@@ -11,14 +11,7 @@ export const licenseRouter = createTRPCRouter({
         licenseKey: z.string(),
       }),
     )
-    .output(
-      z.union([
-        z.literal("VALID"),
-        z.literal("EXPIRED"),
-        z.literal("INVALID"),
-        z.literal("ACTIVATED"),
-      ]),
-    )
+    .output(z.enum(["INVALID", "EXPIRED", "ACTIVATED", "VALID"] as const))
     .query(async ({ ctx, input }) => {
       const licenseKey = await ctx.prisma.licenseKey.findFirst({
         where: { key: input.licenseKey },
