@@ -1,0 +1,23 @@
+{
+  "name": "@acme/scri",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "clean": "git clean -xdf .turbo node_modules",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@acme/api": "*",
+    "@acme/auth": "*",
+    "@acme/db": "*",
+    "@acme/tailwind-config": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "eslint": "^8.34.0",
+    "eslint-config-acme": "0.0.0",
+    "ts-node": "^10.9.1",
+    "tsx": "^3.12.3",
+    "typescript": "^4.9.5"
+  }
+}

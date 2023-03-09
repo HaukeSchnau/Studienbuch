@@ -7,8 +7,8 @@
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push --skip-generate",
-    "dev": "prisma studio --port 5556"
+    "db:push": "prisma db push --skip-generate --force-reset --accept-data-loss",
+    "dev": "BROWSER=none prisma studio --port 5556"
   },
   "dependencies": {
     "@prisma/client": "^4.11.0"

@@ -1,10 +1,16 @@
-import { authRouter } from "./router/auth";
-import { postRouter } from "./router/post";
+import { generateOpenApiDocument } from "trpc-openapi";
+
+import { licenseRouter } from "./router/licenseRouter";
 import { createTRPCRouter } from "./trpc";
 
 export const appRouter = createTRPCRouter({
-  post: postRouter,
-  auth: authRouter,
+  license: licenseRouter,
+});
+
+export const openApiDocument = generateOpenApiDocument(appRouter, {
+  title: "ClassCompanion API",
+  version: "1.0.0",
+  baseUrl: "http://localhost:3000/api",
 });
 
 // export type definition of API
