@@ -4,8 +4,8 @@ import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "../trpc";
 
 export const licenseRouter = createTRPCRouter({
-  checkLicense: publicProcedure
-    .meta({ openapi: { method: "GET", path: "/licenses/check-license" } })
+  check: publicProcedure
+    .meta({ openapi: { method: "GET", path: "/licenses/check" } })
     .input(
       z.object({
         licenseKey: z.string(),
@@ -27,8 +27,8 @@ export const licenseRouter = createTRPCRouter({
       }
       return "VALID" as const;
     }),
-  activateLicense: publicProcedure
-    .meta({ openapi: { method: "POST", path: "/licenses/activate-license" } })
+  activate: publicProcedure
+    .meta({ openapi: { method: "POST", path: "/licenses/activate" } })
     .input(
       z.object({
         licenseKey: z.string(),
