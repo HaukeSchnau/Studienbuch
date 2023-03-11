@@ -19,14 +19,53 @@ model LicenseKey {
 }
 
 model User {
-    id             Int          @id @default(autoincrement())
-    email          String       @unique
-    hashedPassword String
-    createdAt      DateTime     @default(now())
-    updatedAt      DateTime     @updatedAt
-    permissions    Permission[]
+    id          Int          @id @default(autoincrement())
+    email       String       @unique
+    name        String
+    createdAt   DateTime     @default(now())
+    updatedAt   DateTime     @updatedAt
+    permissions Permission[]
+    Course      Course[]
 }
 
 enum Permission {
     EDIT_INFO_PAGES
+}
+
+model CourseTime {
+    id       Int     @id @default(autoincrement())
+    weekday  Int
+    start    Int // time of day in minutes since midnight
+    duration Int
+    Course   Course? @relation(fields: [courseId], references: [id])
+    courseId Int?
+}
+
+model Course {
+    id        Int          @id @default(autoincrement())
+    courseId  String       @unique
+    name      String
+    teacher   User         @relation(fields: [teacherId], references: [id])
+    createdAt DateTime     @default(now())
+    teacherId Int
+    times     CourseTime[]
+    Class     Class?       @relation(fields: [classId], references: [id])
+    classId   Int?
+}
+
+model Class {
+    id        Int      @id @default(autoincrement())
+    name      String
+    createdAt DateTime @default(now())
+    Course    Course[]
+    Year      Year     @relation(fields: [yearId], references: [id])
+    yearId    Int
+}
+
+model Year {
+    id        Int      @id @default(autoincrement())
+    year      Int
+    name      String
+    createdAt DateTime @default(now())
+    Class     Class[]
 }

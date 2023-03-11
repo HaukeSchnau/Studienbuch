@@ -11,9 +11,7 @@ function generateLicenseKey(): string {
     .slice(0, -1);
 }
 
-const main = async () => {
-  const numberOfLicenses = process.argv[2] || 1;
-
+export const generateLicenses = async (numberOfLicenses: number) => {
   for (let i = 0; i < numberOfLicenses; i++) {
     const licenseKey = generateLicenseKey();
     const expiresAt = new Date();
@@ -29,5 +27,3 @@ const main = async () => {
     console.log(license);
   }
 };
-
-void main();

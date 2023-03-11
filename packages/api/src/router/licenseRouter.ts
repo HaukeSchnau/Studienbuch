@@ -35,7 +35,7 @@ export const licenseRouter = createTRPCRouter({
       }),
     )
     .output(z.void())
-    .query(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       const licenseKey = await ctx.prisma.licenseKey.findFirst({
         where: { key: input.licenseKey },
       });
