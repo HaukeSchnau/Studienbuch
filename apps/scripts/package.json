@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "scripts:seed": "ts-node ./src/seed.ts",
     "clean": "git clean -xdf .turbo node_modules",
     "type-check": "tsc --noEmit"
   },

@@ -1,4 +1,4 @@
-import { prisma } from "@acme/db";
+import { prisma, type Role } from "@acme/db";
 
 import iservUsers from "../iservUsers.json";
 
@@ -8,6 +8,7 @@ export const copyIservUsers = async () => {
       data: {
         email: `${user.username}@igslilienthal.de`,
         name: user.name,
+        role: (user.role = user.role as Role | undefined) ?? "STUDENT",
       },
     });
     console.log(newUser);

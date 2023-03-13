@@ -14,6 +14,12 @@
       "inputs": ["prisma/schema.prisma"],
       "cache": false
     },
+    "scripts:seed": {
+      "cache": false
+    },
+    "flutter:gen": {
+      "cache": false
+    },
     "dev": {
       "persistent": true,
       "cache": false

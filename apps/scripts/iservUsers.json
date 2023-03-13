@@ -21,7 +21,7 @@
   { "name": "Adriana Dimitrova", "username": "adriana.dimitrova" },
   { "name": "Afrodite Böger", "username": "afrodite.boeger" },
   { "name": "Ahmad Mona", "username": "ahmad.mona" },
-  { "name": "Ahmed Hussein", "username": "ahmed.hussein" },
+  { "name": "Ahmed Hussein", "username": "ahmed.hussein", "role": "TEACHER" },
   { "name": "Ahmed Kilic", "username": "ahmed.kilic" },
   { "name": "Ahmed Zirek Raoof", "username": "ahmed.zirek.raoof" },
   { "name": "Aidé El-Seyed", "username": "aide.el-seyed" },
@@ -43,8 +43,16 @@
     "username": "alexander.jeerayut.fluegge"
   },
   { "name": "Alexander Keiner", "username": "alexander.keiner" },
-  { "name": "Alexander Kellermann", "username": "alexander.kellermann" },
-  { "name": "Alexander Klähr", "username": "alexander.klaehr" },
+  {
+    "name": "Alexander Kellermann",
+    "username": "alexander.kellermann",
+    "role": "TEACHER"
+  },
+  {
+    "name": "Alexander Klähr",
+    "username": "alexander.klaehr",
+    "role": "TEACHER"
+  },
   { "name": "Alexander Lachenmeier", "username": "alexander.lachenmeier" },
   { "name": "Alexander Rollauer", "username": "alexander.rollauer" },
   { "name": "Alexander Schwan", "username": "alexander.schwan" },
@@ -262,7 +270,7 @@
   { "name": "David Albrecht", "username": "david.albrecht" },
   { "name": "David Hagel", "username": "david.hagel" },
   { "name": "David Meins", "username": "david.meins" },
-  { "name": "David Niemann", "username": "david.niemann" },
+  { "name": "David Niemann", "username": "david.niemann", "role": "TEACHER" },
   { "name": "David Pfeil", "username": "david.pfeil" },
   { "name": "David Toska", "username": "david.toska" },
   { "name": "David von Berg", "username": "david.von.berg" },
@@ -590,7 +598,11 @@
   { "name": "Jeldrik Wilk", "username": "jeldrik.wilk" },
   { "name": "Jelel Ben Chaladia", "username": "jelel.ben.chaladia" },
   { "name": "Jelle Stenekes", "username": "jelle.stenekes" },
-  { "name": "Jendrik Erichsen", "username": "jendrik.erichsen" },
+  {
+    "name": "Jendrik Erichsen",
+    "username": "jendrik.erichsen",
+    "role": "TEACHER"
+  },
   { "name": "Jenia Yevhen", "username": "jenia.yevhen" },
   { "name": "Jenke Vahlenkamp", "username": "jenke.vahlenkamp" },
   { "name": "Jennifer Aufderheide", "username": "jennifer.aufderheide" },
@@ -1437,7 +1449,11 @@
   { "name": "Schaza El-Khatib", "username": "schaza.el-khatib" },
   { "name": "Schulung", "username": "schulung" },
   { "name": "Sean Davidson", "username": "sean.davidson" },
-  { "name": "Sebastian Drachenberg", "username": "s.drachenberg" },
+  {
+    "name": "Sebastian Drachenberg",
+    "username": "s.drachenberg",
+    "role": "TEACHER"
+  },
   { "name": "Sebastian Holler", "username": "sebastian.holler" },
   { "name": "Sebastian Mitterer", "username": "sebastian.mitterer" },
   { "name": "Sebastian Rathje", "username": "sebastian.rathje" },
@@ -1517,14 +1533,18 @@
   { "name": "Theo Schöling", "username": "theo.schoeling" },
   { "name": "Thilo Rößmann", "username": "thilo.roessmann" },
   { "name": "Thomas Brzakala", "username": "thomas.brzakala" },
-  { "name": "Thomas Buse", "username": "thomas.buse" },
-  { "name": "Thomas Seifert", "username": "thomas.seifert" },
+  { "name": "Thomas Buse", "username": "thomas.buse", "role": "TEACHER" },
+  { "name": "Thomas Seifert", "username": "thomas.seifert", "role": "TEACHER" },
   { "name": "Thora Kessels", "username": "thora.kessels" },
   {
     "name": "Thora Vanessa Laetitcia Mertling",
     "username": "thora.vanessa.laetitcia.mertling"
   },
-  { "name": "Thorsten Köpke", "username": "thorsten.koepke" },
+  {
+    "name": "Thorsten Köpke",
+    "username": "thorsten.koepke",
+    "role": "TEACHER"
+  },
   { "name": "Till Santen", "username": "till.santen" },
   { "name": "Till Sieberns", "username": "till.sieberns" },
   { "name": "Tim Binefeld", "username": "tim.binefeld" },
@@ -1574,11 +1594,19 @@
   { "name": "Veith Weihrauch", "username": "veith.weihrauch" },
   { "name": "Venja von Salzen", "username": "venja.von.salzen" },
   { "name": "Verena Schiltkamp", "username": "verena.schiltkamp" },
-  { "name": "Veronica Schilling", "username": "veronica.schilling" },
+  {
+    "name": "Veronica Schilling",
+    "username": "veronica.schilling",
+    "role": "TEACHER"
+  },
   { "name": "Vienna Petriel", "username": "vienna.petriel" },
   { "name": "Viktor Achterberg", "username": "viktor.achterberg" },
   { "name": "Viktor Klimenko", "username": "viktor.klimenko" },
-  { "name": "Viktor Turkaljuk", "username": "viktor.turkaljuk" },
+  {
+    "name": "Viktor Turkaljuk",
+    "username": "viktor.turkaljuk",
+    "role": "TEACHER"
+  },
   { "name": "Viktoria Scharf", "username": "viktoria.scharf" },
   { "name": "Viktoria Schwan", "username": "viktoria.schwan" },
   { "name": "Viktoria Sitz", "username": "viktoria.sitz" },
@@ -1586,7 +1614,11 @@
   { "name": "Vincent Ihssen", "username": "vincent.ihssen" },
   { "name": "Vincent Krause", "username": "vincent.krause" },
   { "name": "Vinzent Hoppe", "username": "vinzent.hoppe" },
-  { "name": "Viviane Heiber-Rehm", "username": "viviane.heiber-rehm" },
+  {
+    "name": "Viviane Heiber-Rehm",
+    "username": "viviane.heiber-rehm",
+    "role": "TEACHER"
+  },
   { "name": "Vivien Koppen", "username": "vivien.koppen" },
   { "name": "Vivienne Albrecht", "username": "vivienne.albrecht" },
   { "name": "Vivienne Hanelt", "username": "vivienne.hanelt" },
@@ -1594,7 +1626,11 @@
   { "name": "Vladislav Ruder", "username": "vladislav.ruder" },
   { "name": "Ward Haji", "username": "ward.haji" },
   { "name": "Watan Ertem", "username": "watan.ertem" },
-  { "name": "Wiebke Köstermann", "username": "wiebke.koestermann" },
+  {
+    "name": "Wiebke Köstermann",
+    "username": "wiebke.koestermann",
+    "role": "TEACHER"
+  },
   { "name": "Wiebke Regehr", "username": "wiebke.regehr" },
   { "name": "Wiktoria Wrobel", "username": "wiktoria.wrobel" },
   { "name": "Wolfgang Ahlrichs", "username": "wolfgang.ahlrichs" },

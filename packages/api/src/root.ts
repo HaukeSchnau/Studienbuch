@@ -1,10 +1,12 @@
 import { generateOpenApiDocument } from "trpc-openapi";
 
 import { licenseRouter } from "./router/licenseRouter";
+import { yearsRouter } from "./router/yearsRouter";
 import { createTRPCRouter } from "./trpc";
 
 export const appRouter = createTRPCRouter({
   license: licenseRouter,
+  years: yearsRouter,
 });
 
 export const openApiDocument = generateOpenApiDocument(appRouter, {

@@ -5,6 +5,29 @@ generator client {
     provider = "prisma-client-js"
 }
 
+generator zod {
+    provider = "zod-prisma"
+    output   = "./zod" // (default) the directory where generated zod schemas will be saved
+
+    relationModel = true // (default) Create and export both plain and related models.
+    // relationModel         = "default" // Do not export model without relations.
+    // relationModel         = false // Do not generate related model
+
+    modelCase = "PascalCase" // (default) Output models using pascal case (ex. UserModel, PostModel)
+    // modelCase             = "camelCase" // Output models using camel case (ex. userModel, postModel)
+
+    modelSuffix = "Model" // (default) Suffix to apply to your prisma models when naming Zod schemas
+
+    // useDecimalJs          = false // (default) represent the prisma Decimal type using as a JS number
+    useDecimalJs = true // represent the prisma Decimal type using Decimal.js (as Prisma does)
+
+    imports = null // (default) will import the referenced file in generated schemas to be used via imports.someExportedVariable
+
+    // https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-by-null-values
+    prismaJsonNullability = true // (default) uses prisma's scheme for JSON field nullability
+    // prismaJsonNullability = false // allows null assignment to optional JSON fields
+}
+
 datasource db {
     provider = "postgresql"
     url      = env("DATABASE_URL")
@@ -26,6 +49,12 @@ model User {
     updatedAt   DateTime     @updatedAt
     permissions Permission[]
     Course      Course[]
+    role        Role
+}
+
+enum Role {
+    TEACHER
+    STUDENT
 }
 
 enum Permission {
@@ -42,30 +71,41 @@ model CourseTime {
 }
 
 model Course {
-    id        Int          @id @default(autoincrement())
-    courseId  String       @unique
+    id        Int      @id @default(autoincrement())
+    courseId  String?
     name      String
-    teacher   User         @relation(fields: [teacherId], references: [id])
-    createdAt DateTime     @default(now())
+    createdAt DateTime @default(now())
+
+    teacher   User @relation(fields: [teacherId], references: [id])
     teacherId Int
-    times     CourseTime[]
-    Class     Class?       @relation(fields: [classId], references: [id])
-    classId   Int?
+
+    times CourseTime[]
+
+    class   Class? @relation(fields: [classId], references: [id])
+    classId Int?
+
+    year   Year @relation(fields: [yearId], references: [id])
+    yearId Int
 }
 
 model Class {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    Course    Course[]
-    Year      Year     @relation(fields: [yearId], references: [id])
-    yearId    Int
+    id               Int      @id @default(autoincrement())
+    identifierInYear String
+    createdAt        DateTime @default(now())
+
+    courses Course[]
+
+    year   Year @relation(fields: [yearId], references: [id])
+    yearId Int
 }
 
 model Year {
-    id        Int      @id @default(autoincrement())
-    year      Int
-    name      String
-    createdAt DateTime @default(now())
-    Class     Class[]
+    id             Int      @id @default(autoincrement())
+    startYear      Int
+    graduationYear Int
+    name           String
+    createdAt      DateTime @default(now())
+
+    classes Class[]
+    courses Course[]
 }
