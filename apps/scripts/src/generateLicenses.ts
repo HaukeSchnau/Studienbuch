@@ -13,7 +13,7 @@ function generateLicenseKey(): string {
 
 export const generateLicenses = async (numberOfLicenses: number) => {
   for (let i = 0; i < numberOfLicenses; i++) {
-    const licenseKey = generateLicenseKey();
+    const licenseKey = i == 0 ? "KJ27-MP16-LS14-JM22" : generateLicenseKey();
     const expiresAt = new Date();
     expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 

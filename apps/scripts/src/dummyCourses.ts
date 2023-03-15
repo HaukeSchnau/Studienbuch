@@ -28,6 +28,9 @@ const getRandomTeacher = async () => {
   });
   const skip = Math.floor(Math.random() * teachersCount);
   return await prisma.user.findFirst({
+    where: {
+      role: "TEACHER",
+    },
     skip: skip,
   });
 };
@@ -39,7 +42,7 @@ const getRandomNumber = (min: number, max: number) => {
 const getRandomCourseTime = () => {
   return {
     weekday: getRandomNumber(1, 5),
-    start: getRandomNumber(0, 4) * (80 + 25) + 48,
+    start: getRandomNumber(0, 4) * (80 + 25) + 480,
     duration: 80,
   };
 };
@@ -51,12 +54,12 @@ const getRandomCourseTimes = () => {
 };
 
 const getShortName = (name: string) => {
-  if (name === "Politik-Wirtschaft") return "PoWi";
-  if (name === "Werte und Normen") return "WuN";
-  if (name === "Informatik") return "Inf";
-  if (name === "Spanisch") return "Sn";
+  if (name === "Politik-Wirtschaft") return "pw";
+  if (name === "Werte und Normen") return "wn";
+  if (name === "Informatik") return "if";
+  if (name === "Spanisch") return "sn";
 
-  return name.slice(0, 3);
+  return name.slice(0, 2).toLowerCase();
 };
 
 const years = [
@@ -142,8 +145,9 @@ export const generateDummyCourses = async () => {
       console.log(cl);
 
       if (year.numClasses === 1) {
-        for (let courseNum = 1; courseNum <= 4; courseNum++) {
-          for (const courseName of courseNames) {
+        for (const courseName of courseNames) {
+          const coursesToGenerate = getRandomNumber(1, 3);
+          for (let courseNum = 1; courseNum <= coursesToGenerate; courseNum++) {
             const randomTeacher = await getRandomTeacher();
             if (!randomTeacher) {
               throw new Error("No teacher found");
@@ -152,9 +156,7 @@ export const generateDummyCourses = async () => {
             const course = await prisma.course.create({
               data: {
                 name: courseName,
-                courseId: `${getShortName(
-                  courseName,
-                ).toLowerCase()}${courseNum}`,
+                courseId: `${getShortName(courseName)}${courseNum}`,
                 teacher: {
                   connect: {
                     id: randomTeacher.id,
