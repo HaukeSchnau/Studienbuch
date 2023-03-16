@@ -39,10 +39,37 @@ const getRandomNumber = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
+const times = [
+  {
+    hour: 8,
+    minute: 0,
+  },
+  {
+    hour: 9,
+    minute: 45,
+  },
+  {
+    hour: 11,
+    minute: 30,
+  },
+  {
+    hour: 13,
+    minute: 50,
+  },
+  {
+    hour: 15,
+    minute: 15,
+  },
+];
+
 const getRandomCourseTime = () => {
+  const start = times[getRandomNumber(0, times.length - 1)] ?? {
+    hour: 8,
+    minute: 0,
+  };
   return {
     weekday: getRandomNumber(1, 5),
-    start: getRandomNumber(0, 4) * (80 + 25) + 480,
+    start: start.hour * 60 + start.minute,
     duration: 80,
   };
 };
