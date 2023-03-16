@@ -15,10 +15,6 @@ class HomePage extends HookWidget {
 
     final hPadding = useHorizontalPadding();
     final agenda = store.currentUser.agenda;
-    print(agenda.entries.length);
-    print(store.currentUser.courses.map(
-      (e) => e.courseTimes.map((time) => time.weekday),
-    ));
     final message = agenda.entries.isEmpty
         ? "du hast ${agenda.when} keine Kurse."
         : "das steht ${agenda.when} an:";
@@ -65,23 +61,36 @@ class HomePage extends HookWidget {
       ],
     );
 
-    return SingleChildScrollView(
-      child: Stack(children: [
-        Container(
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height,
-            color: store.theme.lightBg),
-        ClipShadowPath(
-          shadow:
-              Shadow(color: store.theme.secondary, offset: const Offset(0, 6)),
-          clipper: BezierClipper(),
-          child: Container(
-            height: 250,
-            color: store.theme.primary,
+    final scrollView = SingleChildScrollView(
+      child: Container(
+        color: store.theme.lightBg,
+        child: Stack(children: [
+          ClipShadowPath(
+            shadow: Shadow(
+                color: store.theme.secondary, offset: const Offset(0, 6)),
+            clipper: BezierClipper(),
+            child: Container(
+              height: 250,
+              color: store.theme.primary,
+            ),
           ),
-        ),
-        SafeArea(child: body)
-      ]),
+          SafeArea(child: body)
+        ]),
+      ),
     );
+
+    return Stack(children: [
+      Column(
+        children: [
+          Expanded(
+            child: Container(color: store.theme.primary),
+          ),
+          Expanded(
+            child: Container(color: store.theme.lightBg),
+          )
+        ],
+      ),
+      scrollView
+    ]);
   }
 }
