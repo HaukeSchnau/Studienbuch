@@ -1,6 +1,7 @@
 import 'package:class_companion/models/agenda.dart';
 import 'package:class_companion/models/class.dart';
 import 'package:class_companion/models/course.dart';
+import 'package:class_companion/util/date_util.dart';
 import 'package:mobx/mobx.dart';
 
 part 'user.g.dart';
@@ -33,9 +34,24 @@ abstract class _UserBase with Store {
   get shortName {
     return name.split(" ")[0].split("-")[0];
   }
- 
+
   @computed
   Agenda get agenda => Agenda(start: DateTime.now(), courses: courses);
+
+  @computed
+  List<Agenda> get weeklyAgenda {
+    final now = DateTime.now();
+    final start = now.startOfWeek;
+
+    final days = <DateTime>[];
+    for (var i = 0; i < 5; i++) {
+      days.add(start.add(Duration(days: i)));
+    }
+
+    return days
+        .map((e) => Agenda(start: e, courses: courses, autoAdjust: false))
+        .toList();
+  }
 
   @computed
   List<Course> get courses => _courses + currentClass.courses;

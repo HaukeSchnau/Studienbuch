@@ -15,7 +15,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Intl.defaultLocale = "de_DE";
 
-  const reinit = true;
+  const reinit = false;
   if (reinit) {
     runApp(const App());
   }

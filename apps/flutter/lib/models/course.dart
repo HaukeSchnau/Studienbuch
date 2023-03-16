@@ -56,6 +56,24 @@ class Teacher {
 
   Teacher({required this.name, required this.title});
 
+  String get formalName {
+    String? title = this.title;
+
+    if (title == null) {
+      return name.split(" ").last;
+    }
+
+    if (title == "Herr") {
+      return "Hr. ${name.split(" ").last}";
+    }
+
+    if (title == "Frau") {
+      return "Fr. ${name.split(" ").last}";
+    }
+
+    return "$title ${name.split(" ").last}";
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'name': name,

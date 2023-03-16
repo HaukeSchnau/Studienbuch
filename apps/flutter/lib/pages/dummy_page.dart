@@ -5,12 +5,8 @@ class DummyPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Placeholder(
-      child: Center(
-        child: Text(
-          "This is a dummy page. Replace it with your own content.",
-        ),
-      ),
+    return const Center(
+      child: Text("Diese Seite ist noch nicht implementiert."),
     );
   }
 }

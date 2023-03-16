@@ -4,6 +4,9 @@ extension Date on DateTime {
   DateTime get startOfDay =>
       copyWith(hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
 
+  DateTime get startOfWeek =>
+      startOfDay.subtract(Duration(days: weekday - DateTime.monday)).startOfDay;
+
   bool get isToday {
     final now = DateTime.now().startOfDay;
 

@@ -1,5 +1,7 @@
 import 'package:class_companion/pages/dummy_page.dart';
 import 'package:class_companion/pages/home_page.dart';
+import 'package:class_companion/pages/profile_page.dart';
+import 'package:class_companion/pages/week_page.dart';
 import 'package:class_companion/util/ui_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,11 +22,11 @@ const pages = [
   Page(
       name: "Meine Woche",
       icon: Icons.calendar_today_rounded,
-      widget: DummyPage()),
+      widget: WeekPage()),
   Page(
     name: "Mein Profil",
     icon: Icons.person_rounded,
-    widget: DummyPage(),
+    widget: ProfilePage(),
   ),
   Page(
     name: "Oberstufe",

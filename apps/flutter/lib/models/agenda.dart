@@ -11,14 +11,14 @@ abstract class _AgendaBase with Store {
   DateTime date;
   List<AgendaEntry> entries = [];
 
-  _AgendaBase({required DateTime start, required List<Course> courses})
+  _AgendaBase({required DateTime start, required List<Course> courses, bool autoAdjust = true})
       : date = start {
     start = start.startOfDay;
 
     final entries = _buildEntries(courses, start);
     final entriesAhead = entries.where((element) => !element.isOver);
 
-    if (entriesAhead.isEmpty) {
+    if (entriesAhead.isEmpty && autoAdjust) {
       final nextDate = start.weekday == DateTime.friday
           ? start.add(const Duration(days: 3))
           : start.add(const Duration(days: 1));
