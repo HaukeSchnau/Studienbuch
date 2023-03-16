@@ -39,6 +39,7 @@ model LicenseKey {
     createdAt   DateTime  @default(now())
     activatedAt DateTime?
     expiresAt   DateTime?
+    isSuperKey  Boolean   @default(false)
 }
 
 model User {

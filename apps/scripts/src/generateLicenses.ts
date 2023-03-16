@@ -20,7 +20,8 @@ export const generateLicenses = async (numberOfLicenses: number) => {
     const license = await prisma.licenseKey.create({
       data: {
         key: licenseKey,
-        expiresAt,
+        expiresAt: i == 0 ? null : expiresAt,
+        isSuperKey: i == 0,
       },
     });
 
