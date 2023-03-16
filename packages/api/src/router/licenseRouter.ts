@@ -19,7 +19,8 @@ export const licenseRouter = createTRPCRouter({
       if (!licenseKey) {
         return "INVALID" as const;
       }
-      if(licenseKey.isSuperKey) {
+      console.log(licenseKey);
+      if (licenseKey.isSuperKey) {
         return "VALID" as const;
       }
       if (licenseKey.expiresAt && licenseKey.expiresAt < new Date()) {
@@ -43,13 +44,13 @@ export const licenseRouter = createTRPCRouter({
         where: { key: input.licenseKey },
       });
       if (!licenseKey) {
-        return;
-      }
-      if(licenseKey.isSuperKey) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Super key cannot be activated",
+          message: "License key not found",
         });
+      }
+      if (licenseKey.isSuperKey) {
+        return;
       }
       if (licenseKey.expiresAt && licenseKey.expiresAt < new Date()) {
         throw new TRPCError({
