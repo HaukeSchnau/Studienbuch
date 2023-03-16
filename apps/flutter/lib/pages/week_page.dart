@@ -14,7 +14,17 @@ class WeekPage extends HookWidget {
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Container(
-          color: getDefaultTheme().primary,
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                spreadRadius: 0,
+                blurRadius: 16,
+                offset: const Offset(0, 4), // changes position of shadow
+              ),
+            ],
+            color: getDefaultTheme().primary,
+          ),
           child: SafeArea(
             child: Column(
               children: const [
