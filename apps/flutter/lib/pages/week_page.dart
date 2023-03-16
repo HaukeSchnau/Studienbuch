@@ -15,17 +15,22 @@ class WeekPage extends HookWidget {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Container(
           color: getDefaultTheme().primary,
-          child: const SafeArea(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text("Meine Woche",
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20)),
-              ),
+          child: SafeArea(
+            child: Column(
+              children: const [
+                SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: Text("Meine Woche",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20)),
+                ),
+                SizedBox(height: 8),
+                Weekdays(),
+                SizedBox(height: 12),
+              ],
             ),
           )),
       Expanded(
@@ -47,6 +52,33 @@ const spaceLeft = 52;
 const lineOverflow = 8;
 const timePad = 0;
 const entryPad = 4.0;
+
+class Weekdays extends StatelessWidget {
+  const Weekdays({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const weekdays = [
+      "Mo",
+      "Di",
+      "Mi",
+      "Do",
+      "Fr",
+    ];
+
+    return Row(
+      children: [
+        const SizedBox(width: spaceLeft + 0),
+        for (final weekday in weekdays)
+          Expanded(
+            child: Text(weekday,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 16)),
+          ),
+      ],
+    );
+  }
+}
 
 class WeekGrid extends StatelessWidget {
   final List<Agenda> weeklyAgenda;
