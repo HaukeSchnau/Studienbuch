@@ -81,6 +81,16 @@ class Teacher {
     return "$title ${name.split(" ").last}";
   }
 
+  String get longFormalName {
+    String? title = this.title;
+
+    if (title == null) {
+      return name;
+    }
+  
+    return "$title ${name.split(" ").last}";
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'name': name,

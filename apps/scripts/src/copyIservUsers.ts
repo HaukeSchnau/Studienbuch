@@ -9,6 +9,7 @@ export const copyIservUsers = async () => {
         email: `${user.username}@igslilienthal.de`,
         name: user.name,
         role: (user.role = user.role as Role | undefined) ?? "STUDENT",
+        title: user.title,
       },
     });
     console.log(newUser);

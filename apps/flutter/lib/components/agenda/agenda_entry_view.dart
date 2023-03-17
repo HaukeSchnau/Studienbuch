@@ -45,8 +45,7 @@ class AgendaEntryView extends DataHookWidget<AgendaEntry> {
                             height: circleSize,
                             decoration: BoxDecoration(
                                 color: store.theme.primary,
-                                borderRadius:
-                                    BorderRadius.circular(9999999999)),
+                                borderRadius: BorderRadius.circular(999)),
                           ),
                           const Padding(
                             padding: EdgeInsets.only(left: 8.0),
@@ -89,7 +88,7 @@ class AgendaEntryView extends DataHookWidget<AgendaEntry> {
                   ],
                 ),
                 Text(
-                  course.teacher.name,
+                  course.teacher.longFormalName,
                   style: const TextStyle(color: Colors.black87),
                 ),
               ],
