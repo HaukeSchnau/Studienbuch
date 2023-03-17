@@ -1,3 +1,4 @@
+import 'package:class_companion/models/absence.dart';
 import 'package:class_companion/models/agenda.dart';
 import 'package:class_companion/models/class.dart';
 import 'package:class_companion/models/course.dart';
@@ -18,10 +19,18 @@ abstract class _UserBase with Store {
   @observable
   Class currentClass;
 
+  @observable
+  List<Absence> absences;
+
+  @observable
+  bool isOfAge;
+
   _UserBase({
     required this.name,
     required this.currentClass,
     required ObservableList<Course> courses,
+    this.absences = const [],
+    required this.isOfAge,
   }) : _courses = courses;
 
   @computed
@@ -61,6 +70,8 @@ abstract class _UserBase with Store {
       'name': name,
       'currentClass': currentClass.toJson(),
       'courses': _courses.map((e) => e.toJson()).toList(),
+      'absences': absences.map((e) => e.toJson()).toList(),
+      'isOfAge': isOfAge,
     };
   }
 
@@ -72,5 +83,9 @@ abstract class _UserBase with Store {
               .map<Course>((e) => Course.fromJson(e))
               .toList()
               .asObservable(),
+          absences: (json["absences"] as List)
+              .map<Absence>((e) => Absence.fromJson(e))
+              .toList(),
+          isOfAge: json["isOfAge"],
         );
 }

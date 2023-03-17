@@ -42,12 +42,16 @@ abstract class _SetupStoreBase with Store {
   ApiClass? class_;
 
   @observable
+  bool? isOfAge;  
+
+  @observable
   ObservableList<ApiCourse> courses = ObservableList<ApiCourse>();
 
   GlobalStore toGlobalStore() {
     final res = GlobalStore(
       licenseKey: licenseKey!,
       currentUser: User(
+          isOfAge: isOfAge!,
           name: name!,
           currentClass: Class(
               year: Year(

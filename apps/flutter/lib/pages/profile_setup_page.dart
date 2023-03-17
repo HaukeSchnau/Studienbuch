@@ -17,6 +17,7 @@ class ProfileSetupPage extends HookWidget {
   Widget build(BuildContext context) {
     final years = useNetworkResult(() => apiInstance.queryYearsGet());
     final selectedYear = useState<ApiYear?>(null);
+    final isOfAge = useState(false);
     final nameController = useTextEditingController();
 
     bool isValidInput() {
@@ -59,13 +60,23 @@ class ProfileSetupPage extends HookWidget {
               selectedYear.value = value;
             },
           ),
-          const SizedBox(height: 16.0),
+          const SizedBox(height: 8.0),
+          // Checkbox
+          CheckboxListTile(
+            title: const Text("Ich bin volljährig."),
+            value: isOfAge.value,
+            onChanged: (value) {
+              isOfAge.value = value ?? false;
+            },
+          ),
+          const SizedBox(height: 8.0),
           ContinueButton(
               isValidInput: isValidInput(),
               loading: false,
               onActivate: () {
                 store.name = nameController.text;
                 store.year = selectedYear.value;
+                store.isOfAge = isOfAge.value;
                 onNext(ClassesCoursesSetupPage(store: store, onNext: onNext));
               })
         ],
