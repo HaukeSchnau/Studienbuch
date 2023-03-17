@@ -205,38 +205,68 @@ export const generateDummyCourses = async () => {
           }
         }
       } else {
-        for (const courseName of courseNames) {
-          const randomTeacher = await getRandomTeacher();
-          if (!randomTeacher) {
-            throw new Error("No teacher found");
-          }
+        const courses = await Promise.all(
+          courseNames.map(async (name) => {
+            const randomTeacher = await getRandomTeacher();
+            if (!randomTeacher) {
+              throw new Error("No teacher found");
+            }
 
-          const course = await prisma.course.create({
+            return {
+              name,
+              teacher: randomTeacher,
+              times: [] as {
+                weekday: number;
+                start: number;
+                duration: number;
+              }[],
+              class: cl,
+              year: dbYear,
+            };
+          }),
+        );
+
+        for (let weekday = 1; weekday <= 5; weekday++) {
+          for (const time of times) {
+            const course = courses[getRandomNumber(0, courses.length + time.hour - 7)]; // + time.hour - 9 to make sure that later slots are more likely to be empty
+            if (!course) {
+              continue;
+            }
+            course.times.push({
+              weekday,
+              start: time.hour * 60 + time.minute,
+              duration: 80,
+            });
+          }
+        }
+
+        for (const course of courses) {
+          const dbCourse = await prisma.course.create({
             data: {
-              name: courseName,
+              name: course.name,
               teacher: {
                 connect: {
-                  id: randomTeacher.id,
+                  id: course.teacher.id,
                 },
               },
               times: {
                 createMany: {
-                  data: getRandomCourseTimes(),
+                  data: course.times,
                 },
               },
               class: {
                 connect: {
-                  id: cl.id,
+                  id: course.class.id,
                 },
               },
               year: {
                 connect: {
-                  id: dbYear.id,
+                  id: course.year.id,
                 },
               },
             },
           });
-          console.log(course);
+          console.log(dbCourse);
         }
       }
     }
