@@ -1,4 +1,5 @@
 import 'package:class_companion/models/course_time.dart';
+import 'package:flutter/material.dart';
 import 'package:mobx/mobx.dart';
 part 'course.g.dart';
 
@@ -27,6 +28,12 @@ abstract class _CourseBase with Store {
     required this.teacher,
     required this.courseTimes,
   });
+
+  void navigateTo(BuildContext context) {
+    print("Navigating to course $name");
+    // TODO Implement course page
+    // Navigator.of(context).pushNamed('/course', arguments: this);
+  }
 
   Map<String, dynamic> toJson() {
     return {

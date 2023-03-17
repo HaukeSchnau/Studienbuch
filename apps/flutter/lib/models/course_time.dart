@@ -31,6 +31,20 @@ class TimeOfDay {
       return hour.compareTo(other.hour);
     }
   }
+
+  TimeOfDay operator +(int minutes) {
+    final newMinute = minute + minutes;
+    final newHour = hour + newMinute ~/ 60;
+    return TimeOfDay(hour: newHour, minute: newMinute % 60);
+  }
+
+  bool isBefore(TimeOfDay other) {
+    return compareTo(other) < 0;
+  }
+
+  bool isAfter(TimeOfDay other) {
+    return compareTo(other) > 0;
+  }
 }
 
 class CourseTime {
@@ -43,6 +57,22 @@ class CourseTime {
     required this.start,
     required this.duration,
   });
+
+  bool overlap(CourseTime other) {
+    if (weekday != other.weekday) {
+      return false;
+    }
+
+    final start = this.start;
+    final end = start + duration;
+
+    final otherStart = other.start;
+    final otherEnd = otherStart + other.duration;
+
+    return start.isBefore(otherEnd) && end.isAfter(otherStart) ||
+        start == otherStart ||
+        end == otherEnd;
+  }
 
   Map<String, dynamic> toJson() {
     return {

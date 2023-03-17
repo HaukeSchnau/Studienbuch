@@ -122,25 +122,32 @@ class WeekGrid extends StatelessWidget {
           color: color,
           borderRadius: const BorderRadius.all(Radius.circular(8)),
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              text,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => course.navigateTo(context),
+            borderRadius: const BorderRadius.all(Radius.circular(8)),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+                Text(
+                  course.teacher.formalName,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 10,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              course.teacher.formalName,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 10,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

@@ -113,9 +113,7 @@ class AgendaEntryView extends DataHookWidget<AgendaEntry> {
       return Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () {
-              print("Tapped ${course.name}");
-            },
+            onTap: () => course.navigateTo(context),
             child: view,
           ));
     }

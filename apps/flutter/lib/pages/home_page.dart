@@ -16,11 +16,11 @@ class HomePage extends HookWidget {
     final hPadding = useHorizontalPadding();
     final agenda = store.currentUser.agenda;
     final message = agenda.entries.isEmpty
-        ? "du hast ${agenda.when} keine Kurse."
-        : "das steht ${agenda.when} an:";
+        ? "Du hast ${agenda.when} keine Kurse."
+        : "Das steht ${agenda.when} an:";
 
     final mainGreeting = Text(
-      "Hallo, ${store.currentUser.shortName}",
+      "Moin, ${store.currentUser.shortName}!",
       style: const TextStyle(
         color: Colors.white,
         fontWeight: FontWeight.bold,
@@ -41,17 +41,14 @@ class HomePage extends HookWidget {
       children: [
         const SizedBox(height: 16),
         Padding(
-          padding: EdgeInsets.only(left: hPadding, right: hPadding - 8.0),
+          padding: EdgeInsets.only(left: hPadding, right: hPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               mainGreeting,
               subGreeting,
               const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: agendaWidget,
-              )
+              agendaWidget,
             ],
           ),
         ),
