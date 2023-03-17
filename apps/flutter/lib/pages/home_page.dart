@@ -1,3 +1,4 @@
+import 'package:class_companion/components/absense_view.dart';
 import 'package:class_companion/components/agenda/agenda_view.dart';
 import 'package:class_companion/components/util/clip_shadow_path.dart';
 import 'package:class_companion/components/util/clippers.dart';
@@ -34,21 +35,23 @@ class HomePage extends HookWidget {
           color: Color.fromRGBO(255, 255, 255, .9), fontSize: 20),
     );
 
-    final agendaWidget = AgendaView(data: agenda);
-
     final body = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: 16),
         Padding(
           padding: EdgeInsets.only(left: hPadding, right: hPadding),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               mainGreeting,
               subGreeting,
               const SizedBox(height: 16),
-              agendaWidget,
+              AgendaView(data: agenda),
+              const SizedBox(
+                height: 32,
+              ),
+              const AbsenceView(),
             ],
           ),
         ),

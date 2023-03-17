@@ -1,3 +1,4 @@
+import 'package:class_companion/models/absence.dart';
 import 'package:class_companion/models/class.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/course_time.dart';
@@ -42,7 +43,7 @@ abstract class _SetupStoreBase with Store {
   ApiClass? class_;
 
   @observable
-  bool? isOfAge;  
+  bool? isOfAge;
 
   @observable
   ObservableList<ApiCourse> courses = ObservableList<ApiCourse>();
@@ -53,6 +54,7 @@ abstract class _SetupStoreBase with Store {
       currentUser: User(
           isOfAge: isOfAge!,
           name: name!,
+          absences: ObservableList<Absence>(),
           currentClass: Class(
               year: Year(
                 id: year!.id,

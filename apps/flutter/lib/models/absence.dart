@@ -20,6 +20,9 @@ abstract class _AbsenceBase with Store {
   @observable
   bool isExcusedByParent;
 
+  @computed
+  bool get isExcused => isExcusedByTeacher && isExcusedByParent;
+
   _AbsenceBase({
     required this.date,
     required this.reason,

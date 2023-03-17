@@ -20,7 +20,7 @@ abstract class _UserBase with Store {
   Class currentClass;
 
   @observable
-  List<Absence> absences;
+  ObservableList<Absence> absences;
 
   @observable
   bool isOfAge;
@@ -29,7 +29,7 @@ abstract class _UserBase with Store {
     required this.name,
     required this.currentClass,
     required ObservableList<Course> courses,
-    this.absences = const [],
+    required this.absences,
     required this.isOfAge,
   }) : _courses = courses;
 
@@ -45,7 +45,26 @@ abstract class _UserBase with Store {
   }
 
   @computed
+  ObservableList<Absence> get unexcusedAbsences =>
+      absences.where((element) => !element.isExcused).toList().asObservable();
+
+  @computed
+  ObservableMap<DateTime, List<Absence>> get unexcusedAbsencesByDay {
+    final map = <DateTime, List<Absence>>{};
+    for (final absence in unexcusedAbsences) {
+      if (map[absence.date] == null) {
+        map[absence.date] = [];
+      }
+      map[absence.date]!.add(absence);
+    }
+    return map.asObservable();
+  }
+
+  @computed
   Agenda get agenda => Agenda(start: DateTime.now(), courses: courses);
+
+  Agenda getAgendaForDay(DateTime day) =>
+      Agenda(start: day, courses: courses, autoAdjust: false);
 
   @computed
   List<Agenda> get weeklyAgenda {
@@ -85,7 +104,8 @@ abstract class _UserBase with Store {
               .asObservable(),
           absences: (json["absences"] as List)
               .map<Absence>((e) => Absence.fromJson(e))
-              .toList(),
+              .toList()
+              .asObservable(),
           isOfAge: json["isOfAge"],
         );
 }

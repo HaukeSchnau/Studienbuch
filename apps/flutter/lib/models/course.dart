@@ -55,6 +55,16 @@ abstract class _CourseBase with Store {
               .map<CourseTime>((e) => CourseTime.fromJson(e))
               .toList(),
         );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _CourseBase &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 class Teacher {
@@ -87,7 +97,7 @@ class Teacher {
     if (title == null) {
       return name;
     }
-  
+
     return "$title ${name.split(" ").last}";
   }
 

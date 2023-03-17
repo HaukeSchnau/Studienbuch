@@ -11,6 +11,7 @@ class AgendaView extends DataHookWidget<Agenda> {
   Widget buildWithData(BuildContext context, Agenda agenda) {
     return MyCard(
         clipBehavior: Clip.hardEdge,
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),

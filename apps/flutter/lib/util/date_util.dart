@@ -80,4 +80,27 @@ extension Date on DateTime {
         includeTime ? DateFormat("dd.MM.yyyy HH:mm") : DateFormat("dd.MM.yyyy");
     return format.format(toLocal());
   }
+
+  String formatRelativeDay() {
+    DateTime now = DateTime.now();
+    DateTime localDateTime = toLocal();
+    if (localDateTime.day == now.day &&
+        localDateTime.month == now.month &&
+        localDateTime.year == now.year) {
+      return 'Heute';
+    }
+    DateTime yesterday = now.subtract(const Duration(days: 1));
+    if (localDateTime.day == yesterday.day &&
+        localDateTime.month == yesterday.month &&
+        localDateTime.year == yesterday.year) {
+      return 'Gestern';
+    }
+    DateTime tomorrow = now.add(const Duration(days: 1));
+    if (localDateTime.day == tomorrow.day &&
+        localDateTime.month == tomorrow.month &&
+        localDateTime.year == tomorrow.year) {
+      return 'Morgen';
+    }
+    return DateFormat("EEEE").format(localDateTime);
+  }
 }

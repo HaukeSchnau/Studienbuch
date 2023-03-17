@@ -7,4 +7,14 @@ extension ListUtil<T> on List<T> {
     }
     return null;
   }
+
+  List<T> sublistNegative(int start, [int? end]) {
+    if (start < 0) {
+      start = length + start;
+    }
+    if (end != null && end < 0) {
+      end = length + end;
+    }
+    return sublist(start, end);
+  }
 }

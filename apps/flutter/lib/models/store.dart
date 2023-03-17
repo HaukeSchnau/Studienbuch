@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -29,7 +30,18 @@ abstract class _GlobalStore with Store {
   _GlobalStore(
       {required this.currentUser,
       required this.licenseKey,
-      this.substitutionPlan = const []});
+      this.substitutionPlan = const []}) {
+    Timer.periodic(const Duration(seconds: 5), (timer) {
+      // TODO find a better way to save the store on changes (mobx?)
+      save();
+    });
+
+    // React on every change
+    autorun((_) {
+      save();
+      toJson();
+    });
+  }
 
   _GlobalStore.fromJson(Map<String, dynamic> json)
       : this(
