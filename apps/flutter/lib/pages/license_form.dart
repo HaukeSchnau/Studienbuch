@@ -8,14 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter/material.dart';
 
-T useDisposable<T extends ChangeNotifier>(T initialValue) {
-  final value = useState(initialValue);
-  useEffect(() {
-    return value.dispose;
-  }, []);
-  return value.value;
-}
-
 class LicenseFormatter extends TextInputFormatter {
   String formatLicense(String input) {
     return input
