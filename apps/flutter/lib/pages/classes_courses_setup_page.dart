@@ -116,24 +116,25 @@ class ClassesCoursesSetupPage extends HookWidget {
                 selectedClass.value = value;
               },
             ),
-          GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 16.0,
-              mainAxisSpacing: 16.0,
-              childAspectRatio: 1 / .5,
-              children: [
-                for (final courses in courseChoices.values)
-                  CourseSelector(
-                      courses: courses,
-                      selectedCourse: selectedCourses.value[courses[0].name],
-                      onCourseSelected: (course) {
-                        selectedCourses.value[courses[0].name] = course;
-                        // rerender
-                        selectedCourses.value = {...selectedCourses.value};
-                      })
-              ]),
+          if (courseChoices.isNotEmpty)
+            GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 16.0,
+                mainAxisSpacing: 16.0,
+                childAspectRatio: 1 / .5,
+                children: [
+                  for (final courses in courseChoices.values)
+                    CourseSelector(
+                        courses: courses,
+                        selectedCourse: selectedCourses.value[courses[0].name],
+                        onCourseSelected: (course) {
+                          selectedCourses.value[courses[0].name] = course;
+                          // rerender
+                          selectedCourses.value = {...selectedCourses.value};
+                        })
+                ]),
           const SizedBox(height: 16.0),
           ContinueButton(
               isValidInput: isValidInput(),

@@ -1,29 +1,10 @@
+import 'package:class_companion/models/course.dart' show getCourseIcon;
 import 'package:class_companion/pages/classes_courses_setup_page.dart';
 import 'package:class_companion/static/theme.dart';
 import 'package:class_companion_api/api.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-
-const courseIconMap = {
-  "Deutsch": "german.svg",
-  "Englisch": "english.svg",
-  "Mathe": "math.svg",
-  "Physik": "physics.svg",
-  "Chemie": "chemistry.svg",
-  "Biologie": "bio.svg",
-  "Informatik": "informatik-2.svg",
-  "Geschichte": "history.svg",
-  "Politik-Wirtschaft": "pw.svg",
-  "Musik": "music.svg",
-  "Sport": "sport.svg",
-  "Kunst": "art.svg",
-  "Religion": "religion.svg",
-  "Französisch": "french.svg",
-  "Spanisch": "spanish.svg",
-  "Latein": "latin.svg",
-  "Werte und Normen": "wun.svg",
-};
 
 typedef User = QueryCoursesGet200ResponseInnerTeacher;
 
@@ -36,14 +17,6 @@ extension UserExtension on User {
     }
     return "${name[0]}. $lastName";
   }
-}
-
-String getCourseIcon(String courseName) {
-  final icon = courseIconMap[courseName];
-  if (icon == null) {
-    throw Exception("No icon for course $courseName");
-  }
-  return "assets/icons/$icon";
 }
 
 class CourseSelector extends StatelessWidget {

@@ -2,6 +2,7 @@ import 'package:class_companion/models/absence.dart';
 import 'package:class_companion/models/agenda.dart';
 import 'package:class_companion/models/class.dart';
 import 'package:class_companion/models/course.dart';
+import 'package:class_companion/static/years.dart';
 import 'package:class_companion/util/date_util.dart';
 import 'package:mobx/mobx.dart';
 
@@ -14,10 +15,10 @@ abstract class _UserBase with Store {
   String name;
 
   @observable
-  ObservableList<Course> _courses;
+  ObservableMap<Semester, List<Course>> _courses;
 
   @observable
-  Class currentClass;
+  ObservableMap<Semester, Class> classes;
 
   @observable
   ObservableList<Absence> absences;
@@ -27,17 +28,28 @@ abstract class _UserBase with Store {
 
   _UserBase({
     required this.name,
-    required this.currentClass,
-    required ObservableList<Course> courses,
+    required Map<Semester, List<Course>> courses,
+    required Map<Semester, Class> classes,
     required this.absences,
     required this.isOfAge,
-  }) : _courses = courses;
+  })  : assert(classes.isNotEmpty),
+        _courses = courses.asObservable(),
+        classes = classes.asObservable();
 
   @computed
   String get firstName => name.split(" ").first;
 
   @computed
   String get lastName => name.split(" ").last;
+
+  @computed
+  String get initials {
+    final parts = name.split(" ");
+    if (parts.length == 1) {
+      return parts.first.substring(0, 2);
+    }
+    return parts.first.substring(0, 1) + parts.last.substring(0, 1);
+  }
 
   @computed
   get shortName {
@@ -82,13 +94,48 @@ abstract class _UserBase with Store {
   }
 
   @computed
-  List<Course> get courses => _courses + currentClass.courses;
+  List<Course> get _coursesInCurrentSemester {
+    final currentSemester = getCurrentSemester();
+    return _courses[currentSemester] ?? [];
+  }
+
+  @computed
+  Map<int, List<Course>> get coursesInAllSemesters {
+    final map = <Semester, List<Course>>{};
+    for (final entry in _courses.entries) {
+      final semester = entry.key;
+      if (map[semester] == null) {
+        map[semester] = [];
+      }
+      map[semester]!.addAll(entry.value);
+    }
+    for (final entry in classes.entries) {
+      final semester = entry.key;
+      if (map[semester] == null) {
+        map[semester] = [];
+      }
+      map[semester]!.addAll(entry.value.courses);
+    }
+    return map;
+  }
+
+  @computed
+  Class get currentClass {
+    final currentSemester = getCurrentSemester();
+    return classes[currentSemester] ?? classes.values.first;
+  }
+
+  @computed
+  List<Course> get courses => _coursesInCurrentSemester + currentClass.courses;
 
   Map<String, dynamic> toJson() {
     return {
       'name': name,
       'currentClass': currentClass.toJson(),
-      'courses': _courses.map((e) => e.toJson()).toList(),
+      'courses': _courses.map((key, value) =>
+          MapEntry(key.toString(), value.map((e) => e.toJson()).toList())),
+      'classes':
+          classes.map((key, value) => MapEntry(key.toString(), value.toJson())),
       'absences': absences.map((e) => e.toJson()).toList(),
       'isOfAge': isOfAge,
     };
@@ -97,11 +144,19 @@ abstract class _UserBase with Store {
   _UserBase.fromJson(Map<String, dynamic> json)
       : this(
           name: json["name"],
-          currentClass: Class.fromJson(json["currentClass"]),
-          courses: (json["courses"] as List)
-              .map<Course>((e) => Course.fromJson(e))
-              .toList()
-              .asObservable(),
+          courses: (json["courses"] as Map<String, dynamic>)
+              .map<Semester, List<Course>>((key, value) {
+            final semester = int.parse(key);
+            final courses =
+                (value as List).map<Course>((e) => Course.fromJson(e)).toList();
+            return MapEntry(semester, courses);
+          }),
+          classes: (json["classes"] as Map<String, dynamic>)
+              .map<Semester, Class>((key, value) {
+            final semester = int.parse(key);
+            final class_ = Class.fromJson(value);
+            return MapEntry(semester, class_);
+          }),
           absences: (json["absences"] as List)
               .map<Absence>((e) => Absence.fromJson(e))
               .toList()

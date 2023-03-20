@@ -7,6 +7,7 @@ import 'package:class_companion/models/substitution_plan.dart';
 import 'package:class_companion/models/user.dart';
 import 'package:class_companion/static/colors.dart';
 import 'package:encrypt/encrypt.dart';
+import 'package:flutter/material.dart' hide Key;
 import 'package:mobx/mobx.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -88,13 +89,17 @@ String decrypt(Uint8List encryptedBytes) {
 }
 
 Future<GlobalStore?> loadStore() async {
-  final directory = await getApplicationDocumentsDirectory();
-  final storeFilePath = "${directory.path}/haukestore";
-  final storeFile = File(storeFilePath);
-  if (await storeFile.exists()) {
-    final jsonContent = decrypt(await storeFile.readAsBytes());
-    final store = GlobalStore.fromJson(jsonDecode(jsonContent));
-    return store;
+  try {
+    final directory = await getApplicationDocumentsDirectory();
+    final storeFilePath = "${directory.path}/haukestore";
+    final storeFile = File(storeFilePath);
+    if (await storeFile.exists()) {
+      final jsonContent = decrypt(await storeFile.readAsBytes());
+      final store = GlobalStore.fromJson(jsonDecode(jsonContent));
+      return store;
+    }
+  } catch (e) {
+    debugPrint("Error while loading store: $e");
   }
   return null;
 }

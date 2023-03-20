@@ -40,6 +40,15 @@ ThemeData buildTheme(MyTheme theme) {
         filled: true),
     scaffoldBackgroundColor: Colors.white,
     textTheme: buildTextTheme(theme),
+    appBarTheme: AppBarTheme(
+        backgroundColor: theme.primary,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(
+            fontFamily: "Nunito",
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold)),
     colorScheme:
         ColorScheme.light(primary: theme.primary, secondary: theme.secondary),
   );

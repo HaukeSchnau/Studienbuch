@@ -3,6 +3,34 @@ import 'package:flutter/material.dart';
 import 'package:mobx/mobx.dart';
 part 'course.g.dart';
 
+const _courseIconMap = {
+  "Deutsch": "german.svg",
+  "Englisch": "english.svg",
+  "Mathe": "math.svg",
+  "Physik": "physics.svg",
+  "Chemie": "chemistry.svg",
+  "Biologie": "bio.svg",
+  "Informatik": "informatik-2.svg",
+  "Geschichte": "history.svg",
+  "Politik-Wirtschaft": "pw.svg",
+  "Musik": "music.svg",
+  "Sport": "sport.svg",
+  "Kunst": "art.svg",
+  "Religion": "religion.svg",
+  "Französisch": "french.svg",
+  "Spanisch": "spanish.svg",
+  "Latein": "latin.svg",
+  "Werte und Normen": "wun.svg",
+};
+
+String getCourseIcon(String courseName) {
+  final icon = _courseIconMap[courseName];
+  if (icon == null) {
+    throw Exception("No icon for course $courseName");
+  }
+  return "assets/icons/$icon";
+}
+
 class Course = _CourseBase with _$Course;
 
 abstract class _CourseBase with Store {

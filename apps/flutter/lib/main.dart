@@ -15,11 +15,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Intl.defaultLocale = "de_DE";
 
-  const reinit = false;
-  if (reinit) {
-    runApp(const App());
-  }
-
   final store = await loadStore();
   runApp(App(initialStore: store));
 }
@@ -64,7 +59,7 @@ class App extends HookWidget {
                   builder: (context, state) => const AboutPage(),
                 ),
                 GoRoute(
-                    path: "/setup/license-key",
+                    path: "/setup",
                     builder: (context, state) => Provider(
                           create: (_) => onSetupFinished,
                           child: const WelcomePage(),
