@@ -15,6 +15,20 @@
       "request": "launch",
       "program": "lib/main.dart",
       "cwd": "${workspaceFolder}/apps/flutter/"
+    },
+    {
+      "name": "Dev Server",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "nr dev",
+      "cwd": "${workspaceFolder}",
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Flutter + Dev Server",
+      "configurations": ["Flutter App", "Dev Server"]
     }
   ]
 }
