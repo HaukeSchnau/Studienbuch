@@ -14,9 +14,7 @@ class MyTabBarView extends HookWidget {
   final List<TabPage> pages;
   final int initialIndex;
 
-  const MyTabBarView(
-      {Key? key, required this.pages, this.initialIndex = 0})
-      : super(key: key);
+  const MyTabBarView({super.key, required this.pages, this.initialIndex = 0});
 
   @override
   Widget build(BuildContext context) {

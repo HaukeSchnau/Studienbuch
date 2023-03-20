@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 class CoolDots extends StatelessWidget {
   final int rows, cols;
 
-  const CoolDots({Key? key, required this.rows, required this.cols})
-      : super(key: key);
+  const CoolDots({super.key, required this.rows, required this.cols});
 
   @override
   Widget build(BuildContext context) {

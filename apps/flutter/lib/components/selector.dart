@@ -15,7 +15,7 @@
 //   final Function(T?) onSelect;
 
 //   const Selector(
-//       {Key? key,
+//       {super.key,
 //       required this.name,
 //       required this.values,
 //       required this.itemBuilder,
@@ -23,8 +23,7 @@
 //       this.fullWidth = false,
 //       this.selected,
 //       required this.onSelect,
-//       this.isNull = false})
-//       : super(key: key);
+//       this.isNull = false});
 
 //   @override
 //   Widget build(BuildContext context) {

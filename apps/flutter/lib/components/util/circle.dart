@@ -4,8 +4,7 @@ class Circle extends StatelessWidget {
   final double size;
   final Color color;
 
-  const Circle({Key? key, required this.size, required this.color})
-      : super(key: key);
+  const Circle({super.key, required this.size, required this.color});
 
   @override
   Widget build(BuildContext context) {

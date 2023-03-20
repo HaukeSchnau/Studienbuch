@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class ActionSheet extends StatelessWidget {
   final List<MyAction> actions;
 
-  const ActionSheet({Key? key, required this.actions}) : super(key: key);
+  const ActionSheet({super.key, required this.actions});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +28,7 @@ class ActionSheet extends StatelessWidget {
 class ActionSheetItem extends StatelessWidget {
   final MyAction action;
 
-  const ActionSheetItem({Key? key, required this.action}) : super(key: key);
+  const ActionSheetItem({super.key, required this.action});
 
   @override
   Widget build(BuildContext context) {

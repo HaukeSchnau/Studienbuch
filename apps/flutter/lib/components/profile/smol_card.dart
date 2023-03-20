@@ -7,8 +7,7 @@ class SmolCard extends StatelessWidget {
   final String secondaryLine;
 
   const SmolCard(
-      {Key? key, required this.mainLine, required this.secondaryLine})
-      : super(key: key);
+      {super.key, required this.mainLine, required this.secondaryLine});
 
   @override
   Widget build(BuildContext context) {

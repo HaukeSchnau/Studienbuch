@@ -7,8 +7,7 @@
 //   final String? selected;
 //   final Function(String?) onSelect;
 
-//   const JahrgangSelector({Key? key, this.selected, required this.onSelect})
-//       : super(key: key);
+//   const JahrgangSelector({super.key, this.selected, required this.onSelect});
 
 //   @override
 //   Widget build(BuildContext context) {

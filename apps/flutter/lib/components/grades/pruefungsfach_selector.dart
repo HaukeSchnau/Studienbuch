@@ -9,12 +9,11 @@
 //   final String title;
 
 //   const PruefungsfachSelector(
-//       {Key? key,
+//       {super.key,
 //       this.selected,
 //       required this.onSelect,
 //       required this.options,
-//       required this.title})
-//       : super(key: key);
+//       required this.title});
 
 //   @override
 //   Widget build(BuildContext context) {

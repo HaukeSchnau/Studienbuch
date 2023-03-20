@@ -13,9 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 const TextStyle _linkStyle = TextStyle(color: Color(0xFF6A6A6A), fontSize: 16);
 
 class WelcomePage extends HookWidget {
-  const WelcomePage({
-    Key? key,
-  }) : super(key: key);
+  const WelcomePage({super.key});
 
   @override
   Widget build(BuildContext context) {

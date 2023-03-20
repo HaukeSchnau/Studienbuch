@@ -145,11 +145,11 @@ class ContinueButton extends StatelessWidget {
   final void Function() onActivate;
 
   const ContinueButton({
-    Key? key,
+    super.key,
     required this.isValidInput,
     required this.loading,
     required this.onActivate,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

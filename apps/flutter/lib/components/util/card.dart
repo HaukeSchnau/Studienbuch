@@ -13,7 +13,7 @@ class MyCard extends StatelessWidget {
   final Clip clipBehavior;
 
   const MyCard(
-      {Key? key,
+      {super.key,
       required this.child,
       this.padding,
       this.margin,
@@ -23,8 +23,7 @@ class MyCard extends StatelessWidget {
       this.shadow = true,
       this.onTap,
       this.disabled = false,
-      this.clipBehavior = Clip.none})
-      : super(key: key);
+      this.clipBehavior = Clip.none});
 
   @override
   Widget build(BuildContext context) {

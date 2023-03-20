@@ -11,12 +11,11 @@
 //   final Function(ClassData?) onSelect;
 
 //   const ClassSelector(
-//       {Key? key,
+//       {super.key,
 //       required this.name,
 //       required this.options,
 //       required this.onSelect,
-//       this.selected})
-//       : super(key: key);
+//       this.selected});
 
 //   @override
 //   Widget build(BuildContext context) {

@@ -26,7 +26,7 @@ typedef SetupFinishedCallback = void Function(GlobalStore store);
 class App extends HookWidget {
   final GlobalStore? initialStore;
 
-  const App({Key? key, this.initialStore}) : super(key: key);
+  const App({super.key, this.initialStore});
 
   @override
   Widget build(BuildContext context) {
