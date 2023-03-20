@@ -11,7 +11,10 @@ abstract class _AgendaBase with Store {
   DateTime date;
   List<AgendaEntry> entries = [];
 
-  _AgendaBase({required DateTime start, required List<Course> courses, bool autoAdjust = true})
+  _AgendaBase(
+      {required DateTime start,
+      required List<Course> courses,
+      bool autoAdjust = true})
       : date = start {
     start = start.startOfDay;
 

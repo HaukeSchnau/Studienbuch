@@ -2,6 +2,7 @@ import 'package:class_companion/hooks/use_store.dart';
 import 'package:class_companion/models/agenda.dart';
 import 'package:class_companion/models/agenda_entry.dart';
 import 'package:class_companion/static/colors.dart';
+import 'package:class_companion/static/years.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
@@ -125,7 +126,7 @@ class WeekGrid extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () => course.navigateTo(context),
+            onTap: () => course.navigateTo(context, getCurrentSemester()),
             borderRadius: const BorderRadius.all(Radius.circular(8)),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

@@ -1,5 +1,7 @@
+import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/store.dart';
 import 'package:class_companion/pages/about_page.dart';
+import 'package:class_companion/pages/course_page.dart';
 import 'package:class_companion/pages/root_page.dart';
 import 'package:class_companion/pages/welcome_page.dart';
 import 'package:class_companion/static/colors.dart';
@@ -45,6 +47,25 @@ class App extends HookWidget {
                       return Provider(
                         create: (_) => val,
                         child: const RootPage(),
+                      );
+                    } else {
+                      return Provider(
+                        create: (_) => onSetupFinished,
+                        child: const WelcomePage(),
+                      );
+                    }
+                  },
+                ),
+                GoRoute(
+                  path: "/course",
+                  builder: (context, state) {
+                    final val = store.value;
+                    if (val != null) {
+                      return Provider(
+                        create: (_) => val,
+                        child: CoursePage(
+                          course: state.extra as Course,
+                        ),
                       );
                     } else {
                       return Provider(

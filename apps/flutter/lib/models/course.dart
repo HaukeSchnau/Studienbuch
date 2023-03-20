@@ -1,5 +1,7 @@
 import 'package:class_companion/models/course_time.dart';
+import 'package:class_companion/static/years.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobx/mobx.dart';
 part 'course.g.dart';
 
@@ -57,10 +59,8 @@ abstract class _CourseBase with Store {
     required this.courseTimes,
   });
 
-  void navigateTo(BuildContext context) {
-    print("Navigating to course $name");
-    // TODO Implement course page
-    // Navigator.of(context).pushNamed('/course', arguments: this);
+  void navigateTo(BuildContext context, Semester semester) {
+    context.push("/course", extra: this);
   }
 
   Map<String, dynamic> toJson() {

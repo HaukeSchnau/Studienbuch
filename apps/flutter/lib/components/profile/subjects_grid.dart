@@ -31,15 +31,7 @@ class SubjectsGrid extends HookWidget {
           padding: const EdgeInsets.all(4.0),
           onTap: () async {
             if (isCurrentSemester) {
-              // await Navigator.push(
-              //     context,
-              //     MaterialPageRoute(
-              //       builder: (context) => SubjectGradePage(
-              //         subject: subject,
-              //         results: results,
-              //         semester: semester,
-              //       ),
-              //     ));
+              course.navigateTo(context, semester);
             } else {
               // await showModalBottomSheet(
               //   context: context,
@@ -53,7 +45,6 @@ class SubjectsGrid extends HookWidget {
               //   },
               // );
             }
-            // loadProfileFile();
           },
           child: Center(
             child: Column(
