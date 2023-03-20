@@ -1,9 +1,10 @@
 import 'package:class_companion/hooks/use_store.dart';
 import 'package:class_companion/models/agenda.dart';
 import 'package:class_companion/models/agenda_entry.dart';
+import 'package:class_companion/models/course_time.dart';
 import 'package:class_companion/static/colors.dart';
 import 'package:class_companion/static/years.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 class WeekPage extends HookWidget {
@@ -52,13 +53,6 @@ class WeekPage extends HookWidget {
   }
 }
 
-const lessonTimes = [
-  TimeOfDay(hour: 8, minute: 0),
-  TimeOfDay(hour: 9, minute: 45),
-  TimeOfDay(hour: 11, minute: 30),
-  TimeOfDay(hour: 13, minute: 50),
-  TimeOfDay(hour: 15, minute: 15),
-];
 const spaceLeft = 52;
 const lineOverflow = 8;
 const timePad = 0;

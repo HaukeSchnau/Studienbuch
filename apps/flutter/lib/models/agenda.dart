@@ -1,9 +1,18 @@
 import 'package:class_companion/models/agenda_entry.dart';
 import 'package:class_companion/models/course.dart';
+import 'package:class_companion/models/course_time.dart';
 import 'package:class_companion/util/date_util.dart';
 
 import 'package:mobx/mobx.dart';
 part 'agenda.g.dart';
+
+const lessonTimes = [
+  TimeOfDay(hour: 8, minute: 0),
+  TimeOfDay(hour: 9, minute: 45),
+  TimeOfDay(hour: 11, minute: 30),
+  TimeOfDay(hour: 13, minute: 50),
+  TimeOfDay(hour: 15, minute: 15),
+];
 
 class Agenda = _AgendaBase with _$Agenda;
 
@@ -31,7 +40,20 @@ abstract class _AgendaBase with Store {
       date = start;
       this.entries = entries;
     }
+    this.entries.sort((a, b) => a.start.compareTo(b.start));
 
+    // Fill in empty slots, but not after the last entry of the day (which is the last entry of the list) or before the first entry of the day (which is the first entry of the list)
+    // TODO make this more efficient
+    final firstEntry = this.entries.first;
+    final lastEntry = this.entries.last;
+    for (final time in lessonTimes) {
+      if (time.isAfter(firstEntry.recurringTime.start) &&
+          time.isBefore(lastEntry.recurringTime.start) &&
+          !this.entries.any((element) => element.recurringTime.start == time)) {
+        final entry = AgendaEntry.empty(date, time);
+        this.entries.add(entry);
+      }
+    }
     this.entries.sort((a, b) => a.start.compareTo(b.start));
   }
 

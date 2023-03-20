@@ -19,6 +19,18 @@ class AgendaEntry {
           minute: recurringTime.start.minute,
         );
 
+  factory AgendaEntry.empty(DateTime date, TimeOfDay lessonTime) {
+    return AgendaEntry(
+      course: null,
+      concreteDate: date,
+      recurringTime: CourseTime(
+        start: lessonTime,
+        weekday: date.weekday,
+        duration: 80,
+      ),
+    );
+  }
+
   DateTime get start => _concreteDate;
   DateTime get end =>
       _concreteDate.add(Duration(minutes: recurringTime.duration));
@@ -46,9 +58,8 @@ class AgendaEntry {
 
   AgendaEntry.fromJson(Map<String, dynamic> json)
       : this(
-          course: json["course"] != null
-              ? Course.fromJson(json["course"])
-              : null,
+          course:
+              json["course"] != null ? Course.fromJson(json["course"]) : null,
           concreteDate: DateTime.parse(json["concreteDate"]),
           recurringTime: CourseTime.fromJson(json["recurringTime"]),
           substitution: json["substitution"] != null

@@ -11,14 +11,18 @@ class AgendaEntryView extends DataHookWidget<AgendaEntry> {
   @override
   Widget buildWithData(BuildContext context, AgendaEntry entry) {
     final store = useStore();
+    const padding = EdgeInsets.symmetric(vertical: 12.0, horizontal: 32);
     final course = entry.course;
     if (course == null) {
-      return const Text(
-        "Freistunde",
-        style: TextStyle(
-            fontSize: 20,
-            fontStyle: FontStyle.italic,
-            color: Color.fromRGBO(0, 0, 0, .3)),
+      return const Padding(
+        padding: padding,
+        child: Text(
+          "Freistunde",
+          style: TextStyle(
+              fontSize: 20,
+              fontStyle: FontStyle.italic,
+              color: Color.fromRGBO(0, 0, 0, .3)),
+        ),
       );
     }
 
@@ -30,7 +34,7 @@ class AgendaEntryView extends DataHookWidget<AgendaEntry> {
     var circleSize = 10.0;
 
     final view = Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 32),
+      padding: padding,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

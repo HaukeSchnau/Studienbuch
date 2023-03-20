@@ -3,6 +3,9 @@ class TimeOfDay {
   final int minute;
 
   const TimeOfDay({required this.hour, required this.minute});
+  TimeOfDay.fromDateTime(DateTime time)
+      : hour = time.hour,
+        minute = time.minute;
 
   factory TimeOfDay.now() {
     final now = DateTime.now();
