@@ -102,7 +102,9 @@ class WeekGrid extends StatelessWidget {
     final day = entry.recurringTime.weekday - 1;
     final text = entry.course!.name;
     // final color = HSLColor.fromAHSL(1, text.hashCode % 360, .9, .7).toColor();
-    final color = HSLColor.fromAHSL(1, text.hashCode % 360, 1, .75).toColor();
+    // final color = HSLColor.fromAHSL(1, text.hashCode % 360, 1, .3).toColor();
+    final color = HSVColor.fromAHSV(1, text.hashCode % 360, 1, .65).toColor();
+    // final color = const Color(0xFF3B7FD9);
 
     final x = spaceLeft + day * (width - spaceLeft) / 5;
     final w = (width - spaceLeft) / 5;
@@ -125,20 +127,31 @@ class WeekGrid extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Container(
+                //   padding: const EdgeInsets.all(4),
+                //   decoration: const BoxDecoration(
+                //     color: Colors.white,
+                //     borderRadius: BorderRadius.all(Radius.circular(4)),
+                //   ),
+                //   child: SvgPicture.asset(
+                //     getCourseIcon(course.name),
+                //     height: 16,
+                //     width: 16,
+                //   ),
+                // ),
+                // const SizedBox(height: 4),
                 Text(
                   text,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      color: Colors.white),
                 ),
                 Text(
                   course.teacher.formalName,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 10,
-                  ),
+                  style: const TextStyle(fontSize: 10, color: Colors.white),
                 ),
               ],
             ),
