@@ -289,7 +289,12 @@
   { "name": "Delano Busch", "username": "delano.busch" },
   { "name": "Dennis Matz", "username": "dennis.matz" },
   { "name": "Dennis Meyer", "username": "dennis.meyer" },
-  { "name": "Derek Meißner", "username": "derek.meissner" },
+  {
+    "name": "Derek Meißner",
+    "username": "derek.meissner",
+    "role": "TEACHER",
+    "title": "Herr"
+  },
   { "name": "Destiny Kapka", "username": "destiny.kapka" },
   { "name": "Dian Todorov", "username": "dian.todorov" },
   { "name": "Diana Issa", "username": "diana.issa" },
@@ -298,7 +303,12 @@
   { "name": "Didem Atladan", "username": "didem.atladan" },
   { "name": "Dilan Altay", "username": "dilan.altay" },
   { "name": "Dilara Tasyer", "username": "dilara.tasyer" },
-  { "name": "Dinah Murken", "username": "dinah.murken" },
+  {
+    "name": "Dinah Murken",
+    "username": "dinah.murken",
+    "role": "TEACHER",
+    "title": "Frau"
+  },
   { "name": "Dirk Runge", "username": "dirk.runge" },
   { "name": "Domenik Krause", "username": "domenik.krause" },
   { "name": "Dominick Hanke", "username": "dominick.hanke" },
@@ -442,7 +452,12 @@
   { "name": "Frederick Gill", "username": "frederick.gill" },
   { "name": "Frederik Dihrberg", "username": "frederik.dihrberg" },
   { "name": "Frederik Hirsch", "username": "frederik.hirsch" },
-  { "name": "Frederik Tamcke", "username": "frederik.tamcke" },
+  {
+    "name": "Frederik Tamcke",
+    "username": "frederik.tamcke",
+    "role": "TEACHER",
+    "title": "Herr"
+  },
   { "name": "Frida Kaemena", "username": "frida.kaemena" },
   { "name": "Fynn Holst", "username": "fynn.holst" },
   { "name": "Fynn John", "username": "fynn.john" },
@@ -490,7 +505,12 @@
   { "name": "Hans Hein", "username": "hans.hein" },
   { "name": "Harun Sicak", "username": "harun.sicak" },
   { "name": "Hauke Schnau", "username": "hauke.schnau" },
-  { "name": "Hauke Vahlenkamp", "username": "hauke.vahlenkamp" },
+  {
+    "name": "Hauke Vahlenkamp",
+    "username": "hauke.vahlenkamp",
+    "role": "TEACHER",
+    "title": "Herr"
+  },
   { "name": "Hediye Sicak", "username": "hediye.sicak" },
   { "name": "Heidi Weißenborn", "username": "heidi.weissenborn" },
   { "name": "Heike Clemens", "username": "heike.clemens" },
@@ -521,7 +541,12 @@
   { "name": "Ilia Matthey", "username": "ilia.matthey" },
   { "name": "Illia Zadyraka", "username": "illia.zadyraka" },
   { "name": "Imke Behrens", "username": "imke.behrens" },
-  { "name": "Imke Klee", "username": "imke.klee" },
+  {
+    "name": "Imke Klee",
+    "username": "imke.klee",
+    "role": "TEACHER",
+    "title": "Frau"
+  },
   { "name": "Imke Langhorst", "username": "imke.langhorst" },
   { "name": "Imke Wilkening", "username": "imke.wilkening" },
   { "name": "Inan Erkek", "username": "inan.erkek" },
