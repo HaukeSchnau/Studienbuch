@@ -12,7 +12,7 @@ abstract class _AbsenceBase with Store {
   String reason;
 
   @observable
-  Course course;
+  Course? course;
 
   @observable
   bool isExcusedByTeacher;
@@ -35,7 +35,7 @@ abstract class _AbsenceBase with Store {
     return {
       'date': date.toIso8601String(),
       'reason': reason,
-      'course': course.toJson(),
+      'course': course?.toJson(),
       'isExcusedByTeacher': isExcusedByTeacher,
       'isExcusedByParent': isExcusedByParent,
     };
@@ -45,7 +45,9 @@ abstract class _AbsenceBase with Store {
       : this(
           date: DateTime.parse(json['date']),
           reason: json['reason'],
-          course: Course.fromJson(json['course']),
+          course: json['course'] != null
+              ? Course.fromJson(json['course'])
+              : null,
           isExcusedByTeacher: json['isExcusedByTeacher'],
           isExcusedByParent: json['isExcusedByParent'],
         );
