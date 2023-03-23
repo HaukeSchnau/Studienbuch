@@ -71,7 +71,7 @@ class ProfileTopPanel extends HookWidget {
             Align(
                 alignment: Alignment.topRight,
                 child: Padding(
-                  padding: const EdgeInsets.only(right: 8.0, top: 4.0),
+                  padding: const EdgeInsets.only(right: 16.0, top: 8.0),
                   child: Material(
                       color: Colors.transparent,
                       child: IconButton(

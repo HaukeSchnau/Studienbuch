@@ -1,7 +1,6 @@
 import 'package:class_companion/components/absense_view.dart';
 import 'package:class_companion/components/agenda/agenda_view.dart';
-import 'package:class_companion/components/util/clip_shadow_path.dart';
-import 'package:class_companion/components/util/clippers.dart';
+import 'package:class_companion/components/path_bg_page.dart';
 import 'package:class_companion/hooks/use_store.dart';
 import 'package:class_companion/util/ui_util.dart';
 import 'package:flutter/material.dart';
@@ -61,36 +60,6 @@ class HomePage extends HookWidget {
       ],
     );
 
-    final scrollView = SingleChildScrollView(
-      child: Container(
-        color: store.theme.lightBg,
-        child: Stack(children: [
-          ClipShadowPath(
-            shadow: Shadow(
-                color: store.theme.secondary, offset: const Offset(0, 6)),
-            clipper: BezierClipper(),
-            child: Container(
-              height: 250,
-              color: store.theme.primary,
-            ),
-          ),
-          SafeArea(child: body)
-        ]),
-      ),
-    );
-
-    return Stack(children: [
-      Column(
-        children: [
-          Expanded(
-            child: Container(color: store.theme.primary),
-          ),
-          Expanded(
-            child: Container(color: store.theme.lightBg),
-          )
-        ],
-      ),
-      scrollView
-    ]);
+    return PathBackgroundPage(child: body);
   }
 }
