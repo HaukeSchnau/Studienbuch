@@ -54,7 +54,7 @@ class MyCard extends StatelessWidget {
             : Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(40),
+                  borderRadius: BorderRadius.circular(36),
                   splashColor: const Color.fromRGBO(0, 0, 0, .3),
                   onTap: onTap,
                   child: paddedChild,
