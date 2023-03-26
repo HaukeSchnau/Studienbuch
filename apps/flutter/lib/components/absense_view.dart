@@ -16,8 +16,8 @@ class AbsenceView extends HookWidget {
 
     final copyWidget = Observer(
       builder: (_) {
-        final absences = store.currentUser.absences;
-        final unexcusedAbsences = store.currentUser.unexcusedAbsences;
+        final absences = store.absences;
+        final unexcusedAbsences = store.unexcusedAbsences;
         if (absences.isEmpty) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,7 +122,7 @@ class AbsenceView extends HookWidget {
             copyWidget,
             const SizedBox(height: 16),
             Observer(
-                builder: (_) => store.currentUser.unexcusedAbsences.isEmpty
+                builder: (_) => store.unexcusedAbsences.isEmpty
                     ? const SizedBox.shrink()
                     : Align(
                         alignment: Alignment.bottomRight,

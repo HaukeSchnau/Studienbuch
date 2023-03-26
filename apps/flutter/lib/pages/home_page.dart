@@ -14,7 +14,7 @@ class HomePage extends HookWidget {
     final store = useStore();
 
     final hPadding = useHorizontalPadding();
-    final agenda = store.currentUser.agenda;
+    final agenda = store.agenda;
     final message = agenda.entries.isEmpty
         ? "Du hast ${agenda.when} keine Kurse."
         : "Das steht ${agenda.when} an:";

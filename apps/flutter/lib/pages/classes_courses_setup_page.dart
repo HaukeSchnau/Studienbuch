@@ -77,8 +77,10 @@ class ClassesCoursesSetupPage extends HookWidget {
       await apiInstance.mutationLicenseActivate(
           MutationLicenseActivateRequest(licenseKey: store.licenseKey!));
 
+      await store.saveToDatabase();
       final globalStore = store.toGlobalStore();
       await globalStore.save();
+      await globalStore.init();
 
       // ignore: use_build_context_synchronously
       final onSetupFinished = context.read<SetupFinishedCallback>();

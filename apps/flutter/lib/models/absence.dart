@@ -1,54 +1,61 @@
+import 'package:class_companion/database.dart';
+import 'package:drift/drift.dart';
 import 'package:class_companion/models/course.dart';
-import 'package:mobx/mobx.dart';
-part 'absence.g.dart';
 
-class Absence = _AbsenceBase with _$Absence;
+@UseRowClass(Absence, constructor: 'load')
+class Absences extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  DateTimeColumn get date => dateTime()();
+  TextColumn get reason => text()();
+  IntColumn get course => integer().nullable().references(Courses, #id)();
+  BoolColumn get isExcusedByTeacher =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get isExcusedByParent =>
+      boolean().withDefault(const Constant(false))();
+}
 
-abstract class _AbsenceBase with Store {
-  @observable
-  DateTime date;
+class Absence {
+  final int id;
+  final DateTime date;
+  final String reason;
+  final Course? course;
+  final bool isExcusedByTeacher;
+  final bool isExcusedByParent;
 
-  @observable
-  String reason;
-
-  @observable
-  Course? course;
-
-  @observable
-  bool isExcusedByTeacher;
-
-  @observable
-  bool isExcusedByParent;
-
-  @computed
-  bool get isExcused => isExcusedByTeacher && isExcusedByParent;
-
-  _AbsenceBase({
+  Absence({
+    required this.id,
     required this.date,
     required this.reason,
     required this.course,
-    this.isExcusedByTeacher = false,
-    this.isExcusedByParent = false,
+    required this.isExcusedByTeacher,
+    required this.isExcusedByParent,
   });
 
-  Map<String, dynamic> toJson() {
-    return {
-      'date': date.toIso8601String(),
-      'reason': reason,
-      'course': course?.toJson(),
-      'isExcusedByTeacher': isExcusedByTeacher,
-      'isExcusedByParent': isExcusedByParent,
-    };
+  static Future<Absence> load({
+    required int id,
+    required DateTime date,
+    required String reason,
+    required int? course,
+    required bool isExcusedByTeacher,
+    required bool isExcusedByParent,
+  }) async {
+    Course? concreteCourse;
+    if (course != null) {
+      final statement = database.select(database.courses)
+        ..where(
+          (dbCourse) => dbCourse.id.equals(course),
+        );
+      concreteCourse = await statement.getSingle();
+    }
+    return Absence(
+      id: id,
+      date: date,
+      reason: reason,
+      course: concreteCourse,
+      isExcusedByTeacher: isExcusedByTeacher,
+      isExcusedByParent: isExcusedByParent,
+    );
   }
 
-  _AbsenceBase.fromJson(Map<String, dynamic> json)
-      : this(
-          date: DateTime.parse(json['date']),
-          reason: json['reason'],
-          course: json['course'] != null
-              ? Course.fromJson(json['course'])
-              : null,
-          isExcusedByTeacher: json['isExcusedByTeacher'],
-          isExcusedByParent: json['isExcusedByParent'],
-        );
+  bool get isExcused => isExcusedByTeacher || isExcusedByParent;
 }

@@ -2,7 +2,6 @@ import 'package:class_companion/models/agenda_entry.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/course_time.dart';
 import 'package:class_companion/util/date_util.dart';
-
 import 'package:mobx/mobx.dart';
 part 'agenda.g.dart';
 
@@ -41,6 +40,10 @@ abstract class _AgendaBase with Store {
       this.entries = entries;
     }
     this.entries.sort((a, b) => a.start.compareTo(b.start));
+
+    if (this.entries.isEmpty) {
+      return;
+    }
 
     // Fill in empty slots, but not after the last entry of the day (which is the last entry of the list) or before the first entry of the day (which is the first entry of the list)
     // TODO make this more efficient

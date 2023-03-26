@@ -1,9 +1,10 @@
 import 'package:class_companion/hooks/use_store.dart';
 import 'package:class_companion/models/agenda.dart';
 import 'package:class_companion/models/agenda_entry.dart';
+import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/course_time.dart';
+import 'package:class_companion/models/semester.dart';
 import 'package:class_companion/static/colors.dart';
-import 'package:class_companion/static/years.dart';
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_hooks/flutter_hooks.dart';
 
@@ -47,7 +48,7 @@ class WeekPage extends HookWidget {
           )),
       Expanded(
           child: WeekGrid(
-        weeklyAgenda: store.currentUser.weeklyAgenda,
+        weeklyAgenda: store.weeklyAgenda,
       ))
     ]);
   }
@@ -91,7 +92,7 @@ class WeekGrid extends StatelessWidget {
   const WeekGrid({super.key, required this.weeklyAgenda});
 
   Widget buildEntry(
-      BuildContext context, AgendaEntry entry, double height, double width) {
+      BuildContext context, AgendaEntry entry, double height, double width, ) {
     final course = entry.course;
     if (course == null) {
       return const SizedBox();
@@ -122,7 +123,7 @@ class WeekGrid extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () => course.navigateTo(context, getCurrentSemester()),
+            onTap: () => course.navigateTo(context, getCurrentSemesterId()),
             borderRadius: const BorderRadius.all(Radius.circular(8)),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

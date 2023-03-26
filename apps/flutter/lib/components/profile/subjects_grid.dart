@@ -1,21 +1,21 @@
 import 'package:class_companion/components/util/card.dart';
-import 'package:class_companion/hooks/use_store.dart';
 import 'package:class_companion/models/course.dart';
-import 'package:class_companion/static/years.dart';
+import 'package:class_companion/models/semester.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class SubjectsGrid extends HookWidget {
-  final List<Course> courses;
   final Semester semester;
 
-  const SubjectsGrid(
-      {super.key, required this.courses, required this.semester});
+  const SubjectsGrid({super.key, required this.semester});
 
   @override
   Widget build(BuildContext context) {
-    final isCurrentSemester = semester == getCurrentSemester();
+    final isCurrentSemester = semester.id == getCurrentSemesterId();
+
+    final courses = useValueListenable(semester.courses);
+    semester.courses.load();
 
     Widget itemBuilder(BuildContext context, int index) {
       final course = courses[index];
@@ -28,7 +28,7 @@ class SubjectsGrid extends HookWidget {
         ),
         onTap: () async {
           if (isCurrentSemester) {
-            course.navigateTo(context, semester);
+            course.navigateTo(context, semester.id);
           } else {
             // await showModalBottomSheet(
             //   context: context,

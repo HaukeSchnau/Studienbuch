@@ -1,11 +1,10 @@
 import 'package:class_companion/components/date_picker.dart';
-import 'package:class_companion/models/absence.dart';
-import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/store.dart';
 import 'package:class_companion/static/theme.dart';
 import 'package:class_companion/util/date_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:class_companion/models/course.dart';
 
 class RegisterAbsenceForm extends HookWidget {
   final GlobalStore store;
@@ -16,7 +15,7 @@ class RegisterAbsenceForm extends HookWidget {
   Widget build(BuildContext context) {
     final date = useState(DateTime.now().startOfDay);
     final reason = useState("");
-    final agenda = store.currentUser.getAgendaForDay(date.value);
+    final agenda = store.getAgendaForDay(date.value);
     final absenceTimes = useState<Map<Course, bool>>({
       for (var course
           in agenda.entries.map((e) => e.course).whereType<Course>())
@@ -24,7 +23,7 @@ class RegisterAbsenceForm extends HookWidget {
     });
 
     useEffect(() {
-      final agenda = store.currentUser.getAgendaForDay(date.value);
+      final agenda = store.getAgendaForDay(date.value);
       absenceTimes.value = {
         for (var course
             in agenda.entries.map((e) => e.course).whereType<Course>())
@@ -93,19 +92,21 @@ class RegisterAbsenceForm extends HookWidget {
             ),
             onPressed: isValid()
                 ? () {
-                    store.currentUser.absences.addAll(
-                      absenceTimes.value.entries
-                          .where((e) => e.value)
-                          .map(
-                            (e) => Absence(
-                              date: date.value,
-                              course: e.key,
-                              reason: reason.value,
-                            ),
-                          )
-                          .toList(),
-                    );
-                    Navigator.of(context).pop();
+                    // TODO implement
+                    throw UnimplementedError();
+                    // store.currentUser.absences.addAll(
+                    //   absenceTimes.value.entries
+                    //       .where((e) => e.value)
+                    //       .map(
+                    //         (e) => Absence(
+                    //           date: date.value,
+                    //           course: e.key,
+                    //           reason: reason.value,
+                    //         ),
+                    //       )
+                    //       .toList(),
+                    // );
+                    // Navigator.of(context).pop();
                   }
                 : null,
             child: const Text("Speichern"),

@@ -1,11 +1,20 @@
+import 'package:class_companion/database.dart';
+import 'package:class_companion/models/course.dart';
+import 'package:drift/drift.dart';
+
 class TimeOfDay {
   final int hour;
   final int minute;
 
   const TimeOfDay({required this.hour, required this.minute});
+
   TimeOfDay.fromDateTime(DateTime time)
       : hour = time.hour,
         minute = time.minute;
+
+  TimeOfDay.fromMinutes(int minutes)
+      : hour = minutes ~/ 60,
+        minute = minutes % 60;
 
   factory TimeOfDay.now() {
     final now = DateTime.now();
@@ -15,6 +24,10 @@ class TimeOfDay {
   @override
   String toString() {
     return "$hour:$minute";
+  }
+
+  int toMinutes() {
+    return hour * 60 + minute;
   }
 
   @override
@@ -50,16 +63,30 @@ class TimeOfDay {
   }
 }
 
-class CourseTime {
-  final int weekday;
-  final TimeOfDay start;
-  final int duration;
+class CourseTimes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get weekday => integer()();
+  IntColumn get start => integer().map(const TimeOfDayConverter())();
+  IntColumn get duration => integer()();
+  IntColumn get course => integer().nullable().references(Courses, #id)();
+}
 
-  CourseTime({
-    required this.weekday,
-    required this.start,
-    required this.duration,
-  });
+class TimeOfDayConverter extends TypeConverter<TimeOfDay, int> {
+  const TimeOfDayConverter();
+
+  @override
+  TimeOfDay fromSql(int fromDb) {
+    return TimeOfDay.fromMinutes(fromDb);
+  }
+
+  @override
+  int toSql(TimeOfDay value) {
+    return value.toMinutes();
+  }
+}
+
+extension CourseTimeExtension on CourseTime {
+  TimeOfDay get end => start + duration;
 
   bool overlap(CourseTime other) {
     if (weekday != other.weekday) {
@@ -76,23 +103,4 @@ class CourseTime {
         start == otherStart ||
         end == otherEnd;
   }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'weekday': weekday,
-      'start': {
-        'hour': start.hour,
-        'minute': start.minute,
-      },
-      'duration': duration,
-    };
-  }
-
-  CourseTime.fromJson(Map<String, dynamic> json)
-      : this(
-          weekday: json["weekday"],
-          start: TimeOfDay(
-              hour: json["start"]["hour"], minute: json["start"]["minute"]),
-          duration: json["duration"],
-        );
 }

@@ -1,3 +1,4 @@
+import 'package:class_companion/database.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/course_time.dart';
 import 'package:class_companion/models/substitution.dart';
@@ -24,6 +25,7 @@ class AgendaEntry {
       course: null,
       concreteDate: date,
       recurringTime: CourseTime(
+        id: -1, // TODO: find a better solution for this hack
         start: lessonTime,
         weekday: date.weekday,
         duration: 80,
@@ -46,24 +48,4 @@ class AgendaEntry {
   int compareTo(AgendaEntry other) {
     return _concreteDate.compareTo(other._concreteDate);
   }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'course': course?.toJson(),
-      'concreteDate': _concreteDate.toIso8601String(),
-      'recurringTime': recurringTime.toJson(),
-      'substitution': substitution?.toJson(),
-    };
-  }
-
-  AgendaEntry.fromJson(Map<String, dynamic> json)
-      : this(
-          course:
-              json["course"] != null ? Course.fromJson(json["course"]) : null,
-          concreteDate: DateTime.parse(json["concreteDate"]),
-          recurringTime: CourseTime.fromJson(json["recurringTime"]),
-          substitution: json["substitution"] != null
-              ? Substitution.fromJson(json["substitution"])
-              : null,
-        );
 }

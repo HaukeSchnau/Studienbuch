@@ -1,7 +1,8 @@
 import 'package:class_companion/data_hook_widget.dart';
 import 'package:class_companion/hooks/use_store.dart';
 import 'package:class_companion/models/agenda_entry.dart';
-import 'package:class_companion/static/years.dart';
+import 'package:class_companion/models/course.dart';
+import 'package:class_companion/models/semester.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -117,7 +118,7 @@ class AgendaEntryView extends DataHookWidget<AgendaEntry> {
       return Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () => course.navigateTo(context, getCurrentSemester()),
+            onTap: () => course.navigateTo(context, getCurrentSemesterId()),
             child: view,
           ));
     }

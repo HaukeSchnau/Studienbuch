@@ -3,9 +3,17 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:class_companion/database.dart';
+import 'package:class_companion/models/absence.dart';
+import 'package:class_companion/models/agenda.dart';
+import 'package:class_companion/models/course.dart';
+import 'package:class_companion/models/semester.dart';
 import 'package:class_companion/models/substitution_plan.dart';
 import 'package:class_companion/models/user.dart';
 import 'package:class_companion/static/colors.dart';
+import 'package:class_companion/util/date_util.dart';
+import 'package:class_companion/util/list_util.dart';
+import 'package:drift/drift.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:flutter/material.dart' hide Key;
 import 'package:mobx/mobx.dart';
@@ -28,10 +36,19 @@ abstract class _GlobalStore with Store {
   @observable
   String licenseKey;
 
-  _GlobalStore(
-      {required this.currentUser,
-      required this.licenseKey,
-      this.substitutionPlan = const []}) {
+  @observable
+  List<Absence> absences = [];
+
+  @observable
+  List<Course> courses = [];
+
+  @observable
+  List<Semester> semesters = [];
+
+  _GlobalStore({
+    required this.currentUser,
+    required this.licenseKey,
+  }) {
     Timer.periodic(const Duration(seconds: 5), (timer) {
       // TODO find a better way to save the store on changes (mobx?)
       save();
@@ -44,19 +61,98 @@ abstract class _GlobalStore with Store {
     });
   }
 
+  Future<void> init() async {
+    database.select(database.absences).watch().listen((event) {
+      absences = event;
+    });
+
+    database.select(database.courses).watch().listen((event) {
+      courses = event;
+    });
+
+    database.select(database.semesters).watch().listen((event) {
+      semesters = event;
+    });
+
+    final currentSemesterId = getCurrentSemesterId();
+    final currentSemester = await (database.select(database.semesters)
+          ..where((tbl) => tbl.id.equals(currentSemesterId)))
+        .getSingleOrNull();
+    if (currentSemester == null) {
+      database
+          .into(database.semesters)
+          .insert(SemestersCompanion.insert(id: Value(currentSemesterId)));
+    }
+    semesters = await database.select(database.semesters).get();
+    for (final semester in semesters) {
+      await semester.courses.load();
+    }
+  }
+
+  //// SEMESTERS ////
+
+  Semester get currentSemester {
+    final currentSemesterId = getCurrentSemesterId();
+    final currentSemester = semesters
+        .firstWhereOrNull((element) => element.id == currentSemesterId);
+    if (currentSemester == null) {
+      throw Exception("No current semester found");
+    }
+    return currentSemester;
+  }
+
+  //// ABSENCES ////
+
+  @computed
+  List<Absence> get unexcusedAbsences =>
+      absences.where((element) => !element.isExcusedByParent).toList();
+
+  @computed
+  ObservableMap<DateTime, List<Absence>> get unexcusedAbsencesByDay {
+    final map = <DateTime, List<Absence>>{};
+    for (final absence in unexcusedAbsences) {
+      if (map[absence.date] == null) {
+        map[absence.date] = [];
+      }
+      map[absence.date]!.add(absence);
+    }
+    return map.asObservable();
+  }
+
+  //// AGENDA ////
+
+  @computed
+  Agenda get agenda => Agenda(start: DateTime.now(), courses: courses);
+
+  @computed
+  List<Agenda> get weeklyAgenda {
+    final now = DateTime.now();
+    final start = now.startOfWeek;
+
+    final days = <DateTime>[];
+    for (var i = 0; i < 5; i++) {
+      days.add(start.add(Duration(days: i)));
+    }
+
+    return days
+        .map((e) => Agenda(start: e, courses: courses, autoAdjust: false))
+        .toList();
+  }
+
+  Agenda getAgendaForDay(DateTime day) =>
+      Agenda(start: day, courses: courses, autoAdjust: false);
+
+  //// PERSISTENCE ////
+
   _GlobalStore.fromJson(Map<String, dynamic> json)
       : this(
           currentUser: User.fromJson(json["currentUser"]),
-          substitutionPlan: (json["substitutionPlan"] as List)
-              .map<SubstitutionPlan>((e) => SubstitutionPlan.fromJson(e))
-              .toList(),
           licenseKey: json["licenseKey"],
         );
 
   Map<String, dynamic> toJson() {
     return {
       "currentUser": currentUser.toJson(),
-      "substitutionPlan": substitutionPlan.map((e) => e.toJson()).toList(),
       "theme": theme.toJson(),
       "licenseKey": licenseKey,
     };
@@ -98,8 +194,8 @@ Future<GlobalStore?> loadStore() async {
       final store = GlobalStore.fromJson(jsonDecode(jsonContent));
       return store;
     }
-  } catch (e) {
-    debugPrint("Error while loading store: $e");
+  } catch (e, stacktrace) {
+    debugPrint("Error while loading store: $e\n" + stacktrace.toString());
   }
   return null;
 }

@@ -4,7 +4,6 @@ import 'package:class_companion/components/profile/subjects_grid.dart';
 import 'package:class_companion/components/profile/top_panel.dart';
 import 'package:class_companion/components/tab_bar_view.dart';
 import 'package:class_companion/hooks/use_store.dart';
-import 'package:class_companion/static/years.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
@@ -15,7 +14,7 @@ class ProfilePage extends HookWidget {
   Widget build(BuildContext context) {
     final store = useStore();
 
-    final coursesMap = store.currentUser.coursesInAllSemesters;
+    final semesters = store.semesters;
 
     return Scaffold(
         body: Column(
@@ -29,7 +28,7 @@ class ProfilePage extends HookWidget {
           ],
         ),
         const SizedBox(height: 16),
-        if (coursesMap.length > 1)
+        if (semesters.length > 1)
           const Padding(
             padding: EdgeInsets.only(left: 24.0),
             child: Text(
@@ -38,20 +37,17 @@ class ProfilePage extends HookWidget {
             ),
           ),
         Expanded(
-            child: coursesMap.length > 1
+            child: semesters.length > 1
                 ? MyTabBarView(
-                    pages: coursesMap.entries.map((entry) {
+                    pages: semesters.map((semester) {
                       return TabPage(
-                          title: formatSemester(entry.key),
+                          title: semester.name,
                           widget: SubjectsGrid(
-                            courses: entry.value,
-                            semester: entry.key,
+                            semester: semester,
                           ));
                     }).toList(),
                   )
-                : SubjectsGrid(
-                    courses: coursesMap.values.first,
-                    semester: coursesMap.keys.first))
+                : SubjectsGrid(semester: semesters.first))
       ],
     ));
   }

@@ -1,9 +1,10 @@
-import 'package:class_companion/models/course_time.dart';
-import 'package:class_companion/static/years.dart';
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:class_companion/database.dart';
+import 'package:class_companion/models/class.dart';
+import 'package:class_companion/models/semester.dart';
+import 'package:drift/drift.dart';
+import 'package:flutter/material.dart' hide Table;
 import 'package:go_router/go_router.dart';
-import 'package:mobx/mobx.dart';
-part 'course.g.dart';
 
 const _courseIconMap = {
   "Deutsch": "german.svg",
@@ -33,74 +34,78 @@ String getCourseIcon(String courseName) {
   return "assets/icons/$icon";
 }
 
-class Course = _CourseBase with _$Course;
+class Teachers extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text()();
+  TextColumn get title => text().nullable()();
+}
 
-abstract class _CourseBase with Store {
-  @observable
-  int id;
+@UseRowClass(Course, constructor: "load")
+class Courses extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get courseId => text().nullable()();
+  TextColumn get name => text()();
+  IntColumn get teacher => integer().references(Teachers, #id)();
+  IntColumn get parentClass => integer().nullable().references(Classes, #id)();
+}
 
-  @observable
-  String? courseId;
+class Course {
+  final int id;
+  final String? courseId;
+  final String name;
+  final Teacher teacher;
+  final Class? parentClass;
+  final List<CourseTime> courseTimes;
 
-  @observable
-  String name;
-
-  @observable
-  Teacher teacher;
-
-  @observable
-  List<CourseTime> courseTimes;
-
-  _CourseBase({
+  Course({
     required this.id,
     required this.courseId,
     required this.name,
     required this.teacher,
+    required this.parentClass,
     required this.courseTimes,
   });
 
-  void navigateTo(BuildContext context, Semester semester) {
+  static Future<Course> load({
+    required int id,
+    required String? courseId,
+    required String name,
+    required int teacher,
+    required int? parentClass,
+  }) async {
+    final teacherQuery = database.select(database.teachers)
+      ..where((t) => t.id.equals(teacher));
+    final teach = await teacherQuery.getSingle();
+
+    Class? class_;
+    if (parentClass != null) {
+      final classQuery = database.select(database.classes)
+        ..where((t) => t.id.equals(parentClass));
+      class_ = await classQuery.getSingle();
+    }
+
+    final courseTimesQuery = database.select(database.courseTimes)
+      ..where((t) => t.course.equals(id));
+    final courseTimes = await courseTimesQuery.get();
+
+    return Course(
+      id: id,
+      courseId: courseId,
+      name: name,
+      teacher: teach,
+      parentClass: class_,
+      courseTimes: courseTimes,
+    );
+  }
+
+  String get icon => getCourseIcon(name);
+
+  void navigateTo(BuildContext context, SemesterId semester) {
     context.push("/course", extra: this);
   }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'courseId': courseId,
-      'name': name,
-      'teacher': teacher.toJson(),
-      'courseTimes': courseTimes.map((e) => e.toJson()).toList(),
-    };
-  }
-
-  _CourseBase.fromJson(Map<String, dynamic> json)
-      : this(
-          id: json["id"],
-          courseId: json["courseId"],
-          name: json["name"],
-          teacher: Teacher.fromJson(json["teacher"]),
-          courseTimes: (json["courseTimes"] as List)
-              .map<CourseTime>((e) => CourseTime.fromJson(e))
-              .toList(),
-        );
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _CourseBase &&
-          runtimeType == other.runtimeType &&
-          id == other.id;
-
-  @override
-  int get hashCode => id.hashCode;
 }
 
-class Teacher {
-  final String name;
-  final String? title;
-
-  Teacher({required this.name, required this.title});
-
+extension TeacherExtension on Teacher {
   String get formalName {
     String? title = this.title;
 
@@ -128,17 +133,4 @@ class Teacher {
 
     return "$title ${name.split(" ").last}";
   }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'title': title,
-    };
-  }
-
-  Teacher.fromJson(Map<String, dynamic> json)
-      : this(
-          name: json["name"],
-          title: json["title"],
-        );
 }

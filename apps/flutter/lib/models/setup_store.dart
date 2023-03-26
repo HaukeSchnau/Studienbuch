@@ -1,12 +1,11 @@
-import 'package:class_companion/models/absence.dart';
-import 'package:class_companion/models/class.dart';
-import 'package:class_companion/models/course.dart';
+import 'package:class_companion/database.dart';
 import 'package:class_companion/models/course_time.dart';
+import 'package:class_companion/models/semester.dart';
 import 'package:class_companion/models/store.dart';
 import 'package:class_companion/models/user.dart';
 import 'package:class_companion/models/year.dart';
-import 'package:class_companion/static/years.dart';
 import 'package:class_companion_api/api.dart';
+import 'package:drift/drift.dart';
 import 'package:mobx/mobx.dart';
 
 part 'setup_store.g.dart';
@@ -49,70 +48,110 @@ abstract class _SetupStoreBase with Store {
   @observable
   ObservableList<ApiCourse> courses = ObservableList<ApiCourse>();
 
+  Future<void> saveToDatabase() async {
+    await resetDatabase();
+
+    await database.into(database.classes).insert(Class(
+          id: class_!.id,
+          identifierInYear: class_!.identifierInYear,
+        ));
+
+    for (final course in courses) {
+      await database.into(database.teachers).insert(
+          Teacher(
+              id: course.teacher.id,
+              name: course.teacher.name,
+              title: course.teacher.title),
+          mode: InsertMode.insertOrReplace);
+
+      await database.into(database.courses).insert(CoursesCompanion.insert(
+            id: Value(course.id),
+            courseId: Value(
+              course.courseId,
+            ),
+            name: course.name,
+            teacher: course.teacher.id,
+          ));
+
+      for (final time in course.times) {
+        await database.into(database.courseTimes).insert(CourseTime(
+              id: time.id,
+              duration: time.duration,
+              start: TimeOfDay.fromMinutes(time.start),
+              weekday: time.weekday,
+              course: course.id,
+            ));
+      }
+    }
+
+    for (final course in class_!.courses) {
+      await database.into(database.teachers).insert(
+          Teacher(
+              id: course.teacher.id,
+              name: course.teacher.name,
+              title: course.teacher.title),
+          mode: InsertMode.insertOrReplace);
+
+      await database.into(database.courses).insert(CoursesCompanion.insert(
+            id: Value(course.id),
+            courseId: Value(
+              course.courseId,
+            ),
+            name: course.name,
+            teacher: course.teacher.id,
+            parentClass: Value(
+              class_!.id,
+            ),
+          ));
+
+      for (final time in course.times) {
+        await database.into(database.courseTimes).insert(CourseTime(
+              id: time.id,
+              duration: time.duration,
+              start: TimeOfDay.fromMinutes(time.start),
+              weekday: time.weekday,
+              course: course.id,
+            ));
+      }
+    }
+
+    final currentSemesterId = getCurrentSemesterId();
+    await database.into(database.semesters).insert(SemestersCompanion.insert(
+          id: Value(currentSemesterId),
+        ));
+
+    for (final course in courses) {
+      await database
+          .into(database.semesterCourses)
+          .insert(SemesterCoursesCompanion.insert(
+            semester: currentSemesterId,
+            course: course.id,
+          ));
+    }
+
+    for (final course in class_!.courses) {
+      await database
+          .into(database.semesterCourses)
+          .insert(SemesterCoursesCompanion.insert(
+            semester: currentSemesterId,
+            course: course.id,
+          ));
+    }
+  }
+
   GlobalStore toGlobalStore() {
     final res = GlobalStore(
       licenseKey: licenseKey!,
       currentUser: User(
-          isOfAge: isOfAge!,
-          name: name!,
-          absences: ObservableList<Absence>(),
-          classes: {
-            getCurrentSemester(): Class(
-                year: Year(
-                  id: year!.id,
-                  startYear: year!.startYear,
-                  graduationYear: year!.graduationYear,
-                  name: year!.name,
-                ),
-                identifierInYear: class_!.identifierInYear,
-                id: class_!.id,
-                courses: class_!.courses
-                    .map((e) => Course(
-                          id: e.id,
-                          courseId: e.courseId,
-                          name: e.name,
-                          teacher: Teacher(
-                            name: e.teacher.name,
-                            title: e.teacher.title,
-                          ),
-                          courseTimes: e.times
-                              .map((e) => CourseTime(
-                                    duration: e.duration,
-                                    weekday: e.weekday,
-                                    start: TimeOfDay(
-                                        hour: e.start ~/ 60,
-                                        minute: e.start % 60),
-                                  ))
-                              .toList()
-                              .asObservable(),
-                        ))
-                    .toList()
-                    .asObservable())
-          },
-          courses: {
-            getCurrentSemester(): courses
-                .map((course) => Course(
-                      id: course.id,
-                      courseId: course.courseId,
-                      name: course.name,
-                      teacher: Teacher(
-                        name: course.teacher.name,
-                        title: course.teacher.title,
-                      ),
-                      courseTimes: course.times
-                          .map((courseTime) => CourseTime(
-                                duration: courseTime.duration,
-                                weekday: courseTime.weekday,
-                                start: TimeOfDay(
-                                    hour: courseTime.start ~/ 60,
-                                    minute: courseTime.start % 60),
-                              ))
-                          .toList()
-                          .asObservable(),
-                    ))
-                .toList()
-                .asObservable()
-          }),
+        isOfAge: isOfAge!,
+        name: name!,
+        year: Year(
+          id: year!.id,
+          startYear: year!.startYear,
+          graduationYear: year!.graduationYear,
+          name: year!.name,
+        ),
+      ),
     );
 
     return res;

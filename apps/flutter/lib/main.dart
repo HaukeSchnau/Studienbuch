@@ -1,4 +1,5 @@
-import 'package:class_companion/models/course.dart';
+import 'dart:ffi';
+
 import 'package:class_companion/models/store.dart';
 import 'package:class_companion/pages/about_page.dart';
 import 'package:class_companion/pages/course_page.dart';
@@ -12,12 +13,16 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:class_companion/models/course.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Intl.defaultLocale = "de_DE";
 
   final store = await loadStore();
+  if(store != null) {
+    await store.init();
+  } 
   runApp(App(initialStore: store));
 }
 
