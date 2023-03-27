@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:class_companion/database.dart';
 import 'package:class_companion/models/absence.dart';
 import 'package:class_companion/models/agenda.dart';

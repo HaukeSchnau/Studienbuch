@@ -70,9 +70,9 @@ class CoursePage extends HookWidget {
               ],
             ),
             const SizedBox(height: 32),
-            const Padding(
-              padding: EdgeInsets.only(left: 16.0),
-              child: GradesCard(),
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0),
+              child: GradesCard(course: course),
             )
           ],
         ),

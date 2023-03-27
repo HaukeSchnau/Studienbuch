@@ -8,6 +8,7 @@ class BottomSheetContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.only(top: 32, left: 48, right: 48),
       decoration: const BoxDecoration(
           color: Colors.white,

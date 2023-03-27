@@ -1,7 +1,9 @@
 import 'package:class_companion/components/date_picker.dart';
+import 'package:class_companion/database.dart';
 import 'package:class_companion/models/store.dart';
 import 'package:class_companion/static/theme.dart';
 import 'package:class_companion/util/date_util.dart';
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:class_companion/models/course.dart';
@@ -91,22 +93,26 @@ class RegisterAbsenceForm extends HookWidget {
               disabledBackgroundColor: disabledColor,
             ),
             onPressed: isValid()
-                ? () {
-                    // TODO implement
-                    throw UnimplementedError();
-                    // store.currentUser.absences.addAll(
-                    //   absenceTimes.value.entries
-                    //       .where((e) => e.value)
-                    //       .map(
-                    //         (e) => Absence(
-                    //           date: date.value,
-                    //           course: e.key,
-                    //           reason: reason.value,
-                    //         ),
-                    //       )
-                    //       .toList(),
-                    // );
-                    // Navigator.of(context).pop();
+                ? () async {
+                    await database.batch((batch) => batch.insertAll(
+                          database.absences,
+                          absenceTimes.value.entries
+                              .where((e) => e.value)
+                              .map(
+                                (e) => AbsencesCompanion.insert(
+                                  date: date.value,
+                                  reason: reason.value,
+                                  isExcusedByParent: store.currentUser.isOfAge
+                                      ? const Value(true)
+                                      : const Value.absent(),
+                                  course: Value(e.key.id),
+                                ),
+                              )
+                              .toList(),
+                        ));
+
+                    // ignore: use_build_context_synchronously
+                    Navigator.of(context).pop();
                   }
                 : null,
             child: const Text("Speichern"),
