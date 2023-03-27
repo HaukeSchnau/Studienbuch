@@ -1,6 +1,7 @@
 import 'package:class_companion/hooks/use_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:flutter_svg/svg.dart';
 
 class SingleConfirmationStatusView extends HookWidget {
   final bool confirmed;
@@ -16,8 +17,9 @@ class SingleConfirmationStatusView extends HookWidget {
 
     return Row(
       children: [
-        Icon(confirmed ? Icons.verified_rounded : Icons.close_rounded,
-            color: color),
+        confirmed
+            ? Icon(Icons.verified_rounded, color: color)
+            : SvgPicture.asset("assets/icons/cross.svg"),
         const SizedBox(width: 4),
         Text(text, style: TextStyle(color: color)),
       ],

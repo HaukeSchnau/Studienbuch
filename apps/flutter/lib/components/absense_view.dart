@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 
 class AbsenceView extends HookWidget {
   const AbsenceView({super.key});
@@ -127,7 +128,7 @@ class AbsenceView extends HookWidget {
                     : Align(
                         alignment: Alignment.bottomRight,
                         child: ElevatedButton(
-                            onPressed: () {},
+                            onPressed: () => context.push("/absences"),
                             child: const Text("Alle ansehen",
                                 style: TextStyle(color: Colors.white))),
                       )),

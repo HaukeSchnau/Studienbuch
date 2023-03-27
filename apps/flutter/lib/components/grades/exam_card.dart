@@ -82,7 +82,7 @@ class ExamCard extends HookWidget {
           (ctx) => Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Bitte lasse deinen Eltern hier unterschreiben:",
+                  Text("Bitte lasse deine Eltern hier unterschreiben:",
                       style: TextStyle(color: Colors.black.withOpacity(.8))),
                   const SizedBox(height: 16),
                   Text.rich(

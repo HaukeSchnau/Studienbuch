@@ -1,7 +1,7 @@
-import 'dart:ffi';
 
 import 'package:class_companion/models/store.dart';
 import 'package:class_companion/pages/about_page.dart';
+import 'package:class_companion/pages/absences_page.dart';
 import 'package:class_companion/pages/course_page.dart';
 import 'package:class_companion/pages/root_page.dart';
 import 'package:class_companion/pages/welcome_page.dart';
@@ -20,9 +20,9 @@ Future<void> main() async {
   Intl.defaultLocale = "de_DE";
 
   final store = await loadStore();
-  if(store != null) {
+  if (store != null) {
     await store.init();
-  } 
+  }
   runApp(App(initialStore: store));
 }
 
@@ -71,6 +71,23 @@ class App extends HookWidget {
                         child: CoursePage(
                           course: state.extra as Course,
                         ),
+                      );
+                    } else {
+                      return Provider(
+                        create: (_) => onSetupFinished,
+                        child: const WelcomePage(),
+                      );
+                    }
+                  },
+                ),
+                GoRoute(
+                  path: "/absences",
+                  builder: (context, state) {
+                    final val = store.value;
+                    if (val != null) {
+                      return Provider(
+                        create: (_) => val,
+                        child: const AbsencesPage(),
                       );
                     } else {
                       return Provider(
