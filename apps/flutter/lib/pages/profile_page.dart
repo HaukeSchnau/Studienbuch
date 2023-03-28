@@ -30,7 +30,7 @@ class ProfilePage extends HookWidget {
         const SizedBox(height: 16),
         if (semesters.length > 1)
           const Padding(
-            padding: EdgeInsets.only(left: 24.0),
+            padding: EdgeInsets.only(left: 24.0, bottom: 4),
             child: Text(
               "Semester:",
               style: TextStyle(fontSize: 14),

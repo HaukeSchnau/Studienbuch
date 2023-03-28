@@ -98,7 +98,7 @@ abstract class _GlobalStore with Store {
 
   @computed
   List<Absence> get unexcusedAbsences =>
-      absences.where((element) => !element.isExcusedByParent).toList();
+      absences.where((element) => !element.isExcused).toList();
 
   @computed
   ObservableMap<DateTime, List<Absence>> get unexcusedAbsencesByDay {

@@ -101,7 +101,7 @@ class Course {
   String get icon => getCourseIcon(name);
 
   void navigateTo(BuildContext context, SemesterId semester) {
-    context.push("/course", extra: this);
+    context.push("/course/$id/$semester");
   }
 }
 

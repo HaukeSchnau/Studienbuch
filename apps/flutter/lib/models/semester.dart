@@ -35,8 +35,7 @@ class Semester {
   Semester({
     required this.id,
   }) : courses = LazyList(() async {
-          final semesterCoursesStatement = db
-              .select(db.semesterCourses)
+          final semesterCoursesStatement = db.select(db.semesterCourses)
             ..where((sc) => sc.semester.equals(id));
           final semesterCourses = await semesterCoursesStatement.get();
           final coursesStatement = db.select(db.courses)
@@ -48,9 +47,9 @@ class Semester {
     final year = id >> 1;
     final isWinter = id & 1 == 1;
     if (isWinter) {
-      return "$year/${year + 1} Winter";
+      return "Winter $year/${year + 1}";
     } else {
-      return "${year - 1}/$year Sommer";
+      return "Sommer ${year - 1}/$year";
     }
   }
 }

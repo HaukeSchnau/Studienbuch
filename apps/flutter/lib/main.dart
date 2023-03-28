@@ -1,4 +1,5 @@
-
+import 'package:class_companion/database.dart';
+import 'package:class_companion/models/semester.dart';
 import 'package:class_companion/models/store.dart';
 import 'package:class_companion/pages/about_page.dart';
 import 'package:class_companion/pages/absences_page.dart';
@@ -62,14 +63,39 @@ class App extends HookWidget {
                   },
                 ),
                 GoRoute(
-                  path: "/course",
+                  path: "/course/:courseId/:semesterId",
                   builder: (context, state) {
                     final val = store.value;
                     if (val != null) {
+                      final futures = Future.wait([
+                        (db.select(db.courses)
+                              ..where((tbl) => tbl.id.equals(
+                                  int.parse(state.params['courseId']!))))
+                            .getSingleOrNull(),
+                        (db.select(db.semesters)
+                              ..where((tbl) => tbl.id.equals(
+                                  int.parse(state.params['semesterId']!))))
+                            .getSingleOrNull(),
+                      ]);
                       return Provider(
                         create: (_) => val,
-                        child: CoursePage(
-                          course: state.extra as Course,
+                        child: FutureBuilder(
+                          future: futures,
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              return Provider(
+                                create: (_) => snapshot.data as Course,
+                                child: CoursePage(
+                                  course: snapshot.data![0] as Course,
+                                  semester: snapshot.data![1] as Semester,
+                                ),
+                              );
+                            } else {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+                          },
                         ),
                       );
                     } else {

@@ -1,14 +1,16 @@
 import 'package:class_companion/components/grades/grades_card.dart';
 import 'package:class_companion/components/path_bg_page.dart';
 import 'package:class_companion/models/course.dart';
+import 'package:class_companion/models/semester.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class CoursePage extends HookWidget {
   final Course course;
+  final Semester semester;
 
-  const CoursePage({super.key, required this.course});
+  const CoursePage({super.key, required this.course, required this.semester});
 
   @override
   Widget build(BuildContext context) {
@@ -42,12 +44,19 @@ class CoursePage extends HookWidget {
                               height: 1.2,
                               fontWeight: FontWeight.bold,
                               color: Colors.white)),
+                      Text(
+                        semester.name,
+                        style: const TextStyle(
+                            fontSize: 14,
+                            color: Color.fromRGBO(255, 255, 255, 8),
+                            fontStyle: FontStyle.italic),
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         course.teacher.longFormalName,
                         style:
                             const TextStyle(fontSize: 18, color: Colors.white),
-                      )
+                      ),
                     ],
                   ),
                 ),

@@ -20,9 +20,12 @@ class MyTabBarView extends HookWidget {
   Widget build(BuildContext context) {
     return ContainedTabBarView(
       tabs: pages
-          .map((page) => Text(
-                page.title,
-                overflow: TextOverflow.visible,
+          .map((page) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  page.title,
+                  overflow: TextOverflow.visible,
+                ),
               ))
           .toList(),
       initialIndex: initialIndex,
