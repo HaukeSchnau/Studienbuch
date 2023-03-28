@@ -30,6 +30,7 @@ class SubjectsGrid extends HookWidget {
           if (isCurrentSemester) {
             course.navigateTo(context, semester.id);
           } else {
+            // TODO
             // await showModalBottomSheet(
             //   context: context,
             //   isScrollControlled: true,

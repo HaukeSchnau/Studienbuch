@@ -6,6 +6,7 @@ import 'package:class_companion/models/absence.dart';
 import 'package:class_companion/models/agenda.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/semester.dart';
+import 'package:class_companion/models/substitution.dart';
 import 'package:class_companion/models/substitution_plan.dart';
 import 'package:class_companion/models/user.dart';
 import 'package:class_companion/util/date_util.dart';
@@ -25,7 +26,7 @@ abstract class _GlobalStore with Store {
   User currentUser;
 
   @observable
-  List<SubstitutionPlan> substitutionPlan = [];
+  List<SubstitutionPlan> substitutionPlans = [];
 
   @observable
   String licenseKey;
@@ -61,6 +62,20 @@ abstract class _GlobalStore with Store {
 
     db.select(db.courses).watch().listen((event) {
       courses = event;
+
+      // TOOD: This is temporary
+      final entry = agenda.entries.first;
+      substitutionPlans.add(
+        SubstitutionPlan(
+          date: DateTime.now().startOfDay,
+          substitutions: [
+            Substitution(
+              type: SubstitutionType.cancelled,
+              agendaEntry: entry,
+            ),
+          ],
+        ),
+      );
     });
 
     db.select(db.semesters).watch().listen((event) {
@@ -115,7 +130,12 @@ abstract class _GlobalStore with Store {
   //// AGENDA ////
 
   @computed
-  Agenda get agenda => Agenda(start: DateTime.now(), courses: courses);
+  Agenda get agenda => Agenda(
+      start: DateTime.now(),
+      courses: courses,
+      substitutionPlan: substitutionPlans.firstWhereOrNull(
+        (element) => element.date == DateTime.now().startOfDay,
+      ));
 
   @computed
   List<Agenda> get weeklyAgenda {

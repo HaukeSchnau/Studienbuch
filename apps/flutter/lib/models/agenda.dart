@@ -1,7 +1,10 @@
 import 'package:class_companion/models/agenda_entry.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/course_time.dart';
+import 'package:class_companion/models/substitution.dart';
+import 'package:class_companion/models/substitution_plan.dart';
 import 'package:class_companion/util/date_util.dart';
+import 'package:class_companion/util/list_util.dart';
 import 'package:mobx/mobx.dart';
 part 'agenda.g.dart';
 
@@ -22,11 +25,14 @@ abstract class _AgendaBase with Store {
   _AgendaBase(
       {required DateTime start,
       required List<Course> courses,
-      bool autoAdjust = true})
+      bool autoAdjust = true,
+      SubstitutionPlan? substitutionPlan})
       : date = start {
     start = start.startOfDay;
 
-    final entries = _buildEntries(courses, start);
+    final substitutions = substitutionPlan?.substitutions ?? [];
+
+    final entries = _buildEntries(courses, start, substitutions);
     final entriesAhead = entries.where((element) => !element.isOver);
 
     if (entriesAhead.isEmpty && autoAdjust) {
@@ -34,7 +40,7 @@ abstract class _AgendaBase with Store {
           ? start.add(const Duration(days: 3))
           : start.add(const Duration(days: 1));
       date = nextDate;
-      this.entries = _buildEntries(courses, nextDate);
+      this.entries = _buildEntries(courses, nextDate, substitutions);
     } else {
       date = start;
       this.entries = entries;
@@ -82,15 +88,24 @@ abstract class _AgendaBase with Store {
   }
 }
 
-List<AgendaEntry> _buildEntries(List<Course> courses, DateTime date) {
+List<AgendaEntry> _buildEntries(
+    List<Course> courses, DateTime date, List<Substitution> substitutions) {
   date = date.startOfDay;
 
   List<AgendaEntry> entries = [];
   for (final course in courses) {
     for (final time in course.courseTimes) {
       if (time.weekday == date.weekday) {
+        final substitution = substitutions
+            .firstWhereOrNull((sub) => sub.agendaEntry.start == date.copyWith(
+                hour: time.start.hour, minute: time.start.minute
+            ));
+            
         entries.add(AgendaEntry(
-            course: course, recurringTime: time, concreteDate: date));
+            course: course,
+            recurringTime: time,
+            concreteDate: date,
+            substitution: substitution));
       }
     }
   }

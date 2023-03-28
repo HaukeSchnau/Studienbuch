@@ -1,9 +1,6 @@
-import 'package:class_companion/components/tasks/task_page.dart';
 import 'package:class_companion/components/util/card.dart';
 import 'package:class_companion/database.dart';
-import 'package:class_companion/hooks/use_query.dart';
 import 'package:class_companion/models/course.dart';
-import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
