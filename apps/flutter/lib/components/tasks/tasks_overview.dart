@@ -1,17 +1,57 @@
 import 'package:class_companion/components/bottom_sheet_container.dart';
 import 'package:class_companion/components/tasks/add_task_form.dart';
 import 'package:class_companion/components/tasks/tasks_view.dart';
+import 'package:class_companion/database.dart';
+import 'package:class_companion/hooks/use_query.dart';
 import 'package:class_companion/hooks/use_store.dart';
+import 'package:class_companion/models/course.dart';
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:provider/provider.dart';
 
 class TasksOverview extends HookWidget {
-  const TasksOverview({super.key});
+  final Course? course;
+
+  const TasksOverview({super.key, this.course});
 
   @override
   Widget build(BuildContext context) {
     final store = useStore();
+
+    final courseId = course?.id;
+
+    final tasks = useQueryJoin(
+        () => (db.select(db.tasks)).join(
+              [
+                innerJoin(
+                  db.courses,
+                  db.courses.id.equalsExp(db.tasks.course),
+                )
+              ],
+            )
+              ..where(
+                courseId != null
+                    ? db.tasks.course.equals(courseId)
+                    : const Constant(true),
+              )
+              ..orderBy(
+                [
+                  OrderingTerm(
+                    expression: db.tasks.done,
+                    mode: OrderingMode.asc,
+                  ),
+                  OrderingTerm(
+                    expression: db.tasks.dueDate,
+                    mode: OrderingMode.asc,
+                  )
+                ],
+              ),
+        [courseId]).map((row) {
+      final task = row.readTable(db.tasks);
+      final course = row.readTable(db.courses);
+      return TaskWithCourse(task, course);
+    }).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,7 +76,8 @@ class TasksOverview extends HookWidget {
                     onPressed: () => showSheet(
                         context,
                         (ctx) => Provider.value(
-                            value: store, child: const AddTaskForm()))),
+                            value: store,
+                            child: AddTaskForm(predefinedCourse: course)))),
               )
             ],
           ),
@@ -44,7 +85,7 @@ class TasksOverview extends HookWidget {
         const Padding(
           padding: EdgeInsets.only(bottom: 0.0),
         ),
-        const TasksView(),
+        TasksView(tasks: tasks),
       ],
     );
   }

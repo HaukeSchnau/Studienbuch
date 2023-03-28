@@ -28,13 +28,15 @@ class BottomPanels extends StatelessWidget {
             child: blueChild,
           ),
         ),
-        Container(
-          width: MediaQuery.of(context).size.width,
-          padding:
-              const EdgeInsets.only(top: 32.0, bottom: 16, left: 32, right: 32),
-          decoration: BoxDecoration(color: theme.lightBg, borderRadius: radius),
-          child: whiteChild,
-        )
+        if (whiteChild != null)
+          Container(
+            width: MediaQuery.of(context).size.width,
+            padding: const EdgeInsets.only(
+                top: 32.0, bottom: 16, left: 32, right: 32),
+            decoration:
+                BoxDecoration(color: theme.lightBg, borderRadius: radius),
+            child: whiteChild,
+          )
       ],
     );
   }

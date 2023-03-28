@@ -17,34 +17,12 @@ class TaskWithCourse {
 }
 
 class TasksView extends HookWidget {
-  const TasksView({super.key});
+  final List<TaskWithCourse> tasks;
+
+  const TasksView({super.key, required this.tasks});
 
   @override
   Widget build(BuildContext context) {
-    final tasks = useQueryJoin(() => db.select(db.tasks).join(
-          [
-            innerJoin(
-              db.courses,
-              db.courses.id.equalsExp(db.tasks.course),
-            )
-          ],
-        )..orderBy(
-            [
-              OrderingTerm(
-                expression: db.tasks.done,
-                mode: OrderingMode.asc,
-              ),
-              OrderingTerm(
-                expression: db.tasks.dueDate,
-                mode: OrderingMode.asc,
-              )
-            ],
-          )).map((row) {
-      final task = row.readTable(db.tasks);
-      final course = row.readTable(db.courses);
-      return TaskWithCourse(task, course);
-    }).toList();
-
     const padding = EdgeInsets.symmetric(
       horizontal: 32,
       vertical: 16.0,

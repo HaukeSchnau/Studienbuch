@@ -16,7 +16,9 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 class AddTaskForm extends HookWidget {
-  const AddTaskForm({super.key});
+  final Course? predefinedCourse;
+
+  const AddTaskForm({super.key, this.predefinedCourse});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +27,7 @@ class AddTaskForm extends HookWidget {
     final images = useState<List<File>>([]);
     final selectedDate = useState<DateTime?>(null);
     final store = useStore();
-    final selectedCourse = useState<Course?>(null);
+    final selectedCourse = useState<Course?>(predefinedCourse);
     useListenable(titleController);
     useListenable(descController);
 
@@ -59,15 +61,16 @@ class AddTaskForm extends HookWidget {
                   fontSize: 24),
             ),
             const SizedBox(height: 8),
-            PruefungsfachSelector(
-              title: "Fach",
-              options: store.courses,
-              onSelect: (newSelected) {
-                selectedCourse.value = newSelected;
-              },
-              selected: selectedCourse.value,
-            ),
-            const SizedBox(height: 32),
+            if (predefinedCourse == null)
+              PruefungsfachSelector(
+                title: "Fach",
+                options: store.courses,
+                onSelect: (newSelected) {
+                  selectedCourse.value = newSelected;
+                },
+                selected: selectedCourse.value,
+              ),
+            if (predefinedCourse == null) const SizedBox(height: 32),
             TextField(
               controller: titleController,
               decoration: const InputDecoration(labelText: "Titel"),
@@ -87,51 +90,48 @@ class AddTaskForm extends HookWidget {
                       borderSide: BorderSide.none),
                 )),
             const Padding(padding: EdgeInsets.only(top: 16.0)),
-            images.value.isEmpty
-                ? Container()
-                : GridView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 12,
-                            crossAxisSpacing: 32),
-                    itemBuilder: (context, index) {
-                      var image = images.value[index];
-                      return Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.file(
-                            image,
-                            fit: BoxFit.cover,
-                          ),
-                          Positioned(
-                              top: 6,
-                              right: 6,
-                              child: GestureDetector(
-                                  onTap: () {
-                                    images.value.removeAt(index);
-                                    images.value = [...images.value];
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(99),
-                                      color: const Color.fromRGBO(0, 0, 0, .7),
-                                    ),
-                                    child: const Icon(Icons.close,
-                                        color: Colors.white, size: 20),
-                                  )))
-                        ],
-                      );
-                    },
-                    itemCount: images.value.length,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                  ),
-            images.value.isEmpty
-                ? Container()
-                : const Padding(padding: EdgeInsets.only(top: 8.0)),
+            if (images.value.isNotEmpty)
+              GridView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 32),
+                itemBuilder: (context, index) {
+                  var image = images.value[index];
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.file(
+                        image,
+                        fit: BoxFit.cover,
+                      ),
+                      Positioned(
+                          top: 6,
+                          right: 6,
+                          child: GestureDetector(
+                              onTap: () {
+                                images.value.removeAt(index);
+                                images.value = [...images.value];
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(99),
+                                  color: const Color.fromRGBO(0, 0, 0, .7),
+                                ),
+                                child: const Icon(Icons.close,
+                                    color: Colors.white, size: 20),
+                              )))
+                    ],
+                  );
+                },
+                itemCount: images.value.length,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+              ),
+            if (images.value.isEmpty)
+              const Padding(padding: EdgeInsets.only(top: 8.0)),
             TextButton(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,

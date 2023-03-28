@@ -6,8 +6,10 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 
 class PathBackgroundPage extends HookWidget {
   final Widget child;
+  final Color? bottomColor;
 
-  const PathBackgroundPage({super.key, required this.child});
+  const PathBackgroundPage(
+      {super.key, required this.child, this.bottomColor});
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +40,7 @@ class PathBackgroundPage extends HookWidget {
             child: Container(color: theme.primary),
           ),
           Expanded(
-            child: Container(color: theme.lightBg),
+            child: Container(color: bottomColor ?? theme.lightBg),
           )
         ],
       ),
