@@ -9,8 +9,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 
-class AbsenceView extends HookWidget {
-  const AbsenceView({super.key});
+class AbsenceCard extends HookWidget {
+  const AbsenceCard({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -35,17 +35,32 @@ class AbsenceView extends HookWidget {
             ],
           );
         } else if (absences.every((element) => element.isExcused)) {
-          return Column(
+          return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text("Super! All deine Fehlzeiten sind entschuldigt!",
-                  style: TextStyle(
-                      fontSize: 16, color: Color.fromRGBO(0, 0, 0, .8))),
-              SizedBox(height: 8),
-              Text(
-                  "Wirst du heute/morgen fehlen? Trage es dir direkt hier ein!",
-                  style: TextStyle(
-                      fontSize: 16, color: Color.fromRGBO(0, 0, 0, .8))),
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: SvgPicture.asset(
+                  "assets/icons/big_check.svg",
+                  width: 48,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text("Super! All deine Fehlzeiten sind entschuldigt!",
+                        style: TextStyle(
+                            fontSize: 16, color: Color.fromRGBO(0, 0, 0, .8))),
+                    SizedBox(height: 8),
+                    Text(
+                        "Wirst du heute/morgen fehlen? Trage es dir direkt hier ein!",
+                        style: TextStyle(
+                            fontSize: 16, color: Color.fromRGBO(0, 0, 0, .8))),
+                  ],
+                ),
+              ),
             ],
           );
         } else {
@@ -116,15 +131,14 @@ class AbsenceView extends HookWidget {
                 IconButton(
                     onPressed: () => showSheet(
                         context, (ctx) => RegisterAbsenceForm(store: store)),
-                    icon: Icon(Icons.add,
-                        color: theme.primaryText, size: 32))
+                    icon: Icon(Icons.add, color: theme.primaryText, size: 32))
               ],
             ),
             const SizedBox(height: 8),
             copyWidget,
             const SizedBox(height: 16),
             Observer(
-                builder: (_) => store.unexcusedAbsences.isEmpty
+                builder: (_) => store.absences.isEmpty
                     ? const SizedBox.shrink()
                     : Align(
                         alignment: Alignment.bottomRight,

@@ -25,7 +25,7 @@ class AgendaEntry {
       course: null,
       concreteDate: date,
       recurringTime: CourseTime(
-        id: -1, // TODO: find a better solution for this hack
+        id: -1,
         start: lessonTime,
         weekday: date.weekday,
         duration: 80,

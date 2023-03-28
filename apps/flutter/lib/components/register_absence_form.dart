@@ -106,7 +106,7 @@ class RegisterAbsenceForm extends HookWidget {
                                   isExcusedByParent: store.currentUser.isOfAge
                                       ? const Value(true)
                                       : const Value.absent(),
-                                  course: Value(e.key.id),
+                                  course: e.key.id,
                                 ),
                               )
                               .toList(),

@@ -7,6 +7,7 @@ class MyTheme {
   final Color secondary;
   final Color secondaryDesaturated;
   final Color error;
+  final Color errorDesaturated;
   final Color lightBg;
 
   const MyTheme({
@@ -16,6 +17,7 @@ class MyTheme {
     required this.secondary,
     required this.secondaryDesaturated,
     required this.error,
+    required this.errorDesaturated,
     required this.lightBg,
   });
 }
@@ -36,10 +38,11 @@ class MyTheme {
 const theme = MyTheme(
   primary: Color(0xFF33A42B),
   primaryText: Color(0xFF098A00),
-  primaryDesaturated: Color(0xFF75B470),
+  primaryDesaturated: Color(0xFFEEF5ED),
   secondary: Color(0xFF3B7FD9),
   secondaryDesaturated: Color(0xFFEBF0F7),
   error: Color(0xFFA42B33),
+  errorDesaturated: Color(0xFFECD4D6), //Color(0xFFD9A3A7),
   lightBg: Color(0xFFF9F9F9),
 );
 

@@ -41,41 +41,6 @@ abstract class _UserBase with Store {
     return name.split(" ")[0].split("-")[0];
   }
 
-  // @computed
-  // List<Course> get _coursesInCurrentSemester {
-  //   final currentSemester = getCurrentSemester();
-  //   return _courses[currentSemester] ?? [];
-  // }
-
-  // @computed
-  // Map<int, List<Course>> get coursesInAllSemesters {
-  //   final map = <Semester, List<Course>>{};
-  //   for (final entry in _courses.entries) {
-  //     final semester = entry.key;
-  //     if (map[semester] == null) {
-  //       map[semester] = [];
-  //     }
-  //     map[semester]!.addAll(entry.value);
-  //   }
-  //   for (final entry in classes.entries) {
-  //     final semester = entry.key;
-  //     if (map[semester] == null) {
-  //       map[semester] = [];
-  //     }
-  //     map[semester]!.addAll(entry.value.courses);
-  //   }
-  //   return map;
-  // }
-
-  // @computed
-  // Class get currentClass {
-  //   final currentSemester = getCurrentSemester();
-  //   return classes[currentSemester] ?? classes.values.first;
-  // }
-
-  // @computed
-  // List<Course> get courses => _coursesInCurrentSemester + currentClass.courses;
-
   Map<String, dynamic> toJson() {
     return {
       'name': name,
@@ -84,6 +49,7 @@ abstract class _UserBase with Store {
     };
   }
 
+  // ignore: unused_element
   _UserBase.fromJson(Map<String, dynamic> json)
       : this(
           name: json["name"],

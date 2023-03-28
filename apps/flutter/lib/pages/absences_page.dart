@@ -1,3 +1,4 @@
+import 'package:class_companion/components/absences/absence_view.dart';
 import 'package:class_companion/database.dart';
 import 'package:class_companion/hooks/use_query.dart';
 import 'package:class_companion/static/colors.dart';
@@ -41,7 +42,12 @@ class AbsencesPage extends HookWidget {
                     style: TextStyle(color: theme.error, fontSize: 16)),
               ],
             ),
-            for (final absence in unexcusedAbsences) Text(absence.reason),
+            const SizedBox(height: 16),
+            for (final absence in unexcusedAbsences)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: AbsenceView(absence: absence),
+              ),
             const SizedBox(height: 64),
             Row(
               children: [
@@ -54,7 +60,12 @@ class AbsencesPage extends HookWidget {
                     style: TextStyle(color: theme.primary, fontSize: 16)),
               ],
             ),
-            for (final absence in excusedAbsences) Text(absence.reason),
+            const SizedBox(height: 16),
+            for (final absence in excusedAbsences)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: AbsenceView(absence: absence),
+              ),
           ],
         ),
       )),

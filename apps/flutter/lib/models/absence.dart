@@ -7,7 +7,7 @@ class Absences extends Table {
   IntColumn get id => integer().autoIncrement()();
   DateTimeColumn get date => dateTime()();
   TextColumn get reason => text()();
-  IntColumn get course => integer().nullable().references(Courses, #id)();
+  IntColumn get course => integer().references(Courses, #id)();
   BoolColumn get isExcusedByTeacher =>
       boolean().withDefault(const Constant(false))();
   BoolColumn get isExcusedByParent =>
@@ -18,7 +18,7 @@ class Absence {
   final int id;
   final DateTime date;
   final String reason;
-  final Course? course;
+  final Course course;
   final bool isExcusedByTeacher;
   final bool isExcusedByParent;
 
@@ -35,18 +35,16 @@ class Absence {
     required int id,
     required DateTime date,
     required String reason,
-    required int? course,
+    required int course,
     required bool isExcusedByTeacher,
     required bool isExcusedByParent,
   }) async {
     Course? concreteCourse;
-    if (course != null) {
-      final statement = db.select(db.courses)
-        ..where(
-          (dbCourse) => dbCourse.id.equals(course),
-        );
-      concreteCourse = await statement.getSingle();
-    }
+    final statement = db.select(db.courses)
+      ..where(
+        (dbCourse) => dbCourse.id.equals(course),
+      );
+    concreteCourse = await statement.getSingle();
     return Absence(
       id: id,
       date: date,
@@ -57,5 +55,5 @@ class Absence {
     );
   }
 
-  bool get isExcused => isExcusedByTeacher || isExcusedByParent;
+  bool get isExcused => isExcusedByTeacher && isExcusedByParent;
 }

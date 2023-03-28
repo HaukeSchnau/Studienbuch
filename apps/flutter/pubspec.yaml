@@ -146,6 +146,7 @@ flutter:
     - assets/icons/schriftl.svg
     - assets/icons/warning.svg
     - assets/icons/cross.svg
+    - assets/icons/big_check.svg
   fonts:
     - family: Nunito
       fonts:

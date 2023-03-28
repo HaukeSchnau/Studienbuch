@@ -44,7 +44,6 @@ abstract class _GlobalStore with Store {
     required this.licenseKey,
   }) {
     Timer.periodic(const Duration(seconds: 5), (timer) {
-      // TODO find a better way to save the store on changes (mobx?)
       save();
     });
 
@@ -138,6 +137,7 @@ abstract class _GlobalStore with Store {
 
   //// PERSISTENCE ////
 
+  // ignore: unused_element
   _GlobalStore.fromJson(Map<String, dynamic> json)
       : this(
           currentUser: User.fromJson(json["currentUser"]),

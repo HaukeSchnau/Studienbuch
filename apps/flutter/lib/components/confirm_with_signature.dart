@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:class_companion/hooks/use_disposable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:signature/signature.dart';
 
 class ConfirmWithSignature extends HookWidget {
@@ -92,12 +95,12 @@ class ConfirmWithSignature extends HookWidget {
   }
 }
 
-Future<String?> confirmWithSignature(
-    BuildContext context,
-    Widget Function(BuildContext context) builder,
-    String title,
-    String signer) async {
-  final result = await Navigator.of(context).push<String>(
+Future<void> confirmWithSignature(
+    BuildContext context, Widget Function(BuildContext context) builder,
+    {required String title,
+    required String signer,
+    required String fileName, required VoidCallback onSuccess}) async {
+  final signatureSvg = await Navigator.of(context).push<String>(
     MaterialPageRoute(
       builder: (context) => ConfirmWithSignature(
         builder: builder,
@@ -106,5 +109,12 @@ Future<String?> confirmWithSignature(
       ),
     ),
   );
-  return result;
+
+  if (signatureSvg != null) {
+    final directory = await getApplicationDocumentsDirectory();
+    final file = File("${directory.path}/$fileName");
+
+    await file.writeAsString(signatureSvg);
+    onSuccess();
+  }
 }

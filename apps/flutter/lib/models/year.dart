@@ -33,6 +33,7 @@ abstract class _YearBase with Store {
     };
   }
 
+  // ignore: unused_element
   _YearBase.fromJson(Map<String, dynamic> json)
       : this(
           id: json["id"],

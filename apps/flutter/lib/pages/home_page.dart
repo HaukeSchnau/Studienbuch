@@ -1,4 +1,4 @@
-import 'package:class_companion/components/absense_view.dart';
+import 'package:class_companion/components/absences/absense_card.dart';
 import 'package:class_companion/components/agenda/agenda_view.dart';
 import 'package:class_companion/components/path_bg_page.dart';
 import 'package:class_companion/hooks/use_store.dart';
@@ -50,7 +50,7 @@ class HomePage extends HookWidget {
               const SizedBox(
                 height: 32,
               ),
-              const AbsenceView(),
+              const AbsenceCard(),
             ],
           ),
         ),
