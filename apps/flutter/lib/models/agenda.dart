@@ -45,13 +45,12 @@ abstract class _AgendaBase with Store {
       return;
     }
 
-    // Fill in empty slots, but not after the last entry of the day (which is the last entry of the list) or before the first entry of the day (which is the first entry of the list)
+    // Fill in empty slots, but not after the last entry of the day (which is the last entry of the list) or before the first lesson time of the day
     // TODO make this more efficient
     final firstEntry = this.entries.first;
     final lastEntry = this.entries.last;
     for (final time in lessonTimes) {
-      if (time.isAfter(firstEntry.recurringTime.start) &&
-          time.isBefore(lastEntry.recurringTime.start) &&
+      if (time.isBefore(lastEntry.recurringTime.start) &&
           !this.entries.any((element) => element.recurringTime.start == time)) {
         final entry = AgendaEntry.empty(date, time);
         this.entries.add(entry);

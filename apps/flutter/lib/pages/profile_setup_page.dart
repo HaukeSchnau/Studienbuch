@@ -19,6 +19,7 @@ class ProfileSetupPage extends HookWidget {
     final selectedYear = useState<ApiYear?>(null);
     final isOfAge = useState(false);
     final nameController = useTextEditingController();
+    useListenable(nameController);
 
     bool isValidInput() {
       return nameController.text.trim().isNotEmpty &&

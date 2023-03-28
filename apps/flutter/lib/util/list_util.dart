@@ -17,4 +17,6 @@ extension ListUtil<T> on List<T> {
     }
     return sublist(start, end);
   }
+
+  T? get firstOrNull => isNotEmpty ? first : null;
 }

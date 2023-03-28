@@ -50,7 +50,9 @@ class AddWrittenGradeForm extends HookWidget {
         TextField(
           onChanged: (value) => resultStr.value = (value.replaceAll(",", ".")),
           decoration: const InputDecoration(labelText: "Note"),
-          keyboardType: TextInputType.number,
+          keyboardType: const TextInputType.numberWithOptions(
+            decimal: true,
+          ),
         ),
         const SizedBox(height: 32),
         Align(

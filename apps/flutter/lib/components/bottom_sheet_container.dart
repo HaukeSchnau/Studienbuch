@@ -9,7 +9,11 @@ class BottomSheetContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.only(top: 32, left: 48, right: 48),
+      padding: EdgeInsets.only(
+          top: 32,
+          left: 48,
+          right: 48,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 12),
       decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24))),

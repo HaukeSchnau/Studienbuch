@@ -1,4 +1,3 @@
-
 import 'package:class_companion/components/confirm_with_signature.dart';
 import 'package:class_companion/confirmation_status_view.dart';
 import 'package:class_companion/database.dart';
@@ -75,7 +74,7 @@ class ExamCard extends HookWidget {
                 Text.rich(
                     TextSpan(style: const TextStyle(fontSize: 16), children: [
                   const TextSpan(
-                    text: "Ich habe zur Kenntniss genommen, dass mein Kind ",
+                    text: "Ich habe zur Kenntnis genommen, dass mein Kind ",
                   ),
                   TextSpan(
                       text: store.currentUser.name,
@@ -96,16 +95,50 @@ class ExamCard extends HookWidget {
                 ]))
               ],
             ),
-        title: "Klausurergebis bestätigen (Eltern)",
+        title: "Klausurergebnis bestätigen (Eltern)",
         signer: "Unterschrift der Eltern",
         fileName: "signature-${examResult.id}-parent.svg",
         onSuccess: () => db.update(db.gradeResults).replace(examResult.copyWith(
               isConfirmedByParent: true,
             )));
 
+    return ResultCard(
+      result: examResult,
+      action: !examResult.isConfirmed
+          ? examResult.isConfirmedByTeacher
+              ? confirmParent
+              : confirmTeacher
+          : null,
+      actionColor: theme.error,
+      userIsOfAge: store.currentUser.isOfAge,
+    );
+  }
+}
+
+class ResultCard extends StatelessWidget {
+  final GradeResult result;
+  final VoidCallback? action;
+  final bool userIsOfAge;
+  final String type;
+  final String actionText;
+  final Color actionColor;
+
+  const ResultCard(
+      {super.key,
+      required this.result,
+      this.action,
+      this.userIsOfAge = false,
+      this.type = "Klausur",
+      this.actionText = "Jetzt bestätigen",
+      required this.actionColor});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
         decoration: BoxDecoration(
-          color: theme.secondaryDesaturated,
+          color: result.isConfirmed
+              ? theme.primaryDesaturated
+              : theme.errorDesaturated,
           borderRadius: BorderRadius.circular(24),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
@@ -115,7 +148,7 @@ class ExamCard extends HookWidget {
             Row(
               children: [
                 Text(
-                  examResult.result.toString().replaceAll(".", ","),
+                  result.result.toString().replaceAll(".", ","),
                   style: const TextStyle(
                       fontSize: 24,
                       height: 1,
@@ -127,11 +160,11 @@ class ExamCard extends HookWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Klausur vom ${examResult.date.format()}"),
+                      Text("$type vom ${result.date.format()}"),
                       ConfirmationStatusView(
-                        confirmedByParent: examResult.isConfirmedByParent,
-                        confirmedByTeacher: examResult.isConfirmedByTeacher,
-                        isOfAge: store.currentUser.isOfAge,
+                        confirmedByParent: result.isConfirmedByParent,
+                        confirmedByTeacher: result.isConfirmedByTeacher,
+                        isOfAge: userIsOfAge,
                         order: ConfirmationStatusOrder.teacherParent,
                       )
                     ],
@@ -140,17 +173,15 @@ class ExamCard extends HookWidget {
               ],
             ),
             const SizedBox(height: 8),
-            if (!examResult.isConfirmed)
+            if (action != null)
               Align(
                 alignment: Alignment.centerRight,
                 child: OutlinedButton(
-                    onPressed: examResult.isConfirmedByTeacher
-                        ? confirmParent
-                        : confirmTeacher,
+                    onPressed: action,
                     style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: theme.error)),
-                    child: Text("Jetzt bestätigen",
-                        style: TextStyle(color: theme.error))),
+                        side: BorderSide(color: actionColor)),
+                    child:
+                        Text(actionText, style: TextStyle(color: actionColor))),
               )
           ],
         ));

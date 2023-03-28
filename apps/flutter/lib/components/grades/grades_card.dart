@@ -1,18 +1,24 @@
 import 'package:class_companion/components/bottom_sheet_container.dart';
+import 'package:class_companion/components/grades/add_oral_grade_form.dart';
 import 'package:class_companion/components/grades/add_written_grade_form.dart';
+import 'package:class_companion/components/grades/confirm_oral_grade_button.dart';
 import 'package:class_companion/components/grades/exam_card.dart';
 import 'package:class_companion/components/util/card.dart';
+import 'package:class_companion/confirmation_status_view.dart';
 import 'package:class_companion/database.dart';
 import 'package:class_companion/hooks/use_query.dart';
 import 'package:class_companion/hooks/use_store.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/grade_result.dart';
 import 'package:class_companion/static/colors.dart';
+import 'package:class_companion/util/date_util.dart';
+import 'package:class_companion/util/list_util.dart';
 import 'package:class_companion/util/number_util.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:path/path.dart';
 
 class GradesCard extends HookWidget {
   final Course course;
@@ -33,6 +39,9 @@ class GradesCard extends HookWidget {
         ]),
       [course.id],
     );
+    final currentOralGrade = oralGrades.firstOrNull;
+    final mostRecentConfirmedOralGrade =
+        oralGrades.firstWhereOrNull((element) => element.isConfirmed);
 
     final writtenGrades = useQuery(
       () => db.select(db.gradeResults)
@@ -60,16 +69,26 @@ class GradesCard extends HookWidget {
       width: 64,
     );
 
-    const oralGradeText = Text(
-      "1,8",
-      style: TextStyle(fontSize: 32, height: 1, fontWeight: FontWeight.w600),
+    final oralGradeText = Text(
+      currentOralGrade != null ? currentOralGrade.result.formatAsGrade() : "—",
+      style:
+          const TextStyle(fontSize: 32, height: 1, fontWeight: FontWeight.w600),
     );
 
     final editOralButton = IconButton(
         icon: const Icon(
           Icons.edit_rounded,
         ),
-        onPressed: () {/* TODO */});
+        onPressed: () {
+          showSheet(
+              context,
+              (ctx) => AddOralGradeForm(
+                    course: course,
+                    store: store,
+                    currentOralGrade: currentOralGrade,
+                    mostRecentConfirmedOralGrade: mostRecentConfirmedOralGrade,
+                  ));
+        });
 
     const oralText = Text(
       "mündlich",
@@ -77,19 +96,10 @@ class GradesCard extends HookWidget {
           fontSize: 16, height: 1, color: Color.fromRGBO(0, 0, 0, .6)),
     );
 
-    const isVerified = true;
-    final verifiedBadge = Row(
-      children: [
-        Icon(
-          Icons.verified,
-          color: theme.primaryText,
-        ),
-        const SizedBox(width: 6),
-        Text(
-          "bestätigt",
-          style: TextStyle(color: theme.primaryText),
-        )
-      ],
+    final oralLastUpdatedText = Text(
+      "Stand: ${currentOralGrade?.date.format() ?? "—"}",
+      style: const TextStyle(
+          fontSize: 16, height: 1, color: Color.fromRGBO(0, 0, 0, .6)),
     );
 
     final writtenIcon = SvgPicture.asset(
@@ -147,18 +157,36 @@ class GradesCard extends HookWidget {
                       children: [
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            SizedBox(height: 10),
+                          children: [
+                            const SizedBox(height: 10),
                             oralGradeText,
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             oralText,
+                            const SizedBox(height: 4),
+                            oralLastUpdatedText,
                           ],
                         ),
                         editOralButton,
                       ],
                     ),
                     const SizedBox(height: 12),
-                    if (isVerified) verifiedBadge
+                    if (currentOralGrade != null)
+                      ConfirmationStatusView(
+                          confirmedByParent:
+                              currentOralGrade.isConfirmedByParent,
+                          confirmedByTeacher:
+                              currentOralGrade.isConfirmedByTeacher,
+                          isOfAge: store.currentUser.isOfAge,
+                          order: ConfirmationStatusOrder.teacherParent),
+                    if (currentOralGrade != null &&
+                        !currentOralGrade.isConfirmed)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: ConfirmOralGradeButton(
+                          result: currentOralGrade,
+                          course: course,
+                        ),
+                      )
                   ],
                 ))
               ],
