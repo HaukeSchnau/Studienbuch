@@ -182,7 +182,7 @@ class WeekGrid extends StatelessWidget {
         height: h,
         width: w,
         decoration: BoxDecoration(
-          color: theme.primaryDesaturated,
+          color: theme.primary,
           borderRadius: const BorderRadius.all(Radius.circular(8)),
         ),
       ),

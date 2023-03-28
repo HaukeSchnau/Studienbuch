@@ -1,6 +1,8 @@
 import 'package:class_companion/components/absences/absense_card.dart';
 import 'package:class_companion/components/agenda/agenda_view.dart';
 import 'package:class_companion/components/path_bg_page.dart';
+import 'package:class_companion/components/tasks/tasks_overview.dart';
+import 'package:class_companion/components/util/bottom_panels.dart';
 import 'package:class_companion/hooks/use_store.dart';
 import 'package:class_companion/util/ui_util.dart';
 import 'package:flutter/material.dart';
@@ -55,8 +57,7 @@ class HomePage extends HookWidget {
           ),
         ),
         const SizedBox(height: 32),
-        // const BottomPanels(
-        //     blueChild: AufgabenOverview(), whiteChild: Klausuren())
+        const BottomPanels(blueChild: TasksOverview())
       ],
     );
 

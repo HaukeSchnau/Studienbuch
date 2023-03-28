@@ -4,6 +4,7 @@ import 'package:class_companion/models/class.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/course_time.dart';
 import 'package:class_companion/models/grade_result.dart';
+import 'package:class_companion/models/task.dart';
 import 'package:path/path.dart' as p;
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -20,7 +21,8 @@ part 'database.g.dart';
   Classes,
   Semesters,
   SemesterCourses,
-  GradeResults
+  GradeResults,
+  Tasks
 ])
 class MyDatabase extends _$MyDatabase {
   // we tell the database where to store the data with this constructor

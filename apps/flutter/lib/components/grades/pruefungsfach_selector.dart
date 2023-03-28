@@ -1,32 +1,32 @@
-// import 'package:flutter/material.dart';
-// import 'package:igs_lilienthal/components/selector.dart';
-// import 'package:igs_lilienthal/static/subjects.dart';
+import 'package:class_companion/components/selector.dart';
+import 'package:class_companion/models/course.dart';
+import 'package:flutter/material.dart';
 
-// class PruefungsfachSelector extends StatelessWidget {
-//   final String? selected;
-//   final List<String> options;
-//   final Function(String?) onSelect;
-//   final String title;
+class PruefungsfachSelector extends StatelessWidget {
+  final Course? selected;
+  final List<Course> options;
+  final Function(Course?) onSelect;
+  final String title;
 
-//   const PruefungsfachSelector(
-//       {super.key,
-//       this.selected,
-//       required this.onSelect,
-//       required this.options,
-//       required this.title});
+  const PruefungsfachSelector(
+      {super.key,
+      this.selected,
+      required this.onSelect,
+      required this.options,
+      required this.title});
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return Selector<String>(
-//         name: title,
-//         isNull: selected == null,
-//         selected: selected,
-//         onSelect: onSelect,
-//         selectedItemBuilder: (value) => Text(
-//               subjectAbbrvMap[value] ?? "",
-//               style: const TextStyle(color: Colors.white),
-//             ),
-//         itemBuilder: (value) => Text(subjectAbbrvMap[value] ?? ""),
-//         values: options);
-//   }
-// }
+  @override
+  Widget build(BuildContext context) {
+    return Selector<Course>(
+        name: title,
+        isNull: selected == null,
+        selected: selected,
+        onSelect: onSelect,
+        selectedItemBuilder: (course) => Text(
+              course.name,
+              style: const TextStyle(color: Colors.white),
+            ),
+        itemBuilder: (course) => Text(course.name),
+        values: options);
+  }
+}
