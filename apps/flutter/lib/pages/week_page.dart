@@ -26,7 +26,7 @@ class WeekPage extends HookWidget {
                 offset: const Offset(0, 4), // changes position of shadow
               ),
             ],
-            color: getDefaultTheme().primary,
+            color: theme.primary,
           ),
           child: SafeArea(
             child: Column(
@@ -182,7 +182,7 @@ class WeekGrid extends StatelessWidget {
         height: h,
         width: w,
         decoration: BoxDecoration(
-          color: getDefaultTheme().primaryDesaturated,
+          color: theme.primaryDesaturated,
           borderRadius: const BorderRadius.all(Radius.circular(8)),
         ),
       ),

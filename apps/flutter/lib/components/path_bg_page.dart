@@ -1,6 +1,6 @@
 import 'package:class_companion/components/util/clip_shadow_path.dart';
 import 'package:class_companion/components/util/clippers.dart';
-import 'package:class_companion/hooks/use_store.dart';
+import 'package:class_companion/static/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
@@ -11,21 +11,19 @@ class PathBackgroundPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = useStore();
     final screenHeight = MediaQuery.of(context).size.height;
 
     final scrollView = SingleChildScrollView(
       child: Container(
-        color: store.theme.lightBg,
+        color: theme.lightBg,
         child: Stack(children: [
-          Container(color: store.theme.lightBg, height: screenHeight / 2),
+          Container(color: theme.lightBg, height: screenHeight / 2),
           ClipShadowPath(
-            shadow: Shadow(
-                color: store.theme.secondary, offset: const Offset(0, 6)),
+            shadow: Shadow(color: theme.secondary, offset: const Offset(0, 6)),
             clipper: BezierClipper(),
             child: Container(
               height: 250,
-              color: store.theme.primary,
+              color: theme.primary,
             ),
           ),
           SafeArea(child: child)
@@ -37,10 +35,10 @@ class PathBackgroundPage extends HookWidget {
       Column(
         children: [
           Expanded(
-            child: Container(color: store.theme.primary),
+            child: Container(color: theme.primary),
           ),
           Expanded(
-            child: Container(color: store.theme.lightBg),
+            child: Container(color: theme.lightBg),
           )
         ],
       ),

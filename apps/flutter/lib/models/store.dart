@@ -29,9 +29,6 @@ abstract class _GlobalStore with Store {
   List<SubstitutionPlan> substitutionPlan = [];
 
   @observable
-  MyTheme theme = getDefaultTheme();
-
-  @observable
   String licenseKey;
 
   @observable
@@ -151,7 +148,6 @@ abstract class _GlobalStore with Store {
   Map<String, dynamic> toJson() {
     return {
       "currentUser": currentUser.toJson(),
-      "theme": theme.toJson(),
       "licenseKey": licenseKey,
     };
   }

@@ -7,6 +7,7 @@ import 'package:class_companion/hooks/use_query.dart';
 import 'package:class_companion/hooks/use_store.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/grade_result.dart';
+import 'package:class_companion/static/colors.dart';
 import 'package:class_companion/util/number_util.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
@@ -52,7 +53,7 @@ class GradesCard extends HookWidget {
         style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: store.theme.primaryText));
+            color: theme.primaryText));
 
     final icon = SvgPicture.asset(
       "assets/icons/muendl.svg",
@@ -81,12 +82,12 @@ class GradesCard extends HookWidget {
       children: [
         Icon(
           Icons.verified,
-          color: store.theme.primaryText,
+          color: theme.primaryText,
         ),
         const SizedBox(width: 6),
         Text(
           "bestätigt",
-          style: TextStyle(color: store.theme.primaryText),
+          style: TextStyle(color: theme.primaryText),
         )
       ],
     );

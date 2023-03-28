@@ -1,6 +1,7 @@
 import 'package:class_companion/components/action_sheet.dart';
 import 'package:class_companion/components/profile/cool_dots.dart';
 import 'package:class_companion/hooks/use_store.dart';
+import 'package:class_companion/static/colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -53,7 +54,7 @@ class ProfileTopPanel extends HookWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-          color: store.theme.primary,
+          color: theme.primary,
           borderRadius:
               const BorderRadius.vertical(bottom: Radius.circular(40))),
       child: SafeArea(
@@ -91,7 +92,7 @@ class ProfileTopPanel extends HookWidget {
                     Container(
                       decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(99999999),
-                          color: store.theme.secondary),
+                          color: theme.secondary),
                       padding: const EdgeInsets.all(24.0),
                       child: Text(
                         user.initials,

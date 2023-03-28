@@ -1,8 +1,8 @@
 import 'package:class_companion/data_hook_widget.dart';
-import 'package:class_companion/hooks/use_store.dart';
 import 'package:class_companion/models/agenda_entry.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/semester.dart';
+import 'package:class_companion/static/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -11,7 +11,6 @@ class AgendaEntryView extends DataHookWidget<AgendaEntry> {
 
   @override
   Widget buildWithData(BuildContext context, AgendaEntry entry) {
-    final store = useStore();
     const padding = EdgeInsets.symmetric(vertical: 12.0, horizontal: 32);
     final course = entry.course;
     if (course == null) {
@@ -50,7 +49,7 @@ class AgendaEntryView extends DataHookWidget<AgendaEntry> {
                             width: circleSize,
                             height: circleSize,
                             decoration: BoxDecoration(
-                                color: store.theme.primary,
+                                color: theme.primary,
                                 borderRadius: BorderRadius.circular(999)),
                           ),
                           const Padding(
@@ -73,12 +72,12 @@ class AgendaEntryView extends DataHookWidget<AgendaEntry> {
                       course.name,
                       style: TextStyle(
                           fontSize: 20,
-                          color: store.theme.primaryText,
+                          color: theme.primaryText,
                           // fontWeight: FontWeight.w600,
                           decoration: entry.isCancelled
                               ? TextDecoration.lineThrough
                               : null,
-                          decorationColor: store.theme.error,
+                          decorationColor: theme.error,
                           decorationThickness: 2),
                     ),
                     entry.isCancelled
@@ -86,8 +85,8 @@ class AgendaEntryView extends DataHookWidget<AgendaEntry> {
                             padding: const EdgeInsets.only(left: 8.0),
                             child: Text(
                               "(Entfall)",
-                              style: TextStyle(
-                                  fontSize: 16, color: store.theme.error),
+                              style:
+                                  TextStyle(fontSize: 16, color: theme.error),
                             ),
                           )
                         : Container()
@@ -104,8 +103,7 @@ class AgendaEntryView extends DataHookWidget<AgendaEntry> {
             height: 60,
             child: Center(
                 child: isOver
-                    ? Icon(Icons.check_rounded,
-                        color: store.theme.primary, size: 32)
+                    ? Icon(Icons.check_rounded, color: theme.primary, size: 32)
                     : const Icon(Icons.navigate_next_rounded)),
           )
         ],

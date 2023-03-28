@@ -3,6 +3,7 @@ import 'package:class_companion/database.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/grade_result.dart';
 import 'package:class_companion/models/store.dart';
+import 'package:class_companion/static/colors.dart';
 import 'package:class_companion/static/theme.dart';
 import 'package:class_companion/util/date_util.dart';
 import 'package:drift/drift.dart' hide Column;
@@ -35,7 +36,7 @@ class AddWrittenGradeForm extends HookWidget {
               style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: store.theme.primary)),
+                  color: theme.primary)),
         ),
         const SizedBox(height: 32),
         DatePicker(

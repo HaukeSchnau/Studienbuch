@@ -1,4 +1,4 @@
-import 'package:class_companion/hooks/use_store.dart';
+import 'package:class_companion/static/colors.dart';
 import 'package:contained_tab_bar_view/contained_tab_bar_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -18,8 +18,6 @@ class MyTabBarView extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = useStore();
-
     return ContainedTabBarView(
       tabs: pages
           .map((page) => Text(
@@ -34,7 +32,7 @@ class MyTabBarView extends HookWidget {
           height: 40,
           background: Container(
             decoration: BoxDecoration(
-                color: store.theme.secondaryDesaturated,
+                color: theme.secondaryDesaturated,
                 borderRadius: BorderRadius.circular(12.0)),
           ),
           labelStyle:
@@ -42,7 +40,7 @@ class MyTabBarView extends HookWidget {
           indicator: ContainerTabIndicator(
             height: 40,
             radius: BorderRadius.circular(12.0),
-            color: store.theme.primary,
+            color: theme.primary,
           ),
           labelColor: Colors.white,
           unselectedLabelColor: Colors.black),

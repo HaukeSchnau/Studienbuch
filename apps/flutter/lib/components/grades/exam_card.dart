@@ -6,6 +6,7 @@ import 'package:class_companion/database.dart';
 import 'package:class_companion/hooks/use_store.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/grade_result.dart';
+import 'package:class_companion/static/colors.dart';
 import 'package:class_companion/util/date_util.dart';
 import 'package:class_companion/util/number_util.dart';
 import 'package:flutter/material.dart';
@@ -127,7 +128,7 @@ class ExamCard extends HookWidget {
 
     return Container(
         decoration: BoxDecoration(
-          color: store.theme.secondaryDesaturated,
+          color: theme.secondaryDesaturated,
           borderRadius: BorderRadius.circular(24),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
@@ -170,9 +171,9 @@ class ExamCard extends HookWidget {
                         ? confirmParent
                         : confirmTeacher,
                     style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: store.theme.error)),
+                        side: BorderSide(color: theme.error)),
                     child: Text("Jetzt bestätigen",
-                        style: TextStyle(color: store.theme.error))),
+                        style: TextStyle(color: theme.error))),
               )
           ],
         ));

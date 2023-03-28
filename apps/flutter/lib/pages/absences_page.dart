@@ -1,6 +1,6 @@
 import 'package:class_companion/database.dart';
 import 'package:class_companion/hooks/use_query.dart';
-import 'package:class_companion/hooks/use_store.dart';
+import 'package:class_companion/static/colors.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -10,8 +10,6 @@ class AbsencesPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = useStore();
-
     final unexcusedAbsences = useQuery(() => database.select(database.absences)
       ..where((tbl) =>
           tbl.isExcusedByParent.equals(false) |
@@ -36,11 +34,11 @@ class AbsencesPage extends HookWidget {
               children: [
                 Icon(
                   Icons.warning_rounded,
-                  color: store.theme.error,
+                  color: theme.error,
                 ),
                 const SizedBox(width: 8),
                 Text("unentschuldigte Fehlzeiten",
-                    style: TextStyle(color: store.theme.error, fontSize: 16)),
+                    style: TextStyle(color: theme.error, fontSize: 16)),
               ],
             ),
             for (final absence in unexcusedAbsences) Text(absence.reason),
@@ -49,11 +47,11 @@ class AbsencesPage extends HookWidget {
               children: [
                 Icon(
                   Icons.verified_rounded,
-                  color: store.theme.primary,
+                  color: theme.primary,
                 ),
                 const SizedBox(width: 8),
                 Text("entschuldigte Fehlzeiten",
-                    style: TextStyle(color: store.theme.primary, fontSize: 16)),
+                    style: TextStyle(color: theme.primary, fontSize: 16)),
               ],
             ),
             for (final absence in excusedAbsences) Text(absence.reason),

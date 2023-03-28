@@ -114,7 +114,7 @@ class App extends HookWidget {
     return MaterialApp.router(
         routerConfig: router,
         title: 'IGS Lilienthal',
-        theme: buildTheme(getDefaultTheme()),
+        theme: buildTheme(theme),
         debugShowCheckedModeBanner: false,
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,

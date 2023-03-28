@@ -17,7 +17,6 @@ class WelcomePage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = getDefaultTheme();
     final store = useState(SetupStore());
     final currentPage = useState<Widget?>(null);
 

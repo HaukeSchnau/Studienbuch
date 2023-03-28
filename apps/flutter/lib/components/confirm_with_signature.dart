@@ -56,6 +56,7 @@ class ConfirmWithSignature extends HookWidget {
                         left: 8,
                         child: SvgPicture.asset(
                           "assets/icons/cross.svg",
+                          // ignore: deprecated_member_use
                           color: Colors.black54,
                           width: 32,
                         ),

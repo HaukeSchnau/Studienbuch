@@ -113,7 +113,7 @@ class LicenseForm extends HookWidget {
                   padding: const EdgeInsets.symmetric(
                       vertical: 16.0, horizontal: 16.0),
                   decoration: BoxDecoration(
-                      color: getDefaultTheme().error,
+                      color: theme.error,
                       borderRadius: BorderRadius.circular(12.0)),
                   child: Text(
                     errorValue,
