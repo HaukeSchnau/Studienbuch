@@ -92,7 +92,11 @@ class WeekGrid extends StatelessWidget {
   const WeekGrid({super.key, required this.weeklyAgenda});
 
   Widget buildEntry(
-      BuildContext context, AgendaEntry entry, double height, double width, ) {
+    BuildContext context,
+    AgendaEntry entry,
+    double height,
+    double width,
+  ) {
     final course = entry.course;
     if (course == null) {
       return const SizedBox();
@@ -162,6 +166,29 @@ class WeekGrid extends StatelessWidget {
     );
   }
 
+  Widget buildCurrentTimeIndicator(double height, double width) {
+    final now = DateTime.now();
+    final time = TimeOfDay.fromDateTime(now);
+    const h = 5.0;
+    final y = getYForTime(time, height) - h / 2;
+    final day = now.weekday - 1;
+    final x = spaceLeft + day * (width - spaceLeft) / 5;
+    final w = (width - spaceLeft) / 5;
+
+    return Positioned(
+      top: y,
+      left: x,
+      child: Container(
+        height: h,
+        width: w,
+        decoration: BoxDecoration(
+          color: getDefaultTheme().primaryDesaturated,
+          borderRadius: const BorderRadius.all(Radius.circular(8)),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
@@ -185,6 +212,7 @@ class WeekGrid extends StatelessWidget {
           for (final day in weeklyAgenda)
             for (final entry in day.entries)
               buildEntry(context, entry, height, width),
+          buildCurrentTimeIndicator(height, width),
         ],
       );
     });
