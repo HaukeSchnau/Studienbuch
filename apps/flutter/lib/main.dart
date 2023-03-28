@@ -1,3 +1,4 @@
+import 'package:class_companion/components/tasks/task_page.dart';
 import 'package:class_companion/database.dart';
 import 'package:class_companion/models/semester.dart';
 import 'package:class_companion/models/store.dart';
@@ -106,6 +107,23 @@ class App extends HookWidget {
                     }
                   },
                 ),
+                GoRoute(
+                    path: "/tasks/:taskId",
+                    builder: (context, state) {
+                      final val = store.value;
+                      if (val != null) {
+                        return Provider(
+                          create: (_) => val,
+                          child: TaskPage(
+                              taskId: int.parse(state.params['taskId']!)),
+                        );
+                      } else {
+                        return Provider(
+                          create: (_) => onSetupFinished,
+                          child: const WelcomePage(),
+                        );
+                      }
+                    }),
                 GoRoute(
                   path: "/absences",
                   builder: (context, state) {

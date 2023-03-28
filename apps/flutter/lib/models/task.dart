@@ -7,6 +7,6 @@ class Tasks extends Table {
   TextColumn get description => text()();
   DateTimeColumn get dueDate => dateTime()();
   IntColumn get course => integer().references(Courses, #id)();
-  TextColumn get images => text().nullable()();
+  TextColumn get images => text().withDefault(const Constant(""))();
   BoolColumn get done => boolean().withDefault(const Constant(false))();
 }

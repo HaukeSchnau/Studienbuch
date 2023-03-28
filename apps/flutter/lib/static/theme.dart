@@ -3,13 +3,15 @@ import 'package:class_companion/static/colors.dart';
 
 TextTheme buildTextTheme(MyTheme theme) {
   return TextTheme(
-      displaySmall: TextStyle(
-          color: theme.primaryText, fontWeight: FontWeight.bold, fontSize: 38),
-      headlineMedium: TextStyle(
-          color: theme.primaryText, fontWeight: FontWeight.bold, fontSize: 30),
-      labelLarge: const TextStyle(
-        fontWeight: FontWeight.bold,
-      ));
+    displaySmall: TextStyle(
+        color: theme.primaryText, fontWeight: FontWeight.bold, fontSize: 38),
+    headlineMedium: TextStyle(
+        color: theme.primaryText, fontWeight: FontWeight.bold, fontSize: 30),
+    labelLarge: const TextStyle(
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    ),
+  );
 }
 
 ElevatedButtonThemeData buildButtonTheme(MyTheme theme) {

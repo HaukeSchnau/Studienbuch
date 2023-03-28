@@ -8,3 +8,11 @@ List<D> useQuery<T extends HasResultSet, D>(
   final snapshot = useStream(stream);
   return snapshot.data ?? [];
 }
+
+List<TypedResult> useQueryJoin<T extends HasResultSet, D>(
+    JoinedSelectStatement<T, D> Function() createQuery,
+    [List<Object?> keys = const []]) {
+  final stream = useMemoized(() => createQuery().watch(), keys);
+  final snapshot = useStream(stream);
+  return snapshot.data ?? [];
+}
