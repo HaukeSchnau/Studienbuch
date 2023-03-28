@@ -73,18 +73,18 @@ class Course {
     required int teacher,
     required int? parentClass,
   }) async {
-    final teacherQuery = database.select(database.teachers)
+    final teacherQuery = db.select(db.teachers)
       ..where((t) => t.id.equals(teacher));
     final teach = await teacherQuery.getSingle();
 
     Class? class_;
     if (parentClass != null) {
-      final classQuery = database.select(database.classes)
+      final classQuery = db.select(db.classes)
         ..where((t) => t.id.equals(parentClass));
       class_ = await classQuery.getSingle();
     }
 
-    final courseTimesQuery = database.select(database.courseTimes)
+    final courseTimesQuery = db.select(db.courseTimes)
       ..where((t) => t.course.equals(id));
     final courseTimes = await courseTimesQuery.get();
 

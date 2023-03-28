@@ -41,7 +41,7 @@ class Absence {
   }) async {
     Course? concreteCourse;
     if (course != null) {
-      final statement = database.select(database.courses)
+      final statement = db.select(db.courses)
         ..where(
           (dbCourse) => dbCourse.id.equals(course),
         );

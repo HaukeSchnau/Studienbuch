@@ -72,7 +72,7 @@ class ExamCard extends HookWidget {
 
       await file.writeAsString(signatureSvg);
 
-      await database.update(database.gradeResults).replace(examResult.copyWith(
+      await db.update(db.gradeResults).replace(examResult.copyWith(
             isConfirmedByTeacher: true,
           ));
     }
@@ -121,7 +121,7 @@ class ExamCard extends HookWidget {
 
       await file.writeAsString(signatureSvg);
 
-      await database.update(database.gradeResults).replace(examResult.copyWith(
+      await db.update(db.gradeResults).replace(examResult.copyWith(
             isConfirmedByParent: true,
           ));
     }

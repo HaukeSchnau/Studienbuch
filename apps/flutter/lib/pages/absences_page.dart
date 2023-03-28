@@ -10,12 +10,12 @@ class AbsencesPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final unexcusedAbsences = useQuery(() => database.select(database.absences)
+    final unexcusedAbsences = useQuery(() => db.select(db.absences)
       ..where((tbl) =>
           tbl.isExcusedByParent.equals(false) |
           tbl.isExcusedByTeacher.equals(false)));
 
-    final excusedAbsences = useQuery(() => database.select(database.absences)
+    final excusedAbsences = useQuery(() => db.select(db.absences)
       ..where((tbl) =>
           tbl.isExcusedByParent.equals(true) &
           tbl.isExcusedByTeacher.equals(true)));

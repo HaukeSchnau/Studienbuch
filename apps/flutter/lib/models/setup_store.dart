@@ -51,20 +51,20 @@ abstract class _SetupStoreBase with Store {
   Future<void> saveToDatabase() async {
     await resetDatabase();
 
-    await database.into(database.classes).insert(Class(
+    await db.into(db.classes).insert(Class(
           id: class_!.id,
           identifierInYear: class_!.identifierInYear,
         ));
 
     for (final course in courses) {
-      await database.into(database.teachers).insert(
+      await db.into(db.teachers).insert(
           Teacher(
               id: course.teacher.id,
               name: course.teacher.name,
               title: course.teacher.title),
           mode: InsertMode.insertOrReplace);
 
-      await database.into(database.courses).insert(CoursesCompanion.insert(
+      await db.into(db.courses).insert(CoursesCompanion.insert(
             id: Value(course.id),
             courseId: Value(
               course.courseId,
@@ -74,7 +74,7 @@ abstract class _SetupStoreBase with Store {
           ));
 
       for (final time in course.times) {
-        await database.into(database.courseTimes).insert(CourseTime(
+        await db.into(db.courseTimes).insert(CourseTime(
               id: time.id,
               duration: time.duration,
               start: TimeOfDay.fromMinutes(time.start),
@@ -85,14 +85,14 @@ abstract class _SetupStoreBase with Store {
     }
 
     for (final course in class_!.courses) {
-      await database.into(database.teachers).insert(
+      await db.into(db.teachers).insert(
           Teacher(
               id: course.teacher.id,
               name: course.teacher.name,
               title: course.teacher.title),
           mode: InsertMode.insertOrReplace);
 
-      await database.into(database.courses).insert(CoursesCompanion.insert(
+      await db.into(db.courses).insert(CoursesCompanion.insert(
             id: Value(course.id),
             courseId: Value(
               course.courseId,
@@ -105,7 +105,7 @@ abstract class _SetupStoreBase with Store {
           ));
 
       for (final time in course.times) {
-        await database.into(database.courseTimes).insert(CourseTime(
+        await db.into(db.courseTimes).insert(CourseTime(
               id: time.id,
               duration: time.duration,
               start: TimeOfDay.fromMinutes(time.start),
@@ -116,13 +116,13 @@ abstract class _SetupStoreBase with Store {
     }
 
     final currentSemesterId = getCurrentSemesterId();
-    await database.into(database.semesters).insert(SemestersCompanion.insert(
+    await db.into(db.semesters).insert(SemestersCompanion.insert(
           id: Value(currentSemesterId),
         ));
 
     for (final course in courses) {
-      await database
-          .into(database.semesterCourses)
+      await db
+          .into(db.semesterCourses)
           .insert(SemesterCoursesCompanion.insert(
             semester: currentSemesterId,
             course: course.id,
@@ -130,8 +130,8 @@ abstract class _SetupStoreBase with Store {
     }
 
     for (final course in class_!.courses) {
-      await database
-          .into(database.semesterCourses)
+      await db
+          .into(db.semesterCourses)
           .insert(SemesterCoursesCompanion.insert(
             semester: currentSemesterId,
             course: course.id,

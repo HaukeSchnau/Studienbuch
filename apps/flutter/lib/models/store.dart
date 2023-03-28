@@ -8,7 +8,6 @@ import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/semester.dart';
 import 'package:class_companion/models/substitution_plan.dart';
 import 'package:class_companion/models/user.dart';
-import 'package:class_companion/static/colors.dart';
 import 'package:class_companion/util/date_util.dart';
 import 'package:class_companion/util/list_util.dart';
 import 'package:drift/drift.dart';
@@ -57,28 +56,28 @@ abstract class _GlobalStore with Store {
   }
 
   Future<void> init() async {
-    database.select(database.absences).watch().listen((event) {
+    db.select(db.absences).watch().listen((event) {
       absences = event;
     });
 
-    database.select(database.courses).watch().listen((event) {
+    db.select(db.courses).watch().listen((event) {
       courses = event;
     });
 
-    database.select(database.semesters).watch().listen((event) {
+    db.select(db.semesters).watch().listen((event) {
       semesters = event;
     });
 
     final currentSemesterId = getCurrentSemesterId();
-    final currentSemester = await (database.select(database.semesters)
+    final currentSemester = await (db.select(db.semesters)
           ..where((tbl) => tbl.id.equals(currentSemesterId)))
         .getSingleOrNull();
     if (currentSemester == null) {
-      database
-          .into(database.semesters)
+      db
+          .into(db.semesters)
           .insert(SemestersCompanion.insert(id: Value(currentSemesterId)));
     }
-    semesters = await database.select(database.semesters).get();
+    semesters = await db.select(db.semesters).get();
     for (final semester in semesters) {
       await semester.courses.load();
     }
@@ -189,7 +188,7 @@ Future<GlobalStore?> loadStore() async {
       return store;
     }
   } catch (e, stacktrace) {
-    debugPrint("Error while loading store: $e\n" + stacktrace.toString());
+    debugPrint("Error while loading store: $e\n$stacktrace");
   }
   return null;
 }

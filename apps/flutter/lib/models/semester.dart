@@ -35,11 +35,11 @@ class Semester {
   Semester({
     required this.id,
   }) : courses = LazyList(() async {
-          final semesterCoursesStatement = database
-              .select(database.semesterCourses)
+          final semesterCoursesStatement = db
+              .select(db.semesterCourses)
             ..where((sc) => sc.semester.equals(id));
           final semesterCourses = await semesterCoursesStatement.get();
-          final coursesStatement = database.select(database.courses)
+          final coursesStatement = db.select(db.courses)
             ..where((c) => c.id.isIn(semesterCourses.map((sc) => sc.course)));
           return await coursesStatement.get();
         });

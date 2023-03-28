@@ -62,7 +62,7 @@ class AddWrittenGradeForm extends HookWidget {
             ),
             onPressed: isValid()
                 ? () async {
-                    await database.into(database.gradeResults).insert(
+                    await db.into(db.gradeResults).insert(
                         GradeResultsCompanion.insert(
                             date: date.value,
                             result: double.parse(resultStr.value),

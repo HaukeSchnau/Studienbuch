@@ -95,8 +95,8 @@ class RegisterAbsenceForm extends HookWidget {
             ),
             onPressed: isValid()
                 ? () async {
-                    await database.batch((batch) => batch.insertAll(
-                          database.absences,
+                    await db.batch((batch) => batch.insertAll(
+                          db.absences,
                           absenceTimes.value.entries
                               .where((e) => e.value)
                               .map(

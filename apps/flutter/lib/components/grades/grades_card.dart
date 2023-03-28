@@ -24,7 +24,7 @@ class GradesCard extends HookWidget {
     final store = useStore();
 
     final oralGrades = useQuery(
-      () => database.select(database.gradeResults)
+      () => db.select(db.gradeResults)
         ..where((tbl) =>
             tbl.course.equals(course.id) &
             tbl.type.equalsValue(GradeResultType.oral))
@@ -35,7 +35,7 @@ class GradesCard extends HookWidget {
     );
 
     final writtenGrades = useQuery(
-      () => database.select(database.gradeResults)
+      () => db.select(db.gradeResults)
         ..where((tbl) =>
             tbl.course.equals(course.id) &
             tbl.type.equalsValue(GradeResultType.written))

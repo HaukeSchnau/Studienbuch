@@ -39,7 +39,7 @@ class MyDatabase extends _$MyDatabase {
   }
 }
 
-MyDatabase database = MyDatabase();
+MyDatabase db = MyDatabase();
 
 Future<File> get _dbFile async {
   final dbFolder = await getApplicationDocumentsDirectory();
@@ -47,12 +47,12 @@ Future<File> get _dbFile async {
 }
 
 Future<void> resetDatabase() async {
-  await database.close();
-  
+  await db.close();
+
   final file = await _dbFile;
   await file.delete();
 
-  database = MyDatabase();
+  db = MyDatabase();
 }
 
 LazyDatabase _openConnection() {
