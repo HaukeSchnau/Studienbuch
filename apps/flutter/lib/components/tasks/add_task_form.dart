@@ -26,6 +26,8 @@ class AddTaskForm extends HookWidget {
     final selectedDate = useState<DateTime?>(null);
     final store = useStore();
     final selectedCourse = useState<Course?>(null);
+    useListenable(titleController);
+    useListenable(descController);
 
     // TODO replace with date picker
     Future<DateTime?> openDatePicker() {
@@ -155,6 +157,8 @@ class AddTaskForm extends HookWidget {
                   style: TextStyle(),
                 ),
                 OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: theme.primaryText)),
                   onPressed: () async {
                     final newDate = await openDatePicker();
                     if (newDate != null) {
@@ -167,8 +171,12 @@ class AddTaskForm extends HookWidget {
             ),
             const Padding(padding: EdgeInsets.only(top: 8.0)),
             Align(
-                alignment: Alignment.centerRight,
-                child: ElevatedButton(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: disabledColor,
+                  ),
                   onPressed: isValid()
                       ? () async {
                           var appDir = await getApplicationDocumentsDirectory();
@@ -196,8 +204,10 @@ class AddTaskForm extends HookWidget {
                           Navigator.pop(context);
                         }
                       : null,
-                  child: const Text("SPEICHERN"),
-                )),
+                  child: const Text(
+                    "Speichern",
+                  )),
+            ),
             Padding(
               padding: EdgeInsets.only(
                   top: MediaQuery.of(context).viewInsets.bottom),

@@ -28,7 +28,18 @@ class TasksView extends HookWidget {
               db.courses.id.equalsExp(db.tasks.course),
             )
           ],
-        )).map((row) {
+        )..orderBy(
+            [
+              OrderingTerm(
+                expression: db.tasks.done,
+                mode: OrderingMode.asc,
+              ),
+              OrderingTerm(
+                expression: db.tasks.dueDate,
+                mode: OrderingMode.asc,
+              )
+            ],
+          )).map((row) {
       final task = row.readTable(db.tasks);
       final course = row.readTable(db.courses);
       return TaskWithCourse(task, course);
@@ -52,13 +63,13 @@ class TasksView extends HookWidget {
       ));
     } else {
       return SizedBox(
-        height: 185.0 * crossAxisCount,
+        height: 225.0 * crossAxisCount,
         child: GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
               crossAxisSpacing: 15.0,
               mainAxisSpacing: 32.0,
-              childAspectRatio: 1 / 1.2),
+              childAspectRatio: 1 / 1.1),
           scrollDirection: Axis.horizontal,
           padding: padding,
           itemCount: tasks.length,
@@ -91,6 +102,12 @@ class TasksView extends HookWidget {
                         color: titleColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 20),
+                  ),
+                  Text(
+                    task.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
                   Expanded(
                     child: Container(),
