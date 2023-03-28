@@ -16,7 +16,7 @@ class RegisterAbsenceForm extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = useState(DateTime.now().startOfDay);
+    final date = useState(DateTime.now().orNextWeekday);
     final reason = useState("");
     final agenda = store.getAgendaForDay(date.value);
     final absenceTimes = useState<Map<Course, bool>>({

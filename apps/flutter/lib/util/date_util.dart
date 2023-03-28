@@ -7,6 +7,16 @@ extension Date on DateTime {
   DateTime get startOfWeek =>
       startOfDay.subtract(Duration(days: weekday - DateTime.monday)).startOfDay;
 
+  DateTime get orNextWeekday {
+    if (weekday == DateTime.saturday) {
+      return add(const Duration(days: 2)).startOfDay;
+    }
+    if (weekday == DateTime.sunday) {
+      return add(const Duration(days: 1)).startOfDay;
+    }
+    return startOfDay;
+  }
+
   bool get isToday {
     final now = DateTime.now().startOfDay;
 

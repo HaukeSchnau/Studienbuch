@@ -19,7 +19,7 @@ class AddWrittenGradeForm extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = useState(DateTime.now().startOfDay);
+    final date = useState(DateTime.now().orNextWeekday);
     final resultStr = useState<String>("");
 
     bool isValid() {

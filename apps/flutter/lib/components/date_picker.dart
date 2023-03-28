@@ -34,6 +34,8 @@ class DatePicker extends StatelessWidget {
                   initialDate: date,
                   firstDate: DateTime(2020),
                   lastDate: DateTime(2050),
+                  selectableDayPredicate: (DateTime val) =>
+                      val.weekday != 6 && val.weekday != 7,
                 ).then((newDate) {
                   if (newDate != null) {
                     onDateChanged(newDate.startOfDay);
