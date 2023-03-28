@@ -78,9 +78,6 @@ class ConfirmOralGradeButton extends HookWidget {
                   TextSpan(
                       text: store.currentUser.name,
                       style: const TextStyle(fontWeight: FontWeight.bold)),
-                  TextSpan(
-                      text: store.currentUser.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
                   const TextSpan(text: " am "),
                   TextSpan(
                       text: result.date.format(),

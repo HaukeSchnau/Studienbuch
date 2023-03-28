@@ -18,84 +18,91 @@ class CoursePage extends HookWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         body: PathBackgroundPage(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(
-              right: 32.0,
-              left: 16,
-              top: 16,
-              bottom: 16,
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.of(context).pop()),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 4),
-                          Text(course.name,
+      child: ConstrainedBox(
+        constraints:
+            BoxConstraints(minHeight: MediaQuery.of(context).size.height),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(
+                right: 32.0,
+                left: 16,
+                top: 16,
+                bottom: 16,
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      IconButton(
+                          icon:
+                              const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Navigator.of(context).pop()),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 4),
+                            Text(course.name,
+                                style: const TextStyle(
+                                    fontSize: 32,
+                                    height: 1.2,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white)),
+                            Text(
+                              semester.name,
                               style: const TextStyle(
-                                  fontSize: 32,
-                                  height: 1.2,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white)),
-                          Text(
-                            semester.name,
-                            style: const TextStyle(
-                                fontSize: 14,
-                                color: Color.fromRGBO(255, 255, 255, 8),
-                                fontStyle: FontStyle.italic),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            course.teacher.longFormalName,
-                            style: const TextStyle(
-                                fontSize: 18, color: Colors.white),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4))
+                                  fontSize: 14,
+                                  color: Color.fromRGBO(255, 255, 255, 8),
+                                  fontStyle: FontStyle.italic),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              course.teacher.longFormalName,
+                              style: const TextStyle(
+                                  fontSize: 18, color: Colors.white),
+                            ),
                           ],
                         ),
-                        padding: const EdgeInsets.all(16),
-                        child: SvgPicture.asset(
-                          getCourseIcon(course.name),
-                          height: 64,
-                        ))
-                  ],
-                ),
-                const SizedBox(height: 32),
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0),
-                  child: GradesCard(course: course),
-                ),
-              ],
+                      ),
+                      Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4))
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: SvgPicture.asset(
+                            getCourseIcon(course.name),
+                            height: 64,
+                          ))
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0),
+                    child: GradesCard(course: course),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 32),
-          BottomPanels(
-              blueChild: TasksOverview(
-            course: course,
-          ))
-        ],
+            const SizedBox(height: 32),
+            BottomPanels(
+                blueChild: TasksOverview(
+              course: course,
+            ))
+          ],
+        ),
       ),
     ));
   }
