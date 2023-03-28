@@ -99,7 +99,9 @@ Future<void> confirmWithSignature(
     BuildContext context, Widget Function(BuildContext context) builder,
     {required String title,
     required String signer,
-    required String fileName, required VoidCallback onSuccess}) async {
+    String? fileName,
+    List<String>? fileNames,
+    required VoidCallback onSuccess}) async {
   final signatureSvg = await Navigator.of(context).push<String>(
     MaterialPageRoute(
       builder: (context) => ConfirmWithSignature(
@@ -111,10 +113,20 @@ Future<void> confirmWithSignature(
   );
 
   if (signatureSvg != null) {
-    final directory = await getApplicationDocumentsDirectory();
-    final file = File("${directory.path}/$fileName");
+    if (fileName != null) {
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File("${directory.path}/$fileName");
 
-    await file.writeAsString(signatureSvg);
+      await file.writeAsString(signatureSvg);
+    }
+    if(fileNames != null) {
+      final directory = await getApplicationDocumentsDirectory();
+      for (final fileName in fileNames) {
+        final file = File("${directory.path}/$fileName");
+
+        await file.writeAsString(signatureSvg);
+      }
+    }
     onSuccess();
   }
 }

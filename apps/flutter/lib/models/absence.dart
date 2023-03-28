@@ -57,3 +57,31 @@ class Absence {
 
   bool get isExcused => isExcusedByTeacher && isExcusedByParent;
 }
+
+class AbsenceGroup {
+  final List<Absence> children;
+  final DateTime date;
+  final String reason;
+  final bool isExcusedByTeacher;
+  final bool isExcusedByParent;
+
+  AbsenceGroup({
+    required this.children,
+    required this.date,
+    required this.reason,
+    required this.isExcusedByTeacher,
+    required this.isExcusedByParent,
+  });
+  
+  bool get isExcused => isExcusedByTeacher && isExcusedByParent;
+}
+
+AbsenceGroup mapAbsenceToGroup(Absence absence) {
+  return AbsenceGroup(
+    children: [absence],
+    date: absence.date,
+    reason: absence.reason,
+    isExcusedByTeacher: absence.isExcusedByTeacher,
+    isExcusedByParent: absence.isExcusedByParent,
+  );
+}

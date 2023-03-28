@@ -1,25 +1,57 @@
 import 'package:class_companion/components/absences/absence_view.dart';
 import 'package:class_companion/database.dart';
 import 'package:class_companion/hooks/use_query.dart';
+import 'package:class_companion/models/absence.dart';
 import 'package:class_companion/static/colors.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:tuple/tuple.dart';
 
 class AbsencesPage extends HookWidget {
   const AbsencesPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final unexcusedAbsences = useQuery(() => db.select(db.absences)
+    final unexcusedAbsencesByTeacher = useQuery(() => db.select(db.absences)
       ..where((tbl) =>
-          tbl.isExcusedByParent.equals(false) |
+          tbl.isExcusedByParent.equals(true) &
           tbl.isExcusedByTeacher.equals(false)));
+
+    final unexcusedAbsencesByParent = useQuery(() => db.select(db.absences)
+      ..where((tbl) => tbl.isExcusedByParent.equals(false)));
+
+    final absenceGroupsByParent = useMemoized(() {
+      final groups = <Tuple2<String, DateTime>, AbsenceGroup>{};
+      for (final absence in unexcusedAbsencesByParent) {
+        final key = Tuple2(absence.reason, absence.date);
+        if (groups.containsKey(key)) {
+          groups[key]!.children.add(absence);
+        } else {
+          groups[key] = AbsenceGroup(
+            date: absence.date,
+            reason: absence.reason,
+            children: [absence],
+            isExcusedByParent: absence.isExcusedByParent,
+            isExcusedByTeacher: absence.isExcusedByTeacher,
+          );
+        }
+      }
+      return groups.values;
+    }, [unexcusedAbsencesByParent]);
+
+    final absenceGroupsByTeacher = useMemoized(() {
+      return unexcusedAbsencesByTeacher.map(mapAbsenceToGroup);
+    }, [unexcusedAbsencesByTeacher]);
 
     final excusedAbsences = useQuery(() => db.select(db.absences)
       ..where((tbl) =>
           tbl.isExcusedByParent.equals(true) &
           tbl.isExcusedByTeacher.equals(true)));
+
+    final absenceGroupsExcused = useMemoized(() {
+      return excusedAbsences.map(mapAbsenceToGroup);
+    }, [excusedAbsences]);
 
     return Scaffold(
       appBar: AppBar(
@@ -43,10 +75,15 @@ class AbsencesPage extends HookWidget {
               ],
             ),
             const SizedBox(height: 16),
-            for (final absence in unexcusedAbsences)
+            for (final absenceGroup in absenceGroupsByTeacher)
               Padding(
                 padding: const EdgeInsets.only(bottom: 16.0),
-                child: AbsenceView(absence: absence),
+                child: AbsenceView(absenceGroup: absenceGroup),
+              ),
+            for (final absenceGroup in absenceGroupsByParent)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: AbsenceView(absenceGroup: absenceGroup),
               ),
             const SizedBox(height: 64),
             Row(
@@ -61,10 +98,10 @@ class AbsencesPage extends HookWidget {
               ],
             ),
             const SizedBox(height: 16),
-            for (final absence in excusedAbsences)
+            for (final absence in absenceGroupsExcused)
               Padding(
                 padding: const EdgeInsets.only(bottom: 16.0),
-                child: AbsenceView(absence: absence),
+                child: AbsenceView(absenceGroup: absence),
               ),
           ],
         ),
