@@ -17,9 +17,9 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
   title: "ClassCompanion API",
   version: "1.0.0",
   baseUrl:
-    process.env.NODE_ENV === "production"
-      ? "https://classcompanion.haukeschnau.de"
-      : "http://localhost:3000",
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3000"
+      : "https://classcompanion.haukeschnau.de",
 });
 
 // export type definition of API
