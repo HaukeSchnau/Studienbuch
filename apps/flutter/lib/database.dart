@@ -52,7 +52,7 @@ Future<void> resetDatabase() async {
   await db.close();
 
   final file = await _dbFile;
-  await file.delete();
+  if (await file.exists()) await file.delete();
 
   db = MyDatabase();
 }

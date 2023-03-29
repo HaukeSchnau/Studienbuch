@@ -75,7 +75,7 @@ class ProfileSetupPage extends HookWidget {
               isValidInput: isValidInput(),
               loading: false,
               onActivate: () {
-                store.name = nameController.text;
+                store.name = nameController.text.trim();
                 store.year = selectedYear.value;
                 store.isOfAge = isOfAge.value;
                 onNext(ClassesCoursesSetupPage(store: store, onNext: onNext));
