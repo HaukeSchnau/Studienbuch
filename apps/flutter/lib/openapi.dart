@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:openapi_generator_annotations/openapi_generator_annotations.dart';
 import 'package:class_companion_api/api.dart';
 
@@ -14,4 +15,7 @@ import 'package:class_companion_api/api.dart';
 )
 class MyOpenApi extends OpenapiGeneratorConfig {}
 
-final apiInstance = DefaultApi();
+final apiInstance = DefaultApi(ApiClient(
+    basePath: kDebugMode
+        ? "http://localhost:3000/api"
+        : "https://classcompanion.haukeschnau.de/api"));

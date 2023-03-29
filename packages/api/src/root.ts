@@ -16,7 +16,10 @@ export const appRouter = createTRPCRouter({
 export const openApiDocument = generateOpenApiDocument(appRouter, {
   title: "ClassCompanion API",
   version: "1.0.0",
-  baseUrl: "http://localhost:3000/api",
+  baseUrl:
+    process.env.NODE_ENV === "production"
+      ? "https://classcompanion.haukeschnau.de"
+      : "http://localhost:3000",
 });
 
 // export type definition of API
