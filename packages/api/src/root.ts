@@ -18,8 +18,8 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
   version: "1.0.0",
   baseUrl:
     process.env.NODE_ENV === "development"
-      ? "http://localhost:3000"
-      : "https://classcompanion.haukeschnau.de",
+      ? "http://localhost:3000/api"
+      : "https://classcompanion.haukeschnau.de/api",
 });
 
 // export type definition of API
