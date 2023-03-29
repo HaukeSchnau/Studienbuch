@@ -19,7 +19,6 @@ export const licenseRouter = createTRPCRouter({
       if (!licenseKey) {
         return "INVALID" as const;
       }
-      console.log(licenseKey);
       if (licenseKey.isSuperKey) {
         return "VALID" as const;
       }
