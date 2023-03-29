@@ -1,5 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="de.haukeschnau.class_companion">
+    <uses-permission android:name="android.permission.INTERNET"/>
+
    <application
         android:label="class_companion"
         android:name="${applicationName}"
