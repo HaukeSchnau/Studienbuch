@@ -1,4 +1,5 @@
 import 'package:class_companion/components/confirm_with_signature.dart';
+import 'package:class_companion/components/util/card.dart';
 import 'package:class_companion/confirmation_status_view.dart';
 import 'package:class_companion/database.dart';
 import 'package:class_companion/hooks/use_store.dart';
@@ -123,13 +124,12 @@ class AbsenceView extends HookWidget {
           }
         });
 
-    return Container(
-        decoration: BoxDecoration(
-          color: absenceGroup.isExcused
-              ? theme.primaryDesaturated
-              : theme.errorDesaturated,
-          borderRadius: BorderRadius.circular(24),
-        ),
+    return MyCard(
+        color: absenceGroup.isExcused
+            ? theme.primaryDesaturated
+            : theme.errorDesaturated,
+        borderRadius: BorderRadius.circular(24),
+        shadow: false,
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

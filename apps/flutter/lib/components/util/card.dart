@@ -11,6 +11,7 @@ class MyCard extends StatelessWidget {
   final void Function()? onTap;
   final bool disabled;
   final Clip clipBehavior;
+  final BorderRadius borderRadius;
 
   const MyCard(
       {super.key,
@@ -23,7 +24,8 @@ class MyCard extends StatelessWidget {
       this.shadow = true,
       this.onTap,
       this.disabled = false,
-      this.clipBehavior = Clip.none});
+      this.clipBehavior = Clip.none,
+      this.borderRadius = const BorderRadius.all(Radius.circular(36))});
 
   @override
   Widget build(BuildContext context) {
@@ -48,13 +50,13 @@ class MyCard extends StatelessWidget {
                         blurRadius: 24)
                   ]
                 : [],
-            borderRadius: const BorderRadius.all(Radius.circular(36))),
+            borderRadius: borderRadius),
         child: onTap == null
             ? paddedChild
             : Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(36),
+                  borderRadius: borderRadius,
                   splashColor: const Color.fromRGBO(0, 0, 0, .3),
                   onTap: onTap,
                   child: paddedChild,
