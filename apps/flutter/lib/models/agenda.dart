@@ -36,9 +36,15 @@ abstract class _AgendaBase with Store {
     final entriesAhead = entries.where((element) => !element.isOver);
 
     if (entriesAhead.isEmpty && autoAdjust) {
-      final nextDate = start.weekday == DateTime.friday
-          ? start.add(const Duration(days: 3))
-          : start.add(const Duration(days: 1));
+      DateTime nextDate;
+      if (start.weekday == DateTime.friday) {
+        nextDate = start.add(const Duration(days: 3));
+      } else if (start.weekday == DateTime.saturday) {
+        nextDate = start.add(const Duration(days: 2));
+      } else {
+        nextDate = start.add(const Duration(days: 1));
+      }
+
       date = nextDate;
       this.entries = _buildEntries(courses, nextDate, substitutions);
     } else {
@@ -96,11 +102,10 @@ List<AgendaEntry> _buildEntries(
   for (final course in courses) {
     for (final time in course.courseTimes) {
       if (time.weekday == date.weekday) {
-        final substitution = substitutions
-            .firstWhereOrNull((sub) => sub.agendaEntry.start == date.copyWith(
-                hour: time.start.hour, minute: time.start.minute
-            ));
-            
+        final substitution = substitutions.firstWhereOrNull((sub) =>
+            sub.agendaEntry.start ==
+            date.copyWith(hour: time.start.hour, minute: time.start.minute));
+
         entries.add(AgendaEntry(
             course: course,
             recurringTime: time,
