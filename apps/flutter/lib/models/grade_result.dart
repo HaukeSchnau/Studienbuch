@@ -32,3 +32,8 @@ extension GradeResultTypeExt on GradeResultType {
 extension GradeResultExt on GradeResult {
   bool get isConfirmed => isConfirmedByParent && isConfirmedByTeacher;
 }
+
+bool validateGradeString(String grade) {
+  final parsed = double.tryParse(grade.replaceAll(",", "."));
+  return parsed != null && parsed >= 0 && parsed <= 15;
+}

@@ -29,8 +29,7 @@ class AddOralGradeForm extends HookWidget {
     useListenable(resultController);
 
     bool isValid() {
-      final regex = RegExp(r"^[1-6]([,.][0-9]{1,2})?$");
-      return regex.hasMatch(resultController.text);
+      return validateGradeString(resultController.text);
     }
 
     final mostRecentConfirmedOralGrade = this.mostRecentConfirmedOralGrade;

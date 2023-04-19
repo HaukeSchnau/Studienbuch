@@ -23,8 +23,7 @@ class AddWrittenGradeForm extends HookWidget {
     final resultStr = useState<String>("");
 
     bool isValid() {
-      final regex = RegExp(r"^[1-6]([,.][0-9]{1,2})?$");
-      return regex.hasMatch(resultStr.value);
+      return validateGradeString(resultStr.value);
     }
 
     return Column(
