@@ -1,9 +1,11 @@
 import 'package:class_companion/components/confirm_with_signature.dart';
+import 'package:class_companion/components/confirmation_info.dart';
 import 'package:class_companion/components/util/card.dart';
 import 'package:class_companion/confirmation_status_view.dart';
 import 'package:class_companion/database.dart';
 import 'package:class_companion/hooks/use_store.dart';
 import 'package:class_companion/models/absence.dart';
+import 'package:class_companion/pages/confirmation_view.dart';
 import 'package:class_companion/static/colors.dart';
 import 'package:class_companion/util/date_util.dart';
 import 'package:drift/drift.dart' hide Column;
@@ -23,47 +25,7 @@ class AbsenceView extends HookWidget {
       assert(absenceGroup.children.length == 1);
       final absence = absenceGroup.children.first;
       confirmWithSignature(
-          context,
-          (ctx) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Bitte lasse deinen Lehrer hier unterschreiben:",
-                      style: TextStyle(color: Colors.black.withOpacity(.8))),
-                  const SizedBox(height: 16),
-                  Text.rich(
-                      TextSpan(style: const TextStyle(fontSize: 16), children: [
-                    const TextSpan(
-                      text: "Ich, ",
-                    ),
-                    TextSpan(
-                        text: absence.course.teacher.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const TextSpan(
-                        text: " bestätige, dass der/die Schüler/in "),
-                    TextSpan(
-                        text: store.currentUser.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const TextSpan(text: " am "),
-                    TextSpan(
-                        text: absence.date.format(),
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const TextSpan(text: " in dem Fach "),
-                    TextSpan(
-                        text: absence.course.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const TextSpan(
-                        text: " mit folgender Begründung gefehlt hat:"),
-                  ])),
-                  const SizedBox(height: 8),
-                  Text(
-                    absence.reason,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+          context, (ctx) => buildAbsenceInfoTeacher(absence, store.currentUser),
           title: "Fehlzeit entschuldigen (Lehrer)",
           signer: "Unterschrift von ${absence.course.teacher.name}",
           fileName: "absence-excuse-${absence.id}-teacher.svg",
@@ -74,42 +36,8 @@ class AbsenceView extends HookWidget {
               )));
     }
 
-    excuseParent() => confirmWithSignature(
-            context,
-            (ctx) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Bitte lasse deine Eltern hier unterschreiben:",
-                        style: TextStyle(color: Colors.black.withOpacity(.8))),
-                    const SizedBox(height: 16),
-                    Text.rich(TextSpan(
-                        style: const TextStyle(fontSize: 16),
-                        children: [
-                          const TextSpan(
-                            text: "Ich bestätige, dass mein Kind ",
-                          ),
-                          TextSpan(
-                              text: store.currentUser.name,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold)),
-                          const TextSpan(text: " am "),
-                          TextSpan(
-                              text: absenceGroup.date.format(),
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold)),
-                          const TextSpan(
-                              text: " mit folgender Begründung gefehlt hat:"),
-                        ])),
-                    const SizedBox(height: 8),
-                    Text(
-                      absenceGroup.reason,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+    excuseParent() => confirmWithSignature(context,
+            (ctx) => buildAbsenceInfoParent(absenceGroup, store.currentUser),
             title: "Fehlzeit entschuldigen (Eltern)",
             signer: "Unterschrift der Eltern",
             fileNames: absenceGroup.children
@@ -131,6 +59,8 @@ class AbsenceView extends HookWidget {
         borderRadius: BorderRadius.circular(24),
         shadow: false,
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (ctx) => const ConfirmationView())),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
