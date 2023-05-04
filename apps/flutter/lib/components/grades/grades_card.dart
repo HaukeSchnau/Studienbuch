@@ -220,7 +220,7 @@ class GradesCard extends HookWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    writtenInfoText
+                    if (writtenGrades.isNotEmpty) writtenInfoText
                   ],
                 ))
               ],
