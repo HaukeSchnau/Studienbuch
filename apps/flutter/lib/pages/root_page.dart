@@ -28,11 +28,6 @@ const pages = [
     icon: Icons.person_rounded,
     widget: ProfilePage(),
   ),
-  Page(
-    name: "Oberstufe",
-    icon: Icons.school_rounded,
-    widget: DummyPage(),
-  )
 ];
 
 class RootPage extends HookWidget {
