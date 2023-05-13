@@ -46,3 +46,7 @@ yarn-error.log*
 
 # turbo
 .turbo
+
+pyenv
+cache
+*.pyc
