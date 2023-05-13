@@ -1,8 +1,8 @@
 import { prisma, type Role } from "@acme/db";
 
-import iservUsers from "../iservUsers.json";
+import iservUsers from "../../iservUsers.json";
 
-export const copyIservUsers = async () => {
+export const seedUsers = async () => {
   for (const user of iservUsers) {
     const newUser = await prisma.user.create({
       data: {
