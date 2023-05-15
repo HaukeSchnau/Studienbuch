@@ -119,7 +119,7 @@ const parseTime = (time: string) => {
 };
 
 export const seedClasses = async () => {
-  const path = "./cache/classes_json";
+  const path = "./cache/classes_csv";
   const filenames = await fs.readdir(path);
 
   const rowSchema = z.object({

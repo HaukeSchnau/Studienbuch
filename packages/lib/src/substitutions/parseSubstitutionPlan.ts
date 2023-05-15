@@ -2,6 +2,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import utc from "dayjs/plugin/utc";
 import pdfTableExtractor, { type PageTable } from "pdf-table-extractor";
+
 import { compareMaps } from "../equality";
 
 dayjs.extend(utc);
@@ -60,13 +61,13 @@ export const parseTable = function (file: string) {
 
         let date = dayjs.utc(dateStr, "DD.MM.").startOf("day");
         if (!date.isValid()) {
-          date = dayjs(dateStr, "DD.M.");
+          date = dayjs.utc(dateStr, "DD.M.");
         }
         if (!date.isValid()) {
-          date = dayjs(dateStr, "D.M.");
+          date = dayjs.utc(dateStr, "D.M.");
         }
         if (!date.isValid()) {
-          date = dayjs(dateStr, "D.MM.");
+          date = dayjs.utc(dateStr, "D.MM.");
         }
 
         let counter = 0;
@@ -102,6 +103,8 @@ export const parseTable = function (file: string) {
                 existingEntry.classes || parsedEntry.classes;
               existingEntry.subject =
                 existingEntry.subject || parsedEntry.subject;
+              existingEntry.readableSubject =
+                existingEntry.readableSubject || parsedEntry.readableSubject;
               existingEntry.room = existingEntry.room || parsedEntry.room;
             }
             counter++;
@@ -120,6 +123,7 @@ type ProtoSubstitution = {
   lessonEnd: number;
   classes?: string[];
   subject?: string;
+  readableSubject?: string;
   room?: string;
   type?: string;
 };
@@ -158,16 +162,12 @@ function parseEntry(
 
   const classesStr = getAttr("Klasse(n)");
   const classes = classesStr
-    ?.split(",")
-    .map((e) => e.trim())
-    .map((e) => {
-      if (e.endsWith(".")) return e.substring(0, e.length - 1);
-      if (e.startsWith("(") && e.endsWith(")"))
-        return e.substring(1, e.length - 1);
-      return e;
-    })
-    .map((e) => e.trim())
-    .filter((e) => e && e.length);
+    ? trim(trim(classesStr, "("), ")")
+        .trim()
+        .split(",")
+        .map((e) => trim(e, ".").trim())
+        .filter((e) => e)
+    : undefined;
 
   const subject = getAttr("(Fach)")?.toLowerCase();
 
@@ -175,7 +175,9 @@ function parseEntry(
     console.log("Failed to parse row: " + JSON.stringify(row));
     return null;
   }
-  const room = getAttr("Raum");
+  let room = getAttr("Raum");
+  if (room === "---") room = undefined;
+
   const type = getAttr("Art");
 
   return {
@@ -184,7 +186,18 @@ function parseEntry(
     lessonEnd,
     classes,
     subject,
+    readableSubject: getAttr("(Fach)")?.replaceAll("- ", "-"),
     room,
     type,
   };
+}
+function trim(str: string, ch: string) {
+  let start = 0,
+    end = str.length;
+
+  while (start < end && str[start] === ch) ++start;
+
+  while (end > start && str[end - 1] === ch) --end;
+
+  return start > 0 || end < str.length ? str.substring(start, end) : str;
 }

@@ -134,7 +134,7 @@ model Substitution {
 
     type SubstitutionType?
 
-    @@unique([date, lessonStart, courseId, room], name: "substitutionIdentifier")
+    @@unique([date, lessonStart, courseId], name: "substitutionIdentifier")
 }
 
 enum SubstitutionType {
