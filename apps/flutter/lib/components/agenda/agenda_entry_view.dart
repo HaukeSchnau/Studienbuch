@@ -2,6 +2,7 @@ import 'package:class_companion/data_hook_widget.dart';
 import 'package:class_companion/models/agenda_entry.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/semester.dart';
+import 'package:class_companion/models/substitution.dart';
 import 'package:class_companion/static/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -74,17 +75,17 @@ class AgendaEntryView extends DataHookWidget<AgendaEntry> {
                           fontSize: 20,
                           color: theme.primaryText,
                           // fontWeight: FontWeight.w600,
-                          decoration: entry.isCancelled
+                          decoration: entry.isSubstituted
                               ? TextDecoration.lineThrough
                               : null,
                           decorationColor: theme.error,
                           decorationThickness: 2),
                     ),
-                    entry.isCancelled
+                    entry.isSubstituted
                         ? Padding(
                             padding: const EdgeInsets.only(left: 8.0),
                             child: Text(
-                              "(Entfall)",
+                              "(${typeStringMap[entry.substitution?.type]})",
                               style:
                                   TextStyle(fontSize: 16, color: theme.error),
                             ),

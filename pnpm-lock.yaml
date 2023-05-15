@@ -132,6 +132,7 @@ importers:
       '@acme/db': '*'
       '@trpc/client': ^10.14.0
       '@trpc/server': ^10.14.0
+      dayjs: ^1.11.7
       eslint: ^8.34.0
       eslint-config-acme: 0.0.0
       superjson: 1.9.1
@@ -143,6 +144,7 @@ importers:
       '@acme/db': link:../db
       '@trpc/client': 10.14.0_@trpc+server@10.14.0
       '@trpc/server': 10.14.0
+      dayjs: 1.11.7
       superjson: 1.9.1
       trpc-openapi: 1.1.2_wcrgtdweuztnrlkgr5ekzkt2im
       zod: 3.20.6

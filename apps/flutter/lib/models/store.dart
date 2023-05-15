@@ -7,8 +7,8 @@ import 'package:class_companion/models/agenda.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/semester.dart';
 import 'package:class_companion/models/substitution.dart';
-import 'package:class_companion/models/substitution_plan.dart';
 import 'package:class_companion/models/user.dart';
+import 'package:class_companion/openapi.dart';
 import 'package:class_companion/util/date_util.dart';
 import 'package:class_companion/util/list_util.dart';
 import 'package:drift/drift.dart';
@@ -26,9 +26,6 @@ abstract class _GlobalStore with Store {
   User currentUser;
 
   @observable
-  List<SubstitutionPlan> substitutionPlans = [];
-
-  @observable
   String licenseKey;
 
   @observable
@@ -39,6 +36,9 @@ abstract class _GlobalStore with Store {
 
   @observable
   List<Semester> semesters = [];
+
+  @observable
+  Agenda agenda = Agenda(start: DateTime.now(), courses: []);
 
   _GlobalStore({
     required this.currentUser,
@@ -60,22 +60,24 @@ abstract class _GlobalStore with Store {
       absences = event;
     });
 
-    db.select(db.courses).watch().listen((event) {
+    db.select(db.courses).watch().listen((event) async {
       courses = event;
 
-      // TOOD: This is temporary
-      final entry = agenda.entries.first;
-      substitutionPlans.add(
-        SubstitutionPlan(
-          date: DateTime.now().startOfDay,
-          substitutions: [
-            Substitution(
-              type: SubstitutionType.cancelled,
-              agendaEntry: entry,
-            ),
-          ],
-        ),
-      );
+       await _updateAgenda();
+
+      // // TOOD: This is temporary
+      // final entry = agenda.entries.first;
+      // substitutionPlans.add(
+      //   SubstitutionPlan(
+      //     date: DateTime.now().startOfDay,
+      //     substitutions: [
+      //       Substitution(
+      //         type: SubstitutionType.cancelled,
+      //         agendaEntry: entry,
+      //       ),
+      //     ],
+      //   ),
+      // );
     });
 
     db.select(db.semesters).watch().listen((event) {
@@ -129,13 +131,40 @@ abstract class _GlobalStore with Store {
 
   //// AGENDA ////
 
-  @computed
-  Agenda get agenda => Agenda(
+  @action
+  Future<void> _updateAgenda() async {
+    final agenda = Agenda(
       start: DateTime.now(),
       courses: courses,
-      substitutionPlan: substitutionPlans.firstWhereOrNull(
-        (element) => element.date == DateTime.now().startOfDay,
-      ));
+    );
+
+    final date = agenda.date.add(agenda.date.timeZoneOffset).toUtc();
+    final substitutions = await apiInstance.querySubstitutionsGet(date: date);
+
+    if (substitutions == null) {
+      this.agenda = agenda;
+      return;
+    }
+
+    for (final sub in substitutions) {
+      final startTime = sub.lessonStart;
+      final index = startTime ~/ 2;
+
+      if (index >= agenda.entries.length) {
+        continue;
+      }
+
+      final agendaEntry = agenda.entries[index];
+
+      if (agendaEntry.course?.id == sub.courseId) {
+        agendaEntry.substitution = Substitution(
+          type: typeMap[sub.type]!,
+        );
+      }
+    }
+
+    this.agenda = agenda;
+  }
 
   @computed
   List<Agenda> get weeklyAgenda {
