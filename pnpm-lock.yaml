@@ -6,6 +6,7 @@ importers:
     specifiers:
       '@ianvs/prettier-plugin-sort-imports': ^3.7.1
       '@manypkg/cli': ^0.20.0
+      '@total-typescript/ts-reset': ^0.4.2
       '@types/prettier': ^2.7.2
       dotenv-cli: ^7.0.0
       eslint: ^8.34.0
@@ -25,6 +26,8 @@ importers:
       prettier-plugin-tailwindcss: 0.2.4_2m34gfnsqvzqy5bj5eci3wt3by
       turbo: 1.8.3
       typescript: 4.9.5
+    devDependencies:
+      '@total-typescript/ts-reset': 0.4.2
 
   apps/flutter:
     specifiers: {}
@@ -95,11 +98,14 @@ importers:
       '@acme/api': '*'
       '@acme/auth': '*'
       '@acme/db': '*'
+      '@acme/lib': workspace:^0.1.0
       '@acme/tailwind-config': '*'
       '@types/node': ^18.0.0
+      '@types/papaparse': ^5.3.7
       cross-fetch: ^3.1.5
       eslint: ^8.34.0
       eslint-config-acme: 0.0.0
+      papaparse: ^5.4.1
       ts-node: ^10.9.1
       tsx: ^3.12.3
       typescript: ^4.9.5
@@ -107,10 +113,13 @@ importers:
       '@acme/api': link:../../packages/api
       '@acme/auth': link:../../packages/auth
       '@acme/db': link:../../packages/db
+      '@acme/lib': link:../../packages/lib
       '@acme/tailwind-config': link:../../packages/config/tailwind
       cross-fetch: 3.1.5
+      papaparse: 5.4.1
     devDependencies:
       '@types/node': 18.11.18
+      '@types/papaparse': 5.3.7
       eslint: 8.34.0
       eslint-config-acme: link:../../packages/config/eslint
       ts-node: 10.9.1_bdgp3l2zgaopogaavxusmetvge
@@ -1377,6 +1386,10 @@ packages:
       use-sync-external-store: 1.2.0_react@18.2.0
     dev: false
 
+  /@total-typescript/ts-reset/0.4.2:
+    resolution: {integrity: sha512-vqd7ZUDSrXFVT1n8b2kc3LnklncDQFPvR58yUS1kEP23/nHPAO9l1lMjUfnPrXYYk4Hj54rrLKMW5ipwk7k09A==}
+    dev: true
+
   /@trpc/client/10.14.0_@trpc+server@10.14.0:
     resolution: {integrity: sha512-fi7i+Av3ARGyWwlbuGD+ZeqF5HxomGG8hBB89dWHAc4WlBnDV6g0GQQgDaMKZqXbGt0sYeJucym6WPI6kO7HCQ==}
     peerDependencies:
@@ -1511,6 +1524,12 @@ packages:
 
   /@types/node/18.11.18:
     resolution: {integrity: sha512-DHQpWGjyQKSHj3ebjFI/wRKcqQcdR+MoFBygntYOZytCqNfkd2ZC4ARDJ2DQqhjH5p85Nnd3jhUJIXrszFX/JA==}
+
+  /@types/papaparse/5.3.7:
+    resolution: {integrity: sha512-f2HKmlnPdCvS0WI33WtCs5GD7X1cxzzS/aduaxSu3I7TbhWlENjSPs6z5TaB9K0J+BH1jbmqTaM+ja5puis4wg==}
+    dependencies:
+      '@types/node': 18.11.18
+    dev: true
 
   /@types/prettier/2.7.2:
     resolution: {integrity: sha512-KufADq8uQqo1pYKVIYzfKbJfBAc0sOeXqGbFaSpv8MRmC/zXgowNZmFcbngndGk922QDmOASEXUZCaY48gs4cg==}
@@ -4321,6 +4340,10 @@ packages:
       registry-auth-token: 4.2.2
       registry-url: 5.1.0
       semver: 6.3.0
+    dev: false
+
+  /papaparse/5.4.1:
+    resolution: {integrity: sha512-HipMsgJkZu8br23pW15uvo6sib6wne/4woLZPlFf3rpDyMe9ywEXUsuD7+6K9PRkJlVT51j/sCOYDKGGS3ZJrw==}
     dev: false
 
   /parent-module/1.0.1:

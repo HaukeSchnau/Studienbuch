@@ -44,9 +44,10 @@ model LicenseKey {
 
 model User {
     id          Int          @id @default(autoincrement())
-    email       String       @unique
+    email       String?      @unique
     name        String
     title       String?
+    abbrv       String?      @unique
     createdAt   DateTime     @default(now())
     updatedAt   DateTime     @updatedAt
     permissions Permission[]
@@ -68,26 +69,32 @@ model CourseTime {
     weekday  Int
     start    Int // time of day in minutes since midnight
     duration Int
-    Course   Course? @relation(fields: [courseId], references: [id])
+    course   Course? @relation(fields: [courseId], references: [id])
     courseId Int?
 }
 
 model Course {
     id        Int      @id @default(autoincrement())
-    courseId  String?
+    courseId  String
     name      String
     createdAt DateTime @default(now())
+    room      String?
+    isChoosable      Boolean  @default(false)
 
     teacher   User @relation(fields: [teacherId], references: [id])
     teacherId Int
 
     times CourseTime[]
 
-    class   Class? @relation(fields: [classId], references: [id])
-    classId Int?
+    class   Class @relation(fields: [classId], references: [id])
+    classId Int
 
     year   Year @relation(fields: [yearId], references: [id])
     yearId Int
+
+    substitutions Substitution[]
+
+    @@unique([courseId, classId, yearId], name: "courseIdentifier")
 }
 
 model Class {
@@ -99,15 +106,40 @@ model Class {
 
     year   Year @relation(fields: [yearId], references: [id])
     yearId Int
+
+    @@unique([identifierInYear, yearId], name: "classIdentifier")
 }
 
 model Year {
     id             Int      @id @default(autoincrement())
-    startYear      Int
+    startYear      Int      @unique
     graduationYear Int
     name           String
     createdAt      DateTime @default(now())
 
     classes Class[]
     courses Course[]
+}
+
+model Substitution {
+    id          Int      @id @default(autoincrement())
+    date        DateTime
+    lessonStart Int
+    lessonEnd   Int
+
+    course   Course @relation(fields: [courseId], references: [id])
+    courseId Int
+
+    room String?
+
+    type SubstitutionType?
+
+    @@unique([date, lessonStart, courseId, room], name: "substitutionIdentifier")
+}
+
+enum SubstitutionType {
+    FREISETZUNG
+    VERTRETUNG
+    BETREUUNG
+    ENTFALL
 }

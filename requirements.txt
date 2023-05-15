@@ -1,0 +1,6 @@
+requests
+bs4
+camelot-py
+tabula-py
+cv2
+opencv-python
