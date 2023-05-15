@@ -15,7 +15,8 @@ class ProfileSetupPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final years = useNetworkResult(() => apiInstance.queryYearsGet());
+    final years = useNetworkResult(() => apiInstance.queryYearsGet())
+      ?..sort((a, b) => -b.yearNumber.compareTo(a.yearNumber));
     final selectedYear = useState<ApiYear?>(null);
     final isOfAge = useState(false);
     final nameController = useTextEditingController();

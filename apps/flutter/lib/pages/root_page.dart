@@ -1,4 +1,3 @@
-import 'package:class_companion/pages/dummy_page.dart';
 import 'package:class_companion/pages/home_page.dart';
 import 'package:class_companion/pages/profile_page.dart';
 import 'package:class_companion/pages/week_page.dart';

@@ -24,6 +24,8 @@ const _courseIconMap = {
   "Spanisch": "spanish.svg",
   "Latein": "latin.svg",
   "Werte und Normen": "wun.svg",
+  "Darstellendes Spiel": "ds.svg",
+  "Seminarfach": "seminar.svg"
 };
 
 String getCourseIcon(String courseName) {

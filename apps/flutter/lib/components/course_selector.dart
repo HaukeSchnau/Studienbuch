@@ -15,7 +15,7 @@ extension UserExtension on User {
     if (title != null && title!.isNotEmpty) {
       return "$title $lastName";
     }
-    return "${name[0]}. $lastName";
+    return lastName;
   }
 }
 
@@ -33,6 +33,7 @@ class CourseSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final canChoose = courses.length > 1;
+    courses.sort((a, b) => a.courseId.compareTo(b.courseId));
     final itemsWithNull = [null, ...courses];
     final selectedCourse = this.selectedCourse;
 
@@ -54,7 +55,7 @@ class CourseSelector extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                value.courseId ?? value.name,
+                value.courseId,
               ),
               Text(
                 value.teacher.formalName,

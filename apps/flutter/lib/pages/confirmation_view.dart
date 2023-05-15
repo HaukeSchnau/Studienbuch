@@ -6,6 +6,6 @@ class ConfirmationView extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return const Scaffold();
   }
 }

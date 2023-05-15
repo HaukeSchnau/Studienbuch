@@ -84,7 +84,8 @@ abstract class _SetupStoreBase with Store {
       }
     }
 
-    for (final course in class_!.courses) {
+    for (final course
+        in class_!.courses.where((element) => !element.isChoosable)) {
       await db.into(db.teachers).insert(
           Teacher(
               id: course.teacher.id,
@@ -121,18 +122,15 @@ abstract class _SetupStoreBase with Store {
         ));
 
     for (final course in courses) {
-      await db
-          .into(db.semesterCourses)
-          .insert(SemesterCoursesCompanion.insert(
+      await db.into(db.semesterCourses).insert(SemesterCoursesCompanion.insert(
             semester: currentSemesterId,
             course: course.id,
           ));
     }
 
-    for (final course in class_!.courses) {
-      await db
-          .into(db.semesterCourses)
-          .insert(SemesterCoursesCompanion.insert(
+    for (final course
+        in class_!.courses.where((element) => !element.isChoosable)) {
+      await db.into(db.semesterCourses).insert(SemesterCoursesCompanion.insert(
             semester: currentSemesterId,
             course: course.id,
           ));

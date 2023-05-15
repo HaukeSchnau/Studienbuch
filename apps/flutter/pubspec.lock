@@ -652,6 +652,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
+  openapi_generator:
+    dependency: "direct dev"
+    description:
+      name: openapi_generator
+      sha256: "0c1d9041346286c12b8b39a8c92dc08f1ec57058603e8f0a1625d4e2233ab822"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.10.0"
   openapi_generator_annotations:
     dependency: "direct main"
     description:
@@ -660,6 +668,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.0"
+  openapi_generator_cli:
+    dependency: transitive
+    description:
+      name: openapi_generator_cli
+      sha256: bb2d5f533ec2ed9a5404cbf35aa077ead9fbe7983cda1d749bc5d18cd3bb18bf
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.10.0"
   package_config:
     dependency: transitive
     description:

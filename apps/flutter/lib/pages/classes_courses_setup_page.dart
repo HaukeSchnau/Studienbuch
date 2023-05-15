@@ -42,7 +42,7 @@ class ClassesCoursesSetupPage extends HookWidget {
 
     final courseChoices = useMemoized(() {
       return groupCoursesByName(
-          courses?.where((course) => course.classId == null).toList() ?? []);
+          courses?.where((course) => course.isChoosable).toList() ?? []);
     }, [courses]);
 
     bool hasClasses = classes == null ? false : classes.length > 1;
