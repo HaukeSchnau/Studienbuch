@@ -11,7 +11,7 @@
     "@acme/api": "*",
     "@acme/auth": "*",
     "@acme/db": "*",
-    "@acme/lib": "workspace:^0.1.0",
+    "@acme/common": "*",
     "@acme/tailwind-config": "*",
     "cross-fetch": "^3.1.5",
     "papaparse": "^5.4.1"

@@ -6,4 +6,4 @@ packages:
   - packages/auth
   - packages/db
   - packages/config/*
-  - packages/lib
+  - packages/common

@@ -1,9 +1,8 @@
 {
-  "name": "@acme/lib",
+  "name": "@acme/common",
   "version": "0.1.0",
-  "main": "dist/index.js",
-  "typings": "@types/pdf-table-extractor.d.ts",
   "license": "MIT",
+  "main": "src/index.ts",
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "lint": "eslint .",

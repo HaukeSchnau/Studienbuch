@@ -1,61 +1,12 @@
 import fs from "fs/promises";
 import p from "path";
 import Papa from "papaparse";
-import { z, type ZodTypeAny, type ZodUnion } from "zod";
+import { z } from "zod";
 
+import { guessSubject } from "@acme/common";
 import { prisma } from "@acme/db";
 
 import { years } from "./years";
-
-const courseNames = [
-  "Deutsch",
-  "Englisch",
-  "Mathe",
-  "Physik",
-  "Chemie",
-  "Biologie",
-  "Informatik",
-  "Geschichte",
-  "Politik-Wirtschaft",
-  "Musik",
-  "Sport",
-  "Kunst",
-  "Religion",
-  "Werte und Normen",
-  "Französisch",
-  "Latein",
-  "Spanisch",
-  "Sport-Theorie",
-  "Seminarfach",
-];
-
-const guessSubject = (subject: string | undefined) => {
-  const regex = /^\*?([^0-9]+)[0-9]*$/;
-  const matches = regex.exec(subject ?? "");
-
-  if (!matches) return subject?.trim().replaceAll("*", "");
-
-  const parsedSubject = matches[1];
-
-  if (!parsedSubject) return subject?.trim().replaceAll("*", "");
-
-  const subjectLower = parsedSubject.trim().toLowerCase();
-
-  if (subjectLower.startsWith("wn") || subjectLower.startsWith("wun"))
-    return "Werte und Normen";
-
-  if (subjectLower === "ds") return "Darstellendes Spiel";
-  if (subjectLower === "sn") return "Spanisch";
-  if (subjectLower === "pw") return "Politik-Wirtschaft";
-  if (subjectLower === "if") return "Informatik";
-  if (subjectLower === "sf") return "Seminarfach";
-
-  return (
-    courseNames.find((candidate) =>
-      candidate.toLowerCase().startsWith(subjectLower),
-    ) ?? parsedSubject
-  );
-};
 
 const parseCourses = (coursesRaw: string) => {
   const coursesForDay = coursesRaw
@@ -118,36 +69,43 @@ const parseTime = (time: string) => {
   );
 };
 
-export const seedClasses = async () => {
-  const knownUsers = await fs
-    .readFile("./known-users.csv", "utf8")
-    .then((csv) => Papa.parse(csv, { header: true }))
-    .then((data) =>
-      data.data.map((row) =>
-        z
-          .object({
-            abbrv: z.string(),
-            name: z.string(),
-            title: z.string(),
-          })
-          .safeParse(row),
-      ),
-    )
-    .then((users) =>
-      users
-        .filter(
-          (user) =>
-            user.success &&
-            user.data.abbrv !== user.data.name &&
-            user.data.name &&
-            user.data.title,
-        )
-        .map((user) => user.success && user.data)
-        .filter(Boolean),
-    );
+const getKnownUsers = async () => {
+  const csv = await fs
+    .readFile("./known-users.csv", "utf8");
+  const data = Papa.parse(csv, { header: true });
+  
+  const users = data.data.map((row) => z
+    .object({
+      abbrv: z.string(),
+      name: z.string(),
+      title: z.string(),
+    })
+    .safeParse(row));
 
-  const path = "./cache/classes_csv";
-  const filenames = await fs.readdir(path);
+  return users
+    .filter(
+      (user) => user.success &&
+        user.data.abbrv !== user.data.name &&
+        user.data.name &&
+        user.data.title)
+    .map((user_1) => user_1.success && user_1.data)
+    .filter(Boolean);
+};
+
+const parseFile = async (filepath: string) => {
+  const fileContents = await fs.readFile(filepath, "utf8");
+  const { data } = Papa.parse(fileContents, { header: true });
+
+  const basename = p.basename(filepath, ".csv");
+  const yearName = basename.split("-")[0];
+  const idInYear = basename.split("-")[1];
+
+  if (!yearName) throw new Error(`No year found in ${p.basename(filepath)}`);
+
+  const year = years.find(
+    (candidate) => candidate.name.toLowerCase() === yearName?.toLowerCase(),
+  );
+  if (!year) throw new Error(`No year found for ${yearName}`);
 
   const rowSchema = z.object({
     "": z.string(),
@@ -158,24 +116,49 @@ export const seedClasses = async () => {
     Freitag: z.string(),
   });
 
+  const typedTable = data
+    .map((row) => {
+      const parsed = rowSchema.safeParse(row);
+      if (parsed.success) return parsed.data;
+    })
+    .filter(Boolean)
+    .map((row) => {
+      const { Montag, Dienstag, Mittwoch, Donnerstag, Freitag } = row;
+
+      const time = row[""];
+      const [start, end] = time.split("\n");
+      const startMinutes = parseTime(start ?? "0");
+      const endMinutes = parseTime(end ?? "0");
+
+      const days = [Montag, Dienstag, Mittwoch, Donnerstag, Freitag].map(
+        (coursesRaw) => {
+          if (!coursesRaw) return [];
+
+          const coursesForDay = parseCourses(coursesRaw);
+          return coursesForDay;
+        },
+      );
+
+      return {
+        startMinutes,
+        endMinutes,
+        days,
+      };
+    });
+
+  return { year, idInYear, data: typedTable };
+};
+
+export const seedClasses = async () => {
+  const knownUsers = await getKnownUsers();
+
+  const path = "./cache/classes_csv";
+  const filenames = await fs.readdir(path);
+
   for (const filename of filenames.filter((filename) =>
     filename.endsWith(".csv"),
   )) {
-    const fileContents = await fs.readFile(p.join(path, filename), "utf8");
-    const { data } = Papa.parse(fileContents, { header: true });
-
-    const parsed = data.map((row) => rowSchema.safeParse(row));
-
-    const basename = p.basename(filename, ".csv");
-    const yearName = basename.split("-")[0];
-    const idInYear = basename.split("-")[1];
-
-    if (!yearName) throw new Error(`No year found in ${filename}`);
-
-    const year = years.find(
-      (candidate) => candidate.name.toLowerCase() === yearName?.toLowerCase(),
-    );
-    if (!year) throw new Error(`No year found for ${yearName}`);
+    const { year, idInYear, data } = await parseFile(p.join(path, filename));
 
     const dbYear = await prisma.year.upsert({
       where: {
@@ -207,28 +190,8 @@ export const seedClasses = async () => {
       update: {},
     });
 
-    for (const row of parsed) {
-      if (!row.success) continue;
-
-      const { data } = row;
-      const { Montag, Dienstag, Mittwoch, Donnerstag, Freitag } = data;
-
-      const time = data[""];
-      const [start, end] = time.split("\n");
-      const startMinutes = parseTime(start ?? "0");
-      const endMinutes = parseTime(end ?? "0");
-
-      for (const [dayNum, coursesRaw] of [
-        Montag,
-        Dienstag,
-        Mittwoch,
-        Donnerstag,
-        Freitag,
-      ].entries()) {
-        if (!coursesRaw) continue;
-
-        const coursesForDay = parseCourses(coursesRaw);
-
+    for (const row of data) {
+      for (const [dayNum, coursesForDay] of row.days.entries()) {
         for (const course of coursesForDay) {
           const { subject, guessedSubject, teacher, room } = course;
           const normalizedCourseIdentifier = subject
@@ -243,8 +206,8 @@ export const seedClasses = async () => {
 
           await prisma.courseTime.create({
             data: {
-              start: startMinutes,
-              duration: endMinutes - startMinutes,
+              start: row.startMinutes,
+              duration: row.endMinutes - row.startMinutes,
               weekday: dayNum + 1,
               course: {
                 connectOrCreate: {

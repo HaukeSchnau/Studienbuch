@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import z from "zod";
 
 import { prisma } from "@acme/db";
-import { parseTable } from "@acme/lib/src/substitutions/parseSubstitutionPlan";
+import { parseTable } from "../../../packages/common/src/substitutions/parseSubstitutionPlan";
 
 const substitutionsDir = "./cache/substitutions";
 

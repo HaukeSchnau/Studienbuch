@@ -97,8 +97,8 @@ importers:
     specifiers:
       '@acme/api': '*'
       '@acme/auth': '*'
+      '@acme/common': '*'
       '@acme/db': '*'
-      '@acme/lib': workspace:^0.1.0
       '@acme/tailwind-config': '*'
       '@types/node': ^18.0.0
       '@types/papaparse': ^5.3.7
@@ -112,8 +112,8 @@ importers:
     dependencies:
       '@acme/api': link:../../packages/api
       '@acme/auth': link:../../packages/auth
+      '@acme/common': link:../../packages/common
       '@acme/db': link:../../packages/db
-      '@acme/lib': link:../../packages/lib
       '@acme/tailwind-config': link:../../packages/config/tailwind
       cross-fetch: 3.1.5
       papaparse: 5.4.1
@@ -176,6 +176,21 @@ importers:
       eslint-config-acme: link:../config/eslint
       typescript: 4.9.5
 
+  packages/common:
+    specifiers:
+      dayjs: ^1.11.7
+      eslint: ^8.34.0
+      eslint-config-acme: 0.0.0
+      pdf-table-extractor: ^1.0.3
+      typescript: ^4.9.5
+    dependencies:
+      dayjs: 1.11.7
+      pdf-table-extractor: 1.0.3
+    devDependencies:
+      eslint: 8.34.0
+      eslint-config-acme: link:../config/eslint
+      typescript: 4.9.5
+
   packages/config/eslint:
     specifiers:
       '@types/eslint': ^8.21.0
@@ -221,21 +236,6 @@ importers:
       prisma: 4.11.0
       typescript: 4.9.5
       zod-prisma: 0.5.4_prisma@4.11.0
-
-  packages/lib:
-    specifiers:
-      dayjs: ^1.11.7
-      eslint: ^8.34.0
-      eslint-config-acme: 0.0.0
-      pdf-table-extractor: ^1.0.3
-      typescript: ^4.9.5
-    dependencies:
-      dayjs: 1.11.7
-      pdf-table-extractor: 1.0.3
-    devDependencies:
-      eslint: 8.34.0
-      eslint-config-acme: link:../config/eslint
-      typescript: 4.9.5
 
 packages:
 
