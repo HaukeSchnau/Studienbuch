@@ -231,11 +231,6 @@ export const seedClasses = async () => {
             (user) => user.abbrv === teacher,
           );
 
-          const EARLY = true;
-          if (EARLY) {
-            continue;
-          }
-
           await prisma.courseTime.create({
             data: {
               start: row.startMinutes,
