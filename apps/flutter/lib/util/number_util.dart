@@ -6,7 +6,18 @@ extension NumberUtil on num {
       return "—";
     }
 
-    final format = NumberFormat("0.0#");
+    final format = NumberFormat("0.##");
+    return "${format.format(
+      this,
+    )} Punkte";
+  }
+
+  String formatAsGradeShort() {
+    if (isNaN) {
+      return "—";
+    }
+
+    final format = NumberFormat("0.##");
     return format.format(
       this,
     );

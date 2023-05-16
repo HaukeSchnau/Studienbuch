@@ -49,9 +49,9 @@ class AddOralGradeForm extends HookWidget {
         const SizedBox(height: 32),
         TextField(
           controller: resultController,
-          decoration: const InputDecoration(labelText: "Note"),
+          decoration: const InputDecoration(labelText: "Punkte"),
           keyboardType: const TextInputType.numberWithOptions(
-            decimal: true,
+            decimal: true, 
           ),
           autofocus: true,
         ),

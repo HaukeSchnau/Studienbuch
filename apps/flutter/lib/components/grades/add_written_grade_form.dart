@@ -48,7 +48,7 @@ class AddWrittenGradeForm extends HookWidget {
         const SizedBox(height: 16),
         TextField(
           onChanged: (value) => resultStr.value = (value.replaceAll(",", ".")),
-          decoration: const InputDecoration(labelText: "Note"),
+          decoration: const InputDecoration(labelText: "Punkte"),
           keyboardType: const TextInputType.numberWithOptions(
             decimal: true,
           ),
