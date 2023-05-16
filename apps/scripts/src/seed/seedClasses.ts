@@ -207,8 +207,14 @@ export const seedClasses = async () => {
 
         const isNormalTime = normalTimes.includes(row.startMinutes);
         let weeks: CourseTimeWeeks = "BOTH";
+        let startMinutes = row.startMinutes;
+        let endMinutes = row.endMinutes;
 
-        if (!isNormalTime && coursesForDay.length > 0) weeks = "ODD";
+        if (!isNormalTime && coursesForDay.length > 0) {
+          weeks = "ODD";
+          startMinutes -= 40;
+          endMinutes -= 40;
+        }
 
         if (
           isNormalTime &&
@@ -233,8 +239,8 @@ export const seedClasses = async () => {
 
           await prisma.courseTime.create({
             data: {
-              start: row.startMinutes,
-              duration: row.endMinutes - row.startMinutes,
+              start: startMinutes,
+              duration: endMinutes - startMinutes,
               weekday: dayNum + 1,
               weeks,
               course: {
