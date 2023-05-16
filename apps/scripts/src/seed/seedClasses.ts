@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import p from "path";
 import Papa from "papaparse";
-import z from "zod";
+import { z, type ZodTypeAny, type ZodUnion } from "zod";
 
 import { prisma } from "@acme/db";
 
@@ -119,6 +119,33 @@ const parseTime = (time: string) => {
 };
 
 export const seedClasses = async () => {
+  const knownUsers = await fs
+    .readFile("./known-users.csv", "utf8")
+    .then((csv) => Papa.parse(csv, { header: true }))
+    .then((data) =>
+      data.data.map((row) =>
+        z
+          .object({
+            abbrv: z.string(),
+            name: z.string(),
+            title: z.string(),
+          })
+          .safeParse(row),
+      ),
+    )
+    .then((users) =>
+      users
+        .filter(
+          (user) =>
+            user.success &&
+            user.data.abbrv !== user.data.name &&
+            user.data.name &&
+            user.data.title,
+        )
+        .map((user) => user.success && user.data)
+        .filter(Boolean),
+    );
+
   const path = "./cache/classes_csv";
   const filenames = await fs.readdir(path);
 
@@ -210,6 +237,10 @@ export const seedClasses = async () => {
 
           const isChoosable = subject.startsWith("*");
 
+          const knownTeacher = knownUsers.find(
+            (user) => user.abbrv === teacher,
+          );
+
           await prisma.courseTime.create({
             data: {
               start: startMinutes,
@@ -241,7 +272,8 @@ export const seedClasses = async () => {
                         },
                         create: {
                           abbrv: teacher,
-                          name: teacher,
+                          name: knownTeacher?.name ?? teacher,
+                          title: knownTeacher?.title,
                           role: "TEACHER",
                         },
                       },
