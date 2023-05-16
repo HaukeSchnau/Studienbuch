@@ -17,6 +17,9 @@ const config = {
       rootDir: ["apps/nextjs"],
     },
   },
+  rules: {
+    "react/no-unescaped-entities": "off",
+  }
 };
 
 module.exports = config;
