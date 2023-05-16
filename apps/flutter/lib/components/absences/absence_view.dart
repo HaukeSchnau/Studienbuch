@@ -52,6 +52,9 @@ class AbsenceView extends HookWidget {
           }
         });
 
+    viewFullConfirmation() =>
+        viewAbsenceConfirmation(context, absenceGroup, store.currentUser);
+
     return MyCard(
         color: absenceGroup.isExcused
             ? theme.primaryDesaturated
@@ -59,8 +62,7 @@ class AbsenceView extends HookWidget {
         borderRadius: BorderRadius.circular(24),
         shadow: false,
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-        onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (ctx) => const ConfirmationView())),
+        onTap: absenceGroup.isExcused ? viewFullConfirmation : null,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

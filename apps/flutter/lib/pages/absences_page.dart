@@ -75,6 +75,13 @@ class AbsencesPage extends HookWidget {
               ],
             ),
             const SizedBox(height: 16),
+            if (absenceGroupsByTeacher.isEmpty && absenceGroupsByParent.isEmpty)
+              const Align(
+                alignment: Alignment.center,
+                child: Text("Keine unentschuldigten Fehlzeiten gefunden",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.black54, fontSize: 14)),
+              ),
             for (final absenceGroup in absenceGroupsByTeacher)
               Padding(
                 padding: const EdgeInsets.only(bottom: 16.0),
@@ -98,6 +105,13 @@ class AbsencesPage extends HookWidget {
               ],
             ),
             const SizedBox(height: 16),
+            if (absenceGroupsExcused.isEmpty)
+              const Align(
+                alignment: Alignment.center,
+                child: Text("Keine entschuldigten Fehlzeiten gefunden",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.black54, fontSize: 14)),
+              ),
             for (final absence in absenceGroupsExcused)
               Padding(
                 padding: const EdgeInsets.only(bottom: 16.0),

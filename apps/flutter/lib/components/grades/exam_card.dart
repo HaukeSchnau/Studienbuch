@@ -6,6 +6,8 @@ import 'package:class_companion/database.dart';
 import 'package:class_companion/hooks/use_store.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/grade_result.dart';
+import 'package:class_companion/models/user.dart';
+import 'package:class_companion/pages/confirmation_view.dart';
 import 'package:class_companion/static/colors.dart';
 import 'package:class_companion/util/date_util.dart';
 import 'package:class_companion/util/number_util.dart';
@@ -24,7 +26,8 @@ class ExamCard extends HookWidget {
 
     confirmTeacher() => confirmWithSignature(
         context,
-        (ctx) => buildWrittenGradeConfirmationInfoTeacher(course, store.currentUser, examResult),
+        (ctx) => buildWrittenGradeConfirmationInfoTeacher(
+            course, store.currentUser, examResult),
         title: "Klausurergebnis bestätigen (Lehrer)",
         signer: "Unterschrift von ${course.teacher.name}",
         fileName: "signature-${examResult.id}-teacher.svg",
@@ -34,7 +37,8 @@ class ExamCard extends HookWidget {
 
     confirmParent() => confirmWithSignature(
         context,
-        (ctx) => buildWrittenGradeConfirmationInfoParent(course, store.currentUser, examResult),
+        (ctx) => buildWrittenGradeConfirmationInfoParent(
+            course, store.currentUser, examResult),
         title: "Klausurergebnis bestätigen (Eltern)",
         signer: "Unterschrift der Eltern",
         fileName: "signature-${examResult.id}-parent.svg",
@@ -44,6 +48,7 @@ class ExamCard extends HookWidget {
 
     return ResultCard(
       result: examResult,
+      course: course,
       action: !examResult.isConfirmed
           ? examResult.isConfirmedByTeacher
               ? confirmParent
@@ -51,6 +56,7 @@ class ExamCard extends HookWidget {
           : null,
       actionColor: theme.error,
       userIsOfAge: store.currentUser.isOfAge,
+      user: store.currentUser
     );
   }
 }
@@ -62,6 +68,8 @@ class ResultCard extends StatelessWidget {
   final String type;
   final String actionText;
   final Color actionColor;
+  final Course course;
+  final User user;
 
   const ResultCard(
       {super.key,
@@ -70,10 +78,16 @@ class ResultCard extends StatelessWidget {
       this.userIsOfAge = false,
       this.type = "Klausur",
       this.actionText = "Jetzt bestätigen",
-      required this.actionColor});
+      required this.actionColor,
+      required this.course,
+      required this.user});
 
   @override
   Widget build(BuildContext context) {
+    viewFullConfirmation() => type == "Klausur"
+        ? viewWrittenGradeConfirmation(context, course, user, result)
+        : viewOralGradeConfirmation(context, course, user, result);
+
     return MyCard(
         color: result.isConfirmed
             ? theme.primaryDesaturated
@@ -81,6 +95,7 @@ class ResultCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         shadow: false,
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        onTap: result.isConfirmed ? viewFullConfirmation : null,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

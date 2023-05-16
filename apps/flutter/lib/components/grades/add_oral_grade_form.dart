@@ -51,7 +51,7 @@ class AddOralGradeForm extends HookWidget {
           controller: resultController,
           decoration: const InputDecoration(labelText: "Punkte"),
           keyboardType: const TextInputType.numberWithOptions(
-            decimal: true, 
+            decimal: true,
           ),
           autofocus: true,
         ),
@@ -73,6 +73,8 @@ class AddOralGradeForm extends HookWidget {
             type: "Mündliche Mitarbeitsnote",
             actionColor: theme.primary,
             actionText: "Wiederherstellen",
+            course: course,
+            user: store.currentUser,
             action: () async {
               await (db.delete(db.gradeResults)
                     ..where((tbl) => tbl.date.isBiggerThanValue(

@@ -38,7 +38,12 @@ class ConfirmWithSignature extends HookWidget {
               children: [
                 Builder(builder: builder),
                 const SizedBox(height: 16),
-                Expanded(
+                Container(
+                  clipBehavior: Clip.hardEdge,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                  ),
+                  height: 100,
                   child: Stack(
                     children: [
                       Signature(
@@ -119,7 +124,7 @@ Future<void> confirmWithSignature(
 
       await file.writeAsString(signatureSvg);
     }
-    if(fileNames != null) {
+    if (fileNames != null) {
       final directory = await getApplicationDocumentsDirectory();
       for (final fileName in fileNames) {
         final file = File("${directory.path}/$fileName");

@@ -9,6 +9,7 @@ import 'package:class_companion/hooks/use_grades.dart';
 import 'package:class_companion/hooks/use_store.dart';
 import 'package:class_companion/models/course.dart';
 import 'package:class_companion/models/grade_result.dart';
+import 'package:class_companion/pages/confirmation_view.dart';
 import 'package:class_companion/static/colors.dart';
 import 'package:class_companion/util/date_util.dart';
 import 'package:class_companion/util/number_util.dart';
@@ -107,6 +108,7 @@ class GradesCard extends HookWidget {
       "Deine Note setzt sich aus diesen Ergebnissen zusammen:",
       style: TextStyle(fontSize: 14, color: Color.fromRGBO(0, 0, 0, .8)),
     );
+
     return MyCard(
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 32),
         child: Column(
@@ -146,13 +148,26 @@ class GradesCard extends HookWidget {
                     ),
                     const SizedBox(height: 12),
                     if (currentOralGrade != null)
-                      ConfirmationStatusView(
-                          confirmedByParent:
-                              currentOralGrade.isConfirmedByParent,
-                          confirmedByTeacher:
-                              currentOralGrade.isConfirmedByTeacher,
-                          isOfAge: store.currentUser.isOfAge,
-                          order: ConfirmationStatusOrder.teacherParent),
+                      Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            ConfirmationStatusView(
+                                confirmedByParent:
+                                    currentOralGrade.isConfirmedByParent,
+                                confirmedByTeacher:
+                                    currentOralGrade.isConfirmedByTeacher,
+                                isOfAge: store.currentUser.isOfAge,
+                                order: ConfirmationStatusOrder.teacherParent),
+                            if (currentOralGrade.isConfirmed)
+                              IconButton(
+                                  onPressed: () => viewOralGradeConfirmation(
+                                      context,
+                                      course,
+                                      store.currentUser,
+                                      currentOralGrade),
+                                  icon: const Icon(Icons.visibility,
+                                      color: Colors.black87))
+                          ]),
                     if (currentOralGrade != null &&
                         !currentOralGrade.isConfirmed)
                       Align(

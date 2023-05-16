@@ -6,13 +6,15 @@ import 'package:class_companion/util/date_util.dart';
 import 'package:class_companion/util/number_util.dart';
 import 'package:flutter/material.dart';
 
-Widget buildAbsenceInfoTeacher(Absence absence, User user) {
+Widget buildAbsenceInfoTeacher(Absence absence, User user,
+    {bool viewOnly = false}) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text("Bitte lasse deinen Lehrer hier unterschreiben:",
-          style: TextStyle(color: Colors.black.withOpacity(.8))),
-      const SizedBox(height: 16),
+      if (!viewOnly)
+        Text("Bitte lasse deinen Lehrer hier unterschreiben:",
+            style: TextStyle(color: Colors.black.withOpacity(.8))),
+      if (!viewOnly) const SizedBox(height: 16),
       Text.rich(TextSpan(style: const TextStyle(fontSize: 16), children: [
         const TextSpan(
           text: "Ich, ",
@@ -46,13 +48,15 @@ Widget buildAbsenceInfoTeacher(Absence absence, User user) {
   );
 }
 
-Widget buildAbsenceInfoParent(AbsenceGroup absenceGroup, User user) {
+Widget buildAbsenceInfoParent(AbsenceGroup absenceGroup, User user,
+    {bool viewOnly = false}) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text("Bitte lasse deine Eltern hier unterschreiben:",
-          style: TextStyle(color: Colors.black.withOpacity(.8))),
-      const SizedBox(height: 16),
+      if (!viewOnly)
+        Text("Bitte lasse deine Eltern hier unterschreiben:",
+            style: TextStyle(color: Colors.black.withOpacity(.8))),
+      if (!viewOnly) const SizedBox(height: 16),
       Text.rich(TextSpan(style: const TextStyle(fontSize: 16), children: [
         const TextSpan(
           text: "Ich bestätige, dass mein Kind ",
@@ -79,13 +83,15 @@ Widget buildAbsenceInfoParent(AbsenceGroup absenceGroup, User user) {
 }
 
 Widget buildOralGradeConfirmationInfoTeacher(
-    Course course, User user, GradeResult result) {
+    Course course, User user, GradeResult result,
+    {bool viewOnly = false}) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text("Bitte lasse deinen Lehrer hier unterschreiben:",
-          style: TextStyle(color: Colors.black.withOpacity(.8))),
-      const SizedBox(height: 16),
+      if (!viewOnly)
+        Text("Bitte lasse deinen Lehrer hier unterschreiben:",
+            style: TextStyle(color: Colors.black.withOpacity(.8))),
+      if (!viewOnly) const SizedBox(height: 16),
       Text.rich(TextSpan(style: const TextStyle(fontSize: 16), children: [
         const TextSpan(
           text: "Ich, ",
@@ -116,13 +122,15 @@ Widget buildOralGradeConfirmationInfoTeacher(
 }
 
 Widget buildOralGradeConfirmationInfoParent(
-    Course course, User user, GradeResult result) {
+    Course course, User user, GradeResult result,
+    {bool viewOnly = false}) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text("Bitte lasse deine Eltern hier unterschreiben:",
-          style: TextStyle(color: Colors.black.withOpacity(.8))),
-      const SizedBox(height: 16),
+      if (!viewOnly)
+        Text("Bitte lasse deine Eltern hier unterschreiben:",
+            style: TextStyle(color: Colors.black.withOpacity(.8))),
+      if (!viewOnly) const SizedBox(height: 16),
       Text.rich(TextSpan(style: const TextStyle(fontSize: 16), children: [
         const TextSpan(
           text: "Ich habe zur Kenntnis genommen, dass mein Kind ",
@@ -149,13 +157,15 @@ Widget buildOralGradeConfirmationInfoParent(
 }
 
 Widget buildWrittenGradeConfirmationInfoTeacher(
-    Course course, User user, GradeResult result) {
+    Course course, User user, GradeResult result,
+    {bool viewOnly = false}) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text("Bitte lasse deinen Lehrer hier unterschreiben:",
-          style: TextStyle(color: Colors.black.withOpacity(.8))),
-      const SizedBox(height: 16),
+      if (!viewOnly)
+        Text("Bitte lasse deinen Lehrer hier unterschreiben:",
+            style: TextStyle(color: Colors.black.withOpacity(.8))),
+      if (!viewOnly) const SizedBox(height: 16),
       Text.rich(TextSpan(style: const TextStyle(fontSize: 16), children: [
         const TextSpan(
           text: "Ich, ",
@@ -186,13 +196,15 @@ Widget buildWrittenGradeConfirmationInfoTeacher(
 }
 
 Widget buildWrittenGradeConfirmationInfoParent(
-    Course course, User user, GradeResult result) {
+    Course course, User user, GradeResult result,
+    {bool viewOnly = false}) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text("Bitte lasse deine Eltern hier unterschreiben:",
-          style: TextStyle(color: Colors.black.withOpacity(.8))),
-      const SizedBox(height: 16),
+      if (!viewOnly)
+        Text("Bitte lasse deine Eltern hier unterschreiben:",
+            style: TextStyle(color: Colors.black.withOpacity(.8))),
+      if (!viewOnly) const SizedBox(height: 16),
       Text.rich(TextSpan(style: const TextStyle(fontSize: 16), children: [
         const TextSpan(
           text: "Ich habe zur Kenntnis genommen, dass mein Kind ",
