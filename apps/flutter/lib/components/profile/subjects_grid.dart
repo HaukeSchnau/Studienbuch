@@ -131,6 +131,12 @@ class CourseCard extends HookWidget {
                     ),
                   ],
                 )),
+                Container(
+                  width: 1,
+                  height: 16,
+                  color: Colors.grey,
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                ),
                 Expanded(
                     child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -147,11 +153,6 @@ class CourseCard extends HookWidget {
                 )),
               ],
             )
-            // grade.isNaN
-            //     ? Container()
-            //     : Text(
-            //         "${grade.toStringAsFixed(0)} ${punktePluralSingular(grade)}"),
-            // Text(subject.)
           ],
         ),
       ),
