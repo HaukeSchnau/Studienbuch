@@ -5,6 +5,7 @@ import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:class_mate/models/semester.dart';
 import 'package:class_mate/static/colors.dart';
+import 'package:class_mate/util/date_util.dart';
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_hooks/flutter_hooks.dart';
 
@@ -14,6 +15,7 @@ class WeekPage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final store = useStore();
+    final weekNum = store.agenda.date.weekNumber;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Container(
@@ -30,19 +32,31 @@ class WeekPage extends HookWidget {
           ),
           child: SafeArea(
             child: Column(
-              children: const [
-                SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.topCenter,
-                  child: Text("Meine Woche",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20)),
+              children: [
+                const SizedBox(height: 12),
+                Stack(
+                  children: [
+                    const Align(
+                      alignment: Alignment.center,
+                      child: Text("Meine Woche",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20)),
+                    ),
+                    Positioned(
+                        bottom: 6,
+                        right: 24,
+                        child: Text("KW $weekNum",
+                            style: const TextStyle(
+                                height: 1,
+                                color: Color.fromRGBO(255, 255, 255, .8),
+                                fontSize: 16))),
+                  ],
                 ),
-                SizedBox(height: 8),
-                Weekdays(),
-                SizedBox(height: 12),
+                const SizedBox(height: 8),
+                const Weekdays(),
+                const SizedBox(height: 12),
               ],
             ),
           )),

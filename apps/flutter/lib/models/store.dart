@@ -168,8 +168,7 @@ abstract class _GlobalStore with Store {
 
   @computed
   List<Agenda> get weeklyAgenda {
-    final now = DateTime.now();
-    final start = now.startOfWeek;
+    final start = agenda.date.startOfWeek;
 
     final days = <DateTime>[];
     for (var i = 0; i < 5; i++) {
