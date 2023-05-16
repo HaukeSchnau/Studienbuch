@@ -9,7 +9,7 @@ extension NumberUtil on num {
     final format = NumberFormat("0.##");
     return "${format.format(
       this,
-    )} Punkte";
+    )} Pkt.";
   }
 
   String formatAsGradeShort() {
