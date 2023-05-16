@@ -32,7 +32,7 @@ class ProfileSetupPage extends HookWidget {
       child: Column(
         children: [
           Text(
-            "Profil",
+            "Willkommen!",
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 8.0),

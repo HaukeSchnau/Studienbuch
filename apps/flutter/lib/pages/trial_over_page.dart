@@ -2,8 +2,6 @@ import 'dart:math';
 
 import 'package:class_mate/components/util/card.dart';
 import 'package:class_mate/components/util/circle.dart';
-import 'package:class_mate/models/setup_store.dart';
-import 'package:class_mate/pages/profile_setup_page.dart';
 import 'package:flutter/material.dart';
 import 'package:class_mate/components/util/logo.dart';
 import 'package:class_mate/static/colors.dart';
@@ -12,35 +10,14 @@ import 'package:url_launcher/url_launcher.dart';
 
 const TextStyle _linkStyle = TextStyle(color: Color(0xFF6A6A6A), fontSize: 16);
 
-class WelcomePage extends HookWidget {
-  const WelcomePage({super.key});
+const trialEndText =
+    'Die offizielle Testphase ist vorbei. Vielen Dank für deine Hilfe! Du kannst die App weiterhin nutzen, indem du die App im Store updadest und ab kommendem Schuljahr einen kleinen Beitrag zahlst. Weitere Informationen erhältst du bei Herr Niemann oder per Mail an den Entwickler, Hauke Schnau unter studienbuch@haukeschnau.de';
+
+class TrialOverPage extends HookWidget {
+  const TrialOverPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final store = useState(SetupStore());
-    final currentPage = useState<Widget?>(null);
-
-    useEffect(() {
-      store.value.licenseKey = "KJ27-MP16-LS14-JM22";
-
-      currentPage.value = ProfileSetupPage(
-        onNext: (Widget nextPage) {
-          currentPage.value = nextPage;
-        },
-        store: store.value,
-      );
-      return null;
-
-      // TODO: Re-add after trial phase is over
-      // currentPage.value = LicenseForm(
-      //   onNext: (Widget nextPage) {
-      //     currentPage.value = nextPage;
-      //   },
-      //   store: store.value,
-      // );
-      // return null;
-    }, []);
-
     return Scaffold(
       body: SizedBox(
         width: MediaQuery.of(context).size.width,
@@ -88,7 +65,37 @@ class WelcomePage extends HookWidget {
                           margin: const EdgeInsets.symmetric(horizontal: 32),
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           width: min(MediaQuery.of(context).size.width, 500),
-                          child: currentPage.value ?? Container()),
+                          child: Column(
+                            children: [
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 36.0),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      "Testphase vorbei!",
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineMedium,
+                                    ),
+                                    const SizedBox(height: 8.0),
+                                    Text(trialEndText,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium),
+                                  ],
+                                ),
+                              ),
+                              // Padding(
+                              //   padding:
+                              //       const EdgeInsets.symmetric(vertical: 24.0),
+                              //   child: FilledButton(
+                              //     child: const Text("Store öffnen"),
+                              //     onPressed: () {},
+                              //   ),
+                              // )
+                            ],
+                          )),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 32),
