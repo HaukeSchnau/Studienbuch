@@ -208,7 +208,7 @@ export const seedClasses = async () => {
         const isNormalTime = normalTimes.includes(row.startMinutes);
         let weeks: CourseTimeWeeks = "BOTH";
         let startMinutes = row.startMinutes;
-        let endMinutes = row.endMinutes;
+        let endMinutes = row.endMinutes + 40;
 
         if (!isNormalTime && coursesForDay.length > 0) {
           weeks = "ODD";
