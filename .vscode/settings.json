@@ -8,5 +8,6 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "[prisma]": {
     "editor.defaultFormatter": "Prisma.prisma"
-  }
+  },
+  "dart.analysisExcludedFolders": ["apps/flutter/api"]
 }
