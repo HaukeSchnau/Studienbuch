@@ -91,14 +91,15 @@ abstract class _AgendaBase with Store {
 List<AgendaEntry> _buildEntries(List<Course> courses, DateTime date) {
   date = date.startOfDay;
 
+  final currentWeekNumber = date.weekNumber;
+
   List<AgendaEntry> entries = [];
   for (final course in courses) {
     for (final time in course.courseTimes) {
-      if (time.weekday == date.weekday) {
-        // final substitution = substitutions.firstWhereOrNull((sub) =>
-        //     sub.agendaEntry.start ==
-        //     date.copyWith(hour: time.start.hour, minute: time.start.minute));
-
+      if (time.weekday == date.weekday &&
+          (time.weeks == CourseTimeWeek.both ||
+              (time.weeks == CourseTimeWeek.even && currentWeekNumber.isEven) ||
+              (time.weeks == CourseTimeWeek.odd && currentWeekNumber.isOdd))) {
         entries.add(AgendaEntry(
           course: course,
           recurringTime: time,

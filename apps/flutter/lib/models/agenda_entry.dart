@@ -25,11 +25,11 @@ class AgendaEntry {
       course: null,
       concreteDate: date,
       recurringTime: CourseTime(
-        id: -1,
-        start: lessonTime,
-        weekday: date.weekday,
-        duration: 80,
-      ),
+          id: -1,
+          start: lessonTime,
+          weekday: date.weekday,
+          duration: 80,
+          weeks: CourseTimeWeek.both),
     );
   }
 

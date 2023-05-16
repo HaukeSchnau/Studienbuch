@@ -12,6 +12,15 @@ part 'setup_store.g.dart';
 
 class SetupStore = _SetupStoreBase with _$SetupStore;
 
+const _weeksMap = {
+  QueryClassesGet200ResponseInnerCoursesInnerTimesInnerWeeksEnum.BOTH:
+      CourseTimeWeek.both,
+  QueryClassesGet200ResponseInnerCoursesInnerTimesInnerWeeksEnum.EVEN:
+      CourseTimeWeek.even,
+  QueryClassesGet200ResponseInnerCoursesInnerTimesInnerWeeksEnum.ODD:
+      CourseTimeWeek.odd,
+};
+
 extension YearExtension on ApiYear {
   int get yearNumber {
     final now = DateTime.now();
@@ -75,12 +84,12 @@ abstract class _SetupStoreBase with Store {
 
       for (final time in course.times) {
         await db.into(db.courseTimes).insert(CourseTime(
-              id: time.id,
-              duration: time.duration,
-              start: TimeOfDay.fromMinutes(time.start),
-              weekday: time.weekday,
-              course: course.id,
-            ));
+            id: time.id,
+            duration: time.duration,
+            start: TimeOfDay.fromMinutes(time.start),
+            weekday: time.weekday,
+            course: course.id,
+            weeks: _weeksMap[time.weeks]!));
       }
     }
 
@@ -112,6 +121,7 @@ abstract class _SetupStoreBase with Store {
               start: TimeOfDay.fromMinutes(time.start),
               weekday: time.weekday,
               course: course.id,
+              weeks: _weeksMap[time.weeks]!,
             ));
       }
     }

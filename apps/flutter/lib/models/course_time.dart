@@ -63,12 +63,19 @@ class TimeOfDay {
   }
 }
 
+enum CourseTimeWeek {
+  even,
+  odd,
+  both,
+}
+
 class CourseTimes extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get weekday => integer()();
   IntColumn get start => integer().map(const TimeOfDayConverter())();
   IntColumn get duration => integer()();
   IntColumn get course => integer().nullable().references(Courses, #id)();
+  TextColumn get weeks => textEnum<CourseTimeWeek>()();
 }
 
 class TimeOfDayConverter extends TypeConverter<TimeOfDay, int> {

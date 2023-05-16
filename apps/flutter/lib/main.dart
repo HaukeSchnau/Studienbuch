@@ -13,6 +13,7 @@ import 'package:class_mate/static/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +22,7 @@ import 'package:class_mate/models/course.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   Intl.defaultLocale = "de_DE";
+  await initializeDateFormatting("de_DE", null);
 
   final store = await loadStore();
   if (store != null) {
@@ -172,17 +174,10 @@ class App extends HookWidget {
         [store.value, isTrial]);
 
     return MaterialApp.router(
-        routerConfig: router,
-        title: 'IGS Lilienthal',
-        theme: buildTheme(theme),
-        debugShowCheckedModeBanner: false,
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [
-          Locale('de', 'DE'),
-        ]);
+      routerConfig: router,
+      title: 'IGS Lilienthal',
+      theme: buildTheme(theme),
+      debugShowCheckedModeBanner: false,
+    );
   }
 }
