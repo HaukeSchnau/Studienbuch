@@ -67,36 +67,21 @@ class AgendaEntryView extends DataHookWidget<AgendaEntry> {
                         style: const TextStyle(
                             fontSize: 12, color: Color.fromRGBO(0, 0, 0, .7)),
                       ),
-                Row(
-                  children: [
-                    Text(
-                      course.name,
-                      style: TextStyle(
-                          fontSize: 20,
-                          color: theme.primaryText,
-                          // fontWeight: FontWeight.w600,
-                          decoration: entry.isSubstituted
-                              ? TextDecoration.lineThrough
-                              : null,
-                          decorationColor: theme.error,
-                          decorationThickness: 2),
-                    ),
-                    entry.isSubstituted
-                        ? Padding(
-                            padding: const EdgeInsets.only(left: 8.0),
-                            child: Text(
-                              "(${typeStringMap[entry.substitution?.type]})",
-                              style:
-                                  TextStyle(fontSize: 16, color: theme.error),
-                            ),
-                          )
-                        : Container()
-                  ],
-                ),
-                Text(
-                  course.teacher.longFormalName,
+                CancelledText(
+                    isCancelled: entry.isCancelled,
+                    text: course.name,
+                    cancelledText: typeStringMap[entry.substitution?.type],
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: theme.primaryText,
+                      // fontWeight: FontWeight.w600
+                    )),
+                CancelledText(
+                  isCancelled: entry.isSubstituted,
+                  text: course.teacher.longFormalName,
+                  cancelledText: typeStringMap[entry.substitution?.type],
                   style: const TextStyle(color: Colors.black87),
-                ),
+                )
               ],
             ),
           ),
@@ -121,5 +106,44 @@ class AgendaEntryView extends DataHookWidget<AgendaEntry> {
             child: view,
           ));
     }
+  }
+}
+
+class CancelledText extends StatelessWidget {
+  final bool isCancelled;
+  final String text;
+  final String? cancelledText;
+  final TextStyle? style;
+
+  const CancelledText(
+      {Key? key,
+      required this.isCancelled,
+      required this.text,
+      this.cancelledText,
+      this.style})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          text,
+          style: style?.copyWith(
+              decoration: isCancelled ? TextDecoration.lineThrough : null,
+              decorationColor: theme.error,
+              decorationThickness: 2),
+        ),
+        isCancelled && cancelledText != null
+            ? Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: Text(
+                  "($cancelledText)",
+                  style: TextStyle(fontSize: 16, color: theme.error),
+                ),
+              )
+            : Container()
+      ],
+    );
   }
 }

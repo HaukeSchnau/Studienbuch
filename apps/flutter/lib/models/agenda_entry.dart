@@ -42,10 +42,8 @@ class AgendaEntry {
   bool get isNow =>
       DateTime.now().isAfter(start) && DateTime.now().isBefore(end);
 
-  bool get isSubstituted => substitution != null;
-
-
-  // bool get isCancelled => substitution?.type == SubstitutionType.entfall;
+  bool get isCancelled => substitution?.type == SubstitutionType.entfall || substitution?.type == SubstitutionType.freisetzung;
+  bool get isSubstituted => substitution?.type == SubstitutionType.vertretung || substitution?.type == SubstitutionType.betreuung;
 
   int compareTo(AgendaEntry other) {
     return _concreteDate.compareTo(other._concreteDate);
