@@ -211,7 +211,7 @@ export const seedClasses = async () => {
         let endMinutes = row.endMinutes + 40;
 
         if (!isNormalTime && coursesForDay.length > 0) {
-          weeks = "ODD";
+          weeks = "EVEN";
           startMinutes -= 40;
           endMinutes -= 40;
         }
@@ -222,7 +222,7 @@ export const seedClasses = async () => {
           cellBelow &&
           cellBelow.length > 0
         ) {
-          weeks = "EVEN";
+          weeks = "ODD";
         }
 
         for (const course of coursesForDay) {
