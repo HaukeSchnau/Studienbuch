@@ -3,3 +3,4 @@
 source .venv/bin/activate
 
 python apps/scripts/src/fetch_substitutions.py
+ts-node apps/scripts/src/copySubstitutions.ts

@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import p from "path";
+import dayjs from "dayjs";
 import z from "zod";
 
 import { prisma } from "@acme/db";
@@ -75,7 +76,7 @@ const main = async () => {
           continue;
         }
 
-        await prisma.substitution.upsert({
+        const res = await prisma.substitution.upsert({
           where: {
             substitutionIdentifier: {
               date: substitution.date.toDate(),
@@ -108,6 +109,18 @@ const main = async () => {
             type: type.data,
           },
         });
+
+        const isNew = dayjs(res.updatedAt).diff(res.createdAt) < 1000;
+
+        if (isNew) {
+          console.log(
+            `Created substitution ${substitution.date.format("YYYY-MM-DD")} ${
+              substitution.lessonStart
+            } ${substitution.lessonEnd} ${
+              substitution.type
+            } ${substitution.readableSubject} ${class_}`,
+          );
+        }
       }
     }
   }
