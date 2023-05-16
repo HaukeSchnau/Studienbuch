@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'package:class_companion/database.dart';
-import 'package:class_companion/models/class.dart';
-import 'package:class_companion/models/semester.dart';
+import 'package:class_mate/database.dart';
+import 'package:class_mate/models/class.dart';
+import 'package:class_mate/models/semester.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart' hide Table;
 import 'package:go_router/go_router.dart';

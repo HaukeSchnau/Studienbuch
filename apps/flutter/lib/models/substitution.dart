@@ -1,4 +1,4 @@
-import 'package:class_companion_api/api.dart';
+import 'package:class_mate_api/api.dart';
 
 enum SubstitutionType {
   freisetzung,

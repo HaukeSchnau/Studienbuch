@@ -1,7 +1,7 @@
-import 'package:class_companion/components/agenda/agenda_entry_view.dart';
-import 'package:class_companion/components/util/card.dart';
-import 'package:class_companion/data_hook_widget.dart';
-import 'package:class_companion/models/agenda.dart';
+import 'package:class_mate/components/agenda/agenda_entry_view.dart';
+import 'package:class_mate/components/util/card.dart';
+import 'package:class_mate/data_hook_widget.dart';
+import 'package:class_mate/models/agenda.dart';
 import 'package:flutter/material.dart';
 
 class AgendaView extends DataHookWidget<Agenda> {

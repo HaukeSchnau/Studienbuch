@@ -1,9 +1,9 @@
-import 'package:class_companion/components/grades/grades_card.dart';
-import 'package:class_companion/components/path_bg_page.dart';
-import 'package:class_companion/components/tasks/tasks_overview.dart';
-import 'package:class_companion/components/util/bottom_panels.dart';
-import 'package:class_companion/models/course.dart';
-import 'package:class_companion/models/semester.dart';
+import 'package:class_mate/components/grades/grades_card.dart';
+import 'package:class_mate/components/path_bg_page.dart';
+import 'package:class_mate/components/tasks/tasks_overview.dart';
+import 'package:class_mate/components/util/bottom_panels.dart';
+import 'package:class_mate/models/course.dart';
+import 'package:class_mate/models/semester.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';

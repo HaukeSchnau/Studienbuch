@@ -1,1 +1,1 @@
-# ClassCompanion Monorepo
+# ClassMate Monorepo

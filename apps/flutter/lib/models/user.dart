@@ -1,4 +1,4 @@
-import 'package:class_companion/models/year.dart';
+import 'package:class_mate/models/year.dart';
 import 'package:mobx/mobx.dart';
 
 part 'user.g.dart';

@@ -1,7 +1,7 @@
-import 'package:class_companion/database.dart';
-import 'package:class_companion/models/course.dart';
+import 'package:class_mate/database.dart';
+import 'package:class_mate/models/course.dart';
 import 'package:drift/drift.dart';
-import 'package:class_companion/lazy.dart';
+import 'package:class_mate/lazy.dart';
 
 enum SemesterType {
   winter,

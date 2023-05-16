@@ -1,4 +1,4 @@
-package de.haukeschnau.class_companion
+package de.haukeschnau.class_mate
 
 import io.flutter.embedding.android.FlutterActivity
 

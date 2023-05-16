@@ -1,8 +1,7 @@
 import 'dart:math';
 
-import 'package:class_companion/util/math_util.dart';
+import 'package:class_mate/util/math_util.dart';
 import 'package:flutter/widgets.dart';
-
 
 class BezierClipper extends CustomClipper<Path> {
   @override

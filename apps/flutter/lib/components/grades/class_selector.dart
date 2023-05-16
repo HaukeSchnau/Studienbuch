@@ -1,4 +1,4 @@
-// import 'package:class_companion/components/selector.dart';
+// import 'package:class_mate/components/selector.dart';
 // import 'package:flutter/material.dart';
 // import 'package:igs_lilienthal/components/selector.dart';
 // import 'package:igs_lilienthal/models/classes/classes.dart';

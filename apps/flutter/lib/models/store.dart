@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:class_companion/database.dart';
-import 'package:class_companion/models/absence.dart';
-import 'package:class_companion/models/agenda.dart';
-import 'package:class_companion/models/course.dart';
-import 'package:class_companion/models/semester.dart';
-import 'package:class_companion/models/substitution.dart';
-import 'package:class_companion/models/user.dart';
-import 'package:class_companion/openapi.dart';
-import 'package:class_companion/util/date_util.dart';
-import 'package:class_companion/util/list_util.dart';
+import 'package:class_mate/database.dart';
+import 'package:class_mate/models/absence.dart';
+import 'package:class_mate/models/agenda.dart';
+import 'package:class_mate/models/course.dart';
+import 'package:class_mate/models/semester.dart';
+import 'package:class_mate/models/substitution.dart';
+import 'package:class_mate/models/user.dart';
+import 'package:class_mate/openapi.dart';
+import 'package:class_mate/util/date_util.dart';
+import 'package:class_mate/util/list_util.dart';
 import 'package:drift/drift.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:flutter/material.dart' hide Key;
@@ -63,7 +63,7 @@ abstract class _GlobalStore with Store {
     db.select(db.courses).watch().listen((event) async {
       courses = event;
 
-       await _updateAgenda();
+      await _updateAgenda();
 
       // // TOOD: This is temporary
       // final entry = agenda.entries.first;

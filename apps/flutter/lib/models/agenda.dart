@@ -1,7 +1,7 @@
-import 'package:class_companion/models/agenda_entry.dart';
-import 'package:class_companion/models/course.dart';
-import 'package:class_companion/models/course_time.dart';
-import 'package:class_companion/util/date_util.dart';
+import 'package:class_mate/models/agenda_entry.dart';
+import 'package:class_mate/models/course.dart';
+import 'package:class_mate/models/course_time.dart';
+import 'package:class_mate/util/date_util.dart';
 import 'package:mobx/mobx.dart';
 part 'agenda.g.dart';
 

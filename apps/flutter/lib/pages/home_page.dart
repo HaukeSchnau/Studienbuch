@@ -1,10 +1,10 @@
-import 'package:class_companion/components/absences/absense_card.dart';
-import 'package:class_companion/components/agenda/agenda_view.dart';
-import 'package:class_companion/components/path_bg_page.dart';
-import 'package:class_companion/components/tasks/tasks_overview.dart';
-import 'package:class_companion/components/util/bottom_panels.dart';
-import 'package:class_companion/hooks/use_store.dart';
-import 'package:class_companion/util/ui_util.dart';
+import 'package:class_mate/components/absences/absense_card.dart';
+import 'package:class_mate/components/agenda/agenda_view.dart';
+import 'package:class_mate/components/path_bg_page.dart';
+import 'package:class_mate/components/tasks/tasks_overview.dart';
+import 'package:class_mate/components/util/bottom_panels.dart';
+import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/util/ui_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';

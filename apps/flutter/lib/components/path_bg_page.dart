@@ -1,6 +1,6 @@
-import 'package:class_companion/components/util/clip_shadow_path.dart';
-import 'package:class_companion/components/util/clippers.dart';
-import 'package:class_companion/static/colors.dart';
+import 'package:class_mate/components/util/clip_shadow_path.dart';
+import 'package:class_mate/components/util/clippers.dart';
+import 'package:class_mate/static/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
@@ -8,8 +8,7 @@ class PathBackgroundPage extends HookWidget {
   final Widget child;
   final Color? bottomColor;
 
-  const PathBackgroundPage(
-      {super.key, required this.child, this.bottomColor});
+  const PathBackgroundPage({super.key, required this.child, this.bottomColor});
 
   @override
   Widget build(BuildContext context) {

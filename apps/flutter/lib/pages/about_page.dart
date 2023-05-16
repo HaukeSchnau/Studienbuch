@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:class_companion/components/util/logo.dart';
+import 'package:class_mate/components/util/logo.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -23,7 +23,7 @@ class AboutPage extends HookWidget {
 
     return LicensePage(
       applicationIcon: const Logo(),
-      applicationName: "Class Companion: IGS Lilienthal",
+      applicationName: "Class Mate: IGS Lilienthal",
       applicationVersion:
           packageInfo != null ? "Version ${packageInfo.version}" : null,
       applicationLegalese: "© ${DateTime.now().year.toString()} Hauke Schnau",

@@ -1,21 +1,21 @@
-import 'package:class_companion/components/tasks/task_page.dart';
-import 'package:class_companion/database.dart';
-import 'package:class_companion/models/semester.dart';
-import 'package:class_companion/models/store.dart';
-import 'package:class_companion/pages/about_page.dart';
-import 'package:class_companion/pages/absences_page.dart';
-import 'package:class_companion/pages/course_page.dart';
-import 'package:class_companion/pages/root_page.dart';
-import 'package:class_companion/pages/welcome_page.dart';
-import 'package:class_companion/static/colors.dart';
-import 'package:class_companion/static/theme.dart';
+import 'package:class_mate/components/tasks/task_page.dart';
+import 'package:class_mate/database.dart';
+import 'package:class_mate/models/semester.dart';
+import 'package:class_mate/models/store.dart';
+import 'package:class_mate/pages/about_page.dart';
+import 'package:class_mate/pages/absences_page.dart';
+import 'package:class_mate/pages/course_page.dart';
+import 'package:class_mate/pages/root_page.dart';
+import 'package:class_mate/pages/welcome_page.dart';
+import 'package:class_mate/static/colors.dart';
+import 'package:class_mate/static/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:class_companion/models/course.dart';
+import 'package:class_mate/models/course.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

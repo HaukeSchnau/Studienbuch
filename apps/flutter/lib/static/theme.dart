@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:class_companion/static/colors.dart';
+import 'package:class_mate/static/colors.dart';
 
 TextTheme buildTextTheme(MyTheme theme) {
   return TextTheme(

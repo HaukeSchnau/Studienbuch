@@ -1,4 +1,4 @@
-import 'package:class_companion/static/colors.dart';
+import 'package:class_mate/static/colors.dart';
 import 'package:flutter/material.dart';
 
 typedef SelectorItemBuilder<T> = Widget Function(T value);

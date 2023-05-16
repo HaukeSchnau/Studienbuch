@@ -1,10 +1,10 @@
-import 'package:class_companion/database.dart';
-import 'package:class_companion/models/course_time.dart';
-import 'package:class_companion/models/semester.dart';
-import 'package:class_companion/models/store.dart';
-import 'package:class_companion/models/user.dart';
-import 'package:class_companion/models/year.dart';
-import 'package:class_companion_api/api.dart';
+import 'package:class_mate/database.dart';
+import 'package:class_mate/models/course_time.dart';
+import 'package:class_mate/models/semester.dart';
+import 'package:class_mate/models/store.dart';
+import 'package:class_mate/models/user.dart';
+import 'package:class_mate/models/year.dart';
+import 'package:class_mate_api/api.dart';
 import 'package:drift/drift.dart';
 import 'package:mobx/mobx.dart';
 

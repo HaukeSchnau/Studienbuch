@@ -1,11 +1,11 @@
-import 'package:class_companion/components/action_sheet.dart';
-import 'package:class_companion/components/profile/cool_dots.dart';
-import 'package:class_companion/hooks/use_store.dart';
-import 'package:class_companion/static/colors.dart';
+import 'package:class_mate/components/action_sheet.dart';
+import 'package:class_mate/components/profile/cool_dots.dart';
+import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/static/colors.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:class_companion/components/profile/smol_card.dart';
+import 'package:class_mate/components/profile/smol_card.dart';
 import 'package:go_router/go_router.dart';
 
 class ProfileTopPanel extends HookWidget {

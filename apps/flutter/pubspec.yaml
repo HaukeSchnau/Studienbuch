@@ -1,4 +1,4 @@
-name: class_companion
+name: class_mate
 description: A new Flutter project.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -47,7 +47,7 @@ dependencies:
   flutter_mobx: ^2.0.6+5
   freezed_annotation: ^2.2.0
   openapi_generator_annotations: ^4.0.0
-  class_companion_api:
+  class_mate_api:
     path: ./api
   provider: ^6.0.5
   url_launcher: ^6.1.10

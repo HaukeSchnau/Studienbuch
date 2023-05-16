@@ -1,8 +1,8 @@
-import 'package:class_companion/database.dart';
-import 'package:class_companion/models/course.dart';
-import 'package:class_companion/models/course_time.dart';
-import 'package:class_companion/models/substitution.dart';
-import 'package:class_companion/util/date_util.dart';
+import 'package:class_mate/database.dart';
+import 'package:class_mate/models/course.dart';
+import 'package:class_mate/models/course_time.dart';
+import 'package:class_mate/models/substitution.dart';
+import 'package:class_mate/util/date_util.dart';
 
 class AgendaEntry {
   final Course? course;
@@ -42,8 +42,12 @@ class AgendaEntry {
   bool get isNow =>
       DateTime.now().isAfter(start) && DateTime.now().isBefore(end);
 
-  bool get isCancelled => substitution?.type == SubstitutionType.entfall || substitution?.type == SubstitutionType.freisetzung;
-  bool get isSubstituted => substitution?.type == SubstitutionType.vertretung || substitution?.type == SubstitutionType.betreuung;
+  bool get isCancelled =>
+      substitution?.type == SubstitutionType.entfall ||
+      substitution?.type == SubstitutionType.freisetzung;
+  bool get isSubstituted =>
+      substitution?.type == SubstitutionType.vertretung ||
+      substitution?.type == SubstitutionType.betreuung;
 
   int compareTo(AgendaEntry other) {
     return _concreteDate.compareTo(other._concreteDate);

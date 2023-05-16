@@ -1,1 +1,1 @@
-# Class Companion App
+# Class Mate App

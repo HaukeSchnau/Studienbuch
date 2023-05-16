@@ -1,6 +1,6 @@
-import 'package:class_companion/database.dart';
+import 'package:class_mate/database.dart';
 import 'package:drift/drift.dart';
-import 'package:class_companion/models/course.dart';
+import 'package:class_mate/models/course.dart';
 
 @UseRowClass(Absence, constructor: 'load')
 class Absences extends Table {
@@ -72,7 +72,7 @@ class AbsenceGroup {
     required this.isExcusedByTeacher,
     required this.isExcusedByParent,
   });
-  
+
   bool get isExcused => isExcusedByTeacher && isExcusedByParent;
 }
 

@@ -1,8 +1,8 @@
-import 'package:class_companion/components/bottom_sheet_container.dart';
-import 'package:class_companion/components/register_absence_form.dart';
-import 'package:class_companion/components/util/card.dart';
-import 'package:class_companion/hooks/use_store.dart';
-import 'package:class_companion/static/colors.dart';
+import 'package:class_mate/components/bottom_sheet_container.dart';
+import 'package:class_mate/components/register_absence_form.dart';
+import 'package:class_mate/components/util/card.dart';
+import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/static/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';

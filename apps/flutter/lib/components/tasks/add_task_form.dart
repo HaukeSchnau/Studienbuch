@@ -1,14 +1,14 @@
 import 'dart:io';
 
-import 'package:class_companion/components/grades/pruefungsfach_selector.dart';
-import 'package:class_companion/database.dart';
-import 'package:class_companion/hooks/use_store.dart';
-import 'package:class_companion/models/course.dart';
-import 'package:class_companion/static/colors.dart';
-import 'package:class_companion/static/theme.dart';
-import 'package:class_companion/util/date_util.dart';
-import 'package:class_companion/util/image_picker_util.dart';
-import 'package:class_companion/util/string_util.dart';
+import 'package:class_mate/components/grades/pruefungsfach_selector.dart';
+import 'package:class_mate/database.dart';
+import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/models/course.dart';
+import 'package:class_mate/static/colors.dart';
+import 'package:class_mate/static/theme.dart';
+import 'package:class_mate/util/date_util.dart';
+import 'package:class_mate/util/image_picker_util.dart';
+import 'package:class_mate/util/string_util.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';

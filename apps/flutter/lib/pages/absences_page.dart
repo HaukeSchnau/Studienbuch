@@ -1,8 +1,8 @@
-import 'package:class_companion/components/absences/absence_view.dart';
-import 'package:class_companion/database.dart';
-import 'package:class_companion/hooks/use_query.dart';
-import 'package:class_companion/models/absence.dart';
-import 'package:class_companion/static/colors.dart';
+import 'package:class_mate/components/absences/absence_view.dart';
+import 'package:class_mate/database.dart';
+import 'package:class_mate/hooks/use_query.dart';
+import 'package:class_mate/models/absence.dart';
+import 'package:class_mate/static/colors.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';

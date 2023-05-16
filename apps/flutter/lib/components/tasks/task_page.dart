@@ -1,12 +1,12 @@
 import 'dart:io';
 
 import 'package:assorted_layout_widgets/assorted_layout_widgets.dart';
-import 'package:class_companion/components/util/bottom_panels.dart';
-import 'package:class_companion/components/util/image_dialog.dart';
-import 'package:class_companion/database.dart';
-import 'package:class_companion/hooks/use_query.dart';
-import 'package:class_companion/static/colors.dart';
-import 'package:class_companion/util/list_util.dart';
+import 'package:class_mate/components/util/bottom_panels.dart';
+import 'package:class_mate/components/util/image_dialog.dart';
+import 'package:class_mate/database.dart';
+import 'package:class_mate/hooks/use_query.dart';
+import 'package:class_mate/static/colors.dart';
+import 'package:class_mate/util/list_util.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';

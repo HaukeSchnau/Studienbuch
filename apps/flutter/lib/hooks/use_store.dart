@@ -1,4 +1,4 @@
-import 'package:class_companion/models/store.dart';
+import 'package:class_mate/models/store.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:provider/provider.dart';
 

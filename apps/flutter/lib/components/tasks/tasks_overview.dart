@@ -1,10 +1,10 @@
-import 'package:class_companion/components/bottom_sheet_container.dart';
-import 'package:class_companion/components/tasks/add_task_form.dart';
-import 'package:class_companion/components/tasks/tasks_view.dart';
-import 'package:class_companion/database.dart';
-import 'package:class_companion/hooks/use_query.dart';
-import 'package:class_companion/hooks/use_store.dart';
-import 'package:class_companion/models/course.dart';
+import 'package:class_mate/components/bottom_sheet_container.dart';
+import 'package:class_mate/components/tasks/add_task_form.dart';
+import 'package:class_mate/components/tasks/tasks_view.dart';
+import 'package:class_mate/database.dart';
+import 'package:class_mate/hooks/use_query.dart';
+import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/models/course.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';

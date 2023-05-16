@@ -1,10 +1,10 @@
-import 'package:class_companion/components/course_selector.dart';
-import 'package:class_companion/hooks/use_network_result.dart';
-import 'package:class_companion/main.dart';
-import 'package:class_companion/models/setup_store.dart';
-import 'package:class_companion/openapi.dart';
-import 'package:class_companion/pages/license_form.dart';
-import 'package:class_companion_api/api.dart';
+import 'package:class_mate/components/course_selector.dart';
+import 'package:class_mate/hooks/use_network_result.dart';
+import 'package:class_mate/main.dart';
+import 'package:class_mate/models/setup_store.dart';
+import 'package:class_mate/openapi.dart';
+import 'package:class_mate/pages/license_form.dart';
+import 'package:class_mate_api/api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:mobx/mobx.dart';

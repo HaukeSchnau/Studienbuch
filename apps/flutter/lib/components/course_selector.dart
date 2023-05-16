@@ -1,7 +1,7 @@
-import 'package:class_companion/models/course.dart' show getCourseIcon;
-import 'package:class_companion/pages/classes_courses_setup_page.dart';
-import 'package:class_companion/static/theme.dart';
-import 'package:class_companion_api/api.dart';
+import 'package:class_mate/models/course.dart' show getCourseIcon;
+import 'package:class_mate/pages/classes_courses_setup_page.dart';
+import 'package:class_mate/static/theme.dart';
+import 'package:class_mate_api/api.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';

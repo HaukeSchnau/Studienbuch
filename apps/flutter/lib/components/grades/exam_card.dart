@@ -1,16 +1,16 @@
-import 'package:class_companion/components/confirm_with_signature.dart';
-import 'package:class_companion/components/confirmation_info.dart';
-import 'package:class_companion/components/util/card.dart';
-import 'package:class_companion/confirmation_status_view.dart';
-import 'package:class_companion/database.dart';
-import 'package:class_companion/hooks/use_store.dart';
-import 'package:class_companion/models/course.dart';
-import 'package:class_companion/models/grade_result.dart';
-import 'package:class_companion/models/user.dart';
-import 'package:class_companion/pages/confirmation_view.dart';
-import 'package:class_companion/static/colors.dart';
-import 'package:class_companion/util/date_util.dart';
-import 'package:class_companion/util/number_util.dart';
+import 'package:class_mate/components/confirm_with_signature.dart';
+import 'package:class_mate/components/confirmation_info.dart';
+import 'package:class_mate/components/util/card.dart';
+import 'package:class_mate/confirmation_status_view.dart';
+import 'package:class_mate/database.dart';
+import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/models/course.dart';
+import 'package:class_mate/models/grade_result.dart';
+import 'package:class_mate/models/user.dart';
+import 'package:class_mate/pages/confirmation_view.dart';
+import 'package:class_mate/static/colors.dart';
+import 'package:class_mate/util/date_util.dart';
+import 'package:class_mate/util/number_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
@@ -47,17 +47,16 @@ class ExamCard extends HookWidget {
             )));
 
     return ResultCard(
-      result: examResult,
-      course: course,
-      action: !examResult.isConfirmed
-          ? examResult.isConfirmedByTeacher
-              ? confirmParent
-              : confirmTeacher
-          : null,
-      actionColor: theme.error,
-      userIsOfAge: store.currentUser.isOfAge,
-      user: store.currentUser
-    );
+        result: examResult,
+        course: course,
+        action: !examResult.isConfirmed
+            ? examResult.isConfirmedByTeacher
+                ? confirmParent
+                : confirmTeacher
+            : null,
+        actionColor: theme.error,
+        userIsOfAge: store.currentUser.isOfAge,
+        user: store.currentUser);
   }
 }
 

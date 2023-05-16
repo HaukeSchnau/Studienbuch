@@ -1,8 +1,8 @@
-import 'package:class_companion/components/util/card.dart';
-import 'package:class_companion/hooks/use_grades.dart';
-import 'package:class_companion/models/course.dart';
-import 'package:class_companion/models/semester.dart';
-import 'package:class_companion/util/number_util.dart';
+import 'package:class_mate/components/util/card.dart';
+import 'package:class_mate/hooks/use_grades.dart';
+import 'package:class_mate/models/course.dart';
+import 'package:class_mate/models/semester.dart';
+import 'package:class_mate/util/number_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';

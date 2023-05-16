@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = class_companion
+PRODUCT_NAME = class_mate
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = de.haukeschnau.classCompanion
+PRODUCT_BUNDLE_IDENTIFIER = de.haukeschnau.classMate
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2023 de.haukeschnau. All rights reserved.

@@ -1,8 +1,8 @@
-import 'package:class_companion/database.dart';
-import 'package:class_companion/hooks/use_query.dart';
-import 'package:class_companion/models/course.dart';
-import 'package:class_companion/models/grade_result.dart';
-import 'package:class_companion/util/list_util.dart';
+import 'package:class_mate/database.dart';
+import 'package:class_mate/hooks/use_query.dart';
+import 'package:class_mate/models/course.dart';
+import 'package:class_mate/models/grade_result.dart';
+import 'package:class_mate/util/list_util.dart';
 import 'package:drift/drift.dart';
 
 class CurrentOralGrade {

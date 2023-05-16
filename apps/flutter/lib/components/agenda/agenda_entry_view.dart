@@ -1,9 +1,9 @@
-import 'package:class_companion/data_hook_widget.dart';
-import 'package:class_companion/models/agenda_entry.dart';
-import 'package:class_companion/models/course.dart';
-import 'package:class_companion/models/semester.dart';
-import 'package:class_companion/models/substitution.dart';
-import 'package:class_companion/static/colors.dart';
+import 'package:class_mate/data_hook_widget.dart';
+import 'package:class_mate/models/agenda_entry.dart';
+import 'package:class_mate/models/course.dart';
+import 'package:class_mate/models/semester.dart';
+import 'package:class_mate/models/substitution.dart';
+import 'package:class_mate/static/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 

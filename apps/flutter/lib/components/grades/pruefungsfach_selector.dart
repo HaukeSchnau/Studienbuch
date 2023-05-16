@@ -1,5 +1,5 @@
-import 'package:class_companion/components/selector.dart';
-import 'package:class_companion/models/course.dart';
+import 'package:class_mate/components/selector.dart';
+import 'package:class_mate/models/course.dart';
 import 'package:flutter/material.dart';
 
 class PruefungsfachSelector extends StatelessWidget {

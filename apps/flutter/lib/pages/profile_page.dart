@@ -1,9 +1,9 @@
 import 'package:assorted_layout_widgets/assorted_layout_widgets.dart';
-import 'package:class_companion/components/profile/smol_card.dart';
-import 'package:class_companion/components/profile/subjects_grid.dart';
-import 'package:class_companion/components/profile/top_panel.dart';
-import 'package:class_companion/components/tab_bar_view.dart';
-import 'package:class_companion/hooks/use_store.dart';
+import 'package:class_mate/components/profile/smol_card.dart';
+import 'package:class_mate/components/profile/subjects_grid.dart';
+import 'package:class_mate/components/profile/top_panel.dart';
+import 'package:class_mate/components/tab_bar_view.dart';
+import 'package:class_mate/hooks/use_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 

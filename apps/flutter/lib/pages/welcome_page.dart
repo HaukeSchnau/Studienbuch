@@ -1,12 +1,12 @@
 import 'dart:math';
 
-import 'package:class_companion/components/util/card.dart';
-import 'package:class_companion/components/util/circle.dart';
-import 'package:class_companion/models/setup_store.dart';
-import 'package:class_companion/pages/license_form.dart';
+import 'package:class_mate/components/util/card.dart';
+import 'package:class_mate/components/util/circle.dart';
+import 'package:class_mate/models/setup_store.dart';
+import 'package:class_mate/pages/license_form.dart';
 import 'package:flutter/material.dart';
-import 'package:class_companion/components/util/logo.dart';
-import 'package:class_companion/static/colors.dart';
+import 'package:class_mate/components/util/logo.dart';
+import 'package:class_mate/static/colors.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:url_launcher/url_launcher.dart';
 

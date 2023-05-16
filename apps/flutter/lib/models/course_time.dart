@@ -1,5 +1,5 @@
-import 'package:class_companion/database.dart';
-import 'package:class_companion/models/course.dart';
+import 'package:class_mate/database.dart';
+import 'package:class_mate/models/course.dart';
 import 'package:drift/drift.dart';
 
 class TimeOfDay {

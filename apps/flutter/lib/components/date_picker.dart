@@ -1,5 +1,5 @@
-import 'package:class_companion/static/theme.dart';
-import 'package:class_companion/util/date_util.dart';
+import 'package:class_mate/static/theme.dart';
+import 'package:class_mate/util/date_util.dart';
 import 'package:flutter/material.dart';
 
 class DatePicker extends StatelessWidget {

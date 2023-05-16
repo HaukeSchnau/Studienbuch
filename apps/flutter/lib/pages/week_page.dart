@@ -1,10 +1,10 @@
-import 'package:class_companion/hooks/use_store.dart';
-import 'package:class_companion/models/agenda.dart';
-import 'package:class_companion/models/agenda_entry.dart';
-import 'package:class_companion/models/course.dart';
-import 'package:class_companion/models/course_time.dart';
-import 'package:class_companion/models/semester.dart';
-import 'package:class_companion/static/colors.dart';
+import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/models/agenda.dart';
+import 'package:class_mate/models/agenda_entry.dart';
+import 'package:class_mate/models/course.dart';
+import 'package:class_mate/models/course_time.dart';
+import 'package:class_mate/models/semester.dart';
+import 'package:class_mate/static/colors.dart';
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_hooks/flutter_hooks.dart';
 

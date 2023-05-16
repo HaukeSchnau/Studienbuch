@@ -1,6 +1,6 @@
 import 'package:assorted_layout_widgets/assorted_layout_widgets.dart';
-import 'package:class_companion/components/util/clippers.dart';
-import 'package:class_companion/static/colors.dart';
+import 'package:class_mate/components/util/clippers.dart';
+import 'package:class_mate/static/colors.dart';
 import 'package:flutter/material.dart';
 
 class BottomPanels extends StatelessWidget {

@@ -1,9 +1,9 @@
-import 'package:class_companion/models/setup_store.dart';
-import 'package:class_companion/openapi.dart';
-import 'package:class_companion/pages/profile_setup_page.dart';
-import 'package:class_companion/static/colors.dart';
-import 'package:class_companion/static/theme.dart';
-import 'package:class_companion/util/string_util.dart';
+import 'package:class_mate/models/setup_store.dart';
+import 'package:class_mate/openapi.dart';
+import 'package:class_mate/pages/profile_setup_page.dart';
+import 'package:class_mate/static/colors.dart';
+import 'package:class_mate/static/theme.dart';
+import 'package:class_mate/util/string_util.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter/material.dart';
