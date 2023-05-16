@@ -4,7 +4,7 @@ import Papa from "papaparse";
 import { z } from "zod";
 
 import { guessSubject } from "@acme/common";
-import { prisma } from "@acme/db";
+import { prisma, type CourseTimeWeeks } from "@acme/db";
 
 import { years } from "./years";
 
@@ -70,27 +70,38 @@ const parseTime = (time: string) => {
 };
 
 const getKnownUsers = async () => {
-  const csv = await fs
-    .readFile("./known-users.csv", "utf8");
+  const csv = await fs.readFile("./known-users.csv", "utf8");
   const data = Papa.parse(csv, { header: true });
-  
-  const users = data.data.map((row) => z
-    .object({
-      abbrv: z.string(),
-      name: z.string(),
-      title: z.string(),
-    })
-    .safeParse(row));
+
+  const users = data.data.map((row) =>
+    z
+      .object({
+        abbrv: z.string(),
+        name: z.string(),
+        title: z.string(),
+      })
+      .safeParse(row),
+  );
 
   return users
     .filter(
-      (user) => user.success &&
+      (user) =>
+        user.success &&
         user.data.abbrv !== user.data.name &&
         user.data.name &&
-        user.data.title)
+        user.data.title,
+    )
     .map((user_1) => user_1.success && user_1.data)
     .filter(Boolean);
 };
+
+const normalTimes = [
+  8 * 60,
+  9 * 60 + 45,
+  11 * 60 + 30,
+  13 * 60 + 50,
+  15 * 60 + 15,
+];
 
 const parseFile = async (filepath: string) => {
   const fileContents = await fs.readFile(filepath, "utf8");
@@ -190,8 +201,24 @@ export const seedClasses = async () => {
       update: {},
     });
 
-    for (const row of data) {
+    for (const [rowNum, row] of data.entries()) {
       for (const [dayNum, coursesForDay] of row.days.entries()) {
+        const cellBelow = data[rowNum + 1]?.days[dayNum];
+
+        const isNormalTime = normalTimes.includes(row.startMinutes);
+        let weeks: CourseTimeWeeks = "BOTH";
+
+        if (!isNormalTime && coursesForDay.length > 0) weeks = "ODD";
+
+        if (
+          isNormalTime &&
+          coursesForDay.length > 0 &&
+          cellBelow &&
+          cellBelow.length > 0
+        ) {
+          weeks = "EVEN";
+        }
+
         for (const course of coursesForDay) {
           const { subject, guessedSubject, teacher, room } = course;
           const normalizedCourseIdentifier = subject
@@ -204,11 +231,17 @@ export const seedClasses = async () => {
             (user) => user.abbrv === teacher,
           );
 
+          const EARLY = true;
+          if (EARLY) {
+            continue;
+          }
+
           await prisma.courseTime.create({
             data: {
               start: row.startMinutes,
               duration: row.endMinutes - row.startMinutes,
               weekday: dayNum + 1,
+              weeks,
               course: {
                 connectOrCreate: {
                   where: {

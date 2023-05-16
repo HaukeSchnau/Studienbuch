@@ -69,8 +69,15 @@ model CourseTime {
     weekday  Int
     start    Int // time of day in minutes since midnight
     duration Int
+    weeks    CourseTimeWeeks @default(BOTH)
     course   Course? @relation(fields: [courseId], references: [id])
     courseId Int?
+}
+
+enum CourseTimeWeeks {
+    EVEN
+    ODD
+    BOTH
 }
 
 model Course {
