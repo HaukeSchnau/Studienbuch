@@ -35,10 +35,12 @@ class ClassesCoursesSetupPage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final year = store.year!;
-    final classes =
-        useNetworkResult(() => apiInstance.queryClassesGet(year.id), [year.id]);
-    final courses =
-        useNetworkResult(() => apiInstance.queryCoursesGet(year.id), [year.id]);
+    final classes = useNetworkResult(
+        () => apiInstance.queryClassesGet(year.id),
+        () => throw Exception("Klassen konnten nicht geladen werden"),
+        [year.id]);
+    final courses = useNetworkResult(() => apiInstance.queryCoursesGet(year.id),
+        () => throw Exception("Kurse konnten nicht geladen werden"), [year.id]);
 
     final courseChoices = useMemoized(() {
       return groupCoursesByName(

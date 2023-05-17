@@ -26,6 +26,17 @@ class QueueNotifier extends ChangeNotifier {
 
 final errorQueue = QueueNotifier();
 
+class UserException implements Exception {
+  final String message;
+
+  UserException(this.message);
+
+  @override
+  String toString() {
+    return message;
+  }
+}
+
 class EventCatcherProcessor extends EventProcessor {
   @override
   FutureOr<SentryEvent?> apply(SentryEvent event, {Hint? hint}) {

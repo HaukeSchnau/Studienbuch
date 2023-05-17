@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:class_mate/database.dart';
+import 'package:class_mate/error_catcher.dart';
 import 'package:class_mate/models/absence.dart';
 import 'package:class_mate/models/agenda.dart';
 import 'package:class_mate/models/course.dart';
@@ -125,7 +126,12 @@ abstract class _GlobalStore with Store {
     );
 
     final date = agenda.date.add(agenda.date.timeZoneOffset).toUtc();
-    final substitutions = await apiInstance.querySubstitutionsGet(date: date);
+    final substitutions = await apiInstance
+        .querySubstitutionsGet(date: date)
+        .catchError((e, stacktrace) {
+      this.agenda = agenda;
+      throw UserException("Vertretungen konnten nicht geladen werden");
+    });
 
     if (substitutions == null) {
       this.agenda = agenda;

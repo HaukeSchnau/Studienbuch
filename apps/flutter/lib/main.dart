@@ -37,7 +37,7 @@ Future<void> main() async {
   Intl.defaultLocale = "de_DE";
   await initializeDateFormatting("de_DE", null);
 
-  if (!kDebugMode) {
+  if (kDebugMode) {
     await appRunner();
   } else {
     await SentryFlutter.init(
