@@ -1,5 +1,10 @@
+import Head from "next/head";
+
 const Datenschutz = () => (
   <div className="mx-auto max-w-screen-sm text-gray-700">
+    <Head>
+      <title>Datenschutz | ClassMate</title>
+    </Head>
     <style jsx>{`
       h1 {
         font-size: 2rem;
