@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:class_mate/components/util/card.dart';
 import 'package:class_mate/components/util/circle.dart';
+import 'package:class_mate/simple_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:class_mate/components/util/logo.dart';
 import 'package:class_mate/static/colors.dart';
@@ -18,7 +19,7 @@ class TrialOverPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SimpleScaffold(
       body: SizedBox(
         width: MediaQuery.of(context).size.width,
         height: MediaQuery.of(context).size.height,

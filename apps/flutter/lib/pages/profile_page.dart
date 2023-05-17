@@ -4,6 +4,7 @@ import 'package:class_mate/components/profile/subjects_grid.dart';
 import 'package:class_mate/components/profile/top_panel.dart';
 import 'package:class_mate/components/tab_bar_view.dart';
 import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/simple_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
@@ -16,7 +17,7 @@ class ProfilePage extends HookWidget {
 
     final semesters = store.semesters;
 
-    return Scaffold(
+    return SimpleScaffold(
         body: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

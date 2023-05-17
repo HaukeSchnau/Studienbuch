@@ -64,20 +64,6 @@ abstract class _GlobalStore with Store {
       courses = event;
 
       await _updateAgenda();
-
-      // // TOOD: This is temporary
-      // final entry = agenda.entries.first;
-      // substitutionPlans.add(
-      //   SubstitutionPlan(
-      //     date: DateTime.now().startOfDay,
-      //     substitutions: [
-      //       Substitution(
-      //         type: SubstitutionType.cancelled,
-      //         agendaEntry: entry,
-      //       ),
-      //     ],
-      //   ),
-      // );
     });
 
     db.select(db.semesters).watch().listen((event) {

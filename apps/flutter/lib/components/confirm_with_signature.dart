@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:class_mate/hooks/use_disposable.dart';
+import 'package:class_mate/simple_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/svg.dart';
@@ -26,7 +27,7 @@ class ConfirmWithSignature extends HookWidget {
           penColor: Colors.black,
         ));
 
-    return Scaffold(
+    return SimpleScaffold(
         appBar: AppBar(
           title: Text(title),
         ),

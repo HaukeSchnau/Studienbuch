@@ -6,6 +6,7 @@ import 'package:class_mate/hooks/use_app_dir.dart';
 import 'package:class_mate/models/absence.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/user.dart';
+import 'package:class_mate/simple_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -93,27 +94,26 @@ class ConfirmationView extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SimpleScaffold(
+        scroll: true,
         appBar: AppBar(
           title: Text(title),
         ),
-        body: SingleChildScrollView(
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: confirmations
-                    .map((confirmation) => [
-                          confirmation.builder(context),
-                          SignatureView(
-                              signer: confirmation.signer,
-                              fileName: confirmation.fileName),
-                          const SizedBox(height: 64),
-                        ])
-                    .expand((element) => element)
-                    .toList(),
-              ),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: confirmations
+                  .map((confirmation) => [
+                        confirmation.builder(context),
+                        SignatureView(
+                            signer: confirmation.signer,
+                            fileName: confirmation.fileName),
+                        const SizedBox(height: 64),
+                      ])
+                  .expand((element) => element)
+                  .toList(),
             ),
           ),
         ));

@@ -4,6 +4,7 @@ import 'package:class_mate/components/util/card.dart';
 import 'package:class_mate/components/util/circle.dart';
 import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/pages/profile_setup_page.dart';
+import 'package:class_mate/simple_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:class_mate/components/util/logo.dart';
 import 'package:class_mate/static/colors.dart';
@@ -41,7 +42,7 @@ class WelcomePage extends HookWidget {
       // return null;
     }, []);
 
-    return Scaffold(
+    return SimpleScaffold(
       body: SizedBox(
         width: MediaQuery.of(context).size.width,
         height: MediaQuery.of(context).size.height,

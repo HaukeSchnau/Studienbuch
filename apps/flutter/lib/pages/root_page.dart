@@ -1,6 +1,7 @@
 import 'package:class_mate/pages/home_page.dart';
 import 'package:class_mate/pages/profile_page.dart';
 import 'package:class_mate/pages/week_page.dart';
+import 'package:class_mate/simple_scaffold.dart';
 import 'package:class_mate/util/ui_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -63,7 +64,7 @@ class RootPage extends HookWidget {
             .toList(),
       );
 
-      return Scaffold(
+      return SimpleScaffold(
         body: Row(
           children: [navigationRail, Expanded(child: body)],
         ),
@@ -78,7 +79,7 @@ class RootPage extends HookWidget {
                   icon: Icon(page.icon), label: page.name))
               .toList());
 
-      return Scaffold(
+      return SimpleScaffold(
         body: AnnotatedRegion<SystemUiOverlayStyle>(
             value: SystemUiOverlayStyle.light, child: body),
         bottomNavigationBar: bottomNavigationBar,

@@ -4,6 +4,7 @@ import 'package:class_mate/components/tasks/tasks_overview.dart';
 import 'package:class_mate/components/util/bottom_panels.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/semester.dart';
+import 'package:class_mate/simple_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -16,7 +17,7 @@ class CoursePage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SimpleScaffold(
         body: PathBackgroundPage(
       child: ConstrainedBox(
         constraints:
