@@ -105,7 +105,7 @@ class TrialOverPage extends HookWidget {
                         children: [
                           GestureDetector(
                             onTap: () => launchUrl(Uri.parse(
-                                "https://igs.haukeschnau.de/impressum")),
+                                "https://classmate.haukeschnau.de/impressum")),
                             child: const Text(
                               "Impressum",
                               style: _linkStyle,
@@ -116,7 +116,7 @@ class TrialOverPage extends HookWidget {
                           ),
                           GestureDetector(
                             onTap: () => launchUrl(Uri.parse(
-                                "https://igs.haukeschnau.de/datenschutz")),
+                                "https://classmate.haukeschnau.de/datenschutz")),
                             child: const Text(
                               "Datenschutz",
                               style: _linkStyle,
