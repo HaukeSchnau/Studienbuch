@@ -18,6 +18,8 @@ const courseNames = [
   "Spanisch",
   "Sport-Theorie",
   "Seminarfach",
+  "Tutorium",
+  "Darstellendes Spiel",
 ];
 
 export const guessSubject = (subject: string | undefined) => {
@@ -42,8 +44,10 @@ export const guessSubject = (subject: string | undefined) => {
   if (subjectLower === "sf") return "Seminarfach";
 
   return (
-    courseNames.find((candidate) =>
-      candidate.toLowerCase().startsWith(subjectLower),
+    courseNames.find(
+      (candidate) =>
+        candidate.toLowerCase().startsWith(subjectLower) ||
+        subjectLower.startsWith(candidate.toLowerCase()),
     ) ?? parsedSubject
   );
 };
