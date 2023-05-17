@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider = "prisma-client-js"
+    provider      = "prisma-client-js"
+    binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
 generator zod {
@@ -65,12 +66,12 @@ enum Permission {
 }
 
 model CourseTime {
-    id       Int     @id @default(autoincrement())
+    id       Int             @id @default(autoincrement())
     weekday  Int
     start    Int // time of day in minutes since midnight
     duration Int
     weeks    CourseTimeWeeks @default(BOTH)
-    course   Course? @relation(fields: [courseId], references: [id])
+    course   Course?         @relation(fields: [courseId], references: [id])
     courseId Int?
 }
 
@@ -81,12 +82,12 @@ enum CourseTimeWeeks {
 }
 
 model Course {
-    id        Int      @id @default(autoincrement())
-    courseId  String
-    name      String
-    createdAt DateTime @default(now())
-    room      String?
-    isChoosable      Boolean  @default(false)
+    id          Int      @id @default(autoincrement())
+    courseId    String
+    name        String
+    createdAt   DateTime @default(now())
+    room        String?
+    isChoosable Boolean  @default(false)
 
     teacher   User @relation(fields: [teacherId], references: [id])
     teacherId Int
