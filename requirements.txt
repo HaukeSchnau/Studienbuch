@@ -2,3 +2,4 @@ requests
 camelot-py
 tabula-py
 opencv-python
+ghostscript
