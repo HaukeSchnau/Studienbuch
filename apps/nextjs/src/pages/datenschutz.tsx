@@ -446,36 +446,12 @@ const Datenschutz = () => (
       Die Push-Nachrichten können zum einen für die Erfüllung von vertraglichen
       Pflichten erforderlich sein (z. B. für die Nutzung unseres Onlineangebotes
       relevante technische und organisatorische Informationen)
-      <span className="dsg-license-content-blurred de">
-        - Dieser Textbereich muss mit einer Premium Lizenz freischaltet werden.
-        - premiumtext premiumtext premiumtext premiumtext premiumtext
-        premiumtext premiumtext premiumtext premiumtext premiumtext premiumtext
-        premiumtext premiumtext premiumtext premiumtext premiumtext premiumtext
-        premiumtext premiumtext premiumtext premiumtext premiumtext premiumtext
-        premiumtext premiumtext premiumtext premiumtext premiumtext premiumtext
-        premiumtext premiumtext premiumtext premiumtext premiumtext
-      </span>
     </p>
     Inhalte:
     <p>Tagesaktuelle Änderungen im Vertretungsplan</p>
     <p>Kommende Klausuren</p>
     <p>Erinnerungen für Hausaufgaben</p>
     <ul className="m-elements">
-      <li>
-        <strong>Verarbeitete Datenarten:</strong> Nutzungsdaten (z.B. besuchte
-        Webseiten, Interesse an Inhalten,
-        <span className="dsg-license-content-blurred de">
-          - Dieser Textbereich muss mit einer Premium Lizenz freischaltet
-          werden. - premiumtext premiumtext premiumtext{" "}
-        </span>
-        ); Meta-, Kommunikations- und Verfahrensdaten (z. B. IP-Adressen,
-        Zeitangaben, Identifikationsnummern,
-        <span className="dsg-license-content-blurred de">
-          - Dieser Textbereich muss mit einer Premium Lizenz freischaltet
-          werden. - premiumtext premiumtext premiumtext{" "}
-        </span>
-        ).
-      </li>
       <li>
         <strong>Betroffene Personen:</strong> Kommunikationspartner.
       </li>
