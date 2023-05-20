@@ -1,11 +1,16 @@
 /* eslint-disable @next/next/no-img-element */
 import type { NextPage } from "next";
+import Head from "next/head";
 import Image from "next/image";
 import icon from "public/assets/icon.png";
 
 const Home: NextPage = () => {
   return (
     <div className="wrapper relative min-h-screen">
+      <Head>
+        <title>Digitales Studienbuch</title>
+      </Head>
+
       <style jsx>
         {`
           .wrapper {
