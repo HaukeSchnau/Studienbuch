@@ -167,9 +167,9 @@ class ContinueButton extends StatelessWidget {
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 strokeWidth: 2,
               )
-            : Row(
+            : const Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Text(
                     "WEITER",
                   ),

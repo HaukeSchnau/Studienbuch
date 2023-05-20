@@ -21,9 +21,9 @@ class AbsenceCard extends HookWidget {
         final absences = store.absences;
         final unexcusedAbsences = store.unexcusedAbsences;
         if (absences.isEmpty) {
-          return Column(
+          return const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text("Du hast noch keine Fehlzeiten eingetragen.",
                   style: TextStyle(
                       fontSize: 16, color: Color.fromRGBO(0, 0, 0, .8))),
@@ -46,10 +46,10 @@ class AbsenceCard extends HookWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              Expanded(
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text("Super! All deine Fehlzeiten sind entschuldigt!",
                         style: TextStyle(
                             fontSize: 16, color: Color.fromRGBO(0, 0, 0, .8))),

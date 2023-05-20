@@ -133,9 +133,9 @@ class AddTaskForm extends HookWidget {
             if (images.value.isEmpty)
               const Padding(padding: EdgeInsets.only(top: 8.0)),
             TextButton(
-              child: Row(
+              child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
-                children: const [
+                children: [
                   Icon(Icons.add_a_photo_rounded, size: 20),
                   Padding(padding: EdgeInsets.only(left: 4.0)),
                   Text("Foto hinzufügen", style: TextStyle(fontSize: 12))
