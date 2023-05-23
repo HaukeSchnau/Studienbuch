@@ -97,6 +97,10 @@ const parseFile = async (filepath: string) => {
 const main = async () => {
   for (const fileName of await fs.readdir(substitutionsDir)) {
     const filePath = p.join(substitutionsDir, fileName);
+    const filename = p.basename(filePath, ".csv");
+
+    let createdCount = 0;
+    let updatedCount = 0;
 
     const substitutions = await parseFile(filePath);
 
@@ -206,9 +210,16 @@ const main = async () => {
               substitution.subject
             } ${class_}`,
           );
+          createdCount++;
+        } else {
+          updatedCount++;
         }
       }
     }
+
+    console.log(
+      `${dayjs().format("YYYY-MM-DD HH:mm")}: Finished ${filename} (created: ${createdCount}, updated: ${updatedCount})`,
+    );
   }
 };
 
