@@ -30,4 +30,4 @@ Path(substitutions_dir).mkdir(parents=True, exist_ok=True)
 
 fetch_substitutions(datetime.now())
 # TODO: Find a way to check if tomorrow's substitutions are already available
-fetch_substitutions(datetime.now() + timedelta(days=1))
+# fetch_substitutions(datetime.now() + timedelta(days=1))

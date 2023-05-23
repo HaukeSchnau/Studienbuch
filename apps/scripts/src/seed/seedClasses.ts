@@ -71,9 +71,9 @@ const parseTime = (time: string) => {
 
 const getKnownUsers = async () => {
   const csv = await fs.readFile("./known-users.csv", "utf8");
-  const data = Papa.parse(csv, { header: true });
+  const { data } = Papa.parse(csv, { header: true });
 
-  const users = data.data.map((row) =>
+  const users = data.map((row) =>
     z
       .object({
         abbrv: z.string(),
@@ -142,7 +142,7 @@ const parseFile = async (filepath: string) => {
       const endMinutes = parseTime(end ?? "0");
 
       const days = [Montag, Dienstag, Mittwoch, Donnerstag, Freitag].map(
-        (coursesRaw, dayIndex) => {
+        (coursesRaw) => {
           if (!coursesRaw) return [];
 
           // Special case for wrong entry on PDF
