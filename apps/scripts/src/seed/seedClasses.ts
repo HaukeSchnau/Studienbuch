@@ -142,10 +142,19 @@ const parseFile = async (filepath: string) => {
       const endMinutes = parseTime(end ?? "0");
 
       const days = [Montag, Dienstag, Mittwoch, Donnerstag, Freitag].map(
-        (coursesRaw) => {
+        (coursesRaw, dayIndex) => {
           if (!coursesRaw) return [];
 
-          const coursesForDay = parseCourses(coursesRaw);
+          // Special case for wrong entry on PDF
+          // TODO: Remove this once the PDF is fixed
+          // Will probably break something in the future
+          const coursesForDay = parseCourses(coursesRaw).map((course) =>
+            course.teacher === "GES" &&
+            startMinutes === parseTime("11:30") &&
+            course.subject.toLowerCase().includes("ma2")
+              ? { ...course, subject: "ma23" }
+              : course,
+          );
           return coursesForDay;
         },
       );
