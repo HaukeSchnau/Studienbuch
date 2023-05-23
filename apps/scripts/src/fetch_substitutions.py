@@ -31,8 +31,6 @@ def fetch_substitutions(date):
 
     pdf_path = os.path.join(substitutions_dir, pdf_name)
 
-    existed_before = os.path.exists(pdf_path)
-
     with open(pdf_path, "wb") as file:
         file.write(response.content)
 
@@ -53,8 +51,10 @@ def fetch_substitutions(date):
                 break
 
         new_path = os.path.join(substitutions_dir, date.strftime("%Y-%m-%d.pdf"))
+        existed_before = os.path.exists(new_path)
         # Move file to new name with date in it
         os.rename(pdf_path, new_path)
+
 
     extract_tables(new_path, substitutions_csv_dir, print_tables=not existed_before)
 
