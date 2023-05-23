@@ -1,7 +1,7 @@
 import requests
 
 
-def auth_iserv(username, password):
+def auth_iserv(username, password, log=True):
     """Authenticates to IServ and returns a session object to be used for further requests to IServ."""
     url = "https://igslilienthal.de"
     session = requests.Session()
@@ -10,8 +10,9 @@ def auth_iserv(username, password):
     response = session.get(url)
     url = response.url
 
-    print(session.cookies.get_dict())
-    print(url)
+    if log:
+        print(session.cookies.get_dict())
+        print(url)
 
     # Login
     payload = {

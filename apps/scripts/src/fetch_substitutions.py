@@ -4,7 +4,7 @@ from pathlib import Path
 import os
 from extract_tables import extract_tables
 
-session = auth.auth_iserv("hauke.schnau", "yXPTd26D5")
+session = auth.auth_iserv("hauke.schnau", "yXPTd26D5", log=False)
 
 url = "https://igslilienthal.de/iserv/plan/show/raw/Vertretung_OS/"
 
@@ -20,10 +20,12 @@ def fetch_substitutions(date):
 
     pdf_path = os.path.join(substitutions_dir, pdf_name)
 
+    existed_before = os.path.exists(pdf_path)
+
     with open(pdf_path, "wb") as file:
         file.write(response.content)
 
-    extract_tables(pdf_path, substitutions_csv_dir)
+    extract_tables(pdf_path, substitutions_csv_dir, print_tables=not existed_before)
 
 
 Path(substitutions_dir).mkdir(parents=True, exist_ok=True)
