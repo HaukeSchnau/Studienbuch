@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:class_mate/database.dart';
 import 'package:class_mate/error_catcher.dart';
-import 'package:class_mate/models/absence.dart';
 import 'package:class_mate/models/agenda.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/semester.dart';
@@ -31,9 +30,6 @@ abstract class _GlobalStore with Store {
   String licenseKey;
 
   @observable
-  List<Absence> absences = [];
-
-  @observable
   List<Course> courses = [];
 
   @observable
@@ -45,12 +41,11 @@ abstract class _GlobalStore with Store {
   @observable
   UpdateStoreCallback? updateStore;
 
-  _GlobalStore({
-    required this.user,
-    required this.licenseKey,
-    // ignore: unused_element
-    this.updateStore
-  }) {
+  _GlobalStore(
+      {required this.user,
+      required this.licenseKey,
+      // ignore: unused_element
+      this.updateStore}) {
     Timer.periodic(const Duration(seconds: 5), (timer) {
       save();
     });
@@ -63,10 +58,6 @@ abstract class _GlobalStore with Store {
   }
 
   Future<void> init() async {
-    db.select(db.absences).watch().listen((event) {
-      absences = event;
-    });
-
     db.select(db.courses).watch().listen((event) async {
       courses = event;
 
@@ -102,24 +93,6 @@ abstract class _GlobalStore with Store {
       throw Exception("No current semester found");
     }
     return currentSemester;
-  }
-
-  //// ABSENCES ////
-
-  @computed
-  List<Absence> get unexcusedAbsences =>
-      absences.where((element) => !element.isExcused).toList();
-
-  @computed
-  ObservableMap<DateTime, List<Absence>> get unexcusedAbsencesByDay {
-    final map = <DateTime, List<Absence>>{};
-    for (final absence in unexcusedAbsences) {
-      if (map[absence.date] == null) {
-        map[absence.date] = [];
-      }
-      map[absence.date]!.add(absence);
-    }
-    return map.asObservable();
   }
 
   //// AGENDA ////

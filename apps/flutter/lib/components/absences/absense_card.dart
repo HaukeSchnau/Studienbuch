@@ -2,9 +2,9 @@ import 'package:class_mate/components/bottom_sheet_container.dart';
 import 'package:class_mate/components/register_absence_form.dart';
 import 'package:class_mate/components/util/card.dart';
 import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/models/absence.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
@@ -15,11 +15,11 @@ class AbsenceCard extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final store = useStore();
+    final absences = useAbsences();
 
-    final copyWidget = Observer(
+    final copyWidget = HookBuilder(
       builder: (_) {
-        final absences = store.absences;
-        final unexcusedAbsences = store.unexcusedAbsences;
+        final unexcusedAbsences = useUnexcusedAbsences();
         if (absences.isEmpty) {
           return const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,16 +137,15 @@ class AbsenceCard extends HookWidget {
             const SizedBox(height: 8),
             copyWidget,
             const SizedBox(height: 16),
-            Observer(
-                builder: (_) => store.absences.isEmpty
-                    ? const SizedBox.shrink()
-                    : Align(
-                        alignment: Alignment.bottomRight,
-                        child: ElevatedButton(
-                            onPressed: () => context.push("/absences"),
-                            child: const Text("Alle ansehen",
-                                style: TextStyle(color: Colors.white))),
-                      )),
+            absences.isEmpty
+                ? const SizedBox.shrink()
+                : Align(
+                    alignment: Alignment.bottomRight,
+                    child: ElevatedButton(
+                        onPressed: () => context.push("/absences"),
+                        child: const Text("Alle ansehen",
+                            style: TextStyle(color: Colors.white))),
+                  )
           ],
         ));
   }

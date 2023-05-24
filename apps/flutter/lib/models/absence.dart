@@ -1,4 +1,5 @@
 import 'package:class_mate/database.dart';
+import 'package:class_mate/hooks/use_query.dart';
 import 'package:drift/drift.dart';
 import 'package:class_mate/models/course.dart';
 
@@ -85,3 +86,13 @@ AbsenceGroup mapAbsenceToGroup(Absence absence) {
     isExcusedByParent: absence.isExcusedByParent,
   );
 }
+
+List<Absence> useAbsences() => useQuery(() => db.select(db.absences));
+List<Absence> useUnexcusedAbsences() => useQuery(() => db.select(db.absences)
+  ..where((tbl) =>
+      tbl.isExcusedByParent.equals(false) |
+      tbl.isExcusedByTeacher.equals(false)));
+List<Absence> useExcusedAbsences() => useQuery(() => db.select(db.absences)
+  ..where((tbl) =>
+      tbl.isExcusedByParent.equals(true) &
+      tbl.isExcusedByTeacher.equals(true)));
