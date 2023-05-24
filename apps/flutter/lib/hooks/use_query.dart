@@ -12,10 +12,13 @@ List<D>? useQuery<T extends HasResultSet, D>(
   return snapshot.data;
 }
 
-List<TypedResult> useQueryJoin<T extends HasResultSet, D>(
+List<TypedResult>? useQueryJoin<T extends HasResultSet, D>(
     JoinedSelectStatement<T, D> Function() createQuery,
     [List<Object?> keys = const []]) {
   final stream = useMemoized(() => createQuery().watch(), keys);
   final snapshot = useStream(stream);
-  return snapshot.data ?? [];
+  if(snapshot.hasError) {
+    throw snapshot.error!;
+  }
+  return snapshot.data;
 }

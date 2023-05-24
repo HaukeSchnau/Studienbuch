@@ -139,7 +139,7 @@ extension TeacherExtension on Teacher {
   }
 }
 
-List<Course> useCourses({int? semesterId}) {
+List<Course>? useCourses({int? semesterId}) {
   // final semesterCoursesStatement = db.select(db.semesterCourses)
   //   ..where((sc) => sc.semester.equals(id));
   // final semesterCourses = await semesterCoursesStatement.get();
@@ -154,9 +154,9 @@ List<Course> useCourses({int? semesterId}) {
                   db.semesterCourses.course.equalsExp(db.courses.id)),
             ])
               ..where(db.semesterCourses.semester.equals(semesterId)))
-        .map((row) => row.readTable(db.courses))
+        ?.map((row) => row.readTable(db.courses))
         .toList();
   }
 
-  throw Exception("No semesterId provided");
+  return useQuery(() => db.select(db.courses));
 }

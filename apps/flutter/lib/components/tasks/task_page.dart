@@ -28,7 +28,7 @@ class TaskPage extends HookWidget {
                   db.courses.id.equalsExp(db.tasks.course),
                 )
               ],
-            )).firstOrNull;
+            ))?.firstOrNull;
     if (res == null) {
       return const Scaffold();
     }

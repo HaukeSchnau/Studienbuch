@@ -2,8 +2,7 @@ import 'package:class_mate/models/agenda_entry.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:class_mate/util/date_util.dart';
-import 'package:mobx/mobx.dart';
-part 'agenda.g.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 
 const lessonTimes = [
   TimeOfDay(hour: 8, minute: 0),
@@ -13,13 +12,11 @@ const lessonTimes = [
   TimeOfDay(hour: 15, minute: 15),
 ];
 
-class Agenda = _AgendaBase with _$Agenda;
-
-abstract class _AgendaBase with Store {
+class Agenda {
   DateTime date;
   List<AgendaEntry> entries = [];
 
-  _AgendaBase({
+  Agenda({
     required DateTime start,
     required List<Course> courses,
     bool autoAdjust = true,
@@ -110,4 +107,17 @@ List<AgendaEntry> _buildEntries(List<Course> courses, DateTime date) {
   }
 
   return entries;
+}
+
+Agenda? useAgendaForDay(DateTime day) {
+  final courses = useCourses();
+  final agenda = useMemoized(() {
+    if (courses == null) {
+      return null;
+    }
+
+    return Agenda(start: day, courses: courses, autoAdjust: false);
+  }, [day, courses]);
+
+  return agenda;
 }

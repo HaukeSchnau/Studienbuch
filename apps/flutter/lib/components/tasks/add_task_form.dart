@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:class_mate/components/grades/pruefungsfach_selector.dart';
 import 'package:class_mate/database.dart';
-import 'package:class_mate/hooks/use_store.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/static/theme.dart';
@@ -26,8 +25,8 @@ class AddTaskForm extends HookWidget {
     final descController = useTextEditingController();
     final images = useState<List<File>>([]);
     final selectedDate = useState<DateTime?>(null);
-    final store = useStore();
     final selectedCourse = useState<Course?>(predefinedCourse);
+    final options = useCourses();
     useListenable(titleController);
     useListenable(descController);
 
@@ -64,7 +63,7 @@ class AddTaskForm extends HookWidget {
             if (predefinedCourse == null)
               PruefungsfachSelector(
                 title: "Fach",
-                options: store.courses,
+                options: options ?? [],
                 onSelect: (newSelected) {
                   selectedCourse.value = newSelected;
                 },

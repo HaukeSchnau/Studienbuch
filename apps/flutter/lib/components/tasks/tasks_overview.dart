@@ -47,11 +47,15 @@ class TasksOverview extends HookWidget {
                   )
                 ],
               ),
-        [courseId]).map((row) {
+        [courseId])?.map((row) {
       final task = row.readTable(db.tasks);
       final course = row.readTable(db.courses);
       return TaskWithCourse(task, course);
     }).toList();
+
+    if (tasks == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -16,6 +16,9 @@ class SubjectsGrid extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final courses = useCourses(semesterId: semester.id);
+    if (courses == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     const numColumns = 2;
     return SingleChildScrollView(

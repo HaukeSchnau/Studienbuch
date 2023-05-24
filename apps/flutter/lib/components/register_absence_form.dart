@@ -1,5 +1,6 @@
 import 'package:class_mate/components/date_picker.dart';
 import 'package:class_mate/database.dart';
+import 'package:class_mate/models/agenda.dart';
 import 'package:class_mate/models/store.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/static/theme.dart';
@@ -18,22 +19,20 @@ class RegisterAbsenceForm extends HookWidget {
   Widget build(BuildContext context) {
     final date = useState(DateTime.now().orNextWeekday);
     final reason = useState("");
-    final agenda = store.getAgendaForDay(date.value);
-    final absenceTimes = useState<Map<Course, bool>>({
-      for (var course
-          in agenda.entries.map((e) => e.course).whereType<Course>())
-        course: true
-    });
+
+    final agenda = useAgendaForDay(date.value);
+    final absenceTimes = useState<Map<Course, bool>>({});
 
     useEffect(() {
-      final agenda = store.getAgendaForDay(date.value);
+      if (agenda == null) return;
+
       absenceTimes.value = {
         for (var course
             in agenda.entries.map((e) => e.course).whereType<Course>())
           course: true
       };
       return null;
-    }, [date.value]);
+    }, [agenda]);
 
     bool isValid() {
       return reason.value.isNotEmpty && absenceTimes.value.values.any((e) => e);
@@ -64,14 +63,13 @@ class RegisterAbsenceForm extends HookWidget {
           child: Text("Fächer, in denen du gefehlt hast:",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
         ),
-        ...agenda.entries.map(
+        ...absenceTimes.value.entries.map(
           (entry) {
-            final course = entry.course;
-            if (course == null) return Container();
+            final course = entry.key;
             return CheckboxListTile(
               visualDensity: VisualDensity.compact,
               title: Text(course.name),
-              value: absenceTimes.value[course],
+              value: entry.value,
               onChanged: (value) {
                 absenceTimes.value[course] = value!;
                 // rerender

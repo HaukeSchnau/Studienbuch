@@ -27,11 +27,12 @@ abstract class _GlobalStore with Store {
 
   @observable
   String licenseKey;
-  @observable
-  List<Course> courses = [];
 
   @observable
   Agenda agenda = Agenda(start: DateTime.now(), courses: []);
+
+  @observable
+  List<Agenda> weeklyAgenda = [];
 
   @observable
   UpdateStoreCallback? updateStore;
@@ -53,10 +54,9 @@ abstract class _GlobalStore with Store {
   }
 
   Future<void> init() async {
-    db.select(db.courses).watch().listen((event) async {
-      courses = event;
-
-      await _updateAgenda();
+    db.select(db.courses).watch().listen((courses) {
+      _updateSubstitutedAgenda(courses);
+      _updateWeeklyAgenda(courses);
     });
 
     // Make sure the current semester exists in the database (if not, create it)
@@ -86,7 +86,7 @@ abstract class _GlobalStore with Store {
   //// AGENDA ////
 
   @action
-  Future<void> _updateAgenda() async {
+  Future<void> _updateSubstitutedAgenda(List<Course> courses) async {
     final agenda = Agenda(
       start: DateTime.now(),
       courses: courses,
@@ -125,8 +125,8 @@ abstract class _GlobalStore with Store {
     this.agenda = agenda;
   }
 
-  @computed
-  List<Agenda> get weeklyAgenda {
+  @action
+  void _updateWeeklyAgenda(List<Course> courses) {
     final start = agenda.date.startOfWeek;
 
     final days = <DateTime>[];
@@ -134,13 +134,10 @@ abstract class _GlobalStore with Store {
       days.add(start.add(Duration(days: i)));
     }
 
-    return days
+    weeklyAgenda = days
         .map((e) => Agenda(start: e, courses: courses, autoAdjust: false))
         .toList();
   }
-
-  Agenda getAgendaForDay(DateTime day) =>
-      Agenda(start: day, courses: courses, autoAdjust: false);
 
   //// PERSISTENCE ////
 
