@@ -1,5 +1,5 @@
+import datetime
 from iserv import auth
-from datetime import datetime, timedelta
 from pathlib import Path
 import os
 from extract_tables import extract_tables
@@ -14,20 +14,18 @@ substitutions_dir = "./cache/substitutions"
 substitutions_csv_dir = "./cache/substitutions_csv"
 
 
-def try_parsing_date(text):
+def try_parsing_date(text: str):
     for fmt in ("%d.%m.", "%d.%-m.", "%-d.%m.", "%-d.%-m."):
         try:
-            return datetime.strptime(text, fmt)
+            return datetime.datetime.strptime(text, fmt)
         except ValueError:
             pass
     raise ValueError("no valid date format found")
 
 
-def fetch_substitutions(date):
+def fetch_substitutions(date: datetime.datetime):
     response = session.get(url + "OS_V_{}.pdf".format(date.strftime("%d.%m.%Y")))
-    original_pdf_name = response.url.split("/")[-1]
-    pdf_date = datetime.strptime(original_pdf_name.split("_")[-1], "%d.%m.%Y.pdf")
-    pdf_name = pdf_date.strftime("temp.pdf")
+    pdf_name = "temp.pdf"
 
     pdf_path = os.path.join(substitutions_dir, pdf_name)
 
@@ -47,7 +45,8 @@ def fetch_substitutions(date):
             if match:
                 date_str = match.group(1)
                 date = try_parsing_date(date_str)
-                date = date.replace(year=pdf_date.year)
+                current_year = datetime.date.today().year
+                date = date.replace(year=current_year)
                 break
 
         new_path = os.path.join(substitutions_dir, date.strftime("%Y-%m-%d.pdf"))
@@ -55,12 +54,11 @@ def fetch_substitutions(date):
         # Move file to new name with date in it
         os.rename(pdf_path, new_path)
 
-
     extract_tables(new_path, substitutions_csv_dir, print_tables=not existed_before)
 
 
 Path(substitutions_dir).mkdir(parents=True, exist_ok=True)
 
-fetch_substitutions(datetime.now())
+fetch_substitutions(datetime.datetime.now())
 # TODO: Find a way to check if tomorrow's substitutions are already available
-# fetch_substitutions(datetime.now() + timedelta(days=1))
+fetch_substitutions(datetime.datetime.now() + datetime.timedelta(days=1))
