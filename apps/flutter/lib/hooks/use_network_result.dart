@@ -1,5 +1,5 @@
-import 'dart:ui';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 T? useNetworkResult<T>(Future<T> Function() future, VoidCallback? onError,
@@ -11,6 +11,7 @@ T? useNetworkResult<T>(Future<T> Function() future, VoidCallback? onError,
         result.value = await future();
       } catch (e) {
         if (onError != null) {
+          debugPrint(e.toString());
           onError();
         } else {
           rethrow;

@@ -10,7 +10,7 @@ export const coursesRouter = createTRPCRouter({
     .input(z.object({ yearId: z.number() }))
     .output(
       z.array(
-        CourseModel.extend({
+        CourseModel.omit({ createdAt: true }).extend({
           teacher: UserModel.pick({ id: true, name: true, title: true }),
           times: z.array(CourseTimeModel),
         }),

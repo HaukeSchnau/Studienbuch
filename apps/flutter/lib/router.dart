@@ -12,10 +12,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:class_mate/models/course.dart';
 
-typedef SetupFinishedCallback = void Function(GlobalStore store);
+typedef UpdateStoreCallback = void Function(GlobalStore newStore);
 
 buildMainRouter(
-    ValueNotifier<GlobalStore?> store, SetupFinishedCallback onSetupFinished) {
+    ValueNotifier<GlobalStore?> store, UpdateStoreCallback updateStore) {
   return GoRouter(
     routes: [
       GoRoute(
@@ -29,7 +29,7 @@ buildMainRouter(
             );
           } else {
             return Provider(
-              create: (_) => onSetupFinished,
+              create: (_) => updateStore,
               child: const WelcomePage(),
             );
           }
@@ -73,7 +73,7 @@ buildMainRouter(
             );
           } else {
             return Provider(
-              create: (_) => onSetupFinished,
+              create: (_) => updateStore,
               child: const WelcomePage(),
             );
           }
@@ -90,7 +90,7 @@ buildMainRouter(
               );
             } else {
               return Provider(
-                create: (_) => onSetupFinished,
+                create: (_) => updateStore,
                 child: const WelcomePage(),
               );
             }
@@ -106,7 +106,7 @@ buildMainRouter(
             );
           } else {
             return Provider(
-              create: (_) => onSetupFinished,
+              create: (_) => updateStore,
               child: const WelcomePage(),
             );
           }
@@ -119,7 +119,7 @@ buildMainRouter(
       GoRoute(
           path: "/setup",
           builder: (context, state) => Provider(
-                create: (_) => onSetupFinished,
+                create: (_) => updateStore,
                 child: const WelcomePage(),
               )),
     ],

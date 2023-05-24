@@ -19,7 +19,7 @@ export const yearsRouter = createTRPCRouter({
   get: publicProcedure
     .meta({ openapi: { method: "GET", path: "/years" } })
     .input(z.void())
-    .output(z.array(YearModel))
+    .output(z.array(YearModel.omit({ createdAt: true })))
     .query(async ({ ctx }) => {
       return ctx.prisma.year
         .findMany()

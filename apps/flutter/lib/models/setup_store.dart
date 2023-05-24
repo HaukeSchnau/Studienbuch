@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 import 'package:class_mate/database.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:class_mate/models/semester.dart';
@@ -56,6 +58,15 @@ abstract class _SetupStoreBase with Store {
 
   @observable
   ObservableList<ApiCourse> courses = ObservableList<ApiCourse>();
+
+  _SetupStoreBase({
+    this.licenseKey,
+    this.name,
+    this.year,
+    this.class_,
+    this.isOfAge,
+    required this.courses,
+  });
 
   Future<void> saveToDatabase() async {
     await resetDatabase();

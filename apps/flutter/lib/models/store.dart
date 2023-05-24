@@ -10,6 +10,7 @@ import 'package:class_mate/models/semester.dart';
 import 'package:class_mate/models/substitution.dart';
 import 'package:class_mate/models/user.dart';
 import 'package:class_mate/openapi.dart';
+import 'package:class_mate/router.dart';
 import 'package:class_mate/util/date_util.dart';
 import 'package:class_mate/util/list_util.dart';
 import 'package:drift/drift.dart';
@@ -41,9 +42,14 @@ abstract class _GlobalStore with Store {
   @observable
   Agenda agenda = Agenda(start: DateTime.now(), courses: []);
 
+  @observable
+  UpdateStoreCallback? updateStore;
+
   _GlobalStore({
     required this.currentUser,
     required this.licenseKey,
+    // ignore: unused_element
+    this.updateStore
   }) {
     Timer.periodic(const Duration(seconds: 5), (timer) {
       save();

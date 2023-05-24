@@ -15,11 +15,12 @@ class ProfileSetupPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final years = useNetworkResult(() => apiInstance.queryYearsGet(), () => throw Exception("Jahrgänge konnten nicht geladen werden"))
+    final years = useNetworkResult(() => apiInstance.queryYearsGet(),
+            () => throw Exception("Jahrgänge konnten nicht geladen werden"))
       ?..sort((a, b) => -b.yearNumber.compareTo(a.yearNumber));
-    final selectedYear = useState<ApiYear?>(null);
+    final selectedYear = useState<ApiYear?>(store.year);
     final isOfAge = useState(false);
-    final nameController = useTextEditingController();
+    final nameController = useTextEditingController(text: store.name);
     useListenable(nameController);
 
     bool isValidInput() {
@@ -48,6 +49,7 @@ class ProfileSetupPage extends HookWidget {
           ),
           const SizedBox(height: 16.0),
           DropdownButtonFormField(
+            value: selectedYear.value,
             decoration: const InputDecoration(
               labelText: "Jahrgang",
             ),

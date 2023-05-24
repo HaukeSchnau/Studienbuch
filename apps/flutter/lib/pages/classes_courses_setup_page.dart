@@ -85,7 +85,7 @@ class ClassesCoursesSetupPage extends HookWidget {
       await globalStore.init();
 
       // ignore: use_build_context_synchronously
-      final onSetupFinished = context.read<SetupFinishedCallback>();
+      final onSetupFinished = context.read<UpdateStoreCallback>();
       onSetupFinished(globalStore);
     }
 

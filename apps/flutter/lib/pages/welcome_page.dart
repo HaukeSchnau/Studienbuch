@@ -9,21 +9,27 @@ import 'package:flutter/material.dart';
 import 'package:class_mate/components/util/logo.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:mobx/mobx.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const TextStyle _linkStyle = TextStyle(color: Color(0xFF6A6A6A), fontSize: 16);
 
 class WelcomePage extends HookWidget {
-  const WelcomePage({super.key});
+  final SetupStore? initialStore;
+
+  const WelcomePage({super.key, this.initialStore});
 
   @override
   Widget build(BuildContext context) {
-    final store = useState(SetupStore());
+    final store = useState(
+      initialStore ??
+          SetupStore(
+              courses: ObservableList(), licenseKey: "KJ27-MP16-LS14-JM22"),
+    );
+
     final currentPage = useState<Widget?>(null);
 
     useEffect(() {
-      store.value.licenseKey = "KJ27-MP16-LS14-JM22";
-
       currentPage.value = ProfileSetupPage(
         onNext: (Widget nextPage) {
           currentPage.value = nextPage;

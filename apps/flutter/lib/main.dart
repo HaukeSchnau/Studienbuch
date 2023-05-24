@@ -53,13 +53,19 @@ class App extends HookWidget {
   Widget build(BuildContext context) {
     final store = useState<GlobalStore?>(initialStore);
 
-    void onSetupFinished(GlobalStore newStore) {
+    void updateStore(GlobalStore newStore) {
       store.value = newStore;
+      store.value?.updateStore = updateStore;
     }
+
+    useEffect(() {
+      store.value?.updateStore = updateStore;
+      return null;
+    }, []);
 
     final router = useMemoized(
         () => isTrial
-            ? buildMainRouter(store, onSetupFinished)
+            ? buildMainRouter(store, updateStore)
             : buildTrialOverRouter(),
         [store.value, isTrial]);
 
