@@ -9,5 +9,6 @@
   "[prisma]": {
     "editor.defaultFormatter": "Prisma.prisma"
   },
-  "dart.analysisExcludedFolders": ["apps/flutter/api"]
+  "dart.analysisExcludedFolders": ["apps/flutter/api"],
+  "python.analysis.typeCheckingMode": "basic"
 }
