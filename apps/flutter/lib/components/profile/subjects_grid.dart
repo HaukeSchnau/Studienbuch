@@ -1,4 +1,5 @@
 import 'package:class_mate/components/util/card.dart';
+import 'package:class_mate/database.dart';
 import 'package:class_mate/hooks/use_grades.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/semester.dart';
@@ -14,8 +15,7 @@ class SubjectsGrid extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final courses = useValueListenable(semester.courses);
-    semester.courses.load();
+    final courses = useCourses(semesterId: semester.id);
 
     const numColumns = 2;
     return SingleChildScrollView(

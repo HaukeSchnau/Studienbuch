@@ -11,7 +11,6 @@ import 'package:class_mate/models/user.dart';
 import 'package:class_mate/openapi.dart';
 import 'package:class_mate/router.dart';
 import 'package:class_mate/util/date_util.dart';
-import 'package:class_mate/util/list_util.dart';
 import 'package:drift/drift.dart';
 import 'package:encrypt/encrypt.dart';
 import 'package:flutter/material.dart' hide Key;
@@ -28,12 +27,8 @@ abstract class _GlobalStore with Store {
 
   @observable
   String licenseKey;
-
   @observable
   List<Course> courses = [];
-
-  @observable
-  List<Semester> semesters = [];
 
   @observable
   Agenda agenda = Agenda(start: DateTime.now(), courses: []);
@@ -64,10 +59,7 @@ abstract class _GlobalStore with Store {
       await _updateAgenda();
     });
 
-    db.select(db.semesters).watch().listen((event) {
-      semesters = event;
-    });
-
+    // Make sure the current semester exists in the database (if not, create it)
     final currentSemesterId = getCurrentSemesterId();
     final currentSemester = await (db.select(db.semesters)
           ..where((tbl) => tbl.id.equals(currentSemesterId)))
@@ -77,23 +69,19 @@ abstract class _GlobalStore with Store {
           .into(db.semesters)
           .insert(SemestersCompanion.insert(id: Value(currentSemesterId)));
     }
-    semesters = await db.select(db.semesters).get();
-    for (final semester in semesters) {
-      await semester.courses.load();
-    }
   }
 
   //// SEMESTERS ////
 
-  Semester get currentSemester {
-    final currentSemesterId = getCurrentSemesterId();
-    final currentSemester = semesters
-        .firstWhereOrNull((element) => element.id == currentSemesterId);
-    if (currentSemester == null) {
-      throw Exception("No current semester found");
-    }
-    return currentSemester;
-  }
+  // Semester get currentSemester {
+  //   final currentSemesterId = getCurrentSemesterId();
+  //   final currentSemester = semesters
+  //       .firstWhereOrNull((element) => element.id == currentSemesterId);
+  //   if (currentSemester == null) {
+  //     throw Exception("No current semester found");
+  //   }
+  //   return currentSemester;
+  // }
 
   //// AGENDA ////
 

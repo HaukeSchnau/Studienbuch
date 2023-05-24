@@ -2,6 +2,7 @@ import 'package:class_mate/components/grades/grades_card.dart';
 import 'package:class_mate/components/path_bg_page.dart';
 import 'package:class_mate/components/tasks/tasks_overview.dart';
 import 'package:class_mate/components/util/bottom_panels.dart';
+import 'package:class_mate/database.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/semester.dart';
 import 'package:class_mate/simple_scaffold.dart';

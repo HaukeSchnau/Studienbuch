@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:class_mate/database.dart';
+import 'package:class_mate/hooks/use_query.dart';
 import 'package:class_mate/models/class.dart';
 import 'package:class_mate/models/semester.dart';
 import 'package:drift/drift.dart';
@@ -136,4 +137,26 @@ extension TeacherExtension on Teacher {
 
     return "$title ${name.split(" ").last}";
   }
+}
+
+List<Course> useCourses({int? semesterId}) {
+  // final semesterCoursesStatement = db.select(db.semesterCourses)
+  //   ..where((sc) => sc.semester.equals(id));
+  // final semesterCourses = await semesterCoursesStatement.get();
+  // final coursesStatement = db.select(db.courses)
+  //   ..where((c) => c.id.isIn(semesterCourses.map((sc) => sc.course)));
+  // return await coursesStatement.get();
+
+  // Use joins to get the courses for the semester
+  if (semesterId != null) {
+    return useQueryJoin(() => db.select(db.courses).join([
+              innerJoin(db.semesterCourses,
+                  db.semesterCourses.course.equalsExp(db.courses.id)),
+            ])
+              ..where(db.semesterCourses.semester.equals(semesterId)))
+        .map((row) => row.readTable(db.courses))
+        .toList();
+  }
+
+  throw Exception("No semesterId provided");
 }

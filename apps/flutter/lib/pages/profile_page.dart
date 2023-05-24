@@ -3,7 +3,7 @@ import 'package:class_mate/components/profile/smol_card.dart';
 import 'package:class_mate/components/profile/subjects_grid.dart';
 import 'package:class_mate/components/profile/top_panel.dart';
 import 'package:class_mate/components/tab_bar_view.dart';
-import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/models/semester.dart';
 import 'package:class_mate/simple_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -13,9 +13,7 @@ class ProfilePage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = useStore();
-
-    final semesters = store.semesters;
+    final semesters = useSemesters();
 
     return SimpleScaffold(
         body: Column(
