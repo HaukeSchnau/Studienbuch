@@ -103,7 +103,7 @@ class RegisterAbsenceForm extends HookWidget {
                                 (e) => AbsencesCompanion.insert(
                                   date: date.value,
                                   reason: reason.value,
-                                  isExcusedByParent: store.currentUser.isOfAge
+                                  isExcusedByParent: store.user.isOfAge
                                       ? const Value(true)
                                       : const Value.absent(),
                                   course: e.key.id,

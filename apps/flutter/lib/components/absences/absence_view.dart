@@ -25,7 +25,7 @@ class AbsenceView extends HookWidget {
       assert(absenceGroup.children.length == 1);
       final absence = absenceGroup.children.first;
       confirmWithSignature(
-          context, (ctx) => buildAbsenceInfoTeacher(absence, store.currentUser),
+          context, (ctx) => buildAbsenceInfoTeacher(absence, store.user),
           title: "Fehlzeit entschuldigen (Lehrer)",
           signer: "Unterschrift von ${absence.course.teacher.name}",
           fileName: "absence-excuse-${absence.id}-teacher.svg",
@@ -36,8 +36,8 @@ class AbsenceView extends HookWidget {
               )));
     }
 
-    excuseParent() => confirmWithSignature(context,
-            (ctx) => buildAbsenceInfoParent(absenceGroup, store.currentUser),
+    excuseParent() => confirmWithSignature(
+            context, (ctx) => buildAbsenceInfoParent(absenceGroup, store.user),
             title: "Fehlzeit entschuldigen (Eltern)",
             signer: "Unterschrift der Eltern",
             fileNames: absenceGroup.children
@@ -53,7 +53,7 @@ class AbsenceView extends HookWidget {
         });
 
     viewFullConfirmation() =>
-        viewAbsenceConfirmation(context, absenceGroup, store.currentUser);
+        viewAbsenceConfirmation(context, absenceGroup, store.user);
 
     return MyCard(
         color: absenceGroup.isExcused
@@ -104,7 +104,7 @@ class AbsenceView extends HookWidget {
             ConfirmationStatusView(
               confirmedByParent: absenceGroup.isExcusedByParent,
               confirmedByTeacher: absenceGroup.isExcusedByTeacher,
-              isOfAge: store.currentUser.isOfAge,
+              isOfAge: store.user.isOfAge,
               order: ConfirmationStatusOrder.parentTeacher,
               confirmedText: "Entschuldigt",
             )

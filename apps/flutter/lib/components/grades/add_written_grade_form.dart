@@ -67,7 +67,7 @@ class AddWrittenGradeForm extends HookWidget {
                         GradeResultsCompanion.insert(
                             date: date.value,
                             result: double.parse(resultStr.value),
-                            isConfirmedByParent: store.currentUser.isOfAge
+                            isConfirmedByParent: store.user.isOfAge
                                 ? const Value(true)
                                 : const Value.absent(),
                             course: course.id,

@@ -14,7 +14,7 @@ class ProfileTopPanel extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final store = useStore();
-    final user = store.currentUser;
+    final user = store.user;
     // const schwerpunkt = "sprachlich";
 
     var actions = <MyAction>[

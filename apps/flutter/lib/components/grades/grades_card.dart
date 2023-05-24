@@ -156,14 +156,14 @@ class GradesCard extends HookWidget {
                                     currentOralGrade.isConfirmedByParent,
                                 confirmedByTeacher:
                                     currentOralGrade.isConfirmedByTeacher,
-                                isOfAge: store.currentUser.isOfAge,
+                                isOfAge: store.user.isOfAge,
                                 order: ConfirmationStatusOrder.teacherParent),
                             if (currentOralGrade.isConfirmed)
                               IconButton(
                                   onPressed: () => viewOralGradeConfirmation(
                                       context,
                                       course,
-                                      store.currentUser,
+                                      store.user,
                                       currentOralGrade),
                                   icon: const Icon(Icons.visibility,
                                       color: Colors.black87))

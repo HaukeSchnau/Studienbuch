@@ -27,7 +27,7 @@ class ExamCard extends HookWidget {
     confirmTeacher() => confirmWithSignature(
         context,
         (ctx) => buildWrittenGradeConfirmationInfoTeacher(
-            course, store.currentUser, examResult),
+            course, store.user, examResult),
         title: "Klausurergebnis bestätigen (Lehrer)",
         signer: "Unterschrift von ${course.teacher.name}",
         fileName: "signature-${examResult.id}-teacher.svg",
@@ -38,7 +38,7 @@ class ExamCard extends HookWidget {
     confirmParent() => confirmWithSignature(
         context,
         (ctx) => buildWrittenGradeConfirmationInfoParent(
-            course, store.currentUser, examResult),
+            course, store.user, examResult),
         title: "Klausurergebnis bestätigen (Eltern)",
         signer: "Unterschrift der Eltern",
         fileName: "signature-${examResult.id}-parent.svg",
@@ -55,8 +55,8 @@ class ExamCard extends HookWidget {
                 : confirmTeacher
             : null,
         actionColor: theme.error,
-        userIsOfAge: store.currentUser.isOfAge,
-        user: store.currentUser);
+        userIsOfAge: store.user.isOfAge,
+        user: store.user);
   }
 }
 

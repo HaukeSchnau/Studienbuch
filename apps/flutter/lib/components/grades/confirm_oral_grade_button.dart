@@ -20,8 +20,8 @@ class ConfirmOralGradeButton extends HookWidget {
     final store = useStore();
     confirmTeacher() => confirmWithSignature(
         context,
-        (ctx) => buildOralGradeConfirmationInfoTeacher(
-            course, store.currentUser, result),
+        (ctx) =>
+            buildOralGradeConfirmationInfoTeacher(course, store.user, result),
         title: "Mündliche Note bestätigen (Lehrer)",
         signer: "Unterschrift von ${course.teacher.name}",
         fileName: "signature-${result.id}-teacher.svg",
@@ -31,8 +31,8 @@ class ConfirmOralGradeButton extends HookWidget {
 
     confirmParent() => confirmWithSignature(
         context,
-        (ctx) => buildOralGradeConfirmationInfoParent(
-            course, store.currentUser, result),
+        (ctx) =>
+            buildOralGradeConfirmationInfoParent(course, store.user, result),
         title: "Mündliche Note bestätigen (Eltern)",
         signer: "Unterschrift der Eltern",
         fileName: "signature-${result.id}-parent.svg",

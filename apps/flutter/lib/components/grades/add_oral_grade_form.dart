@@ -74,7 +74,7 @@ class AddOralGradeForm extends HookWidget {
             actionColor: theme.primary,
             actionText: "Wiederherstellen",
             course: course,
-            user: store.currentUser,
+            user: store.user,
             action: () async {
               await (db.delete(db.gradeResults)
                     ..where((tbl) => tbl.date.isBiggerThanValue(
@@ -103,7 +103,7 @@ class AddOralGradeForm extends HookWidget {
                           GradeResultsCompanion.insert(
                             date: DateTime.now(),
                             result: result,
-                            isConfirmedByParent: store.currentUser.isOfAge
+                            isConfirmedByParent: store.user.isOfAge
                                 ? const Value(true)
                                 : const Value.absent(),
                             course: course.id,

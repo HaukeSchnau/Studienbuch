@@ -64,7 +64,7 @@ class CourseCard extends HookWidget {
 
     final isCurrentSemester = semester.id == getCurrentSemesterId();
     const pIndex = -1; // TODO
-    // final grades = store.currentUser.grades[semester]![course.name]!; // TODO
+    // final grades = store.user.grades[semester]![course.name]!; // TODO
     return MyCard(
       padding: const EdgeInsets.symmetric(
         horizontal: 16,

@@ -25,7 +25,7 @@ class GlobalStore = _GlobalStore with _$GlobalStore;
 
 abstract class _GlobalStore with Store {
   @observable
-  User currentUser;
+  User user;
 
   @observable
   String licenseKey;
@@ -46,7 +46,7 @@ abstract class _GlobalStore with Store {
   UpdateStoreCallback? updateStore;
 
   _GlobalStore({
-    required this.currentUser,
+    required this.user,
     required this.licenseKey,
     // ignore: unused_element
     this.updateStore
@@ -186,13 +186,13 @@ abstract class _GlobalStore with Store {
   // ignore: unused_element
   _GlobalStore.fromJson(Map<String, dynamic> json)
       : this(
-          currentUser: User.fromJson(json["currentUser"]),
+          user: User.fromJson(json["currentUser"]),
           licenseKey: json["licenseKey"],
         );
 
   Map<String, dynamic> toJson() {
     return {
-      "currentUser": currentUser.toJson(),
+      "currentUser": user.toJson(),
       "licenseKey": licenseKey,
     };
   }

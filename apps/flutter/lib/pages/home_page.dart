@@ -25,7 +25,7 @@ class HomePage extends HookWidget {
           : "Das steht ${agenda.when} an:";
 
       final mainGreeting = Text(
-        "Moin, ${store.currentUser.shortName}!",
+        "Moin, ${store.user.shortName}!",
         style: const TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.bold,

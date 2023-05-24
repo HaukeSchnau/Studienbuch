@@ -161,7 +161,7 @@ abstract class _SetupStoreBase with Store {
   GlobalStore toGlobalStore() {
     final res = GlobalStore(
       licenseKey: licenseKey!,
-      currentUser: User(
+      user: User(
         isOfAge: isOfAge!,
         name: name!,
         year: Year(
