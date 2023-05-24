@@ -87,12 +87,12 @@ AbsenceGroup mapAbsenceToGroup(Absence absence) {
   );
 }
 
-List<Absence> useAbsences() => useQuery(() => db.select(db.absences));
-List<Absence> useUnexcusedAbsences() => useQuery(() => db.select(db.absences)
+List<Absence>? useAbsences() => useQuery(() => db.select(db.absences));
+List<Absence>? useUnexcusedAbsences() => useQuery(() => db.select(db.absences)
   ..where((tbl) =>
       tbl.isExcusedByParent.equals(false) |
       tbl.isExcusedByTeacher.equals(false)));
-List<Absence> useExcusedAbsences() => useQuery(() => db.select(db.absences)
+List<Absence>? useExcusedAbsences() => useQuery(() => db.select(db.absences)
   ..where((tbl) =>
       tbl.isExcusedByParent.equals(true) &
       tbl.isExcusedByTeacher.equals(true)));

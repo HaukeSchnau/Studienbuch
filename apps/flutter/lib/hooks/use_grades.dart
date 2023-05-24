@@ -25,6 +25,11 @@ CurrentOralGrade useCurrentOralGrade(Course course) {
       ]),
     [course.id],
   );
+  if (oralGrades == null) {
+    return const CurrentOralGrade(
+        currentOralGrade: null, mostRecentConfirmedOralGrade: null);
+  }
+
   final currentOralGrade = oralGrades.firstOrNull;
   final mostRecentConfirmedOralGrade =
       oralGrades.firstWhereOrNull((element) => element.isConfirmed);
@@ -53,6 +58,11 @@ CurrentWrittenGrade useWrittenGrades(Course course) {
       ]),
     [course.id],
   );
+
+  if (writtenGrades == null) {
+    return const CurrentWrittenGrade(
+        writtenGrades: [], averageWrittenGrade: double.nan);
+  }
 
   final averageWrittenGrade =
       writtenGrades.map((e) => e.result).fold<double>(0, (a, b) => a + b) /

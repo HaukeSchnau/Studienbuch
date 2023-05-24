@@ -16,10 +16,14 @@ class AbsenceCard extends HookWidget {
   Widget build(BuildContext context) {
     final store = useStore();
     final absences = useAbsences();
+    final unexcusedAbsences = useUnexcusedAbsences();
 
-    final copyWidget = HookBuilder(
+    if(absences == null || unexcusedAbsences == null) {
+      return const SizedBox();
+    }
+
+    final copyWidget = Builder(
       builder: (_) {
-        final unexcusedAbsences = useUnexcusedAbsences();
         if (absences.isEmpty) {
           return const Column(
             crossAxisAlignment: CrossAxisAlignment.start,

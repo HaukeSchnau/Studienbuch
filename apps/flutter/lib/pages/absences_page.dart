@@ -24,6 +24,8 @@ class AbsencesPage extends HookWidget {
 
     final absenceGroupsByParent = useMemoized(() {
       final groups = <Tuple2<String, DateTime>, AbsenceGroup>{};
+      if (unexcusedAbsencesByParent == null) return null;
+
       for (final absence in unexcusedAbsencesByParent) {
         final key = Tuple2(absence.reason, absence.date);
         if (groups.containsKey(key)) {
@@ -42,6 +44,7 @@ class AbsencesPage extends HookWidget {
     }, [unexcusedAbsencesByParent]);
 
     final absenceGroupsByTeacher = useMemoized(() {
+      if (unexcusedAbsencesByTeacher == null) return null;
       return unexcusedAbsencesByTeacher.map(mapAbsenceToGroup);
     }, [unexcusedAbsencesByTeacher]);
 
@@ -49,6 +52,10 @@ class AbsencesPage extends HookWidget {
       ..where((tbl) =>
           tbl.isExcusedByParent.equals(true) &
           tbl.isExcusedByTeacher.equals(true)));
+
+    if (excusedAbsences == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     final absenceGroupsExcused = useMemoized(() {
       return excusedAbsences.map(mapAbsenceToGroup);
@@ -76,23 +83,28 @@ class AbsencesPage extends HookWidget {
               ],
             ),
             const SizedBox(height: 16),
-            if (absenceGroupsByTeacher.isEmpty && absenceGroupsByParent.isEmpty)
+            if (absenceGroupsByTeacher == null || absenceGroupsByParent == null)
+              const Center(child: CircularProgressIndicator())
+            else if (absenceGroupsByTeacher.isEmpty &&
+                absenceGroupsByParent.isEmpty)
               const Align(
                 alignment: Alignment.center,
                 child: Text("Keine unentschuldigten Fehlzeiten gefunden",
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.black54, fontSize: 14)),
               ),
-            for (final absenceGroup in absenceGroupsByTeacher)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: AbsenceView(absenceGroup: absenceGroup),
-              ),
-            for (final absenceGroup in absenceGroupsByParent)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: AbsenceView(absenceGroup: absenceGroup),
-              ),
+            if (absenceGroupsByTeacher != null)
+              for (final absenceGroup in absenceGroupsByTeacher)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: AbsenceView(absenceGroup: absenceGroup),
+                ),
+            if (absenceGroupsByParent != null)
+              for (final absenceGroup in absenceGroupsByParent)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: AbsenceView(absenceGroup: absenceGroup),
+                ),
             const SizedBox(height: 64),
             Row(
               children: [

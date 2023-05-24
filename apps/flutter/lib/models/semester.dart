@@ -45,4 +45,4 @@ class SemesterCourses extends Table {
   IntColumn get course => integer().references(Courses, #id)();
 }
 
-List<Semester> useSemesters() => useQuery(() => db.select(db.semesters));
+List<Semester>? useSemesters() => useQuery(() => db.select(db.semesters));

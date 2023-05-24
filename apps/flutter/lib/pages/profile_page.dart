@@ -27,7 +27,9 @@ class ProfilePage extends HookWidget {
           ],
         ),
         const SizedBox(height: 16),
-        if (semesters.length > 1)
+        if (semesters == null)
+          const Center(child: CircularProgressIndicator())
+        else if (semesters.length > 1)
           const Padding(
             padding: EdgeInsets.only(left: 24.0, bottom: 4),
             child: Text(
@@ -35,18 +37,19 @@ class ProfilePage extends HookWidget {
               style: TextStyle(fontSize: 14),
             ),
           ),
-        Expanded(
-            child: semesters.length > 1
-                ? MyTabBarView(
-                    pages: semesters.map((semester) {
-                      return TabPage(
-                          title: semester.name,
-                          widget: SubjectsGrid(
-                            semester: semester,
-                          ));
-                    }).toList(),
-                  )
-                : SubjectsGrid(semester: semesters.first))
+        if (semesters != null)
+          Expanded(
+              child: semesters.length > 1
+                  ? MyTabBarView(
+                      pages: semesters.map((semester) {
+                        return TabPage(
+                            title: semester.name,
+                            widget: SubjectsGrid(
+                              semester: semester,
+                            ));
+                      }).toList(),
+                    )
+                  : SubjectsGrid(semester: semesters.first))
       ],
     ));
   }
