@@ -15,41 +15,18 @@ class ProfileTopPanel extends HookWidget {
   Widget build(BuildContext context) {
     final store = useStore();
     final user = store.user;
-    // const schwerpunkt = "sprachlich";
 
     var actions = <MyAction>[
       MyAction(
           label: "Über die App",
           icon: Icons.info_rounded,
           handler: () => context.push("/about")),
-    ];
-    // TODO: Re-add these actions
-    // actions.insertAll(0, [
-    //   MyAction(
-    //       label: "Prüfungsfächer wechseln",
-    //       icon: Icons.school_rounded,
-    //       handler: () => Navigator.push(
-    //           context,
-    //           MaterialPageRoute(
-    //             builder: (context) =>
-    //                 ProfileSetupPage(onSubmit: () => loadProfileFile()),
-    //           ))),
-    //   MyAction(
-    //       label: "Kurse neu wählen",
-    //       icon: Icons.class__rounded,
-    //       handler: () => Navigator.push(
-    //           context,
-    //           MaterialPageRoute(
-    //             builder: (context) => const SetupPage(),
-    //           ))),
-    // ]);
-    if (kDebugMode) {
-      actions.add(MyAction(
-        label: "App zurücksetzen",
-        icon: Icons.restore_rounded,
+      MyAction(
+        label: "Kurse neu wählen",
+        icon: Icons.class_rounded,
         handler: () => context.go("/setup"),
-      ));
-    }
+      )
+    ];
 
     return Container(
       width: double.infinity,
