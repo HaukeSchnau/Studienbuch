@@ -152,7 +152,7 @@ const parseFile = async (filepath: string) => {
             course.teacher === "GES" &&
             startMinutes === parseTime("11:30") &&
             course.subject.toLowerCase().includes("ma2")
-              ? { ...course, subject: "ma23" }
+              ? { ...course, subject: "*ma23" }
               : course,
           );
           return coursesForDay;
