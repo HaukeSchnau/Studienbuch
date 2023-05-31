@@ -21,6 +21,32 @@ class AbsenceView extends HookWidget {
   Widget build(BuildContext context) {
     final store = useStore();
 
+    // Show a confirmation dialog, then delete the absence
+    delete() async {
+      final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+                title: const Text("Fehlzeit löschen"),
+                content: const Text(
+                    "Bist du sicher, dass Du diese Fehlzeit löschen möchten?"),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text("Abbrechen")),
+                  TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: const Text("Löschen"))
+                ],
+              ));
+      if (confirmed == true) {
+        for (final absence in absenceGroup.children) {
+          await (db.delete(db.absences)
+                ..where((tbl) => tbl.id.equals(absence.id)))
+              .go();
+        }
+      }
+    }
+
     excuseTeacher() {
       assert(absenceGroup.children.length == 1);
       final absence = absenceGroup.children.first;
@@ -63,51 +89,60 @@ class AbsenceView extends HookWidget {
         shadow: false,
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         onTap: absenceGroup.isExcused ? viewFullConfirmation : null,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "${absenceGroup.date.format()} (${absenceGroup.children.map((absence) => absence.course.name).join(", ")})",
-                        style: const TextStyle(
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        absenceGroup.reason,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "${absenceGroup.date.format()} (${absenceGroup.children.map((absence) => absence.course.name).join(", ")})",
+                    style: const TextStyle(
+                      fontSize: 12,
+                    ),
                   ),
-                ),
-                if (!absenceGroup.isExcused)
+                  const SizedBox(height: 4),
+                  Text(
+                    absenceGroup.reason,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ConfirmationStatusView(
+                    confirmedByParent: absenceGroup.isExcusedByParent,
+                    confirmedByTeacher: absenceGroup.isExcusedByTeacher,
+                    isOfAge: store.user.isOfAge,
+                    order: ConfirmationStatusOrder.parentTeacher,
+                    confirmedText: "Entschuldigt",
+                  )
+                ],
+              ),
+            ),
+            if (!absenceGroup.isExcused)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
                   OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: theme.error)),
+                          side: BorderSide(color: theme.error),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 8,
+                            horizontal: 16,
+                          )),
                       onPressed: absenceGroup.isExcusedByParent
                           ? excuseTeacher
                           : excuseParent,
                       child: Text("Entschuldigen",
-                          style: TextStyle(color: theme.error)))
-              ],
-            ),
-            const SizedBox(height: 8),
-            ConfirmationStatusView(
-              confirmedByParent: absenceGroup.isExcusedByParent,
-              confirmedByTeacher: absenceGroup.isExcusedByTeacher,
-              isOfAge: store.user.isOfAge,
-              order: ConfirmationStatusOrder.parentTeacher,
-              confirmedText: "Entschuldigt",
-            )
+                          style: TextStyle(color: theme.error))),
+                  TextButton(
+                      onPressed: delete,
+                      child:
+                          Text("Löschen", style: TextStyle(color: theme.error)))
+                ],
+              )
           ],
         ));
   }

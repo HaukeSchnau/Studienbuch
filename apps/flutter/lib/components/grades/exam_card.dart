@@ -24,6 +24,29 @@ class ExamCard extends HookWidget {
   Widget build(BuildContext context) {
     final store = useStore();
 
+    delete() async {
+      final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+                title: const Text("Klausurergebnis löschen"),
+                content: const Text(
+                    "Bist du sicher, dass Du dieses Klausurergebnis löschen möchten?"),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text("Abbrechen")),
+                  TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: const Text("Löschen"))
+                ],
+              ));
+      if (confirmed == true) {
+        await (db.delete(db.gradeResults)
+              ..where((tbl) => tbl.id.equals(examResult.id)))
+            .go();
+      }
+    }
+
     confirmTeacher() => confirmWithSignature(
         context,
         (ctx) => buildWrittenGradeConfirmationInfoTeacher(
@@ -54,6 +77,7 @@ class ExamCard extends HookWidget {
                 ? confirmParent
                 : confirmTeacher
             : null,
+        deleteAction: !examResult.isConfirmedByTeacher ? delete : null,
         actionColor: theme.error,
         userIsOfAge: store.user.isOfAge,
         user: store.user);
@@ -63,6 +87,7 @@ class ExamCard extends HookWidget {
 class ResultCard extends StatelessWidget {
   final GradeResult result;
   final VoidCallback? action;
+  final VoidCallback? deleteAction;
   final bool userIsOfAge;
   final String type;
   final String actionText;
@@ -74,6 +99,7 @@ class ResultCard extends StatelessWidget {
       {super.key,
       required this.result,
       this.action,
+      this.deleteAction,
       this.userIsOfAge = false,
       this.type = "Klausur",
       this.actionText = "Jetzt bestätigen",
@@ -122,7 +148,12 @@ class ResultCard extends StatelessWidget {
                       )
                     ],
                   ),
-                )
+                ),
+                if (deleteAction != null)
+                  IconButton(
+                      onPressed: deleteAction,
+                      icon: const Icon(Icons.delete_outline_rounded,
+                          color: Color.fromRGBO(0, 0, 0, .7)))
               ],
             ),
             const SizedBox(height: 8),

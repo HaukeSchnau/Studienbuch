@@ -18,6 +18,7 @@ class ConfirmOralGradeButton extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final store = useStore();
+
     confirmTeacher() => confirmWithSignature(
         context,
         (ctx) =>
