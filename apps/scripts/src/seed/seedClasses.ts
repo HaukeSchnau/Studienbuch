@@ -257,7 +257,7 @@ export const seedClasses = async () => {
                   where: {
                     courseIdentifier: {
                       courseId: normalizedCourseIdentifier,
-                      yearId: dbYear.id,
+                        yearId: dbYear.id,
                       classId: dbClass.id,
                     },
                   },

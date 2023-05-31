@@ -69,12 +69,17 @@ abstract class _SetupStoreBase with Store {
   });
 
   Future<void> saveToDatabase() async {
-    await resetDatabase();
+    final currentSemesterId = getCurrentSemesterId();
+    await (db.delete(db.semesterCourses)
+          ..where((tbl) => tbl.semester.equals(currentSemesterId)))
+        .go();
 
-    await db.into(db.classes).insert(Class(
+    await db.into(db.classes).insert(
+        Class(
           id: class_!.id,
           identifierInYear: class_!.identifierInYear,
-        ));
+        ),
+        mode: InsertMode.insertOrReplace);
 
     for (final course in courses) {
       await db.into(db.teachers).insert(
@@ -84,23 +89,27 @@ abstract class _SetupStoreBase with Store {
               title: course.teacher.title),
           mode: InsertMode.insertOrReplace);
 
-      await db.into(db.courses).insert(CoursesCompanion.insert(
+      await db.into(db.courses).insert(
+          CoursesCompanion.insert(
             id: Value(course.id),
             courseId: Value(
               course.courseId,
             ),
             name: course.name,
             teacher: course.teacher.id,
-          ));
+          ),
+          mode: InsertMode.insertOrReplace);
 
       for (final time in course.times) {
-        await db.into(db.courseTimes).insert(CourseTime(
-            id: time.id,
-            duration: time.duration,
-            start: TimeOfDay.fromMinutes(time.start),
-            weekday: time.weekday,
-            course: course.id,
-            weeks: _weeksMap[time.weeks]!));
+        await db.into(db.courseTimes).insert(
+            CourseTime(
+                id: time.id,
+                duration: time.duration,
+                start: TimeOfDay.fromMinutes(time.start),
+                weekday: time.weekday,
+                course: course.id,
+                weeks: _weeksMap[time.weeks]!),
+            mode: InsertMode.insertOrReplace);
       }
     }
 
@@ -113,7 +122,8 @@ abstract class _SetupStoreBase with Store {
               title: course.teacher.title),
           mode: InsertMode.insertOrReplace);
 
-      await db.into(db.courses).insert(CoursesCompanion.insert(
+      await db.into(db.courses).insert(
+          CoursesCompanion.insert(
             id: Value(course.id),
             courseId: Value(
               course.courseId,
@@ -123,24 +133,28 @@ abstract class _SetupStoreBase with Store {
             parentClass: Value(
               class_!.id,
             ),
-          ));
+          ),
+          mode: InsertMode.insertOrReplace);
 
       for (final time in course.times) {
-        await db.into(db.courseTimes).insert(CourseTime(
+        await db.into(db.courseTimes).insert(
+            CourseTime(
               id: time.id,
               duration: time.duration,
               start: TimeOfDay.fromMinutes(time.start),
               weekday: time.weekday,
               course: course.id,
               weeks: _weeksMap[time.weeks]!,
-            ));
+            ),
+            mode: InsertMode.insertOrReplace);
       }
     }
 
-    final currentSemesterId = getCurrentSemesterId();
-    await db.into(db.semesters).insert(SemestersCompanion.insert(
+    await db.into(db.semesters).insert(
+        SemestersCompanion.insert(
           id: Value(currentSemesterId),
-        ));
+        ),
+        mode: InsertMode.insertOrReplace);
 
     for (final course in courses) {
       await db.into(db.semesterCourses).insert(SemesterCoursesCompanion.insert(

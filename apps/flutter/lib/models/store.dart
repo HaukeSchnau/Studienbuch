@@ -54,7 +54,8 @@ abstract class _GlobalStore with Store {
   }
 
   Future<void> init() async {
-    db.select(db.courses).watch().listen((courses) {
+    createSemesterCoursesQuery().watch().listen((results) {
+      final courses = results.map((e) => e.readTable(db.courses)).toList();
       _updateSubstitutedAgenda(courses);
       _updateWeeklyAgenda(courses);
     });

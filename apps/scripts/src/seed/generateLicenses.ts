@@ -17,14 +17,20 @@ export const generateLicenses = async (numberOfLicenses: number) => {
     const expiresAt = new Date();
     expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
-    const license = await prisma.licenseKey.create({
-      data: {
-        key: licenseKey,
-        expiresAt: i == 0 ? null : expiresAt,
-        isSuperKey: i == 0,
-      },
-    });
+    const data = {
+      key: licenseKey,
+      expiresAt: i == 0 ? null : expiresAt,
+      isSuperKey: i == 0,
+    };
 
-    console.log(license);
+    await prisma.licenseKey.upsert({
+      where: {
+        key: licenseKey,
+      },
+      update: data,
+      create: data,
+    });
   }
+
+  console.log(`Generated ${numberOfLicenses} licenses.`);
 };

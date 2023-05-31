@@ -42,15 +42,19 @@ class ClassesCoursesSetupPage extends HookWidget {
     final courses = useNetworkResult(() => apiInstance.queryCoursesGet(year.id),
         () => throw Exception("Kurse konnten nicht geladen werden"), [year.id]);
 
-    final courseChoices = useMemoized(() {
-      return groupCoursesByName(
-          courses?.where((course) => course.isChoosable).toList() ?? []);
-    }, [courses]);
-
-    bool hasClasses = classes == null ? false : classes.length > 1;
-
     final selectedClass = useState<Class?>(null);
     final selectedCourses = useState<Map<String, Course?>>({});
+
+    final courseChoices = useMemoized(() {
+      return groupCoursesByName(courses
+              ?.where((course) =>
+                  course.isChoosable &&
+                  course.classId == selectedClass.value?.id)
+              .toList() ??
+          []);
+    }, [courses, selectedClass.value]);
+
+    bool hasClasses = classes == null ? false : classes.length > 1;
 
     useEffect(() {
       for (final courseName in courseChoices.keys) {
@@ -120,6 +124,7 @@ class ClassesCoursesSetupPage extends HookWidget {
                 selectedClass.value = value;
               },
             ),
+          if (hasClasses) const SizedBox(height: 16.0),
           if (courseChoices.isNotEmpty)
             GridView.count(
                 crossAxisCount: 2,
@@ -139,7 +144,7 @@ class ClassesCoursesSetupPage extends HookWidget {
                           selectedCourses.value = {...selectedCourses.value};
                         })
                 ]),
-          const SizedBox(height: 16.0),
+          if (courseChoices.isNotEmpty) const SizedBox(height: 16.0),
           ContinueButton(
               isValidInput: isValidInput(),
               loading: false,

@@ -66,8 +66,11 @@ class CourseCard extends HookWidget {
     final written = useWrittenGrades(course);
 
     final isCurrentSemester = semester.id == getCurrentSemesterId();
-    const pIndex = -1; // TODO
+    const pIndex = -1;
     // final grades = store.user.grades[semester]![course.name]!; // TODO
+
+    final iconPath = course.icon;
+
     return MyCard(
       padding: const EdgeInsets.symmetric(
         horizontal: 16,
@@ -95,10 +98,11 @@ class CourseCard extends HookWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SvgPicture.asset(
-              getCourseIcon(course.name),
-              height: 30,
-            ),
+            if (iconPath != null)
+              SvgPicture.asset(
+                iconPath,
+                height: 30,
+              ),
             const Padding(padding: EdgeInsets.only(top: 4.0)),
             Text(
               course.name + (pIndex == -1 ? "" : " (P${pIndex + 1})"),

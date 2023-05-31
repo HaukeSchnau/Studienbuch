@@ -30,10 +30,10 @@ const _courseIconMap = {
   "Sport-Theorie": "sport.svg",
 };
 
-String getCourseIcon(String courseName) {
+String? getCourseIcon(String courseName) {
   final icon = _courseIconMap[courseName];
   if (icon == null) {
-    throw Exception("No icon for course $courseName");
+    return null;
   }
   return "assets/icons/$icon";
 }
@@ -102,7 +102,7 @@ class Course {
     );
   }
 
-  String get icon => getCourseIcon(name);
+  String? get icon => getCourseIcon(name);
 
   void navigateTo(BuildContext context, SemesterId semester) {
     context.push("/course/$id/$semester");
@@ -139,24 +139,20 @@ extension TeacherExtension on Teacher {
   }
 }
 
+JoinedSelectStatement<HasResultSet, dynamic> createSemesterCoursesQuery(
+    {int? semesterId}) {
+  return db.select(db.semesterCourses).join(
+    [
+      innerJoin(db.courses, db.semesterCourses.course.equalsExp(db.courses.id)),
+    ],
+  )..where(
+      db.semesterCourses.semester.equals(semesterId ?? getCurrentSemesterId()));
+}
+
+/// Returns a list of all courses
+/// If [semesterId] is specified, only courses of that semester are returned. Otherwise, the current semester is used.
 List<Course>? useCourses({int? semesterId}) {
-  // final semesterCoursesStatement = db.select(db.semesterCourses)
-  //   ..where((sc) => sc.semester.equals(id));
-  // final semesterCourses = await semesterCoursesStatement.get();
-  // final coursesStatement = db.select(db.courses)
-  //   ..where((c) => c.id.isIn(semesterCourses.map((sc) => sc.course)));
-  // return await coursesStatement.get();
-
-  // Use joins to get the courses for the semester
-  if (semesterId != null) {
-    return useQueryJoin(() => db.select(db.courses).join([
-              innerJoin(db.semesterCourses,
-                  db.semesterCourses.course.equalsExp(db.courses.id)),
-            ])
-              ..where(db.semesterCourses.semester.equals(semesterId)))
-        ?.map((row) => row.readTable(db.courses))
-        .toList();
-  }
-
-  return useQuery(() => db.select(db.courses));
+  return useQueryJoin(() => createSemesterCoursesQuery(semesterId: semesterId))
+      ?.map((row) => row.readTable(db.courses))
+      .toList();
 }

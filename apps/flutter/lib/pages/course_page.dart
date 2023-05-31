@@ -18,6 +18,8 @@ class CoursePage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconPath = course.icon;
+
     return SimpleScaffold(
         body: PathBackgroundPage(
       child: ConstrainedBox(
@@ -72,22 +74,23 @@ class CoursePage extends HookWidget {
                           ],
                         ),
                       ),
-                      Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4))
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(16),
-                          child: SvgPicture.asset(
-                            getCourseIcon(course.name),
-                            height: 64,
-                          ))
+                      if (iconPath != null)
+                        Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(24),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4))
+                              ],
+                            ),
+                            padding: const EdgeInsets.all(16),
+                            child: SvgPicture.asset(
+                              iconPath,
+                              height: 64,
+                            ))
                     ],
                   ),
                   const SizedBox(height: 32),

@@ -37,7 +37,9 @@ class CourseSelector extends StatelessWidget {
     final itemsWithNull = [null, ...courses];
     final selectedCourse = this.selectedCourse;
 
-    final icon = SvgPicture.asset(getCourseIcon(courses[0].name), width: 20);
+    final iconPath = getCourseIcon(courses[0].name);
+    final icon =
+        iconPath == null ? Container() : SvgPicture.asset(iconPath, width: 20);
     final courseText = Text(
       courses[0].name,
       maxLines: 1,
