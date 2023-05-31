@@ -38,7 +38,7 @@ class SignatureView extends HookWidget {
     return Column(
       children: [
         SizedBox(
-          height: 150,
+          height: 200,
           width: double.infinity,
           child: Stack(
             children: [

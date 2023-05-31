@@ -44,7 +44,7 @@ class ConfirmWithSignature extends HookWidget {
                   decoration: BoxDecoration(
                     color: Colors.grey[50],
                   ),
-                  height: 100,
+                  height: 200,
                   child: Stack(
                     children: [
                       Signature(
