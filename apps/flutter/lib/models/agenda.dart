@@ -97,11 +97,18 @@ List<AgendaEntry> _buildEntries(List<Course> courses, DateTime date) {
           (time.weeks == CourseTimeWeek.both ||
               (time.weeks == CourseTimeWeek.even && currentWeekNumber.isEven) ||
               (time.weeks == CourseTimeWeek.odd && currentWeekNumber.isOdd))) {
-        entries.add(AgendaEntry(
+        final entry = AgendaEntry(
           course: course,
           recurringTime: time,
           concreteDate: date,
-        ));
+        );
+        final existingIndex = entries
+            .indexWhere((element) => element.recurringTime.start == time.start);
+        if (existingIndex != -1) {
+          entries[existingIndex] = entry;
+        } else {
+          entries.add(entry);
+        }
       }
     }
   }
