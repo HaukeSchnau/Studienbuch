@@ -15,4 +15,4 @@ flutter build appbundle --obfuscate --split-debug-info ./debug-symbols
 open build/app/outputs/bundle/release
 
 flutter build ipa --obfuscate --split-debug-info ./debug-symbols
-open apps/flutter/build/ios/archive/Runner.xcarchive
+open build/ios/archive/Runner.xcarchive
