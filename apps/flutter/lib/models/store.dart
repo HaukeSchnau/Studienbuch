@@ -72,18 +72,6 @@ abstract class _GlobalStore with Store {
     }
   }
 
-  //// SEMESTERS ////
-
-  // Semester get currentSemester {
-  //   final currentSemesterId = getCurrentSemesterId();
-  //   final currentSemester = semesters
-  //       .firstWhereOrNull((element) => element.id == currentSemesterId);
-  //   if (currentSemester == null) {
-  //     throw Exception("No current semester found");
-  //   }
-  //   return currentSemester;
-  // }
-
   //// AGENDA ////
 
   @action
@@ -107,8 +95,8 @@ abstract class _GlobalStore with Store {
     }
 
     for (final sub in substitutions) {
-      final startTime = sub.lessonStart;
-      final index = startTime ~/ 2;
+      final lessonStart = sub.lessonStart;
+      final index = lessonStart ~/ 2;
 
       if (index >= agenda.entries.length) {
         continue;
