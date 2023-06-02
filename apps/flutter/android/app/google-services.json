@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "580059450872",
+    "project_id": "de-haukeschnau-classmate",
+    "storage_bucket": "de-haukeschnau-classmate.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:580059450872:android:07d539c7c136d64989da0d",
+        "android_client_info": {
+          "package_name": "de.haukeschnau.class_mate"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "580059450872-m2fnjcke0m721gp0v3g97ke8k67uq4hs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXJKbKhUmNUx19tuHQ9xsKY_R2pt0hnDE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "580059450872-m2fnjcke0m721gp0v3g97ke8k67uq4hs.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "580059450872-okv7k9tc2nvpv2uj9htfagk2qeo6la55.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "de.haukeschnau.classMate",
+                "app_store_id": "6449227364"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
