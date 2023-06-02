@@ -101,6 +101,7 @@ model Course {
     yearId Int
 
     substitutions Substitution[]
+    subscriptions CourseSubscription[]
 
     @@unique([courseId, classId, yearId], name: "courseIdentifier")
 }
@@ -153,4 +154,14 @@ enum SubstitutionType {
     VERTRETUNG
     BETREUUNG
     ENTFALL
+}
+
+model CourseSubscription {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+
+    course   Course @relation(fields: [courseId], references: [id])
+    courseId Int
+
+    fcmToken String
 }
