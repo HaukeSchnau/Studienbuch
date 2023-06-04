@@ -45,14 +45,14 @@ class ClassesCoursesSetupPage extends HookWidget {
     final selectedClass = useState<Class?>(null);
     final selectedCourses = useState<Map<String, Course?>>({});
 
-    final courseChoices = useMemoized(() {
-      return groupCoursesByName(courses
-              ?.where((course) =>
-                  course.isChoosable &&
-                  course.classId == selectedClass.value?.id)
-              .toList() ??
-          []);
-    }, [courses, selectedClass.value]);
+    final courseChoices = groupCoursesByName(courses
+            ?.where((course) =>
+                course.isChoosable && course.classId == selectedClass.value?.id)
+            .toList() ??
+        []);
+
+    print(courses);
+    print(courseChoices);
 
     bool hasClasses = classes == null ? false : classes.length > 1;
 

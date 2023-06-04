@@ -163,5 +163,7 @@ model CourseSubscription {
     course   Course @relation(fields: [courseId], references: [id])
     courseId Int
 
-    fcmToken String
+    messagingToken String
+
+    @@unique([courseId, messagingToken], name: "courseSubscriptionIdentifier")
 }

@@ -3,6 +3,7 @@ import { generateOpenApiDocument } from "trpc-openapi";
 import { classesRouter } from "./router/classesRouter";
 import { coursesRouter } from "./router/coursesRouter";
 import { licenseRouter } from "./router/licenseRouter";
+import { subscriptionsRouter } from "./router/subscriptionsRouter";
 import { substitutionsRouter } from "./router/substitutionsRouter";
 import { yearsRouter } from "./router/yearsRouter";
 import { createTRPCRouter } from "./trpc";
@@ -13,6 +14,7 @@ export const appRouter = createTRPCRouter({
   classes: classesRouter,
   courses: coursesRouter,
   substitutions: substitutionsRouter,
+  subscriptions: subscriptionsRouter,
 });
 
 export const openApiDocument = generateOpenApiDocument(appRouter, {

@@ -1,11 +1,18 @@
 import 'dart:async';
 
 import 'package:class_mate/error_catcher.dart';
+import 'package:class_mate/firebase_options.dart';
+import 'package:class_mate/hooks/use_async_effect.dart';
+import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/store.dart';
+import 'package:class_mate/openapi.dart';
 import 'package:class_mate/router.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/static/theme.dart';
 import 'package:class_mate/trial.dart';
+import 'package:class_mate_api/api.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -14,6 +21,10 @@ import 'package:intl/intl.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> appRunner() async {
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   final store = await loadStore();
   if (store != null) {
     await store.init();
@@ -48,6 +59,55 @@ class App extends HookWidget {
   final GlobalStore? initialStore;
 
   const App({super.key, this.initialStore});
+
+  @override
+  Widget build(BuildContext context) {
+    final courses = useCourses();
+
+    useAsyncEffect(() async {
+      if (courses == null || courses.isEmpty) {
+        return;
+      }
+
+      FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+      NotificationSettings settings = await messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      debugPrint('User granted permission: ${settings.authorizationStatus}');
+      if (settings.authorizationStatus != AuthorizationStatus.authorized) {
+        return;
+      }
+
+      final token = await messaging.getToken();
+      if (token == null) {
+        return;
+      }
+
+      await apiInstance
+          .mutationSubscriptionsSubscribe(MutationSubscriptionsSubscribeRequest(
+        messagingToken: token,
+        courses: courses.map((course) => course.id).toList(),
+      ));
+    }, [courses]);
+
+    return StoreManagingApp(
+      initialStore: initialStore,
+    );
+  }
+}
+
+class StoreManagingApp extends HookWidget {
+  final GlobalStore? initialStore;
+
+  const StoreManagingApp({super.key, this.initialStore});
 
   @override
   Widget build(BuildContext context) {

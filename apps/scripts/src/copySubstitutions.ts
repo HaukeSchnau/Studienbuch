@@ -2,10 +2,13 @@ import fs from "fs/promises";
 import p from "path";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import firebase from "firebase-admin";
+import { applicationDefault } from "firebase-admin/app";
 import Papa from "papaparse";
 import z from "zod";
 
-import { prisma } from "@acme/db";
+import { formalName, toUpperFirst } from "@acme/common";
+import { prisma, type Course, type Substitution, type User } from "@acme/db";
 
 dayjs.extend(utc);
 
@@ -41,7 +44,8 @@ const parseFile = async (filepath: string) => {
   return data
     .map((row) => {
       const parsed = rowSchema.safeParse(row);
-      if (!parsed.success) {
+      // {"Stunde":""} is a known error in the csv. Ignore it.
+      if (!parsed.success && JSON.stringify(row) !== '{"Stunde":""}') {
         console.warn("WARNING: Could not parse row: " + JSON.stringify(row));
       }
       if (parsed.success) return parsed.data;
@@ -94,7 +98,45 @@ const parseFile = async (filepath: string) => {
     .filter(Boolean);
 };
 
+const notifySubscribers = async (
+  app: firebase.app.App,
+  substitution: Substitution,
+  course: Course & { teacher: User },
+) => {
+  // Don't notify for substitutions in the past
+  if (substitution.date.getTime() < Date.now()) return;
+
+  const subscriptions = await prisma.courseSubscription.findMany({
+    where: {
+      courseId: course.id,
+    },
+  });
+
+  for (const subscription of subscriptions) {
+    await app.messaging().send({
+      notification: {
+        title: `Vertretungsplan: ${course.name} bei ${formalName(
+          course.teacher,
+        )}`,
+        body: `${toUpperFirst(substitution.type)} am ${dayjs(
+          substitution.date,
+        ).format("DD.MM.")}`,
+      },
+      token: subscription.messagingToken,
+    });
+
+    console.log(
+      `Sent notification to ${subscription.messagingToken} for ${course.courseId} (ID: ${course.id})`,
+    );
+  }
+};
+
 const main = async () => {
+  const app = firebase.initializeApp({
+    credential: applicationDefault(),
+    databaseURL: "https://de-haukeschnau-classmate.firebaseio.com",
+  });
+
   for (const fileName of await fs.readdir(substitutionsDir)) {
     const filePath = p.join(substitutionsDir, fileName);
     const filename = p.basename(filePath, ".csv");
@@ -120,7 +162,7 @@ const main = async () => {
         });
 
         if (!dbYear) {
-          console.error(`Could not find year for ${class_}`);
+          // console.error(`Could not find year for ${class_}`);
           continue;
         }
 
@@ -132,7 +174,7 @@ const main = async () => {
         });
 
         if (!dbClass) {
-          console.error(`Could not find class for ${class_}`);
+          // console.error(`Could not find class for ${class_}`);
           continue;
         }
 
@@ -142,12 +184,15 @@ const main = async () => {
             classId: dbClass.id,
             courseId: substitution.subject?.toLowerCase(),
           },
+          include: {
+            teacher: true,
+          },
         });
 
         if (!dbCourse) {
-          console.error(
-            `Could not find course for class ${class_}: ${substitution.subject}`,
-          );
+          // console.error(
+          //   `Could not find course for class ${class_}: ${substitution.subject}`,
+          // );
           continue;
         }
 
@@ -203,6 +248,8 @@ const main = async () => {
         const isNew = dayjs(res.updatedAt).diff(res.createdAt) < 1000;
 
         if (isNew) {
+          await notifySubscribers(app, res, dbCourse);
+          
           console.log(
             `Created substitution ${substitution.date.format("YYYY-MM-DD")} ${
               substitution.lessonStart
@@ -218,7 +265,9 @@ const main = async () => {
     }
 
     console.log(
-      `${dayjs().format("YYYY-MM-DD HH:mm")}: Finished ${filename} (created: ${createdCount}, updated: ${updatedCount})`,
+      `${dayjs().format(
+        "YYYY-MM-DD HH:mm",
+      )}: Finished ${filename} (created: ${createdCount}, updated: ${updatedCount})`,
     );
   }
 };

@@ -3,3 +3,4 @@ camelot-py
 tabula-py
 opencv-python
 ghostscript
+PyPDF2
