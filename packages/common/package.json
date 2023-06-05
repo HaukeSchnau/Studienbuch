@@ -10,7 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@acme/db": "workspace:*",
+    "@acme/db": "0.1.0",
     "dayjs": "^1.11.7",
     "pdf-table-extractor": "^1.0.3"
   },
