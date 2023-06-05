@@ -98,13 +98,14 @@ const parseFile = async (filepath: string) => {
     .filter(Boolean);
 };
 
+// Returns the number of subscribers that were notified
 const notifySubscribers = async (
   app: firebase.app.App,
   substitution: Substitution,
   course: Course & { teacher: User },
 ) => {
   // Don't notify for substitutions in the past
-  if (substitution.date.getTime() < Date.now()) return;
+  if (substitution.date.getTime() < Date.now()) return 0;
 
   const subscriptions = await prisma.courseSubscription.findMany({
     where: {
@@ -129,6 +130,8 @@ const notifySubscribers = async (
       `Sent notification to ${subscription.messagingToken} for ${course.courseId} (ID: ${course.id})`,
     );
   }
+
+  return subscriptions.length;
 };
 
 const main = async () => {
@@ -248,14 +251,14 @@ const main = async () => {
         const isNew = dayjs(res.updatedAt).diff(res.createdAt) < 1000;
 
         if (isNew) {
-          await notifySubscribers(app, res, dbCourse);
-          
+          const notifiedCount = await notifySubscribers(app, res, dbCourse);
+
           console.log(
             `Created substitution ${substitution.date.format("YYYY-MM-DD")} ${
               substitution.lessonStart
             } ${substitution.lessonEnd} ${substitution.type} ${
               substitution.subject
-            } ${class_}`,
+            } ${class_} and notified ${notifiedCount} subscribers`,
           );
           createdCount++;
         } else {
