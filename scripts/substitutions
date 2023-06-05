@@ -1,4 +1,4 @@
 #!/bin/bash
 
-# scripts/run-script fetch_substitutions.py
+scripts/run-script fetch_substitutions.py
 scripts/run-script copySubstitutions.ts
