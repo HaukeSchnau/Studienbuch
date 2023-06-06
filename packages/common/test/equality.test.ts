@@ -29,6 +29,10 @@ test("compareMaps", () => {
       ]),
     ),
   ).toBe(true);
+  expect(compareMaps(new Map([["b", 2]]), new Map([["b", undefined]]))).toBe(
+    false,
+  );
+  expect(
+    compareMaps(new Map([["b", undefined]]), new Map([["b", undefined]])),
+  ).toBe(true);
 });
-
-

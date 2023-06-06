@@ -3,7 +3,7 @@ import p from "path";
 import Papa from "papaparse";
 import { z } from "zod";
 
-import { guessSubject } from "@acme/common";
+import { guessSubject, isNormalTime, parseTime } from "@acme/common";
 import { prisma, type CourseTimeWeeks } from "@acme/db";
 
 import { years } from "./years";
@@ -62,13 +62,6 @@ const parseCourses = (coursesRaw: string) => {
   return coursesForDayProcessed;
 };
 
-const parseTime = (time: string) => {
-  return (
-    parseInt(time.split(":")?.[0] ?? "0") * 60 +
-    parseInt(time.split(":")?.[1] ?? "0")
-  );
-};
-
 const getKnownUsers = async () => {
   const csv = await fs.readFile("./known-users.csv", "utf8");
   const { data } = Papa.parse(csv, { header: true });
@@ -94,14 +87,6 @@ const getKnownUsers = async () => {
     .map((user_1) => user_1.success && user_1.data)
     .filter(Boolean);
 };
-
-const normalTimes = [
-  8 * 60,
-  9 * 60 + 45,
-  11 * 60 + 30,
-  13 * 60 + 50,
-  15 * 60 + 15,
-];
 
 const parseFile = async (filepath: string) => {
   const fileContents = await fs.readFile(filepath, "utf8");
@@ -214,19 +199,19 @@ export const seedClasses = async () => {
       for (const [dayNum, coursesForDay] of row.days.entries()) {
         const cellBelow = data[rowNum + 1]?.days[dayNum];
 
-        const isNormalTime = normalTimes.includes(row.startMinutes);
+        const normalTime = isNormalTime(row.startMinutes);
         let weeks: CourseTimeWeeks = "BOTH";
         let startMinutes = row.startMinutes;
         let endMinutes = row.endMinutes + 40;
 
-        if (!isNormalTime && coursesForDay.length > 0) {
+        if (!normalTime && coursesForDay.length > 0) {
           weeks = "EVEN";
           startMinutes -= 40;
           endMinutes -= 40;
         }
 
         if (
-          isNormalTime &&
+          normalTime &&
           coursesForDay.length > 0 &&
           cellBelow &&
           cellBelow.length > 0
@@ -257,7 +242,7 @@ export const seedClasses = async () => {
                   where: {
                     courseIdentifier: {
                       courseId: normalizedCourseIdentifier,
-                        yearId: dbYear.id,
+                      yearId: dbYear.id,
                       classId: dbClass.id,
                     },
                   },

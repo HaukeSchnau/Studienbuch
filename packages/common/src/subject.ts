@@ -26,14 +26,11 @@ export const guessSubject = (subject?: string | null) => {
   if (!subject?.trim()) return "";
 
   const regex = /^\*?([^0-9]+)[0-9]*$/;
-  const matches = regex.exec(subject ?? "");
+  const matches = regex.exec(subject.trim());
 
-  if (!matches) return subject.trim().replaceAll("*", "");
+  if (!matches || !matches[1]) return subject.trim().replaceAll("*", "");
 
   const parsedSubject = matches[1];
-
-  if (!parsedSubject) return subject.trim().replaceAll("*", "");
-
   const subjectLower = parsedSubject.trim().toLowerCase();
 
   if (subjectLower.startsWith("wn") || subjectLower.startsWith("wun"))

@@ -6,6 +6,8 @@ test("guessSubject", () => {
   expect(guessSubject("de")).toBe("Deutsch");
   expect(guessSubject("Deutsch")).toBe("Deutsch");
   expect(guessSubject("de1")).toBe("Deutsch");
+  expect(guessSubject("*de1")).toBe("Deutsch");
+  expect(guessSubject(" *de1")).toBe("Deutsch");
 
   expect(guessSubject("ds")).toBe("Darstellendes Spiel");
   expect(guessSubject("DS")).toBe("Darstellendes Spiel");
@@ -37,4 +39,7 @@ test("guessSubject", () => {
   expect(guessSubject("wun")).toBe("Werte und Normen");
   expect(guessSubject("wun1")).toBe("Werte und Normen");
   expect(guessSubject("Werte und Normen")).toBe("Werte und Normen");
+
+  expect(guessSubject("*12ASDf")).toBe("12ASDf");
+  expect(guessSubject("*Fach12")).toBe("Fach");
 });

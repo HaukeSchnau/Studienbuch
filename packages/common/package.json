@@ -8,9 +8,9 @@
     "lint": "eslint .",
     "lint:fix": "pnpm lint --fix",
     "type-check": "tsc --noEmit",
-    "test": "vitest",
+    "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui --coverage"
   },
   "dependencies": {
     "@acme/db": "0.1.0",
@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@total-typescript/shoehorn": "^0.1.0",
+    "@vitest/coverage-v8": "^0.32.0",
     "@vitest/ui": "^0.32.0",
     "eslint": "^8.34.0",
     "eslint-config-acme": "0.0.0",
