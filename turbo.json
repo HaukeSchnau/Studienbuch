@@ -24,6 +24,15 @@
       "persistent": true,
       "cache": false
     },
+    "test": {
+      "cache": false
+    },
+    "test:coverage": {
+      "cache": false
+    },
+    "test:ui": {
+      "cache": false
+    },
     "build": {
       "dependsOn": ["^build", "^db:generate"],
       "outputs": [".next/**", ".expo/**"]

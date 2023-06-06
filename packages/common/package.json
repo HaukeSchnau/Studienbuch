@@ -7,7 +7,10 @@
     "clean": "rm -rf .turbo node_modules",
     "lint": "eslint .",
     "lint:fix": "pnpm lint --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@acme/db": "0.1.0",
@@ -15,8 +18,11 @@
     "pdf-table-extractor": "^1.0.3"
   },
   "devDependencies": {
+    "@total-typescript/shoehorn": "^0.1.0",
+    "@vitest/ui": "^0.32.0",
     "eslint": "^8.34.0",
     "eslint-config-acme": "0.0.0",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "vitest": "^0.32.0"
   }
 }

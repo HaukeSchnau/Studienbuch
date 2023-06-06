@@ -22,15 +22,17 @@ const courseNames = [
   "Darstellendes Spiel",
 ];
 
-export const guessSubject = (subject: string | undefined) => {
+export const guessSubject = (subject?: string | null) => {
+  if (!subject?.trim()) return "";
+
   const regex = /^\*?([^0-9]+)[0-9]*$/;
   const matches = regex.exec(subject ?? "");
 
-  if (!matches) return subject?.trim().replaceAll("*", "");
+  if (!matches) return subject.trim().replaceAll("*", "");
 
   const parsedSubject = matches[1];
 
-  if (!parsedSubject) return subject?.trim().replaceAll("*", "");
+  if (!parsedSubject) return subject.trim().replaceAll("*", "");
 
   const subjectLower = parsedSubject.trim().toLowerCase();
 

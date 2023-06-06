@@ -7,7 +7,7 @@ import { applicationDefault } from "firebase-admin/app";
 import Papa from "papaparse";
 import z from "zod";
 
-import { formalName, toUpperFirst } from "@acme/common";
+import { capitalize, formalName } from "@acme/common";
 import { prisma, type Course, type Substitution, type User } from "@acme/db";
 
 dayjs.extend(utc);
@@ -119,7 +119,7 @@ const notifySubscribers = async (
         title: `Vertretungsplan: ${course.name} bei ${formalName(
           course.teacher,
         )}`,
-        body: `${toUpperFirst(substitution.type)} am ${dayjs(
+        body: `${capitalize(substitution.type)} am ${dayjs(
           substitution.date,
         ).format("DD.MM.")}`,
       },
