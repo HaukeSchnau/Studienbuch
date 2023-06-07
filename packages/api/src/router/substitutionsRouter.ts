@@ -24,7 +24,6 @@ export const substitutionsRouter = createTRPCRouter({
       ),
     )
     .query(async ({ ctx, input }) => {
-      console.log(dayjs.utc().startOf("day").toDate());
       return ctx.prisma.substitution
         .findMany({
           include: { course: true },

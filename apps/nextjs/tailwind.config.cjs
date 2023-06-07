@@ -9,6 +9,12 @@ const config = {
     },
     colors: {
       green: "#098A00",
+      offwhite: "#F1F1F1",
+      white: "#FFFFFF",
+      grey: "#E5E5E5",
+    },
+    backgroundImage: {
+      "main-blob": "url('/assets/main-blob.svg')",
     },
   },
 };
