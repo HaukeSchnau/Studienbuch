@@ -12,6 +12,11 @@ const config = {
       "./packages/*/tsconfig.json",
     ],
   },
+  ignorePatterns: [
+    "node_modules",
+    "coverage",
+    "dist",
+  ],
   settings: {
     next: {
       rootDir: ["apps/nextjs"],
