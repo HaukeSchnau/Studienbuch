@@ -28,3 +28,17 @@ const normalTimes = [
 ];
 
 export const isNormalTime = (time: number) => normalTimes.includes(time);
+
+export const getNormalTimeIndex = (time: number) =>
+  normalTimes.findIndex((t) => t === time);
+
+export const getNormalTime = (index: number) => normalTimes[index];
+
+export const formatTime = (time: number) => {
+  const hours = Math.floor(time / 60);
+  const minutes = time % 60;
+
+  return `${hours.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}`;
+};

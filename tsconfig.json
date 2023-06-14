@@ -15,12 +15,7 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "noUncheckedIndexedAccess": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+    "noUncheckedIndexedAccess": true
   },
   "include": [".eslintrc.js", "prettier.config.cjs"]
 }

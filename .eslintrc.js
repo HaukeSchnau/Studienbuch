@@ -19,7 +19,10 @@ const config = {
   },
   rules: {
     "react/no-unescaped-entities": "off",
-  }
+    "@next/next/no-img-element": "off",
+    "@typescript-eslint/no-misused-promises": "off",
+    "@typescript-eslint/require-await": "off",
+  },
 };
 
 module.exports = config;

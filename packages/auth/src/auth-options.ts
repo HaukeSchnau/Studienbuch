@@ -36,6 +36,9 @@ export const authOptions: NextAuthOptions = {
       return !!user.emailVerified;
     },
   },
+  pages: {
+    signIn: "/login",
+  },
   adapter: PrismaAdapter(prisma),
   providers: [
     Email({

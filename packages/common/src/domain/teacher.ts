@@ -7,3 +7,5 @@ export const formalName = (teacher: User) => {
 
   return `${teacher.title} ${teacher.name.split(" ").at(-1)}`;
 };
+
+export type Teacher = Pick<User, "id" | "name">;

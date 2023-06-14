@@ -1,5 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
-import NavigationItem from "~/components/NavigationItem";
+import NavigationItem, { LogoutButton } from "~/components/NavigationItem";
 
 export default function DashboardLayout({
   children,
@@ -21,6 +20,7 @@ export default function DashboardLayout({
           </NavigationItem>
           <NavigationItem href="/admin/courses">Kurse</NavigationItem>
           <NavigationItem href="/admin/classes">Klasen</NavigationItem>
+          <LogoutButton />
         </ul>
       </div>
       <div className="flex-1 overflow-y-auto px-16 py-12">{children}</div>
