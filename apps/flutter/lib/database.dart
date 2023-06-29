@@ -45,7 +45,7 @@ MyDatabase db = MyDatabase();
 
 Future<File> get _dbFile async {
   final dbFolder = await getApplicationDocumentsDirectory();
-  return File(p.join(dbFolder.path, 'db.sqlite'));
+  return File(p.join(dbFolder.path, 'database.sqlite'));
 }
 
 Future<void> resetDatabase() async {

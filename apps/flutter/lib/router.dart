@@ -6,10 +6,10 @@ import 'package:class_mate/pages/absences_page.dart';
 import 'package:class_mate/pages/course_page.dart';
 import 'package:class_mate/pages/root_page.dart';
 import 'package:class_mate/pages/welcome_page.dart';
+import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:class_mate/models/course.dart';
 
 typedef UpdateStoreCallback = void Function(GlobalStore newStore);
 
@@ -39,28 +39,38 @@ buildMainRouter(
         builder: (context, state) {
           final val = store.value;
           if (val != null) {
-            final futures = Future.wait([
-              (db.select(db.courses)
-                    ..where((tbl) =>
-                        tbl.id.equals(int.parse(state.params['courseId']!))))
-                  .getSingleOrNull(),
-              (db.select(db.semesters)
-                    ..where((tbl) =>
-                        tbl.id.equals(int.parse(state.params['semesterId']!))))
-                  .getSingleOrNull(),
-            ]);
+            final courseId = int.parse(state.params['courseId']!);
+            final semesterId = int.parse(state.params['semesterId']!);
+
+            final semesterCourseFuture = (db.select(db.semesterCourses)
+                  ..where((tbl) =>
+                      tbl.semester.equals(semesterId) &
+                      tbl.course.equals(courseId)))
+                .join(
+              [
+                innerJoin(db.courses,
+                    db.courses.id.equalsExp(db.semesterCourses.course)),
+                innerJoin(db.semesters,
+                    db.semesters.id.equalsExp(db.semesterCourses.semester)),
+              ],
+            ).getSingle();
+
             return Provider(
               create: (_) => val,
               child: FutureBuilder(
-                future: futures,
+                future: semesterCourseFuture,
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
-                    return Provider(
-                      create: (_) => snapshot.data as Course,
-                      child: CoursePage(
-                        course: snapshot.data![0] as Course,
-                        semester: snapshot.data![1] as Semester,
-                      ),
+                    final semesterCourse = snapshot.data;
+                    if (semesterCourse == null) {
+                      return const Center(child: Text("Kurs nicht gefunden"));
+                    }
+                    final course = semesterCourse.readTable(db.courses);
+                    final semester = semesterCourse.readTable(db.semesters);
+
+                    return CoursePage(
+                      course: course,
+                      semester: semester,
                     );
                   } else {
                     return const Center(

@@ -19,6 +19,7 @@ class CoursePage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final iconPath = course.icon;
+    final bool isPast = semester.id < getCurrentSemesterId();
 
     return SimpleScaffold(
         body: PathBackgroundPage(
@@ -96,16 +97,17 @@ class CoursePage extends HookWidget {
                   const SizedBox(height: 32),
                   Padding(
                     padding: const EdgeInsets.only(left: 16.0),
-                    child: GradesCard(course: course),
+                    child: GradesCard(course: course, locked: isPast),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-            BottomPanels(
-                blueChild: TasksOverview(
-              course: course,
-            ))
+            if (!isPast) const SizedBox(height: 32),
+            if (!isPast)
+              BottomPanels(
+                  blueChild: TasksOverview(
+                course: course,
+              ))
           ],
         ),
       ),

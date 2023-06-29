@@ -1,6 +1,6 @@
 import 'package:class_mate/database.dart';
-import 'package:class_mate/hooks/use_query.dart';
 import 'package:class_mate/models/course.dart';
+import 'package:class_mate/models/year.dart';
 import 'package:drift/drift.dart';
 
 enum SemesterType {
@@ -13,11 +13,52 @@ typedef SemesterId = int;
 SemesterId getCurrentSemesterId() {
   final now = DateTime.now();
   int year = now.year;
-  bool isWinter = now.month > 7 || now.month < 2;
+  bool isWinter =
+      now.month > 5 || now.month < 2; // TODO CHANGE BACK TO 7 BEFORE RELEASE
   if (now.month < 2) {
     year--;
   }
-  return year << 1 | (isWinter ? 1 : 0);
+  return getSemesterId(
+      year, isWinter ? SemesterType.winter : SemesterType.summer);
+}
+
+SemesterId getSemesterId(int year, SemesterType type) {
+  return year << 1 | (type == SemesterType.winter ? 1 : 0);
+}
+
+class SemesterRange extends Iterable<Semester> {
+  final SemesterId start;
+  final SemesterId end;
+
+  SemesterRange(this.start, this.end);
+
+  @override
+  int get length => end - start + 1;
+
+  @override
+  Iterator<Semester> get iterator => _SemesterRangeIterator(start, end);
+}
+
+class _SemesterRangeIterator extends Iterator<Semester> {
+  final SemesterId end;
+  SemesterId currentId;
+
+  _SemesterRangeIterator(this.currentId, this.end) {
+    currentId--;
+  }
+
+  @override
+  Semester get current => Semester(id: currentId);
+
+  @override
+  bool moveNext() {
+    if (currentId < end) {
+      currentId++;
+      return true;
+    } else {
+      return false;
+    }
+  }
 }
 
 class Semesters extends Table {
@@ -29,20 +70,28 @@ class Semesters extends Table {
 
 extension SemesterExt on Semester {
   String get name {
-    final year = id >> 1;
+    final year = this.year;
     final isWinter = id & 1 == 1;
     if (isWinter) {
       return "Winter $year/${year + 1}";
     } else {
-      return "Sommer ${year - 1}/$year";
+      return "Sommer $year";
     }
   }
-}
 
+  int get year => id >> 1;
+}
 
 class SemesterCourses extends Table {
   IntColumn get semester => integer().references(Semesters, #id)();
   IntColumn get course => integer().references(Courses, #id)();
 }
 
-List<Semester>? useSemesters() => useQuery(() => db.select(db.semesters));
+SemesterRange getRelevantSemesters(Year year) {
+  final startYear = year.startYear +
+      7; // First Year of Q-Phase is 7 years after start (5th grade to 11th grade)
+  final firstRelevantSemesterId = getSemesterId(startYear, SemesterType.winter);
+  final relevantSemesters =
+      SemesterRange(firstRelevantSemesterId, getCurrentSemesterId());
+  return relevantSemesters;
+}

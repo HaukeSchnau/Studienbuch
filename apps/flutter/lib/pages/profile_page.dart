@@ -3,6 +3,7 @@ import 'package:class_mate/components/profile/smol_card.dart';
 import 'package:class_mate/components/profile/subjects_grid.dart';
 import 'package:class_mate/components/profile/top_panel.dart';
 import 'package:class_mate/components/tab_bar_view.dart';
+import 'package:class_mate/hooks/use_store.dart';
 import 'package:class_mate/models/semester.dart';
 import 'package:class_mate/simple_scaffold.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +14,8 @@ class ProfilePage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final semesters = useSemesters();
+    final store = useStore();
+    final semesters = getRelevantSemesters(store.user.year);
 
     return SimpleScaffold(
         body: Column(
@@ -27,9 +29,7 @@ class ProfilePage extends HookWidget {
           ],
         ),
         const SizedBox(height: 16),
-        if (semesters == null)
-          const Center(child: CircularProgressIndicator())
-        else if (semesters.length > 1)
+        if (semesters.length > 1)
           const Padding(
             padding: EdgeInsets.only(left: 24.0, bottom: 4),
             child: Text(
@@ -37,19 +37,19 @@ class ProfilePage extends HookWidget {
               style: TextStyle(fontSize: 14),
             ),
           ),
-        if (semesters != null)
-          Expanded(
-              child: semesters.length > 1
-                  ? MyTabBarView(
-                      pages: semesters.map((semester) {
-                        return TabPage(
-                            title: semester.name,
-                            widget: SubjectsGrid(
-                              semester: semester,
-                            ));
-                      }).toList(),
-                    )
-                  : SubjectsGrid(semester: semesters.first))
+        Expanded(
+            child: semesters.length > 1
+                ? MyTabBarView(
+                    initialIndex: semesters.length - 1,
+                    pages: semesters.map((semester) {
+                      return TabPage(
+                          title: semester.name,
+                          widget: SubjectsGrid(
+                            semester: semester,
+                          ));
+                    }),
+                  )
+                : SubjectsGrid(semester: semesters.first))
       ],
     ));
   }

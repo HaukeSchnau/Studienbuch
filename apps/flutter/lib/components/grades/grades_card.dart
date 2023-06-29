@@ -19,8 +19,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 class GradesCard extends HookWidget {
   final Course course;
+  final bool locked;
 
-  const GradesCard({super.key, required this.course});
+  const GradesCard({super.key, required this.course, required this.locked});
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +144,7 @@ class GradesCard extends HookWidget {
                             oralLastUpdatedText,
                           ],
                         ),
-                        editOralButton,
+                        if (!locked) editOralButton,
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -207,7 +208,7 @@ class GradesCard extends HookWidget {
                             writtenText,
                           ],
                         ),
-                        addWrittenButton,
+                        if (!locked) addWrittenButton,
                       ],
                     ),
                     const SizedBox(height: 12),

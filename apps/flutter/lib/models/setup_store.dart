@@ -69,107 +69,8 @@ abstract class _SetupStoreBase with Store {
   });
 
   Future<void> saveToDatabase() async {
-    final currentSemesterId = getCurrentSemesterId();
-    await (db.delete(db.semesterCourses)
-          ..where((tbl) => tbl.semester.equals(currentSemesterId)))
-        .go();
-
-    await db.into(db.classes).insert(
-        Class(
-          id: class_!.id,
-          identifierInYear: class_!.identifierInYear,
-        ),
-        mode: InsertMode.insertOrReplace);
-
-    for (final course in courses) {
-      await db.into(db.teachers).insert(
-          Teacher(
-              id: course.teacher.id,
-              name: course.teacher.name,
-              title: course.teacher.title),
-          mode: InsertMode.insertOrReplace);
-
-      await db.into(db.courses).insert(
-          CoursesCompanion.insert(
-            id: Value(course.id),
-            courseId: Value(
-              course.courseId,
-            ),
-            name: course.name,
-            teacher: course.teacher.id,
-          ),
-          mode: InsertMode.insertOrReplace);
-
-      for (final time in course.times) {
-        await db.into(db.courseTimes).insert(
-            CourseTime(
-                id: time.id,
-                duration: time.duration,
-                start: TimeOfDay.fromMinutes(time.start),
-                weekday: time.weekday,
-                course: course.id,
-                weeks: _weeksMap[time.weeks]!),
-            mode: InsertMode.insertOrReplace);
-      }
-    }
-
-    for (final course
-        in class_!.courses.where((element) => !element.isChoosable)) {
-      await db.into(db.teachers).insert(
-          Teacher(
-              id: course.teacher.id,
-              name: course.teacher.name,
-              title: course.teacher.title),
-          mode: InsertMode.insertOrReplace);
-
-      await db.into(db.courses).insert(
-          CoursesCompanion.insert(
-            id: Value(course.id),
-            courseId: Value(
-              course.courseId,
-            ),
-            name: course.name,
-            teacher: course.teacher.id,
-            parentClass: Value(
-              class_!.id,
-            ),
-          ),
-          mode: InsertMode.insertOrReplace);
-
-      for (final time in course.times) {
-        await db.into(db.courseTimes).insert(
-            CourseTime(
-              id: time.id,
-              duration: time.duration,
-              start: TimeOfDay.fromMinutes(time.start),
-              weekday: time.weekday,
-              course: course.id,
-              weeks: _weeksMap[time.weeks]!,
-            ),
-            mode: InsertMode.insertOrReplace);
-      }
-    }
-
-    await db.into(db.semesters).insert(
-        SemestersCompanion.insert(
-          id: Value(currentSemesterId),
-        ),
-        mode: InsertMode.insertOrReplace);
-
-    for (final course in courses) {
-      await db.into(db.semesterCourses).insert(SemesterCoursesCompanion.insert(
-            semester: currentSemesterId,
-            course: course.id,
-          ));
-    }
-
-    for (final course
-        in class_!.courses.where((element) => !element.isChoosable)) {
-      await db.into(db.semesterCourses).insert(SemesterCoursesCompanion.insert(
-            semester: currentSemesterId,
-            course: course.id,
-          ));
-    }
+    await saveSemesterData(
+        class_: class_!, courses: courses, semesterId: getCurrentSemesterId());
   }
 
   GlobalStore toGlobalStore() {
@@ -188,5 +89,112 @@ abstract class _SetupStoreBase with Store {
     );
 
     return res;
+  }
+}
+
+Future<void> saveSemesterData({
+  required ApiClass class_,
+  required List<ApiCourse> courses,
+  required SemesterId semesterId,
+}) async {
+  await (db.delete(db.semesterCourses)
+        ..where((tbl) => tbl.semester.equals(semesterId)))
+      .go();
+
+  await db.into(db.classes).insert(
+      Class(
+        id: class_.id,
+        identifierInYear: class_.identifierInYear,
+      ),
+      mode: InsertMode.insertOrReplace);
+
+  for (final course in courses) {
+    await db.into(db.teachers).insert(
+        Teacher(
+            id: course.teacher.id,
+            name: course.teacher.name,
+            title: course.teacher.title),
+        mode: InsertMode.insertOrReplace);
+
+    await db.into(db.courses).insert(
+        CoursesCompanion.insert(
+          id: Value(course.id),
+          courseId: Value(
+            course.courseId,
+          ),
+          name: course.name,
+          teacher: course.teacher.id,
+        ),
+        mode: InsertMode.insertOrReplace);
+
+    for (final time in course.times) {
+      await db.into(db.courseTimes).insert(
+          CourseTime(
+              id: time.id,
+              duration: time.duration,
+              start: TimeOfDay.fromMinutes(time.start),
+              weekday: time.weekday,
+              course: course.id,
+              weeks: _weeksMap[time.weeks]!),
+          mode: InsertMode.insertOrReplace);
+    }
+  }
+
+  for (final course
+      in class_.courses.where((element) => !element.isChoosable)) {
+    await db.into(db.teachers).insert(
+        Teacher(
+            id: course.teacher.id,
+            name: course.teacher.name,
+            title: course.teacher.title),
+        mode: InsertMode.insertOrReplace);
+
+    await db.into(db.courses).insert(
+        CoursesCompanion.insert(
+          id: Value(course.id),
+          courseId: Value(
+            course.courseId,
+          ),
+          name: course.name,
+          teacher: course.teacher.id,
+          parentClass: Value(
+            class_.id,
+          ),
+        ),
+        mode: InsertMode.insertOrReplace);
+
+    for (final time in course.times) {
+      await db.into(db.courseTimes).insert(
+          CourseTime(
+            id: time.id,
+            duration: time.duration,
+            start: TimeOfDay.fromMinutes(time.start),
+            weekday: time.weekday,
+            course: course.id,
+            weeks: _weeksMap[time.weeks]!,
+          ),
+          mode: InsertMode.insertOrReplace);
+    }
+  }
+
+  await db.into(db.semesters).insert(
+      SemestersCompanion.insert(
+        id: Value(semesterId),
+      ),
+      mode: InsertMode.insertOrReplace);
+
+  for (final course in courses) {
+    await db.into(db.semesterCourses).insert(SemesterCoursesCompanion.insert(
+          semester: semesterId,
+          course: course.id,
+        ));
+  }
+
+  for (final course
+      in class_.courses.where((element) => !element.isChoosable)) {
+    await db.into(db.semesterCourses).insert(SemesterCoursesCompanion.insert(
+          semester: semesterId,
+          course: course.id,
+        ));
   }
 }

@@ -13,7 +13,6 @@ const fixedType = z.array(
 );
 
 export const idFix = publicProcedure
-  .meta({ openapi: { method: "PATCH", path: "/idFix" } })
   .input(
     z.object({
       courses: z.array(CourseModel),

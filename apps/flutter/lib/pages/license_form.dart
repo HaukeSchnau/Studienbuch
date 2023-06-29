@@ -1,3 +1,4 @@
+import 'package:class_mate/error_catcher.dart';
 import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/openapi.dart';
 import 'package:class_mate/pages/profile_setup_page.dart';
@@ -66,7 +67,12 @@ class LicenseForm extends HookWidget {
       final licenseKey = licenseController.text;
       final licenseStatus = await apiInstance
           .queryLicenseCheck(licenseKey)
-          .then((value) => value?.replaceAll("\"", ""));
+          .then((value) => value?.replaceAll("\"", ""))
+          .catchError((error) {
+        loading.value = false;
+
+        throw UserException("Lizenzschlüssel konnte nicht geprüft werden");
+      });
       if (licenseStatus == "VALID") {
         // License key will have to be checked again and activated when setup flow is completed
 

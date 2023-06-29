@@ -5,7 +5,6 @@ import 'package:class_mate/database.dart';
 import 'package:class_mate/error_catcher.dart';
 import 'package:class_mate/models/agenda.dart';
 import 'package:class_mate/models/course.dart';
-import 'package:class_mate/models/semester.dart';
 import 'package:class_mate/models/substitution.dart';
 import 'package:class_mate/models/user.dart';
 import 'package:class_mate/openapi.dart';
@@ -22,8 +21,7 @@ part 'store.g.dart';
 class GlobalStore = _GlobalStore with _$GlobalStore;
 
 abstract class _GlobalStore with Store {
-  @observable
-  User user;
+  final User user;
 
   @observable
   String licenseKey;
@@ -59,17 +57,6 @@ abstract class _GlobalStore with Store {
       _updateSubstitutedAgenda(courses);
       _updateWeeklyAgenda(courses);
     });
-
-    // Make sure the current semester exists in the database (if not, create it)
-    final currentSemesterId = getCurrentSemesterId();
-    final currentSemester = await (db.select(db.semesters)
-          ..where((tbl) => tbl.id.equals(currentSemesterId)))
-        .getSingleOrNull();
-    if (currentSemester == null) {
-      db
-          .into(db.semesters)
-          .insert(SemestersCompanion.insert(id: Value(currentSemesterId)));
-    }
   }
 
   //// AGENDA ////
@@ -155,7 +142,7 @@ abstract class _GlobalStore with Store {
 
   Future<void> save() async {
     final directory = await getApplicationDocumentsDirectory();
-    final storeFilePath = "${directory.path}/haukestore";
+    final storeFilePath = "${directory.path}/data";
     final storeFile = File(storeFilePath);
     await storeFile.writeAsBytes(encrypt());
   }
@@ -173,7 +160,7 @@ String decrypt(Uint8List encryptedBytes) {
 Future<GlobalStore?> loadStore() async {
   try {
     final directory = await getApplicationDocumentsDirectory();
-    final storeFilePath = "${directory.path}/haukestore";
+    final storeFilePath = "${directory.path}/data";
     final storeFile = File(storeFilePath);
     if (await storeFile.exists()) {
       final jsonContent = decrypt(await storeFile.readAsBytes());

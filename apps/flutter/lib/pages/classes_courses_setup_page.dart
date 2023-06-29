@@ -1,4 +1,5 @@
 import 'package:class_mate/components/course_selector.dart';
+import 'package:class_mate/error_catcher.dart';
 import 'package:class_mate/hooks/use_network_result.dart';
 import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/openapi.dart';
@@ -35,51 +36,10 @@ class ClassesCoursesSetupPage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final year = store.year!;
-    final classes = useNetworkResult(
-        () => apiInstance.queryClassesGet(year.id),
-        () => throw Exception("Klassen konnten nicht geladen werden"),
-        [year.id]);
-    final courses = useNetworkResult(() => apiInstance.queryCoursesGet(year.id),
-        () => throw Exception("Kurse konnten nicht geladen werden"), [year.id]);
 
-    final selectedClass = useState<Class?>(null);
-    final selectedCourses = useState<Map<String, Course?>>({});
-
-    final courseChoices = groupCoursesByName(courses
-            ?.where((course) =>
-                course.isChoosable && course.classId == selectedClass.value?.id)
-            .toList() ??
-        []);
-
-    print(courses);
-    print(courseChoices);
-
-    bool hasClasses = classes == null ? false : classes.length > 1;
-
-    useEffect(() {
-      for (final courseName in courseChoices.keys) {
-        selectedCourses.value[courseName] = null;
-      }
-      return null;
-    }, [courseChoices]);
-
-    useEffect(() {
-      if (!hasClasses && classes != null) {
-        selectedClass.value = classes[0];
-      }
-      return null;
-    }, [classes, hasClasses]);
-
-    bool isValidInput() {
-      return selectedClass.value != null;
-    }
-
-    void finishFlow() async {
-      store.class_ = selectedClass.value;
-      store.courses = selectedCourses.value.values
-          .whereType<Course>()
-          .toList()
-          .asObservable();
+    void finishFlow(Class selectedClass, List<Course> selectedCourses) async {
+      store.class_ = selectedClass;
+      store.courses = selectedCourses.asObservable();
       await apiInstance.mutationLicenseActivate(
           MutationLicenseActivateRequest(licenseKey: store.licenseKey!));
 
@@ -91,6 +51,72 @@ class ClassesCoursesSetupPage extends HookWidget {
       // ignore: use_build_context_synchronously
       final onSetupFinished = context.read<UpdateStoreCallback>();
       onSetupFinished(globalStore);
+    }
+
+    return ClassesCoursesChooserPage(
+        year: year, onFinishedCallback: finishFlow);
+  }
+}
+
+class ClassesCoursesChooserPage extends HookWidget {
+  final QueryYearsGet200ResponseInner year;
+  final void Function(
+    Class selectedClass,
+    List<Course> selectedCourses,
+  ) onFinishedCallback;
+
+  const ClassesCoursesChooserPage(
+      {super.key, required this.year, required this.onFinishedCallback});
+
+  @override
+  Widget build(BuildContext context) {
+    final classesData = useNetworkResult(
+        () => apiInstance.queryClassesGet(year.id),
+        () => throw UserException("Klassen konnten nicht geladen werden"),
+        [year.id]);
+    final coursesData = useNetworkResult(
+        () => apiInstance.queryCoursesGet(year.id),
+        () => throw UserException("Kurse konnten nicht geladen werden"),
+        [year.id]);
+
+    final loading = classesData == null || coursesData == null;
+    final hasClasses = classesData != null && classesData.length > 1;
+
+    final selectedClass = useState<Class?>(null);
+    final selectedCourses = useState<Map<String, Course?>>({});
+    final courseChoices = useState<Map<String, List<Course>>>({});
+
+    useEffect(() {
+      if (!hasClasses && classesData != null) {
+        selectedClass.value = classesData[0];
+      }
+      return null;
+    }, [classesData, hasClasses]);
+
+    useEffect(() {
+      final choosableCourses = groupCoursesByName(coursesData
+              ?.where((course) =>
+                  course.isChoosable &&
+                  course.classId == selectedClass.value?.id)
+              .toList() ??
+          []);
+
+      courseChoices.value = choosableCourses;
+
+      for (final courseName in choosableCourses.keys) {
+        selectedCourses.value[courseName] = null;
+      }
+      return null;
+    }, [coursesData, selectedClass.value]);
+
+    bool isValidInput() {
+      return selectedClass.value != null;
+    }
+
+    void finishFlow() {
+      final class_ = selectedClass.value;
+      final courses = selectedCourses.value.values.whereType<Course>().toList();
+      onFinishedCallback(class_!, courses);
     }
 
     return Padding(
@@ -108,13 +134,14 @@ class ClassesCoursesSetupPage extends HookWidget {
                   : "Bitte wähle deine Kurse aus. Du kannst diese später jederzeit ändern. Tippe auf die Fächer, um deine Kurse auszuwählen.",
               style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 16.0),
+          if (loading) const Center(child: CircularProgressIndicator()),
           if (hasClasses)
             DropdownButtonFormField(
               decoration: const InputDecoration(
                 labelText: "Klasse",
               ),
               hint: const Text("Klasse"),
-              items: classes.map((class_) {
+              items: classesData.map((class_) {
                 return DropdownMenuItem(
                   value: class_,
                   child: Text("${year.yearNumber}.${class_.identifierInYear}"),
@@ -125,7 +152,7 @@ class ClassesCoursesSetupPage extends HookWidget {
               },
             ),
           if (hasClasses) const SizedBox(height: 16.0),
-          if (courseChoices.isNotEmpty)
+          if (courseChoices.value.isNotEmpty)
             GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,
@@ -134,7 +161,7 @@ class ClassesCoursesSetupPage extends HookWidget {
                 mainAxisSpacing: 16.0,
                 childAspectRatio: 1 / .5,
                 children: [
-                  for (final courses in courseChoices.values)
+                  for (final courses in courseChoices.value.values)
                     CourseSelector(
                         courses: courses,
                         selectedCourse: selectedCourses.value[courses[0].name],
@@ -144,7 +171,7 @@ class ClassesCoursesSetupPage extends HookWidget {
                           selectedCourses.value = {...selectedCourses.value};
                         })
                 ]),
-          if (courseChoices.isNotEmpty) const SizedBox(height: 16.0),
+          if (courseChoices.value.isNotEmpty) const SizedBox(height: 16.0),
           ContinueButton(
               isValidInput: isValidInput(),
               loading: false,

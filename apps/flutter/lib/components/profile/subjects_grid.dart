@@ -1,9 +1,14 @@
 import 'package:class_mate/components/util/card.dart';
 import 'package:class_mate/database.dart';
 import 'package:class_mate/hooks/use_grades.dart';
+import 'package:class_mate/hooks/use_store.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/semester.dart';
+import 'package:class_mate/models/setup_store.dart';
+import 'package:class_mate/pages/classes_courses_setup_page.dart' hide Course;
+import 'package:class_mate/pages/setup_page_layout.dart';
 import 'package:class_mate/util/number_util.dart';
+import 'package:class_mate_api/api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -15,38 +20,97 @@ class SubjectsGrid extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final store = useStore();
     final courses = useCourses(semesterId: semester.id);
+
     if (courses == null) {
       return const Center(child: CircularProgressIndicator());
     }
+
+    final noCoursesChosenYet =
+        semester.id == getCurrentSemesterId() && courses.isEmpty;
+
+    void startCourseChooseFlow() {
+      final year = store.user.year;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => SetupPageLayout(
+              page: ClassesCoursesChooserPage(
+                  year: QueryYearsGet200ResponseInner(
+                    graduationYear: year.graduationYear,
+                    id: year.id,
+                    name: year.name,
+                    startYear: year.startYear,
+                  ),
+                  onFinishedCallback: (selectedClass, selectedCourses) async {
+                    await saveSemesterData(
+                        class_: selectedClass,
+                        courses: selectedCourses,
+                        semesterId: getCurrentSemesterId());
+
+                    Navigator.of(context).pop();
+                  })),
+        ),
+      );
+    }
+
+    if (noCoursesChosenYet) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            "Du hast noch keine Kurse gewählt.",
+            style: TextStyle(fontSize: 16),
+          ),
+          const SizedBox(
+            height: 8,
+          ),
+          FilledButton(
+              onPressed: () => startCourseChooseFlow(),
+              child: const Text("Jetzt Kurse wählen"))
+        ],
+      );
+    }
+
+    final isPast = semester.id < getCurrentSemesterId();
 
     const numColumns = 2;
     return SingleChildScrollView(
       child: Padding(
         padding:
             const EdgeInsets.only(left: 24, right: 24, bottom: 32, top: 12),
-        child: Table(
+        child: Column(
           children: [
-            for (var i = 0; i < courses.length; i += numColumns)
-              TableRow(
-                children: [
-                  for (var j = 0; j < numColumns; j++)
-                    if (i + j < courses.length)
-                      Padding(
-                        padding: EdgeInsets.only(
-                          right: j == 0 ? 16 : 0,
-                          left: j == 1 ? 16 : 0,
-                          bottom: 32,
-                        ),
-                        child: CourseCard(
-                          semester: semester,
-                          course: courses[i + j],
-                        ),
-                      )
-                    else
-                      Container(),
-                ],
+            if (isPast)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: Text(
+                    "Dieses Semester ist vorbei. Die Noten sind nicht mehr veränderbar."),
               ),
+            Table(
+              children: [
+                for (var i = 0; i < courses.length; i += numColumns)
+                  TableRow(
+                    children: [
+                      for (var j = 0; j < numColumns; j++)
+                        if (i + j < courses.length)
+                          Padding(
+                            padding: EdgeInsets.only(
+                              right: j == 0 ? 16 : 0,
+                              left: j == 1 ? 16 : 0,
+                              bottom: 32,
+                            ),
+                            child: CourseCard(
+                              semester: semester,
+                              course: courses[i + j],
+                            ),
+                          )
+                        else
+                          Container(),
+                    ],
+                  ),
+              ],
+            ),
           ],
         ),
       ),
@@ -65,7 +129,6 @@ class CourseCard extends HookWidget {
     final oral = useCurrentOralGrade(course);
     final written = useWrittenGrades(course);
 
-    final isCurrentSemester = semester.id == getCurrentSemesterId();
     const pIndex = -1;
     // final grades = store.user.grades[semester]![course.name]!; // TODO
 
@@ -77,22 +140,7 @@ class CourseCard extends HookWidget {
         vertical: pIndex != -1 && pIndex < 2 ? 48 : 24,
       ),
       onTap: () async {
-        if (isCurrentSemester) {
-          course.navigateTo(context, semester.id);
-        } else {
-          // TODO
-          // await showModalBottomSheet(
-          //   context: context,
-          //   isScrollControlled: true,
-          //   backgroundColor: Colors.transparent,
-          //   builder: (context) {
-          //     return OverrideSheet(
-          //         subjectAbbrv: subject.abbrv,
-          //         points: grade,
-          //         semester: semester);
-          //   },
-          // );
-        }
+        course.navigateTo(context, semester.id);
       },
       child: Center(
         child: Column(

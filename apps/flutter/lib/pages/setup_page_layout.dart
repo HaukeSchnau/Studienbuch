@@ -2,20 +2,19 @@ import 'dart:math';
 
 import 'package:class_mate/components/util/card.dart';
 import 'package:class_mate/components/util/circle.dart';
-import 'package:class_mate/simple_scaffold.dart';
-import 'package:flutter/material.dart';
 import 'package:class_mate/components/util/logo.dart';
+import 'package:class_mate/simple_scaffold.dart';
 import 'package:class_mate/static/colors.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const TextStyle _linkStyle = TextStyle(color: Color(0xFF6A6A6A), fontSize: 16);
 
-const trialEndText =
-    'Die offizielle Testphase ist vorbei. Vielen Dank für deine Hilfe! Du kannst die App weiterhin nutzen, indem du die App im Store updadest und ab kommendem Schuljahr einen kleinen Beitrag zahlst. Weitere Informationen erhältst du bei Herr Niemann oder per Mail an den Entwickler, Hauke Schnau unter studienbuch@haukeschnau.de';
+class SetupPageLayout extends HookWidget {
+  final Widget page;
 
-class TrialOverPage extends HookWidget {
-  const TrialOverPage({super.key});
+  const SetupPageLayout({super.key, required this.page});
 
   @override
   Widget build(BuildContext context) {
@@ -63,40 +62,11 @@ class TrialOverPage extends HookWidget {
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
                       child: MyCard(
-                          margin: const EdgeInsets.symmetric(horizontal: 32),
-                          padding: const EdgeInsets.symmetric(horizontal: 24),
-                          width: min(MediaQuery.of(context).size.width, 500),
-                          child: Column(
-                            children: [
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 36.0),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      "Testphase vorbei!",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineMedium,
-                                    ),
-                                    const SizedBox(height: 8.0),
-                                    Text(trialEndText,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium),
-                                  ],
-                                ),
-                              ),
-                              // Padding(
-                              //   padding:
-                              //       const EdgeInsets.symmetric(vertical: 24.0),
-                              //   child: FilledButton(
-                              //     child: const Text("Store öffnen"),
-                              //     onPressed: () {},
-                              //   ),
-                              // )
-                            ],
-                          )),
+                        margin: const EdgeInsets.symmetric(horizontal: 32),
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        width: min(MediaQuery.of(context).size.width, 500),
+                        child: page,
+                      ),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 32),

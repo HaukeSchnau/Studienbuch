@@ -9,7 +9,6 @@ import 'package:class_mate/openapi.dart';
 import 'package:class_mate/router.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/static/theme.dart';
-import 'package:class_mate/trial.dart';
 import 'package:class_mate_api/api.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -123,11 +122,8 @@ class StoreManagingApp extends HookWidget {
       return null;
     }, []);
 
-    final router = useMemoized(
-        () => isTrial
-            ? buildMainRouter(store, updateStore)
-            : buildTrialOverRouter(),
-        [store.value, isTrial]);
+    final router =
+        useMemoized(() => buildMainRouter(store, updateStore), [store.value]);
 
     return MaterialApp.router(
       routerConfig: router,
