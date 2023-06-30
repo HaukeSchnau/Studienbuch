@@ -35,6 +35,8 @@ abstract class _GlobalStore with Store {
   @observable
   UpdateStoreCallback? updateStore;
 
+  bool shouldSave = true;
+
   _GlobalStore(
       {required this.user,
       required this.licenseKey,
@@ -49,6 +51,10 @@ abstract class _GlobalStore with Store {
       save();
       toJson();
     });
+  }
+
+  disableSaving() {
+    shouldSave = false;
   }
 
   Future<void> init() async {
@@ -141,9 +147,12 @@ abstract class _GlobalStore with Store {
   }
 
   Future<void> save() async {
+    if (!shouldSave) return;
+
     final directory = await getApplicationDocumentsDirectory();
     final storeFilePath = "${directory.path}/data";
     final storeFile = File(storeFilePath);
+
     await storeFile.writeAsBytes(encrypt());
   }
 }

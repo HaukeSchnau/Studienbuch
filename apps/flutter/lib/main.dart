@@ -113,6 +113,7 @@ class StoreManagingApp extends HookWidget {
     final store = useState<GlobalStore?>(initialStore);
 
     void updateStore(GlobalStore newStore) {
+      store.value?.disableSaving();
       store.value = newStore;
       store.value?.updateStore = updateStore;
     }

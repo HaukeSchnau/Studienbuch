@@ -16,7 +16,7 @@ class ProfileSetupPage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final years = useNetworkResult(() => apiInstance.queryYearsGet(),
-            () => throw Exception("Jahrgänge konnten nicht geladen werden"))
+        () => throw Exception("Jahrgänge konnten nicht geladen werden"))
       ?..sort((a, b) => -b.yearNumber.compareTo(a.yearNumber));
     final selectedYear = useState<ApiYear?>(store.year);
     final isOfAge = useState(false);

@@ -1,5 +1,6 @@
 import 'package:class_mate/components/tasks/task_page.dart';
 import 'package:class_mate/database.dart';
+import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/models/store.dart';
 import 'package:class_mate/pages/about_page.dart';
 import 'package:class_mate/pages/absences_page.dart';
@@ -9,6 +10,7 @@ import 'package:class_mate/pages/welcome_page.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobx/mobx.dart';
 import 'package:provider/provider.dart';
 
 typedef UpdateStoreCallback = void Function(GlobalStore newStore);
@@ -125,6 +127,15 @@ buildMainRouter(
         path: '/about',
         builder: (context, state) => const AboutPage(),
       ),
+      GoRoute(
+          path: "/setup/:licenseKey",
+          builder: (context, state) => Provider(
+              create: (_) => updateStore,
+              child: WelcomePage(
+                  initialStore: SetupStore(
+                courses: ObservableList(),
+                licenseKey: state.params["licenseKey"],
+              )))),
       GoRoute(
           path: "/setup",
           builder: (context, state) => Provider(

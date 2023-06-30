@@ -1,14 +1,11 @@
 import 'package:class_mate/components/action_sheet.dart';
 import 'package:class_mate/components/profile/cool_dots.dart';
 import 'package:class_mate/hooks/use_store.dart';
-import 'package:class_mate/models/setup_store.dart';
-import 'package:class_mate/pages/welcome_page.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:class_mate/components/profile/smol_card.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobx/mobx.dart';
 
 class ProfileTopPanel extends HookWidget {
   const ProfileTopPanel({super.key});
@@ -26,14 +23,7 @@ class ProfileTopPanel extends HookWidget {
       MyAction(
           label: "Kurse neu wählen",
           icon: Icons.class_rounded,
-          handler: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (context) => WelcomePage(
-                            initialStore: SetupStore(
-                          courses: ObservableList(),
-                          licenseKey: store.licenseKey,
-                        ))),
-              ))
+          handler: () => context.push("/setup/${store.licenseKey}"))
     ];
 
     return Container(

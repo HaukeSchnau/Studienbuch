@@ -48,6 +48,7 @@ class SubjectsGrid extends HookWidget {
                         courses: selectedCourses,
                         semesterId: getCurrentSemesterId());
 
+                    // ignore: use_build_context_synchronously
                     Navigator.of(context).pop();
                   })),
         ),
