@@ -8,7 +8,6 @@ import 'package:class_mate/router.dart';
 import 'package:class_mate_api/api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mobx/mobx.dart';
 
 class WelcomePage extends HookWidget {
@@ -33,8 +32,6 @@ class WelcomePage extends HookWidget {
       await globalStore.init();
 
       updateStore(globalStore);
-      // ignore: use_build_context_synchronously
-      context.pushReplacement("/");
     }
 
     Widget? nextPageCallback(Widget? currentPage) {

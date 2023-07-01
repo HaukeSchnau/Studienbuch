@@ -7,9 +7,11 @@ import 'package:class_mate/pages/absences_page.dart';
 import 'package:class_mate/pages/course_page.dart';
 import 'package:class_mate/pages/setup/edit_profile_page.dart';
 import 'package:class_mate/pages/root_page.dart';
+import 'package:class_mate/pages/setup/license_renew_page.dart';
 import 'package:class_mate/pages/setup/welcome_page.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobx/mobx.dart';
 import 'package:provider/provider.dart';
@@ -25,9 +27,17 @@ buildMainRouter(
         builder: (context, state) {
           final val = store.value;
           if (val != null) {
-            return Provider(
-              create: (_) => val,
-              child: const RootPage(),
+            return Observer(
+              builder: (context) {
+                if (val.isLicenseKeyValid) {
+                  return Provider(
+                    create: (_) => val,
+                    child: const RootPage(),
+                  );
+                } else {
+                  return LicenseRenewPage(store: val);
+                }
+              },
             );
           } else {
             return WelcomePage(updateStore: updateStore);

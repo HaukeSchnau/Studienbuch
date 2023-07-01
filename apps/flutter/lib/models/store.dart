@@ -71,6 +71,7 @@ abstract class _GlobalStore with Store {
 
   @computed
   bool get isLicenseKeyValid {
+    // TODO better logic for license key validation
     final now = DateTime.now();
     final diff = now.difference(licenseKeyActivatedAt);
     return diff.inDays < 365;
