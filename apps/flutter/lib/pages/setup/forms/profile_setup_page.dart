@@ -1,17 +1,16 @@
 import 'package:class_mate/hooks/use_network_result.dart';
 import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/openapi.dart';
-import 'package:class_mate/pages/classes_courses_setup_page.dart';
-import 'package:class_mate/pages/license_form.dart';
+import 'package:class_mate/pages/setup/forms/license_form.dart';
+import 'package:class_mate/pages/setup/helpers/setup_flow.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class ProfileSetupPage extends HookWidget {
   final SetupStore store;
-  final void Function(Widget nextPage) onNext;
 
-  const ProfileSetupPage(
-      {super.key, required this.store, required this.onNext});
+  const ProfileSetupPage({super.key, required this.store});
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +80,9 @@ class ProfileSetupPage extends HookWidget {
                 store.name = nameController.text.trim();
                 store.year = selectedYear.value;
                 store.isOfAge = isOfAge.value;
-                onNext(ClassesCoursesSetupPage(store: store, onNext: onNext));
+
+                final onNext = context.read<OnNext>();
+                onNext();
               })
         ],
       ),

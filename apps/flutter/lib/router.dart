@@ -5,8 +5,9 @@ import 'package:class_mate/models/store.dart';
 import 'package:class_mate/pages/about_page.dart';
 import 'package:class_mate/pages/absences_page.dart';
 import 'package:class_mate/pages/course_page.dart';
+import 'package:class_mate/pages/setup/edit_profile_page.dart';
 import 'package:class_mate/pages/root_page.dart';
-import 'package:class_mate/pages/welcome_page.dart';
+import 'package:class_mate/pages/setup/welcome_page.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -29,10 +30,7 @@ buildMainRouter(
               child: const RootPage(),
             );
           } else {
-            return Provider(
-              create: (_) => updateStore,
-              child: const WelcomePage(),
-            );
+            return WelcomePage(updateStore: updateStore);
           }
         },
       ),
@@ -83,10 +81,7 @@ buildMainRouter(
               ),
             );
           } else {
-            return Provider(
-              create: (_) => updateStore,
-              child: const WelcomePage(),
-            );
+            return WelcomePage(updateStore: updateStore);
           }
         },
       ),
@@ -100,10 +95,7 @@ buildMainRouter(
                 child: TaskPage(taskId: int.parse(state.params['taskId']!)),
               );
             } else {
-              return Provider(
-                create: (_) => updateStore,
-                child: const WelcomePage(),
-              );
+              return WelcomePage(updateStore: updateStore);
             }
           }),
       GoRoute(
@@ -116,10 +108,7 @@ buildMainRouter(
               child: const AbsencesPage(),
             );
           } else {
-            return Provider(
-              create: (_) => updateStore,
-              child: const WelcomePage(),
-            );
+            return WelcomePage(updateStore: updateStore);
           }
         },
       ),
@@ -128,20 +117,27 @@ buildMainRouter(
         builder: (context, state) => const AboutPage(),
       ),
       GoRoute(
-          path: "/setup/:licenseKey",
-          builder: (context, state) => Provider(
-              create: (_) => updateStore,
-              child: WelcomePage(
-                  initialStore: SetupStore(
+        path: '/editProfile',
+        builder: (context, state) {
+          final val = store.value;
+          if (val != null) {
+            return EditProfilePage(
+              updateStore: updateStore,
+              initialStore: SetupStore(
                 courses: ObservableList(),
-                licenseKey: state.params["licenseKey"],
-              )))),
+                licenseKey: val.licenseKey,
+                licenseKeyActivatedAt: val.licenseKeyActivatedAt,
+                name: val.user.name,
+              ),
+            );
+          } else {
+            return WelcomePage(updateStore: updateStore);
+          }
+        },
+      ),
       GoRoute(
           path: "/setup",
-          builder: (context, state) => Provider(
-                create: (_) => updateStore,
-                child: const WelcomePage(),
-              )),
+          builder: (context, state) => WelcomePage(updateStore: updateStore)),
     ],
   );
 }

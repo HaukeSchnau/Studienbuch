@@ -21,9 +21,9 @@ class ProfileTopPanel extends HookWidget {
           icon: Icons.info_rounded,
           handler: () => context.push("/about")),
       MyAction(
-          label: "Kurse neu wählen",
-          icon: Icons.class_rounded,
-          handler: () => context.push("/setup/${store.licenseKey}"))
+          label: "Profil & Kurse bearbeiten",
+          icon: Icons.edit_rounded,
+          handler: () => context.push("/editProfile"))
     ];
 
     return Container(

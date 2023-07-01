@@ -3,8 +3,8 @@ import 'package:class_mate/error_catcher.dart';
 import 'package:class_mate/hooks/use_network_result.dart';
 import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/openapi.dart';
-import 'package:class_mate/pages/license_form.dart';
-import 'package:class_mate/router.dart';
+import 'package:class_mate/pages/setup/forms/license_form.dart';
+import 'package:class_mate/pages/setup/helpers/setup_flow.dart';
 import 'package:class_mate_api/api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -28,10 +28,8 @@ Map<String, List<Course>> groupCoursesByName(List<Course> courses) {
 
 class ClassesCoursesSetupPage extends HookWidget {
   final SetupStore store;
-  final void Function(Widget nextPage) onNext;
 
-  const ClassesCoursesSetupPage(
-      {super.key, required this.store, required this.onNext});
+  const ClassesCoursesSetupPage({super.key, required this.store});
 
   @override
   Widget build(BuildContext context) {
@@ -40,17 +38,9 @@ class ClassesCoursesSetupPage extends HookWidget {
     void finishFlow(Class selectedClass, List<Course> selectedCourses) async {
       store.class_ = selectedClass;
       store.courses = selectedCourses.asObservable();
-      await apiInstance.mutationLicenseActivate(
-          MutationLicenseActivateRequest(licenseKey: store.licenseKey!));
 
-      await store.saveToDatabase();
-      final globalStore = store.toGlobalStore();
-      await globalStore.save();
-      await globalStore.init();
-
-      // ignore: use_build_context_synchronously
-      final onSetupFinished = context.read<UpdateStoreCallback>();
-      onSetupFinished(globalStore);
+      final onNext = context.read<OnNext>();
+      onNext();
     }
 
     return ClassesCoursesChooserPage(

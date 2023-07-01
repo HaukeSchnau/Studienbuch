@@ -27,6 +27,9 @@ abstract class _GlobalStore with Store {
   String licenseKey;
 
   @observable
+  DateTime licenseKeyActivatedAt;
+
+  @observable
   Agenda agenda = Agenda(start: DateTime.now(), courses: []);
 
   @observable
@@ -40,6 +43,7 @@ abstract class _GlobalStore with Store {
   _GlobalStore(
       {required this.user,
       required this.licenseKey,
+      required this.licenseKeyActivatedAt,
       // ignore: unused_element
       this.updateStore}) {
     Timer.periodic(const Duration(seconds: 5), (timer) {
@@ -63,6 +67,13 @@ abstract class _GlobalStore with Store {
       _updateSubstitutedAgenda(courses);
       _updateWeeklyAgenda(courses);
     });
+  }
+
+  @computed
+  bool get isLicenseKeyValid {
+    final now = DateTime.now();
+    final diff = now.difference(licenseKeyActivatedAt);
+    return diff.inDays < 365;
   }
 
   //// AGENDA ////
@@ -128,12 +139,14 @@ abstract class _GlobalStore with Store {
       : this(
           user: User.fromJson(json["currentUser"]),
           licenseKey: json["licenseKey"],
+          licenseKeyActivatedAt: DateTime.parse(json["licenseKeyActivatedAt"]),
         );
 
   Map<String, dynamic> toJson() {
     return {
       "currentUser": user.toJson(),
       "licenseKey": licenseKey,
+      "licenseKeyActivatedAt": licenseKeyActivatedAt.toIso8601String(),
     };
   }
 

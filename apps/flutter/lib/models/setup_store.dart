@@ -28,7 +28,7 @@ extension YearExtension on ApiYear {
     final now = DateTime.now();
     final currentYear = now.year;
 
-    if (now.month < 7) {
+    if (now.month < 8) {
       return currentYear - startYear + 5 - 1;
     }
 
@@ -43,6 +43,9 @@ typedef ApiCourse = QueryCoursesGet200ResponseInner;
 abstract class _SetupStoreBase with Store {
   @observable
   String? licenseKey;
+
+  @observable
+  DateTime? licenseKeyActivatedAt;
 
   @observable
   String? name;
@@ -61,6 +64,7 @@ abstract class _SetupStoreBase with Store {
 
   _SetupStoreBase({
     this.licenseKey,
+    this.licenseKeyActivatedAt,
     this.name,
     this.year,
     this.class_,
@@ -76,6 +80,7 @@ abstract class _SetupStoreBase with Store {
   GlobalStore toGlobalStore() {
     final res = GlobalStore(
       licenseKey: licenseKey!,
+      licenseKeyActivatedAt: licenseKeyActivatedAt ?? DateTime.now(),
       user: User(
         isOfAge: isOfAge!,
         name: name!,

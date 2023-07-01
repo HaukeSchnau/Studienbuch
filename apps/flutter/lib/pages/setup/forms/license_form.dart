@@ -1,13 +1,14 @@
 import 'package:class_mate/error_catcher.dart';
 import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/openapi.dart';
-import 'package:class_mate/pages/profile_setup_page.dart';
+import 'package:class_mate/pages/setup/helpers/setup_flow.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/static/theme.dart';
 import 'package:class_mate/util/string_util.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class LicenseFormatter extends TextInputFormatter {
   String formatLicense(String input) {
@@ -40,9 +41,8 @@ class LicenseFormatter extends TextInputFormatter {
 
 class LicenseForm extends HookWidget {
   final SetupStore store;
-  final void Function(Widget nextPage) onNext;
 
-  const LicenseForm({super.key, required this.store, required this.onNext});
+  const LicenseForm({super.key, required this.store});
 
   @override
   Widget build(BuildContext context) {
@@ -78,10 +78,9 @@ class LicenseForm extends HookWidget {
 
         store.licenseKey = licenseKey;
 
-        onNext(ProfileSetupPage(
-          store: store,
-          onNext: onNext,
-        ));
+        // ignore: use_build_context_synchronously
+        final onNext = context.read<OnNext>();
+        onNext();
       } else if (licenseStatus == "INVALID") {
         error.value = "Ungültiger Lizenzschlüssel";
       } else if (licenseStatus == "ACTIVATED") {

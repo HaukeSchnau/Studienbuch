@@ -1,5 +1,5 @@
 import 'package:class_mate/models/course.dart' show getCourseIcon;
-import 'package:class_mate/pages/classes_courses_setup_page.dart';
+import 'package:class_mate/pages/setup/forms/classes_courses_setup_page.dart';
 import 'package:class_mate/static/theme.dart';
 import 'package:class_mate_api/api.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
