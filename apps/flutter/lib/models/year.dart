@@ -1,3 +1,5 @@
+import 'package:class_mate/database.dart';
+import 'package:class_mate/models/semester.dart';
 import 'package:mobx/mobx.dart';
 
 part 'year.g.dart';
@@ -23,6 +25,14 @@ abstract class _YearBase with Store {
     required this.graduationYear,
     required this.name,
   });
+
+  @computed
+  int get currentYearNum {
+    final currentSemester = Semester(id: getCurrentSemesterId());
+    var currentYear = currentSemester.year - startYear + 5;
+    if (!currentSemester.isWinter) currentYear--;
+    return currentYear;
+  }
 
   Map<String, dynamic> toJson() {
     return {

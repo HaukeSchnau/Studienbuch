@@ -14,7 +14,7 @@ SemesterId getCurrentSemesterId() {
   final now = DateTime.now();
   int year = now.year;
   bool isWinter =
-      now.month > 5 || now.month < 2; // TODO CHANGE BACK TO 7 BEFORE RELEASE
+      now.month > 7 || now.month < 2;
   if (now.month < 2) {
     year--;
   }
@@ -78,6 +78,8 @@ extension SemesterExt on Semester {
       return "Sommer $year";
     }
   }
+
+  bool get isWinter => id & 1 == 1;
 
   int get year => id >> 1;
 }

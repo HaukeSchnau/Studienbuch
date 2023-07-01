@@ -86,13 +86,13 @@ class ProfileTopPanel extends HookWidget {
                           fontSize: 24),
                     ),
                     const Padding(padding: EdgeInsets.only(top: 8.0)),
-                    // const Text(
-                    //   "${schwerpunkt}er\nSchwerpunkt",
-                    //   textAlign: TextAlign.center,
-                    //   style: TextStyle(
-                    //       color: Color.fromRGBO(255, 255, 255, .85),
-                    //       fontSize: 16),
-                    // ),
+                    Text(
+                      "Jahrgang ${user.year.name} (${user.year.currentYearNum}. Klasse)",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          color: Color.fromRGBO(255, 255, 255, .85),
+                          fontSize: 16),
+                    ),
                     // const Padding(
                     //     padding: EdgeInsets.only(top: smolCardHeight / 2)),
                   ],
