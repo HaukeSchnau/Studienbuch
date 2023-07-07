@@ -1,5 +1,5 @@
 {
-  "name": "@acme/scri",
+  "name": "@acme/monitoring",
   "version": "0.1.0",
   "private": true,
   "scripts": {

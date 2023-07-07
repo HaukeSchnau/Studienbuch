@@ -2,6 +2,7 @@ packages:
   - apps/flutter
   - apps/scripts
   - apps/nextjs
+  - apps/monitoring
   - packages/api
   - packages/auth
   - packages/db
