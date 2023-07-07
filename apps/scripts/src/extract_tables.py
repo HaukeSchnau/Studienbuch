@@ -16,7 +16,12 @@ def extract_tables(file_path: str, output_dir: str, print_tables: bool = True):
 
         print("Total tables extracted:", tables.n)
 
-    tables.export(os.path.join(output_dir, file_name.replace(".pdf", ".csv")), f="csv")
+    try:
+        tables.export(
+            os.path.join(output_dir, file_name.replace(".pdf", ".csv")), f="csv"
+        )
+    except Exception as e:
+        print(f"Error while exporting tables from file {file_name}: {e}")
 
 
 if __name__ == "__main__":
