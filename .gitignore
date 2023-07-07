@@ -52,3 +52,5 @@ yarn-error.log*
 *.pyc
 
 /cache
+
+__snapshots__
