@@ -33,7 +33,13 @@ def fetch_substitutions(date: datetime.datetime):
         file.write(response.content)
 
     with open(pdf_path, "rb") as file:
-        reader = PyPDF2.PdfReader(file)
+        try:
+            reader = PyPDF2.PdfReader(file)
+        except Exception as e:
+            print(
+                f"Error while reading newly downloaded PDF file. Maybe there is no substitutions for {date.strftime('%d.%m.%Y')}?"
+            )
+            return
 
         # Extract date from PDF in String that looks like "Lehrer  23.5. / Dienstag" using regex
         regex = r"Lehrer +(\d{1,2}\.\d{1,2}\.)"
