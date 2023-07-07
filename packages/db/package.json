@@ -9,6 +9,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push --skip-generate",
     "db:push-delete": "prisma db push --skip-generate --force-reset --accept-data-loss",
+    "db": "prisma",
     "dev": "BROWSER=none prisma studio --port 5556"
   },
   "dependencies": {
