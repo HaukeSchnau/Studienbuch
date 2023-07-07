@@ -19,6 +19,7 @@
     "test:watch": "pnpm with-env vitest watch",
     "test:coverage": "pnpm with-env vitest run --coverage",
     "test:ui": "pnpm with-env vitest --ui --coverage",
+    "test:monitoring": "pnpm with-env vitest run monitoring",
     "dev": "pnpm with-env turbo dev --parallel",
     "format": "prettier --write \"**/*.{js,cjs,mjs,ts,tsx,md,json}\" --ignore-path .gitignore",
     "lint": "turbo lint && manypkg check",
