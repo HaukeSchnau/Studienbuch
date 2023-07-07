@@ -35,6 +35,43 @@ importers:
   apps/flutter:
     specifiers: {}
 
+  apps/monitoring:
+    specifiers:
+      '@acme/api': '*'
+      '@acme/common': '*'
+      '@acme/tailwind-config': '*'
+      '@total-typescript/ts-reset': ^0.4.2
+      '@trpc/client': ^10.14.0
+      '@types/node': ^18.0.0
+      cross-fetch: ^3.1.5
+      dayjs: ^1.11.7
+      eslint: ^8.34.0
+      eslint-config-acme: 0.0.0
+      superjson: 1.9.1
+      ts-node: ^10.9.1
+      tsx: ^3.12.3
+      typescript: ^4.9.5
+      vitest: ^0.32.0
+      zod: ^3.20.6
+    dependencies:
+      '@acme/api': link:../../packages/api
+      '@acme/common': link:../../packages/common
+      '@acme/tailwind-config': link:../../packages/config/tailwind
+      '@trpc/client': 10.14.0
+      cross-fetch: 3.1.5
+      dayjs: 1.11.7
+      superjson: 1.9.1
+      vitest: 0.32.0
+      zod: 3.20.6
+    devDependencies:
+      '@total-typescript/ts-reset': 0.4.2
+      '@types/node': 18.11.18
+      eslint: 8.34.0
+      eslint-config-acme: link:../../packages/config/eslint
+      ts-node: 10.9.1_bdgp3l2zgaopogaavxusmetvge
+      tsx: 3.12.3
+      typescript: 4.9.5
+
   apps/nextjs:
     specifiers:
       '@acme/api': '*'
@@ -1648,6 +1685,12 @@ packages:
   /@total-typescript/ts-reset/0.4.2:
     resolution: {integrity: sha512-vqd7ZUDSrXFVT1n8b2kc3LnklncDQFPvR58yUS1kEP23/nHPAO9l1lMjUfnPrXYYk4Hj54rrLKMW5ipwk7k09A==}
     dev: true
+
+  /@trpc/client/10.14.0:
+    resolution: {integrity: sha512-fi7i+Av3ARGyWwlbuGD+ZeqF5HxomGG8hBB89dWHAc4WlBnDV6g0GQQgDaMKZqXbGt0sYeJucym6WPI6kO7HCQ==}
+    peerDependencies:
+      '@trpc/server': 10.14.0
+    dev: false
 
   /@trpc/client/10.14.0_@trpc+server@10.14.0:
     resolution: {integrity: sha512-fi7i+Av3ARGyWwlbuGD+ZeqF5HxomGG8hBB89dWHAc4WlBnDV6g0GQQgDaMKZqXbGt0sYeJucym6WPI6kO7HCQ==}
