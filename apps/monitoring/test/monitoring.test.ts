@@ -1,6 +1,6 @@
 import { test } from "vitest";
 
-import { createClient, isHolidayToday } from "./testUtils";
+import { createClient, isHolidayToday } from "../src/testUtils";
 
 test(
   "staticApi",
