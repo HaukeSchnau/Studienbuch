@@ -1,28 +1,6 @@
-import { createTRPCProxyClient, httpBatchLink, loggerLink } from "@trpc/client";
-import fetch from "cross-fetch";
-import superjson from "superjson";
 import { test } from "vitest";
 
-import type { AppRouter } from "@acme/api";
-import { isHolidayToday } from "@acme/common";
-
-const BASE_URL = "https://studienbuch.haukeschnau.de";
-
-const createClient = () =>
-  createTRPCProxyClient<AppRouter>({
-    transformer: superjson,
-    links: [
-      loggerLink({
-        enabled: (opts) =>
-          process.env.NODE_ENV === "development" ||
-          (opts.direction === "down" && opts.result instanceof Error),
-      }),
-      httpBatchLink({
-        fetch,
-        url: `${BASE_URL}/api/trpc`,
-      }),
-    ],
-  });
+import { createClient, isHolidayToday } from "./testUtils";
 
 test(
   "staticApi",
