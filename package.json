@@ -12,7 +12,7 @@
     "db:generate": "pnpm with-env turbo db:generate",
     "db:push": "pnpm with-env turbo db:push db:generate",
     "db:push-delete": "pnpm with-env turbo db:push-delete db:generate",
-    "db": "pnpm with-env turbo db",
+    "db": "pnpm with-env 'cd packages/db && pnpm run db'",
     "setup": "pnpm with-env turbo db:push-delete db:generate scripts:seed flutter:gen",
     "start": "pnpm with-env turbo start",
     "test": "pnpm with-env vitest run",
