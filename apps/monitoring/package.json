@@ -9,14 +9,14 @@
   },
   "dependencies": {
     "@acme/api": "*",
-    "@acme/tailwind-config": "*",
     "@acme/common": "*",
+    "@acme/tailwind-config": "*",
     "@trpc/client": "^10.14.0",
     "cross-fetch": "^3.1.5",
+    "dayjs": "^1.11.7",
     "superjson": "1.9.1",
     "vitest": "^0.32.0",
-    "zod": "^3.20.6",
-    "dayjs": "^1.11.7"
+    "zod": "^3.20.6"
   },
   "devDependencies": {
     "@total-typescript/ts-reset": "^0.4.2",
