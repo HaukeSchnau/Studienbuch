@@ -47,7 +47,7 @@ class LicenseForm extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final licenseController =
-        useTextEditingController(text: "KJ27-MP16-LS14-JM22");
+        useTextEditingController();
     useListenable(licenseController);
     final loading = useState(false);
     final error = useState<String?>(null);

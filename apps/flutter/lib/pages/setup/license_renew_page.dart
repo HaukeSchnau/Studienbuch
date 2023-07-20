@@ -6,7 +6,6 @@ import 'package:class_mate/pages/setup/helpers/setup_flow.dart';
 import 'package:class_mate_api/api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mobx/mobx.dart';
 
 class LicenseRenewPage extends HookWidget {

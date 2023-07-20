@@ -283,4 +283,6 @@ export const seedClasses = async () => {
       }
     }
   }
+
+  console.log("Done seeding classes");
 };

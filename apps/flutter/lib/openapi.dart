@@ -17,5 +17,5 @@ class MyOpenApi extends OpenapiGeneratorConfig {}
 
 final apiInstance = DefaultApi(ApiClient(
     basePath: kDebugMode
-        ? "http://192.168.2.105:3000/api"
+        ? "http://172.21.31.53:3000/api"
         : "https://classmate.haukeschnau.de/api"));
