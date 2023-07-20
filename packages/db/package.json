@@ -13,10 +13,10 @@
     "dev": "BROWSER=none prisma studio --port 5556"
   },
   "dependencies": {
-    "@prisma/client": "^4.11.0"
+    "@prisma/client": "^5.0.0"
   },
   "devDependencies": {
-    "prisma": "^4.11.0",
+    "prisma": "^5.0.0",
     "typescript": "^4.9.5",
     "zod-prisma": "^0.5.4"
   }
