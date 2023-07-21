@@ -64,6 +64,7 @@ class App extends HookWidget {
     final courses = useCourses();
 
     useAsyncEffect(() async {
+      print("Subscribing to notifications");
       if (courses == null || courses.isEmpty) {
         return;
       }
