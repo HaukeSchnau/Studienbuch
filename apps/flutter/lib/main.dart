@@ -1,20 +1,12 @@
 import 'dart:async';
 
+import 'package:class_mate/app.dart';
 import 'package:class_mate/error_catcher.dart';
 import 'package:class_mate/firebase_options.dart';
-import 'package:class_mate/hooks/use_async_effect.dart';
-import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/store.dart';
-import 'package:class_mate/openapi.dart';
-import 'package:class_mate/router.dart';
-import 'package:class_mate/static/colors.dart';
-import 'package:class_mate/static/theme.dart';
-import 'package:class_mate_api/api.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -55,93 +47,6 @@ Future<void> main() async {
         options.addEventProcessor(EventCatcherProcessor());
       },
       appRunner: appRunner,
-    );
-  }
-}
-
-bool hasStartMessagingRequest = false;
-
-class App extends HookWidget {
-  final GlobalStore? initialStore;
-
-  const App({super.key, this.initialStore});
-
-  @override
-  Widget build(BuildContext context) {
-    final courses = useCourses();
-
-    useAsyncEffect(() async {
-      if (courses == null || courses.isEmpty || hasStartMessagingRequest) {
-        return;
-      }
-
-      hasStartMessagingRequest = true;
-
-      FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-      NotificationSettings settings = await messaging.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
-      );
-
-      debugPrint('User granted permission: ${settings.authorizationStatus}');
-      if (settings.authorizationStatus != AuthorizationStatus.authorized) {
-        return;
-      }
-
-      final token = await messaging.getToken();
-      if (token == null) {
-        return;
-      }
-
-      await apiInstance
-          .mutationSubscriptionsSubscribe(MutationSubscriptionsSubscribeRequest(
-        messagingToken: token,
-        courses: courses.map((course) => course.id).toList(),
-      ));
-
-      hasStartMessagingRequest = false;
-    }, [courses]);
-
-    return StoreManagingApp(
-      initialStore: initialStore,
-    );
-  }
-}
-
-class StoreManagingApp extends HookWidget {
-  final GlobalStore? initialStore;
-
-  const StoreManagingApp({super.key, this.initialStore});
-
-  @override
-  Widget build(BuildContext context) {
-    final store = useState<GlobalStore?>(initialStore);
-
-    void updateStore(GlobalStore newStore) {
-      store.value?.disableSaving();
-      store.value = newStore;
-      store.value?.updateStore = updateStore;
-    }
-
-    useEffect(() {
-      store.value?.updateStore = updateStore;
-      return null;
-    }, []);
-
-    final router =
-        useMemoized(() => buildMainRouter(store, updateStore), [store.value]);
-
-    return MaterialApp.router(
-      routerConfig: router,
-      title: 'IGS Lilienthal',
-      theme: buildTheme(theme),
-      debugShowCheckedModeBanner: false,
     );
   }
 }
