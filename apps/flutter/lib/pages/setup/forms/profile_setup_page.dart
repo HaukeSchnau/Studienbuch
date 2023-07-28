@@ -1,3 +1,4 @@
+import 'package:class_mate/error_catcher.dart';
 import 'package:class_mate/hooks/use_network_result.dart';
 import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/openapi.dart';
@@ -14,8 +15,10 @@ class ProfileSetupPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final years = useNetworkResult(() => apiInstance.queryYearsGet(),
-        () => throw Exception("Jahrgänge konnten nicht geladen werden"))
+    final years = useNetworkResult(
+        () => apiInstance.queryYearsGet(),
+        (error) => throw UserException(
+            "Jahrgänge konnten nicht geladen werden", error))
       ?..sort((a, b) => -b.yearNumber.compareTo(a.yearNumber));
     final selectedYear = useState<ApiYear?>(store.year);
     final isOfAge = useState(false);

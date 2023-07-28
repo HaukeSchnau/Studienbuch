@@ -62,11 +62,11 @@ class ClassesCoursesChooserPage extends HookWidget {
   Widget build(BuildContext context) {
     final classesData = useNetworkResult(
         () => apiInstance.queryClassesGet(year.id),
-        () => throw UserException("Klassen konnten nicht geladen werden"),
+        (e) => throw UserException("Klassen konnten nicht geladen werden", e),
         [year.id]);
     final coursesData = useNetworkResult(
         () => apiInstance.queryCoursesGet(year.id),
-        () => throw UserException("Kurse konnten nicht geladen werden"),
+        (e) => throw UserException("Kurse konnten nicht geladen werden", e),
         [year.id]);
 
     final loading = classesData == null || coursesData == null;

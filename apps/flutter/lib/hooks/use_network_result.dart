@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
-T? useNetworkResult<T>(Future<T> Function() future, VoidCallback? onError,
+T? useNetworkResult<T>(Future<T> Function() future, void Function(Object cause)? onError,
     [List<Object?> keys = const []]) {
   final result = useState<T?>(null);
   useEffect(() {
@@ -12,7 +12,7 @@ T? useNetworkResult<T>(Future<T> Function() future, VoidCallback? onError,
       } catch (e) {
         if (onError != null) {
           debugPrint(e.toString());
-          onError();
+          onError(e);
         } else {
           rethrow;
         }

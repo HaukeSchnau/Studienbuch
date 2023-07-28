@@ -71,7 +71,7 @@ class LicenseForm extends HookWidget {
           .catchError((error) {
         loading.value = false;
 
-        throw UserException("Lizenzschlüssel konnte nicht geprüft werden");
+        throw UserException("Lizenzschlüssel konnte nicht geprüft werden", error);
       });
       if (licenseStatus == "VALID") {
         // License key will have to be checked again and activated when setup flow is completed

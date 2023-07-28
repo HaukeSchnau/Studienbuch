@@ -19,11 +19,18 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-Future<void> appRunner() async {
+Future<void> prepare() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  Intl.defaultLocale = "de_DE";
+  await initializeDateFormatting("de_DE", null);
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+}
 
+Future<void> appRunner() async {
   final store = await loadStore();
   if (store != null) {
     await store.init();
@@ -33,9 +40,7 @@ Future<void> appRunner() async {
 }
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  Intl.defaultLocale = "de_DE";
-  await initializeDateFormatting("de_DE", null);
+  await prepare();
 
   if (kDebugMode) {
     await appRunner();
@@ -54,6 +59,8 @@ Future<void> main() async {
   }
 }
 
+bool hasStartMessagingRequest = false;
+
 class App extends HookWidget {
   final GlobalStore? initialStore;
 
@@ -64,10 +71,11 @@ class App extends HookWidget {
     final courses = useCourses();
 
     useAsyncEffect(() async {
-      print("Subscribing to notifications");
-      if (courses == null || courses.isEmpty) {
+      if (courses == null || courses.isEmpty || hasStartMessagingRequest) {
         return;
       }
+
+      hasStartMessagingRequest = true;
 
       FirebaseMessaging messaging = FirebaseMessaging.instance;
 
@@ -96,6 +104,8 @@ class App extends HookWidget {
         messagingToken: token,
         courses: courses.map((course) => course.id).toList(),
       ));
+
+      hasStartMessagingRequest = false;
     }, [courses]);
 
     return StoreManagingApp(

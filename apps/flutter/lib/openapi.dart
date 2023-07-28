@@ -16,6 +16,6 @@ import 'package:class_mate_api/api.dart';
 class MyOpenApi extends OpenapiGeneratorConfig {}
 
 final apiInstance = DefaultApi(ApiClient(
-    basePath: !kDebugMode
-        ? "http://172.21.31.53:3000/api"
+    basePath: kDebugMode
+        ? "http://192.168.178.21:3000/api"
         : "https://classmate.haukeschnau.de/api"));

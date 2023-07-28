@@ -29,12 +29,13 @@ final errorQueue = QueueNotifier();
 
 class UserException implements Exception {
   final String message;
+  final Object cause;
 
-  UserException(this.message);
+  UserException(this.message, this.cause);
 
   @override
   String toString() {
-    return message;
+    return "UserException: $message\n$cause";
   }
 }
 

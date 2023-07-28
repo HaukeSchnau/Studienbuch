@@ -91,7 +91,7 @@ abstract class _GlobalStore with Store {
         .querySubstitutionsGet(date: date)
         .catchError((e, stacktrace) {
       this.agenda = agenda;
-      throw UserException("Vertretungen konnten nicht geladen werden");
+      throw UserException("Vertretungen konnten nicht geladen werden", e);
     });
 
     if (substitutions == null) {
