@@ -8,7 +8,16 @@ import { prisma, type CourseTimeWeeks } from "@acme/db";
 
 import { years } from "./years";
 
-const parseCourses = (coursesRaw: string) => {
+const protoCourseSchema = z.object({
+  subject: z.string(),
+  guessedSubject: z.string(),
+  teacher: z.string(),
+  room: z.string().optional(),
+});
+
+type ProtoCourse = z.infer<typeof protoCourseSchema>;
+
+const parseCourses = (coursesRaw: string): ProtoCourse[] => {
   const coursesForDay = coursesRaw
     .split("\n")
     .filter((course) => course.trim());
@@ -52,19 +61,12 @@ const parseCourses = (coursesRaw: string) => {
     const guessedSubject = guessSubject(subject);
 
     coursesForDayProcessed.push(
-      z
-        .object({
-          subject: z.string(),
-          guessedSubject: z.string(),
-          teacher: z.string(),
-          room: z.string().optional(),
-        })
-        .parse({
-          subject,
-          guessedSubject,
-          teacher,
-          room,
-        }),
+      protoCourseSchema.parse({
+        subject,
+        guessedSubject,
+        teacher,
+        room,
+      }),
     );
   }
 
