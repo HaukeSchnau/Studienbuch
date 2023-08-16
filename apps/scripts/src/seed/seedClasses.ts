@@ -22,8 +22,7 @@ const parseCourses = (coursesRaw: string) => {
 
   for (let i = 0; i < coursesForDay.length; i++) {
     const course = coursesForDay[i];
-    const components =
-      course?.split(" ").filter((course) => course.trim()) ?? [];
+    let components = course?.split(" ").filter((course) => course.trim()) ?? [];
 
     while (
       components.length == 1 ||
@@ -37,6 +36,16 @@ const parseCourses = (coursesRaw: string) => {
           .filter((course) => course.trim()) ?? []),
       );
       i++;
+
+      // TODO: Remove this once the PDF is fixed
+      if (i > 50) {
+        components = [];
+      }
+    }
+
+    if (!components.length) {
+      console.log("Empty course", course);
+      continue;
     }
 
     const [subject, teacher, room] = components;
@@ -159,6 +168,9 @@ export const seedClasses = async () => {
 
   const path = "./cache/classes_csv";
   const filenames = await fs.readdir(path);
+
+  // Delete all course times
+  await prisma.courseTime.deleteMany({});
 
   for (const filename of filenames.filter((filename) =>
     filename.endsWith(".csv"),

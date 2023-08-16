@@ -54,4 +54,9 @@ export const years = [
     name: "Richard",
     numClasses: 6,
   },
+  {
+    startYear: 2023,
+    name: "",
+    numClasses: 6
+  }
 ];
