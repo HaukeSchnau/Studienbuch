@@ -1,10 +1,11 @@
-import { expect, test } from "vitest";
+import { test } from "vitest";
 
 import { prisma } from "@acme/db";
 
 import { appRouter } from "../src/root";
 
 test("sync", async () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const caller = appRouter.createCaller({
     prisma,
     session: null,
