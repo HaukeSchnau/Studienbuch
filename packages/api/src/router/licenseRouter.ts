@@ -19,15 +19,16 @@ export const licenseRouter = createTRPCRouter({
       if (!licenseKey) {
         return "INVALID" as const;
       }
-      if (licenseKey.isSuperKey) {
-        return "VALID" as const;
-      }
-      if (licenseKey.expiresAt && licenseKey.expiresAt < new Date()) {
-        return "EXPIRED" as const;
-      }
-      if (licenseKey.activatedAt) {
-        return "ACTIVATED" as const;
-      }
+      // TODO restore old logic once logout bug is fixed
+      // if (licenseKey.isSuperKey) {
+      //   return "VALID" as const;
+      // }
+      // if (licenseKey.expiresAt && licenseKey.expiresAt < new Date()) {
+      //   return "EXPIRED" as const;
+      // }
+      // if (licenseKey.activatedAt) {
+      //   return "ACTIVATED" as const;
+      // }
       return "VALID" as const;
     }),
   activate: publicProcedure
