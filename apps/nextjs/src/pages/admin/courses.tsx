@@ -2,17 +2,18 @@ import { useState } from "react";
 
 import { type Year } from "@acme/db";
 
+import { CourseList } from "~/components/CourseList";
 import { PageHeading } from "~/components/PageHeading";
 import { YearSelectField } from "~/components/SelectField";
-import Timetable from "~/components/Timetable";
 
-export default function SchedulesPage() {
+export default function Courses() {
   const [selectedYear, setSelectedYear] = useState<Omit<Year, "createdAt">>();
+
   return (
     <div className="flex flex-col gap-4">
-      <PageHeading title="Stundenpläne" />
+      <PageHeading title="Kurse" />
       <YearSelectField value={selectedYear} onChange={setSelectedYear} />
-      {selectedYear && <Timetable yearId={selectedYear.id} />}
+      {selectedYear && <CourseList yearId={selectedYear.id} />}
     </div>
   );
 }

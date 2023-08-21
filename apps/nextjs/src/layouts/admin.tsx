@@ -19,7 +19,7 @@ export default function DashboardLayout({
             Vertretungspläne
           </NavigationItem>
           <NavigationItem href="/admin/courses">Kurse</NavigationItem>
-          <NavigationItem href="/admin/classes">Klasen</NavigationItem>
+          <NavigationItem href="/admin/classes">Klassen</NavigationItem>
           <LogoutButton />
         </ul>
       </div>
