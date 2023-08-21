@@ -52,18 +52,18 @@ export const licenseRouter = createTRPCRouter({
       if (licenseKey.isSuperKey) {
         return;
       }
-      if (licenseKey.expiresAt && licenseKey.expiresAt < new Date()) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "License key expired",
-        });
-      }
-      if (licenseKey.activatedAt) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "License key already activated",
-        });
-      }
+      // if (licenseKey.expiresAt && licenseKey.expiresAt < new Date()) {
+      //   throw new TRPCError({
+      //     code: "BAD_REQUEST",
+      //     message: "License key expired",
+      //   });
+      // }
+      // if (licenseKey.activatedAt) {
+      //   throw new TRPCError({
+      //     code: "BAD_REQUEST",
+      //     message: "License key already activated",
+      //   });
+      // }
       await ctx.prisma.licenseKey.update({
         where: { id: licenseKey.id },
         data: { activatedAt: new Date() },
