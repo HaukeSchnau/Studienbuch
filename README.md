@@ -1,1 +1,9 @@
 # ClassMate Monorepo
+
+
+## Development Setup
+- Put schedule PDFs into `./cache/classes`
+- Run `scripts/setup`
+- Run `scripts/run-script extract_tables.py cache/classes cache/classes_csv`
+- Rename CSV files in `cache/classes_csv` to their respective class names (e.g. `Paula.csv`, `Otto-1.csv`, etc.)
+- Run `scripts/setup-db-DESTRUCTIVE` to setup the database (this will drop the database if it exists) and seed it with some data.
