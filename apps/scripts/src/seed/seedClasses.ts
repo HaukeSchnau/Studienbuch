@@ -27,32 +27,32 @@ export const seedClasses = async () => {
   console.log("Done seeding courses");
 
   // Delete all courses that have no course times
-  await prisma.course.deleteMany({
-    where: {
-      times: {
-        none: {},
-      },
-    },
-  });
-  console.log("Successfully deleted all courses that have no course times");
-
-  // Delete all classes that have no courses
-  await prisma.class.deleteMany({
-    where: {
-      courses: {
-        none: {},
-      },
-    },
-  });
-  console.log("Successfully deleted all classes that have no courses");
-
-  // Delete all years that have no classes
-  await prisma.year.deleteMany({
-    where: {
-      classes: {
-        none: {},
-      },
-    },
-  });
-  console.log("Successfully deleted all years that have no classes");
+  // await prisma.course.deleteMany({
+  //   where: {
+  //     times: {
+  //       none: {},
+  //     },
+  //   },
+  // });
+  // console.log("Successfully deleted all courses that have no course times");
+  //
+  // // Delete all classes that have no courses
+  // await prisma.class.deleteMany({
+  //   where: {
+  //     courses: {
+  //       none: {},
+  //     },
+  //   },
+  // });
+  // console.log("Successfully deleted all classes that have no courses");
+  //
+  // // Delete all years that have no classes
+  // await prisma.year.deleteMany({
+  //   where: {
+  //     classes: {
+  //       none: {},
+  //     },
+  //   },
+  // });
+  // console.log("Successfully deleted all years that have no classes");
 };
