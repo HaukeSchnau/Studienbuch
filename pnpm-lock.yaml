@@ -228,6 +228,9 @@ importers:
       papaparse:
         specifier: ^5.4.1
         version: 5.4.1
+      zod:
+        specifier: ^3.20.6
+        version: 3.20.6
     devDependencies:
       '@total-typescript/ts-reset':
         specifier: ^0.4.2

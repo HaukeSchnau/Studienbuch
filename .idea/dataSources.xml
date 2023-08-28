@@ -22,5 +22,12 @@
       <jdbc-url>jdbc:sqlite:$USER_HOME$/Library/Developer/CoreSimulator/Devices/ECF8EDCE-221B-47AF-A7AC-5B5142569F9E/data/Containers/Data/Application/CB026A60-3EBE-4F69-8F97-FAF7A1A0DE01/Documents/db.sqlite</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="LOCAL DOCKER" uuid="cc14a148-2488-49b8-823f-11a5ced05ab1">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://localhost:5432/class_mate</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>
