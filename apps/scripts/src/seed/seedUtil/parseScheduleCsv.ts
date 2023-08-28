@@ -118,6 +118,7 @@ export const parseScheduleCsv = async (
         } else {
           courses.push({
             ...course,
+            isChoosable: course.isChoosable || !idInYear,
             times: [time],
           });
         }
