@@ -86,7 +86,7 @@ export const parseScheduleCsv = async (
       let endMinutes = row.endMinutes;
 
       if (!normalTime && coursesForDay.length > 0) {
-        weeks = "EVEN";
+        weeks = "ODD";
         startMinutes -= 40;
         endMinutes -= 40;
       }
@@ -97,7 +97,7 @@ export const parseScheduleCsv = async (
         cellBelow &&
         cellBelow.length > 0
       ) {
-        weeks = "ODD";
+        weeks = "EVEN";
       }
 
       for (const course of coursesForDay) {
