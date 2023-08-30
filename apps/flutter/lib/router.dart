@@ -5,8 +5,8 @@ import 'package:class_mate/models/store.dart';
 import 'package:class_mate/pages/about_page.dart';
 import 'package:class_mate/pages/absences_page.dart';
 import 'package:class_mate/pages/course_page.dart';
-import 'package:class_mate/pages/setup/edit_profile_page.dart';
 import 'package:class_mate/pages/root_page.dart';
+import 'package:class_mate/pages/setup/edit_profile_page.dart';
 import 'package:class_mate/pages/setup/license_renew_page.dart';
 import 'package:class_mate/pages/setup/welcome_page.dart';
 import 'package:drift/drift.dart';
@@ -145,9 +145,6 @@ buildMainRouter(
           }
         },
       ),
-      GoRoute(
-          path: "/setup",
-          builder: (context, state) => WelcomePage(updateStore: updateStore)),
     ],
   );
 }

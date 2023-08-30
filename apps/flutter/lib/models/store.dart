@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:class_mate/database.dart';
 import 'package:class_mate/error_catcher.dart';
 import 'package:class_mate/models/agenda.dart';
@@ -12,9 +13,9 @@ import 'package:class_mate/router.dart';
 import 'package:class_mate/util/date_util.dart';
 import 'package:drift/drift.dart';
 import 'package:encrypt/encrypt.dart';
-import 'package:flutter/material.dart' hide Key;
 import 'package:mobx/mobx.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:sentry/sentry_io.dart';
 
 part 'store.g.dart';
 
@@ -163,8 +164,7 @@ abstract class _GlobalStore with Store {
   Future<void> save() async {
     if (!shouldSave) return;
 
-    final directory = await getApplicationDocumentsDirectory();
-    final storeFilePath = "${directory.path}/data";
+    final storeFilePath = await getStoreFilePath();
     final storeFile = File(storeFilePath);
 
     await storeFile.writeAsBytes(encrypt());
@@ -176,22 +176,28 @@ String decrypt(Uint8List encryptedBytes) {
   final iv = IV.fromLength(16);
   final encrypter = Encrypter(AES(key));
   final encrypted = Encrypted(encryptedBytes);
-  final decrypted = encrypter.decrypt(encrypted, iv: iv);
-  return decrypted;
+  return encrypter.decrypt(encrypted, iv: iv);
 }
 
 Future<GlobalStore?> loadStore() async {
-  try {
-    final directory = await getApplicationDocumentsDirectory();
-    final storeFilePath = "${directory.path}/data";
-    final storeFile = File(storeFilePath);
-    if (await storeFile.exists()) {
+  final storeFilePath = await getStoreFilePath();
+  final storeFile = File(storeFilePath);
+  if (await storeFile.exists()) {
+    try {
       final jsonContent = decrypt(await storeFile.readAsBytes());
-      final store = GlobalStore.fromJson(jsonDecode(jsonContent));
-      return store;
+      return GlobalStore.fromJson(jsonDecode(jsonContent));
+    } catch (e, stacktrace) {
+      await Sentry.captureException(e,
+          stackTrace: stacktrace,
+          hint: Hint.withAttachment(IoSentryAttachment.fromFile(storeFile)));
+      return null;
     }
-  } catch (e, stacktrace) {
-    debugPrint("Error while loading store: $e\n$stacktrace");
+  } else {
+    return null;
   }
-  return null;
+}
+
+Future<String> getStoreFilePath() async {
+  final directory = await getApplicationDocumentsDirectory();
+  return "${directory.path}/data";
 }
