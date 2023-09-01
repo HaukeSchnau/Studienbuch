@@ -1,3 +1,4 @@
+import 'package:class_mate/hooks/use_async_effect.dart';
 import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/openapi.dart';
 import 'package:class_mate/pages/setup/forms/classes_courses_setup_page.dart';
@@ -9,6 +10,7 @@ import 'package:class_mate_api/api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:mobx/mobx.dart';
+import 'package:sentry/sentry.dart';
 
 class WelcomePage extends HookWidget {
   final UpdateStoreCallback updateStore;
@@ -17,6 +19,10 @@ class WelcomePage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    useAsyncEffect(() async {
+      await Sentry.captureMessage("Showing welcome page. This should only happen once per device.");
+    }, []);
+
     final storeState = useState(
       SetupStore(courses: ObservableList()),
     );
@@ -30,6 +36,10 @@ class WelcomePage extends HookWidget {
       final globalStore = store.toGlobalStore();
       await globalStore.save();
       await globalStore.init();
+
+      await Sentry.captureMessage("Finished setup flow and saved store & database. License key: ${store.licenseKey}", hint: Hint.withMap(
+        {"store": globalStore.toJson()}
+      ));
 
       updateStore(globalStore);
     }

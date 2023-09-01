@@ -91,7 +91,7 @@ buildMainRouter(
               ),
             );
           } else {
-            return WelcomePage(updateStore: updateStore);
+            throw Exception("Store is null in /course/:courseId/:semesterId");
           }
         },
       ),
@@ -105,7 +105,7 @@ buildMainRouter(
                 child: TaskPage(taskId: int.parse(state.params['taskId']!)),
               );
             } else {
-              return WelcomePage(updateStore: updateStore);
+              throw Exception("Store is null in /tasks/:taskId");
             }
           }),
       GoRoute(
@@ -118,7 +118,7 @@ buildMainRouter(
               child: const AbsencesPage(),
             );
           } else {
-            return WelcomePage(updateStore: updateStore);
+            throw Exception("Store is null in /absences");
           }
         },
       ),
@@ -141,7 +141,7 @@ buildMainRouter(
               ),
             );
           } else {
-            return WelcomePage(updateStore: updateStore);
+            throw Exception("Store is null in /editProfile");
           }
         },
       ),
