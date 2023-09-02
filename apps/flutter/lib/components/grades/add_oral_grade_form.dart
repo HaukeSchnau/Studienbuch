@@ -56,7 +56,7 @@ class AddOralGradeForm extends HookWidget {
         ),
         const SizedBox(height: 16),
         const Text(
-          "Diese Note muss im Nachhinein noch von deinem Lehrer und deinen Eltern bestätigt werden.",
+          "Diese Note muss im Nachhinein noch von deiner Lehrkraft und deinen Eltern bestätigt werden.",
         ),
         if (mostRecentConfirmedOralGrade != null &&
             mostRecentConfirmedOralGrade.id != currentOralGrade?.id) ...[

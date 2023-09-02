@@ -5,9 +5,9 @@ import 'package:class_mate/pages/setup/helpers/setup_flow.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/static/theme.dart';
 import 'package:class_mate/util/string_util.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class LicenseFormatter extends TextInputFormatter {
@@ -46,8 +46,7 @@ class LicenseForm extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final licenseController =
-        useTextEditingController();
+    final licenseController = useTextEditingController();
     useListenable(licenseController);
     final loading = useState(false);
     final error = useState<String?>(null);
@@ -71,7 +70,8 @@ class LicenseForm extends HookWidget {
           .catchError((error) {
         loading.value = false;
 
-        throw UserException("Lizenzschlüssel konnte nicht geprüft werden", error);
+        throw UserException(
+            "Lizenzschlüssel konnte nicht geprüft werden", error);
       });
       if (licenseStatus == "VALID") {
         // License key will have to be checked again and activated when setup flow is completed
@@ -104,7 +104,7 @@ class LicenseForm extends HookWidget {
               ),
               const SizedBox(height: 8.0),
               Text(
-                  "Bitte gib zunächst deinen Lizenzschlüssel ein, um fortzufahren und die App zu aktivieren. Du hast deinen Lizenzschlüssel von deinem Lehrer erhalten.",
+                  "Bitte gib zunächst deinen Lizenzschlüssel ein, um fortzufahren und die App zu aktivieren. Du hast deinen Lizenzschlüssel von deiner Lehrkraft erhalten.",
                   style: Theme.of(context).textTheme.bodyMedium),
             ],
           ),
