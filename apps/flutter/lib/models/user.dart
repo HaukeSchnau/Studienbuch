@@ -1,4 +1,4 @@
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/year.dart';
 import 'package:drift/drift.dart';
 import 'package:mobx/mobx.dart';

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:class_mate/database/schema_versions.dart';
 import 'package:class_mate/models/absence.dart';
 import 'package:class_mate/models/class.dart';
 import 'package:class_mate/models/course.dart';
@@ -31,19 +32,27 @@ part 'database.g.dart';
   Years
 ])
 class MyDatabase extends _$MyDatabase {
-  // we tell the database where to store the data with this constructor
   MyDatabase() : super(_openConnection());
 
-  // you should bump this number whenever you change or add a table definition.
-  // Migrations are covered later in the documentation.
   @override
   int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
-    return MigrationStrategy(beforeOpen: (details) async {
-      await customStatement('PRAGMA foreign_keys = ON');
-    });
+    return MigrationStrategy(
+      beforeOpen: (details) async {
+        await customStatement('PRAGMA foreign_keys = ON');
+      },
+      onCreate: (Migrator m) async {
+        await m.createAll();
+      },
+      onUpgrade: stepByStep(
+        from1To2: (m, schema) async {
+          await m.createTable(schema.users);
+          await m.createTable(schema.years);
+        },
+      ),
+    );
   }
 }
 

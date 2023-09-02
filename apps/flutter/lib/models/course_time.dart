@@ -1,4 +1,4 @@
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:drift/drift.dart';
 
@@ -71,10 +71,15 @@ enum CourseTimeWeek {
 
 class CourseTimes extends Table {
   IntColumn get id => integer().autoIncrement()();
+
   IntColumn get weekday => integer()();
+
   IntColumn get start => integer().map(const TimeOfDayConverter())();
+
   IntColumn get duration => integer()();
+
   IntColumn get course => integer().nullable().references(Courses, #id)();
+
   TextColumn get weeks => textEnum<CourseTimeWeek>()();
 }
 

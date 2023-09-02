@@ -1,7 +1,7 @@
 import 'package:class_mate/components/bottom_sheet_container.dart';
 import 'package:class_mate/components/tasks/add_task_form.dart';
 import 'package:class_mate/components/tasks/tasks_view.dart';
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/hooks/use_query.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:drift/drift.dart' hide Column;

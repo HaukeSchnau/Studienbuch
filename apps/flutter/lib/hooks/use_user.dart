@@ -1,4 +1,4 @@
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/hooks/use_query.dart';
 import 'package:class_mate/util/list_util.dart';
 
@@ -17,8 +17,9 @@ User useUser() {
 
 Year useYear() {
   final user = useUser();
-  final year = useQuery(() => db.select(db.years)..where((tbl) => tbl.id.equals(user.year)), [user.year])
-      ?.firstOrNull;
+  final year = useQuery(
+      () => db.select(db.years)..where((tbl) => tbl.id.equals(user.year)),
+      [user.year])?.firstOrNull;
   if (year == null) {
     throw Exception("Year not found");
   }

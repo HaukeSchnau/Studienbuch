@@ -1,11 +1,12 @@
 import 'package:class_mate/components/util/card.dart';
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/hooks/use_grades.dart';
 import 'package:class_mate/hooks/use_user.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/semester.dart';
 import 'package:class_mate/models/setup_store.dart';
-import 'package:class_mate/pages/setup/forms/classes_courses_setup_page.dart' hide Course;
+import 'package:class_mate/pages/setup/forms/classes_courses_setup_page.dart'
+    hide Course;
 import 'package:class_mate/pages/setup/helpers/setup_page_layout.dart';
 import 'package:class_mate/util/number_util.dart';
 import 'package:class_mate_api/api.dart';

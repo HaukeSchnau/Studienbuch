@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/error_catcher.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sentry/sentry_io.dart';

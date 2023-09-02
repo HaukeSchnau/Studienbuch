@@ -1,6 +1,6 @@
 // ignore_for_file: unused_element
 
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:class_mate/models/semester.dart';
 import 'package:class_mate_api/api.dart';

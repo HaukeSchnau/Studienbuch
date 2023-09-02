@@ -1,5 +1,5 @@
 import 'package:class_mate/components/tasks/task_page.dart';
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/pages/about_page.dart';
 import 'package:class_mate/pages/absences_page.dart';

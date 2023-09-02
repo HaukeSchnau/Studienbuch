@@ -1,4 +1,4 @@
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:drift/drift.dart';
 
@@ -37,7 +37,7 @@ class SemesterRange extends Iterable<Semester> {
   Iterator<Semester> get iterator => _SemesterRangeIterator(start, end);
 }
 
-class _SemesterRangeIterator extends Iterator<Semester> {
+class _SemesterRangeIterator implements Iterator<Semester> {
   final SemesterId end;
   SemesterId currentId;
 

@@ -2,7 +2,7 @@ import 'package:class_mate/components/confirm_with_signature.dart';
 import 'package:class_mate/components/confirmation_info.dart';
 import 'package:class_mate/components/util/card.dart';
 import 'package:class_mate/confirmation_status_view.dart';
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/hooks/use_user.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/grade_result.dart';
@@ -48,8 +48,8 @@ class ExamCard extends HookWidget {
 
     confirmTeacher() => confirmWithSignature(
         context,
-        (ctx) => buildWrittenGradeConfirmationInfoTeacher(
-            course, user, examResult),
+        (ctx) =>
+            buildWrittenGradeConfirmationInfoTeacher(course, user, examResult),
         title: "Klausurergebnis bestätigen (Lehrer)",
         signer: "Unterschrift von ${course.teacher.name}",
         fileName: "signature-${examResult.id}-teacher.svg",
@@ -59,8 +59,8 @@ class ExamCard extends HookWidget {
 
     confirmParent() => confirmWithSignature(
         context,
-        (ctx) => buildWrittenGradeConfirmationInfoParent(
-            course, user, examResult),
+        (ctx) =>
+            buildWrittenGradeConfirmationInfoParent(course, user, examResult),
         title: "Klausurergebnis bestätigen (Eltern)",
         signer: "Unterschrift der Eltern",
         fileName: "signature-${examResult.id}-parent.svg",

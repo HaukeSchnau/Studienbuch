@@ -2,7 +2,7 @@ import 'package:class_mate/components/confirm_with_signature.dart';
 import 'package:class_mate/components/confirmation_info.dart';
 import 'package:class_mate/components/util/card.dart';
 import 'package:class_mate/confirmation_status_view.dart';
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/hooks/use_user.dart';
 import 'package:class_mate/models/absence.dart';
 import 'package:class_mate/pages/confirmation_view.dart';
