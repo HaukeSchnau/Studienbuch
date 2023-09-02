@@ -1,6 +1,6 @@
-import 'package:class_mate/hooks/use_store.dart';
 import 'package:class_mate/models/agenda.dart';
 import 'package:class_mate/models/agenda_entry.dart';
+import 'package:class_mate/models/app_store.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:class_mate/models/semester.dart';
@@ -14,7 +14,6 @@ class WeekPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = useStore();
     final weekNum = store.agenda.date.weekNumber;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [

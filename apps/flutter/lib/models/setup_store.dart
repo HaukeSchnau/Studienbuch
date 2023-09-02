@@ -3,12 +3,10 @@
 import 'package:class_mate/database.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:class_mate/models/semester.dart';
-import 'package:class_mate/models/store.dart';
-import 'package:class_mate/models/user.dart';
-import 'package:class_mate/models/year.dart';
 import 'package:class_mate_api/api.dart';
 import 'package:drift/drift.dart';
 import 'package:mobx/mobx.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 part 'setup_store.g.dart';
 
@@ -73,27 +71,21 @@ abstract class _SetupStoreBase with Store {
   });
 
   Future<void> saveToDatabase() async {
-    await saveSemesterData(
-        class_: class_!, courses: courses, semesterId: getCurrentSemesterId());
-  }
-
-  GlobalStore toGlobalStore() {
-    final res = GlobalStore(
-      licenseKey: licenseKey!,
-      licenseKeyActivatedAt: licenseKeyActivatedAt ?? DateTime.now(),
-      user: User(
-        isOfAge: isOfAge!,
-        name: name!,
-        year: Year(
-          id: year!.id,
-          startYear: year!.startYear,
-          graduationYear: year!.graduationYear,
-          name: year!.name,
-        ),
+    await saveUserData(
+      year: Year(
+        id: year!.id,
+        startYear: year!.startYear,
+        graduationYear: year!.graduationYear,
+        name: year!.name,
       ),
+      licenseKey: licenseKey!,
+      licenseKeyActivatedAt: licenseKeyActivatedAt!,
+      name: name!,
+      isOfAge: isOfAge!,
     );
 
-    return res;
+    await saveSemesterData(
+        class_: class_!, courses: courses, semesterId: getCurrentSemesterId());
   }
 }
 
@@ -202,4 +194,38 @@ Future<void> saveSemesterData({
           course: course.id,
         ));
   }
+
+  await Sentry.captureMessage("Saved semester data for semester $semesterId");
+}
+
+Future<void> saveUserData({
+  required Year year,
+  required String licenseKey,
+  required DateTime licenseKeyActivatedAt,
+  required String name,
+  required bool isOfAge,
+}) async {
+  final yearId = await db.into(db.years).insertOnConflictUpdate(
+        YearsCompanion.insert(
+          id: Value(year.id),
+          startYear: year.startYear,
+          graduationYear: year.graduationYear,
+          name: year.name,
+        ),
+      );
+
+  final userId = await db.into(db.users).insertOnConflictUpdate(
+        UsersCompanion.insert(
+          id: const Value(0),
+          // We want to have only one user in the database
+          licenseKey: licenseKey,
+          licenseKeyActivatedAt: licenseKeyActivatedAt,
+          name: name,
+          isOfAge: isOfAge,
+          year: yearId,
+        ),
+      );
+
+  await Sentry.captureMessage(
+      "Saved user $userId: $name with license key $licenseKey in year ${year.name}");
 }

@@ -1,7 +1,7 @@
 import 'package:class_mate/components/util/card.dart';
 import 'package:class_mate/database.dart';
 import 'package:class_mate/hooks/use_grades.dart';
-import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/hooks/use_user.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/semester.dart';
 import 'package:class_mate/models/setup_store.dart';
@@ -20,7 +20,7 @@ class SubjectsGrid extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = useStore();
+    final year = useYear();
     final courses = useCourses(semesterId: semester.id);
 
     if (courses == null) {
@@ -31,7 +31,6 @@ class SubjectsGrid extends HookWidget {
         semester.id == getCurrentSemesterId() && courses.isEmpty;
 
     void startCourseChooseFlow() {
-      final year = store.user.year;
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => SetupPageLayout(
@@ -41,6 +40,7 @@ class SubjectsGrid extends HookWidget {
                     id: year.id,
                     name: year.name,
                     startYear: year.startYear,
+                    updatedAt: DateTime.now(), // TODO fix this
                   ),
                   onFinishedCallback: (selectedClass, selectedCourses) async {
                     await saveSemesterData(

@@ -5,7 +5,6 @@ import 'package:class_mate/pages/setup/forms/classes_courses_setup_page.dart';
 import 'package:class_mate/pages/setup/forms/license_form.dart';
 import 'package:class_mate/pages/setup/forms/profile_setup_page.dart';
 import 'package:class_mate/pages/setup/helpers/setup_flow.dart';
-import 'package:class_mate/router.dart';
 import 'package:class_mate_api/api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -13,14 +12,13 @@ import 'package:mobx/mobx.dart';
 import 'package:sentry/sentry.dart';
 
 class WelcomePage extends HookWidget {
-  final UpdateStoreCallback updateStore;
-
-  const WelcomePage({super.key, required this.updateStore});
+  const WelcomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     useAsyncEffect(() async {
-      await Sentry.captureMessage("Showing welcome page. This should only happen once per device.");
+      await Sentry.captureMessage(
+          "Showing welcome page. This should only happen once per device.");
     }, []);
 
     final storeState = useState(
@@ -33,15 +31,9 @@ class WelcomePage extends HookWidget {
           MutationLicenseActivateRequest(licenseKey: store.licenseKey!));
 
       await store.saveToDatabase();
-      final globalStore = store.toGlobalStore();
-      await globalStore.save();
-      await globalStore.init();
 
-      await Sentry.captureMessage("Finished setup flow and saved store & database. License key: ${store.licenseKey}", hint: Hint.withMap(
-        {"store": globalStore.toJson()}
-      ));
-
-      updateStore(globalStore);
+      await Sentry.captureMessage(
+          "Finished setup flow and saved store & database. License key: ${store.licenseKey}");
     }
 
     Widget? nextPageCallback(Widget? currentPage) {

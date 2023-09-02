@@ -1,6 +1,5 @@
 import 'package:class_mate/database.dart';
 import 'package:class_mate/models/course.dart';
-import 'package:class_mate/models/year.dart';
 import 'package:drift/drift.dart';
 
 enum SemesterType {
@@ -13,8 +12,7 @@ typedef SemesterId = int;
 SemesterId getCurrentSemesterId() {
   final now = DateTime.now();
   int year = now.year;
-  bool isWinter =
-      now.month > 7 || now.month < 2;
+  bool isWinter = now.month > 7 || now.month < 2;
   if (now.month < 2) {
     year--;
   }
@@ -86,6 +84,7 @@ extension SemesterExt on Semester {
 
 class SemesterCourses extends Table {
   IntColumn get semester => integer().references(Semesters, #id)();
+
   IntColumn get course => integer().references(Courses, #id)();
 }
 

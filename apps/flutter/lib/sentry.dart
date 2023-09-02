@@ -1,13 +1,13 @@
 import 'dart:async';
 
+import 'package:class_mate/database.dart';
 import 'package:class_mate/error_catcher.dart';
-import 'package:class_mate/models/store.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sentry/sentry_io.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 Future<void> prepareSentry(FutureOr<void> Function() appRunner) async {
-  final storeAttachment = IoSentryAttachment.fromPath(await getStoreFilePath());
+  final storeAttachment = IoSentryAttachment.fromPath(await getDbFilePath());
 
   await SentryFlutter.init(
     (options) {

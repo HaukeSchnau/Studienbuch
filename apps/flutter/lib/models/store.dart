@@ -1,3 +1,4 @@
+@Deprecated("Use SQLite instead")
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -6,10 +7,10 @@ import 'package:class_mate/database.dart';
 import 'package:class_mate/error_catcher.dart';
 import 'package:class_mate/models/agenda.dart';
 import 'package:class_mate/models/course.dart';
+import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/models/substitution.dart';
 import 'package:class_mate/models/user.dart';
 import 'package:class_mate/openapi.dart';
-import 'package:class_mate/router.dart';
 import 'package:class_mate/util/date_util.dart';
 import 'package:drift/drift.dart';
 import 'package:encrypt/encrypt.dart';
@@ -24,7 +25,7 @@ class GlobalStore = _GlobalStore with _$GlobalStore;
 
 @Deprecated("Use SQLite instead")
 abstract class _GlobalStore with Store {
-  final User user;
+  final UserStore user;
 
   @observable
   String licenseKey;
@@ -38,17 +39,13 @@ abstract class _GlobalStore with Store {
   @observable
   List<Agenda> weeklyAgenda = [];
 
-  @observable
-  UpdateStoreCallback? updateStore;
-
   bool shouldSave = true;
 
-  _GlobalStore(
-      {required this.user,
-      required this.licenseKey,
-      required this.licenseKeyActivatedAt,
-      // ignore: unused_element
-      this.updateStore});
+  _GlobalStore({
+    required this.user,
+    required this.licenseKey,
+    required this.licenseKeyActivatedAt,
+  });
 
   disableSaving() {
     shouldSave = false;
@@ -131,10 +128,35 @@ abstract class _GlobalStore with Store {
   // ignore: unused_element
   _GlobalStore.fromJson(Map<String, dynamic> json)
       : this(
-          user: User.fromJson(json["currentUser"]),
+          user: UserStore.fromJson(json["currentUser"]),
           licenseKey: json["licenseKey"],
           licenseKeyActivatedAt: DateTime.parse(json["licenseKeyActivatedAt"]),
         );
+
+  Future<void> save() async {
+    await Sentry.captureMessage("Converting JSON store to SQLite");
+
+    await saveUserData(
+        year: Year(
+          id: user.year.id,
+          startYear: user.year.startYear,
+          graduationYear: user.year.graduationYear,
+          name: user.year.name,
+        ),
+        licenseKey: licenseKey,
+        licenseKeyActivatedAt: licenseKeyActivatedAt,
+        name: user.name,
+        isOfAge: user.isOfAge);
+  }
+
+  Future<void> retire() async {
+    await Sentry.captureMessage("Retiring old JSON store");
+    final storeFilePath = await getStoreFilePath();
+    final storeFile = File(storeFilePath);
+    if (await storeFile.exists()) {
+      await storeFile.rename("${storeFilePath}_retired");
+    }
+  }
 }
 
 @Deprecated("Use SQLite instead")

@@ -1,33 +1,29 @@
+import 'package:class_mate/database.dart';
 import 'package:class_mate/models/year.dart';
+import 'package:drift/drift.dart';
 import 'package:mobx/mobx.dart';
 
 part 'user.g.dart';
 
-class User = _UserBase with _$User;
+class Users extends Table {
+  IntColumn get id => integer().autoIncrement()();
 
-abstract class _UserBase with Store {
-  @observable
-  String name;
+  TextColumn get licenseKey => text()();
 
-  @observable
-  bool isOfAge;
+  DateTimeColumn get licenseKeyActivatedAt => dateTime()();
 
-  @observable
-  Year year;
+  TextColumn get name => text()();
 
-  _UserBase({
-    required this.name,
-    required this.isOfAge,
-    required this.year,
-  });
+  BoolColumn get isOfAge => boolean()();
 
-  @computed
+  IntColumn get year => integer().references(Years, #id)();
+}
+
+extension UserExtension on User {
   String get firstName => name.split(" ").first;
 
-  @computed
   String get lastName => name.split(" ").last;
 
-  @computed
   String get initials {
     final parts = name.split(" ");
     if (parts.length == 1) {
@@ -36,24 +32,36 @@ abstract class _UserBase with Store {
     return parts.first.substring(0, 1) + parts.last.substring(0, 1);
   }
 
-  @computed
   get shortName {
     return name.split(" ")[0].split("-")[0];
   }
+}
 
-  Map<String, dynamic> toJson() {
-    return {
-      'name': name,
-      'isOfAge': isOfAge,
-      'year': year.toJson(),
-    };
-  }
+@Deprecated("Use SQLite instead")
+class UserStore = _UserBase with _$UserStore;
+
+@Deprecated("Use SQLite instead")
+abstract class _UserBase with Store {
+  @observable
+  String name;
+
+  @observable
+  bool isOfAge;
+
+  @observable
+  YearStore year;
+
+  _UserBase({
+    required this.name,
+    required this.isOfAge,
+    required this.year,
+  });
 
   // ignore: unused_element
   _UserBase.fromJson(Map<String, dynamic> json)
       : this(
           name: json["name"],
           isOfAge: json["isOfAge"],
-          year: Year.fromJson(json["year"]),
+          year: YearStore.fromJson(json["year"]),
         );
 }

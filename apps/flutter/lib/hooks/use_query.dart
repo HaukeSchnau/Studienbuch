@@ -5,7 +5,7 @@ List<D>? useQuery<T extends HasResultSet, D>(
     SimpleSelectStatement<T, D> Function() createQuery,
     [List<Object?> keys = const []]) {
   final stream = useMemoized(() => createQuery().watch(), keys);
-  final snapshot =  useStream(stream);
+  final snapshot = useStream(stream);
   if(snapshot.hasError) {
     throw snapshot.error!;
   }

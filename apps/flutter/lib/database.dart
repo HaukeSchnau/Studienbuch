@@ -1,15 +1,19 @@
 import 'dart:io';
+
 import 'package:class_mate/models/absence.dart';
 import 'package:class_mate/models/class.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:class_mate/models/grade_result.dart';
+import 'package:class_mate/models/semester.dart';
 import 'package:class_mate/models/task.dart';
-import 'package:path/path.dart' as p;
+import 'package:class_mate/models/user.dart';
+import 'package:class_mate/models/year.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:class_mate/models/semester.dart';
+import 'package:sentry/sentry.dart';
 
 part 'database.g.dart';
 
@@ -22,7 +26,9 @@ part 'database.g.dart';
   Semesters,
   SemesterCourses,
   GradeResults,
-  Tasks
+  Tasks,
+  Users,
+  Years
 ])
 class MyDatabase extends _$MyDatabase {
   // we tell the database where to store the data with this constructor
@@ -31,7 +37,7 @@ class MyDatabase extends _$MyDatabase {
   // you should bump this number whenever you change or add a table definition.
   // Migrations are covered later in the documentation.
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
@@ -43,15 +49,19 @@ class MyDatabase extends _$MyDatabase {
 
 MyDatabase db = MyDatabase();
 
-Future<File> get _dbFile async {
+Future<String> getDbFilePath() async {
   final dbFolder = await getApplicationDocumentsDirectory();
-  return File(p.join(dbFolder.path, 'database.sqlite'));
+  return p.join(dbFolder.path, 'database.sqlite');
+}
+
+Future<File> getDbFile() async {
+  return File(await getDbFilePath());
 }
 
 Future<void> resetDatabase() async {
   await db.close();
 
-  final file = await _dbFile;
+  final file = await getDbFile();
   if (await file.exists()) await file.delete();
 
   db = MyDatabase();
@@ -60,9 +70,11 @@ Future<void> resetDatabase() async {
 LazyDatabase _openConnection() {
   // the LazyDatabase util lets us find the right location for the file async.
   return LazyDatabase(() async {
-    // put the database file, called db.sqlite here, into the documents folder
-    // for your app.
-    final file = await _dbFile;
+    final file = await getDbFile();
+
+    if ((await file.exists()) && (await file.stat()).size == 0) {
+      Sentry.captureMessage("Database file is empty");
+    }
 
     return NativeDatabase.createInBackground(file);
   });

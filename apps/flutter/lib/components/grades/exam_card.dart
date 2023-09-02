@@ -3,10 +3,9 @@ import 'package:class_mate/components/confirmation_info.dart';
 import 'package:class_mate/components/util/card.dart';
 import 'package:class_mate/confirmation_status_view.dart';
 import 'package:class_mate/database.dart';
-import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/hooks/use_user.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/grade_result.dart';
-import 'package:class_mate/models/user.dart';
 import 'package:class_mate/pages/confirmation_view.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/util/date_util.dart';
@@ -22,7 +21,7 @@ class ExamCard extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = useStore();
+    final user = useUser();
 
     delete() async {
       final confirmed = await showDialog<bool>(
@@ -50,7 +49,7 @@ class ExamCard extends HookWidget {
     confirmTeacher() => confirmWithSignature(
         context,
         (ctx) => buildWrittenGradeConfirmationInfoTeacher(
-            course, store.user, examResult),
+            course, user, examResult),
         title: "Klausurergebnis bestätigen (Lehrer)",
         signer: "Unterschrift von ${course.teacher.name}",
         fileName: "signature-${examResult.id}-teacher.svg",
@@ -61,7 +60,7 @@ class ExamCard extends HookWidget {
     confirmParent() => confirmWithSignature(
         context,
         (ctx) => buildWrittenGradeConfirmationInfoParent(
-            course, store.user, examResult),
+            course, user, examResult),
         title: "Klausurergebnis bestätigen (Eltern)",
         signer: "Unterschrift der Eltern",
         fileName: "signature-${examResult.id}-parent.svg",
@@ -79,8 +78,8 @@ class ExamCard extends HookWidget {
             : null,
         deleteAction: !examResult.isConfirmedByTeacher ? delete : null,
         actionColor: theme.error,
-        userIsOfAge: store.user.isOfAge,
-        user: store.user);
+        userIsOfAge: user.isOfAge,
+        user: user);
   }
 }
 
