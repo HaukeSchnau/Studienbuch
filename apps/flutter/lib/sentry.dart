@@ -2,13 +2,24 @@ import 'dart:async';
 
 import 'package:class_mate/database/database.dart';
 import 'package:class_mate/error_catcher.dart';
+import 'package:class_mate/hooks/use_user.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sentry/sentry_io.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-Future<void> prepareSentry(FutureOr<void> Function() appRunner) async {
+Future<void> configureSentryScope() async {
   final storeAttachment = IoSentryAttachment.fromPath(await getDbFilePath());
 
+  Sentry.configureScope((scope) {
+    scope.addAttachment(storeAttachment);
+    scope.setUser(SentryUser(
+      id: useOptionalUser()?.licenseKey,
+      username: useOptionalUser()?.name,
+    ));
+  });
+}
+
+Future<void> prepareSentry(FutureOr<void> Function() appRunner) async {
   await SentryFlutter.init(
     (options) {
       options.debug = kDebugMode;
@@ -21,9 +32,7 @@ Future<void> prepareSentry(FutureOr<void> Function() appRunner) async {
       options.addEventProcessor(EventCatcherProcessor());
     },
     appRunner: () async {
-      Sentry.configureScope((scope) {
-        scope.addAttachment(storeAttachment);
-      });
+      await configureSentryScope();
 
       await appRunner();
     },

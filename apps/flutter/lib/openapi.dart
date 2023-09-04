@@ -16,6 +16,6 @@ import 'package:openapi_generator_annotations/openapi_generator_annotations.dart
 class MyOpenApi extends OpenapiGeneratorConfig {}
 
 final apiInstance = DefaultApi(ApiClient(
-    basePath: kDebugMode
+    basePath: !kDebugMode
         ? "http://192.168.178.21:3000/api"
         : "https://classmate.haukeschnau.de/api"));

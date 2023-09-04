@@ -4,10 +4,10 @@ PODS:
   - Firebase/Messaging (10.12.0):
     - Firebase/CoreOnly
     - FirebaseMessaging (~> 10.12.0)
-  - firebase_core (2.15.0):
+  - firebase_core (2.15.1):
     - Firebase/CoreOnly (= 10.12.0)
     - Flutter
-  - firebase_messaging (14.6.5):
+  - firebase_messaging (14.6.7):
     - Firebase/Messaging (= 10.12.0)
     - firebase_core
     - Flutter
@@ -75,18 +75,18 @@ PODS:
     - FlutterMacOS
     - Sentry/HybridSDK (= 8.9.1)
   - SentryPrivate (8.9.1)
-  - sqlite3 (3.41.2):
-    - sqlite3/common (= 3.41.2)
-  - sqlite3/common (3.41.2)
-  - sqlite3/fts5 (3.41.2):
+  - sqlite3 (3.43.0):
+    - sqlite3/common (= 3.43.0)
+  - sqlite3/common (3.43.0)
+  - sqlite3/fts5 (3.43.0):
     - sqlite3/common
-  - sqlite3/perf-threadsafe (3.41.2):
+  - sqlite3/perf-threadsafe (3.43.0):
     - sqlite3/common
-  - sqlite3/rtree (3.41.2):
+  - sqlite3/rtree (3.43.0):
     - sqlite3/common
   - sqlite3_flutter_libs (0.0.1):
     - Flutter
-    - sqlite3 (~> 3.41.2)
+    - sqlite3 (~> 3.43.0)
     - sqlite3/fts5
     - sqlite3/perf-threadsafe
     - sqlite3/rtree
@@ -144,8 +144,8 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Firebase: 07150e75d142fb9399f6777fa56a187b17f833a0
-  firebase_core: e477125798fc37cd4ab43ca6a8536bf7e0929c00
-  firebase_messaging: 334d68c3a36b6d4d5cd91e4f42509e0d4ae49828
+  firebase_core: 4a3246a02f828a01c74a2c26427037786d90f17f
+  firebase_messaging: 0b4f7997f491343b90d9300af54fe55c72135833
   FirebaseCore: f86a1394906b97ac445ae49c92552a9425831bed
   FirebaseCoreInternal: 950500ad8a08963657f6d8c67b579740c06d6aa1
   FirebaseInstallations: 7b99ef103f013624444c614397038219c45f8e63
@@ -162,8 +162,8 @@ SPEC CHECKSUMS:
   Sentry: e3203780941722a1fcfee99e351de14244c7f806
   sentry_flutter: 8f0ffd53088e6a4d50c095852c5cad9e4405025c
   SentryPrivate: 5e3683390f66611fc7c6215e27645873adb55d13
-  sqlite3: fd89671d969f3e73efe503ce203e28b016b58f68
-  sqlite3_flutter_libs: 04ba0d14a04335a2fbf9a331e8664f401fbccdd5
+  sqlite3: 7afcf055d3700254769a4dcba56f27d26b5515c9
+  sqlite3_flutter_libs: 878ccbdcfd7b7cb41a774ec238223d876880c5ec
   url_launcher_ios: 08a3dfac5fb39e8759aeb0abbd5d9480f30fc8b4
 
 PODFILE CHECKSUM: cac482c4d0fbd03e7be0c34b08d8b23b34b05da5

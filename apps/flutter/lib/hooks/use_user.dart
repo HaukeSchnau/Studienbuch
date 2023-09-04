@@ -1,27 +1,63 @@
+import 'dart:async';
+
 import 'package:class_mate/database/database.dart';
-import 'package:class_mate/hooks/use_query.dart';
-import 'package:class_mate/util/list_util.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+
+final _user = ValueNotifier<User?>(null);
+final _year = ValueNotifier<Year?>(null);
+
+StreamSubscription? _userSubscription;
+StreamSubscription? _yearSubscription;
+
+Future<void> initYear(User user) async {
+  final yearQuery = db.select(db.years)
+    ..where((tbl) => tbl.id.equals(user.year));
+
+  final newYear = await yearQuery.getSingleOrNull();
+  _year.value = newYear;
+
+  _yearSubscription?.cancel();
+  _yearSubscription = yearQuery.watchSingleOrNull().listen((event) {
+    _year.value = event;
+  });
+}
+
+Future<void> initUser() async {
+  final userQuery = db.select(db.users)..where((tbl) => tbl.id.equals(0));
+
+  final newUser = await userQuery.getSingleOrNull();
+  _user.value = newUser;
+
+  _userSubscription?.cancel();
+  _userSubscription = userQuery.watchSingleOrNull().listen((event) {
+    _user.value = event;
+
+    if (event != null) {
+      initYear(event);
+    }
+  });
+
+  if (newUser != null) {
+    initYear(newUser);
+  }
+}
+
+User? getOptionalUser() {
+  return _user.value;
+}
 
 User? useOptionalUser() {
-  return useQuery(() => db.select(db.users), [])
-      ?.firstOrNull; // This kinda sucks right now because while it's loading it will return null and show the user the login screen for a split second
+  useListenable(_user);
+  return _user.value;
 }
 
 User useUser() {
-  final user = useOptionalUser();
-  if (user == null) {
-    throw Exception("User not found");
-  }
-  return user;
+  useListenable(_user);
+  return _user.value!;
 }
 
 Year useYear() {
-  final user = useUser();
-  final year = useQuery(
-      () => db.select(db.years)..where((tbl) => tbl.id.equals(user.year)),
-      [user.year])?.firstOrNull;
-  if (year == null) {
-    throw Exception("Year not found");
-  }
-  return year;
+  useListenable(_year);
+  return _year.value!;
 }

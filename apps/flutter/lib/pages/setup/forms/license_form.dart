@@ -77,6 +77,7 @@ class LicenseForm extends HookWidget {
         // License key will have to be checked again and activated when setup flow is completed
 
         store.licenseKey = licenseKey;
+        store.licenseKeyActivatedAt = DateTime.now();
 
         // ignore: use_build_context_synchronously
         final onNext = context.read<OnNext>();
