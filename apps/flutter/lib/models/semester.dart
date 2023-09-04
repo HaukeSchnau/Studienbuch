@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:drift/drift.dart';
@@ -92,7 +94,9 @@ SemesterRange getRelevantSemesters(Year year) {
   final startYear = year.startYear +
       7; // First Year of Q-Phase is 7 years after start (5th grade to 11th grade)
   final firstRelevantSemesterId = getSemesterId(startYear, SemesterType.winter);
-  final relevantSemesters =
-      SemesterRange(firstRelevantSemesterId, getCurrentSemesterId());
+
+  final relevantSemesters = SemesterRange(
+      min(getCurrentSemesterId(), firstRelevantSemesterId),
+      getCurrentSemesterId());
   return relevantSemesters;
 }

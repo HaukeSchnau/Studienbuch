@@ -205,7 +205,7 @@ Future<void> saveUserData({
   required String name,
   required bool isOfAge,
 }) async {
-  final yearId = await db.into(db.years).insertOnConflictUpdate(
+  await db.into(db.years).insertOnConflictUpdate(
         YearsCompanion.insert(
           id: Value(year.id),
           startYear: year.startYear,
@@ -214,7 +214,7 @@ Future<void> saveUserData({
         ),
       );
 
-  final userId = await db.into(db.users).insertOnConflictUpdate(
+  await db.into(db.users).insertOnConflictUpdate(
         UsersCompanion.insert(
           id: const Value(0),
           // We want to have only one user in the database
@@ -222,10 +222,10 @@ Future<void> saveUserData({
           licenseKeyActivatedAt: licenseKeyActivatedAt,
           name: name,
           isOfAge: isOfAge,
-          year: yearId,
+          year: year.id,
         ),
       );
 
   await Sentry.captureMessage(
-      "Saved user $userId: $name with license key $licenseKey in year ${year.name}");
+      "Saved user: $name with license key $licenseKey in year ${year.name}");
 }
