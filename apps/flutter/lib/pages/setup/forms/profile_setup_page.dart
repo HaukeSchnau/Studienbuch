@@ -15,22 +15,10 @@ class ProfileSetupPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final years = useNetworkResult(
-        () => apiInstance.queryYearsGet(),
-        (error) => throw UserException(
-            "Jahrgänge konnten nicht geladen werden", error))
-      ?..sort((a, b) => -b.yearNumber.compareTo(a.yearNumber));
     final selectedYear = useState<ApiYear?>(store.year);
     final isOfAge = useState(false);
     final nameController = useTextEditingController(text: store.name);
     useListenable(nameController);
-
-    if (years == null) {
-      return const Padding(
-        padding: EdgeInsets.all(32.0),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
 
     bool isValidInput() {
       return nameController.text.trim().isNotEmpty &&
@@ -57,22 +45,9 @@ class ProfileSetupPage extends HookWidget {
             controller: nameController,
           ),
           const SizedBox(height: 16.0),
-          DropdownButtonFormField(
-            value: selectedYear.value,
-            decoration: const InputDecoration(
-              labelText: "Jahrgang",
-            ),
-            hint: const Text("Jahrgang"),
-            items: years.map((year) {
-              return DropdownMenuItem(
-                value: year,
-                child: Text("${year.yearNumber} (${year.name})"),
-              );
-            }).toList(),
-            onChanged: (value) {
-              selectedYear.value = value;
-            },
-          ),
+          YearSelector(
+              selectedYear: selectedYear.value,
+              onChange: (newYear) => selectedYear.value = newYear),
           const SizedBox(height: 8.0),
           // Checkbox
           CheckboxListTile(
@@ -97,5 +72,43 @@ class ProfileSetupPage extends HookWidget {
         ],
       ),
     );
+  }
+}
+
+class YearSelector extends HookWidget {
+  final ApiYear? selectedYear;
+  final void Function(ApiYear? newYear) onChange;
+
+  const YearSelector(
+      {super.key, required this.onChange, required this.selectedYear});
+
+  @override
+  Widget build(BuildContext context) {
+    final years = useNetworkResult(
+        () => apiInstance.queryYearsGet(),
+        (error) => throw UserException(
+            "Jahrgänge konnten nicht geladen werden", error))
+      ?..sort((a, b) => -b.yearNumber.compareTo(a.yearNumber));
+
+    if (years == null) {
+      return const Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return DropdownButtonFormField(
+        value: selectedYear,
+        decoration: const InputDecoration(
+          labelText: "Jahrgang",
+        ),
+        hint: const Text("Jahrgang"),
+        items: years.map((year) {
+          return DropdownMenuItem(
+            value: year,
+            child: Text("${year.yearNumber} (${year.name})"),
+          );
+        }).toList(),
+        onChanged: onChange);
   }
 }
