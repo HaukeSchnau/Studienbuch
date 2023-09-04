@@ -47,10 +47,6 @@ abstract class _GlobalStore with Store {
     required this.licenseKeyActivatedAt,
   });
 
-  disableSaving() {
-    shouldSave = false;
-  }
-
   Future<void> init() async {
     createSemesterCoursesQuery().watch().listen((results) {
       final courses = results.map((e) => e.readTable(db.courses)).toList();

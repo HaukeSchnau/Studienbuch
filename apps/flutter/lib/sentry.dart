@@ -19,7 +19,14 @@ Future<void> configureSentryScope() async {
   });
 }
 
+const disableSentryInDebug = true;
+
 Future<void> prepareSentry(FutureOr<void> Function() appRunner) async {
+  if (kDebugMode && disableSentryInDebug) {
+    await appRunner();
+    return;
+  }
+
   await SentryFlutter.init(
     (options) {
       options.debug = kDebugMode;

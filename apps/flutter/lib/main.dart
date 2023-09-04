@@ -5,6 +5,7 @@ import 'package:class_mate/firebase_options.dart';
 import 'package:class_mate/hooks/use_user.dart';
 import 'package:class_mate/models/app_store.dart';
 import 'package:class_mate/models/store.dart';
+import 'package:class_mate/sentry.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -41,6 +42,5 @@ Future<void> appRunner() async {
 Future<void> main() async {
   await prepare();
 
-  await appRunner();
-  // await prepareSentry(appRunner);
+  await prepareSentry(appRunner);
 }
