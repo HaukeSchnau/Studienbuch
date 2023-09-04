@@ -14,7 +14,8 @@ fi
 if [[ $SCRIPT_NAME == *".ts" ]]; then
     ts-node $SCRIPT_PATH
 elif [[ $SCRIPT_NAME == *".py" ]]; then
-    python $SCRIPT_PATH
+    shift
+    python $SCRIPT_PATH $@
 else
     echo "Unknown file type"
 fi

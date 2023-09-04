@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import {
   buildTimetable,
   formatTime,
@@ -102,17 +104,21 @@ const CoursePill = ({
   weeks: CourseTimeWeeks;
 }) => {
   return (
-    <div
+    <Link
+      href={`/admin/courses/${course.courseId}`}
       className="flex items-center gap-2 rounded-full bg-green-100 px-3 py-2 text-sm text-white"
       style={{
         backgroundColor: `hsl(${(hash(course.name) % 180) + 180}, 100%, 30%)`,
       }}
     >
-      <div className="truncate">{course.name}</div>
+      <div className="truncate">
+        {course.name}
+        {course.isChoosable ? "*" : ""}
+      </div>
       <div>{course.courseId}</div>
       <div className="grow">{course.teacher.name}</div>
       {weeks !== "BOTH" && <div>{formatWeeks(weeks)}</div>}
-    </div>
+    </Link>
   );
 };
 

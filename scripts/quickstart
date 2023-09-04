@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cp .env.example .env
+scripts/setup
+scripts/run-script extract_tables.py cache/classes cache/classes_csv
+docker compose up -d

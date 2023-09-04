@@ -1,8 +1,8 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
-T? useNetworkResult<T>(Future<T> Function() future, void Function(Object cause)? onError,
+T? useNetworkResult<T>(
+    Future<T> Function() future, void Function(Object cause) onError,
     [List<Object?> keys = const []]) {
   final result = useState<T?>(null);
   useEffect(() {
@@ -10,12 +10,8 @@ T? useNetworkResult<T>(Future<T> Function() future, void Function(Object cause)?
       try {
         result.value = await future();
       } catch (e) {
-        if (onError != null) {
-          debugPrint(e.toString());
-          onError(e);
-        } else {
-          rethrow;
-        }
+        debugPrint(e.toString());
+        onError(e);
       }
     }();
     return null;

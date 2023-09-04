@@ -1,3 +1,4 @@
+import 'package:class_mate/hooks/use_async_effect.dart';
 import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/models/store.dart';
 import 'package:class_mate/openapi.dart';
@@ -7,6 +8,7 @@ import 'package:class_mate_api/api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:mobx/mobx.dart';
+import 'package:sentry/sentry.dart';
 
 class LicenseRenewPage extends HookWidget {
   final GlobalStore store;
@@ -15,6 +17,10 @@ class LicenseRenewPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    useAsyncEffect(() async {
+      Sentry.captureMessage("Showing license renew page. License has expired.");
+    }, []);
+
     final setupStore = useState(
       SetupStore(courses: ObservableList()),
     );
@@ -22,7 +28,7 @@ class LicenseRenewPage extends HookWidget {
     Future<void> finishFlow() async {
       final newLicenseKey = setupStore.value.licenseKey;
       if (newLicenseKey == null) {
-        return;
+        throw Exception("License key is null after license renew.");
       }
 
       await apiInstance.mutationLicenseActivate(
