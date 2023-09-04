@@ -25,6 +25,13 @@ class ProfileSetupPage extends HookWidget {
     final nameController = useTextEditingController(text: store.name);
     useListenable(nameController);
 
+    if (years == null) {
+      return const Padding(
+        padding: EdgeInsets.all(32.0),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     bool isValidInput() {
       return nameController.text.trim().isNotEmpty &&
           selectedYear.value != null;
@@ -56,7 +63,7 @@ class ProfileSetupPage extends HookWidget {
               labelText: "Jahrgang",
             ),
             hint: const Text("Jahrgang"),
-            items: years?.map((year) {
+            items: years.map((year) {
               return DropdownMenuItem(
                 value: year,
                 child: Text("${year.yearNumber} (${year.name})"),
