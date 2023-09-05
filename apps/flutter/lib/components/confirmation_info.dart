@@ -1,7 +1,6 @@
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/absence.dart';
 import 'package:class_mate/models/course.dart';
-import 'package:class_mate/models/user.dart';
 import 'package:class_mate/util/date_util.dart';
 import 'package:class_mate/util/number_util.dart';
 import 'package:flutter/material.dart';

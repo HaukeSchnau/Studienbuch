@@ -2,17 +2,14 @@ import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/pages/setup/forms/classes_courses_setup_page.dart';
 import 'package:class_mate/pages/setup/forms/profile_setup_page.dart';
 import 'package:class_mate/pages/setup/helpers/setup_flow.dart';
-import 'package:class_mate/router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 
 class EditProfilePage extends HookWidget {
   final SetupStore initialStore;
-  final UpdateStoreCallback updateStore;
 
-  const EditProfilePage(
-      {super.key, required this.initialStore, required this.updateStore});
+  const EditProfilePage({super.key, required this.initialStore});
 
   @override
   Widget build(BuildContext context) {
@@ -23,15 +20,11 @@ class EditProfilePage extends HookWidget {
     Future<void> finishFlow() async {
       final store = storeState.value;
       await store.saveToDatabase();
-      final globalStore = store.toGlobalStore();
-      await globalStore.save();
-      await globalStore.init();
 
-      updateStore(globalStore);
       // ignore: use_build_context_synchronously
       context.pop();
     }
- 
+
     Widget? nextPageCallback(Widget? currentPage) {
       switch (currentPage.runtimeType) {
         case ClassesCoursesSetupPage:

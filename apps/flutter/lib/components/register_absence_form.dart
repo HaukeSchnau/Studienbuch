@@ -1,19 +1,18 @@
 import 'package:class_mate/components/date_picker.dart';
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/agenda.dart';
-import 'package:class_mate/models/store.dart';
+import 'package:class_mate/models/course.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/static/theme.dart';
 import 'package:class_mate/util/date_util.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:class_mate/models/course.dart';
 
 class RegisterAbsenceForm extends HookWidget {
-  final GlobalStore store;
+  final User user;
 
-  const RegisterAbsenceForm({super.key, required this.store});
+  const RegisterAbsenceForm({super.key, required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +100,7 @@ class RegisterAbsenceForm extends HookWidget {
                                 (e) => AbsencesCompanion.insert(
                                   date: date.value,
                                   reason: reason.value,
-                                  isExcusedByParent: store.user.isOfAge
+                                  isExcusedByParent: user.isOfAge
                                       ? const Value(true)
                                       : const Value.absent(),
                                   course: e.key.id,

@@ -1,5 +1,5 @@
 import 'package:class_mate/components/absences/absence_view.dart';
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/hooks/use_query.dart';
 import 'package:class_mate/models/absence.dart';
 import 'package:class_mate/simple_scaffold.dart';

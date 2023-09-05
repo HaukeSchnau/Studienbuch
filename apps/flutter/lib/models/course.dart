@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:class_mate/database.dart';
+
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/hooks/use_query.dart';
 import 'package:class_mate/models/class.dart';
 import 'package:class_mate/models/semester.dart';
@@ -40,16 +41,22 @@ String? getCourseIcon(String courseName) {
 
 class Teachers extends Table {
   IntColumn get id => integer().autoIncrement()();
+
   TextColumn get name => text()();
+
   TextColumn get title => text().nullable()();
 }
 
 @UseRowClass(Course, constructor: "load")
 class Courses extends Table {
   IntColumn get id => integer().autoIncrement()();
+
   TextColumn get courseId => text().nullable()();
+
   TextColumn get name => text()();
+
   IntColumn get teacher => integer().references(Teachers, #id)();
+
   IntColumn get parentClass => integer().nullable().references(Classes, #id)();
 }
 

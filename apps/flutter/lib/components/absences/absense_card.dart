@@ -1,7 +1,7 @@
 import 'package:class_mate/components/bottom_sheet_container.dart';
 import 'package:class_mate/components/register_absence_form.dart';
 import 'package:class_mate/components/util/card.dart';
-import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/hooks/use_user.dart';
 import 'package:class_mate/models/absence.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +14,7 @@ class AbsenceCard extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = useStore();
+    final user = useUser();
     final absences = useAbsences();
     final unexcusedAbsences = useUnexcusedAbsences();
 
@@ -134,7 +134,7 @@ class AbsenceCard extends HookWidget {
                         color: theme.primaryText)),
                 IconButton(
                     onPressed: () => showSheet(
-                        context, (ctx) => RegisterAbsenceForm(store: store)),
+                        context, (ctx) => RegisterAbsenceForm(user: user)),
                     icon: Icon(Icons.add, color: theme.primaryText, size: 32))
               ],
             ),

@@ -3,7 +3,9 @@ import 'package:class_mate/components/agenda/agenda_view.dart';
 import 'package:class_mate/components/path_bg_page.dart';
 import 'package:class_mate/components/tasks/tasks_overview.dart';
 import 'package:class_mate/components/util/bottom_panels.dart';
-import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/hooks/use_user.dart';
+import 'package:class_mate/models/app_store.dart';
+import 'package:class_mate/models/user.dart';
 import 'package:class_mate/util/ui_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -14,7 +16,7 @@ class HomePage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = useStore();
+    final user = useUser();
 
     final hPadding = useHorizontalPadding();
 
@@ -25,7 +27,7 @@ class HomePage extends HookWidget {
           : "Das steht ${agenda.when} an:";
 
       final mainGreeting = Text(
-        "Moin, ${store.user.shortName}!",
+        "Moin, ${user.shortName}!",
         style: const TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.bold,

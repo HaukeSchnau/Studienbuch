@@ -1,8 +1,7 @@
 import 'package:class_mate/components/date_picker.dart';
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/grade_result.dart';
-import 'package:class_mate/models/store.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/static/theme.dart';
 import 'package:class_mate/util/date_util.dart';
@@ -12,10 +11,10 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 
 class AddWrittenGradeForm extends HookWidget {
   final Course course;
-  final GlobalStore store;
+  final User user;
 
   const AddWrittenGradeForm(
-      {super.key, required this.course, required this.store});
+      {super.key, required this.course, required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +66,7 @@ class AddWrittenGradeForm extends HookWidget {
                         GradeResultsCompanion.insert(
                             date: date.value,
                             result: double.parse(resultStr.value),
-                            isConfirmedByParent: store.user.isOfAge
+                            isConfirmedByParent: user.isOfAge
                                 ? const Value(true)
                                 : const Value.absent(),
                             course: course.id,

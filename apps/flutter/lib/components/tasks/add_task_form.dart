@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:class_mate/components/grades/pruefungsfach_selector.dart';
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/static/theme.dart';

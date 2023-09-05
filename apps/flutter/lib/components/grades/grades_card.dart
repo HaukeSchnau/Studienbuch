@@ -6,7 +6,7 @@ import 'package:class_mate/components/grades/exam_card.dart';
 import 'package:class_mate/components/util/card.dart';
 import 'package:class_mate/confirmation_status_view.dart';
 import 'package:class_mate/hooks/use_grades.dart';
-import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/hooks/use_user.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/grade_result.dart';
 import 'package:class_mate/pages/confirmation_view.dart';
@@ -25,7 +25,7 @@ class GradesCard extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = useStore();
+    final user = useUser();
 
     final oral = useCurrentOralGrade(course);
     final currentOralGrade = oral.currentOralGrade;
@@ -61,7 +61,7 @@ class GradesCard extends HookWidget {
               context,
               (ctx) => AddOralGradeForm(
                     course: course,
-                    store: store,
+                    user: user,
                     currentOralGrade: currentOralGrade,
                     mostRecentConfirmedOralGrade: mostRecentConfirmedOralGrade,
                   ));
@@ -102,7 +102,7 @@ class GradesCard extends HookWidget {
         ),
         onPressed: () {
           showSheet(context,
-              (ctx) => AddWrittenGradeForm(course: course, store: store));
+              (ctx) => AddWrittenGradeForm(course: course, user: user));
         });
 
     const writtenInfoText = Text(
@@ -157,14 +157,14 @@ class GradesCard extends HookWidget {
                                     currentOralGrade.isConfirmedByParent,
                                 confirmedByTeacher:
                                     currentOralGrade.isConfirmedByTeacher,
-                                isOfAge: store.user.isOfAge,
+                                isOfAge: user.isOfAge,
                                 order: ConfirmationStatusOrder.teacherParent),
                             if (currentOralGrade.isConfirmed)
                               IconButton(
                                   onPressed: () => viewOralGradeConfirmation(
                                       context,
                                       course,
-                                      store.user,
+                                      user,
                                       currentOralGrade),
                                   icon: const Icon(Icons.visibility,
                                       color: Colors.black87))

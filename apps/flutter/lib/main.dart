@@ -2,13 +2,14 @@ import 'dart:async';
 
 import 'package:class_mate/app.dart';
 import 'package:class_mate/firebase_options.dart';
+import 'package:class_mate/hooks/use_user.dart';
+import 'package:class_mate/models/app_store.dart';
 import 'package:class_mate/models/store.dart';
 import 'package:class_mate/sentry.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
-import 'package:sentry/sentry.dart';
 
 // Runs before sentry is initialized
 Future<void> prepare() async {
@@ -24,19 +25,22 @@ Future<void> prepare() async {
 
 // Runs after sentry is initialized
 Future<void> appRunner() async {
-  final store = await loadStore();
-  if (store != null) {
-    await store.init();
-  } else {
-    Sentry.captureMessage(
-      "No store found. This might be the first time the app is started. Creating a new store. This should only happen once per device.",
-    );
+  // TODO remove this when all users have migrated to the new store
+  final legacyStore = await loadStore();
+  if (legacyStore != null) {
+    await legacyStore.init();
+    await legacyStore.save();
+    await legacyStore.retire();
   }
 
-  runApp(App(initialStore: store));
+  await initUser();
+  await store.init();
+
+  runApp(const App());
 }
 
 Future<void> main() async {
   await prepare();
+
   await prepareSentry(appRunner);
 }

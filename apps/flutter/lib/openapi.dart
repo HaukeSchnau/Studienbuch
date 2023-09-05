@@ -7,15 +7,15 @@ import 'package:openapi_generator_annotations/openapi_generator_annotations.dart
     pubName: 'class_mate_api',
     pubAuthor: 'Hauke Schnau',
   ),
-  inputSpecFile: 'http://localhost:3000/api/openapi.json',
+  inputSpecFile: 'https://classmate.haukeschnau.de/api/openapi.json',
   generatorName: Generator.dart,
   outputDirectory: 'api',
   alwaysRun: true,
   overwriteExistingFiles: true,
 )
-class MyOpenApi extends OpenapiGeneratorConfig {}
+class MyOpenApi {}
 
 final apiInstance = DefaultApi(ApiClient(
-    basePath: kDebugMode
+    basePath: !kDebugMode
         ? "http://192.168.178.21:3000/api"
         : "https://classmate.haukeschnau.de/api"));

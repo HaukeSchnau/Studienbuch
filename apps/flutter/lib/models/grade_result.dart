@@ -1,4 +1,4 @@
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:drift/drift.dart';
 
@@ -6,12 +6,18 @@ enum GradeResultType { written, oral, master }
 
 class GradeResults extends Table {
   IntColumn get id => integer().autoIncrement()();
+
   DateTimeColumn get date => dateTime()();
+
   RealColumn get result => real()();
+
   IntColumn get course => integer().references(Courses, #id)();
+
   TextColumn get type => textEnum<GradeResultType>()();
+
   BoolColumn get isConfirmedByTeacher =>
       boolean().withDefault(const Constant(false))();
+
   BoolColumn get isConfirmedByParent =>
       boolean().withDefault(const Constant(false))();
 }

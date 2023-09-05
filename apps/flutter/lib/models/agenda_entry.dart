@@ -1,4 +1,4 @@
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:class_mate/models/substitution.dart';
@@ -34,17 +34,21 @@ class AgendaEntry {
   }
 
   DateTime get start => _concreteDate;
+
   DateTime get end =>
       _concreteDate.add(Duration(minutes: recurringTime.duration));
 
   bool get isToday => _concreteDate.isToday;
+
   bool get isOver => DateTime.now().isAfter(end);
+
   bool get isNow =>
       DateTime.now().isAfter(start) && DateTime.now().isBefore(end);
 
   bool get isCancelled =>
       substitution?.type == SubstitutionType.entfall ||
       substitution?.type == SubstitutionType.freisetzung;
+
   bool get isSubstituted =>
       substitution?.type == SubstitutionType.vertretung ||
       substitution?.type == SubstitutionType.betreuung;

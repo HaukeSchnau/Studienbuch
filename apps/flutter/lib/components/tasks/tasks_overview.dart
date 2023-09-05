@@ -1,14 +1,12 @@
 import 'package:class_mate/components/bottom_sheet_container.dart';
 import 'package:class_mate/components/tasks/add_task_form.dart';
 import 'package:class_mate/components/tasks/tasks_view.dart';
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/hooks/use_query.dart';
-import 'package:class_mate/hooks/use_store.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:provider/provider.dart';
 
 class TasksOverview extends HookWidget {
   final Course? course;
@@ -17,8 +15,6 @@ class TasksOverview extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = useStore();
-
     final courseId = course?.id;
 
     final tasks = useQueryJoin(
@@ -77,11 +73,8 @@ class TasksOverview extends HookWidget {
                 color: Colors.transparent,
                 child: IconButton(
                     icon: const Icon(Icons.add, color: Colors.white),
-                    onPressed: () => showSheet(
-                        context,
-                        (ctx) => Provider.value(
-                            value: store,
-                            child: AddTaskForm(predefinedCourse: course)))),
+                    onPressed: () => showSheet(context,
+                        (ctx) => AddTaskForm(predefinedCourse: course))),
               )
             ],
           ),

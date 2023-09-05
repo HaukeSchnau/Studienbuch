@@ -1,7 +1,7 @@
 import 'package:class_mate/components/confirm_with_signature.dart';
 import 'package:class_mate/components/confirmation_info.dart';
-import 'package:class_mate/database.dart';
-import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/database/database.dart';
+import 'package:class_mate/hooks/use_user.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:flutter/material.dart';
@@ -17,12 +17,10 @@ class ConfirmOralGradeButton extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = useStore();
+    final user = useUser();
 
-    confirmTeacher() => confirmWithSignature(
-        context,
-        (ctx) =>
-            buildOralGradeConfirmationInfoTeacher(course, store.user, result),
+    confirmTeacher() => confirmWithSignature(context,
+        (ctx) => buildOralGradeConfirmationInfoTeacher(course, user, result),
         title: "Mündliche Note bestätigen (Lehrer)",
         signer: "Unterschrift von ${course.teacher.name}",
         fileName: "signature-${result.id}-teacher.svg",
@@ -30,10 +28,8 @@ class ConfirmOralGradeButton extends HookWidget {
               isConfirmedByTeacher: true,
             )));
 
-    confirmParent() => confirmWithSignature(
-        context,
-        (ctx) =>
-            buildOralGradeConfirmationInfoParent(course, store.user, result),
+    confirmParent() => confirmWithSignature(context,
+        (ctx) => buildOralGradeConfirmationInfoParent(course, user, result),
         title: "Mündliche Note bestätigen (Eltern)",
         signer: "Unterschrift der Eltern",
         fileName: "signature-${result.id}-parent.svg",

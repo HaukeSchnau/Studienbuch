@@ -2,8 +2,8 @@ import 'package:class_mate/components/confirm_with_signature.dart';
 import 'package:class_mate/components/confirmation_info.dart';
 import 'package:class_mate/components/util/card.dart';
 import 'package:class_mate/confirmation_status_view.dart';
-import 'package:class_mate/database.dart';
-import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/database/database.dart';
+import 'package:class_mate/hooks/use_user.dart';
 import 'package:class_mate/models/absence.dart';
 import 'package:class_mate/pages/confirmation_view.dart';
 import 'package:class_mate/static/colors.dart';
@@ -19,7 +19,7 @@ class AbsenceView extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = useStore();
+    final user = useUser();
 
     // Show a confirmation dialog, then delete the absence
     delete() async {
@@ -51,7 +51,7 @@ class AbsenceView extends HookWidget {
       assert(absenceGroup.children.length == 1);
       final absence = absenceGroup.children.first;
       confirmWithSignature(
-          context, (ctx) => buildAbsenceInfoTeacher(absence, store.user),
+          context, (ctx) => buildAbsenceInfoTeacher(absence, user),
           title: "Fehlzeit entschuldigen (Lehrer)",
           signer: "Unterschrift von ${absence.course.teacher.name}",
           fileName: "absence-excuse-${absence.id}-teacher.svg",
@@ -63,7 +63,7 @@ class AbsenceView extends HookWidget {
     }
 
     excuseParent() => confirmWithSignature(
-            context, (ctx) => buildAbsenceInfoParent(absenceGroup, store.user),
+            context, (ctx) => buildAbsenceInfoParent(absenceGroup, user),
             title: "Fehlzeit entschuldigen (Eltern)",
             signer: "Unterschrift der Eltern",
             fileNames: absenceGroup.children
@@ -79,7 +79,7 @@ class AbsenceView extends HookWidget {
         });
 
     viewFullConfirmation() =>
-        viewAbsenceConfirmation(context, absenceGroup, store.user);
+        viewAbsenceConfirmation(context, absenceGroup, user);
 
     return MyCard(
         color: absenceGroup.isExcused
@@ -114,7 +114,7 @@ class AbsenceView extends HookWidget {
                   ConfirmationStatusView(
                     confirmedByParent: absenceGroup.isExcusedByParent,
                     confirmedByTeacher: absenceGroup.isExcusedByTeacher,
-                    isOfAge: store.user.isOfAge,
+                    isOfAge: user.isOfAge,
                     order: ConfirmationStatusOrder.parentTeacher,
                     confirmedText: "Entschuldigt",
                   )

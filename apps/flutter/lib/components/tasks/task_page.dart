@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:assorted_layout_widgets/assorted_layout_widgets.dart';
 import 'package:class_mate/components/util/bottom_panels.dart';
 import 'package:class_mate/components/util/image_dialog.dart';
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/hooks/use_query.dart';
 import 'package:class_mate/simple_scaffold.dart';
 import 'package:class_mate/static/colors.dart';

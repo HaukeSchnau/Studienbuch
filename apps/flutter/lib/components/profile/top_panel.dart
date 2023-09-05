@@ -1,10 +1,12 @@
 import 'package:class_mate/components/action_sheet.dart';
 import 'package:class_mate/components/profile/cool_dots.dart';
-import 'package:class_mate/hooks/use_store.dart';
+import 'package:class_mate/components/profile/smol_card.dart';
+import 'package:class_mate/hooks/use_user.dart';
+import 'package:class_mate/models/user.dart';
+import 'package:class_mate/models/year.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:class_mate/components/profile/smol_card.dart';
 import 'package:go_router/go_router.dart';
 
 class ProfileTopPanel extends HookWidget {
@@ -12,8 +14,8 @@ class ProfileTopPanel extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = useStore();
-    final user = store.user;
+    final user = useUser();
+    final year = useYear();
 
     var actions = <MyAction>[
       MyAction(
@@ -87,7 +89,7 @@ class ProfileTopPanel extends HookWidget {
                     ),
                     const Padding(padding: EdgeInsets.only(top: 8.0)),
                     Text(
-                      "Jahrgang ${user.year.name} (${user.year.currentYearNum}. Klasse)",
+                      "Jahrgang ${year.name} (${year.currentYearNum}. Klasse)",
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                           color: Color.fromRGBO(255, 255, 255, .85),

@@ -1,15 +1,16 @@
+@Deprecated("Use SQLite instead")
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/error_catcher.dart';
 import 'package:class_mate/models/agenda.dart';
 import 'package:class_mate/models/course.dart';
+import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/models/substitution.dart';
 import 'package:class_mate/models/user.dart';
 import 'package:class_mate/openapi.dart';
-import 'package:class_mate/router.dart';
 import 'package:class_mate/util/date_util.dart';
 import 'package:drift/drift.dart';
 import 'package:encrypt/encrypt.dart';
@@ -19,10 +20,12 @@ import 'package:sentry/sentry_io.dart';
 
 part 'store.g.dart';
 
+@Deprecated("Use SQLite instead")
 class GlobalStore = _GlobalStore with _$GlobalStore;
 
+@Deprecated("Use SQLite instead")
 abstract class _GlobalStore with Store {
-  final User user;
+  final UserStore user;
 
   @observable
   String licenseKey;
@@ -36,31 +39,13 @@ abstract class _GlobalStore with Store {
   @observable
   List<Agenda> weeklyAgenda = [];
 
-  @observable
-  UpdateStoreCallback? updateStore;
-
   bool shouldSave = true;
 
-  _GlobalStore(
-      {required this.user,
-      required this.licenseKey,
-      required this.licenseKeyActivatedAt,
-      // ignore: unused_element
-      this.updateStore}) {
-    Timer.periodic(const Duration(seconds: 5), (timer) {
-      save();
-    });
-
-    // React on every change
-    autorun((_) {
-      save();
-      toJson();
-    });
-  }
-
-  disableSaving() {
-    shouldSave = false;
-  }
+  _GlobalStore({
+    required this.user,
+    required this.licenseKey,
+    required this.licenseKeyActivatedAt,
+  });
 
   Future<void> init() async {
     createSemesterCoursesQuery().watch().listen((results) {
@@ -139,38 +124,38 @@ abstract class _GlobalStore with Store {
   // ignore: unused_element
   _GlobalStore.fromJson(Map<String, dynamic> json)
       : this(
-          user: User.fromJson(json["currentUser"]),
+          user: UserStore.fromJson(json["currentUser"]),
           licenseKey: json["licenseKey"],
           licenseKeyActivatedAt: DateTime.parse(json["licenseKeyActivatedAt"]),
         );
 
-  Map<String, dynamic> toJson() {
-    return {
-      "currentUser": user.toJson(),
-      "licenseKey": licenseKey,
-      "licenseKeyActivatedAt": licenseKeyActivatedAt.toIso8601String(),
-    };
-  }
-
-  Uint8List encrypt() {
-    final cleartext = jsonEncode(this);
-    final key = Key.fromUtf8("y\$B&E)H@McQfTjWn");
-    final iv = IV.fromLength(16);
-
-    final encrypter = Encrypter(AES(key));
-    return encrypter.encrypt(cleartext, iv: iv).bytes;
-  }
-
   Future<void> save() async {
-    if (!shouldSave) return;
+    await Sentry.captureMessage("Converting JSON store to SQLite");
 
+    await saveUserData(
+        year: Year(
+          id: user.year.id,
+          startYear: user.year.startYear,
+          graduationYear: user.year.graduationYear,
+          name: user.year.name,
+        ),
+        licenseKey: licenseKey,
+        licenseKeyActivatedAt: licenseKeyActivatedAt,
+        name: user.name,
+        isOfAge: user.isOfAge);
+  }
+
+  Future<void> retire() async {
+    await Sentry.captureMessage("Retiring old JSON store");
     final storeFilePath = await getStoreFilePath();
     final storeFile = File(storeFilePath);
-
-    await storeFile.writeAsBytes(encrypt());
+    if (await storeFile.exists()) {
+      await storeFile.rename("${storeFilePath}_retired");
+    }
   }
 }
 
+@Deprecated("Use SQLite instead")
 String decrypt(Uint8List encryptedBytes) {
   final key = Key.fromUtf8("y\$B&E)H@McQfTjWn");
   final iv = IV.fromLength(16);
@@ -179,6 +164,7 @@ String decrypt(Uint8List encryptedBytes) {
   return encrypter.decrypt(encrypted, iv: iv);
 }
 
+@Deprecated("Use SQLite instead")
 Future<GlobalStore?> loadStore() async {
   final storeFilePath = await getStoreFilePath();
   final storeFile = File(storeFilePath);
@@ -197,6 +183,7 @@ Future<GlobalStore?> loadStore() async {
   }
 }
 
+@Deprecated("Use SQLite instead")
 Future<String> getStoreFilePath() async {
   final directory = await getApplicationDocumentsDirectory();
   return "${directory.path}/data";

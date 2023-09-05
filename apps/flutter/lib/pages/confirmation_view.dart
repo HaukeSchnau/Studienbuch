@@ -1,11 +1,10 @@
 import 'dart:io';
 
 import 'package:class_mate/components/confirmation_info.dart';
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/hooks/use_app_dir.dart';
 import 'package:class_mate/models/absence.dart';
 import 'package:class_mate/models/course.dart';
-import 'package:class_mate/models/user.dart';
 import 'package:class_mate/simple_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';

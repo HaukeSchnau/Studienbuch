@@ -1,6 +1,7 @@
-import 'package:class_mate/database.dart';
+import 'dart:math';
+
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course.dart';
-import 'package:class_mate/models/year.dart';
 import 'package:drift/drift.dart';
 
 enum SemesterType {
@@ -13,8 +14,7 @@ typedef SemesterId = int;
 SemesterId getCurrentSemesterId() {
   final now = DateTime.now();
   int year = now.year;
-  bool isWinter =
-      now.month > 7 || now.month < 2;
+  bool isWinter = now.month > 7 || now.month < 2;
   if (now.month < 2) {
     year--;
   }
@@ -39,7 +39,7 @@ class SemesterRange extends Iterable<Semester> {
   Iterator<Semester> get iterator => _SemesterRangeIterator(start, end);
 }
 
-class _SemesterRangeIterator extends Iterator<Semester> {
+class _SemesterRangeIterator implements Iterator<Semester> {
   final SemesterId end;
   SemesterId currentId;
 
@@ -86,6 +86,7 @@ extension SemesterExt on Semester {
 
 class SemesterCourses extends Table {
   IntColumn get semester => integer().references(Semesters, #id)();
+
   IntColumn get course => integer().references(Courses, #id)();
 }
 
@@ -93,7 +94,9 @@ SemesterRange getRelevantSemesters(Year year) {
   final startYear = year.startYear +
       7; // First Year of Q-Phase is 7 years after start (5th grade to 11th grade)
   final firstRelevantSemesterId = getSemesterId(startYear, SemesterType.winter);
-  final relevantSemesters =
-      SemesterRange(firstRelevantSemesterId, getCurrentSemesterId());
+
+  final relevantSemesters = SemesterRange(
+      min(getCurrentSemesterId(), firstRelevantSemesterId),
+      getCurrentSemesterId());
   return relevantSemesters;
 }

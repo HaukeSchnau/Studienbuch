@@ -1,8 +1,7 @@
 import 'package:class_mate/components/grades/exam_card.dart';
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/grade_result.dart';
-import 'package:class_mate/models/store.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/static/theme.dart';
 import 'package:drift/drift.dart' hide Column;
@@ -13,12 +12,12 @@ class AddOralGradeForm extends HookWidget {
   final Course course;
   final GradeResult? currentOralGrade;
   final GradeResult? mostRecentConfirmedOralGrade;
-  final GlobalStore store;
+  final User user;
 
   const AddOralGradeForm(
       {super.key,
       required this.course,
-      required this.store,
+      required this.user,
       this.currentOralGrade,
       this.mostRecentConfirmedOralGrade});
 
@@ -57,7 +56,7 @@ class AddOralGradeForm extends HookWidget {
         ),
         const SizedBox(height: 16),
         const Text(
-          "Diese Note muss im Nachhinein noch von deinem Lehrer und deinen Eltern bestätigt werden.",
+          "Diese Note muss im Nachhinein noch von deiner Lehrkraft und deinen Eltern bestätigt werden.",
         ),
         if (mostRecentConfirmedOralGrade != null &&
             mostRecentConfirmedOralGrade.id != currentOralGrade?.id) ...[
@@ -74,7 +73,7 @@ class AddOralGradeForm extends HookWidget {
             actionColor: theme.primary,
             actionText: "Wiederherstellen",
             course: course,
-            user: store.user,
+            user: user,
             action: () async {
               await (db.delete(db.gradeResults)
                     ..where((tbl) => tbl.date.isBiggerThanValue(
@@ -103,7 +102,7 @@ class AddOralGradeForm extends HookWidget {
                           GradeResultsCompanion.insert(
                             date: DateTime.now(),
                             result: result,
-                            isConfirmedByParent: store.user.isOfAge
+                            isConfirmedByParent: user.isOfAge
                                 ? const Value(true)
                                 : const Value.absent(),
                             course: course.id,

@@ -1,16 +1,21 @@
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/hooks/use_query.dart';
-import 'package:drift/drift.dart';
 import 'package:class_mate/models/course.dart';
+import 'package:drift/drift.dart';
 
 @UseRowClass(Absence, constructor: 'load')
 class Absences extends Table {
   IntColumn get id => integer().autoIncrement()();
+
   DateTimeColumn get date => dateTime()();
+
   TextColumn get reason => text()();
+
   IntColumn get course => integer().references(Courses, #id)();
+
   BoolColumn get isExcusedByTeacher =>
       boolean().withDefault(const Constant(false))();
+
   BoolColumn get isExcusedByParent =>
       boolean().withDefault(const Constant(false))();
 }
@@ -88,10 +93,12 @@ AbsenceGroup mapAbsenceToGroup(Absence absence) {
 }
 
 List<Absence>? useAbsences() => useQuery(() => db.select(db.absences));
+
 List<Absence>? useUnexcusedAbsences() => useQuery(() => db.select(db.absences)
   ..where((tbl) =>
       tbl.isExcusedByParent.equals(false) |
       tbl.isExcusedByTeacher.equals(false)));
+
 List<Absence>? useExcusedAbsences() => useQuery(() => db.select(db.absences)
   ..where((tbl) =>
       tbl.isExcusedByParent.equals(true) &

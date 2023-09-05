@@ -1,4 +1,4 @@
-import 'package:class_mate/database.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/hooks/use_query.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/grade_result.dart';
