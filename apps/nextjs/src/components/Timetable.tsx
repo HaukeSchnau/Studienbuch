@@ -133,7 +133,5 @@ export const useTimetable = (yearId: number) => {
     return { status: "error" as const, error: courses.error };
   }
 
-  console.log(courses.data.length);
-
   return { status: "success" as const, data: buildTimetable(courses.data) };
 };

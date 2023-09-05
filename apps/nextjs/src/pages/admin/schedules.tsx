@@ -9,7 +9,7 @@ import Timetable from "~/components/Timetable";
 export default function SchedulesPage() {
   const [selectedYear, setSelectedYear] = useState<Omit<Year, "createdAt">>();
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       <PageHeading title="Stundenpläne" />
       <YearSelectField value={selectedYear} onChange={setSelectedYear} />
       {selectedYear && <Timetable yearId={selectedYear.id} />}

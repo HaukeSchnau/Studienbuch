@@ -1,8 +1,8 @@
 import Head from "next/head";
 
-interface PageHeadingProps {
+type PageHeadingProps = {
   title: string;
-}
+};
 
 export const PageHeading = ({ title }: PageHeadingProps) => {
   return (
@@ -10,7 +10,7 @@ export const PageHeading = ({ title }: PageHeadingProps) => {
       <Head>
         <title>{title}</title>
       </Head>
-      <h1 className="text-5xl font-semibold text-white">{title}</h1>
+      <h1 className="text-5xl font-semibold text-white ">{title}</h1>
     </>
   );
 };

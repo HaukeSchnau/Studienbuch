@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { type Year } from "@acme/db";
 
 import { api } from "~/utils/api";
+import { LoadingIndicator } from "./LoadingIndicator";
 
 type SelectEntry<T> = {
   label: string;
@@ -25,7 +26,7 @@ export default function SelectField<T>({
 }: SelectFieldProps<T>) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-sm text-gray-500">{label}</label>
+      <label className="text-sm text-white">{label}</label>
       <select
         className="rounded-md border border-gray-200 px-2 py-1 text-sm"
         value={value.id}
@@ -54,24 +55,33 @@ export const YearSelectField: React.FC<YearSelectFieldProps> = ({
   value,
   onChange,
 }) => {
-  const years = api.years.get.useQuery();
+  const { data: years, isLoading, error } = api.years.get.useQuery();
 
   useEffect(() => {
-    if (years.data && !value) {
-      onChange(years.data[0]);
+    if (years && !value) {
+      onChange(years[0]);
     }
-  }, [years.data, value, onChange]);
+  }, [years, value, onChange]);
 
-  if (!years.data) return null;
+  if (isLoading) {
+    return <LoadingIndicator />;
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
 
   return (
     <SelectField
-      label="Jahr"
-      options={years.data?.map((year) => ({
-        label: year.name,
-        value: year,
-        id: year.name,
-      }))}
+      label="Jahrgang"
+      options={years
+        .slice()
+        .sort((a, b) => a.graduationYear - b.graduationYear)
+        .map((year) => ({
+          label: `${year.name} (${year.graduationYear})`,
+          value: year,
+          id: year.name,
+        }))}
       value={{
         label: value?.name ?? "Kein Jahr ausgewählt",
         value: value,
