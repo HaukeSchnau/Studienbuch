@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 
+import { type Course, type User } from "@acme/db";
+
 import { api } from "~/utils/api";
 import { CourseCard } from "./CourseCard";
 import { LoadingIndicator } from "./LoadingIndicator";
@@ -30,7 +32,17 @@ export const CourseList = ({ yearId }: CourseListProps) => {
   return (
     <ul className="grid gap-10">
       {courses.map((course) => (
-        <CourseCard key={course.id} course={course as any} />
+        <CourseCard
+          key={course.id}
+          course={
+            course as unknown as Omit<
+              Course,
+              "createdAt" | "updatedAt" | "room"
+            > & {
+              teacher: User;
+            } // TODO make this better
+          }
+        />
       ))}
 
       <style jsx>{`
