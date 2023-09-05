@@ -1,7 +1,7 @@
 import { prisma } from "@acme/db";
 
-import { KnownUser } from "./getKnownUsers";
-import { ScheduleInfo } from "./parseScheduleCsv";
+import { type KnownUser } from "./getKnownUsers";
+import { type ScheduleInfo } from "./parseScheduleCsv";
 
 export const seedSchedule = async (
   { year, idInYear, courses }: ScheduleInfo,
@@ -43,7 +43,6 @@ export const seedSchedule = async (
     room,
     guessedSubject,
     teacher,
-    subject,
     times,
   } of courses) {
     const knownTeacher = knownUsers.find((user) => user.abbrv === teacher);
