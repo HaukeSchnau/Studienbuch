@@ -21,19 +21,13 @@ class ConfirmationWrapper {
 
 class SignatureView extends HookWidget {
   final String signer;
-  final String fileName;
+  final File signatureFile;
 
   const SignatureView(
-      {super.key, required this.signer, required this.fileName});
+      {super.key, required this.signer, required this.signatureFile});
 
   @override
   Widget build(BuildContext context) {
-    final appDir = useAppDir();
-
-    if (appDir == null) {
-      return const SizedBox();
-    }
-
     return Column(
       children: [
         SizedBox(
@@ -43,7 +37,7 @@ class SignatureView extends HookWidget {
             children: [
               Positioned.fill(
                 child: SvgPicture.file(
-                  File("$appDir/$fileName"),
+                  signatureFile,
                   // ignore: deprecated_member_use
                   color: Colors.black,
                 ),
@@ -82,10 +76,34 @@ class SignatureView extends HookWidget {
 }
 
 class ConfirmationView extends HookWidget {
+  final ConfirmationWrapper confirmation;
+
+  const ConfirmationView({super.key, required this.confirmation});
+
+  @override
+  Widget build(BuildContext context) {
+    final file = useFile(confirmation.fileName);
+
+    if (file == null) {
+      return const SizedBox();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        confirmation.builder(context),
+        SignatureView(signer: confirmation.signer, signatureFile: file),
+        const SizedBox(height: 64),
+      ],
+    );
+  }
+}
+
+class ConfirmationsView extends HookWidget {
   final String title;
   final List<ConfirmationWrapper> confirmations;
 
-  const ConfirmationView({
+  const ConfirmationsView({
     super.key,
     required this.confirmations,
     required this.title,
@@ -104,14 +122,8 @@ class ConfirmationView extends HookWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: confirmations
-                  .map((confirmation) => [
-                        confirmation.builder(context),
-                        SignatureView(
-                            signer: confirmation.signer,
-                            fileName: confirmation.fileName),
-                        const SizedBox(height: 64),
-                      ])
-                  .expand((element) => element)
+                  .map((confirmation) =>
+                      ConfirmationView(confirmation: confirmation))
                   .toList(),
             ),
           ),
@@ -127,14 +139,15 @@ Future<void> viewAbsenceConfirmation(
 
   await Navigator.of(context).push(
     MaterialPageRoute(
-      builder: (context) => ConfirmationView(
+      builder: (context) => ConfirmationsView(
         title: "Fehlzeit",
         confirmations: [
-          ConfirmationWrapper(
-              signer: "Eltern",
-              builder: (ctx) =>
-                  buildAbsenceInfoParent(absenceGroup, user, viewOnly: true),
-              fileName: "absence-excuse-${absence.id}-parent.svg"),
+          if (!user.isOfAge)
+            ConfirmationWrapper(
+                signer: "Eltern",
+                builder: (ctx) =>
+                    buildAbsenceInfoParent(absenceGroup, user, viewOnly: true),
+                fileName: "absence-excuse-${absence.id}-parent.svg"),
           ConfirmationWrapper(
               signer: absence.course.teacher.name,
               builder: (ctx) =>
@@ -150,7 +163,7 @@ Future<void> viewOralGradeConfirmation(
     BuildContext context, Course course, User user, GradeResult result) async {
   await Navigator.of(context).push(
     MaterialPageRoute(
-      builder: (context) => ConfirmationView(
+      builder: (context) => ConfirmationsView(
         title: "Mündliche Note",
         confirmations: [
           ConfirmationWrapper(
@@ -159,12 +172,13 @@ Future<void> viewOralGradeConfirmation(
                   course, user, result,
                   viewOnly: true),
               fileName: "signature-${result.id}-teacher.svg"),
-          ConfirmationWrapper(
-              signer: "Eltern",
-              builder: (ctx) => buildOralGradeConfirmationInfoParent(
-                  course, user, result,
-                  viewOnly: true),
-              fileName: "signature-${result.id}-parent.svg")
+          if (!user.isOfAge)
+            ConfirmationWrapper(
+                signer: "Eltern",
+                builder: (ctx) => buildOralGradeConfirmationInfoParent(
+                    course, user, result,
+                    viewOnly: true),
+                fileName: "signature-${result.id}-parent.svg")
         ],
       ),
     ),
@@ -175,7 +189,7 @@ Future<void> viewWrittenGradeConfirmation(
     BuildContext context, Course course, User user, GradeResult result) async {
   await Navigator.of(context).push(
     MaterialPageRoute(
-      builder: (context) => ConfirmationView(
+      builder: (context) => ConfirmationsView(
         title: "Schriftliche Note",
         confirmations: [
           ConfirmationWrapper(
@@ -184,12 +198,13 @@ Future<void> viewWrittenGradeConfirmation(
                   course, user, result,
                   viewOnly: true),
               fileName: "signature-${result.id}-teacher.svg"),
-          ConfirmationWrapper(
-              signer: "Eltern",
-              builder: (ctx) => buildWrittenGradeConfirmationInfoParent(
-                  course, user, result,
-                  viewOnly: true),
-              fileName: "signature-${result.id}-parent.svg")
+          if (!user.isOfAge)
+            ConfirmationWrapper(
+                signer: "Eltern",
+                builder: (ctx) => buildWrittenGradeConfirmationInfoParent(
+                    course, user, result,
+                    viewOnly: true),
+                fileName: "signature-${result.id}-parent.svg")
         ],
       ),
     ),
