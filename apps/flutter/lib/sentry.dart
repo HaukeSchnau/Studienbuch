@@ -13,8 +13,8 @@ Future<void> configureSentryScope() async {
   Sentry.configureScope((scope) {
     scope.addAttachment(storeAttachment);
     scope.setUser(SentryUser(
-      id: useOptionalUser()?.licenseKey,
-      username: useOptionalUser()?.name,
+      id: getOptionalUser()?.licenseKey,
+      username: getOptionalUser()?.name,
     ));
   });
 }
