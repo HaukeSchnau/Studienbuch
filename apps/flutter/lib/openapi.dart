@@ -1,5 +1,4 @@
 import 'package:class_mate_api/api.dart';
-import 'package:flutter/foundation.dart';
 import 'package:openapi_generator_annotations/openapi_generator_annotations.dart';
 
 @Openapi(
@@ -15,7 +14,5 @@ import 'package:openapi_generator_annotations/openapi_generator_annotations.dart
 )
 class MyOpenApi {}
 
-final apiInstance = DefaultApi(ApiClient(
-    basePath: !kDebugMode
-        ? "http://192.168.178.21:3000/api"
-        : "https://classmate.haukeschnau.de/api"));
+final apiInstance =
+    DefaultApi(ApiClient(basePath: "https://classmate.haukeschnau.de/api"));
