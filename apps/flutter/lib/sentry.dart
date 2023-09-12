@@ -12,14 +12,18 @@ Future<void> configureSentryScope() async {
 
   Sentry.configureScope((scope) {
     scope.addAttachment(storeAttachment);
-    scope.setUser(SentryUser(
-      id: getOptionalUser()?.licenseKey,
-      username: getOptionalUser()?.name,
-    ));
+
+    final user = getOptionalUser();
+    if (user != null) {
+      scope.setUser(SentryUser(
+        id: user.licenseKey,
+        username: user.name,
+      ));
+    }
   });
 }
 
-const disableSentryInDebug = true;
+const disableSentryInDebug = false;
 
 Future<void> prepareSentry(FutureOr<void> Function() appRunner) async {
   if (kDebugMode && disableSentryInDebug) {
