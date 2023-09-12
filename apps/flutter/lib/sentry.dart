@@ -36,6 +36,7 @@ Future<void> prepareSentry(FutureOr<void> Function() appRunner) async {
       // Set tracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
       // We recommend adjusting this value in production.
       options.tracesSampleRate = 1.0;
+      options.attachScreenshot = true;
       options.addEventProcessor(EventCatcherProcessor());
     },
     appRunner: () async {

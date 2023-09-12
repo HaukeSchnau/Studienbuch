@@ -6,6 +6,7 @@ import 'package:class_mate/models/class.dart';
 import 'package:class_mate/models/semester.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart' hide Table;
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 
 const _courseIconMap = {
@@ -159,7 +160,10 @@ JoinedSelectStatement<HasResultSet, dynamic> createSemesterCoursesQuery(
 /// Returns a list of all courses
 /// If [semesterId] is specified, only courses of that semester are returned. Otherwise, the current semester is used.
 List<Course>? useCourses({int? semesterId}) {
-  return useQueryJoin(() => createSemesterCoursesQuery(semesterId: semesterId))
-      ?.map((row) => row.readTable(db.courses))
-      .toList();
+  final querySnapshot =
+      useQueryJoin(() => createSemesterCoursesQuery(semesterId: semesterId));
+
+  return useMemoized(
+      () => querySnapshot?.map((row) => row.readTable(db.courses)).toList(),
+      [querySnapshot]);
 }
