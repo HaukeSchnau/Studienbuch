@@ -35,7 +35,7 @@ class MyDatabase extends _$MyDatabase {
   MyDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration {
@@ -50,6 +50,10 @@ class MyDatabase extends _$MyDatabase {
         from1To2: (m, schema) async {
           await m.createTable(schema.users);
           await m.createTable(schema.years);
+        },
+        from2To3: (m, schema) async {
+          await m.addColumn(schema.users, schema.users.lastSyncedAt);
+          await m.addColumn(schema.users, schema.users.lastFullSyncedAt);
         },
       ),
     );
