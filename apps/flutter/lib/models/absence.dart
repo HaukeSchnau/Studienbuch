@@ -24,7 +24,7 @@ class Absence {
   final int id;
   final DateTime date;
   final String reason;
-  final Course course;
+  Course course;
   final bool isExcusedByTeacher;
   final bool isExcusedByParent;
 
@@ -51,7 +51,7 @@ class Absence {
         (dbCourse) => dbCourse.id.equals(course),
       );
     concreteCourse = await statement.getSingle();
-    return Absence(
+    final ret = Absence(
       id: id,
       date: date,
       reason: reason,
@@ -59,6 +59,12 @@ class Absence {
       isExcusedByTeacher: isExcusedByTeacher,
       isExcusedByParent: isExcusedByParent,
     );
+
+    statement.watch().listen((event) {
+      ret.course = event.single;
+    });
+
+    return ret;
   }
 
   bool get isExcused => isExcusedByTeacher && isExcusedByParent;

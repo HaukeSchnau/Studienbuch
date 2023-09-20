@@ -6,6 +6,7 @@ import 'package:class_mate/hooks/use_user.dart';
 import 'package:class_mate/models/app_store.dart';
 import 'package:class_mate/models/store.dart';
 import 'package:class_mate/sentry.dart';
+import 'package:class_mate/services/sync_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -36,6 +37,8 @@ Future<void> appRunner() async {
 
   await initUser();
   await store.init();
+
+  syncTimetableData();
 
   runApp(const SentryScreenshotWidget(child: App()));
 }

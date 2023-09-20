@@ -65,9 +65,9 @@ class Course {
   final int id;
   final String? courseId;
   final String name;
-  final Teacher teacher;
+  Teacher teacher;
   final Class? parentClass;
-  final List<CourseTime> courseTimes;
+  List<CourseTime> courseTimes;
 
   Course({
     required this.id,
@@ -100,7 +100,7 @@ class Course {
       ..where((t) => t.course.equals(id));
     final courseTimes = await courseTimesQuery.get();
 
-    return Course(
+    final ret = Course(
       id: id,
       courseId: courseId,
       name: name,
@@ -108,6 +108,16 @@ class Course {
       parentClass: class_,
       courseTimes: courseTimes,
     );
+
+    teacherQuery.watch().listen((event) {
+      ret.teacher = event.single;
+    });
+
+    courseTimesQuery.watch().listen((event) {
+      ret.courseTimes = event;
+    });
+
+    return ret;
   }
 
   String? get icon => getCourseIcon(name);
@@ -118,22 +128,24 @@ class Course {
 }
 
 extension TeacherExtension on Teacher {
+  String get lastName => name.split(" ").last;
+
   String get formalName {
     String? title = this.title;
 
     if (title == null) {
-      return name.split(" ").last;
+      return lastName;
     }
 
     if (title == "Herr") {
-      return "Hr. ${name.split(" ").last}";
+      return "Hr. $lastName";
     }
 
     if (title == "Frau") {
-      return "Fr. ${name.split(" ").last}";
+      return "Fr. $lastName";
     }
 
-    return "$title ${name.split(" ").last}";
+    return "$title $lastName";
   }
 
   String get longFormalName {
@@ -143,7 +155,7 @@ extension TeacherExtension on Teacher {
       return name;
     }
 
-    return "$title ${name.split(" ").last}";
+    return "$title $lastName";
   }
 }
 

@@ -17,6 +17,10 @@ class Users extends Table {
   BoolColumn get isOfAge => boolean()();
 
   IntColumn get year => integer().references(Years, #id)();
+
+  DateTimeColumn get lastSyncedAt => dateTime().nullable()();
+
+  DateTimeColumn get lastFullSyncedAt => dateTime().nullable()();
 }
 
 extension UserExtension on User {
