@@ -4,7 +4,6 @@ import 'package:class_mate/app.dart';
 import 'package:class_mate/firebase_options.dart';
 import 'package:class_mate/hooks/use_user.dart';
 import 'package:class_mate/models/app_store.dart';
-import 'package:class_mate/models/store.dart';
 import 'package:class_mate/sentry.dart';
 import 'package:class_mate/services/sync_service.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -27,14 +26,6 @@ Future<void> prepare() async {
 
 // Runs after sentry is initialized
 Future<void> appRunner() async {
-  // TODO remove this when all users have migrated to the new store
-  final legacyStore = await loadStore();
-  if (legacyStore != null) {
-    await legacyStore.init();
-    await legacyStore.save();
-    await legacyStore.retire();
-  }
-
   await initUser();
   await store.init();
 
