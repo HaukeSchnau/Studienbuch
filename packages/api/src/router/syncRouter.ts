@@ -13,7 +13,7 @@ export const sync = publicProcedure
             classIds: z.array(z.number()),
             yearIds: z.array(z.number()),
             userIds: z.array(z.number()),
-            lastSync: z.date().optional(),
+            lastSync: z.coerce.date().nullish(),
         }),
     )
     .output(
@@ -26,7 +26,8 @@ export const sync = publicProcedure
         }),
     )
     .query(async ({ctx, input}) => {
-        const {courseIds, classIds, yearIds, userIds, lastSync} = input;
+        const {courseIds, classIds, yearIds, userIds, lastSync: lastSyncNullish} = input;
+        const lastSync = lastSyncNullish ?? undefined;
 
         const updatedCourses = await ctx.prisma.course.findMany({
             where: {

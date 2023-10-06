@@ -16,7 +16,7 @@ Future<void> syncTimetableData() async {
   final lastFullSyncedAt = user.lastFullSyncedAt;
 
   bool shouldSyncLite = lastSyncedAt != null &&
-      lastSyncedAt.difference(DateTime.now()).inMinutes.abs() > 1;
+      lastSyncedAt.difference(DateTime.now()).inDays.abs() > 1;
 
   bool shouldSyncFull = lastSyncedAt == null ||
       lastFullSyncedAt == null ||
@@ -47,11 +47,11 @@ Future<QuerySync200Response?> getSyncResult(DateTime? lastSync) async {
   final [courseIds, classIds, yearIds, teacherIds] = await getRelevantIds();
 
   return apiInstance.querySync(QuerySyncRequest(
-    courseIds: courseIds,
-    classIds: classIds,
-    yearIds: yearIds,
-    userIds: teacherIds,
-  ));
+      courseIds: courseIds,
+      classIds: classIds,
+      yearIds: yearIds,
+      userIds: teacherIds,
+      lastSync: lastSync));
 }
 
 Future<List<List<int>>> getRelevantIds() {
