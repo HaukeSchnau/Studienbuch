@@ -1,6 +1,7 @@
 import 'package:class_mate/business_domain/schedule/agenda.dart';
 import 'package:class_mate/business_domain/time/weeks.dart';
 import 'package:class_mate/models/course.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 Agenda? useAgendaForDay(DateTime day) {
@@ -16,18 +17,37 @@ Agenda? useAgendaForDay(DateTime day) {
   return agenda;
 }
 
+List<Agenda>? buildWeeklyAgenda(WeekDef weekDef, List<Course>? courses) {
+  if (courses == null) {
+    return null;
+  }
+
+  final days = getDaysInWeek(weekDef);
+
+  return days
+      .map((e) => Agenda(start: e, courses: courses, autoAdjust: false))
+      .toList();
+}
+
 List<Agenda>? useWeeklyAgenda(WeekDef weekDef) {
   final courses = useCourses();
 
-  return useMemoized(() {
-    if (courses == null) {
-      return null;
+  final agenda = useState<List<Agenda>?>(null);
+
+  useEffect(() {
+    listener() {
+      agenda.value = buildWeeklyAgenda(weekDef, courses);
     }
 
-    final days = getDaysInWeek(weekDef);
+    listener();
 
-    return days
-        .map((e) => Agenda(start: e, courses: courses, autoAdjust: false))
-        .toList();
+    final listenable = courses == null ? null : Listenable.merge(courses);
+    listenable?.addListener(listener);
+
+    return () {
+      listenable?.removeListener(listener);
+    };
   }, [weekDef, courses]);
+
+  return agenda.value;
 }

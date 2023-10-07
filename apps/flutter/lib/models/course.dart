@@ -61,7 +61,7 @@ class Courses extends Table {
   IntColumn get parentClass => integer().nullable().references(Classes, #id)();
 }
 
-class Course {
+class Course extends ChangeNotifier {
   final int id;
   final String? courseId;
   final String name;
@@ -111,10 +111,12 @@ class Course {
 
     teacherQuery.watch().listen((event) {
       ret.teacher = event.single;
+      ret.notifyListeners();
     });
 
     courseTimesQuery.watch().listen((event) {
       ret.courseTimes = event;
+      ret.notifyListeners();
     });
 
     return ret;
@@ -172,10 +174,12 @@ JoinedSelectStatement<HasResultSet, dynamic> createSemesterCoursesQuery(
 /// Returns a list of all courses
 /// If [semesterId] is specified, only courses of that semester are returned. Otherwise, the current semester is used.
 List<Course>? useCourses({int? semesterId}) {
-  final querySnapshot =
-      useQueryJoin(() => createSemesterCoursesQuery(semesterId: semesterId));
+  final querySnapshot = useQueryJoin(
+      () => createSemesterCoursesQuery(semesterId: semesterId), []);
 
-  return useMemoized(
+  final courses = useMemoized(
       () => querySnapshot?.map((row) => row.readTable(db.courses)).toList(),
       [querySnapshot]);
+
+  return courses;
 }

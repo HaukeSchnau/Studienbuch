@@ -6,7 +6,9 @@ import 'package:class_mate/error_catcher.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/substitution.dart';
 import 'package:class_mate/openapi.dart';
-import 'package:mobx/mobx.dart';
+import 'package:class_mate_api/api.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:mobx/mobx.dart' hide Listenable;
 
 part 'app_store.g.dart';
 
@@ -19,9 +21,17 @@ abstract class _AppStore with Store {
   Future<void> init() async {
     createSemesterCoursesQuery().watch().listen((results) {
       final courses = results.map((e) => e.readTable(db.courses)).toList();
+
+      final listenable = Listenable.merge(courses);
+      listenable.addListener(() {
+        _updateSubstitutedAgenda(courses);
+      });
+
       _updateSubstitutedAgenda(courses);
     });
   }
+
+  List<QuerySubstitutionsGet200ResponseInner>? _substitutionsResponse;
 
   //// AGENDA ////
 
@@ -33,19 +43,19 @@ abstract class _AppStore with Store {
     );
 
     final date = agenda.date.add(agenda.date.timeZoneOffset).toUtc();
-    final substitutions = await apiInstance
+    _substitutionsResponse ??= await apiInstance
         .querySubstitutionsGet(date: date)
         .catchError((e, stacktrace) {
       this.agenda = agenda;
       throw UserException("Vertretungen konnten nicht geladen werden", e);
     });
 
-    if (substitutions == null) {
+    if (_substitutionsResponse == null) {
       this.agenda = agenda;
       return;
     }
 
-    for (final sub in substitutions) {
+    for (final sub in _substitutionsResponse!) {
       final lessonStart = sub.lessonStart;
       final index = lessonStart ~/ 2;
 

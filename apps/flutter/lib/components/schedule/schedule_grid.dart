@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:class_mate/business_domain/schedule/agenda.dart';
 import 'package:class_mate/components/schedule/schedule_entry.dart';
 import 'package:class_mate/components/schedule/schedule_grid_background.dart';
@@ -61,18 +63,17 @@ class WeekGrid extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maxTime = editMode
+        ? lessonTimes.last + 80
+        : TimeOfDay.fromMinutes(weeklyAgenda
+            .map((agenda) => agenda.entries.last.recurringTime.end.toMinutes())
+            .reduce((value, element) => max(value, element)));
+
     return LayoutBuilder(builder: (context, constraints) {
       final height = constraints.maxHeight;
       final width = constraints.maxWidth;
 
       final isToday = weeklyAgenda.any((agenda) => agenda.date.isToday);
-
-      final maxTime = editMode
-          ? lessonTimes.last + 80
-          : TimeOfDay.fromDateTime(weeklyAgenda
-              .map((agenda) => agenda.entries.last.end)
-              .reduce((value, element) =>
-                  value.isBefore(element) ? value : element));
 
       final stack = Stack(
         children: [

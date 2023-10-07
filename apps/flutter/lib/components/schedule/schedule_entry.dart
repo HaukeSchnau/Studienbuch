@@ -1,7 +1,6 @@
 import 'package:class_mate/business_domain/schedule/agenda.dart';
 import 'package:class_mate/components/schedule/schedule_view_helpers.dart';
 import 'package:class_mate/database/database.dart';
-import 'package:class_mate/hooks/use_query.dart';
 import 'package:class_mate/models/agenda_entry.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/course_time.dart';
@@ -41,16 +40,12 @@ class ScheduleEntry extends HookWidget {
     final columnWidth = (gridWidth - spaceLeft) / 5;
     final cellWidth = columnWidth - entryPad * 2;
 
-    final timeId = entry.recurringTime.id;
-    final timeSnapshot = useQuerySingle(
-        () => db.select(db.courseTimes)..where((tbl) => tbl.id.equals(timeId)),
-        [timeId]);
-    final time = timeSnapshot.data;
-
     final course = entry.course;
-    if (course == null || time == null) {
+    if (course == null) {
       return const SizedBox();
     }
+
+    final time = entry.recurringTime;
     final day = time.weekday - 1;
 
     final text = course.name;
