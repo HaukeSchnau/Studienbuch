@@ -1,5 +1,7 @@
+import 'package:class_mate/business_domain/schedule/agenda.dart';
 import 'package:class_mate/components/schedule/schedule_view_helpers.dart';
 import 'package:class_mate/database/database.dart';
+import 'package:class_mate/hooks/use_query.dart';
 import 'package:class_mate/models/agenda_entry.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/course_time.dart';
@@ -39,22 +41,25 @@ class ScheduleEntry extends HookWidget {
     final columnWidth = (gridWidth - spaceLeft) / 5;
     final cellWidth = columnWidth - entryPad * 2;
 
+    final timeId = entry.recurringTime.id;
+    final timeSnapshot = useQuerySingle(
+        () => db.select(db.courseTimes)..where((tbl) => tbl.id.equals(timeId)),
+        [timeId]);
+    final time = timeSnapshot.data;
+
     final course = entry.course;
-    if (course == null) {
+    if (course == null || time == null) {
       return const SizedBox();
     }
+    final day = time.weekday - 1;
 
-    final day = entry.recurringTime.weekday - 1;
-
-    final text = entry.course!.name;
+    final text = course.name;
     final color = HSVColor.fromAHSV(1, text.hashCode % 360, 1, .65).toColor();
 
     final x = _getXForDay(day, gridWidth);
 
-    final y =
-        getYForTime(TimeOfDay.fromDateTime(entry.start), gridHeight, maxTime);
-    final yEnd =
-        getYForTime(TimeOfDay.fromDateTime(entry.end), gridHeight, maxTime);
+    final y = getYForTime(time.start, gridHeight, maxTime);
+    final yEnd = getYForTime(time.end, gridHeight, maxTime);
     final cellHeight = yEnd - y;
 
     final pos = Offset(x + entryPad, y);
@@ -101,7 +106,7 @@ class ScheduleEntry extends HookWidget {
     );
 
     final draggableChild = Draggable<CourseTime>(
-        data: entry.recurringTime,
+        data: time,
         feedback: Material(
             type: MaterialType.transparency,
             child: Container(
@@ -120,14 +125,14 @@ class ScheduleEntry extends HookWidget {
         onDragEnd: (details) async {
           final nearestDay =
               _getDayForX(pos.dx + delta.value.dx, gridWidth) + 1;
-          final nearestTime = getNearestLessonTime(
+          final nearestTimeIndex = getNearestLessonTimeIndex(
               getTimeForY(pos.dy + delta.value.dy, gridHeight, maxTime));
 
           await (db.update(db.courseTimes)
-                ..where((tbl) => tbl.id.equals(entry.recurringTime.id)))
+                ..where((tbl) => tbl.id.equals(time.id)))
               .write(CourseTimesCompanion(
             weekday: Value(nearestDay),
-            start: Value(nearestTime),
+            start: Value(lessonTimes[nearestTimeIndex]),
           ));
 
           delta.value = const Offset(0, 0);
@@ -143,8 +148,9 @@ class ScheduleEntry extends HookWidget {
     final nearestDay = _getDayForX(pos.dx + delta.value.dx, gridWidth);
     final snappedX = _getXForDay(nearestDay, gridWidth);
 
-    final nearestTime = getNearestLessonTime(
+    final nearestTimeIndex = getNearestLessonTimeIndex(
         getTimeForY(pos.dy + delta.value.dy, gridHeight, maxTime));
+    final nearestTime = lessonTimes[nearestTimeIndex];
     final snappedY = getYForTime(nearestTime, gridHeight, maxTime);
 
     return Positioned(

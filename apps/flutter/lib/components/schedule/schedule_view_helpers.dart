@@ -39,11 +39,9 @@ TimeOfDay getTimeForY(double y, double height, TimeOfDay maxTime) {
   return TimeOfDay(hour: hour, minute: minutes % 60);
 }
 
-TimeOfDay getNearestLessonTime(TimeOfDay time) {
+int getNearestLessonTimeIndex(TimeOfDay time) {
   final distances = lessonTimes.map((e) => e.distanceTo(time)).toList();
   final min =
       distances.reduce((value, element) => value < element ? value : element);
-  final index = distances.indexOf(min);
-
-  return lessonTimes[index];
+  return distances.indexOf(min);
 }

@@ -67,10 +67,12 @@ class WeekGrid extends HookWidget {
 
       final isToday = weeklyAgenda.any((agenda) => agenda.date.isToday);
 
-      final maxTime = TimeOfDay.fromDateTime(weeklyAgenda
-          .map((agenda) => agenda.entries.last.end)
-          .reduce(
-              (value, element) => value.isBefore(element) ? value : element));
+      final maxTime = editMode
+          ? lessonTimes.last + 80
+          : TimeOfDay.fromDateTime(weeklyAgenda
+              .map((agenda) => agenda.entries.last.end)
+              .reduce((value, element) =>
+                  value.isBefore(element) ? value : element));
 
       final stack = Stack(
         children: [
