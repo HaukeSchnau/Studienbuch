@@ -1,12 +1,11 @@
 import 'dart:async';
 
+import 'package:class_mate/business_domain/schedule/agenda.dart';
 import 'package:class_mate/database/database.dart';
 import 'package:class_mate/error_catcher.dart';
-import 'package:class_mate/models/agenda.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/substitution.dart';
 import 'package:class_mate/openapi.dart';
-import 'package:class_mate/util/date_util.dart';
 import 'package:mobx/mobx.dart';
 
 part 'app_store.g.dart';
@@ -17,14 +16,10 @@ abstract class _AppStore with Store {
   @observable
   Agenda agenda = Agenda(start: DateTime.now(), courses: []);
 
-  @observable
-  List<Agenda> weeklyAgenda = [];
-
   Future<void> init() async {
     createSemesterCoursesQuery().watch().listen((results) {
       final courses = results.map((e) => e.readTable(db.courses)).toList();
       _updateSubstitutedAgenda(courses);
-      _updateWeeklyAgenda(courses);
     });
   }
 
@@ -68,20 +63,6 @@ abstract class _AppStore with Store {
     }
 
     this.agenda = agenda;
-  }
-
-  @action
-  void _updateWeeklyAgenda(List<Course> courses) {
-    final start = agenda.date.startOfWeek;
-
-    final days = <DateTime>[];
-    for (var i = 0; i < 5; i++) {
-      days.add(start.add(Duration(days: i)));
-    }
-
-    weeklyAgenda = days
-        .map((e) => Agenda(start: e, courses: courses, autoAdjust: false))
-        .toList();
   }
 }
 
