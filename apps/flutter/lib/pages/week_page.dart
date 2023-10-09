@@ -15,7 +15,7 @@ class WeekPage extends HookWidget {
     final defaultDate = DateTime.now(); // store.agenda.date;
     final weekDef = useState(WeekDef(defaultDate.year, defaultDate.weekNumber));
 
-    final editMode = useState(true); // TODO default false
+    final editMode = useState(false);
 
     final weekdays = getDaysInWeek(weekDef.value);
     final weeklyAgenda =
