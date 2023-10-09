@@ -19,10 +19,11 @@ class Agenda {
     required DateTime start,
     required List<Course> courses,
     bool autoAdjust = true,
+    bool ignoreWeeks = false,
   }) : date = start {
     start = start.startOfDay;
 
-    final entries = _buildEntries(courses, start);
+    final entries = _buildEntries(courses, start, ignoreWeeks);
     final entriesAhead = entries.where((element) => !element.isOver);
 
     if (entriesAhead.isEmpty && autoAdjust) {
@@ -36,7 +37,7 @@ class Agenda {
       }
 
       date = nextDate;
-      this.entries = _buildEntries(courses, nextDate);
+      this.entries = _buildEntries(courses, nextDate, ignoreWeeks);
     } else {
       date = start;
       this.entries = entries;
@@ -84,7 +85,8 @@ class Agenda {
   }
 }
 
-List<AgendaEntry> _buildEntries(List<Course> courses, DateTime date) {
+List<AgendaEntry> _buildEntries(
+    List<Course> courses, DateTime date, bool ignoreWeeks) {
   date = date.startOfDay;
 
   final currentWeekNumber = date.weekNumber;
@@ -92,10 +94,11 @@ List<AgendaEntry> _buildEntries(List<Course> courses, DateTime date) {
   List<AgendaEntry> entries = [];
   for (final course in courses) {
     for (final time in course.courseTimes) {
-      if (time.weekday == date.weekday &&
-          (time.weeks == CourseTimeWeek.both ||
-              (time.weeks == CourseTimeWeek.even && currentWeekNumber.isEven) ||
-              (time.weeks == CourseTimeWeek.odd && currentWeekNumber.isOdd))) {
+      final matchesWeek = (time.weeks == CourseTimeWeek.both ||
+          (time.weeks == CourseTimeWeek.even && currentWeekNumber.isEven) ||
+          (time.weeks == CourseTimeWeek.odd && currentWeekNumber.isOdd));
+
+      if (time.weekday == date.weekday && (ignoreWeeks || matchesWeek)) {
         final entry = AgendaEntry(
           course: course,
           recurringTime: time,

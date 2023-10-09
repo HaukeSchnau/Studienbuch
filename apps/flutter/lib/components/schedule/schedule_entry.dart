@@ -11,7 +11,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 
 double _getXForDay(int day, double gridWidth) {
   final colWidth = (gridWidth - spaceLeft) / 5;
-  return spaceLeft + day * colWidth;
+  return spaceLeft + day * colWidth + entryPad;
 }
 
 int _getDayForX(double x, double gridWidth) {

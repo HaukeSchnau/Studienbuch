@@ -17,7 +17,8 @@ Agenda? useAgendaForDay(DateTime day) {
   return agenda;
 }
 
-List<Agenda>? buildWeeklyAgenda(WeekDef weekDef, List<Course>? courses) {
+List<Agenda>? buildWeeklyAgenda(WeekDef weekDef, List<Course>? courses,
+    {bool ignoreWeeks = false}) {
   if (courses == null) {
     return null;
   }
@@ -25,18 +26,23 @@ List<Agenda>? buildWeeklyAgenda(WeekDef weekDef, List<Course>? courses) {
   final days = getDaysInWeek(weekDef);
 
   return days
-      .map((e) => Agenda(start: e, courses: courses, autoAdjust: false))
+      .map((e) => Agenda(
+          start: e,
+          courses: courses,
+          autoAdjust: false,
+          ignoreWeeks: ignoreWeeks))
       .toList();
 }
 
-List<Agenda>? useWeeklyAgenda(WeekDef weekDef) {
+List<Agenda>? useWeeklyAgenda(WeekDef weekDef, {bool ignoreWeeks = false}) {
   final courses = useCourses();
 
   final agenda = useState<List<Agenda>?>(null);
 
   useEffect(() {
     listener() {
-      agenda.value = buildWeeklyAgenda(weekDef, courses);
+      agenda.value =
+          buildWeeklyAgenda(weekDef, courses, ignoreWeeks: ignoreWeeks);
     }
 
     listener();
@@ -47,7 +53,7 @@ List<Agenda>? useWeeklyAgenda(WeekDef weekDef) {
     return () {
       listenable?.removeListener(listener);
     };
-  }, [weekDef, courses]);
+  }, [weekDef, courses, ignoreWeeks]);
 
   return agenda.value;
 }
