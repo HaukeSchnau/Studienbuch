@@ -61,6 +61,11 @@ class TimeOfDay {
   bool isAfter(TimeOfDay other) {
     return compareTo(other) > 0;
   }
+
+  Duration distanceTo(TimeOfDay other) {
+    final minutes = toMinutes() - other.toMinutes();
+    return Duration(minutes: minutes.abs());
+  }
 }
 
 enum CourseTimeWeek {

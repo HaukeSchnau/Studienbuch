@@ -1,6 +1,6 @@
 import 'package:class_mate/components/date_picker.dart';
 import 'package:class_mate/database/database.dart';
-import 'package:class_mate/models/agenda.dart';
+import 'package:class_mate/hooks/use_agenda.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/static/theme.dart';

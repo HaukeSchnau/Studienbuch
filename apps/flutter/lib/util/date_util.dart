@@ -91,6 +91,11 @@ extension Date on DateTime {
     return format.format(toLocal());
   }
 
+  String formatShort() {
+    var format = DateFormat("dd.MM.");
+    return format.format(toLocal());
+  }
+
   String formatRelativeDay() {
     DateTime now = DateTime.now();
     DateTime localDateTime = toLocal();

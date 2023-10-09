@@ -92,13 +92,13 @@ buildMainRouterConfig(User? user) {
           }
 
           return EditProfilePage(
-            initialStore: SetupStore(
-              courses: ObservableList(),
-              licenseKey: user.licenseKey,
-              licenseKeyActivatedAt: user.licenseKeyActivatedAt,
-              name: user.name,
-            ),
-          );
+              initialStore: SetupStore(
+                courses: ObservableList(),
+                licenseKey: user.licenseKey,
+                licenseKeyActivatedAt: user.licenseKeyActivatedAt,
+                name: user.name,
+              ),
+              onFinished: () => context.pop());
         },
       ),
     ],

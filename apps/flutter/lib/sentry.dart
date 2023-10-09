@@ -23,7 +23,7 @@ Future<void> configureSentryScope() async {
   });
 }
 
-const disableSentryInDebug = false;
+const disableSentryInDebug = true;
 
 Future<void> prepareSentry(FutureOr<void> Function() appRunner) async {
   if (kDebugMode && disableSentryInDebug) {
