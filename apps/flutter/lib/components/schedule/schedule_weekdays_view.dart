@@ -3,12 +3,13 @@ import 'package:class_mate/util/date_util.dart';
 import 'package:flutter/material.dart';
 
 class Weekdays extends StatelessWidget {
-  final List<DateTime> days;
+  final List<DateTime>? days;
 
   const Weekdays({super.key, required this.days});
 
   @override
   Widget build(BuildContext context) {
+    final days = this.days;
     const weekdays = [
       "Mo",
       "Di",
@@ -27,12 +28,13 @@ class Weekdays extends StatelessWidget {
                 Text(weekdays[i],
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white, fontSize: 16)),
-                Text(
-                  days[i].formatShort(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      color: Color.fromRGBO(255, 255, 255, .9), fontSize: 12),
-                ),
+                if (days != null)
+                  Text(
+                    days[i].formatShort(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        color: Color.fromRGBO(255, 255, 255, .9), fontSize: 12),
+                  ),
               ],
             ),
           ),

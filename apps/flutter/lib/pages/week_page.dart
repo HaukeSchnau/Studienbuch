@@ -20,6 +20,7 @@ class WeekPage extends HookWidget {
     final weekdays = getDaysInWeek(weekDef.value);
     final weeklyAgenda =
         useWeeklyAgenda(weekDef.value, ignoreWeeks: editMode.value);
+    final isThisYear = weekDef.value.year == DateTime.now().year;
 
     final weekRow = Row(
       children: [
@@ -36,7 +37,10 @@ class WeekPage extends HookWidget {
           color: theme.primaryText,
           iconSize: 20,
         ),
-        Text("KW ${weekDef.value.weekNumber}",
+        Text(
+            isThisYear
+                ? "KW ${weekDef.value.weekNumber}"
+                : "KW ${weekDef.value.weekNumber} (${weekDef.value.year})",
             style:
                 TextStyle(height: 1, color: theme.primaryText, fontSize: 16)),
         IconButton(
@@ -78,7 +82,7 @@ class WeekPage extends HookWidget {
                         fontWeight: FontWeight.bold,
                         fontSize: 20)),
                 const SizedBox(height: 8),
-                Weekdays(days: weekdays),
+                Weekdays(days: editMode.value ? null : weekdays),
                 const SizedBox(height: 12),
               ],
             ),

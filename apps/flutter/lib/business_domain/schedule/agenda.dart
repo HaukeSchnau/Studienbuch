@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:class_mate/models/agenda_entry.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/course_time.dart';
@@ -11,54 +13,63 @@ const lessonTimes = [
   TimeOfDay(hour: 15, minute: 15),
 ];
 
+class AgendaTimeBlock {
+  final AgendaEntry entry;
+  final int column;
+
+  AgendaTimeBlock(this.entry, {required this.column});
+}
+
 class Agenda {
   DateTime date;
-  List<AgendaEntry> entries = [];
+  List<AgendaTimeBlock> blocks = [];
+
+  List<AgendaEntry> get entries => blocks.map((e) => e.entry).toList();
 
   Agenda({
     required DateTime start,
     required List<Course> courses,
     bool autoAdjust = true,
     bool ignoreWeeks = false,
-  }) : date = start {
-    start = start.startOfDay;
-
-    final entries = _buildEntries(courses, start, ignoreWeeks);
+  }) : date = start.startOfDay {
+    var entries = _buildEntries(courses, date, ignoreWeeks);
     final entriesAhead = entries.where((element) => !element.isOver);
 
     if (entriesAhead.isEmpty && autoAdjust) {
-      DateTime nextDate;
-      if (start.weekday == DateTime.friday) {
-        nextDate = start.add(const Duration(days: 3));
-      } else if (start.weekday == DateTime.saturday) {
-        nextDate = start.add(const Duration(days: 2));
-      } else {
-        nextDate = start.add(const Duration(days: 1));
-      }
-
-      date = nextDate;
-      this.entries = _buildEntries(courses, nextDate, ignoreWeeks);
-    } else {
-      date = start;
-      this.entries = entries;
+      date = _getNextRelevantDate(date);
+      entries = _buildEntries(courses, date, ignoreWeeks);
     }
-    this.entries.sort((a, b) => a.start.compareTo(b.start));
 
-    if (this.entries.isEmpty) {
+    if (entries.isEmpty) {
       return;
     }
+    entries.sort((a, b) => a.start.compareTo(b.start));
 
     // Fill in empty slots, but not after the last entry of the day (which is the last entry of the list) or before the first lesson time of the day
     // TODO make this more efficient
-    final lastEntry = this.entries.last;
+    final lastEntry = entries.last;
     for (final time in lessonTimes) {
       if (time.isBefore(lastEntry.recurringTime.start) &&
-          !this.entries.any((element) => element.recurringTime.start == time)) {
+          !entries.any((entry) => entry.recurringTime.start == time)) {
         final entry = AgendaEntry.empty(date, time);
-        this.entries.add(entry);
+        entries.add(entry);
       }
     }
-    this.entries.sort((a, b) => a.start.compareTo(b.start));
+    entries.sort((a, b) => a.start.compareTo(b.start));
+
+    for (final entry in entries) {
+      final overlappingBlocks = blocks
+          .where((other) =>
+              other.entry.start.isBefore(entry.end) &&
+              other.entry.end.isAfter(entry.start))
+          .toList();
+
+      final column = overlappingBlocks.isEmpty
+          ? 0
+          : overlappingBlocks.map((e) => e.column).reduce(max) + 1;
+
+      blocks.add(AgendaTimeBlock(entry, column: column));
+    }
   }
 
   bool get isToday {
@@ -116,4 +127,14 @@ List<AgendaEntry> _buildEntries(
   }
 
   return entries;
+}
+
+DateTime _getNextRelevantDate(DateTime date) {
+  if (date.weekday == DateTime.friday) {
+    return date.add(const Duration(days: 3));
+  } else if (date.weekday == DateTime.saturday) {
+    return date.add(const Duration(days: 2));
+  } else {
+    return date.add(const Duration(days: 1));
+  }
 }

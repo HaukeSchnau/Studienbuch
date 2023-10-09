@@ -4,7 +4,6 @@ import 'package:class_mate/business_domain/schedule/agenda.dart';
 import 'package:class_mate/components/schedule/schedule_entry.dart';
 import 'package:class_mate/components/schedule/schedule_grid_background.dart';
 import 'package:class_mate/components/schedule/schedule_view_helpers.dart';
-import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/util/date_util.dart';
@@ -75,9 +74,9 @@ class WeekGrid extends HookWidget {
 
       final isToday = weeklyAgenda.any((agenda) => agenda.date.isToday);
 
-      final stack = Stack(
+      return Stack(
         children: [
-          if (isToday) buildCurrentDayIndicator(height, width),
+          if (isToday && !editMode) buildCurrentDayIndicator(height, width),
           WeekGridBackground(maxTime: maxTime),
           for (final lessonTime in lessonTimes)
             Positioned(
@@ -103,23 +102,6 @@ class WeekGrid extends HookWidget {
           if (isToday) buildCurrentTimeIndicator(height, width, maxTime),
         ],
       );
-
-      if (editMode) {
-        return DragTarget<CourseTime>(
-          builder: (
-            context,
-            List<dynamic> accepted,
-            List<dynamic> rejected,
-          ) {
-            return stack;
-          },
-          onWillAccept: (data) {
-            return true;
-          },
-        );
-      }
-
-      return stack;
     });
   }
 }
