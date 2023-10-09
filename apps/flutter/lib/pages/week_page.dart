@@ -1,4 +1,5 @@
 import 'package:class_mate/business_domain/time/weeks.dart';
+import 'package:class_mate/components/schedule/course_choices_row.dart';
 import 'package:class_mate/components/schedule/schedule_grid.dart';
 import 'package:class_mate/components/schedule/schedule_weekdays_view.dart';
 import 'package:class_mate/hooks/use_agenda.dart';
@@ -110,9 +111,14 @@ class WeekPage extends HookWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
+            mainAxisSize: MainAxisSize.max,
             children: [
               if (!editMode.value) weekRow,
-              const Spacer(),
+              if (editMode.value)
+                const Expanded(
+                  child: CourseChoicesRow(),
+                ),
+              if (!editMode.value) const Spacer(),
               TextButton(
                 onPressed: () => editMode.value = !editMode.value,
                 child: Text(editMode.value ? "Speichern" : "Bearbeiten",

@@ -1,4 +1,5 @@
 import 'package:class_mate/business_domain/schedule/agenda.dart';
+import 'package:class_mate/components/schedule/course_cell.dart';
 import 'package:class_mate/components/schedule/schedule_view_helpers.dart';
 import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course.dart';
@@ -9,12 +10,12 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_hooks/flutter_hooks.dart';
 
-double _getXForDay(int day, double gridWidth) {
+double getXForDay(int day, double gridWidth) {
   final colWidth = (gridWidth - spaceLeft) / 5;
   return spaceLeft + day * colWidth + entryPad;
 }
 
-int _getDayForX(double x, double gridWidth) {
+int getDayForX(double x, double gridWidth) {
   final colWidth = (gridWidth - spaceLeft) / 5;
   return ((x - spaceLeft) / colWidth).round();
 }
@@ -51,11 +52,7 @@ class ScheduleEntry extends HookWidget {
     final time = entry.recurringTime;
     final day = time.weekday - 1;
 
-    final text = editMode ? course.abbrv : course.name;
-    final color =
-        HSVColor.fromAHSV(1, course.name.hashCode % 360, 1, .65).toColor();
-
-    final x = _getXForDay(day, gridWidth) + block.column * cellWidth;
+    final x = getXForDay(day, gridWidth) + block.column * cellWidth;
     final xWithBetweenPad = x + betweenEntriesPad * block.column;
 
     final y = getYForTime(time.start, gridHeight, maxTime);
@@ -72,28 +69,12 @@ class ScheduleEntry extends HookWidget {
       return null;
     }, [day, entry.start]);
 
-    final cell = Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          text,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-              fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white),
-        ),
-        if (!editMode)
-          Text(
-            course.teacher.formalName,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 10, color: Colors.white),
-          ),
-      ],
+    final cell = CourseCell(
+      name: editMode ? course.abbrv : course.name,
+      teacherName: !editMode ? course.teacher.formalName : null,
     );
 
-    final decoration = BoxDecoration(
-      color: color,
-      borderRadius: const BorderRadius.all(Radius.circular(8)),
-    );
+    final decoration = getScheduleEntryDecoration(course);
 
     final clickableChild = Container(
       decoration: decoration,
@@ -137,8 +118,7 @@ class ScheduleEntry extends HookWidget {
           ),
         ),
         onDragEnd: (details) async {
-          final nearestDay =
-              _getDayForX(pos.dx + delta.value.dx, gridWidth) + 1;
+          final nearestDay = getDayForX(pos.dx + delta.value.dx, gridWidth) + 1;
           final nearestTimeIndex = getNearestLessonTimeIndex(
               getTimeForY(pos.dy + delta.value.dy, gridHeight, maxTime));
 
@@ -211,16 +191,20 @@ class ScheduleEntry extends HookWidget {
 }
 
 double _snapX(double x, double gridWidth) {
-  final nearestDay = clamp(_getDayForX(x, gridWidth), -1, 4);
+  final nearestDay = clamp(getDayForX(x, gridWidth), -1, 4);
   if (nearestDay == -1) return -1;
 
-  return _getXForDay(nearestDay, gridWidth);
+  return getXForDay(nearestDay, gridWidth);
+}
+
+TimeOfDay getNearestLessonTime(double y, double gridHeight, TimeOfDay maxTime) {
+  final nearestTimeIndex =
+      getNearestLessonTimeIndex(getTimeForY(y, gridHeight, maxTime));
+  return lessonTimes[nearestTimeIndex];
 }
 
 double _snapY(double y, double gridHeight, TimeOfDay maxTime) {
-  final nearestTimeIndex =
-      getNearestLessonTimeIndex(getTimeForY(y, gridHeight, maxTime));
-  final nearestTime = lessonTimes[nearestTimeIndex];
+  final nearestTime = getNearestLessonTime(y, gridHeight, maxTime);
   return getYForTime(nearestTime, gridHeight, maxTime);
 }
 
@@ -239,3 +223,13 @@ const _courseTimeFormatMap = {
   CourseTimeWeek.odd: "A",
   CourseTimeWeek.even: "B",
 };
+
+BoxDecoration getScheduleEntryDecoration(Course course) {
+  final color =
+      HSVColor.fromAHSV(1, course.name.hashCode % 360, 1, .65).toColor();
+
+  return BoxDecoration(
+    color: color,
+    borderRadius: const BorderRadius.all(Radius.circular(8)),
+  );
+}
