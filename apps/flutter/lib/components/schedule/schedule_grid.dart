@@ -91,9 +91,9 @@ class WeekGrid extends HookWidget {
               ),
             ),
           for (final day in weeklyAgenda)
-            for (final entry in day.entries)
+            for (final block in day.blocks)
               ScheduleEntry(
-                entry: entry,
+                block: block,
                 editMode: editMode,
                 gridHeight: height,
                 gridWidth: width,

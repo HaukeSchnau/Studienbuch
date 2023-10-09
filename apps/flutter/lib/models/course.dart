@@ -124,10 +124,34 @@ class Course extends ChangeNotifier {
 
   String? get icon => getCourseIcon(name);
 
+  String get abbrv => _nameAbbrvMap[name.toLowerCase()]?.toUpperCase() ?? name;
+
   void navigateTo(BuildContext context, SemesterId semester) {
     context.push("/course/$id/$semester");
   }
 }
+
+final _nameAbbrvMap = {
+  "deutsch": "de",
+  "englisch": "en",
+  "mathe": "ma",
+  "physik": "ph",
+  "chemie": "ch",
+  "biologie": "bi",
+  "informatik": "inf",
+  "geschichte": "ge",
+  "politik-wirtschaft": "pw",
+  "musik": "mu",
+  "sport": "sp",
+  "kunst": "ku",
+  "religion": "re",
+  "französisch": "fr",
+  "spanisch": "sp",
+  "latein": "la",
+  "werte und normen": "wun",
+  "darstellendes spiel": "ds",
+  "seminarfach": "sf",
+};
 
 extension TeacherExtension on Teacher {
   String get lastName => name.split(" ").last;

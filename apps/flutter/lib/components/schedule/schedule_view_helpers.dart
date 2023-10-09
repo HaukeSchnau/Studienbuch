@@ -5,6 +5,7 @@ const spaceLeft = 52;
 const lineOverflow = 8;
 const timePad = 0;
 const entryPad = 4.0;
+const betweenEntriesPad = 2.0;
 
 const startOfDay = TimeOfDay(hour: 7, minute: 30);
 

@@ -1,10 +1,10 @@
 import 'package:class_mate/business_domain/schedule/agenda.dart';
 import 'package:class_mate/components/schedule/schedule_view_helpers.dart';
 import 'package:class_mate/database/database.dart';
-import 'package:class_mate/models/agenda_entry.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:class_mate/models/semester.dart';
+import 'package:class_mate/static/colors.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -20,7 +20,7 @@ int _getDayForX(double x, double gridWidth) {
 }
 
 class ScheduleEntry extends HookWidget {
-  final AgendaEntry entry;
+  final AgendaTimeBlock block;
   final bool editMode;
   final double gridHeight;
   final double gridWidth;
@@ -28,7 +28,7 @@ class ScheduleEntry extends HookWidget {
 
   const ScheduleEntry(
       {Key? key,
-      required this.entry,
+      required this.block,
       required this.editMode,
       required this.gridHeight,
       required this.gridWidth,
@@ -38,8 +38,11 @@ class ScheduleEntry extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final columnWidth = (gridWidth - spaceLeft) / 5;
-    final cellWidth = columnWidth - entryPad * 2;
+    final paddedWidth = (columnWidth - entryPad * 2);
+    final cellWidth = paddedWidth / block.totalColumns -
+        betweenEntriesPad * (block.totalColumns - 1);
 
+    final entry = block.entry;
     final course = entry.course;
     if (course == null) {
       return const SizedBox();
@@ -48,16 +51,18 @@ class ScheduleEntry extends HookWidget {
     final time = entry.recurringTime;
     final day = time.weekday - 1;
 
-    final text = course.name;
-    final color = HSVColor.fromAHSV(1, text.hashCode % 360, 1, .65).toColor();
+    final text = editMode ? course.abbrv : course.name;
+    final color =
+        HSVColor.fromAHSV(1, course.name.hashCode % 360, 1, .65).toColor();
 
-    final x = _getXForDay(day, gridWidth);
+    final x = _getXForDay(day, gridWidth) + block.column * cellWidth;
+    final xWithBetweenPad = block.column == 0 ? x : x + betweenEntriesPad;
 
     final y = getYForTime(time.start, gridHeight, maxTime);
     final yEnd = getYForTime(time.end, gridHeight, maxTime);
     final cellHeight = yEnd - y;
 
-    final pos = Offset(x + entryPad, y);
+    final pos = Offset(xWithBetweenPad, y);
     final size = Size(cellWidth, cellHeight);
 
     final delta = useState(const Offset(0, 0));
@@ -76,11 +81,12 @@ class ScheduleEntry extends HookWidget {
           style: const TextStyle(
               fontWeight: FontWeight.w600, fontSize: 12, color: Colors.white),
         ),
-        Text(
-          course.teacher.formalName,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 10, color: Colors.white),
-        ),
+        if (!editMode)
+          Text(
+            course.teacher.formalName,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 10, color: Colors.white),
+          ),
       ],
     );
 
@@ -99,6 +105,17 @@ class ScheduleEntry extends HookWidget {
             child: cell),
       ),
     );
+
+    cycleCourseTimeWeek() async {
+      final newWeeks = time.weeks == CourseTimeWeek.both
+          ? CourseTimeWeek.odd
+          : time.weeks == CourseTimeWeek.odd
+              ? CourseTimeWeek.even
+              : CourseTimeWeek.both;
+
+      await (db.update(db.courseTimes)..where((tbl) => tbl.id.equals(time.id)))
+          .write(CourseTimesCompanion(weeks: Value(newWeeks)));
+    }
 
     final draggableChild = Draggable<CourseTime>(
         data: time,
@@ -126,7 +143,7 @@ class ScheduleEntry extends HookWidget {
           await (db.update(db.courseTimes)
                 ..where((tbl) => tbl.id.equals(time.id)))
               .write(CourseTimesCompanion(
-            weekday: Value(nearestDay),
+            weekday: Value(clamp(nearestDay, 1, 5)),
             start: Value(lessonTimes[nearestTimeIndex]),
           ));
 
@@ -135,25 +152,81 @@ class ScheduleEntry extends HookWidget {
         onDragUpdate: (details) {
           delta.value += details.delta;
         },
-        child: Container(
-          decoration: decoration,
-          child: cell,
+        child: GestureDetector(
+          onTap: cycleCourseTimeWeek,
+          child: Stack(
+            fit: StackFit.expand,
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                decoration: decoration,
+                child: cell,
+              ),
+              if (time.weeks != CourseTimeWeek.both)
+                Positioned(
+                    bottom: -4,
+                    right: -4,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                          color: theme.secondary,
+                          borderRadius: BorderRadius.circular(99999)),
+                      child: Text(_courseTimeFormatMap[time.weeks] ?? "A/B",
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.white)),
+                    )),
+            ],
+          ),
         ));
 
-    final nearestDay = _getDayForX(pos.dx + delta.value.dx, gridWidth);
-    final snappedX = _getXForDay(nearestDay, gridWidth);
+    if (editMode && delta.value != const Offset(0, 0)) {
+      final snappedX = _snapX(pos.dx + delta.value.dx, gridWidth);
+      final snappedY = _snapY(pos.dy + delta.value.dy, gridHeight, maxTime);
 
-    final nearestTimeIndex = getNearestLessonTimeIndex(
-        getTimeForY(pos.dy + delta.value.dy, gridHeight, maxTime));
-    final nearestTime = lessonTimes[nearestTimeIndex];
-    final snappedY = getYForTime(nearestTime, gridHeight, maxTime);
+      return Positioned(
+          top: snappedY,
+          left: snappedX,
+          width: size.width,
+          height: size.height,
+          child: draggableChild);
+    }
 
     return Positioned(
-      top: snappedY,
-      left: snappedX,
+      top: pos.dy,
+      left: pos.dx,
       width: size.width,
       height: size.height,
       child: editMode ? draggableChild : clickableChild,
     );
   }
 }
+
+double _snapX(double x, double gridWidth) {
+  final nearestDay = clamp(_getDayForX(x, gridWidth), 0, 4);
+  return _getXForDay(nearestDay, gridWidth);
+}
+
+double _snapY(double y, double gridHeight, TimeOfDay maxTime) {
+  final nearestTimeIndex =
+      getNearestLessonTimeIndex(getTimeForY(y, gridHeight, maxTime));
+  final nearestTime = lessonTimes[nearestTimeIndex];
+  return getYForTime(nearestTime, gridHeight, maxTime);
+}
+
+int clamp(int value, int min, int max) {
+  if (value < min) {
+    return min;
+  } else if (value > max) {
+    return max;
+  } else {
+    return value;
+  }
+}
+
+const _courseTimeFormatMap = {
+  CourseTimeWeek.both: "A/B",
+  CourseTimeWeek.odd: "A",
+  CourseTimeWeek.even: "B",
+};

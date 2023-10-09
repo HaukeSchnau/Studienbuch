@@ -16,8 +16,9 @@ const lessonTimes = [
 class AgendaTimeBlock {
   final AgendaEntry entry;
   final int column;
+  int totalColumns;
 
-  AgendaTimeBlock(this.entry, {required this.column});
+  AgendaTimeBlock(this.entry, {required this.column, this.totalColumns = 1});
 }
 
 class Agenda {
@@ -60,15 +61,21 @@ class Agenda {
     for (final entry in entries) {
       final overlappingBlocks = blocks
           .where((other) =>
+              other.entry.recurringTime.start == entry.recurringTime.start ||
+              other.entry.recurringTime.end == entry.recurringTime.end ||
               other.entry.start.isBefore(entry.end) &&
-              other.entry.end.isAfter(entry.start))
+                  other.entry.end.isAfter(entry.start))
           .toList();
 
       final column = overlappingBlocks.isEmpty
           ? 0
           : overlappingBlocks.map((e) => e.column).reduce(max) + 1;
+      for (final block in overlappingBlocks) {
+        block.totalColumns = column + 1;
+      }
 
-      blocks.add(AgendaTimeBlock(entry, column: column));
+      blocks.add(
+          AgendaTimeBlock(entry, column: column, totalColumns: column + 1));
     }
   }
 
@@ -115,13 +122,8 @@ List<AgendaEntry> _buildEntries(
           recurringTime: time,
           concreteDate: date,
         );
-        final existingIndex = entries
-            .indexWhere((element) => element.recurringTime.start == time.start);
-        if (existingIndex != -1) {
-          entries[existingIndex] = entry;
-        } else {
-          entries.add(entry);
-        }
+
+        entries.add(entry);
       }
     }
   }
