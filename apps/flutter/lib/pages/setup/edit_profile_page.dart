@@ -7,8 +7,10 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 
 class EditProfilePage extends HookWidget {
   final SetupStore initialStore;
+  final VoidCallback onFinished;
 
-  const EditProfilePage({super.key, required this.initialStore});
+  const EditProfilePage(
+      {super.key, required this.initialStore, required this.onFinished});
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +21,8 @@ class EditProfilePage extends HookWidget {
     Future<void> finishFlow() async {
       final store = storeState.value;
       await store.saveToDatabase();
+
+      onFinished();
     }
 
     Widget? nextPageCallback(Widget? currentPage) {
