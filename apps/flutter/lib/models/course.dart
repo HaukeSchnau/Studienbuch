@@ -151,6 +151,7 @@ final _nameAbbrvMap = {
   "werte und normen": "wun",
   "darstellendes spiel": "ds",
   "seminarfach": "sf",
+  "tutorium": "tut"
 };
 
 extension TeacherExtension on Teacher {
