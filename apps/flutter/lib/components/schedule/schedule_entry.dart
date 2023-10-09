@@ -117,6 +117,8 @@ class ScheduleEntry extends HookWidget {
           .write(CourseTimesCompanion(weeks: Value(newWeeks)));
     }
 
+    final snappedX = _snapX(pos.dx + delta.value.dx, gridWidth);
+    final isOffscreen = snappedX == -1 || pos.dy + delta.value.dy < 0;
     final draggableChild = Draggable<CourseTime>(
         data: time,
         feedback: Material(
@@ -128,7 +130,7 @@ class ScheduleEntry extends HookWidget {
               child: cell,
             )),
         childWhenDragging: Opacity(
-          opacity: .7,
+          opacity: isOffscreen ? 0 : .7,
           child: Container(
             decoration: decoration,
             child: cell,
@@ -140,12 +142,18 @@ class ScheduleEntry extends HookWidget {
           final nearestTimeIndex = getNearestLessonTimeIndex(
               getTimeForY(pos.dy + delta.value.dy, gridHeight, maxTime));
 
-          await (db.update(db.courseTimes)
-                ..where((tbl) => tbl.id.equals(time.id)))
-              .write(CourseTimesCompanion(
-            weekday: Value(clamp(nearestDay, 1, 5)),
-            start: Value(lessonTimes[nearestTimeIndex]),
-          ));
+          if (isOffscreen) {
+            await (db.delete(db.courseTimes)
+                  ..where((tbl) => tbl.id.equals(time.id)))
+                .go();
+          } else {
+            await (db.update(db.courseTimes)
+                  ..where((tbl) => tbl.id.equals(time.id)))
+                .write(CourseTimesCompanion(
+              weekday: Value(clamp(nearestDay, 1, 5)),
+              start: Value(lessonTimes[nearestTimeIndex]),
+            ));
+          }
 
           delta.value = const Offset(0, 0);
         },
@@ -182,7 +190,6 @@ class ScheduleEntry extends HookWidget {
         ));
 
     if (editMode && delta.value != const Offset(0, 0)) {
-      final snappedX = _snapX(pos.dx + delta.value.dx, gridWidth);
       final snappedY = _snapY(pos.dy + delta.value.dy, gridHeight, maxTime);
 
       return Positioned(
@@ -204,7 +211,9 @@ class ScheduleEntry extends HookWidget {
 }
 
 double _snapX(double x, double gridWidth) {
-  final nearestDay = clamp(_getDayForX(x, gridWidth), 0, 4);
+  final nearestDay = clamp(_getDayForX(x, gridWidth), -1, 4);
+  if (nearestDay == -1) return -1;
+
   return _getXForDay(nearestDay, gridWidth);
 }
 
