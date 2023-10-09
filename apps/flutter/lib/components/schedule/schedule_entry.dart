@@ -40,7 +40,7 @@ class ScheduleEntry extends HookWidget {
     final columnWidth = (gridWidth - spaceLeft) / 5;
     final paddedWidth = (columnWidth - entryPad * 2);
     final cellWidth = paddedWidth / block.totalColumns -
-        betweenEntriesPad * (block.totalColumns - 1);
+        betweenEntriesPad * (block.totalColumns - 1) / 2;
 
     final entry = block.entry;
     final course = entry.course;
@@ -56,7 +56,7 @@ class ScheduleEntry extends HookWidget {
         HSVColor.fromAHSV(1, course.name.hashCode % 360, 1, .65).toColor();
 
     final x = _getXForDay(day, gridWidth) + block.column * cellWidth;
-    final xWithBetweenPad = block.column == 0 ? x : x + betweenEntriesPad;
+    final xWithBetweenPad = x + betweenEntriesPad * block.column;
 
     final y = getYForTime(time.start, gridHeight, maxTime);
     final yEnd = getYForTime(time.end, gridHeight, maxTime);
