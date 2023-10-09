@@ -1,5 +1,5 @@
 import 'package:class_mate/business_domain/schedule/agenda.dart';
-import 'package:class_mate/components/schedule/schedule_view_helpers.dart';
+import 'package:class_mate/components/schedule/schedule_view_math_helpers.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:flutter/material.dart' hide TimeOfDay;
 

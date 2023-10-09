@@ -1,4 +1,4 @@
-import 'package:class_mate/components/schedule/schedule_view_helpers.dart';
+import 'package:class_mate/components/schedule/schedule_view_math_helpers.dart';
 import 'package:class_mate/util/date_util.dart';
 import 'package:flutter/material.dart';
 

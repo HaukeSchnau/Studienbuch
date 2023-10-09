@@ -1,6 +1,8 @@
 import 'package:class_mate/business_domain/schedule/agenda.dart';
 import 'package:class_mate/components/schedule/course_cell.dart';
 import 'package:class_mate/components/schedule/schedule_view_helpers.dart';
+import 'package:class_mate/components/schedule/schedule_view_math_helpers.dart';
+import 'package:class_mate/components/util/math.dart';
 import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/course_time.dart';
@@ -9,16 +11,6 @@ import 'package:class_mate/static/colors.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_hooks/flutter_hooks.dart';
-
-double getXForDay(int day, double gridWidth) {
-  final colWidth = (gridWidth - spaceLeft) / 5;
-  return spaceLeft + day * colWidth + entryPad;
-}
-
-int getDayForX(double x, double gridWidth) {
-  final colWidth = (gridWidth - spaceLeft) / 5;
-  return ((x - spaceLeft) / colWidth).round();
-}
 
 class ScheduleEntry extends HookWidget {
   final AgendaTimeBlock block;
@@ -197,25 +189,9 @@ double _snapX(double x, double gridWidth) {
   return getXForDay(nearestDay, gridWidth);
 }
 
-TimeOfDay getNearestLessonTime(double y, double gridHeight, TimeOfDay maxTime) {
-  final nearestTimeIndex =
-      getNearestLessonTimeIndex(getTimeForY(y, gridHeight, maxTime));
-  return lessonTimes[nearestTimeIndex];
-}
-
 double _snapY(double y, double gridHeight, TimeOfDay maxTime) {
   final nearestTime = getNearestLessonTime(y, gridHeight, maxTime);
   return getYForTime(nearestTime, gridHeight, maxTime);
-}
-
-int clamp(int value, int min, int max) {
-  if (value < min) {
-    return min;
-  } else if (value > max) {
-    return max;
-  } else {
-    return value;
-  }
 }
 
 const _courseTimeFormatMap = {
@@ -223,13 +199,3 @@ const _courseTimeFormatMap = {
   CourseTimeWeek.odd: "A",
   CourseTimeWeek.even: "B",
 };
-
-BoxDecoration getScheduleEntryDecoration(Course course) {
-  final color =
-      HSVColor.fromAHSV(1, course.name.hashCode % 360, 1, .65).toColor();
-
-  return BoxDecoration(
-    color: color,
-    borderRadius: const BorderRadius.all(Radius.circular(8)),
-  );
-}
