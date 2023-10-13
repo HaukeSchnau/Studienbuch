@@ -56,8 +56,7 @@ Future<QuerySync200Response?> getSyncResult(DateTime? lastSync) async {
 
 Future<List<List<int>>> getRelevantIds() {
   return Future.wait([
-    db
-        .select(db.courses)
+    (db.select(db.courses)..where((tbl) => tbl.isManuallyEdited.equals(false)))
         .get()
         .then((value) => value.map((e) => e.id).toList()),
     db

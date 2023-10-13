@@ -59,6 +59,9 @@ class Courses extends Table {
   IntColumn get teacher => integer().references(Teachers, #id)();
 
   IntColumn get parentClass => integer().nullable().references(Classes, #id)();
+
+  BoolColumn get isManuallyEdited =>
+      boolean().withDefault(const Constant(false))();
 }
 
 class Course extends ChangeNotifier {
@@ -68,6 +71,7 @@ class Course extends ChangeNotifier {
   Teacher teacher;
   final Class? parentClass;
   List<CourseTime> courseTimes;
+  final bool isManuallyEdited;
 
   Course({
     required this.id,
@@ -76,6 +80,7 @@ class Course extends ChangeNotifier {
     required this.teacher,
     required this.parentClass,
     required this.courseTimes,
+    required this.isManuallyEdited,
   });
 
   static Future<Course> load({
@@ -84,6 +89,7 @@ class Course extends ChangeNotifier {
     required String name,
     required int teacher,
     required int? parentClass,
+    required bool isManuallyEdited,
   }) async {
     final teacherQuery = db.select(db.teachers)
       ..where((t) => t.id.equals(teacher));
@@ -107,6 +113,7 @@ class Course extends ChangeNotifier {
       teacher: teach,
       parentClass: class_,
       courseTimes: courseTimes,
+      isManuallyEdited: isManuallyEdited,
     );
 
     teacherQuery.watch().listen((event) {
