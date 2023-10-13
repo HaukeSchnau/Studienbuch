@@ -1,5 +1,8 @@
 import 'package:class_mate/components/tutorial/tutorial_provider.dart';
+import 'package:class_mate/database/database.dart';
+import 'package:class_mate/hooks/use_user.dart';
 import 'package:class_mate/pages/week_page.dart';
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
@@ -148,11 +151,11 @@ class WeekPageTutorial extends HookWidget {
           keyTarget: tutorialKeys[WeekTutorialKeys.abSwitcher],
           contents: [
             TargetContent(
-                align: ContentAlign.left,
+                align: ContentAlign.bottom,
                 child: const MyTargetContent(
-                  top: -50,
+                  top: 0,
                   left: 0,
-                  right: 20,
+                  right: 0,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,15 +272,22 @@ class WeekPageTutorial extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final editMode = useState(false);
+    final user = useUser();
 
     return TutorialProvider<WeekTutorialKeys>(
       targetFocusBuilder: _createTargets,
+      showTutorial: !user.hasCompletedScheduleTutorial,
       initialTutorialKeys: {
         WeekTutorialKeys.someCourseTime: GlobalKey(),
         WeekTutorialKeys.weekSwitcher: GlobalKey(),
         WeekTutorialKeys.editButton: GlobalKey(),
         WeekTutorialKeys.abSwitcher: GlobalKey(),
         WeekTutorialKeys.courseDragHandle: GlobalKey(),
+      },
+      onFinish: () {
+        db.update(db.users).write(const UsersCompanion(
+              hasCompletedScheduleTutorial: Value(true),
+            ));
       },
       onClickTarget: (target) {
         if (target.identify == WeekTutorialKeys.editButton) {

@@ -84,8 +84,8 @@ class WeekPage extends HookWidget {
             child: Column(
               children: [
                 const SizedBox(height: 8),
-                const Text("Meine Woche",
-                    style: TextStyle(
+                Text(editMode ? "Mein Stundenplan" : "Meine Woche",
+                    style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 20)),

@@ -88,14 +88,17 @@ class WeekGrid extends HookWidget {
             shadowEntry.value = shadowEntryData;
           },
           builder: (context) {
-            final firstBlock =
-                weeklyAgenda.expand((agenda) => agenda.blocks).toList()[0];
-            final firstAb = weeklyAgenda
-                .expand((agenda) => agenda.blocks)
-                .firstWhere(
+            final Iterable<AgendaTimeBlock?> allBlocks =
+                weeklyAgenda.expand((agenda) => agenda.blocks);
+            final firstBlock = allBlocks.firstWhere(
+                (block) => block?.entry.course != null,
+                orElse: () => null);
+            final firstAb = firstBlock != null
+                ? allBlocks.firstWhere(
                     (block) =>
-                        block.entry.recurringTime.weeks != CourseTimeWeek.both,
-                    orElse: () => firstBlock);
+                        block?.entry.recurringTime.weeks != CourseTimeWeek.both,
+                    orElse: () => firstBlock)
+                : null;
 
             return Stack(
               children: [
@@ -118,9 +121,9 @@ class WeekGrid extends HookWidget {
                   for (final block in day.blocks)
                     ScheduleEntry(
                       isFirst: block.entry.recurringTime.id ==
-                          firstBlock.entry.recurringTime.id,
+                          firstBlock?.entry.recurringTime.id,
                       isFirstAb: block.entry.recurringTime.id ==
-                          firstAb.entry.recurringTime.id,
+                          firstAb?.entry.recurringTime.id,
                       block: block,
                       editMode: editMode,
                       gridHeight: height,

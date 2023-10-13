@@ -18,12 +18,16 @@ class TutorialProvider<TKeyIds> extends HookWidget {
   final TargetFocusBuilder<TKeyIds> targetFocusBuilder;
   final TutorialKeys<TKeyIds> initialTutorialKeys;
   final FutureOr<void> Function(TargetFocus)? onClickTarget;
+  final VoidCallback onFinish;
+  final bool showTutorial;
 
   const TutorialProvider(
       {super.key,
       required this.child,
       required this.targetFocusBuilder,
       required this.initialTutorialKeys,
+      required this.onFinish,
+      required this.showTutorial,
       this.onClickTarget});
 
   TutorialCoachMark _createTutorial(TutorialKeys<TKeyIds> tutorialKeys) {
@@ -36,6 +40,7 @@ class TutorialProvider<TKeyIds> extends HookWidget {
         color: Colors.white,
       ),
       onClickTarget: onClickTarget,
+      onFinish: onFinish,
       alignSkip: Alignment.topRight,
       paddingFocus: 0,
       opacityShadow: 0.6,
@@ -48,8 +53,10 @@ class TutorialProvider<TKeyIds> extends HookWidget {
     final tutorialKeys = useState<TutorialKeys<TKeyIds>>(initialTutorialKeys);
 
     useEffect(() {
-      Future.delayed(const Duration(milliseconds: 500)).then((value) =>
-          _createTutorial(tutorialKeys.value).show(context: context));
+      if (showTutorial) {
+        Future.delayed(const Duration(milliseconds: 500)).then((value) =>
+            _createTutorial(tutorialKeys.value).show(context: context));
+      }
 
       return null;
     }, []);
