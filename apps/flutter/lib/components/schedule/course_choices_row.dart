@@ -1,13 +1,17 @@
 import 'package:class_mate/components/schedule/course_cell.dart';
+import 'package:class_mate/components/tutorial/tutorial_provider.dart';
 import 'package:class_mate/models/course.dart';
+import 'package:class_mate/pages/week_page_tutorial.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:provider/provider.dart';
 
 class CourseChoicesRow extends HookWidget {
   const CourseChoicesRow({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final tutorialKeys = context.watch<TutorialKeyNotifier>();
     final courses = useCourses();
 
     if (courses == null) {
@@ -15,6 +19,7 @@ class CourseChoicesRow extends HookWidget {
     }
 
     return Wrap(
+      key: tutorialKeys.value[WeekTutorialKeys.courseDragHandle],
       spacing: 4,
       runSpacing: 4,
       direction: Axis.horizontal,

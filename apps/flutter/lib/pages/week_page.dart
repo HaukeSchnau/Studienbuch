@@ -12,7 +12,11 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:provider/provider.dart';
 
 class WeekPage extends HookWidget {
-  const WeekPage({super.key});
+  final bool editMode;
+  final void Function(bool) onEditModeChanged;
+
+  const WeekPage(
+      {super.key, required this.editMode, required this.onEditModeChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -21,11 +25,8 @@ class WeekPage extends HookWidget {
     final defaultDate = DateTime.now(); // store.agenda.date;
     final weekDef = useState(WeekDef(defaultDate.year, defaultDate.weekNumber));
 
-    final editMode = useState(false);
-
     final weekdays = getDaysInWeek(weekDef.value);
-    final weeklyAgenda =
-        useWeeklyAgenda(weekDef.value, ignoreWeeks: editMode.value);
+    final weeklyAgenda = useWeeklyAgenda(weekDef.value, ignoreWeeks: editMode);
     final isThisYear = weekDef.value.year == DateTime.now().year;
 
     final weekSwitcherRow = Row(
@@ -89,7 +90,7 @@ class WeekPage extends HookWidget {
                         fontWeight: FontWeight.bold,
                         fontSize: 20)),
                 const SizedBox(height: 8),
-                Weekdays(days: editMode.value ? null : weekdays),
+                Weekdays(days: editMode ? null : weekdays),
                 const SizedBox(height: 12),
               ],
             ),
@@ -100,7 +101,7 @@ class WeekPage extends HookWidget {
         Expanded(
             child: WeekGrid(
           weeklyAgenda: weeklyAgenda,
-          editMode: editMode.value,
+          editMode: editMode,
         )),
       Container(
         decoration: BoxDecoration(
@@ -119,16 +120,16 @@ class WeekPage extends HookWidget {
           child: Row(
             mainAxisSize: MainAxisSize.max,
             children: [
-              if (!editMode.value) weekSwitcherRow,
-              if (editMode.value)
+              if (!editMode) weekSwitcherRow,
+              if (editMode)
                 const Expanded(
                   child: CourseChoicesRow(),
                 ),
-              if (!editMode.value) const Spacer(),
+              if (!editMode) const Spacer(),
               TextButton(
                 key: tutorialKeys.value[WeekTutorialKeys.editButton],
-                onPressed: () => editMode.value = !editMode.value,
-                child: Text(editMode.value ? "Speichern" : "Bearbeiten",
+                onPressed: () => onEditModeChanged(!editMode),
+                child: Text(editMode ? "Speichern" : "Bearbeiten",
                     style: TextStyle(
                         color: theme.primary,
                         fontWeight: FontWeight.bold,

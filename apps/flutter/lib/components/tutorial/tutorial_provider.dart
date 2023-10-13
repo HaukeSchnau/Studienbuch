@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:class_mate/static/colors.dart';
@@ -16,12 +17,14 @@ class TutorialProvider<TKeyIds> extends HookWidget {
   final Widget child;
   final TargetFocusBuilder<TKeyIds> targetFocusBuilder;
   final TutorialKeys<TKeyIds> initialTutorialKeys;
+  final FutureOr<void> Function(TargetFocus)? onClickTarget;
 
   const TutorialProvider(
       {super.key,
       required this.child,
       required this.targetFocusBuilder,
-      required this.initialTutorialKeys});
+      required this.initialTutorialKeys,
+      this.onClickTarget});
 
   TutorialCoachMark _createTutorial(TutorialKeys<TKeyIds> tutorialKeys) {
     return TutorialCoachMark(
@@ -32,6 +35,7 @@ class TutorialProvider<TKeyIds> extends HookWidget {
         fontSize: 16.0,
         color: Colors.white,
       ),
+      onClickTarget: onClickTarget,
       alignSkip: Alignment.topRight,
       paddingFocus: 0,
       opacityShadow: 0.6,

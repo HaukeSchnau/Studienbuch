@@ -2,15 +2,18 @@ import 'package:class_mate/business_domain/schedule/agenda.dart';
 import 'package:class_mate/components/schedule/course_cell.dart';
 import 'package:class_mate/components/schedule/schedule_view_helpers.dart';
 import 'package:class_mate/components/schedule/schedule_view_math_helpers.dart';
+import 'package:class_mate/components/tutorial/tutorial_provider.dart';
 import 'package:class_mate/components/util/math.dart';
 import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:class_mate/models/semester.dart';
+import 'package:class_mate/pages/week_page_tutorial.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:provider/provider.dart';
 
 class ScheduleEntry extends HookWidget {
   final AgendaTimeBlock block;
@@ -18,10 +21,14 @@ class ScheduleEntry extends HookWidget {
   final double gridHeight;
   final double gridWidth;
   final TimeOfDay maxTime;
+  final bool isFirst;
+  final bool isFirstAb;
 
   const ScheduleEntry(
       {Key? key,
       required this.block,
+      required this.isFirst,
+      required this.isFirstAb,
       required this.editMode,
       required this.gridHeight,
       required this.gridWidth,
@@ -30,6 +37,8 @@ class ScheduleEntry extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tutorialKeys = context.watch<TutorialKeyNotifier>();
+
     final columnWidth = (gridWidth - spaceLeft) / 5;
     final paddedWidth = (columnWidth - entryPad * 2);
     final cellWidth = paddedWidth / block.totalColumns -
@@ -133,6 +142,9 @@ class ScheduleEntry extends HookWidget {
           delta.value += details.delta;
         },
         child: GestureDetector(
+          key: isFirstAb
+              ? tutorialKeys.value[WeekTutorialKeys.abSwitcher]
+              : null,
           onTap: cycleCourseTimeWeek,
           child: Stack(
             fit: StackFit.expand,
@@ -173,6 +185,7 @@ class ScheduleEntry extends HookWidget {
     }
 
     return Positioned(
+      key: isFirst ? tutorialKeys.value[WeekTutorialKeys.someCourseTime] : null,
       top: pos.dy,
       left: pos.dx,
       width: size.width,

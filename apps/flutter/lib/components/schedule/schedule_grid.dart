@@ -6,14 +6,11 @@ import 'package:class_mate/components/schedule/schedule_entry.dart';
 import 'package:class_mate/components/schedule/schedule_grid_background.dart';
 import 'package:class_mate/components/schedule/schedule_view_math_helpers.dart';
 import 'package:class_mate/components/schedule/shadow_entry.dart';
-import 'package:class_mate/components/tutorial/tutorial_provider.dart';
 import 'package:class_mate/models/course_time.dart';
-import 'package:class_mate/pages/week_page_tutorial.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/util/date_util.dart';
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:provider/provider.dart';
 
 class WeekGrid extends HookWidget {
   final List<Agenda> weeklyAgenda;
@@ -91,8 +88,14 @@ class WeekGrid extends HookWidget {
             shadowEntry.value = shadowEntryData;
           },
           builder: (context) {
-            final tutorialKeys = context.watch<TutorialKeyNotifier>();
-            var i = 0;
+            final firstBlock =
+                weeklyAgenda.expand((agenda) => agenda.blocks).toList()[0];
+            final firstAb = weeklyAgenda
+                .expand((agenda) => agenda.blocks)
+                .firstWhere(
+                    (block) =>
+                        block.entry.recurringTime.weeks != CourseTimeWeek.both,
+                    orElse: () => firstBlock);
 
             return Stack(
               children: [
@@ -114,9 +117,10 @@ class WeekGrid extends HookWidget {
                 for (final day in weeklyAgenda)
                   for (final block in day.blocks)
                     ScheduleEntry(
-                      key: i++ == 0
-                          ? tutorialKeys.value[WeekTutorialKeys.someCourseTime]
-                          : null,
+                      isFirst: block.entry.recurringTime.id ==
+                          firstBlock.entry.recurringTime.id,
+                      isFirstAb: block.entry.recurringTime.id ==
+                          firstAb.entry.recurringTime.id,
                       block: block,
                       editMode: editMode,
                       gridHeight: height,
