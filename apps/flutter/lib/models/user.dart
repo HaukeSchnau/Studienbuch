@@ -18,6 +18,9 @@ class Users extends Table {
   DateTimeColumn get lastSyncedAt => dateTime().nullable()();
 
   DateTimeColumn get lastFullSyncedAt => dateTime().nullable()();
+
+  BoolColumn get hasCompletedScheduleTutorial =>
+      boolean().withDefault(const Constant(false))();
 }
 
 extension UserExtension on User {
