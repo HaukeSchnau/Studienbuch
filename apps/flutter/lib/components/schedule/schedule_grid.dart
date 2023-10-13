@@ -6,11 +6,14 @@ import 'package:class_mate/components/schedule/schedule_entry.dart';
 import 'package:class_mate/components/schedule/schedule_grid_background.dart';
 import 'package:class_mate/components/schedule/schedule_view_math_helpers.dart';
 import 'package:class_mate/components/schedule/shadow_entry.dart';
+import 'package:class_mate/components/tutorial/tutorial_provider.dart';
 import 'package:class_mate/models/course_time.dart';
+import 'package:class_mate/pages/week_page_tutorial.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/util/date_util.dart';
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:provider/provider.dart';
 
 class WeekGrid extends HookWidget {
   final List<Agenda> weeklyAgenda;
@@ -88,6 +91,9 @@ class WeekGrid extends HookWidget {
             shadowEntry.value = shadowEntryData;
           },
           builder: (context) {
+            final tutorialKeys = context.watch<TutorialKeyNotifier>();
+            var i = 0;
+
             return Stack(
               children: [
                 if (isToday && !editMode)
@@ -108,6 +114,9 @@ class WeekGrid extends HookWidget {
                 for (final day in weeklyAgenda)
                   for (final block in day.blocks)
                     ScheduleEntry(
+                      key: i++ == 0
+                          ? tutorialKeys.value[WeekTutorialKeys.someCourseTime]
+                          : null,
                       block: block,
                       editMode: editMode,
                       gridHeight: height,

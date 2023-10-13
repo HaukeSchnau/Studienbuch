@@ -1,13 +1,12 @@
+import 'package:class_mate/components/util/logo.dart';
 import 'package:class_mate/pages/home_page.dart';
 import 'package:class_mate/pages/profile_page.dart';
-import 'package:class_mate/pages/week_page.dart';
+import 'package:class_mate/pages/week_page_tutorial.dart';
 import 'package:class_mate/simple_scaffold.dart';
 import 'package:class_mate/util/ui_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-
-import 'package:class_mate/components/util/logo.dart';
 
 class Page {
   final Widget widget;
@@ -22,7 +21,7 @@ const pages = [
   Page(
       name: "Meine Woche",
       icon: Icons.calendar_today_rounded,
-      widget: WeekPage()),
+      widget: WeekPageTutorial()),
   Page(
     name: "Mein Profil",
     icon: Icons.person_rounded,

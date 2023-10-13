@@ -2,17 +2,22 @@ import 'package:class_mate/business_domain/time/weeks.dart';
 import 'package:class_mate/components/schedule/course_choices_row.dart';
 import 'package:class_mate/components/schedule/schedule_grid.dart';
 import 'package:class_mate/components/schedule/schedule_weekdays_view.dart';
+import 'package:class_mate/components/tutorial/tutorial_provider.dart';
 import 'package:class_mate/hooks/use_agenda.dart';
+import 'package:class_mate/pages/week_page_tutorial.dart';
 import 'package:class_mate/static/colors.dart';
 import 'package:class_mate/util/date_util.dart';
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:provider/provider.dart';
 
 class WeekPage extends HookWidget {
   const WeekPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final tutorialKeys = context.watch<TutorialKeyNotifier>();
+
     final defaultDate = DateTime.now(); // store.agenda.date;
     final weekDef = useState(WeekDef(defaultDate.year, defaultDate.weekNumber));
 
@@ -23,7 +28,8 @@ class WeekPage extends HookWidget {
         useWeeklyAgenda(weekDef.value, ignoreWeeks: editMode.value);
     final isThisYear = weekDef.value.year == DateTime.now().year;
 
-    final weekRow = Row(
+    final weekSwitcherRow = Row(
+      key: tutorialKeys.value[WeekTutorialKeys.weekSwitcher],
       children: [
         IconButton(
           icon: const Icon(Icons.chevron_left_rounded),
@@ -113,13 +119,14 @@ class WeekPage extends HookWidget {
           child: Row(
             mainAxisSize: MainAxisSize.max,
             children: [
-              if (!editMode.value) weekRow,
+              if (!editMode.value) weekSwitcherRow,
               if (editMode.value)
                 const Expanded(
                   child: CourseChoicesRow(),
                 ),
               if (!editMode.value) const Spacer(),
               TextButton(
+                key: tutorialKeys.value[WeekTutorialKeys.editButton],
                 onPressed: () => editMode.value = !editMode.value,
                 child: Text(editMode.value ? "Speichern" : "Bearbeiten",
                     style: TextStyle(
