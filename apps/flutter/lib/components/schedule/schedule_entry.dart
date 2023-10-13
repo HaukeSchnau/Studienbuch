@@ -95,6 +95,11 @@ class ScheduleEntry extends HookWidget {
               ? CourseTimeWeek.even
               : CourseTimeWeek.both;
 
+      await (db.update(db.courses)..where((tbl) => tbl.id.equals(course.id)))
+          .write(const CoursesCompanion(
+        isManuallyEdited: Value(true),
+      ));
+
       await (db.update(db.courseTimes)..where((tbl) => tbl.id.equals(time.id)))
           .write(CourseTimesCompanion(weeks: Value(newWeeks)));
     }
@@ -128,6 +133,12 @@ class ScheduleEntry extends HookWidget {
                   ..where((tbl) => tbl.id.equals(time.id)))
                 .go();
           } else {
+            await (db.update(db.courses)
+                  ..where((tbl) => tbl.id.equals(course.id)))
+                .write(const CoursesCompanion(
+              isManuallyEdited: Value(true),
+            ));
+
             await (db.update(db.courseTimes)
                   ..where((tbl) => tbl.id.equals(time.id)))
                 .write(CourseTimesCompanion(

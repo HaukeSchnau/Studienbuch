@@ -52,6 +52,11 @@ class NewCourseTimeDragTarget extends HookWidget {
       final day = getDayForX(offset.dx, width) + 1;
       final time = getNearestLessonTime(offset.dy, height, maxTime);
 
+      (db.update(db.courses)..where((tbl) => tbl.id.equals(details.data.id)))
+          .write(const CoursesCompanion(
+        isManuallyEdited: Value(true),
+      ));
+
       db.into(db.courseTimes).insert(CourseTimesCompanion.insert(
           weekday: clamp(day, 1, 5),
           start: time,

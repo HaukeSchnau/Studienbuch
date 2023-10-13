@@ -41,6 +41,7 @@ class TutorialProvider<TKeyIds> extends HookWidget {
       ),
       onClickTarget: onClickTarget,
       onFinish: onFinish,
+      onSkip: onFinish,
       alignSkip: Alignment.topRight,
       paddingFocus: 0,
       opacityShadow: 0.6,
