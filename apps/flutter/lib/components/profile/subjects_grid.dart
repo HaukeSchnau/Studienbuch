@@ -132,14 +132,12 @@ class CourseCard extends HookWidget {
     final written = useWrittenGrades(course);
 
     const pIndex = -1;
-    // final grades = store.user.grades[semester]![course.name]!; // TODO
-
     final iconPath = course.icon;
 
     return MyCard(
       padding: const EdgeInsets.symmetric(
         horizontal: 16,
-        vertical: pIndex != -1 && pIndex < 2 ? 48 : 24,
+        vertical: pIndex >= 0 && pIndex < 2 ? 48 : 24,
       ),
       onTap: () async {
         course.navigateTo(context, semester.id);
