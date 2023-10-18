@@ -1,5 +1,5 @@
 {
-  "name": "@urbs/shared",
+  "name": "@acme/shared",
   "version": "0.1.0",
   "private": true,
   "main": "./index.ts",
@@ -19,9 +19,9 @@
   },
   "devDependencies": {
     "@total-typescript/shoehorn": "^0.1.0",
-    "@urbs/eslint-config": "^0.2.0",
-    "@urbs/prettier-config": "^0.1.0",
-    "@urbs/tsconfig": "^0.1.0",
+    "@acme/eslint-config": "^0.2.0",
+    "@acme/prettier-config": "^0.1.0",
+    "@acme/tsconfig": "^0.1.0",
     "eslint": "^8.50.0",
     "prettier": "^3.0.3",
     "typescript": "^5.2.2"
@@ -29,8 +29,8 @@
   "eslintConfig": {
     "root": true,
     "extends": [
-      "@urbs/eslint-config/base"
+      "@acme/eslint-config/base"
     ]
   },
-  "prettier": "@urbs/prettier-config"
+  "prettier": "@acme/prettier-config"
 }
