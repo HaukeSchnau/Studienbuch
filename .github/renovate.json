@@ -3,9 +3,11 @@
   "extends": ["config:base"],
   "packageRules": [
     {
-      "matchPackagePatterns": ["^@acme/", "eslint-config-acme"],
+      "matchPackagePatterns": ["^@acme/"],
       "enabled": false
     }
   ],
-  "updateInternalDeps": true
+  "updateInternalDeps": true,
+  "rangeStrategy": "bump",
+  "automerge": true
 }
