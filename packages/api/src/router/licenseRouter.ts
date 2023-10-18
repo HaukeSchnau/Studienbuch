@@ -1,9 +1,10 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { publicProcedure } from "../procedures/publicProcedure";
 
-import { createTRPCRouter, publicProcedure } from "../trpc";
+import { createRouter } from "../trpc";
 
-export const licenseRouter = createTRPCRouter({
+export const licenseRouter = createRouter({
   check: publicProcedure
     .meta({ openapi: { method: "GET", path: "/licenses/check" } })
     .input(
@@ -13,7 +14,7 @@ export const licenseRouter = createTRPCRouter({
     )
     .output(z.enum(["INVALID", "EXPIRED", "ACTIVATED", "VALID"] as const))
     .query(async ({ ctx, input }) => {
-      const licenseKey = await ctx.prisma.licenseKey.findFirst({
+      const licenseKey = await ctx.db.licenseKey.findFirst({
         where: { key: input.licenseKey },
       });
       if (!licenseKey) {
@@ -40,7 +41,7 @@ export const licenseRouter = createTRPCRouter({
     )
     .output(z.void())
     .mutation(async ({ ctx, input }) => {
-      const licenseKey = await ctx.prisma.licenseKey.findFirst({
+      const licenseKey = await ctx.db.licenseKey.findFirst({
         where: { key: input.licenseKey },
       });
       if (!licenseKey) {
@@ -64,7 +65,7 @@ export const licenseRouter = createTRPCRouter({
       //     message: "License key already activated",
       //   });
       // }
-      await ctx.prisma.licenseKey.update({
+      await ctx.db.licenseKey.update({
         where: { id: licenseKey.id },
         data: { activatedAt: new Date() },
       });

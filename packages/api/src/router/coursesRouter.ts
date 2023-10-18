@@ -2,9 +2,10 @@ import { z } from "zod";
 
 import { CourseModel, CourseTimeModel, UserModel } from "@acme/db/prisma/zod";
 
-import { createTRPCRouter, publicProcedure } from "../trpc";
+import { createRouter } from "../trpc";
+import { publicProcedure } from "../procedures/publicProcedure";
 
-export const coursesRouter = createTRPCRouter({
+export const coursesRouter = createRouter({
   get: publicProcedure
     .meta({ openapi: { method: "GET", path: "/courses/{yearId}" } })
     .input(z.object({ yearId: z.number() }))
@@ -17,7 +18,7 @@ export const coursesRouter = createTRPCRouter({
       ),
     )
     .query(async ({ ctx, input }) => {
-      return ctx.prisma.course.findMany({
+      return ctx.db.course.findMany({
         where: { yearId: input.yearId },
         include: {
           teacher: {
