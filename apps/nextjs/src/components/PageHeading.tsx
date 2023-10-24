@@ -1,8 +1,8 @@
 import Head from "next/head";
 
-type PageHeadingProps = {
+interface PageHeadingProps {
   title: string;
-};
+}
 
 export const PageHeading = ({ title }: PageHeadingProps) => {
   return (

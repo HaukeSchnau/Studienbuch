@@ -4,7 +4,7 @@ import clsx from "clsx";
 import styles from "./datenschutz.module.css";
 
 const Datenschutz = () => (
-  <div className={clsx("mx-auto max-w-screen-sm text-gray-700", styles.page)}>
+  <div className={clsx("text-gray-700 mx-auto max-w-screen-sm", styles.page)}>
     <Head>
       <title>Datenschutz | ClassMate</title>
     </Head>
@@ -13,8 +13,8 @@ const Datenschutz = () => (
     <p>
       Mit der folgenden Datenschutzerklärung möchten wir Sie darüber aufklären,
       welche Arten Ihrer personenbezogenen Daten (nachfolgend auch kurz als
-      "Daten“ bezeichnet) wir zu welchen Zwecken und in welchem Umfang im Rahmen
-      der Bereitstellung unserer Applikation verarbeiten.
+      &quot;Daten&quot; bezeichnet) wir zu welchen Zwecken und in welchem Umfang
+      im Rahmen der Bereitstellung unserer Applikation verarbeiten.
     </p>
     <p>Die verwendeten Begriffe sind nicht geschlechtsspezifisch.</p>
     <p>Stand: 16. Mai 2023</p>
@@ -239,10 +239,11 @@ const Datenschutz = () => (
     <h2 id="m317">Geschäftliche Leistungen</h2>
     <p>
       Wir verarbeiten Daten unserer Vertrags- und Geschäftspartner, z.B. Kunden
-      und Interessenten (zusammenfassend bezeichnet als "Vertragspartner") im
-      Rahmen von vertraglichen und vergleichbaren Rechtsverhältnissen sowie
-      damit verbundenen Maßnahmen und im Rahmen der Kommunikation mit den
-      Vertragspartnern (oder vorvertraglich), z.B., um Anfragen zu beantworten.
+      und Interessenten (zusammenfassend bezeichnet als
+      &quot;Vertragspartner&quot;) im Rahmen von vertraglichen und
+      vergleichbaren Rechtsverhältnissen sowie damit verbundenen Maßnahmen und
+      im Rahmen der Kommunikation mit den Vertragspartnern (oder
+      vorvertraglich), z.B., um Anfragen zu beantworten.
     </p>
     <p>
       Wir verarbeiten diese Daten, um unsere vertraglichen Verpflichtungen zu
@@ -360,24 +361,24 @@ const Datenschutz = () => (
         </strong>
         Für die Bereitstellung unseres Onlineangebotes nutzen wir Speicherplatz,
         Rechenkapazität und Software, die wir von einem entsprechenden
-        Serveranbieter (auch "Webhoster" genannt) mieten oder anderweitig
-        beziehen;
+        Serveranbieter (auch &quot;Webhoster&quot; genannt) mieten oder
+        anderweitig beziehen;
         <strong>Rechtsgrundlagen:</strong> Berechtigte Interessen (Art. 6 Abs. 1
         S. 1 lit. f) DSGVO).
       </li>
       <li>
         <strong>Erhebung von Zugriffsdaten und Logfiles: </strong>Der Zugriff
-        auf unser Onlineangebot wird in Form von so genannten "Server-Logfiles"
-        protokolliert. Zu den Serverlogfiles können die Adresse und Name der
-        abgerufenen Webseiten und Dateien, Datum und Uhrzeit des Abrufs,
-        übertragene Datenmengen, Meldung über erfolgreichen Abruf, Browsertyp
-        nebst Version, das Betriebssystem des Nutzers, Referrer URL (die zuvor
-        besuchte Seite) und im Regelfall IP-Adressen und der anfragende Provider
-        gehören. Die Serverlogfiles können zum einen zu Zwecken der Sicherheit
-        eingesetzt werden, z.B., um eine Überlastung der Server zu vermeiden
-        (insbesondere im Fall von missbräuchlichen Angriffen, sogenannten
-        DDoS-Attacken) und zum anderen, um die Auslastung der Server und ihre
-        Stabilität sicherzustellen;
+        auf unser Onlineangebot wird in Form von so genannten
+        &quot;Server-Logfiles&quot; protokolliert. Zu den Serverlogfiles können
+        die Adresse und Name der abgerufenen Webseiten und Dateien, Datum und
+        Uhrzeit des Abrufs, übertragene Datenmengen, Meldung über erfolgreichen
+        Abruf, Browsertyp nebst Version, das Betriebssystem des Nutzers,
+        Referrer URL (die zuvor besuchte Seite) und im Regelfall IP-Adressen und
+        der anfragende Provider gehören. Die Serverlogfiles können zum einen zu
+        Zwecken der Sicherheit eingesetzt werden, z.B., um eine Überlastung der
+        Server zu vermeiden (insbesondere im Fall von missbräuchlichen
+        Angriffen, sogenannten DDoS-Attacken) und zum anderen, um die Auslastung
+        der Server und ihre Stabilität sicherzustellen;
         <strong>Rechtsgrundlagen:</strong> Berechtigte Interessen (Art. 6 Abs. 1
         S. 1 lit. f) DSGVO); <strong>Löschung von Daten:</strong>{" "}
         Logfile-Informationen werden für die Dauer von maximal 30 Tagen
@@ -410,9 +411,10 @@ const Datenschutz = () => (
     <h2 id="m1643">Push-Nachrichten</h2>
     <p>
       Mit der Zustimmung der Nutzer, können wir den Nutzern so genannte
-      "Push-Benachrichtigungen" zusenden. Dabei handelt es sich um Nachrichten,
-      die auf den Bildschirmen, Endgeräten oder in Browsern der Nutzer angezeigt
-      werden, auch wenn unser Onlinedienst gerade nicht aktiv genutzt wird.
+      &quot;Push-Benachrichtigungen&quot; zusenden. Dabei handelt es sich um
+      Nachrichten, die auf den Bildschirmen, Endgeräten oder in Browsern der
+      Nutzer angezeigt werden, auch wenn unser Onlinedienst gerade nicht aktiv
+      genutzt wird.
     </p>
     <p>
       Um sich für die Push-Nachrichten anzumelden, müssen Nutzer die Abfrage
@@ -421,7 +423,8 @@ const Datenschutz = () => (
       Speicherung ist erforderlich, um zu erkennen, ob Nutzer dem Empfang der
       Push-Nachrichten zugestimmt haben sowie um die Zustimmung nachweisen zu
       können. Zu diesen Zwecken wird ein pseudonymer Identifikator des Browsers
-      (sog. "Push-Token") oder die Geräte-ID eines Endgerätes gespeichert.
+      (sog. &quot;Push-Token&quot;) oder die Geräte-ID eines Endgerätes
+      gespeichert.
     </p>
     <p>
       Die Push-Nachrichten können zum einen für die Erfüllung von vertraglichen
@@ -450,9 +453,9 @@ const Datenschutz = () => (
     <p>
       Wir binden in unser Onlineangebot Funktions- und Inhaltselemente ein, die
       von den Servern ihrer jeweiligen Anbieter (nachfolgend bezeichnet als
-      "Drittanbieter”) bezogen werden. Dabei kann es sich zum Beispiel um
-      Grafiken, Videos oder Stadtpläne handeln (nachfolgend einheitlich
-      bezeichnet als "Inhalte”).
+      &quot;Drittanbieter&quot;) bezogen werden. Dabei kann es sich zum Beispiel
+      um Grafiken, Videos oder Stadtpläne handeln (nachfolgend einheitlich
+      bezeichnet als &quot;Inhalte&quot;).
     </p>
     <p>
       Die Einbindung setzt immer voraus, dass die Drittanbieter dieser Inhalte
@@ -461,15 +464,15 @@ const Datenschutz = () => (
       für die Darstellung dieser Inhalte oder Funktionen erforderlich. Wir
       bemühen uns, nur solche Inhalte zu verwenden, deren jeweilige Anbieter die
       IP-Adresse lediglich zur Auslieferung der Inhalte verwenden. Drittanbieter
-      können ferner sogenannte Pixel-Tags (unsichtbare Grafiken, auch als "Web
-      Beacons" bezeichnet) für statistische oder Marketingzwecke verwenden.
-      Durch die "Pixel-Tags" können Informationen, wie der Besucherverkehr auf
-      den Seiten dieser Webseite, ausgewertet werden. Die pseudonymen
-      Informationen können ferner in Cookies auf dem Gerät der Nutzer
-      gespeichert werden und unter anderem technische Informationen zum Browser
-      und zum Betriebssystem, zu verweisenden Webseiten, zur Besuchszeit sowie
-      weitere Angaben zur Nutzung unseres Onlineangebotes enthalten als auch mit
-      solchen Informationen aus anderen Quellen verbunden werden.
+      können ferner sogenannte Pixel-Tags (unsichtbare Grafiken, auch als
+      &quot;Web Beacons&quot; bezeichnet) für statistische oder Marketingzwecke
+      verwenden. Durch die &quot;Pixel-Tags&quot; können Informationen, wie der
+      Besucherverkehr auf den Seiten dieser Webseite, ausgewertet werden. Die
+      pseudonymen Informationen können ferner in Cookies auf dem Gerät der
+      Nutzer gespeichert werden und unter anderem technische Informationen zum
+      Browser und zum Betriebssystem, zu verweisenden Webseiten, zur Besuchszeit
+      sowie weitere Angaben zur Nutzung unseres Onlineangebotes enthalten als
+      auch mit solchen Informationen aus anderen Quellen verbunden werden.
     </p>
     <ul className="m-elements">
       <li>
@@ -654,29 +657,30 @@ const Datenschutz = () => (
     </p>
     <ul className="glossary">
       <li>
-        <strong>Personenbezogene Daten:</strong> "Personenbezogene Daten“ sind
-        alle Informationen, die sich auf eine identifizierte oder
-        identifizierbare natürliche Person (im Folgenden "betroffene Person“)
-        beziehen; als identifizierbar wird eine natürliche Person angesehen, die
-        direkt oder indirekt, insbesondere mittels Zuordnung zu einer Kennung
-        wie einem Namen, zu einer Kennnummer, zu Standortdaten, zu einer
-        Online-Kennung (z.B. Cookie) oder zu einem oder mehreren besonderen
-        Merkmalen identifiziert werden kann, die Ausdruck der physischen,
-        physiologischen, genetischen, psychischen, wirtschaftlichen, kulturellen
-        oder sozialen Identität dieser natürlichen Person sind.
+        <strong>Personenbezogene Daten:</strong> &quot;Personenbezogene
+        Daten&quot; sind alle Informationen, die sich auf eine identifizierte
+        oder identifizierbare natürliche Person (im Folgenden &quot;betroffene
+        Person&quot;) beziehen; als identifizierbar wird eine natürliche Person
+        angesehen, die direkt oder indirekt, insbesondere mittels Zuordnung zu
+        einer Kennung wie einem Namen, zu einer Kennnummer, zu Standortdaten, zu
+        einer Online-Kennung (z.B. Cookie) oder zu einem oder mehreren
+        besonderen Merkmalen identifiziert werden kann, die Ausdruck der
+        physischen, physiologischen, genetischen, psychischen, wirtschaftlichen,
+        kulturellen oder sozialen Identität dieser natürlichen Person sind.
       </li>
       <li>
-        <strong>Verantwortlicher:</strong> Als "Verantwortlicher“ wird die
-        natürliche oder juristische Person, Behörde, Einrichtung oder andere
+        <strong>Verantwortlicher:</strong> Als &quot;Verantwortlicher&quot; wird
+        die natürliche oder juristische Person, Behörde, Einrichtung oder andere
         Stelle, die allein oder gemeinsam mit anderen über die Zwecke und Mittel
         der Verarbeitung von personenbezogenen Daten entscheidet, bezeichnet.
       </li>
       <li>
-        <strong>Verarbeitung:</strong> "Verarbeitung" ist jeder mit oder ohne
-        Hilfe automatisierter Verfahren ausgeführte Vorgang oder jede solche
-        Vorgangsreihe im Zusammenhang mit personenbezogenen Daten. Der Begriff
-        reicht weit und umfasst praktisch jeden Umgang mit Daten, sei es das
-        Erheben, das Auswerten, das Speichern, das Übermitteln oder das Löschen.
+        <strong>Verarbeitung:</strong> &quot;Verarbeitung&quot; ist jeder mit
+        oder ohne Hilfe automatisierter Verfahren ausgeführte Vorgang oder jede
+        solche Vorgangsreihe im Zusammenhang mit personenbezogenen Daten. Der
+        Begriff reicht weit und umfasst praktisch jeden Umgang mit Daten, sei es
+        das Erheben, das Auswerten, das Speichern, das Übermitteln oder das
+        Löschen.
       </li>
     </ul>
   </div>

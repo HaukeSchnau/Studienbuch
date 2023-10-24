@@ -6,17 +6,16 @@ import {
   formatWeeks,
   getNormalTime,
   hash,
-  type Teacher,
-  type TimetableCell,
 } from "@acme/common";
-import { type Course, type CourseTimeWeeks } from "@acme/db";
+import type { Teacher, TimetableCell } from "@acme/common";
+import type { Course, CourseTimeWeeks } from "@acme/db";
 
 import { api } from "~/utils/api";
 import { Card } from "./Card";
 
-type TimetableProps = {
+interface TimetableProps {
   yearId: number;
-};
+}
 
 const weekdays = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
 
@@ -61,7 +60,7 @@ export default function TimetableView({ yearId }: TimetableProps) {
             <th></th>
             {weekdays.map((day) => (
               <th
-                className="border-grey-100 border-l py-4 font-normal"
+                className="border-l border-grey-100 py-4 font-normal"
                 key={day}
               >
                 {day}
@@ -72,13 +71,13 @@ export default function TimetableView({ yearId }: TimetableProps) {
         <tbody>
           {timetable.data.map((row, periodIndex) => (
             <tr key={periodIndex}>
-              <th className="border-grey-100 border-t px-4 font-normal">
+              <th className="border-t border-grey-100 px-4 font-normal">
                 {formatTime(getNormalTime(periodIndex) ?? 0)} -{" "}
                 {formatTime((getNormalTime(periodIndex) ?? 0) + 80)}
               </th>
               {[...new Array<unknown>(5)].map((_, dayIndex) => (
                 <td
-                  className="border-grey-100  border-l border-t"
+                  className="border-l  border-t border-grey-100"
                   key={dayIndex}
                 >
                   <div className="flex flex-col gap-2 p-2">
@@ -106,7 +105,7 @@ const CoursePill = ({
   return (
     <Link
       href={`/admin/courses/${course.courseId}`}
-      className="flex items-center gap-2 rounded-full bg-green-100 px-3 py-2 text-sm text-white"
+      className="bg-green-100 flex items-center gap-2 rounded-full px-3 py-2 text-sm text-white"
       style={{
         backgroundColor: `hsl(${(hash(course.name) % 180) + 180}, 100%, 30%)`,
       }}

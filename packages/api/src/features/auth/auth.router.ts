@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { db } from "@acme/db";

@@ -1,15 +1,15 @@
-import { type Course, type CourseTime, type CourseTimeWeeks } from "@acme/db";
+import type { Course, CourseTime, CourseTimeWeeks } from "@acme/db";
 
 import { getNormalTimeIndex } from "../date";
-import { type Teacher } from "./teacher";
+import type { Teacher } from "./teacher";
 
-export type TimetableEntry = {
+export interface TimetableEntry {
   course: Omit<Course, "createdAt" | "room"> & {
     teacher: Teacher;
   }; // TODO: Fix this when we move away from Flutter and to React Native so we don't need the Prisma Zod generator anymore
   weeks: CourseTimeWeeks;
   duration: number;
-};
+}
 
 export type TimetableCell = TimetableEntry[];
 

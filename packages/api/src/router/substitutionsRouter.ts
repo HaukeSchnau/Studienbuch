@@ -4,8 +4,8 @@ import { z } from "zod";
 
 import { CourseModel, SubstitutionModel } from "@acme/db/prisma/zod";
 
-import { createRouter } from "../trpc";
 import { publicProcedure } from "../procedures/publicProcedure";
+import { createRouter } from "../trpc";
 
 dayjs.extend(utc);
 

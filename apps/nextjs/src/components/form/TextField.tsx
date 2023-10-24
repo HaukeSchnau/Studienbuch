@@ -19,7 +19,7 @@ export const TextField = forwardRef(function TextField(
     >
       {label}
       <input
-        className="bg-black-80 border-darkgrey focus:border-blue mb-1 mt-2 w-full border-b-2 p-4 text-lg transition-all focus:outline-none"
+        className="mb-1 mt-2 w-full border-b-2 border-darkgrey bg-black-80 p-4 text-lg transition-all focus:border-blue focus:outline-none"
         ref={ref}
         {...props}
       />

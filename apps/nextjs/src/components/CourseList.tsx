@@ -1,14 +1,14 @@
 import { useMemo } from "react";
 
-import { type Course, type User } from "@acme/db";
+import type { Course, User } from "@acme/db";
 
 import { api } from "~/utils/api";
 import { CourseCard } from "./CourseCard";
 import { LoadingIndicator } from "./LoadingIndicator";
 
-type CourseListProps = {
+interface CourseListProps {
   yearId: number;
-};
+}
 
 export const CourseList = ({ yearId }: CourseListProps) => {
   const { isLoading, error, data } = api.courses.get.useQuery({ yearId });
@@ -30,7 +30,12 @@ export const CourseList = ({ yearId }: CourseListProps) => {
   const courses = sortedCourses ?? data;
 
   return (
-    <ul className="grid gap-10">
+    <ul
+      className="gap-10"
+      style={{
+        gridTemplateColumns: "repeat(auto-fill, minmax(15rem, 1fr))",
+      }}
+    >
       {courses.map((course) => (
         <CourseCard
           key={course.id}
@@ -44,12 +49,6 @@ export const CourseList = ({ yearId }: CourseListProps) => {
           }
         />
       ))}
-
-      <style jsx>{`
-        .grid {
-          grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-        }
-      `}</style>
     </ul>
   );
 };

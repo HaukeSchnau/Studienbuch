@@ -7,8 +7,8 @@ import {
   UserModel,
 } from "@acme/db/prisma/zod";
 
-import { createRouter } from "../trpc";
 import { publicProcedure } from "../procedures/publicProcedure";
+import { createRouter } from "../trpc";
 
 export const classesRouter = createRouter({
   get: publicProcedure

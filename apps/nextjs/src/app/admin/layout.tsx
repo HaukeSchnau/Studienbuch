@@ -17,7 +17,7 @@ export default function AdminLayout({ children }: Props) {
   }
 
   return (
-    <div className="bg-offwhite bg-main-blob flex h-screen overflow-hidden bg-contain bg-no-repeat">
+    <div className="flex h-screen overflow-hidden bg-offwhite bg-main-blob bg-contain bg-no-repeat">
       <div className="w-80 rounded-r-3xl bg-white p-4 shadow-md">
         <img
           src="/assets/icon.png"

@@ -1,13 +1,13 @@
 import { generateOpenApiDocument } from "trpc-openapi";
 
+import { authRouter } from "./features/auth/auth.router";
 import { classesRouter } from "./router/classesRouter";
 import { coursesRouter } from "./router/coursesRouter";
-import { sync } from "./router/syncRouter";
 import { licenseRouter } from "./router/licenseRouter";
 import { subscriptionsRouter } from "./router/subscriptionsRouter";
 import { substitutionsRouter } from "./router/substitutionsRouter";
+import { sync } from "./router/syncRouter";
 import { yearsRouter } from "./router/yearsRouter";
-import { authRouter } from "./features/auth/auth.router";
 import { createRouter } from "./trpc";
 
 export const appRouter = createRouter({
@@ -18,7 +18,7 @@ export const appRouter = createRouter({
   substitutions: substitutionsRouter,
   subscriptions: subscriptionsRouter,
   sync,
-  auth: authRouter
+  auth: authRouter,
 });
 
 export const openApiDocument = generateOpenApiDocument(appRouter, {

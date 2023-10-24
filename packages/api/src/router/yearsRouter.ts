@@ -2,8 +2,8 @@ import { z } from "zod";
 
 import { YearModel } from "@acme/db/prisma/zod/year";
 
-import { createRouter } from "../trpc";
 import { publicProcedure } from "../procedures/publicProcedure";
+import { createRouter } from "../trpc";
 
 const getYearNumber = (startYear: number) => {
   const now = new Date();

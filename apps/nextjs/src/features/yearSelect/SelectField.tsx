@@ -27,7 +27,7 @@ export default function SelectField<T>({
     <div className="flex flex-col gap-1">
       <label className="text-sm text-white">{label}</label>
       <select
-        className="rounded-md border border-gray-200 px-2 py-1 text-sm"
+        className="border-gray-200 rounded-md border px-2 py-1 text-sm"
         value={value.id}
         onChange={(e) =>
           onChange(

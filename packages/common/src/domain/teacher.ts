@@ -1,4 +1,4 @@
-import { type User } from "@acme/db";
+import type { User } from "@acme/db";
 
 export const formalName = (teacher: User) => {
   if (!teacher.title) {

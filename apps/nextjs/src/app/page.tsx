@@ -25,7 +25,7 @@ const Home: NextPage = () => {
             alt="IGS Lilienthal Logo"
             className="aspect-square w-[25vw] rounded-3xl md:w-48"
           />
-          <h1 className="text-green ml-4 flex-grow text-4xl font-bold leading-relaxed md:ml-12 md:text-6xl md:leading-relaxed">
+          <h1 className="ml-4 flex-grow text-4xl font-bold leading-relaxed text-green md:ml-12 md:text-6xl md:leading-relaxed">
             Das Digitale <br /> Studienbuch
           </h1>
         </div>

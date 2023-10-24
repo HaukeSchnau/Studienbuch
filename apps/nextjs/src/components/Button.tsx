@@ -19,8 +19,11 @@ export function Button({
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled} 
-      className={clsx("bg-blue rounded-3xl px-8 py-4 text-white uppercase font-bold ", className)}
+      disabled={disabled}
+      className={clsx(
+        "rounded-3xl bg-blue px-8 py-4 font-bold uppercase text-white ",
+        className,
+      )}
     >
       {children}
     </button>

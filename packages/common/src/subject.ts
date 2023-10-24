@@ -28,7 +28,7 @@ export const guessSubject = (subject?: string | null) => {
   const regex = /^\*?([^0-9]+)[0-9]*$/;
   const matches = regex.exec(subject.trim());
 
-  if (!matches || !matches[1]) return subject.trim().replaceAll("*", "");
+  if (!matches?.[1]) return subject.trim().replaceAll("*", "");
 
   const parsedSubject = matches[1];
   const subjectLower = parsedSubject.trim().toLowerCase();
