@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import p from "path";
 
-import { prisma } from "@acme/db";
+import { db } from "@acme/db";
 
 import { getFilePath } from "../getFilePath";
 import { getKnownUsers } from "./seedUtil/getKnownUsers";
@@ -10,7 +10,7 @@ import { seedSchedule } from "./seedUtil/seedSchedule";
 
 export const seedClasses = async () => {
   // Delete all course times
-  await prisma.courseTime.deleteMany({});
+  await db.courseTime.deleteMany({});
 
   const knownUsers = await getKnownUsers();
 
@@ -27,7 +27,7 @@ export const seedClasses = async () => {
   console.log("Done seeding courses");
 
   // Delete all courses that have no course times
-  // await prisma.course.deleteMany({
+  // await db.course.deleteMany({
   //   where: {
   //     times: {
   //       none: {},
@@ -37,7 +37,7 @@ export const seedClasses = async () => {
   // console.log("Successfully deleted all courses that have no course times");
   //
   // // Delete all classes that have no courses
-  // await prisma.class.deleteMany({
+  // await db.class.deleteMany({
   //   where: {
   //     courses: {
   //       none: {},
@@ -47,7 +47,7 @@ export const seedClasses = async () => {
   // console.log("Successfully deleted all classes that have no courses");
   //
   // // Delete all years that have no classes
-  // await prisma.year.deleteMany({
+  // await db.year.deleteMany({
   //   where: {
   //     classes: {
   //       none: {},

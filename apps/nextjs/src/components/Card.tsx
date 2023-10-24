@@ -10,7 +10,7 @@ interface CardProps {
 
 export const Card = ({ children, className, noPadding, href }: CardProps) => {
   const classes = clsx("rounded-3xl bg-white shadow-md", className, {
-    "p-4": !noPadding,
+    "p-8": !noPadding,
   });
 
   if (href)

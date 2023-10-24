@@ -1,13 +1,14 @@
-import { prisma } from "@acme/db";
+import { db } from "@acme/db";
 
 import { type KnownUser } from "./getKnownUsers";
 import { type ScheduleInfo } from "./parseScheduleCsv";
+import { generateHashedPassword } from "./generateHashedPassword";
 
 export const seedSchedule = async (
   { year, idInYear, courses }: ScheduleInfo,
   knownUsers: KnownUser[],
 ) => {
-  const dbYear = await prisma.year.upsert({
+  const dbYear = await db.year.upsert({
     where: {
       startYear: year.startYear,
     },
@@ -19,7 +20,7 @@ export const seedSchedule = async (
     update: {},
   });
 
-  const dbClass = await prisma.class.upsert({
+  const dbClass = await db.class.upsert({
     where: {
       classIdentifier: {
         identifierInYear: idInYear,
@@ -47,7 +48,7 @@ export const seedSchedule = async (
   } of courses) {
     const knownTeacher = knownUsers.find((user) => user.abbrv === teacher);
 
-    await prisma.course.upsert({
+    await db.course.upsert({
       where: {
         courseIdentifier: {
           courseId: normalizedCourseId,
@@ -67,6 +68,10 @@ export const seedSchedule = async (
             },
             create: {
               abbrv: teacher,
+              email: `${
+                  teacher.toLowerCase().replaceAll(" ", ".")
+                }@igslilienthal.de`,
+              passwordHash: await generateHashedPassword(),
               name: knownTeacher?.name ?? teacher,
               title: knownTeacher?.title,
               role: "TEACHER",
@@ -102,6 +107,10 @@ export const seedSchedule = async (
             },
             create: {
               abbrv: teacher,
+              email: `${
+                  teacher.toLowerCase().replaceAll(" ", ".")
+                }@igslilienthal.de`,
+              passwordHash: await generateHashedPassword(),
               name: knownTeacher?.name ?? teacher,
               title: knownTeacher?.title,
               role: "TEACHER",

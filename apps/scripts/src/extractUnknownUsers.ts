@@ -1,10 +1,10 @@
 import fs from "fs/promises";
 import Papa from "papaparse";
 
-import { prisma } from "@acme/db";
+import { db } from "@acme/db";
 
 const extractUnknownUsers = async () => {
-  const users = await prisma.user.findMany({
+  const users = await db.user.findMany({
     where: {
       role: "TEACHER",
     },

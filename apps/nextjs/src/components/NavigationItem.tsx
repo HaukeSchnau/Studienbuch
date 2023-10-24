@@ -1,17 +1,17 @@
-import Link from "next/link";
-import { useRouter } from "next/router";
-import cx from "clsx";
-import { signOut } from "next-auth/react";
+"use client";
 
-type NavigationItemProps = {
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import cx from "clsx";
+
+interface NavigationItemProps {
   href?: string;
   action?: () => void;
   children: React.ReactNode;
-};
+}
 
 const NavigationItem = ({ href, action, children }: NavigationItemProps) => {
-  const router = useRouter();
-  const { pathname } = router;
+  const pathname = usePathname();
   const active = pathname === href;
 
   return (
@@ -23,12 +23,12 @@ const NavigationItem = ({ href, action, children }: NavigationItemProps) => {
       })}
     >
       {href && (
-        <Link className="block py-4 px-6" href={href}>
+        <Link className="block px-6 py-4" href={href}>
           {children}
         </Link>
       )}
       {action && (
-        <button className="block py-4 px-6" onClick={action}>
+        <button className="block px-6 py-4" onClick={action}>
           {children}
         </button>
       )}
@@ -37,7 +37,9 @@ const NavigationItem = ({ href, action, children }: NavigationItemProps) => {
 };
 
 export const LogoutButton = () => {
-  return <NavigationItem action={() => signOut()}>Abmelden</NavigationItem>;
+  return (
+    <NavigationItem action={() => console.log("TODO")}>Abmelden</NavigationItem>
+  );
 };
 
 export default NavigationItem;

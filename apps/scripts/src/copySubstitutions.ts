@@ -8,7 +8,7 @@ import Papa from "papaparse";
 import z from "zod";
 
 import { capitalize, formalName } from "@acme/common";
-import { prisma, type Course, type Substitution, type User } from "@acme/db";
+import { db, type Course, type Substitution, type User } from "@acme/db";
 
 dayjs.extend(utc);
 
@@ -107,7 +107,7 @@ const notifySubscribers = async (
   // Don't notify for substitutions in the past
   if (substitution.date.getTime() < Date.now()) return 0;
 
-  const subscriptions = await prisma.courseSubscription.findMany({
+  const subscriptions = await db.courseSubscription.findMany({
     where: {
       courseId: course.id,
     },
@@ -158,7 +158,7 @@ const main = async () => {
         let startYear = today.getFullYear() - yearNum + 5;
         if (today.getMonth() < 7) startYear--;
 
-        const dbYear = await prisma.year.findFirst({
+        const dbYear = await db.year.findFirst({
           where: {
             startYear,
           },
@@ -169,7 +169,7 @@ const main = async () => {
           continue;
         }
 
-        const dbClass = await prisma.class.findFirst({
+        const dbClass = await db.class.findFirst({
           where: {
             yearId: dbYear.id,
             identifierInYear,
@@ -181,7 +181,7 @@ const main = async () => {
           continue;
         }
 
-        const dbCourse = await prisma.course.findFirst({
+        const dbCourse = await db.course.findFirst({
           where: {
             yearId: dbYear.id,
             classId: dbClass.id,
@@ -214,7 +214,7 @@ const main = async () => {
           continue;
         }
 
-        const res = await prisma.substitution.upsert({
+        const res = await db.substitution.upsert({
           where: {
             substitutionIdentifier: {
               date: substitution.date.toDate(),

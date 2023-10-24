@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-import { prisma } from "@acme/db";
+import { db } from "@acme/db";
 
 function generateLicenseKey(): string {
   return crypto
@@ -23,7 +23,7 @@ export const generateLicenses = async (numberOfLicenses: number) => {
       isSuperKey: i == 0,
     };
 
-    await prisma.licenseKey.upsert({
+    await db.licenseKey.upsert({
       where: {
         key: licenseKey,
       },

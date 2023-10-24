@@ -1,9 +1,7 @@
 {
-  "name": "@acme/shared",
+  "name": "@acme/common",
   "version": "0.1.0",
   "private": true,
-  "main": "./index.ts",
-  "types": "./index.ts",
   "license": "MIT",
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
@@ -13,16 +11,17 @@
   },
   "dependencies": {
     "@acme/db": "0.1.0",
+    "cross-fetch": "^4.0.0",
     "dayjs": "^1.11.7",
     "pdf-table-extractor": "^1.0.3",
     "vitest": "^0.32.0"
   },
   "devDependencies": {
-    "@total-typescript/shoehorn": "^0.1.0",
     "@acme/eslint-config": "^0.2.0",
     "@acme/prettier-config": "^0.1.0",
     "@acme/tsconfig": "^0.1.0",
-    "eslint": "^8.50.0",
+    "@total-typescript/shoehorn": "^0.1.0",
+    "eslint": "^8.51.0",
     "prettier": "^3.0.3",
     "typescript": "^5.2.2"
   },

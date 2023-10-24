@@ -12,8 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@acme/db": "^0.1.0",
     "@acme/common": "^0.1.0",
+    "@acme/db": "^0.1.0",
     "@t3-oss/env-nextjs": "^0.7.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
