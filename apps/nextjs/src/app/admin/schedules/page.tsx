@@ -1,19 +1,17 @@
 "use client";
 
-import { useState } from "react";
-
-import type { Year } from "@acme/db";
-
 import { PageHeading } from "~/components/PageHeading";
-import { YearSelectField } from "~/components/SelectField";
 import Timetable from "~/components/Timetable";
+import { useSelectedYear } from "~/features/yearSelect/selectedYearStore";
+import { YearSelectField } from "~/features/yearSelect/SelectField";
 
 export default function SchedulesPage() {
-  const [selectedYear, setSelectedYear] = useState<Omit<Year, "createdAt">>();
+  const { selectedYear } = useSelectedYear();
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeading title="Stundenpläne" />
-      <YearSelectField value={selectedYear} onChange={setSelectedYear} />
+      <YearSelectField />
       {selectedYear && <Timetable yearId={selectedYear.id} />}
     </div>
   );

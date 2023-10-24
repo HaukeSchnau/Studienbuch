@@ -1,22 +1,21 @@
 import { useEffect } from "react";
 
-import { type Year } from "@acme/db";
-
+import { useSelectedYear } from "~/features/yearSelect/selectedYearStore";
 import { api } from "~/utils/api";
-import { LoadingIndicator } from "./LoadingIndicator";
+import { LoadingIndicator } from "../../components/LoadingIndicator";
 
-type SelectEntry<T> = {
+interface SelectEntry<T> {
   label: string;
   value: T;
   id: string;
-};
+}
 
-type SelectFieldProps<T> = {
+interface SelectFieldProps<T> {
   label: string;
   value: SelectEntry<T>;
   onChange: (value?: T) => void;
   options: SelectEntry<T>[];
-};
+}
 
 export default function SelectField<T>({
   label,
@@ -46,22 +45,15 @@ export default function SelectField<T>({
   );
 }
 
-type YearSelectFieldProps = {
-  value?: Omit<Year, "createdAt">;
-  onChange: (value?: Omit<Year, "createdAt">) => void;
-};
-
-export const YearSelectField: React.FC<YearSelectFieldProps> = ({
-  value,
-  onChange,
-}) => {
+export const YearSelectField = () => {
   const { data: years, isLoading, error } = api.years.get.useQuery();
+  const { selectedYear, setSelectedYear } = useSelectedYear();
 
   useEffect(() => {
-    if (years && !value) {
-      onChange(years[0]);
+    if (years?.[0] && !selectedYear) {
+      setSelectedYear(years[0]);
     }
-  }, [years, value, onChange]);
+  }, [selectedYear, setSelectedYear, years]);
 
   if (isLoading) {
     return <LoadingIndicator />;
@@ -83,11 +75,11 @@ export const YearSelectField: React.FC<YearSelectFieldProps> = ({
           id: year.name,
         }))}
       value={{
-        label: value?.name ?? "Kein Jahr ausgewählt",
-        value: value,
-        id: value?.name ?? "Kein Jahr ausgewählt",
+        label: selectedYear?.name ?? "Kein Jahr ausgewählt",
+        value: selectedYear,
+        id: selectedYear?.name ?? "Kein Jahr ausgewählt",
       }}
-      onChange={(year) => year && onChange(year)}
+      onChange={(year) => year && setSelectedYear(year)}
     />
   );
 };

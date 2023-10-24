@@ -27,13 +27,15 @@
     "@trpc/react-query": "^10.40.0",
     "@trpc/server": "^10.40.0",
     "clsx": "^2.0.0",
+    "immer": "^10.0.3",
     "next": "^13.5.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-hook-form": "^7.47.0",
     "superjson": "1.13.1",
     "swagger-ui-react": "^5.9.0",
-    "zod": "^3.22.2"
+    "zod": "^3.22.2",
+    "zustand": "^4.4.4"
   },
   "devDependencies": {
     "@acme/eslint-config": "^0.2.0",
