@@ -2,8 +2,8 @@ import {z} from "zod";
 
 import {ClassModel, CourseModel, CourseTimeModel, UserModel, YearModel} from "@acme/db/prisma/zod";
 
-import {publicProcedure} from "../trpc";
 import "@total-typescript/ts-reset";
+import { publicProcedure } from "../procedures/publicProcedure";
 
 export const sync = publicProcedure
     .meta({openapi: {method: "POST", path: "/sync"}})
@@ -29,7 +29,7 @@ export const sync = publicProcedure
         const {courseIds, classIds, yearIds, userIds, lastSync: lastSyncNullish} = input;
         const lastSync = lastSyncNullish ?? undefined;
 
-        const updatedCourses = await ctx.prisma.course.findMany({
+        const updatedCourses = await ctx.db.course.findMany({
             where: {
                 updatedAt: {
                     gt: lastSync,
@@ -40,7 +40,7 @@ export const sync = publicProcedure
             },
         });
 
-        const updatedCourseTimes = await ctx.prisma.courseTime.findMany({
+        const updatedCourseTimes = await ctx.db.courseTime.findMany({
             where: {
                 updatedAt: {
                     gt: lastSync,
@@ -51,7 +51,7 @@ export const sync = publicProcedure
             },
         });
 
-        const updatedClasses = await ctx.prisma.class.findMany({
+        const updatedClasses = await ctx.db.class.findMany({
             where: {
                 updatedAt: {
                     gt: lastSync,
@@ -62,7 +62,7 @@ export const sync = publicProcedure
             },
         });
 
-        const updatedYears = await ctx.prisma.year.findMany({
+        const updatedYears = await ctx.db.year.findMany({
             where: {
                 updatedAt: {
                     gt: lastSync,
@@ -73,7 +73,7 @@ export const sync = publicProcedure
             },
         });
 
-        const updatedUsers = await ctx.prisma.user.findMany({
+        const updatedUsers = await ctx.db.user.findMany({
             where: {
                 updatedAt: {
                     gt: lastSync,

@@ -7,16 +7,18 @@ import { licenseRouter } from "./router/licenseRouter";
 import { subscriptionsRouter } from "./router/subscriptionsRouter";
 import { substitutionsRouter } from "./router/substitutionsRouter";
 import { yearsRouter } from "./router/yearsRouter";
-import { createTRPCRouter } from "./trpc";
+import { authRouter } from "./features/auth/auth.router";
+import { createRouter } from "./trpc";
 
-export const appRouter = createTRPCRouter({
+export const appRouter = createRouter({
   license: licenseRouter,
   years: yearsRouter,
   classes: classesRouter,
   courses: coursesRouter,
   substitutions: substitutionsRouter,
   subscriptions: subscriptionsRouter,
-  sync
+  sync,
+  auth: authRouter
 });
 
 export const openApiDocument = generateOpenApiDocument(appRouter, {

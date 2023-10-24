@@ -4,11 +4,12 @@ import { z } from "zod";
 
 import { CourseModel, SubstitutionModel } from "@acme/db/prisma/zod";
 
-import { createTRPCRouter, publicProcedure } from "../trpc";
+import { createRouter } from "../trpc";
+import { publicProcedure } from "../procedures/publicProcedure";
 
 dayjs.extend(utc);
 
-export const substitutionsRouter = createTRPCRouter({
+export const substitutionsRouter = createRouter({
   get: publicProcedure
     .meta({ openapi: { method: "GET", path: "/substitutions" } })
     .input(
@@ -24,7 +25,7 @@ export const substitutionsRouter = createTRPCRouter({
       ),
     )
     .query(async ({ ctx, input }) => {
-      return ctx.prisma.substitution
+      return ctx.db.substitution
         .findMany({
           include: { course: true },
           where: {

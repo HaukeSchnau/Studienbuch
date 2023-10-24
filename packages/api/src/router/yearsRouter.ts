@@ -2,7 +2,8 @@ import { z } from "zod";
 
 import { YearModel } from "@acme/db/prisma/zod/year";
 
-import { createTRPCRouter, publicProcedure } from "../trpc";
+import { createRouter } from "../trpc";
+import { publicProcedure } from "../procedures/publicProcedure";
 
 const getYearNumber = (startYear: number) => {
   const now = new Date();
@@ -15,13 +16,13 @@ const getYearNumber = (startYear: number) => {
   return currentYear - startYear + 5;
 };
 
-export const yearsRouter = createTRPCRouter({
+export const yearsRouter = createRouter({
   get: publicProcedure
     .meta({ openapi: { method: "GET", path: "/years" } })
     .input(z.void())
     .output(z.array(YearModel.omit({ createdAt: true })))
     .query(async ({ ctx }) => {
-      return ctx.prisma.year
+      return ctx.db.year
         .findMany()
         .then((years) =>
           years.filter((year) => getYearNumber(year.startYear) <= 13),

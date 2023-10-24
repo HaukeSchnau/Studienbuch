@@ -12,7 +12,7 @@ if [ ! -f "$SCRIPT_PATH" ]; then
 fi
 
 if [[ $SCRIPT_NAME == *".ts" ]]; then
-    ts-node $SCRIPT_PATH
+    ts-node $SCRIPT_PATH $@
 elif [[ $SCRIPT_NAME == *".py" ]]; then
     shift
     python $SCRIPT_PATH $@

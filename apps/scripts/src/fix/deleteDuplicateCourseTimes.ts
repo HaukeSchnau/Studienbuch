@@ -1,7 +1,7 @@
-import { prisma } from "@acme/db";
+import { db } from "@acme/db";
 
 export const deleteDuplicateCourseTimes = async () => {
-    const courses = await prisma.course.findMany({
+    const courses = await db.course.findMany({
         include: {
             times: true,
         },
@@ -18,7 +18,7 @@ export const deleteDuplicateCourseTimes = async () => {
         }
         if(timesToDelete.length > 0) {
             console.log(`Deleting ${timesToDelete.length} duplicate times for course ${course.id}`);
-            await prisma.courseTime.deleteMany({
+            await db.courseTime.deleteMany({
                 where: {
                     id: {
                         in: timesToDelete.map(t => t.id),

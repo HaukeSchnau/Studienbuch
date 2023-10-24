@@ -1,4 +1,4 @@
-import { formalName } from "@acme/common";
+import { formalName } from "@acme/common/src/domain/teacher";
 import { type Course, type User } from "@acme/db";
 
 import { Card, CardHeading } from "./Card";
