@@ -1,49 +1,11 @@
+"use client";
+
 import { useEffect } from "react";
 
-import { useSelectedYear } from "~/features/yearSelect/selectedYearStore";
+import { LoadingIndicator } from "~/components/LoadingIndicator";
 import { api } from "~/utils/api";
-import { LoadingIndicator } from "../../components/LoadingIndicator";
-
-interface SelectEntry<T> {
-  label: string;
-  value: T;
-  id: string;
-}
-
-interface SelectFieldProps<T> {
-  label: string;
-  value: SelectEntry<T>;
-  onChange: (value?: T) => void;
-  options: SelectEntry<T>[];
-}
-
-export default function SelectField<T>({
-  label,
-  value,
-  onChange,
-  options,
-}: SelectFieldProps<T>) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-sm text-white">{label}</label>
-      <select
-        className="border-gray-200 rounded-md border px-2 py-1 text-sm"
-        value={value.id}
-        onChange={(e) =>
-          onChange(
-            options.find((option) => option.id === e.target.value)?.value,
-          )
-        }
-      >
-        {options.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
+import SelectField from "../../components/SelectField";
+import { useSelectedYear } from "./selectedYearStore";
 
 export const YearSelectField = () => {
   const { data: years, isLoading, error } = api.years.get.useQuery();

@@ -2,8 +2,8 @@
 
 import { CourseList } from "~/components/CourseList";
 import { PageHeading } from "~/components/PageHeading";
+import { YearSelectField } from "~/components/SelectField";
 import { useSelectedYear } from "~/features/yearSelect/selectedYearStore";
-import { YearSelectField } from "~/features/yearSelect/SelectField";
 
 export default function Courses() {
   const { selectedYear } = useSelectedYear();
@@ -11,7 +11,6 @@ export default function Courses() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeading title="Kurse" />
-      <YearSelectField />
       {selectedYear && <CourseList yearId={selectedYear.id} />}
     </div>
   );

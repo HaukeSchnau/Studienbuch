@@ -1,3 +1,5 @@
+import { redirect, RedirectType } from "next/navigation";
+
 export default function AdminPage() {
-  return <></>;
+  return redirect("/admin/schedules", RedirectType.replace);
 }
