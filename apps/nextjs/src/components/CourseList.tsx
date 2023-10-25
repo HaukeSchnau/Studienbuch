@@ -31,7 +31,7 @@ export const CourseList = ({ yearId }: CourseListProps) => {
 
   return (
     <ul
-      className="gap-10"
+      className="grid gap-10"
       style={{
         gridTemplateColumns: "repeat(auto-fill, minmax(15rem, 1fr))",
       }}
