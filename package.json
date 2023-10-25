@@ -10,7 +10,7 @@
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo clean",
     "db:push": "pnpm -F db push",
-    "db:generate": "pnpm -F db generate",
+    "db:generate": "turbo db:generate",
     "db:seed": "pnpm -F scripts seed",
     "db:studio": "pnpm -F db studio",
     "dev": "turbo dev --parallel",

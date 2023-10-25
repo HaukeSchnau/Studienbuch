@@ -5,6 +5,10 @@
     "topo": {
       "dependsOn": ["^topo"]
     },
+    "db:generate": {
+      "inputs": ["prisma/schema.prisma"],
+      "cache": false
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "next-env.d.ts", ".expo/**"]
@@ -18,11 +22,11 @@
       "outputMode": "new-only"
     },
     "lint": {
-      "dependsOn": ["^topo"],
+      "dependsOn": ["^topo", "db:generate"],
       "outputs": ["node_modules/.cache/.eslintcache"]
     },
     "typecheck": {
-      "dependsOn": ["^topo"],
+      "dependsOn": ["^topo", "db:generate"],
       "outputs": ["node_modules/.cache/tsbuildinfo.json"]
     },
     "clean": {
@@ -32,7 +36,5 @@
       "cache": false
     }
   },
-  "globalEnv": [
-    "DATABASE_URL"
-  ]
+  "globalEnv": ["DATABASE_URL"]
 }
