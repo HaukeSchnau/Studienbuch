@@ -21,7 +21,7 @@ export default function SelectField<T>({
     <div className="flex flex-col gap-1">
       <label className="text-sm">{label}</label>
       <select
-        className="border-darkgrey bg-black-80 focus:border-blue mb-1 mt-2 w-full cursor-pointer border-b-2 p-4 text-lg transition-all focus:outline-none"
+        className="mb-1 mt-2 w-full cursor-pointer border-b-2 border-darkgrey bg-black-80 p-4 text-lg transition-all focus:border-blue focus:outline-none"
         value={value.id}
         onChange={(e) =>
           onChange(

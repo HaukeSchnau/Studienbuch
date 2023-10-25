@@ -2,7 +2,6 @@
 
 import { CourseList } from "~/components/CourseList";
 import { PageHeading } from "~/components/PageHeading";
-import { YearSelectField } from "~/components/SelectField";
 import { useSelectedYear } from "~/features/yearSelect/selectedYearStore";
 
 export default function Courses() {
