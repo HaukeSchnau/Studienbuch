@@ -1,7 +1,7 @@
 import Head from "next/head";
 import { redirect } from "next/navigation";
 
-import { Card, CardHeading } from "~/components/Card";
+import { Card, CardHeading } from "~/components/layout/Card";
 import { isLoggedIn } from "~/features/auth/isLoggedIn";
 import { LoginForm } from "~/features/auth/LoginForm";
 

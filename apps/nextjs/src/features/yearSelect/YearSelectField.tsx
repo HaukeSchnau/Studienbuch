@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 
-import { LoadingIndicator } from "~/components/LoadingIndicator";
+import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { api } from "~/utils/api";
-import SelectField from "../../components/SelectField";
+import SelectField from "../../components/form/SelectField";
 import { useSelectedYear } from "./selectedYearStore";
 
 export const YearSelectField = () => {

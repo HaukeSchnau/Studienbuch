@@ -1,7 +1,7 @@
 "use client";
 
-import { PageHeading } from "~/components/PageHeading";
-import Timetable from "~/components/Timetable";
+import { PageHeading } from "~/components/layout/PageHeading";
+import Timetable from "~/features/timetable/Timetable";
 import { useSelectedYear } from "~/features/yearSelect/selectedYearStore";
 
 export default function SchedulesPage() {

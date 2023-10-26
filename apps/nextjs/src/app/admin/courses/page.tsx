@@ -1,7 +1,7 @@
 "use client";
 
-import { CourseList } from "~/components/CourseList";
-import { PageHeading } from "~/components/PageHeading";
+import { CourseList } from "~/components/course/CourseList";
+import { PageHeading } from "~/components/layout/PageHeading";
 import { useSelectedYear } from "~/features/yearSelect/selectedYearStore";
 
 export default function Courses() {

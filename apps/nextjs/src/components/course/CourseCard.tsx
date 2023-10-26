@@ -1,7 +1,7 @@
 import type { Course } from "@acme/common";
 import { formalName } from "@acme/common";
 
-import { Card, CardHeading } from "./Card";
+import { Card, CardHeading } from "../layout/Card";
 
 interface CourseCardProps {
   course: Course;
