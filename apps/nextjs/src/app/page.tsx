@@ -1,8 +1,6 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import Image from "next/image";
 import clsx from "clsx";
-import icon from "public/assets/icon.png";
 
 import styles from "./home.module.css";
 
@@ -20,8 +18,8 @@ const Home: NextPage = () => {
             gridArea: "headline",
           }}
         >
-          <Image
-            src={icon}
+          <img
+            src="/assets/icon.png"
             alt="IGS Lilienthal Logo"
             className="aspect-square w-[25vw] rounded-3xl md:w-48"
           />
