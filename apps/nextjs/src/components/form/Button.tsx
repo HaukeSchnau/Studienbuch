@@ -21,7 +21,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
       className={clsx(
-        "hover:bg-blue-sec border-b-blue-sec hover:border-t-blue-sec rounded-3xl border-b-4 border-t-4 border-t-blue bg-blue px-8 py-4 font-bold uppercase text-white transition-all",
+        "rounded-3xl border-b-4 border-t-4 border-b-blue-sec border-t-blue bg-blue px-8 py-4 font-bold uppercase text-white transition-all hover:border-t-blue-sec hover:bg-blue-sec",
         className,
       )}
     >
