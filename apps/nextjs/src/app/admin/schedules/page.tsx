@@ -9,7 +9,7 @@ export default function SchedulesPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeading title="Stundenpläne" />
+      <PageHeading title="Stundenpläne" color="white" />
       {selectedYear && <Timetable yearId={selectedYear.id} />}
     </div>
   );
