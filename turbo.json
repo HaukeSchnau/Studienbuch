@@ -22,11 +22,11 @@
       "outputMode": "new-only"
     },
     "lint": {
-      "dependsOn": ["^topo", "^db:generate"],
+      "dependsOn": ["^topo"],
       "outputs": ["node_modules/.cache/.eslintcache"]
     },
     "typecheck": {
-      "dependsOn": ["^topo", "db:generate"],
+      "dependsOn": ["^topo"],
       "outputs": ["node_modules/.cache/tsbuildinfo.json"]
     },
     "clean": {
