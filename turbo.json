@@ -22,7 +22,7 @@
       "outputMode": "new-only"
     },
     "lint": {
-      "dependsOn": ["^topo", "db:generate"],
+      "dependsOn": ["^topo", "^db:generate"],
       "outputs": ["node_modules/.cache/.eslintcache"]
     },
     "typecheck": {
