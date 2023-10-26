@@ -1,5 +1,9 @@
 import type { Preview } from "@storybook/react";
 
+import "../src/styles/globals.css";
+
+import React, { CSSProperties } from "react";
+
 const preview: Preview = {
   parameters: {
     actions: { argTypesRegex: "^on[A-Z].*" },
@@ -10,6 +14,16 @@ const preview: Preview = {
       },
     },
   },
+  decorators: [
+    (Story) => (
+      <div
+        className="flex font-sans"
+        style={{ "--font-sans": "Nunito" } as CSSProperties}
+      >
+        <Story />
+      </div>
+    ),
+  ],
 };
 
 export default preview;
