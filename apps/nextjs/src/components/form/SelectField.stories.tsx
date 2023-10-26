@@ -26,6 +26,7 @@ const options = [
 export const Primary: Story = {
   args: {
     label: "Select an option",
+    emptyLabel: "No option selected",
     valueId: "option1",
     options,
   },
