@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 
-import { LoadingIndicator } from "~/components/LoadingIndicator";
+import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { api } from "~/utils/api";
-import SelectField from "../../components/SelectField";
+import { SelectField } from "../../components/form/SelectField";
 import { useSelectedYear } from "./selectedYearStore";
 
 export const YearSelectField = () => {
@@ -28,6 +28,7 @@ export const YearSelectField = () => {
   return (
     <SelectField
       label="Jahrgang"
+      emptyLabel="Kein Jahrgang ausgewählt"
       options={years
         .slice()
         .sort((a, b) => a.graduationYear - b.graduationYear)
@@ -36,11 +37,7 @@ export const YearSelectField = () => {
           value: year,
           id: year.name,
         }))}
-      value={{
-        label: selectedYear?.name ?? "Kein Jahr ausgewählt",
-        value: selectedYear,
-        id: selectedYear?.name ?? "Kein Jahr ausgewählt",
-      }}
+      valueId={selectedYear?.name}
       onChange={(year) => year && setSelectedYear(year)}
     />
   );

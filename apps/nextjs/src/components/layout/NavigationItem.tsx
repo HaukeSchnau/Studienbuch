@@ -10,7 +10,7 @@ interface NavigationItemProps {
   children: React.ReactNode;
 }
 
-const NavigationItem = ({ href, action, children }: NavigationItemProps) => {
+export const NavigationItem = ({ href, action, children }: NavigationItemProps) => {
   const pathname = usePathname();
   const active = pathname === href;
 
@@ -42,4 +42,3 @@ export const LogoutButton = () => {
   );
 };
 
-export default NavigationItem;

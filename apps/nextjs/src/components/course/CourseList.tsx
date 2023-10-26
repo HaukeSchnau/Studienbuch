@@ -3,8 +3,8 @@ import { useMemo } from "react";
 import type { Course } from "@acme/common";
 
 import { api } from "~/utils/api";
+import { LoadingIndicator } from "../layout/LoadingIndicator";
 import { CourseCard } from "./CourseCard";
-import { LoadingIndicator } from "./LoadingIndicator";
 
 interface CourseListProps {
   yearId: number;

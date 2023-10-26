@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
-import NavigationItem, { LogoutButton } from "~/components/NavigationItem";
+import {
+  LogoutButton,
+  NavigationItem,
+} from "~/components/layout/NavigationItem";
 import { isLoggedIn } from "~/features/auth/isLoggedIn";
 import { YearSelectField } from "~/features/yearSelect/YearSelectField";
 import { getCurrentUrl } from "~/utils/getCurrentUrl";

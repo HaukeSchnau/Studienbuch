@@ -9,8 +9,8 @@ import {
 } from "@acme/common";
 import type { Course, CourseTimeWeeks, TimetableCell } from "@acme/common";
 
+import { Card } from "~/components/layout/Card";
 import { api } from "~/utils/api";
-import { Card } from "./Card";
 
 interface TimetableProps {
   yearId: number;

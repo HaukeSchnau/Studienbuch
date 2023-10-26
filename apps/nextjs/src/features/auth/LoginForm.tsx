@@ -6,7 +6,7 @@ import type { SubmitHandler } from "react-hook-form";
 import { useLoginForm } from "@acme/react-shared";
 import type { LoginForm as LoginFormData } from "@acme/react-shared";
 
-import { Button } from "~/components/Button";
+import { Button } from "~/components/form/Button";
 import { TextField } from "~/components/form/TextField";
 import { api } from "~/utils/api";
 
