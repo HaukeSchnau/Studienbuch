@@ -9,7 +9,7 @@
     "clean": "rm -rf .turbo node_modules",
     "lint": "eslint . ",
     "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
-    "generate": "prisma generate",
+    "db:generate": "prisma generate",
     "push": "prisma db push --skip-generate",
     "push-delete": "prisma db push --skip-generate --force-reset --accept-data-loss",
     "studio": "prisma studio --port 5556",
