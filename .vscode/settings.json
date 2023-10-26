@@ -16,5 +16,8 @@
     "next/dist/client/router.d.ts"
   ],
   "dart.analysisExcludedFolders": ["apps/flutter/api"],
-  "python.analysis.typeCheckingMode": "basic"
+  "python.analysis.typeCheckingMode": "basic",
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma"
+  }
 }

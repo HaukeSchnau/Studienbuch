@@ -7,8 +7,7 @@ import {
   getNormalTime,
   hash,
 } from "@acme/common";
-import type { Teacher, TimetableCell } from "@acme/common";
-import type { Course, CourseTimeWeeks } from "@acme/db";
+import type { Course, CourseTimeWeeks, TimetableCell } from "@acme/common";
 
 import { api } from "~/utils/api";
 import { Card } from "./Card";
@@ -97,9 +96,7 @@ const CoursePill = ({
   course,
   weeks,
 }: {
-  course: Omit<Course, "createdAt" | "room"> & {
-    teacher: Teacher;
-  };
+  course: Course;
   weeks: CourseTimeWeeks;
 }) => {
   return (
@@ -132,5 +129,8 @@ export const useTimetable = (yearId: number) => {
     return { status: "error" as const, error: courses.error };
   }
 
-  return { status: "success" as const, data: buildTimetable(courses.data) };
+  return {
+    status: "success" as const,
+    data: buildTimetable(courses.data as Course[]),
+  }; // TODO fix when zod generator is fixed/not needed anymore
 };

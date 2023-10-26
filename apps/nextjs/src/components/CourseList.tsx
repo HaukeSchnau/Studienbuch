@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import type { Course, User } from "@acme/db";
+import type { Course } from "@acme/common";
 
 import { api } from "~/utils/api";
 import { CourseCard } from "./CourseCard";
@@ -40,12 +40,7 @@ export const CourseList = ({ yearId }: CourseListProps) => {
         <CourseCard
           key={course.id}
           course={
-            course as unknown as Omit<
-              Course,
-              "createdAt" | "updatedAt" | "room"
-            > & {
-              teacher: User;
-            } // TODO make this better
+            course as Course // TODO make this better
           }
         />
       ))}

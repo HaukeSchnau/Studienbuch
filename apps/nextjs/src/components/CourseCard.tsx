@@ -1,10 +1,10 @@
-import { formalName } from "@acme/common/src/domain/teacher";
-import type { Course, User } from "@acme/db";
+import type { Course } from "@acme/common";
+import { formalName } from "@acme/common";
 
 import { Card, CardHeading } from "./Card";
 
 interface CourseCardProps {
-  course: Omit<Course, "createdAt" | "updatedAt" | "room"> & { teacher: User };
+  course: Course;
 }
 
 export const CourseCard = ({ course }: CourseCardProps) => {

@@ -1,11 +1,11 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 
-import type { Year } from "@acme/db";
+import type { Year } from "@acme/common";
 
 interface SelectedYearState {
-  selectedYear: Omit<Year, "createdAt"> | null;
-  setSelectedYear: (year: Omit<Year, "createdAt">) => void;
+  selectedYear: Year | null;
+  setSelectedYear: (year: Year) => void;
 }
 
 export const useSelectedYear = create(

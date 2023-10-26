@@ -7,8 +7,13 @@ import { applicationDefault } from "firebase-admin/app";
 import Papa from "papaparse";
 import z from "zod";
 
-import { capitalize, formalName } from "@acme/common";
-import { db, type Course, type Substitution, type User } from "@acme/db";
+import {
+  capitalize,
+  CourseWithoutTimes,
+  formalName,
+  Substitution,
+} from "@acme/common";
+import { db } from "@acme/db";
 
 dayjs.extend(utc);
 
@@ -102,7 +107,7 @@ const parseFile = async (filepath: string) => {
 const notifySubscribers = async (
   app: firebase.app.App,
   substitution: Substitution,
-  course: Course & { teacher: User },
+  course: CourseWithoutTimes,
 ) => {
   // Don't notify for substitutions in the past
   if (substitution.date.getTime() < Date.now()) return 0;
