@@ -2,8 +2,6 @@ import fs from "fs/promises";
 import p from "path";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import firebase from "firebase-admin";
-import { applicationDefault } from "firebase-admin/app";
 import Papa from "papaparse";
 import z from "zod";
 
@@ -104,46 +102,46 @@ const parseFile = async (filepath: string) => {
 };
 
 // Returns the number of subscribers that were notified
-const notifySubscribers = async (
-  app: firebase.app.App,
-  substitution: Substitution,
-  course: CourseWithoutTimes,
-) => {
-  // Don't notify for substitutions in the past
-  if (substitution.date.getTime() < Date.now()) return 0;
-
-  const subscriptions = await db.courseSubscription.findMany({
-    where: {
-      courseId: course.id,
-    },
-  });
-
-  for (const subscription of subscriptions) {
-    await app.messaging().send({
-      notification: {
-        title: `Vertretungsplan: ${course.name} bei ${formalName(
-          course.teacher,
-        )}`,
-        body: `${capitalize(substitution.type)} am ${dayjs(
-          substitution.date,
-        ).format("DD.MM.")}`,
-      },
-      token: subscription.messagingToken,
-    });
-
-    console.log(
-      `Sent notification to ${subscription.messagingToken} for ${course.courseId} (ID: ${course.id})`,
-    );
-  }
-
-  return subscriptions.length;
-};
+// const notifySubscribers = async (
+//   app: firebase.app.App,
+//   substitution: Substitution,
+//   course: CourseWithoutTimes,
+// ) => {
+//   // Don't notify for substitutions in the past
+//   if (substitution.date.getTime() < Date.now()) return 0;
+//
+//   const subscriptions = await db.courseSubscription.findMany({
+//     where: {
+//       courseId: course.id,
+//     },
+//   });
+//
+//   for (const subscription of subscriptions) {
+//     await app.messaging().send({
+//       notification: {
+//         title: `Vertretungsplan: ${course.name} bei ${formalName(
+//           course.teacher,
+//         )}`,
+//         body: `${capitalize(substitution.type)} am ${dayjs(
+//           substitution.date,
+//         ).format("DD.MM.")}`,
+//       },
+//       token: subscription.messagingToken,
+//     });
+//
+//     console.log(
+//       `Sent notification to ${subscription.messagingToken} for ${course.courseId} (ID: ${course.id})`,
+//     );
+//   }
+//
+//   return subscriptions.length;
+// };
 
 const main = async () => {
-  const app = firebase.initializeApp({
-    credential: applicationDefault(),
-    databaseURL: "https://de-haukeschnau-classmate.firebaseio.com",
-  });
+  // const app = firebase.initializeApp({
+  //   credential: applicationDefault(),
+  //   databaseURL: "https://de-haukeschnau-classmate.firebaseio.com",
+  // });
 
   for (const fileName of await fs.readdir(substitutionsDir)) {
     const filePath = p.join(substitutionsDir, fileName);
@@ -256,15 +254,15 @@ const main = async () => {
         const isNew = dayjs(res.updatedAt).diff(res.createdAt) < 1000;
 
         if (isNew) {
-          const notifiedCount = await notifySubscribers(app, res, dbCourse);
+          // const notifiedCount = await notifySubscribers(app, res, dbCourse);
 
-          console.log(
-            `Created substitution ${substitution.date.format("YYYY-MM-DD")} ${
-              substitution.lessonStart
-            } ${substitution.lessonEnd} ${substitution.type} ${
-              substitution.subject
-            } ${class_} and notified ${notifiedCount} subscribers`,
-          );
+          // console.log(
+          //   `Created substitution ${substitution.date.format("YYYY-MM-DD")} ${
+          //     substitution.lessonStart
+          //   } ${substitution.lessonEnd} ${substitution.type} ${
+          //     substitution.subject
+          //   } ${class_} and notified ${notifiedCount} subscribers`,
+          // );
           createdCount++;
         } else {
           updatedCount++;
