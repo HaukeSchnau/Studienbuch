@@ -2,7 +2,7 @@ import type { Preview } from "@storybook/react";
 
 import "../src/styles/globals.css";
 
-import React, { CSSProperties } from "react";
+import { CSSProperties } from "react";
 
 const preview: Preview = {
   parameters: {

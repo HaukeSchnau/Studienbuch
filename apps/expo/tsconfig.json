@@ -15,7 +15,9 @@
     "index.tsx",
     "*.js",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "expo-env.d.ts",
+    ".storybook/**/*.ts",
+    ".storybook/**/*.tsx",
   ],
   "exclude": ["node_modules"]
 }
