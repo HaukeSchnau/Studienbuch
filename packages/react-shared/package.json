@@ -17,7 +17,7 @@
     "@acme/eslint-config": "0.2.0",
     "@acme/prettier-config": "^0.1.0",
     "@acme/tsconfig": "^0.1.0",
-    "eslint": "^8.51.0",
+    "eslint": "^8.54.0",
     "typescript": "^5.2.2"
   },
   "eslintConfig": {

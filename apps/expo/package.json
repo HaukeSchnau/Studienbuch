@@ -59,7 +59,7 @@
     "@types/babel__core": "^7.20.4",
     "@types/react": "^18.2.37",
     "babel-loader": "^8.3.0",
-    "eslint": "^8.53.0",
+    "eslint": "^8.54.0",
     "prettier": "^3.1.0",
     "react-native-safe-area-context": "4.7.4",
     "tailwindcss": "3.3.5",
