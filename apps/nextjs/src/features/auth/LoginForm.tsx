@@ -1,25 +1,34 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import type { SubmitHandler } from "react-hook-form";
-
-import { useLoginForm } from "@acme/react-shared";
-import type { LoginForm as LoginFormData } from "@acme/react-shared";
+import { useForm, type SubmitHandler } from "react-hook-form";
 
 import { Button } from "~/components/form/Button";
 import { TextField } from "~/components/form/TextField";
 import { api } from "~/utils/api";
 
+export interface LoginForm {
+  email: string;
+  password: string;
+}
+
 export const LoginForm = () => {
-  const { register, handleSubmit, setError, errors, clearErrors } =
-    useLoginForm();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError,
+    clearErrors,
+  } = useForm<LoginForm>({
+    defaultValues: {
+      email: "hauke@schnau-lilienthal.de",
+      password: "kiara2705",
+    },
+  });
   const loginMutation = api.auth.login.useMutation();
   const router = useRouter();
 
-  const onSubmit: SubmitHandler<LoginFormData> = async ({
-    email,
-    password,
-  }) => {
+  const onSubmit: SubmitHandler<LoginForm> = async ({ email, password }) => {
     clearErrors();
 
     const response = await loginMutation
