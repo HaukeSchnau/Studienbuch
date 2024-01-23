@@ -40,11 +40,6 @@
     "superjson": "2.2.1"
   },
   "devDependencies": {
-    "@schnau/api": "0.1.0",
-    "@schnau/eslint-config": "0.2.0",
-    "@schnau/prettier-config": "0.1.0",
-    "@schnau/tailwind-config": "0.1.0",
-    "@schnau/tsconfig": "0.1.0",
     "@babel/core": "^7.23.7",
     "@babel/preset-env": "^7.23.8",
     "@babel/runtime": "^7.23.8",
@@ -52,6 +47,11 @@
     "@react-native-async-storage/async-storage": "^1.21.0",
     "@react-native-community/datetimepicker": "^7.6.2",
     "@react-native-community/slider": "^4.5.0",
+    "@schnau/api": "0.1.0",
+    "@schnau/eslint-config": "0.2.0",
+    "@schnau/prettier-config": "0.1.0",
+    "@schnau/tailwind-config": "0.1.0",
+    "@schnau/tsconfig": "0.1.0",
     "@storybook/addon-actions": "^7.6.10",
     "@storybook/addon-controls": "^7.6.10",
     "@storybook/addon-ondevice-actions": "^6.5.7",
