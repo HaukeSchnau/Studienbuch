@@ -11,7 +11,7 @@ interface CourseListProps {
 }
 
 export const CourseList = ({ yearId }: CourseListProps) => {
-  const { isLoading, error, data } = api.courses.get.useQuery({ yearId });
+  const { isPending, error, data } = api.courses.get.useQuery({ yearId });
 
   const sortedCourses = useMemo(() => {
     if (!data) return null;
@@ -19,7 +19,7 @@ export const CourseList = ({ yearId }: CourseListProps) => {
     return data.slice().sort((a, b) => a.courseId.localeCompare(b.courseId));
   }, [data]);
 
-  if (isLoading) {
+  if (isPending) {
     return <LoadingIndicator />;
   }
 
