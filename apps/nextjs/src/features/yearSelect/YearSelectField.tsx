@@ -8,7 +8,7 @@ import { SelectField } from "../../components/form/SelectField";
 import { useSelectedYear } from "./selectedYearStore";
 
 export const YearSelectField = () => {
-  const { data: years, isLoading, error } = api.years.get.useQuery();
+  const { data: years, isPending, error } = api.years.get.useQuery();
   const { selectedYear, setSelectedYear } = useSelectedYear();
 
   useEffect(() => {
@@ -17,7 +17,7 @@ export const YearSelectField = () => {
     }
   }, [selectedYear, setSelectedYear, years]);
 
-  if (isLoading) {
+  if (isPending) {
     return <LoadingIndicator />;
   }
 

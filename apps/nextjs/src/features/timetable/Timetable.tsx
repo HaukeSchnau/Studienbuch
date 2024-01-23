@@ -121,7 +121,7 @@ const CoursePill = ({
 export const useTimetable = (yearId: number) => {
   const courses = api.courses.get.useQuery({ yearId });
 
-  if (courses.status === "loading") {
+  if (courses.status === "pending") {
     return { status: "loading" as const };
   }
 
