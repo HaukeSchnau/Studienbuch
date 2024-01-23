@@ -10,8 +10,8 @@ import {
   CourseWithoutTimes,
   formalName,
   Substitution,
-} from "@acme/common";
-import { db } from "@acme/db";
+} from "@schnau/common";
+import { db } from "@schnau/db";
 
 dayjs.extend(utc);
 

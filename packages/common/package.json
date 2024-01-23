@@ -1,5 +1,5 @@
 {
-  "name": "@acme/common",
+  "name": "@schnau/common",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -10,16 +10,16 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@acme/db": "0.1.0",
+    "@schnau/db": "0.1.0",
     "cross-fetch": "^4.0.0",
     "dayjs": "^1.11.10",
     "pdf-table-extractor": "^1.0.3",
     "vitest": "^1.2.1"
   },
   "devDependencies": {
-    "@acme/eslint-config": "^0.2.0",
-    "@acme/prettier-config": "^0.1.0",
-    "@acme/tsconfig": "^0.1.0",
+    "@schnau/eslint-config": "^0.2.0",
+    "@schnau/prettier-config": "^0.1.0",
+    "@schnau/tsconfig": "^0.1.0",
     "@total-typescript/shoehorn": "^0.1.1",
     "eslint": "^8.56.0",
     "prettier": "^3.2.4",
@@ -28,8 +28,8 @@
   "eslintConfig": {
     "root": true,
     "extends": [
-      "@acme/eslint-config/base"
+      "@schnau/eslint-config/base"
     ]
   },
-  "prettier": "@acme/prettier-config"
+  "prettier": "@schnau/prettier-config"
 }

@@ -6,7 +6,7 @@ import {
   CourseTimeModel,
   UserModel,
   YearModel,
-} from "@acme/db/prisma/zod";
+} from "@schnau/db/prisma/zod";
 
 import "@total-typescript/ts-reset";
 

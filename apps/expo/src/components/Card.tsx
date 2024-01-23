@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { View } from "react-native";
 
-import { getColorValue } from "@acme/tailwind-config";
+import { getColorValue } from "@schnau/tailwind-config";
 
 interface Props {
   children: ReactNode;

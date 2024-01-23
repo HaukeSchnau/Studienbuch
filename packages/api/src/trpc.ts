@@ -10,8 +10,8 @@ import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import type { Session } from "@acme/auth";
-import { db } from "@acme/db";
+import type { Session } from "@schnau/auth";
+import { db } from "@schnau/db";
 
 /**
  * 1. CONTEXT

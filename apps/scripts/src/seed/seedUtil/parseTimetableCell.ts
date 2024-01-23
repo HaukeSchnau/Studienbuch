@@ -1,4 +1,4 @@
-import { guessSubject } from "@acme/common";
+import { guessSubject } from "@schnau/common";
 
 import { ExtendedProtoCourse, protoCourseSchema } from "./ProtoCourse.type";
 

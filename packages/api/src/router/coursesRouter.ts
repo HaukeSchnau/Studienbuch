@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { CourseModel, CourseTimeModel, UserModel } from "@acme/db/prisma/zod";
+import { CourseModel, CourseTimeModel, UserModel } from "@schnau/db/prisma/zod";
 
 import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";

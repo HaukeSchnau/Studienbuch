@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-import { db } from "@acme/db";
+import { db } from "@schnau/db";
 
 function generateLicenseKey(): string {
   return crypto

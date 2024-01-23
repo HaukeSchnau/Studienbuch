@@ -1,5 +1,5 @@
 {
-  "name": "@acme/auth",
+  "name": "@schnau/auth",
   "version": "0.1.0",
   "private": true,
   "main": "./index.ts",
@@ -12,17 +12,17 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@acme/common": "^0.1.0",
-    "@acme/db": "^0.1.0",
+    "@schnau/common": "^0.1.0",
+    "@schnau/db": "^0.1.0",
     "@t3-oss/env-nextjs": "^0.7.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "zod": "^3.22.2"
   },
   "devDependencies": {
-    "@acme/eslint-config": "^0.2.0",
-    "@acme/prettier-config": "^0.1.0",
-    "@acme/tsconfig": "^0.1.0",
+    "@schnau/eslint-config": "^0.2.0",
+    "@schnau/prettier-config": "^0.1.0",
+    "@schnau/tsconfig": "^0.1.0",
     "eslint": "^8.56.0",
     "prettier": "^3.2.4",
     "typescript": "^5.3.3"
@@ -30,8 +30,8 @@
   "eslintConfig": {
     "root": true,
     "extends": [
-      "@acme/eslint-config/base"
+      "@schnau/eslint-config/base"
     ]
   },
-  "prettier": "@acme/prettier-config"
+  "prettier": "@schnau/prettier-config"
 }

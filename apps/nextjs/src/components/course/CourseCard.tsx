@@ -1,5 +1,5 @@
-import type { Course } from "@acme/common";
-import { formalName } from "@acme/common";
+import type { Course } from "@schnau/common";
+import { formalName } from "@schnau/common";
 
 import { Card, CardHeading } from "../layout/Card";
 

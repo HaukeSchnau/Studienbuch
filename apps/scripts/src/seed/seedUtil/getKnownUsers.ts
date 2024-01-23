@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import Papa from "papaparse";
 import { z } from "zod";
 
-import { fileExists } from "@acme/common/src/fileExists";
+import { fileExists } from "@schnau/common/src/fileExists";
 
 import { getFilePath } from "../../getFilePath";
 

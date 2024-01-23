@@ -1,4 +1,4 @@
-import { db } from "@acme/db";
+import { db } from "@schnau/db";
 
 export const deleteDuplicateCourseTimes = async () => {
     const courses = await db.course.findMany({

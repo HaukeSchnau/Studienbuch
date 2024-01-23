@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 
-import type { Year } from "@acme/common";
+import type { Year } from "@schnau/common";
 
 interface SelectedYearState {
   selectedYear: Year | null;

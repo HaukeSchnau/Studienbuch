@@ -1,4 +1,4 @@
-import { db } from "@acme/db";
+import { db } from "@schnau/db";
 
 import { type KnownUser } from "./getKnownUsers";
 import { type ScheduleInfo } from "./parseScheduleCsv";

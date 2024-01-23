@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { z } from "zod";
 
-import { CourseModel, SubstitutionModel } from "@acme/db/prisma/zod";
+import { CourseModel, SubstitutionModel } from "@schnau/db/prisma/zod";
 
 import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";

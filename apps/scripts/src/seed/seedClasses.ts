@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import p from "path";
 
-import { db } from "@acme/db";
+import { db } from "@schnau/db";
 
 import { getFilePath } from "../getFilePath";
 import { getKnownUsers } from "./seedUtil/getKnownUsers";

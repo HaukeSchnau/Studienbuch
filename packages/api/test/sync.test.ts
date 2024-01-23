@@ -1,6 +1,6 @@
 import { test } from "vitest";
 
-import { db } from "@acme/db";
+import { db } from "@schnau/db";
 
 import { appRouter } from "../src/root";
 

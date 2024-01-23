@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { YearModel } from "@acme/db/prisma/zod/year";
+import { YearModel } from "@schnau/db/prisma/zod/year";
 
 import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";

@@ -1,6 +1,6 @@
 import type { ComponentStoryObj, Meta } from "@storybook/react-native";
 
-import { colors } from "@acme/tailwind-config";
+import { colors } from "@schnau/tailwind-config";
 
 import { Circle } from "./Circle";
 

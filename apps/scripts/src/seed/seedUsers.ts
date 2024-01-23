@@ -1,5 +1,5 @@
-import { Role } from "@acme/common";
-import { db } from "@acme/db";
+import { Role } from "@schnau/common";
+import { db } from "@schnau/db";
 
 import iservUsers from "../../iservUsers.json";
 import { generateHashedPassword } from "./seedUtil/generateHashedPassword";

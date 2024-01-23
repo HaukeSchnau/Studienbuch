@@ -8,7 +8,7 @@ importers:
 
   .:
     dependencies:
-      '@acme/prettier-config':
+      '@schnau/prettier-config':
         specifier: ^0.1.0
         version: link:tooling/prettier
       '@manypkg/cli':
@@ -99,20 +99,20 @@ importers:
         specifier: 2.2.1
         version: 2.2.1
     devDependencies:
-      '@acme/api':
-        specifier: workspace:^0.1.0
+      '@schnau/api':
+        specifier: 0.1.0
         version: link:../../packages/api
-      '@acme/eslint-config':
-        specifier: workspace:^0.2.0
+      '@schnau/eslint-config':
+        specifier: 0.2.0
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
-        specifier: workspace:^0.1.0
+      '@schnau/prettier-config':
+        specifier: 0.1.0
         version: link:../../tooling/prettier
-      '@acme/tailwind-config':
-        specifier: workspace:^0.1.0
+      '@schnau/tailwind-config':
+        specifier: 0.1.0
         version: link:../../tooling/tailwind
-      '@acme/tsconfig':
-        specifier: workspace:^0.1.0
+      '@schnau/tsconfig':
+        specifier: 0.1.0
         version: link:../../tooling/typescript
       '@babel/core':
         specifier: ^7.23.7
@@ -179,13 +179,13 @@ importers:
 
   apps/monitoring:
     dependencies:
-      '@acme/api':
+      '@schnau/api':
         specifier: '*'
         version: link:../../packages/api
-      '@acme/common':
+      '@schnau/common':
         specifier: '*'
         version: link:../../packages/common
-      '@acme/tailwind-config':
+      '@schnau/tailwind-config':
         specifier: '*'
         version: link:../../tooling/tailwind
       '@trpc/client':
@@ -207,13 +207,13 @@ importers:
         specifier: ^3.22.2
         version: 3.22.4
     devDependencies:
-      '@acme/eslint-config':
+      '@schnau/eslint-config':
         specifier: ^0.2.0
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@schnau/prettier-config':
         specifier: ^0.1.0
         version: link:../../tooling/prettier
-      '@acme/tsconfig':
+      '@schnau/tsconfig':
         specifier: ^0.1.0
         version: link:../../tooling/typescript
       '@total-typescript/ts-reset':
@@ -234,16 +234,16 @@ importers:
 
   apps/nextjs:
     dependencies:
-      '@acme/api':
+      '@schnau/api':
         specifier: ^0.1.0
         version: link:../../packages/api
-      '@acme/auth':
+      '@schnau/auth':
         specifier: ^0.1.0
         version: link:../../packages/auth
-      '@acme/common':
+      '@schnau/common':
         specifier: ^0.1.0
         version: link:../../packages/common
-      '@acme/db':
+      '@schnau/db':
         specifier: ^0.1.0
         version: link:../../packages/db
       '@t3-oss/env-nextjs':
@@ -301,16 +301,16 @@ importers:
         specifier: ^4.5.0
         version: 4.5.0(@types/react@18.2.48)(immer@10.0.3)(react@18.2.0)
     devDependencies:
-      '@acme/eslint-config':
+      '@schnau/eslint-config':
         specifier: ^0.2.0
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@schnau/prettier-config':
         specifier: ^0.1.0
         version: link:../../tooling/prettier
-      '@acme/tailwind-config':
+      '@schnau/tailwind-config':
         specifier: ^0.1.0
         version: link:../../tooling/tailwind
-      '@acme/tsconfig':
+      '@schnau/tsconfig':
         specifier: ^0.1.0
         version: link:../../tooling/typescript
       '@storybook/addon-essentials':
@@ -370,19 +370,19 @@ importers:
 
   apps/scripts:
     dependencies:
-      '@acme/api':
+      '@schnau/api':
         specifier: '*'
         version: link:../../packages/api
-      '@acme/auth':
+      '@schnau/auth':
         specifier: '*'
         version: link:../../packages/auth
-      '@acme/common':
+      '@schnau/common':
         specifier: ^0.1.0
         version: link:../../packages/common
-      '@acme/db':
+      '@schnau/db':
         specifier: '*'
         version: link:../../packages/db
-      '@acme/tailwind-config':
+      '@schnau/tailwind-config':
         specifier: '*'
         version: link:../../tooling/tailwind
       cross-fetch:
@@ -395,13 +395,13 @@ importers:
         specifier: ^3.22.2
         version: 3.22.4
     devDependencies:
-      '@acme/eslint-config':
+      '@schnau/eslint-config':
         specifier: ^0.2.0
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@schnau/prettier-config':
         specifier: ^0.1.0
         version: link:../../tooling/prettier
-      '@acme/tsconfig':
+      '@schnau/tsconfig':
         specifier: ^0.1.0
         version: link:../../tooling/typescript
       '@total-typescript/ts-reset':
@@ -425,10 +425,10 @@ importers:
 
   packages/api:
     dependencies:
-      '@acme/auth':
+      '@schnau/auth':
         specifier: ^0.1.0
         version: link:../auth
-      '@acme/db':
+      '@schnau/db':
         specifier: ^0.1.0
         version: link:../db
       '@trpc/client':
@@ -453,13 +453,13 @@ importers:
         specifier: ^3.22.2
         version: 3.22.4
     devDependencies:
-      '@acme/eslint-config':
+      '@schnau/eslint-config':
         specifier: ^0.2.0
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@schnau/prettier-config':
         specifier: ^0.1.0
         version: link:../../tooling/prettier
-      '@acme/tsconfig':
+      '@schnau/tsconfig':
         specifier: ^0.1.0
         version: link:../../tooling/typescript
       '@types/bcrypt':
@@ -477,10 +477,10 @@ importers:
 
   packages/auth:
     dependencies:
-      '@acme/common':
+      '@schnau/common':
         specifier: ^0.1.0
         version: link:../common
-      '@acme/db':
+      '@schnau/db':
         specifier: ^0.1.0
         version: link:../db
       '@t3-oss/env-nextjs':
@@ -496,13 +496,13 @@ importers:
         specifier: ^3.22.2
         version: 3.22.4
     devDependencies:
-      '@acme/eslint-config':
+      '@schnau/eslint-config':
         specifier: ^0.2.0
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@schnau/prettier-config':
         specifier: ^0.1.0
         version: link:../../tooling/prettier
-      '@acme/tsconfig':
+      '@schnau/tsconfig':
         specifier: ^0.1.0
         version: link:../../tooling/typescript
       eslint:
@@ -517,7 +517,7 @@ importers:
 
   packages/common:
     dependencies:
-      '@acme/db':
+      '@schnau/db':
         specifier: 0.1.0
         version: link:../db
       cross-fetch:
@@ -533,13 +533,13 @@ importers:
         specifier: ^1.2.1
         version: 1.2.1(@types/node@20.11.5)
     devDependencies:
-      '@acme/eslint-config':
+      '@schnau/eslint-config':
         specifier: ^0.2.0
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@schnau/prettier-config':
         specifier: ^0.1.0
         version: link:../../tooling/prettier
-      '@acme/tsconfig':
+      '@schnau/tsconfig':
         specifier: ^0.1.0
         version: link:../../tooling/typescript
       '@total-typescript/shoehorn':
@@ -561,13 +561,13 @@ importers:
         specifier: ^5.8.1
         version: 5.8.1(prisma@5.8.1)
     devDependencies:
-      '@acme/eslint-config':
+      '@schnau/eslint-config':
         specifier: ^0.2.0
         version: link:../../tooling/eslint
-      '@acme/prettier-config':
+      '@schnau/prettier-config':
         specifier: ^0.1.0
         version: link:../../tooling/prettier
-      '@acme/tsconfig':
+      '@schnau/tsconfig':
         specifier: ^0.1.0
         version: link:../../tooling/typescript
       dotenv-cli:
@@ -622,10 +622,10 @@ importers:
         specifier: ^4.6.0
         version: 4.6.0(eslint@8.56.0)
     devDependencies:
-      '@acme/prettier-config':
+      '@schnau/prettier-config':
         specifier: ^0.1.0
         version: link:../prettier
-      '@acme/tsconfig':
+      '@schnau/tsconfig':
         specifier: ^0.1.0
         version: link:../typescript
       eslint:
@@ -647,7 +647,7 @@ importers:
         specifier: ^0.5.11
         version: 0.5.11(@ianvs/prettier-plugin-sort-imports@4.1.1)(prettier@3.2.4)
     devDependencies:
-      '@acme/tsconfig':
+      '@schnau/tsconfig':
         specifier: ^0.1.0
         version: link:../typescript
       typescript:
@@ -666,13 +666,13 @@ importers:
         specifier: 3.4.1
         version: 3.4.1
     devDependencies:
-      '@acme/eslint-config':
+      '@schnau/eslint-config':
         specifier: ^0.2.0
         version: link:../eslint
-      '@acme/prettier-config':
+      '@schnau/prettier-config':
         specifier: ^0.1.0
         version: link:../prettier
-      '@acme/tsconfig':
+      '@schnau/tsconfig':
         specifier: ^0.1.0
         version: link:../typescript
       eslint:

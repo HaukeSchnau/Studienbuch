@@ -1,5 +1,5 @@
 {
-  "name": "@acme/db",
+  "name": "@schnau/db",
   "version": "0.1.0",
   "private": true,
   "main": "./index.ts",
@@ -19,9 +19,9 @@
     "@prisma/client": "^5.8.1"
   },
   "devDependencies": {
-    "@acme/eslint-config": "^0.2.0",
-    "@acme/prettier-config": "^0.1.0",
-    "@acme/tsconfig": "^0.1.0",
+    "@schnau/eslint-config": "^0.2.0",
+    "@schnau/prettier-config": "^0.1.0",
+    "@schnau/tsconfig": "^0.1.0",
     "dotenv-cli": "^7.3.0",
     "eslint": "^8.56.0",
     "prettier": "^3.2.4",
@@ -32,8 +32,8 @@
   "eslintConfig": {
     "root": true,
     "extends": [
-      "@acme/eslint-config/base"
+      "@schnau/eslint-config/base"
     ]
   },
-  "prettier": "@acme/prettier-config"
+  "prettier": "@schnau/prettier-config"
 }

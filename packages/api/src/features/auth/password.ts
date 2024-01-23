@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 
-import { db } from "@acme/db";
+import { db } from "@schnau/db";
 
 export const checkPassword = (password: string, hashedPassword: string) => {
   return bcrypt.compare(password, hashedPassword);

@@ -3,7 +3,7 @@ import p from "path";
 import Papa from "papaparse";
 import { z } from "zod";
 
-import { CourseTimeWeeks, isNormalTime, parseTime } from "@acme/common";
+import { CourseTimeWeeks, isNormalTime, parseTime } from "@schnau/common";
 
 import { years } from "../years";
 import { ExtendedProtoCourse, ProtoCourseWithTimes } from "./ProtoCourse.type";

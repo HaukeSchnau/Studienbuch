@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { getCookies } from "@acme/common/src/cookies";
-import { db } from "@acme/db";
+import { getCookies } from "@schnau/common/src/cookies";
+import { db } from "@schnau/db";
 
 export interface Session {
   token: string;

@@ -1,7 +1,7 @@
 import { View } from "react-native";
 
-import type { Color } from "@acme/tailwind-config";
-import { getColorValue } from "@acme/tailwind-config";
+import type { Color } from "@schnau/tailwind-config";
+import { getColorValue } from "@schnau/tailwind-config";
 
 interface Props {
   size: number;

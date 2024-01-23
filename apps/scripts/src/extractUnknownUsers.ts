@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import Papa from "papaparse";
 
-import { db } from "@acme/db";
+import { db } from "@schnau/db";
 
 const extractUnknownUsers = async () => {
   const users = await db.user.findMany({

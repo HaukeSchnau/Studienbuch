@@ -23,7 +23,7 @@
     "ci:fix": "run-p format:fix lint:fix"
   },
   "dependencies": {
-    "@acme/prettier-config": "^0.1.0",
+    "@schnau/prettier-config": "^0.1.0",
     "@manypkg/cli": "^0.21.2",
     "@turbo/gen": "^1.11.3",
     "npm-run-all": "^4.1.5",
@@ -32,5 +32,5 @@
     "typescript": "^5.3.3",
     "vitest": "^1.2.1"
   },
-  "prettier": "@acme/prettier-config"
+  "prettier": "@schnau/prettier-config"
 }

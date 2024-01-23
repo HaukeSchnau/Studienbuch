@@ -2,9 +2,9 @@ import { createTRPCProxyClient, httpBatchLink, loggerLink } from "@trpc/client";
 import fetch from "cross-fetch";
 import superjson from "superjson";
 
-import type { AppRouter } from "@acme/api";
+import type { AppRouter } from "@schnau/api";
 
-export { isHolidayToday } from "@acme/common";
+export { isHolidayToday } from "@schnau/common";
 
 const BASE_URL = "https://studienbuch.haukeschnau.de";
 

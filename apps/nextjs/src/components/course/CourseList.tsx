@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import type { Course } from "@acme/common";
+import type { Course } from "@schnau/common";
 
 import { api } from "~/utils/api";
 import { LoadingIndicator } from "../layout/LoadingIndicator";

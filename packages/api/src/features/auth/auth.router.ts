@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { z } from "zod";
 
-import { db } from "@acme/db";
+import { db } from "@schnau/db";
 
 import { publicProcedure } from "../../procedures/publicProcedure";
 import { createRouter } from "../../trpc";

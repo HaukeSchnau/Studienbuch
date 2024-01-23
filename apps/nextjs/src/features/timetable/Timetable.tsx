@@ -6,8 +6,8 @@ import {
   formatWeeks,
   getNormalTime,
   hash,
-} from "@acme/common";
-import type { Course, CourseTimeWeeks, TimetableCell } from "@acme/common";
+} from "@schnau/common";
+import type { Course, CourseTimeWeeks, TimetableCell } from "@schnau/common";
 
 import { Card } from "~/components/layout/Card";
 import { api } from "~/utils/api";
