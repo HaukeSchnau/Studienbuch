@@ -14,22 +14,22 @@
   "dependencies": {
     "@acme/auth": "^0.1.0",
     "@acme/db": "^0.1.0",
-    "@trpc/client": "^10.40.0",
-    "@trpc/server": "^10.40.0",
+    "@trpc/client": "^10.45.0",
+    "@trpc/server": "^10.45.0",
     "bcrypt": "^5.1.1",
-    "dayjs": "^1.11.7",
+    "dayjs": "^1.11.10",
     "superjson": "2.2.0",
-    "trpc-openapi": "^1.1.2",
+    "trpc-openapi": "^1.2.0",
     "zod": "^3.22.2"
   },
   "devDependencies": {
     "@acme/eslint-config": "^0.2.0",
     "@acme/prettier-config": "^0.1.0",
     "@acme/tsconfig": "^0.1.0",
-    "@types/bcrypt": "^5.0.1",
-    "eslint": "^8.54.0",
-    "prettier": "^3.0.3",
-    "typescript": "^5.2.2"
+    "@types/bcrypt": "^5.0.2",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.4",
+    "typescript": "^5.3.3"
   },
   "eslintConfig": {
     "root": true,

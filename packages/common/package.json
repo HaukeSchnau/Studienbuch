@@ -12,18 +12,18 @@
   "dependencies": {
     "@acme/db": "0.1.0",
     "cross-fetch": "^3.1.5",
-    "dayjs": "^1.11.7",
+    "dayjs": "^1.11.10",
     "pdf-table-extractor": "^1.0.3",
-    "vitest": "^0.32.0"
+    "vitest": "^0.32.4"
   },
   "devDependencies": {
     "@acme/eslint-config": "^0.2.0",
     "@acme/prettier-config": "^0.1.0",
     "@acme/tsconfig": "^0.1.0",
-    "@total-typescript/shoehorn": "^0.1.0",
-    "eslint": "^8.54.0",
-    "prettier": "^3.0.3",
-    "typescript": "^5.2.2"
+    "@total-typescript/shoehorn": "^0.1.1",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.4",
+    "typescript": "^5.3.3"
   },
   "eslintConfig": {
     "root": true,
