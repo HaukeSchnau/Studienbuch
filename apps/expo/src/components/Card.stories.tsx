@@ -1,6 +1,5 @@
 import type { ComponentStoryFn, Meta } from "@storybook/react-native";
 
-import { Text } from "~/components/Text";
 import { Card } from "./Card";
 
 export default {
@@ -10,8 +9,4 @@ export default {
 
 type Story = ComponentStoryFn<typeof Card>;
 
-export const Primary: Story = (props) => (
-  <Card {...props}>
-    <Text>Card</Text>
-  </Card>
-);
+export const Primary: Story = (props) => <Card {...props}></Card>;

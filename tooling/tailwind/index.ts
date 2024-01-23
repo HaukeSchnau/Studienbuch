@@ -23,6 +23,10 @@ export const colors = {
   "black-80": "#0000000b",
 };
 
+export type Color = keyof typeof colors;
+
+export const getColorValue = (color: Color) => colors[color];
+
 export default {
   content: [""],
   theme: {

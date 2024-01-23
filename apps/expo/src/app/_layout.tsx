@@ -2,8 +2,6 @@ import React from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
-import { colors } from "@acme/tailwind-config";
-
 import { TRPCProvider } from "~/utils/api";
 
 import "../styles.css";
@@ -19,12 +17,7 @@ const RootLayout = () => {
       */}
       <Stack
         screenOptions={{
-          headerStyle: {
-            backgroundColor: colors.green,
-          },
-          headerTitleStyle: {
-            color: colors.white,
-          },
+          headerShown: false,
         }}
       />
       <StatusBar />
