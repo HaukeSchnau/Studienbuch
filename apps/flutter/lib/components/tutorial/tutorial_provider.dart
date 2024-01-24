@@ -18,7 +18,7 @@ class TutorialProvider<TKeyIds> extends HookWidget {
   final TargetFocusBuilder<TKeyIds> targetFocusBuilder;
   final TutorialKeys<TKeyIds> initialTutorialKeys;
   final FutureOr<void> Function(TargetFocus)? onClickTarget;
-  final VoidCallback onFinish;
+  final bool Function() onFinish;
   final bool showTutorial;
 
   const TutorialProvider(

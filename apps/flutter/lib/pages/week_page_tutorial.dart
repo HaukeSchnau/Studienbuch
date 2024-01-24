@@ -288,6 +288,7 @@ class WeekPageTutorial extends HookWidget {
         db.update(db.users).write(const UsersCompanion(
               hasCompletedScheduleTutorial: Value(true),
             ));
+        return true;
       },
       onClickTarget: (target) {
         if (target.identify == WeekTutorialKeys.editButton) {

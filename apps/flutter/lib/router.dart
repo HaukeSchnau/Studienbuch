@@ -29,8 +29,8 @@ buildMainRouterConfig(User? user) {
       GoRoute(
         path: "/course/:courseId/:semesterId",
         builder: (context, state) {
-          final courseId = int.parse(state.params['courseId']!);
-          final semesterId = int.parse(state.params['semesterId']!);
+          final courseId = int.parse(state.pathParameters['courseId']!);
+          final semesterId = int.parse(state.pathParameters['semesterId']!);
 
           final semesterCourseFuture = (db.select(db.semesterCourses)
                 ..where((tbl) =>
@@ -72,7 +72,7 @@ buildMainRouterConfig(User? user) {
       GoRoute(
           path: "/tasks/:taskId",
           builder: (context, state) {
-            return TaskPage(taskId: int.parse(state.params['taskId']!));
+            return TaskPage(taskId: int.parse(state.pathParameters['taskId']!));
           }),
       GoRoute(
         path: "/absences",

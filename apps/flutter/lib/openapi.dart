@@ -1,3 +1,4 @@
+// Openapi Generator last run: : 2024-01-24T19:58:45.299756
 import 'package:class_mate_api/api.dart';
 import 'package:openapi_generator_annotations/openapi_generator_annotations.dart';
 
@@ -6,11 +7,9 @@ import 'package:openapi_generator_annotations/openapi_generator_annotations.dart
     pubName: 'class_mate_api',
     pubAuthor: 'Hauke Schnau',
   ),
-  inputSpecFile: 'https://classmate.haukeschnau.de/api/openapi.json',
+  inputSpec: RemoteSpec(path: 'https://classmate.haukeschnau.de/api/openapi.json'),
   generatorName: Generator.dart,
   outputDirectory: 'api',
-  alwaysRun: true,
-  overwriteExistingFiles: true,
 )
 class MyOpenApi {}
 
