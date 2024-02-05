@@ -6,6 +6,9 @@ import 'package:class_mate/hooks/use_app_dir.dart';
 import 'package:class_mate/models/absence.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/simple_scaffold.dart';
+import 'package:class_mate/static/colors.dart';
+import 'package:class_mate/util/date_util.dart';
+import 'package:class_mate/util/number_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -102,11 +105,13 @@ class ConfirmationView extends HookWidget {
 class ConfirmationsView extends HookWidget {
   final String title;
   final List<ConfirmationWrapper> confirmations;
+  final List<Widget>? children;
 
   const ConfirmationsView({
     super.key,
     required this.confirmations,
     required this.title,
+    this.children,
   });
 
   @override
@@ -122,9 +127,10 @@ class ConfirmationsView extends HookWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: confirmations
-                  .map((confirmation) =>
+                  .map<Widget>((confirmation) =>
                       ConfirmationView(confirmation: confirmation))
-                  .toList(),
+                  .toList()
+                    ..addAll(children ?? [])
             ),
           ),
         ));
@@ -160,7 +166,7 @@ Future<void> viewAbsenceConfirmation(
 }
 
 Future<void> viewOralGradeConfirmation(
-    BuildContext context, Course course, User user, GradeResult result) async {
+    BuildContext context, Course course, User user, GradeResult result, [List<GradeResult>? previousResults]) async {
   await Navigator.of(context).push(
     MaterialPageRoute(
       builder: (context) => ConfirmationsView(
@@ -180,9 +186,35 @@ Future<void> viewOralGradeConfirmation(
                     viewOnly: true),
                 fileName: "signature-${result.id}-parent.svg")
         ],
+        children: previousResults == null
+            ? []
+            : [
+              Text("Vorherige mündliche Noten",
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold)),
+          ...previousResults
+              .map((previousResult) => PreviousGradeView(result: previousResult)
+          )
+
+        ]
       ),
     ),
   );
+}
+
+class PreviousGradeView extends StatelessWidget {
+  final GradeResult result;
+
+  const PreviousGradeView({super.key, required this.result});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(Icons.verified_rounded, color: theme.primaryText),
+      title: Text(result.result.formatAsGrade()),
+      subtitle: Text(result.date.format()),
+    );
+  }
 }
 
 Future<void> viewWrittenGradeConfirmation(

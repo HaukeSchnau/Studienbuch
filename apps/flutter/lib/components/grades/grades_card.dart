@@ -165,7 +165,9 @@ class GradesCard extends HookWidget {
                                       context,
                                       course,
                                       user,
-                                      currentOralGrade),
+                                      currentOralGrade,
+                                      oral.pastOralGrades
+                                  ),
                                   icon: const Icon(Icons.visibility,
                                       color: Colors.black87))
                           ]),

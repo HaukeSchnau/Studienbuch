@@ -8,10 +8,12 @@ import 'package:drift/drift.dart';
 class CurrentOralGrade {
   final GradeResult? currentOralGrade;
   final GradeResult? mostRecentConfirmedOralGrade;
+  final List<GradeResult> pastOralGrades;
 
   const CurrentOralGrade(
       {required this.currentOralGrade,
-      required this.mostRecentConfirmedOralGrade});
+      required this.mostRecentConfirmedOralGrade,
+      required this.pastOralGrades});
 }
 
 CurrentOralGrade useCurrentOralGrade(Course course) {
@@ -27,7 +29,8 @@ CurrentOralGrade useCurrentOralGrade(Course course) {
   );
   if (oralGrades == null) {
     return const CurrentOralGrade(
-        currentOralGrade: null, mostRecentConfirmedOralGrade: null);
+        currentOralGrade: null, mostRecentConfirmedOralGrade: null,
+        pastOralGrades: []);
   }
 
   final currentOralGrade = oralGrades.firstOrNull;
@@ -36,7 +39,9 @@ CurrentOralGrade useCurrentOralGrade(Course course) {
 
   return CurrentOralGrade(
       currentOralGrade: currentOralGrade,
-      mostRecentConfirmedOralGrade: mostRecentConfirmedOralGrade);
+      mostRecentConfirmedOralGrade: mostRecentConfirmedOralGrade,
+      pastOralGrades: oralGrades.skip(1).toList()
+  );
 }
 
 class CurrentWrittenGrade {
