@@ -57,20 +57,28 @@ class SubjectsGrid extends HookWidget {
     }
 
     if (noCoursesChosenYet) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            "Du hast noch keine Kurse gewählt.",
-            style: TextStyle(fontSize: 16),
+      return Center(
+        child: SizedBox(
+          width: 300,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Text(
+                "Du hast noch keine Kurse gewählt.",
+                style: TextStyle(fontSize: 16
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(
+                height: 8,
+              ),
+              FilledButton(
+                  onPressed: () => startCourseChooseFlow(),
+                  child: const Text("Jetzt Kurse wählen"))
+            ],
           ),
-          const SizedBox(
-            height: 8,
-          ),
-          FilledButton(
-              onPressed: () => startCourseChooseFlow(),
-              child: const Text("Jetzt Kurse wählen"))
-        ],
+        ),
       );
     }
 

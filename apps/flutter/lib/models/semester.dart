@@ -91,12 +91,12 @@ class SemesterCourses extends Table {
 }
 
 SemesterRange getRelevantSemesters(Year year) {
-  final startYear = year.startYear +
-      7; // First Year of Q-Phase is 7 years after start (5th grade to 11th grade)
+  final startYear = year.startYear + 6; // Year 11 = year 5 + 6 years
   final firstRelevantSemesterId = getSemesterId(startYear, SemesterType.winter);
 
   final relevantSemesters = SemesterRange(
       min(getCurrentSemesterId(), firstRelevantSemesterId),
       getCurrentSemesterId());
+
   return relevantSemesters;
 }
