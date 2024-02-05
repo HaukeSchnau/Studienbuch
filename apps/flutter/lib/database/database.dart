@@ -1,15 +1,15 @@
 import 'dart:io';
 
+import 'package:class_mate/business_domain/user/user.dart';
+import 'package:class_mate/business_domain/year/year.dart';
 import 'package:class_mate/database/schema_versions.dart';
-import 'package:class_mate/models/absence.dart';
+import 'package:class_mate/features/absences/absence.dart';
 import 'package:class_mate/models/class.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:class_mate/models/grade_result.dart';
 import 'package:class_mate/models/semester.dart';
-import 'package:class_mate/models/task.dart';
-import 'package:class_mate/models/user.dart';
-import 'package:class_mate/models/year.dart';
+import 'package:class_mate/features/tasks/task.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;

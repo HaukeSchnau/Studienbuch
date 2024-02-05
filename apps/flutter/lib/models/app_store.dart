@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:class_mate/business_domain/schedule/agenda.dart';
+import 'package:class_mate/features/agenda/agenda.dart';
 import 'package:class_mate/database/database.dart';
-import 'package:class_mate/error_catcher.dart';
+import 'package:class_mate/infrastructure/error_catcher.dart';
 import 'package:class_mate/models/course.dart';
-import 'package:class_mate/models/substitution.dart';
-import 'package:class_mate/openapi.dart';
+import 'package:class_mate/features/substitutions/substitution.dart';
+import 'package:class_mate/infrastructure/openapi.dart';
 import 'package:class_mate_api/api.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:mobx/mobx.dart' hide Listenable;

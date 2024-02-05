@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:class_mate/database/database.dart';
-import 'package:class_mate/hooks/use_query.dart';
+import 'package:class_mate/infrastructure/hooks/use_query.dart';
 import 'package:class_mate/models/class.dart';
 import 'package:class_mate/models/semester.dart';
 import 'package:drift/drift.dart';

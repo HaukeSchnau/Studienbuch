@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:class_mate/app.dart';
-import 'package:class_mate/firebase_options.dart';
-import 'package:class_mate/hooks/use_user.dart';
+import 'package:class_mate/infrastructure/app.dart';
+import 'package:class_mate/infrastructure/firebase_options.dart';
+import 'package:class_mate/business_domain/user/use_user.dart';
 import 'package:class_mate/models/app_store.dart';
-import 'package:class_mate/sentry.dart';
-import 'package:class_mate/services/sync_service.dart';
+import 'package:class_mate/infrastructure/sentry.dart';
+import 'package:class_mate/features/sync/sync_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
