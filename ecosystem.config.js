@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "ClassMate",
+      name: "Studienbuch",
       script: "pnpm",
       args: "start",
     },

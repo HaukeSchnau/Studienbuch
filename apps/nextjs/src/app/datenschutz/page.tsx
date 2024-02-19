@@ -6,7 +6,7 @@ import styles from "./datenschutz.module.css";
 const Datenschutz = () => (
   <div className={clsx("text-gray-700 mx-auto max-w-screen-sm", styles.page)}>
     <Head>
-      <title>Datenschutz | ClassMate</title>
+      <title>Datenschutz | Studienbuch</title>
     </Head>
     <h1>Datenschutzerklärung</h1>
     <h2>Präambel</h2>

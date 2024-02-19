@@ -22,12 +22,12 @@ export const appRouter = createRouter({
 });
 
 export const openApiDocument = generateOpenApiDocument(appRouter, {
-  title: "ClassMate API",
+  title: "Studienbuch API",
   version: "1.0.0",
   baseUrl:
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000/api"
-      : "https://classmate.haukeschnau.de/api",
+      : "https://studienbuch.haukeschnau.de/api",
 });
 
 // export type definition of API

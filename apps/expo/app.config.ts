@@ -2,8 +2,8 @@ import type { ExpoConfig } from "@expo/config";
 
 const defineConfig = (): ExpoConfig => ({
   name: "IGS Lilienthal",
-  slug: "classmate",
-  scheme: "classmate",
+  slug: "studienbuch",
+  scheme: "studienbuch",
   version: "1.4.0",
   orientation: "portrait",
   icon: "./assets/icon.png",

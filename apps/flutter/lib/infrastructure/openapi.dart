@@ -7,11 +7,11 @@ import 'package:openapi_generator_annotations/openapi_generator_annotations.dart
     pubName: 'class_mate_api',
     pubAuthor: 'Hauke Schnau',
   ),
-  inputSpec: RemoteSpec(path: 'https://classmate.haukeschnau.de/api/openapi.json'),
+  inputSpec: RemoteSpec(path: 'https://studienbuch.haukeschnau.de/api/openapi.json'),
   generatorName: Generator.dart,
   outputDirectory: 'api',
 )
 class MyOpenApi {}
 
 final apiInstance =
-    DefaultApi(ApiClient(basePath: "https://classmate.haukeschnau.de/api"));
+    DefaultApi(ApiClient(basePath: "https://studienbuch.haukeschnau.de/api"));

@@ -1,4 +1,4 @@
-# ClassMate Monorepo
+# Studienbuch Monorepo
 
 
 ## Development Setup
