@@ -3,9 +3,9 @@ import { z } from "zod";
 
 import { db } from "@schnau/db";
 
+import { checkPassword } from "../../../../common/src/auth/password";
 import { publicProcedure } from "../../procedures/publicProcedure";
 import { createRouter } from "../../trpc";
-import { checkPassword } from "./password";
 
 export const authRouter = createRouter({
   getSession: publicProcedure.query(({ ctx }) => {
@@ -31,6 +31,17 @@ export const authRouter = createRouter({
           error: {
             field: "email" as const,
             message: "Kein Nutzer mit dieser E-Mail gefunden",
+          },
+          session: undefined,
+        };
+      }
+
+      if (!user.passwordHash) {
+        return {
+          error: {
+            field: "email" as const,
+            message:
+              "Für diesen Nutzer wurde kein Passwort festgelegt. Bitte kontaktiere den Support.",
           },
           session: undefined,
         };

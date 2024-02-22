@@ -47,9 +47,9 @@ model LicenseKey {
 
 model User {
   id            Int          @id @default(autoincrement())
-  email         String       @unique
+  email         String?
   name          String
-  passwordHash  String
+  passwordHash  String?
   title         String?
   abbrv         String?      @unique
   createdAt     DateTime     @default(now())

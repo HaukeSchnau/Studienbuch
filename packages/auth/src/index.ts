@@ -9,7 +9,7 @@ export interface Session {
   user: {
     id: number;
     name: string;
-    email: string;
+    email: string | null;
     image: string | null;
   } | null;
 }

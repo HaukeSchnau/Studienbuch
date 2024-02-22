@@ -1,4 +1,4 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiRequest, NextApiResponse } from "next";
 import { createOpenApiNextHandler } from "trpc-openapi";
 
 import { appRouter, createTRPCContext } from "@schnau/api";

@@ -10,7 +10,6 @@ const BASE_URL = "https://studienbuch.haukeschnau.de";
 
 export const createClient = () =>
   createTRPCProxyClient<AppRouter>({
-    transformer: superjson,
     links: [
       loggerLink({
         enabled: (opts) =>
@@ -18,6 +17,7 @@ export const createClient = () =>
           (opts.direction === "down" && opts.result instanceof Error),
       }),
       httpBatchLink({
+        transformer: superjson,
         fetch,
         url: `${BASE_URL}/api/trpc`,
       }),
