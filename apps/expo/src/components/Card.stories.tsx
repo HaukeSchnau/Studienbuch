@@ -1,4 +1,4 @@
-import type { ComponentStoryFn, Meta } from "@storybook/react-native";
+import type { ComponentStoryFn, Meta } from "@storybook/react";
 
 import { Card } from "./Card";
 

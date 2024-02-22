@@ -1,5 +1,8 @@
-import { getStorybookUI } from "@storybook/react-native";
+import { start } from "@storybook/react-native";
 
 import "./storybook.requires";
 
-export const StorybookUI = getStorybookUI({});
+export const StorybookUI = start({
+  annotations: [],
+  storyEntries: [],
+});

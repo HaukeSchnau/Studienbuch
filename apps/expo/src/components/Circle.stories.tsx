@@ -1,4 +1,4 @@
-import type { ComponentStoryObj, Meta } from "@storybook/react-native";
+import type { ComponentStoryObj, Meta } from "@storybook/react";
 
 import { colors } from "@schnau/tailwind-config";
 
