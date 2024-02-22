@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { guessSubject } from "../src";
+import { guessSubject } from "../src/subject";
 
 test("guessSubject", () => {
   expect(guessSubject("de")).toBe("Deutsch");

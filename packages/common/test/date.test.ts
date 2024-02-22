@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { isNormalTime, parseTime } from "../src";
+import { isNormalTime, parseTime } from "../src/date";
 
 test("parseTime", () => {
   expect(parseTime("08:00")).toBe(8 * 60);

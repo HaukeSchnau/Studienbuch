@@ -4,8 +4,6 @@ import superjson from "superjson";
 
 import type { AppRouter } from "@schnau/api";
 
-export { isHolidayToday } from "@schnau/common";
-
 const BASE_URL = "https://studienbuch.haukeschnau.de";
 
 export const createClient = () =>

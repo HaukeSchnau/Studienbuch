@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { getCookies } from "@schnau/common/src/cookies";
+import { getCookies } from "@schnau/common/src/auth/cookies";
 import { db } from "@schnau/db";
 
 export interface Session {

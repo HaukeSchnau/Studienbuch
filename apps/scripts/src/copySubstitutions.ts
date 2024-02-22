@@ -5,12 +5,6 @@ import utc from "dayjs/plugin/utc";
 import Papa from "papaparse";
 import z from "zod";
 
-import {
-  capitalize,
-  CourseWithoutTimes,
-  formalName,
-  Substitution,
-} from "@schnau/common";
 import { db } from "@schnau/db";
 
 dayjs.extend(utc);

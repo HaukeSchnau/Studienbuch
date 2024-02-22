@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 
-import { compareMaps } from "../src/equality";
+import { compareMaps } from "../src/infrastructure/equality";
 
 test("compareMaps", () => {
   expect(compareMaps(new Map(), new Map())).toBe(true);

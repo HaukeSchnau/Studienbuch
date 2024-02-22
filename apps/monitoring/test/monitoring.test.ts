@@ -1,6 +1,8 @@
 import { test } from "vitest";
 
-import { createClient, isHolidayToday } from "../src/testUtils";
+import { isHolidayToday } from "@schnau/common/src/holidays";
+
+import { createClient } from "~/testUtils";
 
 test(
   "staticApi",

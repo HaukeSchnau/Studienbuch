@@ -1,4 +1,4 @@
-import { Role } from "@schnau/common";
+import { Role } from "@schnau/common/src/teacher";
 import { db } from "@schnau/db";
 
 import iservUsers from "../../iservUsers.json";

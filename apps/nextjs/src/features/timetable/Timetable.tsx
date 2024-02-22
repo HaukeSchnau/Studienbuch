@@ -1,13 +1,10 @@
 import Link from "next/link";
 
-import type { Course, CourseTimeWeeks, TimetableCell } from "@schnau/common";
-import {
-  buildTimetable,
-  formatTime,
-  formatWeeks,
-  getNormalTime,
-  hash,
-} from "@schnau/common";
+import type { Course, CourseTimeWeeks } from "@schnau/common/src/course";
+import type { TimetableCell } from "@schnau/common/src/timetable";
+import { formatTime, getNormalTime } from "@schnau/common/src/date";
+import { hash } from "@schnau/common/src/infrastructure/strings";
+import { buildTimetable, formatWeeks } from "@schnau/common/src/timetable";
 
 import { Card } from "~/components/layout/Card";
 import { api } from "~/utils/api";

@@ -3,11 +3,12 @@ import p from "path";
 import Papa from "papaparse";
 import { z } from "zod";
 
-import { CourseTimeWeeks, isNormalTime, parseTime } from "@schnau/common";
+import { CourseTimeWeeks } from "@schnau/common/src/course";
+import { isNormalTime, parseTime } from "@schnau/common/src/date";
 
 import { years } from "../years";
-import { ExtendedProtoCourse, ProtoCourseWithTimes } from "./ProtoCourse.type";
 import { parseTimetableCell } from "./parseTimetableCell";
+import { ExtendedProtoCourse, ProtoCourseWithTimes } from "./ProtoCourse.type";
 
 type Cell = ExtendedProtoCourse[];
 

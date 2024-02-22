@@ -1,7 +1,7 @@
 import { fromPartial } from "@total-typescript/shoehorn";
 import { expect, test } from "vitest";
 
-import { formalName } from "../../src";
+import { formalName } from "../../src/teacher";
 
 test("formalName", () => {
   expect(formalName(fromPartial({ name: "Bernd" }))).toBe("Bernd");
