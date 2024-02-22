@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@prisma/client": "^5.8.1"
+    "@prisma/client": "^5.10.2"
   },
   "devDependencies": {
     "@schnau/eslint-config": "^0.2.0",
@@ -24,8 +24,8 @@
     "@schnau/tsconfig": "^0.1.0",
     "dotenv-cli": "^7.3.0",
     "eslint": "^8.56.0",
-    "prettier": "^3.2.4",
-    "prisma": "^5.8.1",
+    "prettier": "^3.2.5",
+    "prisma": "^5.10.2",
     "typescript": "^5.3.3",
     "zod-prisma": "^0.5.4"
   },
