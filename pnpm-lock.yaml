@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  trpc-openapi@1.2.0:
+    hash: qtq2yoxpefz2xxvevk32tv7f2q
+    path: patches/trpc-openapi@1.2.0.patch
+
 importers:
 
   .:
@@ -270,6 +275,9 @@ importers:
       swagger-ui-react:
         specifier: ^5.11.7
         version: 5.11.7(@types/react@18.2.57)(react-dom@18.2.0)(react@18.2.0)
+      trpc-openapi:
+        specifier: ^1.2.0
+        version: 1.2.0(patch_hash=qtq2yoxpefz2xxvevk32tv7f2q)(@trpc/server@11.0.0-next-beta.264)(zod@3.22.4)
       zod:
         specifier: ^3.22.4
         version: 3.22.4
@@ -419,12 +427,15 @@ importers:
       dayjs:
         specifier: ^1.11.10
         version: 1.11.10
+      patch-package:
+        specifier: ^8.0.0
+        version: 8.0.0
       superjson:
         specifier: 2.2.1
         version: 2.2.1
       trpc-openapi:
         specifier: ^1.2.0
-        version: 1.2.0(@trpc/server@11.0.0-next-beta.264)(zod@3.22.4)
+        version: 1.2.0(patch_hash=qtq2yoxpefz2xxvevk32tv7f2q)(@trpc/server@11.0.0-next-beta.264)(zod@3.22.4)
       zod:
         specifier: ^3.22.4
         version: 3.22.4
@@ -17780,7 +17791,7 @@ packages:
     dev: false
     optional: true
 
-  /trpc-openapi@1.2.0(@trpc/server@11.0.0-next-beta.264)(zod@3.22.4):
+  /trpc-openapi@1.2.0(patch_hash=qtq2yoxpefz2xxvevk32tv7f2q)(@trpc/server@11.0.0-next-beta.264)(zod@3.22.4):
     resolution: {integrity: sha512-pfYoCd/3KYXWXvUPZBKJw455OOwngKN/6SIcj7Yit19OMLJ+8yVZkEvGEeg5wUSwfsiTdRsKuvqkRPXVSwV7ew==}
     peerDependencies:
       '@trpc/server': ^10.0.0
@@ -17795,6 +17806,7 @@ packages:
       zod: 3.22.4
       zod-to-json-schema: 3.22.4(zod@3.22.4)
     dev: false
+    patched: true
 
   /ts-api-utils@1.2.1(typescript@5.3.3):
     resolution: {integrity: sha512-RIYA36cJn2WiH9Hy77hdF9r7oEwxAtB/TS9/S4Qd90Ap4z5FSiin5zEiTL44OII1Y3IIlEvxwxFUVgrHSZ/UpA==}

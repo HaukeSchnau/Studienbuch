@@ -33,5 +33,10 @@
     "typescript": "^5.3.3",
     "vitest": "^1.3.1"
   },
-  "prettier": "@schnau/prettier-config"
+  "prettier": "@schnau/prettier-config",
+  "pnpm": {
+    "patchedDependencies": {
+      "trpc-openapi@1.2.0": "patches/trpc-openapi@1.2.0.patch"
+    }
+  }
 }

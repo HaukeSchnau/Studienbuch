@@ -13,6 +13,12 @@ import { ZodError } from "zod";
 import type { Session } from "@schnau/auth";
 import { db } from "@schnau/db";
 
+const isHeaders = (
+  headers: Headers | Record<string, string | string[] | undefined>,
+): headers is Headers => {
+  return typeof headers.get === "function";
+};
+
 /**
  * 1. CONTEXT
  *
@@ -26,11 +32,22 @@ import { db } from "@schnau/db";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = (opts: {
-  headers: Headers;
+  headers: Headers | Record<string, string | string[] | undefined>;
   session: Session | null;
 }) => {
+  const getHeader = (key: string) => {
+    if (isHeaders(opts.headers)) {
+      return opts.headers.get(key);
+    }
+    const value = opts.headers[key];
+    if (Array.isArray(value)) {
+      return value[0];
+    }
+    return value;
+  };
+
   const session = opts.session; // ?? (await auth());
-  const source = opts.headers.get("x-trpc-source") ?? "unknown";
+  const source = getHeader("x-trpc-source") ?? "unknown";
 
   console.log(">>> tRPC Request from", source, "by", session?.user);
 
