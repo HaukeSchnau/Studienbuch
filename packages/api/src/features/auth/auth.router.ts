@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { db } from "@schnau/db";
 
-import { checkPassword } from "../../../../common/src/auth/password";
+import { checkPassword } from "../../../../lib/src/auth/password";
 import { publicProcedure } from "../../procedures/publicProcedure";
 import { createRouter } from "../../trpc";
 

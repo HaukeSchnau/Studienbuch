@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-import { getCookies } from "@schnau/common/src/auth/cookies";
 import { db } from "@schnau/db";
+import { getCookies } from "@schnau/lib/src/auth/cookies";
 
 export interface Session {
   token: string;

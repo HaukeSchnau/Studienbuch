@@ -172,9 +172,9 @@ importers:
       '@schnau/api':
         specifier: workspace:^0.1.0
         version: link:../../packages/api
-      '@schnau/common':
+      '@schnau/lib':
         specifier: ^0.1.0
-        version: link:../../packages/common
+        version: link:../../packages/lib
       '@schnau/tailwind-config':
         specifier: workspace:^0.1.0
         version: link:../../tooling/tailwind
@@ -230,12 +230,12 @@ importers:
       '@schnau/auth':
         specifier: workspace:^0.1.0
         version: link:../../packages/auth
-      '@schnau/common':
-        specifier: workspace:^0.1.0
-        version: link:../../packages/common
       '@schnau/db':
         specifier: workspace:^0.1.0
         version: link:../../packages/db
+      '@schnau/lib':
+        specifier: workspace:^0.1.0
+        version: link:../../packages/lib
       '@t3-oss/env-nextjs':
         specifier: ^0.9.2
         version: 0.9.2(typescript@5.3.3)(zod@3.22.4)
@@ -363,12 +363,12 @@ importers:
       '@schnau/auth':
         specifier: ^0.1.0
         version: link:../../packages/auth
-      '@schnau/common':
-        specifier: ^0.1.0
-        version: link:../../packages/common
       '@schnau/db':
         specifier: ^0.1.0
         version: link:../../packages/db
+      '@schnau/lib':
+        specifier: ^0.1.0
+        version: link:../../packages/lib
       '@schnau/tailwind-config':
         specifier: workspace:^0.1.0
         version: link:../../tooling/tailwind
@@ -464,12 +464,12 @@ importers:
 
   packages/auth:
     dependencies:
-      '@schnau/common':
-        specifier: workspace:^0.1.0
-        version: link:../common
       '@schnau/db':
         specifier: workspace:^0.1.0
         version: link:../db
+      '@schnau/lib':
+        specifier: workspace:^0.1.0
+        version: link:../lib
       '@t3-oss/env-nextjs':
         specifier: ^0.9.2
         version: 0.9.2(typescript@5.3.3)(zod@3.22.4)
@@ -492,46 +492,6 @@ importers:
       '@schnau/tsconfig':
         specifier: workspace:^0.1.0
         version: link:../../tooling/typescript
-      eslint:
-        specifier: ^8.56.0
-        version: 8.56.0
-      prettier:
-        specifier: ^3.2.5
-        version: 3.2.5
-      typescript:
-        specifier: ^5.3.3
-        version: 5.3.3
-
-  packages/common:
-    dependencies:
-      '@schnau/db':
-        specifier: workspace:^0.1.0
-        version: link:../db
-      cross-fetch:
-        specifier: ^4.0.0
-        version: 4.0.0
-      dayjs:
-        specifier: ^1.11.10
-        version: 1.11.10
-      pdf-table-extractor:
-        specifier: ^1.0.3
-        version: 1.0.3(webpack@4.47.0)
-      vitest:
-        specifier: ^1.3.1
-        version: 1.3.1(@types/node@20.11.19)
-    devDependencies:
-      '@schnau/eslint-config':
-        specifier: workspace:^0.2.0
-        version: link:../../tooling/eslint
-      '@schnau/prettier-config':
-        specifier: workspace:^0.1.0
-        version: link:../../tooling/prettier
-      '@schnau/tsconfig':
-        specifier: workspace:^0.1.0
-        version: link:../../tooling/typescript
-      '@total-typescript/shoehorn':
-        specifier: ^0.1.1
-        version: 0.1.1
       eslint:
         specifier: ^8.56.0
         version: 8.56.0
@@ -575,6 +535,46 @@ importers:
       zod-prisma:
         specifier: ^0.5.4
         version: 0.5.4(prisma@5.10.2)(zod@3.22.4)
+
+  packages/lib:
+    dependencies:
+      '@schnau/db':
+        specifier: workspace:^0.1.0
+        version: link:../db
+      cross-fetch:
+        specifier: ^4.0.0
+        version: 4.0.0
+      dayjs:
+        specifier: ^1.11.10
+        version: 1.11.10
+      pdf-table-extractor:
+        specifier: ^1.0.3
+        version: 1.0.3(webpack@4.47.0)
+      vitest:
+        specifier: ^1.3.1
+        version: 1.3.1(@types/node@20.11.19)
+    devDependencies:
+      '@schnau/eslint-config':
+        specifier: workspace:^0.2.0
+        version: link:../../tooling/eslint
+      '@schnau/prettier-config':
+        specifier: workspace:^0.1.0
+        version: link:../../tooling/prettier
+      '@schnau/tsconfig':
+        specifier: workspace:^0.1.0
+        version: link:../../tooling/typescript
+      '@total-typescript/shoehorn':
+        specifier: ^0.1.1
+        version: 0.1.1
+      eslint:
+        specifier: ^8.56.0
+        version: 8.56.0
+      prettier:
+        specifier: ^3.2.5
+        version: 3.2.5
+      typescript:
+        specifier: ^5.3.3
+        version: 5.3.3
 
   tooling/eslint:
     dependencies:

@@ -3,8 +3,8 @@ import p from "path";
 import Papa from "papaparse";
 import { z } from "zod";
 
-import { CourseTimeWeeks } from "@schnau/common/src/course";
-import { isNormalTime, parseTime } from "@schnau/common/src/date";
+import { CourseTimeWeeks } from "@schnau/lib/src/course";
+import { isNormalTime, parseTime } from "@schnau/lib/src/date";
 
 import { years } from "../years";
 import { parseTimetableCell } from "./parseTimetableCell";

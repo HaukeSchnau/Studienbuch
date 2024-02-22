@@ -1,4 +1,4 @@
-import { guessSubject } from "@schnau/common/src/subject";
+import { guessSubject } from "@schnau/lib/src/subject";
 
 import { ExtendedProtoCourse, protoCourseSchema } from "./ProtoCourse.type";
 

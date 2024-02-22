@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@schnau/common": "workspace:^0.1.0",
+    "@schnau/lib": "workspace:^0.1.0",
     "@schnau/db": "workspace:^0.1.0",
     "@t3-oss/env-nextjs": "^0.9.2",
     "react": "18.2.0",

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import type { Course } from "@schnau/common";
+import type { Course } from "@schnau/lib/src/course";
 
 import { api } from "~/utils/api";
 import { LoadingIndicator } from "../layout/LoadingIndicator";

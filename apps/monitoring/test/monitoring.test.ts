@@ -1,6 +1,6 @@
 import { test } from "vitest";
 
-import { isHolidayToday } from "@schnau/common/src/holidays";
+import { isHolidayToday } from "@schnau/lib/src/holidays";
 
 import { createClient } from "~/testUtils";
 

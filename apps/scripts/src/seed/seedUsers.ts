@@ -1,5 +1,5 @@
-import { Role } from "@schnau/common/src/teacher";
 import { db } from "@schnau/db";
+import { Role } from "@schnau/lib/src/teacher";
 
 import iservUsers from "../../iservUsers.json";
 import { generateHashedPassword } from "./seedUtil/generateHashedPassword";
