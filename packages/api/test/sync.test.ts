@@ -2,7 +2,7 @@ import { test } from "vitest";
 
 import { db } from "@schnau/db";
 
-import { appRouter } from "../src/root";
+import { appRouter } from "../src";
 
 test("sync", () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

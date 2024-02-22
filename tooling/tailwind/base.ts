@@ -28,18 +28,14 @@ export type Color = keyof typeof colors;
 export const getColorValue = (color: Color) => colors[color];
 
 export default {
-  content: [""],
+  darkMode: ["class"],
+  content: ["src/**/*.{ts,tsx}"],
   theme: {
-    fontFamily: {
-      sans: ["var(--font-sans)", "Nunito", "sans-serif"],
-    },
-    colors,
-    backgroundImage: {
-      "main-blob": "url('/assets/main-blob.svg')",
-    },
-    boxShadow: {
-      md: "4px 4px 16px rgba(0, 0, 0, 0.16)",
+    extend: {
+      colors,
+      borderColor: {
+        DEFAULT: "hsl(var(--border))",
+      },
     },
   },
-  plugins: [],
 } satisfies Config;

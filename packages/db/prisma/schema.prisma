@@ -2,191 +2,191 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-    provider      = "prisma-client-js"
-    binaryTargets = ["native", "debian-openssl-1.1.x"]
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
 generator zod {
-    provider = "zod-prisma"
-    output   = "./zod" // (default) the directory where generated zod schemas will be saved
+  provider = "zod-prisma"
+  output   = "./zod" // (default) the directory where generated zod schemas will be saved
 
-    relationModel = true // (default) Create and export both plain and related models.
-    // relationModel         = "default" // Do not export model without relations.
-    // relationModel         = false // Do not generate related model
+  relationModel = true // (default) Create and export both plain and related models.
+  // relationModel         = "default" // Do not export model without relations.
+  // relationModel         = false // Do not generate related model
 
-    modelCase = "PascalCase" // (default) Output models using pascal case (ex. UserModel, PostModel)
-    // modelCase             = "camelCase" // Output models using camel case (ex. userModel, postModel)
+  modelCase = "PascalCase" // (default) Output models using pascal case (ex. UserModel, PostModel)
+  // modelCase             = "camelCase" // Output models using camel case (ex. userModel, postModel)
 
-    modelSuffix = "Model" // (default) Suffix to apply to your prisma models when naming Zod schemas
+  modelSuffix = "Model" // (default) Suffix to apply to your prisma models when naming Zod schemas
 
-    // useDecimalJs          = false // (default) represent the prisma Decimal type using as a JS number
-    useDecimalJs = true // represent the prisma Decimal type using Decimal.js (as Prisma does)
+  // useDecimalJs          = false // (default) represent the prisma Decimal type using as a JS number
+  useDecimalJs = true // represent the prisma Decimal type using Decimal.js (as Prisma does)
 
-    imports = "zodHelpers" // (default) will import the referenced file in generated schemas to be used via imports.someExportedVariable
+  imports = "zodHelpers" // (default) will import the referenced file in generated schemas to be used via imports.someExportedVariable
 
-    // https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-by-null-values
-    prismaJsonNullability = true // (default) uses prisma's scheme for JSON field nullability
-    // prismaJsonNullability = false // allows null assignment to optional JSON fields
+  // https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-by-null-values
+  prismaJsonNullability = true // (default) uses prisma's scheme for JSON field nullability
+  // prismaJsonNullability = false // allows null assignment to optional JSON fields
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // USERS & AUTHENTICATION
 
 model LicenseKey {
-    id          Int       @id @default(autoincrement())
-    key         String    @unique
-    createdAt   DateTime  @default(now())
-    activatedAt DateTime?
-    expiresAt   DateTime?
-    isSuperKey  Boolean   @default(false)
+  id          Int       @id @default(autoincrement())
+  key         String    @unique
+  createdAt   DateTime  @default(now())
+  activatedAt DateTime?
+  expiresAt   DateTime?
+  isSuperKey  Boolean   @default(false)
 }
 
 model User {
-    id            Int          @id @default(autoincrement())
-    email         String       @unique
-    name          String
-    passwordHash  String
-    title         String?
-    abbrv         String?      @unique
-    createdAt     DateTime     @default(now())
-    updatedAt     DateTime     @updatedAt
-    emailVerified DateTime?
-    image         String?
-    sessions      Session[]
-    permissions   Permission[]
-    Course        Course[]
-    role          Role         @default(STUDENT)
+  id            Int          @id @default(autoincrement())
+  email         String       @unique
+  name          String
+  passwordHash  String
+  title         String?
+  abbrv         String?      @unique
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  emailVerified DateTime?
+  image         String?
+  sessions      Session[]
+  permissions   Permission[]
+  Course        Course[]
+  role          Role         @default(STUDENT)
 }
 
 model Session {
-    id      Int      @id @default(autoincrement())
-    token   String   @unique
-    expires DateTime
+  id      Int      @id @default(autoincrement())
+  token   String   @unique
+  expires DateTime
 
-    userId Int?
-    user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int?
+  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum Role {
-    TEACHER
-    STUDENT
-    ADMIN
+  TEACHER
+  STUDENT
+  ADMIN
 }
 
 enum Permission {
-    EDIT_INFO_PAGES
+  EDIT_INFO_PAGES
 }
 
 // COURSES
 
 model CourseTime {
-    id        Int             @id @default(autoincrement())
-    weekday   Int
-    start     Int // time of day in minutes since midnight
-    duration  Int
-    weeks     CourseTimeWeeks @default(BOTH)
-    course    Course?         @relation(fields: [courseId], references: [id])
-    courseId  Int?
-    createdAt DateTime        @default(now())
-    updatedAt DateTime        @default(now()) @updatedAt
+  id        Int             @id @default(autoincrement())
+  weekday   Int
+  start     Int // time of day in minutes since midnight
+  duration  Int
+  weeks     CourseTimeWeeks @default(BOTH)
+  course    Course?         @relation(fields: [courseId], references: [id])
+  courseId  Int?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @default(now()) @updatedAt
 }
 
 enum CourseTimeWeeks {
-    EVEN
-    ODD
-    BOTH
+  EVEN
+  ODD
+  BOTH
 }
 
 model Course {
-    id          Int      @id @default(autoincrement())
-    courseId    String
-    name        String
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @default(now()) @updatedAt
-    room        String?
-    isChoosable Boolean  @default(false)
+  id          Int      @id @default(autoincrement())
+  courseId    String
+  name        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+  room        String?
+  isChoosable Boolean  @default(false)
 
-    teacher   User @relation(fields: [teacherId], references: [id])
-    teacherId Int
+  teacher   User @relation(fields: [teacherId], references: [id])
+  teacherId Int
 
-    times CourseTime[]
+  times CourseTime[]
 
-    class   Class @relation(fields: [classId], references: [id])
-    classId Int
+  class   Class @relation(fields: [classId], references: [id])
+  classId Int
 
-    year   Year @relation(fields: [yearId], references: [id])
-    yearId Int
+  year   Year @relation(fields: [yearId], references: [id])
+  yearId Int
 
-    substitutions Substitution[]
-    subscriptions CourseSubscription[]
+  substitutions Substitution[]
+  subscriptions CourseSubscription[]
 
-    @@unique([courseId, classId, yearId], name: "courseIdentifier")
+  @@unique([courseId, classId, yearId], name: "courseIdentifier")
 }
 
 model Class {
-    id               Int      @id @default(autoincrement())
-    identifierInYear String
-    createdAt        DateTime @default(now())
-    updatedAt        DateTime @default(now()) @updatedAt
+  id               Int      @id @default(autoincrement())
+  identifierInYear String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
 
-    courses Course[]
+  courses Course[]
 
-    year   Year @relation(fields: [yearId], references: [id])
-    yearId Int
+  year   Year @relation(fields: [yearId], references: [id])
+  yearId Int
 
-    @@unique([identifierInYear, yearId], name: "classIdentifier")
+  @@unique([identifierInYear, yearId], name: "classIdentifier")
 }
 
 model Year {
-    id             Int      @id @default(autoincrement())
-    startYear      Int      @unique
-    graduationYear Int
-    name           String
-    createdAt      DateTime @default(now())
-    updatedAt      DateTime @default(now()) @updatedAt
+  id             Int      @id @default(autoincrement())
+  startYear      Int      @unique
+  graduationYear Int
+  name           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
 
-    classes Class[]
-    courses Course[]
+  classes Class[]
+  courses Course[]
 }
 
 model Substitution {
-    id          Int      @id @default(autoincrement())
-    date        DateTime
-    lessonStart Int
-    lessonEnd   Int
+  id          Int      @id @default(autoincrement())
+  date        DateTime
+  lessonStart Int
+  lessonEnd   Int
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    course   Course @relation(fields: [courseId], references: [id])
-    courseId Int
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId Int
 
-    room String?
+  room String?
 
-    type SubstitutionType?
+  type SubstitutionType?
 
-    @@unique([date, lessonStart, courseId], name: "substitutionIdentifier")
+  @@unique([date, lessonStart, courseId], name: "substitutionIdentifier")
 }
 
 enum SubstitutionType {
-    FREISETZUNG
-    VERTRETUNG
-    BETREUUNG
-    ENTFALL
+  FREISETZUNG
+  VERTRETUNG
+  BETREUUNG
+  ENTFALL
 }
 
 model CourseSubscription {
-    id        Int      @id @default(autoincrement())
-    createdAt DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
 
-    course   Course @relation(fields: [courseId], references: [id])
-    courseId Int
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId Int
 
-    messagingToken String
+  messagingToken String
 
-    @@unique([courseId, messagingToken], name: "courseSubscriptionIdentifier")
+  @@unique([courseId, messagingToken], name: "courseSubscriptionIdentifier")
 }

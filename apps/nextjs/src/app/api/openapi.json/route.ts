@@ -1,4 +1,4 @@
-import { openApiDocument } from "@schnau/api/src/root";
+import { openApiDocument } from "@schnau/api";
 
 export function GET() {
   return new Response(JSON.stringify(openApiDocument), {

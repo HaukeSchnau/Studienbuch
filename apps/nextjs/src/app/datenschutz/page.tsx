@@ -4,7 +4,7 @@ import clsx from "clsx";
 import styles from "./datenschutz.module.css";
 
 const Datenschutz = () => (
-  <div className={clsx("text-gray-700 mx-auto max-w-screen-sm", styles.page)}>
+  <div className={clsx("mx-auto max-w-screen-sm text-gray-700", styles.page)}>
     <Head>
       <title>Datenschutz | Studienbuch</title>
     </Head>

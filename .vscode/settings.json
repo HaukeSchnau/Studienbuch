@@ -8,13 +8,18 @@
     { "pattern": "packages/*/" },
     { "pattern": "tooling/*/" }
   ],
-  "tailwindCSS.experimental.configFile": "./tooling/tailwind/index.ts",
+  "tailwindCSS.experimental.classRegex": [
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ],
+  "tailwindCSS.experimental.configFile": "./tooling/tailwind/web.ts",
   "typescript.enablePromptUseWorkspaceTsdk": true,
-  "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.preferences.autoImportFileExcludePatterns": [
     "next/router.d.ts",
     "next/dist/client/router.d.ts"
   ],
+  "typescript.tsdk": "node_modules/typescript/lib",
+
   "dart.analysisExcludedFolders": ["apps/flutter/api"],
   "python.analysis.typeCheckingMode": "basic",
   "[prisma]": {

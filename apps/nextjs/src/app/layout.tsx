@@ -1,40 +1,49 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Nunito } from "next/font/google";
 
 import "~/styles/globals.css";
 
-import { headers } from "next/headers";
-
-import { TRPCReactProvider } from "./providers";
+import { env } from "~/env";
+import { TRPCReactProvider } from "~/trpc/react";
 
 const fontSans = Nunito({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-nunito",
 });
 
-/**
- * Since we're passing `headers()` to the `TRPCReactProvider` we need to
- * make the entire app dynamic. You can move the `TRPCReactProvider` further
- * down the tree (e.g. /dashboard and onwards) to make part of the app statically rendered.
- */
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
-  title: "urbs",
+  metadataBase: new URL(
+    env.VERCEL_ENV === "production"
+      ? "https://turbo.t3.gg"
+      : "http://localhost:3000",
+  ),
+  title: "Create T3 Turbo",
+  description: "Simple monorepo with shared backend for web & mobile apps",
   openGraph: {
-    title: "urbs",
-    url: "https://urbs.vercel.app",
-    siteName: "urbs",
+    title: "Create T3 Turbo",
+    description: "Simple monorepo with shared backend for web & mobile apps",
+    url: "https://create-t3-turbo.vercel.app",
+    siteName: "Create T3 Turbo",
   },
+  twitter: {
+    card: "summary_large_image",
+    site: "@jullerino",
+    creator: "@jullerino",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "white" },
+    { media: "(prefers-color-scheme: dark)", color: "black" },
+  ],
 };
 
 export default function Layout(props: { children: React.ReactNode }) {
   return (
     <html lang="de">
       <body className={["font-sans", fontSans.variable].join(" ")}>
-        <TRPCReactProvider headers={headers()}>
-          {props.children}
-        </TRPCReactProvider>
+        <TRPCReactProvider>{props.children}</TRPCReactProvider>
       </body>
     </html>
   );

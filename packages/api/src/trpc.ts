@@ -16,28 +16,26 @@ import { db } from "@schnau/db";
 /**
  * 1. CONTEXT
  *
- * This section defines the "contexts" that are available in the backend API
+ * This section defines the "contexts" that are available in the backend API.
  *
- * These allow you to access things like the database, the session, etc., when
- * processing a request
+ * These allow you to access things when processing a request, like the database, the session, etc.
  *
+ * This helper generates the "internals" for a tRPC context. The API handler and RSC clients each
+ * wrap this and provides the required context.
+ *
+ * @see https://trpc.io/docs/server/context
  */
-interface CreateContextOptions {
+export const createTRPCContext = (opts: {
+  headers: Headers;
   session: Session | null;
-}
+}) => {
+  const session = opts.session; // ?? (await auth());
+  const source = opts.headers.get("x-trpc-source") ?? "unknown";
 
-/**
- * This helper generates the "internals" for a tRPC context. If you need to use
- * it, you can export it from here
- *
- * Examples of things you may need it for:
- * - testing, so we don't have to mock Next.js' req/res
- * - trpc's `createSSGHelpers` where we don't have req/res
- * @see https://create.t3.gg/en/usage/trpc#-servertrpccontextts
- */
-export const createTRPCContext = (opts: CreateContextOptions) => {
+  console.log(">>> tRPC Request from", source, "by", session?.user);
+
   return {
-    session: opts.session,
+    session,
     db,
   };
 };
@@ -50,17 +48,27 @@ export const createTRPCContext = (opts: CreateContextOptions) => {
  */
 export const t = initTRPC.context<typeof createTRPCContext>().create({
   transformer: superjson,
-  errorFormatter({ shape, error }) {
-    return {
-      ...shape,
-      data: {
-        ...shape.data,
-        zodError:
-          error.cause instanceof ZodError ? error.cause.flatten() : null,
-      },
-    };
-  },
+  errorFormatter: ({ shape, error }) => ({
+    ...shape,
+    data: {
+      ...shape.data,
+      zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
+    },
+  }),
 });
+
+/**
+ * Create a server-side caller
+ * @see https://trpc.io/docs/server/server-side-calls
+ */
+export const createCallerFactory = t.createCallerFactory;
+
+/**
+ * 3. ROUTER & PROCEDURE (THE IMPORTANT BIT)
+ *
+ * These are the pieces you use to build your tRPC API. You should import these
+ * a lot in the /src/server/api/routers folder
+ */
 
 /**
  * This is how you create new routers and subrouters in your tRPC API

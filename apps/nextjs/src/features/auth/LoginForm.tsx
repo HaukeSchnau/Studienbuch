@@ -1,8 +1,8 @@
 "use client";
 
+import type { SubmitHandler } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import type { SubmitHandler } from "react-hook-form";
 
 import { Button } from "~/components/form/Button";
 import { TextField } from "~/components/form/TextField";

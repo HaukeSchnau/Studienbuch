@@ -27,7 +27,11 @@ const handler = authHandler(async (req, session) => {
     endpoint: "/api/trpc",
     router: appRouter,
     req,
-    createContext: () => createTRPCContext({ session }),
+    createContext: () =>
+      createTRPCContext({
+        session,
+        headers: req.headers,
+      }),
     onError({ error, path }) {
       console.error(`>>> tRPC Error on '${path}'`, error);
     },

@@ -1,6 +1,6 @@
 import type { ComponentStoryObj, Meta } from "@storybook/react";
 
-import { colors } from "@schnau/tailwind-config";
+import { colors } from "@schnau/tailwind-config/base";
 
 import { Circle } from "./Circle";
 
