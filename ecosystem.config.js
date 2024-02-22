@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "Studienbuch",
       script: "pnpm",
-      args: "start",
+      args: "--filter nextjs start",
     },
   ],
 };
