@@ -177,6 +177,7 @@ enum SubstitutionType {
   VERTRETUNG
   BETREUUNG
   ENTFALL
+  TROTZ_ABSENZ
 }
 
 model CourseSubscription {

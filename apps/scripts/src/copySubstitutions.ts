@@ -201,8 +201,11 @@ const main = async () => {
           "VERTRETUNG",
           "BETREUUNG",
           "ENTFALL",
+          "TROTZ_ABSENZ",
         ]);
-        const type = typeSchema.safeParse(substitution.type?.toUpperCase());
+        const type = typeSchema.safeParse(
+          substitution.type?.toUpperCase().replaceAll(" ", "_"),
+        );
 
         if (!type.success) {
           console.error(
