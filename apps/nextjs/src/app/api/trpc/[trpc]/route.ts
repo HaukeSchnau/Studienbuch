@@ -1,7 +1,6 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 
 import { appRouter, createTRPCContext } from "@schnau/api";
-import { authHandler } from "@schnau/auth";
 
 /**
  * Configure basic CORS headers
@@ -22,14 +21,13 @@ export function OPTIONS() {
   return response;
 }
 
-const handler = authHandler(async (req, session) => {
+const handler = async (req: Request) => {
   const response = await fetchRequestHandler({
     endpoint: "/api/trpc",
     router: appRouter,
     req,
     createContext: () =>
       createTRPCContext({
-        session,
         headers: req.headers,
       }),
     onError({ error, path }) {
@@ -39,6 +37,6 @@ const handler = authHandler(async (req, session) => {
 
   setCorsHeaders(response);
   return response;
-});
+};
 
 export { handler as GET, handler as POST };

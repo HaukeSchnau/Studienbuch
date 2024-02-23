@@ -3,10 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": {
-    ".": "./src/index.ts",
-    "./env": "./env.ts"
-  },
   "license": "MIT",
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
@@ -15,9 +11,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@schnau/lib": "workspace:^0.1.0",
     "@schnau/db": "workspace:^0.1.0",
+    "@schnau/lib": "workspace:^0.1.0",
     "@t3-oss/env-nextjs": "^0.9.2",
+    "jsonwebtoken": "^9.0.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "zod": "^3.22.4"

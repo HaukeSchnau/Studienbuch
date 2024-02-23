@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 import type { Course } from "@schnau/lib/src/course";
 
-import { api } from "~/utils/api";
+import { api } from "~/infrastructure/trpc/react";
 import { LoadingIndicator } from "../layout/LoadingIndicator";
 import { CourseCard } from "./CourseCard";
 

@@ -4,7 +4,7 @@ import { Nunito } from "next/font/google";
 import "~/styles/globals.css";
 
 import { env } from "~/env";
-import { TRPCReactProvider } from "~/trpc/react";
+import { TRPCReactProvider } from "~/infrastructure/trpc/react";
 
 const fontSans = Nunito({
   subsets: ["latin"],

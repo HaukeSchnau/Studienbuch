@@ -6,18 +6,13 @@
  * tl;dr - this is where all the tRPC server stuff is created and plugged in.
  * The pieces you will need to use are documented accordingly near the end
  */
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import type { Session } from "@schnau/auth";
+import type { Session } from "@schnau/auth/src";
+import { getSessionFromHeaders } from "@schnau/auth/src";
 import { db } from "@schnau/db";
-
-const isHeaders = (
-  headers: Headers | Record<string, string | string[] | undefined>,
-): headers is Headers => {
-  return typeof headers.get === "function";
-};
 
 /**
  * 1. CONTEXT
@@ -31,25 +26,31 @@ const isHeaders = (
  *
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = (opts: {
-  headers: Headers | Record<string, string | string[] | undefined>;
-  session: Session | null;
+export const createTRPCContext = async (opts: {
+  headers: Headers;
+  session?: Session | null;
 }) => {
-  const getHeader = (key: string) => {
-    if (isHeaders(opts.headers)) {
-      return opts.headers.get(key);
+  let session: Session | null = opts.session ?? null;
+  if (!session) {
+    const result = await getSessionFromHeaders(opts.headers);
+    if (result.error === "BOTH_SESSION_AND_JWT_PRESENT") {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Cannot have both session and jwt",
+      });
     }
-    const value = opts.headers[key];
-    if (Array.isArray(value)) {
-      return value[0];
-    }
-    return value;
-  };
 
-  const session = opts.session; // ?? (await auth());
-  const source = getHeader("x-trpc-source") ?? "unknown";
+    session = result.session;
+  }
 
-  console.log(">>> tRPC Request from", source, "by", session?.user);
+  const source = opts.headers.get("x-trpc-source") ?? "unknown";
+
+  console.log(
+    ">>> tRPC Request from",
+    source,
+    "by",
+    session?.user?.name ?? "Anonymous",
+  );
 
   return {
     session,

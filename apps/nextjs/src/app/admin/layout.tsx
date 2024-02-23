@@ -7,16 +7,13 @@ import {
 } from "~/components/layout/NavigationItem";
 import { isLoggedIn } from "~/features/auth/isLoggedIn";
 import { YearSelectField } from "~/features/yearSelect/YearSelectField";
-import { getCurrentUrl } from "~/utils/getCurrentUrl";
 
 interface Props {
   children: ReactNode;
 }
 
 export default function AdminLayout({ children }: Props) {
-  const { pathname } = getCurrentUrl();
-
-  if (pathname !== "/login" && !isLoggedIn()) {
+  if (!isLoggedIn()) {
     return redirect("/login");
   }
 

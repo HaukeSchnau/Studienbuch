@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { SelectField } from "~/components/form/SelectField";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
-import { api } from "~/utils/api";
+import { api } from "~/infrastructure/trpc/react";
 import { useSelectedYear } from "./selectedYearStore";
 
 export const YearSelectField = () => {

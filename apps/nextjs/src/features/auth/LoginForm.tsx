@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 
 import { Button } from "~/components/form/Button";
 import { TextField } from "~/components/form/TextField";
-import { api } from "~/utils/api";
+import { api } from "~/infrastructure/trpc/react";
 
 export interface LoginForm {
   email: string;
@@ -50,10 +50,9 @@ export const LoginForm = () => {
       return;
     }
 
-    const newSession = response.session;
+    const newSessionToken = response.sessionToken;
 
-    document.cookie = `session=${newSession.id}; path=/`;
-    sessionStorage.setItem("session", JSON.stringify(newSession));
+    document.cookie = `jwt=${newSessionToken}; path=/`;
     void router.replace("/admin");
   };
 

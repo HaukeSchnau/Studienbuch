@@ -7,7 +7,7 @@ import { hash } from "@schnau/lib/src/infrastructure/strings";
 import { buildTimetable, formatWeeks } from "@schnau/lib/src/timetable";
 
 import { Card } from "~/components/layout/Card";
-import { api } from "~/utils/api";
+import { api } from "~/infrastructure/trpc/react";
 
 interface TimetableProps {
   yearId: number;

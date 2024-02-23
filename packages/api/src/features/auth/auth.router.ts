@@ -1,6 +1,7 @@
-import crypto from "crypto";
 import { z } from "zod";
 
+import type { Session } from "@schnau/auth/src";
+import { createJwt } from "@schnau/auth/src/jwt";
 import { db } from "@schnau/db";
 
 import { checkPassword } from "../../../../lib/src/auth/password";
@@ -32,7 +33,7 @@ export const authRouter = createRouter({
             field: "email" as const,
             message: "Kein Nutzer mit dieser E-Mail gefunden",
           },
-          session: undefined,
+          sessionToken: undefined,
         };
       }
 
@@ -43,39 +44,31 @@ export const authRouter = createRouter({
             message:
               "Für diesen Nutzer wurde kein Passwort festgelegt. Bitte kontaktiere den Support.",
           },
-          session: undefined,
+          sessionToken: undefined,
         };
       }
 
       const passwordMatch = await checkPassword(password, user.passwordHash);
-
       if (!passwordMatch) {
         return {
           error: {
             field: "password" as const,
             message: "Falsches Passwort",
           },
-          session: undefined,
+          sessionToken: undefined,
         };
       }
 
-      const newSession = await db.session.create({
-        data: {
-          expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30), // in 30 days
-          token: crypto.randomBytes(32).toString("base64"),
-          user: {
-            connect: {
-              id: user.id,
-            },
-          },
-        },
-        include: {
-          user: true,
-        },
-      });
+      const session: Session = {
+        user,
+      };
+
+      // const newSession = await createSession(user);
+      const newJwt = createJwt(session);
 
       return {
-        session: newSession,
+        sessionToken: newJwt,
+        session,
         error: undefined,
       };
     }),

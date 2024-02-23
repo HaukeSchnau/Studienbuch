@@ -1,42 +1,54 @@
 import { z } from "zod";
 
-import { db } from "@schnau/db";
-import { getCookies } from "@schnau/lib/src/auth/cookies";
+import { getCookies } from "./cookies";
+import { verifyAndDecodeJwt } from "./jwt";
+import { getSession } from "./session";
 
 export interface Session {
-  token: string;
-  expires: Date;
   user: {
-    id: number;
     name: string;
-    email: string | null;
-    image: string | null;
   } | null;
 }
 
+export const getSessionFromHeaders = async (headers: Headers) => {
+  const { sessionToken, jwt } = extractTokens(headers);
+
+  if (sessionToken && jwt) {
+    return {
+      session: null,
+      error: "BOTH_SESSION_AND_JWT_PRESENT" as const,
+    };
+  }
+
+  if (sessionToken) {
+    return {
+      session: await getSession(sessionToken),
+      error: null,
+    };
+  }
+  if (jwt) {
+    return {
+      session: verifyAndDecodeJwt(jwt),
+      error: null,
+    };
+  }
+
+  return {
+    session: null,
+    error: null,
+  };
+};
+
 const cookieSchema = z.object({
   session: z.string().optional(),
+  jwt: z.string().optional(),
 });
 
-export const authHandler = (
-  requestHandler: (req: Request, session: Session | null) => Promise<Response>,
-) => {
-  return async (req: Request) => {
-    const sessionToken =
-      req.headers.get("x-session") ??
-      getCookies(req.headers, cookieSchema)?.session;
-
-    const session = sessionToken
-      ? await db.session.findFirst({
-          where: {
-            token: sessionToken,
-          },
-          include: {
-            user: true,
-          },
-        })
-      : null;
-
-    return requestHandler(req, session);
+const extractTokens = (headers: Headers) => {
+  return {
+    sessionToken:
+      headers.get("x-session") ?? getCookies(headers, cookieSchema)?.session,
+    jwt:
+      headers.get("authentication") ?? getCookies(headers, cookieSchema)?.jwt,
   };
 };

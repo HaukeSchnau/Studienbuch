@@ -1,9 +1,16 @@
 import { headers } from "next/headers";
 import { z } from "zod";
 
-import { getCookies } from "@schnau/lib/src/auth/cookies";
+import { getCookies } from "@schnau/auth/src/cookies";
+import { decodeJwt } from "@schnau/auth/src/jwt";
 
 export const isLoggedIn = () => {
-  const cookie = getCookies(headers(), z.object({ session: z.string() }));
-  return !!cookie?.session;
+  const cookie = getCookies(headers(), z.object({ jwt: z.string() }));
+  if (!cookie) {
+    return false;
+  }
+
+  const decoded = decodeJwt(cookie.jwt);
+
+  return !!decoded?.user;
 };
