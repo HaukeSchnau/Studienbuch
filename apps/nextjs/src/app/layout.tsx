@@ -14,21 +14,16 @@ const fontSans = Nunito({
 export const metadata: Metadata = {
   metadataBase: new URL(
     env.VERCEL_ENV === "production"
-      ? "https://turbo.t3.gg"
+      ? "https://studienbuch.app"
       : "http://localhost:3000",
   ),
-  title: "Create T3 Turbo",
-  description: "Simple monorepo with shared backend for web & mobile apps",
+  title: "Das Studienbuch",
+  description: "Das Studienbuch der IGS Lilienthal",
   openGraph: {
-    title: "Create T3 Turbo",
-    description: "Simple monorepo with shared backend for web & mobile apps",
-    url: "https://create-t3-turbo.vercel.app",
-    siteName: "Create T3 Turbo",
-  },
-  twitter: {
-    card: "summary_large_image",
-    site: "@jullerino",
-    creator: "@jullerino",
+    title: "Das Studienbuch",
+    description: "Das Studienbuch der IGS Lilienthal",
+    url: "https://studienbuch.app",
+    siteName: "Das Studienbuch",
   },
 };
 
