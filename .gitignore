@@ -56,3 +56,5 @@ yarn-error.log*
 /cache_old
 
 __snapshots__
+
+**/prisma/zod
