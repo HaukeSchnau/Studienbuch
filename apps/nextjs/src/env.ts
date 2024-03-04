@@ -3,15 +3,11 @@ import { z } from "zod";
 
 export const env = createEnv({
   shared: {
-    VERCEL_URL: z
-      .string()
-      .optional()
-      .transform((v) => (v ? `https://${v}` : undefined)),
+    BASE_URL: z.string().min(1),
     PORT: z.coerce.number().default(3000),
     NODE_ENV: z
       .enum(["development", "production", "test"])
       .default("development"),
-    VERCEL_ENV: z.enum(["development", "preview", "production"]).optional(),
   },
   /**
    * Specify your server-side environment variables schema here.
@@ -31,8 +27,7 @@ export const env = createEnv({
    * Destructure all variables from `process.env` to make sure they aren't tree-shaken away.
    */
   experimental__runtimeEnv: {
-    VERCEL_URL: process.env.VERCEL_URL,
-    VERCEL_ENV: process.env.VERCEL_ENV,
+    BASE_URL: process.env.BASE_URL,
     NODE_ENV: process.env.NODE_ENV,
     PORT: process.env.PORT,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,

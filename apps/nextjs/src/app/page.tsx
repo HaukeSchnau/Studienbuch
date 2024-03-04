@@ -1,8 +1,14 @@
-import type { NextPage } from "next";
+import type { Metadata, NextPage } from "next";
 import Head from "next/head";
 import clsx from "clsx";
 
 import styles from "./home.module.css";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+  },
+};
 
 const Home: NextPage = () => {
   return (
