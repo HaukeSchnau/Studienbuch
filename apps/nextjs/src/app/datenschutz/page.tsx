@@ -1,13 +1,14 @@
-import Head from "next/head";
+import type { Metadata } from "next";
 import clsx from "clsx";
 
 import styles from "./datenschutz.module.css";
 
+export const metadata: Metadata = {
+  title: "Datenschutz | Studienbuch",
+};
+
 const Datenschutz = () => (
   <div className={clsx("mx-auto max-w-screen-sm text-gray-700", styles.page)}>
-    <Head>
-      <title>Datenschutz | Studienbuch</title>
-    </Head>
     <h1>Datenschutzerklärung</h1>
     <h2>Präambel</h2>
     <p>

@@ -3,6 +3,8 @@ import { Nunito } from "next/font/google";
 
 import "~/styles/globals.css";
 
+import type { ReactNode } from "react";
+
 import { env } from "~/env";
 import { TRPCReactProvider } from "~/infrastructure/trpc/react";
 
@@ -48,13 +50,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "white" },
-    { media: "(prefers-color-scheme: dark)", color: "black" },
-  ],
+  themeColor: "#34A32C",
 };
 
-export default function Layout(props: { children: React.ReactNode }) {
+export default function Layout(props: { children: ReactNode }) {
   return (
     <html lang="de">
       <body className={["font-sans", fontSans.variable].join(" ")}>
