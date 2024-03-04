@@ -20,12 +20,7 @@ export const LoginForm = () => {
     formState: { errors },
     setError,
     clearErrors,
-  } = useForm<LoginForm>({
-    defaultValues: {
-      email: "hauke@schnau-lilienthal.de",
-      password: "kiara2705",
-    },
-  });
+  } = useForm<LoginForm>();
   const loginMutation = api.auth.login.useMutation();
   const router = useRouter();
 
@@ -53,7 +48,10 @@ export const LoginForm = () => {
     const newSessionToken = response.sessionToken;
 
     document.cookie = `jwt=${newSessionToken}; path=/`;
-    void router.replace("/admin");
+
+    setTimeout(() => {
+      void router.replace("/admin");
+    }, 500);
   };
 
   return (

@@ -1,9 +1,3 @@
-.wrapper {
-  background:
-    url("/assets/blob-blue.svg") no-repeat top right,
-    url("/assets/blob-green.svg") no-repeat bottom left;
-}
-
 .main {
   display: grid;
   grid-template-areas:
@@ -21,11 +15,5 @@
       "footer footer";
     column-gap: 2vw;
     row-gap: 4vw;
-  }
-
-  .wrapper {
-    background:
-      url("/assets/blob-blue-md.svg") no-repeat top right,
-      url("/assets/blob-green-md.svg") no-repeat bottom left;
   }
 }

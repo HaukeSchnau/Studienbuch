@@ -1,9 +1,13 @@
-import Head from "next/head";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { Card, CardHeading } from "~/components/layout/Card";
 import { isLoggedIn } from "~/features/auth/isLoggedIn";
 import { LoginForm } from "~/features/auth/LoginForm";
+
+export const metadata: Metadata = {
+  title: "Anmelden | Digitales Studienbuch",
+};
 
 export default function LoginPage() {
   if (isLoggedIn()) {
@@ -12,9 +16,6 @@ export default function LoginPage() {
 
   return (
     <div>
-      <Head>
-        <title>Anmelden | Digitales Studienbuch</title>
-      </Head>
       <svg className="absolute h-full w-full">
         <circle cx="0" cy="2%" r="20%" opacity=".5" className="fill-blue" />
         <circle

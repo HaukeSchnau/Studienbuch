@@ -1,6 +1,11 @@
 import type { Config } from "tailwindcss";
 
 export const colors = {
+  primary: {
+    400: "#6DB868",
+    600: "#33A42B",
+  },
+
   green: "#33A42B",
   "green-desaturated": "#EEF5ED",
   "green-text": "#098A00",
