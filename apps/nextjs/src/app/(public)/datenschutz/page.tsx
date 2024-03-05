@@ -8,7 +8,9 @@ export const metadata: Metadata = {
 };
 
 const Datenschutz = () => (
-  <div className={clsx("mx-auto max-w-screen-sm text-gray-700", styles.page)}>
+  <div
+    className={clsx("mx-auto max-w-screen-md px-8 text-gray-700", styles.page)}
+  >
     <h1>Datenschutzerklärung</h1>
     <h2>Präambel</h2>
     <p>
