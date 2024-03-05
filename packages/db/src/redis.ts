@@ -5,15 +5,39 @@ import { env } from "../env";
 const createRedis = () => {
   return createClient({
     url: env.REDIS_URL,
-  }).connect();
+  });
 };
 
-type RedisClient = Awaited<ReturnType<typeof createRedis>>;
+type RedisClient = ReturnType<typeof createRedis>;
 
 const globalThisForRedis = globalThis as { redis?: RedisClient };
 
 export const getRedis = async (): Promise<RedisClient> => {
-  const redis = globalThisForRedis.redis ?? (await createRedis());
-  if (process.env.NODE_ENV !== "production") globalThisForRedis.redis = redis;
-  return redis;
+  if (!globalThisForRedis.redis) {
+    const redis = createRedis();
+    globalThisForRedis.redis = redis;
+    await redis.connect();
+    return redis;
+  }
+
+  return globalThisForRedis.redis;
+};
+
+export const getCachedResponse = async (key: string) => {
+  const client = await getRedis();
+  const data = await client.get(key);
+
+  return data ? (JSON.parse(data) as unknown) : null;
+};
+
+export const cacheResponse = async (
+  key: string,
+  data: unknown,
+  expirationInSeconds: number,
+) => {
+  const client = await getRedis();
+  const serializedData = JSON.stringify(data);
+  await client.set(key, serializedData, {
+    EX: expirationInSeconds,
+  });
 };
