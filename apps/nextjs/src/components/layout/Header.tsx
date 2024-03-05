@@ -1,7 +1,5 @@
-import type { ReactNode } from "react";
-import Link from "next/link";
-
 import { isLoggedIn } from "~/features/auth/isLoggedIn";
+import { NavLink } from "./NavLink";
 
 export const Header = () => {
   return (
@@ -13,9 +11,3 @@ export const Header = () => {
     </nav>
   );
 };
-
-const NavLink = ({ href, children }: { href: string; children: ReactNode }) => (
-  <Link href={href} className="hover:underline">
-    {children}
-  </Link>
-);
