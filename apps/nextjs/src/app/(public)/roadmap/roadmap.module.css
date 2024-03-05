@@ -1,0 +1,5 @@
+.stateColumns {
+  --num-states: 5;
+  display: grid;
+  grid-template-columns: repeat(var(--num-states), minmax(0, 1fr));
+}

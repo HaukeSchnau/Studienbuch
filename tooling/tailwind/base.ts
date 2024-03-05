@@ -4,6 +4,7 @@ export const colors = {
   primary: {
     400: "#6DB868",
     600: "#33A42B",
+    800: "#098A00",
   },
 
   green: "#33A42B",
@@ -26,6 +27,11 @@ export const colors = {
 
   transparent: "transparent",
   "black-80": "#0000000b",
+
+  black: {
+    20: "rgba(0, 0, 0, 0.2)",
+    80: "#000000b",
+  },
 };
 
 export type Color = keyof typeof colors;
