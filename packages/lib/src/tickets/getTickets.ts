@@ -1,11 +1,4 @@
-import { cacheResponse } from "@schnau/db";
-
 import { getLinearClient } from "./linearClient";
-
-// const linearClient = new LinearClient({
-//   apiKey: env.LINEAR_API_KEY,
-//   cache: "force-cache",
-// });
 
 const VIEW_ID = "cbd58025-74b7-4581-af67-438c97ebd8c9";
 

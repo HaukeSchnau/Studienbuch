@@ -14,7 +14,7 @@ export default async function RoadmapPage() {
 
   return (
     <div className="mx-12 py-12 md:mx-[10vw] md:py-16">
-      <h1 className="text-primary-800 text-4xl font-bold">
+      <h1 className="text-4xl font-bold text-primary-800">
         Woran wird gerade gearbeitet?
       </h1>
 
@@ -43,7 +43,7 @@ const StateColumn = async ({ state, isLast }: StateColumnProps) => {
   return (
     <div
       className={clsx(
-        "border-black-20 flex flex-col gap-4",
+        "flex flex-col gap-4 border-black-20",
         !isLast && "mr-4 border-r pr-4",
       )}
     >
