@@ -23,21 +23,21 @@ export const getRedis = async (): Promise<RedisClient> => {
   return globalThisForRedis.redis;
 };
 
-export const getCachedResponse = async (key: string) => {
+export const getCachedResponse = async (key: string, field: string) => {
   const client = await getRedis();
-  const data = await client.get(key);
+  const data = await client.hGet(key, field);
 
   return data ? (JSON.parse(data) as unknown) : null;
 };
 
 export const cacheResponse = async (
   key: string,
+  field: string,
   data: unknown,
   expirationInSeconds: number,
 ) => {
   const client = await getRedis();
   const serializedData = JSON.stringify(data);
-  await client.set(key, serializedData, {
-    EX: expirationInSeconds,
-  });
+  await client.hSet(key, field, serializedData);
+  await client.expire(key, expirationInSeconds);
 };

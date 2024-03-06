@@ -28,9 +28,9 @@ class CachingLinearClient extends LinearSdk {
         if (vars) {
           docHash.update(JSON.stringify(vars));
         }
-        const cacheKey = `linear:${docHash.digest("hex")}`;
+        const cacheKey = docHash.digest("hex");
 
-        const cached = await getCachedResponse(cacheKey);
+        const cached = await getCachedResponse("linear", cacheKey);
         if (cached) {
           return cached as Data;
         }
@@ -44,7 +44,7 @@ class CachingLinearClient extends LinearSdk {
             throw parseLinearError(error);
           });
 
-        await cacheResponse(cacheKey, data, 60 * 15);
+        await cacheResponse("linear", cacheKey, data, 30);
 
         return data;
       },
