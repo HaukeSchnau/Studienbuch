@@ -1,4 +1,4 @@
-import type { ComponentStoryObj, Meta } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
 
 import { colors } from "@schnau/tailwind-config/base";
 
@@ -23,11 +23,11 @@ export default {
   },
 } satisfies Meta<typeof Circle>;
 
-type Story = ComponentStoryObj<typeof Circle>;
+type Story = StoryObj<typeof Circle>;
 
 export const Primary: Story = {
   args: {
     size: 100,
-    color: "green",
+    color: colors.green,
   },
 };

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { View } from "react-native";
 
-import { getColorValue } from "@schnau/tailwind-config/base";
+import { colors } from "@schnau/tailwind-config/base";
 
 interface Props {
   children: ReactNode;
@@ -11,7 +11,7 @@ export const Card = ({ children }: Props) => (
   <View
     style={[
       {
-        backgroundColor: getColorValue("white"),
+        backgroundColor: colors.white,
         borderRadius: 36,
         padding: 24,
       },

@@ -36,8 +36,6 @@ export const colors = {
 
 export type Color = keyof typeof colors;
 
-export const getColorValue = (color: Color) => colors[color];
-
 export default {
   darkMode: ["class"],
   content: ["src/**/*.{ts,tsx}"],
