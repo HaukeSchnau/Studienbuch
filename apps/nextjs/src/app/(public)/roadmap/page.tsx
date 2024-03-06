@@ -15,7 +15,7 @@ export default async function RoadmapPage() {
 
   return (
     <div className=" py-12  md:py-16">
-      <h1 className="text-primary-800 px-12 text-4xl font-bold md:px-[10vw]">
+      <h1 className="px-12 text-4xl font-bold text-primary-800 md:px-[10vw]">
         Woran wird gerade gearbeitet?
       </h1>
 
@@ -44,7 +44,7 @@ const StateColumn = async ({ state, isLast }: StateColumnProps) => {
   return (
     <div
       className={clsx(
-        "border-black-20 flex flex-col gap-4",
+        "flex flex-col gap-4 border-black-20",
         !isLast && "mr-4 border-r pr-4",
       )}
     >
@@ -123,7 +123,7 @@ const MoreTextIndicator = ({ className }: { className?: string }) => {
   return (
     <div
       className={clsx(
-        "bg-black-20 h-4 w-min rounded-full px-2 leading-none transition-all",
+        "h-4 w-min rounded-full bg-black-20 px-2 leading-none transition-all",
         className,
       )}
     >
