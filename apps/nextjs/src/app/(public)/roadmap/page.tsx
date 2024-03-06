@@ -14,12 +14,12 @@ export default async function RoadmapPage() {
   const states = await getStates();
 
   return (
-    <div className="mx-12 py-12 md:mx-[10vw] md:py-16">
-      <h1 className="text-primary-800 text-4xl font-bold">
+    <div className=" py-12  md:py-16">
+      <h1 className="text-primary-800 px-12 text-4xl font-bold md:px-[10vw]">
         Woran wird gerade gearbeitet?
       </h1>
 
-      <div className={clsx(style.stateColumns, "pt-10")}>
+      <div className={clsx(style.stateColumns, "px-12 pt-10 md:px-[10vw]")}>
         {states.map((state, idx) => (
           <StateColumn
             key={state.id}

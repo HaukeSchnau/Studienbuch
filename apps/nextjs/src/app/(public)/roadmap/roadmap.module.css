@@ -1,7 +1,8 @@
 .stateColumns {
   --num-states: 5;
   display: grid;
-  grid-template-columns: repeat(var(--num-states), minmax(0, 1fr));
+  overflow-x: auto;
+  grid-template-columns: repeat(var(--num-states), minmax(200px, 1fr));
 }
 
 .descriptionExpander {
