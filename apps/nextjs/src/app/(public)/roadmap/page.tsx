@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import clsx from "clsx";
 
 import type { Issue, WorkflowState } from "@schnau/lib/src/tickets/getTickets";
@@ -14,7 +15,7 @@ export default async function RoadmapPage() {
 
   return (
     <div className="mx-12 py-12 md:mx-[10vw] md:py-16">
-      <h1 className="text-4xl font-bold text-primary-800">
+      <h1 className="text-primary-800 text-4xl font-bold">
         Woran wird gerade gearbeitet?
       </h1>
 
@@ -43,7 +44,7 @@ const StateColumn = async ({ state, isLast }: StateColumnProps) => {
   return (
     <div
       className={clsx(
-        "flex flex-col gap-4 border-black-20",
+        "border-black-20 flex flex-col gap-4",
         !isLast && "mr-4 border-r pr-4",
       )}
     >
@@ -68,17 +69,36 @@ const IssueCard = async ({ issue, color }: IssueCardProps) => {
 
   const { title, description } = issue;
 
+  const canExpand = !!description;
+
   return (
     <div
-      className="flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-md"
+      className={clsx(
+        "flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-md",
+        style.issueCard,
+      )}
       style={{ backgroundColor: color }}
+      tabIndex={canExpand ? 0 : undefined}
+      role={canExpand ? "button" : undefined}
     >
       {project && (
         <span className="text-sm italic opacity-80">{project.name}</span>
       )}
       {title}
       {description && (
-        <p className="text-sm opacity-80">{description.slice(0, 100)}...</p>
+        <div className="min-h-4">
+          <div className={style.descriptionExpander}>
+            <div
+              className={clsx(
+                "flex flex-col gap-2 text-sm opacity-80",
+                style.description,
+              )}
+            >
+              <Paragraphs text={description} />
+            </div>
+          </div>
+          <MoreTextIndicator className={style.moreTextIndicator} />
+        </div>
       )}
       <div className="flex items-center justify-between gap-2">
         {labels.map((label) => (
@@ -97,4 +117,32 @@ const IssueCard = async ({ issue, color }: IssueCardProps) => {
       </div>
     </div>
   );
+};
+
+const MoreTextIndicator = ({ className }: { className?: string }) => {
+  return (
+    <span
+      className={clsx(
+        "bg-black-20 w-min rounded-full px-2 leading-none transition-opacity",
+        className,
+      )}
+    >
+      ⋯
+    </span>
+  );
+};
+
+const Paragraphs = ({ text }: { text: string }) => {
+  const paragraphs = text.split("\n\n");
+
+  return paragraphs.map((paragraph, idx) => (
+    <p key={idx}>
+      {paragraph.split("\n").map((line, idx) => (
+        <Fragment key={idx}>
+          {line}
+          <br />
+        </Fragment>
+      ))}
+    </p>
+  ));
 };

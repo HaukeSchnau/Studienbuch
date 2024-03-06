@@ -3,3 +3,27 @@
   display: grid;
   grid-template-columns: repeat(var(--num-states), minmax(0, 1fr));
 }
+
+.descriptionExpander {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows 0.8s ease;
+}
+.description {
+  min-height: 0;
+  transition: visibility 1s;
+  visibility: hidden;
+}
+.issueCard:focus-within .descriptionExpander {
+  grid-template-rows: 1fr;
+}
+.issueCard:focus-within .description {
+  visibility: visible;
+}
+.moreTextIndicator {
+  transition-duration: 0.8;
+}
+.issueCard:focus-within .moreTextIndicator {
+  opacity: 0;
+}
