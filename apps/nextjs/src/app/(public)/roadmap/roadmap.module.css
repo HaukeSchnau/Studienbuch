@@ -9,7 +9,7 @@
   display: grid;
   grid-template-rows: 0fr;
   overflow: hidden;
-  transition: grid-template-rows 0.8s ease;
+  transition: grid-template-rows 0.5s ease;
 }
 .description {
   min-height: 0;
@@ -23,8 +23,9 @@
   visibility: visible;
 }
 .moreTextIndicator {
-  transition-duration: 0.8;
+  transition-duration: 0.25s;
 }
 .issueCard:focus-within .moreTextIndicator {
   opacity: 0;
+  height: 0;
 }
