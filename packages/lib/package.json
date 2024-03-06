@@ -21,10 +21,10 @@
     "@schnau/eslint-config": "workspace:^0.2.0",
     "@schnau/prettier-config": "workspace:^0.1.0",
     "@schnau/tsconfig": "workspace:^0.1.0",
-    "@total-typescript/shoehorn": "^0.1.1",
-    "eslint": "^8.56.0",
+    "@total-typescript/shoehorn": "^0.1.2",
+    "eslint": "^8.57.0",
     "prettier": "^3.2.5",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.2"
   },
   "eslintConfig": {
     "root": true,

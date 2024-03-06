@@ -10,8 +10,8 @@
   "dependencies": {
     "@schnau/api": "workspace:^0.1.0",
     "@schnau/auth": "^0.1.0",
-    "@schnau/lib": "^0.1.0",
     "@schnau/db": "^0.1.0",
+    "@schnau/lib": "^0.1.0",
     "@schnau/tailwind-config": "workspace:^0.1.0",
     "cross-fetch": "^4.0.0",
     "papaparse": "^5.4.1",
@@ -22,10 +22,10 @@
     "@schnau/prettier-config": "workspace:^0.1.0",
     "@schnau/tsconfig": "workspace:^0.1.0",
     "@total-typescript/ts-reset": "^0.5.1",
-    "@types/node": "^20.11.19",
+    "@types/node": "^20.11.25",
     "@types/papaparse": "^5.3.14",
-    "eslint": "^8.56.0",
+    "eslint": "^8.57.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.2"
   }
 }

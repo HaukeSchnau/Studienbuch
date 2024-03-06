@@ -26,10 +26,10 @@
     "@schnau/prettier-config": "workspace:^0.1.0",
     "@schnau/tsconfig": "workspace:^0.1.0",
     "dotenv-cli": "^7.3.0",
-    "eslint": "^8.56.0",
+    "eslint": "^8.57.0",
     "prettier": "^3.2.5",
     "prisma": "^5.10.2",
-    "typescript": "^5.3.3",
+    "typescript": "^5.4.2",
     "zod-prisma": "^0.5.4"
   },
   "eslintConfig": {

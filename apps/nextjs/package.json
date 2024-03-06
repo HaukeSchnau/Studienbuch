@@ -18,8 +18,8 @@
   "dependencies": {
     "@schnau/api": "workspace:^0.1.0",
     "@schnau/auth": "workspace:^0.1.0",
-    "@schnau/lib": "workspace:^0.1.0",
     "@schnau/db": "workspace:^0.1.0",
+    "@schnau/lib": "workspace:^0.1.0",
     "@t3-oss/env-nextjs": "^0.9.2",
     "@tanstack/react-query": "^5.18.1",
     "@trpc/client": "11.0.0-next-beta.264",
@@ -27,15 +27,15 @@
     "@trpc/server": "11.0.0-next-beta.264",
     "clsx": "^2.1.0",
     "immer": "^10.0.3",
-    "next": "^14.1.0",
+    "next": "^14.1.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-hook-form": "^7.50.1",
+    "react-hook-form": "^7.51.0",
     "superjson": "2.2.1",
-    "swagger-ui-react": "^5.11.7",
+    "swagger-ui-react": "^5.11.10",
     "trpc-openapi": "^1.2.0",
     "zod": "^3.22.4",
-    "zustand": "^4.5.1"
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@schnau/eslint-config": "workspace:^0.2.0",
@@ -49,18 +49,18 @@
     "@storybook/nextjs": "^7.6.17",
     "@storybook/react": "^7.6.17",
     "@storybook/testing-library": "^0.2.2",
-    "@types/node": "^20.11.19",
-    "@types/react": "^18.2.57",
-    "@types/react-dom": "^18.2.19",
+    "@types/node": "^20.11.25",
+    "@types/react": "^18.2.63",
+    "@types/react-dom": "^18.2.20",
     "@types/swagger-ui-react": "^4.18.3",
     "dotenv-cli": "^7.3.0",
-    "eslint": "^8.56.0",
+    "eslint": "^8.57.0",
     "eslint-plugin-storybook": "^0.8.0",
     "jiti": "^1.21.0",
     "prettier": "^3.2.5",
     "storybook": "^7.6.17",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.4.2"
   },
   "eslintConfig": {
     "root": true,
