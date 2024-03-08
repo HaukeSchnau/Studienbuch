@@ -1,8 +1,13 @@
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
 import { z } from "zod";
 
+import type { KadmosFormat } from "./format";
 import { BASE_URL } from "./constants";
 import { getFormat } from "./format";
 import { buildSubstitutionsPayload } from "./payloadBuilder";
+
+dayjs.extend(customParseFormat);
 
 const buildSubstitutionsUrl = (school: string) =>
   `${BASE_URL}/substitution/data?school=${school}`;
@@ -29,17 +34,24 @@ export const getSubstitutionsFromKadmos = async (
   formatName: string,
   date: Date,
   hideCancelCausedByEvent = false,
+  formatOverrides?: Partial<KadmosFormat>,
 ) => {
   const payload = await getFormat(school, formatName);
-  console.log(payload);
+  const format = { ...payload, ...formatOverrides };
   const substitutionsPayload = buildSubstitutionsPayload(
     formatName,
     school,
     date,
     hideCancelCausedByEvent,
-    payload,
+    format,
   );
-  return getSubstitutionsWithPayload(school, substitutionsPayload);
+  return {
+    substitutions: await getSubstitutionsWithPayload(
+      school,
+      substitutionsPayload,
+    ),
+    format,
+  };
 };
 
 export interface KadmosSubstitionsPayload {
@@ -84,11 +96,20 @@ export interface KadmosSubstitionsPayload {
   showUnheraldedExams: boolean;
 }
 
+const convertNumberToDate = (number: number) => {
+  const date = number.toString();
+  return new Date(
+    parseInt(date.substring(0, 4)),
+    parseInt(date.substring(4, 6)) - 1,
+    parseInt(date.substring(6, 8)),
+  );
+};
+
 const responseSchema = z.strictObject({
   payload: z.object({
     importInProgress: z.boolean(),
-    date: z.number(),
-    nextDate: z.number(),
+    date: z.number().transform(convertNumberToDate),
+    nextDate: z.number().transform(convertNumberToDate),
     showingNextDate: z.boolean(),
     rows: z.array(
       z.union([
@@ -96,7 +117,7 @@ const responseSchema = z.strictObject({
           data: z.array(z.string()),
           cssClasses: z.array(z.string()),
           cellClasses: z.object({}),
-          group: z.null(),
+          group: z.string().nullable(),
         }),
         z.object({
           data: z.array(z.string()),
@@ -111,7 +132,9 @@ const responseSchema = z.strictObject({
         }),
       ]),
     ),
-    lastUpdate: z.string(),
+    lastUpdate: z
+      .string()
+      .transform((date) => dayjs(date, "DD.MM.YYYY HH:mm:ss").format()),
     absentElements: z.array(z.unknown()).length(0),
     affectedElements: z.object({ 1: z.array(z.string()) }),
     messageData: z.object({
