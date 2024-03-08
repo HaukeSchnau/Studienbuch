@@ -1,25 +1,23 @@
-import Head from "next/head";
+import type { ReactNode } from "react";
 import clsx from "clsx";
 
 interface PageHeadingProps {
-  title: string;
-  color: "green" | "white";
+  children: ReactNode;
+  color?: "green" | "white";
 }
 
-export const PageHeading = ({ title, color }: PageHeadingProps) => {
+export const PageHeading = ({
+  children,
+  color = "green",
+}: PageHeadingProps) => {
   return (
-    <>
-      <Head>
-        <title>{title}</title>
-      </Head>
-      <h1
-        className={clsx("text-5xl font-semibold", {
-          "text-white": color === "white",
-          "text-green": color === "green",
-        })}
-      >
-        {title}
-      </h1>
-    </>
+    <h1
+      className={clsx("text-5xl font-semibold", {
+        "text-white": color === "white",
+        "text-green": color === "green",
+      })}
+    >
+      {children}
+    </h1>
   );
 };

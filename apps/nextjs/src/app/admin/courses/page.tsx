@@ -9,7 +9,7 @@ export default function Courses() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeading title="Kurse" color="white" />
+      <PageHeading color="white">Kurse</PageHeading>
       {selectedYear && <CourseList yearId={selectedYear.id} />}
     </div>
   );
