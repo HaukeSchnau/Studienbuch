@@ -19,12 +19,14 @@ export default function AdminLayout({ children }: Props) {
 
   return (
     <div className="bg-main-blob flex h-screen overflow-hidden bg-offwhite bg-contain bg-no-repeat">
-      <div className="w-80 rounded-r-3xl bg-white p-4 shadow-md">
-        <img
-          src="/assets/icon.png"
-          className="rounded-full p-12"
-          alt="IGS Lilienthal Logo"
-        />
+      <div className="basis-1/5 rounded-r-3xl bg-white p-4 shadow-md">
+        <div className="mx-auto w-4/6 py-12">
+          <img
+            src="/assets/icon.png"
+            className="rounded-full"
+            alt="IGS Lilienthal Logo"
+          />
+        </div>
         <YearSelectField />
         <ul className="flex flex-col gap-2">
           <NavigationItem href="/admin/schedules">Stundenpläne</NavigationItem>
