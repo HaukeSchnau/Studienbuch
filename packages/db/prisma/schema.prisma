@@ -154,8 +154,8 @@ model Year {
 
   classes  Class[]
   courses  Course[]
-  school   School?  @relation(fields: [schoolId], references: [id])
-  schoolId Int?
+  school   School   @relation(fields: [schoolId], references: [id])
+  schoolId Int
 }
 
 model Substitution {
