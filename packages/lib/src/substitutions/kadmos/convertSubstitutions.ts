@@ -43,29 +43,36 @@ const columns = [
     condition: "showTeacher",
   },
   {
-    key: "info",
+    key: "type",
     name: "Art",
     condition: "showInfo",
   },
   {
-    key: "substText",
-    name: "Text",
+    key: "info",
+    name: "Info",
     condition: "showSubstText",
   },
 ] as const satisfies Column[];
 
 type ColumnConfiguration = (typeof columns)[number][];
 type ColumnKey = (typeof columns)[number]["key"];
+interface Cell {
+  data: string | undefined;
+  rowSpan: number;
+}
 
 export const convertKadmosRowsToSubstitutionsTable = (
   rows: { data: string[] }[],
   columns: ColumnConfiguration,
 ) => {
   return rows.map(({ data }) => {
-    const result: Partial<Record<ColumnKey, string>> = {};
+    const result: Partial<Record<ColumnKey, Cell>> = {};
 
     columns.forEach((column, i) => {
-      result[column.key] = data[i];
+      result[column.key] = {
+        data: data[i],
+        rowSpan: 1,
+      };
     });
 
     return result;

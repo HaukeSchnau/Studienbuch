@@ -12,6 +12,19 @@ import { PageHeading } from "~/components/layout/PageHeading";
 
 dayjs.extend(customParseFormat);
 
+const optionalCompare = (a: string | undefined, b: string | undefined) => {
+  if (a === b) {
+    return 0;
+  }
+  if (a === undefined) {
+    return 1;
+  }
+  if (b === undefined) {
+    return -1;
+  }
+  return a.localeCompare(b);
+};
+
 export default async function SubstitutionPage() {
   const school = "IGS Lilienthal";
   const FORMAT_NAME = "iServ_SuS_heute";
@@ -46,6 +59,36 @@ export default async function SubstitutionPage() {
   const columns = getSubstituionTableColumns(format);
   const rowsWithColumns = convertKadmosRowsToSubstitutionsTable(rows, columns);
 
+  rowsWithColumns.sort((a, b) => {
+    return (
+      optionalCompare(a.time?.data, b.time?.data) ||
+      optionalCompare(a.class?.data, b.class?.data) ||
+      optionalCompare(a.subject?.data, b.subject?.data)
+    );
+  });
+
+  for (let i = rowsWithColumns.length - 1; i > 0; i--) {
+    const current = rowsWithColumns[i]!;
+    const previous = rowsWithColumns[i - 1]!;
+    if (
+      previous.time &&
+      current.time &&
+      current.time.data === previous.time.data
+    ) {
+      previous.time.rowSpan = current.time.rowSpan + previous.time.rowSpan;
+      current.time = undefined;
+    }
+
+    if (
+      previous.hour &&
+      current.hour &&
+      current.hour.data === previous.hour.data
+    ) {
+      previous.hour.rowSpan = current.hour.rowSpan + previous.hour.rowSpan;
+      current.hour = undefined;
+    }
+  }
+
   return (
     <>
       <PageHeading color="white">
@@ -72,14 +115,18 @@ export default async function SubstitutionPage() {
           <tbody>
             {rowsWithColumns.map((row, i) => (
               <tr key={i}>
-                {columns.map((column) => (
-                  <td
-                    className="border-l border-t border-grey-100 px-2 py-1"
-                    key={column.key}
-                  >
-                    {row[column.key]}
-                  </td>
-                ))}
+                {columns.map(
+                  (column) =>
+                    row[column.key] && (
+                      <td
+                        className="border-l border-t border-grey-100 px-2 py-1"
+                        key={column.key}
+                        rowSpan={row[column.key]?.rowSpan}
+                      >
+                        {row[column.key]?.data}
+                      </td>
+                    ),
+                )}
               </tr>
             ))}
           </tbody>
