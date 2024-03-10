@@ -10,7 +10,7 @@ import {
 import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";
 
-export const classesRouter = createRouter({
+export const classes = createRouter({
   get: publicProcedure
     .meta({ openapi: { method: "GET", path: "/classes/{yearId}" } })
     .input(z.object({ yearId: z.number() }))

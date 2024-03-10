@@ -17,7 +17,7 @@ const getYearNumber = (startYear: number) => {
   return currentYear - startYear + 5;
 };
 
-export const yearsRouter = createRouter({
+export const years = createRouter({
   get: publicProcedure
     .meta({ openapi: { method: "GET", path: "/years" } })
     .input(z.void())

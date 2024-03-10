@@ -4,11 +4,11 @@ import type { Session } from "@schnau/auth/src";
 import { createJwt } from "@schnau/auth/src/jwt";
 import { db } from "@schnau/db";
 
-import { checkPassword } from "../../../../lib/src/auth/password";
-import { publicProcedure } from "../../procedures/publicProcedure";
-import { createRouter } from "../../trpc";
+import { checkPassword } from "../../../lib/src/auth/password";
+import { publicProcedure } from "../procedures/publicProcedure";
+import { createRouter } from "../trpc";
 
-export const authRouter = createRouter({
+export const auth = createRouter({
   getSession: publicProcedure.query(({ ctx }) => {
     return ctx.session;
   }),

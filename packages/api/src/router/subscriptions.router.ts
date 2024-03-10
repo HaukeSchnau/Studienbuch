@@ -3,7 +3,7 @@ import { z } from "zod";
 import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";
 
-export const subscriptionsRouter = createRouter({
+export const subscriptions = createRouter({
   subscribe: publicProcedure
     .meta({ openapi: { method: "POST", path: "/subscriptions" } })
     .input(

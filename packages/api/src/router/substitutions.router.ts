@@ -9,7 +9,7 @@ import { createRouter } from "../trpc";
 
 dayjs.extend(utc);
 
-export const substitutionsRouter = createRouter({
+export const substitutions = createRouter({
   get: publicProcedure
     .meta({ openapi: { method: "GET", path: "/substitutions" } })
     .input(

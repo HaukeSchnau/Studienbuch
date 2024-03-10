@@ -4,7 +4,7 @@ import { z } from "zod";
 import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";
 
-export const licenseRouter = createRouter({
+export const license = createRouter({
   check: publicProcedure
     .meta({ openapi: { method: "GET", path: "/licenses/check" } })
     .input(
