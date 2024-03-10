@@ -19,7 +19,7 @@ export default function AdminLayout({ children }: Props) {
 
   return (
     <div className="bg-main-blob flex h-screen overflow-hidden bg-offwhite bg-contain bg-no-repeat">
-      <div className="basis-1/6 rounded-r-3xl bg-white p-4 shadow-md">
+      <div className="hidden basis-1/6 rounded-r-3xl bg-white p-4 shadow-md md:block">
         <div className="mx-auto w-4/6 py-12">
           <img
             src="/assets/icon.png"
@@ -29,6 +29,7 @@ export default function AdminLayout({ children }: Props) {
         </div>
         <YearSelectField />
         <ul className="flex flex-col gap-2">
+          <NavigationItem href="/admin/years">Jahrgänge</NavigationItem>
           <NavigationItem href="/admin/schedules">Stundenpläne</NavigationItem>
           <NavigationItem href="/admin/substitutions">
             Vertretungspläne
