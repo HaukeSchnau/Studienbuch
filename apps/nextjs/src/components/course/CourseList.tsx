@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 
-import type { Course } from "@schnau/lib/src/course";
-
 import { api } from "~/infrastructure/trpc/react";
+import { Grid } from "../layout/Grid";
 import { LoadingIndicator } from "../layout/LoadingIndicator";
 import { CourseCard } from "./CourseCard";
 
@@ -30,20 +29,9 @@ export const CourseList = ({ yearId }: CourseListProps) => {
   const courses = sortedCourses ?? data;
 
   return (
-    <ul
-      className="grid gap-10"
-      style={{
-        gridTemplateColumns: "repeat(auto-fill, minmax(15rem, 1fr))",
-      }}
-    >
-      {courses.map((course) => (
-        <CourseCard
-          key={course.id}
-          course={
-            course as Course // TODO make this better
-          }
-        />
-      ))}
-    </ul>
+    <Grid
+      data={courses}
+      renderItem={(course) => <CourseCard course={course} />}
+    />
   );
 };
