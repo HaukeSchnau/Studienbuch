@@ -3,4 +3,9 @@ export interface Substitution {
   type: SubstitutionType | null;
 }
 
-export type SubstitutionType = string; // TODO: enum
+export type SubstitutionType =
+  | "FREISETZUNG"
+  | "VERTRETUNG"
+  | "BETREUUNG"
+  | "ENTFALL"
+  | "TROTZ_ABSENZ";
