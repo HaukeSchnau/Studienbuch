@@ -146,7 +146,7 @@ model Class {
 
 model Year {
   id             Int      @id @default(autoincrement())
-  startYear      Int      @unique
+  startYear      Int
   graduationYear Int
   name           String
   createdAt      DateTime @default(now())
@@ -156,6 +156,8 @@ model Year {
   courses  Course[]
   school   School   @relation(fields: [schoolId], references: [id])
   schoolId Int
+
+  @@unique([startYear, schoolId], name: "yearIdentifier")
 }
 
 model Substitution {
