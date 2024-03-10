@@ -4,6 +4,7 @@ import { authRouter } from "./features/auth/auth.router";
 import { classesRouter } from "./router/classesRouter";
 import { coursesRouter } from "./router/coursesRouter";
 import { licenseRouter } from "./router/licenseRouter";
+import { schools } from "./router/schools.router";
 import { subscriptionsRouter } from "./router/subscriptionsRouter";
 import { substitutionsRouter } from "./router/substitutionsRouter";
 import { sync } from "./router/syncRouter";
@@ -19,6 +20,7 @@ export const appRouter = createRouter({
   subscriptions: subscriptionsRouter,
   sync,
   auth: authRouter,
+  schools,
 });
 
 export const openApiDocument = generateOpenApiDocument(appRouter, {
