@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { YearModel } from "@schnau/db/prisma/zod";
 
+import { protectedProcedure } from "../procedures/protectedProcedure";
 import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";
 
@@ -27,5 +28,32 @@ export const yearsRouter = createRouter({
         .then((years) =>
           years.filter((year) => getYearNumber(year.startYear) <= 13),
         );
+    }),
+  list: publicProcedure.query(async ({ ctx }) => {
+    return ctx.db.year.findMany();
+  }),
+  add: protectedProcedure
+    .input(
+      z.object({
+        name: z.string(),
+        startYear: z.number(),
+        graduationYear: z.number(),
+        schoolId: z.number(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      return ctx.db.year.create({
+        data: {
+          name: input.name,
+          startYear: input.startYear,
+          graduationYear: input.graduationYear,
+
+          school: {
+            connect: {
+              id: input.schoolId,
+            },
+          },
+        },
+      });
     }),
 });
