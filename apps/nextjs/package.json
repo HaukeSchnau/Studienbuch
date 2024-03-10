@@ -16,6 +16,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.3.4",
     "@schnau/api": "workspace:^0.1.0",
     "@schnau/auth": "workspace:^0.1.0",
     "@schnau/db": "workspace:^0.1.0",
