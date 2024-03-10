@@ -421,6 +421,9 @@ importers:
       '@schnau/db':
         specifier: workspace:^0.1.0
         version: link:../db
+      '@schnau/lib':
+        specifier: workspace:^0.1.0
+        version: link:../lib
       '@trpc/server':
         specifier: 11.0.0-next-beta.264
         version: 11.0.0-next-beta.264

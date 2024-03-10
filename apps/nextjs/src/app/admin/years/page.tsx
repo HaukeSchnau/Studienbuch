@@ -1,5 +1,7 @@
 "use client";
 
+import { isYearActive } from "@schnau/lib/src/year";
+
 import { Button } from "~/components/form/Button";
 import { Card } from "~/components/layout/Card";
 import { Grid } from "~/components/layout/Grid";
@@ -26,7 +28,14 @@ export default function YearsPage() {
         ) : (
           <Grid
             data={years.data}
-            renderItem={(year) => <Card key={year.name}>{year.name}</Card>}
+            renderItem={(year) => (
+              <Card
+                key={year.name}
+                className={!isYearActive(year) && "opacity-50"}
+              >
+                {year.name}
+              </Card>
+            )}
           />
         )}
       </div>
