@@ -1,7 +1,7 @@
 export interface User {
   id: number;
   name: string;
-  title: string | null;
+  title?: string | null;
   role: Role;
 }
 
