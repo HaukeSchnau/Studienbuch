@@ -6,6 +6,7 @@ interface SelectFieldProps<T> {
   getOptionLabel: (value: T) => string;
   getOptionId: (value: T) => string | number;
   options: T[];
+  error?: string;
 }
 
 export function SelectField<T>({
@@ -16,6 +17,7 @@ export function SelectField<T>({
   options,
   getOptionLabel,
   getOptionId,
+  error,
 }: SelectFieldProps<T>) {
   return (
     <div className="flex flex-col gap-1">
@@ -39,6 +41,8 @@ export function SelectField<T>({
           </option>
         ))}
       </select>
+
+      {error && <div className="text-red">{error}</div>}
     </div>
   );
 }
