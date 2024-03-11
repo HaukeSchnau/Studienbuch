@@ -28,7 +28,7 @@ export const Modal = ({ open, onClose, children }: Props) => {
           onClose?.();
         }
       }}
-      className="rounded-3xl p-0 backdrop:bg-black-20"
+      className="rounded-3xl p-0 backdrop:bg-black-20 backdrop:backdrop-blur-sm backdrop:backdrop-filter"
     >
       <div className="p-4">{children}</div>
     </dialog>
