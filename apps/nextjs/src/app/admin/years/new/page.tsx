@@ -10,8 +10,13 @@ import { api } from "~/infrastructure/trpc/react";
 export default function NewYearPage() {
   const router = useRouter();
 
+  const utils = api.useUtils();
   const addYear = api.years.add.useMutation({
-    onSuccess: () => router.push("/admin/years"),
+    onSuccess: () => {
+      void utils.years.get.invalidate();
+      void utils.years.list.invalidate();
+      router.push("/admin/years");
+    },
   });
 
   return (
