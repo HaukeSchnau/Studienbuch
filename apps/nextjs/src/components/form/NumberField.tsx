@@ -6,7 +6,7 @@ type NumberFieldProps = Omit<
   ComponentProps<typeof TextField>,
   "type" | "onChange"
 > & {
-  onChange: (value: number) => void;
+  onChange: (value: number | undefined) => void;
 };
 
 export const NumberField = ({ onChange, ...rest }: NumberFieldProps) => {
@@ -14,7 +14,7 @@ export const NumberField = ({ onChange, ...rest }: NumberFieldProps) => {
     <TextField
       {...rest}
       type="number"
-      onChange={(value) => onChange(Number(value))}
+      onChange={(value) => onChange(value === "" ? NaN : Number(value))}
     />
   );
 };
