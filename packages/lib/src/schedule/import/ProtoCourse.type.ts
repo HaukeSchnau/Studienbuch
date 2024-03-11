@@ -9,12 +9,12 @@ export const protoCourseSchema = z.object({
 
 export type ProtoCourse = z.infer<typeof protoCourseSchema>;
 
-export type ProtoCourseTime = {
+export interface ProtoCourseTime {
   weekday: number;
   start: number;
   duration: number;
   weeks: "ODD" | "EVEN" | "BOTH";
-};
+}
 
 export type ExtendedProtoCourse = ProtoCourse & {
   isChoosable: boolean;

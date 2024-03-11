@@ -1,3 +1,1 @@
-export const getSubstitutions = () => {
-       
-}
+export const getSubstitutions = () => {};
