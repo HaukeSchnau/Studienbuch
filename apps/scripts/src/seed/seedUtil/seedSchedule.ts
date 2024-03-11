@@ -1,8 +1,8 @@
 import { db } from "@schnau/db";
 
+import { generateHashedPassword } from "./generateHashedPassword";
 import { type KnownUser } from "./getKnownUsers";
 import { type ScheduleInfo } from "./parseScheduleCsv";
-import { generateHashedPassword } from "./generateHashedPassword";
 
 export const seedSchedule = async (
   { year, idInYear, courses }: ScheduleInfo,
@@ -16,6 +16,11 @@ export const seedSchedule = async (
       startYear: year.startYear,
       graduationYear: year.startYear + 9,
       name: year.name,
+      school: {
+        connect: {
+          id: 1,
+        },
+      },
     },
     update: {},
   });
@@ -68,9 +73,9 @@ export const seedSchedule = async (
             },
             create: {
               abbrv: teacher,
-              email: `${
-                  teacher.toLowerCase().replaceAll(" ", ".")
-                }@igslilienthal.de`,
+              email: `${teacher
+                .toLowerCase()
+                .replaceAll(" ", ".")}@igslilienthal.de`,
               passwordHash: await generateHashedPassword(),
               name: knownTeacher?.name ?? teacher,
               title: knownTeacher?.title,
@@ -107,9 +112,9 @@ export const seedSchedule = async (
             },
             create: {
               abbrv: teacher,
-              email: `${
-                  teacher.toLowerCase().replaceAll(" ", ".")
-                }@igslilienthal.de`,
+              email: `${teacher
+                .toLowerCase()
+                .replaceAll(" ", ".")}@igslilienthal.de`,
               passwordHash: await generateHashedPassword(),
               name: knownTeacher?.name ?? teacher,
               title: knownTeacher?.title,
