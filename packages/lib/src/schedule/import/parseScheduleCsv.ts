@@ -1,54 +1,20 @@
 import fs from "fs/promises";
-import p from "path";
 import Papa from "papaparse";
 import { z } from "zod";
 
-import { CourseTimeWeeks } from "@schnau/lib/src/course";
-import { isNormalTime, parseTime } from "@schnau/lib/src/date";
-import { parseTimetableCell } from "@schnau/lib/src/schedule/import/parseTimetableCell";
-import {
-  ExtendedProtoCourse,
-  ProtoCourseWithTimes,
-} from "@schnau/lib/src/schedule/import/ProtoCourse.type";
+import type { CourseTimeWeeks } from "../../course";
+import type { ProtoCourseWithTimes } from "./ProtoCourse.type";
+import { isNormalTime, parseTime } from "../../date";
+import { parseTimetableCell } from "./parseTimetableCell";
 
-import { years } from "../years";
-
-type Cell = ExtendedProtoCourse[];
-
-type Row = {
-  startMinutes: number;
-  endMinutes: number;
-  cols: Cell[];
-};
-
-/**
- * @deprecated Use `ProtoCourseWithTimes` from `@schnau/lib` instead
- */
-export type ScheduleInfo = {
-  year: (typeof years)[number];
-  idInYear: string;
-  courses: ProtoCourseWithTimes[];
-};
-
-/**
- * @deprecated Use `parseScheduleCsv` from `@schnau/lib` instead
- */
 export const parseScheduleCsv = async (
   filepath: string,
-): Promise<ScheduleInfo> => {
+  areAllCoursesChoosable: boolean,
+): Promise<ProtoCourseWithTimes[]> => {
   const fileContents = await fs.readFile(filepath, "utf8");
   const { data: rawRows } = Papa.parse(fileContents, { header: true });
 
-  const basename = p.basename(filepath, ".csv");
-  const yearName = basename.split("-")[0];
-  const idInYear = basename.split("-")[1] ?? "";
-
-  if (!yearName) throw new Error(`No year found in ${p.basename(filepath)}`);
-
-  const year = years.find(
-    (candidate) => candidate.name.toLowerCase() === yearName?.toLowerCase(),
-  );
-  if (!year) throw new Error(`No year found for ${yearName}`);
+  console.log(rawRows);
 
   const rowSchema = z.object({
     "": z.string(),
@@ -71,7 +37,6 @@ export const parseScheduleCsv = async (
       const time = row[""];
       const [start, end] = time.split("\n");
       const startMinutes = parseTime(start ?? "0");
-      const normalTime = isNormalTime(startMinutes);
       const endMinutes = parseTime(end ?? "40") + 40;
       const cols = [Montag, Dienstag, Mittwoch, Donnerstag, Freitag].map(
         parseTimetableCell,
@@ -127,7 +92,7 @@ export const parseScheduleCsv = async (
         } else {
           courses.push({
             ...course,
-            isChoosable: course.isChoosable || !idInYear,
+            isChoosable: course.isChoosable || areAllCoursesChoosable,
             times: [time],
           });
         }
@@ -135,5 +100,5 @@ export const parseScheduleCsv = async (
     }
   }
 
-  return { year, idInYear, courses };
+  return courses;
 };
