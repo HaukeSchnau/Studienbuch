@@ -3,7 +3,7 @@
 import { isYearActive } from "@schnau/lib/src/year";
 
 import { Button } from "~/components/form/Button";
-import { Card } from "~/components/layout/Card";
+import { Card, CardHeading } from "~/components/layout/Card";
 import { Grid } from "~/components/layout/Grid";
 import { PageHeading } from "~/components/layout/PageHeading";
 import { api } from "~/infrastructure/trpc/react";
@@ -30,10 +30,14 @@ export default function YearsPage() {
             data={years.data}
             renderItem={(year) => (
               <Card
-                key={year.name}
-                className={!isYearActive(year) && "opacity-50"}
+                key={year.id}
+                className={!isYearActive(year) && "opacity-60"}
               >
-                {year.name}
+                <CardHeading>{year.name}</CardHeading>
+
+                <div className="flex justify-end">
+                  <Button href={`/admin/years/${year.id}`}>Bearbeiten</Button>
+                </div>
               </Card>
             )}
           />
