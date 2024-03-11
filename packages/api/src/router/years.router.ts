@@ -9,6 +9,9 @@ import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";
 
 export const years = createRouter({
+  /**
+   * @deprecated
+   */
   get: publicProcedure
     .meta({ openapi: { method: "GET", path: "/years" } })
     .input(z.void())
