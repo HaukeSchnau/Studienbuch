@@ -1,14 +1,16 @@
+import type { ForwardedRef, InputHTMLAttributes } from "react";
 import { forwardRef } from "react";
 import clsx from "clsx";
 
 type TextFieldProps = {
   label: string;
   error?: string;
-} & React.InputHTMLAttributes<HTMLInputElement>;
+  onChange: (value: string) => void;
+} & Omit<InputHTMLAttributes<HTMLInputElement>, "onChange">;
 
 export const TextField = forwardRef(function TextField(
-  { label, error, ...props }: TextFieldProps,
-  ref: React.ForwardedRef<HTMLInputElement>,
+  { label, error, onChange, ...props }: TextFieldProps,
+  ref: ForwardedRef<HTMLInputElement>,
 ) {
   return (
     <label
@@ -25,6 +27,7 @@ export const TextField = forwardRef(function TextField(
         )}
         ref={ref}
         {...props}
+        onChange={(e) => onChange(e.target.value)}
       />
       <span>{error}</span>
     </label>
