@@ -27,15 +27,13 @@ export default function LoginPage() {
         />
         <circle cx="0" cy="80%" r="10%" opacity=".5" className="fill-red" />
       </svg>
-      <div className="absolute flex h-screen w-full flex-col items-center justify-center">
+      <div className="relative z-10 flex h-screen flex-col items-center justify-center">
         <div className="my-8 rounded-full bg-blue p-4">
           <img src="/assets/logo.svg" alt="IGS Lilienthal Logo" />
         </div>
-        <Card>
+        <Card className="w-[min(100%,24rem)]">
           <CardHeading>Anmelden</CardHeading>
-          <div className="flex max-w-md">
-            <LoginForm />
-          </div>
+          <LoginForm />
         </Card>
       </div>
     </div>

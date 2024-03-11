@@ -41,14 +41,13 @@ export default function EditYearPage() {
       <Card>
         <YearForm
           defaultYear={year}
-          onSubmit={(data) => {
-            console.log(data);
+          onSubmit={({ value }) => {
             updateYear.mutate({
               id: year.id,
-              name: data.name,
-              startYear: data.startYear,
-              graduationYear: data.startYear + data.numberOfYears,
-              schoolId: data.schoolId,
+              name: value.name,
+              startYear: value.startYear,
+              graduationYear: value.startYear + value.numberOfYears,
+              schoolId: value.schoolId,
             });
           }}
           isPending={updateYear.isPending}

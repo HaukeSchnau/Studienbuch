@@ -1,83 +1,108 @@
 "use client";
 
-import type { SubmitHandler } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { createFormFactory } from "@tanstack/react-form";
 
 import { Button } from "~/components/form/Button";
 import { TextField } from "~/components/form/TextField";
+import { submitHandler } from "~/infrastructure/forms/submitHandler";
 import { api } from "~/infrastructure/trpc/react";
 
-export interface LoginForm {
+interface LoginFormValues {
   email: string;
   password: string;
 }
 
+const formFactory = createFormFactory<LoginFormValues>({
+  defaultValues: {
+    email: "",
+    password: "",
+  },
+});
+
 export const LoginForm = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    setError,
-    clearErrors,
-  } = useForm<LoginForm>();
   const loginMutation = api.auth.login.useMutation();
   const router = useRouter();
 
-  const onSubmit: SubmitHandler<LoginForm> = async ({ email, password }) => {
-    clearErrors();
+  const { Provider, Field, handleSubmit } = formFactory.useForm({
+    onSubmit: async ({ value, formApi }) => {
+      const { email, password } = value;
+      const response = await loginMutation
+        .mutateAsync({ email, password })
+        .catch(() => null);
 
-    const response = await loginMutation
-      .mutateAsync({ email, password })
-      .catch(() => null);
+      if (!response) {
+        return;
+      }
 
-    if (!response) {
-      return;
-    }
+      if (response.error) {
+        console.log(response.error);
 
-    if (response.error) {
-      console.log(response.error);
+        formApi.setFieldMeta(response.error.field, {
+          errors: [],
+          isTouched: false,
+          touchedErrors: [],
+          errorMap: {
+            onSubmit: response.error.message,
+          },
+          isValidating: false,
+        });
 
-      setError(response.error.field, {
-        message: response.error.message,
-      });
+        return;
+      }
 
-      return;
-    }
+      const newSessionToken = response.sessionToken;
 
-    const newSessionToken = response.sessionToken;
+      document.cookie = `jwt=${newSessionToken}; path=/`;
 
-    document.cookie = `jwt=${newSessionToken}; path=/`;
-
-    setTimeout(() => {
-      void router.replace("/admin");
-    }, 500);
-  };
+      setTimeout(() => {
+        void router.replace("/admin");
+      }, 500);
+    },
+  });
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)}>
-      <TextField
-        label="Email"
-        type="email"
-        {...register("email")}
-        error={errors.email?.message}
-        required
-      />
-      <TextField
-        label="Passwort"
-        type="password"
-        {...register("password")}
-        error={errors.password?.message}
-        required
-      />
+    <Provider>
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={submitHandler(handleSubmit)}
+      >
+        <Field name="email">
+          {(field) => (
+            <TextField
+              label="Email"
+              type="email"
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              required
+              onChange={(value) => field.handleChange(value)}
+              error={field.state.meta.errors.join(",")}
+            />
+          )}
+        </Field>
 
-      {loginMutation.isError && (
-        <p className="text-error">
-          {loginMutation.error?.message ?? "Ein Fehler ist aufgetreten"}
-        </p>
-      )}
+        <Field name="password">
+          {(field) => (
+            <TextField
+              label="Passwort"
+              type="password"
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              required
+              onChange={(value) => field.handleChange(value)}
+              error={field.state.meta.errors.join(",")}
+            />
+          )}
+        </Field>
 
-      <Button type="submit">Anmelden</Button>
-    </form>
+        {loginMutation.isError && (
+          <p className="text-error">
+            {loginMutation.error?.message ?? "Ein Fehler ist aufgetreten"}
+          </p>
+        )}
+
+        <Button type="submit">Anmelden</Button>
+      </form>
+    </Provider>
   );
 };

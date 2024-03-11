@@ -35,6 +35,10 @@ export default function YearsPage() {
               >
                 <CardHeading>{year.name}</CardHeading>
 
+                <div className="pb-4">
+                  {year.startYear} bis {year.graduationYear}
+                </div>
+
                 <div className="flex justify-end">
                   <Button href={`/admin/years/${year.id}`}>Bearbeiten</Button>
                 </div>

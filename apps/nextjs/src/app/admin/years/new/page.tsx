@@ -22,12 +22,12 @@ export default function NewYearPage() {
 
       <Card>
         <YearForm
-          onSubmit={(data) => {
+          onSubmit={({ value }) => {
             addYear.mutate({
-              name: data.name,
-              startYear: data.startYear,
-              graduationYear: data.startYear + data.numberOfYears,
-              schoolId: data.schoolId,
+              name: value.name,
+              startYear: value.startYear,
+              graduationYear: value.startYear + value.numberOfYears,
+              schoolId: value.schoolId,
             });
           }}
           isPending={addYear.isPending}
