@@ -37,7 +37,6 @@ export const parseTimetableCell = (
     }
 
     if (!components.length) {
-      console.log("Empty course", course);
       continue;
     }
 
