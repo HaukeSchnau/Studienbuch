@@ -14,8 +14,6 @@ export const parseScheduleCsv = async (
   const fileContents = await fs.readFile(filepath, "utf8");
   const { data: rawRows } = Papa.parse(fileContents, { header: true });
 
-  console.log(rawRows);
-
   const rowSchema = z.object({
     "": z.string(),
     Montag: z.string(),
@@ -60,7 +58,7 @@ export const parseScheduleCsv = async (
       let endMinutes = row.endMinutes;
 
       if (!normalTime && coursesForDay.length > 0) {
-        weeks = "ODD";
+        weeks = "EVEN";
         startMinutes -= 40;
         endMinutes -= 40;
       }
@@ -71,7 +69,7 @@ export const parseScheduleCsv = async (
         cellBelow &&
         cellBelow.length > 0
       ) {
-        weeks = "EVEN";
+        weeks = "ODD";
       }
 
       for (const course of coursesForDay) {
