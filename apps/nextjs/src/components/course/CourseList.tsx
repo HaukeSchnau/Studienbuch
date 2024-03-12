@@ -10,7 +10,7 @@ interface CourseListProps {
 }
 
 export const CourseList = ({ yearId }: CourseListProps) => {
-  const { isPending, error, data } = api.courses.get.useQuery({ yearId });
+  const { isPending, error, data } = api.courses.list.useQuery({ yearId });
 
   const sortedCourses = useMemo(() => {
     if (!data) return null;

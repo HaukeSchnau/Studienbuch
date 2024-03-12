@@ -30,12 +30,12 @@ export default function AdminLayout({ children }: Props) {
         <YearSelectField />
         <ul className="flex flex-col gap-2">
           <NavigationItem href="/admin/years">Jahrgänge</NavigationItem>
+          <NavigationItem href="/admin/classes">Klassen</NavigationItem>
+          <NavigationItem href="/admin/courses">Kurse</NavigationItem>
           <NavigationItem href="/admin/schedules">Stundenpläne</NavigationItem>
           <NavigationItem href="/admin/substitutions">
             Vertretungspläne
           </NavigationItem>
-          <NavigationItem href="/admin/courses">Kurse</NavigationItem>
-          <NavigationItem href="/admin/classes">Klassen</NavigationItem>
           <LogoutButton />
         </ul>
       </div>

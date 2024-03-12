@@ -14,7 +14,7 @@ test(
       const classes = await client.classes.get.query({ yearId: year.id });
       expect(classes).toMatchSnapshot();
 
-      const courses = client.courses.get.query({ yearId: year.id });
+      const courses = client.courses.list.query({ yearId: year.id });
       expect(courses).toMatchSnapshot();
     }
 

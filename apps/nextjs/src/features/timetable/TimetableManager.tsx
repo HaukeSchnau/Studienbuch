@@ -28,7 +28,7 @@ export const TimetableManager = ({ yearId }: TimetableProps) => {
 };
 
 export const useTimetable = (yearId: number) => {
-  const courses = api.courses.get.useQuery({ yearId });
+  const courses = api.courses.list.useQuery({ yearId });
 
   if (courses.status === "pending") {
     return { status: "loading" as const };

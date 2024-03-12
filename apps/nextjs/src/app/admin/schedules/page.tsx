@@ -6,7 +6,7 @@ import { Button } from "~/components/form/Button";
 import { PageHeading } from "~/components/layout/PageHeading";
 import { TimetableManager } from "~/features/timetable/TimetableManager";
 import { useSelectedYear } from "~/features/yearSelect/selectedYearStore";
-import { ImportScheduleModal } from "./componets/ImportScheduleModal";
+import { ImportScheduleModal } from "./components/ImportScheduleModal";
 
 export default function SchedulesPage() {
   const { selectedYear } = useSelectedYear();
@@ -19,12 +19,19 @@ export default function SchedulesPage() {
         <PageHeading color="white">Stundenpläne</PageHeading>
         <Button onClick={() => setIsModalOpen(true)}>Importieren</Button>
       </div>
-      {selectedYear && <TimetableManager yearId={selectedYear.id} />}
+      {selectedYear ? (
+        <>
+          <TimetableManager yearId={selectedYear.id} />
 
-      <ImportScheduleModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
+          <ImportScheduleModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            year={selectedYear}
+          />
+        </>
+      ) : (
+        <div>Bitte wähle ein Jahr aus</div>
+      )}
     </div>
   );
 }

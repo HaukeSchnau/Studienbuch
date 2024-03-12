@@ -40,13 +40,14 @@ export function Button({
   }
 
   const { disabled, type, onClick } = props;
+  const isDisabled = !!disabled || !onClick;
 
   return (
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled}
-      className={classes}
+      disabled={isDisabled}
+      className={clsx(classes, isDisabled && "cursor-not-allowed opacity-50")}
     >
       {children}
     </button>
