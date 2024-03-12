@@ -11,7 +11,7 @@ test(
 
     const years = await client.years.get.query();
     for (const year of years) {
-      const classes = await client.classes.get.query({ yearId: year.id });
+      const classes = await client.classes.list.query({ yearId: year.id });
       expect(classes).toMatchSnapshot();
 
       const courses = client.courses.list.query({ yearId: year.id });
