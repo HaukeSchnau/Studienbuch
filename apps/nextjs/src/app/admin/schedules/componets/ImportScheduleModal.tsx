@@ -23,6 +23,7 @@ export const ImportScheduleModal = ({ isOpen, onClose }: Props) => {
     isError,
     error,
     data: protoCourses,
+    reset,
   } = useScheduleImportMutation();
 
   const timetable = useMemo<Timetable | undefined>(() => {
@@ -47,6 +48,8 @@ export const ImportScheduleModal = ({ isOpen, onClose }: Props) => {
     const file = e.target.files?.[0];
     if (file) {
       importSchedule({ file });
+    } else {
+      reset();
     }
   };
 
