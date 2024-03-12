@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import cx from "clsx";
 
+import { logout } from "~/features/auth/serverActions/logout";
+
 interface NavigationItemProps {
   href?: string;
   action?: () => void;
@@ -41,7 +43,5 @@ export const NavigationItem = ({
 };
 
 export const LogoutButton = () => {
-  return (
-    <NavigationItem action={() => console.log("TODO")}>Abmelden</NavigationItem>
-  );
+  return <NavigationItem action={() => logout()}>Abmelden</NavigationItem>;
 };

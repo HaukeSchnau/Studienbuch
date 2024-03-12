@@ -1,12 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { createFormFactory } from "@tanstack/react-form";
 
 import { Button } from "~/components/form/Button";
 import { TextField } from "~/components/form/TextField";
 import { submitHandler } from "~/infrastructure/forms/submitHandler";
 import { api } from "~/infrastructure/trpc/react";
+import { setJwt } from "./serverActions/setJwt";
 
 interface LoginFormValues {
   email: string;
@@ -22,7 +22,6 @@ const formFactory = createFormFactory<LoginFormValues>({
 
 export const LoginForm = () => {
   const loginMutation = api.auth.login.useMutation();
-  const router = useRouter();
 
   const { Provider, Field, handleSubmit } = formFactory.useForm({
     onSubmit: async ({ value, formApi }) => {
@@ -52,12 +51,7 @@ export const LoginForm = () => {
       }
 
       const newSessionToken = response.sessionToken;
-
-      document.cookie = `jwt=${newSessionToken}; path=/`;
-
-      setTimeout(() => {
-        void router.replace("/admin");
-      }, 500);
+      await setJwt(newSessionToken);
     },
   });
 
