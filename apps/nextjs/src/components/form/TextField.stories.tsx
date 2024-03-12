@@ -1,4 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryFn } from "@storybook/react";
+import { useState } from "react";
 
 import { TextField } from "./TextField";
 
@@ -12,12 +13,9 @@ const meta = {
 } satisfies Meta<typeof TextField>;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryFn<typeof meta>;
 
-export const Primary: Story = {
-  args: {
-    label: "Email",
-    type: "email",
-    placeholder: "Email",
-  },
+export const Primary: Story = () => {
+  const [value, setValue] = useState("");
+  return <TextField value={value} onChange={setValue} label="Textfeld" />;
 };
