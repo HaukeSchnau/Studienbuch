@@ -14,7 +14,7 @@ export const env = createEnv({
    * This way you can ensure the app isn't built with invalid env vars.
    */
   server: {
-    DATABASE_URL: z.string().url(),
+    DATABASE_PRISMA_URL: z.string().url(),
   },
   /**
    * Specify your client-side environment variables schema here.

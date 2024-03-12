@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
-    DATABASE_URL: z.string().min(1),
+    DATABASE_PRISMA_URL: z.string().min(1),
     REDIS_URL: z.string().min(1),
   },
   client: {},
