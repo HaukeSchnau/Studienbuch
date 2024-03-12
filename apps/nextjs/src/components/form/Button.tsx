@@ -40,7 +40,7 @@ export function Button({
   }
 
   const { disabled, type, onClick } = props;
-  const isDisabled = !!disabled || !onClick;
+  const isDisabled = !!disabled || (type !== "submit" && !onClick);
 
   return (
     <button
