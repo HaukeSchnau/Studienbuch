@@ -272,6 +272,9 @@ importers:
       react-dom:
         specifier: 18.2.0
         version: 18.2.0(react@18.2.0)
+      react-loading-indicators:
+        specifier: ^0.2.3
+        version: 0.2.3(react-dom@18.2.0)(react@18.2.0)
       superjson:
         specifier: 2.2.1
         version: 2.2.1
@@ -15381,6 +15384,17 @@ packages:
   /react-is@18.2.0:
     resolution: {integrity: sha512-xWGDIW6x921xtzPkhiULtthJHoJvBbF3q26fzloPCK0hsvxtPVelvftw3zjbHWSkR2km9Z+4uxbDDK/6Zw9B8w==}
 
+  /react-loading-indicators@0.2.3(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-nIgzS+e0eWXTWSzi9t66a8i5NokKHti+CpK/tzlk4bqpIngUfB5GgcRLUV2mQSgT47LoY9jJQAS4D+PDUFXTRg==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+    dependencies:
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+      tinycolor2: 1.6.0
+    dev: false
+
   /react-native-css-interop@0.0.34(@babel/core@7.24.0)(react-native-reanimated@3.8.0)(react-native-safe-area-context@4.9.0)(react-native-svg@15.1.0)(react-native@0.73.6)(react@18.2.0)(tailwindcss@3.4.1):
     resolution: {integrity: sha512-gz9b0RAyqy5Q/ogPQie8zkWHI+UFhn8JOPELUAV4k2XNkuXzfPRWDMSjQww51ozh7qx7oBKSYDnaCB/D6XgJ1Q==}
     engines: {node: '>=18'}
@@ -17280,7 +17294,6 @@ packages:
 
   /tinycolor2@1.6.0:
     resolution: {integrity: sha512-XPaBkWQJdsf3pLKJV9p4qN/S+fm2Oj8AIPo1BTUhg5oxkvm9+SVEGFdhyOz7tTdUTfvxMiAs4sp6/eZO2Ew+pw==}
-    dev: true
 
   /tinygradient@1.1.5:
     resolution: {integrity: sha512-8nIfc2vgQ4TeLnk2lFj4tRLvvJwEfQuabdsmvDdQPT0xlk9TaNtpGd6nNRxXoK6vQhN6RSzj+Cnp5tTQmpxmbw==}

@@ -1,6 +1,7 @@
 import { buildTimetable } from "@schnau/lib/src/timetable";
 
 import { Card } from "~/components/layout/Card";
+import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { api } from "~/infrastructure/trpc/react";
 import { TimetableView } from "./TimetableView";
 
@@ -12,7 +13,7 @@ export const TimetableManager = ({ yearId }: TimetableProps) => {
   const timetable = useTimetable(yearId);
 
   if (timetable.status === "loading") {
-    return <div>Loading...</div>;
+    return <LoadingIndicator />;
   }
 
   if (timetable.status === "error") {
