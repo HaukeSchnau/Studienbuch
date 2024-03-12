@@ -3,10 +3,7 @@ import { z } from "zod";
 
 export const env = createEnv({
   shared: {
-    BASE_URL: z
-      .string()
-      .min(1)
-      .transform((v) => (v.startsWith("http") ? v : `https://${v}`)),
+    BASE_URL: z.string().min(1),
     PORT: z.coerce.number().default(3000),
     NODE_ENV: z
       .enum(["development", "production", "test"])
@@ -31,7 +28,7 @@ export const env = createEnv({
    * Destructure all variables from `process.env` to make sure they aren't tree-shaken away.
    */
   experimental__runtimeEnv: {
-    BASE_URL: process.env.BASE_URL ?? process.env.VERCEL_URL,
+    BASE_URL: process.env.BASE_URL ?? `https:///${process.env.VERCEL_URL}`,
     VERCEL_ENV: process.env.VERCEL_ENV,
     NODE_ENV: process.env.NODE_ENV,
     PORT: process.env.PORT,
