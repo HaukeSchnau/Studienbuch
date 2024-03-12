@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 import {
-  ClassModel,
-  CourseModel,
-  CourseTimeModel,
-  UserModel,
-  YearModel,
+  ClassSchema,
+  CourseSchema,
+  CourseTimeSchema,
+  UserSchema,
+  YearSchema,
 } from "@schnau/db/prisma/zod";
 
 import "@total-typescript/ts-reset";
@@ -25,11 +25,11 @@ export const sync = publicProcedure
   )
   .output(
     z.object({
-      updatedCourses: z.array(CourseModel),
-      updatedCourseTimes: z.array(CourseTimeModel),
-      updatedClasses: z.array(ClassModel),
-      updatedYears: z.array(YearModel),
-      updatedUsers: z.array(UserModel),
+      updatedCourses: z.array(CourseSchema),
+      updatedCourseTimes: z.array(CourseTimeSchema),
+      updatedClasses: z.array(ClassSchema),
+      updatedYears: z.array(YearSchema),
+      updatedUsers: z.array(UserSchema),
     }),
   )
   .query(async ({ ctx, input }) => {

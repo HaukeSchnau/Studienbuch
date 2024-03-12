@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { z } from "zod";
 
-import { CourseModel, SubstitutionModel } from "@schnau/db/prisma/zod";
+import { CourseSchema, SubstitutionSchema } from "@schnau/db/prisma/zod";
 
 import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";
@@ -19,8 +19,8 @@ export const substitutions = createRouter({
     )
     .output(
       z.array(
-        SubstitutionModel.extend({
-          course: CourseModel,
+        SubstitutionSchema.extend({
+          course: CourseSchema,
         }),
       ),
     )

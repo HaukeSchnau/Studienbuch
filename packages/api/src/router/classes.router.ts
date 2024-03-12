@@ -1,10 +1,10 @@
 import { z } from "zod";
 
 import {
-  ClassModel,
-  CourseModel,
-  CourseTimeModel,
-  UserModel,
+  ClassSchema,
+  CourseSchema,
+  CourseTimeSchema,
+  UserSchema,
 } from "@schnau/db/prisma/zod";
 
 import { publicProcedure } from "../procedures/publicProcedure";
@@ -16,11 +16,11 @@ export const classes = createRouter({
     .input(z.object({ yearId: z.number() }))
     .output(
       z.array(
-        ClassModel.extend({
+        ClassSchema.extend({
           courses: z.array(
-            CourseModel.extend({
-              teacher: UserModel,
-              times: z.array(CourseTimeModel),
+            CourseSchema.extend({
+              teacher: UserSchema,
+              times: z.array(CourseTimeSchema),
             }),
           ),
         }),

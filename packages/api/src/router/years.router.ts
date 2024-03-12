@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { YearModel } from "@schnau/db/prisma/zod";
+import { YearSchema } from "@schnau/db/prisma/zod";
 import { getMaxActiveGraduationYear } from "@schnau/lib/src/year";
 
 import { protectedProcedure } from "../procedures/protectedProcedure";
@@ -15,7 +15,7 @@ export const years = createRouter({
   get: publicProcedure
     .meta({ openapi: { method: "GET", path: "/years" } })
     .input(z.void())
-    .output(z.array(YearModel.omit({ createdAt: true })))
+    .output(z.array(YearSchema.omit({ createdAt: true })))
     .query(async ({ ctx }) => {
       return ctx.db.year.findMany({
         where: {

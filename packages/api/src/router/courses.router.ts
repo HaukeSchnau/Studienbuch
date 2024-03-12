@@ -1,7 +1,11 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { CourseModel, CourseTimeModel, UserModel } from "@schnau/db/prisma/zod";
+import {
+  CourseSchema,
+  CourseTimeSchema,
+  UserSchema,
+} from "@schnau/db/prisma/zod";
 import { insertProtoCourse } from "@schnau/lib/src/courses/insertProtoCourse";
 
 import { protectedProcedure } from "../procedures/protectedProcedure";
@@ -14,9 +18,9 @@ export const courses = createRouter({
     .input(z.object({ yearId: z.number() }))
     .output(
       z.array(
-        CourseModel.omit({ createdAt: true }).extend({
-          teacher: UserModel.pick({ id: true, name: true, title: true }),
-          times: z.array(CourseTimeModel),
+        CourseSchema.omit({ createdAt: true }).extend({
+          teacher: UserSchema.pick({ id: true, name: true, title: true }),
+          times: z.array(CourseTimeSchema),
         }),
       ),
     )
