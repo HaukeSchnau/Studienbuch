@@ -43,5 +43,5 @@
       "cache": false
     }
   },
-  "globalEnv": ["DATABASE_URL"]
+  "globalEnv": ["DATABASE_PRISMA_URL"]
 }

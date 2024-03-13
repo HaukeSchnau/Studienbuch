@@ -15,13 +15,13 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-type OptionValue = "option1" | "option2" | "option3";
-
 const options = [
-  { label: "Option 1", value: "option1" as const, id: "option1" },
-  { label: "Option 2", value: "option2" as const, id: "option2" },
-  { label: "Option 3", value: "option3" as const, id: "option3" },
+  { label: "Option 1", value: "option1" },
+  { label: "Option 2", value: "option2" },
+  { label: "Option 3", value: "option3" },
 ];
+
+type OptionValue = (typeof options)[number];
 
 export const Primary: Story = {
   args: {
@@ -29,6 +29,9 @@ export const Primary: Story = {
     emptyLabel: "No option selected",
     valueId: "option1",
     options,
+    onChange: (valueId) => console.log(valueId),
+    getOptionId: (option) => option.value,
+    getOptionLabel: (option) => option.label,
   },
   render: function Component(args) {
     const [, setArgs] = useArgs();

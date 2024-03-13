@@ -1,24 +1,26 @@
 import { generateOpenApiDocument } from "trpc-openapi";
 
-import { authRouter } from "./features/auth/auth.router";
-import { classesRouter } from "./router/classesRouter";
-import { coursesRouter } from "./router/coursesRouter";
-import { licenseRouter } from "./router/licenseRouter";
-import { subscriptionsRouter } from "./router/subscriptionsRouter";
-import { substitutionsRouter } from "./router/substitutionsRouter";
-import { sync } from "./router/syncRouter";
-import { yearsRouter } from "./router/yearsRouter";
+import { auth } from "./router/auth.router";
+import { classes } from "./router/classes.router";
+import { courses } from "./router/courses.router";
+import { license } from "./router/license.router";
+import { schools } from "./router/schools.router";
+import { subscriptions } from "./router/subscriptions.router";
+import { substitutions } from "./router/substitutions.router";
+import { sync } from "./router/sync.router";
+import { years } from "./router/years.router";
 import { createRouter } from "./trpc";
 
 export const appRouter = createRouter({
-  license: licenseRouter,
-  years: yearsRouter,
-  classes: classesRouter,
-  courses: coursesRouter,
-  substitutions: substitutionsRouter,
-  subscriptions: subscriptionsRouter,
+  license,
+  years,
+  classes,
+  courses,
+  substitutions,
+  subscriptions,
   sync,
-  auth: authRouter,
+  auth,
+  schools,
 });
 
 export const openApiDocument = generateOpenApiDocument(appRouter, {

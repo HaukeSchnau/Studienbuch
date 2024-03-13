@@ -1,15 +1,12 @@
-interface SelectEntry<T> {
-  label: string;
-  value: T;
-  id: string;
-}
-
 interface SelectFieldProps<T> {
   label: string;
   emptyLabel: string;
-  valueId?: string;
-  onChange: (value: T) => void;
-  options: SelectEntry<T>[];
+  valueId?: string | number;
+  onChange: (value?: T) => void;
+  getOptionLabel: (value: T) => string;
+  getOptionId: (value: T) => string | number;
+  options: T[];
+  error?: string;
 }
 
 export function SelectField<T>({
@@ -18,6 +15,9 @@ export function SelectField<T>({
   valueId,
   onChange,
   options,
+  getOptionLabel,
+  getOptionId,
+  error,
 }: SelectFieldProps<T>) {
   return (
     <div className="flex flex-col gap-1">
@@ -27,18 +27,22 @@ export function SelectField<T>({
         value={valueId ?? ""}
         onChange={(e) =>
           onChange(
-            options.find((option) => option.id === e.target.value)!.value,
+            options.find(
+              (option) => String(getOptionId(option)) === e.target.value,
+            ),
           )
         }
       >
         {!valueId && <option value="">{emptyLabel}</option>}
 
         {options.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.label}
+          <option key={getOptionId(option)} value={getOptionId(option)}>
+            {getOptionLabel(option)}
           </option>
         ))}
       </select>
+
+      {error && <div className="text-red">{error}</div>}
     </div>
   );
 }

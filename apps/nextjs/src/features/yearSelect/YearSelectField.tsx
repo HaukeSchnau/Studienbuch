@@ -31,14 +31,11 @@ export const YearSelectField = () => {
       emptyLabel="Kein Jahrgang ausgewählt"
       options={years
         .slice()
-        .sort((a, b) => a.graduationYear - b.graduationYear)
-        .map((year) => ({
-          label: `${year.name} (${year.graduationYear})`,
-          value: year,
-          id: year.name,
-        }))}
+        .sort((a, b) => a.graduationYear - b.graduationYear)}
       valueId={selectedYear?.name}
       onChange={(year) => year && setSelectedYear(year)}
+      getOptionLabel={(year) => `${year.name} (${year.graduationYear})`}
+      getOptionId={(year) => year.name}
     />
   );
 };
