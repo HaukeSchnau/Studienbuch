@@ -27,9 +27,10 @@ export default function AdminLayout({ children }: Props) {
             alt="IGS Lilienthal Logo"
           />
         </div>
-        <YearSelectField />
         <ul className="flex flex-col gap-2">
           <NavigationItem href="/admin/years">Jahrgänge</NavigationItem>
+          <hr className="opacity-20" />
+          <YearSelectField />
           <NavigationItem href="/admin/classes">Klassen</NavigationItem>
           <NavigationItem href="/admin/courses">Kurse</NavigationItem>
           <NavigationItem href="/admin/schedules">Stundenpläne</NavigationItem>
@@ -37,7 +38,7 @@ export default function AdminLayout({ children }: Props) {
             Vertretungspläne
           </NavigationItem>
           <hr className="opacity-20" />
-          <NavigationItem href="/admin/users">Nutzerverwaltung</NavigationItem>
+          <NavigationItem href="/admin/users">Personen</NavigationItem>
           <NavigationItem href="/admin/groups">Gruppen</NavigationItem>
           <NavigationItem href="/admin/permissions">Rechte</NavigationItem>
           <NavigationItem href="/admin/logs">Logs</NavigationItem>
