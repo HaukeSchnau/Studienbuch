@@ -32,6 +32,8 @@ export const colors = {
     20: "rgba(0, 0, 0, 0.2)",
     80: "#000000b",
   },
+
+  yellow: "#DCAB3C",
 };
 
 export type Color = keyof typeof colors;
