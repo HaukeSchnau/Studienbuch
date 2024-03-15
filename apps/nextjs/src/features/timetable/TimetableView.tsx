@@ -43,7 +43,7 @@ export const TimetableView = ({ timetable, clickable }: Props) => {
         <tr>
           <th></th>
           {weekdays.map((day) => (
-            <th className="border-l border-grey-100 py-4 font-normal" key={day}>
+            <th className="border border-grey-100 py-4 font-normal" key={day}>
               {day}
             </th>
           ))}
@@ -52,12 +52,12 @@ export const TimetableView = ({ timetable, clickable }: Props) => {
       <tbody>
         {timetable.map((row, periodIndex) => (
           <tr key={periodIndex}>
-            <th className="border-t border-grey-100 px-4 font-normal">
+            <th className="border border-grey-100 px-4 font-normal">
               {formatTime(getNormalTime(periodIndex) ?? 0)} -{" "}
               {formatTime((getNormalTime(periodIndex) ?? 0) + 80)}
             </th>
             {[...new Array<unknown>(5)].map((_, dayIndex) => (
-              <td className="border-l  border-t border-grey-100" key={dayIndex}>
+              <td className="border border-grey-100" key={dayIndex}>
                 <div className="flex flex-col gap-2 p-2">
                   {renderCell(row[dayIndex])}
                 </div>
