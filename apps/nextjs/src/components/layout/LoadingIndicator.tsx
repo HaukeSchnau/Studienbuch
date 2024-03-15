@@ -1,3 +1,5 @@
+"use client";
+
 import { ThreeDot } from "react-loading-indicators";
 
 import { colors } from "@schnau/tailwind-config/base";

@@ -7,7 +7,10 @@ interface SelectFieldProps<T> {
   getOptionId: (value: T) => string | number;
   options: T[];
   error?: string;
+  allowEmpty?: boolean;
 }
+
+const EMPTY_VALUE = "__RESERVED_EMPTY_VALUE__";
 
 export function SelectField<T>({
   label,
@@ -18,6 +21,7 @@ export function SelectField<T>({
   getOptionLabel,
   getOptionId,
   error,
+  allowEmpty,
 }: SelectFieldProps<T>) {
   return (
     <div className="flex flex-col gap-1">
@@ -27,13 +31,17 @@ export function SelectField<T>({
         value={valueId ?? ""}
         onChange={(e) =>
           onChange(
-            options.find(
-              (option) => String(getOptionId(option)) === e.target.value,
-            ),
+            EMPTY_VALUE === e.target.value
+              ? undefined
+              : options.find(
+                  (option) => String(getOptionId(option)) === e.target.value,
+                ),
           )
         }
       >
-        {!valueId && <option value="">{emptyLabel}</option>}
+        {(!valueId || allowEmpty) && (
+          <option value={EMPTY_VALUE}>{emptyLabel}</option>
+        )}
 
         {options.map((option) => (
           <option key={getOptionId(option)} value={getOptionId(option)}>
