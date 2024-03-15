@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import clsx from "clsx";
 
 import { Footer } from "~/components/layout/Footer";
-import { Header } from "~/components/layout/Header";
+import { Header } from "~/components/layout/header/Header";
 import styles from "./layout.module.css";
 
 export default function Layout({ children }: { children: ReactNode }) {

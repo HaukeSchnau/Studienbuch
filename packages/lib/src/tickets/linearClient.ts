@@ -1,6 +1,11 @@
 import { createHash } from "crypto";
 import type { DocumentNode } from "graphql/language/ast";
-import { LinearGraphQLClient, LinearSdk, parseLinearError } from "@linear/sdk";
+import {
+  LinearClient,
+  LinearGraphQLClient,
+  LinearSdk,
+  parseLinearError,
+} from "@linear/sdk";
 
 import { cacheResponse, getCachedResponse } from "@schnau/db";
 
@@ -54,7 +59,10 @@ class CachingLinearClient extends LinearSdk {
   }
 }
 
-const linearClient = new CachingLinearClient();
+// const linearClient = new CachingLinearClient();
+const linearClient = new LinearClient({
+  apiKey: env.LINEAR_API_KEY,
+});
 
 export const getLinearClient = () => {
   return linearClient;
