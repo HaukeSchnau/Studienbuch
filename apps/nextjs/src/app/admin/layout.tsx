@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import {
   LogoutButton,
   NavigationItem,
-} from "~/components/layout/NavigationItem";
+} from "~/components/layout/nav/NavigationItem";
 import { isLoggedIn } from "~/features/auth/isLoggedIn";
 import { YearSelectField } from "~/features/yearSelect/YearSelectField";
 
@@ -19,7 +19,7 @@ export default function AdminLayout({ children }: Props) {
 
   return (
     <div className="bg-main-blob flex h-screen overflow-hidden bg-offwhite bg-contain bg-no-repeat">
-      <div className="hidden basis-1/6 rounded-r-3xl bg-white p-4 shadow-md md:block">
+      <div className="hidden basis-1/6 overflow-auto rounded-r-3xl bg-white p-4 shadow-md md:block">
         <div className="mx-auto w-4/6 py-12">
           <img
             src="/assets/icon.png"
@@ -36,6 +36,15 @@ export default function AdminLayout({ children }: Props) {
           <NavigationItem href="/admin/substitutions">
             Vertretungspläne
           </NavigationItem>
+          <hr className="opacity-20" />
+          <NavigationItem href="/admin/users">Nutzerverwaltung</NavigationItem>
+          <NavigationItem href="/admin/groups">Gruppen</NavigationItem>
+          <NavigationItem href="/admin/permissions">Rechte</NavigationItem>
+          <NavigationItem href="/admin/logs">Logs</NavigationItem>
+          <NavigationItem href="/admin/settings">Einstellungen</NavigationItem>
+          <NavigationItem href="/impressum">Impressum</NavigationItem>
+          <NavigationItem href="/datenschutz">Datenschutz</NavigationItem>
+          <hr className="opacity-20" />
           <LogoutButton />
         </ul>
       </div>
