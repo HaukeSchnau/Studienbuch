@@ -11,7 +11,7 @@ import {
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import style from "./roadmap.module.css";
 
-export const revalidate = 30;
+export const revalidate = 3600; // 1 hour
 
 export default async function RoadmapPage() {
   return (
