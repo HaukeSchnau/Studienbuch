@@ -59,7 +59,7 @@ export const YearForm = ({
   error,
   isPending,
 }: Props) => {
-  const { Provider, Field, handleSubmit } = formFactory.useForm({
+  const { Field, handleSubmit } = formFactory.useForm({
     defaultValues: {
       name: defaultYear?.name ?? "",
       schoolId: defaultYear?.schoolId,
@@ -77,94 +77,92 @@ export const YearForm = ({
   const schools = api.schools.list.useQuery();
 
   return (
-    <Provider>
-      <form
-        onSubmit={submitHandler(handleSubmit)}
-        className="flex flex-col gap-4"
+    <form
+      onSubmit={submitHandler(handleSubmit)}
+      className="flex flex-col gap-4"
+    >
+      <Field
+        name="name"
+        validators={{
+          onChange: yearSchema.shape.name,
+        }}
       >
-        <Field
-          name="name"
-          validators={{
-            onChange: yearSchema.shape.name,
-          }}
-        >
-          {(field) => (
-            <TextField
-              label="Name"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(value) => field.handleChange(value)}
-              error={field.state.meta.errors.join(", ")}
-            />
-          )}
-        </Field>
-
-        {schools.isPending ? (
-          <LoadingIndicator />
-        ) : schools.isError ? (
-          <div>{schools.error.message}</div>
-        ) : (
-          <Field
-            name="schoolId"
-            validators={{
-              onChange: yearSchema.shape.schoolId,
-            }}
-          >
-            {(field) => (
-              <SelectField
-                label="Schule"
-                emptyLabel="Keine Schule ausgewählt"
-                valueId={field.state.value}
-                options={schools.data}
-                getOptionLabel={(school) => school.name}
-                getOptionId={(school) => school.id}
-                onChange={(school) => field.handleChange(school?.id)}
-                error={field.state.meta.errors.join(", ")}
-              />
-            )}
-          </Field>
+        {(field) => (
+          <TextField
+            label="Name"
+            value={field.state.value}
+            onBlur={field.handleBlur}
+            onChange={(value) => field.handleChange(value)}
+            error={field.state.meta.errors.join(", ")}
+          />
         )}
+      </Field>
 
+      {schools.isPending ? (
+        <LoadingIndicator />
+      ) : schools.isError ? (
+        <div>{schools.error.message}</div>
+      ) : (
         <Field
-          name="startYear"
+          name="schoolId"
           validators={{
-            onChange: yearSchema.shape.startYear,
+            onChange: yearSchema.shape.schoolId,
           }}
         >
           {(field) => (
-            <NumberField
-              label="Startjahr"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(value) => field.handleChange(value)}
+            <SelectField
+              label="Schule"
+              emptyLabel="Keine Schule ausgewählt"
+              valueId={field.state.value}
+              options={schools.data}
+              getOptionLabel={(school) => school.name}
+              getOptionId={(school) => school.id}
+              onChange={(school) => field.handleChange(school?.id)}
               error={field.state.meta.errors.join(", ")}
             />
           )}
         </Field>
+      )}
 
-        <Field
-          name="numberOfYears"
-          validators={{
-            onChange: yearSchema.shape.numberOfYears,
-          }}
-        >
-          {(field) => (
-            <NumberField
-              label="Anzahl Jahre"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(value) => field.handleChange(value)}
-              error={field.state.meta.errors.join(", ")}
-            />
-          )}
-        </Field>
+      <Field
+        name="startYear"
+        validators={{
+          onChange: yearSchema.shape.startYear,
+        }}
+      >
+        {(field) => (
+          <NumberField
+            label="Startjahr"
+            value={field.state.value}
+            onBlur={field.handleBlur}
+            onChange={(value) => field.handleChange(value)}
+            error={field.state.meta.errors.join(", ")}
+          />
+        )}
+      </Field>
 
-        <Button type="submit" className="self-end" disabled={isPending}>
-          {isPending ? <LoadingIndicator /> : "Speichern"}
-        </Button>
+      <Field
+        name="numberOfYears"
+        validators={{
+          onChange: yearSchema.shape.numberOfYears,
+        }}
+      >
+        {(field) => (
+          <NumberField
+            label="Anzahl Jahre"
+            value={field.state.value}
+            onBlur={field.handleBlur}
+            onChange={(value) => field.handleChange(value)}
+            error={field.state.meta.errors.join(", ")}
+          />
+        )}
+      </Field>
 
-        {error && <div className="text-red">{error}</div>}
-      </form>
-    </Provider>
+      <Button type="submit" className="self-end" disabled={isPending}>
+        {isPending ? <LoadingIndicator /> : "Speichern"}
+      </Button>
+
+      {error && <div className="text-red">{error}</div>}
+    </form>
   );
 };
