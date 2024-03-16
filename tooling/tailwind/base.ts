@@ -34,6 +34,7 @@ export const colors = {
   },
 
   yellow: "#DCAB3C",
+  "yellow-sec": "#a47c20",
 };
 
 export type Color = keyof typeof colors;
