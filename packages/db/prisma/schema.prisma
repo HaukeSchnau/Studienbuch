@@ -30,20 +30,20 @@ model LicenseKey {
 }
 
 model User {
-  id            Int          @id @default(autoincrement())
-  email         String?
-  name          String
-  passwordHash  String?
-  title         String?
-  abbrv         String?      @unique
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  emailVerified DateTime?
-  image         String?
-  sessions      Session[]
-  permissions   Permission[]
-  Course        Course[]
-  role          Role         @default(STUDENT)
+  id               Int          @id @default(autoincrement())
+  email            String?
+  name             String
+  passwordHash     String?
+  title            String?
+  abbrv            String?      @unique
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  emailVerified    DateTime?
+  image            String?
+  sessions         Session[]
+  permissions      Permission[]
+  teacherInCourses Course[]
+  role             Role         @default(STUDENT)
 }
 
 model Session {

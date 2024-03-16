@@ -22,7 +22,7 @@ export const NavigationItem = ({
   icon,
 }: NavigationItemProps) => {
   const pathname = usePathname();
-  const active = pathname === href;
+  const active = href && pathname ? pathname.startsWith(href) : false;
 
   const content = (
     <div className="flex items-center gap-2">
@@ -34,8 +34,7 @@ export const NavigationItem = ({
   return (
     <li
       className={cx("cursor-pointer rounded-3xl transition", {
-        "text-white": active,
-        "bg-green": active,
+        "bg-green text-white": active,
         "hover:bg-grey": !active,
       })}
     >

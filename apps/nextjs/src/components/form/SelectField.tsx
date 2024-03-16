@@ -5,7 +5,7 @@ interface SelectFieldProps<T> {
   onChange: (value?: T) => void;
   getOptionLabel: (value: T) => string;
   getOptionId: (value: T) => string | number;
-  options: T[];
+  options: readonly T[];
   error?: string;
   allowEmpty?: boolean;
 }

@@ -44,7 +44,7 @@ export const TextFieldCell = ({
 
 interface SelectCellProps<TValues extends string> {
   value: TValues;
-  values: TValues[];
+  values: readonly TValues[];
   updateData: (value: TValues) => void;
   getLabel?: (value: TValues) => string;
   isDirty: boolean;

@@ -8,4 +8,11 @@ export interface User {
   image?: string | null;
 }
 
-export type Role = "TEACHER" | "STUDENT" | "ADMIN";
+export const roles = ["TEACHER", "STUDENT", "ADMIN"] as const;
+export type Role = (typeof roles)[number];
+
+export const roleMap: Record<Role, string> = {
+  TEACHER: "Lehrer",
+  STUDENT: "Schüler",
+  ADMIN: "Administrator",
+};

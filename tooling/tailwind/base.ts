@@ -23,6 +23,7 @@ export const colors = {
   darkgrey: "#666",
 
   red: "#A42B33",
+  "red-sec": "#8A0000",
   "red-desaturated": "#D9A3A7",
 
   transparent: "transparent",

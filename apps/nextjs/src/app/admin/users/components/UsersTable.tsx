@@ -6,7 +6,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 
-import type { Role } from "@schnau/lib/src/users/user";
+import { roleMap, roles } from "@schnau/lib/src/users/user";
 
 import type { User } from "../user.type";
 import { Actions } from "./Actions";
@@ -21,15 +21,10 @@ interface Props {
   ) => void;
   updates: Map<number, Partial<User>>;
   onClickChangePassword: (user: User) => void;
+  onClickDelete: (user: User) => void;
 }
 
 const column = createColumnHelper<User>();
-
-const roleMap: Record<Role, string> = {
-  TEACHER: "Lehrer",
-  STUDENT: "Schüler",
-  ADMIN: "Administrator",
-};
 
 function useSkipper() {
   const shouldSkipRef = useRef(true);
@@ -52,6 +47,7 @@ export const UsersTable = ({
   updateRow,
   updates,
   onClickChangePassword,
+  onClickDelete,
 }: Props) => {
   const [autoResetPageIndex, skipAutoResetPageIndex] = useSkipper();
 
@@ -119,7 +115,7 @@ export const UsersTable = ({
         cell: ({ getValue, row }) => (
           <SelectCell
             value={getValue()}
-            values={Object.keys(roleMap) as Role[]}
+            values={roles}
             updateData={(value) =>
               handleUpdateRow(row.index, { id: row.original.id, role: value })
             }
@@ -140,11 +136,12 @@ export const UsersTable = ({
           <Actions
             user={row.original}
             onClickChangePassword={onClickChangePassword}
+            onClickDelete={onClickDelete}
           />
         ),
       }),
     ],
-    [handleUpdateRow, onClickChangePassword, updates],
+    [handleUpdateRow, onClickChangePassword, onClickDelete, updates],
   );
 
   const table = useReactTable({
@@ -160,31 +157,35 @@ export const UsersTable = ({
       style={{
         gridTemplateColumns:
           "min-content 1fr min-content 1fr min-content min-content min-content",
+        gap: "1px",
       }}
     >
       {table.getHeaderGroups().map((headerGroup) => (
         <Fragment key={headerGroup.id}>
           {headerGroup.headers.map((header) => (
-            <th key={header.id} className={"border border-grey-100 px-2 py-4"}>
+            <div
+              key={header.id}
+              className="px-2 py-4 outline outline-1 outline-grey-100"
+            >
               {header.isPlaceholder
                 ? null
                 : flexRender(
                     header.column.columnDef.header,
                     header.getContext(),
                   )}
-            </th>
+            </div>
           ))}
         </Fragment>
       ))}
       {table.getRowModel().rows.map((row) => (
         <Fragment key={row.id}>
           {row.getVisibleCells().map((cell) => (
-            <td
+            <div
               key={cell.id}
-              className="flex items-center border border-grey-100"
+              className="flex items-center outline outline-1 outline-grey-100"
             >
               {flexRender(cell.column.columnDef.cell, cell.getContext())}
-            </td>
+            </div>
           ))}
         </Fragment>
       ))}

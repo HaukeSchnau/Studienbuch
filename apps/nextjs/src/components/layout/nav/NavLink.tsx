@@ -20,7 +20,7 @@ export const NavLink = ({
   const isActive = currentPath === href;
 
   return (
-    <Link href={href} className={clsx("flex gap-2")}>
+    <Link href={href} className="flex gap-2">
       {icon && <i className="text-base">{icon}</i>}
       <span className={clsx("hover:underline", isActive && "underline")}>
         {children}
