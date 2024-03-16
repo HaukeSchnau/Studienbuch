@@ -3,8 +3,7 @@
 import { useCallback, useState } from "react";
 import { useImmer } from "use-immer";
 
-import type { User } from "@schnau/lib/src/users/user";
-
+import type { User } from "./user.type";
 import { Button } from "~/components/form/Button";
 import { Card } from "~/components/layout/Card";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";

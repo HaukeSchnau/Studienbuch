@@ -8,9 +8,14 @@ import { createRouter } from "../trpc";
 
 export const users = createRouter({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return await ctx.db.user.findMany({
-      orderBy: { name: "asc" },
-    });
+    return (
+      await ctx.db.user.findMany({
+        orderBy: { name: "asc" },
+      })
+    ).map(({ passwordHash, ...publicUser }) => ({
+      ...publicUser,
+      hasPassword: passwordHash !== null,
+    }));
   }),
 
   updateMany: protectedProcedure

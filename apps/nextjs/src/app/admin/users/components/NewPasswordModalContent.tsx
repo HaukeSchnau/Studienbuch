@@ -2,7 +2,6 @@ import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { z } from "zod";
 
-import type { User } from "@schnau/lib/src/users/user";
 import { generateRandomPassword } from "@schnau/lib/src/auth/generateRandomPassword";
 import { formalName } from "@schnau/lib/src/users/teacher";
 
@@ -10,6 +9,7 @@ import { Button } from "~/components/form/Button";
 import { TextField } from "~/components/form/TextField";
 import { submitHandler } from "~/infrastructure/forms/submitHandler";
 import { api } from "~/infrastructure/trpc/react";
+import type { User } from "../user.type";
 
 interface ChangePasswordModalContentProps {
   user: User;
