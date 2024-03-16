@@ -4,7 +4,6 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     DATABASE_PRISMA_URL: z.string().min(1),
-    REDIS_URL: z.string().min(1),
   },
   client: {},
   experimental__runtimeEnv: {},

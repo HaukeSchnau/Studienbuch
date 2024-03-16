@@ -1,11 +1,4 @@
-export interface User {
-  id: number;
-  name: string;
-  title?: string | null;
-  role: Role;
-}
-
-export type Role = "TEACHER" | "STUDENT" | "ADMIN";
+import type { User } from "./user";
 
 export type Teacher = Pick<User, "id" | "name" | "title">;
 

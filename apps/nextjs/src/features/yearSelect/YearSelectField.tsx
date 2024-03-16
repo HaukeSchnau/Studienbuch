@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-
 import { SelectField } from "~/components/form/SelectField";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { api } from "~/infrastructure/trpc/react";
@@ -10,12 +8,6 @@ import { useSelectedYear } from "./selectedYearStore";
 export const YearSelectField = () => {
   const { data: years, isPending, error } = api.years.get.useQuery();
   const { selectedYear, setSelectedYear } = useSelectedYear();
-
-  useEffect(() => {
-    if (years?.[0] && !selectedYear) {
-      setSelectedYear(years[0]);
-    }
-  }, [selectedYear, setSelectedYear, years]);
 
   if (isPending) {
     return <LoadingIndicator />;
@@ -28,12 +20,13 @@ export const YearSelectField = () => {
   return (
     <SelectField
       label="Jahrgang"
-      emptyLabel="Kein Jahrgang ausgewählt"
+      emptyLabel="Alle Jahrgänge"
+      allowEmpty
       options={years
         .slice()
         .sort((a, b) => a.graduationYear - b.graduationYear)}
       valueId={selectedYear?.name}
-      onChange={(year) => year && setSelectedYear(year)}
+      onChange={(year) => setSelectedYear(year)}
       getOptionLabel={(year) => `${year.name} (${year.graduationYear})`}
       getOptionId={(year) => year.name}
     />

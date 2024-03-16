@@ -8,6 +8,7 @@ import { schools } from "./router/schools.router";
 import { subscriptions } from "./router/subscriptions.router";
 import { substitutions } from "./router/substitutions.router";
 import { sync } from "./router/sync.router";
+import { users } from "./router/users.router";
 import { years } from "./router/years.router";
 import { createRouter } from "./trpc";
 
@@ -21,6 +22,7 @@ export const appRouter = createRouter({
   sync,
   auth,
   schools,
+  users,
 });
 
 export const openApiDocument = generateOpenApiDocument(appRouter, {

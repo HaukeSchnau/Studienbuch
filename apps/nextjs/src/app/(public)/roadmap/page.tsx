@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, Suspense } from "react";
 import clsx from "clsx";
 
 import type { Issue, WorkflowState } from "@schnau/lib/src/tickets/getTickets";
@@ -8,29 +8,46 @@ import {
   getTicketsForState,
 } from "@schnau/lib/src/tickets/getTickets";
 
+import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import style from "./roadmap.module.css";
 
-export default async function RoadmapPage() {
-  const states = await getStates();
+export const revalidate = 3600; // 1 hour
 
+export default async function RoadmapPage() {
   return (
     <div className=" py-12  md:py-16">
       <h1 className="px-12 text-4xl font-bold text-primary-800 md:px-[10vw]">
         Woran wird gerade gearbeitet?
       </h1>
 
-      <div className={clsx(style.stateColumns, "px-12 pt-10 md:px-[10vw]")}>
-        {states.map((state, idx) => (
-          <StateColumn
-            key={state.id}
-            state={state}
-            isLast={idx === states.length - 1}
-          />
-        ))}
-      </div>
+      <Suspense
+        fallback={
+          <div className="grid h-96 place-items-center">
+            <LoadingIndicator />
+          </div>
+        }
+      >
+        <StateColumns />
+      </Suspense>
     </div>
   );
 }
+
+const StateColumns = async () => {
+  const states = await getStates();
+
+  return (
+    <div className={clsx(style.stateColumns, "px-12 pt-10 md:px-[10vw]")}>
+      {states.map((state, idx) => (
+        <StateColumn
+          key={state.id}
+          state={state}
+          isLast={idx === states.length - 1}
+        />
+      ))}
+    </div>
+  );
+};
 
 interface StateColumnProps {
   state: WorkflowState;

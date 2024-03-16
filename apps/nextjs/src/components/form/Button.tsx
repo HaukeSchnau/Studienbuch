@@ -5,7 +5,7 @@ import clsx from "clsx";
 type ButtonProps = {
   children: ReactNode;
   className?: string;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "yellow" | "danger";
 } & (
   | {
       href: string;
@@ -28,6 +28,10 @@ export function Button({
     variant === "primary" &&
       "border-b-blue-sec border-t-blue bg-blue hover:border-t-blue-sec hover:bg-blue-sec text-white",
     variant === "secondary" && "border-transparent hover:bg-grey text-darkgrey",
+    variant === "yellow" &&
+      "border-b-yellow-sec border-t-yellow bg-yellow hover:border-t-yellow-sec hover:bg-yellow-sec text-white",
+    variant === "danger" &&
+      "border-b-red-sec border-t-red bg-red hover:border-t-red-sec hover:bg-red-sec text-white",
     className,
   );
 

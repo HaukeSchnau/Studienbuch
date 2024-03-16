@@ -19,8 +19,6 @@ interface ProtoCourse {
   times: ProtoCourseTime[];
 }
 
-
-
 export const insertProtoCourse = async (
   db: PrismaClient,
   year: Year,

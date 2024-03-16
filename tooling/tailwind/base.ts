@@ -23,6 +23,7 @@ export const colors = {
   darkgrey: "#666",
 
   red: "#A42B33",
+  "red-sec": "#8A0000",
   "red-desaturated": "#D9A3A7",
 
   transparent: "transparent",
@@ -32,6 +33,9 @@ export const colors = {
     20: "rgba(0, 0, 0, 0.2)",
     80: "#000000b",
   },
+
+  yellow: "#DCAB3C",
+  "yellow-sec": "#a47c20",
 };
 
 export type Color = keyof typeof colors;

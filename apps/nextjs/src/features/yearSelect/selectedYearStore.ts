@@ -4,13 +4,13 @@ import { immer } from "zustand/middleware/immer";
 import type { Year } from "@schnau/lib/src/year";
 
 interface SelectedYearState {
-  selectedYear: Year | null;
-  setSelectedYear: (year: Year) => void;
+  selectedYear: Year | undefined;
+  setSelectedYear: (year: Year | undefined) => void;
 }
 
 export const useSelectedYear = create(
   immer<SelectedYearState>((set) => ({
-    selectedYear: null,
+    selectedYear: undefined,
     setSelectedYear: (year) => {
       set((state) => {
         state.selectedYear = year;

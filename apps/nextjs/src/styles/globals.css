@@ -41,3 +41,18 @@
     transform: translateX(-8px);
   }
 }
+
+i {
+  font-family: var(--font-material-icons);
+  font-weight: 200;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+
+  user-select: none;
+}
