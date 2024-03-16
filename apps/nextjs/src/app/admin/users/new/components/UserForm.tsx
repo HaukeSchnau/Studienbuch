@@ -11,7 +11,6 @@ import { SelectField } from "~/components/form/SelectField";
 import { TextField } from "~/components/form/TextField";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { submitHandler } from "~/infrastructure/forms/submitHandler";
-import { api } from "~/infrastructure/trpc/react";
 import { RoleSchema } from "../../../../../../../../packages/db/prisma/zod";
 
 interface UserFormValues {
@@ -71,8 +70,6 @@ export const UserForm = ({
       onSubmit({ value: parsed, formApi });
     },
   });
-
-  const schools = api.schools.list.useQuery();
 
   return (
     <form

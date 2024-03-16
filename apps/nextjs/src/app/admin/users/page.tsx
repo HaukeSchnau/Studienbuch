@@ -34,7 +34,7 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
 
   useEffect(() => {
     setUsers(initialUsers);
-  }, [initialUsers]);
+  }, [initialUsers, setUsers]);
 
   const [deleteModalUser, setDeleteModalUser] = useState<User | null>(null);
   const [changePasswordModalUser, setChangePasswordModalUser] =
