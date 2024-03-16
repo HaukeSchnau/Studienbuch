@@ -22,8 +22,16 @@ export const AdminLink = () => {
   const isLoggedIn = sessionData?.user !== null;
 
   if (!isLoggedIn) {
-    return <NavLink href="/login">Anmelden</NavLink>;
+    return (
+      <NavLink href="/login" icon="login">
+        Anmelden
+      </NavLink>
+    );
   }
 
-  return <NavLink href="/admin">Admin</NavLink>;
+  return (
+    <NavLink href="/admin" icon="admin_panel_settings">
+      Admin
+    </NavLink>
+  );
 };

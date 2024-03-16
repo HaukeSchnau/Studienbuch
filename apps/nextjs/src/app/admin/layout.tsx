@@ -38,11 +38,21 @@ export default function AdminLayout({ children }: Props) {
             Vertretungspläne
           </NavigationItem>
           <hr className="opacity-20" />
-          <NavigationItem href="/admin/users">Personen</NavigationItem>
-          <NavigationItem href="/admin/groups">Gruppen</NavigationItem>
-          <NavigationItem href="/admin/permissions">Rechte</NavigationItem>
-          <NavigationItem href="/admin/logs">Logs</NavigationItem>
-          <NavigationItem href="/admin/settings">Einstellungen</NavigationItem>
+          <NavigationItem href="/admin/users" icon="person">
+            Personen
+          </NavigationItem>
+          <NavigationItem href="/admin/groups" icon="groups">
+            Gruppen
+          </NavigationItem>
+          <NavigationItem href="/admin/permissions" icon="security">
+            Rechte
+          </NavigationItem>
+          <NavigationItem href="/admin/logs" icon="contract">
+            Logs
+          </NavigationItem>
+          <NavigationItem href="/admin/settings" icon="settings">
+            Einstellungen
+          </NavigationItem>
           <NavigationItem href="/impressum">Impressum</NavigationItem>
           <NavigationItem href="/datenschutz">Datenschutz</NavigationItem>
           <hr className="opacity-20" />
