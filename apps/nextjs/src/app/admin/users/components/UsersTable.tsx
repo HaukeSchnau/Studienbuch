@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   createColumnHelper,
   flexRender,
@@ -9,6 +9,9 @@ import clsx from "clsx";
 
 import type { Role, User } from "@schnau/lib/src/users/user";
 
+import { IconButton } from "~/components/form/IconButton";
+import { SelectCell, TextFieldCell } from "./Fields";
+
 interface Props {
   users: User[];
   updateRow: (
@@ -16,6 +19,7 @@ interface Props {
     update: Pick<User, "id"> & Partial<User>,
   ) => void;
   updates: Map<number, Partial<User>>;
+  onClickChangePassword: (user: User) => void;
 }
 
 const column = createColumnHelper<User>();
@@ -24,86 +28,6 @@ const roleMap: Record<Role, string> = {
   TEACHER: "Lehrer",
   STUDENT: "Schüler",
   ADMIN: "Administrator",
-};
-
-interface TextFieldCellProps {
-  value: string;
-  updateData: (value: string) => void;
-  isDirty: boolean;
-}
-
-const TextFieldCell = ({
-  value: initialValue,
-  updateData,
-  isDirty,
-}: TextFieldCellProps) => {
-  const [value, setValue] = useState(initialValue);
-
-  const onBlur = () => {
-    if (value === initialValue) return;
-    updateData(value);
-  };
-
-  useEffect(() => {
-    setValue(initialValue);
-  }, [initialValue]);
-
-  return (
-    <input
-      type="text"
-      value={value}
-      onBlur={onBlur}
-      onChange={(e) => setValue(e.target.value)}
-      className={clsx("w-full p-2", isDirty && "bg-yellow text-white")}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.currentTarget.blur();
-        }
-      }}
-    />
-  );
-};
-
-interface SelectCellProps<TValues extends string> {
-  value: TValues;
-  values: TValues[];
-  updateData: (value: TValues) => void;
-  getLabel?: (value: TValues) => string;
-  isDirty: boolean;
-}
-
-const SelectCell = <TValues extends string>({
-  value: initialValue,
-  values,
-  updateData,
-  getLabel = (value) => value,
-  isDirty,
-}: SelectCellProps<TValues>) => {
-  const [value, setValue] = useState(initialValue);
-
-  const onBlur = () => {
-    if (value === initialValue) return;
-    updateData(value);
-  };
-
-  useEffect(() => {
-    setValue(initialValue);
-  }, [initialValue]);
-
-  return (
-    <select
-      value={value}
-      onBlur={onBlur}
-      onChange={(e) => setValue(e.target.value as TValues)}
-      className={clsx("w-full p-2", isDirty && "bg-yellow text-white")}
-    >
-      {values.map((value) => (
-        <option key={value} value={value}>
-          {getLabel(value)}
-        </option>
-      ))}
-    </select>
-  );
 };
 
 function useSkipper() {
@@ -122,7 +46,12 @@ function useSkipper() {
   return [shouldSkip, skip] as const;
 }
 
-export const UsersTable = ({ users, updateRow, updates }: Props) => {
+export const UsersTable = ({
+  users,
+  updateRow,
+  updates,
+  onClickChangePassword,
+}: Props) => {
   const [autoResetPageIndex, skipAutoResetPageIndex] = useSkipper();
 
   const handleUpdateRow = useCallback(
@@ -195,8 +124,18 @@ export const UsersTable = ({ users, updateRow, updates }: Props) => {
           />
         ),
       }),
+      column.display({
+        id: "actions",
+        header: "Aktionen",
+        cell: ({ row }) => (
+          <IconButton
+            icon="key"
+            onClick={() => onClickChangePassword(row.original)}
+          />
+        ),
+      }),
     ],
-    [handleUpdateRow, updates],
+    [handleUpdateRow, onClickChangePassword, updates],
   );
 
   const table = useReactTable({
@@ -207,36 +146,34 @@ export const UsersTable = ({ users, updateRow, updates }: Props) => {
   });
 
   return (
-    <>
-      <table className="w-full border-collapse">
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th key={header.id} className="border border-grey-100 py-4 ">
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="border border-grey-100">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </>
+    <table className="w-full table-fixed border-collapse">
+      <thead>
+        {table.getHeaderGroups().map((headerGroup) => (
+          <tr key={headerGroup.id}>
+            {headerGroup.headers.map((header) => (
+              <th key={header.id} className={"border border-grey-100 py-4"}>
+                {header.isPlaceholder
+                  ? null
+                  : flexRender(
+                      header.column.columnDef.header,
+                      header.getContext(),
+                    )}
+              </th>
+            ))}
+          </tr>
+        ))}
+      </thead>
+      <tbody>
+        {table.getRowModel().rows.map((row) => (
+          <tr key={row.id}>
+            {row.getVisibleCells().map((cell) => (
+              <td key={cell.id} className="border border-grey-100">
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 };
