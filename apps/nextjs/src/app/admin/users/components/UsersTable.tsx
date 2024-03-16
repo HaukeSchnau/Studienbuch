@@ -1,16 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import clsx from "clsx";
 
-import type { Role, User } from "@schnau/lib/src/users/user";
+import type { Role } from "@schnau/lib/src/users/user";
 
-import { IconButton } from "~/components/form/IconButton";
+import type { User } from "../user.type";
+import { Actions } from "./Actions";
 import { SelectCell, TextFieldCell } from "./Fields";
+import { Status } from "./Status";
 
 interface Props {
   users: User[];
@@ -125,12 +126,17 @@ export const UsersTable = ({
         ),
       }),
       column.display({
+        id: "status",
+        header: "Status",
+        cell: ({ row }) => <Status user={row.original} />,
+      }),
+      column.display({
         id: "actions",
         header: "Aktionen",
         cell: ({ row }) => (
-          <IconButton
-            icon="key"
-            onClick={() => onClickChangePassword(row.original)}
+          <Actions
+            user={row.original}
+            onClickChangePassword={onClickChangePassword}
           />
         ),
       }),
@@ -146,34 +152,38 @@ export const UsersTable = ({
   });
 
   return (
-    <table className="w-full table-fixed border-collapse">
-      <thead>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <tr key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <th key={header.id} className={"border border-grey-100 py-4"}>
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
-              </th>
-            ))}
-          </tr>
-        ))}
-      </thead>
-      <tbody>
-        {table.getRowModel().rows.map((row) => (
-          <tr key={row.id}>
-            {row.getVisibleCells().map((cell) => (
-              <td key={cell.id} className="border border-grey-100">
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div
+      className="grid w-full"
+      style={{
+        gridTemplateColumns: "min-content repeat(5, 1fr) min-content",
+      }}
+    >
+      {table.getHeaderGroups().map((headerGroup) => (
+        <Fragment key={headerGroup.id}>
+          {headerGroup.headers.map((header) => (
+            <th key={header.id} className={"border border-grey-100 px-2 py-4"}>
+              {header.isPlaceholder
+                ? null
+                : flexRender(
+                    header.column.columnDef.header,
+                    header.getContext(),
+                  )}
+            </th>
+          ))}
+        </Fragment>
+      ))}
+      {table.getRowModel().rows.map((row) => (
+        <Fragment key={row.id}>
+          {row.getVisibleCells().map((cell) => (
+            <td
+              key={cell.id}
+              className="flex items-center border border-grey-100"
+            >
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </td>
+          ))}
+        </Fragment>
+      ))}
+    </div>
   );
 };

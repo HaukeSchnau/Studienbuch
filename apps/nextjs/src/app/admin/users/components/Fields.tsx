@@ -29,7 +29,10 @@ export const TextFieldCell = ({
       value={value}
       onBlur={onBlur}
       onChange={(e) => setValue(e.target.value)}
-      className={clsx("w-full p-2", isDirty && "bg-yellow text-white")}
+      className={clsx("p-2", isDirty && "bg-yellow text-white")}
+      style={{
+        width: `max(100%, ${value.length}ch)`,
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.currentTarget.blur();
