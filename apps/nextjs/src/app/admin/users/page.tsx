@@ -8,8 +8,10 @@ import type { User } from "@schnau/lib/src/users/user";
 import { Button } from "~/components/form/Button";
 import { Card } from "~/components/layout/Card";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
+import { ModalWithData } from "~/components/layout/Modal";
 import { PageHeading } from "~/components/layout/PageHeading";
 import { api } from "~/infrastructure/trpc/react";
+import { ChangePasswordModalContent } from "./components/NewPasswordModalContent";
 import { UsersTable } from "./components/UsersTable";
 
 export default function UsersPage() {
@@ -28,6 +30,9 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
   const utils = api.useUtils();
   const [users, setUsers] = useImmer<User[]>(initialUsers);
   const [updates, setUpdates] = useState(new Map<number, Partial<User>>());
+
+  const [changePasswordModalUser, setChangePasswordModalUser] =
+    useState<User | null>(null);
 
   const updateUsersMutation = api.users.updateMany.useMutation({
     onSuccess: () => {
@@ -54,25 +59,46 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <PageHeading color="white">Nutzer</PageHeading>
-        {updates.size > 0 && (
-          <Button
-            onClick={() => {
-              updateUsersMutation.mutate(
-                [...updates.entries()].map(([id, update]) => ({
-                  id,
-                  ...update,
-                })),
-              );
-            }}
-          >
-            Speichern
-          </Button>
-        )}
+        <div className="flex gap-4">
+          {updates.size > 0 && (
+            <Button
+              variant="yellow"
+              onClick={() => {
+                updateUsersMutation.mutate(
+                  [...updates.entries()].map(([id, update]) => ({
+                    id,
+                    ...update,
+                  })),
+                );
+              }}
+            >
+              Speichern
+            </Button>
+          )}
+          <Button href="/admin/users/new">Neuer Nutzer</Button>
+        </div>
       </div>
 
       <Card noPadding className="overflow-hidden">
-        <UsersTable users={users} updateRow={updateRow} updates={updates} />
+        <UsersTable
+          users={users}
+          updateRow={updateRow}
+          updates={updates}
+          onClickChangePassword={setChangePasswordModalUser}
+        />
       </Card>
+
+      <ModalWithData
+        data={changePasswordModalUser}
+        onClose={() => setChangePasswordModalUser(null)}
+      >
+        {(user) => (
+          <ChangePasswordModalContent
+            user={user}
+            onClose={() => setChangePasswordModalUser(null)}
+          />
+        )}
+      </ModalWithData>
     </div>
   );
 };
