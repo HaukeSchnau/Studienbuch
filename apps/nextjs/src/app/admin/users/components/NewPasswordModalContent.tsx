@@ -5,11 +5,11 @@ import { z } from "zod";
 import { generateRandomPassword } from "@schnau/lib/src/auth/generateRandomPassword";
 import { formalName } from "@schnau/lib/src/users/teacher";
 
+import type { User } from "../user.type";
 import { Button } from "~/components/form/Button";
 import { TextField } from "~/components/form/TextField";
 import { submitHandler } from "~/infrastructure/forms/submitHandler";
 import { api } from "~/infrastructure/trpc/react";
-import type { User } from "../user.type";
 
 interface ChangePasswordModalContentProps {
   user: User;
