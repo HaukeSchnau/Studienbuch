@@ -19,7 +19,7 @@ export const AdminLink = () => {
     return <div>{error.message}</div>;
   }
 
-  const isLoggedIn = sessionData?.user !== null;
+  const isLoggedIn = !!sessionData?.user;
 
   if (!isLoggedIn) {
     return (
