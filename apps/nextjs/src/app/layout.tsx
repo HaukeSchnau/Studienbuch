@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Nunito } from "next/font/google";
+import localFont from "next/font/local";
 
 import "~/styles/globals.css";
 
@@ -11,6 +12,12 @@ import { TRPCReactProvider } from "~/infrastructure/trpc/react";
 const fontSans = Nunito({
   subsets: ["latin"],
   variable: "--font-nunito",
+});
+
+const materialIcons = localFont({
+  src: "./MaterialSymbolsRounded.woff2",
+  variable: "--font-material-icons",
+  display: "auto",
 });
 
 export const metadata: Metadata = {
@@ -56,7 +63,13 @@ export const viewport: Viewport = {
 export default function Layout(props: { children: ReactNode }) {
   return (
     <html lang="de">
-      <body className={["font-sans", fontSans.variable].join(" ")}>
+      <body
+        className={[
+          "font-sans",
+          fontSans.variable,
+          materialIcons.variable,
+        ].join(" ")}
+      >
         <TRPCReactProvider>{props.children}</TRPCReactProvider>
       </body>
     </html>
