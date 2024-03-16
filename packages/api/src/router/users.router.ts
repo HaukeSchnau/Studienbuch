@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { UserSchema } from "@schnau/db/prisma/zod";
+import { hashPassword } from "@schnau/lib/src/auth/password";
 
 import { protectedProcedure } from "../procedures/protectedProcedure";
 import { createRouter } from "../trpc";
@@ -29,5 +30,22 @@ export const users = createRouter({
           });
         }),
       );
+    }),
+
+  updatePassword: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        password: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const hashedPassword = await hashPassword(input.password);
+      await ctx.db.user.update({
+        where: { id: input.id },
+        data: {
+          passwordHash: hashedPassword,
+        },
+      });
     }),
 });
