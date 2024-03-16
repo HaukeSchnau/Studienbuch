@@ -94,6 +94,9 @@ export const UsersTable = ({
       }),
       column.accessor("abbrv", {
         header: "Kürzel",
+        cell: ({ getValue }) => (
+          <div className="w-full p-2 text-center">{getValue()}</div>
+        ),
       }),
       column.accessor("email", {
         header: "Email",
@@ -155,7 +158,8 @@ export const UsersTable = ({
     <div
       className="grid w-full"
       style={{
-        gridTemplateColumns: "min-content repeat(5, 1fr) min-content",
+        gridTemplateColumns:
+          "min-content 1fr min-content 1fr min-content min-content min-content",
       }}
     >
       {table.getHeaderGroups().map((headerGroup) => (

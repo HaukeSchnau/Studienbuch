@@ -73,7 +73,7 @@ export const SelectCell = <TValues extends string>({
       value={value}
       onBlur={onBlur}
       onChange={(e) => setValue(e.target.value as TValues)}
-      className={clsx("w-full p-2", isDirty && "bg-yellow text-white")}
+      className={clsx("w-min p-2", isDirty && "bg-yellow text-white")}
     >
       {values.map((value) => (
         <option key={value} value={value}>
