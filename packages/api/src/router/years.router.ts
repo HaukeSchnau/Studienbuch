@@ -16,7 +16,7 @@ export const years = createRouter({
     .meta({ openapi: { method: "GET", path: "/years" } })
     .input(z.void())
     .output(z.array(YearSchema.omit({ createdAt: true })))
-    .query(async ({ ctx }) => {
+    .query(({ ctx }) => {
       return ctx.db.year.findMany({
         where: {
           graduationYear: {
@@ -26,10 +26,21 @@ export const years = createRouter({
       });
     }),
 
-  list: publicProcedure.query(async ({ ctx }) => {
+  list: publicProcedure.query(({ ctx }) => {
     return ctx.db.year.findMany({
       orderBy: {
         startYear: "desc",
+      },
+      include: {
+        school: true,
+      },
+    });
+  }),
+
+  listGroupedBySchool: publicProcedure.query(({ ctx }) => {
+    return ctx.db.school.findMany({
+      include: {
+        years: true,
       },
     });
   }),
