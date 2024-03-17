@@ -7,6 +7,7 @@ import {
 } from "~/components/layout/nav/NavigationItem";
 import { isLoggedIn } from "~/features/auth/isLoggedIn";
 import { YearSelectField } from "~/features/yearSelect/YearSelectField";
+import { YearNav } from "./YearNav";
 
 interface Props {
   children: ReactNode;
@@ -31,9 +32,7 @@ export default function AdminLayout({ children }: Props) {
           <NavigationItem href="/admin/years">Jahrgänge</NavigationItem>
           <hr className="opacity-20" />
           <YearSelectField />
-          <NavigationItem href="/admin/classes">Klassen</NavigationItem>
-          <NavigationItem href="/admin/courses">Kurse</NavigationItem>
-          <NavigationItem href="/admin/schedules">Stundenpläne</NavigationItem>
+          <YearNav />
           <NavigationItem href="/admin/substitutions">
             Vertretungspläne
           </NavigationItem>
