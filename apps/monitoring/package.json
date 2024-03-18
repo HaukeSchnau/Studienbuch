@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@schnau/api": "workspace:^0.1.0",
+    "@schnau/external-api": "workspace:^0.1.0",
     "@schnau/lib": "^0.1.0",
     "@schnau/tailwind-config": "workspace:^0.1.0",
     "@trpc/client": "11.0.0-next-beta.264",

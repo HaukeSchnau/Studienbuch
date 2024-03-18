@@ -6,10 +6,11 @@ import type { ProtoCourseWithTimes } from "@schnau/lib/src/schedule/import/Proto
 import {
   ensureParentDir,
   getFileHash,
+  parseScheduleCsv,
   writeFile,
-} from "@schnau/lib/src/infrastructure/file";
-import { convertPdf } from "@schnau/lib/src/pdf/convertPdf";
-import { parseScheduleCsv } from "@schnau/lib/src/schedule/import/parseScheduleCsv";
+} from "@schnau/lib-server";
+
+import { convertPdf } from "../../../../../../../packages/lib-server/src/pdf/convertPdf";
 
 const cacheDir = p.join(os.tmpdir(), "studienbuch", "imported-schedules");
 

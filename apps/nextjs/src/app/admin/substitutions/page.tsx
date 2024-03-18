@@ -1,11 +1,7 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 
-import {
-  convertKadmosRowsToSubstitutionsTable,
-  getSubstituionTableColumns,
-} from "@schnau/lib/src/substitutions/kadmos/convertSubstitutions";
-import { getSubstitutionsFromKadmos } from "@schnau/lib/src/substitutions/kadmos/requests/substitutions";
+import { getSubstitutions } from "@schnau/lib-server";
 
 import { Card } from "~/components/layout/Card";
 import { PageHeading } from "~/components/layout/PageHeading";
@@ -29,37 +25,12 @@ export default async function SubstitutionPage() {
   const school = "IGS Lilienthal";
   const FORMAT_NAME = "iServ_SuS_heute";
 
-  const {
-    format,
-    substitutions: { rows, date, lastUpdate },
-  } = await getSubstitutionsFromKadmos(school, FORMAT_NAME, new Date(), false, {
-    showTeacher: true,
-    showAbsentTeacher: true,
-    showRoom: true,
-    showSubject: true,
-    showClass: true,
-    showStudentgroup: true,
-    showTime: true,
-    showSubstText: true,
-    showInfo: true,
-    showSubstTypeColor: true,
-    showHour: true,
-    showBreakSupervisions: true,
-    showExamSupervision: true,
-    showUnitTime: true,
-    showCancel: true,
-    showEvent: true,
-    showTeacherOnEvent: true,
-    showUnheraldedExams: true,
-    enableSubstitutionFrom: true,
-    hideAbsent: false,
-    showMessages: true,
-  });
+  const { columns, substitutions, date, lastUpdate } = await getSubstitutions(
+    school,
+    FORMAT_NAME,
+  );
 
-  const columns = getSubstituionTableColumns(format);
-  const rowsWithColumns = convertKadmosRowsToSubstitutionsTable(rows, columns);
-
-  rowsWithColumns.sort((a, b) => {
+  substitutions.sort((a, b) => {
     return (
       optionalCompare(a.time?.data, b.time?.data) ||
       optionalCompare(a.class?.data, b.class?.data) ||
@@ -67,9 +38,9 @@ export default async function SubstitutionPage() {
     );
   });
 
-  for (let i = rowsWithColumns.length - 1; i > 0; i--) {
-    const current = rowsWithColumns[i]!;
-    const previous = rowsWithColumns[i - 1]!;
+  for (let i = substitutions.length - 1; i > 0; i--) {
+    const current = substitutions[i]!;
+    const previous = substitutions[i - 1]!;
     if (
       previous.time &&
       current.time &&
@@ -113,7 +84,7 @@ export default async function SubstitutionPage() {
             </tr>
           </thead>
           <tbody>
-            {rowsWithColumns.map((row, i) => (
+            {substitutions.map((row, i) => (
               <tr key={i}>
                 {columns.map(
                   (column) =>

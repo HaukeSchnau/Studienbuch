@@ -1,7 +1,7 @@
 import type { Permission } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 
-import { findPermissionScope } from "@schnau/lib/src/auth/permissions/hasPermission";
+import { findPermissionScope } from "@schnau/auth/src/hasPermission";
 
 import { t } from "../trpc";
 

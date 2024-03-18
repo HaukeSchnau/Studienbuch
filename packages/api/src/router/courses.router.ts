@@ -6,7 +6,7 @@ import {
   CourseTimeSchema,
   UserSchema,
 } from "@schnau/db/prisma/zod";
-import { insertProtoCourse } from "@schnau/lib/src/courses/insertProtoCourse";
+import { insertProtoCourse } from "@schnau/lib-server";
 
 import { permissionProcedure } from "../procedures/protectedProcedure";
 import { publicProcedure } from "../procedures/publicProcedure";

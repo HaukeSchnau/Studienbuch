@@ -12,6 +12,7 @@
     "@schnau/auth": "^0.1.0",
     "@schnau/db": "^0.1.0",
     "@schnau/lib": "^0.1.0",
+    "@schnau/lib-server": "^0.1.0",
     "@schnau/tailwind-config": "workspace:^0.1.0",
     "cross-fetch": "^4.0.0",
     "papaparse": "^5.4.1",

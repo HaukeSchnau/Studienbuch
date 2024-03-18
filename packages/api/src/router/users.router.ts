@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 import type { PermissionOnUser } from "@schnau/lib/src/auth/permissions/permisison";
+import { hashPassword } from "@schnau/auth/src/password";
 import { PermissionSchema, UserSchema } from "@schnau/db/prisma/zod";
-import { hashPassword } from "@schnau/lib/src/auth/password";
 
 import { permissionProcedure } from "../procedures/protectedProcedure";
 import { createRouter } from "../trpc";

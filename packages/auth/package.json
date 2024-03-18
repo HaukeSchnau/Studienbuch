@@ -14,6 +14,7 @@
     "@schnau/db": "workspace:^0.1.0",
     "@schnau/lib": "workspace:^0.1.0",
     "@t3-oss/env-nextjs": "^0.9.2",
+    "bcrypt": "^5.1.1",
     "jsonwebtoken": "^9.0.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",

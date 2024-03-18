@@ -1,8 +1,6 @@
-import type { Permission } from "@prisma/client";
-
+import type { Permission } from "@schnau/lib/src/auth/permissions/permisison";
+import type { PermissionScope } from "@schnau/lib/src/auth/permissions/scope";
 import { db } from "@schnau/db";
-
-import type { PermissionScope } from "./scope";
 
 export const findPermissionScope = async (
   user: { id: number; isSuperUser: boolean },

@@ -2,10 +2,10 @@ import fs from "fs/promises";
 import Papa from "papaparse";
 import { z } from "zod";
 
-import type { CourseTimeWeeks } from "../../course";
-import type { ProtoCourseWithTimes } from "./ProtoCourse.type";
-import { isNormalTime, parseTime } from "../../date";
-import { parseTimetableCell } from "./parseTimetableCell";
+import type { CourseTimeWeeks } from "@schnau/lib/src/course";
+import type { ProtoCourseWithTimes } from "@schnau/lib/src/schedule/import/ProtoCourse.type";
+import { isNormalTime, parseTime } from "@schnau/lib/src/date";
+import { parseTimetableCell } from "@schnau/lib/src/schedule/import/parseTimetableCell";
 
 export const parseScheduleCsv = async (
   filepath: string,

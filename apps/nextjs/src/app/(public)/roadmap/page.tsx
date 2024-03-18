@@ -1,12 +1,9 @@
 import { Fragment, Suspense } from "react";
 import clsx from "clsx";
 
-import type { Issue, WorkflowState } from "@schnau/lib/src/tickets/getTickets";
+import type { Issue, WorkflowState } from "@schnau/lib-server";
+import { getStates, getTicketsForState } from "@schnau/lib-server";
 import { formatDateRelative } from "@schnau/lib/src/date";
-import {
-  getStates,
-  getTicketsForState,
-} from "@schnau/lib/src/tickets/getTickets";
 
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import style from "./roadmap.module.css";

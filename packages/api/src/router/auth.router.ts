@@ -1,9 +1,9 @@
 import { z } from "zod";
 
+import { checkPassword } from "@schnau/auth/src/password";
 import { createSession } from "@schnau/auth/src/session";
 import { db } from "@schnau/db";
 
-import { checkPassword } from "../../../lib/src/auth/password";
 import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";
 

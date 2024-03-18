@@ -1,7 +1,7 @@
 {
-  "name": "@schnau/api",
-  "version": "0.1.0",
+  "name": "@schnau/lib-server",
   "private": true,
+  "version": "0.1.0",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
@@ -14,28 +14,22 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@schnau/auth": "workspace:^0.1.0",
     "@schnau/db": "workspace:^0.1.0",
+    "@schnau/external-api": "workspace:^0.1.0",
     "@schnau/lib": "workspace:^0.1.0",
-    "@schnau/lib-server": "workspace:^0.1.0",
-    "@trpc/server": "11.0.0-next-beta.264",
-    "dayjs": "^1.11.10",
-    "patch-package": "^8.0.0",
-    "superjson": "2.2.1",
-    "trpc-openapi": "^1.2.0",
+    "server-only": "^0.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@schnau/eslint-config": "workspace:^0.2.0",
     "@schnau/prettier-config": "workspace:^0.1.0",
     "@schnau/tsconfig": "workspace:^0.1.0",
-    "@types/bcrypt": "^5.0.2",
+    "@total-typescript/ts-reset": "^0.5.1",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
     "typescript": "^5.4.2"
   },
   "eslintConfig": {
-    "root": true,
     "extends": [
       "@schnau/eslint-config/base"
     ]
