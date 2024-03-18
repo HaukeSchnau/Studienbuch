@@ -1,20 +1,15 @@
 "use client";
 
-import { NavigationItem } from "~/components/layout/nav/NavigationItem";
+import type { ReactNode } from "react";
+
 import { useSelectedYear } from "~/features/yearSelect/selectedYearStore";
 
-export const YearNav = () => {
+export const YearNav = ({ children }: { children: ReactNode }) => {
   const { selectedYear } = useSelectedYear();
 
   if (!selectedYear) {
     return null;
   }
 
-  return (
-    <>
-      <NavigationItem href="/admin/classes">Klassen</NavigationItem>
-      <NavigationItem href="/admin/courses">Kurse</NavigationItem>
-      <NavigationItem href="/admin/schedules">Stundenpläne</NavigationItem>
-    </>
-  );
+  return children;
 };

@@ -4,13 +4,15 @@ import type { PermissionOnUser } from "@schnau/lib/src/auth/permissions/permisis
 import { PermissionSchema, UserSchema } from "@schnau/db/prisma/zod";
 import { hashPassword } from "@schnau/lib/src/auth/password";
 
-import { protectedProcedure } from "../procedures/protectedProcedure";
+import { permissionProcedure } from "../procedures/protectedProcedure";
 import { createRouter } from "../trpc";
 
 const scopeOptions = ["schools", "years", "classes", "courses"] as const;
 
+const editUsersProcedure = permissionProcedure("EDIT_USERS");
+
 export const users = createRouter({
-  list: protectedProcedure.query(async ({ ctx }) => {
+  list: editUsersProcedure.query(async ({ ctx }) => {
     return (
       await ctx.db.user.findMany({
         orderBy: { name: "asc" },
@@ -26,7 +28,7 @@ export const users = createRouter({
     }));
   }),
 
-  updateMany: protectedProcedure
+  updateMany: editUsersProcedure
     .input(
       z.array(
         UserSchema.pick({ id: true }).merge(
@@ -45,7 +47,7 @@ export const users = createRouter({
       );
     }),
 
-  add: protectedProcedure
+  add: editUsersProcedure
     .input(
       z.object({
         name: z.string(),
@@ -69,7 +71,7 @@ export const users = createRouter({
       });
     }),
 
-  updatePassword: protectedProcedure
+  updatePassword: editUsersProcedure
     .input(
       z.object({
         id: z.number(),
@@ -86,7 +88,7 @@ export const users = createRouter({
       });
     }),
 
-  delete: protectedProcedure
+  delete: editUsersProcedure
     .input(z.number())
     .mutation(async ({ ctx, input }) => {
       await ctx.db.user.delete({
@@ -94,7 +96,7 @@ export const users = createRouter({
       });
     }),
 
-  listScopeOptions: protectedProcedure
+  listScopeOptions: editUsersProcedure
     .input(z.enum(scopeOptions))
     .query(async ({ ctx, input: option }) => {
       switch (option) {
@@ -131,7 +133,7 @@ export const users = createRouter({
       }
     }),
 
-  setPermissions: protectedProcedure
+  setPermissions: editUsersProcedure
     .input(
       z.object({
         userId: z.number(),

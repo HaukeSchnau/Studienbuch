@@ -4,9 +4,11 @@ import { z } from "zod";
 import { YearSchema } from "@schnau/db/prisma/zod";
 import { getMaxActiveGraduationYear } from "@schnau/lib/src/year";
 
-import { protectedProcedure } from "../procedures/protectedProcedure";
+import { permissionProcedure } from "../procedures/protectedProcedure";
 import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";
+
+const editYearsProcedure = permissionProcedure("EDIT_YEARS");
 
 export const years = createRouter({
   /**
@@ -62,7 +64,7 @@ export const years = createRouter({
     return year;
   }),
 
-  add: protectedProcedure
+  add: editYearsProcedure
     .input(
       z.object({
         name: z.string(),
@@ -87,7 +89,7 @@ export const years = createRouter({
       });
     }),
 
-  update: protectedProcedure
+  update: editYearsProcedure
     .input(
       z.object({
         id: z.number(),

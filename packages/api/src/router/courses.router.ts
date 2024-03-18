@@ -8,9 +8,11 @@ import {
 } from "@schnau/db/prisma/zod";
 import { insertProtoCourse } from "@schnau/lib/src/courses/insertProtoCourse";
 
-import { protectedProcedure } from "../procedures/protectedProcedure";
+import { permissionProcedure } from "../procedures/protectedProcedure";
 import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";
+
+const editCoursesProcedure = permissionProcedure("EDIT_COURSES");
 
 export const courses = createRouter({
   list: publicProcedure
@@ -41,7 +43,7 @@ export const courses = createRouter({
       });
     }),
 
-  addCourses: protectedProcedure
+  addCourses: editCoursesProcedure
     .input(
       z.object({
         yearId: z.number(),

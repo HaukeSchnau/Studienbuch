@@ -5,6 +5,7 @@ import {
   LogoutButton,
   NavigationItem,
 } from "~/components/layout/nav/NavigationItem";
+import { PermissionNavigationItem } from "~/components/layout/nav/PermissionNavigationItem";
 import { isLoggedIn } from "~/features/auth/isLoggedIn";
 import { YearSelectField } from "~/features/yearSelect/YearSelectField";
 import { YearNav } from "./YearNav";
@@ -29,26 +30,63 @@ export default function AdminLayout({ children }: Props) {
           />
         </div>
         <ul className="flex flex-col gap-2">
-          <NavigationItem href="/admin/years">Jahrgänge</NavigationItem>
+          <PermissionNavigationItem permission="EDIT_YEARS" href="/admin/years">
+            Jahrgänge
+          </PermissionNavigationItem>
           <hr className="opacity-20" />
           <YearSelectField />
-          <YearNav />
+          <YearNav>
+            <PermissionNavigationItem
+              permission="EDIT_CLASSES"
+              href="/admin/classes"
+            >
+              Klassen
+            </PermissionNavigationItem>
+            <PermissionNavigationItem
+              permission="EDIT_COURSES"
+              href="/admin/courses"
+            >
+              Kurse
+            </PermissionNavigationItem>
+            <PermissionNavigationItem
+              permission="EDIT_COURSES"
+              href="/admin/schedules"
+            >
+              Stundenpläne
+            </PermissionNavigationItem>
+          </YearNav>
           <NavigationItem href="/admin/substitutions">
             Vertretungspläne
           </NavigationItem>
           <hr className="opacity-20" />
-          <NavigationItem href="/admin/users" icon="person">
+          <PermissionNavigationItem
+            permission="EDIT_USERS"
+            href="/admin/users"
+            icon="person"
+          >
             Personen
-          </NavigationItem>
-          <NavigationItem href="/admin/groups" icon="groups">
+          </PermissionNavigationItem>
+          <PermissionNavigationItem
+            permission="EDIT_USERS"
+            href="/admin/groups"
+            icon="groups"
+          >
             Gruppen
-          </NavigationItem>
-          <NavigationItem href="/admin/permissions" icon="security">
+          </PermissionNavigationItem>
+          <PermissionNavigationItem
+            permission="EDIT_USERS"
+            href="/admin/permissions"
+            icon="security"
+          >
             Rechte
-          </NavigationItem>
-          <NavigationItem href="/admin/logs" icon="contract">
+          </PermissionNavigationItem>
+          <PermissionNavigationItem
+            permission="VIEW_LOGS"
+            href="/admin/logs"
+            icon="contract"
+          >
             Logs
-          </NavigationItem>
+          </PermissionNavigationItem>
           <NavigationItem href="/admin/settings" icon="settings">
             Einstellungen
           </NavigationItem>
