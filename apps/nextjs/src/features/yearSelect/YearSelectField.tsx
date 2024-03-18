@@ -1,7 +1,6 @@
 "use client";
 
-import type { School } from "@schnau/lib/src/schools/school";
-import type { Year } from "@schnau/lib/src/year";
+import type { School, Year } from "@schnau/lib";
 
 import { SelectField } from "~/components/form/SelectField";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";

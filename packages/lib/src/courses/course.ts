@@ -1,4 +1,4 @@
-import type { Teacher } from "./users/teacher";
+import type { Teacher } from "../users/teacher";
 
 export interface Course {
   id: number;

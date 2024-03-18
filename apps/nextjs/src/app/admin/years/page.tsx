@@ -1,6 +1,6 @@
 "use client";
 
-import { isYearActive } from "@schnau/lib/src/year";
+import { isYearActive } from "@schnau/lib";
 
 import { Button } from "~/components/form/Button";
 import { Card, CardHeading } from "~/components/layout/Card";

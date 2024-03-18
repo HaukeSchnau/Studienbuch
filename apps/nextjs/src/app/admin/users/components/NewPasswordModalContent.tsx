@@ -2,8 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { z } from "zod";
 
-import { generateRandomPassword } from "@schnau/lib/src/auth/generateRandomPassword";
-import { formalName } from "@schnau/lib/src/users/teacher";
+import { formalName, generateRandomPassword } from "@schnau/lib";
 
 import type { User } from "../user.type";
 import { Button } from "~/components/form/Button";

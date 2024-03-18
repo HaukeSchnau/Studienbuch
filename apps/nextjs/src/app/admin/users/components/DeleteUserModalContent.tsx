@@ -1,4 +1,4 @@
-import { formalName } from "@schnau/lib/src/users/teacher";
+import { formalName } from "@schnau/lib";
 
 import type { User } from "../user.type";
 import { Button } from "~/components/form/Button";

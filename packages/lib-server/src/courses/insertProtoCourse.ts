@@ -1,7 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 
-import type { Class } from "@schnau/lib/src/classes/class.type";
-import type { Year } from "@schnau/lib/src/year";
+import type { Class, Year } from "@schnau/lib";
 
 interface ProtoCourseTime {
   weekday: number;

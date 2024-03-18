@@ -1,5 +1,5 @@
-import type { Course, CourseTimeWeeks } from "./course";
-import { getNormalTimeIndex } from "./date";
+import type { Course, CourseTimeWeeks } from "../courses/course";
+import { getNormalTimeIndex } from "../courses/date";
 
 export interface TimetableEntry {
   course: Course;

@@ -1,10 +1,12 @@
 import Link from "next/link";
 
-import type { Course, CourseTimeWeeks } from "@schnau/lib/src/course";
-import type { Timetable, TimetableCell } from "@schnau/lib/src/timetable";
-import { formatTime, getNormalTime } from "@schnau/lib/src/date";
-import { hash } from "@schnau/lib/src/infrastructure/strings";
-import { formatWeeks } from "@schnau/lib/src/timetable";
+import type {
+  Course,
+  CourseTimeWeeks,
+  Timetable,
+  TimetableCell,
+} from "@schnau/lib";
+import { formatTime, formatWeeks, getNormalTime, hash } from "@schnau/lib";
 
 const weekdays = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
 

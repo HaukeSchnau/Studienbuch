@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { PermissionOnUser } from "@schnau/lib/src/auth/permissions/permisison";
+import type { PermissionOnUser } from "@schnau/lib";
 import { hashPassword } from "@schnau/auth/src/password";
 import { PermissionSchema, UserSchema } from "@schnau/db/prisma/zod";
 

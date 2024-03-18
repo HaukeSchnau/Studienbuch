@@ -1,8 +1,7 @@
-import type { Permission } from "@prisma/client";
 import { useForm } from "@tanstack/react-form";
 
-import type { ScopeOption } from "@schnau/lib/src/auth/permissions/scope";
-import { formalName } from "@schnau/lib/src/users/teacher";
+import type { Permission, ScopeOption } from "@schnau/lib";
+import { formalName } from "@schnau/lib";
 
 import type { User } from "../user.type";
 import { Button } from "~/components/form/Button";

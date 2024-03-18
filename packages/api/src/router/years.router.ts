@@ -2,7 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { YearSchema } from "@schnau/db/prisma/zod";
-import { getMaxActiveGraduationYear } from "@schnau/lib/src/year";
+import { getMaxActiveGraduationYear } from "@schnau/lib";
 
 import { permissionProcedure } from "../procedures/protectedProcedure";
 import { publicProcedure } from "../procedures/publicProcedure";

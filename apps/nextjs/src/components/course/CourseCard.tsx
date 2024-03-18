@@ -1,5 +1,5 @@
-import type { Course } from "@schnau/lib/src/course";
-import { formalName } from "@schnau/lib/src/users/teacher";
+import type { Course } from "@schnau/lib";
+import { formalName } from "@schnau/lib";
 
 import { Card, CardHeading } from "../layout/Card";
 

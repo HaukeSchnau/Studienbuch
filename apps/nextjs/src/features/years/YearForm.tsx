@@ -3,7 +3,7 @@ import { createFormFactory } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { z } from "zod";
 
-import type { Year } from "@schnau/lib/src/year";
+import type { Year } from "@schnau/lib";
 
 import { Button } from "~/components/form/Button";
 import { NumberField } from "~/components/form/NumberField";

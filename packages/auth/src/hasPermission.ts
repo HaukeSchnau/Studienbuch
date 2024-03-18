@@ -1,5 +1,4 @@
-import type { Permission } from "@schnau/lib/src/auth/permissions/permisison";
-import type { PermissionScope } from "@schnau/lib/src/auth/permissions/scope";
+import type { Permission, PermissionScope } from "@schnau/lib";
 import { db } from "@schnau/db";
 
 export const findPermissionScope = async (

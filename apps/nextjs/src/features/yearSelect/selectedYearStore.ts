@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 
-import type { Year } from "@schnau/lib/src/year";
+import type { Year } from "@schnau/lib";
 
 interface SelectedYearState {
   selectedYear: Year | undefined;

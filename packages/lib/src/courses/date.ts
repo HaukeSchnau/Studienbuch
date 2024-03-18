@@ -7,6 +7,9 @@ import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.locale("de");
 dayjs.extend(relativeTime);
 
+/**
+ * Parses a time string in the format "HH:MM" to a number of minutes.
+ */
 export const parseTime = (time: string) => {
   if (!time) throw new Error("No time given");
 
@@ -36,6 +39,9 @@ const normalTimes = [
   15 * 60 + 15,
 ];
 
+/**
+ * Checks if a time is a normal time. Normal times are 8:00, 9:45, 11:30, 13:50 and 15:15.
+ */
 export const isNormalTime = (time: number) => normalTimes.includes(time);
 
 export const getNormalTimeIndex = (time: number) =>
@@ -43,6 +49,9 @@ export const getNormalTimeIndex = (time: number) =>
 
 export const getNormalTime = (index: number) => normalTimes[index];
 
+/**
+ * Formats a number of minutes to a time string in the format "HH:MM".
+ */
 export const formatTime = (time: number) => {
   const hours = Math.floor(time / 60);
   const minutes = time % 60;

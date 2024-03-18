@@ -1,6 +1,5 @@
-import type { ExtendedProtoCourse } from "@schnau/lib/src/schedule/import/ProtoCourse.type";
-import { protoCourseSchema } from "@schnau/lib/src/schedule/import/ProtoCourse.type";
-import { guessSubject } from "@schnau/lib/src/subject";
+import type { ExtendedProtoCourse } from "@schnau/lib";
+import { guessSubject, protoCourseSchema } from "@schnau/lib";
 
 export const parseTimetableCell = (
   coursesRaw: string,

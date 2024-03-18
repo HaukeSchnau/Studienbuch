@@ -1,10 +1,8 @@
 import type { ChangeEvent } from "react";
 import { useMemo } from "react";
 
-import type { Course } from "@schnau/lib/src/course";
-import type { Timetable } from "@schnau/lib/src/timetable";
-import type { Year } from "@schnau/lib/src/year";
-import { buildTimetable } from "@schnau/lib/src/timetable";
+import type { Course, Timetable, Year } from "@schnau/lib";
+import { buildTimetable } from "@schnau/lib";
 
 import { Button } from "~/components/form/Button";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
