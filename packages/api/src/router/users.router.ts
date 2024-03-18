@@ -1,24 +1,34 @@
 import { z } from "zod";
 
-import { RoleSchema, UserSchema } from "@schnau/db/prisma/zod";
+import type { PermissionOnUser } from "@schnau/lib/src/auth/permissions/permisison";
+import { PermissionSchema, UserSchema } from "@schnau/db/prisma/zod";
 import { hashPassword } from "@schnau/lib/src/auth/password";
 
-import { protectedProcedure } from "../procedures/protectedProcedure";
+import { permissionProcedure } from "../procedures/protectedProcedure";
 import { createRouter } from "../trpc";
 
+const scopeOptions = ["schools", "years", "classes", "courses"] as const;
+
+const editUsersProcedure = permissionProcedure("EDIT_USERS");
+
 export const users = createRouter({
-  list: protectedProcedure.query(async ({ ctx }) => {
+  list: editUsersProcedure.query(async ({ ctx }) => {
     return (
       await ctx.db.user.findMany({
         orderBy: { name: "asc" },
+        include: {
+          roles: true,
+          permissions: true,
+        },
       })
-    ).map(({ passwordHash, ...publicUser }) => ({
+    ).map(({ passwordHash, permissions, ...publicUser }) => ({
       ...publicUser,
+      permissions: permissions as PermissionOnUser[],
       hasPassword: passwordHash !== null,
     }));
   }),
 
-  updateMany: protectedProcedure
+  updateMany: editUsersProcedure
     .input(
       z.array(
         UserSchema.pick({ id: true }).merge(
@@ -37,7 +47,7 @@ export const users = createRouter({
       );
     }),
 
-  add: protectedProcedure
+  add: editUsersProcedure
     .input(
       z.object({
         name: z.string(),
@@ -45,7 +55,6 @@ export const users = createRouter({
         password: z.string().optional(),
         title: z.string().optional(),
         abbrv: z.string().optional(),
-        role: RoleSchema,
       }),
     )
     .mutation(async ({ input, ctx }) => {
@@ -58,12 +67,11 @@ export const users = createRouter({
             : null,
           title: input.title,
           abbrv: input.abbrv,
-          role: input.role,
         },
       });
     }),
 
-  updatePassword: protectedProcedure
+  updatePassword: editUsersProcedure
     .input(
       z.object({
         id: z.number(),
@@ -80,11 +88,77 @@ export const users = createRouter({
       });
     }),
 
-  delete: protectedProcedure
+  delete: editUsersProcedure
     .input(z.number())
     .mutation(async ({ ctx, input }) => {
       await ctx.db.user.delete({
         where: { id: input },
+      });
+    }),
+
+  listScopeOptions: editUsersProcedure
+    .input(z.enum(scopeOptions))
+    .query(async ({ ctx, input: option }) => {
+      switch (option) {
+        case "schools":
+          return ctx.db.school.findMany({
+            select: { id: true, name: true },
+          });
+        case "years":
+          return ctx.db.year.findMany({
+            select: { id: true, name: true },
+          });
+        case "classes":
+          return ctx.db.class
+            .findMany({
+              select: { id: true, identifierInYear: true },
+            })
+            .then((classes) =>
+              classes.map((cls) => ({
+                id: cls.id,
+                name: cls.identifierInYear,
+              })),
+            );
+        case "courses":
+          return ctx.db.course
+            .findMany({
+              select: { id: true, courseId: true },
+            })
+            .then((courses) =>
+              courses.map((course) => ({
+                id: course.id,
+                name: course.courseId,
+              })),
+            );
+      }
+    }),
+
+  setPermissions: editUsersProcedure
+    .input(
+      z.object({
+        userId: z.number(),
+        isSuperUser: z.boolean(),
+        permissions: z.array(
+          z.object({
+            permission: PermissionSchema,
+            scope: z.record(z.array(z.number())).nullable(),
+          }),
+        ),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.user.update({
+        where: { id: input.userId },
+        data: {
+          isSuperUser: input.isSuperUser,
+          permissions: {
+            deleteMany: {},
+            create: input.permissions.map((permission) => ({
+              permission: permission.permission,
+              scope: permission.scope ? permission.scope : undefined,
+            })),
+          },
+        },
       });
     }),
 });

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 
 import type { Year } from "@schnau/lib/src/year";
@@ -9,12 +10,18 @@ interface SelectedYearState {
 }
 
 export const useSelectedYear = create(
-  immer<SelectedYearState>((set) => ({
-    selectedYear: undefined,
-    setSelectedYear: (year) => {
-      set((state) => {
-        state.selectedYear = year;
-      });
+  persist(
+    immer<SelectedYearState>((set) => ({
+      selectedYear: undefined,
+      setSelectedYear: (year) => {
+        set((state) => {
+          state.selectedYear = year;
+        });
+      },
+    })),
+    {
+      name: "selectedYear",
+      storage: createJSONStorage(() => localStorage),
     },
-  })),
+  ),
 );

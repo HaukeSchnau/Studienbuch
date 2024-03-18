@@ -6,7 +6,7 @@ import { Button } from "~/components/form/Button";
 import { TextField } from "~/components/form/TextField";
 import { submitHandler } from "~/infrastructure/forms/submitHandler";
 import { api } from "~/infrastructure/trpc/react";
-import { setJwt } from "./serverActions/setJwt";
+import { setSessionToken } from "./serverActions/setJwt";
 
 interface LoginFormValues {
   email: string;
@@ -43,13 +43,15 @@ export const LoginForm = () => {
             onSubmit: response.error.message,
           },
           isValidating: false,
+          isPristine: true,
+          isDirty: false,
         });
 
         return;
       }
 
       const newSessionToken = response.sessionToken;
-      await setJwt(newSessionToken);
+      await setSessionToken(newSessionToken);
     },
   });
 

@@ -6,11 +6,9 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 
-import { roleMap, roles } from "@schnau/lib/src/users/user";
-
 import type { User } from "../user.type";
 import { Actions } from "./Actions";
-import { SelectCell, TextFieldCell } from "./Fields";
+import { TextFieldCell } from "./Fields";
 import { Status } from "./Status";
 
 interface Props {
@@ -21,6 +19,7 @@ interface Props {
   ) => void;
   updates: Map<number, Partial<User>>;
   onClickChangePassword: (user: User) => void;
+  onClickPermissions: (user: User) => void;
   onClickDelete: (user: User) => void;
 }
 
@@ -47,6 +46,7 @@ export const UsersTable = ({
   updateRow,
   updates,
   onClickChangePassword,
+  onClickPermissions,
   onClickDelete,
 }: Props) => {
   const [autoResetPageIndex, skipAutoResetPageIndex] = useSkipper();
@@ -109,19 +109,15 @@ export const UsersTable = ({
           />
         ),
       }),
-      column.accessor("role", {
+      column.accessor("roles", {
         id: "role",
-        header: "Rolle",
-        cell: ({ getValue, row }) => (
-          <SelectCell
-            value={getValue()}
-            values={roles}
-            updateData={(value) =>
-              handleUpdateRow(row.index, { id: row.original.id, role: value })
-            }
-            getLabel={(value) => roleMap[value]}
-            isDirty={updates.get(row.original.id)?.role !== undefined}
-          />
+        header: "Rollen",
+        cell: ({ getValue }) => (
+          <div className="w-full p-2">
+            {getValue()
+              .map((role) => role.name)
+              .join(", ")}
+          </div>
         ),
       }),
       column.display({
@@ -136,12 +132,19 @@ export const UsersTable = ({
           <Actions
             user={row.original}
             onClickChangePassword={onClickChangePassword}
+            onClickPermissions={onClickPermissions}
             onClickDelete={onClickDelete}
           />
         ),
       }),
     ],
-    [handleUpdateRow, onClickChangePassword, onClickDelete, updates],
+    [
+      handleUpdateRow,
+      onClickChangePassword,
+      onClickDelete,
+      onClickPermissions,
+      updates,
+    ],
   );
 
   const table = useReactTable({

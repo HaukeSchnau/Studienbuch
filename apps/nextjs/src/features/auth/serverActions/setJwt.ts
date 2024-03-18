@@ -7,3 +7,8 @@ export const setJwt = async (jwt: string) => {
   cookies().set("jwt", jwt);
   redirect("/admin");
 };
+
+export const setSessionToken = async (sessionToken: string) => {
+  cookies().set("session", sessionToken);
+  redirect("/admin");
+};

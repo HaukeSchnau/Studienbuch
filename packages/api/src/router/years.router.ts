@@ -4,9 +4,11 @@ import { z } from "zod";
 import { YearSchema } from "@schnau/db/prisma/zod";
 import { getMaxActiveGraduationYear } from "@schnau/lib/src/year";
 
-import { protectedProcedure } from "../procedures/protectedProcedure";
+import { permissionProcedure } from "../procedures/protectedProcedure";
 import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";
+
+const editYearsProcedure = permissionProcedure("EDIT_YEARS");
 
 export const years = createRouter({
   /**
@@ -16,7 +18,7 @@ export const years = createRouter({
     .meta({ openapi: { method: "GET", path: "/years" } })
     .input(z.void())
     .output(z.array(YearSchema.omit({ createdAt: true })))
-    .query(async ({ ctx }) => {
+    .query(({ ctx }) => {
       return ctx.db.year.findMany({
         where: {
           graduationYear: {
@@ -26,10 +28,21 @@ export const years = createRouter({
       });
     }),
 
-  list: publicProcedure.query(async ({ ctx }) => {
+  list: publicProcedure.query(({ ctx }) => {
     return ctx.db.year.findMany({
       orderBy: {
         startYear: "desc",
+      },
+      include: {
+        school: true,
+      },
+    });
+  }),
+
+  listGroupedBySchool: publicProcedure.query(({ ctx }) => {
+    return ctx.db.school.findMany({
+      include: {
+        years: true,
       },
     });
   }),
@@ -51,7 +64,7 @@ export const years = createRouter({
     return year;
   }),
 
-  add: protectedProcedure
+  add: editYearsProcedure
     .input(
       z.object({
         name: z.string(),
@@ -76,7 +89,7 @@ export const years = createRouter({
       });
     }),
 
-  update: protectedProcedure
+  update: editYearsProcedure
     .input(
       z.object({
         id: z.number(),

@@ -1,13 +1,15 @@
 import { z } from "zod";
 
 import { getCookies } from "./cookies";
-import { verifyAndDecodeJwt } from "./jwt";
 import { getSession } from "./session";
 
 export interface Session {
   user: {
+    id: number;
     name: string;
+    isSuperUser: boolean;
   } | null;
+  token: string;
 }
 
 export const getSessionFromHeaders = async (headers: Headers) => {
@@ -26,12 +28,12 @@ export const getSessionFromHeaders = async (headers: Headers) => {
       error: null,
     };
   }
-  if (jwt) {
-    return {
-      session: verifyAndDecodeJwt(jwt),
-      error: null,
-    };
-  }
+  // if (jwt) {
+  //   return {
+  //     session: verifyAndDecodeJwt(jwt),
+  //     error: null,
+  //   };
+  // }
 
   return {
     session: null,

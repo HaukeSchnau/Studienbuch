@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-import type { Session } from "@schnau/auth/src";
-import { createJwt } from "@schnau/auth/src/jwt";
+import { createSession } from "@schnau/auth/src/session";
 import { db } from "@schnau/db";
 
 import { checkPassword } from "../../../lib/src/auth/password";
@@ -59,16 +58,11 @@ export const auth = createRouter({
         };
       }
 
-      const session: Session = {
-        user,
-      };
-
-      // const newSession = await createSession(user);
-      const newJwt = createJwt(session);
+      const newSession = await createSession(user);
 
       return {
-        sessionToken: newJwt,
-        session,
+        sessionToken: newSession.token,
+        session: newSession,
         error: undefined,
       };
     }),

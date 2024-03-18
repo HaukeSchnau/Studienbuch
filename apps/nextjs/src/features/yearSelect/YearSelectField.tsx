@@ -1,12 +1,19 @@
 "use client";
 
+import type { School } from "@schnau/lib/src/schools/school";
+import type { Year } from "@schnau/lib/src/year";
+
 import { SelectField } from "~/components/form/SelectField";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { api } from "~/infrastructure/trpc/react";
 import { useSelectedYear } from "./selectedYearStore";
 
 export const YearSelectField = () => {
-  const { data: years, isPending, error } = api.years.get.useQuery();
+  const {
+    data: schools,
+    isPending,
+    error,
+  } = api.years.listGroupedBySchool.useQuery();
   const { selectedYear, setSelectedYear } = useSelectedYear();
 
   if (isPending) {
@@ -17,14 +24,17 @@ export const YearSelectField = () => {
     return <div>Error: {error.message}</div>;
   }
 
+  const groups = new Map<School, Year[]>(
+    schools.map(({ years, ...school }) => [school, years]),
+  );
+
   return (
     <SelectField
       label="Jahrgang"
-      emptyLabel="Alle Jahrgänge"
-      allowEmpty
-      options={years
-        .slice()
-        .sort((a, b) => a.graduationYear - b.graduationYear)}
+      emptyLabel="Kein Jahrgang ausgewählt"
+      groups={groups}
+      getGroupId={(school) => school.id}
+      getGroupLabel={(school) => school.name}
       valueId={selectedYear?.name}
       onChange={(year) => setSelectedYear(year)}
       getOptionLabel={(year) => `${year.name} (${year.graduationYear})`}

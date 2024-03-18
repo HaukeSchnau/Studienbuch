@@ -31,7 +31,7 @@ export const CourseList = ({ yearId }: CourseListProps) => {
   return (
     <Grid
       data={courses}
-      renderItem={(course) => <CourseCard course={course} />}
+      renderItem={(course) => <CourseCard key={course.id} course={course} />}
     />
   );
 };

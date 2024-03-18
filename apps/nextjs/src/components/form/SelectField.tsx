@@ -1,31 +1,48 @@
-interface SelectFieldProps<T> {
-  label: string;
+type SelectFieldProps<TOption, TGroup> = {
+  label?: string;
   emptyLabel: string;
   valueId?: string | number;
-  onChange: (value?: T) => void;
-  getOptionLabel: (value: T) => string;
-  getOptionId: (value: T) => string | number;
-  options: readonly T[];
+  onChange: (value?: TOption) => void;
+  getOptionLabel: (value: TOption) => string;
+  getOptionId: (value: TOption) => string | number;
   error?: string;
   allowEmpty?: boolean;
-}
+} & (
+  | {
+      options: readonly TOption[];
+      groups?: never;
+      getGroupLabel?: never;
+      getGroupId?: never;
+    }
+  | {
+      groups: Map<TGroup, readonly TOption[]>;
+      getGroupLabel: (group: TGroup) => string;
+      getGroupId: (group: TGroup) => string | number;
+      options?: never;
+    }
+);
 
 const EMPTY_VALUE = "__RESERVED_EMPTY_VALUE__";
 
-export function SelectField<T>({
+export function SelectField<TOption, TGroup = unknown>({
   label,
   emptyLabel,
   valueId,
   onChange,
-  options,
   getOptionLabel,
   getOptionId,
   error,
   allowEmpty,
-}: SelectFieldProps<T>) {
+  options,
+  groups,
+  getGroupLabel,
+  getGroupId,
+}: SelectFieldProps<TOption, TGroup>) {
+  const allOptions = options ?? Array.from(groups.values()).flat();
+
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-sm">{label}</label>
+      {label && <label className="text-sm">{label}</label>}
       <select
         className="mb-1 mt-2 w-full cursor-pointer border-b border-darkgrey bg-black-80 p-4 text-lg transition-all focus:border-blue focus:outline-none"
         value={valueId ?? ""}
@@ -33,7 +50,7 @@ export function SelectField<T>({
           onChange(
             EMPTY_VALUE === e.target.value
               ? undefined
-              : options.find(
+              : allOptions.find(
                   (option) => String(getOptionId(option)) === e.target.value,
                 ),
           )
@@ -43,11 +60,21 @@ export function SelectField<T>({
           <option value={EMPTY_VALUE}>{emptyLabel}</option>
         )}
 
-        {options.map((option) => (
-          <option key={getOptionId(option)} value={getOptionId(option)}>
-            {getOptionLabel(option)}
-          </option>
-        ))}
+        {options
+          ? options.map((option) => (
+              <option key={getOptionId(option)} value={getOptionId(option)}>
+                {getOptionLabel(option)}
+              </option>
+            ))
+          : Array.from(groups.entries()).map(([group, options]) => (
+              <optgroup key={getGroupId(group)} label={getGroupLabel(group)}>
+                {options.map((option) => (
+                  <option key={getOptionId(option)} value={getOptionId(option)}>
+                    {getOptionLabel(option)}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
       </select>
 
       {error && <div className="text-red">{error}</div>}

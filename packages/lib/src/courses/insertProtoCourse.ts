@@ -37,7 +37,6 @@ export const insertProtoCourse = async (
   const teacherValue = {
     abbrv: teacher,
     name: teacher,
-    role: "TEACHER" as const,
   };
 
   await db.course.upsert({

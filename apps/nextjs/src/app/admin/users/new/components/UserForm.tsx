@@ -3,15 +3,11 @@ import { createFormFactory } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { z } from "zod";
 
-import type { Role, User } from "@schnau/lib/src/users/user";
-import { roleMap, roles } from "@schnau/lib/src/users/user";
-
+import type { User } from "../../user.type";
 import { Button } from "~/components/form/Button";
-import { SelectField } from "~/components/form/SelectField";
 import { TextField } from "~/components/form/TextField";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { submitHandler } from "~/infrastructure/forms/submitHandler";
-import { RoleSchema } from "../../../../../../../../packages/db/prisma/zod";
 
 interface UserFormValues {
   name: string;
@@ -20,7 +16,6 @@ interface UserFormValues {
   passwordConfirmation?: string;
   title?: string;
   abbrv?: string;
-  role: Role;
 }
 
 const userSchema = z.object({
@@ -32,7 +27,6 @@ const userSchema = z.object({
     .optional(),
   title: z.string().optional(),
   abbrv: z.string().optional(),
-  role: RoleSchema,
 });
 
 type UserOutput = z.infer<typeof userSchema>;
@@ -63,7 +57,6 @@ export const UserForm = ({
       email: defaultUser?.email ?? undefined,
       title: defaultUser?.title ?? undefined,
       abbrv: defaultUser?.abbrv ?? undefined,
-      role: defaultUser?.role ?? "STUDENT",
     },
     onSubmit: async ({ value, formApi }) => {
       const parsed = userSchema.parse(value);
@@ -181,26 +174,6 @@ export const UserForm = ({
             onBlur={field.handleBlur}
             onChange={(value) => field.handleChange(value || undefined)}
             error={field.state.meta.errors.join(", ")}
-          />
-        )}
-      </Field>
-
-      <Field
-        name="role"
-        validators={{
-          onChange: userSchema.shape.role,
-        }}
-      >
-        {(field) => (
-          <SelectField
-            label="Rolle"
-            emptyLabel="Keine Rolle ausgewählt"
-            valueId={field.state.value}
-            error={field.state.meta.errors.join(", ")}
-            onChange={(value) => value && field.handleChange(value)}
-            getOptionLabel={(value) => roleMap[value]}
-            getOptionId={(value) => value}
-            options={roles}
           />
         )}
       </Field>
