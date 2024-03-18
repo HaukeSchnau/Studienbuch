@@ -33,11 +33,11 @@ export const getSession = (sessionToken: string) => {
   });
 };
 
-export const createSession = (user: { id: number }): Session => {
+export const createSession = (user: { id: number }): Promise<Session> => {
   return db.session.create({
     data: {
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30), // in 30 days
-      token: crypto.randomBytes(32).toString("base64"),
+      token: crypto.randomUUID(),
       user: {
         connect: {
           id: user.id,
