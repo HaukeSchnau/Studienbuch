@@ -5,7 +5,8 @@ import { z } from "zod";
 import type { CourseTimeWeeks } from "@schnau/lib/src/course";
 import type { ProtoCourseWithTimes } from "@schnau/lib/src/schedule/import/ProtoCourse.type";
 import { isNormalTime, parseTime } from "@schnau/lib/src/date";
-import { parseTimetableCell } from "@schnau/lib/src/schedule/import/parseTimetableCell";
+
+import { parseTimetableCell } from "./parseTimetableCell";
 
 export const parseScheduleCsv = async (
   filepath: string,
