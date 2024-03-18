@@ -33,7 +33,6 @@ export default function NewUserPage() {
               password: value.password,
               title: value.title,
               abbrv: value.abbrv,
-              role: value.role,
             });
           }}
           isPending={addUser.isPending}

@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useImmer } from "use-immer";
 
-import { formalName } from "@schnau/lib/src/users/teacher";
-
 import type { User } from "./user.type";
 import { Button } from "~/components/form/Button";
 import { Card } from "~/components/layout/Card";
@@ -12,7 +10,9 @@ import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { ModalWithData } from "~/components/layout/Modal";
 import { PageHeading } from "~/components/layout/PageHeading";
 import { api } from "~/infrastructure/trpc/react";
+import { DeleteUserModalContent } from "./components/DeleteUserModalContent";
 import { ChangePasswordModalContent } from "./components/NewPasswordModalContent";
+import { PermissionsModalContent } from "./components/PermissionsModalContent";
 import { UsersTable } from "./components/UsersTable";
 
 export default function UsersPage() {
@@ -37,6 +37,9 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
   }, [initialUsers, setUsers]);
 
   const [deleteModalUser, setDeleteModalUser] = useState<User | null>(null);
+  const [permissionsModalUser, setPermissionsModalUser] = useState<User | null>(
+    null,
+  );
   const [changePasswordModalUser, setChangePasswordModalUser] =
     useState<User | null>(null);
 
@@ -47,15 +50,10 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
     },
   });
 
-  const deleteUserMutation = api.users.delete.useMutation({
-    onSuccess: () => {
-      closeDeleteModal();
-      void utils.users.list.invalidate();
-    },
-  });
+  const { reset: resetDeleteMutation } = api.users.delete.useMutation();
 
   const closeDeleteModal = () => {
-    deleteUserMutation.reset();
+    resetDeleteMutation();
     setDeleteModalUser(null);
   };
 
@@ -103,6 +101,7 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
           updateRow={updateRow}
           updates={updates}
           onClickChangePassword={setChangePasswordModalUser}
+          onClickPermissions={setPermissionsModalUser}
           onClickDelete={setDeleteModalUser}
         />
       </Card>
@@ -121,31 +120,19 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
 
       <ModalWithData data={deleteModalUser} onClose={closeDeleteModal}>
         {(user) => (
-          <div>
-            <h2 className="text-xl font-bold text-green-text">
-              Nutzer löschen
-            </h2>
-            <p>
-              Möchtest du <strong>{formalName(user)}</strong> wirklich löschen?
-            </p>
-            {deleteUserMutation.isError && (
-              <div className="text-red">{deleteUserMutation.error.message}</div>
-            )}
-            <div className="flex justify-end gap-4 pt-8">
-              <Button variant="secondary" onClick={closeDeleteModal}>
-                Abbrechen
-              </Button>
-              <Button
-                variant="danger"
-                disabled={deleteUserMutation.isPending}
-                onClick={() => {
-                  deleteUserMutation.mutate(user.id);
-                }}
-              >
-                Löschen
-              </Button>
-            </div>
-          </div>
+          <DeleteUserModalContent user={user} onClose={closeDeleteModal} />
+        )}
+      </ModalWithData>
+
+      <ModalWithData
+        data={permissionsModalUser}
+        onClose={() => setPermissionsModalUser(null)}
+      >
+        {(user) => (
+          <PermissionsModalContent
+            user={user}
+            onClose={() => setPermissionsModalUser(null)}
+          />
         )}
       </ModalWithData>
     </div>
