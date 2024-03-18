@@ -1,4 +1,7 @@
+import type { Permission } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+
+import { findPermissionScope } from "@schnau/lib/src/auth/permissions/hasPermission";
 
 import { t } from "../trpc";
 
@@ -28,3 +31,28 @@ const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
  * @see https://trpc.io/docs/procedures
  */
 export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);
+
+export const permissionProcedure = (permission: Permission) =>
+  t.procedure.use(
+    t.middleware(async ({ ctx, next }) => {
+      const user = ctx.session?.user;
+      if (!user) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const permissionScope = await findPermissionScope(user, permission);
+      if (!permissionScope) {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+
+      return next({
+        ctx: {
+          session: {
+            ...ctx.session,
+            user,
+          },
+          permissionScope,
+        },
+      });
+    }),
+  );
