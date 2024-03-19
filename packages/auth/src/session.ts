@@ -1,29 +1,11 @@
 import crypto from "crypto";
-import { z } from "zod";
 
 import { db } from "@schnau/db";
 
 import type { Session } from "./index";
 
-export const sessionSchema = z.object({
-  token: z.string(),
-  expires: z.coerce.date(),
-  user: z
-    .object({
-      id: z.number(),
-      email: z.string().nullable(),
-      name: z.string(),
-    })
-    .nullable(),
-});
-
-// export type Session = z.infer<typeof sessionSchema>;
-// export type AuthenticatedSession = Omit<Session, "user"> & {
-//   user: NonNullable<Session["user"]>;
-// };
-
-export const getSession = (sessionToken: string) => {
-  return db.session.findFirst({
+export const getSession = async (sessionToken: string) => {
+  const session = await db.session.findFirst({
     where: {
       token: sessionToken,
     },
@@ -31,6 +13,21 @@ export const getSession = (sessionToken: string) => {
       user: true,
     },
   });
+
+  if (!session) {
+    return null;
+  }
+
+  if (session.expires < new Date()) {
+    await db.session.delete({
+      where: {
+        token: sessionToken,
+      },
+    });
+    return null;
+  }
+
+  return session;
 };
 
 export const createSession = (user: { id: number }): Promise<Session> => {

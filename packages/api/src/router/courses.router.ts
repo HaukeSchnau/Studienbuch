@@ -69,6 +69,7 @@ export const courses = createRouter({
     )
     .mutation(async ({ ctx: { db }, input }) => {
       const { yearId, idInYear, courses } = input;
+      console.log(yearId);
       const dbYear = await db.year.findUnique({ where: { id: yearId } });
       if (!dbYear) {
         throw new TRPCError({

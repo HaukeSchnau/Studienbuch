@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   title: "Anmelden | Digitales Studienbuch",
 };
 
-export default function LoginPage() {
-  if (isLoggedIn()) {
+export default async function LoginPage() {
+  if (await isLoggedIn()) {
     return redirect("/");
   }
 

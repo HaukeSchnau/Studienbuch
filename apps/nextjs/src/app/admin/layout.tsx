@@ -14,8 +14,8 @@ interface Props {
   children: ReactNode;
 }
 
-export default function AdminLayout({ children }: Props) {
-  if (!isLoggedIn()) {
+export default async function AdminLayout({ children }: Props) {
+  if (!(await isLoggedIn())) {
     return redirect("/login");
   }
 

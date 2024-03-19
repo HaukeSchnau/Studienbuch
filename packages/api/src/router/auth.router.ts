@@ -4,6 +4,7 @@ import { checkPassword } from "@schnau/auth/src/password";
 import { createSession } from "@schnau/auth/src/session";
 import { db } from "@schnau/db";
 
+import { protectedProcedure } from "../procedures/protectedProcedure";
 import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";
 
@@ -66,4 +67,12 @@ export const auth = createRouter({
         error: undefined,
       };
     }),
+
+  logout: protectedProcedure.mutation(async ({ ctx }) => {
+    await db.session.delete({
+      where: {
+        token: ctx.session.token,
+      },
+    });
+  }),
 });

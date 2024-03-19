@@ -15,6 +15,7 @@ export default function NewYearPage() {
     onSuccess: () => {
       void utils.years.get.invalidate();
       void utils.years.list.invalidate();
+      void utils.years.listGroupedBySchool.invalidate();
       router.push("/admin/years");
     },
   });
