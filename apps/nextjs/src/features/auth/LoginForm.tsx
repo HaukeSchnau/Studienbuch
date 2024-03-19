@@ -6,7 +6,7 @@ import { Button } from "~/components/form/Button";
 import { TextField } from "~/components/form/TextField";
 import { submitHandler } from "~/infrastructure/forms/submitHandler";
 import { api } from "~/infrastructure/trpc/react";
-import { setSessionToken } from "./serverActions/setJwt";
+import { setSessionToken } from "./serverActions/setSessionToken";
 
 interface LoginFormValues {
   email: string;

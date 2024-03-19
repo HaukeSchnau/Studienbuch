@@ -13,14 +13,7 @@ export interface Session {
 }
 
 export const getSessionFromHeaders = async (headers: Headers) => {
-  const { sessionToken, jwt } = extractTokens(headers);
-
-  if (sessionToken && jwt) {
-    return {
-      session: null,
-      error: "BOTH_SESSION_AND_JWT_PRESENT" as const,
-    };
-  }
+  const { sessionToken } = extractTokens(headers);
 
   if (sessionToken) {
     return {
@@ -28,12 +21,6 @@ export const getSessionFromHeaders = async (headers: Headers) => {
       error: null,
     };
   }
-  // if (jwt) {
-  //   return {
-  //     session: verifyAndDecodeJwt(jwt),
-  //     error: null,
-  //   };
-  // }
 
   return {
     session: null,
@@ -43,14 +30,11 @@ export const getSessionFromHeaders = async (headers: Headers) => {
 
 const cookieSchema = z.object({
   session: z.string().optional(),
-  jwt: z.string().optional(),
 });
 
 const extractTokens = (headers: Headers) => {
   return {
     sessionToken:
       headers.get("x-session") ?? getCookies(headers, cookieSchema)?.session,
-    jwt:
-      headers.get("authentication") ?? getCookies(headers, cookieSchema)?.jwt,
   };
 };
