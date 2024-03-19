@@ -17,7 +17,9 @@ const fontSans = Nunito({
 const materialIcons = localFont({
   src: "./MaterialSymbolsRounded.woff2",
   variable: "--font-material-icons",
-  display: "auto",
+  display: "block",
+  adjustFontFallback: false,
+  fallback: [],
 });
 
 export const metadata: Metadata = {
