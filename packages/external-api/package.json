@@ -30,7 +30,6 @@
   "prettier": "@schnau/prettier-config",
   "dependencies": {
     "@linear/sdk": "^18.0.0",
-    "server-only": "^0.0.1",
     "zod": "^3.22.4"
   }
 }

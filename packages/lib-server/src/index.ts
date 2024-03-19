@@ -1,5 +1,3 @@
-import "server-only";
-
 export * from "./substitutions";
 export * from "./infrastructure";
 export * from "./schedule";
