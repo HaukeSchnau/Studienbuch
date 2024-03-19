@@ -1,4 +1,5 @@
 import { fileURLToPath } from "url";
+import analyzer from "@next/bundle-analyzer";
 import _jiti from "jiti";
 
 const jiti = _jiti(fileURLToPath(import.meta.url));
@@ -17,8 +18,6 @@ const config = {
   /** We already do linting and typechecking as separate tasks in CI */
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
-
-  output: "standalone",
 };
 
-export default config;
+export default analyzer({ enabled: process.env.ANALYZE === "true" })(config);
