@@ -45,12 +45,14 @@ export const createTRPCContext = async (opts: {
 
   const source = opts.headers.get("x-trpc-source") ?? "unknown";
 
-  console.log(
-    ">>> tRPC Request from",
-    source,
-    "by",
-    session?.user?.name ?? "Anonymous",
-  );
+  if (process.env.NODE_ENV === "development") {
+    console.log(
+      ">>> tRPC Request from",
+      source,
+      "by",
+      session?.user?.name ?? "Anonymous",
+    );
+  }
 
   return {
     session,
