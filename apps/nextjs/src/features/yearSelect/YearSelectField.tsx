@@ -24,7 +24,10 @@ export const YearSelectField = () => {
   }
 
   const groups = new Map<School, Year[]>(
-    schools.map(({ years, ...school }) => [school, years]),
+    schools.map(({ years, ...school }) => [
+      school,
+      years.sort((a, b) => a.graduationYear - b.graduationYear),
+    ]),
   );
 
   return (
