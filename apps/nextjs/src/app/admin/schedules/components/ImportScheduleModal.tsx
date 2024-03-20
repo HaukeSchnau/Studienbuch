@@ -18,7 +18,6 @@ interface Props {
 }
 
 export const ImportScheduleModal = ({ isOpen, onClose, year }: Props) => {
-  console.log(year);
   const {
     mutate: importSchedule,
     isPending,
