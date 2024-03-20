@@ -42,7 +42,13 @@ export const years = createRouter({
   listGroupedBySchool: publicProcedure.query(({ ctx }) => {
     return ctx.db.school.findMany({
       include: {
-        years: true,
+        years: {
+          where: {
+            graduationYear: {
+              gte: getMaxActiveGraduationYear(),
+            },
+          },
+        },
       },
     });
   }),
