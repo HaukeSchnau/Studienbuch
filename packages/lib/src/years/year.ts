@@ -17,8 +17,8 @@ export const isYearActive = (year: Pick<Year, "graduationYear">) => {
 export const getCurrentYearNum = (year: Pick<Year, "startYear">) => {
   const today = new Date();
   if (today.getMonth() >= 8) {
-    return today.getFullYear() - year.startYear;
+    return today.getFullYear() - year.startYear + 5;
   }
 
-  return today.getFullYear() - year.startYear - 1;
+  return today.getFullYear() - year.startYear - 1 + 5;
 };
