@@ -1,15 +1,16 @@
-import type { ChangeEvent } from "react";
-import { useMemo } from "react";
+import { useForm } from "@tanstack/react-form";
+import { zodValidator } from "@tanstack/zod-form-adapter";
+import { z } from "zod";
 
-import type { Course, Timetable, Year } from "@schnau/lib";
-import { buildTimetable } from "@schnau/lib";
+import type { Class, ProtoCourseWithTimes, Year } from "@schnau/lib";
+import { formatClassName } from "@schnau/lib";
 
 import { Button } from "~/components/form/Button";
-import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
+import { SelectField } from "~/components/form/SelectField";
 import { Modal } from "~/components/layout/Modal";
-import { TimetableView } from "~/features/timetable/TimetableView";
+import { submitHandler } from "~/infrastructure/forms/submitHandler";
 import { api } from "~/infrastructure/trpc/react";
-import { useScheduleImportMutation } from "../queries";
+import { SchedulePdfField } from "./SchedulePdfField";
 
 interface Props {
   isOpen: boolean;
@@ -17,22 +18,22 @@ interface Props {
   year: Year;
 }
 
-export const ImportScheduleModal = ({ isOpen, onClose, year }: Props) => {
-  const {
-    mutate: importSchedule,
-    isPending,
-    isError,
-    error,
-    data: protoCourses,
-    reset,
-  } = useScheduleImportMutation();
+interface ImportFormValues {
+  class?: Class;
+  protoCourses: ProtoCourseWithTimes[];
+}
 
+const importFormSchema = z.object({
+  class: z.object({ id: z.number() }),
+});
+
+export const ImportScheduleModal = ({ isOpen, onClose, year }: Props) => {
   const utils = api.useUtils();
   const {
     mutate: insertCourses,
-    isPending: isInsertPending,
-    isError: isInsertError,
-    error: insertError,
+    isPending,
+    isError,
+    error,
   } = api.courses.addCourses.useMutation({
     onSuccess: async () => {
       await utils.courses.list.invalidate({ yearId: year.id });
@@ -40,70 +41,82 @@ export const ImportScheduleModal = ({ isOpen, onClose, year }: Props) => {
     },
   });
 
-  const timetable = useMemo<Timetable | undefined>(() => {
-    if (!protoCourses) return undefined;
+  const { data: classes } = api.classes.list.useQuery({ yearId: year.id });
 
-    const courses: Course[] = protoCourses.map((protoCourse) => ({
-      ...protoCourse,
-      id: performance.now(),
-      courseId: protoCourse.normalizedCourseId,
-      name: protoCourse.guessedSubject,
-      teacher: {
-        id: performance.now(),
-        name: protoCourse.teacher,
-        title: "",
-      },
-    }));
+  const { Field, handleSubmit, Subscribe } = useForm<
+    ImportFormValues,
+    typeof zodValidator
+  >({
+    defaultValues: {
+      protoCourses: [],
+    },
+    validatorAdapter: zodValidator,
+    validators: {
+      onChange: importFormSchema,
+    },
+    onSubmit: async ({ value }) => {
+      const { class: clazz } = importFormSchema.parse(value);
 
-    return buildTimetable(courses);
-  }, [protoCourses]);
-
-  const onFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      importSchedule({ file });
-    } else {
-      reset();
-    }
-  };
+      insertCourses({
+        courses: value.protoCourses,
+        yearId: year.id,
+        classId: clazz.id,
+      });
+    },
+  });
 
   return (
     <Modal open={isOpen} onClose={onClose}>
-      <div className="flex flex-col gap-4 p-4">
+      <form
+        className="flex flex-col gap-4 p-4"
+        onSubmit={submitHandler(handleSubmit)}
+      >
         <h2 className="text-2xl font-bold">Stundenplan importieren</h2>
-        <input type="file" accept=".pdf" onChange={onFileChange} />
+        <Field name="protoCourses">
+          {(field) => (
+            <SchedulePdfField
+              protoCourses={field.getValue()}
+              onChange={field.handleChange}
+            />
+          )}
+        </Field>
 
-        {isPending ? (
-          <LoadingIndicator />
-        ) : isError ? (
-          <p>{error?.message}</p>
-        ) : timetable ? (
-          <TimetableView timetable={timetable} />
-        ) : null}
+        <Field name="class">
+          {(field) =>
+            classes && (
+              <SelectField
+                label="Klasse"
+                options={classes}
+                emptyLabel="Klasse auswählen"
+                getOptionId={(option) => option.id}
+                getOptionLabel={(option) => formatClassName(option, year)}
+                onChange={field.handleChange}
+                valueId={field.getValue()?.id}
+              />
+            )
+          }
+        </Field>
 
         <div className="flex gap-4 self-end">
           <Button variant="secondary" onClick={onClose}>
             Abbrechen
           </Button>
-          <Button
-            onClick={
-              isPending || isError || !protoCourses || isInsertPending
-                ? undefined
-                : () => {
-                    insertCourses({
-                      courses: protoCourses,
-                      idInYear: "TestKlasse",
-                      yearId: year.id,
-                    });
-                  }
-            }
-          >
-            Importieren
-          </Button>
+          <Subscribe selector={(form) => !!form.errors.length}>
+            {(isDisabled) => (
+              <Button disabled={isDisabled || isPending} type="submit">
+                Importieren
+              </Button>
+            )}
+          </Subscribe>
         </div>
 
-        {isInsertError && <p className="text-red">{insertError.message}</p>}
-      </div>
+        <Subscribe selector={(form) => form.errors}>
+          {(errors) =>
+            !!errors.length && <p className="text-red">{errors.join(", ")}</p>
+          }
+        </Subscribe>
+        {isError && <p className="text-red">{error.message}</p>}
+      </form>
     </Modal>
   );
 };

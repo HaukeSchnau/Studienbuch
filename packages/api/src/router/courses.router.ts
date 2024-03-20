@@ -47,7 +47,7 @@ export const courses = createRouter({
     .input(
       z.object({
         yearId: z.number(),
-        idInYear: z.string(),
+        classId: z.number(),
         courses: z.array(
           z.object({
             teacher: z.string(),
@@ -68,8 +68,10 @@ export const courses = createRouter({
       }),
     )
     .mutation(async ({ ctx: { db }, input }) => {
-      const { yearId, idInYear, courses } = input;
-      const dbYear = await db.year.findUnique({ where: { id: yearId } });
+      const { yearId, classId, courses } = input;
+      const dbYear = await db.year.findUnique({
+        where: { id: yearId },
+      });
       if (!dbYear) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -77,23 +79,17 @@ export const courses = createRouter({
         });
       }
 
-      const dbClass = await db.class.upsert({
+      const dbClass = await db.class.findUnique({
         where: {
-          classIdentifier: {
-            identifierInYear: idInYear,
-            yearId: dbYear.id,
-          },
+          id: classId,
         },
-        create: {
-          identifierInYear: idInYear,
-          year: {
-            connect: {
-              id: dbYear.id,
-            },
-          },
-        },
-        update: {},
       });
+      if (!dbClass) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Class not found",
+        });
+      }
 
       for (const course of courses) {
         await insertProtoCourse(db, dbYear, dbClass, course);
