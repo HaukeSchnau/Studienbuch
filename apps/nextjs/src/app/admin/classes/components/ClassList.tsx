@@ -1,14 +1,17 @@
+import type { Year } from "@schnau/lib";
+import { formatClassName } from "@schnau/lib";
+
 import { Card, CardHeading } from "~/components/layout/Card";
 import { Grid } from "~/components/layout/Grid";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { api } from "~/infrastructure/trpc/react";
 
 interface Props {
-  yearId: number;
+  year: Year;
 }
 
-export const ClassList = ({ yearId }: Props) => {
-  const classes = api.classes.list.useQuery({ yearId });
+export const ClassList = ({ year }: Props) => {
+  const classes = api.classes.list.useQuery({ yearId: year.id });
 
   if (classes.status === "pending") {
     return <LoadingIndicator />;
@@ -23,7 +26,7 @@ export const ClassList = ({ yearId }: Props) => {
       data={classes.data}
       renderItem={(clazz) => (
         <Card key={clazz.id}>
-          <CardHeading>{clazz.identifierInYear}</CardHeading>
+          <CardHeading>{formatClassName(clazz, year)}</CardHeading>
           <p>{clazz.courses.length} Kurse</p>
         </Card>
       )}

@@ -10,6 +10,15 @@ export const getMaxActiveGraduationYear = () => {
   return today.getMonth() >= 8 ? today.getFullYear() - 1 : today.getFullYear();
 };
 
-export const isYearActive = (year: Year) => {
+export const isYearActive = (year: Pick<Year, "graduationYear">) => {
   return year.graduationYear >= getMaxActiveGraduationYear();
+};
+
+export const getCurrentYearNum = (year: Pick<Year, "startYear">) => {
+  const today = new Date();
+  if (today.getMonth() >= 8) {
+    return today.getFullYear() - year.startYear;
+  }
+
+  return today.getFullYear() - year.startYear - 1;
 };
