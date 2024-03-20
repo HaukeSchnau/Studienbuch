@@ -6,9 +6,14 @@ export const formatClassName = (
   clazz: Pick<Class, "identifierInYear">,
   year: Pick<Year, "name" | "startYear" | "graduationYear">,
 ) => {
-  if (!isYearActive(year)) {
-    return `${year.name} ${clazz.identifierInYear}`;
+  if (!clazz.identifierInYear) {
+    return year.name;
   }
+
+  if (!isYearActive(year)) {
+    return `${year.name} ${clazz.identifierInYear}`.trim();
+  }
+
   const currentYear = getCurrentYearNum(year);
   return `${currentYear}.${clazz.identifierInYear}`;
 };
