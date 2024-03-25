@@ -30,8 +30,8 @@ class LicenseRenewPage extends HookWidget {
         throw Exception("License key is null after license renew.");
       }
 
-      await apiInstance.mutationLicenseActivate(
-          MutationLicenseActivateRequest(licenseKey: newLicenseKey));
+      await apiInstance
+          .licenseActivate(LicenseActivateRequest(licenseKey: newLicenseKey));
 
       await db.update(db.users).write(UsersCompanion(
             licenseKey: Value(newLicenseKey),

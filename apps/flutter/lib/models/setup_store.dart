@@ -13,11 +13,11 @@ part 'setup_store.g.dart';
 class SetupStore = _SetupStoreBase with _$SetupStore;
 
 const _weeksMap = {
-  QueryClassesGet200ResponseInnerCoursesInnerTimesInnerWeeksEnum.BOTH:
+  ClassesList200ResponseInnerCoursesInnerTimesInnerWeeksEnum.BOTH:
       CourseTimeWeek.both,
-  QueryClassesGet200ResponseInnerCoursesInnerTimesInnerWeeksEnum.EVEN:
+  ClassesList200ResponseInnerCoursesInnerTimesInnerWeeksEnum.EVEN:
       CourseTimeWeek.even,
-  QueryClassesGet200ResponseInnerCoursesInnerTimesInnerWeeksEnum.ODD:
+  ClassesList200ResponseInnerCoursesInnerTimesInnerWeeksEnum.ODD:
       CourseTimeWeek.odd,
 };
 
@@ -34,9 +34,9 @@ extension YearExtension on ApiYear {
   }
 }
 
-typedef ApiYear = QueryYearsGet200ResponseInner;
-typedef ApiClass = QueryClassesGet200ResponseInner;
-typedef ApiCourse = QueryCoursesGet200ResponseInner;
+typedef ApiYear = YearsGet200ResponseInner;
+typedef ApiClass = ClassesList200ResponseInner;
+typedef ApiCourse = CoursesList200ResponseInner;
 
 abstract class _SetupStoreBase with Store {
   @observable

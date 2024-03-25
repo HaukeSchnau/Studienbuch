@@ -85,7 +85,7 @@ class YearSelector extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final years = useNetworkResult(
-        () => apiInstance.queryYearsGet(),
+        () => apiInstance.yearsGet(),
         (error) => throw UserException(
             "Jahrgänge konnten nicht geladen werden", error))
       ?..sort((a, b) => -b.yearNumber.compareTo(a.yearNumber));

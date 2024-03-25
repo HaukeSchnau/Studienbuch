@@ -8,13 +8,12 @@ enum SubstitutionType {
 }
 
 final typeMap = {
-  QuerySubstitutionsGet200ResponseInnerTypeEnum.BETREUUNG:
+  SubstitutionsGet200ResponseInnerTypeEnum.BETREUUNG:
       SubstitutionType.betreuung,
-  QuerySubstitutionsGet200ResponseInnerTypeEnum.ENTFALL:
-      SubstitutionType.entfall,
-  QuerySubstitutionsGet200ResponseInnerTypeEnum.FREISETZUNG:
+  SubstitutionsGet200ResponseInnerTypeEnum.ENTFALL: SubstitutionType.entfall,
+  SubstitutionsGet200ResponseInnerTypeEnum.FREISETZUNG:
       SubstitutionType.freisetzung,
-  QuerySubstitutionsGet200ResponseInnerTypeEnum.VERTRETUNG:
+  SubstitutionsGet200ResponseInnerTypeEnum.VERTRETUNG:
       SubstitutionType.vertretung,
 };
 

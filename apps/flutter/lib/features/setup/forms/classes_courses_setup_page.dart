@@ -11,8 +11,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:mobx/mobx.dart';
 import 'package:provider/provider.dart';
 
-typedef Class = QueryClassesGet200ResponseInner;
-typedef Course = QueryCoursesGet200ResponseInner;
+typedef Class = ClassesList200ResponseInner;
+typedef Course = CoursesList200ResponseInner;
 
 Map<String, List<Course>> groupCoursesByName(List<Course> courses) {
   final groupedCourses = <String, List<Course>>{};
@@ -49,7 +49,7 @@ class ClassesCoursesSetupPage extends HookWidget {
 }
 
 class ClassesCoursesChooserPage extends HookWidget {
-  final QueryYearsGet200ResponseInner year;
+  final YearsGet200ResponseInner year;
   final void Function(
     Class selectedClass,
     List<Course> selectedCourses,
@@ -61,11 +61,11 @@ class ClassesCoursesChooserPage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final classesData = useNetworkResult(
-        () => apiInstance.queryClassesGet(year.id),
+        () => apiInstance.classesList(year.id),
         (e) => throw UserException("Klassen konnten nicht geladen werden", e),
         [year.id]);
     final coursesData = useNetworkResult(
-        () => apiInstance.queryCoursesGet(year.id),
+        () => apiInstance.coursesList(year.id),
         (e) => throw UserException("Kurse konnten nicht geladen werden", e),
         [year.id]);
 

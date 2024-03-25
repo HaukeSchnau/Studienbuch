@@ -27,8 +27,8 @@ class WelcomePage extends HookWidget {
 
     Future<void> finishFlow() async {
       final store = storeState.value;
-      await apiInstance.mutationLicenseActivate(
-          MutationLicenseActivateRequest(licenseKey: store.licenseKey!));
+      await apiInstance.licenseActivate(
+          LicenseActivateRequest(licenseKey: store.licenseKey!));
 
       await store.saveToDatabase();
 

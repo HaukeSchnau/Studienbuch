@@ -65,7 +65,7 @@ class LicenseForm extends HookWidget {
 
       final licenseKey = licenseController.text;
       final licenseStatus = await apiInstance
-          .queryLicenseCheck(licenseKey)
+          .licenseCheck(licenseKey)
           .then((value) => value?.replaceAll("\"", ""))
           .catchError((error) {
         loading.value = false;

@@ -39,8 +39,7 @@ void useNotificationSetup() {
       return;
     }
 
-    await apiInstance
-        .mutationSubscriptionsSubscribe(MutationSubscriptionsSubscribeRequest(
+    await apiInstance.subscriptionsSubscribe(SubscriptionsSubscribeRequest(
       messagingToken: token,
       courses: courses.map((course) => course.id).toList(),
     ));

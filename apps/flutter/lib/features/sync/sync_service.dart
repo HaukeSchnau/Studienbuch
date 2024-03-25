@@ -43,10 +43,10 @@ Future<void> syncTimetableData() async {
   }
 }
 
-Future<QuerySync200Response?> getSyncResult(DateTime? lastSync) async {
+Future<Sync200Response?> getSyncResult(DateTime? lastSync) async {
   final [courseIds, classIds, yearIds, teacherIds] = await getRelevantIds();
 
-  return apiInstance.querySync(QuerySyncRequest(
+  return apiInstance.callSync(SyncRequest(
       courseIds: courseIds,
       classIds: classIds,
       yearIds: yearIds,
@@ -71,7 +71,7 @@ Future<List<List<int>>> getRelevantIds() {
   ]);
 }
 
-Future<void> applySyncResult(QuerySync200Response? syncResult) async {
+Future<void> applySyncResult(Sync200Response? syncResult) async {
   if (syncResult == null) {
     Sentry.captureException(Exception("Sync result was null!"));
     return;
@@ -135,10 +135,10 @@ Future<void> applySyncResult(QuerySync200Response? syncResult) async {
 }
 
 const _weeksMap = {
-  QueryClassesGet200ResponseInnerCoursesInnerTimesInnerWeeksEnum.BOTH:
+  ClassesList200ResponseInnerCoursesInnerTimesInnerWeeksEnum.BOTH:
       CourseTimeWeek.both,
-  QueryClassesGet200ResponseInnerCoursesInnerTimesInnerWeeksEnum.EVEN:
+  ClassesList200ResponseInnerCoursesInnerTimesInnerWeeksEnum.EVEN:
       CourseTimeWeek.even,
-  QueryClassesGet200ResponseInnerCoursesInnerTimesInnerWeeksEnum.ODD:
+  ClassesList200ResponseInnerCoursesInnerTimesInnerWeeksEnum.ODD:
       CourseTimeWeek.odd,
 };

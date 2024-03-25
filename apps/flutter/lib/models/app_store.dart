@@ -31,7 +31,7 @@ abstract class _AppStore with Store {
     });
   }
 
-  List<QuerySubstitutionsGet200ResponseInner>? _substitutionsResponse;
+  List<SubstitutionsGet200ResponseInner>? _substitutionsResponse;
 
   //// AGENDA ////
 
@@ -44,10 +44,9 @@ abstract class _AppStore with Store {
 
     final date = agenda.date.add(agenda.date.timeZoneOffset).toUtc();
     _substitutionsResponse ??= await apiInstance
-        .querySubstitutionsGet(date: date)
+        .substitutionsGet(date: date)
         .catchError((e, stacktrace) {
       this.agenda = agenda;
-      print(stacktrace);
       throw UserException("Vertretungen konnten nicht geladen werden", e);
     });
 

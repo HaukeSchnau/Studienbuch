@@ -6,7 +6,7 @@ import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-typedef User = QueryCoursesGet200ResponseInnerTeacher;
+typedef User = CoursesList200ResponseInnerTeacher;
 
 extension UserExtension on User {
   String get lastName => name.split(" ").last;

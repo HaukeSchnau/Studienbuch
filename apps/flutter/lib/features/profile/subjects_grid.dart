@@ -1,7 +1,8 @@
 import 'package:class_mate/database/database.dart';
 import 'package:class_mate/features/grades/use_grades.dart';
 import 'package:class_mate/business_domain/user/use_user.dart';
-import 'package:class_mate/features/setup/forms/classes_courses_setup_page.dart' hide Course;
+import 'package:class_mate/features/setup/forms/classes_courses_setup_page.dart'
+    hide Course;
 import 'package:class_mate/features/setup/helpers/setup_page_layout.dart';
 import 'package:class_mate/infrastructure/util/number_util.dart';
 import 'package:class_mate/models/course.dart';
@@ -35,7 +36,8 @@ class SubjectsGrid extends HookWidget {
         MaterialPageRoute(
           builder: (context) => SetupPageLayout(
               page: ClassesCoursesChooserPage(
-                  year: QueryYearsGet200ResponseInner(
+                  year: YearsGet200ResponseInner(
+                    schoolId: 1,
                     graduationYear: year.graduationYear,
                     id: year.id,
                     name: year.name,
@@ -65,8 +67,7 @@ class SubjectsGrid extends HookWidget {
             children: [
               const Text(
                 "Du hast noch keine Kurse gewählt.",
-                style: TextStyle(fontSize: 16
-                ),
+                style: TextStyle(fontSize: 16),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(
