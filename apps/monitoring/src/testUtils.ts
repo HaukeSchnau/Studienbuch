@@ -4,7 +4,7 @@ import superjson from "superjson";
 
 import type { AppRouter } from "@schnau/api";
 
-const BASE_URL = "https://studienbuch.haukeschnau.de";
+const BASE_URL = "https://studienbuch.app";
 
 export const createClient = () =>
   createTRPCProxyClient<AppRouter>({

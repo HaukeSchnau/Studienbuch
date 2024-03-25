@@ -47,6 +47,7 @@ abstract class _AppStore with Store {
         .querySubstitutionsGet(date: date)
         .catchError((e, stacktrace) {
       this.agenda = agenda;
+      print(stacktrace);
       throw UserException("Vertretungen konnten nicht geladen werden", e);
     });
 

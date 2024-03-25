@@ -74,8 +74,8 @@ class SetupPageLayout extends HookWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           GestureDetector(
-                            onTap: () => launchUrl(Uri.parse(
-                                "https://studienbuch.haukeschnau.de/impressum")),
+                            onTap: () => launchUrl(
+                                Uri.parse("https://studienbuch.app/impressum")),
                             child: const Text(
                               "Impressum",
                               style: _linkStyle,
@@ -86,7 +86,7 @@ class SetupPageLayout extends HookWidget {
                           ),
                           GestureDetector(
                             onTap: () => launchUrl(Uri.parse(
-                                "https://studienbuch.haukeschnau.de/datenschutz")),
+                                "https://studienbuch.app/datenschutz")),
                             child: const Text(
                               "Datenschutz",
                               style: _linkStyle,

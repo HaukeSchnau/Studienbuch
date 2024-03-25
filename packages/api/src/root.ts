@@ -31,7 +31,7 @@ export const openApiDocument = generateOpenApiDocument(appRouter, {
   baseUrl:
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000/api"
-      : "https://studienbuch.haukeschnau.de/api",
+      : "https://studienbuch.app/api",
 });
 
 // export type definition of API
