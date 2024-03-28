@@ -26,17 +26,18 @@ class EditProfilePage extends HookWidget {
     }
 
     Widget? nextPageCallback(Widget? currentPage) {
-      switch (currentPage.runtimeType) {
-        case ClassesCoursesSetupPage _:
-          finishFlow();
-          return null;
-        case ProfileSetupPage _:
-          return ClassesCoursesSetupPage(store: storeState.value);
-        default:
-          return ProfileSetupPage(
-            store: storeState.value,
-          );
+      if (currentPage is ProfileSetupPage) {
+        return ClassesCoursesSetupPage(store: storeState.value);
       }
+
+      if (currentPage is ClassesCoursesSetupPage) {
+        finishFlow();
+        return null;
+      }
+
+      return ProfileSetupPage(
+        store: storeState.value,
+      );
     }
 
     return SetupFlow(nextPageCallback: nextPageCallback);

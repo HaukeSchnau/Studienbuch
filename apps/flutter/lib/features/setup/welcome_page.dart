@@ -37,21 +37,24 @@ class WelcomePage extends HookWidget {
     }
 
     Widget? nextPageCallback(Widget? currentPage) {
-      switch (currentPage.runtimeType) {
-        case ClassesCoursesSetupPage _:
-          finishFlow();
-          return null;
-        case ProfileSetupPage _:
-          return ClassesCoursesSetupPage(store: storeState.value);
-        case LicenseForm _:
-          return ProfileSetupPage(
-            store: storeState.value,
-          );
-        default:
-          return LicenseForm(
-            store: storeState.value,
-          );
+      if (currentPage is LicenseForm) {
+        return ProfileSetupPage(
+          store: storeState.value,
+        );
       }
+
+      if (currentPage is ProfileSetupPage) {
+        return ClassesCoursesSetupPage(store: storeState.value);
+      }
+
+      if (currentPage is ClassesCoursesSetupPage) {
+        finishFlow();
+        return null;
+      }
+
+      return LicenseForm(
+        store: storeState.value,
+      );
     }
 
     return SetupFlow(nextPageCallback: nextPageCallback);

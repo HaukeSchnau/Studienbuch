@@ -40,15 +40,14 @@ class LicenseRenewPage extends HookWidget {
     }
 
     Widget? nextPageCallback(Widget? currentPage) {
-      switch (currentPage.runtimeType) {
-        case LicenseForm _:
-          finishFlow();
-          return null;
-        default:
-          return LicenseForm(
-            store: setupStore.value,
-          );
+      if (currentPage is LicenseForm) {
+        finishFlow();
+        return null;
       }
+
+      return LicenseForm(
+        store: setupStore.value,
+      );
     }
 
     return SetupFlow(nextPageCallback: nextPageCallback);
