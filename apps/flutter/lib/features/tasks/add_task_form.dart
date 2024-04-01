@@ -80,6 +80,7 @@ class AddTaskForm extends HookWidget {
                 keyboardType: TextInputType.multiline,
                 minLines: 4,
                 maxLines: null,
+                maxLength: 500,
                 decoration: InputDecoration(
                   labelText: "Beschreibung",
                   alignLabelWithHint: true,
