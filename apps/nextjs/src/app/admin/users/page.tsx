@@ -23,7 +23,7 @@ export default function UsersPage() {
   ) : isError ? (
     <div>{error.message}</div>
   ) : (
-    <UsersPageContent initialUsers={users} />
+    <UsersPageContent initialUsers={users as any} /> // TODO: Fix type
   );
 }
 
