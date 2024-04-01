@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import type { Session } from "@schnau/auth/src";
 import { checkPassword } from "@schnau/auth/src/password";
 import { createSession } from "@schnau/auth/src/session";
 import { db } from "@schnau/db";
@@ -21,65 +20,53 @@ export const auth = createRouter({
         password: z.string(),
       }),
     )
-    .mutation(
-      async ({
-        input: { email, password },
-      }): Promise<
-        | {
-            error: { field: "email" | "password"; message: string };
-          }
-        | {
-            sessionToken: string;
-            session: Session;
-          }
-      > => {
-        const user = await db.user.findFirst({
-          where: {
-            email: email.toLowerCase(),
-          },
-        });
+    .mutation(async ({ input: { email, password } }) => {
+      const user = await db.user.findFirst({
+        where: {
+          email: email.toLowerCase(),
+        },
+      });
 
-        if (!user) {
-          return {
-            error: {
-              field: "email" as const,
-              message: "Kein Nutzer mit dieser E-Mail gefunden",
-            },
-            sessionToken: undefined,
-          };
-        }
-
-        if (!user.passwordHash) {
-          return {
-            error: {
-              field: "email" as const,
-              message:
-                "Für diesen Nutzer wurde kein Passwort festgelegt. Bitte kontaktiere den Support.",
-            },
-            sessionToken: undefined,
-          };
-        }
-
-        const passwordMatch = await checkPassword(password, user.passwordHash);
-        if (!passwordMatch) {
-          return {
-            error: {
-              field: "password" as const,
-              message: "Falsches Passwort",
-            },
-            sessionToken: undefined,
-          };
-        }
-
-        const newSession = await createSession(user);
-
+      if (!user) {
         return {
-          sessionToken: newSession.token,
-          session: newSession,
-          error: undefined,
+          error: {
+            field: "email" as const,
+            message: "Kein Nutzer mit dieser E-Mail gefunden",
+          },
+          sessionToken: undefined,
         };
-      },
-    ),
+      }
+
+      if (!user.passwordHash) {
+        return {
+          error: {
+            field: "email" as const,
+            message:
+              "Für diesen Nutzer wurde kein Passwort festgelegt. Bitte kontaktiere den Support.",
+          },
+          sessionToken: undefined,
+        };
+      }
+
+      const passwordMatch = await checkPassword(password, user.passwordHash);
+      if (!passwordMatch) {
+        return {
+          error: {
+            field: "password" as const,
+            message: "Falsches Passwort",
+          },
+          sessionToken: undefined,
+        };
+      }
+
+      const newSession = await createSession(user);
+
+      return {
+        sessionToken: newSession.token,
+        session: newSession,
+        error: undefined,
+      };
+    }),
 
   logout: protectedProcedure.mutation(async ({ ctx }) => {
     await db.session.delete({

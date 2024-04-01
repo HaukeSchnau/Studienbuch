@@ -23,7 +23,8 @@ export default function UsersPage() {
   ) : isError ? (
     <div>{error.message}</div>
   ) : (
-    <UsersPageContent initialUsers={users as any} /> // TODO: Fix type
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+    <UsersPageContent initialUsers={users as any} />
   );
 }
 
