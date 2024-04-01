@@ -8,6 +8,14 @@ import 'package:class_mate/features/profile/smol_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+String? encodeQueryParameters(Map<String, String> params) {
+  return params.entries
+      .map((MapEntry<String, String> e) =>
+          '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+      .join('&');
+}
 
 class ProfileTopPanel extends HookWidget {
   const ProfileTopPanel({super.key});
@@ -22,6 +30,20 @@ class ProfileTopPanel extends HookWidget {
           label: "Über die App",
           icon: Icons.info_rounded,
           handler: () => context.push("/about")),
+      MyAction(
+          label: "Feedback",
+          icon: Icons.feedback_rounded,
+          handler: () => launchUrl(
+                Uri(
+                  scheme: 'mailto',
+                  path: 'studienbuch@schnau.dev',
+                  query: encodeQueryParameters(<String, String>{
+                    'subject': 'Feedback zum Studienbuch',
+                    'body':
+                        'Moin Hauke, ich habe folgenden Verbesserungsvorschlag für dich:'
+                  }),
+                ),
+              )),
       MyAction(
           label: "Profil & Kurse bearbeiten",
           icon: Icons.edit_rounded,
