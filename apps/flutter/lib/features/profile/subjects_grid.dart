@@ -82,8 +82,6 @@ class SubjectsGrid extends HookWidget {
       );
     }
 
-    final isPast = semester.id < getCurrentSemesterId();
-
     const numColumns = 2;
     return SingleChildScrollView(
       child: Padding(
@@ -91,12 +89,6 @@ class SubjectsGrid extends HookWidget {
             const EdgeInsets.only(left: 24, right: 24, bottom: 32, top: 12),
         child: Column(
           children: [
-            if (isPast)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: Text(
-                    "Dieses Semester ist vorbei. Die Noten sind nicht mehr veränderbar."),
-              ),
             Table(
               children: [
                 for (var i = 0; i < courses.length; i += numColumns)
