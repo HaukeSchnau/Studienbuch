@@ -66,6 +66,7 @@ dependencies:
   firebase_messaging: ^14.6.5
   sentry: ^7.9.0
   tutorial_coach_mark: ^1.2.9
+  http: ^0.13.6
 
 dev_dependencies:
   flutter_test:
