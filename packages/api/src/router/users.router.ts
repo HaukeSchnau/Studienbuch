@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import type { PermissionOnUser } from "@schnau/lib";
 import { hashPassword } from "@schnau/auth/src/password";
 import { PermissionSchema, UserSchema } from "@schnau/db/prisma/zod";
 
@@ -21,9 +20,8 @@ export const users = createRouter({
           permissions: true,
         },
       })
-    ).map(({ passwordHash, permissions, ...publicUser }) => ({
+    ).map(({ passwordHash, ...publicUser }) => ({
       ...publicUser,
-      permissions: permissions as PermissionOnUser[],
       hasPassword: passwordHash !== null,
     }));
   }),
