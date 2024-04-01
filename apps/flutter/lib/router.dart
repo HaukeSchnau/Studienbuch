@@ -1,7 +1,9 @@
+import 'package:class_mate/api/types.dart';
 import 'package:class_mate/database/database.dart';
 import 'package:class_mate/features/setup/edit_profile_page.dart';
 import 'package:class_mate/features/setup/welcome_page.dart';
 import 'package:class_mate/features/tasks/task_page.dart';
+import 'package:class_mate/infrastructure/hooks/use_query.dart';
 import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/features/about/about_page.dart';
 import 'package:class_mate/features/absences/absences_page.dart';
@@ -9,6 +11,7 @@ import 'package:class_mate/features/courses/course_page.dart';
 import 'package:class_mate/root_page.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobx/mobx.dart';
 
@@ -91,16 +94,49 @@ buildMainRouterConfig(User? user) {
             throw Exception("User is null");
           }
 
-          return EditProfilePage(
-              initialStore: SetupStore(
-                courses: ObservableList(),
-                licenseKey: user.licenseKey,
-                licenseKeyActivatedAt: user.licenseKeyActivatedAt,
-                name: user.name,
-              ),
-              onFinished: () => context.pop());
+          return EditProfileContainerPage(user: user);
         },
       ),
     ],
   );
+}
+
+class EditProfileContainerPage extends HookWidget {
+  final User user;
+
+  const EditProfileContainerPage({super.key, required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    final years = useQuery(
+        () => db.select(db.years)..where((tbl) => tbl.id.equals(user.year)));
+
+    if (years == null) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    final year = years.firstOrNull;
+    print(year);
+
+    return EditProfilePage(
+        initialStore: SetupStore(
+            courses: ObservableList(),
+            licenseKey: user.licenseKey,
+            licenseKeyActivatedAt: user.licenseKeyActivatedAt,
+            name: user.name,
+            isOfAge: user.isOfAge,
+            year: year != null
+                ? YearsGetOutput(
+                    id: year.id,
+                    name: year.name,
+                    updatedAt: DateTime(0), // TODO: Fix this
+                    startYear: year.startYear,
+                    graduationYear: year.graduationYear,
+                    schoolId: 1, // TODO: Fix this
+                  )
+                : null),
+        onFinished: () => context.pop());
+  }
 }

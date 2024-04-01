@@ -3,6 +3,7 @@ import 'package:class_mate/features/setup/helpers/setup_flow.dart';
 import 'package:class_mate/infrastructure/api.dart';
 import 'package:class_mate/infrastructure/error_catcher.dart';
 import 'package:class_mate/infrastructure/hooks/use_network_result.dart';
+import 'package:class_mate/infrastructure/util/list_util.dart';
 import 'package:class_mate/models/setup_store.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,7 @@ class ProfileSetupPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    print(store.year);
     final selectedYear = useState<ApiYear?>(store.year);
     final isOfAge = useState(false);
     final nameController = useTextEditingController(text: store.name);
@@ -98,7 +100,7 @@ class YearSelector extends HookWidget {
     }
 
     return DropdownButtonFormField(
-        value: selectedYear,
+        value: years.firstWhereOrNull((year) => year.id == selectedYear?.id),
         decoration: const InputDecoration(
           labelText: "Jahrgang",
         ),
