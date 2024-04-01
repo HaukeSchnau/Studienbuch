@@ -1,4 +1,4 @@
-import 'package:class_mate_api/api.dart';
+import 'package:class_mate/api/types.dart';
 
 enum SubstitutionType {
   freisetzung,
@@ -8,13 +8,10 @@ enum SubstitutionType {
 }
 
 final typeMap = {
-  SubstitutionsGet200ResponseInnerTypeEnum.BETREUUNG:
-      SubstitutionType.betreuung,
-  SubstitutionsGet200ResponseInnerTypeEnum.ENTFALL: SubstitutionType.entfall,
-  SubstitutionsGet200ResponseInnerTypeEnum.FREISETZUNG:
-      SubstitutionType.freisetzung,
-  SubstitutionsGet200ResponseInnerTypeEnum.VERTRETUNG:
-      SubstitutionType.vertretung,
+  SubstitutionsGetOutputTypeEnum.betreuung: SubstitutionType.betreuung,
+  SubstitutionsGetOutputTypeEnum.entfall: SubstitutionType.entfall,
+  SubstitutionsGetOutputTypeEnum.freisetzung: SubstitutionType.freisetzung,
+  SubstitutionsGetOutputTypeEnum.vertretung: SubstitutionType.vertretung,
 };
 
 final typeStringMap = {
