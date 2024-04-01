@@ -23,7 +23,7 @@ class AboutPage extends HookWidget {
 
     return LicensePage(
       applicationIcon: const Logo(),
-      applicationName: "Class Mate: IGS Lilienthal",
+      applicationName: "Studienbuch: IGS Lilienthal",
       applicationVersion:
           packageInfo != null ? "Version ${packageInfo.version}" : null,
       applicationLegalese: "© ${DateTime.now().year.toString()} Hauke Schnau",
