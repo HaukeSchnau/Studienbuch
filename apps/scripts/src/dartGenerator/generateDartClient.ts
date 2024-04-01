@@ -53,9 +53,10 @@ async function main(fileName: string, outputDir: string) {
   await fs.writeFile(mainFileName, createMainFile(routerStructure));
   await fs.writeFile(
     p.join(outputDir, "types.dart"),
-    [...typeNameMap.entries()]
-      .map(([name, code]) => code.replaceAll("$$NAME$$", name))
-      .join("\n"),
+    "// ignore_for_file: unnecessary_question_mark\n\n" +
+      [...typeNameMap.entries()]
+        .map(([name, code]) => code.replaceAll("$$NAME$$", name))
+        .join("\n"),
   );
 }
 
@@ -126,7 +127,9 @@ function createProcedureFile(parentName: string) {
       p.output,
     );
 
-    if (p.type === "mutation") return ""; // TODO: Implement mutations
+    if (p.name === "login") {
+      return ""; // TODO: Fix login with discriminated unions etc
+    }
 
     const inputNullableSymbol = p.input.nullable || p.input.optional ? "?" : "";
     const outputNullableSymbol =
@@ -168,7 +171,20 @@ function writeProcedureBody(
   outputType: Type,
 ) {
   if (p.type === "mutation") {
-    return "";
+    return `
+      final uri = Uri.https("studienbuch.app", "api/trpc/${path}");
+      final payload = {
+        "json": ${getToJsonCall(inputType, "input")},
+        ${getMeta(inputType)}
+      };
+
+      final response = await client.post(uri,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(payload));
+      ${writeResponseParser(output, outputType, path)}
+    `;
   }
 
   const request =
@@ -187,13 +203,27 @@ function writeProcedureBody(
 
   return `
   ${request}
+  ${writeResponseParser(output, outputType, path)}
+  `;
+}
+
+function writeResponseParser(
+  output: string | null,
+  outputType: Type,
+  path: string,
+) {
+  return `
   if (response.statusCode != 200) {
     throw Exception('Failed to get ${path}: \${response.body}');
   }
-  final json = jsonDecode(utf8.decode(response.bodyBytes));
-
-  ${output ? `return ${getAssignment("result']['data']['json", outputType, output, getAccessor("result']['data']['json"))};` : ""}
-  `;
+  
+  ${
+    output
+      ? `final json = jsonDecode(utf8.decode(response.bodyBytes));
+  return ${getAssignment("result']['data']['json", outputType, output, getAccessor("result']['data']['json"))};`
+      : ""
+  }
+`;
 }
 
 function getMeta(inputType: Type) {
