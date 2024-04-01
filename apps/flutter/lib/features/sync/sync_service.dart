@@ -1,8 +1,8 @@
+import 'package:class_mate/api/types.dart';
 import 'package:class_mate/database/database.dart';
 import 'package:class_mate/business_domain/user/use_user.dart';
+import 'package:class_mate/infrastructure/api.dart';
 import 'package:class_mate/models/course_time.dart';
-import 'package:class_mate/infrastructure/openapi.dart';
-import 'package:class_mate_api/api.dart';
 import 'package:drift/drift.dart';
 import 'package:sentry/sentry.dart';
 
@@ -43,15 +43,15 @@ Future<void> syncTimetableData() async {
   }
 }
 
-Future<Sync200Response?> getSyncResult(DateTime? lastSync) async {
+Future<SyncOutput?> getSyncResult(DateTime? lastSync) async {
   final [courseIds, classIds, yearIds, teacherIds] = await getRelevantIds();
 
-  return apiInstance.callSync(SyncRequest(
+  return api.sync(
       courseIds: courseIds,
       classIds: classIds,
       yearIds: yearIds,
       userIds: teacherIds,
-      lastSync: lastSync));
+      lastSync: lastSync);
 }
 
 Future<List<List<int>>> getRelevantIds() {
@@ -71,7 +71,7 @@ Future<List<List<int>>> getRelevantIds() {
   ]);
 }
 
-Future<void> applySyncResult(Sync200Response? syncResult) async {
+Future<void> applySyncResult(SyncOutput? syncResult) async {
   if (syncResult == null) {
     Sentry.captureException(Exception("Sync result was null!"));
     return;
@@ -122,9 +122,9 @@ Future<void> applySyncResult(Sync200Response? syncResult) async {
       await db.into(db.courseTimes).insert(
             CourseTime(
               id: courseTime.id,
-              duration: courseTime.duration,
-              start: TimeOfDay.fromMinutes(courseTime.start),
-              weekday: courseTime.weekday,
+              duration: courseTime.duration as int,
+              start: TimeOfDay.fromMinutes(courseTime.start as int),
+              weekday: courseTime.weekday as int,
               course: courseTime.courseId,
               weeks: _weeksMap[courseTime.weeks]!,
             ),
@@ -135,10 +135,7 @@ Future<void> applySyncResult(Sync200Response? syncResult) async {
 }
 
 const _weeksMap = {
-  ClassesList200ResponseInnerCoursesInnerTimesInnerWeeksEnum.BOTH:
-      CourseTimeWeek.both,
-  ClassesList200ResponseInnerCoursesInnerTimesInnerWeeksEnum.EVEN:
-      CourseTimeWeek.even,
-  ClassesList200ResponseInnerCoursesInnerTimesInnerWeeksEnum.ODD:
-      CourseTimeWeek.odd,
+  SyncOutputUpdatedCourseTimesWeeksEnum.both: CourseTimeWeek.both,
+  SyncOutputUpdatedCourseTimesWeeksEnum.even: CourseTimeWeek.even,
+  SyncOutputUpdatedCourseTimesWeeksEnum.odd: CourseTimeWeek.odd,
 };

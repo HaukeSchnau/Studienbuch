@@ -1,10 +1,9 @@
 import 'package:class_mate/database/database.dart';
 import 'package:class_mate/features/setup/forms/license_form.dart';
 import 'package:class_mate/features/setup/helpers/setup_flow.dart';
+import 'package:class_mate/infrastructure/api.dart';
 import 'package:class_mate/infrastructure/hooks/use_async_effect.dart';
 import 'package:class_mate/models/setup_store.dart';
-import 'package:class_mate/infrastructure/openapi.dart';
-import 'package:class_mate_api/api.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -30,8 +29,7 @@ class LicenseRenewPage extends HookWidget {
         throw Exception("License key is null after license renew.");
       }
 
-      await apiInstance
-          .licenseActivate(LicenseActivateRequest(licenseKey: newLicenseKey));
+      await api.license.activate(licenseKey: newLicenseKey);
 
       await db.update(db.users).write(UsersCompanion(
             licenseKey: Value(newLicenseKey),

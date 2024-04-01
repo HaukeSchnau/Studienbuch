@@ -1,9 +1,9 @@
 // ignore_for_file: unused_element
 
+import 'package:class_mate/api/types.dart';
 import 'package:class_mate/database/database.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:class_mate/models/semester.dart';
-import 'package:class_mate_api/api.dart';
 import 'package:drift/drift.dart';
 import 'package:mobx/mobx.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -13,12 +13,9 @@ part 'setup_store.g.dart';
 class SetupStore = _SetupStoreBase with _$SetupStore;
 
 const _weeksMap = {
-  ClassesList200ResponseInnerCoursesInnerTimesInnerWeeksEnum.BOTH:
-      CourseTimeWeek.both,
-  ClassesList200ResponseInnerCoursesInnerTimesInnerWeeksEnum.EVEN:
-      CourseTimeWeek.even,
-  ClassesList200ResponseInnerCoursesInnerTimesInnerWeeksEnum.ODD:
-      CourseTimeWeek.odd,
+  SyncOutputUpdatedCourseTimesWeeksEnum.both: CourseTimeWeek.both,
+  SyncOutputUpdatedCourseTimesWeeksEnum.even: CourseTimeWeek.even,
+  SyncOutputUpdatedCourseTimesWeeksEnum.odd: CourseTimeWeek.odd,
 };
 
 extension YearExtension on ApiYear {
@@ -27,16 +24,16 @@ extension YearExtension on ApiYear {
     final currentYear = now.year;
 
     if (now.month < 8) {
-      return currentYear - startYear + 5 - 1;
+      return currentYear - (startYear as int) + 5 - 1;
     }
 
-    return currentYear - startYear + 5;
+    return currentYear - (startYear as int) + 5;
   }
 }
 
-typedef ApiYear = YearsGet200ResponseInner;
-typedef ApiClass = ClassesList200ResponseInner;
-typedef ApiCourse = CoursesList200ResponseInner;
+typedef ApiYear = YearsGetOutput;
+typedef ApiClass = ClassesListOutput;
+typedef ApiCourse = CoursesListOutput;
 
 abstract class _SetupStoreBase with Store {
   @observable
@@ -74,8 +71,8 @@ abstract class _SetupStoreBase with Store {
     await saveUserData(
       year: Year(
         id: year!.id,
-        startYear: year!.startYear,
-        graduationYear: year!.graduationYear,
+        startYear: year!.startYear as int,
+        graduationYear: year!.graduationYear as int,
         name: year!.name,
       ),
       licenseKey: licenseKey!,
@@ -128,9 +125,9 @@ Future<void> saveSemesterData({
       await db.into(db.courseTimes).insert(
           CourseTime(
               id: time.id,
-              duration: time.duration,
-              start: TimeOfDay.fromMinutes(time.start),
-              weekday: time.weekday,
+              duration: time.duration as int,
+              start: TimeOfDay.fromMinutes(time.start as int),
+              weekday: time.weekday as int,
               course: course.id,
               weeks: _weeksMap[time.weeks]!),
           mode: InsertMode.insertOrReplace);
@@ -164,9 +161,9 @@ Future<void> saveSemesterData({
       await db.into(db.courseTimes).insert(
           CourseTime(
             id: time.id,
-            duration: time.duration,
-            start: TimeOfDay.fromMinutes(time.start),
-            weekday: time.weekday,
+            duration: time.duration as int,
+            start: TimeOfDay.fromMinutes(time.start as int),
+            weekday: time.weekday as int,
             course: course.id,
             weeks: _weeksMap[time.weeks]!,
           ),

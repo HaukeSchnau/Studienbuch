@@ -1,12 +1,12 @@
+import 'package:class_mate/api/types.dart';
 import 'package:class_mate/features/setup/forms/classes_courses_setup_page.dart';
 import 'package:class_mate/models/course.dart' show getCourseIcon;
 import 'package:class_mate/presentation/theme.dart';
-import 'package:class_mate_api/api.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-typedef User = CoursesList200ResponseInnerTeacher;
+typedef User = CoursesListOutputTeacher;
 
 extension UserExtension on User {
   String get lastName => name.split(" ").last;

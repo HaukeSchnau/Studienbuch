@@ -1,18 +1,18 @@
+import 'package:class_mate/api/types.dart';
 import 'package:class_mate/features/setup/forms/license_form.dart';
 import 'package:class_mate/features/setup/helpers/setup_flow.dart';
+import 'package:class_mate/infrastructure/api.dart';
 import 'package:class_mate/infrastructure/error_catcher.dart';
 import 'package:class_mate/infrastructure/hooks/use_network_result.dart';
 import 'package:class_mate/models/setup_store.dart';
-import 'package:class_mate/infrastructure/openapi.dart';
 import 'package:class_mate/features/courses/course_selector.dart';
-import 'package:class_mate_api/api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:mobx/mobx.dart';
 import 'package:provider/provider.dart';
 
-typedef Class = ClassesList200ResponseInner;
-typedef Course = CoursesList200ResponseInner;
+typedef Class = ClassesListOutput;
+typedef Course = CoursesListOutput;
 
 Map<String, List<Course>> groupCoursesByName(List<Course> courses) {
   final groupedCourses = <String, List<Course>>{};
@@ -49,7 +49,7 @@ class ClassesCoursesSetupPage extends HookWidget {
 }
 
 class ClassesCoursesChooserPage extends HookWidget {
-  final YearsGet200ResponseInner year;
+  final YearsGetOutput year;
   final void Function(
     Class selectedClass,
     List<Course> selectedCourses,
@@ -61,12 +61,14 @@ class ClassesCoursesChooserPage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final classesData = useNetworkResult(
-        () => apiInstance.classesList(year.id),
-        (e) => throw UserException("Klassen konnten nicht geladen werden", e),
+        () => api.classes.list(yearId: year.id),
+        (e, trace) => throw UserException(
+            "Klassen konnten nicht geladen werden", e, trace),
         [year.id]);
     final coursesData = useNetworkResult(
-        () => apiInstance.coursesList(year.id),
-        (e) => throw UserException("Kurse konnten nicht geladen werden", e),
+        () => api.courses.list(yearId: year.id),
+        (e, trace) =>
+            throw UserException("Kurse konnten nicht geladen werden", e, trace),
         [year.id]);
 
     final loading = classesData == null || coursesData == null;

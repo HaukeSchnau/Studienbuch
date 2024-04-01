@@ -1,8 +1,9 @@
+import 'package:class_mate/api/types.dart';
 import 'package:class_mate/features/setup/helpers/setup_flow.dart';
+import 'package:class_mate/infrastructure/api.dart';
 import 'package:class_mate/infrastructure/error_catcher.dart';
 import 'package:class_mate/infrastructure/util/string_util.dart';
 import 'package:class_mate/models/setup_store.dart';
-import 'package:class_mate/infrastructure/openapi.dart';
 import 'package:class_mate/presentation/colors.dart';
 import 'package:class_mate/presentation/theme.dart';
 import 'package:flutter/material.dart';
@@ -64,16 +65,14 @@ class LicenseForm extends HookWidget {
       error.value = null;
 
       final licenseKey = licenseController.text;
-      final licenseStatus = await apiInstance
-          .licenseCheck(licenseKey)
-          .then((value) => value?.replaceAll("\"", ""))
-          .catchError((error) {
+      final licenseStatus =
+          await api.license.check(licenseKey: licenseKey).catchError((error) {
         loading.value = false;
 
         throw UserException(
             "Lizenzschlüssel konnte nicht geprüft werden", error);
       });
-      if (licenseStatus == "VALID") {
+      if (licenseStatus == LicenseCheckOutputEnum.valid) {
         // License key will have to be checked again and activated when setup flow is completed
 
         store.licenseKey = licenseKey;
@@ -82,10 +81,10 @@ class LicenseForm extends HookWidget {
         // ignore: use_build_context_synchronously
         final onNext = context.read<OnNext>();
         onNext();
-      } else if (licenseStatus == "INVALID") {
+      } else if (licenseStatus == LicenseCheckOutputEnum.invalid) {
         error.value = "Ungültiger Lizenzschlüssel";
-      } else if (licenseStatus == "ACTIVATED") {
-        error.value = "Dieser Lizenzschlüssel wurde bereits verwendet";
+        // } else if (licenseStatus == "ACTIVATED") {
+        //   error.value = "Dieser Lizenzschlüssel wurde bereits verwendet";
       }
 
       loading.value = false;

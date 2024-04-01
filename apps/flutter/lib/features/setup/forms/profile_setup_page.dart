@@ -1,9 +1,9 @@
 import 'package:class_mate/features/setup/forms/license_form.dart';
 import 'package:class_mate/features/setup/helpers/setup_flow.dart';
+import 'package:class_mate/infrastructure/api.dart';
 import 'package:class_mate/infrastructure/error_catcher.dart';
 import 'package:class_mate/infrastructure/hooks/use_network_result.dart';
 import 'package:class_mate/models/setup_store.dart';
-import 'package:class_mate/infrastructure/openapi.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -85,9 +85,9 @@ class YearSelector extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final years = useNetworkResult(
-        () => apiInstance.yearsGet(),
-        (error) => throw UserException(
-            "Jahrgänge konnten nicht geladen werden", error))
+        () => api.years.get(),
+        (error, trace) => throw UserException(
+            "Jahrgänge konnten nicht geladen werden", error, trace))
       ?..sort((a, b) => -b.yearNumber.compareTo(a.yearNumber));
 
     if (years == null) {

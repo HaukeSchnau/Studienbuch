@@ -1,7 +1,6 @@
+import 'package:class_mate/infrastructure/api.dart';
 import 'package:class_mate/infrastructure/hooks/use_async_effect.dart';
 import 'package:class_mate/models/course.dart';
-import 'package:class_mate/infrastructure/openapi.dart';
-import 'package:class_mate_api/api.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
@@ -39,10 +38,10 @@ void useNotificationSetup() {
       return;
     }
 
-    await apiInstance.subscriptionsSubscribe(SubscriptionsSubscribeRequest(
+    await api.subscriptions.subscribe(
       messagingToken: token,
       courses: courses.map((course) => course.id).toList(),
-    ));
+    );
 
     hasStartMessagingRequest = false;
   }, [courses]);
