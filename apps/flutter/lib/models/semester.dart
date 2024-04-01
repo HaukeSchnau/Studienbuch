@@ -82,6 +82,20 @@ extension SemesterExt on Semester {
   bool get isWinter => id & 1 == 1;
 
   int get year => id >> 1;
+
+  DateTime get startDate {
+    final year = this.year;
+    final month = isWinter ? 8 : 2;
+    return DateTime(year, month);
+  }
+
+  DateTime get endDate {
+    if (isWinter) {
+      return DateTime(year + 1, 2);
+    } else {
+      return DateTime(year, 8);
+    }
+  }
 }
 
 class SemesterCourses extends Table {

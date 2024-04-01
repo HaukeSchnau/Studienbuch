@@ -3,6 +3,7 @@ import 'package:class_mate/infrastructure/hooks/use_query.dart';
 import 'package:class_mate/infrastructure/util/list_util.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/grade_result.dart';
+import 'package:class_mate/models/semester.dart';
 import 'package:drift/drift.dart';
 
 class CurrentOralGrade {
@@ -29,7 +30,8 @@ CurrentOralGrade useCurrentOralGrade(Course course) {
   );
   if (oralGrades == null) {
     return const CurrentOralGrade(
-        currentOralGrade: null, mostRecentConfirmedOralGrade: null,
+        currentOralGrade: null,
+        mostRecentConfirmedOralGrade: null,
         pastOralGrades: []);
   }
 
@@ -40,8 +42,7 @@ CurrentOralGrade useCurrentOralGrade(Course course) {
   return CurrentOralGrade(
       currentOralGrade: currentOralGrade,
       mostRecentConfirmedOralGrade: mostRecentConfirmedOralGrade,
-      pastOralGrades: oralGrades.skip(1).toList()
-  );
+      pastOralGrades: oralGrades.skip(1).toList());
 }
 
 class CurrentWrittenGrade {
@@ -52,12 +53,15 @@ class CurrentWrittenGrade {
       {required this.writtenGrades, required this.averageWrittenGrade});
 }
 
-CurrentWrittenGrade useWrittenGrades(Course course) {
+CurrentWrittenGrade useWrittenGrades(Course course, Semester semester) {
+  final minDate = semester.startDate;
+  final maxDate = semester.endDate;
   final writtenGrades = useQuery(
     () => db.select(db.gradeResults)
       ..where((tbl) =>
           tbl.course.equals(course.id) &
-          tbl.type.equalsValue(GradeResultType.written))
+          tbl.type.equalsValue(GradeResultType.written) &
+          tbl.date.isBetweenValues(minDate, maxDate))
       ..orderBy([
         (tbl) => OrderingTerm(expression: tbl.date, mode: OrderingMode.desc)
       ]),

@@ -1,3 +1,4 @@
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/features/grades/add_oral_grade_form.dart';
 import 'package:class_mate/features/grades/add_written_grade_form.dart';
 import 'package:class_mate/features/grades/confirm_oral_grade_button.dart';
@@ -20,9 +21,14 @@ import 'package:class_mate/features/grades/exam_card.dart';
 
 class GradesCard extends HookWidget {
   final Course course;
+  final Semester semester;
   final bool locked;
 
-  const GradesCard({super.key, required this.course, required this.locked});
+  const GradesCard(
+      {super.key,
+      required this.course,
+      required this.semester,
+      required this.locked});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +38,7 @@ class GradesCard extends HookWidget {
     final currentOralGrade = oral.currentOralGrade;
     final mostRecentConfirmedOralGrade = oral.mostRecentConfirmedOralGrade;
 
-    final written = useWrittenGrades(course);
+    final written = useWrittenGrades(course, semester);
     final writtenGrades = written.writtenGrades;
     final averageWrittenGrade = written.averageWrittenGrade;
 
@@ -167,8 +173,7 @@ class GradesCard extends HookWidget {
                                       course,
                                       user,
                                       currentOralGrade,
-                                      oral.pastOralGrades
-                                  ),
+                                      oral.pastOralGrades),
                                   icon: const Icon(Icons.visibility,
                                       color: Colors.black87))
                           ]),
