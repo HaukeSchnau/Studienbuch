@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:class_mate/features/courses/copy_courses_from_previous_semester.dart';
 import 'package:class_mate/features/schedule/week_page_tutorial.dart';
 import 'package:class_mate/infrastructure/util/ui_util.dart';
@@ -42,7 +44,11 @@ class RootPage extends HookWidget {
     final noCoursesChosenYet = courses != null && courses.isEmpty;
     useEffect(() {
       if (noCoursesChosenYet) {
-        copyCoursesFromPreviousSemester(getCurrentSemesterId());
+        final timer = Timer(const Duration(seconds: 1), () {
+          copyCoursesFromPreviousSemester(getCurrentSemesterId());
+        });
+
+        return timer.cancel;
       }
       return null;
     }, [noCoursesChosenYet]);
