@@ -1,7 +1,10 @@
+import 'package:class_mate/features/courses/copy_courses_from_previous_semester.dart';
 import 'package:class_mate/features/schedule/week_page_tutorial.dart';
 import 'package:class_mate/infrastructure/util/ui_util.dart';
 import 'package:class_mate/home_page.dart';
 import 'package:class_mate/features/profile/profile_page.dart';
+import 'package:class_mate/models/course.dart';
+import 'package:class_mate/models/semester.dart';
 import 'package:class_mate/presentation/components/simple_scaffold.dart';
 import 'package:class_mate/presentation/components/logo.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +37,16 @@ class RootPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    final courses = useCourses(semesterId: getCurrentSemesterId());
+
+    final noCoursesChosenYet = courses != null && courses.isEmpty;
+    useEffect(() {
+      if (noCoursesChosenYet) {
+        copyCoursesFromPreviousSemester(getCurrentSemesterId());
+      }
+      return null;
+    }, [noCoursesChosenYet]);
+
     final isLarge = useIsLarge();
     final pageController = usePageController();
     final currentPageIndex = useState(0);
