@@ -34,6 +34,7 @@ class ConfirmWithSignature extends HookWidget {
           .push(MaterialPageRoute(
               builder: (context) => FullscreenSignature(
                     signatureController: signatureController,
+                    signer: signer,
                   )))
           .then((value) async => image.value = signatureController.toSVG());
     }
@@ -166,8 +167,10 @@ Future<void> confirmWithSignature(
 
 class FullscreenSignature extends HookWidget {
   final SignatureController signatureController;
+  final String signer;
 
-  const FullscreenSignature({super.key, required this.signatureController});
+  const FullscreenSignature(
+      {super.key, required this.signatureController, required this.signer});
 
   @override
   Widget build(BuildContext context) {
@@ -187,9 +190,36 @@ class FullscreenSignature extends HookWidget {
 
     return Scaffold(
         body: SafeArea(
-          child: Signature(
-            controller: signatureController,
-            backgroundColor: Colors.white,
+          child: Stack(
+            children: [
+              Container(
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey),
+                    ),
+                  ),
+                  child: Signature(
+                    controller: signatureController,
+                    backgroundColor: Colors.grey[50]!,
+                  )),
+              Positioned(
+                  bottom: 16,
+                  left: 8,
+                  child: Row(
+                    children: [
+                      SvgPicture.asset(
+                        "assets/icons/cross.svg",
+                        // ignore: deprecated_member_use
+                        color: Colors.black26,
+                        width: 48,
+                      ),
+                      const SizedBox(width: 16),
+                      Text(signer,
+                          style: const TextStyle(
+                              color: Colors.black26, fontSize: 24)),
+                    ],
+                  )),
+            ],
           ),
         ),
         floatingActionButton: FloatingActionButton(
