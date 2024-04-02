@@ -99,9 +99,11 @@ export interface KadmosSubstitionsPayload {
 const convertNumberToDate = (number: number) => {
   const date = number.toString();
   return new Date(
-    parseInt(date.substring(0, 4)),
-    parseInt(date.substring(4, 6)) - 1,
-    parseInt(date.substring(6, 8)),
+    Date.UTC(
+      parseInt(date.substring(0, 4)),
+      parseInt(date.substring(4, 6)) - 1,
+      parseInt(date.substring(6, 8)),
+    ),
   );
 };
 
