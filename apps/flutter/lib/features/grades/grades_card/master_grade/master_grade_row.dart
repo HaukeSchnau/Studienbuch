@@ -68,11 +68,16 @@ class MasterGradeRow extends HookWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 8.0),
-          child: Icon(
-            Icons.grade_rounded,
-            color: theme.primary,
-            size: 64,
-          ),
+          child: Opacity(
+              opacity:
+                  currentMasterGrade == null || currentMasterGrade.isConfirmed
+                      ? 1
+                      : 0.25,
+              child: Icon(
+                Icons.grade_rounded,
+                color: theme.primary,
+                size: 64,
+              )),
         ),
         const SizedBox(width: 16),
         Expanded(

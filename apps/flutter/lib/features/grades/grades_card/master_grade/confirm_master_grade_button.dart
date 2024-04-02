@@ -20,7 +20,7 @@ class ConfirmMasterGradeButton extends HookWidget {
 
     confirmTeacher() => confirmWithSignature(context,
         (ctx) => buildMasterGradeConfirmationInfoTeacher(course, user, result),
-        title: "Mündliche Note bestätigen (Lehrer)",
+        title: "Gesamtnote bestätigen (Lehrer)",
         signer: "Unterschrift von ${course.teacher.longFormalName}",
         fileName: "signature-${result.id}-teacher.svg",
         onSuccess: () => db.update(db.gradeResults).replace(result.copyWith(
@@ -29,7 +29,7 @@ class ConfirmMasterGradeButton extends HookWidget {
 
     confirmParent() => confirmWithSignature(context,
         (ctx) => buildMasterGradeConfirmationInfoParent(course, user, result),
-        title: "Mündliche Note bestätigen (Eltern)",
+        title: "Gesamtnote bestätigen (Eltern)",
         signer: "Unterschrift der Eltern",
         fileName: "signature-${result.id}-parent.svg",
         onSuccess: () => db.update(db.gradeResults).replace(result.copyWith(

@@ -69,7 +69,11 @@ class OralGradeRow extends HookWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 8.0),
-          child: icon,
+          child: Opacity(
+              opacity: currentOralGrade == null || currentOralGrade.isConfirmed
+                  ? 1
+                  : 0.25,
+              child: icon),
         ),
         const SizedBox(width: 16),
         Expanded(
