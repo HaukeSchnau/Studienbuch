@@ -6,12 +6,16 @@ class DatePicker extends StatelessWidget {
   final String label;
   final DateTime date;
   final void Function(DateTime) onDateChanged;
+  final DateTime? firstDate;
+  final DateTime? lastDate;
 
   const DatePicker({
     super.key,
     required this.date,
     required this.onDateChanged,
     required this.label,
+    this.firstDate,
+    this.lastDate,
   });
 
   @override
@@ -32,8 +36,8 @@ class DatePicker extends StatelessWidget {
                 showDatePicker(
                   context: context,
                   initialDate: date,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2050),
+                  firstDate: firstDate ?? DateTime(2020),
+                  lastDate: lastDate ?? DateTime(2050),
                   selectableDayPredicate: (DateTime val) =>
                       val.weekday != 6 && val.weekday != 7,
                 ).then((newDate) {

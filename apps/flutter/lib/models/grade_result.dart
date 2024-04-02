@@ -30,7 +30,7 @@ extension GradeResultTypeExt on GradeResultType {
       case GradeResultType.oral:
         return "Mündlich";
       case GradeResultType.master:
-        return "Klausur";
+        return "Gesamtnote";
     }
   }
 }

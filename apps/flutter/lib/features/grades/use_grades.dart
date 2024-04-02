@@ -80,3 +80,42 @@ CurrentWrittenGrade useWrittenGrades(Course course, Semester semester) {
   return CurrentWrittenGrade(
       writtenGrades: writtenGrades, averageWrittenGrade: averageWrittenGrade);
 }
+
+class CurrentMasterGrade {
+  final GradeResult? currentMasterGrade;
+  final GradeResult? mostRecentConfirmedMasterGrade;
+  final List<GradeResult> pastMasterGrades;
+
+  const CurrentMasterGrade(
+      {required this.currentMasterGrade,
+      required this.mostRecentConfirmedMasterGrade,
+      required this.pastMasterGrades});
+}
+
+CurrentMasterGrade useCurrentMasterGrade(Course course) {
+  final masterGrades = useQuery(
+    () => db.select(db.gradeResults)
+      ..where((tbl) =>
+          tbl.course.equals(course.id) &
+          tbl.type.equalsValue(GradeResultType.master))
+      ..orderBy([
+        (tbl) => OrderingTerm(expression: tbl.date, mode: OrderingMode.desc)
+      ]),
+    [course.id],
+  );
+  if (masterGrades == null) {
+    return const CurrentMasterGrade(
+        currentMasterGrade: null,
+        mostRecentConfirmedMasterGrade: null,
+        pastMasterGrades: []);
+  }
+
+  final currentMasterGrade = masterGrades.firstOrNull;
+  final mostRecentConfirmedMasterGrade =
+      masterGrades.firstWhereOrNull((element) => element.isConfirmed);
+
+  return CurrentMasterGrade(
+      currentMasterGrade: currentMasterGrade,
+      mostRecentConfirmedMasterGrade: mostRecentConfirmedMasterGrade,
+      pastMasterGrades: masterGrades.skip(1).toList());
+}

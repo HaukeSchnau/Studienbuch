@@ -21,7 +21,7 @@ class ConfirmOralGradeButton extends HookWidget {
     confirmTeacher() => confirmWithSignature(context,
         (ctx) => buildOralGradeConfirmationInfoTeacher(course, user, result),
         title: "Mündliche Note bestätigen (Lehrer)",
-        signer: "Unterschrift von ${course.teacher.name}",
+        signer: "Unterschrift von ${course.teacher.longFormalName}",
         fileName: "signature-${result.id}-teacher.svg",
         onSuccess: () => db.update(db.gradeResults).replace(result.copyWith(
               isConfirmedByTeacher: true,

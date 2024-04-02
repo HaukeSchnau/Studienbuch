@@ -1,4 +1,5 @@
 import 'package:class_mate/database/database.dart';
+import 'package:class_mate/features/grades/grades_card/result_card.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/grade_result.dart';
 import 'package:class_mate/presentation/colors.dart';
@@ -6,7 +7,6 @@ import 'package:class_mate/presentation/theme.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:class_mate/features/grades/exam_card.dart';
 
 class AddOralGradeForm extends HookWidget {
   final Course course;

@@ -17,6 +17,18 @@ extension Date on DateTime {
     return startOfDay;
   }
 
+  DateTime clamp(DateTime min, DateTime max) {
+    if (isBefore(min)) {
+      return min;
+    }
+
+    if (isAfter(max)) {
+      return max;
+    }
+
+    return this;
+  }
+
   bool get isToday {
     final now = DateTime.now().startOfDay;
 
@@ -83,6 +95,11 @@ extension Date on DateTime {
   int get weekNumber {
     int dayOfYear = int.parse(DateFormat("D").format(this));
     return ((dayOfYear - weekday + 10) / 7).floor();
+  }
+
+  String formatMonth() {
+    var format = DateFormat("MMM yyyy");
+    return format.format(toLocal());
   }
 
   String format({includeTime = false}) {

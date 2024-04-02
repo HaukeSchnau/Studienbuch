@@ -2,6 +2,7 @@ import 'package:class_mate/database/database.dart';
 import 'package:class_mate/infrastructure/util/date_util.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/grade_result.dart';
+import 'package:class_mate/models/semester.dart';
 import 'package:class_mate/presentation/colors.dart';
 import 'package:class_mate/presentation/components/date_picker.dart';
 import 'package:class_mate/presentation/theme.dart';
@@ -10,15 +11,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 class AddWrittenGradeForm extends HookWidget {
+  final Semester semester;
   final Course course;
   final User user;
 
   const AddWrittenGradeForm(
-      {super.key, required this.course, required this.user});
+      {super.key,
+      required this.semester,
+      required this.course,
+      required this.user});
 
   @override
   Widget build(BuildContext context) {
-    final date = useState(DateTime.now().orNextWeekday);
+    final date =
+        useState(DateTime.now().clamp(semester.startDate, semester.endDate));
     final resultStr = useState<String>("");
 
     bool isValid() {
@@ -38,12 +44,13 @@ class AddWrittenGradeForm extends HookWidget {
         ),
         const SizedBox(height: 32),
         DatePicker(
-          label: "Datum der Klausur",
-          date: date.value,
-          onDateChanged: (newDate) {
-            date.value = newDate;
-          },
-        ),
+            label: "Datum der Klausur",
+            date: date.value,
+            onDateChanged: (newDate) {
+              date.value = newDate;
+            },
+            firstDate: semester.startDate,
+            lastDate: semester.endDate),
         const SizedBox(height: 16),
         TextField(
           onChanged: (value) => resultStr.value = (value.replaceAll(",", ".")),
