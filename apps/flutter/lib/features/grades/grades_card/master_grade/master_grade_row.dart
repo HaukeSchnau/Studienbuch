@@ -1,4 +1,5 @@
 import 'package:class_mate/business_domain/user/use_user.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/features/grades/confirmation_status_view.dart';
 import 'package:class_mate/features/grades/confirmation_view.dart';
 import 'package:class_mate/features/grades/grades_card/master_grade/add_master_grade_form.dart';
@@ -16,13 +17,18 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 class MasterGradeRow extends HookWidget {
   final Course course;
   final bool locked;
+  final Semester semester;
 
-  const MasterGradeRow({super.key, required this.course, this.locked = false});
+  const MasterGradeRow(
+      {super.key,
+      required this.course,
+      required this.semester,
+      this.locked = false});
 
   @override
   Widget build(BuildContext context) {
     final user = useUser();
-    final master = useCurrentMasterGrade(course);
+    final master = useCurrentMasterGrade(course, semester);
     final currentMasterGrade = master.currentMasterGrade;
     final mostRecentConfirmedMasterGrade =
         master.mostRecentConfirmedMasterGrade;
@@ -50,6 +56,7 @@ class MasterGradeRow extends HookWidget {
               context,
               (ctx) => AddMasterGradeForm(
                     course: course,
+                    semester: semester,
                     user: user,
                     currentMasterGrade: currentMasterGrade,
                     mostRecentConfirmedMasterGrade:

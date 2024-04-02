@@ -128,7 +128,7 @@ class CourseCard extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final oral = useCurrentOralGrade(course);
+    final oral = useCurrentOralGrade(course, semester);
     final written = useWrittenGrades(course, semester);
 
     const pIndex = -1;

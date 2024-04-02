@@ -1,7 +1,9 @@
 import 'package:class_mate/database/database.dart';
 import 'package:class_mate/features/grades/grades_card/result_card.dart';
+import 'package:class_mate/infrastructure/util/date_util.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/grade_result.dart';
+import 'package:class_mate/models/semester.dart';
 import 'package:class_mate/presentation/colors.dart';
 import 'package:class_mate/presentation/theme.dart';
 import 'package:drift/drift.dart' hide Column;
@@ -10,12 +12,14 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 
 class AddMasterGradeForm extends HookWidget {
   final Course course;
+  final Semester semester;
   final GradeResult? currentMasterGrade;
   final GradeResult? mostRecentConfirmedMasterGrade;
   final User user;
 
   const AddMasterGradeForm(
       {super.key,
+      required this.semester,
       required this.course,
       required this.user,
       this.currentMasterGrade,
@@ -76,9 +80,12 @@ class AddMasterGradeForm extends HookWidget {
             user: user,
             action: () async {
               await (db.delete(db.gradeResults)
-                    ..where((tbl) => tbl.date.isBiggerThanValue(
+                    ..where((tbl) =>
+                        tbl.date.isBiggerThanValue(
                           mostRecentConfirmedMasterGrade.date,
-                        )))
+                        ) &
+                        tbl.date.isBetweenValues(
+                            semester.startDate, semester.endDate)))
                   .go();
 
               // ignore: use_build_context_synchronously
@@ -100,7 +107,8 @@ class AddMasterGradeForm extends HookWidget {
                         resultController.text.replaceAll(",", "."));
                     await db.into(db.gradeResults).insert(
                           GradeResultsCompanion.insert(
-                            date: DateTime.now(),
+                            date: DateTime.now()
+                                .clamp(semester.startDate, semester.endDate),
                             result: result,
                             isConfirmedByParent: user.isOfAge
                                 ? const Value(true)

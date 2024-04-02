@@ -17,12 +17,13 @@ class CurrentOralGrade {
       required this.pastOralGrades});
 }
 
-CurrentOralGrade useCurrentOralGrade(Course course) {
+CurrentOralGrade useCurrentOralGrade(Course course, Semester semester) {
   final oralGrades = useQuery(
     () => db.select(db.gradeResults)
       ..where((tbl) =>
           tbl.course.equals(course.id) &
-          tbl.type.equalsValue(GradeResultType.oral))
+          tbl.type.equalsValue(GradeResultType.oral) &
+          tbl.date.isBetweenValues(semester.startDate, semester.endDate))
       ..orderBy([
         (tbl) => OrderingTerm(expression: tbl.date, mode: OrderingMode.desc)
       ]),
@@ -92,12 +93,13 @@ class CurrentMasterGrade {
       required this.pastMasterGrades});
 }
 
-CurrentMasterGrade useCurrentMasterGrade(Course course) {
+CurrentMasterGrade useCurrentMasterGrade(Course course, Semester semester) {
   final masterGrades = useQuery(
     () => db.select(db.gradeResults)
       ..where((tbl) =>
           tbl.course.equals(course.id) &
-          tbl.type.equalsValue(GradeResultType.master))
+          tbl.type.equalsValue(GradeResultType.master) &
+          tbl.date.isBetweenValues(semester.startDate, semester.endDate))
       ..orderBy([
         (tbl) => OrderingTerm(expression: tbl.date, mode: OrderingMode.desc)
       ]),

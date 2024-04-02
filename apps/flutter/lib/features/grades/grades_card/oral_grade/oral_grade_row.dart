@@ -1,4 +1,5 @@
 import 'package:class_mate/business_domain/user/use_user.dart';
+import 'package:class_mate/database/database.dart';
 import 'package:class_mate/features/grades/grades_card/oral_grade/add_oral_grade_form.dart';
 import 'package:class_mate/features/grades/grades_card/oral_grade/confirm_oral_grade_button.dart';
 import 'package:class_mate/features/grades/confirmation_status_view.dart';
@@ -14,15 +15,16 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 class OralGradeRow extends HookWidget {
+  final Semester semester;
   final Course course;
   final bool locked;
 
-  const OralGradeRow({super.key, required this.course, this.locked = false});
+  const OralGradeRow({super.key, required this.course, required this.semester, this.locked = false});
 
   @override
   Widget build(BuildContext context) {
     final user = useUser();
-    final oral = useCurrentOralGrade(course);
+    final oral = useCurrentOralGrade(course, semester);
     final currentOralGrade = oral.currentOralGrade;
     final mostRecentConfirmedOralGrade = oral.mostRecentConfirmedOralGrade;
 
@@ -49,6 +51,7 @@ class OralGradeRow extends HookWidget {
                     user: user,
                     currentOralGrade: currentOralGrade,
                     mostRecentConfirmedOralGrade: mostRecentConfirmedOralGrade,
+                    semester: semester,
                   ));
         });
 

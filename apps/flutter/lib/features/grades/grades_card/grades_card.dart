@@ -33,9 +33,9 @@ class GradesCard extends StatelessWidget {
           children: [
             heading,
             const SizedBox(height: 8),
-            MasterGradeRow(course: course),
+            MasterGradeRow(course: course, semester: semester),
             Divider(color: Colors.black.withOpacity(0.2), height: 48),
-            OralGradeRow(course: course, locked: locked),
+            OralGradeRow(course: course, semester: semester, locked: locked),
             Divider(color: Colors.black.withOpacity(0.2), height: 48),
             WrittenGradeRow(course: course, semester: semester, locked: locked),
           ],
