@@ -91,9 +91,9 @@ extension SemesterExt on Semester {
 
   DateTime get endDate {
     if (isWinter) {
-      return DateTime(year + 1, 2);
+      return DateTime(year + 1, 1, 31);
     } else {
-      return DateTime(year, 8);
+      return DateTime(year, 7, 31);
     }
   }
 }

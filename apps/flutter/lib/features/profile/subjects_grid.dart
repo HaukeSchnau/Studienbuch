@@ -23,6 +23,7 @@ class SubjectsGrid extends HookWidget {
   Widget build(BuildContext context) {
     final year = useYear();
     final courses = useCourses(semesterId: semester.id);
+    final averageMasterGrade = useAverageMasterGrade(semester);
 
     if (courses == null) {
       return const Center(child: CircularProgressIndicator());
@@ -89,6 +90,18 @@ class SubjectsGrid extends HookWidget {
             const EdgeInsets.only(left: 24, right: 24, bottom: 32, top: 12),
         child: Column(
           children: [
+            MyCard(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+              child: Text(
+                "Semesterschnitt: ${averageMasterGrade.formatAsGrade()}",
+              ),
+            ),
+            const SizedBox(
+              height: 16,
+            ),
             Table(
               children: [
                 for (var i = 0; i < courses.length; i += numColumns)
@@ -130,14 +143,14 @@ class CourseCard extends HookWidget {
   Widget build(BuildContext context) {
     final oral = useCurrentOralGrade(course, semester);
     final written = useWrittenGrades(course, semester);
+    final master = useCurrentMasterGrade(course, semester);
 
-    const pIndex = -1;
     final iconPath = course.icon;
 
     return MyCard(
       padding: const EdgeInsets.symmetric(
         horizontal: 16,
-        vertical: pIndex >= 0 && pIndex < 2 ? 48 : 24,
+        vertical: 24,
       ),
       onTap: () async {
         course.navigateTo(context, semester.id);
@@ -153,17 +166,10 @@ class CourseCard extends HookWidget {
               ),
             const Padding(padding: EdgeInsets.only(top: 4.0)),
             Text(
-              course.name + (pIndex == -1 ? "" : " (P${pIndex + 1})"),
+              course.name,
               textAlign: TextAlign.center,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            pIndex < 2 && pIndex != -1
-                ? const Text(
-                    "doppelte Wertung",
-                    style: TextStyle(
-                        fontSize: 12, color: Color.fromRGBO(0, 0, 0, .7)),
-                  )
-                : Container(),
             const SizedBox(
               height: 12,
             ),
@@ -207,7 +213,24 @@ class CourseCard extends HookWidget {
                   ],
                 )),
               ],
-            )
+            ),
+            if (master.mostRecentConfirmedMasterGrade != null)
+              const SizedBox(
+                height: 8,
+              ),
+            if (master.mostRecentConfirmedMasterGrade != null)
+              Row(
+                children: [
+                  Expanded(
+                      child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                          "Gesamtnote: ${master.mostRecentConfirmedMasterGrade != null ? master.mostRecentConfirmedMasterGrade!.result.formatAsGrade() : "—"}"),
+                    ],
+                  )),
+                ],
+              )
           ],
         ),
       ),

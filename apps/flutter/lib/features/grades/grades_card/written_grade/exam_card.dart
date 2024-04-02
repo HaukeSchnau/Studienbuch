@@ -1,14 +1,9 @@
-import 'package:class_mate/features/grades/confirmation_status_view.dart';
 import 'package:class_mate/database/database.dart';
 import 'package:class_mate/business_domain/user/use_user.dart';
 import 'package:class_mate/features/grades/grades_card/result_card.dart';
-import 'package:class_mate/infrastructure/util/date_util.dart';
-import 'package:class_mate/infrastructure/util/number_util.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/grade_result.dart';
-import 'package:class_mate/features/grades/confirmation_view.dart';
 import 'package:class_mate/presentation/colors.dart';
-import 'package:class_mate/presentation/components/card.dart';
 import 'package:class_mate/features/grades/confirm_with_signature.dart';
 import 'package:class_mate/features/grades/confirmation_info.dart';
 import 'package:flutter/material.dart';

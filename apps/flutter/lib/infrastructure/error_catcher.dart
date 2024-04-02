@@ -26,18 +26,16 @@ class QueueNotifier extends ChangeNotifier {
 
 final errorQueue = QueueNotifier();
 
-class UserException implements Error {
+class UserException implements Exception {
   final String message;
   final Object cause;
-
-  @override
   final StackTrace? stackTrace;
 
   UserException(this.message, this.cause, [this.stackTrace]);
 
   @override
   String toString() {
-    return "UserException: $message\n$cause";
+    return "UserException: $message\n$cause\n$stackTrace";
   }
 }
 

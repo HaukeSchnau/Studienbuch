@@ -105,18 +105,49 @@ class AddOralGradeForm extends HookWidget {
                 ? () async {
                     final result = double.parse(
                         resultController.text.replaceAll(",", "."));
-                    await db.into(db.gradeResults).insert(
-                          GradeResultsCompanion.insert(
-                            date: DateTime.now()
-                                .clamp(semester.startDate, semester.endDate),
-                            result: result,
-                            isConfirmedByParent: user.isOfAge
-                                ? const Value(true)
-                                : const Value.absent(),
-                            course: course.id,
-                            type: GradeResultType.oral,
-                          ),
-                        );
+                    final date = DateTime.now().clamp(
+                      semester.startDate,
+                      semester.endDate,
+                    );
+                    final dateExistsAlreadyQuery = db.select(db.gradeResults)
+                      ..where((tbl) =>
+                          tbl.date.equals(
+                            date,
+                          ) &
+                          tbl.course.equals(course.id) &
+                          tbl.type.equalsValue(GradeResultType.oral));
+                    final dateExistsAlready =
+                        (await dateExistsAlreadyQuery.get()).isNotEmpty;
+
+                    if (dateExistsAlready) {
+                      await (db.update(db.gradeResults)
+                            ..where((tbl) =>
+                                tbl.date.equals(
+                                  date,
+                                ) &
+                                tbl.course.equals(course.id) &
+                                tbl.type.equalsValue(GradeResultType.oral)))
+                          .write(
+                        GradeResultsCompanion(
+                          result: Value(result),
+                          isConfirmedByParent: user.isOfAge
+                              ? const Value(true)
+                              : const Value.absent(),
+                        ),
+                      );
+                    } else {
+                      await db.into(db.gradeResults).insert(
+                            GradeResultsCompanion.insert(
+                              date: date,
+                              result: result,
+                              isConfirmedByParent: user.isOfAge
+                                  ? const Value(true)
+                                  : const Value.absent(),
+                              course: course.id,
+                              type: GradeResultType.oral,
+                            ),
+                          );
+                    }
 
                     // ignore: use_build_context_synchronously
                     Navigator.of(context).pop();

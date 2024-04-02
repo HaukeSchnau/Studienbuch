@@ -5,6 +5,7 @@ import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/grade_result.dart';
 import 'package:class_mate/models/semester.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 
 class CurrentOralGrade {
   final GradeResult? currentOralGrade;
@@ -74,8 +75,10 @@ CurrentWrittenGrade useWrittenGrades(Course course, Semester semester) {
         writtenGrades: [], averageWrittenGrade: double.nan);
   }
 
-  final averageWrittenGrade =
-      writtenGrades.map((e) => e.result).fold<double>(0, (a, b) => a + b) /
+  final confirmedGrades = writtenGrades.where((e) => e.isConfirmed);
+  final averageWrittenGrade = confirmedGrades.isEmpty
+      ? double.nan
+      : confirmedGrades.map((e) => e.result).fold<double>(0, (a, b) => a + b) /
           (writtenGrades.length);
 
   return CurrentWrittenGrade(
@@ -120,4 +123,38 @@ CurrentMasterGrade useCurrentMasterGrade(Course course, Semester semester) {
       currentMasterGrade: currentMasterGrade,
       mostRecentConfirmedMasterGrade: mostRecentConfirmedMasterGrade,
       pastMasterGrades: masterGrades.skip(1).toList());
+}
+
+double useAverageMasterGrade(Semester semester) {
+  final courses = useCourses();
+
+  final masterGrades = useQuery(
+    () => db.select(db.gradeResults)
+      ..where((tbl) =>
+          tbl.type.equalsValue(GradeResultType.master) &
+          tbl.date.isBetweenValues(semester.startDate, semester.endDate) &
+          tbl.course.isIn(courses?.map((e) => e.id).toList() ?? []) &
+          tbl.isConfirmedByParent.equals(true) &
+          tbl.isConfirmedByTeacher.equals(true))
+      ..orderBy([
+        (tbl) => OrderingTerm(expression: tbl.date, mode: OrderingMode.desc)
+      ]),
+    [courses, semester],
+  );
+
+  return useMemoized(() {
+    final seenCourses = <int>{};
+    final grades = <double>[];
+
+    for (final grade in masterGrades ?? []) {
+      if (seenCourses.contains(grade.course)) {
+        continue;
+      }
+
+      seenCourses.add(grade.course);
+      grades.add(grade.result);
+    }
+
+    return grades.fold<double>(0, (a, b) => a + b) / grades.length;
+  }, [masterGrades]);
 }
