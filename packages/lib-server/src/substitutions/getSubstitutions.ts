@@ -1,3 +1,5 @@
+import { parse } from "node-html-parser";
+
 import { getSubstitutionsFromKadmos } from "@schnau/external-api";
 
 import {
@@ -28,7 +30,6 @@ export const getSubstitutions = async (school: string, formatName: string) => {
     showEvent: true,
     showTeacherOnEvent: true,
     showUnheraldedExams: true,
-    enableSubstitutionFrom: true,
     hideAbsent: false,
     showMessages: true,
   });
@@ -36,5 +37,32 @@ export const getSubstitutions = async (school: string, formatName: string) => {
   const columns = getSubstituionTableColumns(format);
   const substitutions = convertKadmosRowsToSubstitutionsTable(rows, columns);
 
-  return { columns, substitutions, date, lastUpdate };
+  const withParsedSubstitutions = substitutions.map((substitution) => {
+    if (!substitution.teacher?.data) return substitution;
+
+    const html = parse(substitution.teacher.data);
+
+    const substituteElem = html.querySelector(".substMonitorSubstElem");
+    const teacherElem = html.querySelector(".cancelStyle");
+
+    if (substituteElem && teacherElem) {
+      const substitute = substituteElem.text;
+      const teacher = teacherElem.text;
+      return {
+        ...substitution,
+        substitute: {
+          data: substitute,
+          rowSpan: 1,
+        },
+        teacher: {
+          data: teacher,
+          rowSpan: 1,
+        },
+      };
+    }
+
+    return substitution;
+  });
+
+  return { columns, substitutions: withParsedSubstitutions, date, lastUpdate };
 };

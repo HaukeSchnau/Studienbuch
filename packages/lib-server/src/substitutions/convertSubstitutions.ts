@@ -3,7 +3,7 @@ import type { KadmosFormat } from "@schnau/external-api";
 interface Column {
   key: string;
   name: string;
-  condition: keyof KadmosFormat;
+  condition?: keyof KadmosFormat;
 }
 
 const columns = [
@@ -43,6 +43,10 @@ const columns = [
     condition: "showTeacher",
   },
   {
+    key: "substitute",
+    name: "Vertretung",
+  },
+  {
     key: "type",
     name: "Art",
     condition: "showInfo",
@@ -68,12 +72,18 @@ export const convertKadmosRowsToSubstitutionsTable = (
   return rows.map(({ data }) => {
     const result: Partial<Record<ColumnKey, Cell>> = {};
 
-    columns.forEach((column, i) => {
-      result[column.key] = {
-        data: data[i],
-        rowSpan: 1,
-      };
-    });
+    columns
+      .filter((column) => "condition" in column && column.condition)
+      .forEach((column, i) => {
+        result[column.key] = {
+          data: data[i],
+          rowSpan: 1,
+        };
+      });
+    result.substitute = {
+      data: "",
+      rowSpan: 1,
+    };
 
     return result;
   });
@@ -82,5 +92,7 @@ export const convertKadmosRowsToSubstitutionsTable = (
 export const getSubstituionTableColumns = (
   format: KadmosFormat,
 ): ColumnConfiguration => {
-  return columns.filter((column) => format[column.condition]);
+  return columns.filter((column) =>
+    "condition" in column ? format[column.condition] : true,
+  );
 };

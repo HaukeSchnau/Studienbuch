@@ -17,6 +17,7 @@
     "@schnau/db": "workspace:^0.1.0",
     "@schnau/external-api": "workspace:^0.1.0",
     "@schnau/lib": "workspace:^0.1.0",
+    "node-html-parser": "^6.1.13",
     "zod": "^3.22.4"
   },
   "devDependencies": {
