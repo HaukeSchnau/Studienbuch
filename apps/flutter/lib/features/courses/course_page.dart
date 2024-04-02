@@ -1,6 +1,7 @@
-import 'package:class_mate/features/grades/grades_card.dart';
+import 'package:class_mate/features/grades/grades_card/grades_card.dart';
 import 'package:class_mate/database/database.dart';
 import 'package:class_mate/features/tasks/tasks_overview.dart';
+import 'package:class_mate/infrastructure/util/date_util.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/models/semester.dart';
 import 'package:class_mate/presentation/components/path_bg_page.dart';
@@ -61,6 +62,13 @@ class CoursePage extends HookWidget {
                                     color: Colors.white)),
                             Text(
                               semester.name,
+                              style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color.fromRGBO(255, 255, 255, 8),
+                                  fontStyle: FontStyle.italic),
+                            ),
+                            Text(
+                              "${semester.startDate.formatMonth()} - ${semester.endDate.formatMonth()}",
                               style: const TextStyle(
                                   fontSize: 14,
                                   color: Color.fromRGBO(255, 255, 255, 8),

@@ -125,13 +125,12 @@ class ConfirmationsView extends HookWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: confirmations
-                  .map<Widget>((confirmation) =>
-                      ConfirmationView(confirmation: confirmation))
-                  .toList()
-                    ..addAll(children ?? [])
-            ),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: confirmations
+                    .map<Widget>((confirmation) =>
+                        ConfirmationView(confirmation: confirmation))
+                    .toList()
+                  ..addAll(children ?? [])),
           ),
         ));
   }
@@ -155,7 +154,7 @@ Future<void> viewAbsenceConfirmation(
                     buildAbsenceInfoParent(absenceGroup, user, viewOnly: true),
                 fileName: "absence-excuse-${absence.id}-parent.svg"),
           ConfirmationWrapper(
-              signer: absence.course.teacher.name,
+              signer: absence.course.teacher.longFormalName,
               builder: (ctx) =>
                   buildAbsenceInfoTeacher(absence, user, viewOnly: true),
               fileName: "absence-excuse-${absence.id}-teacher.svg")
@@ -166,38 +165,71 @@ Future<void> viewAbsenceConfirmation(
 }
 
 Future<void> viewOralGradeConfirmation(
-    BuildContext context, Course course, User user, GradeResult result, [List<GradeResult>? previousResults]) async {
+    BuildContext context, Course course, User user, GradeResult result,
+    [List<GradeResult>? previousResults]) async {
   await Navigator.of(context).push(
     MaterialPageRoute(
       builder: (context) => ConfirmationsView(
-        title: "Mündliche Note",
-        confirmations: [
-          ConfirmationWrapper(
-              signer: course.teacher.name,
-              builder: (ctx) => buildOralGradeConfirmationInfoTeacher(
-                  course, user, result,
-                  viewOnly: true),
-              fileName: "signature-${result.id}-teacher.svg"),
-          if (!user.isOfAge)
+          title: "Mündliche Note",
+          confirmations: [
             ConfirmationWrapper(
-                signer: "Eltern",
-                builder: (ctx) => buildOralGradeConfirmationInfoParent(
+                signer: course.teacher.longFormalName,
+                builder: (ctx) => buildOralGradeConfirmationInfoTeacher(
                     course, user, result,
                     viewOnly: true),
-                fileName: "signature-${result.id}-parent.svg")
-        ],
-        children: previousResults == null
-            ? []
-            : [
-              const Text("Vorherige mündliche Noten",
-                  style: TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold)),
-          ...previousResults
-              .map((previousResult) => PreviousGradeView(result: previousResult)
-          )
+                fileName: "signature-${result.id}-teacher.svg"),
+            if (!user.isOfAge)
+              ConfirmationWrapper(
+                  signer: "Eltern",
+                  builder: (ctx) => buildOralGradeConfirmationInfoParent(
+                      course, user, result,
+                      viewOnly: true),
+                  fileName: "signature-${result.id}-parent.svg")
+          ],
+          children: previousResults == null
+              ? []
+              : [
+                  const Text("Vorherige mündliche Noten",
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  ...previousResults.map((previousResult) =>
+                      PreviousGradeView(result: previousResult))
+                ]),
+    ),
+  );
+}
 
-        ]
-      ),
+Future<void> viewMasterGradeConfirmation(
+    BuildContext context, Course course, User user, GradeResult result,
+    [List<GradeResult>? previousResults]) async {
+  await Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => ConfirmationsView(
+          title: "Gesamtnote",
+          confirmations: [
+            ConfirmationWrapper(
+                signer: course.teacher.longFormalName,
+                builder: (ctx) => buildMasterGradeConfirmationInfoTeacher(
+                    course, user, result,
+                    viewOnly: true),
+                fileName: "signature-${result.id}-teacher.svg"),
+            if (!user.isOfAge)
+              ConfirmationWrapper(
+                  signer: "Eltern",
+                  builder: (ctx) => buildMasterGradeConfirmationInfoParent(
+                      course, user, result,
+                      viewOnly: true),
+                  fileName: "signature-${result.id}-parent.svg")
+          ],
+          children: previousResults == null
+              ? []
+              : [
+                  const Text("Vorherige mündliche Noten",
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  ...previousResults.map((previousResult) =>
+                      PreviousGradeView(result: previousResult))
+                ]),
     ),
   );
 }
@@ -225,7 +257,7 @@ Future<void> viewWrittenGradeConfirmation(
         title: "Schriftliche Note",
         confirmations: [
           ConfirmationWrapper(
-              signer: course.teacher.name,
+              signer: course.teacher.longFormalName,
               builder: (ctx) => buildWrittenGradeConfirmationInfoTeacher(
                   course, user, result,
                   viewOnly: true),

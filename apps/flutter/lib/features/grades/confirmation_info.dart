@@ -19,7 +19,7 @@ Widget buildAbsenceInfoTeacher(Absence absence, User user,
           text: "Ich, ",
         ),
         TextSpan(
-            text: absence.course.teacher.name,
+            text: absence.course.teacher.longFormalName,
             style: const TextStyle(fontWeight: FontWeight.bold)),
         const TextSpan(text: " bestätige, dass der/die Schüler/in "),
         TextSpan(
@@ -96,7 +96,7 @@ Widget buildOralGradeConfirmationInfoTeacher(
           text: "Ich, ",
         ),
         TextSpan(
-            text: course.teacher.name,
+            text: course.teacher.longFormalName,
             style: const TextStyle(fontWeight: FontWeight.bold)),
         const TextSpan(text: " bestätige, dass der/die Schüler/in "),
         TextSpan(
@@ -170,7 +170,7 @@ Widget buildWrittenGradeConfirmationInfoTeacher(
           text: "Ich, ",
         ),
         TextSpan(
-            text: course.teacher.name,
+            text: course.teacher.longFormalName,
             style: const TextStyle(fontWeight: FontWeight.bold)),
         const TextSpan(text: " bestätige, dass der/die Schüler/in "),
         TextSpan(
@@ -224,6 +224,80 @@ Widget buildWrittenGradeConfirmationInfoParent(
             text: result.result.formatAsGrade(),
             style: const TextStyle(fontWeight: FontWeight.bold)),
         const TextSpan(text: " geschrieben hat."),
+      ]))
+    ],
+  );
+}
+
+Widget buildMasterGradeConfirmationInfoTeacher(
+    Course course, User user, GradeResult result,
+    {bool viewOnly = false}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      if (!viewOnly)
+        Text("Bitte lasse deinen Lehrer hier unterschreiben:",
+            style: TextStyle(color: Colors.black.withOpacity(.8))),
+      if (!viewOnly) const SizedBox(height: 16),
+      Text.rich(TextSpan(style: const TextStyle(fontSize: 16), children: [
+        const TextSpan(
+          text: "Ich, ",
+        ),
+        TextSpan(
+            text: course.teacher.longFormalName,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        const TextSpan(text: " bestätige, dass der/die Schüler/in "),
+        TextSpan(
+            text: user.name,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        const TextSpan(text: " am "),
+        TextSpan(
+            text: result.date.format(),
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        const TextSpan(text: " die Gesamtnote "),
+        TextSpan(
+            text: result.result.formatAsGrade(),
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        const TextSpan(text: " in "),
+        TextSpan(
+            text: course.name,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        const TextSpan(text: " hat."),
+      ]))
+    ],
+  );
+}
+
+Widget buildMasterGradeConfirmationInfoParent(
+    Course course, User user, GradeResult result,
+    {bool viewOnly = false}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      if (!viewOnly)
+        Text("Bitte lasse deine Eltern hier unterschreiben:",
+            style: TextStyle(color: Colors.black.withOpacity(.8))),
+      if (!viewOnly) const SizedBox(height: 16),
+      Text.rich(TextSpan(style: const TextStyle(fontSize: 16), children: [
+        const TextSpan(
+          text: "Ich habe zur Kenntnis genommen, dass mein Kind ",
+        ),
+        TextSpan(
+            text: user.name,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        const TextSpan(text: " am "),
+        TextSpan(
+            text: result.date.format(),
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        const TextSpan(text: " die Gesamtnote "),
+        TextSpan(
+            text: result.result.formatAsGrade(),
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        const TextSpan(text: " in "),
+        TextSpan(
+            text: course.name,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        const TextSpan(text: " hat."),
       ]))
     ],
   );

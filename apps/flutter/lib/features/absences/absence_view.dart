@@ -4,6 +4,7 @@ import 'package:class_mate/business_domain/user/use_user.dart';
 import 'package:class_mate/features/absences/absence.dart';
 import 'package:class_mate/infrastructure/util/date_util.dart';
 import 'package:class_mate/features/grades/confirmation_view.dart';
+import 'package:class_mate/models/course.dart';
 import 'package:class_mate/presentation/colors.dart';
 import 'package:class_mate/presentation/components/card.dart';
 import 'package:class_mate/features/grades/confirm_with_signature.dart';
@@ -53,7 +54,7 @@ class AbsenceView extends HookWidget {
       confirmWithSignature(
           context, (ctx) => buildAbsenceInfoTeacher(absence, user),
           title: "Fehlzeit entschuldigen (Lehrer)",
-          signer: "Unterschrift von ${absence.course.teacher.name}",
+          signer: "Unterschrift von ${absence.course.teacher.longFormalName}",
           fileName: "absence-excuse-${absence.id}-teacher.svg",
           onSuccess: () => (db.update(db.absences)
                     ..where((tbl) => tbl.id.equals(absence.id)))
