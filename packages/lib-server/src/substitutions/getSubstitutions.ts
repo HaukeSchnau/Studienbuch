@@ -38,9 +38,9 @@ export const getSubstitutions = async (school: string, formatName: string) => {
   const substitutions = convertKadmosRowsToSubstitutionsTable(rows, columns);
 
   const withParsedSubstitutions = substitutions.map((substitution) => {
-    if (!substitution.teacher?.data) return substitution;
+    if (!substitution.teacher) return substitution;
 
-    const html = parse(substitution.teacher.data);
+    const html = parse(substitution.teacher);
 
     const substituteElem = html.querySelector(".substMonitorSubstElem");
     const teacherElem = html.querySelector(".cancelStyle");
@@ -50,14 +50,8 @@ export const getSubstitutions = async (school: string, formatName: string) => {
       const teacher = teacherElem.text;
       return {
         ...substitution,
-        substitute: {
-          data: substitute,
-          rowSpan: 1,
-        },
-        teacher: {
-          data: teacher,
-          rowSpan: 1,
-        },
+        substitute,
+        teacher,
       };
     }
 

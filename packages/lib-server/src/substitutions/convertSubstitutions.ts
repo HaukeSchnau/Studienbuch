@@ -70,23 +70,33 @@ export const convertKadmosRowsToSubstitutionsTable = (
   columns: ColumnConfiguration,
 ) => {
   return rows.map(({ data }) => {
-    const result: Partial<Record<ColumnKey, Cell>> = {};
+    const result: Partial<Record<ColumnKey, string | undefined>> = {};
 
     columns
       .filter((column) => "condition" in column && column.condition)
       .forEach((column, i) => {
-        result[column.key] = {
-          data: data[i],
-          rowSpan: 1,
-        };
+        result[column.key] = data[i];
       });
-    result.substitute = {
-      data: "",
-      rowSpan: 1,
-    };
+    result.substitute = "";
 
     return result;
   });
+};
+
+export const addRowSpans = (
+  substitutions: Partial<Record<ColumnKey, string | undefined>>[],
+): Partial<Record<ColumnKey, Cell>>[] => {
+  return substitutions.map((substitution) =>
+    Object.fromEntries(
+      Object.entries(substitution).map(([key, value]) => [
+        key,
+        {
+          data: value,
+          rowSpan: 1,
+        },
+      ]),
+    ),
+  );
 };
 
 export const getSubstituionTableColumns = (

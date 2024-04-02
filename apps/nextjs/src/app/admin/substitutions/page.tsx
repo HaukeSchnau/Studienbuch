@@ -1,6 +1,9 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { addRowSpans } from "node_modules/@schnau/lib-server/src/substitutions/convertSubstitutions";
 
+import { db } from "@schnau/db";
+import { formalName } from "@schnau/lib";
 import { getSubstitutions } from "@schnau/lib-server";
 
 import { Card } from "~/components/layout/Card";
@@ -25,10 +28,13 @@ export default async function SubstitutionPage() {
   const school = "IGS Lilienthal";
   const FORMAT_NAME = "iServ_SuS_heute";
 
-  const { columns, substitutions, date, lastUpdate } = await getSubstitutions(
-    school,
-    FORMAT_NAME,
-  );
+  const {
+    columns,
+    substitutions: substitutionsWithoutRowSpan,
+    date,
+    lastUpdate,
+  } = await getSubstitutions(school, FORMAT_NAME);
+  const substitutions = addRowSpans(substitutionsWithoutRowSpan);
 
   substitutions.sort((a, b) => {
     return (
@@ -103,6 +109,83 @@ export default async function SubstitutionPage() {
           </tbody>
         </table>
       </Card>
+
+      <div className="h-16"></div>
+
+      <Card noPadding className="overflow-x-auto">
+        <DBSubstitutionTable />
+      </Card>
     </>
   );
 }
+
+const DBSubstitutionTable = async () => {
+  const substitutions = await db.substitution.findMany({
+    include: {
+      substitute: true,
+      course: {
+        include: {
+          teacher: true,
+          year: true,
+        },
+      },
+    },
+    orderBy: {
+      date: "desc",
+    },
+    take: 100,
+  });
+
+  return (
+    <table className="w-full border-collapse">
+      <thead>
+        <tr>
+          <th className="border-l border-grey-100 py-4 font-normal">Datum</th>
+          <th className="border-l border-grey-100 py-4 font-normal">Lehrer</th>
+          <th className="border-l border-grey-100 py-4 font-normal">
+            Vertreter
+          </th>
+          <th className="border-l border-grey-100 py-4 font-normal">Fach</th>
+          <th className="border-l border-grey-100 py-4 font-normal">Kurs</th>
+          <th className="border-l border-grey-100 py-4 font-normal">
+            Jahrgang
+          </th>
+          <th className="border-l border-grey-100 py-4 font-normal">Raum</th>
+          <th className="border-l border-grey-100 py-4 font-normal">Art</th>
+        </tr>
+      </thead>
+      <tbody>
+        {substitutions.map((substitution, i) => (
+          <tr key={i}>
+            <td className="border-l border-t border-grey-100 px-2 py-1">
+              {dayjs(substitution.date).format("DD.MM.YYYY")}
+            </td>
+            <td className="border-l border-t border-grey-100 px-2 py-1">
+              {formalName(substitution.course.teacher)}
+            </td>
+            <td className="border-l border-t border-grey-100 px-2 py-1">
+              {substitution.substitute
+                ? formalName(substitution.substitute)
+                : ""}
+            </td>
+            <td className="border-l border-t border-grey-100 px-2 py-1">
+              {substitution.course?.name}
+            </td>
+            <td className="border-l border-t border-grey-100 px-2 py-1">
+              {substitution.course?.courseId}
+            </td>
+            <td className="border-l border-t border-grey-100 px-2 py-1">
+              {substitution.course?.year.name}
+            </td>
+            <td className="border-l border-t border-grey-100 px-2 py-1">
+              {substitution.room}
+            </td>
+            <td className="border-l border-t border-grey-100 px-2 py-1">
+              {substitution.type}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
