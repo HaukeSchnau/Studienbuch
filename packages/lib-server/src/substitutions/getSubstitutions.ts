@@ -50,7 +50,7 @@ export const getSubstitutions = async (school: string, formatName: string) => {
       const teacher = teacherElem.text;
       return {
         ...substitution,
-        substitute,
+        substitute: ["---", ""].includes(substitute) ? undefined : substitute,
         teacher,
       };
     }

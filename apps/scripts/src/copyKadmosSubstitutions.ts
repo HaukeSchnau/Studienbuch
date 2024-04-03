@@ -17,8 +17,17 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
   let createdCount = 0;
   let updatedCount = 0;
 
-  for (const substitution of substitutions) {
-    const classes = substitution.class?.split(", ");
+  for (const sub of substitutions) {
+    const {
+      type: unparsedType,
+      subject,
+      class: clazz,
+      room,
+      substitute,
+      time,
+    } = sub;
+
+    const classes = clazz?.split(", ");
     for (const class_ of classes ?? []) {
       if (class_ === "") {
         continue;
@@ -65,7 +74,7 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
         where: {
           yearId: dbYear.id,
           classId: dbClass.id,
-          courseId: substitution.subject?.toLowerCase(),
+          courseId: subject?.toLowerCase(),
         },
         include: {
           teacher: true,
@@ -73,9 +82,7 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
       });
 
       if (!dbCourse) {
-        console.error(
-          `Could not find course for class ${class_}: ${substitution.subject}`,
-        );
+        console.error(`Could not find course for class ${class_}: ${subject}`);
         continue;
       }
 
@@ -87,42 +94,30 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
         "TROTZ_ABSENZ",
       ]);
       const type = typeSchema.safeParse(
-        substitution.type?.toUpperCase().replaceAll(" ", "_") || "VERTRETUNG",
+        unparsedType?.toUpperCase().replaceAll(" ", "_") || "VERTRETUNG",
       );
 
       if (!type.success) {
-        console.error(
-          `Could not parse type for ${class_}: ${substitution.type}`,
-        );
+        console.error(`Could not parse type for ${class_}: ${type}`);
         continue;
       }
 
-      const { start, end } = parseLessonTime(substitution);
+      const { start, end } = parseLessonTime(sub);
 
       if (!start || !end) {
-        console.error(
-          `Could not parse time for ${class_}: ${substitution.time}`,
-        );
+        console.error(`Could not parse time for ${class_}: ${time}`);
         continue;
       }
 
       const normalTimeIndex = getNormalTimeIndex(start);
 
       if (normalTimeIndex === -1) {
-        console.error(
-          `Could not find normalTimeIndex for ${class_}: ${substitution.time}`,
-        );
+        console.error(`Could not find normalTimeIndex for ${class_}: ${time}`);
         continue;
       }
 
       const lessonStart = normalTimeIndex * 2; // TODO: Mobile App currently expects lessonStart to be in hours, not blocks
       const lessonEnd = lessonStart + 1;
-
-      const substituteUser = await db.user.findFirst({
-        where: {
-          abbrv: substitution.substitute,
-        },
-      });
 
       const res = await db.substitution.upsert({
         where: {
@@ -141,12 +136,19 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
               id: dbCourse.id,
             },
           },
-          room: substitution.room,
+          room: room,
           type: type.data,
-          substitute: substituteUser
+          substitute: substitute
             ? {
-                connect: {
-                  id: substituteUser.id,
+                connectOrCreate: {
+                  where: {
+                    abbrv: substitute,
+                  },
+                  create: {
+                    abbrv: substitute,
+                    name: substitute,
+                    role: "TEACHER",
+                  },
                 },
               }
             : undefined,
@@ -160,12 +162,19 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
               id: dbCourse.id,
             },
           },
-          room: substitution.room,
+          room: room,
           type: type.data,
-          substitute: substituteUser
+          substitute: substitute
             ? {
-                connect: {
-                  id: substituteUser.id,
+                connectOrCreate: {
+                  where: {
+                    abbrv: substitute,
+                  },
+                  create: {
+                    abbrv: substitute,
+                    name: substitute,
+                    role: "TEACHER",
+                  },
                 },
               }
             : undefined,
