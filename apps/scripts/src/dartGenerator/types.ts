@@ -1,7 +1,6 @@
-import { capitalize } from "@schnau/lib";
-
 import { writeConverter } from "./converter";
 import { writeType } from "./generateDartClient";
+import { capitalize } from "./strings";
 import { ObjectType, Union } from "./trpc.type";
 import { getVariableName } from "./util";
 
