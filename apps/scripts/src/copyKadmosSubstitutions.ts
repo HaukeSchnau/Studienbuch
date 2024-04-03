@@ -20,10 +20,14 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
   for (const substitution of substitutions) {
     const classes = substitution.class?.split(", ");
     for (const class_ of classes ?? []) {
+      if (class_ === "") {
+        continue;
+      }
+
       const yearNumStr = class_.split(".")[0];
       if (!yearNumStr) {
-        // console.error(`Could not parse year for "${class_}"`);
-        continue;
+        console.error(`Could not parse year for "${class_}"`);
+        process.exit(1);
       }
       const yearNum = parseInt(yearNumStr);
       const identifierInYear = class_.split(".")[1];
@@ -54,7 +58,7 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
 
       if (!dbClass) {
         console.error(`Could not find class for ${class_}`);
-        continue;
+        process.exit(1);
       }
 
       const dbCourse = await db.course.findFirst({
