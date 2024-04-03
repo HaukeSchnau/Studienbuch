@@ -11,6 +11,7 @@
     "@schnau/api": "workspace:^0.1.0",
     "@schnau/auth": "^0.1.0",
     "@schnau/db": "^0.1.0",
+    "@schnau/external-api": "^0.1.0",
     "@schnau/lib": "^0.1.0",
     "@schnau/lib-server": "^0.1.0",
     "@schnau/tailwind-config": "workspace:^0.1.0",

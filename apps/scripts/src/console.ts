@@ -1,5 +1,6 @@
 import { program } from "@commander-js/extra-typings";
 
+import { findAbbrvName } from "@schnau/external-api";
 import { createUser } from "@schnau/lib-server";
 
 import { copySubstitutions } from "./copyKadmosSubstitutions";
@@ -46,6 +47,13 @@ program
   .argument("<outputDir>", "Directory to output the generated dart files")
   .action(async (fileName, outputDir) => {
     await generateDartClient(fileName, outputDir);
+  });
+
+program
+  .command("find-abbrv-name")
+  .argument("<abbrv>", "Abbreviation of the user")
+  .action(async (abbrv) => {
+    await findAbbrvName(abbrv);
   });
 
 program.parse();
