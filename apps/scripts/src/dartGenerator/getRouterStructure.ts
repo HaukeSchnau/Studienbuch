@@ -296,8 +296,3 @@ export function getRouterStructure(fileName: string): RootRouter {
     );
   }
 }
-
-if (!process.argv[2]) {
-  console.log("Usage: generateDartClient file.ts");
-  process.exit(1);
-}
