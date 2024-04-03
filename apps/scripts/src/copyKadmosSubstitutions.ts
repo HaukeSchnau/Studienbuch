@@ -3,6 +3,7 @@ import utc from "dayjs/plugin/utc";
 import { z } from "zod";
 
 import { db } from "@schnau/db";
+import { findAbbrvName, loginIserv } from "@schnau/external-api";
 import { getNormalTimeIndex } from "@schnau/lib";
 import { getSubstitutions } from "@schnau/lib-server";
 
@@ -13,6 +14,8 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
     "IGS Lilienthal",
     day === "TODAY" ? "iServ_SuS_heute" : "iServ_SuS_morgen",
   );
+
+  const makeIservRequest = await loginIserv("hauke.schnau", "yXPTd26D5");
 
   let createdCount = 0;
   let updatedCount = 0;
@@ -119,6 +122,13 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
       const lessonStart = normalTimeIndex * 2; // TODO: Mobile App currently expects lessonStart to be in hours, not blocks
       const lessonEnd = lessonStart + 1;
 
+      const substituteUser = substitute
+        ? (await findAbbrvName(makeIservRequest, substitute)) ?? {
+            name: substitute,
+            email: undefined,
+          }
+        : undefined;
+
       const res = await db.substitution.upsert({
         where: {
           substitutionIdentifier: {
@@ -138,7 +148,7 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
           },
           room: room,
           type: type.data,
-          substitute: substitute
+          substitute: substituteUser
             ? {
                 connectOrCreate: {
                   where: {
@@ -146,8 +156,8 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
                   },
                   create: {
                     abbrv: substitute,
-                    name: substitute,
-                    role: "TEACHER",
+                    name: substituteUser.name,
+                    email: substituteUser.email,
                   },
                 },
               }
@@ -164,7 +174,7 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
           },
           room: room,
           type: type.data,
-          substitute: substitute
+          substitute: substituteUser
             ? {
                 connectOrCreate: {
                   where: {
@@ -172,8 +182,8 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
                   },
                   create: {
                     abbrv: substitute,
-                    name: substitute,
-                    role: "TEACHER",
+                    name: substituteUser.name,
+                    email: substituteUser.email,
                   },
                 },
               }

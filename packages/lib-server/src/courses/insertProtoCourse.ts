@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 
 import type { Class, Year } from "@schnau/lib";
+import { findAbbrvName, MakeRequest } from "@schnau/external-api";
 
 interface ProtoCourseTime {
   weekday: number;
@@ -23,6 +24,7 @@ export const insertProtoCourse = async (
   year: Year,
   clazz: Class,
   course: ProtoCourse,
+  makeIservRequest: MakeRequest,
 ) => {
   const {
     teacher,
@@ -33,9 +35,15 @@ export const insertProtoCourse = async (
     times,
   } = course;
 
+  const teacherMatch = (await findAbbrvName(makeIservRequest, teacher)) ?? {
+    name: teacher,
+    email: undefined,
+  };
+
   const teacherValue = {
     abbrv: teacher,
-    name: teacher,
+    name: teacherMatch.name,
+    email: teacherMatch.email,
   };
 
   await db.course.upsert({

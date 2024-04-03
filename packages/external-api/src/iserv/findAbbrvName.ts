@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { loginIserv } from "./auth";
+import { MakeRequest } from "./auth";
 
 const schema = z.array(
   z.object({
@@ -16,9 +16,10 @@ const schema = z.array(
   }),
 );
 
-export const findAbbrvName = async (abbrv: string) => {
-  const makeRequest = await loginIserv("hauke.schnau", "yXPTd26D5");
-
+export const findAbbrvName = async (
+  makeRequest: MakeRequest,
+  abbrv: string,
+) => {
   const params = new URLSearchParams();
   params.set("type", "mail,list");
   params.set("query", abbrv);
@@ -37,5 +38,22 @@ export const findAbbrvName = async (abbrv: string) => {
       .includes(abbrv),
   );
 
-  return match;
+  if (!match) {
+    return null;
+  }
+
+  const regex =
+    /^([a-zA-ZäöüÄÖÜ\- ]+) <(([a-z\-]+\.)+[a-z\-]+@igslilienthal\.de)>$/;
+  const matchResult = regex.exec(match.text);
+  if (!matchResult) {
+    throw new Error(`Could not parse name and email from "${match.text}"`);
+  }
+
+  const [, name, email] = matchResult;
+
+  if (!name || !email) {
+    throw new Error(`Could not parse name or email from "${match.text}"`);
+  }
+
+  return { name, email };
 };

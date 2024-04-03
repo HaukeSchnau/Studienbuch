@@ -1,5 +1,10 @@
 import { Cookie, CookieJar } from "tough-cookie";
 
+export type MakeRequest = (
+  url: string,
+  options: RequestInit,
+) => Promise<Response>;
+
 export const loginIserv = async (username: string, password: string) => {
   const jar = new CookieJar();
 
@@ -98,7 +103,7 @@ export const loginIserv = async (username: string, password: string) => {
       "upgrade-insecure-requests": "1",
     },
     referrerPolicy: "no-referrer",
-    body: "_username=hauke.schnau&_password=yXPTd26D5",
+    body: `_username=${username}&_password=${password}`,
     method: "POST",
   });
 

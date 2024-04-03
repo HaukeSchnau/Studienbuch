@@ -8,6 +8,7 @@ import {
 } from "@schnau/db/prisma/zod";
 import { insertProtoCourse } from "@schnau/lib-server";
 
+import { loginIserv } from "../../../external-api/src/iserv";
 import { permissionProcedure } from "../procedures/protectedProcedure";
 import { publicProcedure } from "../procedures/publicProcedure";
 import { createRouter } from "../trpc";
@@ -91,8 +92,10 @@ export const courses = createRouter({
         });
       }
 
+      const makeIservRequest = await loginIserv("hauke.schnau", "yXPTd26D5");
+
       for (const course of courses) {
-        await insertProtoCourse(db, dbYear, dbClass, course);
+        await insertProtoCourse(db, dbYear, dbClass, course, makeIservRequest);
       }
     }),
 });
