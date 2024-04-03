@@ -1,7 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
 
 import type { Class, Year } from "@schnau/lib";
-import { findAbbrvName, MakeRequest } from "@schnau/external-api";
+import type { MakeRequest } from "@schnau/external-api";
+import { findAbbrvName } from "@schnau/external-api";
 
 interface ProtoCourseTime {
   weekday: number;

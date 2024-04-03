@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { MakeRequest } from "./auth";
+import type { MakeRequest } from "./auth";
 
 const schema = z.array(
   z.object({
@@ -43,7 +43,7 @@ export const findAbbrvName = async (
   }
 
   const regex =
-    /^([a-zA-ZäöüÄÖÜ\- ]+) <(([a-z\-]+\.)+[a-z\-]+@igslilienthal\.de)>$/;
+    /^([a-zA-ZäöüÄÖÜ\- ]+) <(([a-z-]+\.)+[a-z-]+@igslilienthal\.de)>$/;
   const matchResult = regex.exec(match.text);
   if (!matchResult) {
     throw new Error(`Could not parse name and email from "${match.text}"`);
