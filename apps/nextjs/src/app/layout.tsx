@@ -18,6 +18,8 @@ const materialIcons = localFont({
   src: "./MaterialSymbolsRounded.woff2",
   variable: "--font-material-icons",
   display: "block",
+  style: "normal",
+  weight: "300",
   adjustFontFallback: false,
   fallback: [],
 });
