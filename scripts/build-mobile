@@ -1,6 +1,7 @@
 #!/bin/bash
 
-set -eu
+set -eau
+. ../.env
 
 cd apps/flutter
 
@@ -19,6 +20,4 @@ open build/app/outputs/bundle/release
 flutter build ipa --obfuscate --split-debug-info ./debug-symbols
 open build/ios/archive/Runner.xcarchive
 
-set -a
-source .env
 flutter packages pub run sentry_dart_plugin

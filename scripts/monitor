@@ -1,5 +1,6 @@
 #!/bin/bash
 
-set -eu
+set -eau
+. ../.env
 
 pnpm run test:monitoring
