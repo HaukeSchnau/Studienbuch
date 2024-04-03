@@ -8,7 +8,7 @@ import { getSubstitutions } from "@schnau/lib-server";
 
 dayjs.extend(utc);
 
-const main = async (day: "TODAY" | "TOMORROW") => {
+export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
   const { substitutions, date } = await getSubstitutions(
     "IGS Lilienthal",
     day === "TODAY" ? "iServ_SuS_heute" : "iServ_SuS_morgen",
@@ -195,9 +195,6 @@ const main = async (day: "TODAY" | "TOMORROW") => {
     )}: Finished Day ${dayjs(date).format("DD.MM.YYYY")} (created: ${createdCount}, updated: ${updatedCount})`,
   );
 };
-
-void main("TODAY");
-void main("TOMORROW");
 
 function parseLessonTime({ time }: { time?: string }) {
   const [start, end] = time?.split("-") ?? [];
