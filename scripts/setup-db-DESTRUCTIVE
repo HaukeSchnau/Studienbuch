@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -eau
-. ../.env
+. .env
 
 pnpm run db:generate
 pnpm run db:push-delete 

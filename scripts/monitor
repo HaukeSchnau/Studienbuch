@@ -1,6 +1,6 @@
 #!/bin/bash
 
 set -eau
-. ../.env
+. .env
 
 pnpm run test:monitoring

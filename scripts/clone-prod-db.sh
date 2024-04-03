@@ -1,7 +1,7 @@
 #!/bin/sh
 
 set -eau
-. ../.env
+. .env
 
 dropdb studienbuch
 createdb studienbuch
