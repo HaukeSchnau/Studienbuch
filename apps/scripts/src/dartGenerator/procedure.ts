@@ -84,6 +84,7 @@ function writeProcedureBody(
         final response = await client.post(uri,
           headers: <String, String>{
             'Content-Type': 'application/json; charset=UTF-8',
+            'x-trpc-source': 'mobile-app',
           },
           body: jsonEncode(payload));
         ${writeResponseParser(output, outputType, path)}
@@ -94,7 +95,9 @@ function writeProcedureBody(
     inputType.type === "void"
       ? `
     final uri = Uri.https("studienbuch.app", "api/trpc/${path}");
-    final response = await client.get(uri);
+    final response = await client.get(uri, headers: {
+      'x-trpc-source': 'mobile-app',
+    });
     `
       : `
     final payload = {
@@ -102,7 +105,9 @@ function writeProcedureBody(
       ${getMeta(inputType)}
     };
     final uri = Uri.https("studienbuch.app", "api/trpc/${path}", {"input": jsonEncode(payload)});
-    final response = await client.get(uri);`;
+    final response = await client.get(uri, headers: {
+      'x-trpc-source': 'mobile-app',
+    });`;
 
   return `
     ${request}
