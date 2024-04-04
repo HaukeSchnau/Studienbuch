@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { headers } from "next/headers";
+import { Logger } from "next-axiom";
 
 import { createCaller, createTRPCContext } from "@schnau/api";
 
@@ -10,9 +11,11 @@ import { createCaller, createTRPCContext } from "@schnau/api";
 const createContext = cache(async () => {
   const heads = new Headers(headers());
   heads.set("x-trpc-source", "rsc");
+  const log = new Logger();
 
   return createTRPCContext({
     headers: heads,
+    log,
   });
 });
 

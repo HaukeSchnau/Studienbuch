@@ -5,6 +5,7 @@ import localFont from "next/font/local";
 import "~/styles/globals.css";
 
 import type { ReactNode } from "react";
+import { AxiomWebVitals } from "next-axiom";
 
 import { env } from "~/env";
 import { TRPCReactProvider } from "~/infrastructure/trpc/react";
@@ -67,6 +68,8 @@ export const viewport: Viewport = {
 export default function Layout(props: { children: ReactNode }) {
   return (
     <html lang="de">
+      <AxiomWebVitals />
+
       <body
         className={[
           "font-sans",

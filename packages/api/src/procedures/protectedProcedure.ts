@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { findPermissionScope } from "@schnau/auth/src/hasPermission";
 
 import { t } from "../trpc";
+import { logger } from "./loggingProcedure";
 
 /**
  * Reusable middleware that enforces users are logged in before running the
@@ -30,7 +31,9 @@ const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
  *
  * @see https://trpc.io/docs/procedures
  */
-export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);
+export const protectedProcedure = t.procedure
+  .use(logger)
+  .use(enforceUserIsAuthed);
 
 export const permissionProcedure = (permission: Permission) =>
   t.procedure.use(

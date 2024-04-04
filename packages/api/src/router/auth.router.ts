@@ -69,6 +69,7 @@ export const auth = createRouter({
     }),
 
   logout: protectedProcedure.mutation(async ({ ctx }) => {
+    ctx.log.info("Logging out");
     await db.session.delete({
       where: {
         token: ctx.session.token,

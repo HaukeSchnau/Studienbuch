@@ -1,4 +1,5 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
+import { withAxiom } from "next-axiom";
 
 import { appRouter, createTRPCContext } from "@schnau/api";
 
@@ -21,7 +22,7 @@ export function OPTIONS() {
   return response;
 }
 
-const handler = async (req: Request) => {
+const handler = withAxiom(async (req) => {
   const response = await fetchRequestHandler({
     endpoint: "/api/trpc",
     router: appRouter,
@@ -29,6 +30,7 @@ const handler = async (req: Request) => {
     createContext: () =>
       createTRPCContext({
         headers: req.headers,
+        log: req.log,
       }),
     onError({ error, path }) {
       console.error(`>>> tRPC Error on '${path}'`, error);
@@ -37,6 +39,6 @@ const handler = async (req: Request) => {
 
   setCorsHeaders(response);
   return response;
-};
+});
 
 export { handler as GET, handler as POST };

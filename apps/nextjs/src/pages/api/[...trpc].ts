@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { log } from "next-axiom";
 import { createOpenApiNextHandler } from "trpc-openapi";
 
 import { appRouter, createTRPCContext } from "@schnau/api";
@@ -21,6 +22,7 @@ const handler = (req: NextApiRequest, res: NextApiResponse) => {
 
   const context = createTRPCContext({
     headers,
+    log,
   });
 
   return createOpenApiNextHandler({

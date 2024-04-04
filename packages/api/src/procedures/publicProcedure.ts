@@ -1,4 +1,5 @@
 import { t } from "../trpc";
+import { logger } from "./loggingProcedure";
 
 /**
  * Public (unauthed) procedure
@@ -7,4 +8,4 @@ import { t } from "../trpc";
  * tRPC API. It does not guarantee that a user querying is authorized, but you
  * can still access user session data if they are logged in
  */
-export const publicProcedure = t.procedure;
+export const publicProcedure = t.procedure.use(logger);

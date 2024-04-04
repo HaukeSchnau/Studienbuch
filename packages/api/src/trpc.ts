@@ -14,6 +14,17 @@ import type { Session } from "@schnau/auth/src";
 import { getSessionFromHeaders } from "@schnau/auth/src";
 import { db } from "@schnau/db";
 
+interface Logger {
+  debug: (message: string, args?: Record<string, unknown>) => void;
+  info: (message: string, args?: Record<string, unknown>) => void;
+  warn: (message: string, args?: Record<string, unknown>) => void;
+  error: (message: string, args?: Record<string, unknown>) => void;
+  with: (args: Record<string, unknown>) => Logger;
+  withRequest: (req: unknown) => Logger;
+  attachResponseStatus: (statusCode: number) => void;
+  flush: () => Promise<void>;
+}
+
 /**
  * 1. CONTEXT
  *
@@ -29,6 +40,7 @@ import { db } from "@schnau/db";
 export const createTRPCContext = async (opts: {
   headers: Headers;
   session?: Session | null;
+  log: Logger;
 }) => {
   let session: Session | null = opts.session ?? null;
   if (!session) {
@@ -50,6 +62,9 @@ export const createTRPCContext = async (opts: {
   return {
     session,
     db,
+    log: opts.log.with({
+      source,
+    }),
   };
 };
 
