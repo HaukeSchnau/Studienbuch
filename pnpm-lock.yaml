@@ -278,6 +278,9 @@ importers:
       next:
         specifier: ^14.1.3
         version: 14.1.3(@babel/core@7.24.0)(react-dom@18.2.0)(react@18.2.0)
+      next-axiom:
+        specifier: ^1.1.1
+        version: 1.1.1(next@14.1.3)(react@18.2.0)
       next-bundle-analyzer:
         specifier: ^0.6.8
         version: 0.6.8(next@14.1.3)
@@ -13774,6 +13777,19 @@ packages:
     engines: {node: '>= 0.4.0'}
     dev: true
 
+  /next-axiom@1.1.1(next@14.1.3)(react@18.2.0):
+    resolution: {integrity: sha512-0r/TJ+/zetD+uDc7B+2E7WpC86hEtQ1U+DuWYrP/JNmUz+ZdPFbrZgzOSqaZ6TwYbXP56VVlPfYwq1YsKHTHYQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      next: '>=13.4'
+      react: '>=18.0.0'
+    dependencies:
+      next: 14.1.3(@babel/core@7.24.0)(react-dom@18.2.0)(react@18.2.0)
+      react: 18.2.0
+      remeda: 1.57.1
+      whatwg-fetch: 3.6.20
+    dev: false
+
   /next-bundle-analyzer@0.6.8(next@14.1.3):
     resolution: {integrity: sha512-mt5vZf7JTSYv5FkPP2hZh3fQ4YKYPFw3TZJ/1mASVBavKtlYolOVnAm/UVt/kepTNXz0cR3EdVTtIEOmqaEINg==}
     peerDependencies:
@@ -15986,6 +16002,10 @@ packages:
     dependencies:
       argparse: 1.0.10
       autolinker: 3.16.2
+    dev: false
+
+  /remeda@1.57.1:
+    resolution: {integrity: sha512-CHrQFjgGw7y7d5WDDG21nzES2Z3Ae+s1ZjVAYjLOsoCceM1EMzVrSd4dx+Eb3QooR16tbbHeJhzk0q8qsaquTg==}
     dev: false
 
   /remove-trailing-slash@0.1.1:

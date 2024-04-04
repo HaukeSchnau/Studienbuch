@@ -1,6 +1,7 @@
 import { fileURLToPath } from "url";
 import analyzer from "@next/bundle-analyzer";
 import _jiti from "jiti";
+import { withAxiom } from "next-axiom";
 
 const jiti = _jiti(fileURLToPath(import.meta.url));
 
@@ -22,4 +23,7 @@ const config = {
   output: "standalone",
 };
 
-export default analyzer({ enabled: process.env.ANALYZE === "true" })(config);
+const withAnalyzer = analyzer({ enabled: process.env.ANALYZE === "true" })(
+  config,
+);
+export default withAxiom(withAnalyzer);
