@@ -23,9 +23,7 @@ const handler = (req: NextApiRequest, res: NextApiResponse) => {
   const context = createTRPCContext({
     headers,
     log: log.with({
-      trpc: {
-        source: "REST API",
-      },
+      source: "REST API",
     }),
   });
 

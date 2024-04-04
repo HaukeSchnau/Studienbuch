@@ -31,9 +31,7 @@ const handler = withAxiom(async (req) => {
       createTRPCContext({
         headers: req.headers,
         log: req.log.with({
-          trpc: {
-            source: req.headers.get("x-trpc-source") ?? "unknown",
-          },
+          source: req.headers.get("x-trpc-source") ?? "unknown",
         }),
       }),
     onError({ error, path }) {

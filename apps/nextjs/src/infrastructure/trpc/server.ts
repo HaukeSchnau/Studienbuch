@@ -16,9 +16,7 @@ const createContext = cache(async () => {
   return createTRPCContext({
     headers: heads,
     log: log.with({
-      trpc: {
-        source: "rsc",
-      },
+      source: "rsc",
     }),
   });
 });
