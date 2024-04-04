@@ -62,9 +62,7 @@ export const createTRPCContext = async (opts: {
   return {
     session,
     db,
-    log: opts.log.with({
-      source,
-    }),
+    log: opts.log,
   };
 };
 

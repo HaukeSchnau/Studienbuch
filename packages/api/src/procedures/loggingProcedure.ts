@@ -6,9 +6,9 @@ export const logger = t.middleware(async ({ ctx, next, path, type }) => {
   const result = await next();
 
   const durationMs = performance.now() - start;
-  const meta = { path: path, type: type, durationMs };
+  const meta = { path, type, durationMs };
 
-  ctx.log.info("tRPC", meta);
+  ctx.log.info("tRPC", { trpc: meta });
   await ctx.log.flush();
 
   return result;
