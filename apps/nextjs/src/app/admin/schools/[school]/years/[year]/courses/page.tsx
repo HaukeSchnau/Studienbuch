@@ -2,7 +2,7 @@
 
 import { CourseList } from "~/components/course/CourseList";
 import { PageHeading } from "~/components/layout/PageHeading";
-import { useSelectedYear } from "~/features/yearSelect/selectedYearStore";
+import { useSelectedYear } from "../useSelectedYear";
 
 export default function Courses() {
   const { selectedYear } = useSelectedYear();

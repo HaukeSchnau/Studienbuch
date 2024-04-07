@@ -50,7 +50,3 @@ export const findPermissionScope = async (
 
   return null;
 };
-
-export const createPermissionScopeFilter = (scope: number[] | undefined) => {
-  return scope ? { in: scope } : undefined;
-};

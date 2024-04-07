@@ -7,11 +7,13 @@ import { Card } from "~/components/layout/Card";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { PageHeading } from "~/components/layout/PageHeading";
 import { YearForm } from "~/features/years/YearForm";
-import { useSafeParams } from "~/infrastructure/hooks/useSafeParams";
+import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
 import { api } from "~/infrastructure/trpc/react";
 
 export default function EditYearPage() {
-  const { yearId } = useSafeParams(z.object({ yearId: z.coerce.number() }));
+  const { year: yearId } = useParsedParams(
+    z.object({ year: z.coerce.number() }),
+  );
   const {
     data: year,
     isPending,
@@ -21,7 +23,7 @@ export default function EditYearPage() {
   const router = useRouter();
 
   const updateYear = api.years.update.useMutation({
-    onSuccess: () => router.push("/admin/years"),
+    onSuccess: () => router.push("/admin/users"),
   });
 
   if (isPending) {

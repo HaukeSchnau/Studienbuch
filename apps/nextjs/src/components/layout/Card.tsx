@@ -1,14 +1,20 @@
+import type { Route } from "next";
 import Link from "next/link";
 import clsx from "clsx";
 
-interface CardProps {
+interface CardProps<TUrl extends string> {
   children: React.ReactNode;
   noPadding?: boolean;
   className?: string | boolean;
-  href?: string;
+  href?: Route<TUrl>;
 }
 
-export const Card = ({ children, className, noPadding, href }: CardProps) => {
+export const Card = <TUrl extends string>({
+  children,
+  className,
+  noPadding,
+  href,
+}: CardProps<TUrl>) => {
   const classes = clsx("rounded-3xl bg-white shadow-md", className, {
     "p-8": !noPadding,
   });

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { z } from "zod";
 
 import type {
   Course,
@@ -7,6 +8,8 @@ import type {
   TimetableCell,
 } from "@schnau/lib";
 import { formatTime, formatWeeks, getNormalTime, hash } from "@schnau/lib";
+
+import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
 
 const weekdays = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
 
@@ -81,6 +84,13 @@ const CoursePill = ({
   weeks: CourseTimeWeeks;
   asLink?: boolean;
 }) => {
+  const { school, year } = useParsedParams(
+    z.object({
+      school: z.string(),
+      year: z.string(),
+    }),
+  );
+
   const content = (
     <>
       <div className="truncate">
@@ -98,7 +108,7 @@ const CoursePill = ({
   if (asLink) {
     return (
       <Link
-        href={`/admin/courses/${course.courseId}`}
+        href={`/admin/schools/${school}/years/${year}/courses/${course.courseId}`}
         className="bg-green-100 flex items-center gap-2 rounded-full px-3 py-2 text-sm text-white"
         style={{
           backgroundColor,

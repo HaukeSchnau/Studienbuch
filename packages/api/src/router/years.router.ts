@@ -28,16 +28,25 @@ export const years = createRouter({
       });
     }),
 
-  list: publicProcedure.query(({ ctx }) => {
-    return ctx.db.year.findMany({
-      orderBy: {
-        startYear: "desc",
-      },
-      include: {
-        school: true,
-      },
-    });
-  }),
+  list: publicProcedure
+    .input(
+      z.object({
+        school: z.number().optional(),
+      }),
+    )
+    .query(({ ctx, input }) => {
+      return ctx.db.year.findMany({
+        where: {
+          schoolId: input.school,
+        },
+        orderBy: {
+          startYear: "desc",
+        },
+        include: {
+          school: true,
+        },
+      });
+    }),
 
   listGroupedBySchool: publicProcedure.query(({ ctx }) => {
     return ctx.db.school.findMany({

@@ -1,9 +1,10 @@
+import type { Route } from "next";
 import Link from "next/link";
 import clsx from "clsx";
 
 import type { IconName } from "../layout/icon";
 
-type Props = {
+type Props<TUrl extends string> = {
   icon: IconName;
   className?: string;
   size?: "sm" | "md" | "lg";
@@ -13,18 +14,18 @@ type Props = {
       href?: never;
     }
   | {
-      href: string;
+      href: Route<TUrl>;
       onClick?: never;
     }
 );
 
-export const IconButton = ({
+export const IconButton = <TUrl extends string>({
   icon,
   onClick,
   href,
   className,
   size = "md",
-}: Props) => {
+}: Props<TUrl>) => {
   const classes = clsx(
     "rounded-full bg-transparent transition-colors hover:bg-black-80 grid place-items-center",
     className,

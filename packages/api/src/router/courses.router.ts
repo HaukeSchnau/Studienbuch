@@ -76,7 +76,7 @@ export const courses = createRouter({
       if (!dbYear) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Year not found",
+          message: "Year not found: " + yearId,
         });
       }
 

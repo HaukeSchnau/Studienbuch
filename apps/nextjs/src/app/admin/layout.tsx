@@ -1,14 +1,8 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
-import {
-  LogoutButton,
-  NavigationItem,
-} from "~/components/layout/nav/NavigationItem";
-import { PermissionNavigationItem } from "~/components/layout/nav/PermissionNavigationItem";
 import { isLoggedIn } from "~/features/auth/isLoggedIn";
-import { YearSelectField } from "~/features/yearSelect/YearSelectField";
-import { YearNav } from "./YearNav";
+import { AdminNav } from "./nav/AdminNav";
 
 interface Props {
   children: ReactNode;
@@ -30,70 +24,7 @@ export default async function AdminLayout({ children }: Props) {
           />
         </div>
         <ul className="flex flex-col gap-2">
-          <PermissionNavigationItem permission="EDIT_YEARS" href="/admin/years">
-            Jahrgänge
-          </PermissionNavigationItem>
-          <hr className="opacity-20" />
-          <YearSelectField />
-          <YearNav>
-            <PermissionNavigationItem
-              permission="EDIT_CLASSES"
-              href="/admin/classes"
-            >
-              Klassen
-            </PermissionNavigationItem>
-            <PermissionNavigationItem
-              permission="EDIT_COURSES"
-              href="/admin/courses"
-            >
-              Kurse
-            </PermissionNavigationItem>
-            <PermissionNavigationItem
-              permission="EDIT_COURSES"
-              href="/admin/schedules"
-            >
-              Stundenpläne
-            </PermissionNavigationItem>
-          </YearNav>
-          <NavigationItem href="/admin/substitutions">
-            Vertretungspläne
-          </NavigationItem>
-          <hr className="opacity-20" />
-          <PermissionNavigationItem
-            permission="EDIT_USERS"
-            href="/admin/users"
-            icon="person"
-          >
-            Personen
-          </PermissionNavigationItem>
-          <PermissionNavigationItem
-            permission="EDIT_USERS"
-            href="/admin/groups"
-            icon="groups"
-          >
-            Gruppen
-          </PermissionNavigationItem>
-          <PermissionNavigationItem
-            permission="EDIT_USERS"
-            href="/admin/permissions"
-            icon="security"
-          >
-            Rechte
-          </PermissionNavigationItem>
-          <PermissionNavigationItem
-            permission="VIEW_LOGS"
-            href="/admin/logs"
-            icon="contract"
-          >
-            Logs
-          </PermissionNavigationItem>
-          <NavigationItem href="/admin/settings" icon="settings">
-            Einstellungen
-          </NavigationItem>
-          <NavigationItem href="/impressum">Impressum</NavigationItem>
-          <NavigationItem href="/datenschutz">Datenschutz</NavigationItem>
-          <hr className="opacity-20" />
-          <LogoutButton />
+          <AdminNav />
         </ul>
       </div>
       <div className="flex-1 overflow-y-auto px-16 py-12">{children}</div>

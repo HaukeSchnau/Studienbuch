@@ -1,6 +1,11 @@
+"use client";
+
+import { z } from "zod";
+
 import type { Course } from "@schnau/lib";
 import { formalName } from "@schnau/lib";
 
+import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
 import { Card, CardHeading } from "../layout/Card";
 
 interface CourseCardProps {
@@ -8,8 +13,18 @@ interface CourseCardProps {
 }
 
 export const CourseCard = ({ course }: CourseCardProps) => {
+  const { school, year } = useParsedParams(
+    z.object({
+      school: z.string(),
+      year: z.string(),
+    }),
+  );
+
   return (
-    <Card href={`/admin/courses/${course.id}`} className="flex flex-col">
+    <Card
+      href={`/admin/schools/${school}/years/${year}/courses/${course.id}`}
+      className="flex flex-col"
+    >
       <CardHeading>{course.name}</CardHeading>
       <span>{course.courseId}</span>
       <div>{formalName(course.teacher)}</div>

@@ -1,14 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { z } from "zod";
 
 import { Card } from "~/components/layout/Card";
 import { PageHeading } from "~/components/layout/PageHeading";
 import { YearForm } from "~/features/years/YearForm";
+import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
 import { api } from "~/infrastructure/trpc/react";
 
 export default function NewYearPage() {
   const router = useRouter();
+  const { school } = useParsedParams(z.object({ school: z.string() }));
 
   const utils = api.useUtils();
   const addYear = api.years.add.useMutation({
@@ -16,7 +19,7 @@ export default function NewYearPage() {
       void utils.years.get.invalidate();
       void utils.years.list.invalidate();
       void utils.years.listGroupedBySchool.invalidate();
-      router.push("/admin/years");
+      router.push(`/admin/schools/${school}/years`);
     },
   });
 

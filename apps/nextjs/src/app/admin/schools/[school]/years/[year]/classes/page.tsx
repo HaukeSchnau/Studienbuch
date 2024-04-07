@@ -1,7 +1,7 @@
 "use client";
 
 import { PageHeading } from "~/components/layout/PageHeading";
-import { useSelectedYear } from "~/features/yearSelect/selectedYearStore";
+import { useSelectedYear } from "../useSelectedYear";
 import { ClassList } from "./components/ClassList";
 
 export default function ClassesPage() {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { getPermissions } from "@schnau/auth/src/getPermissions";
 import { checkPassword } from "@schnau/auth/src/password";
 import { createSession } from "@schnau/auth/src/session";
 import { db } from "@schnau/db";
@@ -11,6 +12,10 @@ import { createRouter } from "../trpc";
 export const auth = createRouter({
   getSession: publicProcedure.query(({ ctx }) => {
     return ctx.session;
+  }),
+
+  getPermissions: protectedProcedure.query(async ({ ctx }) => {
+    return getPermissions(ctx.session.user);
   }),
 
   login: publicProcedure

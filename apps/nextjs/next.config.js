@@ -20,6 +20,10 @@ const config = {
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
 
+  experimental: {
+    typedRoutes: true,
+  },
+
   output: "standalone",
 };
 

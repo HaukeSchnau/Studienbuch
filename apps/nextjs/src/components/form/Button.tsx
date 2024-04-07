@@ -1,14 +1,15 @@
 import type { ReactNode } from "react";
+import type { Route } from "next";
 import Link from "next/link";
 import clsx from "clsx";
 
-type ButtonProps = {
+type ButtonProps<TUrl extends string> = {
   children: ReactNode;
   className?: string;
   variant?: "primary" | "secondary" | "yellow" | "danger";
 } & (
   | {
-      href: string;
+      href: Route<TUrl>;
     }
   | {
       onClick?: () => void;
@@ -17,12 +18,12 @@ type ButtonProps = {
     }
 );
 
-export function Button({
+export function Button<TUrl extends string>({
   children,
   className,
   variant = "primary",
   ...props
-}: ButtonProps) {
+}: ButtonProps<TUrl>) {
   const classes = clsx(
     "rounded-3xl border-b-4 border-t-4 px-8 py-4 font-bold uppercase transition-all ",
     variant === "primary" &&

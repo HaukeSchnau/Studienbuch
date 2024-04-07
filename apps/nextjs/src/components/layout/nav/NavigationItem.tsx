@@ -1,5 +1,6 @@
 "use client";
 
+import type { Route } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,19 +9,19 @@ import cx from "clsx";
 import type { IconName } from "../icon";
 import { logout } from "~/features/auth/serverActions/logout";
 
-interface NavigationItemProps {
-  href?: string;
+interface NavigationItemProps<TUrl extends string> {
+  href?: Route<TUrl>;
   action?: () => void;
   children: ReactNode;
   icon?: IconName;
 }
 
-export const NavigationItem = ({
+export const NavigationItem = <TUrl extends string>({
   href,
   action,
   children,
   icon,
-}: NavigationItemProps) => {
+}: NavigationItemProps<TUrl>) => {
   const pathname = usePathname();
   const active = href && pathname ? pathname.startsWith(href) : false;
 

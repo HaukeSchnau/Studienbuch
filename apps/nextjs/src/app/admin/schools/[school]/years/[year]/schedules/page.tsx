@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Button } from "~/components/form/Button";
 import { PageHeading } from "~/components/layout/PageHeading";
 import { TimetableManager } from "~/features/timetable/TimetableManager";
-import { useSelectedYear } from "~/features/yearSelect/selectedYearStore";
+import { useSelectedYear } from "../useSelectedYear";
 import { ImportScheduleModal } from "./components/ImportScheduleModal";
 
 export default function SchedulesPage() {

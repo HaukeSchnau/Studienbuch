@@ -1,21 +1,31 @@
 "use client";
 
+import { z } from "zod";
+
 import { isYearActive } from "@schnau/lib";
 
 import { Button } from "~/components/form/Button";
 import { Card, CardHeading } from "~/components/layout/Card";
 import { Grid } from "~/components/layout/Grid";
 import { PageHeading } from "~/components/layout/PageHeading";
+import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
 import { api } from "~/infrastructure/trpc/react";
 
 export default function YearsPage() {
-  const years = api.years.list.useQuery();
+  const years = api.years.list.useQuery({});
+  const { school } = useParsedParams(
+    z.object({
+      school: z.string(),
+    }),
+  );
 
   return (
     <div>
       <div className="flex items-center justify-between">
         <PageHeading color="white">Jahrgänge</PageHeading>
-        <Button href="/admin/years/new">Neuer Jahrgang</Button>
+        <Button href={`/admin/schools/${school}/years/new`}>
+          Neuer Jahrgang
+        </Button>
       </div>
 
       <div className="h-4" />
@@ -40,7 +50,11 @@ export default function YearsPage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button href={`/admin/years/${year.id}`}>Bearbeiten</Button>
+                  <Button
+                    href={`/admin/schools/${school}/years/${year.id}/edit`}
+                  >
+                    Bearbeiten
+                  </Button>
                 </div>
               </Card>
             )}
