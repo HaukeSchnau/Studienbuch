@@ -50,9 +50,7 @@ export default function YearsPage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button
-                    href={`/admin/schools/${school}/years/${year.id}/edit`}
-                  >
+                  <Button href={`/admin/schools/${school}/years/${year.id}`}>
                     Bearbeiten
                   </Button>
                 </div>

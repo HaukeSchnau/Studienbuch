@@ -45,6 +45,7 @@ export const SchoolsNav = () => {
           <PermissionNavigationItem
             permission="EDIT_YEARS"
             href={`/admin/schools/${params.school}/years`}
+            exact
           >
             Jahrgänge
           </PermissionNavigationItem>

@@ -13,6 +13,7 @@ interface PermissionNavigationItemProps<TUrl extends string> {
   children: ReactNode;
   icon?: IconName;
   permission: Permission;
+  exact?: boolean;
 }
 
 export const PermissionNavigationItem = <TUrl extends string>({
@@ -20,6 +21,7 @@ export const PermissionNavigationItem = <TUrl extends string>({
   children,
   icon,
   permission,
+  exact,
 }: PermissionNavigationItemProps<TUrl>) => {
   const permissions = api.auth.getPermissions.useQuery();
 
@@ -29,7 +31,7 @@ export const PermissionNavigationItem = <TUrl extends string>({
   }
 
   return (
-    <NavigationItem href={href} icon={icon}>
+    <NavigationItem href={href} icon={icon} exact={exact}>
       {children}
     </NavigationItem>
   );

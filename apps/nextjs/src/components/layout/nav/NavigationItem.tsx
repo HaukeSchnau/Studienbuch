@@ -14,6 +14,7 @@ interface NavigationItemProps<TUrl extends string> {
   action?: () => void;
   children: ReactNode;
   icon?: IconName;
+  exact?: boolean;
 }
 
 export const NavigationItem = <TUrl extends string>({
@@ -21,9 +22,11 @@ export const NavigationItem = <TUrl extends string>({
   action,
   children,
   icon,
+  exact,
 }: NavigationItemProps<TUrl>) => {
   const pathname = usePathname();
-  const active = href && pathname ? pathname.startsWith(href) : false;
+  const active =
+    href && pathname && (exact ? pathname === href : pathname.startsWith(href));
 
   const content = (
     <div className="flex items-center gap-2">

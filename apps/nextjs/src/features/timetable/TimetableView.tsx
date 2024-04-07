@@ -7,7 +7,13 @@ import type {
   Timetable,
   TimetableCell,
 } from "@schnau/lib";
-import { formatTime, formatWeeks, getNormalTime, hash } from "@schnau/lib";
+import {
+  formalName,
+  formatTime,
+  formatWeeks,
+  getNormalTime,
+  hash,
+} from "@schnau/lib";
 
 import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
 
@@ -98,7 +104,7 @@ const CoursePill = ({
         {course.isChoosable ? "*" : ""}
       </div>
       <div>{course.courseId}</div>
-      <div className="grow">{course.teacher.name}</div>
+      <div className="grow">{formalName(course.teacher)}</div>
       {weeks !== "BOTH" && <div>{formatWeeks(weeks)}</div>}
     </>
   );
