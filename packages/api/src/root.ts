@@ -1,5 +1,3 @@
-import { generateOpenApiDocument } from "trpc-openapi";
-
 import { auth } from "./router/auth.router";
 import { classes } from "./router/classes.router";
 import { courses } from "./router/courses.router";
@@ -23,15 +21,6 @@ export const appRouter = createRouter({
   auth,
   schools,
   users,
-});
-
-export const openApiDocument = generateOpenApiDocument(appRouter, {
-  title: "Studienbuch API",
-  version: "1.0.0",
-  baseUrl:
-    process.env.NODE_ENV === "development"
-      ? "http://localhost:3000/api"
-      : "https://studienbuch.app/api",
 });
 
 // export type definition of API

@@ -22,7 +22,6 @@
     "dayjs": "^1.11.10",
     "patch-package": "^8.0.0",
     "superjson": "2.2.1",
-    "trpc-openapi": "^1.2.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
