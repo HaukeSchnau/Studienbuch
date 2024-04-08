@@ -37,6 +37,13 @@ export const SchoolsNav = () => {
       {params.school && (
         <>
           <NavigationItem
+            href={`/admin/schools/${params.school}/theme`}
+            icon="palette"
+          >
+            Theme
+          </NavigationItem>
+
+          <NavigationItem
             href={`/admin/schools/${params.school}/substitutions`}
           >
             Vertretungspläne

@@ -2,18 +2,65 @@ import type { Config } from "tailwindcss";
 
 export const colors = {
   primary: {
-    400: "#6DB868",
-    600: "#33A42B",
-    800: "#098A00",
+    default: "var(--primary, #33A42B)",
+    pale: "var(--primary-pale, #6DB868)",
+    des: "var(--primary-des, #EEF5ED)",
+
+    400: "var(--primary-pale, #6DB868)",
+    600: "var(--primary, #33A42B)",
+    800: "var(--primary-text, #098A00)",
   },
 
-  green: "#33A42B",
-  "green-desaturated": "#EEF5ED",
-  "green-text": "#098A00",
+  accent: {
+    default: "var(--accent, #3B7FD9)",
+    sec: "var(--accent-sec, #4d75a8)",
+    pale: "var(--accent-pale, #76A6E5)",
+    des: "var(--accent-des, #EBF0F7)",
+  },
 
-  blue: "#3B7FD9",
-  "blue-sec": "#4d75a8",
-  "blue-desaturated": "#EBF0F7",
+  danger: {
+    default: "var(--danger, #A42B33)",
+    sec: "var(--danger-sec, #8A0000)",
+    des: "var(--danger-des, #ECD4D6)",
+  },
+
+  alert: {
+    default: "var(--alert, #DCAB3C)",
+    des: "var(--alert-des, #F2E9D8)",
+  },
+
+  success: {
+    default: "var(--success, #33A42B)",
+    des: "var(--success-des, #EEF5ED)",
+    pale: "var(--success-pale, #6DB868)",
+  },
+
+  neutral: {
+    default: "var(--neutral, #666666)",
+    sec: "var(--neutral-sec, #e5e5e5)",
+  },
+
+  surface: "var(--surface, #ffffff)",
+  background: "var(--background, #f9f9f9)",
+
+  on: {
+    primary: "var(--on-primary, #ffffff)",
+    accent: "var(--on-accent, #ffffff)",
+    danger: "var(--on-danger, #ffffff)",
+    alert: "var(--on-alert, #ffffff)",
+    success: "var(--on-success, #ffffff)",
+    neutral: "var(--on-neutral, #ffffff)",
+    surface: "var(--on-surface, #000000)",
+    background: "var(--on-background, #000000)",
+  },
+
+  green: "var(--primary, #33A42B)",
+  "green-desaturated": "var(--primary-des, #EEF5ED)",
+  "green-text": "var(--primary-text, #098A00)",
+
+  blue: "var(--accent, #3B7FD9)",
+  "blue-sec": "var(--accent-sec, #4d75a8)",
+  "blue-desaturated": "var(--accent-des, #EBF0F7)",
 
   offwhite: "#F1F1F1",
   white: "#FFFFFF",

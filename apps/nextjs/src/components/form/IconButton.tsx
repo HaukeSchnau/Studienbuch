@@ -1,4 +1,5 @@
 import type { Route } from "next";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 
@@ -8,6 +9,7 @@ type Props<TUrl extends string> = {
   icon: IconName;
   className?: string;
   size?: "sm" | "md" | "lg";
+  style?: CSSProperties;
 } & (
   | {
       onClick: () => void;
@@ -25,6 +27,7 @@ export const IconButton = <TUrl extends string>({
   href,
   className,
   size = "md",
+  style,
 }: Props<TUrl>) => {
   const classes = clsx(
     "rounded-full bg-transparent transition-colors hover:bg-black-80 grid place-items-center",
@@ -48,14 +51,14 @@ export const IconButton = <TUrl extends string>({
 
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} className={classes}>
+      <button type="button" onClick={onClick} className={classes} style={style}>
         {content}
       </button>
     );
   }
 
   return (
-    <Link href={href} className={classes}>
+    <Link href={href} className={classes} style={style}>
       {content}
     </Link>
   );

@@ -57,3 +57,22 @@ i {
   -webkit-font-smoothing: antialiased;
   user-select: none;
 }
+
+input[type="color"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  /* width: 100px;
+  height: 100px; */
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+input[type="color"]::-webkit-color-swatch {
+  border-radius: 15px;
+  border: none;
+}
+input[type="color"]::-moz-color-swatch {
+  border-radius: 15px;
+  border: none;
+}

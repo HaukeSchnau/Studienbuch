@@ -1,11 +1,17 @@
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
-interface Props<T> {
-  data: T[];
-  renderItem: (item: T) => ReactElement;
-}
+type Props<T> =
+  | {
+      data: T[];
+      renderItem: (item: T) => ReactElement;
+    }
+  | {
+      data?: never;
 
-export const Grid = <T,>({ data, renderItem }: Props<T>) => {
+      children: ReactNode;
+    };
+
+export const Grid = <T,>(props: Props<T>) => {
   return (
     <div
       className="grid gap-10"
@@ -13,7 +19,9 @@ export const Grid = <T,>({ data, renderItem }: Props<T>) => {
         gridTemplateColumns: "repeat(auto-fill, minmax(15rem, 1fr))",
       }}
     >
-      {data.map((item) => renderItem(item))}
+      {props.data
+        ? props.data.map((item) => props.renderItem(item))
+        : props.children}
     </div>
   );
 };
