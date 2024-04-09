@@ -5,7 +5,6 @@ import { createRouter } from "../trpc";
 
 export const subscriptions = createRouter({
   subscribe: publicProcedure
-    .meta({ openapi: { method: "POST", path: "/subscriptions" } })
     .input(
       z.object({ messagingToken: z.string(), courses: z.array(z.number()) }),
     )

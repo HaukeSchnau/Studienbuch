@@ -13,7 +13,6 @@ import "@total-typescript/ts-reset";
 import { publicProcedure } from "../procedures/publicProcedure";
 
 export const sync = publicProcedure
-  .meta({ openapi: { method: "POST", path: "/sync" } })
   .input(
     z.object({
       courseIds: z.array(z.number()),

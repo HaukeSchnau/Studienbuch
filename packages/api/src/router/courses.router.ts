@@ -17,7 +17,6 @@ const editCoursesProcedure = permissionProcedure("EDIT_COURSES");
 
 export const courses = createRouter({
   list: publicProcedure
-    .meta({ openapi: { method: "GET", path: "/courses/{yearId}" } })
     .input(z.object({ yearId: z.number() }))
     .output(
       z.array(

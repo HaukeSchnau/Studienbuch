@@ -11,7 +11,6 @@ dayjs.extend(utc);
 
 export const substitutions = createRouter({
   get: publicProcedure
-    .meta({ openapi: { method: "GET", path: "/substitutions" } })
     .input(
       z.object({
         date: z.date().optional(),

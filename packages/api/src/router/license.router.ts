@@ -6,7 +6,6 @@ import { createRouter } from "../trpc";
 
 export const license = createRouter({
   check: publicProcedure
-    .meta({ openapi: { method: "GET", path: "/licenses/check" } })
     .input(
       z.object({
         licenseKey: z.string(),
@@ -33,7 +32,6 @@ export const license = createRouter({
       return "VALID" as const;
     }),
   activate: publicProcedure
-    .meta({ openapi: { method: "POST", path: "/licenses/activate" } })
     .input(
       z.object({
         licenseKey: z.string(),

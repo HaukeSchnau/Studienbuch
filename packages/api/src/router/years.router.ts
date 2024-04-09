@@ -15,7 +15,6 @@ export const years = createRouter({
    * @deprecated
    */
   get: publicProcedure
-    .meta({ openapi: { method: "GET", path: "/years" } })
     .input(z.void())
     .output(z.array(YearSchema.omit({ createdAt: true })))
     .query(({ ctx }) => {
