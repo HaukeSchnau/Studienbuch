@@ -79,7 +79,7 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
         <div className="flex gap-4">
           {updates.size > 0 && (
             <Button
-              variant="yellow"
+              variant="danger"
               onClick={() => {
                 updateUsersMutation.mutate(
                   [...updates.entries()].map(([id, update]) => ({

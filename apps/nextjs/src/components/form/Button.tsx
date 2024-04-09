@@ -6,7 +6,7 @@ import clsx from "clsx";
 type ButtonProps<TUrl extends string> = {
   children: ReactNode;
   className?: string;
-  variant?: "primary" | "secondary" | "yellow" | "danger";
+  variant?: "primary" | "secondary" | "alert" | "danger";
 } & (
   | {
       href: Route<TUrl>;
@@ -27,12 +27,13 @@ export function Button<TUrl extends string>({
   const classes = clsx(
     "rounded-3xl border-b-4 border-t-4 px-8 py-4 font-bold uppercase transition-all",
     variant === "primary" &&
-      "border-b-blue-sec border-t-blue bg-blue hover:border-t-blue-sec hover:bg-blue-sec text-on-accent",
-    variant === "secondary" && "border-transparent hover:bg-grey text-darkgrey",
-    variant === "yellow" &&
-      "border-b-yellow-sec border-t-yellow bg-yellow hover:border-t-yellow-sec hover:bg-yellow-sec text-white",
+      "border-b-accent-sec border-t-accent bg-accent hover:border-t-accent-sec hover:bg-accent-sec text-on-accent",
+    variant === "secondary" &&
+      "border-transparent hover:bg-neutral-sec text-neutral",
+    variant === "alert" &&
+      "border-b-alert-sec border-t-alert bg-alert hover:border-t-alert-sec hover:bg-alert-sec text-white",
     variant === "danger" &&
-      "border-b-red-sec border-t-red bg-red hover:border-t-red-sec hover:bg-red-sec text-white",
+      "border-b-danger-sec border-t-danger bg-danger hover:border-t-danger-sec hover:bg-danger-sec text-white",
     className,
   );
 

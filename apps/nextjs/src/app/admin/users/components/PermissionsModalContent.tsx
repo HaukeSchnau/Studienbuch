@@ -72,7 +72,7 @@ export const PermissionsModalContent = ({ user, onClose }: Props) => {
 
   return (
     <form onSubmit={submitHandler(handleSubmit)}>
-      <h2 className="text-xl font-bold text-green-text">
+      <h2 className="text-xl font-bold text-primary-text">
         Berechtigungen von {formalName(user)} bearbeiten
       </h2>
       <Field name="isSuperUser">

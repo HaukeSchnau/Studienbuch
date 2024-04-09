@@ -13,7 +13,7 @@ export const revalidate = 3600; // 1 hour
 export default async function RoadmapPage() {
   return (
     <div className=" py-12  md:py-16">
-      <h1 className="px-12 text-4xl font-bold text-primary-800 md:px-[10vw]">
+      <h1 className="px-12 text-4xl font-bold text-primary-text md:px-[10vw]">
         Woran wird gerade gearbeitet?
       </h1>
 
@@ -88,7 +88,7 @@ const IssueCard = async ({ issue, color }: IssueCardProps) => {
   return (
     <div
       className={clsx(
-        "flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-md",
+        "flex flex-col gap-2 rounded-2xl bg-surface p-4 shadow-md",
         style.issueCard,
       )}
       style={{ backgroundColor: color }}

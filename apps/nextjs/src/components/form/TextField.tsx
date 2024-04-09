@@ -22,7 +22,7 @@ export const TextField = forwardRef(function TextField(
   return (
     <label
       className={clsx({
-        "text-red": error,
+        "text-danger": error,
         "shake-horizontal": error,
       })}
     >
@@ -30,8 +30,8 @@ export const TextField = forwardRef(function TextField(
       <div className="relative">
         <input
           className={clsx(
-            "transition- mb-1 mt-2 w-full border-b bg-black-80 p-4 text-lg transition-all focus:border-blue focus:outline-none",
-            error ? "border-red" : "border-darkgrey",
+            "mb-1 mt-2 w-full border-b bg-black-80 p-4 text-lg transition-all focus:border-accent focus:outline-none",
+            error ? "border-danger" : "border-darkgrey",
           )}
           ref={ref}
           {...props}

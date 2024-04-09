@@ -112,10 +112,12 @@ export const ImportScheduleModal = ({ isOpen, onClose, year }: Props) => {
 
         <Subscribe selector={(form) => form.errors}>
           {(errors) =>
-            !!errors.length && <p className="text-red">{errors.join(", ")}</p>
+            !!errors.length && (
+              <p className="text-danger">{errors.join(", ")}</p>
+            )
           }
         </Subscribe>
-        {isError && <p className="text-red">{error.message}</p>}
+        {isError && <p className="text-danger">{error.message}</p>}
       </form>
     </Modal>
   );

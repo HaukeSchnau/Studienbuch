@@ -15,7 +15,7 @@ export default async function AdminLayout({ children }: Props) {
   }
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-offwhite">
+    <div className="relative flex h-screen overflow-hidden bg-background">
       <MainBlob className="absolute left-0 top-0 w-full" />
       <div className="relative hidden basis-1/6 overflow-auto rounded-r-3xl bg-white p-4 shadow-md md:block">
         <div className="mx-auto w-4/6 py-12">
@@ -43,7 +43,7 @@ const MainBlob = ({ className }: { className?: string }) => (
       d="M-15 281.825V44.5745V-26L1567 -2.97571C1564.92 33.8965 1537.03 133.168 1482.09 153.189C1413.42 178.215 1296.67 174.712 1186.17 175.713C1075.67 176.714 897.662 138.356 790.983 233.774C699.21 315.861 222.654 299.01 -15 281.825Z"
       fill="var(--primary)"
       stroke="var(--accent)"
-      stroke-width="8"
+      strokeWidth="8"
     />
   </svg>
 );

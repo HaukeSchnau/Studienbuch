@@ -14,7 +14,7 @@ export const PageHeading = ({
     <h1
       className={clsx("text-5xl font-semibold", {
         "text-white": color === "white",
-        "text-green": color === "green",
+        "text-primary-text": color === "green",
       })}
     >
       {children}

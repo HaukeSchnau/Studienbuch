@@ -182,7 +182,7 @@ export const UserForm = ({
         {isPending ? <LoadingIndicator /> : "Speichern"}
       </Button>
 
-      {error && <div className="text-red">{error}</div>}
+      {error && <div className="text-danger">{error}</div>}
     </form>
   );
 };

@@ -47,7 +47,7 @@ export const ChangePasswordModalContent = ({
 
   return (
     <form onSubmit={submitHandler(handleSubmit)}>
-      <h1 className="text-2xl font-bold text-green-text">
+      <h1 className="text-2xl font-bold text-primary-text">
         Passwort von {formalName(user)} ändern
       </h1>
 
@@ -111,11 +111,13 @@ export const ChangePasswordModalContent = ({
       <div className="h-4" />
 
       <Subscribe selector={(form) => form.errors}>
-        {(error) => <div className="text-red">{error.join(", ")}</div>}
+        {(error) => <div className="text-danger">{error.join(", ")}</div>}
       </Subscribe>
 
       {updatePasswordMutation.isError && (
-        <div className="text-red">{updatePasswordMutation.error.message}</div>
+        <div className="text-danger">
+          {updatePasswordMutation.error.message}
+        </div>
       )}
 
       <div className="h-4" />

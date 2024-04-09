@@ -40,5 +40,5 @@ interface CardHeadingProps {
 }
 
 export const CardHeading = ({ children }: CardHeadingProps) => {
-  return <h2 className="mb-4 text-2xl font-bold text-green">{children}</h2>;
+  return <h2 className="mb-4 text-2xl font-bold text-primary">{children}</h2>;
 };

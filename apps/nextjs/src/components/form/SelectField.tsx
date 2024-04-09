@@ -44,7 +44,7 @@ export function SelectField<TOption, TGroup = unknown>({
     <div className="flex flex-col gap-1">
       {label && <label className="text-sm">{label}</label>}
       <select
-        className="mb-1 mt-2 w-full cursor-pointer border-b border-darkgrey bg-black-80 p-4 text-lg transition-all focus:border-blue focus:outline-none"
+        className="border-darkgrey mb-1 mt-2 w-full cursor-pointer border-b bg-black-80 p-4 text-lg transition-all focus:border-accent focus:outline-none"
         value={valueId ?? ""}
         onChange={(e) =>
           onChange(
@@ -77,7 +77,7 @@ export function SelectField<TOption, TGroup = unknown>({
             ))}
       </select>
 
-      {error && <div className="text-red">{error}</div>}
+      {error && <div className="text-danger">{error}</div>}
     </div>
   );
 }

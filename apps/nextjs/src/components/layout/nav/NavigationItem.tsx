@@ -38,8 +38,8 @@ export const NavigationItem = <TUrl extends string>({
   return (
     <li
       className={cx("cursor-pointer rounded-3xl transition", {
-        "bg-green text-white": active,
-        "hover:bg-grey": !active,
+        "bg-primary text-white": active,
+        "hover:bg-neutral-sec": !active,
       })}
     >
       {href && (

@@ -20,12 +20,12 @@ export const DeleteUserModalContent = ({ user, onClose }: Props) => {
 
   return (
     <div>
-      <h2 className="text-xl font-bold text-green-text">Nutzer löschen</h2>
+      <h2 className="text-xl font-bold text-primary-text">Nutzer löschen</h2>
       <p>
         Möchtest du <strong>{formalName(user)}</strong> wirklich löschen?
       </p>
       {deleteUserMutation.isError && (
-        <div className="text-red">{deleteUserMutation.error.message}</div>
+        <div className="text-danger">{deleteUserMutation.error.message}</div>
       )}
       <div className="flex justify-end gap-4 pt-8">
         <Button variant="secondary" onClick={onClose}>

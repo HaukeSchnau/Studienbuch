@@ -29,7 +29,7 @@ export const TextFieldCell = ({
       value={value}
       onBlur={onBlur}
       onChange={(e) => setValue(e.target.value)}
-      className={clsx("p-2", isDirty && "bg-yellow text-white")}
+      className={clsx("p-2", isDirty && "bg-alert text-white")}
       style={{
         width: `max(100%, ${value.length}ch)`,
       }}
@@ -73,7 +73,7 @@ export const SelectCell = <TValues extends string>({
       value={value}
       onBlur={onBlur}
       onChange={(e) => setValue(e.target.value as TValues)}
-      className={clsx("w-min p-2", isDirty && "bg-yellow text-white")}
+      className={clsx("w-min p-2", isDirty && "bg-alert text-white")}
     >
       {values.map((value) => (
         <option key={value} value={value}>
