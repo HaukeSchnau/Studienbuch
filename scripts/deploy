@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -eau
+. .env
+
+SRC_DIR="${1:-src}"
+BUILDS_DIR="${2:-builds}"
+
+cd $SRC_DIR
+
+pnpm install
+pnpm db:deploy
+pnpm --filter nextjs build
+
+BUILD_ID="$(date +%s)-$(git rev-parse HEAD)"
+BUILD_PATH="$BUILDS_DIR/$BUILD_ID"
+
+cd ..
+
+mkdir -p "$BUILD_PATH/_next"
+
+mv "$SRC_DIR/apps/nextjs/.next/standalone" "$BUILD_PATH/server"
+mv "$SRC_DIR/apps/nextjs/.next/static" "$BUILD_PATH/_next/static"
+cp -r "$SRC_DIR/apps/nextjs/public" "$BUILD_PATH/public"
+
+rm prod
+ln -s "$BUILD_PATH" prod
+
+pm2 reload Prod

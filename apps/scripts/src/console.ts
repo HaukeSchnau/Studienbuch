@@ -22,6 +22,8 @@ program.command("copy-substitutions").action(async () => {
   await copySubstitutions("TODAY");
   console.log("Copying tomorrow's substitutions...");
   await copySubstitutions("TOMORROW");
+
+  process.exit(0);
 });
 
 program
@@ -33,6 +35,8 @@ program
     console.log(`Creating user "${username}"...`);
     await createUser(username, email, password);
     console.log(`User "${username}" created!`);
+
+    process.exit(0);
   });
 
 program
@@ -44,6 +48,8 @@ program
 
     console.log(`Generating ${number} licenses...`);
     await generateLicenses(number);
+
+    process.exit(0);
   });
 
 program
@@ -54,6 +60,8 @@ program
     await generateDartClient(fileName, outputDir);
 
     await exec(`dart format ${outputDir}`);
+
+    process.exit(0);
   });
 
 program
@@ -115,6 +123,7 @@ program.command("add-names-to-existing-users").action(async () => {
   }
 
   console.log("Names added to existing users!");
+  process.exit(0);
 });
 
 program.parse();

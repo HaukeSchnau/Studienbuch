@@ -1,8 +1,0 @@
-#!/bin/bash
-
-set -eau
-. .env
-
-pnpm run db:generate
-pnpm run db:push-delete 
-ts-node apps/scripts/src/seed

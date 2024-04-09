@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -eau
+. .env
+
+if [[ $(hostname) == *"server"* ]] || [[ "$NODE_ENV" == "production" ]]; then
+    echo "This script is not intended to be run on the production server."
+    exit 1
+fi
+
+dropdb studienbuch
+createdb studienbuch
+ssh studienbuch@schnau.dev "pg_dump" | psql studienbuch

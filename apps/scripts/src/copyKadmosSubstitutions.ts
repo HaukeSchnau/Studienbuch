@@ -3,7 +3,7 @@ import utc from "dayjs/plugin/utc";
 import { z } from "zod";
 
 import { db } from "@schnau/db";
-import { findAbbrvName, loginIserv } from "@schnau/external-api";
+import { findAbbrvName, loginIserv, MakeRequest } from "@schnau/external-api";
 import { getNormalTimeIndex } from "@schnau/lib";
 import { getSubstitutions } from "@schnau/lib-server";
 
@@ -15,7 +15,43 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
     day === "TODAY" ? "iServ_SuS_heute" : "iServ_SuS_morgen",
   );
 
-  const makeIservRequest = await loginIserv("hauke.schnau", "yXPTd26D5");
+  let makeIservRequest: MakeRequest | null = null;
+  const lazyFindAbbrv = async (abbrv: string) => {
+    makeIservRequest ??= await loginIserv("hauke.schnau", "yXPTd26D5");
+    console.log("Making request for " + abbrv);
+    return findAbbrvName(makeIservRequest, abbrv);
+  };
+
+  const lazyGetCreateUser = async (abbrv?: string) => {
+    if (!abbrv) {
+      return undefined;
+    }
+
+    const existingUser = await db.user.count({
+      where: {
+        abbrv,
+      },
+    });
+
+    if (existingUser === 1) {
+      console.log("Reusing existing user for " + abbrv);
+      return {
+        connect: {
+          abbrv,
+        },
+      };
+    }
+
+    const iservUser = await lazyFindAbbrv(abbrv);
+
+    return {
+      create: {
+        abbrv,
+        name: iservUser?.name ?? abbrv,
+        email: iservUser?.email,
+      },
+    };
+  };
 
   let createdCount = 0;
   let updatedCount = 0;
@@ -122,12 +158,7 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
       const lessonStart = normalTimeIndex * 2; // TODO: Mobile App currently expects lessonStart to be in hours, not blocks
       const lessonEnd = lessonStart + 1;
 
-      const substituteUser = substitute
-        ? (await findAbbrvName(makeIservRequest, substitute)) ?? {
-            name: substitute,
-            email: undefined,
-          }
-        : undefined;
+      const substituteUser = await lazyGetCreateUser(substitute);
 
       const res = await db.substitution.upsert({
         where: {
@@ -148,20 +179,7 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
           },
           room: room,
           type: type.data,
-          substitute: substituteUser
-            ? {
-                connectOrCreate: {
-                  where: {
-                    abbrv: substitute,
-                  },
-                  create: {
-                    abbrv: substitute,
-                    name: substituteUser.name,
-                    email: substituteUser.email,
-                  },
-                },
-              }
-            : undefined,
+          substitute: substituteUser,
         },
         update: {
           date,
@@ -174,20 +192,7 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
           },
           room: room,
           type: type.data,
-          substitute: substituteUser
-            ? {
-                connectOrCreate: {
-                  where: {
-                    abbrv: substitute,
-                  },
-                  create: {
-                    abbrv: substitute,
-                    name: substituteUser.name,
-                    email: substituteUser.email,
-                  },
-                },
-              }
-            : undefined,
+          substitute: substituteUser,
         },
       });
 
