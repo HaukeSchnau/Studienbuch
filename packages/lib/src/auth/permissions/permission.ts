@@ -1,10 +1,13 @@
-import type { z } from "zod";
-
-import type { PermissionSchema } from "@schnau/db/prisma/zod";
-
 import type { PermissionScope } from "./scope";
 
-export type Permission = z.infer<typeof PermissionSchema>;
+export type Permission =
+  | "EDIT_INFO_PAGES"
+  | "EDIT_USERS"
+  | "EDIT_COURSES"
+  | "EDIT_YEARS"
+  | "EDIT_CLASSES"
+  | "EDIT_SCHOOLS"
+  | "VIEW_LOGS";
 
 export interface PermissionOnUser {
   permission: Permission;

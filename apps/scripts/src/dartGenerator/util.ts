@@ -75,5 +75,8 @@ export function getVariableName(name: string) {
   if (name === "class") {
     return "clazz";
   }
+  if (name === "default") {
+    return "def";
+  }
   return name;
 }

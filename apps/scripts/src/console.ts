@@ -1,3 +1,5 @@
+import { exec as execCb } from "child_process";
+import { promisify } from "util";
 import { program } from "@commander-js/extra-typings";
 
 import { db } from "@schnau/db";
@@ -7,6 +9,8 @@ import { createUser } from "@schnau/lib-server";
 import { copySubstitutions } from "./copyKadmosSubstitutions";
 import { generateDartClient } from "./dartGenerator/generateDartClient";
 import { generateLicenses } from "./seed/generateLicenses";
+
+const exec = promisify(execCb);
 
 program
   .name("console")
@@ -48,6 +52,8 @@ program
   .argument("<outputDir>", "Directory to output the generated dart files")
   .action(async (fileName, outputDir) => {
     await generateDartClient(fileName, outputDir);
+
+    await exec(`dart format ${outputDir}`);
   });
 
 program

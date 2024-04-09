@@ -144,8 +144,14 @@ class YearsApi extends BaseApi {
         .toList();
   }
 
-  Future<List<YearsListOutput>> list() async {
-    final uri = Uri.https("studienbuch.app", "api/trpc/years.list");
+  Future<List<YearsListOutput>> list({num? school}) async {
+    final input = YearsListInput(school: school);
+
+    final payload = {
+      "json": input.toJson(),
+    };
+    final uri = Uri.https("studienbuch.app", "api/trpc/years.list",
+        {"input": jsonEncode(payload)});
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -419,6 +425,20 @@ class AuthApi extends BaseApi {
         : null;
   }
 
+  Future<AuthGetPermissionsOutput> getPermissions() async {
+    final uri = Uri.https("studienbuch.app", "api/trpc/auth.getPermissions");
+    final response = await client.get(uri, headers: {
+      'x-trpc-source': 'mobile-app',
+    });
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to get auth.getPermissions: ${response.body}');
+    }
+
+    final json = jsonDecode(utf8.decode(response.bodyBytes));
+    return AuthGetPermissionsOutput.fromJson(json['result']['data']['json']);
+  }
+
   Future<void> logout() async {
     final uri = Uri.https("studienbuch.app", "api/trpc/auth.logout");
     final payload = {
@@ -455,6 +475,51 @@ class SchoolsApi extends BaseApi {
     return (json['result']['data']['json'] as List<dynamic>)
         .map<YearsListOutputSchool>((e) => YearsListOutputSchool.fromJson(e))
         .toList();
+  }
+
+  Future<YearsListOutputSchool> setTheme(
+      {required num school,
+      required String image,
+      required SchoolsSetThemeInputTheme theme}) async {
+    final input =
+        SchoolsSetThemeInput(school: school, image: image, theme: theme);
+
+    final uri = Uri.https("studienbuch.app", "api/trpc/schools.setTheme");
+    final payload = {
+      "json": input.toJson(),
+    };
+
+    final response = await client.post(uri,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+          'x-trpc-source': 'mobile-app',
+        },
+        body: jsonEncode(payload));
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to get schools.setTheme: ${response.body}');
+    }
+
+    final json = jsonDecode(utf8.decode(response.bodyBytes));
+    return YearsListOutputSchool.fromJson(json['result']['data']['json']);
+  }
+
+  Future<SchoolsGetThemeOutput> getTheme(num input) async {
+    final payload = {
+      "json": input,
+    };
+    final uri = Uri.https("studienbuch.app", "api/trpc/schools.getTheme",
+        {"input": jsonEncode(payload)});
+    final response = await client.get(uri, headers: {
+      'x-trpc-source': 'mobile-app',
+    });
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to get schools.getTheme: ${response.body}');
+    }
+
+    final json = jsonDecode(utf8.decode(response.bodyBytes));
+    return SchoolsGetThemeOutput.fromJson(json['result']['data']['json']);
   }
 }
 

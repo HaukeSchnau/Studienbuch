@@ -21,7 +21,7 @@ export default function ThemePage({
   const query = api.schools.getTheme.useQuery(parseInt(params.school));
   const saveMutation = api.schools.setTheme.useMutation({
     onSuccess: () => {
-      query.refetch();
+      void query.refetch();
     },
   });
 

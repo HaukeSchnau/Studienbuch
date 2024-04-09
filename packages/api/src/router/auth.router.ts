@@ -15,6 +15,10 @@ export const auth = createRouter({
   }),
 
   getPermissions: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.session.user.isSuperUser)
+      return {
+        isSuperUser: true,
+      };
     return getPermissions(ctx.session.user);
   }),
 

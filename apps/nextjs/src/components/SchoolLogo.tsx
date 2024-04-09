@@ -2,10 +2,7 @@
 
 import { z } from "zod";
 
-import {
-  useParsedParams,
-  useSafeParams,
-} from "~/infrastructure/hooks/useSafeParams";
+import { useSafeParams } from "~/infrastructure/hooks/useSafeParams";
 import { api } from "~/infrastructure/trpc/react";
 
 export const SchoolLogo = () => {
@@ -14,5 +11,7 @@ export const SchoolLogo = () => {
     enabled: school !== undefined,
   });
 
-  return <img src={query.data?.image} className="rounded-full" />;
+  return (
+    <img src={query.data?.image} className="rounded-full" alt="Schullogo" />
+  );
 };

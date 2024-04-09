@@ -4,9 +4,13 @@ import { db } from "@schnau/db";
 export const getPermissions = async (user: {
   id: number;
   isSuperUser: boolean;
-}): Promise<"ALL" | Partial<Record<Permission, PermissionScope>>> => {
+}): Promise<
+  { isSuperUser: boolean } & Partial<Record<Permission, PermissionScope>>
+> => {
   if (user.isSuperUser) {
-    return "ALL";
+    return {
+      isSuperUser: true,
+    };
   }
 
   const userWithPermissions = await db.user.findUnique({
@@ -23,11 +27,18 @@ export const getPermissions = async (user: {
     },
   });
 
-  if (!userWithPermissions) return {};
+  if (!userWithPermissions)
+    return {
+      isSuperUser: false,
+    };
 
   const { permissions, roles } = userWithPermissions;
 
-  const ret: Partial<Record<Permission, PermissionScope>> = {};
+  const ret: { isSuperUser: boolean } & Partial<
+    Record<Permission, PermissionScope>
+  > = {
+    isSuperUser: false,
+  };
 
   for (const permission of permissions) {
     ret[permission.permission] = (permission.scope as PermissionScope) ?? {};
