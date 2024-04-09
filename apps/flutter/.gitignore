@@ -46,5 +46,3 @@ app.*.map.json
 # Generated files
 *.g.dart
 *.freezed.dart
-/api
-/lib/api
