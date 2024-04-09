@@ -19,9 +19,14 @@
   ],
   "typescript.tsdk": "node_modules/typescript/lib",
 
-  "dart.analysisExcludedFolders": ["apps/flutter/api"],
-  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.typeCheckingMode": "strict",
   "[prisma]": {
     "editor.defaultFormatter": "Prisma.prisma"
+  },
+  "files.exclude": {
+    ".venv": true,
+    "**/.next": true,
+    "**/.turbo": true,
+    "**/node_modules": true
   }
 }
