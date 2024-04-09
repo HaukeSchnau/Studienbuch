@@ -7,6 +7,7 @@ import "~/styles/globals.css";
 import type { ReactNode } from "react";
 import { AxiomWebVitals } from "next-axiom";
 
+import { Theme } from "~/components/Theme";
 import { env } from "~/env";
 import { TRPCReactProvider } from "~/infrastructure/trpc/react";
 
@@ -77,7 +78,10 @@ export default function Layout(props: { children: ReactNode }) {
           materialIcons.variable,
         ].join(" ")}
       >
-        <TRPCReactProvider>{props.children}</TRPCReactProvider>
+        <TRPCReactProvider>
+          <Theme />
+          {props.children}
+        </TRPCReactProvider>
       </body>
     </html>
   );

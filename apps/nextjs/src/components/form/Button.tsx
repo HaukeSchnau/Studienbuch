@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
 import type { Route } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 
@@ -25,9 +25,9 @@ export function Button<TUrl extends string>({
   ...props
 }: ButtonProps<TUrl>) {
   const classes = clsx(
-    "rounded-3xl border-b-4 border-t-4 px-8 py-4 font-bold uppercase transition-all ",
+    "rounded-3xl border-b-4 border-t-4 px-8 py-4 font-bold uppercase transition-all",
     variant === "primary" &&
-      "border-b-blue-sec border-t-blue bg-blue hover:border-t-blue-sec hover:bg-blue-sec text-white",
+      "border-b-blue-sec border-t-blue bg-blue hover:border-t-blue-sec hover:bg-blue-sec text-on-accent",
     variant === "secondary" && "border-transparent hover:bg-grey text-darkgrey",
     variant === "yellow" &&
       "border-b-yellow-sec border-t-yellow bg-yellow hover:border-t-yellow-sec hover:bg-yellow-sec text-white",

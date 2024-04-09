@@ -3,9 +3,12 @@
 import { useRef } from "react";
 import { useForm } from "@tanstack/react-form";
 
+import { Button } from "~/components/form/Button";
 import { IconButton } from "~/components/form/IconButton";
 import { Card } from "~/components/layout/Card";
 import { Grid } from "~/components/layout/Grid";
+import { PageHeading } from "~/components/layout/PageHeading";
+import { submitHandler } from "~/infrastructure/forms/submitHandler";
 import { api } from "~/infrastructure/trpc/react";
 
 export default function ThemePage({
@@ -16,247 +19,268 @@ export default function ThemePage({
   };
 }) {
   const query = api.schools.getTheme.useQuery(parseInt(params.school));
-  const { Field } = useForm({
+  const saveMutation = api.schools.setTheme.useMutation({
+    onSuccess: () => {
+      query.refetch();
+    },
+  });
+
+  const { Field, handleSubmit } = useForm({
     defaultValues: query.data,
+    onSubmit: async ({ value: { image, theme } }) => {
+      await saveMutation.mutateAsync({
+        school: parseInt(params.school),
+        theme,
+        image,
+      });
+    },
   });
 
   return (
-    <Grid>
-      <Card>
-        <Field name="primary.default">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Primary Default"
-              cssVar="--primary"
-              onCssVar="--on-primary"
-            />
-          )}
-        </Field>
+    <form onSubmit={submitHandler(handleSubmit)}>
+      <div className="flex justify-between pb-4">
+        <PageHeading color="white">Theme</PageHeading>
 
-        <Field name="primary.pale">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Primary Pale"
-              cssVar="--primary-pale"
-              onCssVar="--on-primary-pale"
-            />
-          )}
-        </Field>
+        <Button type="submit">Speichern</Button>
+      </div>
 
-        <Field name="primary.des">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Primary Desaturated"
-              cssVar="--primary-des"
-              onCssVar="--on-primary-des"
-            />
-          )}
-        </Field>
-      </Card>
+      <Grid>
+        <Card>
+          <Field name="theme.primary.default">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Primary Default"
+                cssVar="--primary"
+                onCssVar="--on-primary"
+              />
+            )}
+          </Field>
 
-      <Card>
-        <Field name="accent.default">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Accent Default"
-              cssVar="--accent"
-              onCssVar="--on-accent"
-            />
-          )}
-        </Field>
+          <Field name="theme.primary.pale">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Primary Pale"
+                cssVar="--primary-pale"
+                onCssVar="--on-primary-pale"
+              />
+            )}
+          </Field>
 
-        <Field name="accent.sec">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Accent Secondary"
-              cssVar="--accent-sec"
-              onCssVar="--on-accent-sec"
-            />
-          )}
-        </Field>
+          <Field name="theme.primary.des">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Primary Desaturated"
+                cssVar="--primary-des"
+                onCssVar="--on-primary-des"
+              />
+            )}
+          </Field>
+        </Card>
 
-        <Field name="accent.pale">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Accent Pale"
-              cssVar="--accent-pale"
-              onCssVar="--on-accent-pale"
-            />
-          )}
-        </Field>
+        <Card>
+          <Field name="theme.accent.default">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Accent Default"
+                cssVar="--accent"
+                onCssVar="--on-accent"
+              />
+            )}
+          </Field>
 
-        <Field name="accent.des">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Accent Desaturated"
-              cssVar="--accent-des"
-              onCssVar="--on-accent-des"
-            />
-          )}
-        </Field>
-      </Card>
+          <Field name="theme.accent.sec">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Accent Secondary"
+                cssVar="--accent-sec"
+                onCssVar="--on-accent-sec"
+              />
+            )}
+          </Field>
 
-      <Card>
-        <Field name="danger.default">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Danger Default"
-              cssVar="--danger"
-              onCssVar="--on-danger"
-            />
-          )}
-        </Field>
+          <Field name="theme.accent.pale">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Accent Pale"
+                cssVar="--accent-pale"
+                onCssVar="--on-accent-pale"
+              />
+            )}
+          </Field>
 
-        <Field name="danger.sec">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Danger Secondary"
-              cssVar="--danger-sec"
-              onCssVar="--on-danger-sec"
-            />
-          )}
-        </Field>
+          <Field name="theme.accent.des">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Accent Desaturated"
+                cssVar="--accent-des"
+                onCssVar="--on-accent-des"
+              />
+            )}
+          </Field>
+        </Card>
 
-        <Field name="danger.des">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Danger Desaturated"
-              cssVar="--danger-des"
-              onCssVar="--on-danger-des"
-            />
-          )}
-        </Field>
-      </Card>
+        <Card>
+          <Field name="theme.danger.default">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Danger Default"
+                cssVar="--danger"
+                onCssVar="--on-danger"
+              />
+            )}
+          </Field>
 
-      <Card>
-        <Field name="alert.default">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Alert Default"
-              cssVar="--alert"
-              onCssVar="--on-alert"
-            />
-          )}
-        </Field>
+          <Field name="theme.danger.sec">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Danger Secondary"
+                cssVar="--danger-sec"
+                onCssVar="--on-danger-sec"
+              />
+            )}
+          </Field>
 
-        <Field name="alert.des">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Alert Desaturated"
-              cssVar="--alert-des"
-              onCssVar="--on-alert-des"
-            />
-          )}
-        </Field>
-      </Card>
+          <Field name="theme.danger.des">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Danger Desaturated"
+                cssVar="--danger-des"
+                onCssVar="--on-danger-des"
+              />
+            )}
+          </Field>
+        </Card>
 
-      <Card>
-        <Field name="success.default">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Success Default"
-              cssVar="--success"
-              onCssVar="--on-success"
-            />
-          )}
-        </Field>
+        <Card>
+          <Field name="theme.alert.default">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Alert Default"
+                cssVar="--alert"
+                onCssVar="--on-alert"
+              />
+            )}
+          </Field>
 
-        <Field name="success.pale">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Success Pale"
-              cssVar="--success-pale"
-              onCssVar="--on-success-pale"
-            />
-          )}
-        </Field>
+          <Field name="theme.alert.des">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Alert Desaturated"
+                cssVar="--alert-des"
+                onCssVar="--on-alert-des"
+              />
+            )}
+          </Field>
+        </Card>
 
-        <Field name="success.des">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Success Desaturated"
-              cssVar="--success-des"
-              onCssVar="--on-success-des"
-            />
-          )}
-        </Field>
-      </Card>
+        <Card>
+          <Field name="theme.success.default">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Success Default"
+                cssVar="--success"
+                onCssVar="--on-success"
+              />
+            )}
+          </Field>
 
-      <Card>
-        <Field name="neutral.default">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Neutral Default"
-              cssVar="--neutral"
-              onCssVar="--on-neutral"
-            />
-          )}
-        </Field>
+          <Field name="theme.success.pale">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Success Pale"
+                cssVar="--success-pale"
+                onCssVar="--on-success-pale"
+              />
+            )}
+          </Field>
 
-        <Field name="neutral.sec">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Neutral Secondary"
-              cssVar="--neutral-sec"
-              onCssVar="--on-neutral-sec"
-            />
-          )}
-        </Field>
-      </Card>
+          <Field name="theme.success.des">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Success Desaturated"
+                cssVar="--success-des"
+                onCssVar="--on-success-des"
+              />
+            )}
+          </Field>
+        </Card>
 
-      <Card>
-        <Field name="surface.default">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Surface Default"
-              cssVar="--surface"
-              onCssVar="--on-surface"
-            />
-          )}
-        </Field>
+        <Card>
+          <Field name="theme.neutral.default">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Neutral Default"
+                cssVar="--neutral"
+                onCssVar="--on-neutral"
+              />
+            )}
+          </Field>
 
-        <Field name="primary.text">
-          {(field) => (
-            <TextColorField
-              field={field}
-              label="Primary Text"
-              cssVar="--primary-text"
-            />
-          )}
-        </Field>
-      </Card>
+          <Field name="theme.neutral.sec">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Neutral Secondary"
+                cssVar="--neutral-sec"
+                onCssVar="--on-neutral-sec"
+              />
+            )}
+          </Field>
+        </Card>
 
-      <Card>
-        <Field name="background.default">
-          {(field) => (
-            <ColorField
-              field={field}
-              label="Background Default"
-              cssVar="--background"
-              onCssVar="--on-background"
-            />
-          )}
-        </Field>
-      </Card>
-    </Grid>
+        <Card>
+          <Field name="theme.surface.default">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Surface Default"
+                cssVar="--surface"
+                onCssVar="--on-surface"
+              />
+            )}
+          </Field>
+
+          <Field name="theme.primary.text">
+            {(field) => (
+              <TextColorField
+                field={field}
+                label="Primary Text"
+                cssVar="--primary-text"
+              />
+            )}
+          </Field>
+        </Card>
+
+        <Card>
+          <Field name="theme.background.default">
+            {(field) => (
+              <ColorField
+                field={field}
+                label="Background Default"
+                cssVar="--background"
+                onCssVar="--on-background"
+              />
+            )}
+          </Field>
+        </Card>
+      </Grid>
+    </form>
   );
 }
 

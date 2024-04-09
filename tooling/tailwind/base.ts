@@ -45,12 +45,30 @@ export const colors = {
 
   on: {
     primary: "var(--on-primary, #ffffff)",
+    "primary-pale": "var(--on-primary-pale, #ffffff)",
+    "primary-des": "var(--on-primary-des, #ffffff)",
+
     accent: "var(--on-accent, #ffffff)",
+    "accent-sec": "var(--on-accent-sec, #ffffff)",
+    "accent-pale": "var(--on-accent-pale, #ffffff)",
+    "accent-des": "var(--on-accent-des, #ffffff)",
+
     danger: "var(--on-danger, #ffffff)",
+    "danger-sec": "var(--on-danger-sec, #ffffff)",
+    "danger-des": "var(--on-danger-des, #ffffff)",
+
     alert: "var(--on-alert, #ffffff)",
+    "alert-des": "var(--on-alert-des, #ffffff)",
+
     success: "var(--on-success, #ffffff)",
+    "success-des": "var(--on-success-des, #ffffff)",
+    "success-pale": "var(--on-success-pale, #ffffff)",
+
     neutral: "var(--on-neutral, #ffffff)",
+    "neutral-sec": "var(--on-neutral-sec, #ffffff)",
+
     surface: "var(--on-surface, #000000)",
+
     background: "var(--on-background, #000000)",
   },
 
