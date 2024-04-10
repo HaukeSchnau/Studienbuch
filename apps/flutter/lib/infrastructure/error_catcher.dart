@@ -6,6 +6,73 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
+enum FlashType { error, success }
+
+class UserVisibleError {
+  final String message;
+  final String? details;
+  final FlashType type;
+  final bool sticky;
+
+  UserVisibleError(this.message,
+      {this.details, this.type = FlashType.error, this.sticky = false});
+}
+
+ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showErrorWithScaffold(
+    ScaffoldMessengerState scaffoldMessenger, UserVisibleError error) {
+  final content = switch (error.type) {
+    FlashType.error => SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Ein Fehler ist aufgetreten",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              error.message,
+              style: const TextStyle(
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: theme.error,
+        duration: error.sticky
+            ? const Duration(seconds: 999)
+            : const Duration(seconds: 3)),
+    FlashType.success => SnackBar(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              error.message,
+              style: const TextStyle(
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: theme.primary,
+        duration: error.sticky
+            ? const Duration(seconds: 999)
+            : const Duration(seconds: 3)),
+  };
+
+  return scaffoldMessenger.showSnackBar(content);
+}
+
+ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showError(
+    BuildContext context, UserVisibleError error) {
+  final scaffoldMessenger = ScaffoldMessenger.of(context);
+  return showErrorWithScaffold(scaffoldMessenger, error);
+}
+
 class QueueNotifier extends ChangeNotifier {
   final _queue = Queue<String>();
 
@@ -26,19 +93,6 @@ class QueueNotifier extends ChangeNotifier {
 
 final errorQueue = QueueNotifier();
 
-class UserException implements Exception {
-  final String message;
-  final Object cause;
-  final StackTrace? stackTrace;
-
-  UserException(this.message, this.cause, [this.stackTrace]);
-
-  @override
-  String toString() {
-    return "UserException: $message\n$cause\n$stackTrace";
-  }
-}
-
 class EventCatcherProcessor extends EventProcessor {
   @override
   FutureOr<SentryEvent?> apply(SentryEvent event, {Hint? hint}) {
@@ -57,32 +111,14 @@ class ErrorCatcher extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    handleError(String? error) {
+    void handleError(String? error) {
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Ein Fehler ist aufgetreten:",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  error,
-                  style: const TextStyle(
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: theme.error,
-          ),
-        );
+        showError(
+            context,
+            UserVisibleError(
+              error,
+              type: FlashType.error,
+            ));
       }
     }
 

@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:mobx/mobx.dart';
 import 'package:provider/provider.dart';
+import 'package:class_mate/infrastructure/hooks/use_has_network.dart';
 
 typedef Class = ClassesListOutput;
 typedef Course = CoursesListOutput;
@@ -62,14 +63,21 @@ class ClassesCoursesChooserPage extends HookWidget {
   Widget build(BuildContext context) {
     final classesData = useNetworkResult(
         () => api.classes.list(yearId: year.id),
-        (e, trace) => throw UserException(
-            "Klassen konnten nicht geladen werden", e, trace),
+        (e) => showError(
+            context,
+            UserVisibleError(
+              "Klassen konnten nicht geladen werden",
+            )),
         [year.id]);
     final coursesData = useNetworkResult(
         () => api.courses.list(yearId: year.id),
-        (e, trace) =>
-            throw UserException("Kurse konnten nicht geladen werden", e, trace),
+        (e) => showError(
+            context,
+            UserVisibleError(
+              "Kurse konnten nicht geladen werden",
+            )),
         [year.id]);
+    final hasNetwork = useHasNetworkWithNotice();
 
     final loading = classesData == null || coursesData == null;
     final hasClasses = classesData != null && classesData.length > 1;
@@ -165,7 +173,7 @@ class ClassesCoursesChooserPage extends HookWidget {
                 ]),
           if (courseChoices.value.isNotEmpty) const SizedBox(height: 16.0),
           ContinueButton(
-              isValidInput: isValidInput(),
+              enabled: isValidInput() && hasNetwork,
               loading: false,
               onActivate: finishFlow)
         ],

@@ -8,7 +8,9 @@ import 'package:class_mate/infrastructure/error_catcher.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:class_mate/features/substitutions/substitution.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:http/http.dart';
 import 'package:mobx/mobx.dart' hide Listenable;
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 part 'app_store.g.dart';
 
@@ -46,8 +48,19 @@ abstract class _AppStore with Store {
     _substitutionsResponse ??=
         await api.substitutions.get(date: date).catchError((e, stacktrace) {
       this.agenda = agenda;
-      throw UserException(
-          "Vertretungen konnten nicht geladen werden", e, stacktrace);
+
+      if (e is ClientException) {
+        errorQueue.add(
+          "Du bist offline. Vertretungen werden dir nicht angezeigt.",
+        );
+      } else {
+        errorQueue.add(
+          "Vertretungen konnten nicht geladen werden.",
+        );
+        Sentry.captureException(e, stackTrace: stacktrace);
+      }
+
+      return <SubstitutionsGetOutput>[];
     });
 
     if (_substitutionsResponse == null) {

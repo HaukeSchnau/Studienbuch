@@ -28,7 +28,7 @@ Future<void> appRunner() async {
   await initUser();
   await store.init();
 
-  syncTimetableData();
+  safeSyncTimetableData();
 
   runApp(const App());
 }

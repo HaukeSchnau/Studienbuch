@@ -2,6 +2,7 @@ import 'package:class_mate/features/setup/forms/license_form.dart';
 import 'package:class_mate/features/setup/helpers/setup_flow.dart';
 import 'package:class_mate/infrastructure/api.dart';
 import 'package:class_mate/infrastructure/error_catcher.dart';
+import 'package:class_mate/infrastructure/hooks/use_has_network.dart';
 import 'package:class_mate/infrastructure/hooks/use_network_result.dart';
 import 'package:class_mate/infrastructure/util/list_util.dart';
 import 'package:class_mate/models/setup_store.dart';
@@ -16,11 +17,11 @@ class ProfileSetupPage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    print(store.year);
     final selectedYear = useState<ApiYear?>(store.year);
     final isOfAge = useState(false);
     final nameController = useTextEditingController(text: store.name);
     useListenable(nameController);
+    final hasNetwork = useHasNetworkWithNotice();
 
     bool isValidInput() {
       return nameController.text.trim().isNotEmpty &&
@@ -61,7 +62,7 @@ class ProfileSetupPage extends HookWidget {
           ),
           const SizedBox(height: 8.0),
           ContinueButton(
-              isValidInput: isValidInput(),
+              enabled: isValidInput() && hasNetwork,
               loading: false,
               onActivate: () {
                 store.name = nameController.text.trim();
@@ -88,8 +89,11 @@ class YearSelector extends HookWidget {
   Widget build(BuildContext context) {
     final years = useNetworkResult(
         () => api.years.get(),
-        (error, trace) => throw UserException(
-            "Jahrgänge konnten nicht geladen werden", error, trace))
+        (error) => showError(
+              context,
+              UserVisibleError(
+                  "Fehler beim Laden der Jahrgänge. Bitte versuche es später erneut."),
+            ))
       ?..sort((a, b) => -b.yearNumber.compareTo(a.yearNumber));
 
     if (years == null) {

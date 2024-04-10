@@ -2,41 +2,28 @@ import 'package:class_mate/api/types.dart';
 import 'package:class_mate/features/setup/helpers/setup_flow.dart';
 import 'package:class_mate/infrastructure/api.dart';
 import 'package:class_mate/infrastructure/error_catcher.dart';
-import 'package:class_mate/infrastructure/util/string_util.dart';
+import 'package:class_mate/infrastructure/hooks/use_has_network.dart';
 import 'package:class_mate/models/setup_store.dart';
 import 'package:class_mate/presentation/colors.dart';
 import 'package:class_mate/presentation/theme.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:http/http.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:provider/provider.dart';
 
-class LicenseFormatter extends TextInputFormatter {
-  String formatLicense(String input) {
-    return input
-        .toUpperCase()
-        .replaceAll(RegExp(r"[^A-Z0-9]"), "")
-        .replaceAllMapped(RegExp(r".{4}"), (match) => "${match.group(0)}-")
-        .limit(19);
-  }
+class LicenseFormatter extends MaskTextInputFormatter {
+  LicenseFormatter()
+      : super(
+          mask: "XXXX-XXXX-XXXX-XXXX",
+          filter: {"X": RegExp(r"[A-Za-z0-9]")},
+        );
 
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {
-    final oldDashesCount = oldValue.text.split(RegExp(r"[-—]")).length - 1;
-    final newDashesCount = newValue.text.split(RegExp(r"[-—]")).length - 1;
-
-    if (newDashesCount > oldDashesCount) {
-      return oldValue;
-    }
-    if (newDashesCount < oldDashesCount) {
-      return newValue.copyWith();
-    }
-
-    final newText = formatLicense(newValue.text);
-    return newValue.copyWith(
-        text: newText,
-        selection: TextSelection.collapsed(offset: newText.length));
+    return super.formatEditUpdate(
+        oldValue, newValue.copyWith(text: newValue.text.toUpperCase()));
   }
 }
 
@@ -52,6 +39,8 @@ class LicenseForm extends HookWidget {
     final loading = useState(false);
     final error = useState<String?>(null);
     final isValidInput = useState(false);
+    final hasNetwork = useHasNetworkWithNotice();
+    final formatter = useRef(LicenseFormatter());
 
     useEffect(() {
       licenseController.addListener(() {
@@ -65,29 +54,45 @@ class LicenseForm extends HookWidget {
       error.value = null;
 
       final licenseKey = licenseController.text;
-      final licenseStatus =
-          await api.license.check(licenseKey: licenseKey).catchError((error) {
+
+      try {
+        final licenseStatus = await api.license.check(licenseKey: licenseKey);
+
+        if (licenseStatus == LicenseCheckOutputEnum.valid) {
+          // License key will have to be checked again and activated when setup flow is completed
+
+          store.licenseKey = licenseKey;
+          store.licenseKeyActivatedAt = DateTime.now();
+
+          // ignore: use_build_context_synchronously
+          final onNext = context.read<OnNext>();
+          onNext();
+        } else if (licenseStatus == LicenseCheckOutputEnum.invalid) {
+          error.value = "Ungültiger Lizenzschlüssel";
+          // } else if (licenseStatus == "ACTIVATED") {
+          //   error.value = "Dieser Lizenzschlüssel wurde bereits verwendet";
+        }
+      } on ClientException catch (_) {
         loading.value = false;
 
-        throw UserException(
-            "Lizenzschlüssel konnte nicht geprüft werden", error);
-      });
-      if (licenseStatus == LicenseCheckOutputEnum.valid) {
-        // License key will have to be checked again and activated when setup flow is completed
+        showError(
+            context,
+            (UserVisibleError(
+              "Du bist offline. Bitte überprüfe deine Internetverbindung.",
+            )));
+      } catch (error) {
+        loading.value = false;
 
-        store.licenseKey = licenseKey;
-        store.licenseKeyActivatedAt = DateTime.now();
+        showError(
+            context,
+            (UserVisibleError(
+              "Lizenzschlüssel konnte nicht geprüft werden",
+            )));
 
-        // ignore: use_build_context_synchronously
-        final onNext = context.read<OnNext>();
-        onNext();
-      } else if (licenseStatus == LicenseCheckOutputEnum.invalid) {
-        error.value = "Ungültiger Lizenzschlüssel";
-        // } else if (licenseStatus == "ACTIVATED") {
-        //   error.value = "Dieser Lizenzschlüssel wurde bereits verwendet";
+        rethrow;
+      } finally {
+        loading.value = false;
       }
-
-      loading.value = false;
     }
 
     final errorValue = error.value;
@@ -129,14 +134,14 @@ class LicenseForm extends HookWidget {
         TextField(
           controller: licenseController,
           autocorrect: false,
-          inputFormatters: [LicenseFormatter()],
+          inputFormatters: [formatter.value],
           decoration: const InputDecoration(
               labelText: "Lizenzschlüssel", hintText: "XXXX-XXXX-XXXX-XXXX"),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 24.0),
           child: ContinueButton(
-              isValidInput: isValidInput.value,
+              enabled: isValidInput.value && hasNetwork,
               loading: loading.value,
               onActivate: onActivate),
         )
@@ -146,13 +151,13 @@ class LicenseForm extends HookWidget {
 }
 
 class ContinueButton extends StatelessWidget {
-  final bool isValidInput;
+  final bool enabled;
   final bool loading;
   final void Function() onActivate;
 
   const ContinueButton({
     super.key,
-    required this.isValidInput,
+    required this.enabled,
     required this.loading,
     required this.onActivate,
   });
@@ -166,7 +171,7 @@ class ContinueButton extends StatelessWidget {
           foregroundColor: Colors.white,
           disabledBackgroundColor: disabledColor,
         ),
-        onPressed: isValidInput ? () => onActivate() : null,
+        onPressed: enabled ? () => onActivate() : null,
         child: loading
             ? const CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),

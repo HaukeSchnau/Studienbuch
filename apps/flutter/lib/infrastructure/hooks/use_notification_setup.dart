@@ -3,6 +3,7 @@ import 'package:class_mate/infrastructure/hooks/use_async_effect.dart';
 import 'package:class_mate/models/course.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:sentry/sentry.dart';
 
 bool hasStartMessagingRequest = false;
 
@@ -33,15 +34,19 @@ void useNotificationSetup() {
       return;
     }
 
-    final token = await messaging.getToken();
-    if (token == null) {
-      return;
-    }
+    try {
+      final token = await messaging.getToken();
+      if (token == null) {
+        return;
+      }
 
-    await api.subscriptions.subscribe(
-      messagingToken: token,
-      courses: courses.map((course) => course.id).toList(),
-    );
+      await api.subscriptions.subscribe(
+        messagingToken: token,
+        courses: courses.map((course) => course.id).toList(),
+      );
+    } catch (e) {
+      await Sentry.captureException(e);
+    }
 
     hasStartMessagingRequest = false;
   }, [courses]);

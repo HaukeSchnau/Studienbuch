@@ -4,7 +4,18 @@ import 'package:class_mate/business_domain/user/use_user.dart';
 import 'package:class_mate/infrastructure/api.dart';
 import 'package:class_mate/models/course_time.dart';
 import 'package:drift/drift.dart';
+import 'package:http/http.dart';
 import 'package:sentry/sentry.dart';
+
+Future<void> safeSyncTimetableData() async {
+  try {
+    await syncTimetableData();
+  } on ClientException {
+    // No internet, ignore. We'll try again later
+  } catch (e, stacktrace) {
+    await Sentry.captureException(e, stackTrace: stacktrace);
+  }
+}
 
 Future<void> syncTimetableData() async {
   final user = getOptionalUser();
@@ -43,7 +54,7 @@ Future<void> syncTimetableData() async {
   }
 }
 
-Future<SyncOutput?> getSyncResult(DateTime? lastSync) async {
+Future<SyncOutput> getSyncResult(DateTime? lastSync) async {
   final [courseIds, classIds, yearIds, teacherIds] = await getRelevantIds();
 
   return api.sync(
@@ -71,12 +82,7 @@ Future<List<List<int>>> getRelevantIds() {
   ]);
 }
 
-Future<void> applySyncResult(SyncOutput? syncResult) async {
-  if (syncResult == null) {
-    Sentry.captureException(Exception("Sync result was null!"));
-    return;
-  }
-
+Future<void> applySyncResult(SyncOutput syncResult) async {
   await db.transaction(() async {
     for (final teacher in syncResult.updatedUsers) {
       await db.into(db.teachers).insert(
