@@ -21,7 +21,7 @@ class AgendaView extends DataHookWidget<Agenda> {
                   color: Color.fromRGBO(0, 0, 0, .1),
                 ),
             itemBuilder: (context, index) {
-              var entry = agenda.entries[index];
+              final entry = agenda.entries[index];
               return AgendaEntryView(data: entry);
             }));
   }
