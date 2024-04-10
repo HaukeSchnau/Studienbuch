@@ -12,11 +12,11 @@ import 'package:http/http.dart';
 import 'package:mobx/mobx.dart' hide Listenable;
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-part 'app_store.g.dart';
+part 'agenda_store.g.dart';
 
-class AppStore = _AppStore with _$AppStore;
+class AgendaStore = _AgendaStore with _$AgendaStore;
 
-abstract class _AppStore with Store {
+abstract class _AgendaStore with Store {
   @observable
   Agenda agenda = Agenda(start: DateTime.now(), courses: []);
 
@@ -26,49 +26,59 @@ abstract class _AppStore with Store {
 
       final listenable = Listenable.merge(courses);
       listenable.addListener(() {
-        _updateSubstitutedAgenda(courses);
+        buildAgenda(courses);
       });
 
-      _updateSubstitutedAgenda(courses);
+      buildAgenda(courses);
+      loadSubstitutionsForCurrentAgenda();
     });
   }
 
-  List<SubstitutionsGetOutput>? _substitutionsResponse;
+  @observable
+  ObservableList<SubstitutionsGetOutput>? substitutions;
 
-  //// AGENDA ////
+  @computed
+  bool get hasSubstitutionsLoaded => substitutions != null;
 
   @action
-  Future<void> _updateSubstitutedAgenda(List<Course> courses) async {
-    final agenda = Agenda(
-      start: DateTime.now(),
-      courses: courses,
-    );
-
+  Future<void> loadSubstitutionsForCurrentAgenda(
+      {bool reportNetworkError = true}) async {
     final date = agenda.date.add(agenda.date.timeZoneOffset).toUtc();
-    _substitutionsResponse ??=
-        await api.substitutions.get(date: date).catchError((e, stacktrace) {
-      this.agenda = agenda;
 
-      if (e is ClientException) {
+    try {
+      final response = await api.substitutions.get(date: date);
+      substitutions = response.asObservable();
+    } on ClientException {
+      if (reportNetworkError) {
         errorQueue.add(
           "Du bist offline. Vertretungen werden dir nicht angezeigt.",
         );
-      } else {
-        errorQueue.add(
-          "Vertretungen konnten nicht geladen werden.",
-        );
-        Sentry.captureException(e, stackTrace: stacktrace);
       }
+    } catch (e, stacktrace) {
+      errorQueue.add(
+        "Vertretungen konnten nicht geladen werden.",
+      );
+      Sentry.captureException(e, stackTrace: stacktrace);
+    }
+  }
 
-      return <SubstitutionsGetOutput>[];
-    });
+  @action
+  void buildAgenda(List<Course> courses) {
+    agenda = Agenda(
+      start: DateTime.now(),
+      courses: courses,
+    );
+  }
 
-    if (_substitutionsResponse == null) {
-      this.agenda = agenda;
-      return;
+  @computed
+  Agenda get substitutedAgenda {
+    final agenda = this.agenda.copy();
+
+    for (final entry in agenda.entries) {
+      entry.substitution = null;
     }
 
-    for (final sub in _substitutionsResponse!) {
+    for (final sub in substitutions ?? <SubstitutionsGetOutput>[]) {
       final lessonStart = sub.lessonStart;
       final index = lessonStart ~/ 2;
 
@@ -85,8 +95,8 @@ abstract class _AppStore with Store {
       }
     }
 
-    this.agenda = agenda;
+    return agenda;
   }
 }
 
-AppStore store = AppStore();
+AgendaStore agendaStore = AgendaStore();

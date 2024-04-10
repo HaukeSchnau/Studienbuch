@@ -79,6 +79,12 @@ class Agenda {
     }
   }
 
+  Agenda._copy(this.date, this.blocks);
+
+  Agenda copy() {
+    return Agenda._copy(date, List.from(blocks));
+  }
+
   bool get isToday {
     final now = DateTime.now().startOfDay;
 

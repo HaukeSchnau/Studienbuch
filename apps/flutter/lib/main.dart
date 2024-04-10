@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:class_mate/infrastructure/app.dart';
 import 'package:class_mate/infrastructure/firebase_options.dart';
 import 'package:class_mate/business_domain/user/use_user.dart';
-import 'package:class_mate/models/app_store.dart';
+import 'package:class_mate/models/agenda_store.dart';
 import 'package:class_mate/infrastructure/sentry.dart';
 import 'package:class_mate/features/sync/sync_service.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -23,10 +23,22 @@ Future<void> prepare() async {
   );
 }
 
+void reloadSubstitutionsInBackground() {
+  agendaStore.loadSubstitutionsForCurrentAgenda(reportNetworkError: false);
+}
+
 // Runs after sentry is initialized
 Future<void> appRunner() async {
   await initUser();
-  await store.init();
+  await agendaStore.init();
+
+  Timer.periodic(
+      const Duration(seconds: 30), (_) => reloadSubstitutionsInBackground());
+
+  AppLifecycleListener(
+      onShow: reloadSubstitutionsInBackground,
+      onResume: reloadSubstitutionsInBackground,
+      onRestart: reloadSubstitutionsInBackground);
 
   safeSyncTimetableData();
 

@@ -4,7 +4,7 @@ import 'package:class_mate/business_domain/user/use_user.dart';
 import 'package:class_mate/features/agenda/agenda_view.dart';
 import 'package:class_mate/features/tasks/tasks_overview.dart';
 import 'package:class_mate/infrastructure/util/ui_util.dart';
-import 'package:class_mate/models/app_store.dart';
+import 'package:class_mate/models/agenda_store.dart';
 import 'package:class_mate/presentation/components/path_bg_page.dart';
 import 'package:class_mate/presentation/components/bottom_panels.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +21,7 @@ class HomePage extends HookWidget {
     final hPadding = useHorizontalPadding();
 
     return Observer(builder: (ctx) {
-      final agenda = store.agenda;
+      final agenda = agendaStore.substitutedAgenda;
       final message = agenda.entries.isEmpty
           ? "Du hast ${agenda.when} keine Kurse."
           : "Das steht ${agenda.when} an:";

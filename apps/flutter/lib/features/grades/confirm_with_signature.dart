@@ -101,10 +101,10 @@ class ConfirmWithSignature extends HookWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Align(
+                  const Align(
                     alignment: Alignment.centerRight,
                     child: Text("(Tippe auf das Feld, um zu unterschreiben)",
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontStyle: FontStyle.italic, fontSize: 14)),
                   ),
                   const SizedBox(height: 64),
