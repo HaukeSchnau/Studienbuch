@@ -26,7 +26,7 @@ export const PermissionNavigationItem = <TUrl extends string>({
   const permissions = api.auth.getPermissions.useQuery();
 
   if (!permissions.data) return null;
-  if (permissions.data !== "ALL" && !permissions.data[permission]) {
+  if (!permissions.data.isSuperUser && !permissions.data[permission]) {
     return null;
   }
 
