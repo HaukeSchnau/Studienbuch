@@ -151,7 +151,9 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
       const normalTimeIndex = getNormalTimeIndex(start);
 
       if (normalTimeIndex === -1) {
-        console.error(`Could not find normalTimeIndex for ${class_}: ${time}`);
+        console.error(
+          `Could not find normalTimeIndex for Class ${class_} with Subject ${dbCourse.name}: ${time}`,
+        );
         continue;
       }
 
