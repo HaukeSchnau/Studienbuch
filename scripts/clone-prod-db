@@ -3,6 +3,8 @@
 set -eau
 . .env
 
+NODE_ENV="${NODE_ENV:-development}"
+
 if [[ $(hostname) == *"server"* ]] || [[ "$NODE_ENV" == "production" ]]; then
     echo "This script is not intended to be run on the production server."
     exit 1
