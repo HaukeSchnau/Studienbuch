@@ -38,16 +38,14 @@ model User {
   abbrv            String?            @unique
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
-  emailVerified    DateTime?
-  image            String?
   sessions         Session[]
   teacherInCourses Course[]
-  role             String             @default("TEACHER")
+  role             StaticRole?
   roles            Role[]
   permissions      PermissionOnUser[]
   isSuperUser      Boolean            @default(false)
 
-  substituteIn Substitution[] @relation("substitute")
+  substituteIn Substitution[]     @relation("substitute")
 }
 
 model Session {
@@ -56,6 +54,11 @@ model Session {
 
   userId Int?
   user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum StaticRole {
+  TEACHER
+  STUDENT
 }
 
 model Role {
