@@ -126,7 +126,11 @@ const DBSubstitutionTable = async () => {
       course: {
         include: {
           teacher: true,
-          year: true,
+          class: {
+            include: {
+              year: true,
+            },
+          },
         },
       },
     },
@@ -175,7 +179,7 @@ const DBSubstitutionTable = async () => {
               {substitution.course?.courseId}
             </td>
             <td className="border-l border-t border-grey-100 px-2 py-1">
-              {substitution.course?.year.name}
+              {substitution.course?.class.year.name}
             </td>
             <td className="border-l border-t border-grey-100 px-2 py-1">
               {substitution.room}

@@ -59,7 +59,6 @@ export const ImportScheduleModal = ({ isOpen, onClose, year }: Props) => {
 
       insertCourses({
         courses: value.protoCourses,
-        yearId: year.id,
         classId: clazz.id,
       });
     },

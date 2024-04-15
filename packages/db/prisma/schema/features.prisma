@@ -12,8 +12,8 @@ model Absence {
     student   User @relation(fields: [studentId], references: [id])
     studentId Int
 
-    isExcusedByTeacher Boolean @default(false)
-    isExcusedByParent  Boolean @default(false)
+    teacherSignature String?
+    parentSignature  String?
 }
 
 model Task {
@@ -34,12 +34,12 @@ model Task {
 }
 
 model Grade {
-    id                   Int       @id @default(autoincrement())
-    date                 DateTime
-    result               Decimal
-    type                 GradeType
-    isConfirmedByTeacher Boolean   @default(false)
-    isConfirmedByParent  Boolean   @default(false)
+    id               Int       @id @default(autoincrement())
+    date             DateTime
+    result           Decimal
+    type             GradeType
+    teacherSignature String?
+    parentSignature  String?
 
     course   Course @relation(fields: [courseId], references: [id])
     courseId Int

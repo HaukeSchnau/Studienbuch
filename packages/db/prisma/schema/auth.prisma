@@ -15,26 +15,29 @@ model LicenseKey {
 }
 
 model User {
-    id               Int                @id @default(autoincrement())
+    id               Int       @id @default(autoincrement())
     email            String?
     name             String
     passwordHash     String?
     title            String?
-    abbrv            String?            @unique
-    createdAt        DateTime           @default(now())
-    updatedAt        DateTime           @updatedAt
+    abbrv            String?   @unique
+    createdAt        DateTime  @default(now())
+    updatedAt        DateTime  @updatedAt
     sessions         Session[]
-    teacherInCourses Course[]
-    role             StaticRole?
-    roles            Role[]
-    permissions      PermissionOnUser[]
-    isSuperUser      Boolean            @default(false)
+    teacherInCourses Course[]  @relation("teacher")
+    notificationKey  String?
+
+    role        StaticRole?
+    roles       Role[]
+    permissions PermissionOnUser[]
+    isSuperUser Boolean            @default(false)
 
     substituteIn Substitution[] @relation("substitute")
     absences     Absence[]
     tasks        Task[]
     grades       Grade[]
     licenseKeys  LicenseKey[]
+    courses      Course[]       @relation("students")
 }
 
 model Session {

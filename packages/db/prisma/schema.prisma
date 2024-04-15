@@ -41,26 +41,29 @@ model LicenseKey {
 }
 
 model User {
-  id               Int                @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
   email            String?
   name             String
   passwordHash     String?
   title            String?
-  abbrv            String?            @unique
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  abbrv            String?   @unique
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
   sessions         Session[]
-  teacherInCourses Course[]
-  role             StaticRole?
-  roles            Role[]
-  permissions      PermissionOnUser[]
-  isSuperUser      Boolean            @default(false)
+  teacherInCourses Course[]  @relation("teacher")
+  notificationKey  String?
+
+  role        StaticRole?
+  roles       Role[]
+  permissions PermissionOnUser[]
+  isSuperUser Boolean            @default(false)
 
   substituteIn Substitution[] @relation("substitute")
   absences     Absence[]
   tasks        Task[]
   grades       Grade[]
   licenseKeys  LicenseKey[]
+  courses      Course[]       @relation("students")
 }
 
 model Session {
@@ -133,8 +136,8 @@ model Absence {
   student   User @relation(fields: [studentId], references: [id])
   studentId Int
 
-  isExcusedByTeacher Boolean @default(false)
-  isExcusedByParent  Boolean @default(false)
+  teacherSignature String?
+  parentSignature  String?
 }
 
 model Task {
@@ -155,12 +158,12 @@ model Task {
 }
 
 model Grade {
-  id                   Int       @id @default(autoincrement())
-  date                 DateTime
-  result               Decimal
-  type                 GradeType
-  isConfirmedByTeacher Boolean   @default(false)
-  isConfirmedByParent  Boolean   @default(false)
+  id               Int       @id @default(autoincrement())
+  date             DateTime
+  result           Decimal
+  type             GradeType
+  teacherSignature String?
+  parentSignature  String?
 
   course   Course @relation(fields: [courseId], references: [id])
   courseId Int
@@ -201,7 +204,6 @@ model Year {
   updatedAt      DateTime @default(now()) @updatedAt
 
   classes Class[]
-  courses Course[]
 
   school   School @relation(fields: [schoolId], references: [id])
   schoolId Int
@@ -244,30 +246,27 @@ model Course {
   room        String?
   isChoosable Boolean  @default(false)
 
-  semester   Semester @relation(fields: [semesterId], references: [id])
-  semesterId Int
+  // TODO: Make the semester non-optional
+  semester   Semester? @relation(fields: [semesterId], references: [id])
+  semesterId Int?
 
-  teacher   User @relation(fields: [teacherId], references: [id])
+  teacher   User @relation(name: "teacher", fields: [teacherId], references: [id])
   teacherId Int
 
   times CourseTime[]
 
-  // TODO: The relation is currently denormalized since the year is also stored in the class
-  // Also, a course can be taught in multiple years (e.g. a course that is taught in 12th grade and 13th grade)
-  // This should be normalized
+  // TODO: A course can be taught in multiple years (e.g. a course that is taught in 12th grade and 13th grade)
   class   Class @relation(fields: [classId], references: [id])
   classId Int
-
-  year   Year @relation(fields: [yearId], references: [id])
-  yearId Int
 
   substitutions Substitution[]
   subscriptions CourseSubscription[]
   absences      Absence[]
   tasks         Task[]
   grades        Grade[]
+  students      User[]               @relation(name: "students")
 
-  @@unique([courseId, classId, yearId], name: "courseIdentifier")
+  @@unique([courseId, classId], name: "courseIdentifier")
 }
 
 model CourseTime {

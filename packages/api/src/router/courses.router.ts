@@ -28,7 +28,12 @@ export const courses = createRouter({
     )
     .query(async ({ ctx, input }) => {
       return ctx.db.course.findMany({
-        where: { yearId: input.yearId },
+        where: {
+          class: {
+            yearId: input.yearId,
+          },
+          isChoosable: true,
+        },
         include: {
           teacher: {
             select: {
@@ -46,7 +51,6 @@ export const courses = createRouter({
   addCourses: editCoursesProcedure
     .input(
       z.object({
-        yearId: z.number(),
         classId: z.number(),
         courses: z.array(
           z.object({
@@ -68,17 +72,7 @@ export const courses = createRouter({
       }),
     )
     .mutation(async ({ ctx: { db }, input }) => {
-      const { yearId, classId, courses } = input;
-      const dbYear = await db.year.findUnique({
-        where: { id: yearId },
-      });
-      if (!dbYear) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Year not found: " + yearId,
-        });
-      }
-
+      const { classId, courses } = input;
       const dbClass = await db.class.findUnique({
         where: {
           id: classId,
@@ -94,7 +88,7 @@ export const courses = createRouter({
       const makeIservRequest = await loginIserv("hauke.schnau", "yXPTd26D5");
 
       for (const course of courses) {
-        await insertProtoCourse(db, dbYear, dbClass, course, makeIservRequest);
+        await insertProtoCourse(db, dbClass, course, makeIservRequest);
       }
     }),
 });

@@ -111,7 +111,6 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
 
       const dbCourse = await db.course.findFirst({
         where: {
-          yearId: dbYear.id,
           classId: dbClass.id,
           courseId: subject?.toLowerCase(),
         },

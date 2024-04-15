@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 
 import type { MakeRequest } from "@schnau/external-api";
-import type { Class, Year } from "@schnau/lib";
+import type { Class } from "@schnau/lib";
 import { findAbbrvName } from "@schnau/external-api";
 
 interface ProtoCourseTime {
@@ -22,7 +22,6 @@ interface ProtoCourse {
 
 export const insertProtoCourse = async (
   db: PrismaClient,
-  year: Year,
   clazz: Class,
   course: ProtoCourse,
   makeIservRequest: MakeRequest,
@@ -51,7 +50,6 @@ export const insertProtoCourse = async (
     where: {
       courseIdentifier: {
         courseId: normalizedCourseId,
-        yearId: year.id,
         classId: clazz.id,
       },
     },
@@ -66,11 +64,6 @@ export const insertProtoCourse = async (
             abbrv: teacher,
           },
           create: teacherValue,
-        },
-      },
-      year: {
-        connect: {
-          id: year.id,
         },
       },
       class: {
