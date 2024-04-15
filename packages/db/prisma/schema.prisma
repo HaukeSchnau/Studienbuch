@@ -27,6 +27,9 @@ model LicenseKey {
   activatedAt DateTime?
   expiresAt   DateTime?
   isSuperKey  Boolean   @default(false)
+
+  activatedBy   User? @relation(fields: [activatedById], references: [id])
+  activatedById Int?
 }
 
 model User {
@@ -45,7 +48,11 @@ model User {
   permissions      PermissionOnUser[]
   isSuperUser      Boolean            @default(false)
 
-  substituteIn Substitution[]     @relation("substitute")
+  substituteIn Substitution[] @relation("substitute")
+  absences     Absence[]
+  tasks        Task[]
+  grades       Grade[]
+  licenseKeys  LicenseKey[]
 }
 
 model Session {
@@ -148,8 +155,23 @@ model Course {
 
   substitutions Substitution[]
   subscriptions CourseSubscription[]
+  absences      Absence[]
+  tasks         Task[]
+  grades        Grade[]
 
   @@unique([courseId, classId, yearId], name: "courseIdentifier")
+}
+
+model Semester {
+  id    Int
+  name  String
+  start DateTime
+  end   DateTime
+
+  school   School @relation(fields: [schoolId], references: [id])
+  schoolId Int
+
+  @@id([id, schoolId])
 }
 
 model Class {
@@ -233,5 +255,59 @@ model School {
   image String
   theme Json
 
-  years Year[]
+  years     Year[]
+  semesters Semester[]
+}
+
+model Absence {
+  id     Int      @id @default(autoincrement())
+  date   DateTime
+  reason String
+
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId Int
+
+  student   User @relation(fields: [studentId], references: [id])
+  studentId Int
+
+  isExcusedByTeacher Boolean @default(false)
+  isExcusedByParent  Boolean @default(false)
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  dueDate     DateTime
+
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId Int
+
+  owner   User @relation(fields: [ownerId], references: [id])
+  ownerId Int
+
+  images String[]
+
+  done Boolean @default(false)
+}
+
+model Grade {
+  id                   Int       @id @default(autoincrement())
+  date                 DateTime
+  result               Decimal
+  type                 GradeType
+  isConfirmedByTeacher Boolean   @default(false)
+  isConfirmedByParent  Boolean   @default(false)
+
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId Int
+
+  student   User @relation(fields: [studentId], references: [id])
+  studentId Int
+}
+
+enum GradeType {
+  WRITTEN
+  ORAL
+  MASTER
 }
