@@ -1,0 +1,125 @@
+import { User } from "auth"
+import { Absence, Task, Grade } from "features"
+import { Substitution } from "substitution"
+
+model School {
+    id        Int      @id @default(autoincrement())
+    name      String   @unique
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now()) @updatedAt
+
+    image String
+    theme Json
+
+    years     Year[]
+    semesters Semester[]
+}
+
+model Year {
+    id             Int      @id @default(autoincrement())
+    startYear      Int
+    graduationYear Int
+    name           String
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @default(now()) @updatedAt
+
+    classes Class[]
+    courses Course[]
+
+    school   School @relation(fields: [schoolId], references: [id])
+    schoolId Int
+
+    @@unique([startYear, schoolId], name: "yearIdentifier")
+}
+
+model Semester {
+    id    Int      @id
+    name  String
+    start DateTime
+    end   DateTime
+
+    school   School @relation(fields: [schoolId], references: [id])
+    schoolId Int
+
+    courses Course[]
+}
+
+model Class {
+    id               Int      @id @default(autoincrement())
+    identifierInYear String
+    createdAt        DateTime @default(now())
+    updatedAt        DateTime @default(now()) @updatedAt
+
+    courses Course[]
+
+    year   Year @relation(fields: [yearId], references: [id])
+    yearId Int
+
+    @@unique([identifierInYear, yearId], name: "classIdentifier")
+}
+
+model Course {
+    id          Int      @id @default(autoincrement())
+    courseId    String
+    name        String
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @default(now()) @updatedAt
+    room        String?
+    isChoosable Boolean  @default(false)
+
+    semester   Semester @relation(fields: [semesterId], references: [id])
+    semesterId Int
+
+    teacher   User @relation(fields: [teacherId], references: [id])
+    teacherId Int
+
+    times CourseTime[]
+
+    // TODO: The relation is currently denormalized since the year is also stored in the class
+    // Also, a course can be taught in multiple years (e.g. a course that is taught in 12th grade and 13th grade)
+    // This should be normalized
+    class   Class @relation(fields: [classId], references: [id])
+    classId Int
+
+    year   Year @relation(fields: [yearId], references: [id])
+    yearId Int
+
+    substitutions Substitution[]
+    subscriptions CourseSubscription[]
+    absences      Absence[]
+    tasks         Task[]
+    grades        Grade[]
+
+    @@unique([courseId, classId, yearId], name: "courseIdentifier")
+}
+
+model CourseTime {
+    id        Int             @id @default(autoincrement())
+    weekday   Int
+    start     Int // time of day in minutes since midnight
+    duration  Int
+    weeks     CourseTimeWeeks @default(BOTH)
+    course    Course?         @relation(fields: [courseId], references: [id])
+    courseId  Int?
+    createdAt DateTime        @default(now())
+    updatedAt DateTime        @default(now()) @updatedAt
+}
+
+enum CourseTimeWeeks {
+    EVEN
+    ODD
+    BOTH
+}
+
+// DEPRECATED
+model CourseSubscription {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+
+    course   Course @relation(fields: [courseId], references: [id])
+    courseId Int
+
+    messagingToken String
+
+    @@unique([courseId, messagingToken], name: "courseSubscriptionIdentifier")
+}

@@ -1,0 +1,55 @@
+import { Course } from "school"
+import { User } from "auth"
+
+model Absence {
+    id     Int      @id @default(autoincrement())
+    date   DateTime
+    reason String
+
+    course   Course @relation(fields: [courseId], references: [id])
+    courseId Int
+
+    student   User @relation(fields: [studentId], references: [id])
+    studentId Int
+
+    isExcusedByTeacher Boolean @default(false)
+    isExcusedByParent  Boolean @default(false)
+}
+
+model Task {
+    id          Int      @id @default(autoincrement())
+    title       String
+    description String
+    dueDate     DateTime
+
+    course   Course @relation(fields: [courseId], references: [id])
+    courseId Int
+
+    owner   User @relation(fields: [ownerId], references: [id])
+    ownerId Int
+
+    images String[]
+
+    done Boolean @default(false)
+}
+
+model Grade {
+    id                   Int       @id @default(autoincrement())
+    date                 DateTime
+    result               Decimal
+    type                 GradeType
+    isConfirmedByTeacher Boolean   @default(false)
+    isConfirmedByParent  Boolean   @default(false)
+
+    course   Course @relation(fields: [courseId], references: [id])
+    courseId Int
+
+    student   User @relation(fields: [studentId], references: [id])
+    studentId Int
+}
+
+enum GradeType {
+    WRITTEN
+    ORAL
+    MASTER
+}

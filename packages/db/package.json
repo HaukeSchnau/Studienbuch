@@ -9,7 +9,7 @@
     "clean": "rm -rf .turbo node_modules",
     "lint": "eslint src",
     "format": "prettier --check . --ignore-path ../../.gitignore",
-    "db:generate": "prisma generate",
+    "db:generate": "prisma-import --schemas=\"prisma/schema/*\" --output prisma/schema.prisma --force && prisma generate",
     "deploy": "prisma db generate && prisma db migrate deploy",
     "push": "prisma db push --skip-generate",
     "push-delete": "prisma db push --skip-generate --force-reset --accept-data-loss",
@@ -29,6 +29,7 @@
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
     "prisma": "^5.12.1",
+    "prisma-import": "^1.0.5",
     "typescript": "^5.4.5",
     "zod-prisma-types": "^3.1.6"
   },

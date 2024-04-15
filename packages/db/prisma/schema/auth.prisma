@@ -1,0 +1,93 @@
+import { Course } from "school"
+import { Substitution } from "substitution"
+import { Absence, Task, Grade } from "features"
+
+model LicenseKey {
+    id          Int       @id @default(autoincrement())
+    key         String    @unique
+    createdAt   DateTime  @default(now())
+    activatedAt DateTime?
+    expiresAt   DateTime?
+    isSuperKey  Boolean   @default(false)
+
+    activatedBy   User? @relation(fields: [activatedById], references: [id])
+    activatedById Int?
+}
+
+model User {
+    id               Int                @id @default(autoincrement())
+    email            String?
+    name             String
+    passwordHash     String?
+    title            String?
+    abbrv            String?            @unique
+    createdAt        DateTime           @default(now())
+    updatedAt        DateTime           @updatedAt
+    sessions         Session[]
+    teacherInCourses Course[]
+    role             StaticRole?
+    roles            Role[]
+    permissions      PermissionOnUser[]
+    isSuperUser      Boolean            @default(false)
+
+    substituteIn Substitution[] @relation("substitute")
+    absences     Absence[]
+    tasks        Task[]
+    grades       Grade[]
+    licenseKeys  LicenseKey[]
+}
+
+model Session {
+    token   String   @id
+    expires DateTime
+
+    userId Int?
+    user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum StaticRole {
+    TEACHER
+    STUDENT
+}
+
+model Role {
+    id          Int                @id @default(autoincrement())
+    name        String             @unique
+    users       User[]
+    permissions PermissionOnRole[]
+
+    defaultScope Json?
+}
+
+model PermissionOnRole {
+    permission Permission
+    role       Role       @relation(fields: [roleId], references: [id])
+    roleId     Int
+
+    scope Json?
+
+    @@id([permission, roleId])
+}
+
+model PermissionOnUser {
+    permission Permission
+    user       User       @relation(fields: [userId], references: [id])
+    userId     Int
+
+    scope Json?
+
+    @@id([permission, userId])
+}
+
+enum Permission {
+    EDIT_INFO_PAGES
+
+    EDIT_USERS
+
+    EDIT_COURSES
+    EDIT_YEARS
+    EDIT_CLASSES
+    EDIT_SCHOOLS
+
+    VIEW_LOGS
+}

@@ -21,7 +21,7 @@
 
   "python.analysis.typeCheckingMode": "strict",
   "[prisma]": {
-    "editor.defaultFormatter": "Prisma.prisma"
+    "editor.defaultFormatter": "ajmnz.prisma-import"
   },
   "files.exclude": {
     ".venv": true,
