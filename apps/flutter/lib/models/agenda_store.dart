@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:class_mate/api/types.dart';
 import 'package:class_mate/features/agenda/agenda.dart';
 import 'package:class_mate/database/database.dart';
+import 'package:class_mate/features/holidays/holidays.dart';
 import 'package:class_mate/infrastructure/api.dart';
 import 'package:class_mate/infrastructure/error_catcher.dart';
 import 'package:class_mate/models/course.dart';
@@ -32,6 +33,8 @@ abstract class _AgendaStore with Store {
       buildAgenda(courses);
       loadSubstitutionsForCurrentAgenda();
     });
+
+    updateHolidays();
   }
 
   @observable
@@ -39,6 +42,14 @@ abstract class _AgendaStore with Store {
 
   @computed
   bool get hasSubstitutionsLoaded => substitutions != null;
+
+  @observable
+  ObservableList<Holiday> holidays = ObservableList<Holiday>();
+
+  @action
+  Future<void> updateHolidays() async {
+    holidays = (await fetchHolidays()).asObservable();
+  }
 
   @action
   Future<void> loadSubstitutionsForCurrentAgenda(

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:class_mate/features/agenda/agenda.dart';
+import 'package:class_mate/features/holidays/holidays.dart';
 import 'package:class_mate/features/schedule/schedule_grid_background.dart';
 import 'package:class_mate/features/schedule/schedule_view_math_helpers.dart';
 import 'package:class_mate/features/schedule/shadow_entry.dart';
@@ -15,9 +16,13 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 class WeekGrid extends HookWidget {
   final List<Agenda> weeklyAgenda;
   final bool editMode;
+  final List<Holiday> holidays;
 
   const WeekGrid(
-      {super.key, required this.weeklyAgenda, required this.editMode});
+      {super.key,
+      required this.weeklyAgenda,
+      required this.editMode,
+      required this.holidays});
 
   Widget buildCurrentTimeIndicator(
       double height, double width, TimeOfDay maxTime) {
@@ -60,6 +65,46 @@ class WeekGrid extends HookWidget {
         ),
       ),
     );
+  }
+
+  List<Widget> buildHolidayIndicator(double height, double width) {
+    final firstDay = weeklyAgenda.first.date;
+    final lastDay = weeklyAgenda.last.date;
+
+    return holidays
+        .where((holiday) =>
+            doDatesOverlap(holiday.start, holiday.end, firstDay, lastDay))
+        .map((holiday) {
+      final start = holiday.start.clamp(firstDay, lastDay);
+      final end = holiday.end
+          .clamp(firstDay, lastDay.subtract(const Duration(days: 1)));
+      final startDay = start.weekday - 1;
+      final endDay = end.weekday;
+      final x = spaceLeft + startDay * (width - spaceLeft) / 5;
+      final w = (endDay - startDay + 1) * (width - spaceLeft) / 5;
+
+      return Positioned(
+        top: 0,
+        left: x,
+        child: Container(
+            height: height,
+            width: w,
+            decoration: BoxDecoration(
+              color: theme.primaryDesaturated,
+            ),
+            child: Center(
+              child: Text(
+                matchHolidayName(holiday.name),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.black54,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 32,
+                ),
+              ),
+            )),
+      );
+    }).toList();
   }
 
   @override
@@ -139,7 +184,8 @@ class WeekGrid extends HookWidget {
                     gridHeight: height,
                     gridWidth: width,
                     maxTime: maxTime,
-                  )
+                  ),
+                ...buildHolidayIndicator(height, width),
               ],
             );
           });

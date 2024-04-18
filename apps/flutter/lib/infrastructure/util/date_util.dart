@@ -136,3 +136,7 @@ extension Date on DateTime {
     return DateFormat("EEEE").format(localDateTime);
   }
 }
+
+bool doDatesOverlap(DateTime start1, DateTime end1, DateTime start2, DateTime end2) {
+  return start1.isBefore(end2) && end1.isAfter(start2);
+}
