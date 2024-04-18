@@ -3,7 +3,10 @@ import { promisify } from "util";
 import { program } from "@commander-js/extra-typings";
 
 import { db } from "@schnau/db";
-import { findAbbrvName, loginIserv } from "@schnau/external-api";
+import {
+  findAbbrvName,
+  loginIservWithDefaultCredentials,
+} from "@schnau/external-api";
 import { createUser } from "@schnau/lib-server";
 
 import { copySubstitutions } from "./copyKadmosSubstitutions";
@@ -69,7 +72,7 @@ program
   .argument("<abbrv>", "Abbreviation of the user")
   .action(async (abbrv) => {
     console.log(`Finding name for abbreviation "${abbrv}"...`);
-    const makeRequest = await loginIserv("hauke.schnau", "yXPTd26D5");
+    const makeRequest = await loginIservWithDefaultCredentials();
     const result = await findAbbrvName(makeRequest, abbrv);
     console.log(result);
 
@@ -104,7 +107,7 @@ program.command("add-names-to-existing-users").action(async () => {
 
   for (const user of parsedUsers) {
     if (!user.abbrv) throw new Error("User has no abbreviation");
-    const makeRequest = await loginIserv("hauke.schnau", "yXPTd26D5");
+    const makeRequest = await loginIservWithDefaultCredentials();
     const result = await findAbbrvName(makeRequest, user.abbrv);
     if (!result) {
       console.error(`Could not find name for abbreviation "${user.abbrv}"`);

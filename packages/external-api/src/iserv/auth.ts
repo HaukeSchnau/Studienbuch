@@ -1,5 +1,7 @@
 import { Cookie, CookieJar } from "tough-cookie";
 
+import { env } from "../../env";
+
 export type MakeRequest = (
   url: string,
   options: RequestInit,
@@ -112,4 +114,8 @@ export const loginIserv = async (username: string, password: string) => {
   }
 
   return makeRequest;
+};
+
+export const loginIservWithDefaultCredentials = async () => {
+  return loginIserv(env.ISERV_USERNAME, env.ISERV_PASSWORD);
 };

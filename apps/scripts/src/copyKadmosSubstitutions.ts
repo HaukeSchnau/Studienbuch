@@ -3,7 +3,11 @@ import utc from "dayjs/plugin/utc";
 import { z } from "zod";
 
 import { db } from "@schnau/db";
-import { findAbbrvName, loginIserv, MakeRequest } from "@schnau/external-api";
+import {
+  findAbbrvName,
+  loginIservWithDefaultCredentials,
+  MakeRequest,
+} from "@schnau/external-api";
 import { getNormalTimeIndex } from "@schnau/lib";
 import { getSubstitutions } from "@schnau/lib-server";
 
@@ -17,7 +21,7 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
 
   let makeIservRequest: MakeRequest | null = null;
   const lazyFindAbbrv = async (abbrv: string) => {
-    makeIservRequest ??= await loginIserv("hauke.schnau", "yXPTd26D5");
+    makeIservRequest ??= await loginIservWithDefaultCredentials();
     console.log("Making request for " + abbrv);
     return findAbbrvName(makeIservRequest, abbrv);
   };
