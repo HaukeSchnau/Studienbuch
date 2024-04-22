@@ -324,10 +324,8 @@ class CoursesApi extends BaseApi {
 
   Future<void> addCourses(
       {required List<CoursesAddCoursesInputCourses> courses,
-      required int yearId,
       required int classId}) async {
-    final input = CoursesAddCoursesInput(
-        courses: courses, yearId: yearId, classId: classId);
+    final input = CoursesAddCoursesInput(courses: courses, classId: classId);
 
     final uri = Uri.https("studienbuch.app", "api/trpc/courses.addCourses");
     final payload = {
@@ -563,15 +561,15 @@ class UsersApi extends BaseApi {
   Future<UsersAddOutput> add(
       {required String name,
       String? email,
-      String? password,
       String? title,
-      String? abbrv}) async {
+      String? abbrv,
+      String? password}) async {
     final input = UsersAddInput(
         name: name,
         email: email,
-        password: password,
         title: title,
-        abbrv: abbrv);
+        abbrv: abbrv,
+        password: password);
 
     final uri = Uri.https("studienbuch.app", "api/trpc/users.add");
     final payload = {
