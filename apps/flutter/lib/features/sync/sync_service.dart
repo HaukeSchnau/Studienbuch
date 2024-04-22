@@ -34,8 +34,6 @@ Future<void> syncTimetableData() async {
       lastFullSyncedAt.difference(DateTime.now()).inDays.abs() > 7;
 
   if (shouldSyncFull) {
-    Sentry.captureMessage("Syncing full!");
-
     final syncResult = await getSyncResult(null);
     await applySyncResult(syncResult);
 
@@ -43,8 +41,6 @@ Future<void> syncTimetableData() async {
         lastSyncedAt: Value(DateTime.now()),
         lastFullSyncedAt: Value(DateTime.now())));
   } else if (shouldSyncLite) {
-    Sentry.captureMessage("Syncing Lite!");
-
     final syncResult = await getSyncResult(lastSyncedAt);
     await applySyncResult(syncResult);
 
