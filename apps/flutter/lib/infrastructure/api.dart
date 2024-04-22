@@ -1,9 +1,12 @@
 import 'package:class_mate/api/api.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/retry.dart';
 import 'package:http/http.dart' as http;
 
 final api = ApiClient(
-    baseUri: Uri.parse('https://studienbuch.app/api/trpc'),
+    baseUri: kDebugMode
+        ? Uri.http('192.168.178.21:3000')
+        : Uri.https('studienbuch.app'),
     client: RetryClient(
       http.Client(),
       when: (response) =>

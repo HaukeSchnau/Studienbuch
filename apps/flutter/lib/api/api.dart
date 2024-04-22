@@ -52,8 +52,8 @@ class ApiClient {
         }
       },
     };
-    final uri = Uri.https(
-        "studienbuch.app", "api/trpc/sync", {"input": jsonEncode(payload)});
+    final uri = baseUri.replace(
+        path: "api/trpc/sync", queryParameters: {"input": jsonEncode(payload)});
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -90,8 +90,9 @@ class LicenseApi extends BaseApi {
     final payload = {
       "json": input.toJson(),
     };
-    final uri = Uri.https("studienbuch.app", "api/trpc/license.check",
-        {"input": jsonEncode(payload)});
+    final uri = baseUri.replace(
+        path: "api/trpc/license.check",
+        queryParameters: {"input": jsonEncode(payload)});
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -107,7 +108,7 @@ class LicenseApi extends BaseApi {
   Future<void> activate({required String licenseKey}) async {
     final input = LicenseCheckInput(licenseKey: licenseKey);
 
-    final uri = Uri.https("studienbuch.app", "api/trpc/license.activate");
+    final uri = baseUri.replace(path: "api/trpc/license.activate");
     final payload = {
       "json": input.toJson(),
     };
@@ -129,7 +130,7 @@ class YearsApi extends BaseApi {
   YearsApi(super.client);
 
   Future<List<YearsGetOutput>> get() async {
-    final uri = Uri.https("studienbuch.app", "api/trpc/years.get");
+    final uri = baseUri.replace(path: "api/trpc/years.get");
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -150,8 +151,9 @@ class YearsApi extends BaseApi {
     final payload = {
       "json": input.toJson(),
     };
-    final uri = Uri.https("studienbuch.app", "api/trpc/years.list",
-        {"input": jsonEncode(payload)});
+    final uri = baseUri.replace(
+        path: "api/trpc/years.list",
+        queryParameters: {"input": jsonEncode(payload)});
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -167,8 +169,7 @@ class YearsApi extends BaseApi {
   }
 
   Future<List<YearsListGroupedBySchoolOutput>> listGroupedBySchool() async {
-    final uri =
-        Uri.https("studienbuch.app", "api/trpc/years.listGroupedBySchool");
+    final uri = baseUri.replace(path: "api/trpc/years.listGroupedBySchool");
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -189,8 +190,9 @@ class YearsApi extends BaseApi {
     final payload = {
       "json": input,
     };
-    final uri = Uri.https("studienbuch.app", "api/trpc/years.getOne",
-        {"input": jsonEncode(payload)});
+    final uri = baseUri.replace(
+        path: "api/trpc/years.getOne",
+        queryParameters: {"input": jsonEncode(payload)});
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -215,7 +217,7 @@ class YearsApi extends BaseApi {
         graduationYear: graduationYear,
         schoolId: schoolId);
 
-    final uri = Uri.https("studienbuch.app", "api/trpc/years.add");
+    final uri = baseUri.replace(path: "api/trpc/years.add");
     final payload = {
       "json": input.toJson(),
     };
@@ -249,7 +251,7 @@ class YearsApi extends BaseApi {
         graduationYear: graduationYear,
         schoolId: schoolId);
 
-    final uri = Uri.https("studienbuch.app", "api/trpc/years.update");
+    final uri = baseUri.replace(path: "api/trpc/years.update");
     final payload = {
       "json": input.toJson(),
     };
@@ -280,8 +282,9 @@ class ClassesApi extends BaseApi {
     final payload = {
       "json": input.toJson(),
     };
-    final uri = Uri.https("studienbuch.app", "api/trpc/classes.list",
-        {"input": jsonEncode(payload)});
+    final uri = baseUri.replace(
+        path: "api/trpc/classes.list",
+        queryParameters: {"input": jsonEncode(payload)});
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -306,8 +309,9 @@ class CoursesApi extends BaseApi {
     final payload = {
       "json": input.toJson(),
     };
-    final uri = Uri.https("studienbuch.app", "api/trpc/courses.list",
-        {"input": jsonEncode(payload)});
+    final uri = baseUri.replace(
+        path: "api/trpc/courses.list",
+        queryParameters: {"input": jsonEncode(payload)});
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -327,7 +331,7 @@ class CoursesApi extends BaseApi {
       required int classId}) async {
     final input = CoursesAddCoursesInput(courses: courses, classId: classId);
 
-    final uri = Uri.https("studienbuch.app", "api/trpc/courses.addCourses");
+    final uri = baseUri.replace(path: "api/trpc/courses.addCourses");
     final payload = {
       "json": input.toJson(),
     };
@@ -359,8 +363,9 @@ class SubstitutionsApi extends BaseApi {
         }
       },
     };
-    final uri = Uri.https("studienbuch.app", "api/trpc/substitutions.get",
-        {"input": jsonEncode(payload)});
+    final uri = baseUri.replace(
+        path: "api/trpc/substitutions.get",
+        queryParameters: {"input": jsonEncode(payload)});
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -384,8 +389,7 @@ class SubscriptionsApi extends BaseApi {
     final input = SubscriptionsSubscribeInput(
         courses: courses, messagingToken: messagingToken);
 
-    final uri =
-        Uri.https("studienbuch.app", "api/trpc/subscriptions.subscribe");
+    final uri = baseUri.replace(path: "api/trpc/subscriptions.subscribe");
     final payload = {
       "json": input.toJson(),
     };
@@ -408,7 +412,7 @@ class AuthApi extends BaseApi {
   AuthApi(super.client);
 
   Future<AuthGetSessionOutput?> getSession() async {
-    final uri = Uri.https("studienbuch.app", "api/trpc/auth.getSession");
+    final uri = baseUri.replace(path: "api/trpc/auth.getSession");
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -424,7 +428,7 @@ class AuthApi extends BaseApi {
   }
 
   Future<AuthGetPermissionsOutput> getPermissions() async {
-    final uri = Uri.https("studienbuch.app", "api/trpc/auth.getPermissions");
+    final uri = baseUri.replace(path: "api/trpc/auth.getPermissions");
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -438,7 +442,7 @@ class AuthApi extends BaseApi {
   }
 
   Future<void> logout() async {
-    final uri = Uri.https("studienbuch.app", "api/trpc/auth.logout");
+    final uri = baseUri.replace(path: "api/trpc/auth.logout");
     final payload = {
       "json": null,
     };
@@ -460,7 +464,7 @@ class SchoolsApi extends BaseApi {
   SchoolsApi(super.client);
 
   Future<List<YearsListOutputSchool>> list() async {
-    final uri = Uri.https("studienbuch.app", "api/trpc/schools.list");
+    final uri = baseUri.replace(path: "api/trpc/schools.list");
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -482,7 +486,7 @@ class SchoolsApi extends BaseApi {
     final input =
         SchoolsSetThemeInput(school: school, image: image, theme: theme);
 
-    final uri = Uri.https("studienbuch.app", "api/trpc/schools.setTheme");
+    final uri = baseUri.replace(path: "api/trpc/schools.setTheme");
     final payload = {
       "json": input.toJson(),
     };
@@ -506,8 +510,9 @@ class SchoolsApi extends BaseApi {
     final payload = {
       "json": input,
     };
-    final uri = Uri.https("studienbuch.app", "api/trpc/schools.getTheme",
-        {"input": jsonEncode(payload)});
+    final uri = baseUri.replace(
+        path: "api/trpc/schools.getTheme",
+        queryParameters: {"input": jsonEncode(payload)});
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -525,7 +530,7 @@ class UsersApi extends BaseApi {
   UsersApi(super.client);
 
   Future<List<UsersListOutput>> list() async {
-    final uri = Uri.https("studienbuch.app", "api/trpc/users.list");
+    final uri = baseUri.replace(path: "api/trpc/users.list");
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -541,7 +546,7 @@ class UsersApi extends BaseApi {
   }
 
   Future<void> updateMany(List<UsersUpdateManyInput> input) async {
-    final uri = Uri.https("studienbuch.app", "api/trpc/users.updateMany");
+    final uri = baseUri.replace(path: "api/trpc/users.updateMany");
     final payload = {
       "json": input.map((e) => e.toJson()).toList(),
     };
@@ -571,7 +576,7 @@ class UsersApi extends BaseApi {
         abbrv: abbrv,
         password: password);
 
-    final uri = Uri.https("studienbuch.app", "api/trpc/users.add");
+    final uri = baseUri.replace(path: "api/trpc/users.add");
     final payload = {
       "json": input.toJson(),
     };
@@ -595,7 +600,7 @@ class UsersApi extends BaseApi {
       {required int id, required String password}) async {
     final input = UsersUpdatePasswordInput(id: id, password: password);
 
-    final uri = Uri.https("studienbuch.app", "api/trpc/users.updatePassword");
+    final uri = baseUri.replace(path: "api/trpc/users.updatePassword");
     final payload = {
       "json": input.toJson(),
     };
@@ -613,7 +618,7 @@ class UsersApi extends BaseApi {
   }
 
   Future<void> delete(num input) async {
-    final uri = Uri.https("studienbuch.app", "api/trpc/users.delete");
+    final uri = baseUri.replace(path: "api/trpc/users.delete");
     final payload = {
       "json": input,
     };
@@ -635,8 +640,9 @@ class UsersApi extends BaseApi {
     final payload = {
       "json": input.toString(),
     };
-    final uri = Uri.https("studienbuch.app", "api/trpc/users.listScopeOptions",
-        {"input": jsonEncode(payload)});
+    final uri = baseUri.replace(
+        path: "api/trpc/users.listScopeOptions",
+        queryParameters: {"input": jsonEncode(payload)});
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -659,7 +665,7 @@ class UsersApi extends BaseApi {
     final input = UsersSetPermissionsInput(
         userId: userId, isSuperUser: isSuperUser, permissions: permissions);
 
-    final uri = Uri.https("studienbuch.app", "api/trpc/users.setPermissions");
+    final uri = baseUri.replace(path: "api/trpc/users.setPermissions");
     final payload = {
       "json": input.toJson(),
     };

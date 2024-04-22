@@ -42,10 +42,10 @@ class SyncOutputUpdatedCourses {
   final int id;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final int yearId;
   final String courseId;
   final String? room;
   final bool isChoosable;
+  final int? semesterId;
   final int teacherId;
   final int classId;
 
@@ -54,10 +54,10 @@ class SyncOutputUpdatedCourses {
       required this.id,
       required this.createdAt,
       required this.updatedAt,
-      required this.yearId,
       required this.courseId,
       required this.room,
       required this.isChoosable,
+      required this.semesterId,
       required this.teacherId,
       required this.classId});
 
@@ -67,10 +67,10 @@ class SyncOutputUpdatedCourses {
         id: json['id'],
         createdAt: DateTime.parse(json['createdAt']),
         updatedAt: DateTime.parse(json['updatedAt']),
-        yearId: json['yearId'],
         courseId: json['courseId'],
         room: json['room'],
         isChoosable: json['isChoosable'],
+        semesterId: json['semesterId'],
         teacherId: json['teacherId'],
         classId: json['classId']);
   }
@@ -81,10 +81,10 @@ class SyncOutputUpdatedCourses {
       'id': id,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
-      'yearId': yearId,
       'courseId': courseId,
       'room': room,
       'isChoosable': isChoosable,
+      'semesterId': semesterId,
       'teacherId': teacherId,
       'classId': classId
     };
@@ -232,8 +232,24 @@ class SyncOutputUpdatedYears {
   }
 }
 
+enum SyncOutputUpdatedUsersRoleEnum {
+  teacher,
+  student;
+
+  factory SyncOutputUpdatedUsersRoleEnum.fromJson(String json) {
+    switch (json) {
+      case 'TEACHER':
+        return SyncOutputUpdatedUsersRoleEnum.teacher;
+      case 'STUDENT':
+        return SyncOutputUpdatedUsersRoleEnum.student;
+      default:
+        throw Exception('Unknown enum value: $json');
+    }
+  }
+}
+
 class SyncOutputUpdatedUsers {
-  final String role;
+  final SyncOutputUpdatedUsersRoleEnum? role;
   final String name;
   final int id;
   final String? email;
@@ -242,8 +258,7 @@ class SyncOutputUpdatedUsers {
   final String? abbrv;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final DateTime? emailVerified;
-  final String? image;
+  final String? notificationKey;
   final bool isSuperUser;
 
   SyncOutputUpdatedUsers(
@@ -256,13 +271,14 @@ class SyncOutputUpdatedUsers {
       required this.abbrv,
       required this.createdAt,
       required this.updatedAt,
-      required this.emailVerified,
-      required this.image,
+      required this.notificationKey,
       required this.isSuperUser});
 
   factory SyncOutputUpdatedUsers.fromJson(dynamic json) {
     return SyncOutputUpdatedUsers(
-        role: json['role'],
+        role: json['role'] != null
+            ? SyncOutputUpdatedUsersRoleEnum.fromJson(json['role'])
+            : null,
         name: json['name'],
         id: json['id'],
         email: json['email'],
@@ -271,16 +287,13 @@ class SyncOutputUpdatedUsers {
         abbrv: json['abbrv'],
         createdAt: DateTime.parse(json['createdAt']),
         updatedAt: DateTime.parse(json['updatedAt']),
-        emailVerified: json['emailVerified'] != null
-            ? DateTime.parse(json['emailVerified'])
-            : null,
-        image: json['image'],
+        notificationKey: json['notificationKey'],
         isSuperUser: json['isSuperUser']);
   }
 
   dynamic toJson() {
     return {
-      'role': role,
+      'role': role?.toString(),
       'name': name,
       'id': id,
       'email': email,
@@ -289,8 +302,7 @@ class SyncOutputUpdatedUsers {
       'abbrv': abbrv,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
-      'emailVerified': emailVerified?.toIso8601String(),
-      'image': image,
+      'notificationKey': notificationKey,
       'isSuperUser': isSuperUser
     };
   }
@@ -687,10 +699,10 @@ class ClassesListOutputCourses {
   final int id;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final int yearId;
   final String courseId;
   final String? room;
   final bool isChoosable;
+  final int? semesterId;
   final int teacherId;
   final int classId;
   final SyncOutputUpdatedUsers teacher;
@@ -701,10 +713,10 @@ class ClassesListOutputCourses {
       required this.id,
       required this.createdAt,
       required this.updatedAt,
-      required this.yearId,
       required this.courseId,
       required this.room,
       required this.isChoosable,
+      required this.semesterId,
       required this.teacherId,
       required this.classId,
       required this.teacher,
@@ -716,10 +728,10 @@ class ClassesListOutputCourses {
         id: json['id'],
         createdAt: DateTime.parse(json['createdAt']),
         updatedAt: DateTime.parse(json['updatedAt']),
-        yearId: json['yearId'],
         courseId: json['courseId'],
         room: json['room'],
         isChoosable: json['isChoosable'],
+        semesterId: json['semesterId'],
         teacherId: json['teacherId'],
         classId: json['classId'],
         teacher: SyncOutputUpdatedUsers.fromJson(json['teacher']),
@@ -735,10 +747,10 @@ class ClassesListOutputCourses {
       'id': id,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
-      'yearId': yearId,
       'courseId': courseId,
       'room': room,
       'isChoosable': isChoosable,
+      'semesterId': semesterId,
       'teacherId': teacherId,
       'classId': classId,
       'teacher': teacher.toJson(),
@@ -810,10 +822,10 @@ class CoursesListOutput {
   final String name;
   final int id;
   final DateTime updatedAt;
-  final int yearId;
   final String courseId;
   final String? room;
   final bool isChoosable;
+  final int? semesterId;
   final int teacherId;
   final int classId;
   final CoursesListOutputTeacher teacher;
@@ -823,10 +835,10 @@ class CoursesListOutput {
       {required this.name,
       required this.id,
       required this.updatedAt,
-      required this.yearId,
       required this.courseId,
       required this.room,
       required this.isChoosable,
+      required this.semesterId,
       required this.teacherId,
       required this.classId,
       required this.teacher,
@@ -837,10 +849,10 @@ class CoursesListOutput {
         name: json['name'],
         id: json['id'],
         updatedAt: DateTime.parse(json['updatedAt']),
-        yearId: json['yearId'],
         courseId: json['courseId'],
         room: json['room'],
         isChoosable: json['isChoosable'],
+        semesterId: json['semesterId'],
         teacherId: json['teacherId'],
         classId: json['classId'],
         teacher: CoursesListOutputTeacher.fromJson(json['teacher']),
@@ -855,10 +867,10 @@ class CoursesListOutput {
       'name': name,
       'id': id,
       'updatedAt': updatedAt.toIso8601String(),
-      'yearId': yearId,
       'courseId': courseId,
       'room': room,
       'isChoosable': isChoosable,
+      'semesterId': semesterId,
       'teacherId': teacherId,
       'classId': classId,
       'teacher': teacher.toJson(),
@@ -940,11 +952,9 @@ class CoursesAddCoursesInputCourses {
 
 class CoursesAddCoursesInput {
   final List<CoursesAddCoursesInputCourses> courses;
-  final int yearId;
   final int classId;
 
-  CoursesAddCoursesInput(
-      {required this.courses, required this.yearId, required this.classId});
+  CoursesAddCoursesInput({required this.courses, required this.classId});
 
   factory CoursesAddCoursesInput.fromJson(dynamic json) {
     return CoursesAddCoursesInput(
@@ -952,14 +962,12 @@ class CoursesAddCoursesInput {
             .map<CoursesAddCoursesInputCourses>(
                 (e) => CoursesAddCoursesInputCourses.fromJson(e))
             .toList(),
-        yearId: json['yearId'],
         classId: json['classId']);
   }
 
   dynamic toJson() {
     return {
       'courses': courses.map((e) => e.toJson()).toList(),
-      'yearId': yearId,
       'classId': classId
     };
   }
@@ -1476,9 +1484,8 @@ class UsersListOutput {
   final String? abbrv;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final DateTime? emailVerified;
-  final String? image;
-  final String role;
+  final String? notificationKey;
+  final SyncOutputUpdatedUsersRoleEnum? role;
   final bool isSuperUser;
 
   UsersListOutput(
@@ -1492,8 +1499,7 @@ class UsersListOutput {
       required this.abbrv,
       required this.createdAt,
       required this.updatedAt,
-      required this.emailVerified,
-      required this.image,
+      required this.notificationKey,
       required this.role,
       required this.isSuperUser});
 
@@ -1514,11 +1520,10 @@ class UsersListOutput {
         abbrv: json['abbrv'],
         createdAt: DateTime.parse(json['createdAt']),
         updatedAt: DateTime.parse(json['updatedAt']),
-        emailVerified: json['emailVerified'] != null
-            ? DateTime.parse(json['emailVerified'])
+        notificationKey: json['notificationKey'],
+        role: json['role'] != null
+            ? SyncOutputUpdatedUsersRoleEnum.fromJson(json['role'])
             : null,
-        image: json['image'],
-        role: json['role'],
         isSuperUser: json['isSuperUser']);
   }
 
@@ -1534,9 +1539,8 @@ class UsersListOutput {
       'abbrv': abbrv,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
-      'emailVerified': emailVerified?.toIso8601String(),
-      'image': image,
-      'role': role,
+      'notificationKey': notificationKey,
+      'role': role?.toString(),
       'isSuperUser': isSuperUser
     };
   }
@@ -1544,7 +1548,7 @@ class UsersListOutput {
 
 class UsersUpdateManyInput {
   final int id;
-  final String? role;
+  final SyncOutputUpdatedUsersRoleEnum? role;
   final String? name;
   final String? email;
   final String? passwordHash;
@@ -1552,8 +1556,7 @@ class UsersUpdateManyInput {
   final String? abbrv;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  final DateTime? emailVerified;
-  final String? image;
+  final String? notificationKey;
   final bool? isSuperUser;
 
   UsersUpdateManyInput(
@@ -1566,14 +1569,15 @@ class UsersUpdateManyInput {
       required this.abbrv,
       required this.createdAt,
       required this.updatedAt,
-      required this.emailVerified,
-      required this.image,
+      required this.notificationKey,
       required this.isSuperUser});
 
   factory UsersUpdateManyInput.fromJson(dynamic json) {
     return UsersUpdateManyInput(
         id: json['id'],
-        role: json['role'],
+        role: json['role'] != null
+            ? SyncOutputUpdatedUsersRoleEnum.fromJson(json['role'])
+            : null,
         name: json['name'],
         email: json['email'],
         passwordHash: json['passwordHash'],
@@ -1585,17 +1589,14 @@ class UsersUpdateManyInput {
         updatedAt: json['updatedAt'] != null
             ? DateTime.parse(json['updatedAt'])
             : null,
-        emailVerified: json['emailVerified'] != null
-            ? DateTime.parse(json['emailVerified'])
-            : null,
-        image: json['image'],
+        notificationKey: json['notificationKey'],
         isSuperUser: json['isSuperUser']);
   }
 
   dynamic toJson() {
     return {
       'id': id,
-      'role': role,
+      'role': role?.toString(),
       'name': name,
       'email': email,
       'passwordHash': passwordHash,
@@ -1603,8 +1604,7 @@ class UsersUpdateManyInput {
       'abbrv': abbrv,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
-      'emailVerified': emailVerified?.toIso8601String(),
-      'image': image,
+      'notificationKey': notificationKey,
       'isSuperUser': isSuperUser
     };
   }
@@ -1613,33 +1613,33 @@ class UsersUpdateManyInput {
 class UsersAddInput {
   final String name;
   final String? email;
-  final String? password;
   final String? title;
   final String? abbrv;
+  final String? password;
 
   UsersAddInput(
       {required this.name,
       required this.email,
-      required this.password,
       required this.title,
-      required this.abbrv});
+      required this.abbrv,
+      required this.password});
 
   factory UsersAddInput.fromJson(dynamic json) {
     return UsersAddInput(
         name: json['name'],
         email: json['email'],
-        password: json['password'],
         title: json['title'],
-        abbrv: json['abbrv']);
+        abbrv: json['abbrv'],
+        password: json['password']);
   }
 
   dynamic toJson() {
     return {
       'name': name,
       'email': email,
-      'password': password,
       'title': title,
-      'abbrv': abbrv
+      'abbrv': abbrv,
+      'password': password
     };
   }
 }
@@ -1653,9 +1653,8 @@ class UsersAddOutput {
   final String? abbrv;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final DateTime? emailVerified;
-  final String? image;
-  final String role;
+  final String? notificationKey;
+  final SyncOutputUpdatedUsersRoleEnum? role;
   final bool isSuperUser;
 
   UsersAddOutput(
@@ -1667,8 +1666,7 @@ class UsersAddOutput {
       required this.abbrv,
       required this.createdAt,
       required this.updatedAt,
-      required this.emailVerified,
-      required this.image,
+      required this.notificationKey,
       required this.role,
       required this.isSuperUser});
 
@@ -1682,11 +1680,10 @@ class UsersAddOutput {
         abbrv: json['abbrv'],
         createdAt: DateTime.parse(json['createdAt']),
         updatedAt: DateTime.parse(json['updatedAt']),
-        emailVerified: json['emailVerified'] != null
-            ? DateTime.parse(json['emailVerified'])
+        notificationKey: json['notificationKey'],
+        role: json['role'] != null
+            ? SyncOutputUpdatedUsersRoleEnum.fromJson(json['role'])
             : null,
-        image: json['image'],
-        role: json['role'],
         isSuperUser: json['isSuperUser']);
   }
 
@@ -1700,9 +1697,8 @@ class UsersAddOutput {
       'abbrv': abbrv,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
-      'emailVerified': emailVerified?.toIso8601String(),
-      'image': image,
-      'role': role,
+      'notificationKey': notificationKey,
+      'role': role?.toString(),
       'isSuperUser': isSuperUser
     };
   }
@@ -1724,17 +1720,17 @@ class UsersUpdatePasswordInput {
 }
 
 enum UsersListScopeOptionsInputEnum {
-  classes,
   courses,
+  classes,
   years,
   schools;
 
   factory UsersListScopeOptionsInputEnum.fromJson(String json) {
     switch (json) {
-      case 'classes':
-        return UsersListScopeOptionsInputEnum.classes;
       case 'courses':
         return UsersListScopeOptionsInputEnum.courses;
+      case 'classes':
+        return UsersListScopeOptionsInputEnum.classes;
       case 'years':
         return UsersListScopeOptionsInputEnum.years;
       case 'schools':

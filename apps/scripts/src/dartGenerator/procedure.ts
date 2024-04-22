@@ -75,7 +75,7 @@ function writeProcedureBody(
 ) {
   if (p.type === "mutation") {
     return `
-        final uri = Uri.https("studienbuch.app", "api/trpc/${path}");
+        final uri = baseUri.replace(path: "api/trpc/${path}");
         final payload = {
           "json": ${getToJsonCall(inputType, "input")},
           ${getMeta(inputType)}
@@ -94,7 +94,7 @@ function writeProcedureBody(
   const request =
     inputType.type === "void"
       ? `
-    final uri = Uri.https("studienbuch.app", "api/trpc/${path}");
+      final uri = baseUri.replace(path: "api/trpc/${path}");
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });
@@ -104,7 +104,7 @@ function writeProcedureBody(
       "json": ${getToJsonCall(inputType, "input")},
       ${getMeta(inputType)}
     };
-    final uri = Uri.https("studienbuch.app", "api/trpc/${path}", {"input": jsonEncode(payload)});
+    final uri = baseUri.replace(path: "api/trpc/${path}", queryParameters: {"input": jsonEncode(payload)});
     final response = await client.get(uri, headers: {
       'x-trpc-source': 'mobile-app',
     });`;
