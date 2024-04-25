@@ -28,5 +28,10 @@
     "**/.next": true,
     "**/.turbo": true,
     "**/node_modules": true
+  },
+  "workbench.editor.customLabels.patterns": {
+    "**/page.tsx": "${dirname} - Page",
+    "**/index.{tsx,ts}": "${dirname} - Index",
+    "**/layout.tsx": "${dirname} - Layout"
   }
 }
