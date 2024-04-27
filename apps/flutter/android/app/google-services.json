@@ -1,44 +1,26 @@
 {
   "project_info": {
-    "project_number": "580059450872",
-    "project_id": "de-haukeschnau-classmate",
-    "storage_bucket": "de-haukeschnau-classmate.appspot.com"
+    "project_number": "523838006351",
+    "project_id": "studienbuch-3aa23",
+    "storage_bucket": "studienbuch-3aa23.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:580059450872:android:07d539c7c136d64989da0d",
+        "mobilesdk_app_id": "1:523838006351:android:63536196a070d63d07363a",
         "android_client_info": {
           "package_name": "de.haukeschnau.class_mate"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "580059450872-m2fnjcke0m721gp0v3g97ke8k67uq4hs.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCXJKbKhUmNUx19tuHQ9xsKY_R2pt0hnDE"
+          "current_key": "AIzaSyBlEwdSTk32E17GDxe7ySjXUWrqnEo2H0Q"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "580059450872-m2fnjcke0m721gp0v3g97ke8k67uq4hs.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "580059450872-okv7k9tc2nvpv2uj9htfagk2qeo6la55.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "de.haukeschnau.classMate",
-                "app_store_id": "6449227364"
-              }
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

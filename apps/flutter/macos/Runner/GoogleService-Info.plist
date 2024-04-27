@@ -2,22 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CLIENT_ID</key>
-	<string>580059450872-okv7k9tc2nvpv2uj9htfagk2qeo6la55.apps.googleusercontent.com</string>
-	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.580059450872-okv7k9tc2nvpv2uj9htfagk2qeo6la55</string>
 	<key>API_KEY</key>
-	<string>AIzaSyAkzmdb7KPwNvd4RN5_sB7vY0V4cA1O_r8</string>
+	<string>AIzaSyDmf6vl0DYVbQ8t3oHdUoBukp4Pr6x5uaE</string>
 	<key>GCM_SENDER_ID</key>
-	<string>580059450872</string>
+	<string>523838006351</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>de.haukeschnau.classMate</string>
 	<key>PROJECT_ID</key>
-	<string>de-haukeschnau-classmate</string>
+	<string>studienbuch-3aa23</string>
 	<key>STORAGE_BUCKET</key>
-	<string>de-haukeschnau-classmate.appspot.com</string>
+	<string>studienbuch-3aa23.appspot.com</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -29,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:580059450872:ios:581d78ec32aa175989da0d</string>
+	<string>1:523838006351:ios:17fc7a92c4598cd607363a</string>
 </dict>
 </plist>
