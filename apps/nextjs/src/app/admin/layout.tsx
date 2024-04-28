@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
+import { colors } from "@schnau/tailwind-config/base";
+
 import { SchoolLogo } from "~/components/SchoolLogo";
 import { isLoggedIn } from "~/features/auth/isLoggedIn";
 import { AdminNav } from "./nav/AdminNav";
@@ -41,8 +43,8 @@ const MainBlob = ({ className }: { className?: string }) => (
   >
     <path
       d="M-15 281.825V44.5745V-26L1567 -2.97571C1564.92 33.8965 1537.03 133.168 1482.09 153.189C1413.42 178.215 1296.67 174.712 1186.17 175.713C1075.67 176.714 897.662 138.356 790.983 233.774C699.21 315.861 222.654 299.01 -15 281.825Z"
-      fill="var(--primary)"
-      stroke="var(--accent)"
+      fill={colors.primary.DEFAULT}
+      stroke={colors.accent.DEFAULT}
       strokeWidth="8"
     />
   </svg>

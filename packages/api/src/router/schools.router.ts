@@ -146,7 +146,7 @@ export const schools = createRouter({
     }
 
     return {
-      theme: school.theme as Theme,
+      theme: themeSchema.parse(school.theme),
       image: school.image,
     };
   }),
