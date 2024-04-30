@@ -126,7 +126,7 @@ enum Permission {
 //
 
 model Absence {
-  id     Int      @id @default(autoincrement())
+  id     String   @id @default(cuid())
   date   DateTime
   reason String
 
@@ -141,7 +141,7 @@ model Absence {
 }
 
 model Task {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(cuid())
   title       String
   description String
   dueDate     DateTime
@@ -158,7 +158,7 @@ model Task {
 }
 
 model Grade {
-  id               Int       @id @default(autoincrement())
+  id               String    @id @default(cuid())
   date             DateTime
   result           Decimal
   type             GradeType
@@ -211,8 +211,16 @@ model Year {
   @@unique([startYear, schoolId], name: "yearIdentifier")
 }
 
+enum SemesterType {
+  SUMMER
+  WINTER
+}
+
 model Semester {
-  id    Int      @id
+  id   String       @id @default(cuid())
+  year Int
+  type SemesterType
+
   name  String
   start DateTime
   end   DateTime
@@ -248,7 +256,7 @@ model Course {
 
   // TODO: Make the semester non-optional
   semester   Semester? @relation(fields: [semesterId], references: [id])
-  semesterId Int?
+  semesterId String?
 
   teacher   User @relation(name: "teacher", fields: [teacherId], references: [id])
   teacherId Int

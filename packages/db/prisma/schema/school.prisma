@@ -31,8 +31,16 @@ model Year {
     @@unique([startYear, schoolId], name: "yearIdentifier")
 }
 
+enum SemesterType {
+    SUMMER
+    WINTER
+}
+
 model Semester {
-    id    Int      @id
+    id   String       @id @default(cuid())
+    year Int
+    type SemesterType
+
     name  String
     start DateTime
     end   DateTime
@@ -68,7 +76,7 @@ model Course {
 
     // TODO: Make the semester non-optional
     semester   Semester? @relation(fields: [semesterId], references: [id])
-    semesterId Int?
+    semesterId String?
 
     teacher   User @relation(name: "teacher", fields: [teacherId], references: [id])
     teacherId Int
