@@ -3,10 +3,11 @@ import { Absence, Task, Grade } from "features"
 import { Substitution } from "substitution"
 
 model School {
-    id        Int      @id @default(autoincrement())
-    name      String   @unique
-    createdAt DateTime @default(now())
-    updatedAt DateTime @default(now()) @updatedAt
+    id        Int       @id @default(autoincrement())
+    name      String    @unique
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @default(now()) @updatedAt
+    stateCode StateCode @default(NI)
 
     image String
     theme Json
@@ -113,6 +114,25 @@ enum CourseTimeWeeks {
     EVEN
     ODD
     BOTH
+}
+
+enum StateCode {
+    BB
+    BE
+    BW
+    BY
+    HB
+    HE
+    HH
+    MV
+    NI
+    NW
+    RP
+    SH
+    SL
+    SN
+    ST
+    TH
 }
 
 // DEPRECATED
