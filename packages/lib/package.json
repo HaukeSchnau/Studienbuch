@@ -14,8 +14,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "dayjs": "^1.11.10",
-    "vitest": "^1.5.0"
+    "dayjs": "^1.11.11",
+    "vitest": "^1.5.2"
   },
   "devDependencies": {
     "@schnau/eslint-config": "workspace:^0.2.0",

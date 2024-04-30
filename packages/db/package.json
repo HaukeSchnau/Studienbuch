@@ -17,9 +17,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@prisma/client": "^5.12.1",
-    "@t3-oss/env-nextjs": "^0.10.0",
-    "dayjs": "^1.11.10"
+    "@prisma/client": "^5.13.0",
+    "@t3-oss/env-nextjs": "^0.10.1",
+    "dayjs": "^1.11.11"
   },
   "devDependencies": {
     "@schnau/eslint-config": "workspace:^0.2.0",
@@ -28,7 +28,7 @@
     "dotenv-cli": "^7.4.1",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
-    "prisma": "^5.12.1",
+    "prisma": "^5.13.0",
     "prisma-import": "^1.0.5",
     "typescript": "^5.4.5",
     "zod-prisma-types": "^3.1.6"
