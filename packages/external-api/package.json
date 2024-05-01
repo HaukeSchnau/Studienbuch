@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@linear/sdk": "^20.0.0",
+    "@linear/sdk": "^21.1.0",
     "@t3-oss/env-nextjs": "^0.10.1",
     "tough-cookie": "^4.1.4",
     "zod": "^3.23.5"

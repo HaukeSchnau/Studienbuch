@@ -101,8 +101,6 @@ const themeSchema = z.object({
   }),
 });
 
-type Theme = z.infer<typeof themeSchema>;
-
 export const schools = createRouter({
   list: publicProcedure.input(z.void()).query(async ({ ctx }) => {
     return ctx.db.school.findMany();
