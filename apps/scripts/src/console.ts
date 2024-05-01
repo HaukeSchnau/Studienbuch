@@ -6,9 +6,11 @@ import { db } from "@schnau/db";
 import {
   findAbbrvName,
   loginIservWithDefaultCredentials,
+  stateSchema,
 } from "@schnau/external-api";
 import { createUser } from "@schnau/lib-server";
 
+import { addSemesters } from "./addSemesters";
 import { copySubstitutions } from "./copyKadmosSubstitutions";
 import { generateDartClient } from "./dartGenerator/generateDartClient";
 import { generateLicenses } from "./seed/generateLicenses";
@@ -128,5 +130,16 @@ program.command("add-names-to-existing-users").action(async () => {
   console.log("Names added to existing users!");
   process.exit(0);
 });
+
+program
+  .command("add-semesters")
+  .argument("<state>", "State of the user", (val) => stateSchema.parse(val))
+  .action(async (state) => {
+    await addSemesters(state);
+
+    console.log(await db.semester.findMany());
+
+    process.exit(0);
+  });
 
 program.parse();
