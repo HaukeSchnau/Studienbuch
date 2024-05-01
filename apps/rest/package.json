@@ -1,5 +1,5 @@
 {
-  "name": "@schnau/api",
+  "name": "@schnau/rest",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -8,19 +8,21 @@
   },
   "license": "MIT",
   "scripts": {
+    "dev": "pnpm with-env tsx watch src/server.ts",
     "clean": "rm -rf .turbo node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
+    "@hono/node-server": "^1.11.1",
+    "@hono/zod-openapi": "^0.11.0",
+    "@scalar/hono-api-reference": "^0.5.18",
+    "@schnau/api": "workspace:^0.1.0",
     "@schnau/auth": "workspace:^0.1.0",
-    "@schnau/db": "workspace:^0.1.0",
-    "@schnau/lib": "workspace:^0.1.0",
-    "@schnau/lib-server": "workspace:^0.1.0",
-    "@trpc/server": "11.0.0-next-beta.264",
-    "dayjs": "^1.11.11",
-    "superjson": "2.2.1",
+    "@t3-oss/env-nextjs": "^0.10.1",
+    "hono": "^4.2.9",
     "zod": "^3.23.5"
   },
   "devDependencies": {
@@ -29,6 +31,7 @@
     "@schnau/tsconfig": "workspace:^0.1.0",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
+    "tsx": "^4.7.3",
     "typescript": "^5.4.5"
   },
   "eslintConfig": {
