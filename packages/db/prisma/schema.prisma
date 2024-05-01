@@ -230,6 +230,8 @@ model Semester {
   schoolId Int
 
   courses Course[]
+
+  @@unique([year, type, schoolId], name: "semesterId")
 }
 
 model Class {
