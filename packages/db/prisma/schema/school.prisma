@@ -86,9 +86,7 @@ model Course {
 
     times CourseTime[]
 
-    // TODO: A course can be taught in multiple years (e.g. a course that is taught in 12th grade and 13th grade)
-    class   Class @relation(fields: [classId], references: [id])
-    classId Int
+    classes Class[]
 
     substitutions Substitution[]
     subscriptions CourseSubscription[]
@@ -96,8 +94,6 @@ model Course {
     tasks         Task[]
     grades        Grade[]
     students      User[]               @relation(name: "students")
-
-    @@unique([courseId, classId], name: "courseIdentifier")
 }
 
 model CourseTime {
