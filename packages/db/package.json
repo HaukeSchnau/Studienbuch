@@ -10,7 +10,7 @@
     "lint": "eslint src",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "db:generate": "prisma-import --schemas=\"prisma/schema/*\" --output prisma/schema.prisma --force && prisma generate",
-    "deploy": "pnpm db:generate && prisma migrate deploy",
+    "deployment": "pnpm db:generate && prisma migrate deploy",
     "migrate": "pnpm db:generate && prisma migrate dev",
     "push": "prisma db push --skip-generate",
     "push-delete": "prisma db push --skip-generate --force-reset --accept-data-loss",
