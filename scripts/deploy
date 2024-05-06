@@ -3,10 +3,16 @@
 set -eau
 . .env
 
+# Check if required arguments are provided
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 <deployment-name> [src-dir] [builds-dir]"
+  exit 1
+fi
+
 # Variables
-SRC_DIR="${1:-src}"
-BUILDS_DIR="${2:-builds}"
-DEPLOYMENT_NAME="${3:-prod}"
+DEPLOYMENT_NAME="${1}"
+SRC_DIR="${2:-src}"
+BUILDS_DIR="${3:-builds}"
 
 cd $SRC_DIR
 
