@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
-    PORT: z.coerce.number(),
+    API_PORT: z.coerce.number(),
   },
   client: {},
   experimental__runtimeEnv: {},

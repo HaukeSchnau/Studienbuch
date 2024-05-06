@@ -5,7 +5,7 @@ import { env } from "./env";
 
 const { app } = makeRestApi("/");
 
-const port = env.PORT;
+const port = env.API_PORT;
 console.log(`Server is running on http://localhost:${port}`);
 
 serve({
