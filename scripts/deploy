@@ -6,7 +6,7 @@ set -eau
 # Variables
 SRC_DIR="${1:-src}"
 BUILDS_DIR="${2:-builds}"
-DEPLOYMENT_NAME="${3:-Prod}"
+DEPLOYMENT_NAME="${3:-prod}"
 
 cd $SRC_DIR
 
