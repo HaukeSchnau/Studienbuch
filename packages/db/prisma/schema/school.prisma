@@ -61,10 +61,11 @@ model Class {
     createdAt        DateTime @default(now())
     updatedAt        DateTime @default(now()) @updatedAt
 
-    courses Course[]
-
     year   Year @relation(fields: [yearId], references: [id])
     yearId Int
+
+    deprecatedCourses Course[] @relation(name: "class_deprecated")
+    courses           Course[]
 
     @@unique([identifierInYear, yearId], name: "classIdentifier")
 }
@@ -86,6 +87,10 @@ model Course {
     teacherId Int
 
     times CourseTime[]
+
+    // TODO: DEPRECATED
+    class   Class @relation(name: "class_deprecated", fields: [classId], references: [id])
+    classId Int
 
     classes Class[]
 
