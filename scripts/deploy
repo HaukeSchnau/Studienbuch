@@ -17,7 +17,7 @@ BUILDS_DIR="${3:-builds}"
 cd $SRC_DIR
 
 # Build
-pnpm install
+NODE_ENV=development pnpm install
 pnpm db:deploy
 pnpm --filter nextjs build
 
