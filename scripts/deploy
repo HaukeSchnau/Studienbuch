@@ -18,8 +18,9 @@ cd $SRC_DIR
 
 # Build
 NODE_ENV=development pnpm install
+pnpm -F external-api generate
 pnpm db:deploy
-pnpm --filter nextjs build
+pnpm -F nextjs build
 
 # Deploy
 BUILD_ID="$(date +%s)-$(git rev-parse HEAD)"
