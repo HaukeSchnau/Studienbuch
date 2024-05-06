@@ -7,6 +7,8 @@ import { isNormalTime, parseTime } from "@schnau/lib";
 
 import { parseTimetableCell } from "./parseTimetableCell";
 
+import "@total-typescript/ts-reset";
+
 export const parseScheduleCsv = async (
   filepath: string,
   areAllCoursesChoosable: boolean,

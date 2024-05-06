@@ -39,6 +39,7 @@ enum SemesterType {
 
 model Semester {
     id   String       @id @default(cuid())
+    // TODO: Is year really needed?
     year Int
     type SemesterType
 
@@ -94,6 +95,8 @@ model Course {
     tasks         Task[]
     grades        Grade[]
     students      User[]               @relation(name: "students")
+
+    @@unique([courseId, semesterId, room], name: "courseIdentifier")
 }
 
 model CourseTime {

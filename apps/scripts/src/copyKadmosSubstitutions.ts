@@ -115,7 +115,11 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
 
       const dbCourse = await db.course.findFirst({
         where: {
-          classId: dbClass.id,
+          classes: {
+            some: {
+              id: dbClass.id,
+            },
+          },
           courseId: subject?.toLowerCase(),
         },
         include: {

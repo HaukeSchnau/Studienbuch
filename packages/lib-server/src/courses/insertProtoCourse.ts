@@ -15,7 +15,7 @@ interface ProtoCourse {
   teacher: string;
   normalizedCourseId: string;
   guessedSubject: string;
-  room?: string;
+  room: string;
   isChoosable: boolean;
   times: ProtoCourseTime[];
 }
@@ -23,6 +23,7 @@ interface ProtoCourse {
 export const insertProtoCourse = async (
   db: PrismaClient,
   clazz: Class,
+  semesterId: string,
   course: ProtoCourse,
   makeIservRequest: MakeRequest,
 ) => {
@@ -50,7 +51,8 @@ export const insertProtoCourse = async (
     where: {
       courseIdentifier: {
         courseId: normalizedCourseId,
-        classId: clazz.id,
+        room,
+        semesterId,
       },
     },
     create: {
@@ -66,7 +68,7 @@ export const insertProtoCourse = async (
           create: teacherValue,
         },
       },
-      class: {
+      classes: {
         connect: {
           id: clazz.id,
         },
@@ -82,6 +84,11 @@ export const insertProtoCourse = async (
       times: {
         deleteMany: {},
         create: times,
+      },
+      classes: {
+        connect: {
+          id: clazz.id,
+        },
       },
       teacher: {
         connectOrCreate: {

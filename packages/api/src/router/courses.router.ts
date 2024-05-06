@@ -29,8 +29,10 @@ export const courses = createRouter({
     .query(async ({ ctx, input }) => {
       return ctx.db.course.findMany({
         where: {
-          class: {
-            yearId: input.yearId,
+          classes: {
+            some: {
+              yearId: input.yearId,
+            },
           },
           isChoosable: true,
         },
@@ -42,7 +44,7 @@ export const courses = createRouter({
               title: true,
             },
           },
-          class: true,
+          classes: true,
           times: true,
         },
       });
@@ -52,12 +54,13 @@ export const courses = createRouter({
     .input(
       z.object({
         classId: z.number(),
+        semesterId: z.string(),
         courses: z.array(
           z.object({
             teacher: z.string(),
             normalizedCourseId: z.string(),
             guessedSubject: z.string(),
-            room: z.string().optional(),
+            room: z.string(),
             isChoosable: z.boolean(),
             times: z.array(
               z.object({
@@ -72,7 +75,7 @@ export const courses = createRouter({
       }),
     )
     .mutation(async ({ ctx: { db }, input }) => {
-      const { classId, courses } = input;
+      const { classId, semesterId, courses } = input;
       const dbClass = await db.class.findUnique({
         where: {
           id: classId,
@@ -88,7 +91,13 @@ export const courses = createRouter({
       const makeIservRequest = await loginIservWithDefaultCredentials();
 
       for (const course of courses) {
-        await insertProtoCourse(db, dbClass, course, makeIservRequest);
+        await insertProtoCourse(
+          db,
+          dbClass,
+          semesterId,
+          course,
+          makeIservRequest,
+        );
       }
     }),
 });
