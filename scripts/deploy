@@ -3,15 +3,19 @@
 set -eau
 . .env
 
+# Variables
 SRC_DIR="${1:-src}"
 BUILDS_DIR="${2:-builds}"
+DEPLOYMENT_NAME="${3:-Prod}"
 
 cd $SRC_DIR
 
+# Build
 pnpm install
 pnpm db:deploy
 pnpm --filter nextjs build
 
+# Deploy
 BUILD_ID="$(date +%s)-$(git rev-parse HEAD)"
 BUILD_PATH="$BUILDS_DIR/$BUILD_ID"
 
@@ -23,7 +27,7 @@ mv "$SRC_DIR/apps/nextjs/.next/standalone" "$BUILD_PATH/server"
 mv "$SRC_DIR/apps/nextjs/.next/static" "$BUILD_PATH/_next/static"
 cp -r "$SRC_DIR/apps/nextjs/public" "$BUILD_PATH/public"
 
-rm prod
-ln -s "$BUILD_PATH" prod
+rm "$DEPLOYMENT_NAME"
+ln -s "$BUILD_PATH" "$DEPLOYMENT_NAME"
 
-pm2 reload Prod
+pm2 reload "$DEPLOYMENT_NAME"
