@@ -9,6 +9,7 @@ export const env = createEnv({
       .enum(["development", "production", "test"])
       .default("development"),
     VERCEL_ENV: z.enum(["development", "preview", "production"]).optional(),
+    DEPLOYMENT_ENV: z.enum(["dev", "beta", "prod"]),
   },
   /**
    * Specify your server-side environment variables schema here.

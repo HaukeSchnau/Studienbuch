@@ -26,9 +26,20 @@ const materialIcons = localFont({
   fallback: [],
 });
 
+const getTitle = () => {
+  switch (env.DEPLOYMENT_ENV) {
+    case "dev":
+      return "(DEV) Das Studienbuch";
+    case "beta":
+      return "(BETA) Das Studienbuch";
+    case "prod":
+      return "Das Studienbuch";
+  }
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(env.BASE_URL),
-  title: "Das Studienbuch",
+  title: getTitle(),
   description: "Das Studienbuch der IGS Lilienthal",
   applicationName: "Das Studienbuch",
   authors: [{ name: "Hauke Schnau", url: "https://haukeschnau.de" }],
