@@ -1,6 +1,8 @@
+import 'package:class_mate/features/debug/use_is_debug.dart';
 import 'package:class_mate/presentation/components/logo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 PackageInfo? usePackageInfo() {
@@ -20,9 +22,20 @@ class AboutPage extends HookWidget {
   @override
   Widget build(BuildContext context) {
     final packageInfo = usePackageInfo();
+    final tapsOnLogo = useState(0);
 
     return LicensePage(
-      applicationIcon: const Logo(),
+      applicationIcon: GestureDetector(
+        onTap: () async {
+          tapsOnLogo.value++;
+          if (tapsOnLogo.value == 10) {
+            await setDebug(true);
+
+            context.replace("/debug");
+          }
+        },
+        child: const Logo(),
+      ),
       applicationName: "Studienbuch: IGS Lilienthal",
       applicationVersion:
           packageInfo != null ? "Version ${packageInfo.version}" : null,

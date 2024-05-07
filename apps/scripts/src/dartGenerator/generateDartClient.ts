@@ -41,15 +41,16 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import './types.dart';
 
-class ApiClient {
-  final Uri baseUri;
+abstract class ApiClient {
   final http.Client client;
 ${routers.map((m) => `  late final ${capitalize(m.name)}Api ${m.name};`).join("\n")}
 
-  ApiClient({required this.baseUri, http.Client? client})
+  ApiClient({http.Client? client})
       : client = client ?? http.Client() {
 ${routers.map((m) => `    ${m.name} = ${capitalize(m.name)}Api(this);`).join("\n")}
   }
+
+  Uri get baseUri;
 
 ${procedures.map(createProcedureFile("")).join("\n")}
 

@@ -5,8 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import './types.dart';
 
-class ApiClient {
-  final Uri baseUri;
+abstract class ApiClient {
   final http.Client client;
   late final LicenseApi license;
   late final YearsApi years;
@@ -18,8 +17,7 @@ class ApiClient {
   late final SchoolsApi schools;
   late final UsersApi users;
 
-  ApiClient({required this.baseUri, http.Client? client})
-      : client = client ?? http.Client() {
+  ApiClient({http.Client? client}) : client = client ?? http.Client() {
     license = LicenseApi(this);
     years = YearsApi(this);
     classes = ClassesApi(this);
@@ -30,6 +28,8 @@ class ApiClient {
     schools = SchoolsApi(this);
     users = UsersApi(this);
   }
+
+  Uri get baseUri;
 
   Future<SyncOutput> sync(
       {required List<int> courseIds,

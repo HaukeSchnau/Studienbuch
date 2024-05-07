@@ -14,8 +14,7 @@ class App extends HookWidget {
     useNotificationSetup();
 
     final user = useOptionalUser();
-    final routerConfig =
-        useMemoized(() => buildMainRouterConfig(user), [user]);
+    final routerConfig = useMemoized(() => buildMainRouterConfig(user), [user]);
 
     return MaterialApp.router(
       routerConfig: routerConfig,

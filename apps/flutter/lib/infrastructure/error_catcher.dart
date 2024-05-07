@@ -67,10 +67,15 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showErrorWithScaffold(
   return scaffoldMessenger.showSnackBar(content);
 }
 
-ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showError(
+ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? showError(
     BuildContext context, UserVisibleError error) {
-  final scaffoldMessenger = ScaffoldMessenger.of(context);
-  return showErrorWithScaffold(scaffoldMessenger, error);
+  try {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    return showErrorWithScaffold(scaffoldMessenger, error);
+  } catch (e) {
+    debugPrint("Error while showing error: $e");
+    return null;
+  }
 }
 
 class QueueNotifier extends ChangeNotifier {

@@ -1,6 +1,7 @@
 import 'package:class_mate/business_domain/user/use_user.dart';
 import 'package:class_mate/business_domain/user/user.dart';
 import 'package:class_mate/business_domain/year/year.dart';
+import 'package:class_mate/features/debug/use_is_debug.dart';
 import 'package:class_mate/presentation/colors.dart';
 import 'package:class_mate/presentation/components/action_sheet.dart';
 import 'package:class_mate/features/profile/cool_dots.dart';
@@ -24,6 +25,7 @@ class ProfileTopPanel extends HookWidget {
   Widget build(BuildContext context) {
     final user = useUser();
     final year = useYear();
+    final isDebug = useIsDebug();
 
     var actions = <MyAction>[
       MyAction(
@@ -47,7 +49,12 @@ class ProfileTopPanel extends HookWidget {
       MyAction(
           label: "Profil & Kurse bearbeiten",
           icon: Icons.edit_rounded,
-          handler: () => context.push("/editProfile"))
+          handler: () => context.push("/editProfile")),
+      if (isDebug)
+        MyAction(
+            label: "Debug",
+            icon: Icons.bug_report_rounded,
+            handler: () => context.push("/debug")),
     ];
 
     return Container(

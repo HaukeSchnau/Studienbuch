@@ -1,5 +1,6 @@
 import 'package:class_mate/api/types.dart';
 import 'package:class_mate/database/database.dart';
+import 'package:class_mate/features/debug/debug_page.dart';
 import 'package:class_mate/features/setup/edit_profile_page.dart';
 import 'package:class_mate/features/setup/welcome_page.dart';
 import 'package:class_mate/features/tasks/task_page.dart';
@@ -95,6 +96,12 @@ buildMainRouterConfig(User? user) {
           }
 
           return EditProfileContainerPage(user: user);
+        },
+      ),
+      GoRoute(
+        path: '/debug',
+        builder: (context, state) {
+          return const DebugPage();
         },
       ),
     ],

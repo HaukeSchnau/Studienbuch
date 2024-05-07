@@ -1,7 +1,8 @@
 import 'dart:async';
 
+import 'package:class_mate/firebase_options.dart';
+import 'package:class_mate/infrastructure/api.dart';
 import 'package:class_mate/infrastructure/app.dart';
-import 'package:class_mate/infrastructure/firebase_options.dart';
 import 'package:class_mate/business_domain/user/use_user.dart';
 import 'package:class_mate/models/agenda_store.dart';
 import 'package:class_mate/infrastructure/sentry.dart';
@@ -17,6 +18,8 @@ Future<void> prepare() async {
 
   Intl.defaultLocale = "de_DE";
   await initializeDateFormatting("de_DE", null);
+
+  await api.init();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,

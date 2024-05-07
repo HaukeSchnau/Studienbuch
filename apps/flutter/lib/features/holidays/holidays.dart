@@ -1,5 +1,6 @@
 import 'package:class_mate/infrastructure/util/list_util.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 
 final _dio = Dio();
 
@@ -24,13 +25,18 @@ class Holiday {
 }
 
 Future<List<Holiday>> fetchHolidays() async {
-  final response = await _dio.get(
-      'https://ferien-api.de/api/v1/holidays/NI/2024',
-      options: Options(headers: {'Accept': 'application/json'}));
+  try {
+    final response = await _dio.get(
+        'https://ferien-api.de/api/v1/holidays/NI/2024',
+        options: Options(headers: {'Accept': 'application/json'}));
 
-  return List<Holiday>.from((response.data as List)
-      .map((holiday) => Holiday.fromJson(holiday))
-      .whereType<Holiday>());
+    return List<Holiday>.from((response.data as List)
+        .map((holiday) => Holiday.fromJson(holiday))
+        .whereType<Holiday>());
+  } catch (e) {
+    debugPrint('Failed to fetch holidays: $e');
+    return [];
+  }
 }
 
 String matchHolidayName(String name) {
