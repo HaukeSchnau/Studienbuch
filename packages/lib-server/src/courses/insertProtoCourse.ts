@@ -68,7 +68,7 @@ export const insertProtoCourse = async (
           create: teacherValue,
         },
       },
-      classes: {
+      class: {
         connect: {
           id: clazz.id,
         },
