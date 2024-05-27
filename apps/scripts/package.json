@@ -7,22 +7,22 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@commander-js/extra-typings": "^12.0.1",
+    "@commander-js/extra-typings": "^12.1.0",
     "@schnau/api": "workspace:^0.1.0",
     "@schnau/db": "workspace:^0.1.0",
     "@schnau/external-api": "workspace:^0.1.0",
     "@schnau/lib": "workspace:^0.1.0",
     "@schnau/lib-server": "workspace:^0.1.0",
-    "commander": "^12.0.0",
-    "tsx": "^4.8.2",
-    "zod": "^3.23.5"
+    "commander": "^12.1.0",
+    "tsx": "^4.11.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@schnau/eslint-config": "workspace:^0.2.0",
     "@schnau/prettier-config": "workspace:^0.1.0",
     "@schnau/tsconfig": "workspace:^0.1.0",
     "@total-typescript/ts-reset": "^0.5.1",
-    "@types/node": "^20.12.7",
+    "@types/node": "^20.12.12",
     "eslint": "^8.57.0",
     "typescript": "^5.4.5"
   }

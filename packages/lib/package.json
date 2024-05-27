@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "dayjs": "^1.11.11",
-    "vitest": "^1.5.3"
+    "vitest": "^1.6.0"
   },
   "devDependencies": {
     "@schnau/eslint-config": "workspace:^0.2.0",

@@ -17,13 +17,13 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.11.1",
-    "@hono/zod-openapi": "^0.11.0",
-    "@scalar/hono-api-reference": "^0.5.18",
+    "@hono/zod-openapi": "^0.11.1",
+    "@scalar/hono-api-reference": "^0.5.50",
     "@schnau/api": "workspace:^0.1.0",
     "@schnau/auth": "workspace:^0.1.0",
     "@t3-oss/env-nextjs": "^0.10.1",
-    "hono": "^4.2.9",
-    "zod": "^3.23.5"
+    "hono": "^4.3.11",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@schnau/eslint-config": "workspace:^0.2.0",
@@ -31,7 +31,7 @@
     "@schnau/tsconfig": "workspace:^0.1.0",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
-    "tsx": "^4.8.2",
+    "tsx": "^4.11.0",
     "typescript": "^5.4.5"
   },
   "eslintConfig": {
