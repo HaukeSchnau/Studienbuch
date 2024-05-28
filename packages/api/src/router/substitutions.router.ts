@@ -28,7 +28,7 @@ export const substitutions = createRouter({
         .findMany({
           include: { course: true },
           where: {
-            date: input?.date ?? dayjs.utc().startOf("day").toDate(),
+            date: input.date ?? dayjs.utc().startOf("day").toDate(),
           },
         })
         .then((substitutions) => {

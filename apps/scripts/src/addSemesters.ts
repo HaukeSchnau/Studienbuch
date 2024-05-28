@@ -1,14 +1,15 @@
 import dayjs from "dayjs";
 
 import { db } from "@schnau/db";
-import { getHolidays, State } from "@schnau/external-api";
+import type { State } from "@schnau/external-api";
+import { getHolidays } from "@schnau/external-api";
 
 export const addSemesters = async (state: State) => {
   const holidays = await getHolidays(state);
   const semesterDelimitingHolidays = holidays.filter(
     (holiday) =>
-      holiday.name?.toLowerCase().includes("sommerferien") ||
-      holiday.name?.toLowerCase().includes("winterferien"),
+      holiday.name.toLowerCase().includes("sommerferien") ||
+      holiday.name.toLowerCase().includes("winterferien"),
   );
 
   if (semesterDelimitingHolidays.length === 0) {
@@ -30,7 +31,7 @@ export const addSemesters = async (state: State) => {
 
     if (!start || !end) throw new Error("Start or end holidays are undfined");
 
-    const type = start.name?.toLowerCase().includes("sommerferien")
+    const type = start.name.toLowerCase().includes("sommerferien")
       ? "WINTER"
       : "SUMMER";
 

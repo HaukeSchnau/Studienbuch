@@ -2,9 +2,9 @@
   "name": "class_mate",
   "private": true,
   "engines": {
-    "node": ">=20.11.0"
+    "node": ">=20.12.0"
   },
-  "packageManager": "pnpm@9.0.6+sha512.f6d863130973207cb7a336d6b439a242a26ac8068077df530d6a86069419853dc1ffe64029ec594a9c505a3a410d19643c870aba6776330f5cfddcf10a9c1617",
+  "packageManager": "pnpm@9.1.0",
   "scripts": {
     "build": "turbo build",
     "clean": "git clean -xdf node_modules",
@@ -15,10 +15,10 @@
     "db:studio": "pnpm -F db studio",
     "db:deploy": "pnpm -F db deployment",
     "dev": "turbo dev --parallel",
-    "format": "turbo format --continue -- --cache --cache-location node_modules/.cache/.prettiercache",
+    "format": "turbo format -- --cache --cache-location node_modules/.cache/.prettiercache",
     "format:fix": "turbo format --continue -- --write --cache --cache-location node_modules/.cache/.prettiercache",
-    "lint": "turbo lint --continue -- --cache --cache-location node_modules/.cache/.eslintcache",
-    "lint:fix": "turbo lint --continue -- --fix --cache --cache-location node_modules/.cache/.eslintcache",
+    "lint": "turbo lint -- --cache --cache-location node_modules/.cache/.eslintcache",
+    "lint:fix": "turbo lint -- --fix --cache --cache-location node_modules/.cache/.eslintcache",
     "lint:ws": "pnpm dlx sherif@latest",
     "postinstall": "pnpm lint:ws",
     "typecheck": "turbo typecheck",
@@ -26,7 +26,7 @@
     "ci:fix": "run-p format:fix lint:fix"
   },
   "devDependencies": {
-    "@schnau/prettier-config": "workspace:^0.1.0",
+    "@schnau/prettier-config": "workspace:*",
     "@turbo/gen": "^1.13.3",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.2.5",

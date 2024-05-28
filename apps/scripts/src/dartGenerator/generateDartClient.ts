@@ -7,7 +7,8 @@ import { writeEnumConverter } from "./converter";
 import { getRouterStructure } from "./getRouterStructure";
 import { createProcedureFile, createRouterFile } from "./procedure";
 import { capitalize, snakeToCamel } from "./strings";
-import { isProcedure, isRouter, RootRouter, Type } from "./trpc.type";
+import type { RootRouter, Type } from "./trpc.type";
+import { isProcedure, isRouter } from "./trpc.type";
 import { writeClass, writeUnion } from "./types";
 
 // Maps type names to Dart code
@@ -138,6 +139,7 @@ export function writeType(
 
   if (type.type === "void") return null;
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (type.type === "object") {
     const code = writeClass(name, type, parent);
     if (!code) {
@@ -159,5 +161,6 @@ export function writeType(
     return typeCodeMap.get(code) ?? name;
   }
 
-  throw new Error(`Unknown type: ${type}`);
+  // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+  throw new Error(`Unknown type: ${type.type}`);
 }

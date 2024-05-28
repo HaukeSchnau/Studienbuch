@@ -41,7 +41,7 @@ export const Primary: Story = {
       <SelectField<OptionValue>
         {...args}
         onChange={(valueId) => {
-          args.onChange?.(valueId);
+          args.onChange(valueId);
           setArgs({ ...args, valueId });
         }}
       />

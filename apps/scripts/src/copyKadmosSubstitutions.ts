@@ -2,11 +2,11 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { z } from "zod";
 
+import type { MakeRequest } from "@schnau/external-api";
 import { db } from "@schnau/db";
 import {
   findAbbrvName,
   loginIservWithDefaultCredentials,
-  MakeRequest,
 } from "@schnau/external-api";
 import { getNormalTimeIndex } from "@schnau/lib";
 import { getSubstitutions } from "@schnau/lib-server";
@@ -140,11 +140,12 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
         "TROTZ_ABSENZ",
       ]);
       const type = typeSchema.safeParse(
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- We dont't want to allow empty strings
         unparsedType?.toUpperCase().replaceAll(" ", "_") || "VERTRETUNG",
       );
 
       if (!type.success) {
-        console.error(`Could not parse type for ${class_}: ${type}`);
+        console.error(`Could not parse type for ${class_}: ${unparsedType}`);
         continue;
       }
 

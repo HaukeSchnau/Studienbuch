@@ -66,7 +66,11 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
       });
 
       setUsers((users) => {
-        users[rowIndex] = { ...users[rowIndex]!, ...update };
+        const existingUser = users[rowIndex];
+        if (!existingUser) {
+          return;
+        }
+        users[rowIndex] = { ...existingUser, ...update };
       });
     },
     [setUsers],

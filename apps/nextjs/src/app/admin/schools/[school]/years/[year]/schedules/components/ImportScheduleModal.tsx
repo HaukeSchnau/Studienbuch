@@ -2,7 +2,7 @@ import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { z } from "zod";
 
-import type { Class, ProtoCourseWithTimes, Year } from "@schnau/lib";
+import type { Class, ProtoCourseWithTimes, Semester, Year } from "@schnau/lib";
 import { formatClassName } from "@schnau/lib";
 
 import { Button } from "~/components/form/Button";
@@ -20,11 +20,13 @@ interface Props {
 
 interface ImportFormValues {
   class?: Class;
+  semester?: Semester;
   protoCourses: ProtoCourseWithTimes[];
 }
 
 const importFormSchema = z.object({
   class: z.object({ id: z.number() }),
+  semester: z.object({ id: z.string() }),
 });
 
 export const ImportScheduleModal = ({ isOpen, onClose, year }: Props) => {
@@ -54,11 +56,12 @@ export const ImportScheduleModal = ({ isOpen, onClose, year }: Props) => {
     validators: {
       onChange: importFormSchema,
     },
-    onSubmit: async ({ value }) => {
-      const { class: clazz } = importFormSchema.parse(value);
+    onSubmit: ({ value }) => {
+      const { class: clazz, semester } = importFormSchema.parse(value);
 
       insertCourses({
         courses: value.protoCourses,
+        semesterId: semester.id,
         classId: clazz.id,
       });
     },

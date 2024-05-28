@@ -1,5 +1,5 @@
+import type { Property, Type } from "./trpc.type";
 import { snakeToCamel } from "./strings";
-import { Property, Type } from "./trpc.type";
 import { getAccessor, getAssignment, getVariableName } from "./util";
 
 export function writeEnumConverter(values: string[]) {
@@ -62,9 +62,5 @@ export function getToJsonCall(type: Type | null, varName: string): string {
     return `${varName}${nullableSymbol}.toString()`;
   }
 
-  if (type.type === "union" || type.type === "object") {
-    return `${varName}${nullableSymbol}.toJson()`;
-  }
-
-  throw new Error(`Unknown type: ${JSON.stringify(type)}`);
+  return `${varName}${nullableSymbol}.toJson()`;
 }

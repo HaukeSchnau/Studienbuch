@@ -10,7 +10,7 @@ import style from "./roadmap.module.css";
 
 export const revalidate = 3600; // 1 hour
 
-export default async function RoadmapPage() {
+export default function RoadmapPage() {
   return (
     <div className=" py-12  md:py-16">
       <h1 className="px-12 text-4xl font-bold text-primary-text md:px-[10vw]">

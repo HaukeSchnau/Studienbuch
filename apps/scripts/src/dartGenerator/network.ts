@@ -1,4 +1,4 @@
-import { Type } from "./trpc.type";
+import type { Type } from "./trpc.type";
 import { getAccessor, getAssignment } from "./util";
 
 export function writeResponseParser(

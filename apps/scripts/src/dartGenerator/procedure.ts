@@ -2,7 +2,8 @@ import { getToJsonCall } from "./converter";
 import { writeType } from "./generateDartClient";
 import { writeResponseParser } from "./network";
 import { capitalize } from "./strings";
-import { isProcedure, isRouter, Procedure, Router, Type } from "./trpc.type";
+import type { Procedure, Router, Type } from "./trpc.type";
+import { isProcedure, isRouter } from "./trpc.type";
 import { getVariableName } from "./util";
 
 export function createRouterFile(router: Router) {

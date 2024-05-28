@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-properties */
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
@@ -9,6 +10,7 @@ export const env = createEnv({
       .enum(["development", "production", "test"])
       .default("development"),
     VERCEL_ENV: z.enum(["development", "preview", "production"]).optional(),
+    VERCEL_URL: z.string().url().optional(),
     DEPLOYMENT_ENV: z.enum(["dev", "beta", "prod"]),
   },
   /**
@@ -33,6 +35,8 @@ export const env = createEnv({
     VERCEL_ENV: process.env.VERCEL_ENV,
     NODE_ENV: process.env.NODE_ENV,
     PORT: process.env.PORT,
+    VERCEL_URL: process.env.VERCEL_URL,
+    DEPLOYMENT_ENV: process.env.DEPLOYMENT_ENV,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
   skipValidation:

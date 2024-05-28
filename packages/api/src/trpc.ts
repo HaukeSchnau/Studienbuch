@@ -14,16 +14,8 @@ import type { Session } from "@schnau/auth/src";
 import { getSessionFromHeaders } from "@schnau/auth/src";
 import { db } from "@schnau/db";
 
-interface Logger {
-  debug: (message: string, args?: Record<string, unknown>) => void;
-  info: (message: string, args?: Record<string, unknown>) => void;
-  warn: (message: string, args?: Record<string, unknown>) => void;
-  error: (message: string, args?: Record<string, unknown>) => void;
-  with: (args: Record<string, unknown>) => Logger;
-  withRequest: (req: unknown) => Logger;
-  attachResponseStatus: (statusCode: number) => void;
-  flush: () => Promise<void>;
-}
+import type { Logger } from "./logger";
+import { env } from "../env";
 
 /**
  * 1. CONTEXT
@@ -50,7 +42,7 @@ export const createTRPCContext = async (opts: {
 
   const source = opts.headers.get("x-trpc-source") ?? "unknown";
 
-  if (process.env.NODE_ENV === "development") {
+  if (env.NODE_ENV === "development") {
     console.log(
       ">>> tRPC Request from",
       source,

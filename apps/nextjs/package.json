@@ -8,7 +8,7 @@
     "clean": "git clean -xdf .next .turbo node_modules",
     "dev": "pnpm with-env next dev",
     "format": "prettier --check . --ignore-path ../../.gitignore",
-    "lint": "dotenv -v SKIP_ENV_VALIDATION=1 next lint",
+    "lint": "eslint",
     "start": "pnpm with-env next start",
     "typecheck": "tsc --noEmit",
     "with-env": "dotenv -e ../../.env --",
@@ -16,17 +16,17 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "@schnau/api": "workspace:^0.1.0",
-    "@schnau/auth": "workspace:^0.1.0",
-    "@schnau/db": "workspace:^0.1.0",
-    "@schnau/lib": "workspace:^0.1.0",
-    "@schnau/lib-server": "workspace:^0.1.0",
-    "@schnau/rest": "workspace:^0.1.0",
+    "@schnau/api": "workspace:*",
+    "@schnau/auth": "workspace:*",
+    "@schnau/db": "workspace:*",
+    "@schnau/lib": "workspace:*",
+    "@schnau/lib-server": "workspace:*",
+    "@schnau/rest": "workspace:*",
     "@t3-oss/env-nextjs": "^0.10.1",
-    "@tanstack/react-form": "^0.19.5",
+    "@tanstack/react-form": "^0.20.0",
     "@tanstack/react-query": "^5.39.0",
     "@tanstack/react-table": "^8.17.3",
-    "@tanstack/zod-form-adapter": "^0.19.5",
+    "@tanstack/zod-form-adapter": "^0.20.0",
     "@trpc/client": "11.0.0-next-beta.264",
     "@trpc/react-query": "11.0.0-next-beta.264",
     "@trpc/server": "11.0.0-next-beta.264",
@@ -46,10 +46,10 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^14.2.3",
-    "@schnau/eslint-config": "workspace:^0.2.0",
-    "@schnau/prettier-config": "workspace:^0.1.0",
-    "@schnau/tailwind-config": "workspace:^0.1.0",
-    "@schnau/tsconfig": "workspace:^0.1.0",
+    "@schnau/eslint-config": "workspace:*",
+    "@schnau/prettier-config": "workspace:*",
+    "@schnau/tailwind-config": "workspace:*",
+    "@schnau/tsconfig": "workspace:*",
     "@storybook/addon-essentials": "^8.1.3",
     "@storybook/addon-interactions": "^8.1.3",
     "@storybook/addon-links": "^8.1.3",
@@ -62,22 +62,13 @@
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "dotenv-cli": "^7.4.2",
-    "eslint": "^8.57.0",
+    "eslint": "^9.2.0",
     "eslint-plugin-storybook": "^0.8.0",
     "jiti": "^1.21.0",
     "prettier": "^3.2.5",
     "storybook": "^8.1.3",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.4.5"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@schnau/eslint-config/base",
-      "@schnau/eslint-config/nextjs",
-      "@schnau/eslint-config/react",
-      "plugin:storybook/recommended"
-    ]
   },
   "prettier": "@schnau/prettier-config"
 }

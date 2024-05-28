@@ -41,7 +41,7 @@ export const getPermissions = async (user: {
   };
 
   for (const permission of permissions) {
-    ret[permission.permission] = (permission.scope as PermissionScope) ?? {};
+    ret[permission.permission] = (permission.scope ?? {}) as PermissionScope;
   }
 
   for (const role of roles) {

@@ -73,7 +73,7 @@ export const convertKadmosRowsToSubstitutionsTable = (
     const result: Partial<Record<ColumnKey, string | undefined>> = {};
 
     columns
-      .filter((column) => "condition" in column && column.condition)
+      .filter((column) => "condition" in column)
       .forEach((column, i) => {
         result[column.key] = data[i];
       });

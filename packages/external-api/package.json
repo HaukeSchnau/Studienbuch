@@ -16,26 +16,21 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@linear/sdk": "^21.1.0",
+    "@linear/sdk": "^22.0.0",
     "@t3-oss/env-nextjs": "^0.10.1",
     "tough-cookie": "^4.1.4",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@schnau/eslint-config": "workspace:^0.2.0",
-    "@schnau/prettier-config": "workspace:^0.1.0",
-    "@schnau/tsconfig": "workspace:^0.1.0",
+    "@schnau/eslint-config": "workspace:*",
+    "@schnau/prettier-config": "workspace:*",
+    "@schnau/tsconfig": "workspace:*",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/tough-cookie": "^4.0.5",
-    "eslint": "^8.57.0",
+    "eslint": "^9.2.0",
     "openapi-typescript-codegen": "^0.29.0",
     "prettier": "^3.2.5",
     "typescript": "^5.4.5"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@schnau/eslint-config/base"
-    ]
   },
   "prettier": "@schnau/prettier-config"
 }

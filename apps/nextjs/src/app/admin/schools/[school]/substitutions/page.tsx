@@ -45,7 +45,9 @@ export default async function SubstitutionPage() {
   });
 
   for (let i = substitutions.length - 1; i > 0; i--) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const current = substitutions[i]!;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const previous = substitutions[i - 1]!;
     if (
       previous.time &&
@@ -173,13 +175,13 @@ const DBSubstitutionTable = async () => {
                 : ""}
             </td>
             <td className="border-l border-t border-grey-100 px-2 py-1">
-              {substitution.course?.name}
+              {substitution.course.name}
             </td>
             <td className="border-l border-t border-grey-100 px-2 py-1">
-              {substitution.course?.courseId}
+              {substitution.course.courseId}
             </td>
             <td className="border-l border-t border-grey-100 px-2 py-1">
-              {substitution.course?.classes
+              {substitution.course.classes
                 .map((clazz) => clazz.year.name)
                 .join(", ")}
             </td>

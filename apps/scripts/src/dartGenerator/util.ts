@@ -1,6 +1,6 @@
 import { writeType } from "./generateDartClient";
 import { capitalize } from "./strings";
-import { Type } from "./trpc.type";
+import type { Type } from "./trpc.type";
 
 export function getAccessor(name: string | null) {
   if (!name) {

@@ -3,6 +3,8 @@ import animate from "tailwindcss-animate";
 
 import base from "./base";
 
+export { colors } from "./base";
+
 export default {
   content: base.content,
   presets: [base],

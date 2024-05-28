@@ -4,10 +4,13 @@
   "private": true,
   "main": "./src/index.ts",
   "types": "./src/index.ts",
+  "type": "module",
   "license": "MIT",
   "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
     "clean": "rm -rf .turbo node_modules",
-    "lint": "eslint src",
+    "lint": "eslint",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "db:generate": "prisma-import --schemas=\"prisma/schema/*\" --output prisma/schema.prisma --force && prisma generate",
     "deployment": "pnpm db:generate && prisma migrate deploy",
@@ -15,7 +18,7 @@
     "push": "prisma db push --skip-generate",
     "push-delete": "prisma db push --skip-generate --force-reset --accept-data-loss",
     "studio": "prisma studio --port 5556",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
@@ -23,22 +26,16 @@
     "dayjs": "^1.11.11"
   },
   "devDependencies": {
-    "@schnau/eslint-config": "workspace:^0.2.0",
-    "@schnau/prettier-config": "workspace:^0.1.0",
-    "@schnau/tsconfig": "workspace:^0.1.0",
+    "@schnau/eslint-config": "workspace:*",
+    "@schnau/prettier-config": "workspace:*",
+    "@schnau/tsconfig": "workspace:*",
     "dotenv-cli": "^7.4.2",
-    "eslint": "^8.57.0",
+    "eslint": "^9.2.0",
     "prettier": "^3.2.5",
     "prisma": "^5.14.0",
     "prisma-import": "^1.0.5",
     "typescript": "^5.4.5",
     "zod-prisma-types": "^3.1.8"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@schnau/eslint-config/base"
-    ]
   },
   "prettier": "@schnau/prettier-config"
 }

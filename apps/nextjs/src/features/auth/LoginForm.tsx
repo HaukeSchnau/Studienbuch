@@ -89,9 +89,7 @@ export const LoginForm = () => {
       </Field>
 
       {loginMutation.isError && (
-        <p className="text-danger">
-          {loginMutation.error?.message ?? "Ein Fehler ist aufgetreten"}
-        </p>
+        <p className="text-danger">{loginMutation.error.message}</p>
       )}
 
       <Button type="submit">Anmelden</Button>

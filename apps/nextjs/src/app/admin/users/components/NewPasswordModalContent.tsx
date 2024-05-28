@@ -30,7 +30,7 @@ export const ChangePasswordModalContent = ({
       password: "",
       passwordRepeat: "",
     },
-    onSubmit: async ({ value }) => {
+    onSubmit: ({ value }) => {
       updatePasswordMutation.mutate({
         id: user.id,
         password: value.password,

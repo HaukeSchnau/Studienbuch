@@ -3,6 +3,7 @@ import os from "os";
 import p from "path";
 
 import type { ProtoCourseWithTimes } from "@schnau/lib";
+import { isArraySingleElement } from "@schnau/lib";
 import {
   convertPdf,
   ensureParentDir,
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
   }
 
   const csvFiles = await fs.promises.readdir(p.dirname(csvPath));
-  if (csvFiles.length !== 1) {
+  if (!isArraySingleElement(csvFiles)) {
     return new Response(
       JSON.stringify({ message: "Nicht genau eine CSV-Datei gefunden" }),
       {
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const csvFileName = csvFiles[0]!;
+  const csvFileName = csvFiles[0];
   const csvFilePath = p.join(p.dirname(csvPath), csvFileName);
 
   const courses = await parseScheduleCsv(csvFilePath, true);

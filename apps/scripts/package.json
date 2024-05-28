@@ -2,28 +2,30 @@
   "name": "@schnau/scripts",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "clean": "git clean -xdf .turbo node_modules",
+    "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@commander-js/extra-typings": "^12.1.0",
-    "@schnau/api": "workspace:^0.1.0",
-    "@schnau/db": "workspace:^0.1.0",
-    "@schnau/external-api": "workspace:^0.1.0",
-    "@schnau/lib": "workspace:^0.1.0",
-    "@schnau/lib-server": "workspace:^0.1.0",
+    "@schnau/api": "workspace:*",
+    "@schnau/db": "workspace:*",
+    "@schnau/external-api": "workspace:*",
+    "@schnau/lib": "workspace:*",
+    "@schnau/lib-server": "workspace:*",
     "commander": "^12.1.0",
     "tsx": "^4.11.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@schnau/eslint-config": "workspace:^0.2.0",
-    "@schnau/prettier-config": "workspace:^0.1.0",
-    "@schnau/tsconfig": "workspace:^0.1.0",
+    "@schnau/eslint-config": "workspace:*",
+    "@schnau/prettier-config": "workspace:*",
+    "@schnau/tsconfig": "workspace:*",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/node": "^20.12.12",
-    "eslint": "^8.57.0",
+    "eslint": "^9.2.0",
     "typescript": "^5.4.5"
   }
 }

@@ -18,20 +18,14 @@
     "vitest": "^1.6.0"
   },
   "devDependencies": {
-    "@schnau/eslint-config": "workspace:^0.2.0",
-    "@schnau/prettier-config": "workspace:^0.1.0",
-    "@schnau/tsconfig": "workspace:^0.1.0",
+    "@schnau/eslint-config": "workspace:*",
+    "@schnau/prettier-config": "workspace:*",
+    "@schnau/tsconfig": "workspace:*",
     "@total-typescript/shoehorn": "^0.1.2",
     "encoding": "^0.1.13",
-    "eslint": "^8.57.0",
+    "eslint": "^9.2.0",
     "prettier": "^3.2.5",
     "typescript": "^5.4.5"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@schnau/eslint-config/base"
-    ]
   },
   "prettier": "@schnau/prettier-config"
 }

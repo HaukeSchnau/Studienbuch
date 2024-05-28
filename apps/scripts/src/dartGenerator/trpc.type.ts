@@ -1,5 +1,3 @@
-import * as ts from "typescript";
-
 export interface RootRouter {
   type: "router";
   members: Member[];
@@ -70,7 +68,11 @@ export type Type = BaseType &
 export type Procedure = Query | Mutation;
 export type Member = Router | Procedure;
 
-export const ANY_TYPE = { type: "any", nullable: false, optional: false } as const;
+export const ANY_TYPE = {
+  type: "any",
+  nullable: false,
+  optional: false,
+} as const;
 
 export const isRouter = (member: Member): member is Router =>
   member.type === "router";

@@ -58,7 +58,7 @@ export const UserForm = ({
       title: defaultUser?.title ?? undefined,
       abbrv: defaultUser?.abbrv ?? undefined,
     },
-    onSubmit: async ({ value, formApi }) => {
+    onSubmit: ({ value, formApi }) => {
       const parsed = userSchema.parse(value);
       onSubmit({ value: parsed, formApi });
     },

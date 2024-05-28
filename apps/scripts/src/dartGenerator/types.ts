@@ -1,7 +1,7 @@
 import { writeConverter } from "./converter";
 import { writeType } from "./generateDartClient";
 import { capitalize } from "./strings";
-import { ObjectType, Union } from "./trpc.type";
+import type { ObjectType, Union } from "./trpc.type";
 import { getVariableName } from "./util";
 
 export function writeUnion(name: string, union: Union) {

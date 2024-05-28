@@ -16,10 +16,6 @@
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
     "strictNullChecks": true
   },
-  "include": [
-    ".",
-    "../../packages/external-api/src/iserv/auth.ts",
-    "../../packages/external-api/src/iserv/findAbbrvName.ts"
-  ],
+  "include": ["src", "@types"],
   "exclude": ["node_modules"]
 }

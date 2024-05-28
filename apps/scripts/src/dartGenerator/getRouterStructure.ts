@@ -1,16 +1,10 @@
 import * as ts from "typescript";
 
-import {
-  ANY_TYPE,
-  Member,
-  Mutation,
-  Query,
-  RootRouter,
-  Type,
-} from "./trpc.type";
+import type { Member, Mutation, Query, RootRouter, Type } from "./trpc.type";
+import { ANY_TYPE } from "./trpc.type";
 
 export function getRouterStructure(fileName: string): RootRouter {
-  let program = ts.createProgram([fileName], {
+  const program = ts.createProgram([fileName], {
     target: ts.ScriptTarget.ES2022,
     lib: ["dom", "dom.iterable", "ES2022"],
     allowJs: true,
@@ -26,7 +20,7 @@ export function getRouterStructure(fileName: string): RootRouter {
     noUncheckedIndexedAccess: true,
   });
 
-  let checker = program.getTypeChecker();
+  const checker = program.getTypeChecker();
 
   const mainFile = program
     .getSourceFiles()
@@ -56,7 +50,7 @@ export function getRouterStructure(fileName: string): RootRouter {
       ts.isTypeAliasDeclaration(node) &&
       node.name.getText() === "AppRouter"
     ) {
-      return serializeRootRouter(checker.getTypeAtLocation(node.name)!);
+      return serializeRootRouter(checker.getTypeAtLocation(node.name));
     }
   }
 
@@ -150,8 +144,7 @@ export function getRouterStructure(fileName: string): RootRouter {
     return (
       (ts.getCombinedModifierFlags(node as ts.Declaration) &
         ts.ModifierFlags.Export) !==
-        0 ||
-      (!!node.parent && node.parent.kind === ts.SyntaxKind.SourceFile)
+        0 || node.parent.kind === ts.SyntaxKind.SourceFile
     );
   }
 
@@ -168,6 +161,7 @@ export function getRouterStructure(fileName: string): RootRouter {
       return {
         type: "array",
         elementType: serializeType(
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           checker.getTypeArguments(type as ts.TypeReference)[0]!,
         ),
         nullable,
@@ -241,6 +235,7 @@ export function getRouterStructure(fileName: string): RootRouter {
           t.flags !== ts.TypeFlags.Null && t.flags !== ts.TypeFlags.Undefined,
       );
       if (members.length === 1) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return serializeTypeExceptUnion(members[0]!, nullable, optional);
       }
 
@@ -281,6 +276,7 @@ export function getRouterStructure(fileName: string): RootRouter {
     return (
       type.isUnion() &&
       type.types.some(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
         (t) => (t.getFlags() & ts.TypeFlags.Null) === ts.TypeFlags.Null,
       )
     );
@@ -291,6 +287,7 @@ export function getRouterStructure(fileName: string): RootRouter {
       type.isUnion() &&
       type.types.some(
         (t) =>
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
           (t.getFlags() & ts.TypeFlags.Undefined) === ts.TypeFlags.Undefined,
       )
     );

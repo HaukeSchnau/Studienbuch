@@ -68,7 +68,7 @@ export const YearForm = ({
         ? defaultYear.graduationYear - defaultYear.startYear
         : 9,
     },
-    onSubmit: async ({ value, formApi }) => {
+    onSubmit: ({ value, formApi }) => {
       const parsed = yearSchema.parse(value);
       onSubmit({ value: parsed, formApi });
     },

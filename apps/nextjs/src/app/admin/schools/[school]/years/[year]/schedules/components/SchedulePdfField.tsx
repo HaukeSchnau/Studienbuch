@@ -32,8 +32,6 @@ export const SchedulePdfField = ({ protoCourses, onChange }: PdfFieldProps) => {
   };
 
   const timetable = useMemo<Timetable | undefined>(() => {
-    if (!protoCourses) return undefined;
-
     const courses: Course[] = protoCourses.map((protoCourse) => ({
       ...protoCourse,
       id: performance.now(),
@@ -60,7 +58,7 @@ export const SchedulePdfField = ({ protoCourses, onChange }: PdfFieldProps) => {
       {isPending ? (
         <LoadingIndicator />
       ) : isError ? (
-        <p>{error?.message}</p>
+        <p>{error.message}</p>
       ) : timetable ? (
         <TimetableView timetable={timetable} />
       ) : null}
