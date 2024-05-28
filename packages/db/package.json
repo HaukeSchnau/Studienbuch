@@ -7,8 +7,6 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
     "clean": "rm -rf .turbo node_modules",
     "lint": "eslint",
     "format": "prettier --check . --ignore-path ../../.gitignore",
@@ -18,7 +16,7 @@
     "push": "prisma db push --skip-generate",
     "push-delete": "prisma db push --skip-generate --force-reset --accept-data-loss",
     "studio": "prisma studio --port 5556",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+    "typecheck": "tsc --noEmit false"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
