@@ -8,6 +8,8 @@ export const env = createEnv({
     NODE_ENV: z.enum(["development", "production", "test"]),
   },
   client: {},
-  experimental__runtimeEnv: {},
+  experimental__runtimeEnv: {
+    NODE_ENV: process.env.NODE_ENV,
+  },
   skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION,
 });

@@ -1,8 +1,9 @@
 {
   "extends": "@schnau/tsconfig/base.json",
   "compilerOptions": {
+    "outDir": "dist",
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
   },
-  "include": ["src", "prisma/zod", "env.ts"],
+  "include": ["src", "prisma/zod", "env.ts", "drizzle.config.ts"],
   "exclude": ["node_modules"]
 }

@@ -1,0 +1,1465 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "prevId": "",
+  "version": "6",
+  "dialect": "postgresql",
+  "tables": {
+    "public.Course": {
+      "name": "Course",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "courseId": {
+          "name": "courseId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "room": {
+          "name": "room",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "isChoosable": {
+          "name": "isChoosable",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "teacherId": {
+          "name": "teacherId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "classId": {
+          "name": "classId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "semesterId": {
+          "name": "semesterId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "Course_courseId_semesterId_room_key": {
+          "name": "Course_courseId_semesterId_room_key",
+          "columns": ["courseId", "room", "semesterId"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "Course_classId_fkey": {
+          "name": "Course_classId_fkey",
+          "tableFrom": "Course",
+          "tableTo": "Class",
+          "schemaTo": "public",
+          "columnsFrom": ["classId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "Course_teacherId_fkey": {
+          "name": "Course_teacherId_fkey",
+          "tableFrom": "Course",
+          "tableTo": "User",
+          "schemaTo": "public",
+          "columnsFrom": ["teacherId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "Course_semesterId_fkey": {
+          "name": "Course_semesterId_fkey",
+          "tableFrom": "Course",
+          "tableTo": "Semester",
+          "schemaTo": "public",
+          "columnsFrom": ["semesterId"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.CourseTime": {
+      "name": "CourseTime",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "weekday": {
+          "name": "weekday",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start": {
+          "name": "start",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "duration": {
+          "name": "duration",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weeks": {
+          "name": "weeks",
+          "type": "CourseTimeWeeks",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'BOTH'"
+        },
+        "courseId": {
+          "name": "courseId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "CourseTime_courseId_fkey": {
+          "name": "CourseTime_courseId_fkey",
+          "tableFrom": "CourseTime",
+          "tableTo": "Course",
+          "schemaTo": "public",
+          "columnsFrom": ["courseId"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Role": {
+      "name": "Role",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "defaultScope": {
+          "name": "defaultScope",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "Role_name_key": {
+          "name": "Role_name_key",
+          "columns": ["name"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.School": {
+      "name": "School",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "theme": {
+          "name": "theme",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stateCode": {
+          "name": "stateCode",
+          "type": "StateCode",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'NI'"
+        }
+      },
+      "indexes": {
+        "School_name_key": {
+          "name": "School_name_key",
+          "columns": ["name"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Session": {
+      "name": "Session",
+      "schema": "",
+      "columns": {
+        "userId": {
+          "name": "userId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires": {
+          "name": "expires",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Session_userId_fkey": {
+          "name": "Session_userId_fkey",
+          "tableFrom": "Session",
+          "tableTo": "User",
+          "schemaTo": "public",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Substitution": {
+      "name": "Substitution",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lessonStart": {
+          "name": "lessonStart",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lessonEnd": {
+          "name": "lessonEnd",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "courseId": {
+          "name": "courseId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "room": {
+          "name": "room",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "type": {
+          "name": "type",
+          "type": "SubstitutionType",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "substituteId": {
+          "name": "substituteId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "Substitution_date_lessonStart_courseId_key": {
+          "name": "Substitution_date_lessonStart_courseId_key",
+          "columns": ["date", "lessonStart", "courseId"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "Substitution_courseId_fkey": {
+          "name": "Substitution_courseId_fkey",
+          "tableFrom": "Substitution",
+          "tableTo": "Course",
+          "schemaTo": "public",
+          "columnsFrom": ["courseId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "Substitution_substituteId_fkey": {
+          "name": "Substitution_substituteId_fkey",
+          "tableFrom": "Substitution",
+          "tableTo": "User",
+          "schemaTo": "public",
+          "columnsFrom": ["substituteId"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Class": {
+      "name": "Class",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "identifierInYear": {
+          "name": "identifierInYear",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "yearId": {
+          "name": "yearId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "Class_identifierInYear_yearId_key": {
+          "name": "Class_identifierInYear_yearId_key",
+          "columns": ["identifierInYear", "yearId"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "Class_yearId_fkey": {
+          "name": "Class_yearId_fkey",
+          "tableFrom": "Class",
+          "tableTo": "Year",
+          "schemaTo": "public",
+          "columnsFrom": ["yearId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public._RoleToUser": {
+      "name": "_RoleToUser",
+      "schema": "",
+      "columns": {
+        "A": {
+          "name": "A",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "B": {
+          "name": "B",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "_RoleToUser_AB_unique": {
+          "name": "_RoleToUser_AB_unique",
+          "columns": ["A", "B"],
+          "isUnique": true
+        },
+        "_RoleToUser_B_index": {
+          "name": "_RoleToUser_B_index",
+          "columns": ["B"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "_RoleToUser_A_fkey": {
+          "name": "_RoleToUser_A_fkey",
+          "tableFrom": "_RoleToUser",
+          "tableTo": "Role",
+          "schemaTo": "public",
+          "columnsFrom": ["A"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "_RoleToUser_B_fkey": {
+          "name": "_RoleToUser_B_fkey",
+          "tableFrom": "_RoleToUser",
+          "tableTo": "User",
+          "schemaTo": "public",
+          "columnsFrom": ["B"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public._prisma_migrations": {
+      "name": "_prisma_migrations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(36)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "checksum": {
+          "name": "checksum",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "migration_name": {
+          "name": "migration_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "logs": {
+          "name": "logs",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rolled_back_at": {
+          "name": "rolled_back_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "applied_steps_count": {
+          "name": "applied_steps_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Year": {
+      "name": "Year",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "startYear": {
+          "name": "startYear",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "graduationYear": {
+          "name": "graduationYear",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "schoolId": {
+          "name": "schoolId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "Year_startYear_schoolId_key": {
+          "name": "Year_startYear_schoolId_key",
+          "columns": ["startYear", "schoolId"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "Year_schoolId_fkey": {
+          "name": "Year_schoolId_fkey",
+          "tableFrom": "Year",
+          "tableTo": "School",
+          "schemaTo": "public",
+          "columnsFrom": ["schoolId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.CourseSubscription": {
+      "name": "CourseSubscription",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "courseId": {
+          "name": "courseId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "messagingToken": {
+          "name": "messagingToken",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "CourseSubscription_courseId_messagingToken_key": {
+          "name": "CourseSubscription_courseId_messagingToken_key",
+          "columns": ["courseId", "messagingToken"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "CourseSubscription_courseId_fkey": {
+          "name": "CourseSubscription_courseId_fkey",
+          "tableFrom": "CourseSubscription",
+          "tableTo": "Course",
+          "schemaTo": "public",
+          "columnsFrom": ["courseId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.User": {
+      "name": "User",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "abbrv": {
+          "name": "abbrv",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "passwordHash": {
+          "name": "passwordHash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "isSuperUser": {
+          "name": "isSuperUser",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "role": {
+          "name": "role",
+          "type": "StaticRole",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notificationKey": {
+          "name": "notificationKey",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "User_abbrv_key": {
+          "name": "User_abbrv_key",
+          "columns": ["abbrv"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Semester": {
+      "name": "Semester",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start": {
+          "name": "start",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end": {
+          "name": "end",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "schoolId": {
+          "name": "schoolId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "SemesterType",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "Semester_year_type_schoolId_key": {
+          "name": "Semester_year_type_schoolId_key",
+          "columns": ["schoolId", "type", "year"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "Semester_schoolId_fkey": {
+          "name": "Semester_schoolId_fkey",
+          "tableFrom": "Semester",
+          "tableTo": "School",
+          "schemaTo": "public",
+          "columnsFrom": ["schoolId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.LicenseKey": {
+      "name": "LicenseKey",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "activatedAt": {
+          "name": "activatedAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expiresAt": {
+          "name": "expiresAt",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "isSuperKey": {
+          "name": "isSuperKey",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "activatedById": {
+          "name": "activatedById",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "LicenseKey_key_key": {
+          "name": "LicenseKey_key_key",
+          "columns": ["key"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "LicenseKey_activatedById_fkey": {
+          "name": "LicenseKey_activatedById_fkey",
+          "tableFrom": "LicenseKey",
+          "tableTo": "User",
+          "schemaTo": "public",
+          "columnsFrom": ["activatedById"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public._students": {
+      "name": "_students",
+      "schema": "",
+      "columns": {
+        "A": {
+          "name": "A",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "B": {
+          "name": "B",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "_students_AB_unique": {
+          "name": "_students_AB_unique",
+          "columns": ["A", "B"],
+          "isUnique": true
+        },
+        "_students_B_index": {
+          "name": "_students_B_index",
+          "columns": ["B"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "_students_A_fkey": {
+          "name": "_students_A_fkey",
+          "tableFrom": "_students",
+          "tableTo": "Course",
+          "schemaTo": "public",
+          "columnsFrom": ["A"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "_students_B_fkey": {
+          "name": "_students_B_fkey",
+          "tableFrom": "_students",
+          "tableTo": "User",
+          "schemaTo": "public",
+          "columnsFrom": ["B"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Absence": {
+      "name": "Absence",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "courseId": {
+          "name": "courseId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "studentId": {
+          "name": "studentId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "teacherSignature": {
+          "name": "teacherSignature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parentSignature": {
+          "name": "parentSignature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Absence_courseId_fkey": {
+          "name": "Absence_courseId_fkey",
+          "tableFrom": "Absence",
+          "tableTo": "Course",
+          "schemaTo": "public",
+          "columnsFrom": ["courseId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "Absence_studentId_fkey": {
+          "name": "Absence_studentId_fkey",
+          "tableFrom": "Absence",
+          "tableTo": "User",
+          "schemaTo": "public",
+          "columnsFrom": ["studentId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Grade": {
+      "name": "Grade",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "date": {
+          "name": "date",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "result": {
+          "name": "result",
+          "type": "numeric(65, 30)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "GradeType",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "teacherSignature": {
+          "name": "teacherSignature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parentSignature": {
+          "name": "parentSignature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "courseId": {
+          "name": "courseId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "studentId": {
+          "name": "studentId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Grade_courseId_fkey": {
+          "name": "Grade_courseId_fkey",
+          "tableFrom": "Grade",
+          "tableTo": "Course",
+          "schemaTo": "public",
+          "columnsFrom": ["courseId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "Grade_studentId_fkey": {
+          "name": "Grade_studentId_fkey",
+          "tableFrom": "Grade",
+          "tableTo": "User",
+          "schemaTo": "public",
+          "columnsFrom": ["studentId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.Task": {
+      "name": "Task",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dueDate": {
+          "name": "dueDate",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "courseId": {
+          "name": "courseId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ownerId": {
+          "name": "ownerId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "images": {
+          "name": "images",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "done": {
+          "name": "done",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "Task_courseId_fkey": {
+          "name": "Task_courseId_fkey",
+          "tableFrom": "Task",
+          "tableTo": "Course",
+          "schemaTo": "public",
+          "columnsFrom": ["courseId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        },
+        "Task_ownerId_fkey": {
+          "name": "Task_ownerId_fkey",
+          "tableFrom": "Task",
+          "tableTo": "User",
+          "schemaTo": "public",
+          "columnsFrom": ["ownerId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public._ClassToCourse": {
+      "name": "_ClassToCourse",
+      "schema": "",
+      "columns": {
+        "A": {
+          "name": "A",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "B": {
+          "name": "B",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "_ClassToCourse_AB_unique": {
+          "name": "_ClassToCourse_AB_unique",
+          "columns": ["A", "B"],
+          "isUnique": true
+        },
+        "_ClassToCourse_B_index": {
+          "name": "_ClassToCourse_B_index",
+          "columns": ["B"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "_ClassToCourse_A_fkey": {
+          "name": "_ClassToCourse_A_fkey",
+          "tableFrom": "_ClassToCourse",
+          "tableTo": "Class",
+          "schemaTo": "public",
+          "columnsFrom": ["A"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        },
+        "_ClassToCourse_B_fkey": {
+          "name": "_ClassToCourse_B_fkey",
+          "tableFrom": "_ClassToCourse",
+          "tableTo": "Course",
+          "schemaTo": "public",
+          "columnsFrom": ["B"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.PermissionOnUser": {
+      "name": "PermissionOnUser",
+      "schema": "",
+      "columns": {
+        "permission": {
+          "name": "permission",
+          "type": "Permission",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope": {
+          "name": "scope",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "PermissionOnUser_userId_fkey": {
+          "name": "PermissionOnUser_userId_fkey",
+          "tableFrom": "PermissionOnUser",
+          "tableTo": "User",
+          "schemaTo": "public",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "PermissionOnUser_pkey": {
+          "name": "PermissionOnUser_pkey",
+          "columns": ["permission", "userId"]
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "public.PermissionOnRole": {
+      "name": "PermissionOnRole",
+      "schema": "",
+      "columns": {
+        "permission": {
+          "name": "permission",
+          "type": "Permission",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "roleId": {
+          "name": "roleId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope": {
+          "name": "scope",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "PermissionOnRole_roleId_fkey": {
+          "name": "PermissionOnRole_roleId_fkey",
+          "tableFrom": "PermissionOnRole",
+          "tableTo": "Role",
+          "schemaTo": "public",
+          "columnsFrom": ["roleId"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "PermissionOnRole_pkey": {
+          "name": "PermissionOnRole_pkey",
+          "columns": ["permission", "roleId"]
+        }
+      },
+      "uniqueConstraints": {}
+    }
+  },
+  "enums": {
+    "public.CourseTimeWeeks": {
+      "name": "CourseTimeWeeks",
+      "values": ["EVEN", "ODD", "BOTH"],
+      "schema": "public"
+    },
+    "public.GradeType": {
+      "name": "GradeType",
+      "values": ["WRITTEN", "ORAL", "MASTER"],
+      "schema": "public"
+    },
+    "public.Permission": {
+      "name": "Permission",
+      "values": [
+        "EDIT_INFO_PAGES",
+        "EDIT_USERS",
+        "EDIT_COURSES",
+        "EDIT_YEARS",
+        "EDIT_CLASSES",
+        "EDIT_SCHOOLS",
+        "VIEW_LOGS"
+      ],
+      "schema": "public"
+    },
+    "public.SemesterType": {
+      "name": "SemesterType",
+      "values": ["SUMMER", "WINTER"],
+      "schema": "public"
+    },
+    "public.StateCode": {
+      "name": "StateCode",
+      "values": [
+        "BB",
+        "BE",
+        "BW",
+        "BY",
+        "HB",
+        "HE",
+        "HH",
+        "MV",
+        "NI",
+        "NW",
+        "RP",
+        "SH",
+        "SL",
+        "SN",
+        "ST",
+        "TH"
+      ],
+      "schema": "public"
+    },
+    "public.StaticRole": {
+      "name": "StaticRole",
+      "values": ["TEACHER", "STUDENT"],
+      "schema": "public"
+    },
+    "public.SubstitutionType": {
+      "name": "SubstitutionType",
+      "values": [
+        "FREISETZUNG",
+        "VERTRETUNG",
+        "BETREUUNG",
+        "ENTFALL",
+        "TROTZ_ABSENZ"
+      ],
+      "schema": "public"
+    }
+  },
+  "schemas": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "tables": {
+      "Task": {
+        "columns": {
+          "images": {
+            "isArray": true,
+            "dimensions": 1,
+            "rawType": "text"
+          }
+        }
+      }
+    }
+  }
+}
