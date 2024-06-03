@@ -2,7 +2,7 @@ import { exec as execCb } from "child_process";
 import { promisify } from "util";
 import { program } from "@commander-js/extra-typings";
 
-import { db } from "@schnau/db";
+import { db } from "@schnau/db/client";
 import {
   findAbbrvName,
   loginIservWithDefaultCredentials,
@@ -10,6 +10,7 @@ import {
 } from "@schnau/external-api";
 import { createUser } from "@schnau/lib-server";
 
+import { addNamesToExistingUsers } from "./addNamesToExistingUsers";
 import { addSemesters } from "./addSemesters";
 import { copySubstitutions } from "./copyKadmosSubstitutions";
 import { generateDartClient } from "./dartGenerator/generateDartClient";
@@ -84,48 +85,7 @@ program
 program.command("add-names-to-existing-users").action(async () => {
   console.log("Adding names to existing users...");
 
-  // const users =
-  //   await db.$queryRaw`SELECT * FROM "public"."User" WHERE "name" = "abbrv";`;
-  // const parsedUsers = z
-  //   .array(
-  //     z.object({
-  //       id: z.number(),
-  //       abbrv: z.string(),
-  //     }),
-  //   )
-  //   .parse(users);
-
-  const parsedUsers = await db.user.findMany({
-    select: {
-      id: true,
-      abbrv: true,
-    },
-    where: {
-      abbrv: {
-        not: null,
-      },
-    },
-  });
-
-  for (const user of parsedUsers) {
-    if (!user.abbrv) throw new Error("User has no abbreviation");
-    const makeRequest = await loginIservWithDefaultCredentials();
-    const result = await findAbbrvName(makeRequest, user.abbrv);
-    if (!result) {
-      console.error(`Could not find name for abbreviation "${user.abbrv}"`);
-      continue;
-    }
-
-    await db.user.update({
-      where: {
-        id: user.id,
-      },
-      data: {
-        name: result.name,
-        email: result.email,
-      },
-    });
-  }
+  await addNamesToExistingUsers();
 
   console.log("Names added to existing users!");
   process.exit(0);
@@ -137,7 +97,7 @@ program
   .action(async (state) => {
     await addSemesters(state);
 
-    console.log(await db.semester.findMany());
+    console.log(await db.query.Semester.findMany());
 
     process.exit(0);
   });
