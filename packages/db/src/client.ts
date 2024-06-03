@@ -1,10 +1,10 @@
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Client } from "pg";
+import pg from "pg";
 
 import { env } from "../env";
 import * as schema from "./schema";
 
-const client = new Client({
+const client = new pg.Client({
   connectionString: env.DATABASE_PRISMA_URL,
 });
 
