@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: Props) {
   return (
     <div className="relative flex h-screen overflow-hidden bg-background">
       <MainBlob className="absolute left-0 top-0 w-full" />
-      <div className="relative hidden basis-1/6 overflow-auto rounded-r-3xl bg-white p-4 shadow-md md:block">
+      <div className="relative hidden w-64 overflow-auto rounded-r-3xl bg-white p-4 shadow-md md:block">
         <div className="mx-auto w-4/6 py-12">
           <SchoolLogo />
         </div>

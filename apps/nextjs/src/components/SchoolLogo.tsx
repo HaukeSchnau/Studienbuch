@@ -11,6 +11,16 @@ export const SchoolLogo = () => {
     enabled: school !== undefined,
   });
 
+  if (!query.data?.image) {
+    return (
+      <img
+        src="/assets/stu-logo.png"
+        className="rounded-full"
+        alt="Schullogo"
+      />
+    );
+  }
+
   return (
     <img src={query.data?.image} className="rounded-full" alt="Schullogo" />
   );

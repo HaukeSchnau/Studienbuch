@@ -27,7 +27,7 @@ const materialIcons = localFont({
 });
 
 const getTitle = () => {
-  switch (env.DEPLOYMENT_ENV) {
+  switch (env.NEXT_PUBLIC_DEPLOYMENT_ENV) {
     case "dev":
       return "(DEV) Das Studienbuch";
     case "beta":
