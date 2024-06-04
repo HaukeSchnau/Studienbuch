@@ -8,12 +8,14 @@
   },
   "license": "MIT",
   "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
     "clean": "rm -rf .turbo node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "generate": "openapi --input https://ferien-api.de/v2/api-docs --output ./src/holidays/generated",
-    "lint": "eslint .",
+    "lint": "eslint",
     "test": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
     "@linear/sdk": "^22.0.0",

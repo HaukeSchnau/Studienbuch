@@ -5,7 +5,7 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/src/index.d.ts",
       "default": "./src/index.ts"
     }
   },
@@ -21,6 +21,7 @@
   "dependencies": {
     "@schnau/auth": "workspace:*",
     "@schnau/db": "workspace:*",
+    "@schnau/external-api": "workspace:*",
     "@schnau/lib": "workspace:*",
     "@schnau/lib-server": "workspace:*",
     "@t3-oss/env-nextjs": "^0.10.1",
