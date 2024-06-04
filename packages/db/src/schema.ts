@@ -20,7 +20,8 @@ export const CourseTimeWeeks = pgEnum("CourseTimeWeeks", [
   "BOTH",
 ]);
 export const GradeType = pgEnum("GradeType", ["WRITTEN", "ORAL", "MASTER"]);
-export const Permission = pgEnum("Permission", [
+
+export const PERMISSIONS = [
   "EDIT_INFO_PAGES",
   "EDIT_USERS",
   "EDIT_COURSES",
@@ -28,7 +29,8 @@ export const Permission = pgEnum("Permission", [
   "EDIT_CLASSES",
   "EDIT_SCHOOLS",
   "VIEW_LOGS",
-]);
+] as const;
+export const Permission = pgEnum("Permission", PERMISSIONS);
 export const SemesterType = pgEnum("SemesterType", ["SUMMER", "WINTER"]);
 export const StateCode = pgEnum("StateCode", [
   "BB",

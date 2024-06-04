@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { publicProcedure } from "../procedures/publicProcedure";
+import { publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";
 
 export const subscriptions = createRouter({

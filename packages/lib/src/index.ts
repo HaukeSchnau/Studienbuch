@@ -8,3 +8,4 @@ export * from "./substitutions";
 export * from "./users";
 export * from "./years";
 export * from "./semesters";
+export * from "./theme";

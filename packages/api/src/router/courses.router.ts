@@ -1,16 +1,10 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import {
-  CourseSchema,
-  CourseTimeSchema,
-  UserSchema,
-} from "@schnau/db/prisma/zod";
+import { loginIservWithDefaultCredentials } from "@schnau/external-api";
 import { insertProtoCourse } from "@schnau/lib-server";
 
-import { loginIservWithDefaultCredentials } from "../../../external-api/src/iserv";
-import { permissionProcedure } from "../procedures/protectedProcedure";
-import { publicProcedure } from "../procedures/publicProcedure";
+import { permissionProcedure, publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";
 
 const editCoursesProcedure = permissionProcedure("EDIT_COURSES");
@@ -18,14 +12,6 @@ const editCoursesProcedure = permissionProcedure("EDIT_COURSES");
 export const courses = createRouter({
   list: publicProcedure
     .input(z.object({ yearId: z.number() }))
-    .output(
-      z.array(
-        CourseSchema.omit({ createdAt: true }).extend({
-          teacher: UserSchema.pick({ id: true, name: true, title: true }),
-          times: z.array(CourseTimeSchema),
-        }),
-      ),
-    )
     .query(async ({ ctx, input }) => {
       return ctx.db.course.findMany({
         where: {

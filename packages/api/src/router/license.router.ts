@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { publicProcedure } from "../procedures/publicProcedure";
+import { publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";
 
 export const license = createRouter({

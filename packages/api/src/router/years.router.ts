@@ -1,32 +1,14 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { YearSchema } from "@schnau/db/prisma/zod";
 import { getMaxActiveGraduationYear } from "@schnau/lib";
 
-import { permissionProcedure } from "../procedures/protectedProcedure";
-import { publicProcedure } from "../procedures/publicProcedure";
+import { permissionProcedure, publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";
 
 const editYearsProcedure = permissionProcedure("EDIT_YEARS");
 
 export const years = createRouter({
-  /**
-   * @deprecated
-   */
-  get: publicProcedure
-    .input(z.void())
-    .output(z.array(YearSchema.omit({ createdAt: true })))
-    .query(({ ctx }) => {
-      return ctx.db.year.findMany({
-        where: {
-          graduationYear: {
-            gte: getMaxActiveGraduationYear(),
-          },
-        },
-      });
-    }),
-
   list: publicProcedure
     .input(
       z.object({

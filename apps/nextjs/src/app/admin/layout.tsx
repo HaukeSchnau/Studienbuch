@@ -5,6 +5,7 @@ import { colors } from "@schnau/tailwind-config/web";
 
 import { SchoolLogo } from "~/components/SchoolLogo";
 import { isLoggedIn } from "~/features/auth/isLoggedIn";
+import { initAction } from "~/features/auth/serverActions/logout";
 import { AdminNav } from "./nav/AdminNav";
 
 interface Props {
@@ -15,6 +16,8 @@ export default async function AdminLayout({ children }: Props) {
   if (!(await isLoggedIn())) {
     return redirect("/login");
   }
+
+  await initAction();
 
   return (
     <div className="relative flex h-screen overflow-hidden bg-background">

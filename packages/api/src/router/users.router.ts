@@ -1,14 +1,17 @@
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { hashPassword } from "@schnau/auth/src/password";
-import { PermissionSchema, UserSchema } from "@schnau/db/prisma/zod";
+import { PERMISSIONS, User } from "@schnau/db/schema";
 
-import { permissionProcedure } from "../procedures/protectedProcedure";
+import { permissionProcedure } from "../procedures";
 import { createRouter } from "../trpc";
 
 const scopeOptions = ["schools", "years", "classes", "courses"] as const;
 
 const editUsersProcedure = permissionProcedure("EDIT_USERS");
+
+const UserSchema = createInsertSchema(User);
 
 export const users = createRouter({
   list: editUsersProcedure.query(async ({ ctx }) => {
@@ -27,13 +30,7 @@ export const users = createRouter({
   }),
 
   updateMany: editUsersProcedure
-    .input(
-      z.array(
-        UserSchema.pick({ id: true }).merge(
-          UserSchema.partial().omit({ id: true }),
-        ),
-      ),
-    )
+    .input(z.array(UserSchema.partial().required({ id: true })))
     .mutation(async ({ ctx, input }) => {
       await Promise.all(
         input.map((update) => {
@@ -138,7 +135,7 @@ export const users = createRouter({
         isSuperUser: z.boolean(),
         permissions: z.array(
           z.object({
-            permission: PermissionSchema,
+            permission: z.enum(PERMISSIONS),
             scope: z.record(z.array(z.number())).nullable(),
           }),
         ),

@@ -1,6 +1,6 @@
-import { db } from "@schnau/db";
-
-import { hashPassword } from "../../../auth/src/password";
+import { hashPassword } from "@schnau/auth/src/password";
+import { db } from "@schnau/db/client";
+import { User } from "@schnau/db/schema";
 
 export const createUser = async (
   name: string,
@@ -9,11 +9,10 @@ export const createUser = async (
 ) => {
   const hashedPassword = password ? await hashPassword(password) : undefined;
 
-  return db.user.create({
-    data: {
-      email: email?.toLowerCase(),
-      name: name,
-      passwordHash: hashedPassword,
-    },
+  await db.insert(User).values({
+    email: email?.toLowerCase(),
+    name: name,
+    passwordHash: hashedPassword,
+    updatedAt: new Date(),
   });
 };

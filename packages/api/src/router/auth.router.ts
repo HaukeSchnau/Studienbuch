@@ -3,10 +3,11 @@ import { z } from "zod";
 import { getPermissions } from "@schnau/auth/src/getPermissions";
 import { checkPassword } from "@schnau/auth/src/password";
 import { createSession } from "@schnau/auth/src/session";
-import { db } from "@schnau/db";
+import { eq } from "@schnau/db";
+import { db } from "@schnau/db/client";
+import { Session, User } from "@schnau/db/schema";
 
-import { protectedProcedure } from "../procedures/protectedProcedure";
-import { publicProcedure } from "../procedures/publicProcedure";
+import { protectedProcedure, publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";
 
 export const auth = createRouter({
@@ -30,10 +31,8 @@ export const auth = createRouter({
       }),
     )
     .mutation(async ({ input: { email, password } }) => {
-      const user = await db.user.findFirst({
-        where: {
-          email: email.toLowerCase(),
-        },
+      const user = await db.query.User.findFirst({
+        where: eq(User.email, email.toLowerCase()),
       });
 
       if (!user) {
@@ -68,21 +67,17 @@ export const auth = createRouter({
         };
       }
 
-      const newSession = await createSession(user);
+      const session = await createSession(user);
 
       return {
-        sessionToken: newSession.token,
-        session: newSession,
+        sessionToken: session.token,
+        session: session,
         error: undefined,
       };
     }),
 
   logout: protectedProcedure.mutation(async ({ ctx }) => {
     ctx.log.info("Logging out");
-    await db.session.delete({
-      where: {
-        token: ctx.session.token,
-      },
-    });
+    await db.delete(Session).where(eq(Session.token, ctx.session.token));
   }),
 });

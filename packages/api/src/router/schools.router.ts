@@ -1,105 +1,10 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { protectedProcedure } from "../procedures/protectedProcedure";
-import { publicProcedure } from "../procedures/publicProcedure";
-import { createRouter } from "../trpc";
+import { defaultTheme, themeSchema } from "@schnau/lib";
 
-const themeSchema = z.object({
-  primary: z.object({
-    default: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-    text: z.string(),
-    des: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-    pale: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-  }),
-  accent: z.object({
-    default: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-    sec: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-    des: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-    pale: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-  }),
-  danger: z.object({
-    default: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-    des: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-    sec: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-  }),
-  alert: z.object({
-    default: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-    des: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-  }),
-  success: z.object({
-    default: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-    des: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-    pale: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-  }),
-  neutral: z.object({
-    default: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-    sec: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-  }),
-  surface: z.object({
-    default: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-  }),
-  background: z.object({
-    default: z.object({
-      color: z.string(),
-      on: z.string(),
-    }),
-  }),
-});
+import { protectedProcedure, publicProcedure } from "../procedures";
+import { createRouter } from "../trpc";
 
 export const schools = createRouter({
   list: publicProcedure.input(z.void()).query(async ({ ctx }) => {
@@ -110,7 +15,7 @@ export const schools = createRouter({
     .input(
       z.object({
         school: z.number(),
-        image: z.string(),
+        image: z.string().optional(),
         theme: themeSchema,
       }),
     )
@@ -143,8 +48,16 @@ export const schools = createRouter({
       });
     }
 
+    const parsedTheme = themeSchema.safeParse(school.theme);
+
+    if (!parsedTheme.success) {
+      return {
+        theme: defaultTheme,
+      };
+    }
+
     return {
-      theme: themeSchema.parse(school.theme),
+      theme: parsedTheme.data,
       image: school.image,
     };
   }),

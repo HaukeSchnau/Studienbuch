@@ -22,6 +22,6 @@ export const SchoolLogo = () => {
   }
 
   return (
-    <img src={query.data?.image} className="rounded-full" alt="Schullogo" />
+    <img src={query.data.image} className="rounded-full" alt="Schullogo" />
   );
 };
