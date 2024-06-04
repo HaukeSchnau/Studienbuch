@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import clsx from "clsx";
 
-import type { IconName } from "../layout/icon";
+import type { IconName } from "../icon";
 
 type Props<TUrl extends string> = {
   icon: IconName;

@@ -4,7 +4,7 @@ import type { Permission } from "@prisma/client";
 import type { Route } from "next";
 import type { ReactNode } from "react";
 
-import type { IconName } from "../icon";
+import type { IconName } from "~/components/icon";
 import { api } from "~/infrastructure/trpc/react";
 import { NavigationItem } from "./NavigationItem";
 

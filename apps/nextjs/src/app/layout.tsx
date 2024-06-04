@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Nunito } from "next/font/google";
 import localFont from "next/font/local";
 
-import "~/styles/globals.css";
+import "./globals.css";
 
 import type { ReactNode } from "react";
 import { AxiomWebVitals } from "next-axiom";

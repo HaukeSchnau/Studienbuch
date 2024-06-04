@@ -3,7 +3,7 @@ import {
   NavigationItem,
 } from "~/components/layout/nav/NavigationItem";
 import { PermissionNavigationItem } from "~/components/layout/nav/PermissionNavigationItem";
-import { SchoolsNav } from "../nav/SchoolsNav";
+import { SchoolsNav } from "./SchoolsNav";
 
 export const AdminNav = () => {
   return (

@@ -12,7 +12,7 @@ export const revalidate = 3600; // 1 hour
 
 export default function RoadmapPage() {
   return (
-    <div className=" py-12  md:py-16">
+    <div className="py-12 md:py-16">
       <h1 className="px-12 text-4xl font-bold text-primary-text md:px-[10vw]">
         Woran wird gerade gearbeitet?
       </h1>

@@ -1,7 +1,7 @@
 export const Footer = () => {
   return (
     <footer
-      className=" flex flex-col items-center gap-2"
+      className="flex flex-col items-center gap-2"
       style={{ gridArea: "footer" }}
     >
       <div className="text-md opacity-80">

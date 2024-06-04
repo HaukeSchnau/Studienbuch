@@ -640,6 +640,9 @@ importers:
 
   packages/lib-server:
     dependencies:
+      '@schnau/auth':
+        specifier: workspace:*
+        version: link:../auth
       '@schnau/db':
         specifier: workspace:*
         version: link:../db

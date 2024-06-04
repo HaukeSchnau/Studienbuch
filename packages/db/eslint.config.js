@@ -3,7 +3,7 @@ import baseConfig, { restrictEnvAccess } from "@schnau/eslint-config/base";
 /** @type {import('typescript-eslint').Config} */
 export default [
   {
-    ignores: ["prisma/zod/**"],
+    ignores: ["prisma/zod/**", "dist/**"],
   },
   ...baseConfig,
   ...restrictEnvAccess,

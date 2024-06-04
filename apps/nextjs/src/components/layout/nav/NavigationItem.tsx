@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import cx from "clsx";
 
-import type { IconName } from "../icon";
+import type { IconName } from "~/components/icon";
 import { logout } from "~/features/auth/serverActions/logout";
 
 interface NavigationItemProps<TUrl extends string> {

@@ -68,7 +68,6 @@ export default tseslint.config(
       ],
       "@typescript-eslint/no-non-null-assertion": "error",
       "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
-      "import/no-relative-parent-imports": "error",
       "import/no-relative-packages": "error",
     },
   },

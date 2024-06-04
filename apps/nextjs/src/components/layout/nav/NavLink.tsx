@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 
-import type { IconName } from "../icon";
+import type { IconName } from "~/components/icon";
 
 export const NavLink = <TUrl extends string>({
   href,

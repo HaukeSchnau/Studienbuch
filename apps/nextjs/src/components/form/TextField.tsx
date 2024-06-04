@@ -2,7 +2,7 @@ import type { ForwardedRef, InputHTMLAttributes } from "react";
 import { forwardRef } from "react";
 import clsx from "clsx";
 
-import type { IconName } from "../layout/icon";
+import type { IconName } from "../icon";
 import { IconButton } from "./IconButton";
 
 type TextFieldProps = {

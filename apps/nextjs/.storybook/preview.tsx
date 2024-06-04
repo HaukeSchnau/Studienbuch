@@ -1,7 +1,7 @@
 import type { Preview } from "@storybook/react";
 import React from "react";
 
-import "../src/styles/globals.css";
+import "../src/app/globals.css";
 
 import type { CSSProperties } from "react";
 

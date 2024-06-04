@@ -22,8 +22,8 @@
     "lint:ws": "pnpm dlx sherif@latest",
     "postinstall": "pnpm lint:ws",
     "typecheck": "turbo typecheck",
-    "ci": "run-p format lint typecheck",
-    "ci:fix": "run-p format:fix lint:fix"
+    "ci": "run-s format lint typecheck",
+    "ci:fix": "run-s format:fix lint:fix"
   },
   "devDependencies": {
     "@schnau/prettier-config": "workspace:*",
