@@ -1,6 +1,15 @@
 import type { Permission, PermissionScope } from "@schnau/lib";
-import { db } from "@schnau/db";
+import { and, eq } from "@schnau/db";
+import { db } from "@schnau/db/client";
+import {
+  _RoleToUser,
+  PermissionOnRole,
+  PermissionOnUser,
+  Role,
+  User,
+} from "@schnau/db/schema";
 
+// TODO: Produce a single query to get the permission scope and maybe cache it
 export const findPermissionScope = async (
   user: { id: number; isSuperUser: boolean },
   permission: Permission,
@@ -9,44 +18,29 @@ export const findPermissionScope = async (
     return {};
   }
 
-  const foundPermission = await db.permissionOnUser.findFirst({
-    where: {
-      userId: user.id,
-      permission,
-    },
-  });
+  const things = await db
+    .select()
+    .from(User)
+    .where(and(eq(User.id, user.id)))
+    .leftJoin(
+      PermissionOnUser,
+      and(
+        eq(PermissionOnUser.userId, User.id),
+        eq(PermissionOnUser.permission, permission),
+      ),
+    )
+    .leftJoin(_RoleToUser, eq(_RoleToUser.B, User.id))
+    .leftJoin(Role, eq(Role.id, _RoleToUser.A))
+    .leftJoin(
+      PermissionOnRole,
+      and(
+        eq(PermissionOnRole.roleId, Role.id),
+        eq(PermissionOnRole.permission, permission),
+      ),
+    );
 
-  if (foundPermission) {
-    return (foundPermission.scope ?? {}) as PermissionScope;
-  }
-
-  const foundPermissionOnRole = await db.role.findFirst({
-    where: {
-      users: {
-        some: {
-          id: user.id,
-        },
-      },
-      permissions: {
-        some: {
-          permission,
-        },
-      },
-    },
-    include: {
-      permissions: {
-        where: {
-          permission,
-        },
-      },
-    },
-  });
-
-  if (foundPermissionOnRole?.permissions[0]) {
-    return (foundPermissionOnRole.permissions[0].scope ??
-      foundPermissionOnRole.defaultScope ??
-      {}) as PermissionScope;
-  }
+  // TODO - this is just for debugging
+  console.log(things);
 
   return null;
 };

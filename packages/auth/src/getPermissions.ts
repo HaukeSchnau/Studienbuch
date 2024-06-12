@@ -1,6 +1,15 @@
 import type { Permission, PermissionScope } from "@schnau/lib";
-import { db } from "@schnau/db";
+import { eq } from "@schnau/db";
+import { db } from "@schnau/db/client";
+import {
+  _RoleToUser,
+  PermissionOnRole,
+  PermissionOnUser,
+  Role,
+  User,
+} from "@schnau/db/schema";
 
+// TODO: Produce a single query to get the permission scope and maybe cache it
 export const getPermissions = async (user: {
   id: number;
   isSuperUser: boolean;
@@ -13,26 +22,14 @@ export const getPermissions = async (user: {
     };
   }
 
-  const userWithPermissions = await db.user.findUnique({
-    where: {
-      id: user.id,
-    },
-    include: {
-      permissions: true,
-      roles: {
-        include: {
-          permissions: true,
-        },
-      },
-    },
-  });
-
-  if (!userWithPermissions)
-    return {
-      isSuperUser: false,
-    };
-
-  const { permissions, roles } = userWithPermissions;
+  const things = await db
+    .select()
+    .from(User)
+    .where(eq(User.id, user.id))
+    .leftJoin(PermissionOnUser, eq(PermissionOnUser.userId, User.id))
+    .leftJoin(_RoleToUser, eq(_RoleToUser.B, User.id))
+    .leftJoin(Role, eq(Role.id, _RoleToUser.A))
+    .leftJoin(PermissionOnRole, eq(PermissionOnRole.roleId, Role.id));
 
   const ret: { isSuperUser: boolean } & Partial<
     Record<Permission, PermissionScope>
@@ -40,17 +37,23 @@ export const getPermissions = async (user: {
     isSuperUser: false,
   };
 
-  for (const permission of permissions) {
-    ret[permission.permission] = (permission.scope ?? {}) as PermissionScope;
-  }
+  for (const thing of things) {
+    if (thing.User.id !== user.id) {
+      throw new Error("Unexpected user id");
+    }
 
-  for (const role of roles) {
-    for (const permission of role.permissions) {
-      ret[permission.permission] = (permission.scope ??
-        role.defaultScope ??
+    if (thing.PermissionOnRole) {
+      ret[thing.PermissionOnRole.permission] = (thing.PermissionOnRole.scope ??
+        {}) as PermissionScope;
+    }
+
+    if (thing.PermissionOnUser) {
+      ret[thing.PermissionOnUser.permission] = (thing.PermissionOnUser.scope ??
         {}) as PermissionScope;
     }
   }
+
+  console.log(ret, things);
 
   return ret;
 };
