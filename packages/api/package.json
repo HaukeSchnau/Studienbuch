@@ -34,8 +34,8 @@
     "@schnau/eslint-config": "workspace:*",
     "@schnau/prettier-config": "workspace:*",
     "@schnau/tsconfig": "workspace:*",
-    "eslint": "^9.2.0",
-    "prettier": "^3.2.5",
+    "eslint": "^9.5.0",
+    "prettier": "^3.3.2",
     "typescript": "^5.4.5"
   },
   "prettier": "@schnau/prettier-config"

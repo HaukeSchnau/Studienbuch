@@ -32,12 +32,12 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
-    "@prisma/client": "^5.14.0",
+    "@prisma/client": "^5.15.0",
     "@t3-oss/env-nextjs": "^0.10.1",
     "dayjs": "^1.11.11",
-    "drizzle-orm": "^0.31.0",
+    "drizzle-orm": "^0.31.2",
     "drizzle-zod": "^0.5.1",
-    "pg": "^8.11.5"
+    "pg": "^8.12.0"
   },
   "devDependencies": {
     "@schnau/eslint-config": "workspace:*",
@@ -45,10 +45,10 @@
     "@schnau/tsconfig": "workspace:*",
     "@types/pg": "^8.11.6",
     "dotenv-cli": "^7.4.2",
-    "drizzle-kit": "^0.22.1",
-    "eslint": "^9.2.0",
-    "prettier": "^3.2.5",
-    "prisma": "^5.14.0",
+    "drizzle-kit": "^0.22.7",
+    "eslint": "^9.5.0",
+    "prettier": "^3.3.2",
+    "prisma": "^5.15.0",
     "prisma-import": "^1.0.5",
     "typescript": "^5.4.5",
     "zod-prisma-types": "^3.1.8"

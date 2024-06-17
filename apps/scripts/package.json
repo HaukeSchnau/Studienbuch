@@ -16,7 +16,7 @@
     "@schnau/lib": "workspace:*",
     "@schnau/lib-server": "workspace:*",
     "commander": "^12.1.0",
-    "tsx": "^4.11.0",
+    "tsx": "^4.15.6",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -24,8 +24,8 @@
     "@schnau/prettier-config": "workspace:*",
     "@schnau/tsconfig": "workspace:*",
     "@total-typescript/ts-reset": "^0.5.1",
-    "@types/node": "^20.12.12",
-    "eslint": "^9.2.0",
+    "@types/node": "^20.14.2",
+    "eslint": "^9.5.0",
     "typescript": "^5.4.5"
   }
 }
