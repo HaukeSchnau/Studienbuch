@@ -21,7 +21,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@linear/sdk": "^22.0.0",
+    "@linear/sdk": "^24.0.0",
     "@t3-oss/env-nextjs": "^0.10.1",
     "tough-cookie": "^4.1.4",
     "zod": "^3.23.8"
@@ -35,7 +35,7 @@
     "eslint": "^9.5.0",
     "openapi-typescript-codegen": "^0.29.0",
     "prettier": "^3.3.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.5.3"
   },
   "prettier": "@schnau/prettier-config"
 }
