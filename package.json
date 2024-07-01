@@ -1,27 +1,28 @@
 {
-  "name": "class_mate",
+  "name": "studienbuch",
   "private": true,
   "engines": {
     "node": ">=20.12.0"
   },
-  "packageManager": "pnpm@9.1.0",
+  "packageManager": "pnpm@9.2.0",
   "scripts": {
-    "build": "turbo build",
+    "build": "turbo run build",
     "clean": "git clean -xdf node_modules",
-    "clean:workspaces": "turbo clean",
-    "db:push": "pnpm -F db push",
+    "clean:workspaces": "turbo run clean",
+    "db:push": "turbo -F @schnau/db push",
     "db:generate": "turbo db:generate",
     "db:seed": "pnpm -F scripts seed",
-    "db:studio": "pnpm -F db studio",
+    "db:studio": "turbo -F @schnau/db studio",
     "db:deploy": "pnpm -F db deployment",
-    "dev": "turbo dev --parallel",
-    "format": "turbo format -- --cache --cache-location node_modules/.cache/.prettiercache",
-    "format:fix": "turbo format --continue -- --write --cache --cache-location node_modules/.cache/.prettiercache",
-    "lint": "turbo lint -- --cache --cache-location node_modules/.cache/.eslintcache",
-    "lint:fix": "turbo lint -- --fix --cache --cache-location node_modules/.cache/.eslintcache",
+    "dev": "turbo watch dev",
+    "dev:next": "turbo watch dev -F @schnau/nextjs...",
+    "format": "turbo run format --continue -- --cache --cache-location node_modules/.cache/.prettiercache",
+    "format:fix": "turbo run format --continue -- --write --cache --cache-location node_modules/.cache/.prettiercache",
+    "lint": "turbo run lint --continue -- --cache --cache-location node_modules/.cache/.eslintcache",
+    "lint:fix": "turbo run lint --continue -- --fix --cache --cache-location node_modules/.cache/.eslintcache",
     "lint:ws": "pnpm dlx sherif@latest",
     "postinstall": "pnpm lint:ws",
-    "typecheck": "turbo typecheck",
+    "typecheck": "turbo run typecheck",
     "ci": "run-s format lint typecheck",
     "ci:fix": "run-s format:fix lint:fix"
   },
@@ -31,8 +32,7 @@
     "npm-run-all": "^4.1.5",
     "prettier": "^3.3.2",
     "turbo": "^2.0.4",
-    "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "typescript": "^5.4.5"
   },
   "prettier": "@schnau/prettier-config"
 }
