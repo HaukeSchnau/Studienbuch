@@ -255,7 +255,7 @@ export function getRouterStructure(fileName: string): RootRouter {
       if (members.every((t) => t.isStringLiteral())) {
         return {
           type: "enum",
-          values: members.map((t) => (t as ts.StringLiteralType).value),
+          values: members.map((t) => t.value),
           nullable,
           optional,
         };
