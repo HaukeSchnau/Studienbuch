@@ -18,7 +18,6 @@
     "next/dist/client/router.d.ts"
   ],
   "typescript.tsdk": "node_modules/typescript/lib",
-
   "python.analysis.typeCheckingMode": "strict",
   "[prisma]": {
     "editor.defaultFormatter": "ajmnz.prisma-import"
@@ -37,5 +36,9 @@
     "**/page.tsx": "${dirname} - Page",
     "**/index.{tsx,ts}": "${dirname} - Index",
     "**/layout.tsx": "${dirname} - Layout"
+  },
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "package.json": "*"
   }
 }
