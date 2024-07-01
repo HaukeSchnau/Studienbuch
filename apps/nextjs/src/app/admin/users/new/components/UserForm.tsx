@@ -1,5 +1,5 @@
 import type { FormApi } from "@tanstack/react-form";
-import { createFormFactory } from "@tanstack/react-form";
+import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { z } from "zod";
 
@@ -30,16 +30,13 @@ const userSchema = z.object({
 });
 
 type UserOutput = z.infer<typeof userSchema>;
-
-const formFactory = createFormFactory<UserFormValues, typeof zodValidator>({
-  validatorAdapter: zodValidator,
-});
+type ZodValidator = ReturnType<typeof zodValidator>;
 
 interface Props {
   defaultUser?: User & { schoolId: number };
   onSubmit: (props: {
     value: UserOutput;
-    formApi: FormApi<UserFormValues, typeof zodValidator>;
+    formApi: FormApi<UserFormValues, ZodValidator>;
   }) => void;
   error?: string;
   isPending?: boolean;
@@ -51,7 +48,8 @@ export const UserForm = ({
   error,
   isPending,
 }: Props) => {
-  const { Field, handleSubmit } = formFactory.useForm({
+  const { Field, handleSubmit } = useForm<UserFormValues, ZodValidator>({
+    validatorAdapter: zodValidator(),
     defaultValues: {
       name: defaultUser?.name ?? "",
       email: defaultUser?.email ?? undefined,

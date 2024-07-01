@@ -47,12 +47,12 @@ export const ImportScheduleModal = ({ isOpen, onClose, year }: Props) => {
 
   const { Field, handleSubmit, Subscribe } = useForm<
     ImportFormValues,
-    typeof zodValidator
+    ReturnType<typeof zodValidator>
   >({
     defaultValues: {
       protoCourses: [],
     },
-    validatorAdapter: zodValidator,
+    validatorAdapter: zodValidator(),
     validators: {
       onChange: importFormSchema,
     },

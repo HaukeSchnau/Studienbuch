@@ -1,5 +1,5 @@
 import type { FormApi } from "@tanstack/react-form";
-import { createFormFactory } from "@tanstack/react-form";
+import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { z } from "zod";
 
@@ -39,15 +39,13 @@ const yearSchema = z.object({
 
 type YearOutput = z.infer<typeof yearSchema>;
 
-const formFactory = createFormFactory<YearFormValues, typeof zodValidator>({
-  validatorAdapter: zodValidator,
-});
+type ZodValidator = ReturnType<typeof zodValidator>;
 
 interface Props {
   defaultYear?: Year & { schoolId: number };
   onSubmit: (props: {
     value: YearOutput;
-    formApi: FormApi<YearFormValues, typeof zodValidator>;
+    formApi: FormApi<YearFormValues, ZodValidator>;
   }) => void;
   error?: string;
   isPending?: boolean;
@@ -59,7 +57,8 @@ export const YearForm = ({
   error,
   isPending,
 }: Props) => {
-  const { Field, handleSubmit } = formFactory.useForm({
+  const { Field, handleSubmit } = useForm<YearFormValues, ZodValidator>({
+    validatorAdapter: zodValidator(),
     defaultValues: {
       name: defaultYear?.name ?? "",
       schoolId: defaultYear?.schoolId,

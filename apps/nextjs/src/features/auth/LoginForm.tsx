@@ -1,6 +1,6 @@
 "use client";
 
-import { createFormFactory } from "@tanstack/react-form";
+import { useForm } from "@tanstack/react-form";
 
 import { Button } from "~/components/form/Button";
 import { TextField } from "~/components/form/TextField";
@@ -13,17 +13,14 @@ interface LoginFormValues {
   password: string;
 }
 
-const formFactory = createFormFactory<LoginFormValues>({
-  defaultValues: {
-    email: "",
-    password: "",
-  },
-});
-
 export const LoginForm = () => {
   const loginMutation = api.auth.login.useMutation();
 
-  const { Field, handleSubmit } = formFactory.useForm({
+  const { Field, handleSubmit } = useForm<LoginFormValues>({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
     onSubmit: async ({ value, formApi }) => {
       const { email, password } = value;
       const response = await loginMutation

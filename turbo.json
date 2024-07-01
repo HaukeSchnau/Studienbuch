@@ -55,7 +55,14 @@
       "interactive": true
     }
   },
-  "globalEnv": ["DATABASE_PRISMA_URL", "POSTGRES_URL", "PORT"],
+  "globalEnv": [
+    "DATABASE_PRISMA_URL",
+    "POSTGRES_URL",
+    "PORT",
+    "BASE_URL",
+    "NEXT_PUBLIC_DEPLOYMENT_ENV",
+    "SKIP_ENV_VALIDATION"
+  ],
   "globalPassThroughEnv": [
     "NODE_ENV",
     "CI",

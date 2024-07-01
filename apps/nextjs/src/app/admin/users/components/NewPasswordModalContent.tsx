@@ -55,7 +55,7 @@ export const ChangePasswordModalContent = ({
 
       <Field
         name="password"
-        validatorAdapter={zodValidator}
+        validatorAdapter={zodValidator()}
         validators={{
           onChange: z
             .string()

@@ -23,7 +23,7 @@
     "lint:ws": "pnpm dlx sherif@latest",
     "postinstall": "pnpm lint:ws",
     "typecheck": "turbo run typecheck",
-    "ci": "run-s format lint typecheck",
+    "ci": "turbo run format lint typecheck",
     "ci:fix": "run-s format:fix lint:fix"
   },
   "devDependencies": {
