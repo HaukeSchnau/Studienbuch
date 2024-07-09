@@ -20,7 +20,7 @@
     "@schnau/lib": "workspace:*",
     "node-html-parser": "^6.1.13",
     "papaparse": "^5.4.1",
-    "zod": "^3.23.8"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@schnau/eslint-config": "workspace:*",
@@ -28,9 +28,9 @@
     "@schnau/tsconfig": "workspace:*",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/papaparse": "^5.3.14",
-    "eslint": "^9.5.0",
-    "prettier": "^3.3.2",
-    "typescript": "^5.5.3"
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
   },
   "prettier": "@schnau/prettier-config"
 }

@@ -11,7 +11,14 @@ const config = {
   reactStrictMode: true,
 
   /** Enables hot reloading for local packages without a build step */
-  transpilePackages: ["@schnau/api", "@schnau/auth", "@schnau/db"],
+  transpilePackages: [
+    "@schnau/api",
+    "@schnau/auth",
+    "@schnau/db",
+    "@schnau/lib",
+    "@schnau/lib-server",
+    "@schnau/rest",
+  ],
 
   /** We already do linting and typechecking as separate tasks in CI */
   eslint: { ignoreDuringBuilds: true },

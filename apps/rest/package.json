@@ -23,16 +23,16 @@
     "@schnau/auth": "workspace:*",
     "@t3-oss/env-nextjs": "^0.10.1",
     "hono": "^4.4.6",
-    "zod": "^3.23.8"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@schnau/eslint-config": "workspace:*",
     "@schnau/prettier-config": "workspace:*",
     "@schnau/tsconfig": "workspace:*",
-    "eslint": "^9.5.0",
-    "prettier": "^3.3.2",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
     "tsx": "^4.15.6",
-    "typescript": "^5.5.3"
+    "typescript": "catalog:"
   },
   "prettier": "@schnau/prettier-config"
 }

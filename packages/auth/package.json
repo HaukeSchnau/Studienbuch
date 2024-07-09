@@ -15,18 +15,18 @@
     "@schnau/lib": "workspace:*",
     "@t3-oss/env-nextjs": "^0.10.1",
     "bcrypt": "^5.1.1",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "zod": "^3.23.8"
+    "react": "catalog:react18",
+    "react-dom": "catalog:react18",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@schnau/eslint-config": "workspace:*",
     "@schnau/prettier-config": "workspace:*",
     "@schnau/tsconfig": "workspace:*",
     "@types/bcrypt": "^5.0.2",
-    "eslint": "^9.5.0",
-    "prettier": "^3.3.2",
-    "typescript": "^5.5.3"
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:"
   },
   "prettier": "@schnau/prettier-config"
 }

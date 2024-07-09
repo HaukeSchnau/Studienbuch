@@ -25,7 +25,7 @@
     "@t3-oss/env-nextjs": "^0.10.1",
     "dayjs": "^1.11.11",
     "tough-cookie": "^4.1.4",
-    "zod": "^3.23.8"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@schnau/eslint-config": "workspace:*",
@@ -33,10 +33,10 @@
     "@schnau/tsconfig": "workspace:*",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/tough-cookie": "^4.0.5",
-    "eslint": "^9.5.0",
+    "eslint": "catalog:",
     "openapi-typescript-codegen": "^0.29.0",
-    "prettier": "^3.3.2",
-    "typescript": "^5.5.3",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
     "vitest": "^1.6.0"
   },
   "prettier": "@schnau/prettier-config"
