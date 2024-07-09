@@ -49,7 +49,7 @@
   },
   "globalEnv": [
     "LINEAR_API_KEY",
-    "DATABASE_PRISMA_URL",
+    "POSTGRES_URL",
     "POSTGRES_URL",
     "PORT",
     "BASE_URL",
