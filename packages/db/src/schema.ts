@@ -12,7 +12,6 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-  varchar,
 } from "drizzle-orm/pg-core";
 
 export const CourseTimeWeeks = pgEnum("CourseTimeWeeks", [
