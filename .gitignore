@@ -59,6 +59,4 @@ dist/
 
 __snapshots__
 
-**/prisma/zod
-
 generated

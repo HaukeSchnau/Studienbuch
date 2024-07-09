@@ -10,7 +10,6 @@
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo run clean",
     "db:push": "turbo -F @schnau/db push",
-    "db:generate": "turbo db:generate",
     "db:seed": "pnpm -F scripts seed",
     "db:studio": "turbo -F @schnau/db studio",
     "db:deploy": "pnpm -F db deployment",

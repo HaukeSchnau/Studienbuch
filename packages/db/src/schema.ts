@@ -241,22 +241,6 @@ export const _RoleToUser = pgTable(
   },
 );
 
-export const _prisma_migrations = pgTable("_prisma_migrations", {
-  id: varchar("id", { length: 36 }).primaryKey().notNull(),
-  checksum: varchar("checksum", { length: 64 }).notNull(),
-  finished_at: timestamp("finished_at", { withTimezone: true, mode: "string" }),
-  migration_name: varchar("migration_name", { length: 255 }).notNull(),
-  logs: text("logs"),
-  rolled_back_at: timestamp("rolled_back_at", {
-    withTimezone: true,
-    mode: "string",
-  }),
-  started_at: timestamp("started_at", { withTimezone: true, mode: "string" })
-    .defaultNow()
-    .notNull(),
-  applied_steps_count: integer("applied_steps_count").default(0).notNull(),
-});
-
 export const Year = pgTable(
   "Year",
   {

@@ -23,9 +23,6 @@
   ],
   "typescript.tsdk": "node_modules/typescript/lib",
   "python.analysis.typeCheckingMode": "strict",
-  "[prisma]": {
-    "editor.defaultFormatter": "ajmnz.prisma-import"
-  },
   "files.exclude": {
     ".venv": true,
     "**/.next": true,
