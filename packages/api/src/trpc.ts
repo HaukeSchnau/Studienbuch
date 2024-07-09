@@ -10,11 +10,10 @@ import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import type { Session } from "@schnau/auth/src";
-import { getSessionFromHeaders } from "@schnau/auth/src";
 import { db } from "@schnau/db";
 
-import type { Logger } from "./logger";
+import type { Logger } from "./interfaces/logger";
+import type { Session } from "./interfaces/session";
 import { env } from "../env";
 
 /**
@@ -29,19 +28,15 @@ import { env } from "../env";
  *
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = async (opts: {
-  headers: Headers;
-  session?: Session | null;
+export const createTRPCContext = ({
+  session,
+  source,
+  log,
+}: {
+  session: Session | null;
+  source: string;
   log: Logger;
 }) => {
-  let session: Session | null = opts.session ?? null;
-  if (!session) {
-    const result = await getSessionFromHeaders(opts.headers);
-    session = result.session;
-  }
-
-  const source = opts.headers.get("x-trpc-source") ?? "unknown";
-
   if (env.NODE_ENV === "development") {
     console.log(
       ">>> tRPC Request from",
@@ -53,8 +48,8 @@ export const createTRPCContext = async (opts: {
 
   return {
     session,
+    log,
     db,
-    log: opts.log,
   };
 };
 

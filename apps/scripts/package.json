@@ -16,6 +16,7 @@
     "@schnau/lib": "workspace:*",
     "@schnau/lib-server": "workspace:*",
     "commander": "^12.1.0",
+    "dayjs": "^1.11.11",
     "tsx": "^4.15.6",
     "zod": "^3.23.8"
   },

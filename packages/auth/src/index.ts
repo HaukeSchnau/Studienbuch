@@ -16,16 +16,10 @@ export const getSessionFromHeaders = async (headers: Headers) => {
   const { sessionToken } = extractTokens(headers);
 
   if (sessionToken) {
-    return {
-      session: await getSession(sessionToken),
-      error: null,
-    };
+    return getSession(sessionToken);
   }
 
-  return {
-    session: null,
-    error: null,
-  };
+  return null;
 };
 
 const cookieSchema = z.object({
