@@ -1,6 +1,6 @@
-import type { Permission } from "@prisma/client";
 import { cache } from "react";
 
+import type { Permission } from "@schnau/lib";
 import { findPermissionScope } from "@schnau/auth/src/hasPermission";
 
 import { api } from "~/infrastructure/trpc/server";

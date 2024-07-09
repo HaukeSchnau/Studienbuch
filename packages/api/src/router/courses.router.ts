@@ -77,13 +77,7 @@ export const courses = createRouter({
       const makeIservRequest = await loginIservWithDefaultCredentials();
 
       for (const course of courses) {
-        await insertProtoCourse(
-          db,
-          dbClass,
-          semesterId,
-          course,
-          makeIservRequest,
-        );
+        await insertProtoCourse(dbClass, semesterId, course, makeIservRequest);
       }
     }),
 });

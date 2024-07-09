@@ -1,8 +1,9 @@
 "use client";
 
-import type { Permission } from "@prisma/client";
 import type { Route } from "next";
 import type { ReactNode } from "react";
+
+import type { Permission } from "@schnau/lib";
 
 import type { IconName } from "~/components/icon";
 import { api } from "~/infrastructure/trpc/react";

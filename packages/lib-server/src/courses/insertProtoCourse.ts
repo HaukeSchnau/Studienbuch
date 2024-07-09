@@ -1,7 +1,6 @@
-import type { PrismaClient } from "@prisma/client";
-
 import type { MakeRequest } from "@schnau/external-api";
 import type { Class } from "@schnau/lib";
+import { db } from "@schnau/db";
 import { findAbbrvName } from "@schnau/external-api";
 
 interface ProtoCourseTime {
@@ -21,7 +20,6 @@ interface ProtoCourse {
 }
 
 export const insertProtoCourse = async (
-  db: PrismaClient,
   clazz: Class,
   semesterId: string,
   course: ProtoCourse,
