@@ -96,7 +96,9 @@ export interface KadmosSubstitionsPayload {
   showUnheraldedExams: boolean;
 }
 
-const convertNumberToDate = (number: number) => {
+const convertNumberToDate = (number: number | null) => {
+  if (number === null) return null;
+
   const date = number.toString();
   return new Date(
     Date.UTC(
@@ -110,8 +112,8 @@ const convertNumberToDate = (number: number) => {
 const responseSchema = z.strictObject({
   payload: z.object({
     importInProgress: z.boolean(),
-    date: z.number().transform(convertNumberToDate),
-    nextDate: z.number().transform(convertNumberToDate),
+    date: z.number().nullable().transform(convertNumberToDate),
+    nextDate: z.number().nullable().transform(convertNumberToDate),
     showingNextDate: z.boolean(),
     rows: z.array(
       z.union([
@@ -138,12 +140,12 @@ const responseSchema = z.strictObject({
       .string()
       .transform((date) => dayjs(date, "DD.MM.YYYY HH:mm:ss").format()),
     absentElements: z.array(z.unknown()).length(0),
-    affectedElements: z.object({ 1: z.array(z.string()) }),
+    affectedElements: z.object({ 1: z.array(z.string()).optional() }),
     messageData: z.object({
       messages: z.array(z.object({ subject: z.string(), body: z.string() })),
     }),
     weekDay: z.string(),
-    regularFreeData: z.array(z.unknown()).length(0),
+    regularFreeData: z.array(z.unknown()).length(0).nullable(),
   }),
 });
 

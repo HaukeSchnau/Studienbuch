@@ -12,6 +12,7 @@ import { createRouter } from "../trpc";
 
 export const auth = createRouter({
   getSession: publicProcedure.query(({ ctx }) => {
+    console.log("getSession", ctx.session);
     return ctx.session;
   }),
 

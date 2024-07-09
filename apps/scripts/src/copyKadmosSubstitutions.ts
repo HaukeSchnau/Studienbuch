@@ -28,6 +28,10 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
     day === "TODAY" ? "iServ_SuS_heute" : "iServ_SuS_morgen",
   );
 
+  if (date === null) {
+    return;
+  }
+
   let makeIservRequest: MakeRequest | null = null;
   const lazyFindAbbrv = async (abbrv: string) => {
     makeIservRequest ??= await loginIservWithDefaultCredentials();
@@ -205,41 +209,6 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
 
       const substituteUser = await lazyGetCreateUser(substitute);
 
-      // const res = await db.substitution.upsert({
-      //   where: {
-      //     substitutionIdentifier: {
-      //       date,
-      //       lessonStart,
-      //       courseId: dbCourse.id,
-      //     },
-      //   },
-      //   create: {
-      //     date,
-      //     lessonStart,
-      //     lessonEnd,
-      //     course: {
-      //       connect: {
-      //         id: dbCourse.id,
-      //       },
-      //     },
-      //     room: room,
-      //     type: type.data,
-      //     substitute: substituteUser,
-      //   },
-      //   update: {
-      //     date,
-      //     lessonStart,
-      //     lessonEnd,
-      //     course: {
-      //       connect: {
-      //         id: dbCourse.id,
-      //       },
-      //     },
-      //     room: room,
-      //     type: type.data,
-      //     substitute: substituteUser,
-      //   },
-      // });
       const [res] = await db
         .insert(Substitution)
         .values({
