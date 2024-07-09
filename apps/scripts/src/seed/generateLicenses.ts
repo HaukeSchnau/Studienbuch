@@ -1,6 +1,7 @@
 import crypto from "crypto";
 
-import { db } from "@schnau/db";
+import { db } from "@schnau/db/client";
+import { LicenseKey } from "@schnau/db/schema";
 
 function generateLicenseKey(): string {
   return crypto
@@ -23,12 +24,9 @@ export const generateLicenses = async (numberOfLicenses: number) => {
       isSuperKey: i == 0,
     };
 
-    await db.licenseKey.upsert({
-      where: {
-        key: licenseKey,
-      },
-      update: data,
-      create: data,
+    await db.insert(LicenseKey).values(data).onConflictDoUpdate({
+      target: LicenseKey.key,
+      set: data,
     });
   }
 

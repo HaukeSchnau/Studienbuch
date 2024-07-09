@@ -1,14 +1,17 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import { eq } from "@schnau/db";
+import { db } from "@schnau/db/client";
+import { School } from "@schnau/db/schema";
 import { defaultTheme, themeSchema } from "@schnau/lib";
 
 import { protectedProcedure, publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";
 
 export const schools = createRouter({
-  list: publicProcedure.input(z.void()).query(async ({ ctx }) => {
-    return ctx.db.school.findMany();
+  list: publicProcedure.input(z.void()).query(async () => {
+    return db.query.School.findMany();
   }),
 
   setTheme: protectedProcedure
@@ -19,24 +22,20 @@ export const schools = createRouter({
         theme: themeSchema,
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      return ctx.db.school.update({
-        where: {
-          id: input.school,
-        },
-        data: {
+    .mutation(async ({ input }) => {
+      return db
+        .update(School)
+        .set({
           image: input.image,
           theme: input.theme,
-        },
-      });
+        })
+        .where(eq(School.id, input.school));
     }),
 
-  getTheme: publicProcedure.input(z.number()).query(async ({ ctx, input }) => {
-    const school = await ctx.db.school.findFirst({
-      where: {
-        id: input,
-      },
-      select: {
+  getTheme: publicProcedure.input(z.number()).query(async ({ input }) => {
+    const school = await db.query.School.findFirst({
+      where: eq(School.id, input),
+      columns: {
         theme: true,
         image: true,
       },

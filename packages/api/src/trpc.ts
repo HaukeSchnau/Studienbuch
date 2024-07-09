@@ -10,8 +10,6 @@ import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import { db } from "@schnau/db";
-
 import type { Logger } from "./interfaces/logger";
 import type { Session } from "./interfaces/session";
 import { env } from "../env";
@@ -49,7 +47,6 @@ export const createTRPCContext = ({
   return {
     session,
     log,
-    db,
   };
 };
 

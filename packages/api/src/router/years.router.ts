@@ -1,6 +1,9 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import { desc, eq, gte } from "@schnau/db";
+import { db } from "@schnau/db/client";
+import { Year } from "@schnau/db/schema";
 import { getMaxActiveGraduationYear } from "@schnau/lib";
 
 import { permissionProcedure, publicProcedure } from "../procedures";
@@ -15,39 +18,32 @@ export const years = createRouter({
         school: z.number().optional(),
       }),
     )
-    .query(({ ctx, input }) => {
-      return ctx.db.year.findMany({
-        where: {
-          schoolId: input.school,
-        },
-        orderBy: {
-          startYear: "desc",
-        },
-        include: {
+    .query(({ input }) => {
+      return db.query.Year.findMany({
+        where:
+          input.school !== undefined
+            ? eq(Year.schoolId, input.school)
+            : undefined,
+        orderBy: desc(Year.startYear),
+        with: {
           school: true,
         },
       });
     }),
 
-  listGroupedBySchool: publicProcedure.query(({ ctx }) => {
-    return ctx.db.school.findMany({
-      include: {
+  listGroupedBySchool: publicProcedure.query(() => {
+    return db.query.School.findMany({
+      with: {
         years: {
-          where: {
-            graduationYear: {
-              gte: getMaxActiveGraduationYear(),
-            },
-          },
+          where: gte(Year.graduationYear, getMaxActiveGraduationYear()),
         },
       },
     });
   }),
 
-  getOne: publicProcedure.input(z.number()).query(async ({ input, ctx }) => {
-    const year = await ctx.db.year.findUnique({
-      where: {
-        id: input,
-      },
+  getOne: publicProcedure.input(z.number()).query(async ({ input }) => {
+    const year = await db.query.Year.findFirst({
+      where: eq(Year.id, input),
     });
 
     if (!year) {
@@ -69,19 +65,12 @@ export const years = createRouter({
         schoolId: z.number(),
       }),
     )
-    .mutation(async ({ input, ctx }) => {
-      return ctx.db.year.create({
-        data: {
-          name: input.name,
-          startYear: input.startYear,
-          graduationYear: input.graduationYear,
-
-          school: {
-            connect: {
-              id: input.schoolId,
-            },
-          },
-        },
+    .mutation(async ({ input }) => {
+      await db.insert(Year).values({
+        name: input.name,
+        startYear: input.startYear,
+        graduationYear: input.graduationYear,
+        schoolId: input.schoolId,
       });
     }),
 
@@ -95,21 +84,15 @@ export const years = createRouter({
         schoolId: z.number(),
       }),
     )
-    .mutation(async ({ input, ctx }) => {
-      return ctx.db.year.update({
-        where: {
-          id: input.id,
-        },
-        data: {
+    .mutation(async ({ input }) => {
+      await db
+        .update(Year)
+        .set({
           name: input.name,
           startYear: input.startYear,
           graduationYear: input.graduationYear,
-          school: {
-            connect: {
-              id: input.schoolId,
-            },
-          },
-        },
-      });
+          schoolId: input.schoolId,
+        })
+        .where(eq(Year.id, input.id));
     }),
 });

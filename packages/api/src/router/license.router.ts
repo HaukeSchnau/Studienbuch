@@ -1,6 +1,10 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import { eq } from "@schnau/db";
+import { db } from "@schnau/db/client";
+import { LicenseKey } from "@schnau/db/schema";
+
 import { publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";
 
@@ -11,10 +15,9 @@ export const license = createRouter({
         licenseKey: z.string(),
       }),
     )
-    .output(z.enum(["INVALID", "EXPIRED", "ACTIVATED", "VALID"] as const))
-    .query(async ({ ctx, input }) => {
-      const licenseKey = await ctx.db.licenseKey.findFirst({
-        where: { key: input.licenseKey },
+    .query(async ({ input }) => {
+      const licenseKey = await db.query.LicenseKey.findFirst({
+        where: eq(LicenseKey.key, input.licenseKey),
       });
       if (!licenseKey) {
         return "INVALID" as const;
@@ -37,10 +40,9 @@ export const license = createRouter({
         licenseKey: z.string(),
       }),
     )
-    .output(z.void())
-    .mutation(async ({ ctx, input }) => {
-      const licenseKey = await ctx.db.licenseKey.findFirst({
-        where: { key: input.licenseKey },
+    .mutation(async ({ input }) => {
+      const licenseKey = await db.query.LicenseKey.findFirst({
+        where: eq(LicenseKey.key, input.licenseKey),
       });
       if (!licenseKey) {
         throw new TRPCError({
@@ -63,9 +65,11 @@ export const license = createRouter({
       //     message: "License key already activated",
       //   });
       // }
-      await ctx.db.licenseKey.update({
-        where: { id: licenseKey.id },
-        data: { activatedAt: new Date() },
-      });
+      await db
+        .update(LicenseKey)
+        .set({
+          activatedAt: new Date(),
+        })
+        .where(eq(LicenseKey.id, licenseKey.id));
     }),
 });

@@ -3,7 +3,16 @@ import utc from "dayjs/plugin/utc";
 import { z } from "zod";
 
 import type { MakeRequest } from "@schnau/external-api";
-import { db } from "@schnau/db";
+import { and, eq } from "@schnau/db";
+import { db } from "@schnau/db/client";
+import {
+  _ClassToCourse,
+  Class,
+  Course,
+  Substitution,
+  User,
+  Year,
+} from "@schnau/db/schema";
 import {
   findAbbrvName,
   loginIservWithDefaultCredentials,
@@ -31,34 +40,39 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
       return undefined;
     }
 
-    const existingUser = await db.user.count({
-      where: {
-        abbrv,
-      },
-    });
+    const existingUsers = await db
+      .select()
+      .from(User)
+      .where(eq(User.abbrv, abbrv));
 
-    if (existingUser === 1) {
+    const existingUser = existingUsers[0];
+    if (existingUser) {
       console.log("Reusing existing user for " + abbrv);
-      return {
-        connect: {
-          abbrv,
-        },
-      };
+      return existingUser.id;
     }
 
     const iservUser = await lazyFindAbbrv(abbrv);
 
-    return {
-      create: {
+    const [newUser] = await db
+      .insert(User)
+      .values({
         abbrv,
         name: iservUser?.name ?? abbrv,
         email: iservUser?.email,
-      },
-    };
+        updatedAt: new Date(),
+      })
+      .returning()
+      .execute();
+
+    if (!newUser) {
+      throw new Error(`Could not create user for ${abbrv}`);
+    }
+
+    return newUser.id;
   };
 
-  let createdCount = 0;
-  let updatedCount = 0;
+  const createdCount = 0;
+  const updatedCount = 0;
 
   for (const sub of substitutions) {
     const {
@@ -88,10 +102,8 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
       let startYear = today.getFullYear() - yearNum + 5;
       if (today.getMonth() < 8) startYear--;
 
-      const dbYear = await db.year.findFirst({
-        where: {
-          startYear,
-        },
+      const dbYear = await db.query.Year.findFirst({
+        where: eq(Year.startYear, startYear),
       });
 
       if (!dbYear) {
@@ -101,11 +113,17 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
         continue;
       }
 
-      const dbClass = await db.class.findFirst({
-        where: {
-          yearId: dbYear.id,
-          identifierInYear,
-        },
+      const dbClass = await db.query.Class.findFirst({
+        // where: {
+        //   yearId: dbYear.id,
+        //   identifierInYear,
+        // },
+        where: and(
+          eq(Class.yearId, dbYear.id),
+          identifierInYear !== undefined
+            ? eq(Class.identifierInYear, identifierInYear)
+            : undefined,
+        ),
       });
 
       if (!dbClass) {
@@ -113,19 +131,36 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
         process.exit(1);
       }
 
-      const dbCourse = await db.course.findFirst({
-        where: {
-          classes: {
-            some: {
-              id: dbClass.id,
-            },
-          },
-          courseId: subject?.toLowerCase(),
-        },
-        include: {
-          teacher: true,
-        },
-      });
+      // const dbCourse = await db.course.findFirst({
+      //   where: {
+      //     classes: {
+      //       some: {
+      //         id: dbClass.id,
+      //       },
+      //     },
+      //     courseId: subject?.toLowerCase(),
+      //   },
+      //   include: {
+      //     teacher: true,
+      //   },
+      // });
+      const [dbCourse] = await db
+        .select()
+        .from(Course)
+        .innerJoin(User, eq(User.id, Course.teacherId))
+        .innerJoin(
+          _ClassToCourse,
+          and(
+            eq(_ClassToCourse.course, Course.id),
+            eq(_ClassToCourse.class, dbClass.id),
+          ),
+        )
+        .where(
+          subject !== undefined
+            ? eq(Course.courseId, subject.toLowerCase())
+            : undefined,
+        )
+        .execute();
 
       if (!dbCourse) {
         console.error(`Could not find course for class ${class_}: ${subject}`);
@@ -140,7 +175,7 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
         "TROTZ_ABSENZ",
       ]);
       const type = typeSchema.safeParse(
-        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- We dont't want to allow empty strings
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- We don't want to allow empty strings
         unparsedType?.toUpperCase().replaceAll(" ", "_") || "VERTRETUNG",
       );
 
@@ -160,7 +195,7 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
 
       if (normalTimeIndex === -1) {
         console.error(
-          `Could not find normalTimeIndex for Class ${class_} with Subject ${dbCourse.name}: ${time}`,
+          `Could not find normalTimeIndex for Class ${class_} with Subject ${dbCourse.Course.name}: ${time}`,
         );
         continue;
       }
@@ -170,60 +205,95 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
 
       const substituteUser = await lazyGetCreateUser(substitute);
 
-      const res = await db.substitution.upsert({
-        where: {
-          substitutionIdentifier: {
+      // const res = await db.substitution.upsert({
+      //   where: {
+      //     substitutionIdentifier: {
+      //       date,
+      //       lessonStart,
+      //       courseId: dbCourse.id,
+      //     },
+      //   },
+      //   create: {
+      //     date,
+      //     lessonStart,
+      //     lessonEnd,
+      //     course: {
+      //       connect: {
+      //         id: dbCourse.id,
+      //       },
+      //     },
+      //     room: room,
+      //     type: type.data,
+      //     substitute: substituteUser,
+      //   },
+      //   update: {
+      //     date,
+      //     lessonStart,
+      //     lessonEnd,
+      //     course: {
+      //       connect: {
+      //         id: dbCourse.id,
+      //       },
+      //     },
+      //     room: room,
+      //     type: type.data,
+      //     substitute: substituteUser,
+      //   },
+      // });
+      const [res] = await db
+        .insert(Substitution)
+        .values({
+          date,
+          lessonStart,
+          lessonEnd,
+          courseId: dbCourse.Course.id,
+          room,
+          type: type.data,
+          substituteId: substituteUser,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: [
+            Substitution.date,
+            Substitution.lessonStart,
+            Substitution.courseId,
+          ],
+          set: {
             date,
             lessonStart,
-            courseId: dbCourse.id,
+            lessonEnd,
+            courseId: dbCourse.Course.id,
+            room,
+            type: type.data,
+            substituteId: substituteUser,
+            updatedAt: new Date(),
           },
-        },
-        create: {
-          date,
-          lessonStart,
-          lessonEnd,
-          course: {
-            connect: {
-              id: dbCourse.id,
-            },
-          },
-          room: room,
-          type: type.data,
-          substitute: substituteUser,
-        },
-        update: {
-          date,
-          lessonStart,
-          lessonEnd,
-          course: {
-            connect: {
-              id: dbCourse.id,
-            },
-          },
-          room: room,
-          type: type.data,
-          substitute: substituteUser,
-        },
-      });
+        })
+        .returning()
+        .execute();
+
+      if (!res) {
+        throw new Error(`Could not create substitution for ${class_}`);
+      }
 
       const isNew = dayjs(res.updatedAt).diff(res.createdAt) < 1000;
 
-      console.log(res);
+      console.log(res, isNew);
 
-      if (isNew) {
-        // const notifiedCount = await notifySubscribers(app, res, dbCourse);
+      //   if (isNew) {
+      //     // const notifiedCount = await notifySubscribers(app, res, dbCourse);
 
-        // console.log(
-        //   `Created substitution ${substitution.date.format("YYYY-MM-DD")} ${
-        //     substitution.lessonStart
-        //   } ${substitution.lessonEnd} ${substitution.type} ${
-        //     substitution.subject
-        //   } ${class_} and notified ${notifiedCount} subscribers`,
-        // );
-        createdCount++;
-      } else {
-        updatedCount++;
-      }
+      //     // console.log(
+      //     //   `Created substitution ${substitution.date.format("YYYY-MM-DD")} ${
+      //     //     substitution.lessonStart
+      //     //   } ${substitution.lessonEnd} ${substitution.type} ${
+      //     //     substitution.subject
+      //     //   } ${class_} and notified ${notifiedCount} subscribers`,
+      //     // );
+      //     createdCount++;
+      //   } else {
+      //     updatedCount++;
+      //   }
     }
   }
 

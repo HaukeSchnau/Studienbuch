@@ -11,6 +11,7 @@ import {
   text,
   timestamp,
   uniqueIndex,
+  uuid,
   varchar,
 } from "drizzle-orm/pg-core";
 
@@ -65,7 +66,7 @@ export const Course = pgTable(
     id: serial("id").primaryKey().notNull(),
     courseId: text("courseId").notNull(),
     name: text("name").notNull(),
-    createdAt: timestamp("createdAt", { precision: 3, mode: "string" })
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .defaultNow()
       .notNull(),
     room: text("room"),
@@ -79,7 +80,7 @@ export const Course = pgTable(
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
-    updatedAt: timestamp("updatedAt", { precision: 3, mode: "string" })
+    updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" })
       .defaultNow()
       .notNull(),
     semesterId: text("semesterId").references(() => Semester.id, {
@@ -106,10 +107,10 @@ export const CourseTime = pgTable("CourseTime", {
     onDelete: "set null",
     onUpdate: "cascade",
   }),
-  createdAt: timestamp("createdAt", { precision: 3, mode: "string" })
+  createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
     .defaultNow()
     .notNull(),
-  updatedAt: timestamp("updatedAt", { precision: 3, mode: "string" })
+  updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" })
     .defaultNow()
     .notNull(),
 });
@@ -163,7 +164,7 @@ export const Substitution = pgTable(
   "Substitution",
   {
     id: serial("id").primaryKey().notNull(),
-    date: timestamp("date", { precision: 3, mode: "string" }).notNull(),
+    date: timestamp("date", { precision: 3, mode: "date" }).notNull(),
     lessonStart: integer("lessonStart").notNull(),
     lessonEnd: integer("lessonEnd").notNull(),
     createdAt: timestamp("createdAt", { precision: 3, mode: "string" })
@@ -171,7 +172,7 @@ export const Substitution = pgTable(
       .notNull(),
     updatedAt: timestamp("updatedAt", {
       precision: 3,
-      mode: "string",
+      mode: "date",
     }).notNull(),
     courseId: integer("courseId")
       .notNull()
@@ -222,17 +223,20 @@ export const Class = pgTable(
 export const _RoleToUser = pgTable(
   "_RoleToUser",
   {
-    A: integer("A")
+    role: integer("A")
       .notNull()
       .references(() => Role.id, { onDelete: "cascade", onUpdate: "cascade" }),
-    B: integer("B")
+    user: integer("B")
       .notNull()
       .references(() => User.id, { onDelete: "cascade", onUpdate: "cascade" }),
   },
   (table) => {
     return {
-      AB_unique: uniqueIndex("_RoleToUser_AB_unique").on(table.A, table.B),
-      B_idx: index().on(table.B),
+      AB_unique: uniqueIndex("_RoleToUser_AB_unique").on(
+        table.role,
+        table.user,
+      ),
+      B_idx: index().on(table.user),
     };
   },
 );
@@ -337,10 +341,10 @@ export const User = pgTable(
 export const Semester = pgTable(
   "Semester",
   {
-    id: text("id").primaryKey().notNull(),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
     name: text("name").notNull(),
-    start: timestamp("start", { precision: 3, mode: "string" }).notNull(),
-    end: timestamp("end", { precision: 3, mode: "string" }).notNull(),
+    start: timestamp("start", { precision: 3, mode: "date" }).notNull(),
+    end: timestamp("end", { precision: 3, mode: "date" }).notNull(),
     schoolId: integer("schoolId")
       .notNull()
       .references(() => School.id, {
@@ -366,11 +370,11 @@ export const LicenseKey = pgTable(
   {
     id: serial("id").primaryKey().notNull(),
     key: text("key").notNull(),
-    createdAt: timestamp("createdAt", { precision: 3, mode: "string" })
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
       .defaultNow()
       .notNull(),
-    activatedAt: timestamp("activatedAt", { precision: 3, mode: "string" }),
-    expiresAt: timestamp("expiresAt", { precision: 3, mode: "string" }),
+    activatedAt: timestamp("activatedAt", { precision: 3, mode: "date" }),
+    expiresAt: timestamp("expiresAt", { precision: 3, mode: "date" }),
     isSuperKey: boolean("isSuperKey").default(false).notNull(),
     activatedById: integer("activatedById").references(() => User.id, {
       onDelete: "set null",
@@ -452,10 +456,10 @@ export const Task = pgTable("Task", {
 export const _ClassToCourse = pgTable(
   "_ClassToCourse",
   {
-    A: integer("A")
+    class: integer("A")
       .notNull()
       .references(() => Class.id, { onDelete: "cascade", onUpdate: "cascade" }),
-    B: integer("B")
+    course: integer("B")
       .notNull()
       .references(() => Course.id, {
         onDelete: "cascade",
@@ -464,8 +468,11 @@ export const _ClassToCourse = pgTable(
   },
   (table) => {
     return {
-      AB_unique: uniqueIndex("_ClassToCourse_AB_unique").on(table.A, table.B),
-      B_idx: index().on(table.B),
+      AB_unique: uniqueIndex("_ClassToCourse_AB_unique").on(
+        table.class,
+        table.course,
+      ),
+      B_idx: index().on(table.course),
     };
   },
 );

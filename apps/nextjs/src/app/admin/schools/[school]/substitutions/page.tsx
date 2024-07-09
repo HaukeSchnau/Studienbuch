@@ -2,7 +2,9 @@ import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 import { addRowSpans } from "node_modules/@schnau/lib-server/src/substitutions/convertSubstitutions";
 
-import { db } from "@schnau/db";
+import { desc } from "@schnau/db";
+import { db } from "@schnau/db/client";
+import { Substitution } from "@schnau/db/schema";
 import { formalName } from "@schnau/lib";
 import { getSubstitutions } from "@schnau/lib-server";
 
@@ -122,24 +124,26 @@ export default async function SubstitutionPage() {
 }
 
 const DBSubstitutionTable = async () => {
-  const substitutions = await db.substitution.findMany({
-    include: {
+  const substitutions = await db.query.Substitution.findMany({
+    with: {
       substitute: true,
       course: {
-        include: {
+        with: {
           teacher: true,
-          classes: {
-            include: {
-              year: true,
+          classesToCourses: {
+            with: {
+              class: {
+                with: {
+                  year: true,
+                },
+              },
             },
           },
         },
       },
     },
-    orderBy: {
-      date: "desc",
-    },
-    take: 100,
+    orderBy: desc(Substitution.date),
+    limit: 100,
   });
 
   return (
@@ -181,8 +185,8 @@ const DBSubstitutionTable = async () => {
               {substitution.course.courseId}
             </td>
             <td className="border-l border-t border-grey-100 px-2 py-1">
-              {substitution.course.classes
-                .map((clazz) => clazz.year.name)
+              {substitution.course.classesToCourses
+                .map(({ class: clazz }) => clazz.year.name)
                 .join(", ")}
             </td>
             <td className="border-l border-t border-grey-100 px-2 py-1">

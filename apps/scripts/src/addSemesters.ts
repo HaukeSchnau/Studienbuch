@@ -1,7 +1,9 @@
 import dayjs from "dayjs";
 
-import { db } from "@schnau/db";
 import type { State } from "@schnau/external-api";
+import { eq } from "@schnau/db";
+import { db } from "@schnau/db/client";
+import { School, Semester } from "@schnau/db/schema";
 import { getHolidays } from "@schnau/external-api";
 
 export const addSemesters = async (state: State) => {
@@ -49,19 +51,20 @@ export const addSemesters = async (state: State) => {
     });
   }
 
-  const affectedSchools = await db.school.findMany({
-    where: {
-      stateCode: state,
-    },
+  const affectedSchools = await db.query.School.findMany({
+    where: eq(School.stateCode, state),
   });
 
-  await db.semester.createMany({
-    data: affectedSchools.flatMap((school) =>
-      semesters.map((semester) => ({
-        ...semester,
-        schoolId: school.id,
-      })),
-    ),
-    skipDuplicates: true,
-  });
+  await db
+    .insert(Semester)
+    .values(
+      affectedSchools.flatMap((school) =>
+        semesters.map((semester) => ({
+          ...semester,
+          schoolId: school.id,
+        })),
+      ),
+    )
+    .onConflictDoNothing()
+    .execute();
 };

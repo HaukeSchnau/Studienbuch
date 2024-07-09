@@ -29,8 +29,8 @@ export const findPermissionScope = async (
         eq(PermissionOnUser.permission, permission),
       ),
     )
-    .leftJoin(_RoleToUser, eq(_RoleToUser.B, User.id))
-    .leftJoin(Role, eq(Role.id, _RoleToUser.A))
+    .leftJoin(_RoleToUser, eq(_RoleToUser.user, User.id))
+    .leftJoin(Role, eq(Role.id, _RoleToUser.role))
     .leftJoin(
       PermissionOnRole,
       and(

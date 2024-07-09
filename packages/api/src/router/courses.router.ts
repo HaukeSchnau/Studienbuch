@@ -1,6 +1,16 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
+import type { Course as CourseT } from "@schnau/lib";
+import { and, eq } from "@schnau/db";
+import { db } from "@schnau/db/client";
+import {
+  _ClassToCourse,
+  Class,
+  Course,
+  CourseTime,
+  User,
+} from "@schnau/db/schema";
 import { loginIservWithDefaultCredentials } from "@schnau/external-api";
 import { insertProtoCourse } from "@schnau/lib-server";
 
@@ -12,28 +22,37 @@ const editCoursesProcedure = permissionProcedure("EDIT_COURSES");
 export const courses = createRouter({
   list: publicProcedure
     .input(z.object({ yearId: z.number() }))
-    .query(async ({ ctx, input }) => {
-      return ctx.db.course.findMany({
-        where: {
-          classes: {
-            some: {
-              yearId: input.yearId,
-            },
-          },
-          isChoosable: true,
-        },
-        include: {
-          teacher: {
-            select: {
-              id: true,
-              name: true,
-              title: true,
-            },
-          },
-          classes: true,
-          times: true,
-        },
-      });
+    .query(async ({ input }) => {
+      return db
+        .select()
+        .from(Course)
+        .innerJoin(_ClassToCourse, eq(Course.id, _ClassToCourse.course))
+        .innerJoin(
+          Class,
+          and(
+            eq(_ClassToCourse.class, Class.id),
+            eq(Class.yearId, input.yearId),
+          ),
+        )
+        .innerJoin(CourseTime, eq(CourseTime.courseId, Course.id))
+        .innerJoin(User, eq(Course.teacherId, User.id))
+        .where(eq(Course.isChoosable, true))
+        .then((rows) => {
+          const result: Record<number, CourseT> = {};
+          for (const { CourseTime, Course, User } of rows) {
+            if (!result[Course.id]) {
+              result[Course.id] = {
+                ...Course,
+                teacher: User,
+                times: [],
+              };
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            result[Course.id]!.times.push(CourseTime);
+          }
+          return Object.values(result);
+        });
     }),
 
   addCourses: editCoursesProcedure
@@ -60,12 +79,10 @@ export const courses = createRouter({
         ),
       }),
     )
-    .mutation(async ({ ctx: { db }, input }) => {
+    .mutation(async ({ input }) => {
       const { classId, semesterId, courses } = input;
-      const dbClass = await db.class.findUnique({
-        where: {
-          id: classId,
-        },
+      const dbClass = await db.query.Class.findFirst({
+        where: eq(Class.id, classId),
       });
       if (!dbClass) {
         throw new TRPCError({

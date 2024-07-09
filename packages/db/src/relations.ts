@@ -24,42 +24,42 @@ import {
 } from "./schema";
 
 export const CourseRelations = relations(Course, ({ one, many }) => ({
-  Class: one(Class, {
+  class: one(Class, {
     fields: [Course.classId],
     references: [Class.id],
   }),
-  User: one(User, {
+  teacher: one(User, {
     fields: [Course.teacherId],
     references: [User.id],
   }),
-  Semester: one(Semester, {
+  semester: one(Semester, {
     fields: [Course.semesterId],
     references: [Semester.id],
   }),
-  CourseTimes: many(CourseTime),
-  Substitutions: many(Substitution),
+  times: many(CourseTime),
+  substitutions: many(Substitution),
   CourseSubscriptions: many(CourseSubscription),
   _students: many(_students),
-  Absences: many(Absence),
-  Grades: many(Grade),
-  Tasks: many(Task),
-  _ClassToCourses: many(_ClassToCourse),
+  absences: many(Absence),
+  grades: many(Grade),
+  tasks: many(Task),
+  classesToCourses: many(_ClassToCourse),
 }));
 
 export const ClassRelations = relations(Class, ({ one, many }) => ({
-  Courses: many(Course),
-  Year: one(Year, {
+  courses: many(Course),
+  year: one(Year, {
     fields: [Class.yearId],
     references: [Year.id],
   }),
-  _ClassToCourses: many(_ClassToCourse),
+  classesToCourses: many(_ClassToCourse),
 }));
 
 export const UserRelations = relations(User, ({ many }) => ({
   courses: many(Course),
   sessions: many(Session),
   substitutions: many(Substitution),
-  _RoleToUsers: many(_RoleToUser),
+  rolesToUsers: many(_RoleToUser),
   licenseKeys: many(LicenseKey),
   _students: many(_students),
   absences: many(Absence),
@@ -95,7 +95,7 @@ export const SubstitutionRelations = relations(Substitution, ({ one }) => ({
     fields: [Substitution.courseId],
     references: [Course.id],
   }),
-  user: one(User, {
+  substitute: one(User, {
     fields: [Substitution.substituteId],
     references: [User.id],
   }),
@@ -111,11 +111,11 @@ export const YearRelations = relations(Year, ({ one, many }) => ({
 
 export const _RoleToUserRelations = relations(_RoleToUser, ({ one }) => ({
   role: one(Role, {
-    fields: [_RoleToUser.A],
+    fields: [_RoleToUser.role],
     references: [Role.id],
   }),
   user: one(User, {
-    fields: [_RoleToUser.B],
+    fields: [_RoleToUser.user],
     references: [User.id],
   }),
 }));
@@ -193,11 +193,11 @@ export const TaskRelations = relations(Task, ({ one }) => ({
 
 export const _ClassToCourseRelations = relations(_ClassToCourse, ({ one }) => ({
   class: one(Class, {
-    fields: [_ClassToCourse.A],
+    fields: [_ClassToCourse.class],
     references: [Class.id],
   }),
   course: one(Course, {
-    fields: [_ClassToCourse.B],
+    fields: [_ClassToCourse.course],
     references: [Course.id],
   }),
 }));

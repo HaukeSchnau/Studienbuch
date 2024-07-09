@@ -27,8 +27,8 @@ export const getPermissions = async (user: {
     .from(User)
     .where(eq(User.id, user.id))
     .leftJoin(PermissionOnUser, eq(PermissionOnUser.userId, User.id))
-    .leftJoin(_RoleToUser, eq(_RoleToUser.B, User.id))
-    .leftJoin(Role, eq(Role.id, _RoleToUser.A))
+    .leftJoin(_RoleToUser, eq(_RoleToUser.user, User.id))
+    .leftJoin(Role, eq(Role.id, _RoleToUser.role))
     .leftJoin(PermissionOnRole, eq(PermissionOnRole.roleId, Role.id));
 
   const ret: { isSuperUser: boolean } & Partial<

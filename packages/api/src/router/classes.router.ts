@@ -1,17 +1,24 @@
 import { z } from "zod";
 
+import { eq } from "@schnau/db";
+import { db } from "@schnau/db/client";
+import { Class } from "@schnau/db/schema";
+
 import { publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";
 
 export const classes = createRouter({
   list: publicProcedure
     .input(z.object({ yearId: z.number() }))
-    .query(async ({ ctx, input }) => {
-      return ctx.db.class.findMany({
-        where: { yearId: input.yearId },
-        include: {
+    .query(async ({ input }) => {
+      return db.query.Class.findMany({
+        where: eq(Class.yearId, input.yearId),
+        with: {
           courses: {
-            include: { teacher: true, times: true },
+            with: {
+              teacher: true,
+              times: true,
+            },
           },
         },
       });

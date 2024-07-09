@@ -8,7 +8,7 @@ export { alias } from "drizzle-orm/pg-core";
 const globalForPrisma = globalThis as { prisma?: PrismaClient };
 
 /**
- * @deprecated Use @schnau/db/client instead
+ * @deprecated Use `@schnau/db/client` instead
  */
 export const db =
   globalForPrisma.prisma ??

@@ -2,7 +2,9 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { hashPassword } from "@schnau/auth/src/password";
-import { PERMISSIONS, User } from "@schnau/db/schema";
+import { asc, eq } from "@schnau/db";
+import { db } from "@schnau/db/client";
+import { PermissionOnUser, PERMISSIONS, User } from "@schnau/db/schema";
 
 import { permissionProcedure } from "../procedures";
 import { createRouter } from "../trpc";
@@ -14,30 +16,35 @@ const editUsersProcedure = permissionProcedure("EDIT_USERS");
 const UserSchema = createInsertSchema(User);
 
 export const users = createRouter({
-  list: editUsersProcedure.query(async ({ ctx }) => {
+  list: editUsersProcedure.query(async () => {
     return (
-      await ctx.db.user.findMany({
-        orderBy: { name: "asc" },
-        include: {
-          roles: true,
-          permissions: true,
+      await db.query.User.findMany({
+        orderBy: asc(User.name),
+        with: {
+          rolesToUsers: {
+            with: {
+              role: true,
+            },
+          },
+          permissionOnUsers: true,
         },
       })
-    ).map(({ passwordHash, ...publicUser }) => ({
-      ...publicUser,
-      hasPassword: passwordHash !== null,
-    }));
+    ).map(
+      ({ passwordHash, rolesToUsers, permissionOnUsers, ...publicUser }) => ({
+        ...publicUser,
+        roles: rolesToUsers.map(({ role }) => role),
+        permissions: permissionOnUsers,
+        hasPassword: passwordHash !== null,
+      }),
+    );
   }),
 
   updateMany: editUsersProcedure
     .input(z.array(UserSchema.partial().required({ id: true })))
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ input }) => {
       await Promise.all(
         input.map((update) => {
-          return ctx.db.user.update({
-            where: { id: update.id },
-            data: update,
-          });
+          return db.update(User).set(update).where(eq(User.id, update.id));
         }),
       );
     }),
@@ -52,17 +59,16 @@ export const users = createRouter({
         abbrv: z.string().optional(),
       }),
     )
-    .mutation(async ({ input, ctx }) => {
-      return ctx.db.user.create({
-        data: {
-          email: input.email,
-          name: input.name,
-          passwordHash: input.password
-            ? await hashPassword(input.password)
-            : null,
-          title: input.title,
-          abbrv: input.abbrv,
-        },
+    .mutation(async ({ input }) => {
+      return db.insert(User).values({
+        email: input.email,
+        name: input.name,
+        passwordHash: input.password
+          ? await hashPassword(input.password)
+          : null,
+        title: input.title,
+        abbrv: input.abbrv,
+        updatedAt: new Date(),
       });
     }),
 
@@ -73,58 +79,54 @@ export const users = createRouter({
         password: z.string(),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ input }) => {
       const hashedPassword = await hashPassword(input.password);
-      await ctx.db.user.update({
-        where: { id: input.id },
-        data: {
-          passwordHash: hashedPassword,
-        },
-      });
+      await db
+        .update(User)
+        .set({ passwordHash: hashedPassword })
+        .where(eq(User.id, input.id));
     }),
 
-  delete: editUsersProcedure
-    .input(z.number())
-    .mutation(async ({ ctx, input }) => {
-      await ctx.db.user.delete({
-        where: { id: input },
-      });
-    }),
+  delete: editUsersProcedure.input(z.number()).mutation(async ({ input }) => {
+    await db.delete(User).where(eq(User.id, input));
+  }),
 
   listScopeOptions: editUsersProcedure
     .input(z.enum(scopeOptions))
-    .query(async ({ ctx, input: option }) => {
+    .query(async ({ input: option }) => {
       switch (option) {
         case "schools":
-          return ctx.db.school.findMany({
-            select: { id: true, name: true },
+          return await db.query.School.findMany({
+            columns: {
+              id: true,
+              name: true,
+            },
           });
         case "years":
-          return ctx.db.year.findMany({
-            select: { id: true, name: true },
+          return db.query.Year.findMany({
+            columns: {
+              id: true,
+              name: true,
+            },
           });
         case "classes":
-          return ctx.db.class
-            .findMany({
-              select: { id: true, identifierInYear: true },
-            })
-            .then((classes) =>
-              classes.map((cls) => ({
-                id: cls.id,
-                name: cls.identifierInYear,
-              })),
-            );
+          return db.query.Class.findMany({
+            columns: {
+              id: true,
+              identifierInYear: true,
+            },
+          }).then((classes) =>
+            classes.map(({ id, identifierInYear: name }) => ({ id, name })),
+          );
         case "courses":
-          return ctx.db.course
-            .findMany({
-              select: { id: true, courseId: true },
-            })
-            .then((courses) =>
-              courses.map((course) => ({
-                id: course.id,
-                name: course.courseId,
-              })),
-            );
+          return db.query.Course.findMany({
+            columns: {
+              id: true,
+              courseId: true,
+            },
+          }).then((courses) =>
+            courses.map(({ id, courseId: name }) => ({ id, name })),
+          );
       }
     }),
 
@@ -141,19 +143,20 @@ export const users = createRouter({
         ),
       }),
     )
-    .mutation(async ({ ctx, input }) => {
-      await ctx.db.user.update({
-        where: { id: input.userId },
-        data: {
-          isSuperUser: input.isSuperUser,
-          permissions: {
-            deleteMany: {},
-            create: input.permissions.map((permission) => ({
-              permission: permission.permission,
-              scope: permission.scope ? permission.scope : undefined,
-            })),
-          },
-        },
-      });
+    .mutation(async ({ input }) => {
+      await db
+        .update(User)
+        .set({ isSuperUser: input.isSuperUser })
+        .where(eq(User.id, input.userId));
+      await db
+        .delete(PermissionOnUser)
+        .where(eq(PermissionOnUser.userId, input.userId));
+      await db.insert(PermissionOnUser).values(
+        input.permissions.map((permission) => ({
+          userId: input.userId,
+          permission: permission.permission,
+          scope: permission.scope ? permission.scope : undefined,
+        })),
+      );
     }),
 });

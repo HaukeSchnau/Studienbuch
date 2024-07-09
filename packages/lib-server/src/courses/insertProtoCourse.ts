@@ -1,6 +1,8 @@
 import type { MakeRequest } from "@schnau/external-api";
 import type { Class } from "@schnau/lib";
-import { db } from "@schnau/db";
+import { eq } from "@schnau/db";
+import { db } from "@schnau/db/client";
+import { Course, CourseTime, User } from "@schnau/db/schema";
 import { findAbbrvName } from "@schnau/external-api";
 
 interface ProtoCourseTime {
@@ -39,63 +41,91 @@ export const insertProtoCourse = async (
     email: undefined,
   };
 
-  const teacherValue = {
-    abbrv: teacher,
-    name: teacherMatch.name,
-    email: teacherMatch.email,
-  };
+  const [dbTeacher] = await db
+    .insert(User)
+    .values({
+      abbrv: teacher,
+      name: teacherMatch.name,
+      email: teacherMatch.email,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: User.abbrv,
+      set: {
+        name: teacherMatch.name,
+        email: teacherMatch.email,
+        updatedAt: new Date(),
+      },
+    })
+    .returning()
+    .execute();
 
-  await db.course.upsert({
-    where: {
-      courseIdentifier: {
+  if (!dbTeacher) {
+    throw new Error(`Could not create teacher ${teacher}`);
+  }
+
+  const existingCourse = await db.query.Course.findFirst({
+    where: eq(Course.courseId, normalizedCourseId),
+  });
+
+  if (existingCourse) {
+    await db
+      .delete(CourseTime)
+      .where(eq(CourseTime.courseId, existingCourse.id));
+  }
+
+  if (existingCourse) {
+    await db
+      .update(Course)
+      .set({
+        name: guessedSubject,
         courseId: normalizedCourseId,
         room,
+        isChoosable,
+        teacherId: dbTeacher.id,
+        classId: clazz.id,
         semesterId,
-      },
-    },
-    create: {
-      name: guessedSubject,
-      courseId: normalizedCourseId,
-      room,
-      isChoosable,
-      teacher: {
-        connectOrCreate: {
-          where: {
-            abbrv: teacher,
-          },
-          create: teacherValue,
-        },
-      },
-      class: {
-        connect: {
-          id: clazz.id,
-        },
-      },
-      times: {
-        create: times,
-      },
-    },
-    update: {
-      name: guessedSubject,
-      room,
-      isChoosable,
-      times: {
-        deleteMany: {},
-        create: times,
-      },
-      classes: {
-        connect: {
-          id: clazz.id,
-        },
-      },
-      teacher: {
-        connectOrCreate: {
-          where: {
-            abbrv: teacher,
-          },
-          create: teacherValue,
-        },
-      },
-    },
-  });
+        updatedAt: new Date(),
+      })
+      .where(eq(Course.id, existingCourse.id));
+
+    await insertCourseTimes(existingCourse.id, times);
+  } else {
+    const [newCourse] = await db
+      .insert(Course)
+      .values({
+        name: guessedSubject,
+        courseId: normalizedCourseId,
+        room,
+        isChoosable,
+        teacherId: dbTeacher.id,
+        classId: clazz.id,
+        semesterId,
+        updatedAt: new Date(),
+      })
+      .returning()
+      .execute();
+
+    if (!newCourse) {
+      throw new Error(`Could not create course ${normalizedCourseId}`);
+    }
+
+    await insertCourseTimes(newCourse.id, times);
+  }
+};
+
+const insertCourseTimes = async (
+  courseId: number,
+  times: ProtoCourseTime[],
+) => {
+  await db.insert(CourseTime).values(
+    times.map((time) => ({
+      weekday: time.weekday,
+      start: time.start,
+      duration: time.duration,
+      weeks: time.weeks,
+      courseId,
+      updatedAt: new Date(),
+    })),
+  );
 };
