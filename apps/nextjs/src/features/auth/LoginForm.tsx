@@ -35,7 +35,6 @@ export const LoginForm = () => {
         formApi.setFieldMeta(response.error.field, {
           errors: [],
           isTouched: false,
-          touchedErrors: [],
           errorMap: {
             onSubmit: response.error.message,
           },
