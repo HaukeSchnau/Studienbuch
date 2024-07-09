@@ -6,7 +6,7 @@ import * as relations from "./relations";
 import * as schema from "./schema";
 
 const client = new pg.Client({
-  connectionString: env.POSTGRES_URL,
+  connectionString: env.DATABASE_URL,
 });
 
 await client.connect();
