@@ -45,13 +45,10 @@
     "studio": {
       "cache": false,
       "persistent": true
-    },
-    "ui-add": {
-      "cache": false,
-      "interactive": true
     }
   },
   "globalEnv": [
+    "LINEAR_API_KEY",
     "DATABASE_PRISMA_URL",
     "POSTGRES_URL",
     "PORT",
