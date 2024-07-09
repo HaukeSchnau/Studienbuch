@@ -9,8 +9,6 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "production", "test"])
       .default("development"),
-    VERCEL_ENV: z.enum(["development", "preview", "production"]).optional(),
-    VERCEL_URL: z.string().url().optional(),
     NEXT_PUBLIC_DEPLOYMENT_ENV: z.enum(["dev", "beta", "prod"]),
   },
   /**
@@ -32,10 +30,8 @@ export const env = createEnv({
    */
   experimental__runtimeEnv: {
     BASE_URL: process.env.BASE_URL ?? `https:///${process.env.VERCEL_URL}`,
-    VERCEL_ENV: process.env.VERCEL_ENV,
     NODE_ENV: process.env.NODE_ENV,
     PORT: process.env.PORT,
-    VERCEL_URL: process.env.VERCEL_URL,
     NEXT_PUBLIC_DEPLOYMENT_ENV: process.env.NEXT_PUBLIC_DEPLOYMENT_ENV,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
