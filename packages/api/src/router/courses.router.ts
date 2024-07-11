@@ -65,7 +65,7 @@ export const courses = createRouter({
             teacher: z.string(),
             normalizedCourseId: z.string(),
             guessedSubject: z.string(),
-            room: z.string(),
+            room: z.string().optional(),
             isChoosable: z.boolean(),
             times: z.array(
               z.object({

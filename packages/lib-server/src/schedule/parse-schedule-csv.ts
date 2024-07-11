@@ -2,12 +2,31 @@ import fs from "fs/promises";
 import Papa from "papaparse";
 import { z } from "zod";
 
-import type { CourseTimeWeeks, ProtoCourseWithTimes } from "@schnau/lib";
+import type {
+  CourseTimeWeeks,
+  ExtendedProtoCourse,
+  ProtoCourseWithTimes,
+} from "@schnau/lib";
 import { isNormalTime, parseTime } from "@schnau/lib";
 
-import { parseTimetableCell } from "./parseTimetableCell";
+import { parseTimetableCell } from "./parse-timetable-cell";
 
 import "@total-typescript/ts-reset";
+
+const rowSchema = z.object({
+  "": z.string(),
+  Montag: z.string(),
+  Dienstag: z.string(),
+  Mittwoch: z.string(),
+  Donnerstag: z.string(),
+  Freitag: z.string(),
+});
+
+interface Row {
+  startMinutes: number;
+  endMinutes: number;
+  cols: ExtendedProtoCourse[][];
+}
 
 export const parseScheduleCsv = async (
   filepath: string,
@@ -16,39 +35,39 @@ export const parseScheduleCsv = async (
   const fileContents = await fs.readFile(filepath, "utf8");
   const { data: rawRows } = Papa.parse(fileContents, { header: true });
 
-  const rowSchema = z.object({
-    "": z.string(),
-    Montag: z.string(),
-    Dienstag: z.string(),
-    Mittwoch: z.string(),
-    Donnerstag: z.string(),
-    Freitag: z.string(),
-  });
-
   const rows = rawRows
     .map((row) => {
       const parsed = rowSchema.safeParse(row);
       if (parsed.success) return parsed.data;
     })
     .filter(Boolean)
-    .map((row) => {
-      const { Montag, Dienstag, Mittwoch, Donnerstag, Freitag } = row;
+    .map(mapRow);
 
-      const time = row[""];
-      const [start, end] = time.split("\n");
-      const startMinutes = parseTime(start ?? "0");
-      const endMinutes = parseTime(end ?? "40") + 40;
-      const cols = [Montag, Dienstag, Mittwoch, Donnerstag, Freitag].map(
-        parseTimetableCell,
-      );
+  return parseScheduleRows(rows, areAllCoursesChoosable);
+};
 
-      return {
-        startMinutes,
-        endMinutes,
-        cols,
-      };
-    });
+export const mapRow = (row: z.infer<typeof rowSchema>) => {
+  const { Montag, Dienstag, Mittwoch, Donnerstag, Freitag } = row;
 
+  const time = row[""];
+  const [start, end] = time.split("\n");
+  const startMinutes = parseTime(start ?? "0");
+  const endMinutes = parseTime(end ?? "40") + 40;
+  const cols = [Montag, Dienstag, Mittwoch, Donnerstag, Freitag].map(
+    parseTimetableCell,
+  );
+
+  return {
+    startMinutes,
+    endMinutes,
+    cols,
+  };
+};
+
+export const parseScheduleRows = (
+  rows: Row[],
+  areAllCoursesChoosable: boolean,
+): ProtoCourseWithTimes[] => {
   const courses: ProtoCourseWithTimes[] = [];
   for (const [rowNum, row] of rows.entries()) {
     for (const [dayNum, coursesForDay] of row.cols.entries()) {

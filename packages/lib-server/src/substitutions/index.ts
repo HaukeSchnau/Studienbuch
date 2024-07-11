@@ -1,1 +1,2 @@
-export * from "./getSubstitutions";
+export * from "./get-substitutions";
+export * from "./convert-substitutions";

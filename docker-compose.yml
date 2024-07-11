@@ -1,10 +1,10 @@
-version: '3.1'
-
 services:
-  db:
+  db-test:
     image: postgres
     restart: always
     ports:
-      - 5432:5432
+      - 5433:5432
     environment:
-      POSTGRES_PASSWORD: example
+      POSTGRES_PASSWORD: stu_test
+      POSTGRES_USER: stu_test
+      POSTGRES_DB: stu_test

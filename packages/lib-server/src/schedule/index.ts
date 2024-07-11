@@ -1,1 +1,1 @@
-export * from "./parseScheduleCsv";
+export * from "./parse-schedule-csv";

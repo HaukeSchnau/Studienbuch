@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -eau
+
+. .env.test
+docker compose up --wait
+sleep 0.5
+
+DATABASE_URL=postgresql://stu_test:stu_test@localhost:5433/stu_test
+# psql $DATABASE_URL -c 'DROP DATABASE IF EXISTS stu_test;'
+temp_db_name=$(psql $DATABASE_URL -tAc "SELECT 'stu_test_' || md5(random()::text);")
+echo "Creating temporary database $temp_db_name"
+
+psql $DATABASE_URL -c "CREATE DATABASE $temp_db_name;"
+
+export DATABASE_URL="postgresql://stu_test:stu_test@localhost:5433/$temp_db_name"
+echo "DATABASE_URL=$DATABASE_URL"
+
+pnpm db:push
+pnpm run test

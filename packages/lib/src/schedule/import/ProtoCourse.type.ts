@@ -4,7 +4,7 @@ export const protoCourseSchema = z.object({
   subject: z.string(),
   guessedSubject: z.string(),
   teacher: z.string(),
-  room: z.string(),
+  room: z.string().optional(),
 });
 
 export type ProtoCourse = z.infer<typeof protoCourseSchema>;

@@ -1,12 +1,11 @@
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-import { addRowSpans } from "node_modules/@schnau/lib-server/src/substitutions/convertSubstitutions";
 
 import { desc } from "@schnau/db";
 import { db } from "@schnau/db/client";
 import { Substitution } from "@schnau/db/schema";
 import { formalName } from "@schnau/lib";
-import { getSubstitutions } from "@schnau/lib-server";
+import { addRowSpans, getSubstitutions } from "@schnau/lib-server";
 
 import { Card } from "~/components/layout/Card";
 import { PageHeading } from "~/components/layout/PageHeading";

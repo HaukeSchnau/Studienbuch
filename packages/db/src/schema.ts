@@ -82,7 +82,7 @@ export const Course = pgTable(
     updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" })
       .defaultNow()
       .notNull(),
-    semesterId: text("semesterId").references(() => Semester.id, {
+    semesterId: uuid("semesterId").references(() => Semester.id, {
       onDelete: "set null",
       onUpdate: "cascade",
     }),

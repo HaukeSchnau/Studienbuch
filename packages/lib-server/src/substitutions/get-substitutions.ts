@@ -5,7 +5,7 @@ import { getSubstitutionsFromKadmos } from "@schnau/external-api";
 import {
   convertKadmosRowsToSubstitutionsTable,
   getSubstituionTableColumns,
-} from "./convertSubstitutions";
+} from "./convert-substitutions";
 
 export const getSubstitutions = async (school: string, formatName: string) => {
   const {

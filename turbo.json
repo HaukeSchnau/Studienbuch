@@ -20,6 +20,10 @@
       "persistent": true,
       "cache": false
     },
+    "dev:internal": {
+      "persistent": true,
+      "cache": false
+    },
     "format": {
       "outputs": ["node_modules/.cache/.prettiercache"],
       "outputLogs": "new-only"
@@ -27,6 +31,13 @@
     "lint": {
       "dependsOn": ["^topo", "^build"],
       "outputs": ["node_modules/.cache/.eslintcache"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "test:dev": {
+      "persistent": true,
+      "cache": false
     },
     "typecheck": {
       "dependsOn": ["^topo", "^build"],

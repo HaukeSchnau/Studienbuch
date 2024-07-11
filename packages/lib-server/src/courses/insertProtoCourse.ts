@@ -16,7 +16,7 @@ interface ProtoCourse {
   teacher: string;
   normalizedCourseId: string;
   guessedSubject: string;
-  room: string;
+  room?: string;
   isChoosable: boolean;
   times: ProtoCourseTime[];
 }

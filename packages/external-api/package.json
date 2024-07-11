@@ -12,12 +12,13 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
+    "dev:internal": "tsc --watch",
     "clean": "rm -rf .turbo node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "generate": "openapi --input https://ferien-api.de/v2/api-docs --output ./src/holidays/generated",
     "lint": "eslint",
-    "test": "vitest",
+    "test": "vitest run",
+    "test:dev": "vitest",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
