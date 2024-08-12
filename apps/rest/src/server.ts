@@ -1,14 +1,46 @@
-import { serve } from "@hono/node-server";
+import { applyWSSHandler } from "@trpc/server/adapters/ws";
+import { WebSocketServer } from "ws";
 
-import { makeRestApi } from ".";
-import { env } from "./env";
+import { appRouter, createTRPCContext } from "@schnau/api";
 
-const { app } = makeRestApi("/");
+const wss = new WebSocketServer({
+  port: 3001,
+});
+const handler = applyWSSHandler({
+  wss,
+  router: appRouter,
+  createContext: () =>
+    createTRPCContext({
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      log: {
+        info: console.log,
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        flush: () => {},
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any,
+      session: null,
+      source: "ws",
+    }),
+  // Enable heartbeat messages to keep connection open (disabled by default)
+  keepAlive: {
+    enabled: true,
+    // server ping message interval in milliseconds
+    pingMs: 30000,
+    // connection is terminated if pong message is not received in this many milliseconds
+    pongWaitMs: 5000,
+  },
+});
 
-const port = env.API_PORT;
-console.log(`Server is running on http://localhost:${port}`);
+wss.on("connection", (ws) => {
+  console.log(`➕➕ Connection (${wss.clients.size})`);
+  ws.once("close", () => {
+    console.log(`➖➖ Connection (${wss.clients.size})`);
+  });
+});
+console.log("✅ WebSocket Server listening on ws://localhost:3001");
 
-serve({
-  fetch: app.fetch,
-  port,
+process.on("SIGTERM", () => {
+  console.log("SIGTERM");
+  handler.broadcastReconnectNotification();
+  wss.close();
 });

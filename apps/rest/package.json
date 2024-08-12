@@ -16,22 +16,26 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
+    "@axiomhq/js": "^1.1.0",
     "@hono/node-server": "^1.12.0",
-    "@hono/zod-openapi": "^0.14.8",
-    "@scalar/hono-api-reference": "^0.5.100",
+    "@hono/zod-openapi": "^0.15.1",
+    "@scalar/hono-api-reference": "^0.5.134",
     "@schnau/api": "workspace:*",
     "@schnau/auth": "workspace:*",
-    "@t3-oss/env-nextjs": "^0.10.1",
-    "hono": "^4.4.12",
+    "@t3-oss/env-nextjs": "^0.11.0",
+    "@trpc/server": "11.0.0-rc.449",
+    "hono": "^4.5.4",
+    "ws": "^8.18.0",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@schnau/eslint-config": "workspace:*",
     "@schnau/prettier-config": "workspace:*",
     "@schnau/tsconfig": "workspace:*",
+    "@types/ws": "^8.5.12",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "tsx": "^4.16.2",
+    "tsx": "^4.17.0",
     "typescript": "catalog:"
   },
   "prettier": "@schnau/prettier-config"

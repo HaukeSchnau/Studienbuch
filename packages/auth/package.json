@@ -13,7 +13,7 @@
   "dependencies": {
     "@schnau/db": "workspace:*",
     "@schnau/lib": "workspace:*",
-    "@t3-oss/env-nextjs": "^0.10.1",
+    "@t3-oss/env-nextjs": "^0.11.0",
     "bcrypt": "^5.1.1",
     "react": "catalog:react18",
     "react-dom": "catalog:react18",

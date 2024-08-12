@@ -22,9 +22,9 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@linear/sdk": "^24.0.0",
-    "@t3-oss/env-nextjs": "^0.10.1",
-    "dayjs": "^1.11.11",
+    "@linear/sdk": "^27.0.0",
+    "@t3-oss/env-nextjs": "^0.11.0",
+    "dayjs": "^1.11.12",
     "tough-cookie": "^4.1.4",
     "zod": "catalog:"
   },
@@ -38,7 +38,7 @@
     "openapi-typescript-codegen": "^0.29.0",
     "prettier": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^2.0.1"
+    "vitest": "^2.0.5"
   },
   "prettier": "@schnau/prettier-config"
 }

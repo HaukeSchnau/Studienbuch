@@ -11,6 +11,8 @@ import { createRouter } from "../trpc";
 
 const editYearsProcedure = permissionProcedure("EDIT_YEARS");
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const years = createRouter({
   list: publicProcedure
     .input(
@@ -18,7 +20,8 @@ export const years = createRouter({
         school: z.number().optional(),
       }),
     )
-    .query(({ input }) => {
+    .query(async ({ input }) => {
+      await sleep(1000);
       return db.query.Year.findMany({
         where:
           input.school !== undefined

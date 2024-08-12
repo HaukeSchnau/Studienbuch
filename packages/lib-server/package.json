@@ -34,7 +34,7 @@
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^2.0.1"
+    "vitest": "^2.0.5"
   },
   "prettier": "@schnau/prettier-config"
 }

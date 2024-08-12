@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchLink, loggerLink } from "@trpc/client";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { createWSClient, loggerLink, wsLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import superjson from "superjson";
 
 import type { AppRouter } from "@schnau/api";
 
+import { clientRouter } from "~/db/local-trpc";
 import { getBaseUrl } from "./base-url";
-import { getToken } from "./session-store";
+import { PersistingQueryClient } from "./local-trpc/persisting-query-client";
 
 /**
  * A set of typesafe hooks for consuming your API.
@@ -15,12 +16,16 @@ import { getToken } from "./session-store";
 export const api = createTRPCReact<AppRouter>();
 export { type RouterInputs, type RouterOutputs } from "@schnau/api";
 
+const wsClient = createWSClient({
+  url: getBaseUrl().replace("http", "ws").replace("3000", "3001"),
+});
+
 /**
  * A wrapper for your app that provides the TRPC context.
  * Use only in _app.tsx
  */
 export function TRPCProvider(props: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(() => new PersistingQueryClient(clientRouter));
   const [trpcClient] = useState(() =>
     api.createClient({
       links: [
@@ -30,18 +35,9 @@ export function TRPCProvider(props: { children: React.ReactNode }) {
             (opts.direction === "down" && opts.result instanceof Error),
           colorMode: "ansi",
         }),
-        httpBatchLink({
+        wsLink({
           transformer: superjson,
-          url: `${getBaseUrl()}/api/trpc`,
-          headers() {
-            const headers = new Map<string, string>();
-            headers.set("x-trpc-source", "expo-react");
-
-            const token = getToken();
-            if (token) headers.set("Authorization", `Bearer ${token}`);
-
-            return Object.fromEntries(headers);
-          },
+          client: wsClient,
         }),
       ],
     }),

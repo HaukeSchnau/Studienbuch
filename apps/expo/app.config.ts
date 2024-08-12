@@ -19,11 +19,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   assetBundlePatterns: ["**/*"],
   ios: {
-    bundleIdentifier: "your.bundle.identifier",
+    bundleIdentifier: "de.haukeschnau.studienbuch",
     supportsTablet: true,
   },
   android: {
-    package: "your.bundle.identifier",
+    package: "de.haukeschnau.studienbuch",
     adaptiveIcon: {
       foregroundImage: "./assets/icon.png",
       backgroundColor: "#FFFFFF",

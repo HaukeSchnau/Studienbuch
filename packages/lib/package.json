@@ -21,8 +21,8 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "dayjs": "^1.11.11",
-    "vitest": "^2.0.1",
+    "dayjs": "^1.11.12",
+    "vitest": "^2.0.5",
     "zod": "catalog:"
   },
   "devDependencies": {

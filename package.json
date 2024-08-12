@@ -2,9 +2,9 @@
   "name": "studienbuch",
   "private": true,
   "engines": {
-    "node": ">=20.12.0"
+    "node": ">=20.16.0"
   },
-  "packageManager": "pnpm@9.5.0",
+  "packageManager": "pnpm@9.7.0",
   "scripts": {
     "build": "turbo run build",
     "clean": "git clean -xdf node_modules",
@@ -28,10 +28,10 @@
   },
   "devDependencies": {
     "@schnau/prettier-config": "workspace:*",
-    "@turbo/gen": "^2.0.6",
+    "@turbo/gen": "^2.0.12",
     "npm-run-all": "^4.1.5",
     "prettier": "catalog:",
-    "turbo": "^2.0.6",
+    "turbo": "^2.0.12",
     "typescript": "catalog:"
   },
   "prettier": "@schnau/prettier-config"
