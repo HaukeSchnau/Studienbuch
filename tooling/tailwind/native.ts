@@ -88,6 +88,9 @@ export default {
   theme: {
     extend: {
       colors,
+      borderRadius: {
+        "3xl": "2.5rem",
+      },
     },
   },
 } satisfies Config;

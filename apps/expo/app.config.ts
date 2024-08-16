@@ -12,7 +12,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   splash: {
     image: "./assets/icon.png",
     resizeMode: "contain",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#6DB769",
   },
   updates: {
     fallbackToCacheTimeout: 0,
@@ -29,14 +29,24 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: "#FFFFFF",
     },
   },
-  // extra: {
-  //   eas: {
-  //     projectId: "your-eas-project-id",
-  //   },
-  // },
+  extra: {
+    eas: {
+      projectId: "ae447793-ffd9-47fd-bee7-321ed3af41e8",
+    },
+  },
   experiments: {
     tsconfigPaths: true,
     typedRoutes: true,
   },
-  plugins: ["expo-router"],
+  plugins: [
+    "expo-router",
+    [
+      "expo-font",
+      {
+        fonts: [
+          "../../node_modules/@expo-google-fonts/nunito/Nunito_400Regular.ttf",
+        ],
+      },
+    ],
+  ],
 });

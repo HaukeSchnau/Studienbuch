@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { desc, eq, gte } from "@schnau/db";
+import { and, desc, eq, gte } from "@schnau/db";
 import { db } from "@schnau/db/client";
 import { Year } from "@schnau/db/schema";
 import { getMaxActiveGraduationYear } from "@schnau/lib";
@@ -11,26 +11,24 @@ import { createRouter } from "../trpc";
 
 const editYearsProcedure = permissionProcedure("EDIT_YEARS");
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 export const years = createRouter({
   list: publicProcedure
     .input(
       z.object({
         school: z.number().optional(),
+        activeOnly: z.boolean().optional(),
       }),
     )
-    .query(async ({ input }) => {
-      await sleep(1000);
+    .query(async ({ input: { school, activeOnly } }) => {
+      console.log(getMaxActiveGraduationYear());
       return db.query.Year.findMany({
-        where:
-          input.school !== undefined
-            ? eq(Year.schoolId, input.school)
+        where: and(
+          school !== undefined ? eq(Year.schoolId, school) : undefined,
+          activeOnly
+            ? gte(Year.graduationYear, getMaxActiveGraduationYear())
             : undefined,
+        ),
         orderBy: desc(Year.startYear),
-        with: {
-          school: true,
-        },
       });
     }),
 

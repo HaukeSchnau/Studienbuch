@@ -7,7 +7,7 @@ export interface Year {
 
 export const getMaxActiveGraduationYear = () => {
   const today = new Date();
-  return today.getMonth() >= 8 ? today.getFullYear() - 1 : today.getFullYear();
+  return today.getMonth() >= 7 ? today.getFullYear() + 1 : today.getFullYear();
 };
 
 export const isYearActive = (year: Pick<Year, "graduationYear">) => {
@@ -16,9 +16,13 @@ export const isYearActive = (year: Pick<Year, "graduationYear">) => {
 
 export const getCurrentYearNum = (year: Pick<Year, "startYear">) => {
   const today = new Date();
-  if (today.getMonth() >= 8) {
+  if (today.getMonth() >= 7) {
     return today.getFullYear() - year.startYear + 5;
   }
 
   return today.getFullYear() - year.startYear - 1 + 5;
+};
+
+export const formatYear = (year: Year) => {
+  return `${year.name} (Jg. ${getCurrentYearNum(year)})`;
 };

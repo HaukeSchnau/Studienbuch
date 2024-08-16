@@ -60,15 +60,30 @@ importers:
       '@bacons/text-decoder':
         specifier: ^0.0.0
         version: 0.0.0(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1))
+      '@expo-google-fonts/nunito':
+        specifier: ^0.2.3
+        version: 0.2.3
       '@expo/metro-config':
         specifier: ^0.18.11
         version: 0.18.11
+      '@react-native-picker/picker':
+        specifier: 2.7.5
+        version: 2.7.5(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1))(react@18.3.1)
+      '@schnau/lib':
+        specifier: workspace:*
+        version: link:../../packages/lib
       '@shopify/flash-list':
         specifier: 1.7.1
         version: 1.7.1(@babel/runtime@7.25.0)(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1))(react@18.3.1)
+      '@tanstack/react-form':
+        specifier: ^0.29.1
+        version: 0.29.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.5.4)
       '@tanstack/react-query':
         specifier: ^5.51.23
         version: 5.51.23(react@18.3.1)
+      '@tanstack/zod-form-adapter':
+        specifier: ^0.28.0
+        version: 0.28.0(zod@3.23.8)
       '@trpc/client':
         specifier: 11.0.0-rc.449
         version: 11.0.0-rc.449(@trpc/server@11.0.0-rc.449)
@@ -78,6 +93,9 @@ importers:
       '@trpc/server':
         specifier: 11.0.0-rc.449
         version: 11.0.0-rc.449
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       drizzle-orm:
         specifier: ^0.33.0
         version: 0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.6)(@types/react@18.3.3)(expo-sqlite@14.0.6(expo@51.0.26(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(encoding@0.1.13)))(pg@8.12.0)(react@18.3.1)
@@ -90,6 +108,12 @@ importers:
       expo-dev-client:
         specifier: ~4.0.22
         version: 4.0.22(expo@51.0.26(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(encoding@0.1.13))
+      expo-font:
+        specifier: ~12.0.9
+        version: 12.0.9(expo@51.0.26(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(encoding@0.1.13))
+      expo-image:
+        specifier: ~1.12.13
+        version: 1.12.13(expo@51.0.26(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(encoding@0.1.13))
       expo-linking:
         specifier: ~6.3.1
         version: 6.3.1(expo@51.0.26(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(encoding@0.1.13))
@@ -108,6 +132,9 @@ importers:
       expo-status-bar:
         specifier: ~1.12.1
         version: 1.12.1
+      expo-system-ui:
+        specifier: ~3.0.7
+        version: 3.0.7(expo@51.0.26(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(encoding@0.1.13))
       expo-web-browser:
         specifier: ^13.0.3
         version: 13.0.3(expo@51.0.26(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(encoding@0.1.13))
@@ -129,6 +156,12 @@ importers:
       react-native-gesture-handler:
         specifier: ~2.18.1
         version: 2.18.1(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1))(react@18.3.1)
+      react-native-keyboard-controller:
+        specifier: ^1.12.7
+        version: 1.12.7(react-native-reanimated@3.15.0(@babel/core@7.25.2)(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1))(react@18.3.1))(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1))(react@18.3.1)
+      react-native-mask-input:
+        specifier: ^1.2.3
+        version: 1.2.3(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1))(react@18.3.1)
       react-native-reanimated:
         specifier: ~3.15.0
         version: 3.15.0(@babel/core@7.25.2)(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1))(react@18.3.1)
@@ -779,7 +812,7 @@ importers:
         version: 7.35.0(eslint@9.9.0(jiti@1.21.6))
       eslint-plugin-react-hooks:
         specifier: rc
-        version: 5.1.0-rc-68dbd84b-20240812(eslint@9.9.0(jiti@1.21.6))
+        version: 5.1.0-rc-19bd26be-20240815(eslint@9.9.0(jiti@1.21.6))
       eslint-plugin-turbo:
         specifier: ^2.0.12
         version: 2.0.12(eslint@9.9.0(jiti@1.21.6))
@@ -2347,6 +2380,9 @@ packages:
     resolution: {integrity: sha512-BsWiH1yFGjXXS2yvrf5LyuoSIIbPrGUWob917o+BTKuZ7qJdxX8aJLRxs1fS9n6r7vESrq1OUqb68dANcFXuQQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
+  '@expo-google-fonts/nunito@0.2.3':
+    resolution: {integrity: sha512-z+Bx3IuT0t3jguoMxiyWuC7pW3wDVNHgYko/G9V23QhR/yDSjEsT+Kx+VGDT/hu9TXSxw3CtpQ5MFHikqSVDYw==}
+
   '@expo/bunyan@4.0.1':
     resolution: {integrity: sha512-+Lla7nYSiHZirgK+U/uYzsLv/X+HaJienbD5AKX1UQZHYfWaP+9uuQluRB4GrEVWF0GZ7vEVp/jzaOT9k/SQlg==}
     engines: {node: '>=0.10.0'}
@@ -2888,6 +2924,12 @@ packages:
     resolution: {integrity: sha512-hFJL4cgLPxncJJd/epQ4dHnMg5Jy/7Q56jFvA3MHViuKpzzfTCJCB+pGY54maZbtym53UJON9WTGpM3S81UfjQ==}
     engines: {node: '>=18'}
     hasBin: true
+
+  '@react-native-picker/picker@2.7.5':
+    resolution: {integrity: sha512-vhMaOLkXSUb+YKVbukMJToU4g+89VMhBG2U9+cLYF8X8HtFRidrHjohGqT8/OyesDuKIXeLIP+UFYI9Q9CRA9Q==}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
 
   '@react-native/assets-registry@0.74.87':
     resolution: {integrity: sha512-1XmRhqQchN+pXPKEKYdpJlwESxVomJOxtEnIkbo7GAlaN2sym84fHEGDXAjLilih5GVPpcpSmFzTy8jx3LtaFg==}
@@ -5573,8 +5615,8 @@ packages:
     peerDependencies:
       eslint: ^3 || ^4 || ^5 || ^6 || ^7 || ^8
 
-  eslint-plugin-react-hooks@5.1.0-rc-68dbd84b-20240812:
-    resolution: {integrity: sha512-4TYlNy88XzkL2JYCIHjQv+sJ7tQuqkRNeTp0py78arVCVXK4I8MA/Z3DffxH5KSeC7PcagmBnVHww7tEpbToZA==}
+  eslint-plugin-react-hooks@5.1.0-rc-19bd26be-20240815:
+    resolution: {integrity: sha512-ZfRFl05f62HZra++udScYiLMhkH67/agk/s9eru5qCn/gXbGEIvhCH/25zp9pfIK8gl8zlNIYqo1A5Hu2rzOFQ==}
     engines: {node: '>=10'}
     peerDependencies:
       eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0 || ^9.0.0
@@ -5727,6 +5769,11 @@ packages:
     peerDependencies:
       expo: '*'
 
+  expo-image@1.12.13:
+    resolution: {integrity: sha512-Dmuc5qmkIsl1nFj8C3Ux3wL2bN4QYW4dM9fkGA8kYiP5Fxf1lT36ldkHk2O2lPFRSFJDvLxT8Tz+7GTko5fzwQ==}
+    peerDependencies:
+      expo: '*'
+
   expo-json-utils@0.13.1:
     resolution: {integrity: sha512-mlfaSArGVb+oJmUcR22jEONlgPp0wj4iNIHfQ2je9Q8WTOqMc0Ws9tUciz3JdJnhffdHqo/k8fpvf0IRmN5HPA==}
 
@@ -5787,6 +5834,11 @@ packages:
 
   expo-status-bar@1.12.1:
     resolution: {integrity: sha512-/t3xdbS8KB0prj5KG5w7z+wZPFlPtkgs95BsmrP/E7Q0xHXTcDcQ6Cu2FkFuRM+PKTb17cJDnLkawyS5vDLxMA==}
+
+  expo-system-ui@3.0.7:
+    resolution: {integrity: sha512-KAs72F5JKhdIfPR9ZNVlRubTPK9uUuevPy5oYEp12xNEzSQcjZKvypH5NpwJuNWkXzrp3n3vZ+3pXsudA7J3KA==}
+    peerDependencies:
+      expo: '*'
 
   expo-updates-interface@0.16.2:
     resolution: {integrity: sha512-929XBU70q5ELxkKADj1xL0UIm3HvhYhNAOZv5DSk7rrKvLo7QDdPyl+JVnwZm9LrkNbH4wuE2rLoKu1KMgZ+9A==}
@@ -8668,6 +8720,19 @@ packages:
     resolution: {integrity: sha512-m3CkXWss6B1dd6mCMleLpzDCJJGGaHOLQsUzZv8kAASJmMfmVT4d2fx375iXKTRWT25ThBfae3dECuX5cq/8hg==}
     peerDependencies:
       react: ^16.6.0 || ^17.0.0 || ^18.0.0
+
+  react-native-keyboard-controller@1.12.7:
+    resolution: {integrity: sha512-eccg0JtZk5n/up3I7pEg606Bo9eLsgVGtTPnmdv507AJg5UeAAMEhx93P7YXDZmwJ+38oFn3DbL7a0eIUE3Lxw==}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
+      react-native-reanimated: '>=2.11.0'
+
+  react-native-mask-input@1.2.3:
+    resolution: {integrity: sha512-RWx+gc1EaBslJWR6dsvGdILJ5XvnvZuyEsgJaH9uAMukB3Z9eOlxra1E7Ovck8NSMVcYWpBB/lzojO4LwqqXgA==}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
 
   react-native-reanimated@3.15.0:
     resolution: {integrity: sha512-yGxOyYAAu/5CyjonM2SgsM5sviiiK8HiHL9jT1bKfRxMLnNX9cFP8/UXRkbMT7ZXIfOlCvNFR0AqnphpuXIPVA==}
@@ -11932,6 +11997,8 @@ snapshots:
 
   '@eslint/object-schema@2.1.4': {}
 
+  '@expo-google-fonts/nunito@0.2.3': {}
+
   '@expo/bunyan@4.0.1':
     dependencies:
       uuid: 8.3.2
@@ -12817,6 +12884,11 @@ snapshots:
       - encoding
       - supports-color
       - utf-8-validate
+
+  '@react-native-picker/picker@2.7.5(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      react: 18.3.1
+      react-native: 0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1)
 
   '@react-native/assets-registry@0.74.87': {}
 
@@ -16437,7 +16509,7 @@ snapshots:
       safe-regex-test: 1.0.3
       string.prototype.includes: 2.0.0
 
-  eslint-plugin-react-hooks@5.1.0-rc-68dbd84b-20240812(eslint@9.9.0(jiti@1.21.6)):
+  eslint-plugin-react-hooks@5.1.0-rc-19bd26be-20240815(eslint@9.9.0(jiti@1.21.6)):
     dependencies:
       eslint: 9.9.0(jiti@1.21.6)
 
@@ -16697,6 +16769,10 @@ snapshots:
       fontfaceobserver: 2.3.0
     optional: true
 
+  expo-image@1.12.13(expo@51.0.26(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(encoding@0.1.13)):
+    dependencies:
+      expo: 51.0.26(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(encoding@0.1.13)
+
   expo-json-utils@0.13.1: {}
 
   expo-keep-awake@13.0.2(expo@51.0.26(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(encoding@0.1.13)):
@@ -16788,6 +16864,14 @@ snapshots:
     optional: true
 
   expo-status-bar@1.12.1: {}
+
+  expo-system-ui@3.0.7(expo@51.0.26(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(encoding@0.1.13)):
+    dependencies:
+      '@react-native/normalize-colors': 0.74.85
+      debug: 4.3.6
+      expo: 51.0.26(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(encoding@0.1.13)
+    transitivePeerDependencies:
+      - supports-color
 
   expo-updates-interface@0.16.2(expo@51.0.26(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(encoding@0.1.13)):
     dependencies:
@@ -20194,6 +20278,17 @@ snapshots:
       react: 18.3.1
       react-fast-compare: 3.2.2
       shallowequal: 1.1.0
+
+  react-native-keyboard-controller@1.12.7(react-native-reanimated@3.15.0(@babel/core@7.25.2)(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1))(react@18.3.1))(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1))(react@18.3.1):
+    dependencies:
+      react: 18.3.1
+      react-native: 0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1)
+      react-native-reanimated: 3.15.0(@babel/core@7.25.2)(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1))(react@18.3.1)
+
+  react-native-mask-input@1.2.3(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1))(react@18.3.1):
+    dependencies:
+      react: 18.3.1
+      react-native: 0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1)
 
   react-native-reanimated@3.15.0(@babel/core@7.25.2)(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.3(@babel/core@7.25.2))(@types/react@18.3.3)(encoding@0.1.13)(react@18.3.1))(react@18.3.1):
     dependencies:

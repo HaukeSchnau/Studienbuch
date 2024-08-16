@@ -55,6 +55,7 @@ dist/
 .venv
 *.pyc
 
+.cache
 /cache
 /cache_old
 
