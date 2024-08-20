@@ -20,7 +20,7 @@
     "eslint-plugin-react": "^7.35.0",
     "eslint-plugin-react-hooks": "rc",
     "eslint-plugin-turbo": "^2.0.12",
-    "typescript-eslint": "^8.1.0"
+    "typescript-eslint": "^8.2.0"
   },
   "devDependencies": {
     "@schnau/prettier-config": "workspace:*",

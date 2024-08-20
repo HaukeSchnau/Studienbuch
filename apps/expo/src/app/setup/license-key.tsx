@@ -8,11 +8,11 @@ import { TextField } from "~/components/text-field";
 import { useFormContext } from "./form";
 
 export default function LicenseKey() {
-  const form = useFormContext();
+  const form = useFormContext(0);
 
   return (
     <View>
-      <Text weight="bold" className="text-center text-3xl text-primary-text">
+      <Text variant="heading" className="text-center">
         Willkommen!
       </Text>
       <View className="h-4" />
@@ -33,11 +33,7 @@ export default function LicenseKey() {
       />
       <View className="h-6" />
       <Link href="/setup/name-and-year" asChild>
-        <Button
-          label="Weiter"
-          onPress={() => console.log(form.state.values.licenseKey)}
-          className="self-end"
-        />
+        <Button label="Weiter" className="self-end" />
       </Link>
     </View>
   );

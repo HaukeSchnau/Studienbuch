@@ -1,6 +1,6 @@
-import type { Year } from "..";
+import type { Year } from "../years";
 import type { Class } from "./class.type";
-import { getCurrentYearNum, isYearActive } from "..";
+import { getCurrentYearNum, isYearActive } from "../years";
 
 export const formatClassName = (
   clazz: Pick<Class, "identifierInYear">,

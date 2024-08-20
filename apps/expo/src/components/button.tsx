@@ -1,3 +1,4 @@
+import type { ComponentRef } from "react";
 import { forwardRef } from "react";
 import { TouchableOpacity } from "react-native";
 import clsx from "clsx";
@@ -7,12 +8,12 @@ import { Text } from "./text";
 
 interface Props {
   label: string;
-  onPress: () => void;
-  className: string;
+  onPress?: () => void;
+  className?: string;
   disabled?: boolean;
 }
 
-export const Button = forwardRef<TouchableOpacity, Props>(
+export const Button = forwardRef<ComponentRef<typeof TouchableOpacity>, Props>(
   ({ className, disabled, onPress, label }, ref) => {
     return (
       <TouchableOpacity

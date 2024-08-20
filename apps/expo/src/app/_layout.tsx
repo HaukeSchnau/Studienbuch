@@ -1,6 +1,5 @@
 import "@bacons/text-decoder/install";
 
-import { KeyboardProvider } from "react-native-keyboard-controller";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
@@ -10,6 +9,7 @@ import "./styles.css";
 
 import type { ReactNode } from "react";
 import { useEffect } from "react";
+import { UIManager } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import {
   Nunito_400Regular,
@@ -18,6 +18,10 @@ import {
 } from "@expo-google-fonts/nunito";
 
 void SplashScreen.preventAutoHideAsync();
+
+if (UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -56,9 +60,5 @@ export default function RootLayout() {
 }
 
 const Providers = ({ children }: { children: ReactNode }) => {
-  return (
-    <KeyboardProvider>
-      <TRPCProvider>{children}</TRPCProvider>
-    </KeyboardProvider>
-  );
+  return <TRPCProvider>{children}</TRPCProvider>;
 };

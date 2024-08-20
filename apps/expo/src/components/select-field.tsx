@@ -1,7 +1,10 @@
 import type { Key } from "react";
+import { useEffect } from "react";
 import { View } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
 import { Picker } from "@react-native-picker/picker";
+
+import { isArrayNonEmpty } from "@schnau/lib";
 
 import { FieldLabel } from "./field-label";
 
@@ -25,6 +28,13 @@ export const SelectField = <TOption,>({
   const active = useSharedValue(true);
   const focused = useSharedValue(false);
 
+  useEffect(() => {
+    if (!value && isArrayNonEmpty(options)) {
+      console.log("Setting value to", options[0]);
+      onChange(options[0]);
+    }
+  }, [value, options, onChange]);
+
   return (
     <View>
       <Picker
@@ -32,7 +42,7 @@ export const SelectField = <TOption,>({
         onValueChange={(_, idx) => onChange(options[idx]!)}
         style={{
           backgroundColor: "#E6E6E6",
-          borderRadius: 36,
+          borderRadius: 32,
         }}
       >
         {options.map((option) => (

@@ -5,10 +5,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useKeyboardHandler } from "react-native-keyboard-controller";
 import Animated, {
+  useAnimatedKeyboard,
   useAnimatedStyle,
-  useSharedValue,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -23,22 +22,6 @@ import { Text } from "~/components/text";
 import logoImage from "../../../assets/icon.png";
 import { FormContext } from "./form";
 
-const useAnimatedKeyboard = () => {
-  const height = useSharedValue(0);
-
-  useKeyboardHandler(
-    {
-      onMove: (e) => {
-        "worklet";
-        height.value = e.height;
-      },
-    },
-    [],
-  );
-
-  return { height };
-};
-
 export default function HomeLayout() {
   const { height } = useAnimatedKeyboard();
   const animatedStyle = useAnimatedStyle(() => ({
@@ -51,7 +34,7 @@ export default function HomeLayout() {
       name: "",
       isOfAge: false,
       year: null,
-      classId: null,
+      class: null,
       chosenCourses: {},
     },
     validatorAdapter: zodValidator(),

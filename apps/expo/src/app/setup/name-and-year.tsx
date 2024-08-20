@@ -1,7 +1,10 @@
 import { View } from "react-native";
+import { Link } from "expo-router";
 
 import { formatYear } from "@schnau/lib";
 
+import { Button } from "~/components/button";
+import { CheckboxRow } from "~/components/checkbox-row";
 import { SelectField } from "~/components/select-field";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
@@ -9,14 +12,12 @@ import { api } from "~/utils/api";
 import { useFormContext } from "./form";
 
 export default function NameAndYear() {
-  const form = useFormContext();
+  const form = useFormContext(1);
   const years = api.years.list.useQuery({ activeOnly: true });
-
-  console.log(years);
 
   return (
     <View>
-      <Text weight="bold" className="text-center text-3xl text-primary-text">
+      <Text variant="heading" className="text-center">
         Willkommen!
       </Text>
       <View className="h-4" />
@@ -54,6 +55,23 @@ export default function NameAndYear() {
       )}
 
       <View className="h-6" />
+
+      <form.Field
+        name="isOfAge"
+        children={(field) => (
+          <CheckboxRow
+            label="Ich bin volljährig"
+            value={field.state.value}
+            onChange={field.setValue}
+          />
+        )}
+      />
+
+      <View className="h-6" />
+
+      <Link href="/setup/class-and-courses" asChild>
+        <Button label="Weiter" className="self-end" />
+      </Link>
     </View>
   );
 }
