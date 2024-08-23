@@ -66,7 +66,7 @@
     "@stu/tailwind-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@types/babel__core": "^7.20.5",
-    "@types/react": "^18.2.79",
+    "@types/react": "catalog:react18",
     "drizzle-kit": "^0.24.0",
     "eslint": "catalog:",
     "metro": "^0.80.10",
