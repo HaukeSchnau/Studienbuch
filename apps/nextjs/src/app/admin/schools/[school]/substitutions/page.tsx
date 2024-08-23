@@ -1,11 +1,10 @@
+import { desc } from "@stu/db";
+import { db } from "@stu/db/client";
+import { Substitution } from "@stu/db/schema";
+import { formalName } from "@stu/lib";
+import { addRowSpans, getSubstitutions } from "@stu/lib-server";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-
-import { desc } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { Substitution } from "@schnau/db/schema";
-import { formalName } from "@schnau/lib";
-import { addRowSpans, getSubstitutions } from "@schnau/lib-server";
 
 import { Card } from "~/components/layout/Card";
 import { PageHeading } from "~/components/layout/PageHeading";

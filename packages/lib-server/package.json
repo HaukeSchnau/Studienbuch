@@ -1,5 +1,5 @@
 {
-  "name": "@schnau/lib-server",
+  "name": "@stu/lib-server",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -16,18 +16,18 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@schnau/auth": "workspace:*",
-    "@schnau/db": "workspace:*",
-    "@schnau/external-api": "workspace:*",
-    "@schnau/lib": "workspace:*",
+    "@stu/auth": "workspace:*",
+    "@stu/db": "workspace:*",
+    "@stu/external-api": "workspace:*",
+    "@stu/lib": "workspace:*",
     "node-html-parser": "^6.1.13",
     "papaparse": "^5.4.1",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@schnau/eslint-config": "workspace:*",
-    "@schnau/prettier-config": "workspace:*",
-    "@schnau/tsconfig": "workspace:*",
+    "@stu/eslint-config": "workspace:*",
+    "@stu/prettier-config": "workspace:*",
+    "@stu/tsconfig": "workspace:*",
     "@total-typescript/shoehorn": "^0.1.2",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/papaparse": "^5.3.14",
@@ -36,5 +36,5 @@
     "typescript": "catalog:",
     "vitest": "^2.0.5"
   },
-  "prettier": "@schnau/prettier-config"
+  "prettier": "@stu/prettier-config"
 }

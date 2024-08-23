@@ -1,5 +1,5 @@
-import type { Year } from "@schnau/lib";
-import { formatClassName } from "@schnau/lib";
+import type { Year } from "@stu/lib";
+import { formatClassName } from "@stu/lib";
 
 import { Card, CardHeading } from "~/components/layout/Card";
 import { Grid } from "~/components/layout/Grid";

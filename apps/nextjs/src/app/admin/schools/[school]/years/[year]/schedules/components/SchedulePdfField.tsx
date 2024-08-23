@@ -1,8 +1,7 @@
+import type { Course, ProtoCourseWithTimes, Timetable } from "@stu/lib";
 import type { ChangeEvent } from "react";
 import { useMemo } from "react";
-
-import type { Course, ProtoCourseWithTimes, Timetable } from "@schnau/lib";
-import { buildTimetable } from "@schnau/lib";
+import { buildTimetable } from "@stu/lib";
 
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { TimetableView } from "~/features/timetable/TimetableView";

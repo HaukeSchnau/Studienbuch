@@ -1,4 +1,4 @@
-import type { PermissionOnUser, Role } from "@schnau/lib";
+import type { PermissionOnUser, Role } from "@stu/lib";
 
 export interface User {
   id: number;

@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-
-import { colors } from "@schnau/tailwind-config/web";
+import { colors } from "@stu/tailwind-config/web";
 
 import { SchoolLogo } from "~/components/SchoolLogo";
 import { isLoggedIn } from "~/features/auth/isLoggedIn";

@@ -1,7 +1,6 @@
 import crypto from "crypto";
-
-import { db } from "@schnau/db/client";
-import { LicenseKey } from "@schnau/db/schema";
+import { db } from "@stu/db/client";
+import { LicenseKey } from "@stu/db/schema";
 
 function generateLicenseKey(): string {
   return crypto

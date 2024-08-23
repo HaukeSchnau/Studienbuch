@@ -1,9 +1,8 @@
+import type { Class, ProtoCourseWithTimes, Semester, Year } from "@stu/lib";
+import { formatClassName } from "@stu/lib";
 import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { z } from "zod";
-
-import type { Class, ProtoCourseWithTimes, Semester, Year } from "@schnau/lib";
-import { formatClassName } from "@schnau/lib";
 
 import { Button } from "~/components/form/Button";
 import { SelectField } from "~/components/form/SelectField";

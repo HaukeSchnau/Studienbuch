@@ -1,5 +1,5 @@
 {
-  "name": "@schnau/rest",
+  "name": "@stu/rest",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -20,8 +20,8 @@
     "@hono/node-server": "^1.12.1",
     "@hono/zod-openapi": "^0.15.3",
     "@scalar/hono-api-reference": "^0.5.141",
-    "@schnau/api": "workspace:*",
-    "@schnau/auth": "workspace:*",
+    "@stu/api": "workspace:*",
+    "@stu/auth": "workspace:*",
     "@t3-oss/env-nextjs": "^0.11.0",
     "@trpc/server": "11.0.0-rc.449",
     "hono": "^4.5.6",
@@ -29,14 +29,14 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@schnau/eslint-config": "workspace:*",
-    "@schnau/prettier-config": "workspace:*",
-    "@schnau/tsconfig": "workspace:*",
+    "@stu/eslint-config": "workspace:*",
+    "@stu/prettier-config": "workspace:*",
+    "@stu/tsconfig": "workspace:*",
     "@types/ws": "^8.5.12",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "tsx": "^4.17.0",
     "typescript": "catalog:"
   },
-  "prettier": "@schnau/prettier-config"
+  "prettier": "@stu/prettier-config"
 }

@@ -1,16 +1,15 @@
 import fs from "fs";
 import os from "os";
 import p from "path";
-
-import type { ProtoCourseWithTimes } from "@schnau/lib";
-import { isArraySingleElement } from "@schnau/lib";
+import type { ProtoCourseWithTimes } from "@stu/lib";
+import { isArraySingleElement } from "@stu/lib";
 import {
   convertPdf,
   ensureParentDir,
   getFileHash,
   parseScheduleCsv,
   writeFile,
-} from "@schnau/lib-server";
+} from "@stu/lib-server";
 
 const cacheDir = p.join(os.tmpdir(), "studienbuch", "imported-schedules");
 

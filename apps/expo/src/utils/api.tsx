@@ -1,10 +1,9 @@
+import type { AppRouter } from "@stu/api";
 import { useState } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createWSClient, loggerLink, wsLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import superjson from "superjson";
-
-import type { AppRouter } from "@schnau/api";
 
 import { clientRouter } from "~/db/local-trpc";
 import { getBaseUrl } from "./base-url";
@@ -14,7 +13,7 @@ import { PersistingQueryClient } from "./local-trpc/persisting-query-client";
  * A set of typesafe hooks for consuming your API.
  */
 export const api = createTRPCReact<AppRouter>();
-export { type RouterInputs, type RouterOutputs } from "@schnau/api";
+export { type RouterInputs, type RouterOutputs } from "@stu/api";
 
 const wsClient = createWSClient({
   url: getBaseUrl().replace("http", "ws").replace("3000", "3001"),

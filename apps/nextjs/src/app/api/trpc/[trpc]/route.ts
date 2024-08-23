@@ -1,8 +1,7 @@
+import { appRouter, createTRPCContext } from "@stu/api";
+import { getSessionFromHeaders } from "@stu/auth/src";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { withAxiom } from "next-axiom";
-
-import { appRouter, createTRPCContext } from "@schnau/api";
-import { getSessionFromHeaders } from "@schnau/auth/src";
 
 /**
  * Configure basic CORS headers

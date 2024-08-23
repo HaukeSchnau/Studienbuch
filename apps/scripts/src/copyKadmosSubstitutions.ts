@@ -1,10 +1,6 @@
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import { z } from "zod";
-
-import type { MakeRequest } from "@schnau/external-api";
-import { and, eq } from "@schnau/db";
-import { db } from "@schnau/db/client";
+import type { MakeRequest } from "@stu/external-api";
+import { and, eq } from "@stu/db";
+import { db } from "@stu/db/client";
 import {
   _ClassToCourse,
   Class,
@@ -12,13 +8,16 @@ import {
   Substitution,
   User,
   Year,
-} from "@schnau/db/schema";
+} from "@stu/db/schema";
 import {
   findAbbrvName,
   loginIservWithDefaultCredentials,
-} from "@schnau/external-api";
-import { getNormalTimeIndex } from "@schnau/lib";
-import { getSubstitutions } from "@schnau/lib-server";
+} from "@stu/external-api";
+import { getNormalTimeIndex } from "@stu/lib";
+import { getSubstitutions } from "@stu/lib-server";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import { z } from "zod";
 
 dayjs.extend(utc);
 

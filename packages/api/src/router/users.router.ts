@@ -1,10 +1,9 @@
+import { hashPassword } from "@stu/auth/src/password";
+import { asc, eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import { PermissionOnUser, PERMISSIONS, User } from "@stu/db/schema";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-
-import { hashPassword } from "@schnau/auth/src/password";
-import { asc, eq } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { PermissionOnUser, PERMISSIONS, User } from "@schnau/db/schema";
 
 import { permissionProcedure } from "../procedures";
 import { createRouter } from "../trpc";

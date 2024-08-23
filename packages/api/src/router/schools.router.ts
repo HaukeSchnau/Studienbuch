@@ -1,10 +1,9 @@
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import { School } from "@stu/db/schema";
+import { defaultTheme, themeSchema } from "@stu/lib";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-
-import { eq } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { School } from "@schnau/db/schema";
-import { defaultTheme, themeSchema } from "@schnau/lib";
 
 import { protectedProcedure, publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";

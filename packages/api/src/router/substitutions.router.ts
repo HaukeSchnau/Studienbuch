@@ -1,10 +1,9 @@
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import { Substitution } from "@stu/db/schema";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { z } from "zod";
-
-import { eq } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { Substitution } from "@schnau/db/schema";
 
 import { publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";

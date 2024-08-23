@@ -38,7 +38,7 @@ class ProfileTopPanel extends HookWidget {
           handler: () => launchUrl(
                 Uri(
                   scheme: 'mailto',
-                  path: 'studienbuch@schnau.dev',
+                  path: 'studienbuch@stu.dev',
                   query: encodeQueryParameters(<String, String>{
                     'subject': 'Feedback zum Studienbuch',
                     'body':

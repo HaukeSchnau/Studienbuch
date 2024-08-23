@@ -3,8 +3,7 @@ import { useEffect } from "react";
 import { View } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
 import { Picker } from "@react-native-picker/picker";
-
-import { isArrayNonEmpty } from "@schnau/lib";
+import { isArrayNonEmpty } from "@stu/lib";
 
 import { FieldLabel } from "./field-label";
 

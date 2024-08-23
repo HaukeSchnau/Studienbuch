@@ -1,5 +1,5 @@
 {
-  "name": "@schnau/nextjs",
+  "name": "@stu/nextjs",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -16,12 +16,12 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "@schnau/api": "workspace:*",
-    "@schnau/auth": "workspace:*",
-    "@schnau/db": "workspace:*",
-    "@schnau/lib": "workspace:*",
-    "@schnau/lib-server": "workspace:*",
-    "@schnau/rest": "workspace:*",
+    "@stu/api": "workspace:*",
+    "@stu/auth": "workspace:*",
+    "@stu/db": "workspace:*",
+    "@stu/lib": "workspace:*",
+    "@stu/lib-server": "workspace:*",
+    "@stu/rest": "workspace:*",
     "@t3-oss/env-nextjs": "^0.11.0",
     "@tanstack/react-form": "^0.29.2",
     "@tanstack/react-query": "^5.51.24",
@@ -47,10 +47,10 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^14.2.5",
-    "@schnau/eslint-config": "workspace:*",
-    "@schnau/prettier-config": "workspace:*",
-    "@schnau/tailwind-config": "workspace:*",
-    "@schnau/tsconfig": "workspace:*",
+    "@stu/eslint-config": "workspace:*",
+    "@stu/prettier-config": "workspace:*",
+    "@stu/tailwind-config": "workspace:*",
+    "@stu/tsconfig": "workspace:*",
     "@storybook/addon-essentials": "^8.2.8",
     "@storybook/addon-interactions": "^8.2.8",
     "@storybook/addon-links": "^8.2.8",
@@ -72,5 +72,5 @@
     "tailwindcss": "^3.4.9",
     "typescript": "catalog:"
   },
-  "prettier": "@schnau/prettier-config"
+  "prettier": "@stu/prettier-config"
 }

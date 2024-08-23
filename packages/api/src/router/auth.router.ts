@@ -1,11 +1,10 @@
+import { getPermissions } from "@stu/auth/src/getPermissions";
+import { checkPassword } from "@stu/auth/src/password";
+import { createSession } from "@stu/auth/src/session";
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import { Session, User } from "@stu/db/schema";
 import { z } from "zod";
-
-import { getPermissions } from "@schnau/auth/src/getPermissions";
-import { checkPassword } from "@schnau/auth/src/password";
-import { createSession } from "@schnau/auth/src/session";
-import { eq } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { Session, User } from "@schnau/db/schema";
 
 import { protectedProcedure, publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";

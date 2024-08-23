@@ -1,5 +1,5 @@
 {
-  "name": "@schnau/tailwind-config",
+  "name": "@stu/tailwind-config",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -20,12 +20,12 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@schnau/eslint-config": "workspace:*",
-    "@schnau/prettier-config": "workspace:*",
-    "@schnau/tsconfig": "workspace:*",
+    "@stu/eslint-config": "workspace:*",
+    "@stu/prettier-config": "workspace:*",
+    "@stu/tsconfig": "workspace:*",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"
   },
-  "prettier": "@schnau/prettier-config"
+  "prettier": "@stu/prettier-config"
 }

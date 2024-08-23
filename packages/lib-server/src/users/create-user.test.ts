@@ -1,8 +1,7 @@
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import { User } from "@stu/db/schema";
 import { describe, expect, it } from "vitest";
-
-import { eq } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { User } from "@schnau/db/schema";
 
 import { createUser } from "./createUser";
 

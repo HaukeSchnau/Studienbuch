@@ -1,5 +1,5 @@
 {
-  "name": "@schnau/db",
+  "name": "@stu/db",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",
@@ -40,9 +40,9 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@schnau/eslint-config": "workspace:*",
-    "@schnau/prettier-config": "workspace:*",
-    "@schnau/tsconfig": "workspace:*",
+    "@stu/eslint-config": "workspace:*",
+    "@stu/prettier-config": "workspace:*",
+    "@stu/tsconfig": "workspace:*",
     "@types/pg": "^8.11.6",
     "dotenv-cli": "^7.4.2",
     "drizzle-kit": "^0.24.0",
@@ -50,5 +50,5 @@
     "prettier": "catalog:",
     "typescript": "catalog:"
   },
-  "prettier": "@schnau/prettier-config"
+  "prettier": "@stu/prettier-config"
 }

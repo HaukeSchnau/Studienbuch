@@ -1,10 +1,9 @@
 import crypto from "crypto";
-
-import type { User } from "@schnau/lib";
-import { eq } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { Session } from "@schnau/db/schema";
-import { isArraySingleElement } from "@schnau/lib";
+import type { User } from "@stu/lib";
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import { Session } from "@stu/db/schema";
+import { isArraySingleElement } from "@stu/lib";
 
 import type { Session as SessionType } from "./index";
 

@@ -1,9 +1,8 @@
+import type { Course } from "@stu/lib";
 import { useEffect, useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Link } from "expo-router";
-
-import type { Course } from "@schnau/lib";
-import { formatClassName, isArraySingleElement } from "@schnau/lib";
+import { formatClassName, isArraySingleElement } from "@stu/lib";
 
 import { Button } from "~/components/button";
 import { DropdownSelect } from "~/components/dropdown-select";

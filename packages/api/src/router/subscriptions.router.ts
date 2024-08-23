@@ -1,8 +1,7 @@
+import { and, eq, notInArray } from "@stu/db";
+import { db } from "@stu/db/client";
+import { CourseSubscription } from "@stu/db/schema";
 import { z } from "zod";
-
-import { and, eq, notInArray } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { CourseSubscription } from "@schnau/db/schema";
 
 import { publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";

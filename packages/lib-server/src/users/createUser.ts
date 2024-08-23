@@ -1,6 +1,6 @@
-import { hashPassword } from "@schnau/auth/src/password";
-import { db } from "@schnau/db/client";
-import { User } from "@schnau/db/schema";
+import { hashPassword } from "@stu/auth/src/password";
+import { db } from "@stu/db/client";
+import { User } from "@stu/db/schema";
 
 export const createUser = async (
   name: string,

@@ -1,8 +1,7 @@
+import type { Class, Course, Year } from "@stu/lib";
 import type { FormApi, ReactFormApi } from "@tanstack/react-form";
 import type { zodValidator } from "@tanstack/zod-form-adapter";
 import { createContext, useContext } from "react";
-
-import type { Class, Course, Year } from "@schnau/lib";
 
 export interface SetupForm {
   licenseKey: string;

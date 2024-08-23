@@ -1,18 +1,17 @@
-import { TRPCError } from "@trpc/server";
-import { z } from "zod";
-
-import type { Course as CourseT } from "@schnau/lib";
-import { and, eq } from "@schnau/db";
-import { db } from "@schnau/db/client";
+import type { Course as CourseT } from "@stu/lib";
+import { and, eq } from "@stu/db";
+import { db } from "@stu/db/client";
 import {
   _ClassToCourse,
   Class,
   Course,
   CourseTime,
   User,
-} from "@schnau/db/schema";
-import { loginIservWithDefaultCredentials } from "@schnau/external-api";
-import { insertProtoCourse } from "@schnau/lib-server";
+} from "@stu/db/schema";
+import { loginIservWithDefaultCredentials } from "@stu/external-api";
+import { insertProtoCourse } from "@stu/lib-server";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 
 import { permissionProcedure, publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";

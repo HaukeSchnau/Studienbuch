@@ -1,4 +1,4 @@
-import { buildTimetable } from "@schnau/lib";
+import { buildTimetable } from "@stu/lib";
 
 import { Card } from "~/components/layout/Card";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";

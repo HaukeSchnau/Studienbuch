@@ -12,12 +12,12 @@ const config = {
 
   /** Enables hot reloading for local packages without a build step */
   transpilePackages: [
-    "@schnau/api",
-    "@schnau/auth",
-    "@schnau/db",
-    "@schnau/lib",
-    "@schnau/lib-server",
-    "@schnau/rest",
+    "@stu/api",
+    "@stu/auth",
+    "@stu/db",
+    "@stu/lib",
+    "@stu/lib-server",
+    "@stu/rest",
   ],
 
   /** We already do linting and typechecking as separate tasks in CI */

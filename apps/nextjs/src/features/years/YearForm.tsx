@@ -1,9 +1,8 @@
+import type { Year } from "@stu/lib";
 import type { FormApi } from "@tanstack/react-form";
 import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { z } from "zod";
-
-import type { Year } from "@schnau/lib";
 
 import { Button } from "~/components/form/Button";
 import { NumberField } from "~/components/form/NumberField";

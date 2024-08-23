@@ -1,13 +1,12 @@
 import fs from "fs/promises";
 import p from "path";
+import { ensureParentDir } from "@stu/lib-server";
 
-import { ensureParentDir } from "@schnau/lib-server";
-
+import type { RootRouter, Type } from "./trpc.type";
 import { writeEnumConverter } from "./converter";
 import { getRouterStructure } from "./getRouterStructure";
 import { createProcedureFile, createRouterFile } from "./procedure";
 import { capitalize, snakeToCamel } from "./strings";
-import type { RootRouter, Type } from "./trpc.type";
 import { isProcedure, isRouter } from "./trpc.type";
 import { writeClass, writeUnion } from "./types";
 

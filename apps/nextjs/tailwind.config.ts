@@ -1,7 +1,6 @@
 import type { Config } from "tailwindcss";
+import baseConfig from "@stu/tailwind-config/web";
 import { fontFamily } from "tailwindcss/defaultTheme";
-
-import baseConfig from "@schnau/tailwind-config/web";
 
 export default {
   content: [...baseConfig.content],

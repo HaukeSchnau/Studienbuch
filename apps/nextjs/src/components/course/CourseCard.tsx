@@ -1,9 +1,8 @@
 "use client";
 
+import type { Course } from "@stu/lib";
+import { formalName } from "@stu/lib";
 import { z } from "zod";
-
-import type { Course } from "@schnau/lib";
-import { formalName } from "@schnau/lib";
 
 import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
 import { Card, CardHeading } from "../layout/Card";

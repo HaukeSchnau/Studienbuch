@@ -1,19 +1,18 @@
-import Link from "next/link";
-import { z } from "zod";
-
 import type {
   Course,
   CourseTimeWeeks,
   Timetable,
   TimetableCell,
-} from "@schnau/lib";
+} from "@stu/lib";
+import Link from "next/link";
 import {
   formalName,
   formatTime,
   formatWeeks,
   getNormalTime,
   hash,
-} from "@schnau/lib";
+} from "@stu/lib";
+import { z } from "zod";
 
 import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
 

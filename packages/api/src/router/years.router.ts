@@ -1,10 +1,9 @@
+import { and, desc, eq, gte } from "@stu/db";
+import { db } from "@stu/db/client";
+import { Year } from "@stu/db/schema";
+import { getMaxActiveGraduationYear } from "@stu/lib";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-
-import { and, desc, eq, gte } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { Year } from "@schnau/db/schema";
-import { getMaxActiveGraduationYear } from "@schnau/lib";
 
 import { permissionProcedure, publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";

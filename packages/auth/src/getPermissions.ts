@@ -1,13 +1,13 @@
-import type { Permission, PermissionScope } from "@schnau/lib";
-import { eq } from "@schnau/db";
-import { db } from "@schnau/db/client";
+import type { Permission, PermissionScope } from "@stu/lib";
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
 import {
   _RoleToUser,
   PermissionOnRole,
   PermissionOnUser,
   Role,
   User,
-} from "@schnau/db/schema";
+} from "@stu/db/schema";
 
 // TODO: Produce a single query to get the permission scope and maybe cache it
 export const getPermissions = async (user: {

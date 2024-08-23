@@ -98,7 +98,7 @@ const Datenschutz = () => (
       22529 Hamburg
     </p>
     E-Mail-Adresse:
-    <p>hauke@schnau-lilienthal.de</p>
+    <p>hauke@stu-lilienthal.de</p>
     <h2 id="mOverview">Übersicht der Verarbeitungen</h2>
     <p>
       Die nachfolgende Übersicht fasst die Arten der verarbeiteten Daten und die

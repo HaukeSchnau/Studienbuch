@@ -1,4 +1,4 @@
-import { makeRestApi } from "@schnau/rest";
+import { makeRestApi } from "@stu/rest";
 
 const api = makeRestApi("/api");
 const handler = api.nextHandler();

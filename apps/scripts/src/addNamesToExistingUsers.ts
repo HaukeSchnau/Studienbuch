@@ -1,10 +1,10 @@
-import { eq } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { User } from "@schnau/db/schema";
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import { User } from "@stu/db/schema";
 import {
   findAbbrvName,
   loginIservWithDefaultCredentials,
-} from "@schnau/external-api";
+} from "@stu/external-api";
 
 export const addNamesToExistingUsers = async () => {
   const parsedUsers = await db

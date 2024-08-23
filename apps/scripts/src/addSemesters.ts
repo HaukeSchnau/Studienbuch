@@ -1,10 +1,9 @@
+import type { State } from "@stu/external-api";
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import { School, Semester } from "@stu/db/schema";
+import { getHolidays } from "@stu/external-api";
 import dayjs from "dayjs";
-
-import type { State } from "@schnau/external-api";
-import { eq } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { School, Semester } from "@schnau/db/schema";
-import { getHolidays } from "@schnau/external-api";
 
 export const addSemesters = async (state: State) => {
   const holidays = await getHolidays(state);

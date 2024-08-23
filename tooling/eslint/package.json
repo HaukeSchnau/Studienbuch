@@ -1,5 +1,5 @@
 {
-  "name": "@schnau/eslint-config",
+  "name": "@stu/eslint-config",
   "private": true,
   "version": "0.3.0",
   "type": "module",
@@ -23,11 +23,11 @@
     "typescript-eslint": "^8.2.0"
   },
   "devDependencies": {
-    "@schnau/prettier-config": "workspace:*",
-    "@schnau/tsconfig": "workspace:*",
+    "@stu/prettier-config": "workspace:*",
+    "@stu/tsconfig": "workspace:*",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"
   },
-  "prettier": "@schnau/prettier-config"
+  "prettier": "@stu/prettier-config"
 }

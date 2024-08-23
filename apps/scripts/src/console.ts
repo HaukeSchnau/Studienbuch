@@ -1,14 +1,13 @@
 import { exec as execCb } from "child_process";
 import { promisify } from "util";
 import { program } from "@commander-js/extra-typings";
-
-import { db } from "@schnau/db/client";
+import { db } from "@stu/db/client";
 import {
   findAbbrvName,
   loginIservWithDefaultCredentials,
   stateSchema,
-} from "@schnau/external-api";
-import { createUser } from "@schnau/lib-server";
+} from "@stu/external-api";
+import { createUser } from "@stu/lib-server";
 
 import { addNamesToExistingUsers } from "./addNamesToExistingUsers";
 import { addSemesters } from "./addSemesters";

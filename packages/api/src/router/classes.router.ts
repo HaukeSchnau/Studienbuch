@@ -1,8 +1,7 @@
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import { Class } from "@stu/db/schema";
 import { z } from "zod";
-
-import { eq } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { Class } from "@schnau/db/schema";
 
 import { publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";

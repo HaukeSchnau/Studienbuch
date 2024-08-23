@@ -1,4 +1,4 @@
-import type { AppRouter } from "@schnau/api";
+import type { AppRouter } from "@stu/api";
 
 import type { ClientRouter } from "../utils/local-trpc/trpc-util";
 

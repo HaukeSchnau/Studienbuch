@@ -1,9 +1,8 @@
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import { LicenseKey } from "@stu/db/schema";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-
-import { eq } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { LicenseKey } from "@schnau/db/schema";
 
 import { publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";

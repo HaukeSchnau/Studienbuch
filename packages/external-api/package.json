@@ -1,5 +1,5 @@
 {
-  "name": "@schnau/external-api",
+  "name": "@stu/external-api",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -29,9 +29,9 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@schnau/eslint-config": "workspace:*",
-    "@schnau/prettier-config": "workspace:*",
-    "@schnau/tsconfig": "workspace:*",
+    "@stu/eslint-config": "workspace:*",
+    "@stu/prettier-config": "workspace:*",
+    "@stu/tsconfig": "workspace:*",
     "@total-typescript/ts-reset": "^0.5.1",
     "@types/tough-cookie": "^4.0.5",
     "eslint": "catalog:",
@@ -40,5 +40,5 @@
     "typescript": "catalog:",
     "vitest": "^2.0.5"
   },
-  "prettier": "@schnau/prettier-config"
+  "prettier": "@stu/prettier-config"
 }

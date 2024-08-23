@@ -1,7 +1,6 @@
+import type { Permission, ScopeOption } from "@stu/lib";
+import { formalName } from "@stu/lib";
 import { useForm } from "@tanstack/react-form";
-
-import type { Permission, ScopeOption } from "@schnau/lib";
-import { formalName } from "@schnau/lib";
 
 import type { User } from "../user.type";
 import { Button } from "~/components/form/Button";

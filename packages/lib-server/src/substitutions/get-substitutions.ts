@@ -1,6 +1,5 @@
+import { getSubstitutionsFromKadmos } from "@stu/external-api";
 import { parse } from "node-html-parser";
-
-import { getSubstitutionsFromKadmos } from "@schnau/external-api";
 
 import {
   convertKadmosRowsToSubstitutionsTable,

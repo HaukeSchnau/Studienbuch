@@ -1,7 +1,6 @@
 import { View } from "react-native";
 import { Link } from "expo-router";
-
-import { formatYear } from "@schnau/lib";
+import { formatYear } from "@stu/lib";
 
 import { Button } from "~/components/button";
 import { CheckboxRow } from "~/components/checkbox-row";

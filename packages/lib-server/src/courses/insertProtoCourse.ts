@@ -1,9 +1,9 @@
-import type { MakeRequest } from "@schnau/external-api";
-import type { Class } from "@schnau/lib";
-import { eq } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { Course, CourseTime, User } from "@schnau/db/schema";
-import { findAbbrvName } from "@schnau/external-api";
+import type { MakeRequest } from "@stu/external-api";
+import type { Class } from "@stu/lib";
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import { Course, CourseTime, User } from "@stu/db/schema";
+import { findAbbrvName } from "@stu/external-api";
 
 interface ProtoCourseTime {
   weekday: number;

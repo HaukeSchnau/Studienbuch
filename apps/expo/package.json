@@ -1,5 +1,5 @@
 {
-  "name": "@schnau/expo",
+  "name": "@stu/expo",
   "version": "0.1.0",
   "private": true,
   "main": "./src/entry",
@@ -19,7 +19,7 @@
     "@expo-google-fonts/nunito": "^0.2.3",
     "@expo/metro-config": "^0.18.11",
     "@react-native-picker/picker": "2.7.5",
-    "@schnau/lib": "workspace:*",
+    "@stu/lib": "workspace:*",
     "@shopify/flash-list": "1.6.4",
     "@tanstack/react-form": "^0.29.2",
     "@tanstack/react-query": "^5.51.24",
@@ -60,11 +60,11 @@
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
-    "@schnau/api": "workspace:*",
-    "@schnau/eslint-config": "workspace:*",
-    "@schnau/prettier-config": "workspace:*",
-    "@schnau/tailwind-config": "workspace:*",
-    "@schnau/tsconfig": "workspace:*",
+    "@stu/api": "workspace:*",
+    "@stu/eslint-config": "workspace:*",
+    "@stu/prettier-config": "workspace:*",
+    "@stu/tailwind-config": "workspace:*",
+    "@stu/tsconfig": "workspace:*",
     "@types/babel__core": "^7.20.5",
     "@types/react": "^18.2.79",
     "drizzle-kit": "^0.24.0",
@@ -81,5 +81,5 @@
       }
     }
   },
-  "prettier": "@schnau/prettier-config"
+  "prettier": "@stu/prettier-config"
 }

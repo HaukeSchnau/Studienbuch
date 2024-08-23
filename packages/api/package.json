@@ -1,5 +1,5 @@
 {
-  "name": "@schnau/api",
+  "name": "@stu/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -19,11 +19,11 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@schnau/auth": "workspace:*",
-    "@schnau/db": "workspace:*",
-    "@schnau/external-api": "workspace:*",
-    "@schnau/lib": "workspace:*",
-    "@schnau/lib-server": "workspace:*",
+    "@stu/auth": "workspace:*",
+    "@stu/db": "workspace:*",
+    "@stu/external-api": "workspace:*",
+    "@stu/lib": "workspace:*",
+    "@stu/lib-server": "workspace:*",
     "@t3-oss/env-nextjs": "^0.11.0",
     "@trpc/server": "11.0.0-rc.449",
     "dayjs": "^1.11.12",
@@ -32,12 +32,12 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@schnau/eslint-config": "workspace:*",
-    "@schnau/prettier-config": "workspace:*",
-    "@schnau/tsconfig": "workspace:*",
+    "@stu/eslint-config": "workspace:*",
+    "@stu/prettier-config": "workspace:*",
+    "@stu/tsconfig": "workspace:*",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"
   },
-  "prettier": "@schnau/prettier-config"
+  "prettier": "@stu/prettier-config"
 }

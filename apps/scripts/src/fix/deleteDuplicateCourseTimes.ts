@@ -1,6 +1,6 @@
-import { inArray } from "@schnau/db";
-import { db } from "@schnau/db/client";
-import { CourseTime } from "@schnau/db/schema";
+import { inArray } from "@stu/db";
+import { db } from "@stu/db/client";
+import { CourseTime } from "@stu/db/schema";
 
 export const deleteDuplicateCourseTimes = async () => {
   const courses = await db.query.Course.findMany({

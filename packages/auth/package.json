@@ -1,5 +1,5 @@
 {
-  "name": "@schnau/auth",
+  "name": "@stu/auth",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,8 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@schnau/db": "workspace:*",
-    "@schnau/lib": "workspace:*",
+    "@stu/db": "workspace:*",
+    "@stu/lib": "workspace:*",
     "@t3-oss/env-nextjs": "^0.11.0",
     "bcrypt": "^5.1.1",
     "react": "catalog:react18",
@@ -20,13 +20,13 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@schnau/eslint-config": "workspace:*",
-    "@schnau/prettier-config": "workspace:*",
-    "@schnau/tsconfig": "workspace:*",
+    "@stu/eslint-config": "workspace:*",
+    "@stu/prettier-config": "workspace:*",
+    "@stu/tsconfig": "workspace:*",
     "@types/bcrypt": "^5.0.2",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"
   },
-  "prettier": "@schnau/prettier-config"
+  "prettier": "@stu/prettier-config"
 }

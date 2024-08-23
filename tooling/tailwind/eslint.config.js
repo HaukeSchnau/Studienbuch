@@ -1,5 +1,5 @@
 /// <reference types="../../tooling/eslint/types.d.ts" />
 
-import baseConfig from "@schnau/eslint-config/base";
+import baseConfig from "@stu/eslint-config/base";
 
 export default [...baseConfig];
