@@ -1,20 +1,19 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from "react-native";
 
-import * as StuNativeModules from '@stu/expo-native-modules';
+import { SelectView } from "@stu/expo-native-modules";
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>{StuNativeModules.hello()}</Text>
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <SelectView
+        style={{
+          width: 100,
+          height: 50,
+          backgroundColor: "purple",
+          borderRadius: 10,
+        }}
+        name="Hello"
+      />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

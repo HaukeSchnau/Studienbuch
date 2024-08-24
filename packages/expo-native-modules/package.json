@@ -16,12 +16,6 @@
     "open:ios": "xed example/ios",
     "open:android": "open -a \"Android Studio\" example/android"
   },
-  "keywords": [
-    "react-native",
-    "expo",
-    "@stu/expo-native-modules",
-    "StuNativeModules"
-  ],
   "repository": "https://github.com/HaukeSchnau/stu-expo-native-modules",
   "bugs": {
     "url": "https://github.com/HaukeSchnau/stu-expo-native-modules/issues"

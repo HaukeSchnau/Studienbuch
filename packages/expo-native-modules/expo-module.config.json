@@ -1,7 +1,7 @@
 {
-  "platforms": ["ios", "tvos", "android", "web"],
+  "platforms": ["ios", "android"],
   "ios": {
-    "modules": ["StuNativeModulesModule"]
+    "modules": ["SelectModule"]
   },
   "android": {
     "modules": ["de.haukeschnau.stunativemodules.StuNativeModulesModule"]
