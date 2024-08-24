@@ -16,7 +16,7 @@
     "@stu/lib": "workspace:*",
     "@stu/lib-server": "workspace:*",
     "commander": "^12.1.0",
-    "dayjs": "^1.11.12",
+    "dayjs": "^1.11.13",
     "tsx": "^4.17.0",
     "zod": "catalog:"
   },
@@ -24,8 +24,8 @@
     "@stu/eslint-config": "workspace:*",
     "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
-    "@total-typescript/ts-reset": "^0.5.1",
-    "@types/node": "^22.4.1",
+    "@total-typescript/ts-reset": "^0.6.0",
+    "@types/node": "^22.5.0",
     "eslint": "catalog:",
     "typescript": "catalog:"
   }

@@ -29,7 +29,7 @@
     "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@total-typescript/shoehorn": "^0.1.2",
-    "@total-typescript/ts-reset": "^0.5.1",
+    "@total-typescript/ts-reset": "^0.6.0",
     "@types/papaparse": "^5.3.14",
     "eslint": "catalog:",
     "prettier": "catalog:",

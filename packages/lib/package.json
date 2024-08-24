@@ -21,7 +21,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "dayjs": "^1.11.12",
+    "dayjs": "^1.11.13",
     "vitest": "^2.0.5",
     "zod": "catalog:"
   },
@@ -30,7 +30,7 @@
     "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@total-typescript/shoehorn": "^0.1.2",
-    "@total-typescript/ts-reset": "^0.5.1",
+    "@total-typescript/ts-reset": "^0.6.0",
     "encoding": "^0.1.13",
     "eslint": "catalog:",
     "prettier": "catalog:",
