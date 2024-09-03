@@ -14,6 +14,17 @@ const config = withTurborepoManagedCache(
   ),
 );
 
+config.resolver.extraNodeModules = {
+  "@stu/expo-native-modules": "../../packages/expo-native-modules",
+};
+
+config.transformer.getTransformOptions = async () => ({
+  transform: {
+    experimentalImportSupport: false,
+    inlineRequires: true,
+  },
+});
+
 // XXX: Resolve our exports in workspace packages
 // https://github.com/expo/expo/issues/26926
 config.resolver.unstable_enablePackageExports = true;
