@@ -15,8 +15,8 @@
       "default": "./src/client.ts"
     },
     "./schema": {
-      "types": "./dist/src/schema.d.ts",
-      "default": "./src/schema.ts"
+      "types": "./dist/src/schema/index.d.ts",
+      "default": "./src/schema/index.ts"
     }
   },
   "license": "MIT",
@@ -32,6 +32,7 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
+    "@stu/lib": "workspace:*",
     "@t3-oss/env-core": "^0.11.0",
     "dayjs": "^1.11.13",
     "drizzle-orm": "^0.33.0",

@@ -1,0 +1,23 @@
+export * from "./people/persons";
+export * from "./people/users";
+
+export * from "./school/classes";
+export * from "./school/courses";
+export * from "./school/rooms";
+export * from "./school/schools";
+export * from "./school/school-id";
+export * from "./school/semesters";
+export * from "./school/years";
+
+export * from "./security/license-keys";
+export * from "./security/permissions";
+export * from "./security/sessions";
+
+export * from "./students/absences";
+export * from "./students/course-memberships";
+export * from "./students/grades";
+export * from "./students/tasks";
+
+export * from "./timetable/substitutions";
+export * from "./timetable/timetable-entries";
+export * from "./timetable/recurring-timetable-entries";
