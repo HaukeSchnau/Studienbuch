@@ -6,7 +6,6 @@ import { Button } from "~/components/form/Button";
 import { PageHeading } from "~/components/layout/PageHeading";
 import { TimetableManager } from "~/features/timetable/TimetableManager";
 import { useSelectedYear } from "../useSelectedYear";
-import { ImportScheduleModal } from "./components/ImportScheduleModal";
 
 export default function SchedulesPage() {
   const { selectedYear } = useSelectedYear();
@@ -20,15 +19,7 @@ export default function SchedulesPage() {
         <Button onClick={() => setIsModalOpen(true)}>Importieren</Button>
       </div>
       {selectedYear ? (
-        <>
-          <TimetableManager yearId={selectedYear.id} />
-
-          <ImportScheduleModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            year={selectedYear}
-          />
-        </>
+        <TimetableManager year={selectedYear} />
       ) : (
         <div>Bitte wähle ein Jahr aus</div>
       )}

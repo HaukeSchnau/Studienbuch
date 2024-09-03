@@ -1,9 +1,10 @@
 import type { Teacher } from "../users";
+import type { SubjectId } from "./subject";
 
 export interface Course {
   id: number;
   courseId: string;
-  name: string;
+  name: SubjectId;
   teacher: Teacher;
   isChoosable: boolean;
   times: CourseTime[];

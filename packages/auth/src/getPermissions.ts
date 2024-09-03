@@ -2,16 +2,16 @@ import type { Permission, PermissionScope } from "@stu/lib";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import {
-  _RoleToUser,
-  PermissionOnRole,
-  PermissionOnUser,
-  Role,
-  User,
+  PermissionsToRoles,
+  PermissionsToUsers,
+  Roles,
+  RolesToUsers,
+  Users,
 } from "@stu/db/schema";
 
 // TODO: Produce a single query to get the permission scope and maybe cache it
 export const getPermissions = async (user: {
-  id: number;
+  id: string;
   isSuperUser: boolean;
 }): Promise<
   { isSuperUser: boolean } & Partial<Record<Permission, PermissionScope>>
@@ -24,12 +24,12 @@ export const getPermissions = async (user: {
 
   const things = await db
     .select()
-    .from(User)
-    .where(eq(User.id, user.id))
-    .leftJoin(PermissionOnUser, eq(PermissionOnUser.userId, User.id))
-    .leftJoin(_RoleToUser, eq(_RoleToUser.user, User.id))
-    .leftJoin(Role, eq(Role.id, _RoleToUser.role))
-    .leftJoin(PermissionOnRole, eq(PermissionOnRole.roleId, Role.id));
+    .from(Users)
+    .where(eq(Users.id, user.id))
+    .leftJoin(PermissionsToUsers, eq(PermissionsToUsers.user, Users.id))
+    .leftJoin(RolesToUsers, eq(RolesToUsers.user, Users.id))
+    .leftJoin(Roles, eq(Roles.id, RolesToUsers.role))
+    .leftJoin(PermissionsToRoles, eq(PermissionsToRoles.role, Roles.id));
 
   const ret: { isSuperUser: boolean } & Partial<
     Record<Permission, PermissionScope>
@@ -38,18 +38,18 @@ export const getPermissions = async (user: {
   };
 
   for (const thing of things) {
-    if (thing.User.id !== user.id) {
+    if (thing.users.id !== user.id) {
       throw new Error("Unexpected user id");
     }
 
-    if (thing.PermissionOnRole) {
-      ret[thing.PermissionOnRole.permission] = (thing.PermissionOnRole.scope ??
-        {}) as PermissionScope;
+    if (thing.permissions_to_roles) {
+      ret[thing.permissions_to_roles.permission] = (thing.permissions_to_roles
+        .scope ?? {}) as PermissionScope;
     }
 
-    if (thing.PermissionOnUser) {
-      ret[thing.PermissionOnUser.permission] = (thing.PermissionOnUser.scope ??
-        {}) as PermissionScope;
+    if (thing.permissions_to_users) {
+      ret[thing.permissions_to_users.permission] = (thing.permissions_to_users
+        .scope ?? {}) as PermissionScope;
     }
   }
 

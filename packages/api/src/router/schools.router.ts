@@ -1,62 +1,65 @@
-import { eq } from "@stu/db";
-import { db } from "@stu/db/client";
-import { School } from "@stu/db/schema";
-import { defaultTheme, themeSchema } from "@stu/lib";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import { Schools } from "@stu/db/schema";
+import { defaultTheme, SCHOOL_IDS, themeSchema } from "@stu/lib";
 
 import { protectedProcedure, publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";
 
 export const schools = createRouter({
   list: publicProcedure.input(z.void()).query(async () => {
-    return db.query.School.findMany();
+    return db.query.Schools.findMany();
   }),
 
   setTheme: protectedProcedure
     .input(
       z.object({
-        school: z.number(),
+        school: z.enum(SCHOOL_IDS),
         image: z.string().optional(),
         theme: themeSchema,
       }),
     )
     .mutation(async ({ input }) => {
       return db
-        .update(School)
+        .update(Schools)
         .set({
           image: input.image,
           theme: input.theme,
         })
-        .where(eq(School.id, input.school));
+        .where(eq(Schools.id, input.school));
     }),
 
-  getTheme: publicProcedure.input(z.number()).query(async ({ input }) => {
-    const school = await db.query.School.findFirst({
-      where: eq(School.id, input),
-      columns: {
-        theme: true,
-        image: true,
-      },
-    });
-    if (!school) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "School not found",
+  getTheme: publicProcedure
+    .input(z.enum(SCHOOL_IDS))
+    .query(async ({ input }) => {
+      const school = await db.query.Schools.findFirst({
+        where: eq(Schools.id, input),
+        columns: {
+          theme: true,
+          image: true,
+        },
       });
-    }
+      if (!school) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "School not found",
+        });
+      }
 
-    const parsedTheme = themeSchema.safeParse(school.theme);
+      const parsedTheme = themeSchema.safeParse(school.theme);
 
-    if (!parsedTheme.success) {
+      if (!parsedTheme.success) {
+        return {
+          theme: defaultTheme,
+        };
+      }
+
       return {
-        theme: defaultTheme,
+        theme: parsedTheme.data,
+        image: school.image,
       };
-    }
-
-    return {
-      theme: parsedTheme.data,
-      image: school.image,
-    };
-  }),
+    }),
 });

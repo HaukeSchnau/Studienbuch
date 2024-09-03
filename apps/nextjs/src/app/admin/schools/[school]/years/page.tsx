@@ -1,7 +1,8 @@
 "use client";
 
-import { isYearActive } from "@stu/lib";
 import { z } from "zod";
+
+import { isYearActive } from "@stu/lib";
 
 import { Button } from "~/components/form/Button";
 import { Card, CardHeading } from "~/components/layout/Card";
@@ -39,7 +40,7 @@ export default function YearsPage() {
             data={years.data}
             renderItem={(year) => (
               <Card
-                key={year.id}
+                key={year.startYear}
                 className={!isYearActive(year) && "opacity-60"}
               >
                 <CardHeading>{year.name}</CardHeading>
@@ -49,7 +50,9 @@ export default function YearsPage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button href={`/admin/schools/${school}/years/${year.id}`}>
+                  <Button
+                    href={`/admin/schools/${school}/years/${year.startYear}`}
+                  >
                     Bearbeiten
                   </Button>
                 </div>

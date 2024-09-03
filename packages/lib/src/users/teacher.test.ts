@@ -9,10 +9,7 @@ test("formalName", () => {
   expect(formalName(fromPartial({ name: "Bernd Müller" }))).toBe(
     "Bernd Müller",
   );
-  expect(formalName(fromPartial({ name: "Bernd Müller", title: "Dr." }))).toBe(
-    "Dr. Müller",
-  );
-  expect(formalName(fromPartial({ name: "Bernd Müller", title: "Herr" }))).toBe(
-    "Herr Müller",
-  );
+  expect(
+    formalName(fromPartial({ name: "Bernd Müller", salutation: "Herr" })),
+  ).toBe("Herr Müller");
 });

@@ -1,0 +1,2020 @@
+{
+  "elementPeriods": {
+    "348": [
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 690,
+        "endTime": 730,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 206
+          },
+          {
+            "type": 3,
+            "id": 90
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 730,
+        "endTime": 770,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 206
+          },
+          {
+            "type": 3,
+            "id": 90
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 770,
+        "endTime": 800,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 206
+          },
+          {
+            "type": 3,
+            "id": 90
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 690,
+        "endTime": 730,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 126
+          },
+          {
+            "type": 3,
+            "id": 90
+          },
+          {
+            "type": 4,
+            "id": 426
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 730,
+        "endTime": 770,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 126
+          },
+          {
+            "type": 3,
+            "id": 90
+          },
+          {
+            "type": 4,
+            "id": 426
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 770,
+        "endTime": 800,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 126
+          },
+          {
+            "type": 3,
+            "id": 90
+          },
+          {
+            "type": 4,
+            "id": 426
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": null,
+        "endTime": 625,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 182
+          },
+          {
+            "type": 3,
+            "id": 218
+          },
+          {
+            "type": 4,
+            "id": 426
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 625,
+        "endTime": 665,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 182
+          },
+          {
+            "type": 3,
+            "id": 218
+          },
+          {
+            "type": 4,
+            "id": 426
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": null,
+        "endTime": 625,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 270
+          },
+          {
+            "type": 3,
+            "id": 222
+          },
+          {
+            "type": 4,
+            "id": 426
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 625,
+        "endTime": 665,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 270
+          },
+          {
+            "type": 3,
+            "id": 222
+          },
+          {
+            "type": 4,
+            "id": 426
+          }
+        ]
+      },
+      {
+        "date": "2024-08-29T22:00:00.000Z",
+        "startTime": null,
+        "endTime": 625,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 370
+          },
+          {
+            "type": 3,
+            "id": 242
+          },
+          {
+            "type": 4,
+            "id": 426
+          }
+        ]
+      },
+      {
+        "date": "2024-08-29T22:00:00.000Z",
+        "startTime": 625,
+        "endTime": 665,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 370
+          },
+          {
+            "type": 3,
+            "id": 242
+          },
+          {
+            "type": 4,
+            "id": 426
+          }
+        ]
+      },
+      {
+        "date": "2024-08-29T22:00:00.000Z",
+        "startTime": null,
+        "endTime": 625,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 198
+          },
+          {
+            "type": 3,
+            "id": 242
+          },
+          {
+            "type": 4,
+            "id": 430
+          }
+        ]
+      },
+      {
+        "date": "2024-08-29T22:00:00.000Z",
+        "startTime": 625,
+        "endTime": 665,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 198
+          },
+          {
+            "type": 3,
+            "id": 242
+          },
+          {
+            "type": 4,
+            "id": 430
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": 690,
+        "endTime": 730,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 370
+          },
+          {
+            "type": 3,
+            "id": 242
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": 730,
+        "endTime": 770,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 370
+          },
+          {
+            "type": 3,
+            "id": 242
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": 690,
+        "endTime": 730,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 270
+          },
+          {
+            "type": 3,
+            "id": 242
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": 730,
+        "endTime": 770,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 270
+          },
+          {
+            "type": 3,
+            "id": 242
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": 690,
+        "endTime": 730,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 258
+          },
+          {
+            "type": 3,
+            "id": 242
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": 730,
+        "endTime": 770,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 258
+          },
+          {
+            "type": 3,
+            "id": 242
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": 690,
+        "endTime": 730,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 22
+          },
+          {
+            "type": 3,
+            "id": 242
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": 730,
+        "endTime": 770,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 22
+          },
+          {
+            "type": 3,
+            "id": 242
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 690,
+        "endTime": 730,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 370
+          },
+          {
+            "type": 3,
+            "id": 278
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 730,
+        "endTime": 770,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 370
+          },
+          {
+            "type": 3,
+            "id": 278
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 690,
+        "endTime": 730,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 254
+          },
+          {
+            "type": 3,
+            "id": 282
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 730,
+        "endTime": 770,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 254
+          },
+          {
+            "type": 3,
+            "id": 282
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-29T22:00:00.000Z",
+        "startTime": null,
+        "endTime": 625,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 254
+          },
+          {
+            "type": 3,
+            "id": 282
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-29T22:00:00.000Z",
+        "startTime": 625,
+        "endTime": 665,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 254
+          },
+          {
+            "type": 3,
+            "id": 282
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-27T22:00:00.000Z",
+        "startTime": null,
+        "endTime": 625,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 18
+          },
+          {
+            "type": 3,
+            "id": 306
+          },
+          {
+            "type": 4,
+            "id": 346
+          }
+        ]
+      },
+      {
+        "date": "2024-08-27T22:00:00.000Z",
+        "startTime": 625,
+        "endTime": 665,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 18
+          },
+          {
+            "type": 3,
+            "id": 306
+          },
+          {
+            "type": 4,
+            "id": 346
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": null,
+        "endTime": 625,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 110
+          },
+          {
+            "type": 3,
+            "id": 346
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 625,
+        "endTime": 665,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 110
+          },
+          {
+            "type": 3,
+            "id": 346
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": 830,
+        "endTime": 870,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 270
+          },
+          {
+            "type": 3,
+            "id": 402
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": 870,
+        "endTime": 910,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 270
+          },
+          {
+            "type": 3,
+            "id": 402
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": null,
+        "endTime": null,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 258
+          },
+          {
+            "type": 3,
+            "id": 406
+          },
+          {
+            "type": 4,
+            "id": 210
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": null,
+        "endTime": null,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 258
+          },
+          {
+            "type": 3,
+            "id": 406
+          },
+          {
+            "type": 4,
+            "id": 210
+          }
+        ]
+      },
+      {
+        "date": "2024-08-26T22:00:00.000Z",
+        "startTime": null,
+        "endTime": null,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 258
+          },
+          {
+            "type": 3,
+            "id": 550
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-26T22:00:00.000Z",
+        "startTime": null,
+        "endTime": null,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 258
+          },
+          {
+            "type": 3,
+            "id": 550
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": null,
+        "endTime": null,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 258
+          },
+          {
+            "type": 3,
+            "id": 550
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": null,
+        "endTime": null,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 258
+          },
+          {
+            "type": 3,
+            "id": 550
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 690,
+        "endTime": 730,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 62
+          },
+          {
+            "type": 3,
+            "id": 562
+          },
+          {
+            "type": 4,
+            "id": 434
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 730,
+        "endTime": 770,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 62
+          },
+          {
+            "type": 3,
+            "id": 562
+          },
+          {
+            "type": 4,
+            "id": 434
+          }
+        ]
+      },
+      {
+        "date": "2024-08-29T22:00:00.000Z",
+        "startTime": null,
+        "endTime": 625,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 62
+          },
+          {
+            "type": 3,
+            "id": 562
+          },
+          {
+            "type": 4,
+            "id": 434
+          }
+        ]
+      },
+      {
+        "date": "2024-08-29T22:00:00.000Z",
+        "startTime": 625,
+        "endTime": 665,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 62
+          },
+          {
+            "type": 3,
+            "id": 562
+          },
+          {
+            "type": 4,
+            "id": 434
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": null,
+        "endTime": 625,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 468
+          },
+          {
+            "type": 3,
+            "id": 610
+          },
+          {
+            "type": 4,
+            "id": 118
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": 625,
+        "endTime": 665,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 468
+          },
+          {
+            "type": 3,
+            "id": 610
+          },
+          {
+            "type": 4,
+            "id": 118
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 830,
+        "endTime": 870,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 42
+          },
+          {
+            "type": 3,
+            "id": 622
+          },
+          {
+            "type": 4,
+            "id": 246
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 870,
+        "endTime": 910,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 42
+          },
+          {
+            "type": 3,
+            "id": 622
+          },
+          {
+            "type": 4,
+            "id": 246
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 690,
+        "endTime": 730,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 182
+          },
+          {
+            "type": 3,
+            "id": 698
+          },
+          {
+            "type": 4,
+            "id": 430
+          }
+        ]
+      },
+      {
+        "date": "2024-08-28T22:00:00.000Z",
+        "startTime": 730,
+        "endTime": 770,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 182
+          },
+          {
+            "type": 3,
+            "id": 698
+          },
+          {
+            "type": 4,
+            "id": 430
+          }
+        ]
+      },
+      {
+        "date": "2024-08-29T22:00:00.000Z",
+        "startTime": null,
+        "endTime": null,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 162
+          },
+          {
+            "type": 3,
+            "id": 762
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-29T22:00:00.000Z",
+        "startTime": null,
+        "endTime": null,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 162
+          },
+          {
+            "type": 3,
+            "id": 762
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-27T22:00:00.000Z",
+        "startTime": 690,
+        "endTime": 730,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 246
+          },
+          {
+            "type": 3,
+            "id": 770
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-27T22:00:00.000Z",
+        "startTime": 730,
+        "endTime": 770,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 246
+          },
+          {
+            "type": 3,
+            "id": 770
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-27T22:00:00.000Z",
+        "startTime": null,
+        "endTime": null,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 22
+          },
+          {
+            "type": 3,
+            "id": 818
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-27T22:00:00.000Z",
+        "startTime": null,
+        "endTime": null,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 22
+          },
+          {
+            "type": 3,
+            "id": 818
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": null,
+        "endTime": 625,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 370
+          },
+          {
+            "type": 3,
+            "id": 830
+          },
+          {
+            "type": 4,
+            "id": 438
+          }
+        ]
+      },
+      {
+        "date": "2024-08-25T22:00:00.000Z",
+        "startTime": 625,
+        "endTime": 665,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 1,
+            "id": 351
+          },
+          {
+            "type": 1,
+            "id": 354
+          },
+          {
+            "type": 2,
+            "id": 370
+          },
+          {
+            "type": 3,
+            "id": 830
+          },
+          {
+            "type": 4,
+            "id": 438
+          }
+        ]
+      },
+      {
+        "date": "2024-08-29T22:00:00.000Z",
+        "startTime": 690,
+        "endTime": 730,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 258
+          },
+          {
+            "type": 3,
+            "id": 834
+          },
+          {
+            "type": 4,
+            "id": 206
+          }
+        ]
+      },
+      {
+        "date": "2024-08-29T22:00:00.000Z",
+        "startTime": 730,
+        "endTime": 770,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 258
+          },
+          {
+            "type": 3,
+            "id": 834
+          },
+          {
+            "type": 4,
+            "id": 206
+          }
+        ]
+      },
+      {
+        "date": "2024-08-26T22:00:00.000Z",
+        "startTime": 690,
+        "endTime": 730,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 403
+          },
+          {
+            "type": 3,
+            "id": 902
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      },
+      {
+        "date": "2024-08-26T22:00:00.000Z",
+        "startTime": 730,
+        "endTime": 770,
+        "elements": [
+          {
+            "type": 1,
+            "id": 348
+          },
+          {
+            "type": 2,
+            "id": 403
+          },
+          {
+            "type": 3,
+            "id": 902
+          },
+          {
+            "type": 4,
+            "id": 422
+          }
+        ]
+      }
+    ]
+  },
+  "elements": [
+    {
+      "type": 2,
+      "id": 370,
+      "name": "TIM"
+    },
+    {
+      "type": 2,
+      "id": 18,
+      "name": "BEL"
+    },
+    {
+      "type": 3,
+      "id": 818,
+      "name": "DE",
+      "longName": "Deutsch"
+    },
+    {
+      "type": 3,
+      "id": 242,
+      "name": "Tutorium",
+      "longName": "Tutorium"
+    },
+    {
+      "type": 3,
+      "id": 306,
+      "name": "SP",
+      "longName": "Sport"
+    },
+    {
+      "type": 3,
+      "id": 402,
+      "name": "Politik-Wirtschaft",
+      "longName": "Politik-Wirtschaft"
+    },
+    {
+      "type": 3,
+      "id": 562,
+      "name": "Latein",
+      "longName": "Latein"
+    },
+    {
+      "type": 4,
+      "id": 210,
+      "name": "E007",
+      "longName": "NW2 (PHY)"
+    },
+    {
+      "type": 4,
+      "id": 434,
+      "name": "OH-6",
+      "longName": "Lilienthal OS Klassenraum"
+    },
+    {
+      "type": 2,
+      "id": 182,
+      "name": "JEN"
+    },
+    {
+      "type": 2,
+      "id": 22,
+      "name": "BEM"
+    },
+    {
+      "type": 2,
+      "id": 246,
+      "name": "MAS"
+    },
+    {
+      "type": 3,
+      "id": 278,
+      "name": "Spanisch-F",
+      "longName": "Spanisch-F"
+    },
+    {
+      "type": 3,
+      "id": 406,
+      "name": "Physik",
+      "longName": "Physik"
+    },
+    {
+      "type": 4,
+      "id": 118,
+      "name": "B013",
+      "longName": "Lilienthal Kunst"
+    },
+    {
+      "type": 4,
+      "id": 246,
+      "name": "E003",
+      "longName": "Computer 1"
+    },
+    {
+      "type": 4,
+      "id": 438,
+      "name": "OH-7",
+      "longName": "Lilienthal OS DS-Raum"
+    },
+    {
+      "type": 1,
+      "id": 351,
+      "name": "11.2",
+      "longName": "TIM"
+    },
+    {
+      "type": 2,
+      "id": 346,
+      "name": "TAM"
+    },
+    {
+      "type": 3,
+      "id": 698,
+      "name": "Französisch",
+      "longName": "Französisch"
+    },
+    {
+      "type": 3,
+      "id": 762,
+      "name": "EN",
+      "longName": "Englisch"
+    },
+    {
+      "type": 3,
+      "id": 90,
+      "name": "WPK O",
+      "longName": "Wahlpflichtkurs Oberstufe"
+    },
+    {
+      "type": 3,
+      "id": 218,
+      "name": "wn2",
+      "longName": "Werte und Normen"
+    },
+    {
+      "type": 3,
+      "id": 282,
+      "name": "Spanisch-A",
+      "longName": "Spanisch-A"
+    },
+    {
+      "type": 3,
+      "id": 346,
+      "name": "REL",
+      "longName": "Religion"
+    },
+    {
+      "type": 4,
+      "id": 346,
+      "name": "HF1",
+      "longName": "Halle Falkenberg 1"
+    },
+    {
+      "type": 2,
+      "id": 126,
+      "name": "GRJ"
+    },
+    {
+      "type": 2,
+      "id": 254,
+      "name": "MEY"
+    },
+    {
+      "type": 2,
+      "id": 62,
+      "name": "DAU"
+    },
+    {
+      "type": 3,
+      "id": 830,
+      "name": "Darstellendes Spiel",
+      "longName": "Darstellendes Spiel"
+    },
+    {
+      "type": 3,
+      "id": 222,
+      "name": "wn1",
+      "longName": "Werte und Normen"
+    },
+    {
+      "type": 1,
+      "id": 354,
+      "name": "11.3",
+      "longName": "THI"
+    },
+    {
+      "type": 2,
+      "id": 258,
+      "name": "MUE"
+    },
+    {
+      "type": 2,
+      "id": 162,
+      "name": "HÖP"
+    },
+    {
+      "type": 3,
+      "id": 770,
+      "name": "EK",
+      "longName": "Erdkunde"
+    },
+    {
+      "type": 3,
+      "id": 834,
+      "name": "Chemie",
+      "longName": "Chemie"
+    },
+    {
+      "type": 3,
+      "id": 610,
+      "name": "KU",
+      "longName": "Kunst"
+    },
+    {
+      "type": 2,
+      "id": 468,
+      "name": "FED"
+    },
+    {
+      "type": 2,
+      "id": 198,
+      "name": "KLÄ"
+    },
+    {
+      "type": 3,
+      "id": 902,
+      "name": "Biologie",
+      "longName": "Biologie"
+    },
+    {
+      "type": 3,
+      "id": 550,
+      "name": "MA",
+      "longName": "Mathematik"
+    },
+    {
+      "type": 4,
+      "id": 422,
+      "name": "OH-3",
+      "longName": "Lilienthal OS Klassenraum"
+    },
+    {
+      "type": 2,
+      "id": 42,
+      "name": "CLA"
+    },
+    {
+      "type": 4,
+      "id": 426,
+      "name": "OH-4",
+      "longName": "Lilienthal OS Klassenraum"
+    },
+    {
+      "type": 2,
+      "id": 403,
+      "name": "AUF"
+    },
+    {
+      "type": 1,
+      "id": 348,
+      "name": "11.1",
+      "longName": "MUE"
+    },
+    {
+      "type": 2,
+      "id": 206,
+      "name": "KLZ"
+    },
+    {
+      "type": 2,
+      "id": 270,
+      "name": "NIM"
+    },
+    {
+      "type": 2,
+      "id": 110,
+      "name": "FRK"
+    },
+    {
+      "type": 3,
+      "id": 622,
+      "name": "Informatik",
+      "longName": "Informatik"
+    },
+    {
+      "type": 4,
+      "id": 430,
+      "name": "OH-5",
+      "longName": "Lilienthal OS Klassenraum"
+    },
+    {
+      "type": 4,
+      "id": 206,
+      "name": "E006",
+      "longName": "NW3 (CHE)"
+    }
+  ]
+}

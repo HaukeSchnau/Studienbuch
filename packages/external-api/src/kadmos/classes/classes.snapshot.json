@@ -1,0 +1,212 @@
+[
+  {
+    "id": 333,
+    "name": "10.1",
+    "longName": "HAN/KEL"
+  },
+  {
+    "id": 336,
+    "name": "10.2",
+    "longName": "BOU/BÜS"
+  },
+  {
+    "id": 339,
+    "name": "10.3",
+    "longName": "KLZ/AUF"
+  },
+  {
+    "id": 342,
+    "name": "10.4",
+    "longName": "BEM/SRR"
+  },
+  {
+    "id": 345,
+    "name": "10.5",
+    "longName": "DAN/MEI"
+  },
+  {
+    "id": 348,
+    "name": "11.1",
+    "longName": "MUE"
+  },
+  {
+    "id": 351,
+    "name": "11.2",
+    "longName": "TIM"
+  },
+  {
+    "id": 354,
+    "name": "11.3",
+    "longName": "THI"
+  },
+  {
+    "id": 357,
+    "name": "12",
+    "longName": "Jahrgang Lisel"
+  },
+  {
+    "id": 362,
+    "name": "12.",
+    "longName": "Jahrgang Lisel"
+  },
+  {
+    "id": 360,
+    "name": "13",
+    "longName": "Jahrgang Hans"
+  },
+  {
+    "id": 365,
+    "name": "13.",
+    "longName": "Jahrgang Hans"
+  },
+  {
+    "id": 243,
+    "name": "5.1",
+    "longName": "SCL/BUS"
+  },
+  {
+    "id": 246,
+    "name": "5.2",
+    "longName": "BÜN/ENG"
+  },
+  {
+    "id": 249,
+    "name": "5.3",
+    "longName": "KÖS/LIC"
+  },
+  {
+    "id": 252,
+    "name": "5.4",
+    "longName": "ZOL/CLA"
+  },
+  {
+    "id": 255,
+    "name": "5.5",
+    "longName": "KRE/LÜT"
+  },
+  {
+    "id": 258,
+    "name": "5.6",
+    "longName": "SWk/KÖP"
+  },
+  {
+    "id": 261,
+    "name": "6.1",
+    "longName": "HÖP/NIL"
+  },
+  {
+    "id": 264,
+    "name": "6.2",
+    "longName": "HEI/DRA"
+  },
+  {
+    "id": 267,
+    "name": "6.3",
+    "longName": "THO/SCW"
+  },
+  {
+    "id": 270,
+    "name": "6.4",
+    "longName": "KAR/COR"
+  },
+  {
+    "id": 273,
+    "name": "6.5",
+    "longName": "GRA/DIT"
+  },
+  {
+    "id": 276,
+    "name": "6.6",
+    "longName": "FID/MAN"
+  },
+  {
+    "id": 279,
+    "name": "7.1",
+    "longName": "DAU/BEL"
+  },
+  {
+    "id": 282,
+    "name": "7.2",
+    "longName": "ENN/MAS"
+  },
+  {
+    "id": 285,
+    "name": "7.3",
+    "longName": "DIR/OLB"
+  },
+  {
+    "id": 288,
+    "name": "7.4",
+    "longName": "SCH/DAH"
+  },
+  {
+    "id": 291,
+    "name": "7.5",
+    "longName": "END/JEN"
+  },
+  {
+    "id": 294,
+    "name": "8.1",
+    "longName": "KRC/HOR"
+  },
+  {
+    "id": 297,
+    "name": "8.2",
+    "longName": "KRA/HIR"
+  },
+  {
+    "id": 300,
+    "name": "8.3",
+    "longName": "MAR/KLE"
+  },
+  {
+    "id": 303,
+    "name": "8.4",
+    "longName": "RAS/THG"
+  },
+  {
+    "id": 306,
+    "name": "8.5",
+    "longName": "WIN/HUS"
+  },
+  {
+    "id": 309,
+    "name": "8.6",
+    "longName": "SAP/SPA"
+  },
+  {
+    "id": 312,
+    "name": "8.7",
+    "longName": "RUD/WAL"
+  },
+  {
+    "id": 315,
+    "name": "9.1",
+    "longName": "FRA/GRJ"
+  },
+  {
+    "id": 318,
+    "name": "9.2",
+    "longName": "HIL/KLÄ"
+  },
+  {
+    "id": 321,
+    "name": "9.3",
+    "longName": "ERI/KÄM"
+  },
+  {
+    "id": 324,
+    "name": "9.4",
+    "longName": "VAH/FRK"
+  },
+  {
+    "id": 327,
+    "name": "9.5",
+    "longName": "TAM/LAN"
+  },
+  {
+    "id": 330,
+    "name": "9.6",
+    "longName": "SRÖ/SUB"
+  }
+]

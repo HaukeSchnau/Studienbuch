@@ -1,6 +1,6 @@
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
-import { LicenseKey } from "@stu/db/schema";
+import { LicenseKeys } from "@stu/db/schema";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -15,8 +15,8 @@ export const license = createRouter({
       }),
     )
     .query(async ({ input }) => {
-      const licenseKey = await db.query.LicenseKey.findFirst({
-        where: eq(LicenseKey.key, input.licenseKey),
+      const licenseKey = await db.query.LicenseKeys.findFirst({
+        where: eq(LicenseKeys.key, input.licenseKey),
       });
       if (!licenseKey) {
         return "INVALID" as const;
@@ -40,8 +40,8 @@ export const license = createRouter({
       }),
     )
     .mutation(async ({ input }) => {
-      const licenseKey = await db.query.LicenseKey.findFirst({
-        where: eq(LicenseKey.key, input.licenseKey),
+      const licenseKey = await db.query.LicenseKeys.findFirst({
+        where: eq(LicenseKeys.key, input.licenseKey),
       });
       if (!licenseKey) {
         throw new TRPCError({
@@ -65,10 +65,10 @@ export const license = createRouter({
       //   });
       // }
       await db
-        .update(LicenseKey)
+        .update(LicenseKeys)
         .set({
           activatedAt: new Date(),
         })
-        .where(eq(LicenseKey.id, licenseKey.id));
+        .where(eq(LicenseKeys.key, licenseKey.key));
     }),
 });

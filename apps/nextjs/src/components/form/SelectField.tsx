@@ -2,7 +2,7 @@ type SelectFieldProps<TOption, TGroup> = {
   label?: string;
   emptyLabel: string;
   valueId?: string | number;
-  onChange: (value?: TOption) => void;
+  onChange: (value?: NoInfer<TOption>) => void;
   getOptionLabel: (value: TOption) => string;
   getOptionId: (value: TOption) => string | number;
   error?: string;

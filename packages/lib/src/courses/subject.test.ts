@@ -30,8 +30,6 @@ test("guessSubject", () => {
   expect(guessSubject("sf1")).toBe("Seminarfach");
 
   expect(guessSubject("")).toBe("");
-  expect(guessSubject(null)).toBe("");
-  expect(guessSubject(undefined)).toBe("");
   expect(guessSubject(" ")).toBe("");
 
   expect(guessSubject("wn")).toBe("Werte und Normen");

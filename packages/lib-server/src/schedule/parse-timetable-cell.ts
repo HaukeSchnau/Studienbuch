@@ -40,7 +40,7 @@ export const parseTimetableCell = (
     }
 
     const [subject, teacher, room] = components;
-    const guessedSubject = guessSubject(subject);
+    const guessedSubject = subject ? guessSubject(subject) : null;
 
     const parsedProtoCourse = protoCourseSchema.parse({
       subject,

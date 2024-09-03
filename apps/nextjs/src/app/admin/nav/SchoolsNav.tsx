@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 
+import { SCHOOL_IDS } from "@stu/lib";
+
 import { SelectField } from "~/components/form/SelectField";
 import { NavigationItem } from "~/components/layout/nav/NavigationItem";
 import { PermissionNavigationItem } from "~/components/layout/nav/PermissionNavigationItem";
@@ -13,9 +15,9 @@ import { YearsNav } from "./YearsNav";
 export const SchoolsNav = () => {
   const schools = api.schools.list.useQuery();
   const router = useRouter();
-  const params = useSafeParams(z.object({ school: z.coerce.number() }));
+  const params = useSafeParams(z.object({ school: z.enum(SCHOOL_IDS) }));
 
-  const handleSchoolChange = (value?: { id: number }) => {
+  const handleSchoolChange = (value?: { id: string }) => {
     if (value) {
       router.push(`/admin/schools/${value.id}`);
     }
@@ -57,7 +59,7 @@ export const SchoolsNav = () => {
             Jahrgänge
           </PermissionNavigationItem>
 
-          <YearsNav schoolId={params.school} />
+          <YearsNav school={params.school} />
         </>
       )}
     </>

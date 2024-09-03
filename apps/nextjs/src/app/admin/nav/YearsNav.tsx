@@ -3,23 +3,25 @@
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 
+import type { SchoolId } from "@stu/lib";
+
 import { SelectField } from "~/components/form/SelectField";
 import { PermissionNavigationItem } from "~/components/layout/nav/PermissionNavigationItem";
 import { useSafeParams } from "~/infrastructure/hooks/useSafeParams";
 import { api } from "~/infrastructure/trpc/react";
 
 interface Props {
-  schoolId: number;
+  school: SchoolId;
 }
 
-export const YearsNav = ({ schoolId }: Props) => {
-  const years = api.years.list.useQuery({ school: schoolId });
+export const YearsNav = ({ school }: Props) => {
+  const years = api.years.list.useQuery({ school });
   const router = useRouter();
-  const params = useSafeParams(z.object({ year: z.coerce.number() }));
+  const params = useSafeParams(z.object({ startYear: z.coerce.number() }));
 
-  const handleYearChange = (value?: { id: number }) => {
+  const handleYearChange = (value?: { startYear: number }) => {
     if (value) {
-      router.push(`/admin/schools/${schoolId}/years/${value.id}`);
+      router.push(`/admin/schools/${school}/years/${value.startYear}`);
     }
   };
 
@@ -28,31 +30,31 @@ export const YearsNav = ({ schoolId }: Props) => {
       {years.data && (
         <SelectField
           options={years.data}
-          valueId={params.year}
+          valueId={params.startYear}
           emptyLabel="Kein Jahrgang ausgewählt"
           onChange={handleYearChange}
           getOptionLabel={(year) => `${year.name} (${year.graduationYear})`}
-          getOptionId={(year) => year.id}
+          getOptionId={(year) => year.startYear}
         />
       )}
 
-      {params.year && (
+      {params.startYear && (
         <>
           <PermissionNavigationItem
             permission="EDIT_CLASSES"
-            href={`/admin/schools/${schoolId}/years/${params.year}/classes`}
+            href={`/admin/schools/${school}/years/${params.startYear}/classes`}
           >
             Klassen
           </PermissionNavigationItem>
           <PermissionNavigationItem
             permission="EDIT_COURSES"
-            href={`/admin/schools/${schoolId}/years/${params.year}/courses`}
+            href={`/admin/schools/${school}/years/${params.startYear}/courses`}
           >
             Kurse
           </PermissionNavigationItem>
           <PermissionNavigationItem
             permission="EDIT_COURSES"
-            href={`/admin/schools/${schoolId}/years/${params.year}/schedules`}
+            href={`/admin/schools/${school}/years/${params.startYear}/schedules`}
           >
             Stundenpläne
           </PermissionNavigationItem>

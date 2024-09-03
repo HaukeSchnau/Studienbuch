@@ -1,17 +1,17 @@
+import { z } from "zod";
+
 import { getPermissions } from "@stu/auth/src/getPermissions";
 import { checkPassword } from "@stu/auth/src/password";
 import { createSession } from "@stu/auth/src/session";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
-import { Session, User } from "@stu/db/schema";
-import { z } from "zod";
+import { Sessions, Users } from "@stu/db/schema";
 
 import { protectedProcedure, publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";
 
 export const auth = createRouter({
   getSession: publicProcedure.query(({ ctx }) => {
-    console.log("getSession", ctx.session);
     return ctx.session;
   }),
 
@@ -31,8 +31,14 @@ export const auth = createRouter({
       }),
     )
     .mutation(async ({ input: { email, password } }) => {
-      const user = await db.query.User.findFirst({
-        where: eq(User.email, email.toLowerCase()),
+      const user = await db.query.Users.findFirst({
+        where: eq(Users.email, email.toLowerCase()),
+        columns: {
+          person: false,
+        },
+        with: {
+          person: true,
+        },
       });
 
       if (!user) {
@@ -67,7 +73,11 @@ export const auth = createRouter({
         };
       }
 
-      const session = await createSession(user);
+      const session = await createSession({
+        id: user.id,
+        name: user.person.name,
+        isSuperUser: user.isSuperUser,
+      });
 
       return {
         sessionToken: session.token,
@@ -78,6 +88,6 @@ export const auth = createRouter({
 
   logout: protectedProcedure.mutation(async ({ ctx }) => {
     ctx.log.info("Logging out");
-    await db.delete(Session).where(eq(Session.token, ctx.session.token));
+    await db.delete(Sessions).where(eq(Sessions.token, ctx.session.token));
   }),
 });

@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 
+import { SCHOOL_IDS } from "@stu/lib";
+
 import { Card } from "~/components/layout/Card";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { PageHeading } from "~/components/layout/PageHeading";
@@ -11,15 +13,18 @@ import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
 import { api } from "~/infrastructure/trpc/react";
 
 export default function EditYearPage() {
-  const { year: yearId } = useParsedParams(
-    z.object({ year: z.coerce.number() }),
+  const params = useParsedParams(
+    z.object({ school: z.enum(SCHOOL_IDS), startYear: z.coerce.number() }),
   );
   const {
     data: year,
     isPending,
     isError,
     error,
-  } = api.years.getOne.useQuery(yearId);
+  } = api.years.getOne.useQuery({
+    school: params.school,
+    startYear: params.startYear,
+  });
   const router = useRouter();
 
   const updateYear = api.years.update.useMutation({
@@ -45,11 +50,10 @@ export default function EditYearPage() {
           defaultYear={year}
           onSubmit={({ value }) => {
             updateYear.mutate({
-              id: year.id,
               name: value.name,
               startYear: value.startYear,
               graduationYear: value.startYear + value.numberOfYears,
-              schoolId: value.schoolId,
+              school: value.schoolId,
             });
           }}
           isPending={updateYear.isPending}

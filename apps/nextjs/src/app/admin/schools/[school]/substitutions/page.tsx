@@ -1,10 +1,7 @@
-import { desc } from "@stu/db";
-import { db } from "@stu/db/client";
-import { Substitution } from "@stu/db/schema";
-import { formalName } from "@stu/lib";
-import { addRowSpans, getSubstitutions } from "@stu/lib-server";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+
+import { addRowSpans, getSubstitutions } from "@stu/lib-server";
 
 import { Card } from "~/components/layout/Card";
 import { PageHeading } from "~/components/layout/PageHeading";
@@ -122,80 +119,90 @@ export default async function SubstitutionPage() {
 }
 
 const DBSubstitutionTable = async () => {
-  const substitutions = await db.query.Substitution.findMany({
-    with: {
-      substitute: true,
-      course: {
-        with: {
-          teacher: true,
-          classesToCourses: {
-            with: {
-              class: {
-                with: {
-                  year: true,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    orderBy: desc(Substitution.date),
-    limit: 100,
-  });
+  return <></>;
+  // const substitutions = await db.query.Substitutions.findMany({
+  //   with: {
+  //     substitute: true,
+  //     timetableEntry: {
+  //       with: {
+  //         course: {
+  //           with: {
 
-  return (
-    <table className="w-full border-collapse">
-      <thead>
-        <tr>
-          <th className="border-l border-grey-100 py-4 font-normal">Datum</th>
-          <th className="border-l border-grey-100 py-4 font-normal">Lehrer</th>
-          <th className="border-l border-grey-100 py-4 font-normal">
-            Vertreter
-          </th>
-          <th className="border-l border-grey-100 py-4 font-normal">Fach</th>
-          <th className="border-l border-grey-100 py-4 font-normal">Kurs</th>
-          <th className="border-l border-grey-100 py-4 font-normal">
-            Jahrgang
-          </th>
-          <th className="border-l border-grey-100 py-4 font-normal">Raum</th>
-          <th className="border-l border-grey-100 py-4 font-normal">Art</th>
-        </tr>
-      </thead>
-      <tbody>
-        {substitutions.map((substitution, i) => (
-          <tr key={i}>
-            <td className="border-l border-t border-grey-100 px-2 py-1">
-              {dayjs(substitution.date).format("DD.MM.YYYY")}
-            </td>
-            <td className="border-l border-t border-grey-100 px-2 py-1">
-              {formalName(substitution.course.teacher)}
-            </td>
-            <td className="border-l border-t border-grey-100 px-2 py-1">
-              {substitution.substitute
-                ? formalName(substitution.substitute)
-                : ""}
-            </td>
-            <td className="border-l border-t border-grey-100 px-2 py-1">
-              {substitution.course.name}
-            </td>
-            <td className="border-l border-t border-grey-100 px-2 py-1">
-              {substitution.course.courseId}
-            </td>
-            <td className="border-l border-t border-grey-100 px-2 py-1">
-              {substitution.course.classesToCourses
-                .map(({ class: clazz }) => clazz.year.name)
-                .join(", ")}
-            </td>
-            <td className="border-l border-t border-grey-100 px-2 py-1">
-              {substitution.room}
-            </td>
-            <td className="border-l border-t border-grey-100 px-2 py-1">
-              {substitution.type}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
+  //           }
+  //         }
+  //       }
+  //     }
+  //     // course: {
+  //     //   with: {
+  //     //     teacher: true,
+  //     //     classesToCourses: {
+  //     //       with: {
+  //     //         class: {
+  //     //           with: {
+  //     //             year: true,
+  //     //           },
+  //     //         },
+  //     //       },
+  //     //     },
+  //     //   },
+  //     // },
+  //   },
+  //   orderBy: desc(Substitution.date),
+  //   limit: 100,
+  // });
+
+  // return (
+  //   <table className="w-full border-collapse">
+  //     <thead>
+  //       <tr>
+  //         <th className="border-l border-grey-100 py-4 font-normal">Datum</th>
+  //         <th className="border-l border-grey-100 py-4 font-normal">Lehrer</th>
+  //         <th className="border-l border-grey-100 py-4 font-normal">
+  //           Vertreter
+  //         </th>
+  //         <th className="border-l border-grey-100 py-4 font-normal">Fach</th>
+  //         <th className="border-l border-grey-100 py-4 font-normal">Kurs</th>
+  //         <th className="border-l border-grey-100 py-4 font-normal">
+  //           Jahrgang
+  //         </th>
+  //         <th className="border-l border-grey-100 py-4 font-normal">Raum</th>
+  //         <th className="border-l border-grey-100 py-4 font-normal">Art</th>
+  //       </tr>
+  //     </thead>
+  //     <tbody>
+  //       {substitutions.map((substitution, i) => (
+  //         <tr key={i}>
+  //           <td className="border-l border-t border-grey-100 px-2 py-1">
+  //             {dayjs(substitution.date).format("DD.MM.YYYY")}
+  //           </td>
+  //           <td className="border-l border-t border-grey-100 px-2 py-1">
+  //             {formalName(substitution.course.teacher)}
+  //           </td>
+  //           <td className="border-l border-t border-grey-100 px-2 py-1">
+  //             {substitution.substitute
+  //               ? formalName(substitution.substitute)
+  //               : ""}
+  //           </td>
+  //           <td className="border-l border-t border-grey-100 px-2 py-1">
+  //             {substitution.course.name}
+  //           </td>
+  //           <td className="border-l border-t border-grey-100 px-2 py-1">
+  //             {substitution.course.courseId}
+  //           </td>
+  //           <td className="border-l border-t border-grey-100 px-2 py-1">
+  //             {substitution.course.classesToCourses
+  //               .map(({ class: clazz }) => clazz.year.name)
+  //               .join(", ")}
+  //           </td>
+  //           <td className="border-l border-t border-grey-100 px-2 py-1">
+  //             {substitution.room}
+  //           </td>
+  //           <td className="border-l border-t border-grey-100 px-2 py-1">
+  //             {substitution.type}
+  //           </td>
+  //         </tr>
+  //       ))}
+  //     </tbody>
+  //   </table>
+  // );
 };

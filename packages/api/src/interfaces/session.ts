@@ -1,6 +1,6 @@
 export interface Session {
   user: {
-    id: number;
+    id: string;
     name: string;
     isSuperUser: boolean;
   } | null;

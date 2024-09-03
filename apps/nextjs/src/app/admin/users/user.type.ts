@@ -1,13 +1,19 @@
-import type { PermissionOnUser, Role } from "@stu/lib";
+import type { PermissionOnUser, Salutation } from "@stu/lib";
 
 export interface User {
-  id: number;
-  email?: string | null;
-  name: string;
-  abbrv?: string | null;
-  title?: string | null;
+  id: string;
+  email: string | null;
   hasPassword: boolean;
-  roles: Omit<Role, "permissions">[];
+  roles: {
+    id: string;
+    name: string;
+  }[];
   isSuperUser: boolean;
   permissions: PermissionOnUser[];
+  person: {
+    id: string;
+    name: string;
+    abbrv: string | null;
+    salutation: Salutation | null;
+  };
 }

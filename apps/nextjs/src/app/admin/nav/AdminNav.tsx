@@ -15,6 +15,13 @@ export const AdminNav = () => {
         href="/admin/users"
         icon="person"
       >
+        Nutzer
+      </PermissionNavigationItem>
+      <PermissionNavigationItem
+        permission="EDIT_USERS"
+        href="/admin/people"
+        icon="person"
+      >
         Personen
       </PermissionNavigationItem>
       <NavigationItem href="/impressum">Impressum</NavigationItem>

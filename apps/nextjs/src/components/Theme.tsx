@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
+import { skipToken } from "@tanstack/react-query";
 import { z } from "zod";
+
+import { SCHOOL_IDS } from "@stu/lib";
 
 import { useSafeParams } from "~/infrastructure/hooks/useSafeParams";
 import { api } from "~/infrastructure/trpc/react";
 
 export const Theme = () => {
-  const { school } = useSafeParams(z.object({ school: z.coerce.number() }));
-  const query = api.schools.getTheme.useQuery(school ?? -1, {
-    enabled: school !== undefined,
-  });
+  const { school } = useSafeParams(z.object({ school: z.enum(SCHOOL_IDS) }));
+  const query = api.schools.getTheme.useQuery(school ? school : skipToken);
 
   useEffect(() => {
     if (!query.data) return;

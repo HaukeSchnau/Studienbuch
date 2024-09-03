@@ -1,13 +1,17 @@
 import { exec as execCb } from "child_process";
 import { promisify } from "util";
 import { program } from "@commander-js/extra-typings";
+import { add, format } from "date-fns";
+import { z } from "zod";
+
 import { db } from "@stu/db/client";
+import { Schools } from "@stu/db/schema";
 import {
   findAbbrvName,
   loginIservWithDefaultCredentials,
-  stateSchema,
 } from "@stu/external-api";
-import { createUser } from "@stu/lib-server";
+import { defaultSchools, SCHOOL_IDS } from "@stu/lib";
+import { createUser, importClasses, importTimetable } from "@stu/lib-server";
 
 import { addNamesToExistingUsers } from "./addNamesToExistingUsers";
 import { addSemesters } from "./addSemesters";
@@ -22,11 +26,65 @@ program
   .description("Studienbuch Console")
   .showSuggestionAfterError();
 
-program.command("copy-substitutions").action(async () => {
+program
+  .command("seed")
+  .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
+  .action(async (school) => {
+    const defaultSchoolValue = defaultSchools[school];
+
+    console.log(`Seeding school "${school}"...`);
+    await db
+      .insert(Schools)
+      .values({ id: school, ...defaultSchoolValue })
+      .onConflictDoNothing();
+
+    console.log("Adding semesters...");
+    await addSemesters(defaultSchoolValue.stateCode);
+
+    console.log("Importing classes...");
+    await importClasses({ school });
+
+    console.log("Seeding complete!");
+    process.exit(0);
+  });
+
+program.command("import-substitutions").action(async () => {
   console.log("Copying today's substitutions...");
-  await copySubstitutions("TODAY");
+  await copySubstitutions("igs-lil", "TODAY");
   console.log("Copying tomorrow's substitutions...");
-  await copySubstitutions("TOMORROW");
+  await copySubstitutions("igs-lil", "TOMORROW");
+
+  process.exit(0);
+});
+
+program.command("import-classes").action(async () => {
+  console.log("Copying classes...");
+  await importClasses({ school: "igs-lil" });
+
+  process.exit(0);
+});
+
+program.command("import-semesters").action(async () => {
+  const states = await db
+    .selectDistinct({ stateCode: Schools.stateCode })
+    .from(Schools);
+
+  for (const state of states) {
+    await addSemesters(state.stateCode);
+  }
+
+  console.log(await db.query.Semesters.findMany());
+
+  process.exit(0);
+});
+
+program.command("import-timetable").action(async () => {
+  const today = new Date();
+  for (let i = -4; i < 4; i++) {
+    const date = add(today, { weeks: i });
+    console.log(`Importing timetable for ${format(date, "yyyy-MM-dd")}...`);
+    await importTimetable({ school: "igs-lil", date });
+  }
 
   process.exit(0);
 });
@@ -38,7 +96,11 @@ program
   .argument("[password]", "Password of the new user")
   .action(async (username, email, password) => {
     console.log(`Creating user "${username}"...`);
-    await createUser(username, email, password);
+    await createUser({
+      name: username,
+      email,
+      password,
+    });
     console.log(`User "${username}" created!`);
 
     process.exit(0);
@@ -89,16 +151,5 @@ program.command("add-names-to-existing-users").action(async () => {
   console.log("Names added to existing users!");
   process.exit(0);
 });
-
-program
-  .command("add-semesters")
-  .argument("<state>", "State of the user", (val) => stateSchema.parse(val))
-  .action(async (state) => {
-    await addSemesters(state);
-
-    console.log(await db.query.Semester.findMany());
-
-    process.exit(0);
-  });
 
 program.parse();

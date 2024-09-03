@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 
+import { SCHOOL_IDS } from "@stu/lib";
+
 import { Card } from "~/components/layout/Card";
 import { PageHeading } from "~/components/layout/PageHeading";
 import { YearForm } from "~/features/years/YearForm";
@@ -11,7 +13,7 @@ import { api } from "~/infrastructure/trpc/react";
 
 export default function NewYearPage() {
   const router = useRouter();
-  const { school } = useParsedParams(z.object({ school: z.string() }));
+  const { school } = useParsedParams(z.object({ school: z.enum(SCHOOL_IDS) }));
 
   const utils = api.useUtils();
   const addYear = api.years.add.useMutation({
@@ -35,7 +37,7 @@ export default function NewYearPage() {
               name: value.name,
               startYear: value.startYear,
               graduationYear: value.startYear + value.numberOfYears,
-              schoolId: value.schoolId,
+              school,
             });
           }}
           isPending={addYear.isPending}

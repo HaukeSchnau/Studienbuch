@@ -1,16 +1,16 @@
+import type { Course, YearIdentifier } from "@stu/lib";
 import { buildTimetable } from "@stu/lib";
 
 import { Card } from "~/components/layout/Card";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
-import { api } from "~/infrastructure/trpc/react";
 import { TimetableView } from "./TimetableView";
 
 interface TimetableProps {
-  yearId: number;
+  year: YearIdentifier;
 }
 
-export const TimetableManager = ({ yearId }: TimetableProps) => {
-  const timetable = useTimetable(yearId);
+export const TimetableManager = ({ year }: TimetableProps) => {
+  const timetable = useTimetable(year);
 
   if (timetable.status === "loading") {
     return <LoadingIndicator />;
@@ -27,8 +27,21 @@ export const TimetableManager = ({ yearId }: TimetableProps) => {
   );
 };
 
-export const useTimetable = (yearId: number) => {
-  const courses = api.courses.list.useQuery({ yearId });
+export const useTimetable = (year: YearIdentifier) => {
+  // const courses = api.courses.listChoices.useQuery({
+
+  //  });
+  const courses: {
+    data: Course[];
+    status: string;
+    error: {
+      message: string;
+    };
+  } = {
+    data: [],
+    status: "success",
+    error: { message: "Error message" },
+  }; // TODO: Replace with actual data
 
   if (courses.status === "pending") {
     return { status: "loading" as const };

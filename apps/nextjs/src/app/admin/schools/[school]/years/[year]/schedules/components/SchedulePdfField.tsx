@@ -1,6 +1,7 @@
-import type { Course, ProtoCourseWithTimes, Timetable } from "@stu/lib";
 import type { ChangeEvent } from "react";
 import { useMemo } from "react";
+
+import type { Course, ProtoCourseWithTimes, Timetable } from "@stu/lib";
 import { buildTimetable } from "@stu/lib";
 
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
@@ -30,37 +31,39 @@ export const SchedulePdfField = ({ protoCourses, onChange }: PdfFieldProps) => {
     }
   };
 
-  const timetable = useMemo<Timetable | undefined>(() => {
-    const courses: Course[] = protoCourses.map((protoCourse) => ({
-      ...protoCourse,
-      id: performance.now(),
-      courseId: protoCourse.normalizedCourseId,
-      name: protoCourse.guessedSubject,
-      teacher: {
-        id: performance.now(),
-        name: protoCourse.teacher,
-        title: "",
-      },
-    }));
+  // const timetable = useMemo<Timetable | undefined>(() => {
+  //   const courses: Course[] = protoCourses.map((protoCourse) => ({
+  //     ...protoCourse,
+  //     id: performance.now(),
+  //     courseId: protoCourse.normalizedCourseId,
+  //     name: protoCourse.guessedSubject,
+  //     teacher: {
+  //       id: performance.now(),
+  //       name: protoCourse.teacher,
+  //       title: "",
+  //     },
+  //   }));
 
-    return buildTimetable(courses);
-  }, [protoCourses]);
+  //   return buildTimetable(courses);
+  // }, [protoCourses]);
 
-  return (
-    <>
-      <input
-        type="file"
-        accept=".pdf"
-        onChange={onFileChange}
-        disabled={isPending}
-      />
-      {isPending ? (
-        <LoadingIndicator />
-      ) : isError ? (
-        <p>{error.message}</p>
-      ) : timetable ? (
-        <TimetableView timetable={timetable} />
-      ) : null}
-    </>
-  );
+  // return (
+  //   <>
+  //     <input
+  //       type="file"
+  //       accept=".pdf"
+  //       onChange={onFileChange}
+  //       disabled={isPending}
+  //     />
+  //     {isPending ? (
+  //       <LoadingIndicator />
+  //     ) : isError ? (
+  //       <p>{error.message}</p>
+  //     ) : timetable ? (
+  //       <TimetableView timetable={timetable} />
+  //     ) : null}
+  //   </>
+  // );
+
+  return <></>
 };

@@ -2,16 +2,16 @@ import type { Permission, PermissionScope } from "@stu/lib";
 import { and, eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import {
-  _RoleToUser,
-  PermissionOnRole,
-  PermissionOnUser,
-  Role,
-  User,
+  PermissionsToRoles,
+  PermissionsToUsers,
+  Roles,
+  RolesToUsers,
+  Users,
 } from "@stu/db/schema";
 
 // TODO: Produce a single query to get the permission scope and maybe cache it
 export const findPermissionScope = async (
-  user: { id: number; isSuperUser: boolean },
+  user: { id: string; isSuperUser: boolean },
   permission: Permission,
 ): Promise<PermissionScope | null> => {
   if (user.isSuperUser) {
@@ -20,22 +20,22 @@ export const findPermissionScope = async (
 
   const things = await db
     .select()
-    .from(User)
-    .where(and(eq(User.id, user.id)))
+    .from(Users)
+    .where(and(eq(Users.id, user.id)))
     .leftJoin(
-      PermissionOnUser,
+      PermissionsToUsers,
       and(
-        eq(PermissionOnUser.userId, User.id),
-        eq(PermissionOnUser.permission, permission),
+        eq(PermissionsToUsers.user, Users.id),
+        eq(PermissionsToUsers.permission, permission),
       ),
     )
-    .leftJoin(_RoleToUser, eq(_RoleToUser.user, User.id))
-    .leftJoin(Role, eq(Role.id, _RoleToUser.role))
+    .leftJoin(RolesToUsers, eq(RolesToUsers.user, Users.id))
+    .leftJoin(Roles, eq(Roles.id, RolesToUsers.role))
     .leftJoin(
-      PermissionOnRole,
+      PermissionsToRoles,
       and(
-        eq(PermissionOnRole.roleId, Role.id),
-        eq(PermissionOnRole.permission, permission),
+        eq(PermissionsToRoles.role, Roles.id),
+        eq(PermissionsToRoles.permission, permission),
       ),
     );
 

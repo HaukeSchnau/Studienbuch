@@ -1,37 +1,27 @@
-import { useMemo } from "react";
-
-import { api } from "~/infrastructure/trpc/react";
-import { Grid } from "../layout/Grid";
-import { LoadingIndicator } from "../layout/LoadingIndicator";
-import { CourseCard } from "./CourseCard";
+import type { YearIdentifier } from "@stu/lib";
 
 interface CourseListProps {
-  yearId: number;
+  year: YearIdentifier;
 }
 
-export const CourseList = ({ yearId }: CourseListProps) => {
-  const { isPending, error, data } = api.courses.list.useQuery({ yearId });
-
-  const sortedCourses = useMemo(() => {
-    if (!data) return null;
-
-    return data.slice().sort((a, b) => a.courseId.localeCompare(b.courseId));
-  }, [data]);
-
-  if (isPending) {
-    return <LoadingIndicator />;
-  }
-
-  if (error) {
-    return <div>Error: {error.message}</div>;
-  }
-
-  const courses = sortedCourses ?? data;
-
-  return (
-    <Grid
-      data={courses}
-      renderItem={(course) => <CourseCard key={course.id} course={course} />}
-    />
-  );
+export const CourseList = ({ year }: CourseListProps) => {
+  return <></>;
+  // const { isPending, error, data } = api.courses.list.useQuery({ yearId });
+  // const sortedCourses = useMemo(() => {
+  //   if (!data) return null;
+  //   return data.slice().sort((a, b) => a.courseId.localeCompare(b.courseId));
+  // }, [data]);
+  // if (isPending) {
+  //   return <LoadingIndicator />;
+  // }
+  // if (error) {
+  //   return <div>Error: {error.message}</div>;
+  // }
+  // const courses = sortedCourses ?? data;
+  // return (
+  //   <Grid
+  //     data={courses}
+  //     renderItem={(course) => <CourseCard key={course.id} course={course} />}
+  //   />
+  // );
 };

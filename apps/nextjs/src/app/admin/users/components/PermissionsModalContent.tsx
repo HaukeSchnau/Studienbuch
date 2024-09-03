@@ -1,6 +1,7 @@
-import type { Permission, ScopeOption } from "@stu/lib";
-import { formalName } from "@stu/lib";
 import { useForm } from "@tanstack/react-form";
+
+import type { Permission, Salutation, ScopeOption } from "@stu/lib";
+import { formalName } from "@stu/lib";
 
 import type { User } from "../user.type";
 import { Button } from "~/components/form/Button";
@@ -72,7 +73,7 @@ export const PermissionsModalContent = ({ user, onClose }: Props) => {
   return (
     <form onSubmit={submitHandler(handleSubmit)}>
       <h2 className="text-xl font-bold text-primary-text">
-        Berechtigungen von {formalName(user)} bearbeiten
+        Berechtigungen von {formalName(user.person)} bearbeiten
       </h2>
       <Field name="isSuperUser">
         {(field) => (
@@ -225,7 +226,7 @@ const ScopeField = ({
 
   return (
     <div className="flex flex-col">
-      <div className="underline">{scopeOptionLabels[option]}</div>
+      {/* <div className="underline">{scopeOptionLabels[option]}</div>
       <div className="flex flex-col">
         {options.map((option) => (
           <label key={option.id}>
@@ -242,7 +243,7 @@ const ScopeField = ({
             {option.name}
           </label>
         ))}
-      </div>
+      </div> */}
     </div>
   );
 };

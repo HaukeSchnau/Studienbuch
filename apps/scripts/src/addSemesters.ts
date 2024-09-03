@@ -1,7 +1,7 @@
 import type { State } from "@stu/external-api";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
-import { School, Semester } from "@stu/db/schema";
+import { Schools, Semesters } from "@stu/db/schema";
 import { getHolidays } from "@stu/external-api";
 import dayjs from "dayjs";
 
@@ -50,17 +50,18 @@ export const addSemesters = async (state: State) => {
     });
   }
 
-  const affectedSchools = await db.query.School.findMany({
-    where: eq(School.stateCode, state),
+  const affectedSchools = await db.query.Schools.findMany({
+    where: eq(Schools.stateCode, state),
   });
 
   await db
-    .insert(Semester)
+    .insert(Semesters)
     .values(
       affectedSchools.flatMap((school) =>
         semesters.map((semester) => ({
           ...semester,
-          schoolId: school.id,
+          // schoolId: school.id,
+          school: school.id,
         })),
       ),
     )

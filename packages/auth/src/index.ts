@@ -5,14 +5,16 @@ import { getSession } from "./session";
 
 export interface Session {
   user: {
-    id: number;
+    id: string;
     name: string;
     isSuperUser: boolean;
   } | null;
   token: string;
 }
 
-export const getSessionFromHeaders = async (headers: Headers) => {
+export const getSessionFromHeaders = async (
+  headers: Headers,
+): Promise<Session | null> => {
   const { sessionToken } = extractTokens(headers);
 
   if (sessionToken) {

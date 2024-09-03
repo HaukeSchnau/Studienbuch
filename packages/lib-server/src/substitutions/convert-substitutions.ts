@@ -65,12 +65,14 @@ interface Cell {
   rowSpan: number;
 }
 
+export type KadmosSubstitution = Partial<Record<ColumnKey, string>>;
+
 export const convertKadmosRowsToSubstitutionsTable = (
   rows: { data: string[] }[],
   columns: ColumnConfiguration,
-) => {
+): KadmosSubstitution[] => {
   return rows.map(({ data }) => {
-    const result: Partial<Record<ColumnKey, string | undefined>> = {};
+    const result: KadmosSubstitution = {};
 
     columns
       .filter((column) => "condition" in column)

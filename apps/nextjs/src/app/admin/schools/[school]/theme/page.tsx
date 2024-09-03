@@ -4,6 +4,8 @@
 import { useRef } from "react";
 import { useForm } from "@tanstack/react-form";
 
+import type { SchoolId } from "@stu/lib";
+
 import { Button } from "~/components/form/Button";
 import { IconButton } from "~/components/form/IconButton";
 import { Card } from "~/components/layout/Card";
@@ -16,10 +18,10 @@ export default function ThemePage({
   params,
 }: {
   params: {
-    school: string;
+    school: SchoolId;
   };
 }) {
-  const query = api.schools.getTheme.useQuery(parseInt(params.school));
+  const query = api.schools.getTheme.useQuery(params.school);
   const saveMutation = api.schools.setTheme.useMutation({
     onSuccess: () => {
       void query.refetch();
@@ -30,7 +32,7 @@ export default function ThemePage({
     defaultValues: query.data,
     onSubmit: async ({ value: { image, theme } }) => {
       await saveMutation.mutateAsync({
-        school: parseInt(params.school),
+        school: params.school,
         theme,
         image,
       });

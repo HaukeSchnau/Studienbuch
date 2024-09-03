@@ -22,7 +22,7 @@ export const DeleteUserModalContent = ({ user, onClose }: Props) => {
     <div>
       <h2 className="text-xl font-bold text-primary-text">Nutzer löschen</h2>
       <p>
-        Möchtest du <strong>{formalName(user)}</strong> wirklich löschen?
+        Möchtest du <strong>{formalName(user.person)}</strong> wirklich löschen?
       </p>
       {deleteUserMutation.isError && (
         <div className="text-danger">{deleteUserMutation.error.message}</div>

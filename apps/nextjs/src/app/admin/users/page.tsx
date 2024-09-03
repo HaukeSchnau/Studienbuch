@@ -23,15 +23,14 @@ export default function UsersPage() {
   ) : isError ? (
     <div>{error.message}</div>
   ) : (
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-    <UsersPageContent initialUsers={users as any} />
+    <UsersPageContent initialUsers={users} />
   );
 }
 
 const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
   const utils = api.useUtils();
   const [users, setUsers] = useImmer<User[]>(initialUsers);
-  const [updates, setUpdates] = useState(new Map<number, Partial<User>>());
+  const [updates, setUpdates] = useState(new Map<string, Partial<User>>());
 
   useEffect(() => {
     setUsers(initialUsers);
@@ -46,7 +45,7 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
 
   const updateUsersMutation = api.users.updateMany.useMutation({
     onSuccess: () => {
-      setUpdates(new Map());
+      setUpdates(new Map<string, Partial<User>>());
       void utils.users.list.invalidate();
     },
   });
@@ -85,12 +84,12 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
             <Button
               variant="danger"
               onClick={() => {
-                updateUsersMutation.mutate(
-                  [...updates.entries()].map(([id, update]) => ({
-                    id,
-                    ...update,
-                  })),
-                );
+                // updateUsersMutation.mutate(
+                //   [...updates.entries()].map(([id, update]) => ({
+                //     id,
+                //     ...update,
+                //   })),
+                // );
               }}
             >
               Speichern

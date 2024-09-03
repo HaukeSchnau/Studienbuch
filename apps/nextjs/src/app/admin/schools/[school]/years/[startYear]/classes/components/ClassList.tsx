@@ -11,7 +11,7 @@ interface Props {
 }
 
 export const ClassList = ({ year }: Props) => {
-  const classes = api.classes.list.useQuery({ yearId: year.id });
+  const classes = api.classes.list.useQuery(year);
 
   if (classes.status === "pending") {
     return <LoadingIndicator />;
@@ -25,9 +25,8 @@ export const ClassList = ({ year }: Props) => {
     <Grid
       data={classes.data}
       renderItem={(clazz) => (
-        <Card key={clazz.id}>
+        <Card key={clazz.identifierInYear}>
           <CardHeading>{formatClassName(clazz, year)}</CardHeading>
-          <p>{clazz.courses.length} Kurse</p>
         </Card>
       )}
     />

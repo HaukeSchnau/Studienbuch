@@ -1,27 +1,115 @@
+import { add } from "date-fns";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import { z } from "zod";
+
 import type { MakeRequest } from "@stu/external-api";
+import type { SchoolId, SubstitutionType } from "@stu/lib";
+import type { KadmosSubstitution } from "@stu/lib-server";
 import { and, eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import {
-  _ClassToCourse,
-  Class,
-  Course,
-  Substitution,
-  User,
-  Year,
+  Classes,
+  Courses,
+  Persons,
+  Substitutions,
+  Years,
 } from "@stu/db/schema";
 import {
   findAbbrvName,
   loginIservWithDefaultCredentials,
 } from "@stu/external-api";
-import { getNormalTimeIndex } from "@stu/lib";
-import { getSubstitutions } from "@stu/lib-server";
-import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import { z } from "zod";
+import {
+  convertCurrentYearToStartYear,
+  getNormalTimeIndex,
+  SUBSTITUTION_TYPES,
+} from "@stu/lib";
+import { getSubstitutions, createLazyIservClient } from "@stu/lib-server";
 
 dayjs.extend(utc);
 
-export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
+interface ProcessedSubstitution {
+  startTimeOfDay: number;
+  type: SubstitutionType;
+  classes: {
+    currentYear: number;
+    identifierInYear: string;
+  }[];
+  substitute: string | undefined;
+  room: string | undefined;
+  subject: string | undefined;
+}
+
+const preprocess = (substitutions: KadmosSubstitution[]) => {
+  const processedSubstitutions: ProcessedSubstitution[] = [];
+
+  for (const sub of substitutions) {
+    const {
+      type: unparsedType,
+      subject,
+      class: classesJoined,
+      room,
+      substitute,
+      time,
+    } = sub;
+
+    const classes = classesJoined?.split(", ");
+
+    const processedClasses: ProcessedSubstitution["classes"] = [];
+    for (const clazz of classes ?? []) {
+      if (clazz === "") {
+        continue;
+      }
+
+      const [yearNumStr, identifierInYear] = clazz.split(".");
+      if (!yearNumStr) {
+        console.error(`Could not parse year for "${clazz}"`);
+        process.exit(1);
+      }
+
+      const yearNum = parseInt(yearNumStr);
+
+      processedClasses.push({
+        currentYear: yearNum,
+        identifierInYear: identifierInYear ?? "",
+      });
+    }
+
+    const typeSchema = z.enum(SUBSTITUTION_TYPES);
+    const type = typeSchema.safeParse(
+      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- We don't want to allow empty strings
+      unparsedType?.toUpperCase().replaceAll(" ", "_") || "VERTRETUNG",
+    );
+
+    if (!type.success) {
+      console.error(`Could not parse type: ${unparsedType}`);
+      continue;
+    }
+
+    const { start, end } = parseLessonTime(sub);
+
+    if (!start || !end) {
+      console.error(`Could not parse type: ${time}`);
+      continue;
+    }
+
+    processedSubstitutions.push({
+      startTimeOfDay: start,
+      type: type.data,
+      classes: processedClasses,
+      substitute,
+      room,
+      subject,
+    });
+  }
+
+  return processedSubstitutions;
+};
+
+export const copySubstitutions = async (
+  school: SchoolId,
+  day: "TODAY" | "TOMORROW",
+) => {
   const { substitutions, date } = await getSubstitutions(
     "IGS Lilienthal",
     day === "TODAY" ? "iServ_SuS_heute" : "iServ_SuS_morgen",
@@ -31,245 +119,129 @@ export const copySubstitutions = async (day: "TODAY" | "TOMORROW") => {
     return;
   }
 
-  let makeIservRequest: MakeRequest | null = null;
-  const lazyFindAbbrv = async (abbrv: string) => {
-    makeIservRequest ??= await loginIservWithDefaultCredentials();
-    console.log("Making request for " + abbrv);
-    return findAbbrvName(makeIservRequest, abbrv);
-  };
+  const iservClient = createLazyIservClient();
 
-  const lazyGetCreateUser = async (abbrv?: string) => {
-    if (!abbrv) {
-      return undefined;
-    }
+  const processedSubstitutions = preprocess(substitutions);
+  for (const sub of processedSubstitutions) {
+    // const today = new Date();
+    // const startYear = convertCurrentYearToStartYear(
+    const start = add(date, { minutes: sub.startTimeOfDay });
 
-    const existingUsers = await db
-      .select()
-      .from(User)
-      .where(eq(User.abbrv, abbrv));
+    // const dbClass = await db.query.Classes.findFirst({
+    //   where: and(
+    //     eq(Classes.school, school),
+    //     eq(Classes.startYear, startYear),
+    //     identifierInYear !== undefined
+    //       ? eq(Classes.identifierInYear, identifierInYear)
+    //       : undefined,
+    //   ),
+    // });
 
-    const existingUser = existingUsers[0];
-    if (existingUser) {
-      console.log("Reusing existing user for " + abbrv);
-      return existingUser.id;
-    }
+    // const [course] = await db
+    //   .select()
+    //   .from(Courses)
+    //   .innerJoin(Users, eq(User.id, Course.teacherId))
+    //   .innerJoin(
+    //     _ClassToCourse,
+    //     and(
+    //       eq(_ClassToCourse.course, Course.id),
+    //       eq(_ClassToCourse.class, dbClass.id),
+    //     ),
+    //   )
+    //   .where(
+    //     subject !== undefined
+    //       ? eq(Course.courseId, subject.toLowerCase())
+    //       : undefined,
+    //   )
+    //   .execute();
 
-    const iservUser = await lazyFindAbbrv(abbrv);
+    // if (!dbCourse) {
+    //   console.error(`Could not find course for class ${class_}: ${subject}`);
+    //   continue;
+    // }
 
-    const [newUser] = await db
-      .insert(User)
-      .values({
-        abbrv,
-        name: iservUser?.name ?? abbrv,
-        email: iservUser?.email,
-        updatedAt: new Date(),
-      })
-      .returning()
-      .execute();
-
-    if (!newUser) {
-      throw new Error(`Could not create user for ${abbrv}`);
-    }
-
-    return newUser.id;
-  };
-
-  const createdCount = 0;
-  const updatedCount = 0;
-
-  for (const sub of substitutions) {
-    const {
-      type: unparsedType,
-      subject,
-      class: clazz,
-      room,
-      substitute,
-      time,
-    } = sub;
-
-    const classes = clazz?.split(", ");
-    for (const class_ of classes ?? []) {
-      if (class_ === "") {
-        continue;
-      }
-
-      const yearNumStr = class_.split(".")[0];
-      if (!yearNumStr) {
-        console.error(`Could not parse year for "${class_}"`);
-        process.exit(1);
-      }
-      const yearNum = parseInt(yearNumStr);
-      const identifierInYear = class_.split(".")[1];
-
-      const today = new Date();
-      let startYear = today.getFullYear() - yearNum + 5;
-      if (today.getMonth() < 8) startYear--;
-
-      const dbYear = await db.query.Year.findFirst({
-        where: eq(Year.startYear, startYear),
-      });
-
-      if (!dbYear) {
-        // console.error(
-        //   `Could not find year for ${class_} with startYear ${startYear}`,
-        // );
-        continue;
-      }
-
-      const dbClass = await db.query.Class.findFirst({
-        // where: {
-        //   yearId: dbYear.id,
-        //   identifierInYear,
-        // },
-        where: and(
-          eq(Class.yearId, dbYear.id),
-          identifierInYear !== undefined
-            ? eq(Class.identifierInYear, identifierInYear)
-            : undefined,
-        ),
-      });
-
-      if (!dbClass) {
-        console.error(`Could not find class for ${class_}`);
-        process.exit(1);
-      }
-
-      // const dbCourse = await db.course.findFirst({
-      //   where: {
-      //     classes: {
-      //       some: {
-      //         id: dbClass.id,
-      //       },
-      //     },
-      //     courseId: subject?.toLowerCase(),
-      //   },
-      //   include: {
-      //     teacher: true,
-      //   },
-      // });
-      const [dbCourse] = await db
-        .select()
-        .from(Course)
-        .innerJoin(User, eq(User.id, Course.teacherId))
-        .innerJoin(
-          _ClassToCourse,
-          and(
-            eq(_ClassToCourse.course, Course.id),
-            eq(_ClassToCourse.class, dbClass.id),
-          ),
-        )
-        .where(
-          subject !== undefined
-            ? eq(Course.courseId, subject.toLowerCase())
-            : undefined,
-        )
-        .execute();
-
-      if (!dbCourse) {
-        console.error(`Could not find course for class ${class_}: ${subject}`);
-        continue;
-      }
-
-      const typeSchema = z.enum([
-        "FREISETZUNG",
-        "VERTRETUNG",
-        "BETREUUNG",
-        "ENTFALL",
-        "TROTZ_ABSENZ",
-      ]);
-      const type = typeSchema.safeParse(
-        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- We don't want to allow empty strings
-        unparsedType?.toUpperCase().replaceAll(" ", "_") || "VERTRETUNG",
-      );
-
-      if (!type.success) {
-        console.error(`Could not parse type for ${class_}: ${unparsedType}`);
-        continue;
-      }
-
-      const { start, end } = parseLessonTime(sub);
-
-      if (!start || !end) {
-        console.error(`Could not parse time for ${class_}: ${time}`);
-        continue;
-      }
-
-      const normalTimeIndex = getNormalTimeIndex(start);
-
-      if (normalTimeIndex === -1) {
-        console.error(
-          `Could not find normalTimeIndex for Class ${class_} with Subject ${dbCourse.Course.name}: ${time}`,
-        );
-        continue;
-      }
-
-      const lessonStart = normalTimeIndex * 2; // TODO: Mobile App currently expects lessonStart to be in hours, not blocks
-      const lessonEnd = lessonStart + 1;
-
-      const substituteUser = await lazyGetCreateUser(substitute);
-
-      const [res] = await db
-        .insert(Substitution)
-        .values({
-          date,
-          lessonStart,
-          lessonEnd,
-          courseId: dbCourse.Course.id,
-          room,
-          type: type.data,
-          substituteId: substituteUser,
-          updatedAt: new Date(),
-        })
-        .onConflictDoUpdate({
-          target: [
-            Substitution.date,
-            Substitution.lessonStart,
-            Substitution.courseId,
-          ],
-          set: {
-            date,
-            lessonStart,
-            lessonEnd,
-            courseId: dbCourse.Course.id,
-            room,
-            type: type.data,
-            substituteId: substituteUser,
-            updatedAt: new Date(),
+    const courses = await db.query.Courses.findMany({
+      with: {
+        semesterCourses: {
+          with: {
+            classes: {
+              with: {
+                class: true,
+              },
+              // where: and(
+              //   eq(Classes.school, school),
+              //   eq(Classes.startYear, sub.classes[0].currentYear),
+              //   eq(Classes.identifierInYear, sub.classes[0].identifierInYear),
+              // ),
+            },
           },
-        })
-        .returning()
-        .execute();
+        },
+      },
+    });
 
-      if (!res) {
-        throw new Error(`Could not create substitution for ${class_}`);
-      }
+    console.log(sub);
+    console.log(courses);
 
-      const isNew = dayjs(res.updatedAt).diff(res.createdAt) < 1000;
+    // const substituteUser = await lazyGetCreateUser(sub.substitute);
 
-      console.log(res, isNew);
+    // const [res] = await db
+    //   .insert(Substitutions)
+    //   .values({
+    //     start,
+    //     course: courseId,
+    //     type: sub.type,
+    //     substitute: substituteUser,
+    //     updatedAt: new Date(),
+    //   })
+    //   .onConflictDoUpdate({
+    //     target: [
+    //       Substitution.date,
+    //       Substitution.lessonStart,
+    //       Substitution.courseId,
+    //     ],
+    //     set: {
+    //       date,
+    //       lessonStart,
+    //       lessonEnd,
+    //       courseId: dbCourse.Course.id,
+    //       room,
+    //       type: type.data,
+    //       substituteId: substituteUser,
+    //       updatedAt: new Date(),
+    //     },
+    //   })
+    //   .returning()
+    //   .execute();
 
-      //   if (isNew) {
-      //     // const notifiedCount = await notifySubscribers(app, res, dbCourse);
+    // if (!res) {
+    //   throw new Error(`Could not create substitution for ${class_}`);
+    // }
 
-      //     // console.log(
-      //     //   `Created substitution ${substitution.date.format("YYYY-MM-DD")} ${
-      //     //     substitution.lessonStart
-      //     //   } ${substitution.lessonEnd} ${substitution.type} ${
-      //     //     substitution.subject
-      //     //   } ${class_} and notified ${notifiedCount} subscribers`,
-      //     // );
-      //     createdCount++;
-      //   } else {
-      //     updatedCount++;
-      //   }
-    }
+    // const isNew = dayjs(res.updatedAt).diff(res.createdAt) < 1000;
+
+    // console.log(res, isNew);
+
+    //   if (isNew) {
+    //     // const notifiedCount = await notifySubscribers(app, res, dbCourse);
+
+    //     // console.log(
+    //     //   `Created substitution ${substitution.date.format("YYYY-MM-DD")} ${
+    //     //     substitution.lessonStart
+    //     //   } ${substitution.lessonEnd} ${substitution.type} ${
+    //     //     substitution.subject
+    //     //   } ${class_} and notified ${notifiedCount} subscribers`,
+    //     // );
+    //     createdCount++;
+    //   } else {
+    //     updatedCount++;
+    //   }
   }
 
-  console.log(
-    `${dayjs().format(
-      "YYYY-MM-DD HH:mm",
-    )}: Finished Day ${dayjs(date).format("DD.MM.YYYY")} (created: ${createdCount}, updated: ${updatedCount})`,
-  );
+  // console.log(
+  //   `${dayjs().format(
+  //     "YYYY-MM-DD HH:mm",
+  //   )}: Finished Day ${dayjs(date).format("DD.MM.YYYY")} (created: ${createdCount}, updated: ${updatedCount})`,
+  // );
 };
 
 function parseLessonTime({ time }: { time?: string }) {

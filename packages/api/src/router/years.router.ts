@@ -1,9 +1,10 @@
-import { and, desc, eq, gte } from "@stu/db";
-import { db } from "@stu/db/client";
-import { Year } from "@stu/db/schema";
-import { getMaxActiveGraduationYear } from "@stu/lib";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+
+import { and, desc, eq, gte } from "@stu/db";
+import { db } from "@stu/db/client";
+import { Years } from "@stu/db/schema";
+import { getMaxActiveGraduationYear, SCHOOL_IDS } from "@stu/lib";
 
 import { permissionProcedure, publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";
@@ -14,47 +15,57 @@ export const years = createRouter({
   list: publicProcedure
     .input(
       z.object({
-        school: z.number().optional(),
+        school: z.enum(SCHOOL_IDS).optional(),
         activeOnly: z.boolean().optional(),
       }),
     )
     .query(async ({ input: { school, activeOnly } }) => {
       console.log(getMaxActiveGraduationYear());
-      return db.query.Year.findMany({
+      return db.query.Years.findMany({
         where: and(
-          school !== undefined ? eq(Year.schoolId, school) : undefined,
+          school !== undefined ? eq(Years.school, school) : undefined,
           activeOnly
-            ? gte(Year.graduationYear, getMaxActiveGraduationYear())
+            ? gte(Years.graduationYear, getMaxActiveGraduationYear())
             : undefined,
         ),
-        orderBy: desc(Year.startYear),
+        orderBy: desc(Years.startYear),
       });
     }),
 
   listGroupedBySchool: publicProcedure.query(() => {
-    return db.query.School.findMany({
+    return db.query.Schools.findMany({
       with: {
         years: {
-          where: gte(Year.graduationYear, getMaxActiveGraduationYear()),
+          where: gte(Years.graduationYear, getMaxActiveGraduationYear()),
         },
       },
     });
   }),
 
-  getOne: publicProcedure.input(z.number()).query(async ({ input }) => {
-    const year = await db.query.Year.findFirst({
-      where: eq(Year.id, input),
-    });
-
-    if (!year) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "Year not found",
+  getOne: publicProcedure
+    .input(
+      z.object({
+        school: z.enum(SCHOOL_IDS),
+        startYear: z.number(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const year = await db.query.Years.findFirst({
+        where: and(
+          eq(Years.school, input.school),
+          eq(Years.startYear, input.startYear),
+        ),
       });
-    }
 
-    return year;
-  }),
+      if (!year) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Year not found",
+        });
+      }
+
+      return year;
+    }),
 
   add: editYearsProcedure
     .input(
@@ -62,37 +73,39 @@ export const years = createRouter({
         name: z.string(),
         startYear: z.number(),
         graduationYear: z.number(),
-        schoolId: z.number(),
+        school: z.enum(SCHOOL_IDS),
       }),
     )
     .mutation(async ({ input }) => {
-      await db.insert(Year).values({
+      await db.insert(Years).values({
         name: input.name,
         startYear: input.startYear,
         graduationYear: input.graduationYear,
-        schoolId: input.schoolId,
+        school: input.school,
       });
     }),
 
   update: editYearsProcedure
     .input(
       z.object({
-        id: z.number(),
         name: z.string(),
         startYear: z.number(),
         graduationYear: z.number(),
-        schoolId: z.number(),
+        school: z.enum(SCHOOL_IDS),
       }),
     )
     .mutation(async ({ input }) => {
       await db
-        .update(Year)
+        .update(Years)
         .set({
           name: input.name,
-          startYear: input.startYear,
           graduationYear: input.graduationYear,
-          schoolId: input.schoolId,
         })
-        .where(eq(Year.id, input.id));
+        .where(
+          and(
+            eq(Years.school, input.school),
+            eq(Years.startYear, input.startYear),
+          ),
+        );
     }),
 });

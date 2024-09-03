@@ -10,7 +10,7 @@ export default function Courses() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeading color="white">Kurse</PageHeading>
-      {selectedYear && <CourseList yearId={selectedYear.id} />}
+      {selectedYear && <CourseList year={selectedYear} />}
     </div>
   );
 }

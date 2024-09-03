@@ -1,18 +1,24 @@
 import crypto from "crypto";
-import type { User } from "@stu/lib";
+
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
-import { Session } from "@stu/db/schema";
+import { Sessions } from "@stu/db/schema";
 import { isArraySingleElement } from "@stu/lib";
 
-import type { Session as SessionType } from "./index";
+import type { Session, Session as SessionType } from "./index";
 
-export const getSession = async (sessionToken: string) => {
-  const session = await db.query.Session.findFirst({
+export const getSession = async (
+  sessionToken: string,
+): Promise<Session | null> => {
+  const session = await db.query.Sessions.findFirst({
     with: {
-      user: true,
+      user: {
+        with: {
+          person: true,
+        },
+      },
     },
-    where: eq(Session.token, sessionToken),
+    where: eq(Sessions.token, sessionToken),
   });
 
   if (!session) {
@@ -20,20 +26,33 @@ export const getSession = async (sessionToken: string) => {
   }
 
   if (session.expires < new Date()) {
-    await db.delete(Session).where(eq(Session.token, sessionToken));
+    await db.delete(Sessions).where(eq(Sessions.token, sessionToken));
     return null;
   }
 
-  return session;
+  return {
+    user: session.user
+      ? {
+          id: session.user.id,
+          isSuperUser: session.user.isSuperUser,
+          name: session.user.person.name,
+        }
+      : null,
+    token: session.token,
+  };
 };
 
-export const createSession = async (user: User): Promise<SessionType> => {
+export const createSession = async (user: {
+  id: string;
+  isSuperUser: boolean;
+  name: string;
+}): Promise<SessionType> => {
   const newSession = await db
-    .insert(Session)
+    .insert(Sessions)
     .values({
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30), // in 30 days
       token: crypto.randomUUID(),
-      userId: user.id,
+      user: user.id,
     })
     .returning();
   if (!isArraySingleElement(newSession)) {

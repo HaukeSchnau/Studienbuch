@@ -1,8 +1,10 @@
-import type { Year } from "@stu/lib";
 import type { FormApi } from "@tanstack/react-form";
 import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { z } from "zod";
+
+import type { SchoolId, Year } from "@stu/lib";
+import { SCHOOL_IDS } from "@stu/lib";
 
 import { Button } from "~/components/form/Button";
 import { NumberField } from "~/components/form/NumberField";
@@ -14,14 +16,14 @@ import { api } from "~/infrastructure/trpc/react";
 
 interface YearFormValues {
   name: string;
-  schoolId?: number;
+  school?: SchoolId;
   startYear?: number;
   numberOfYears?: number;
 }
 
 const yearSchema = z.object({
   name: z.string().min(1, "Name darf nicht leer sein"),
-  schoolId: z.number().int("Schule muss ausgewählt sein"),
+  schoolId: z.enum(SCHOOL_IDS),
   startYear: z
     .number({
       invalid_type_error: "Startjahr muss eine Zahl sein",
@@ -41,7 +43,7 @@ type YearOutput = z.infer<typeof yearSchema>;
 type ZodValidator = ReturnType<typeof zodValidator>;
 
 interface Props {
-  defaultYear?: Year & { schoolId: number };
+  defaultYear?: Year;
   onSubmit: (props: {
     value: YearOutput;
     formApi: FormApi<YearFormValues, ZodValidator>;
@@ -60,7 +62,7 @@ export const YearForm = ({
     validatorAdapter: zodValidator(),
     defaultValues: {
       name: defaultYear?.name ?? "",
-      schoolId: defaultYear?.schoolId,
+      school: defaultYear?.school,
       startYear: defaultYear?.startYear,
       numberOfYears: defaultYear
         ? defaultYear.graduationYear - defaultYear.startYear
@@ -102,7 +104,7 @@ export const YearForm = ({
         <div>{schools.error.message}</div>
       ) : (
         <Field
-          name="schoolId"
+          name="school"
           validators={{
             onChange: yearSchema.shape.schoolId,
           }}

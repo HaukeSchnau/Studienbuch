@@ -1,9 +1,20 @@
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+import type { Permission, PermissionScope, Role, Salutation } from "@stu/lib";
 import { hashPassword } from "@stu/auth/src/password";
 import { asc, eq } from "@stu/db";
 import { db } from "@stu/db/client";
-import { PermissionOnUser, PERMISSIONS, User } from "@stu/db/schema";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
+import {
+  PERMISSIONS,
+  PermissionsToUsers,
+  Persons,
+  Roles,
+  RolesToUsers,
+  Users,
+} from "@stu/db/schema";
+import { BetterMap, SALUTATIONS } from "@stu/lib";
+import { createUser } from "@stu/lib-server";
 
 import { permissionProcedure } from "../procedures";
 import { createRouter } from "../trpc";
@@ -12,30 +23,78 @@ const scopeOptions = ["schools", "years", "classes", "courses"] as const;
 
 const editUsersProcedure = permissionProcedure("EDIT_USERS");
 
-const UserSchema = createInsertSchema(User);
+const UserSchema = createInsertSchema(Users);
 
 export const users = createRouter({
   list: editUsersProcedure.query(async () => {
-    return (
-      await db.query.User.findMany({
-        orderBy: asc(User.name),
-        with: {
-          rolesToUsers: {
-            with: {
-              role: true,
-            },
+    const rows = await db
+      .select()
+      .from(Users)
+      .innerJoin(Persons, eq(Users.person, Persons.id))
+      .leftJoin(PermissionsToUsers, eq(Users.id, PermissionsToUsers.user))
+      .leftJoin(RolesToUsers, eq(Users.id, RolesToUsers.user))
+      .leftJoin(Roles, eq(Roles.id, RolesToUsers.role))
+      .orderBy(asc(Persons.name));
+
+    console.log(rows);
+
+    const map = new BetterMap<
+      string,
+      {
+        id: string;
+        email: string | null;
+        person: {
+          id: string;
+          name: string;
+          email: string | null;
+          salutation: Salutation | null;
+          abbrv: string | null;
+        };
+        roles: { id: string; name: string }[];
+        permissions: {
+          permission: Permission;
+          scope: PermissionScope | null;
+        }[];
+        hasPassword: boolean;
+        isSuperUser: boolean;
+      }
+    >();
+
+    for (const row of rows) {
+      if (!map.get(row.users.id)) {
+        map.set(row.users.id, {
+          id: row.users.id,
+          email: row.users.email,
+          person: {
+            id: row.persons.id,
+            name: row.persons.name,
+            email: row.persons.email,
+            salutation: row.persons.salutation,
+            abbrv: row.persons.abbrv,
           },
-          permissionOnUsers: true,
-        },
-      })
-    ).map(
-      ({ passwordHash, rolesToUsers, permissionOnUsers, ...publicUser }) => ({
-        ...publicUser,
-        roles: rolesToUsers.map(({ role }) => role),
-        permissions: permissionOnUsers,
-        hasPassword: passwordHash !== null,
-      }),
-    );
+          roles: [],
+          permissions: [],
+          hasPassword: row.users.passwordHash !== null,
+          isSuperUser: row.users.isSuperUser,
+        });
+      }
+
+      const user = map.get(row.users.id);
+      if (!user) {
+        throw new Error("Logic error: Just added this user");
+      }
+
+      if (row.roles) user.roles.push(row.roles);
+      if (row.permissions_to_users)
+        user.permissions.push({
+          permission: row.permissions_to_users.permission,
+          scope: row.permissions_to_users.scope as PermissionScope | null,
+        });
+    }
+
+    console.log([...map.values()]);
+
+    return Array.from(map.values());
   }),
 
   updateMany: editUsersProcedure
@@ -43,7 +102,7 @@ export const users = createRouter({
     .mutation(async ({ input }) => {
       await Promise.all(
         input.map((update) => {
-          return db.update(User).set(update).where(eq(User.id, update.id));
+          return db.update(Users).set(update).where(eq(Users.id, update.id));
         }),
       );
     }),
@@ -54,40 +113,29 @@ export const users = createRouter({
         name: z.string(),
         email: z.string().optional(),
         password: z.string().optional(),
-        title: z.string().optional(),
+        salutation: z.enum(SALUTATIONS).optional(),
         abbrv: z.string().optional(),
       }),
     )
-    .mutation(async ({ input }) => {
-      return db.insert(User).values({
-        email: input.email,
-        name: input.name,
-        passwordHash: input.password
-          ? await hashPassword(input.password)
-          : null,
-        title: input.title,
-        abbrv: input.abbrv,
-        updatedAt: new Date(),
-      });
-    }),
+    .mutation(async ({ input }) => createUser(input)),
 
   updatePassword: editUsersProcedure
     .input(
       z.object({
-        id: z.number(),
+        id: z.string(),
         password: z.string(),
       }),
     )
     .mutation(async ({ input }) => {
       const hashedPassword = await hashPassword(input.password);
       await db
-        .update(User)
+        .update(Users)
         .set({ passwordHash: hashedPassword })
-        .where(eq(User.id, input.id));
+        .where(eq(Users.id, input.id));
     }),
 
-  delete: editUsersProcedure.input(z.number()).mutation(async ({ input }) => {
-    await db.delete(User).where(eq(User.id, input));
+  delete: editUsersProcedure.input(z.string()).mutation(async ({ input }) => {
+    await db.delete(Users).where(eq(Users.id, input));
   }),
 
   listScopeOptions: editUsersProcedure
@@ -95,44 +143,47 @@ export const users = createRouter({
     .query(async ({ input: option }) => {
       switch (option) {
         case "schools":
-          return await db.query.School.findMany({
+          return await db.query.Schools.findMany({
             columns: {
-              id: true,
               name: true,
             },
           });
         case "years":
-          return db.query.Year.findMany({
+          return db.query.Years.findMany({
+            columns: {
+              name: true,
+              startYear: true,
+              school: true,
+            },
+          });
+        case "classes":
+          return db.query.Classes.findMany({
+            columns: {
+              school: true,
+              startYear: true,
+              identifierInYear: true,
+            },
+          }).then((classes) =>
+            classes.map(({ school, startYear, identifierInYear: name }) => ({
+              school,
+              startYear,
+              name,
+            })),
+          );
+        case "courses":
+          return db.query.Courses.findMany({
             columns: {
               id: true,
               name: true,
             },
           });
-        case "classes":
-          return db.query.Class.findMany({
-            columns: {
-              id: true,
-              identifierInYear: true,
-            },
-          }).then((classes) =>
-            classes.map(({ id, identifierInYear: name }) => ({ id, name })),
-          );
-        case "courses":
-          return db.query.Course.findMany({
-            columns: {
-              id: true,
-              courseId: true,
-            },
-          }).then((courses) =>
-            courses.map(({ id, courseId: name }) => ({ id, name })),
-          );
       }
     }),
 
   setPermissions: editUsersProcedure
     .input(
       z.object({
-        userId: z.number(),
+        userId: z.string(),
         isSuperUser: z.boolean(),
         permissions: z.array(
           z.object({
@@ -144,15 +195,15 @@ export const users = createRouter({
     )
     .mutation(async ({ input }) => {
       await db
-        .update(User)
+        .update(Users)
         .set({ isSuperUser: input.isSuperUser })
-        .where(eq(User.id, input.userId));
+        .where(eq(Users.id, input.userId));
       await db
-        .delete(PermissionOnUser)
-        .where(eq(PermissionOnUser.userId, input.userId));
-      await db.insert(PermissionOnUser).values(
+        .delete(PermissionsToUsers)
+        .where(eq(PermissionsToUsers.user, input.userId));
+      await db.insert(PermissionsToUsers).values(
         input.permissions.map((permission) => ({
-          userId: input.userId,
+          user: input.userId,
           permission: permission.permission,
           scope: permission.scope ? permission.scope : undefined,
         })),

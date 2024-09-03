@@ -1,10 +1,9 @@
 export interface User {
-  id: number;
-  email?: string | null;
-  name: string;
-  abbrv?: string | null;
-  title?: string | null;
-  role: "TEACHER" | "STUDENT" | null;
-  image?: string | null;
+  id: string;
+  email: string | null;
+  primaryRole: "TEACHER" | "STUDENT" | null;
   isSuperUser: boolean;
 }
+
+export const SALUTATIONS = ["Herr", "Frau"] as const;
+export type Salutation = (typeof SALUTATIONS)[number];

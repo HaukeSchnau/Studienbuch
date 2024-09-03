@@ -17,7 +17,7 @@ interface Props {
     rowIndex: number,
     update: Pick<User, "id"> & Partial<User>,
   ) => void;
-  updates: Map<number, Partial<User>>;
+  updates: Map<string, Partial<User>>;
   onClickChangePassword: (user: User) => void;
   onClickPermissions: (user: User) => void;
   onClickDelete: (user: User) => void;
@@ -61,39 +61,39 @@ export const UsersTable = ({
 
   const columns = useMemo(
     () => [
-      column.accessor("title", {
-        header: "Anrede",
-        cell: ({ getValue, row }) => (
-          <TextFieldCell
-            value={getValue() ?? ""}
-            updateData={(value) =>
-              handleUpdateRow(row.index, {
-                id: row.original.id,
-                title: value ? value : null,
-              })
-            }
-            isDirty={updates.get(row.original.id)?.title !== undefined}
-          />
-        ),
-      }),
-      column.accessor("name", {
-        header: "Name",
-        cell: ({ getValue, row }) => (
-          <TextFieldCell
-            value={getValue()}
-            updateData={(value) =>
-              handleUpdateRow(row.index, { id: row.original.id, name: value })
-            }
-            isDirty={updates.get(row.original.id)?.name !== undefined}
-          />
-        ),
-      }),
-      column.accessor("abbrv", {
-        header: "Kürzel",
-        cell: ({ getValue }) => (
-          <div className="w-full p-2 text-center">{getValue()}</div>
-        ),
-      }),
+      // column.accessor("title", {
+      //   header: "Anrede",
+      //   cell: ({ getValue, row }) => (
+      //     <TextFieldCell
+      //       value={getValue() ?? ""}
+      //       updateData={(value) =>
+      //         handleUpdateRow(row.index, {
+      //           id: row.original.id,
+      //           title: value ? value : null,
+      //         })
+      //       }
+      //       isDirty={updates.get(row.original.id)?.title !== undefined}
+      //     />
+      //   ),
+      // }),
+      // column.accessor("name", {
+      //   header: "Name",
+      //   cell: ({ getValue, row }) => (
+      //     <TextFieldCell
+      //       value={getValue()}
+      //       updateData={(value) =>
+      //         handleUpdateRow(row.index, { id: row.original.id, name: value })
+      //       }
+      //       isDirty={updates.get(row.original.id)?.name !== undefined}
+      //     />
+      //   ),
+      // }),
+      // column.accessor("abbrv", {
+      //   header: "Kürzel",
+      //   cell: ({ getValue }) => (
+      //     <div className="w-full p-2 text-center">{getValue()}</div>
+      //   ),
+      // }),
       column.accessor("email", {
         header: "Email",
         cell: ({ getValue, row }) => (
@@ -158,8 +158,7 @@ export const UsersTable = ({
     <div
       className="grid w-full"
       style={{
-        gridTemplateColumns:
-          "min-content 1fr min-content 1fr min-content min-content min-content",
+        gridTemplateColumns: "1fr min-content min-content min-content",
         gap: "1px",
       }}
     >

@@ -1,6 +1,6 @@
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
-import { User } from "@stu/db/schema";
+import { Persons } from "@stu/db/schema";
 import {
   findAbbrvName,
   loginIservWithDefaultCredentials,
@@ -9,8 +9,8 @@ import {
 export const addNamesToExistingUsers = async () => {
   const parsedUsers = await db
     .select()
-    .from(User)
-    .where(eq(User.name, User.abbrv));
+    .from(Persons)
+    .where(eq(Persons.name, Persons.abbrv));
 
   for (const user of parsedUsers) {
     if (!user.abbrv) throw new Error("User has no abbreviation");
@@ -22,11 +22,11 @@ export const addNamesToExistingUsers = async () => {
     }
 
     await db
-      .update(User)
+      .update(Persons)
       .set({
         name: result.name,
         email: result.email,
       })
-      .where(eq(User.id, user.id));
+      .where(eq(Persons.id, user.id));
   }
 };

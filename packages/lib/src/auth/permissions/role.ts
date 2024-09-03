@@ -1,7 +1,7 @@
 import type { Permission } from "./permission";
 
 export interface Role {
-  id: number;
+  id: string;
   name: string;
   permissions: PermissionOnRole[];
   defaultScope: unknown;

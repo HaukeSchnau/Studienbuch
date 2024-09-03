@@ -1,9 +1,11 @@
-import { eq } from "@stu/db";
-import { db } from "@stu/db/client";
-import { Substitution } from "@stu/db/schema";
+import { add } from "date-fns";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { z } from "zod";
+
+import { between } from "@stu/db";
+import { db } from "@stu/db/client";
+import { Substitutions } from "@stu/db/schema";
 
 import { publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";
@@ -18,21 +20,24 @@ export const substitutions = createRouter({
       }),
     )
     .query(async ({ input }) => {
-      return db.query.Substitution.findMany({
-        where: eq(
-          Substitution.date,
-          input.date ?? dayjs.utc().startOf("day").toDate(),
-        ),
+      const start = input.date ?? dayjs.utc().startOf("day").toDate();
+      const end = add(start, { days: 1 });
+      return db.query.Substitutions.findMany({
+        where: between(Substitutions.start, start, end),
         with: {
-          course: true,
+          timetableEntry: {
+            with: {
+              course: true,
+            },
+          },
         },
       }).then((substitutions) => {
         return substitutions.map(
-          ({ lessonStart, lessonEnd, ...substitution }) => {
+          ({ timetableEntry: { start, duration }, ...substitution }) => {
             return {
               ...substitution,
-              lessonStart: lessonStart >= 8 ? lessonStart - 2 : lessonStart,
-              lessonEnd: lessonStart >= 8 ? lessonEnd - 2 : lessonEnd,
+              start,
+              duration,
             };
           },
         );

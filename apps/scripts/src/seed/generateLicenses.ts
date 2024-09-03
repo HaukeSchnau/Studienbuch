@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { db } from "@stu/db/client";
-import { LicenseKey } from "@stu/db/schema";
+import { LicenseKeys } from "@stu/db/schema";
 
 function generateLicenseKey(): string {
   return crypto
@@ -23,8 +23,8 @@ export const generateLicenses = async (numberOfLicenses: number) => {
       isSuperKey: i == 0,
     };
 
-    await db.insert(LicenseKey).values(data).onConflictDoUpdate({
-      target: LicenseKey.key,
+    await db.insert(LicenseKeys).values(data).onConflictDoUpdate({
+      target: LicenseKeys.key,
       set: data,
     });
   }

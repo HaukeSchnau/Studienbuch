@@ -1,11 +1,14 @@
-import type { User } from "./user";
+import type { Salutation } from "./user";
 
-export type Teacher = Pick<User, "id" | "name" | "title">;
+export interface Teacher {
+  salutation: Salutation | null;
+  name: string;
+}
 
 export const formalName = (teacher: Teacher) => {
-  if (!teacher.title) {
+  if (!teacher.salutation) {
     return teacher.name;
   }
 
-  return `${teacher.title} ${teacher.name.split(" ").at(-1)}`;
+  return `${teacher.salutation} ${teacher.name.split(" ").at(-1)}`;
 };

@@ -1,7 +1,8 @@
-import { formalName, generateRandomPassword } from "@stu/lib";
 import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { z } from "zod";
+
+import { formalName, generateRandomPassword } from "@stu/lib";
 
 import type { User } from "../user.type";
 import { Button } from "~/components/form/Button";
@@ -47,7 +48,7 @@ export const ChangePasswordModalContent = ({
   return (
     <form onSubmit={submitHandler(handleSubmit)}>
       <h1 className="text-2xl font-bold text-primary-text">
-        Passwort von {formalName(user)} ändern
+        Passwort von {formalName(user.person)} ändern
       </h1>
 
       <div className="h-4" />

@@ -2,7 +2,6 @@ import { z } from "zod";
 
 export const protoCourseSchema = z.object({
   subject: z.string(),
-  guessedSubject: z.string(),
   teacher: z.string(),
   room: z.string().optional(),
 });

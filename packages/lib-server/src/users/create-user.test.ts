@@ -1,7 +1,8 @@
+import { describe, expect, it } from "vitest";
+
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
-import { User } from "@stu/db/schema";
-import { describe, expect, it } from "vitest";
+import { Persons, Users } from "@stu/db/schema";
 
 import { createUser } from "./createUser";
 
@@ -11,16 +12,21 @@ function expectToBeDefined<T>(value: T | undefined): asserts value is T {
 
 describe("createUser", () => {
   it("should create a user", async () => {
-    await createUser("John Doe", "john.doe@example.com", "password");
+    await createUser({
+      name: "John Doe",
+      email: "john.doe@example.com",
+      password: "password",
+    });
 
-    const [user] = await db
+    const [row] = await db
       .select()
-      .from(User)
-      .where(eq(User.email, "john.doe@example.com"));
+      .from(Users)
+      .where(eq(Users.email, "john.doe@example.com"))
+      .innerJoin(Persons, eq(Users.person, Persons.id));
 
-    expectToBeDefined(user);
-    expect(user.name).toEqual("John Doe");
-    expect(user.email).toEqual("john.doe@example.com");
-    expect(user.passwordHash).not.toEqual("password"); // should be hashed
+    expectToBeDefined(row);
+    expect(row.persons.name).toEqual("John Doe");
+    expect(row.users.email).toEqual("john.doe@example.com");
+    expect(row.users.passwordHash).not.toEqual("password"); // should be hashed
   });
 });
