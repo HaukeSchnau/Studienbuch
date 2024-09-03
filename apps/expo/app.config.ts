@@ -53,6 +53,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         ios: {
           newArchEnabled: true,
+          deploymentTarget: "15.0",
         },
         android: {
           newArchEnabled: true,

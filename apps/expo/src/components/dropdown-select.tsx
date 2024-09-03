@@ -1,5 +1,7 @@
 import React, { useMemo } from "react";
 
+import { SelectView } from "@stu/expo-native-modules";
+
 import { Button } from "./button";
 import { Text } from "./text";
 
@@ -20,5 +22,5 @@ export const DropdownSelect = <TOption,>({
   onChange,
   options,
 }: Props<TOption>) => {
-  return <></>;
+  return <SelectView name={label} />;
 };
