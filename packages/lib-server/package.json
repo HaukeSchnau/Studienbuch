@@ -20,6 +20,7 @@
     "@stu/db": "workspace:*",
     "@stu/external-api": "workspace:*",
     "@stu/lib": "workspace:*",
+    "date-fns": "^3.6.0",
     "node-html-parser": "^6.1.13",
     "papaparse": "^5.4.1",
     "zod": "catalog:"

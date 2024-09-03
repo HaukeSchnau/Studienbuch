@@ -16,6 +16,7 @@
     "@stu/lib": "workspace:*",
     "@stu/lib-server": "workspace:*",
     "commander": "^12.1.0",
+    "date-fns": "^3.6.0",
     "dayjs": "^1.11.13",
     "tsx": "^4.17.0",
     "zod": "catalog:"

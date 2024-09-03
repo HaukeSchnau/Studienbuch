@@ -73,7 +73,7 @@ importers:
         specifier: 1.6.4
         version: 1.6.4(@babel/runtime@7.25.4)(react-native@0.74.5(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(@types/react@18.3.4)(encoding@0.1.13)(react@18.3.1))(react@18.3.1)
       '@stu/expo-native-modules':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/expo-native-modules
       '@stu/lib':
         specifier: workspace:*
@@ -479,6 +479,9 @@ importers:
       commander:
         specifier: ^12.1.0
         version: 12.1.0
+      date-fns:
+        specifier: ^3.6.0
+        version: 3.6.0
       dayjs:
         specifier: ^1.11.13
         version: 1.11.13
@@ -534,6 +537,9 @@ importers:
       '@trpc/server':
         specifier: 11.0.0-rc.449
         version: 11.0.0-rc.449
+      date-fns:
+        specifier: ^3.6.0
+        version: 3.6.0
       dayjs:
         specifier: ^1.11.13
         version: 1.11.13
@@ -614,6 +620,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@stu/lib':
+        specifier: workspace:*
+        version: link:../lib
       '@t3-oss/env-core':
         specifier: ^0.11.0
         version: 0.11.0(typescript@5.5.4)(zod@3.23.8)
@@ -716,6 +725,9 @@ importers:
       '@t3-oss/env-nextjs':
         specifier: ^0.11.0
         version: 0.11.0(typescript@5.5.4)(zod@3.23.8)
+      date-fns:
+        specifier: ^3.6.0
+        version: 3.6.0
       dayjs:
         specifier: ^1.11.13
         version: 1.11.13
@@ -811,6 +823,9 @@ importers:
       '@stu/lib':
         specifier: workspace:*
         version: link:../lib
+      date-fns:
+        specifier: ^3.6.0
+        version: 3.6.0
       node-html-parser:
         specifier: ^6.1.13
         version: 6.1.13
@@ -868,7 +883,7 @@ importers:
         version: 7.35.0(eslint@9.9.1(jiti@1.21.6))
       eslint-plugin-react-hooks:
         specifier: rc
-        version: 5.1.0-rc-b57d2823-20240822(eslint@9.9.1(jiti@1.21.6))
+        version: 5.1.0-rc-4f604941-20240830(eslint@9.9.1(jiti@1.21.6))
       eslint-plugin-turbo:
         specifier: ^2.0.12
         version: 2.0.14(eslint@9.9.1(jiti@1.21.6))
@@ -5225,6 +5240,9 @@ packages:
     resolution: {integrity: sha512-t/Ygsytq+R995EJ5PZlD4Cu56sWa8InXySaViRzw9apusqsOO2bQP+SbYzAhR0pFKoB+43lYy8rWban9JSuXnA==}
     engines: {node: '>= 0.4'}
 
+  date-fns@3.6.0:
+    resolution: {integrity: sha512-fRHTG8g/Gif+kSh50gaGEdToemgfj74aRX3swtiouboip5JDLAyDE9F11nHMIcvOaXeOC6D7SpNhi7uFyB7Uww==}
+
   dayjs@1.11.13:
     resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
 
@@ -5834,8 +5852,8 @@ packages:
     peerDependencies:
       eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0
 
-  eslint-plugin-react-hooks@5.1.0-rc-b57d2823-20240822:
-    resolution: {integrity: sha512-YY9FJcnmCAA/DVWYjm7TBcgKDWZGtrIzL2BrddxM705RTZog56zdu4G0//d1W9TZV3mQkDratfjtH/tMTaL5Gw==}
+  eslint-plugin-react-hooks@5.1.0-rc-4f604941-20240830:
+    resolution: {integrity: sha512-7IHBSzlQL498kfaPzQWV1t8dR/v3QTbXtG2x2bVjl5YOLpmf+I045NU78HMX7wAOaepWjsOwF591Q/O+nr3CJQ==}
     engines: {node: '>=10'}
     peerDependencies:
       eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0 || ^9.0.0
@@ -16148,6 +16166,8 @@ snapshots:
       es-errors: 1.3.0
       is-data-view: 1.0.1
 
+  date-fns@3.6.0: {}
+
   dayjs@1.11.13: {}
 
   debounce@1.2.1: {}
@@ -16926,7 +16946,7 @@ snapshots:
     dependencies:
       eslint: 9.9.1(jiti@1.21.6)
 
-  eslint-plugin-react-hooks@5.1.0-rc-b57d2823-20240822(eslint@9.9.1(jiti@1.21.6)):
+  eslint-plugin-react-hooks@5.1.0-rc-4f604941-20240830(eslint@9.9.1(jiti@1.21.6)):
     dependencies:
       eslint: 9.9.1(jiti@1.21.6)
 
