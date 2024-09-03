@@ -41,5 +41,6 @@
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.patterns": {
     "package.json": "*"
-  }
+  },
+  "emmet.excludeLanguages": ["markdown", "typescriptreact"]
 }
