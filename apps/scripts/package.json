@@ -18,15 +18,15 @@
     "commander": "^12.1.0",
     "date-fns": "^3.6.0",
     "dayjs": "^1.11.13",
-    "tsx": "^4.17.0",
+    "tsx": "^4.19.0",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
     "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
-    "@total-typescript/ts-reset": "^0.6.0",
-    "@types/node": "^22.5.0",
+    "@total-typescript/ts-reset": "^0.6.1",
+    "@types/node": "^22.5.3",
     "eslint": "catalog:",
     "typescript": "catalog:"
   }

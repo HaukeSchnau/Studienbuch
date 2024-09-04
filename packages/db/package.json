@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "@stu/lib": "workspace:*",
-    "@t3-oss/env-core": "^0.11.0",
+    "@t3-oss/env-core": "^0.11.1",
     "dayjs": "^1.11.13",
     "drizzle-orm": "^0.33.0",
     "drizzle-zod": "^0.5.1",
@@ -44,9 +44,9 @@
     "@stu/eslint-config": "workspace:*",
     "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
-    "@types/pg": "^8.11.6",
+    "@types/pg": "^8.11.8",
     "dotenv-cli": "^7.4.2",
-    "drizzle-kit": "^0.24.1",
+    "drizzle-kit": "^0.24.2",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"

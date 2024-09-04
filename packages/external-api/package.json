@@ -22,8 +22,8 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@linear/sdk": "^27.0.0",
-    "@t3-oss/env-nextjs": "^0.11.0",
+    "@linear/sdk": "^29.0.0",
+    "@t3-oss/env-nextjs": "^0.11.1",
     "date-fns": "^3.6.0",
     "dayjs": "^1.11.13",
     "tough-cookie": "^4.1.4",
@@ -33,7 +33,7 @@
     "@stu/eslint-config": "workspace:*",
     "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
-    "@total-typescript/ts-reset": "^0.6.0",
+    "@total-typescript/ts-reset": "^0.6.1",
     "@types/tough-cookie": "^4.0.5",
     "eslint": "catalog:",
     "openapi-typescript-codegen": "^0.29.0",
