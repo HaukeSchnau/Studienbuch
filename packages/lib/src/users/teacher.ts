@@ -12,3 +12,15 @@ export const formalName = (teacher: Teacher) => {
 
   return `${teacher.salutation} ${teacher.name.split(" ").at(-1)}`;
 };
+
+export const formalNameShort = (teacher: Teacher) => {
+  if (!teacher.salutation) {
+    return teacher.name;
+  }
+
+  if (teacher.salutation === "Herr") {
+    return `Hr. ${teacher.name.split(" ").at(-1)}`;
+  }
+
+  return `Fr. ${teacher.name.split(" ").at(-1)}`;
+};

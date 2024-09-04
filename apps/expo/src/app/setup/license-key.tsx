@@ -1,14 +1,21 @@
 import { View } from "react-native";
 import { useMaskedInputProps } from "react-native-mask-input";
-import { Link } from "expo-router";
+import { router } from "expo-router";
+
+import type { Falsy } from "@stu/lib";
 
 import { Button } from "~/components/button";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
+import { api } from "~/utils/api";
 import { useFormContext } from "./form";
 
 export default function LicenseKey() {
-  const form = useFormContext(0);
+  const { form, handleSubmitStep } = useFormContext({
+    step: 0,
+    onSubmitStep: () => router.push("/setup/name-and-year"),
+  });
+  const checkMutation = api.license.check.useMutation();
 
   return (
     <View>
@@ -24,17 +31,31 @@ export default function LicenseKey() {
       <View className="h-6" />
       <form.Field
         name="licenseKey"
+        validators={{
+          onSubmitAsync: async ({ value }) => {
+            console.log("VALIDATE", value);
+            const result = await checkMutation.mutateAsync({
+              licenseKey: value,
+            });
+            return result === "VALID"
+              ? undefined
+              : "Ungültiger Lizenzschlüssel";
+          },
+        }}
         children={(field) => (
           <LicenseKeyField
             value={field.state.value}
             setValue={field.setValue}
+            error={
+              field.state.meta.isTouched &&
+              field.state.meta.errors.length &&
+              field.state.meta.errors.join(", ")
+            }
           />
         )}
       />
       <View className="h-6" />
-      <Link href="/setup/name-and-year" asChild>
-        <Button label="Weiter" className="self-end" />
-      </Link>
+      <Button label="Weiter" className="self-end" onPress={handleSubmitStep} />
     </View>
   );
 }
@@ -42,9 +63,11 @@ export default function LicenseKey() {
 const LicenseKeyField = ({
   value,
   setValue,
+  error,
 }: {
   value: string;
   setValue: (value: string) => void;
+  error?: string | Falsy;
 }) => {
   const maskedInputProps = useMaskedInputProps({
     // prettier-ignore
@@ -55,5 +78,13 @@ const LicenseKeyField = ({
     maskAutoComplete: true,
   });
 
-  return <TextField label="Lizenzschlüssel" {...maskedInputProps} />;
+  return (
+    <TextField
+      label="Lizenzschlüssel"
+      error={error}
+      {...maskedInputProps}
+      autoCorrect={false}
+      autoComplete="off"
+    />
+  );
 };

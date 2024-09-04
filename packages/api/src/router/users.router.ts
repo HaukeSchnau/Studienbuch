@@ -1,7 +1,7 @@
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import type { Permission, PermissionScope, Role, Salutation } from "@stu/lib";
+import type { Permission, PermissionScope, Salutation } from "@stu/lib";
 import { hashPassword } from "@stu/auth/src/password";
 import { asc, eq } from "@stu/db";
 import { db } from "@stu/db/client";

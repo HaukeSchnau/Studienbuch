@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { add, format } from "date-fns";
+import { add } from "date-fns";
 
 import type { SchoolId } from "@stu/lib";
 import { and, eq, gte, lte } from "@stu/db";
@@ -9,6 +9,7 @@ import {
   Rooms,
   Schools,
   SemesterCourses,
+  SemesterCoursesToClasses,
   SemesterCoursesToTeachers,
   Semesters,
   TimetableEntries,
@@ -148,13 +149,15 @@ export const importTimetable = async ({ school, date }: Options) => {
         .insert(Courses)
         .values({
           id: courseUuid,
-          name: course.longName,
+          name: course.name,
+          longName: course.longName,
           subject,
         })
         .onConflictDoUpdate({
           target: [Courses.id],
           set: {
-            name: course.longName,
+            name: course.name,
+            longName: course.longName,
             subject,
           },
         });
@@ -167,8 +170,35 @@ export const importTimetable = async ({ school, date }: Options) => {
           semesterType: semester.type,
           semesterYear: semester.year,
         })
-        .onConflictDoNothing(); // TODO: Update isChoosable here
+        .onConflictDoUpdate({
+          target: [
+            SemesterCourses.course,
+            SemesterCourses.semesterType,
+            SemesterCourses.semesterYear,
+            SemesterCourses.school,
+          ],
+          set: {
+            isChoosable: true,
+          },
+        }); // TODO: Update isChoosable here
       //// END COURSE
+
+      //// CLASSES
+      for (const cls of periodClasses) {
+        const mappedClass = mapKadmosClass(cls);
+
+        await db
+          .insert(SemesterCoursesToClasses)
+          .values({
+            classIdentifier: mappedClass.identifierInYear,
+            classStartYear: mappedClass.startYear,
+            course: courseUuid,
+            school,
+            semesterType: semester.type,
+            semesterYear: semester.year,
+          })
+          .onConflictDoNothing();
+      }
 
       //// TEACHERS
       for (const teacher of periodTeachers) {

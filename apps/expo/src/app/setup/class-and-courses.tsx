@@ -1,28 +1,44 @@
-import type { Course } from "@stu/lib";
 import { useEffect, useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Link } from "expo-router";
-import { formatClassName, isArraySingleElement } from "@stu/lib";
+
+import type { Course, SubjectId } from "@stu/lib";
+import {
+  BetterMap,
+  formalNameShort,
+  formatClassName,
+  isArraySingleElement,
+} from "@stu/lib";
 
 import { Button } from "~/components/button";
-import { DropdownSelect } from "~/components/dropdown-select";
+import { SelectCourse } from "~/components/select-course";
 import { SelectField } from "~/components/select-field";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { useFormContext } from "./form";
 
 export default function ClassAndCourses() {
-  const form = useFormContext(2);
+  const { form, handleSubmitStep } = useFormContext({
+    step: 2,
+    onSubmitStep: () => form.handleSubmit(),
+  });
 
   const selectedYear = form.useField({
     name: "year",
   });
 
-  const classes = api.classes.list.useQuery({
-    yearId: selectedYear.state.value.id,
+  const selectedClass = form.useField({
+    name: "class",
   });
-  const courses = api.courses.list.useQuery({
-    yearId: selectedYear.state.value.id,
+
+  const classes = api.classes.list.useQuery({
+    school: "igs-lil",
+    startYear: selectedYear.state.value.startYear,
+  });
+
+  const courses = api.courses.listChoices.useQuery({
+    school: "igs-lil",
+    startYear: selectedYear.state.value.startYear,
   });
 
   useEffect(() => {
@@ -32,18 +48,21 @@ export default function ClassAndCourses() {
   }, [classes.data, form]);
 
   const courseChoices = useMemo(() => {
-    if (courses.data) {
+    const classVal = selectedClass.state.value;
+    if (courses.data && classVal) {
       return courses.data
-        .filter((course) => course.isChoosable)
-        .reduce<Record<string, Course[]>>((acc, course) => {
-          acc[course.name] ??= [];
-          // @ts-expect-error - we know it's defined above
-          acc[course.name].push(course);
+        .filter((course) =>
+          course.classes.some(
+            (cls) => cls.identifierInYear === classVal.identifierInYear,
+          ),
+        )
+        .reduce<BetterMap<SubjectId, Course[]>>((acc, course) => {
+          acc.getWithDefault(course.subject, []).push(course);
           return acc;
-        }, {});
+        }, new BetterMap());
     }
-    return {};
-  }, [courses.data]);
+    return new BetterMap<SubjectId, Course[]>();
+  }, [courses.data, selectedClass.state.value]);
 
   if (classes.isPending || courses.isPending) {
     return <ActivityIndicator />;
@@ -69,45 +88,49 @@ export default function ClassAndCourses() {
       <View className="h-6" />
 
       {hasClasses && (
-        <form.Field
-          name="class"
-          children={(field) => (
-            <SelectField
-              options={classes.data}
-              label="Klasse"
-              getKey={(item) => item.id}
-              getOptionLabel={(item) =>
-                formatClassName(item, selectedYear.state.value)
-              }
-              onChange={field.setValue}
-              value={field.state.value}
-            />
-          )}
-        />
+        <>
+          <form.Field
+            name="class"
+            children={(field) => (
+              <SelectField
+                options={classes.data}
+                label="Klasse"
+                getKey={(item) => item.identifierInYear}
+                getOptionLabel={(item) =>
+                  formatClassName(item, selectedYear.state.value)
+                }
+                onChange={field.setValue}
+                value={field.state.value}
+              />
+            )}
+          />
+          <View className="h-6" />
+        </>
       )}
-      <View className="h-6" />
 
       <View className="flex flex-row flex-wrap">
-        {Object.entries(courseChoices).map(([name, courses], idx) => (
+        {Array.from(courseChoices.entries()).map(([subject, courses], idx) => (
           <View
-            key={idx}
+            key={subject}
             style={{
               width: "50%",
-              paddingLeft: idx % 2 === 1 ? 4 : 0,
-              paddingRight: idx % 2 === 0 ? 4 : 0,
+              paddingLeft: idx % 2 === 1 ? 12 : 0,
+              paddingRight: idx % 2 === 0 ? 12 : 0,
               paddingTop: idx >= 2 ? 12 : 0,
             }}
           >
             <form.Field
-              name={`chosenCourses.${name}`}
-              key={name}
+              name={`chosenCourses.${subject}`}
               children={(field) => (
-                <DropdownSelect
+                <SelectCourse
                   options={courses}
-                  label={name}
-                  getKey={(item) => item?.id.toString() ?? ""}
-                  getOptionLabel={(item) => item.courseId}
-                  onChange={field.setValue}
+                  subject={subject}
+                  getOptionLabel={(item) =>
+                    item
+                      ? `${item.name.toLowerCase()} (${item.teachers.map(formalNameShort).join(", ")})`
+                      : "nicht belegt"
+                  }
+                  onChange={(val) => field.setValue(val)}
                   value={field.state.value}
                 />
               )}
@@ -118,9 +141,7 @@ export default function ClassAndCourses() {
 
       <View className="h-6" />
 
-      <Link href="/setup/name-and-year" asChild>
-        <Button label="Fertig" className="self-end" />
-      </Link>
+      <Button label="Fertig" className="self-end" onPress={handleSubmitStep} />
     </View>
   );
 }

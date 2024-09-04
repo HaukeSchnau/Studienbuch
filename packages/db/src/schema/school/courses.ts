@@ -2,7 +2,6 @@ import { relations } from "drizzle-orm";
 import {
   boolean,
   foreignKey,
-  integer,
   pgEnum,
   pgTable,
   primaryKey,
@@ -24,6 +23,7 @@ export const Subject = pgEnum("subject", SUBJECT_IDS);
 export const Courses = pgTable("courses", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   name: text("name").notNull(),
+  longName: text("long_name").notNull(),
   subject: Subject("subject").notNull(),
 });
 
@@ -46,13 +46,6 @@ export const SemesterCourses = pgTable(
     school: SchoolId("school").notNull(),
     semesterType: SemesterType("semester_type").notNull(),
     semesterYear: smallint("semester_year").notNull(),
-
-    // teacher: uuid("teacher")
-    //   .notNull()
-    //   .references(() => Persons.id, {
-    //     onDelete: "restrict",
-    //     onUpdate: "cascade",
-    //   }),
 
     isChoosable: boolean("is_choosable").notNull().default(false),
   },

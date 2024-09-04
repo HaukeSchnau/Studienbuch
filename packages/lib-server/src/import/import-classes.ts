@@ -4,9 +4,9 @@ import { db } from "@stu/db/client";
 import { Classes, Schools, TeachersToClasses, Years } from "@stu/db/schema";
 import { getClasses, login } from "@stu/external-api";
 import { BetterMap, startYearToNameMap } from "@stu/lib";
-import {mapKadmosClass} from './map-kadmos-class'
 
 import { createLazyIservClient } from "../lazy-iserv-client";
+import { mapKadmosClass } from "./map-kadmos-class";
 
 interface Options {
   school: SchoolId;
@@ -39,7 +39,7 @@ export const importClasses = async ({ school }: Options) => {
         startYearToNameMap.get(year.startYear) ??
         year.name ??
         year.startYear.toString(),
-      graduationYear: year.startYear + 8,
+      graduationYear: year.startYear + 9,
       startYear: year.startYear,
       school,
     };

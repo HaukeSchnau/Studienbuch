@@ -38,6 +38,9 @@ program
       .values({ id: school, ...defaultSchoolValue })
       .onConflictDoNothing();
 
+    console.log(`Generating license keys for school "${school}"...`);
+    await generateLicenses(100, school);
+
     console.log("Adding semesters...");
     await addSemesters(defaultSchoolValue.stateCode);
 
@@ -109,12 +112,13 @@ program
 program
   .command("generate-licenses")
   .argument("<number>", "Number of licenses to generate", parseInt)
-  .action(async (number) => {
+  .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
+  .action(async (number, school) => {
     if (isNaN(number)) program.error("Number must be a number");
     if (number < 1) program.error("Number must be greater than 0");
 
     console.log(`Generating ${number} licenses...`);
-    await generateLicenses(number);
+    await generateLicenses(number, school);
 
     process.exit(0);
   });

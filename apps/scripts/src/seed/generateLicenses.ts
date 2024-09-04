@@ -1,4 +1,6 @@
 import crypto from "crypto";
+
+import type { SchoolId } from "@stu/lib";
 import { db } from "@stu/db/client";
 import { LicenseKeys } from "@stu/db/schema";
 
@@ -11,9 +13,15 @@ function generateLicenseKey(): string {
     .slice(0, -1);
 }
 
-export const generateLicenses = async (numberOfLicenses: number) => {
+export const generateLicenses = async (
+  numberOfLicenses: number,
+  school: SchoolId,
+) => {
   for (let i = 0; i < numberOfLicenses; i++) {
-    const licenseKey = i == 0 ? "KJ27-MP16-LS14-JM22" : generateLicenseKey();
+    const licenseKey =
+      i == 0 && school === "igs-lil"
+        ? "KJ27-MP16-LS14-JM22"
+        : generateLicenseKey();
     const expiresAt = new Date();
     expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
@@ -21,6 +29,7 @@ export const generateLicenses = async (numberOfLicenses: number) => {
       key: licenseKey,
       expiresAt: i == 0 ? null : expiresAt,
       isSuperKey: i == 0,
+      school,
     };
 
     await db.insert(LicenseKeys).values(data).onConflictDoUpdate({

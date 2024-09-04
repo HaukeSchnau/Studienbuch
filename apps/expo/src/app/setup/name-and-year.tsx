@@ -1,5 +1,7 @@
 import { View } from "react-native";
-import { Link } from "expo-router";
+import { router } from "expo-router";
+import { z } from "zod";
+
 import { formatYear } from "@stu/lib";
 
 import { Button } from "~/components/button";
@@ -11,7 +13,10 @@ import { api } from "~/utils/api";
 import { useFormContext } from "./form";
 
 export default function NameAndYear() {
-  const form = useFormContext(1);
+  const { form, handleSubmitStep } = useFormContext({
+    step: 1,
+    onSubmitStep: () => router.push("/setup/class-and-courses"),
+  });
   const years = api.years.list.useQuery({ activeOnly: true });
 
   return (
@@ -26,11 +31,19 @@ export default function NameAndYear() {
 
       <form.Field
         name="name"
+        validators={{
+          onSubmit: z.string().min(2, "Bitte gib deinen Namen an"),
+        }}
         children={(field) => (
           <TextField
             label="Name"
             value={field.state.value}
             onChangeText={field.setValue}
+            error={
+              field.state.meta.isTouched &&
+              field.state.meta.errors.length &&
+              field.state.meta.errors.join(", ")
+            }
           />
         )}
       />
@@ -47,7 +60,7 @@ export default function NameAndYear() {
               onChange={field.setValue}
               options={years.data}
               getOptionLabel={formatYear}
-              getKey={(year) => year.id}
+              getKey={(year) => year.startYear}
             />
           )}
         />
@@ -68,9 +81,7 @@ export default function NameAndYear() {
 
       <View className="h-6" />
 
-      <Link href="/setup/class-and-courses" asChild>
-        <Button label="Weiter" className="self-end" />
-      </Link>
+      <Button label="Weiter" className="self-end" onPress={handleSubmitStep} />
     </View>
   );
 }

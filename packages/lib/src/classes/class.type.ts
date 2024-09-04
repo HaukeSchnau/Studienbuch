@@ -1,4 +1,7 @@
+import type { SchoolId } from "../schools";
+
 export interface Class {
-  id: number;
   identifierInYear: string;
+  startYear: number;
+  school: SchoolId;
 }

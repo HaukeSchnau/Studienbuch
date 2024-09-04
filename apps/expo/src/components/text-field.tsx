@@ -1,23 +1,22 @@
-import { useEffect, useRef, useState } from "react";
+import type { TextInputProps } from "react-native";
+import { useState } from "react";
 import { TextInput, View } from "react-native";
-import Animated, {
-  interpolateColor,
-  useAnimatedStyle,
-  useDerivedValue,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import { useSharedValue } from "react-native-reanimated";
+
+import type { Falsy } from "@stu/lib";
 
 import { FieldLabel } from "./field-label";
+import { Text } from "./text";
 
-interface Props {
+interface Props extends TextInputProps {
   label: string;
   value: string;
   placeholder?: string;
   onChangeText: (text: string) => void;
+  error?: string | Falsy;
 }
 
-export const TextField = ({ label, placeholder, ...props }: Props) => {
+export const TextField = ({ label, placeholder, error, ...props }: Props) => {
   const [isActive, setIsActive] = useState(false);
   const active = useSharedValue(false);
   const focused = useSharedValue(false);
@@ -37,17 +36,22 @@ export const TextField = ({ label, placeholder, ...props }: Props) => {
 
   return (
     <View>
-      <TextInput
-        {...props}
-        placeholder={isActive ? placeholder : ""}
-        className="rounded-3xl bg-[#E6E6E6] px-6 py-6"
-        style={{
-          fontFamily: "Nunito_400Regular",
-        }}
-        onFocus={onFocus}
-        onBlur={onBlur}
-      />
-      <FieldLabel label={label} active={active} focused={focused} />
+      <View>
+        <TextInput
+          {...props}
+          placeholder={isActive ? placeholder : ""}
+          className="rounded-3xl bg-[#E6E6E6] px-6 py-6"
+          style={{
+            fontFamily: "Nunito_400Regular",
+          }}
+          onFocus={onFocus}
+          onBlur={onBlur}
+        />
+        <FieldLabel label={label} active={active} focused={focused} />
+      </View>
+      {error ? (
+        <Text className="px-6 pt-1 text-danger">{error}</Text>
+      ) : undefined}
     </View>
   );
 };

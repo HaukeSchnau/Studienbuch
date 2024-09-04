@@ -14,7 +14,7 @@ export const license = createRouter({
         licenseKey: z.string(),
       }),
     )
-    .query(async ({ input }) => {
+    .mutation(async ({ input }) => {
       const licenseKey = await db.query.LicenseKeys.findFirst({
         where: eq(LicenseKeys.key, input.licenseKey),
       });

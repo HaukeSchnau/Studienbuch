@@ -1,13 +1,17 @@
-import type { Teacher } from "../users";
+import type { Salutation } from "../users";
 import type { SubjectId } from "./subject";
 
 export interface Course {
-  id: number;
-  courseId: string;
-  name: SubjectId;
-  teacher: Teacher;
+  id: string;
+  name: string;
+  subject: SubjectId;
   isChoosable: boolean;
-  times: CourseTime[];
+  teachers: {
+    id: string;
+    name: string;
+    abbrv: string | null;
+    salutation: Salutation | null;
+  }[];
 }
 
 export type CourseWithoutTimes = Omit<Course, "times">;

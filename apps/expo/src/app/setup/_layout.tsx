@@ -33,8 +33,6 @@ export default function HomeLayout() {
       licenseKey: "",
       name: "",
       isOfAge: false,
-      year: null,
-      class: null,
       chosenCourses: {},
     },
     validatorAdapter: zodValidator(),
@@ -73,7 +71,10 @@ export default function HomeLayout() {
             ]}
           >
             <Logo />
-            <View className="rounded-3xl bg-white px-6 py-8" style={shadow}>
+            <View
+              className="w-full rounded-3xl bg-white px-6 py-8"
+              style={shadow}
+            >
               <FormContext.Provider value={form}>
                 <Slot />
               </FormContext.Provider>
