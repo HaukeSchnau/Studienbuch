@@ -4,7 +4,8 @@ import { Image } from "expo-image";
 
 import type { SubjectId } from "@stu/lib";
 
-const subjectIconMap: Record<SubjectId, number> = {
+// TODO: Remove partial when all subjects have icons
+const subjectIconMap: Partial<Record<SubjectId, number>> = {
   de: require("./icons/de.svg"),
   en: require("./icons/en.svg"),
   ma: require("./icons/ma.svg"),

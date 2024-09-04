@@ -5,7 +5,6 @@ import { license } from "./router/license.router";
 import { persons } from "./router/persons.router";
 import { schools } from "./router/schools.router";
 import { substitutions } from "./router/substitutions.router";
-import { sync } from "./router/sync.router";
 import { users } from "./router/users.router";
 import { years } from "./router/years.router";
 import { createRouter } from "./trpc";
@@ -16,7 +15,6 @@ export const appRouter = createRouter({
   classes,
   courses,
   substitutions,
-  sync,
   auth,
   schools,
   users,
