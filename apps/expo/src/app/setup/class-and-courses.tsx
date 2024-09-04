@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { Link } from "expo-router";
 
 import type { Course, SubjectId } from "@stu/lib";
 import {
@@ -114,8 +113,8 @@ export default function ClassAndCourses() {
             key={subject}
             style={{
               width: "50%",
-              paddingLeft: idx % 2 === 1 ? 12 : 0,
-              paddingRight: idx % 2 === 0 ? 12 : 0,
+              paddingLeft: idx % 2 === 1 ? 6 : 0,
+              paddingRight: idx % 2 === 0 ? 6 : 0,
               paddingTop: idx >= 2 ? 12 : 0,
             }}
           >
@@ -123,7 +122,9 @@ export default function ClassAndCourses() {
               name={`chosenCourses.${subject}`}
               children={(field) => (
                 <SelectCourse
-                  options={courses}
+                  options={courses
+                    .slice()
+                    .sort((a, b) => a.name.localeCompare(b.name))}
                   subject={subject}
                   getOptionLabel={(item) =>
                     item

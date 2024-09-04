@@ -1,8 +1,9 @@
 "use client";
 
+import { z } from "zod";
+
 import type { Course } from "@stu/lib";
 import { formalName } from "@stu/lib";
-import { z } from "zod";
 
 import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
 import { Card, CardHeading } from "../layout/Card";
@@ -25,8 +26,7 @@ export const CourseCard = ({ course }: CourseCardProps) => {
       className="flex flex-col"
     >
       <CardHeading>{course.name}</CardHeading>
-      <span>{course.courseId}</span>
-      <div>{formalName(course.teacher)}</div>
+      <span>{course.name}</span>
     </Card>
   );
 };

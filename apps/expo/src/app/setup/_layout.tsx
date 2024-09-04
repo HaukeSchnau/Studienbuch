@@ -63,7 +63,7 @@ export default function HomeLayout() {
                 justifyContent: "center",
                 alignItems: "center",
                 gap: 16 * 2,
-                paddingHorizontal: 40,
+                paddingHorizontal: 32,
                 height: "100%",
                 flex: 1,
               },
