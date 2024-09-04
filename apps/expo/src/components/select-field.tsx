@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { View } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
 import { Picker } from "@react-native-picker/picker";
+
 import { isArrayNonEmpty } from "@stu/lib";
 
 import { FieldLabel } from "./field-label";
@@ -29,7 +30,6 @@ export const SelectField = <TOption,>({
 
   useEffect(() => {
     if (!value && isArrayNonEmpty(options)) {
-      console.log("Setting value to", options[0]);
       onChange(options[0]);
     }
   }, [value, options, onChange]);

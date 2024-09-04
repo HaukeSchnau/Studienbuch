@@ -36,8 +36,6 @@ export const users = createRouter({
       .leftJoin(Roles, eq(Roles.id, RolesToUsers.role))
       .orderBy(asc(Persons.name));
 
-    console.log(rows);
-
     const map = new BetterMap<
       string,
       {
@@ -91,8 +89,6 @@ export const users = createRouter({
           scope: row.permissions_to_users.scope as PermissionScope | null,
         });
     }
-
-    console.log([...map.values()]);
 
     return Array.from(map.values());
   }),

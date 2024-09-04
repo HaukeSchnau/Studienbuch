@@ -20,7 +20,6 @@ export const years = createRouter({
       }),
     )
     .query(async ({ input: { school, activeOnly } }) => {
-      console.log(getMaxActiveGraduationYear());
       return db.query.Years.findMany({
         where: and(
           school !== undefined ? eq(Years.school, school) : undefined,

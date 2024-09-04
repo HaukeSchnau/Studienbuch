@@ -33,7 +33,6 @@ export default function LicenseKey() {
         name="licenseKey"
         validators={{
           onSubmitAsync: async ({ value }) => {
-            console.log("VALIDATE", value);
             const result = await checkMutation.mutateAsync({
               licenseKey: value,
             });
