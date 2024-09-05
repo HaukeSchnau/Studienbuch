@@ -120,6 +120,9 @@ importers:
       expo-dev-client:
         specifier: ~4.0.22
         version: 4.0.26(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13))
+      expo-drizzle-studio-plugin:
+        specifier: ^0.0.2
+        version: 0.0.2(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13))
       expo-font:
         specifier: ~12.0.9
         version: 12.0.10(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13))
@@ -6050,6 +6053,11 @@ packages:
 
   expo-dev-menu@5.0.21:
     resolution: {integrity: sha512-i7kOaxOeBksqgeUDvb5vb2cZIVLZhAX2rjLJNH3fBifiAWISeCBAQsKN9vAkMPQGqL9F88vjMyy14ca6Vo+fEw==}
+    peerDependencies:
+      expo: '*'
+
+  expo-drizzle-studio-plugin@0.0.2:
+    resolution: {integrity: sha512-Q5PODIlRp1Hox8a55kJ0iEaaDBL1xo9+oidO03dRu45sB4GAulFcKqc4bZ3qpND4mex0sFu+xm72pmXa/GkjHw==}
     peerDependencies:
       expo: '*'
 
@@ -17287,6 +17295,11 @@ snapshots:
       expo: 51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)
       expo-dev-menu-interface: 1.8.3(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13))
       semver: 7.6.3
+
+  expo-drizzle-studio-plugin@0.0.2(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)):
+    dependencies:
+      expo: 51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)
+      expo-sqlite: 14.0.6(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13))
 
   expo-file-system@17.0.1(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)):
     dependencies:

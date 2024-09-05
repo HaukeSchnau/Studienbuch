@@ -10,6 +10,7 @@ import "./styles.css";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { UIManager } from "react-native";
+import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 import * as SplashScreen from "expo-splash-screen";
 import {
   Nunito_400Regular,
@@ -18,7 +19,8 @@ import {
 } from "@expo-google-fonts/nunito";
 
 // import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
-// import { db } from "~/db/client";
+import { expoDb } from "~/db/client";
+
 // import migrations from './drizzle/migrations';
 
 void SplashScreen.preventAutoHideAsync();
@@ -29,6 +31,7 @@ if (UIManager.setLayoutAnimationEnabledExperimental) {
 
 export default function RootLayout() {
   // const { migrationSuccess, migrationError } = useMigrations(db, migrations);
+  useDrizzleStudio(expoDb);
 
   const [fontLoaded, fontError] = useFonts({
     Nunito_400Regular,
