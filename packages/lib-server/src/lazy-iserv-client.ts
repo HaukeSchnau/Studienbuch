@@ -16,7 +16,7 @@ export const createLazyIservClient = () => {
     return findAbbrvName(makeIservRequest, abbrv);
   };
 
-  const getOrCreatePerson = async (abbrv: string) => {
+  const getOrCreateTeacher = async (abbrv: string) => {
     const existingUser = await db.query.Persons.findFirst({
       where: eq(Persons.abbrv, abbrv),
     });
@@ -33,6 +33,7 @@ export const createLazyIservClient = () => {
         abbrv,
         name: iservUser?.name ?? abbrv,
         email: iservUser?.email,
+        role: "TEACHER",
       })
       .returning()
       .execute();
@@ -44,5 +45,5 @@ export const createLazyIservClient = () => {
     return newUser.id;
   };
 
-  return { getOrCreatePerson };
+  return { getOrCreateTeacher };
 };

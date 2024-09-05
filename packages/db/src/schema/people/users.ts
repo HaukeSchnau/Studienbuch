@@ -11,7 +11,6 @@ export const Users = pgTable("users", {
   email: text("email"),
   passwordHash: text("password_hash"),
   isSuperUser: boolean("is_super_user").default(false).notNull(),
-  primaryRole: PrimaryRole("primary_role"),
   notificationKey: text("notification_key"),
   person: uuid("person")
     .notNull()

@@ -111,6 +111,7 @@ export const users = createRouter({
         password: z.string().optional(),
         salutation: z.enum(SALUTATIONS).optional(),
         abbrv: z.string().optional(),
+        primaryRole: z.enum(["TEACHER", "STUDENT"]).optional(),
       }),
     )
     .mutation(async ({ input }) => createUser(input)),

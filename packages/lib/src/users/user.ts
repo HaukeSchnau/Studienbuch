@@ -1,7 +1,6 @@
 export interface User {
   id: string;
   email: string | null;
-  primaryRole: "TEACHER" | "STUDENT" | null;
   isSuperUser: boolean;
 }
 

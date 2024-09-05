@@ -66,7 +66,7 @@ export const importClasses = async ({ school }: Options) => {
     await db.insert(Classes).values(dbValues).onConflictDoNothing();
 
     for (const teacher of cls.teachers) {
-      const personId = await iservClient.getOrCreatePerson(teacher);
+      const personId = await iservClient.getOrCreateTeacher(teacher);
       await db
         .insert(TeachersToClasses)
         .values({

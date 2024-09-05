@@ -205,7 +205,7 @@ export const importTimetable = async ({ school, date }: Options) => {
         if (teacher.name === "---") {
           continue;
         }
-        const personId = await iservClient.getOrCreatePerson(teacher.name);
+        const personId = await iservClient.getOrCreateTeacher(teacher.name);
         await db
           .insert(SemesterCoursesToTeachers)
           .values({
