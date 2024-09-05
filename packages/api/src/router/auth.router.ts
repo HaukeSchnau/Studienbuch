@@ -5,15 +5,13 @@ import { checkPassword } from "@stu/auth/src/password";
 import { createSession } from "@stu/auth/src/session";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
-import { Sessions, Users } from "@stu/db/schema";
+import { LicenseKeys, Sessions, Users } from "@stu/db/schema";
 
 import { protectedProcedure, publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";
 
 export const auth = createRouter({
-  getSession: publicProcedure.query(({ ctx }) => {
-    return ctx.session;
-  }),
+  getSession: publicProcedure.query(({ ctx }) => ctx.session),
 
   getPermissions: protectedProcedure.query(async ({ ctx }) => {
     if (ctx.session.user.isSuperUser)
@@ -22,6 +20,53 @@ export const auth = createRouter({
       };
     return getPermissions(ctx.session.user);
   }),
+
+  loginWithLicenseKey: publicProcedure
+    .input(
+      z.object({
+        licenseKey: z.string(),
+      }),
+    )
+    .mutation(async ({ input: { licenseKey } }) => {
+      const license = await db.query.LicenseKeys.findFirst({
+        where: eq(LicenseKeys.key, licenseKey),
+        with: {
+          activatedBy: {
+            with: {
+              person: true,
+            },
+          },
+        },
+      });
+
+      if (!license) {
+        return {
+          error: {
+            field: "licenseKey" as const,
+            message: "Ungültiger Lizenzschlüssel",
+          },
+        };
+      }
+
+      if (!license.activatedBy) {
+        return {
+          error: {
+            field: "licenseKey" as const,
+            message: "Für diesen Lizenzschlüssel wurde kein Nutzer gefunden",
+          },
+        };
+      }
+
+      const session = await createSession({
+        id: license.activatedBy.id,
+        name: license.activatedBy.person.name,
+        isSuperUser: license.activatedBy.isSuperUser,
+      });
+
+      return {
+        session: session,
+      };
+    }),
 
   login: publicProcedure
     .input(

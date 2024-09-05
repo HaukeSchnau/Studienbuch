@@ -1,6 +1,5 @@
 import {
   foreignKey,
-  integer,
   pgTable,
   primaryKey,
   smallint,

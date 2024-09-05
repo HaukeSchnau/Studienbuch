@@ -1,8 +1,9 @@
-import { eq } from "@stu/db";
-import { db } from "@stu/db/client";
-import { LicenseKeys } from "@stu/db/schema";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import { LicenseKeys, Persons, Users } from "@stu/db/schema";
 
 import { publicProcedure } from "../procedures";
 import { createRouter } from "../trpc";
@@ -37,6 +38,7 @@ export const license = createRouter({
     .input(
       z.object({
         licenseKey: z.string(),
+        name: z.string().min(2),
       }),
     )
     .mutation(async ({ input }) => {
@@ -58,16 +60,39 @@ export const license = createRouter({
       //     message: "License key expired",
       //   });
       // }
-      // if (licenseKey.activatedAt) {
-      //   throw new TRPCError({
-      //     code: "BAD_REQUEST",
-      //     message: "License key already activated",
-      //   });
-      // }
+      if (licenseKey.activatedBy) {
+        return;
+      }
+    
+      const [person] = await db
+        .insert(Persons)
+        .values({
+          name: input.name,
+        })
+        .returning();
+      if (!person) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create person",
+        });
+      }
+      const [user] = await db
+        .insert(Users)
+        .values({
+          person: person.id,
+        })
+        .returning();
+      if (!user) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create user",
+        });
+      }
       await db
         .update(LicenseKeys)
         .set({
           activatedAt: new Date(),
+          activatedBy: user.id,
         })
         .where(eq(LicenseKeys.key, licenseKey.key));
     }),
