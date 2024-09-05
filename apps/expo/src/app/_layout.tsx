@@ -17,6 +17,10 @@ import {
   useFonts,
 } from "@expo-google-fonts/nunito";
 
+// import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
+// import { db } from "~/db/client";
+// import migrations from './drizzle/migrations';
+
 void SplashScreen.preventAutoHideAsync();
 
 if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -24,18 +28,22 @@ if (UIManager.setLayoutAnimationEnabledExperimental) {
 }
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
+  // const { migrationSuccess, migrationError } = useMigrations(db, migrations);
+
+  const [fontLoaded, fontError] = useFonts({
     Nunito_400Regular,
     Nunito_700Bold,
   });
 
+  const isLoaded = fontLoaded || fontError; // || migrationSuccess || migrationError;
+
   useEffect(() => {
-    if (loaded || error) {
+    if (isLoaded) {
       void SplashScreen.hideAsync();
     }
-  }, [loaded, error]);
+  }, [isLoaded]);
 
-  if (!loaded && !error) {
+  if (!isLoaded) {
     return null;
   }
 

@@ -29,6 +29,8 @@ config.transformer.getTransformOptions = async () => ({
 // https://github.com/expo/expo/issues/26926
 config.resolver.unstable_enablePackageExports = true;
 
+config.resolver.sourceExts.push("sql");
+
 module.exports = config;
 
 /**
