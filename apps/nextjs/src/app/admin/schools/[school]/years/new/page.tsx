@@ -16,7 +16,7 @@ export default function NewYearPage() {
   const { school } = useParsedParams(z.object({ school: z.enum(SCHOOL_IDS) }));
 
   const utils = api.useUtils();
-  const addYear = api.years.add.useMutation({
+  const addYear = api.management.years.add.useMutation({
     onSuccess: () => {
       void utils.years.list.invalidate();
       void utils.years.listGroupedBySchool.invalidate();

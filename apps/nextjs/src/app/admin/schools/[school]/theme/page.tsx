@@ -22,7 +22,7 @@ export default function ThemePage({
   };
 }) {
   const query = api.schools.getTheme.useQuery(params.school);
-  const saveMutation = api.schools.setTheme.useMutation({
+  const saveMutation = api.management.schools.setTheme.useMutation({
     onSuccess: () => {
       void query.refetch();
     },

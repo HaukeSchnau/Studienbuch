@@ -7,8 +7,8 @@ import { between } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Substitutions } from "@stu/db/schema";
 
-import { publicProcedure } from "../procedures";
-import { createRouter } from "../trpc";
+import { publicProcedure } from "../../procedures";
+import { createRouter } from "../../trpc";
 
 dayjs.extend(utc);
 

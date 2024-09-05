@@ -1,40 +1,11 @@
-import { TRPCError } from "@trpc/server";
-import { z } from "zod";
-
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { LicenseKeys, Persons, Users } from "@stu/db/schema";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+import { publicProcedure } from "../../procedures";
 
-import { publicProcedure } from "../procedures";
-import { createRouter } from "../trpc";
-
-export const license = createRouter({
-  check: publicProcedure
-    .input(
-      z.object({
-        licenseKey: z.string(),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      const licenseKey = await db.query.LicenseKeys.findFirst({
-        where: eq(LicenseKeys.key, input.licenseKey),
-      });
-      if (!licenseKey) {
-        return "INVALID" as const;
-      }
-      // TODO restore old logic once logout bug is fixed
-      // if (licenseKey.isSuperKey) {
-      //   return "VALID" as const;
-      // }
-      // if (licenseKey.expiresAt && licenseKey.expiresAt < new Date()) {
-      //   return "EXPIRED" as const;
-      // }
-      // if (licenseKey.activatedAt) {
-      //   return "ACTIVATED" as const;
-      // }
-      return "VALID" as const;
-    }),
-  activate: publicProcedure
+export const activateLicenseKey = publicProcedure
     .input(
       z.object({
         licenseKey: z.string(),
@@ -63,7 +34,7 @@ export const license = createRouter({
       if (licenseKey.activatedBy) {
         return;
       }
-    
+
       const [person] = await db
         .insert(Persons)
         .values({
@@ -95,5 +66,4 @@ export const license = createRouter({
           activatedBy: user.id,
         })
         .where(eq(LicenseKeys.key, licenseKey.key));
-    }),
-});
+    })

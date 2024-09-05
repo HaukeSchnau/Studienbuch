@@ -11,9 +11,9 @@ export default function NewUserPage() {
   const router = useRouter();
 
   const utils = api.useUtils();
-  const addUser = api.users.add.useMutation({
+  const addUser = api.management.users.add.useMutation({
     onSuccess: () => {
-      void utils.users.list.invalidate();
+      void utils.management.users.list.invalidate();
       router.push("/admin/users");
     },
   });

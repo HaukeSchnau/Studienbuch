@@ -5,8 +5,8 @@ import { db } from "@stu/db/client";
 import { Classes } from "@stu/db/schema";
 import { SCHOOL_IDS } from "@stu/lib";
 
-import { publicProcedure } from "../procedures";
-import { createRouter } from "../trpc";
+import { publicProcedure } from "../../procedures";
+import { createRouter } from "../../trpc";
 
 export const classes = createRouter({
   list: publicProcedure

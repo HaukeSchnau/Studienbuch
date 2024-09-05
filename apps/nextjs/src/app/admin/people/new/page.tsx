@@ -11,9 +11,9 @@ export default function NewUserPage() {
   const router = useRouter();
 
   const utils = api.useUtils();
-  const addUser = api.users.add.useMutation({
+  const addUser = api.management.persons.add.useMutation({
     onSuccess: () => {
-      void utils.users.list.invalidate();
+      void utils.management.persons.list.invalidate();
       router.push("/admin/users");
     },
   });
@@ -30,7 +30,6 @@ export default function NewUserPage() {
             addUser.mutate({
               name: value.name,
               email: value.email,
-              password: value.password,
               salutation: value.title,
               abbrv: value.abbrv,
             });

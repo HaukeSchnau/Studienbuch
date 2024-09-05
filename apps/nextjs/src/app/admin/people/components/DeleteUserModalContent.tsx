@@ -11,10 +11,10 @@ interface Props {
 
 export const DeleteUserModalContent = ({ user, onClose }: Props) => {
   const utils = api.useUtils();
-  const deleteUserMutation = api.users.delete.useMutation({
+  const deleteUserMutation = api.management.persons.delete.useMutation({
     onSuccess: () => {
       onClose();
-      void utils.users.list.invalidate();
+      void utils.management.persons.list.invalidate();
     },
   });
 

@@ -15,7 +15,7 @@ export default function LicenseKey() {
     step: 0,
     onSubmitStep: () => router.push("/setup/name-and-year"),
   });
-  const checkMutation = api.license.check.useMutation();
+  const checkMutation = api.auth.checkLicenseKey.useMutation();
 
   return (
     <View>

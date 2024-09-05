@@ -19,7 +19,7 @@ export default function UsersPage() {
     isPending,
     isError,
     error,
-  } = api.persons.list.useQuery();
+  } = api.management.persons.list.useQuery();
 
   return isPending ? (
     <LoadingIndicator />
@@ -41,14 +41,14 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: Person[] }) => {
 
   const [deleteModalUser, setDeleteModalUser] = useState<Person | null>(null);
 
-  const updateUsersMutation = api.persons.updateMany.useMutation({
+  const updateUsersMutation = api.management.persons.updateMany.useMutation({
     onSuccess: () => {
       setUpdates(new Map<string, Partial<Person>>());
-      void utils.persons.list.invalidate();
+      void utils.management.persons.list.invalidate();
     },
   });
 
-  const { reset: resetDeleteMutation } = api.persons.delete.useMutation();
+  const { reset: resetDeleteMutation } = api.management.persons.delete.useMutation();
 
   const closeDeleteModal = () => {
     resetDeleteMutation();

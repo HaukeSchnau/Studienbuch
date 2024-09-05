@@ -16,8 +16,8 @@ import {
 import { BetterMap, SALUTATIONS } from "@stu/lib";
 import { createUser } from "@stu/lib-server";
 
-import { permissionProcedure } from "../procedures";
-import { createRouter } from "../trpc";
+import { permissionProcedure } from "../../../procedures";
+import { createRouter } from "../../../trpc";
 
 const scopeOptions = ["schools", "years", "classes", "courses"] as const;
 

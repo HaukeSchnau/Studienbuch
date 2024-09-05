@@ -50,11 +50,12 @@ const availablePermissions = new Map<Permission, PermissionMeta>([
 ]);
 
 export const PermissionsModalContent = ({ user, onClose }: Props) => {
-  const setPermissionsMutation = api.users.setPermissions.useMutation({
-    onSuccess: () => {
-      onClose();
-    },
-  });
+  const setPermissionsMutation =
+    api.management.users.setPermissions.useMutation({
+      onSuccess: () => {
+        onClose();
+      },
+    });
 
   const { Field, handleSubmit } = useForm({
     defaultValues: {
@@ -214,7 +215,7 @@ const ScopeField = ({
     isPending,
     isError,
     error,
-  } = api.users.listScopeOptions.useQuery(option);
+  } = api.management.users.listScopeOptions.useQuery(option);
 
   if (isPending) {
     return <LoadingIndicator />;

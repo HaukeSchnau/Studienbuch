@@ -16,7 +16,12 @@ import { PermissionsModalContent } from "./components/PermissionsModalContent";
 import { UsersTable } from "./components/UsersTable";
 
 export default function UsersPage() {
-  const { data: users, isPending, isError, error } = api.users.list.useQuery();
+  const {
+    data: users,
+    isPending,
+    isError,
+    error,
+  } = api.management.users.list.useQuery();
 
   return isPending ? (
     <LoadingIndicator />
@@ -43,14 +48,15 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
   const [changePasswordModalUser, setChangePasswordModalUser] =
     useState<User | null>(null);
 
-  const updateUsersMutation = api.users.updateMany.useMutation({
+  const updateUsersMutation = api.management.users.updateMany.useMutation({
     onSuccess: () => {
       setUpdates(new Map<string, Partial<User>>());
-      void utils.users.list.invalidate();
+      void utils.management.users.list.invalidate();
     },
   });
 
-  const { reset: resetDeleteMutation } = api.users.delete.useMutation();
+  const { reset: resetDeleteMutation } =
+    api.management.users.delete.useMutation();
 
   const closeDeleteModal = () => {
     resetDeleteMutation();

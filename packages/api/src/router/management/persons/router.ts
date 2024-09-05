@@ -6,8 +6,8 @@ import { db } from "@stu/db/client";
 import { Persons } from "@stu/db/schema";
 import { SALUTATIONS } from "@stu/lib";
 
-import { permissionProcedure } from "../procedures";
-import { createRouter } from "../trpc";
+import { permissionProcedure } from "../../../procedures";
+import { createRouter } from "../../../trpc";
 
 const editUsersProcedure = permissionProcedure("EDIT_USERS");
 

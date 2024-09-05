@@ -24,10 +24,6 @@ interface UserFormValues {
 const userSchema = z.object({
   name: z.string().min(1, "Name darf nicht leer sein"),
   email: z.string().email().optional(),
-  password: z
-    .string()
-    .min(8, "Passwort muss mindestens 8 Zeichen lang sein")
-    .optional(),
   title: z.enum(SALUTATIONS).optional(),
   abbrv: z.string().optional(),
 });
@@ -102,47 +98,6 @@ export const UserForm = ({
         {(field) => (
           <TextField
             label="Email"
-            value={field.state.value}
-            onBlur={field.handleBlur}
-            onChange={(value) => field.handleChange(value || undefined)}
-            error={field.state.meta.errors.join(", ")}
-          />
-        )}
-      </Field>
-
-      <Field
-        name="password"
-        validators={{
-          onChange: userSchema.shape.password,
-        }}
-      >
-        {(field) => (
-          <TextField
-            label="Passwort"
-            type="password"
-            value={field.state.value}
-            onBlur={field.handleBlur}
-            onChange={(value) => field.handleChange(value || undefined)}
-            error={field.state.meta.errors.join(", ")}
-          />
-        )}
-      </Field>
-
-      <Field
-        name="passwordConfirmation"
-        validators={{
-          onChange: (field) => {
-            if (field.value !== field.fieldApi.form.getFieldValue("password")) {
-              return "Passwörter stimmen nicht überein";
-            }
-            return null;
-          },
-        }}
-      >
-        {(field) => (
-          <TextField
-            label="Passwort bestätigen"
-            type="password"
             value={field.state.value}
             onBlur={field.handleBlur}
             onChange={(value) => field.handleChange(value || undefined)}

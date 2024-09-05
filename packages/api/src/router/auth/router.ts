@@ -1,0 +1,34 @@
+import { getPermissions } from "@stu/auth/src/getPermissions";
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import { Sessions } from "@stu/db/schema";
+
+import { protectedProcedure, publicProcedure } from "../../procedures";
+import { createRouter } from "../../trpc";
+import { activateLicenseKey } from "./activate-license-key";
+import { checkLicenseKey } from "./check-license-key";
+import { login } from "./login";
+import { loginWithLicenseKey } from "./login-with-license-key";
+
+export const auth = createRouter({
+  getSession: publicProcedure.query(({ ctx }) => ctx.session),
+
+  getPermissions: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.session.user.isSuperUser)
+      return {
+        isSuperUser: true,
+      };
+    return getPermissions(ctx.session.user);
+  }),
+
+  loginWithLicenseKey,
+  login,
+
+  logout: protectedProcedure.mutation(async ({ ctx }) => {
+    ctx.log.info("Logging out");
+    await db.delete(Sessions).where(eq(Sessions.token, ctx.session.token));
+  }),
+
+  checkLicenseKey,
+  activateLicenseKey,
+});

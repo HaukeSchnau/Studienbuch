@@ -19,11 +19,12 @@ export const ChangePasswordModalContent = ({
   user,
   onClose,
 }: ChangePasswordModalContentProps) => {
-  const updatePasswordMutation = api.users.updatePassword.useMutation({
-    onSuccess: () => {
-      onClose();
-    },
-  });
+  const updatePasswordMutation =
+    api.management.users.updatePassword.useMutation({
+      onSuccess: () => {
+        onClose();
+      },
+    });
 
   const { Field, Subscribe, handleSubmit } = useForm({
     defaultValues: {

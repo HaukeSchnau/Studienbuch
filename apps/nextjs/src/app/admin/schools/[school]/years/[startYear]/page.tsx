@@ -27,7 +27,7 @@ export default function EditYearPage() {
   });
   const router = useRouter();
 
-  const updateYear = api.years.update.useMutation({
+  const updateYear = api.management.years.update.useMutation({
     onSuccess: () => router.push("/admin/users"),
   });
 
