@@ -19,7 +19,9 @@ import { useFormContext } from "./form";
 export default function ClassAndCourses() {
   const { form, handleSubmitStep } = useFormContext({
     step: 2,
-    onSubmitStep: () => form.handleSubmit(),
+    onSubmitStep: async () => {
+      await form.handleSubmit();
+    },
   });
 
   const selectedYear = form.useField({

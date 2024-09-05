@@ -1,5 +1,4 @@
-import type { ValidationError } from "@tanstack/react-form";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext } from "react";
 
 import type { Class, Course, SubjectId, Year } from "@stu/lib";
 
@@ -37,7 +36,7 @@ export const useFormContext = <Step extends number>({
   onSubmitStep,
 }: {
   step: Step;
-  onSubmitStep: () => void;
+  onSubmitStep: () => void | Promise<void>;
 }): {
   form: CombinedForm<JoinedSteps<Steps, Step>>;
   handleSubmitStep: () => Promise<void>;
@@ -74,7 +73,7 @@ export const useFormContext = <Step extends number>({
     handleSubmitStep: async () => {
       const results = await validateStep();
       if (results.every((result) => !result)) {
-        onSubmitStep();
+        await onSubmitStep();
       }
     },
   };
