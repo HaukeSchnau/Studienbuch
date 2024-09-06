@@ -17,11 +17,10 @@ import {
   Nunito_700Bold,
   useFonts,
 } from "@expo-google-fonts/nunito";
+import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 
-// import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
-import { expoDb } from "~/db/client";
-
-// import migrations from './drizzle/migrations';
+import { db, expoDb } from "~/db/client";
+import migrations from "../../drizzle/migrations";
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -30,7 +29,10 @@ if (UIManager.setLayoutAnimationEnabledExperimental) {
 }
 
 export default function RootLayout() {
-  // const { migrationSuccess, migrationError } = useMigrations(db, migrations);
+  const { success: migrationSuccess, error: migrationError } = useMigrations(
+    db,
+    migrations,
+  );
   useDrizzleStudio(expoDb);
 
   const [fontLoaded, fontError] = useFonts({
@@ -38,7 +40,8 @@ export default function RootLayout() {
     Nunito_700Bold,
   });
 
-  const isLoaded = fontLoaded || fontError; // || migrationSuccess || migrationError;
+  const isLoaded =
+    fontLoaded || !!fontError || migrationSuccess || !!migrationError;
 
   useEffect(() => {
     if (isLoaded) {

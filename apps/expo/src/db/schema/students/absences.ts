@@ -1,19 +1,20 @@
-import { date, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
+import { primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { Persons } from "../people/persons";
 import { Courses } from "../school/courses";
+import { timestamp } from "../utils";
 
-export const Absences = pgTable(
+export const Absences = sqliteTable(
   "absences",
   {
-    date: date("date", { mode: "date" }).notNull(),
-    course: uuid("course")
+    date: timestamp("date").notNull(),
+    course: text("course")
       .notNull()
       .references(() => Courses.id, {
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
-    student: uuid("student")
+    student: text("student")
       .notNull()
       .references(() => Persons.id, {
         onDelete: "restrict",

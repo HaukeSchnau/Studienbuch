@@ -3,8 +3,9 @@ import { boolean, pgEnum, pgTable, text, uuid } from "drizzle-orm/pg-core";
 
 import { PermissionsToUsers, RolesToUsers } from "../security/permissions";
 import { Persons } from "./persons";
+import { PERSON_ROLES } from "@stu/lib";
 
-export const PrimaryRole = pgEnum("primary_role", ["TEACHER", "STUDENT"]);
+export const PrimaryRole = pgEnum("primary_role", PERSON_ROLES);
 
 export const Users = pgTable("users", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
