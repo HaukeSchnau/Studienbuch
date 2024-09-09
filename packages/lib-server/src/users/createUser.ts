@@ -9,14 +9,12 @@ export const createUser = async ({
   password,
   salutation,
   abbrv,
-  primaryRole,
 }: {
   name: string;
   email?: string;
   password?: string;
   salutation?: Salutation;
   abbrv?: string;
-  primaryRole?: "TEACHER" | "STUDENT";
 }) => {
   const hashedPassword = password ? await hashPassword(password) : undefined;
 
@@ -27,7 +25,6 @@ export const createUser = async ({
       salutation,
       abbrv,
       email,
-      role: primaryRole,
     })
     .returning({
       id: Persons.id,
@@ -38,6 +35,6 @@ export const createUser = async ({
   await db.insert(Users).values({
     email: email?.toLowerCase(),
     passwordHash: hashedPassword,
-    person: personId,
+    id: personId,
   });
 };

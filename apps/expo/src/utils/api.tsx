@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { createWSClient, loggerLink, wsLink } from "@trpc/client";
+import { httpBatchLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import superjson from "superjson";
 
@@ -12,16 +12,13 @@ import {
   localLink,
   PersistingQueryClient,
 } from "./local-trpc/persisting-query-client";
+import { getStorage } from "./storage";
 
 /**
  * A set of typesafe hooks for consuming your API.
  */
 export const api = createTRPCReact<AppRouter>();
 export { type RouterInputs, type RouterOutputs } from "@stu/api";
-
-const wsClient = createWSClient({
-  url: getBaseUrl().replace("http", "ws").replace("3000", "3001"),
-});
 
 /**
  * A wrapper for your app that provides the TRPC context.
@@ -39,9 +36,17 @@ export function TRPCProvider(props: { children: React.ReactNode }) {
           colorMode: "ansi",
         }),
         localLink(clientRouter),
-        wsLink({
+        httpBatchLink({
+          url: `${getBaseUrl()}/api/trpc`,
           transformer: superjson,
-          client: wsClient,
+          headers() {
+            const headers = new Map<string, string>();
+            headers.set("x-trpc-source", "expo-react");
+            const session = getStorage("auth.session");
+            if (session?.token) headers.set("x-session", session.token);
+
+            return Object.fromEntries(headers);
+          },
         }),
       ],
     }),

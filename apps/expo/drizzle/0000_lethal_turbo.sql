@@ -3,8 +3,17 @@ CREATE TABLE `persons` (
 	`name` text NOT NULL,
 	`salutation` text,
 	`abbrv` text,
-	`email` text,
-	`role` text
+	`email` text
+);
+--> statement-breakpoint
+CREATE TABLE `students` (
+	`person` text PRIMARY KEY NOT NULL,
+	`is_of_age` integer,
+	`class_identifier` text NOT NULL,
+	`start_year` integer NOT NULL,
+	`school` text NOT NULL,
+	FOREIGN KEY (`person`) REFERENCES `persons`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`class_identifier`,`start_year`,`school`) REFERENCES `classes`(`identifier_in_year`,`start_year`,`school`) ON UPDATE cascade ON DELETE restrict
 );
 --> statement-breakpoint
 CREATE TABLE `classes` (
@@ -121,7 +130,7 @@ CREATE TABLE `course_memberships` (
 	`semester_year` integer NOT NULL,
 	`school` text NOT NULL,
 	PRIMARY KEY(`student`, `course`, `semester_type`, `semester_year`, `school`),
-	FOREIGN KEY (`student`) REFERENCES `persons`(`id`) ON UPDATE cascade ON DELETE cascade,
+	FOREIGN KEY (`student`) REFERENCES `students`(`person`) ON UPDATE cascade ON DELETE cascade,
 	FOREIGN KEY (`course`,`semester_type`,`semester_year`,`school`) REFERENCES `semester_courses`(`course`,`semester_type`,`semester_year`,`school`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint

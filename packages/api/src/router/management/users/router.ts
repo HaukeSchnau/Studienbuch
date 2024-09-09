@@ -30,7 +30,7 @@ export const users = createRouter({
     const rows = await db
       .select()
       .from(Users)
-      .innerJoin(Persons, eq(Users.person, Persons.id))
+      .innerJoin(Persons, eq(Users.id, Persons.id))
       .leftJoin(PermissionsToUsers, eq(Users.id, PermissionsToUsers.user))
       .leftJoin(RolesToUsers, eq(Users.id, RolesToUsers.user))
       .leftJoin(Roles, eq(Roles.id, RolesToUsers.role))
@@ -111,7 +111,6 @@ export const users = createRouter({
         password: z.string().optional(),
         salutation: z.enum(SALUTATIONS).optional(),
         abbrv: z.string().optional(),
-        primaryRole: z.enum(["TEACHER", "STUDENT"]).optional(),
       }),
     )
     .mutation(async ({ input }) => createUser(input)),

@@ -38,7 +38,7 @@ export const loginWithLicenseKey = publicProcedure
       return {
         error: {
           field: "licenseKey" as const,
-          message: "Für diesen Lizenzschlüssel wurde kein Nutzer gefunden",
+          message: "Dieser Lizenkschlüssel wurde noch nicht aktiviert",
         },
       };
     }

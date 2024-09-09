@@ -6,7 +6,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { Persons } from "../people/persons";
+import { Students } from "../people/persons";
 import { SemesterCourses } from "../school/courses";
 import { SchoolId } from "../school/school-id";
 import { SemesterType } from "../school/semesters";
@@ -16,7 +16,7 @@ export const CourseMemberships = pgTable(
   {
     student: uuid("student")
       .notNull()
-      .references(() => Persons.id, {
+      .references(() => Students.person, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),

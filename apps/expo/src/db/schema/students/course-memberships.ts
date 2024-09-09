@@ -6,7 +6,7 @@ import {
   text,
 } from "drizzle-orm/sqlite-core";
 
-import { Persons } from "../people/persons";
+import { Students } from "../people/persons";
 import { SemesterCourses } from "../school/courses";
 import { SchoolId } from "../school/school-id";
 import { SemesterType } from "../school/semesters";
@@ -16,7 +16,7 @@ export const CourseMemberships = sqliteTable(
   {
     student: text("student")
       .notNull()
-      .references(() => Persons.id, {
+      .references(() => Students.person, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),

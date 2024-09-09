@@ -6,8 +6,9 @@ import { db } from "@stu/db/client";
 import {
   CourseMemberships,
   LicenseKeys,
-  Persons,
   Schools,
+  Students,
+  Users,
 } from "@stu/db/schema";
 import { isArraySingleElement, SCHOOL_IDS, SEMESTER_TYPES } from "@stu/lib";
 
@@ -20,6 +21,9 @@ export const join = protectedProcedure
       semesterType: z.enum(SEMESTER_TYPES),
       semesterYear: z.number(),
       school: z.enum(SCHOOL_IDS),
+      classIdentifier: z.string(),
+      startYear: z.number(),
+      isOfAge: z.boolean(),
     }),
   )
   .mutation(
@@ -33,10 +37,10 @@ export const join = protectedProcedure
         .select({
           count: count(),
         })
-        .from(Persons)
-        .innerJoin(LicenseKeys, eq(Persons.id, LicenseKeys.activatedBy))
+        .from(Users)
+        .innerJoin(LicenseKeys, eq(Users.id, LicenseKeys.activatedBy))
         .innerJoin(Schools, eq(LicenseKeys.school, Schools.id))
-        .where(and(eq(Persons.id, user.id), eq(Schools.id, input.school)));
+        .where(and(eq(Users.id, user.id), eq(Schools.id, input.school)));
       if (!isArraySingleElement(rows)) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -49,6 +53,25 @@ export const join = protectedProcedure
           message: "You are not allowed to join this school",
         });
       }
+
+      await db
+        .insert(Students)
+        .values({
+          person: user.id,
+          school: input.school,
+          startYear: input.startYear,
+          classIdentifier: input.classIdentifier,
+          isOfAge: input.isOfAge,
+        })
+        .onConflictDoUpdate({
+          target: [Students.person],
+          set: {
+            school: input.school,
+            startYear: input.startYear,
+            classIdentifier: input.classIdentifier,
+            isOfAge: input.isOfAge,
+          },
+        });
 
       await db.transaction(async (db) => {
         await db

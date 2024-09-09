@@ -11,7 +11,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
-import { Slot, Stack, usePathname } from "expo-router";
+import { router, Slot, Stack, usePathname } from "expo-router";
 import { openBrowserAsync } from "expo-web-browser";
 import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
@@ -19,6 +19,8 @@ import { zodValidator } from "@tanstack/zod-form-adapter";
 import type { SetupForm } from "./form";
 import { shadow } from "~/components/styles/shadow";
 import { Text } from "~/components/text";
+import { api } from "~/utils/api";
+import { setStorage } from "~/utils/storage";
 import logoImage from "../../../assets/icon.png";
 import { FormContext } from "./form";
 
@@ -28,6 +30,14 @@ export default function HomeLayout() {
     paddingBottom: height.value,
   }));
 
+  const activateLicenseKey = api.auth.activateLicenseKey.useMutation();
+  const login = api.auth.loginWithLicenseKey.useMutation();
+  const joinCourses = api.courses.join.useMutation();
+
+  const semester = api.semesters.getCurrent.useQuery();
+
+  const utils = api.useUtils();
+
   const form = useForm<SetupForm, ReturnType<typeof zodValidator>>({
     defaultValues: {
       licenseKey: "",
@@ -36,8 +46,45 @@ export default function HomeLayout() {
       chosenCourses: {},
     },
     validatorAdapter: zodValidator(),
-    onSubmit: (values) => {
-      console.log(values);
+    onSubmit: async ({ value, formApi }) => {
+      if (!semester.data || !value.class) {
+        return; // TODO: show error
+      }
+
+      await activateLicenseKey.mutateAsync({
+        licenseKey: value.licenseKey,
+        name: value.name,
+      });
+      const { error, session } = await login.mutateAsync({
+        licenseKey: value.licenseKey,
+      });
+      if (error) {
+        console.error(error);
+        formApi.setFieldMeta(error.field, (prev) => ({
+          ...prev,
+          errors: prev.errors.concat(error.message),
+        }));
+
+        return;
+      }
+      await setStorage("auth.licenseKey", value.licenseKey);
+      await setStorage("auth.session", session);
+
+      await joinCourses.mutateAsync({
+        school: "igs-lil",
+        semesterType: semester.data.type,
+        semesterYear: semester.data.year,
+        courseIds: Object.values(value.chosenCourses).map(
+          (course) => course.id,
+        ),
+        classIdentifier: value.class.identifierInYear,
+        startYear: value.class.startYear,
+        isOfAge: value.isOfAge,
+      });
+
+      await utils.invalidate();
+
+      router.replace("/");
     },
   });
 

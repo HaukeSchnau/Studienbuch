@@ -18,9 +18,6 @@ export const login = publicProcedure
   .mutation(async ({ input: { email, password } }) => {
     const user = await db.query.Users.findFirst({
       where: eq(Users.email, email.toLowerCase()),
-      columns: {
-        person: false,
-      },
       with: {
         person: true,
       },

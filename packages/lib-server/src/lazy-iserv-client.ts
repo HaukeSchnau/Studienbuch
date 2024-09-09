@@ -33,7 +33,6 @@ export const createLazyIservClient = () => {
         abbrv,
         name: iservUser?.name ?? abbrv,
         email: iservUser?.email,
-        role: "TEACHER",
       })
       .returning()
       .execute();

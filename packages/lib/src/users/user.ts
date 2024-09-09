@@ -6,6 +6,3 @@ export interface User {
 
 export const SALUTATIONS = ["Herr", "Frau"] as const;
 export type Salutation = (typeof SALUTATIONS)[number];
-
-export const PERSON_ROLES = ["STUDENT", "TEACHER"] as const;
-export type PersonRole = (typeof PERSON_ROLES)[number];

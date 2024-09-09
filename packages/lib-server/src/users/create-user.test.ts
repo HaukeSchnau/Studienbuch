@@ -22,7 +22,7 @@ describe("createUser", () => {
       .select()
       .from(Users)
       .where(eq(Users.email, "john.doe@example.com"))
-      .innerJoin(Persons, eq(Users.person, Persons.id));
+      .innerJoin(Persons, eq(Users.id, Persons.id));
 
     expectToBeDefined(row);
     expect(row.persons.name).toEqual("John Doe");

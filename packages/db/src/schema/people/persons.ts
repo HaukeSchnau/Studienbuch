@@ -1,8 +1,17 @@
-import { pgEnum, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  foreignKey,
+  pgEnum,
+  pgTable,
+  smallint,
+  text,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 import { SALUTATIONS } from "@stu/lib";
 
-import { PrimaryRole } from "./users";
+import { Classes } from "../school/classes";
+import { SchoolId } from "../school/school-id";
 
 export const Salutation = pgEnum("salutation", SALUTATIONS);
 
@@ -12,5 +21,30 @@ export const Persons = pgTable("persons", {
   salutation: Salutation("salutation"),
   abbrv: text("abbrv").unique(),
   email: text("email").unique(),
-  role: PrimaryRole("role"),
 });
+
+export const Students = pgTable(
+  "students",
+  {
+    person: uuid("person")
+      .primaryKey()
+      .references(() => Persons.id),
+    isOfAge: boolean("is_of_age"),
+
+    classIdentifier: text("class_identifier").notNull(),
+    startYear: smallint("start_year").notNull(),
+    school: SchoolId("school").notNull(),
+  },
+  (table) => ({
+    class_fk: foreignKey({
+      columns: [table.classIdentifier, table.startYear, table.school],
+      foreignColumns: [
+        Classes.identifierInYear,
+        Classes.startYear,
+        Classes.school,
+      ],
+    })
+      .onDelete("restrict")
+      .onUpdate("cascade"),
+  }),
+);

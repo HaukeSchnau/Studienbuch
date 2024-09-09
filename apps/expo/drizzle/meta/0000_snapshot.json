@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "7d340f62-4c31-4c94-8a02-07c10149abfd",
+  "id": "740ad8fa-c418-409b-b445-98c424b5f1bf",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "persons": {
@@ -41,13 +41,6 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
-        },
-        "role": {
-          "name": "role",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
         }
       },
       "indexes": {
@@ -67,6 +60,81 @@
         }
       },
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "students": {
+      "name": "students",
+      "columns": {
+        "person": {
+          "name": "person",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "is_of_age": {
+          "name": "is_of_age",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "class_identifier": {
+          "name": "class_identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "start_year": {
+          "name": "start_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "school": {
+          "name": "school",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "students_person_persons_id_fk": {
+          "name": "students_person_persons_id_fk",
+          "tableFrom": "students",
+          "tableTo": "persons",
+          "columnsFrom": [
+            "person"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "students_class_identifier_start_year_school_classes_identifier_in_year_start_year_school_fk": {
+          "name": "students_class_identifier_start_year_school_classes_identifier_in_year_start_year_school_fk",
+          "tableFrom": "students",
+          "tableTo": "classes",
+          "columnsFrom": [
+            "class_identifier",
+            "start_year",
+            "school"
+          ],
+          "columnsTo": [
+            "identifier_in_year",
+            "start_year",
+            "school"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
@@ -863,15 +931,15 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "course_memberships_student_persons_id_fk": {
-          "name": "course_memberships_student_persons_id_fk",
+        "course_memberships_student_students_person_fk": {
+          "name": "course_memberships_student_students_person_fk",
           "tableFrom": "course_memberships",
-          "tableTo": "persons",
+          "tableTo": "students",
           "columnsFrom": [
             "student"
           ],
           "columnsTo": [
-            "id"
+            "person"
           ],
           "onDelete": "cascade",
           "onUpdate": "cascade"

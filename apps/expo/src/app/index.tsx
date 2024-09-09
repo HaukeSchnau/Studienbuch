@@ -1,17 +1,20 @@
-import { View } from "react-native";
-import { Link, Stack } from "expo-router";
+import { Redirect, Stack } from "expo-router";
 
-import { Button } from "~/components/button";
+import { useSession } from "~/utils/auth";
 
 export default function Index() {
+  const authenticated = useSession();
+
+  if (authenticated === null) {
+    return <Stack.Screen options={{ headerShown: false }} />;
+  }
+
+  if (authenticated === false) {
+    return <Redirect href="/setup/license-key" />;
+  }
+
   return (
     <>
-      <View className="h-full w-full items-center justify-center">
-        <Link href="/setup/license-key" asChild>
-          <Button label="Start" />
-        </Link>
-      </View>
-
       <Stack.Screen options={{ title: "Home Page" }} />
     </>
   );

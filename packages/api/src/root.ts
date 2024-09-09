@@ -3,6 +3,7 @@ import { classes } from "./router/classes/router";
 import { courses } from "./router/courses/router";
 import { management } from "./router/management/router";
 import { schools } from "./router/schools/router";
+import { semesters } from "./router/semesters/router";
 import { substitutions } from "./router/substitutions/router";
 import { years } from "./router/years/router";
 import { createRouter } from "./trpc";
@@ -14,6 +15,7 @@ export const appRouter = createRouter({
   courses,
   substitutions,
   auth,
+  semesters,
   schools,
 });
 

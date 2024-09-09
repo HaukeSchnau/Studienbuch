@@ -41,7 +41,7 @@ export default function RootLayout() {
   });
 
   const isLoaded =
-    fontLoaded || !!fontError || migrationSuccess || !!migrationError;
+    (fontLoaded || !!fontError) && (migrationSuccess || !!migrationError);
 
   useEffect(() => {
     if (isLoaded) {
