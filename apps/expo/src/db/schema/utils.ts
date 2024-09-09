@@ -5,7 +5,7 @@ export const uuid = <TName extends string>(name: TName) =>
   text(name).$defaultFn(uuidv4);
 
 export const sqliteEnum =
-  <TEnum extends readonly [string, ...string[]]>(values: TEnum) =>
+  <U extends string, T extends Readonly<[U, ...U[]]>>(values: T) =>
   <TName extends string>(name: TName) =>
     text(name, { enum: values });
 
@@ -16,4 +16,4 @@ export const jsonb = <TName extends string>(name: TName) =>
   text(name, { mode: "json" });
 
 export const timestamp = <TName extends string>(name: TName) =>
-  int(name, { mode: "timestamp" }); 
+  int(name, { mode: "timestamp_ms" });

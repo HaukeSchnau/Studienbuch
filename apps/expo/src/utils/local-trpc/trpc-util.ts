@@ -6,15 +6,25 @@ import type {
   Router,
 } from "@trpc/server/unstable-core-do-not-import";
 
-interface LocalQuery<Input, Output> {
+export interface LocalQuery<Input, Output> {
   persist: (input: Input, output: Output) => void | Promise<void>;
   read: (input: Input) => Output | Promise<Output>;
+
+  mutate?: undefined;
 }
+
+export interface LocalMutation<Input, Output> {
+  mutate: (input: Input) => Output | Promise<Output>;
+
+  persist?: undefined;
+  read?: undefined;
+}
+
 type SubsetRouterDef<T extends Record<string, any>> = {
   [K in keyof T]?: T[K] extends QueryProcedure<infer TDef>
     ? LocalQuery<TDef["input"], TDef["output"]>
-    : T[K] extends MutationProcedure<any>
-      ? "mutation"
+    : T[K] extends MutationProcedure<infer TDef>
+      ? LocalMutation<TDef["input"], TDef["output"]>
       : T[K] extends Record<string, any>
         ? SubsetRouterDef<T[K]>
         : never;
@@ -26,7 +36,10 @@ export type ClientRouter<T extends Router<any, any>> = SubsetRouterDef<
 export const findLocalProcedure = <TAppRouter extends Router<any, any>>(
   clientRouter: ClientRouter<TAppRouter>,
   path: string[],
-): LocalQuery<unknown, unknown> | undefined => {
+):
+  | LocalQuery<unknown, unknown>
+  | LocalMutation<unknown, unknown>
+  | undefined => {
   let localProcedure = clientRouter;
   while (path.length) {
     const key = path.shift();

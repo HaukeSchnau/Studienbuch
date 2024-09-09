@@ -194,5 +194,12 @@ CREATE TABLE `recurring_timetable_entries` (
 	FOREIGN KEY (`course`) REFERENCES `courses`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
+CREATE TABLE `mutations` (
+	`timestamp` integer PRIMARY KEY NOT NULL,
+	`path` text NOT NULL,
+	`input` text NOT NULL,
+	`mutation_status` text NOT NULL
+);
+--> statement-breakpoint
 CREATE UNIQUE INDEX `persons_abbrv_unique` ON `persons` (`abbrv`);--> statement-breakpoint
 CREATE UNIQUE INDEX `persons_email_unique` ON `persons` (`email`);

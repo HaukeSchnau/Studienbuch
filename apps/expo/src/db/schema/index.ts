@@ -16,3 +16,5 @@ export * from "./students/tasks";
 export * from "./timetable/substitutions";
 export * from "./timetable/timetable-entries";
 export * from "./timetable/recurring-timetable-entries";
+
+export * from "./mutations";

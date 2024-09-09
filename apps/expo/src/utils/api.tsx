@@ -1,13 +1,17 @@
-import type { AppRouter } from "@stu/api";
 import { useState } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createWSClient, loggerLink, wsLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import superjson from "superjson";
 
+import type { AppRouter } from "@stu/api";
+
 import { clientRouter } from "~/db/local-trpc";
 import { getBaseUrl } from "./base-url";
-import { PersistingQueryClient } from "./local-trpc/persisting-query-client";
+import {
+  localLink,
+  PersistingQueryClient,
+} from "./local-trpc/persisting-query-client";
 
 /**
  * A set of typesafe hooks for consuming your API.
@@ -34,6 +38,7 @@ export function TRPCProvider(props: { children: React.ReactNode }) {
             (opts.direction === "down" && opts.result instanceof Error),
           colorMode: "ansi",
         }),
+        localLink(clientRouter),
         wsLink({
           transformer: superjson,
           client: wsClient,

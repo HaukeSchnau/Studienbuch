@@ -60,7 +60,7 @@ export const createSession = async (user: {
   }
 
   return {
-    ...newSession[0],
+    token: newSession[0].token,
     user,
   };
 };
