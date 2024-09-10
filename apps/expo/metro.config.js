@@ -14,10 +14,6 @@ const config = withTurborepoManagedCache(
   ),
 );
 
-config.resolver.extraNodeModules = {
-  "@stu/expo-native-modules": "../../packages/expo-native-modules",
-};
-
 config.transformer.getTransformOptions = async () => ({
   transform: {
     experimentalImportSupport: false,
@@ -25,11 +21,24 @@ config.transformer.getTransformOptions = async () => ({
   },
 });
 
+config.transformer.babelTransformerPath = require.resolve(
+  "react-native-svg-transformer/expo",
+);
+
+config.resolver.extraNodeModules = {
+  "@stu/expo-native-modules": "../../packages/expo-native-modules",
+};
+
+config.resolver.assetExts = config.resolver.assetExts.filter(
+  (ext) => ext !== "svg",
+);
+
 // XXX: Resolve our exports in workspace packages
 // https://github.com/expo/expo/issues/26926
 config.resolver.unstable_enablePackageExports = true;
 
 config.resolver.sourceExts.push("sql");
+config.resolver.sourceExts.push("svg");
 
 module.exports = config;
 

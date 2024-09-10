@@ -18,6 +18,7 @@
     "@bacons/text-decoder": "^0.0.0",
     "@expo-google-fonts/nunito": "^0.2.3",
     "@expo/metro-config": "^0.18.11",
+    "@expo/vector-icons": "^14.0.2",
     "@react-native-picker/picker": "2.7.5",
     "@shopify/flash-list": "1.6.4",
     "@stu/expo-native-modules": "workspace:*",
@@ -59,6 +60,7 @@
     "react-native-reanimated": "~3.10.1",
     "react-native-safe-area-context": "~4.10.5",
     "react-native-screens": "~3.31.1",
+    "react-native-svg": "15.2.0",
     "superjson": "2.2.1",
     "uuid": "^10.0.0",
     "zod": "^3.23.8"
@@ -78,6 +80,7 @@
     "eslint": "catalog:",
     "metro": "^0.80.10",
     "prettier": "catalog:",
+    "react-native-svg-transformer": "^1.5.0",
     "tailwindcss": "^3.4.9",
     "typescript": "catalog:"
   },

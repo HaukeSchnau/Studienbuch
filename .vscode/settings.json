@@ -44,5 +44,12 @@
   "explorer.fileNesting.patterns": {
     "package.json": "*"
   },
-  "emmet.excludeLanguages": ["markdown", "typescriptreact"]
+  "emmet.excludeLanguages": ["markdown", "typescriptreact"],
+  "typescript.tsserver.watchOptions": {
+    "watchDirectory": "useFsEvents",
+    "fallbackPolling": "dynamicPriorityPolling",
+    "watchFile": "useFsEventsOnParentDirectory",
+    "synchronousWatchDirectory": true,
+    "excludeDirectories": ["**/node_modules/**/*"]
+  }
 }

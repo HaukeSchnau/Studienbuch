@@ -1,17 +1,24 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+
+import { Text } from "~/components/text";
+import Background from "../../../assets/home-bg.svg";
 
 export default function Tab() {
   return (
-    <View style={styles.container}>
-      <Text>Tab Home</Text>
-    </View>
+    <>
+      <StatusBar style="light" />
+      <Background
+        width="100%"
+        height={350}
+        preserveAspectRatio="none"
+        style={{
+          position: "absolute",
+        }}
+      />
+      <SafeAreaView>
+        <Text>Tab Settings</Text>
+      </SafeAreaView>
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
