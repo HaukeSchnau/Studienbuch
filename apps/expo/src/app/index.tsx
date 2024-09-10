@@ -13,9 +13,5 @@ export default function Index() {
     return <Redirect href="/setup/license-key" />;
   }
 
-  return (
-    <>
-      <Stack.Screen options={{ title: "Home Page" }} />
-    </>
-  );
+  return <Redirect href="/(main)" />;
 }

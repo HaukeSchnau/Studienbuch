@@ -67,7 +67,9 @@ export default function RootLayout() {
             backgroundColor: "#FFFFFF",
           },
         }}
-      />
+      >
+        <Stack.Screen name="(main)" options={{ headerShown: false }} />
+      </Stack>
       <StatusBar />
     </Providers>
   );
