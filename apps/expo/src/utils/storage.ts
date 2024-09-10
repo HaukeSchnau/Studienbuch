@@ -1,8 +1,7 @@
-import type { PrimitiveAtom } from "jotai";
 import type { ZodSchema } from "zod";
 import { useCallback } from "react";
 import * as SecureStore from "expo-secure-store";
-import { atom, getDefaultStore, useAtom } from "jotai";
+import { Store, useStore } from "@tanstack/react-store";
 import { z } from "zod";
 
 const schemas = {
@@ -23,11 +22,12 @@ const schemas = {
 
 type Keys = keyof typeof schemas;
 
-const atoms: Partial<{
-  [K in Keys]: StorageAtom<K>;
-}> = {};
+const store: Store<
+  Partial<{
+    [K in Keys]: StorageValue<K> | null;
+  }>
+> = new Store({});
 
-type StorageAtom<TKey extends Keys> = PrimitiveAtom<StorageValue<TKey> | null>;
 type StorageValue<TKey extends Keys> = z.infer<(typeof schemas)[TKey]>;
 
 const getStorageValue = <TKey extends Keys>(
@@ -53,10 +53,10 @@ export const useStorage = <TKey extends Keys>(
   StorageValue<TKey> | null,
   (newValue: StorageValue<TKey>) => Promise<void>,
 ] => {
-  // @ts-expect-error TODO: fix this
-  const storageAtom = (atoms[key] ??= atom(getStorageValue(key)));
-
-  const [value, setValue] = useAtom(storageAtom);
+  const value = useStore(
+    store,
+    (state) => state[key],
+  ) as StorageValue<TKey> | null;
 
   const set = useCallback(
     async (newValue: StorageValue<TKey>) => {
@@ -64,9 +64,9 @@ export const useStorage = <TKey extends Keys>(
       const strValue = JSON.stringify(schema.parse(newValue));
 
       await SecureStore.setItemAsync(key, strValue);
-      setValue(newValue);
+      store.setState((state) => ({ ...state, [key]: newValue }));
     },
-    [key, setValue],
+    [key],
   );
 
   return [value, set] as const;
@@ -76,10 +76,7 @@ export const setStorage = async <TKey extends Keys>(
   key: TKey,
   newValue: StorageValue<TKey>,
 ): Promise<void> => {
-  // @ts-expect-error TODO: fix this
-  atoms[key] ??= atom(newValue);
-
-  getDefaultStore().set(atoms[key], newValue);
+  store.setState(() => ({ [key]: newValue }));
 
   const strValue = JSON.stringify(newValue);
   await SecureStore.setItemAsync(key, strValue);
@@ -88,8 +85,12 @@ export const setStorage = async <TKey extends Keys>(
 export const getStorage = <TKey extends Keys>(
   key: TKey,
 ): StorageValue<TKey> | null => {
-  // @ts-expect-error TODO: fix this
-  const storageAtom = (atoms[key] ??= atom(getStorageValue(key)));
+  const val = store.state[key];
+  if (val === undefined) {
+    const newValue = getStorageValue(key);
+    store.setState((state) => ({ ...state, [key]: newValue }));
+    return newValue;
+  }
 
-  return getDefaultStore().get(storageAtom);
+  return val;
 };

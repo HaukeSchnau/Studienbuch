@@ -36,10 +36,5 @@
     "turbo": "^2.1.1",
     "typescript": "catalog:"
   },
-  "prettier": "@stu/prettier-config",
-  "pnpm": {
-    "patchedDependencies": {
-      "jotai": "patches/jotai.patch"
-    }
-  }
+  "prettier": "@stu/prettier-config"
 }
