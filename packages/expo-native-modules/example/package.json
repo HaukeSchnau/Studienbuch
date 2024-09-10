@@ -16,7 +16,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "catalog:react18",
-    "metro": "^0.80.10",
+    "metro": "^0.80.12",
     "typescript": "catalog:"
   },
   "private": true,
