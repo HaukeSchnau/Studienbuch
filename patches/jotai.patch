@@ -1,0 +1,25 @@
+diff --git a/package.json b/package.json
+index 4e8389a8a72d2da2cb941e732b8536bbc1022663..a6faa11698a1b0b4f63e7fda3fe099c22ca8b56a 100644
+--- a/package.json
++++ b/package.json
+@@ -35,20 +35,12 @@
+   "exports": {
+     "./package.json": "./package.json",
+     ".": {
+-      "import": {
+-        "types": "./esm/index.d.mts",
+-        "default": "./esm/index.mjs"
+-      },
+       "default": {
+         "types": "./index.d.ts",
+         "default": "./index.js"
+       }
+     },
+     "./*": {
+-      "import": {
+-        "types": "./esm/*.d.mts",
+-        "default": "./esm/*.mjs"
+-      },
+       "default": {
+         "types": "./*.d.ts",
+         "default": "./*.js"

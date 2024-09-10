@@ -1,3 +1,4 @@
+import type { TRPCRouterRecord } from "@trpc/server";
 import { add } from "date-fns";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -8,11 +9,10 @@ import { db } from "@stu/db/client";
 import { Substitutions } from "@stu/db/schema";
 
 import { publicProcedure } from "../../procedures";
-import { createRouter } from "../../trpc";
 
 dayjs.extend(utc);
 
-export const substitutions = createRouter({
+export const substitutions = {
   get: publicProcedure
     .input(
       z.object({
@@ -43,4 +43,4 @@ export const substitutions = createRouter({
         );
       });
     }),
-});
+} satisfies TRPCRouterRecord;

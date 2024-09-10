@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "clean": "git clean -xdf .turbo node_modules",
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },

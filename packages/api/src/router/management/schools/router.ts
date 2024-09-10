@@ -1,3 +1,4 @@
+import type { TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
 
 import { eq } from "@stu/db";
@@ -6,9 +7,8 @@ import { Schools } from "@stu/db/schema";
 import { SCHOOL_IDS, themeSchema } from "@stu/lib";
 
 import { protectedProcedure } from "../../../procedures";
-import { createRouter } from "../../../trpc";
 
-export const schools = createRouter({
+export const schools = {
   setTheme: protectedProcedure
     .input(
       z.object({
@@ -26,4 +26,4 @@ export const schools = createRouter({
         })
         .where(eq(Schools.id, input.school));
     }),
-});
+} satisfies TRPCRouterRecord;

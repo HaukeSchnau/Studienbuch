@@ -1,3 +1,4 @@
+import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -7,9 +8,8 @@ import { Schools } from "@stu/db/schema";
 import { defaultTheme, SCHOOL_IDS, themeSchema } from "@stu/lib";
 
 import { publicProcedure } from "../../procedures";
-import { createRouter } from "../../trpc";
 
-export const schools = createRouter({
+export const schools = {
   list: publicProcedure.input(z.void()).query(async () => {
     return db.query.Schools.findMany();
   }),
@@ -44,4 +44,4 @@ export const schools = createRouter({
         image: school.image,
       };
     }),
-});
+} satisfies TRPCRouterRecord;

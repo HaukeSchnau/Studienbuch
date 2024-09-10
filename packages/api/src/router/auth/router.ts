@@ -1,16 +1,17 @@
+import type { TRPCRouterRecord } from "@trpc/server";
+
 import { getPermissions } from "@stu/auth/src/getPermissions";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Sessions } from "@stu/db/schema";
 
 import { protectedProcedure, publicProcedure } from "../../procedures";
-import { createRouter } from "../../trpc";
 import { activateLicenseKey } from "./activate-license-key";
 import { checkLicenseKey } from "./check-license-key";
 import { login } from "./login";
 import { loginWithLicenseKey } from "./login-with-license-key";
 
-export const auth = createRouter({
+export const auth = {
   getSession: publicProcedure.query(({ ctx }) => ctx.session),
 
   getPermissions: protectedProcedure.query(async ({ ctx }) => {
@@ -31,4 +32,4 @@ export const auth = createRouter({
 
   checkLicenseKey,
   activateLicenseKey,
-});
+} satisfies TRPCRouterRecord;

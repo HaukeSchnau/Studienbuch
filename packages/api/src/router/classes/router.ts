@@ -1,3 +1,4 @@
+import type { TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
 
 import { and, eq } from "@stu/db";
@@ -6,9 +7,8 @@ import { Classes } from "@stu/db/schema";
 import { SCHOOL_IDS } from "@stu/lib";
 
 import { publicProcedure } from "../../procedures";
-import { createRouter } from "../../trpc";
 
-export const classes = createRouter({
+export const classes = {
   list: publicProcedure
     .input(z.object({ school: z.enum(SCHOOL_IDS), startYear: z.number() }))
     .query(async ({ input }) => {
@@ -19,4 +19,4 @@ export const classes = createRouter({
         ),
       });
     }),
-});
+} satisfies TRPCRouterRecord;

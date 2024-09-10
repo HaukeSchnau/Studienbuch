@@ -6,9 +6,9 @@ import { schools } from "./router/schools/router";
 import { semesters } from "./router/semesters/router";
 import { substitutions } from "./router/substitutions/router";
 import { years } from "./router/years/router";
-import { createRouter } from "./trpc";
+import { t } from "./trpc";
 
-export const appRouter = createRouter({
+export const appRouter = t.router({
   management,
   years,
   classes,

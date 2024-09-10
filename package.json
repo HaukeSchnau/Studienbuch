@@ -13,13 +13,13 @@
     "db:studio": "turbo -F @stu/db studio",
     "db:deploy": "pnpm -F db deployment",
     "dev": "turbo watch dev dev:internal",
-    "dev:internal": "turbo run dev:internal",
+    "dev:internal": "turbo watch dev:internal",
     "dev:next": "turbo watch dev dev:internal -F @stu/nextjs...",
     "dev:mobile": "turbo watch dev dev:internal -F @stu/rest... -F @stu/expo...",
-    "format": "turbo run format --continue -- --cache --cache-location node_modules/.cache/.prettiercache",
-    "format:fix": "turbo run format --continue -- --write --cache --cache-location node_modules/.cache/.prettiercache",
-    "lint": "turbo run lint --continue -- --cache --cache-location node_modules/.cache/.eslintcache",
-    "lint:fix": "turbo run lint --continue -- --fix --cache --cache-location node_modules/.cache/.eslintcache",
+    "format": "turbo run format --continue -- --cache --cache-location .cache/.prettiercache",
+    "format:fix": "turbo run format --continue -- --write --cache --cache-location .cache/.prettiercache",
+    "lint": "turbo run lint --continue -- --cache --cache-location .cache/.eslintcache",
+    "lint:fix": "turbo run lint --continue -- --fix --cache --cache-location .cache/.eslintcache",
     "lint:ws": "pnpm dlx sherif@latest",
     "postinstall": "pnpm lint:ws",
     "test": "DATABASE_URL=postgresql://stu_test:stu_test@localhost:5433/stu_test turbo run test",
@@ -36,5 +36,10 @@
     "turbo": "^2.1.1",
     "typescript": "catalog:"
   },
-  "prettier": "@stu/prettier-config"
+  "prettier": "@stu/prettier-config",
+  "pnpm": {
+    "patchedDependencies": {
+      "jotai": "patches/jotai.patch"
+    }
+  }
 }

@@ -1,9 +1,5 @@
 {
   "extends": "@stu/tsconfig/internal-package.json",
-  "compilerOptions": {
-    "outDir": "dist",
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
-  },
   "include": ["src", "env.ts", "drizzle.config.ts"],
   "exclude": ["node_modules"]
 }

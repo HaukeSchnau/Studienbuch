@@ -1,3 +1,4 @@
+import type { TRPCRouterRecord } from "@trpc/server";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -7,13 +8,12 @@ import { Persons } from "@stu/db/schema";
 import { SALUTATIONS } from "@stu/lib";
 
 import { permissionProcedure } from "../../../procedures";
-import { createRouter } from "../../../trpc";
 
 const editUsersProcedure = permissionProcedure("EDIT_USERS");
 
 const PersonsSchema = createInsertSchema(Persons);
 
-export const persons = createRouter({
+export const persons = {
   list: editUsersProcedure.query(async () => {
     return await db.query.Persons.findMany({
       orderBy: asc(Persons.name),
@@ -54,4 +54,4 @@ export const persons = createRouter({
   delete: editUsersProcedure.input(z.string()).mutation(async ({ input }) => {
     await db.delete(Persons).where(eq(Persons.id, input));
   }),
-});
+} satisfies TRPCRouterRecord;

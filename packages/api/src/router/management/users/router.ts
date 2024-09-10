@@ -1,3 +1,4 @@
+import type { TRPCRouterRecord } from "@trpc/server";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -17,7 +18,6 @@ import { BetterMap, SALUTATIONS } from "@stu/lib";
 import { createUser } from "@stu/lib-server";
 
 import { permissionProcedure } from "../../../procedures";
-import { createRouter } from "../../../trpc";
 
 const scopeOptions = ["schools", "years", "classes", "courses"] as const;
 
@@ -25,7 +25,7 @@ const editUsersProcedure = permissionProcedure("EDIT_USERS");
 
 const UserSchema = createInsertSchema(Users);
 
-export const users = createRouter({
+export const users = {
   list: editUsersProcedure.query(async () => {
     const rows = await db
       .select()
@@ -205,4 +205,4 @@ export const users = createRouter({
         })),
       );
     }),
-});
+} satisfies TRPCRouterRecord;

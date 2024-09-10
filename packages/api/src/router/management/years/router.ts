@@ -1,3 +1,4 @@
+import type { TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
 
 import { and, eq } from "@stu/db";
@@ -6,11 +7,10 @@ import { Years } from "@stu/db/schema";
 import { SCHOOL_IDS } from "@stu/lib";
 
 import { permissionProcedure } from "../../../procedures";
-import { createRouter } from "../../../trpc";
 
 const editYearsProcedure = permissionProcedure("EDIT_YEARS");
 
-export const years = createRouter({
+export const years = {
   add: editYearsProcedure
     .input(
       z.object({
@@ -52,4 +52,4 @@ export const years = createRouter({
           ),
         );
     }),
-});
+} satisfies TRPCRouterRecord;

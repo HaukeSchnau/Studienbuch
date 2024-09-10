@@ -1,8 +1,5 @@
 {
   "extends": "@stu/tsconfig/base.json",
-  "compilerOptions": {
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
-  },
   "include": ["*.ts", "*.test.ts", "src", "@types/*.d.ts"],
   "exclude": ["node_modules"]
 }

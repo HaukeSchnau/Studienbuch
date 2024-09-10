@@ -13,7 +13,6 @@
     "paths": {
       "~/*": ["./src/*"]
     },
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
     "strictNullChecks": true
   },
   "include": ["src", "@types"],
