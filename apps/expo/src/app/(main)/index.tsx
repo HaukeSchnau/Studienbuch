@@ -2,6 +2,7 @@ import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
+import { Card } from "~/components/card";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import BackgroundImage from "../../../assets/home-bg.svg";
@@ -35,7 +36,9 @@ export default function OverviewPage() {
 
         <View className="h-4" />
 
-        
+        <Card className="mx-8">
+          <Text>Card Content</Text>
+        </Card>
       </SafeAreaView>
     </>
   );

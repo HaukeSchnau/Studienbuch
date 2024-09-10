@@ -8,6 +8,7 @@
   },
   "license": "MIT",
   "scripts": {
+    "dev": "pnpm with-env tsx watch src/bin/http.ts",
     "clean": "rm -rf .turbo node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
@@ -17,6 +18,7 @@
   "dependencies": {
     "@axiomhq/js": "^1.1.0",
     "@hono/node-server": "^1.12.2",
+    "@hono/trpc-server": "^0.3.2",
     "@hono/zod-openapi": "^0.16.0",
     "@scalar/hono-api-reference": "^0.5.144",
     "@stu/api": "workspace:*",

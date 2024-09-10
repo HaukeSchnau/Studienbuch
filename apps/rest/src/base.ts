@@ -1,8 +1,12 @@
+import { trpcServer } from "@hono/trpc-server";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { apiReference } from "@scalar/hono-api-reference";
 import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
 import { trimTrailingSlash } from "hono/trailing-slash";
+
+import { appRouter, createTRPCContext } from "@stu/api";
+import { getSessionFromHeaders } from "@stu/auth/src";
 
 export const createBase = (basePath: string) => {
   const app = new OpenAPIHono().basePath(basePath);
@@ -36,6 +40,25 @@ export const createBase = (basePath: string) => {
       spec: {
         url: "/openapi",
       },
+    }),
+  );
+
+  app.use(
+    "/trpc/*",
+    trpcServer({
+      router: appRouter,
+      createContext: async ({ req, info}, c) =>
+        createTRPCContext({
+          source: req.headers.get("x-trpc-source") ?? "unknown" ,
+          session: await getSessionFromHeaders(req.headers),
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          log: {
+            info: console.log,
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            flush: () => {},
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          } as any,
+        }),
     }),
   );
 
