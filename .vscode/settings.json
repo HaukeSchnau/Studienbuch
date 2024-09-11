@@ -52,5 +52,9 @@
     "watchFile": "useFsEventsOnParentDirectory",
     "synchronousWatchDirectory": true,
     "excludeDirectories": ["**/node_modules/**/*"]
-  }
+  },
+  "typescript.preferences.autoImportSpecifierExcludeRegexes": [
+    "^drizzle-orm/mysql-core$",
+    "^drizzle-orm/.+/columns(/.+)?$"
+  ]
 }

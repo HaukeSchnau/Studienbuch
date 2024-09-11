@@ -16,6 +16,7 @@
 
     "strict": true,
     "noUncheckedIndexedAccess": true,
+    "noUncheckedSideEffectImports": true,
     "checkJs": true,
 
     "module": "esnext",
