@@ -1,5 +1,5 @@
 import type { ZodSchema } from "zod";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import * as SecureStore from "expo-secure-store";
 import { Store, useStore } from "@tanstack/react-store";
 import { z } from "zod";
@@ -53,10 +53,10 @@ export const useStorage = <TKey extends Keys>(
   StorageValue<TKey> | null,
   (newValue: StorageValue<TKey>) => Promise<void>,
 ] => {
-  const value = useStore(
-    store,
-    (state) => state[key],
-  ) as StorageValue<TKey> | null;
+  const value = useStore(store, (state) => state[key]) as
+    | StorageValue<TKey>
+    | null
+    | undefined;
 
   const set = useCallback(
     async (newValue: StorageValue<TKey>) => {
@@ -69,7 +69,15 @@ export const useStorage = <TKey extends Keys>(
     [key],
   );
 
-  return [value, set] as const;
+  const definedValue = value === undefined ? getStorageValue(key) : value;
+
+  useEffect(() => {
+    if (value === undefined) {
+      store.setState((state) => ({ ...state, [key]: definedValue }));
+    }
+  }, [key, value, definedValue]);
+
+  return [definedValue, set] as const;
 };
 
 export const setStorage = async <TKey extends Keys>(

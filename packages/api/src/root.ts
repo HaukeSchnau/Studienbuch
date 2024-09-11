@@ -5,18 +5,20 @@ import { management } from "./router/management/router";
 import { schools } from "./router/schools/router";
 import { semesters } from "./router/semesters/router";
 import { substitutions } from "./router/substitutions/router";
+import { timetable } from "./router/timetable/router";
 import { years } from "./router/years/router";
 import { t } from "./trpc";
 
 export const appRouter = t.router({
-  management,
-  years,
+  auth,
   classes,
   courses,
-  substitutions,
-  auth,
-  semesters,
+  management,
   schools,
+  semesters,
+  substitutions,
+  timetable,
+  years,
 });
 
 // export type definition of API

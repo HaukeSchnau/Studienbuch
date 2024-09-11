@@ -60,8 +60,6 @@ export function localLink<TRouter extends AnyRouter = AnyRouter>(
           op.path.split("."),
         );
 
-        console.log(localProcedure);
-
         if (localProcedure?.mutate) {
           void (async () => {
             const handleLocalResponse = (output: unknown) => {
@@ -83,7 +81,7 @@ export function localLink<TRouter extends AnyRouter = AnyRouter>(
                     .where(eq(Mutations.timestamp, timestamp));
                 },
                 error: (err) => {
-                  console.log("err", err, op);
+                  console.error("err", err, op);
                   db.update(Mutations)
                     .set({
                       status: "REJECTED",

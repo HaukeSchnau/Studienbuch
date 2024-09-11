@@ -47,7 +47,7 @@ export const SemesterCourses = pgTable(
     semesterType: SemesterType("semester_type").notNull(),
     semesterYear: smallint("semester_year").notNull(),
 
-    isChoosable: boolean("is_choosable").notNull().default(false),
+    isMandatory: boolean("is_mandatory").notNull().default(false),
   },
   (table) => {
     return {

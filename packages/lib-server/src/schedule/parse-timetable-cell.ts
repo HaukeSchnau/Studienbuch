@@ -51,7 +51,7 @@ export const parseTimetableCell = (
 
     coursesForDayProcessed.push({
       ...parsedProtoCourse,
-      isChoosable: parsedProtoCourse.subject.startsWith("*"),
+      isMandatory: parsedProtoCourse.subject.startsWith("*"),
       normalizedCourseId: parsedProtoCourse.subject
         .replaceAll("*", "")
         .toLowerCase(),

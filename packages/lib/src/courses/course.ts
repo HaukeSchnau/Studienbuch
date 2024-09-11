@@ -5,7 +5,7 @@ export interface Course {
   id: string;
   name: string;
   subject: SubjectId;
-  isChoosable: boolean;
+  isMandatory: boolean;
   teachers: {
     id: string;
     name: string;

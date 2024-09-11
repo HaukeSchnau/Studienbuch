@@ -22,7 +22,7 @@ export const Substitutions = pgTable(
     start: timestamp("date").notNull(),
     course: uuid("course").notNull(),
     type: SubstitutionType("type"),
-    
+
     substitute: uuid("substitute").references(() => Persons.id, {
       onDelete: "set null",
       onUpdate: "cascade",

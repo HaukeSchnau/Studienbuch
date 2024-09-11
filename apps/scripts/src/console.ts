@@ -83,11 +83,12 @@ program.command("import-semesters").action(async () => {
 
 program.command("import-timetable").action(async () => {
   const today = new Date();
-  for (let i = -4; i < 4; i++) {
-    const date = add(today, { weeks: i });
-    console.log(`Importing timetable for ${format(date, "yyyy-MM-dd")}...`);
-    await importTimetable({ school: "igs-lil", date });
-  }
+  await importTimetable({ school: "igs-lil", date: today });
+  // for (let i = -4; i < 4; i++) {
+  //   const date = add(today, { weeks: i });
+  //   console.log(`Importing timetable for ${format(date, "yyyy-MM-dd")}...`);
+  //   await importTimetable({ school: "igs-lil", date });
+  // }
 
   process.exit(0);
 });

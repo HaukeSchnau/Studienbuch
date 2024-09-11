@@ -16,7 +16,7 @@ export interface ProtoCourseTime {
 }
 
 export type ExtendedProtoCourse = ProtoCourse & {
-  isChoosable: boolean;
+  isMandatory: boolean;
   normalizedCourseId: string;
 };
 

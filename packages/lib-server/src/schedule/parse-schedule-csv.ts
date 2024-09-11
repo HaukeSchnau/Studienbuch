@@ -110,7 +110,7 @@ export const parseScheduleRows = (
         } else {
           courses.push({
             ...course,
-            isChoosable: course.isChoosable || areAllCoursesChoosable,
+            isMandatory: course.isMandatory && !areAllCoursesChoosable,
             times: [time],
           });
         }

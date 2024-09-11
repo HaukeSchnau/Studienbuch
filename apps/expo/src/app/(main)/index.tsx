@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -8,20 +9,6 @@ import { api } from "~/utils/api";
 import BackgroundImage from "../../../assets/home-bg.svg";
 
 export default function OverviewPage() {
-  const session = api.auth.getSession.useQuery();
-
-  if (session.isLoading) {
-    return <Text>Loading...</Text>;
-  }
-
-  if (session.error) {
-    return <Text>Error: {session.error.message}</Text>;
-  }
-
-  if (!session.data) {
-    return <Text>Not authenticated</Text>;
-  }
-
   return (
     <>
       <StatusBar style="light" />
@@ -29,20 +16,55 @@ export default function OverviewPage() {
       <SafeAreaView>
         <View className="h-4" />
 
-        <Text className="color-white px-8 text-4xl" variant="heading">
-          Moin, {session.data.user?.name}!
-        </Text>
+        <Greeting />
         <Text className="color-white px-8 text-2xl">Das steht heute an:</Text>
 
         <View className="h-4" />
 
-        <Card className="mx-8">
-          <Text>Card Content</Text>
-        </Card>
+        <Agenda />
       </SafeAreaView>
     </>
   );
 }
+
+const Greeting = () => {
+  const session = api.auth.getSession.useQuery();
+
+  if (session.isLoading) {
+    return <Text>Loading...</Text>;
+  }
+
+  if (session.error) {
+    return <Text>Session Error: {session.error.message}</Text>;
+  }
+
+  if (!session.data?.user) {
+    return <Text>Not authenticated. This should not happen.</Text>;
+  }
+
+  return (
+    <Text className="color-white px-8 text-4xl" variant="heading">
+      Moin, {session.data.user?.name}!
+    </Text>
+  );
+};
+
+const Agenda = () => {
+  const today = useMemo(() => new Date(), []);
+  const timetable = api.timetable.getWeek.useQuery({ date: today });
+
+  // useEffect(() => {
+  //   setInterval(() => {
+  //     timetable.refetch();
+  //   }, 2000);
+  // }, []);
+
+  return (
+    <Card className="mx-8">
+      <Text>Card Content</Text>
+    </Card>
+  );
+};
 
 const Background = () => (
   <View

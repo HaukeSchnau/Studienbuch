@@ -104,7 +104,7 @@ export const listChoices = publicProcedure
       .innerJoin(Persons, eq(SemesterCoursesToTeachers.teacher, Persons.id))
       .where(
         and(
-          eq(SemesterCourses.isChoosable, true),
+          eq(SemesterCourses.isMandatory, false),
           eq(SemesterCourses.school, input.school),
           eq(SemesterCourses.semesterYear, semester.year),
           eq(SemesterCourses.semesterType, semester.type),
@@ -118,7 +118,7 @@ export const listChoices = publicProcedure
         id: string;
         name: string;
         subject: SubjectId;
-        isChoosable: boolean;
+        isMandatory: boolean;
         teachers: {
           id: string;
           name: string;
@@ -140,7 +140,7 @@ export const listChoices = publicProcedure
         result.set(row.courses.id, {
           classes: [],
           id: row.courses.id,
-          isChoosable: row.semester_courses.isChoosable,
+          isMandatory: row.semester_courses.isMandatory,
           name: row.courses.name,
           semesterType: row.semesters.type,
           semesterYear: row.semesters.year,

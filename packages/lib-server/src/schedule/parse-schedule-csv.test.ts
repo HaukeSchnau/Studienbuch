@@ -11,7 +11,7 @@ describe("parse-schedule-csv", () => {
       {
         subject: "*ch2",
         guessedSubject: "Chemie",
-        isChoosable: true,
+        isMandatory: true,
         normalizedCourseId: "ch2",
         room: "KH-15",
         teacher: "MUE",
