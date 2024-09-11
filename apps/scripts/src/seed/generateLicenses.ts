@@ -19,6 +19,7 @@ export const generateLicenses = async (
 ) => {
   for (let i = 0; i < numberOfLicenses; i++) {
     const licenseKey =
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- We may have more schools in the future
       i == 0 && school === "igs-lil"
         ? "KJ27-MP16-LS14-JM22"
         : generateLicenseKey();

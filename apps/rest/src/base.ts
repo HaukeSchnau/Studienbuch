@@ -47,7 +47,7 @@ export const createBase = (basePath: string) => {
     "/trpc/*",
     trpcServer({
       router: appRouter,
-      createContext: async ({ req, info }, c) =>
+      createContext: async ({ req }) =>
         createTRPCContext({
           source: req.headers.get("x-trpc-source") ?? "unknown",
           session: await getSessionFromHeaders(req.headers),

@@ -1,7 +1,6 @@
 import { exec as execCb } from "child_process";
 import { promisify } from "util";
 import { program } from "@commander-js/extra-typings";
-import { add, format } from "date-fns";
 import { z } from "zod";
 
 import { db } from "@stu/db/client";

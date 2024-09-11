@@ -1,30 +1,12 @@
-import { add } from "date-fns";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { z } from "zod";
 
-import type { MakeRequest } from "@stu/external-api";
 import type { SchoolId, SubstitutionType } from "@stu/lib";
 import type { KadmosSubstitution } from "@stu/lib-server";
-import { and, eq } from "@stu/db";
 import { db } from "@stu/db/client";
-import {
-  Classes,
-  Courses,
-  Persons,
-  Substitutions,
-  Years,
-} from "@stu/db/schema";
-import {
-  findAbbrvName,
-  loginIservWithDefaultCredentials,
-} from "@stu/external-api";
-import {
-  convertCurrentYearToStartYear,
-  getNormalTimeIndex,
-  SUBSTITUTION_TYPES,
-} from "@stu/lib";
-import { getSubstitutions, createLazyIservClient } from "@stu/lib-server";
+import { SUBSTITUTION_TYPES } from "@stu/lib";
+import { getSubstitutions } from "@stu/lib-server";
 
 dayjs.extend(utc);
 
@@ -119,13 +101,13 @@ export const copySubstitutions = async (
     return;
   }
 
-  const iservClient = createLazyIservClient();
+  // const iservClient = createLazyIservClient();
 
   const processedSubstitutions = preprocess(substitutions);
   for (const sub of processedSubstitutions) {
     // const today = new Date();
     // const startYear = convertCurrentYearToStartYear(
-    const start = add(date, { minutes: sub.startTimeOfDay });
+    // const start = add(date, { minutes: sub.startTimeOfDay });
 
     // const dbClass = await db.query.Classes.findFirst({
     //   where: and(
