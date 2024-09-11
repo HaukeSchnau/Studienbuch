@@ -2,7 +2,7 @@ import { numeric, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { Persons } from "../people/persons";
 import { Courses } from "../school/courses";
-import { timestamp, sqliteEnum, uuid } from "../utils";
+import { sqliteEnum, timestamp, uuid } from "../utils";
 
 export const GradeType = sqliteEnum(["WRITTEN", "ORAL", "MASTER"]);
 

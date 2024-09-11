@@ -11,4 +11,4 @@ export const SUBSTITUTION_TYPES = [
   "TROTZ_ABSENZ",
 ] as const;
 
-export type SubstitutionType = typeof SUBSTITUTION_TYPES[number];
+export type SubstitutionType = (typeof SUBSTITUTION_TYPES)[number];

@@ -47,9 +47,9 @@ export const createBase = (basePath: string) => {
     "/trpc/*",
     trpcServer({
       router: appRouter,
-      createContext: async ({ req, info}, c) =>
+      createContext: async ({ req, info }, c) =>
         createTRPCContext({
-          source: req.headers.get("x-trpc-source") ?? "unknown" ,
+          source: req.headers.get("x-trpc-source") ?? "unknown",
           session: await getSessionFromHeaders(req.headers),
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           log: {

@@ -65,5 +65,5 @@ export const SchedulePdfField = ({ protoCourses, onChange }: PdfFieldProps) => {
   //   </>
   // );
 
-  return <></>
+  return <></>;
 };

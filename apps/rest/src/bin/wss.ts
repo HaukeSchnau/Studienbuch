@@ -1,6 +1,7 @@
-import { appRouter, createTRPCContext } from "@stu/api";
 import { applyWSSHandler } from "@trpc/server/adapters/ws";
 import { WebSocketServer } from "ws";
+
+import { appRouter, createTRPCContext } from "@stu/api";
 
 const wss = new WebSocketServer({
   port: 3001,

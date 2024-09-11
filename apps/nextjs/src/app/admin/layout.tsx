@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
+
 import { colors } from "@stu/tailwind-config/web";
 
 import { SchoolLogo } from "~/components/SchoolLogo";

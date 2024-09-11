@@ -2,7 +2,7 @@ import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { Persons } from "../people/persons";
 import { Courses } from "../school/courses";
-import { boolean, timestamp, jsonb, uuid } from "../utils";
+import { boolean, jsonb, timestamp, uuid } from "../utils";
 
 export const Tasks = sqliteTable("tasks", {
   id: uuid("id").primaryKey().notNull(),

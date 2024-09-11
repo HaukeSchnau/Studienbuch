@@ -1,6 +1,7 @@
 import fs from "fs";
 import os from "os";
 import p from "path";
+
 import type { ProtoCourseWithTimes } from "@stu/lib";
 import { isArraySingleElement } from "@stu/lib";
 import {

@@ -1,7 +1,9 @@
+import { z } from "zod";
+
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { LicenseKeys } from "@stu/db/schema";
-import { z } from "zod";
+
 import { publicProcedure } from "../../procedures";
 
 export const checkLicenseKey = publicProcedure

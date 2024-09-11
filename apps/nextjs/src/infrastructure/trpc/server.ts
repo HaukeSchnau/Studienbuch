@@ -1,10 +1,11 @@
-import type { AppRouter } from "@stu/api";
 import { cache } from "react";
 import { headers } from "next/headers";
-import { createCaller, createTRPCContext } from "@stu/api";
-import { getSessionFromHeaders } from "@stu/auth/src";
 import { createHydrationHelpers } from "@trpc/react-query/rsc";
 import { Logger } from "next-axiom";
+
+import type { AppRouter } from "@stu/api";
+import { createCaller, createTRPCContext } from "@stu/api";
+import { getSessionFromHeaders } from "@stu/auth/src";
 
 import { createQueryClient } from "./query-client";
 

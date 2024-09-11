@@ -18,7 +18,11 @@ const extractYearNum = (name: string) => {
   return parseInt(yearStr);
 };
 
-export const mapKadmosClass = ({ name, longName, id }: KadmosClassResponse[number]) => ({
+export const mapKadmosClass = ({
+  name,
+  longName,
+  id,
+}: KadmosClassResponse[number]) => ({
   id,
   startYear: convertCurrentYearToStartYear(extractYearNum(name)),
   yearName: isTeachersAbbrvString(longName) ? null : longName,

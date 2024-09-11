@@ -48,7 +48,8 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: Person[] }) => {
     },
   });
 
-  const { reset: resetDeleteMutation } = api.management.persons.delete.useMutation();
+  const { reset: resetDeleteMutation } =
+    api.management.persons.delete.useMutation();
 
   const closeDeleteModal = () => {
     resetDeleteMutation();

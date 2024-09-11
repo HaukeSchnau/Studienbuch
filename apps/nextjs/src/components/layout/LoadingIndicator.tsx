@@ -1,7 +1,8 @@
 "use client";
 
-import { colors } from "@stu/tailwind-config/web";
 import { ThreeDot } from "react-loading-indicators";
+
+import { colors } from "@stu/tailwind-config/web";
 
 export const LoadingIndicator = () => {
   return (

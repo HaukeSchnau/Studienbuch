@@ -1,5 +1,6 @@
-import type { Permission } from "@stu/lib";
 import { cache } from "react";
+
+import type { Permission } from "@stu/lib";
 import { findPermissionScope } from "@stu/auth/src/hasPermission";
 
 import { api } from "~/infrastructure/trpc/server";

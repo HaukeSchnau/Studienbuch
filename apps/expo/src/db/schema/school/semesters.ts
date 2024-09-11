@@ -1,16 +1,11 @@
 import { relations } from "drizzle-orm";
-import {
-  int,
-  primaryKey,
-  sqliteTable,
-  text,
-} from "drizzle-orm/sqlite-core";
+import { int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { SEMESTER_TYPES } from "@stu/lib";
 
+import { sqliteEnum, timestamp } from "../utils";
 import { SchoolId } from "./school-id";
 import { Schools } from "./schools";
-import { timestamp, sqliteEnum } from "../utils";
 
 export const SemesterType = sqliteEnum(SEMESTER_TYPES);
 
