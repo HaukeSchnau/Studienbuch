@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 
-import type { Permission, Salutation, ScopeOption } from "@stu/lib";
+import type { Permission, ScopeOption } from "@stu/lib";
 import { formalName } from "@stu/lib";
 
 import type { User } from "../user.type";
@@ -15,12 +15,12 @@ interface Props {
   onClose: () => void;
 }
 
-const scopeOptionLabels = {
-  schools: "Schulen",
-  years: "Jahrgänge",
-  classes: "Klassen",
-  courses: "Kurse",
-} as const;
+// const scopeOptionLabels = {
+//   schools: "Schulen",
+//   years: "Jahrgänge",
+//   classes: "Klassen",
+//   courses: "Kurse",
+// } as const;
 
 interface PermissionMeta {
   description: string;
@@ -207,11 +207,11 @@ interface ScopeFieldProps {
 
 const ScopeField = ({
   option,
-  selectedOptions,
-  onSetScopeOption,
+  // selectedOptions,
+  // onSetScopeOption,
 }: ScopeFieldProps) => {
   const {
-    data: options,
+    // data: options,
     isPending,
     isError,
     error,

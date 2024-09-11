@@ -118,7 +118,7 @@ export default async function SubstitutionPage() {
   );
 }
 
-const DBSubstitutionTable = async () => {
+const DBSubstitutionTable = () => {
   return <></>;
   // const substitutions = await db.query.Substitutions.findMany({
   //   with: {
