@@ -1,34 +1,65 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { Image } from "expo-image";
+import { View } from "react-native";
+import { ReactComponent } from "react-native-css-interop/dist/types";
 
 import type { SubjectId } from "@stu/lib";
 
+import bi from "./icons/bi.svg";
+import ch from "./icons/ch.svg";
+import de from "./icons/de.svg";
+import tutorium from "./icons/ds.svg";
+import ds from "./icons/ds.svg";
+import en from "./icons/en.svg";
+import fr from "./icons/fr.svg";
+import ge from "./icons/ge.svg";
+import ifIcon from "./icons/if.svg";
+import ku from "./icons/ku.svg";
+import la from "./icons/la.svg";
+import ma from "./icons/ma.svg";
+import mu from "./icons/mu.svg";
+import ph from "./icons/ph.svg";
+import pw from "./icons/pw.svg";
+import re from "./icons/re.svg";
+import sf from "./icons/sf.svg";
+import sn from "./icons/sn.svg";
+import sp from "./icons/sp.svg";
+import sportTheorie from "./icons/sp.svg";
+import wn from "./icons/wn.svg";
+
 // TODO: Remove partial when all subjects have icons
-const subjectIconMap: Partial<Record<SubjectId, number>> = {
-  de: require("./icons/de.svg"),
-  en: require("./icons/en.svg"),
-  ma: require("./icons/ma.svg"),
-  ph: require("./icons/ph.svg"),
-  ch: require("./icons/ch.svg"),
-  bi: require("./icons/bi.svg"),
-  if: require("./icons/if.svg"),
-  ge: require("./icons/ge.svg"),
-  pw: require("./icons/pw.svg"),
-  mu: require("./icons/mu.svg"),
-  sp: require("./icons/sp.svg"),
-  ku: require("./icons/ku.svg"),
-  re: require("./icons/re.svg"),
-  wn: require("./icons/wn.svg"),
-  fr: require("./icons/fr.svg"),
-  la: require("./icons/la.svg"),
-  sn: require("./icons/sn.svg"),
-  "sport-theorie": require("./icons/sp.svg"),
-  sf: require("./icons/sf.svg"),
-  tutorium: require("./icons/ds.svg"),
-  ds: require("./icons/ds.svg"),
+const subjectIconMap: Partial<Record<SubjectId, ReactComponent>> = {
+  de,
+  en,
+  ma,
+  ph,
+  ch,
+  bi,
+  if: ifIcon,
+  ge,
+  pw,
+  mu,
+  sp,
+  ku,
+  re,
+  wn,
+  fr,
+  la,
+  sn,
+  "sport-theorie": sportTheorie,
+  sf,
+  tutorium,
+  ds,
 } as const;
 
-export const SubjectIcon = ({ subject }: { subject: SubjectId }) => (
-  <Image source={subjectIconMap[subject]} style={{ width: 24, height: 24 }} />
-);
+export const SubjectIcon = ({ subject }: { subject: SubjectId }) => {
+  const Icon = subjectIconMap[subject];
+  return Icon ? (
+    <Icon width={24} height={24} />
+  ) : (
+    <View
+      style={{
+        width: 24,
+        height: 24,
+      }}
+    />
+  );
+};
