@@ -59,3 +59,5 @@ dist/
 /cache_old
 
 __snapshots__
+
+/packages/expo-native-modules/.eslintrc.js
