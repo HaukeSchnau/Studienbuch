@@ -1,6 +1,6 @@
 import { writeFile } from "fs/promises";
 import path from "path";
-import { describe, test, vi } from "vitest";
+import { describe, test } from "vitest";
 
 import { login } from "../auth/login";
 import { getTimetable } from "./get-timetable";

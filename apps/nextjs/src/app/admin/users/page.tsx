@@ -33,7 +33,7 @@ export default function UsersPage() {
 }
 
 const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
-  const utils = api.useUtils();
+  // const utils = api.useUtils();
   const [users, setUsers] = useImmer<User[]>(initialUsers);
   const [updates, setUpdates] = useState(new Map<string, Partial<User>>());
 
@@ -48,12 +48,12 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
   const [changePasswordModalUser, setChangePasswordModalUser] =
     useState<User | null>(null);
 
-  const updateUsersMutation = api.management.users.updateMany.useMutation({
-    onSuccess: () => {
-      setUpdates(new Map<string, Partial<User>>());
-      void utils.management.users.list.invalidate();
-    },
-  });
+  // const updateUsersMutation = api.management.users.updateMany.useMutation({
+  //   onSuccess: () => {
+  //     setUpdates(new Map<string, Partial<User>>());
+  //     void utils.management.users.list.invalidate();
+  //   },
+  // });
 
   const { reset: resetDeleteMutation } =
     api.management.users.delete.useMutation();

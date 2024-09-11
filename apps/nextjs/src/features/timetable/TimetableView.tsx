@@ -1,30 +1,13 @@
-import Link from "next/link";
-import { z } from "zod";
+import type { Timetable } from "@stu/lib";
 
-import type {
-  Course,
-  CourseTimeWeeks,
-  Timetable,
-  TimetableCell,
-} from "@stu/lib";
-import {
-  formalName,
-  formatTime,
-  formatWeeks,
-  getNormalTime,
-  hash,
-} from "@stu/lib";
-
-import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
-
-const weekdays = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
+// const weekdays = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
 
 interface Props {
   timetable: Timetable;
   clickable?: boolean;
 }
 
-export const TimetableView = ({ timetable, clickable }: Props) => {
+export const TimetableView = (_: Props) => {
   return <></>;
   //   const renderCell = (cell?: TimetableCell) => {
   //     if (!cell) return null;

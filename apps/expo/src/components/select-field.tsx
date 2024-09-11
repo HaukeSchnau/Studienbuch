@@ -38,6 +38,7 @@ export const SelectField = <TOption,>({
     <View>
       <Picker
         selectedValue={value ? getKey(value) : undefined}
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         onValueChange={(_, idx) => onChange(options[idx]!)}
         style={{
           backgroundColor: "#E6E6E6",

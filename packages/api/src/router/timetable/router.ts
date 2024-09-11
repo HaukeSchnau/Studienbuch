@@ -1,17 +1,14 @@
-import { TRPCRouterRecord } from "@trpc/server";
+import type { TRPCRouterRecord } from "@trpc/server";
 import { endOfWeek, startOfWeek } from "date-fns";
 import { z } from "zod";
 
-import { and, between, eq, gte, lte } from "@stu/db";
+import { and, between, eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import {
-  Classes,
   CourseMemberships,
   Courses,
   SemesterCourses,
   SemesterCoursesToClasses,
-  SemesterCoursesToClassesRelations,
-  Semesters,
   Students,
   Substitutions,
   TimetableEntries,

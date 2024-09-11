@@ -4,7 +4,7 @@ interface CourseListProps {
   year: YearIdentifier;
 }
 
-export const CourseList = ({ year }: CourseListProps) => {
+export const CourseList = (_: CourseListProps) => {
   return <></>;
   // const { isPending, error, data } = api.courses.list.useQuery({ yearId });
   // const sortedCourses = useMemo(() => {

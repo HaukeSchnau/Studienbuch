@@ -3,7 +3,6 @@
 import { z } from "zod";
 
 import type { Course } from "@stu/lib";
-import { formalName } from "@stu/lib";
 
 import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
 import { Card, CardHeading } from "../layout/Card";

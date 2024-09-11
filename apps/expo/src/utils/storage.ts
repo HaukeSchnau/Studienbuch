@@ -22,11 +22,11 @@ const schemas = {
 
 type Keys = keyof typeof schemas;
 
-const store: Store<
+const store = new Store<
   Partial<{
     [K in Keys]: StorageValue<K> | null;
   }>
-> = new Store({});
+>({});
 
 type StorageValue<TKey extends Keys> = z.infer<(typeof schemas)[TKey]>;
 

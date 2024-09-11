@@ -27,7 +27,7 @@ export const TimetableManager = ({ year }: TimetableProps) => {
   );
 };
 
-export const useTimetable = (year: YearIdentifier) => {
+export const useTimetable = (_year: YearIdentifier) => {
   // const courses = api.courses.listChoices.useQuery({
 
   //  });

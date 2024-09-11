@@ -1,11 +1,9 @@
 import { relations } from "drizzle-orm";
 import {
-  integer,
   jsonb,
   pgEnum,
   pgTable,
   primaryKey,
-  serial,
   text,
   uuid,
 } from "drizzle-orm/pg-core";

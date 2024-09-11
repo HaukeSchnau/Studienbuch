@@ -1,5 +1,4 @@
 import type { Course, CourseTimeWeeks } from "../courses";
-import { getNormalTimeIndex } from "../courses";
 
 export interface TimetableEntry {
   course: Course;
@@ -11,7 +10,7 @@ export type TimetableCell = TimetableEntry[];
 
 export type Timetable = TimetableCell[][];
 
-export const buildTimetable = (courses: Course[]): Timetable => {
+export const buildTimetable = (_courses: Course[]): Timetable => {
   const timetable: Timetable = [];
 
   // for (const course of courses) {

@@ -1,7 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
   foreignKey,
-  integer,
   pgEnum,
   pgTable,
   primaryKey,

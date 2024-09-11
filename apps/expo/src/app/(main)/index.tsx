@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -44,20 +44,14 @@ const Greeting = () => {
 
   return (
     <Text className="color-white px-8 text-4xl" variant="heading">
-      Moin, {session.data.user?.name}!
+      Moin, {session.data.user.name}!
     </Text>
   );
 };
 
 const Agenda = () => {
   const today = useMemo(() => new Date(), []);
-  const timetable = api.timetable.getWeek.useQuery({ date: today });
-
-  // useEffect(() => {
-  //   setInterval(() => {
-  //     timetable.refetch();
-  //   }, 2000);
-  // }, []);
+  api.timetable.getWeek.useQuery({ date: today });
 
   return (
     <Card className="mx-8">

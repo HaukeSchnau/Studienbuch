@@ -80,6 +80,7 @@ export default tseslint.config(
         "error",
         { includeInternal: true, includeTypes: true },
       ],
+      "@typescript-eslint/no-redundant-type-constituents": "off",
     },
   },
   {

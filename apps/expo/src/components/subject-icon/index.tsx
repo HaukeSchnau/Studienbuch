@@ -1,5 +1,5 @@
+import type { ReactComponent } from "react-native-css-interop/dist/types";
 import { View } from "react-native";
-import { ReactComponent } from "react-native-css-interop/dist/types";
 
 import type { SubjectId } from "@stu/lib";
 
