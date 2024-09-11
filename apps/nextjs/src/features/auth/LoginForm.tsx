@@ -41,6 +41,7 @@ export const LoginForm = () => {
           isValidating: false,
           isPristine: true,
           isDirty: false,
+          isBlurred: false,
         });
 
         return;
