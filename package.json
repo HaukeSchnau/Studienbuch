@@ -36,5 +36,10 @@
     "turbo": "^2.1.1",
     "typescript": "catalog:"
   },
-  "prettier": "@stu/prettier-config"
+  "prettier": "@stu/prettier-config",
+  "pnpm": {
+    "patchedDependencies": {
+      "expo-module-scripts": "patches/expo-module-scripts.patch"
+    }
+  }
 }

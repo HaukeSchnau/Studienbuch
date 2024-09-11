@@ -1,0 +1,14 @@
+diff --git a/bin/npx b/bin/npx
+index 30c3df13b7d40712e122d4d8291666bba1b0982e..9a3b95e9c3e157dccde88eb45ee754cdc48cf1b5 100755
+--- a/bin/npx
++++ b/bin/npx
+@@ -4,8 +4,4 @@
+ # Yarn and npm.
+ 
+ # shellcheck disable=SC2154
+-if [[ ! "$npm_config_user_agent" =~ yarn ]] && [ -x "$(command -v yarn)" ]; then
+-  yarn exec -- npx "$@"
+-else
+-  npx "$@"
+-fi
++npx "$@"
