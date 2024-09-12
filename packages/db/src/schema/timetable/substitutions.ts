@@ -4,6 +4,7 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -11,6 +12,7 @@ import {
 import { SUBSTITUTION_TYPES } from "@stu/lib";
 
 import { Persons } from "../people/persons";
+import { Rooms } from "../school/rooms";
 import { TimetableEntries } from "./timetable-entries";
 
 export const SubstitutionType = pgEnum("substitution_type", SUBSTITUTION_TYPES);
@@ -55,6 +57,29 @@ export const SubstitutionRelations = relations(Substitutions, ({ one }) => ({
   }),
   timetableEntry: one(TimetableEntries, {
     fields: [Substitutions.start, Substitutions.course],
+    references: [TimetableEntries.start, TimetableEntries.course],
+  }),
+}));
+
+export const RoomChanges = pgTable("room_changes", {
+  start: timestamp("date").notNull(),
+  course: uuid("course").notNull(),
+  room: text("room")
+    .notNull()
+    .references(() => Rooms.roomNumber, {
+      onDelete: "set null",
+      onUpdate: "cascade",
+    }),
+
+  createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" }).notNull(),
+});
+
+export const RoomChangeRelations = relations(RoomChanges, ({ one }) => ({
+  timetableEntry: one(TimetableEntries, {
+    fields: [RoomChanges.start, RoomChanges.course],
     references: [TimetableEntries.start, TimetableEntries.course],
   }),
 }));

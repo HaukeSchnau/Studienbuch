@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { add, endOfWeek, startOfWeek } from "date-fns";
+import { add, endOfWeek, format, startOfWeek } from "date-fns";
 
 import type { KadmosTimetableResponse } from "@stu/external-api";
 import type { SchoolId, SubjectId } from "@stu/lib";
@@ -13,6 +13,7 @@ import {
   SemesterCoursesToClasses,
   SemesterCoursesToTeachers,
   Semesters,
+  Substitutions,
   TimetableEntries,
   TimetableEntryRooms,
 } from "@stu/db/schema";
@@ -43,6 +44,16 @@ interface ProtoTimetableEntry {
     identifierInYear: string;
     startYear: number;
   }[];
+  substitutions: (
+    | {
+        type: "SUBSTITUTION";
+        substituteName: string;
+      }
+    | {
+        type: "ABSENT";
+        substituteName?: never;
+      }
+  )[];
   teacherNames: string[];
   roomNumbers: string[];
   start: Date;
@@ -134,19 +145,28 @@ const collectEntries = async (timetable: KadmosTimetableResponse) => {
   for (const period of Object.values(elementPeriods).flat()) {
     const periodClasses = period.elements
       .filter((el) => el.type === 1)
-      .map((el) => classes.get(el.id))
+      .map((el) => classes.get(el.orgId || el.id))
       .filter((cls) => !!cls);
     const periodTeachers = period.elements
       .filter((el) => el.type === 2)
-      .map((el) => teachers.get(el.id))
-      .filter((teacher) => !!teacher);
+      .map((el) => ({
+        state: el.state,
+        substitute: el.orgId > 0 ? teachers.get(el.id) : undefined,
+        teacher: teachers.get(el.orgId || el.id),
+      }))
+      .map((el) => ({
+        state: el.state,
+        substitute: el.substitute?.name === "---" ? undefined : el.substitute,
+        teacher: el.teacher?.name === "---" ? undefined : el.teacher,
+      }));
+
     const periodCourses = period.elements
       .filter((el) => el.type === 3)
-      .map((el) => courses.get(el.id))
+      .map((el) => courses.get(el.orgId || el.id))
       .filter((course) => !!course);
     const periodRooms = period.elements
       .filter((el) => el.type === 4)
-      .map((el) => rooms.get(el.id))
+      .map((el) => rooms.get(el.orgId || el.id))
       .filter((room) => !!room)
       .filter((room) => room.name !== "---");
 
@@ -199,41 +219,80 @@ const collectEntries = async (timetable: KadmosTimetableResponse) => {
         .onConflictDoNothing();
     }
 
+    // Some sanity checks
     // if (period.cellState === "SUBSTITUTION") {
-    // if (
-    //   period.elements.every((element) => element.state !== "SUBSTITUTED")
-    // ) {
-    //   console.warn(
-    //     `Substitution without substituted elements found for period with classes ${periodClasses
-    //       .map((el) => `${el.name} ${el.longName}`)
-    //       .join(
-    //         ", ",
-    //       )} on date ${format(period.date, "yyyy-MM-dd")}. ${period.elements
-    //       .filter((element) => element.state !== "SUBSTITUTED")
-    //       .map((element) => `${element.type} ${element.state}`)}`,
-    //   );
+    //   if (period.elements.every((element) => element.state !== "SUBSTITUTED")) {
+    //     console.warn(
+    //       `Substitution without substituted elements found for period with classes ${periodClasses
+    //         .map((el) => `${el.name} ${el.longName}`)
+    //         .join(
+    //           ", ",
+    //         )} on date ${format(period.date, "yyyy-MM-dd")}. ${period.elements
+    //         .filter((element) => element.state !== "SUBSTITUTED")
+    //         .map((element) => `${element.type} ${element.state}`)
+    //         .join(", ")}`,
+    //     );
+    //   }
+    //   if (
+    //     period.elements.some(
+    //       (element) =>
+    //         element.type !== 2 &&
+    //         element.type !== 4 &&
+    //         element.state !== "REGULAR",
+    //     )
+    //   ) {
+    //     console.warn(
+    //       `Substitution with non-regular elements found for period with classes ${periodClasses
+    //         .map((el) => `${el.name} ${el.longName}`)
+    //         .join(
+    //           ", ",
+    //         )} on date ${format(period.date, "yyyy-MM-dd")}. ${period.elements
+    //         .filter(
+    //           (element) => element.type !== 2 && element.state !== "REGULAR",
+    //         )
+    //         .map((element) => `${element.type} ${element.state}`)
+    //         .join(", ")}`,
+    //     );
+    //   }
     // }
-    // if (
-    //   period.elements.some(
-    //     (element) =>
-    //       element.type !== 2 &&
-    //       element.type !== 4 &&
-    //       element.state !== "REGULAR",
-    //   )
-    // ) {
-    //   console.warn(
-    //     `Substitution with non-regular elements found for period with classes ${periodClasses
-    //       .map((el) => `${el.name} ${el.longName}`)
-    //       .join(
-    //         ", ",
-    //       )} on date ${format(period.date, "yyyy-MM-dd")}. ${period.elements
-    //       .filter(
-    //         (element) => element.type !== 2 && element.state !== "REGULAR",
-    //       )
-    //       .map((element) => `${element.type} ${element.state}`)}`,
-    //   );
-    // }
-    // }
+
+    const entryTeachers: string[] = [];
+    const substitutions: ProtoTimetableEntry["substitutions"] = [];
+    for (const teacher of periodTeachers) {
+      if (teacher.state === "SUBSTITUTED") {
+        if (!teacher.substitute) {
+          throw new Error("Substitute is missing");
+        }
+
+        substitutions.push({
+          type: "SUBSTITUTION",
+          substituteName: teacher.substitute.name,
+        });
+        continue;
+      }
+
+      if (teacher.state === "ABSENT") {
+        if (teacher.substitute) {
+          throw new Error(
+            `Absent should have no substitute. Classes: ${JSON.stringify(periodClasses.map(mapKadmosClass))}\nDate: ${format(period.date, "yyyy-MM-dd")}`,
+          );
+        }
+
+        substitutions.push({ type: "ABSENT" });
+        continue;
+      }
+
+      // Regular
+      if (teacher.substitute) {
+        throw new Error("Regular should have no substitute");
+      }
+
+      if (!teacher.teacher) {
+        throw new Error("Teacher is missing");
+      }
+
+      entryTeachers.push(teacher.teacher.name);
+    }
 
     entriesToInsert.push({
       course: {
@@ -246,9 +305,8 @@ const collectEntries = async (timetable: KadmosTimetableResponse) => {
       duration: period.endTime - period.startTime,
       start: add(period.date, { minutes: period.startTime }),
       roomNumbers: periodRooms.map((room) => room.name),
-      teacherNames: periodTeachers
-        .map((teacher) => teacher.name)
-        .filter((name) => name !== "---"),
+      teacherNames: entryTeachers,
+      substitutions,
     });
   }
 
@@ -338,6 +396,24 @@ export const importTimetable = async ({ school, date }: Options) => {
       }
     }
 
+    const joinedSubstitutions: ProtoTimetableEntry["substitutions"] = [];
+    for (const entry of adjacentEntries) {
+      for (const substitution of entry.substitutions) {
+        if (
+          !joinedSubstitutions.some(
+            (otherSubstitution) =>
+              otherSubstitution.type === substitution.type &&
+              (substitution.type === "SUBSTITUTION"
+                ? otherSubstitution.substituteName ===
+                  substitution.substituteName
+                : true),
+          )
+        ) {
+          joinedSubstitutions.push(substitution);
+        }
+      }
+    }
+
     const joinedStart = Math.min(
       ...adjacentEntries.map((entry) => entry.start.getTime()),
     );
@@ -355,6 +431,7 @@ export const importTimetable = async ({ school, date }: Options) => {
       teacherNames: joinedTeachers,
       start: new Date(joinedStart),
       duration: joinedDuration,
+      substitutions: joinedSubstitutions,
     });
   }
 
@@ -519,6 +596,24 @@ export const importTimetable = async ({ school, date }: Options) => {
             duration: entry.duration,
           },
         });
+
+      for (const substitution of entry.substitutions) {
+        const teacherId =
+          substitution.type === "SUBSTITUTION"
+            ? await iservClient.getOrCreateTeacher(substitution.substituteName)
+            : null;
+        await db
+          .insert(Substitutions)
+          .values({
+            course: uuid,
+            start: entry.start,
+            updatedAt: new Date(),
+            type:
+              substitution.type === "SUBSTITUTION" ? "VERTRETUNG" : "ENTFALL",
+            substitute: teacherId,
+          })
+          .onConflictDoNothing();
+      }
 
       if (entry.roomNumbers.length > 0) {
         await db
