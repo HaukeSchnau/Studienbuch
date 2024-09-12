@@ -17,7 +17,7 @@ export const Card = ({
       style={[
         {
           backgroundColor: "white",
-          borderRadius: 24,
+          borderRadius: 32,
           padding: 16,
         },
         shadow,

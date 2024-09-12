@@ -1,7 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
   foreignKey,
-  interval,
   pgTable,
   primaryKey,
   smallint,
@@ -19,7 +18,7 @@ export const TimetableEntries = pgTable(
   "timetable_entries",
   {
     start: timestamp("date", { mode: "date" }).notNull(),
-    duration: interval("duration", { fields: "minute" }).notNull(),
+    duration: smallint("duration").notNull(),
 
     course: uuid("course").notNull(),
     semesterType: SemesterType("semester_type").notNull(),

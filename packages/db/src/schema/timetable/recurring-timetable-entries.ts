@@ -1,5 +1,4 @@
 import {
-  interval,
   pgEnum,
   pgTable,
   primaryKey,
@@ -21,7 +20,7 @@ export const RecurringTimetableEntries = pgTable(
   {
     weekday: smallint("weekday").notNull(),
     start: time("start").notNull(),
-    duration: interval("duration").notNull(),
+    duration: smallint("duration").notNull(),
     weeks: RecurringTimetableEntryWeeks("weeks").default("ALL").notNull(),
     room: text("room"),
 

@@ -2,19 +2,25 @@ import type { TRPCRouterRecord } from "@trpc/server";
 import { endOfWeek, startOfWeek } from "date-fns";
 import { z } from "zod";
 
-import { and, between, eq } from "@stu/db";
+import type { AgendaEntry } from "@stu/lib";
+import { alias, and, asc, between, eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import {
   CourseMemberships,
   Courses,
+  Persons,
   SemesterCourses,
   SemesterCoursesToClasses,
+  SemesterCoursesToTeachers,
   Students,
   Substitutions,
   TimetableEntries,
 } from "@stu/db/schema";
 
 import { protectedProcedure } from "../../procedures";
+
+const Teachers = alias(Persons, "teachers");
+const Substitute = alias(Persons, "substitute");
 
 export const timetable = {
   getWeek: protectedProcedure
@@ -32,7 +38,7 @@ export const timetable = {
       }) => {
         const start = startOfWeek(date, { weekStartsOn: 1 });
         const end = endOfWeek(date, { weekStartsOn: 1 });
-        const timetableEntries = await db
+        const rows = await db
           .select()
           .from(TimetableEntries)
           .innerJoin(
@@ -69,6 +75,25 @@ export const timetable = {
             ),
           )
           .innerJoin(
+            SemesterCoursesToTeachers,
+            and(
+              eq(SemesterCoursesToTeachers.course, SemesterCourses.course),
+              eq(
+                SemesterCoursesToTeachers.semesterType,
+                SemesterCourses.semesterType,
+              ),
+              eq(
+                SemesterCoursesToTeachers.semesterYear,
+                SemesterCourses.semesterYear,
+              ),
+              eq(SemesterCoursesToTeachers.school, SemesterCourses.school),
+            ),
+          )
+          .innerJoin(
+            Teachers,
+            eq(SemesterCoursesToTeachers.teacher, Teachers.id),
+          )
+          .innerJoin(
             Students,
             and(
               eq(CourseMemberships.student, Students.person),
@@ -87,20 +112,57 @@ export const timetable = {
               eq(TimetableEntries.course, Substitutions.course),
             ),
           )
+          .leftJoin(Substitute, eq(Substitutions.substitute, Substitute.id))
           .where(
             and(
               between(TimetableEntries.start, start, end),
               eq(Students.person, user.id),
             ),
-          );
-        console.log(
-          timetableEntries.map((entry) => ({
-            name: entry.courses.name,
-            date: entry.timetable_entries.start,
-            cls: entry.semester_courses_to_classes.classIdentifier,
-            startYear: entry.semester_courses_to_classes.classStartYear,
-          })),
-        );
+          )
+          .orderBy(asc(TimetableEntries.start), asc(TimetableEntries.course));
+
+        const timetableEntries: AgendaEntry[] = [];
+        let currentEntry: AgendaEntry | null = null;
+        for (const row of rows) {
+          if (
+            !currentEntry ||
+            currentEntry.start.getTime() !==
+              row.timetable_entries.start.getTime() ||
+            currentEntry.course.id !== row.timetable_entries.course
+          ) {
+            currentEntry = {
+              start: row.timetable_entries.start,
+              duration: row.timetable_entries.duration,
+              course: {
+                id: row.courses.id,
+                name: row.courses.name,
+                subject: row.courses.subject,
+                teachers: [],
+              },
+              substitutions: [],
+            };
+            timetableEntries.push(currentEntry);
+          }
+          currentEntry.course.teachers.push({
+            id: row.teachers.id,
+            name: row.teachers.name,
+            abbrv: row.teachers.abbrv,
+            salutation: row.teachers.salutation,
+          });
+          if (row.substitutions) {
+            currentEntry.substitutions.push({
+              type: row.substitutions.type,
+              substitute: row.substitute
+                ? {
+                    id: row.substitute.id,
+                    abbrv: row.substitute.abbrv,
+                    name: row.substitute.name,
+                    salutation: row.substitute.salutation,
+                  }
+                : null,
+            });
+          }
+        }
 
         return timetableEntries;
       },

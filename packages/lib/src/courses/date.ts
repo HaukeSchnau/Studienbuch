@@ -31,7 +31,7 @@ export const parseTime = (time: string) => {
   return hours * 60 + minutes;
 };
 
-const normalTimes = [
+export const normalTimes = [
   8 * 60,
   9 * 60 + 45,
   11 * 60 + 30,

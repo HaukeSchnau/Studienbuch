@@ -244,7 +244,7 @@ const collectEntries = async (timetable: KadmosTimetableResponse) => {
       },
       classes: periodClasses.map(mapKadmosClass),
       duration: period.endTime - period.startTime,
-      start: add(period.date, { minutes: period.startTime, hours: 2 }), // TODO: Timezone
+      start: add(period.date, { minutes: period.startTime }),
       roomNumbers: periodRooms.map((room) => room.name),
       teacherNames: periodTeachers
         .map((teacher) => teacher.name)
@@ -508,7 +508,7 @@ export const importTimetable = async ({ school, date }: Options) => {
           semesterYear: semester.year,
           start: entry.start,
           school,
-          duration: `${entry.duration} minutes`,
+          duration: entry.duration,
         })
         .onConflictDoUpdate({
           target: [TimetableEntries.start, TimetableEntries.course],
@@ -516,7 +516,7 @@ export const importTimetable = async ({ school, date }: Options) => {
             semesterType: semester.type,
             semesterYear: semester.year,
             school,
-            duration: `${entry.duration} minutes`,
+            duration: entry.duration,
           },
         });
 

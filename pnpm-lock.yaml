@@ -128,6 +128,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      date-fns:
+        specifier: ^3.6.0
+        version: 3.6.0
       drizzle-orm:
         specifier: ^0.33.0
         version: 0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.8)(@types/react@18.3.5)(expo-sqlite@14.0.6(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)))(pg@8.12.0)(react@18.3.1)
@@ -939,7 +942,7 @@ importers:
         version: 7.35.2(eslint@9.10.0(jiti@1.21.6))
       eslint-plugin-react-hooks:
         specifier: rc
-        version: 5.1.0-rc-3dfd5d9e-20240910(eslint@9.10.0(jiti@1.21.6))
+        version: 5.1.0-rc-d6cb4e77-20240911(eslint@9.10.0(jiti@1.21.6))
       eslint-plugin-turbo:
         specifier: ^2.1.1
         version: 2.1.1(eslint@9.10.0(jiti@1.21.6))
@@ -6070,8 +6073,8 @@ packages:
     peerDependencies:
       eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0
 
-  eslint-plugin-react-hooks@5.1.0-rc-3dfd5d9e-20240910:
-    resolution: {integrity: sha512-bB2mPM2fKSgb+rrHtksYrawCribuatIBq8t1gZTyEwNbrWTDFc1H0r7FWZVgqOvR9n5hwOxF16KVXkgFwvGQMw==}
+  eslint-plugin-react-hooks@5.1.0-rc-d6cb4e77-20240911:
+    resolution: {integrity: sha512-bVg0IJv+ti3rSR6LSStSSaLSbEVX31gE9Id9SxvK+4fLHMXQHPakeusjipFpzgM1XvRSDqQPucxOhI2+i7KMNQ==}
     engines: {node: '>=10'}
     peerDependencies:
       eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0 || ^9.0.0
@@ -17397,7 +17400,7 @@ snapshots:
     dependencies:
       eslint: 9.10.0(jiti@1.21.6)
 
-  eslint-plugin-react-hooks@5.1.0-rc-3dfd5d9e-20240910(eslint@9.10.0(jiti@1.21.6)):
+  eslint-plugin-react-hooks@5.1.0-rc-d6cb4e77-20240911(eslint@9.10.0(jiti@1.21.6)):
     dependencies:
       eslint: 9.10.0(jiti@1.21.6)
 

@@ -1,10 +1,12 @@
 import { useMemo } from "react";
-import { View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { format, isSameDay } from "date-fns";
 
 import { Card } from "~/components/card";
 import { Text } from "~/components/text";
+import { Agenda } from "~/features/agenda/agenda";
 import { api } from "~/utils/api";
 import BackgroundImage from "../../../assets/home-bg.svg";
 
@@ -30,8 +32,8 @@ export default function OverviewPage() {
 const Greeting = () => {
   const session = api.auth.getSession.useQuery();
 
-  if (session.isLoading) {
-    return <Text>Loading...</Text>;
+  if (session.isPending) {
+    return <ActivityIndicator />;
   }
 
   if (session.error) {
@@ -46,17 +48,6 @@ const Greeting = () => {
     <Text className="color-white px-8 text-4xl" variant="heading">
       Moin, {session.data.user.name}!
     </Text>
-  );
-};
-
-const Agenda = () => {
-  const today = useMemo(() => new Date(), []);
-  api.timetable.getWeek.useQuery({ date: today });
-
-  return (
-    <Card className="mx-8">
-      <Text>Card Content</Text>
-    </Card>
   );
 };
 
