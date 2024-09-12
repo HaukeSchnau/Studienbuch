@@ -11,7 +11,12 @@ import {
   loginIservWithDefaultCredentials,
 } from "@stu/external-api";
 import { defaultSchools, SCHOOL_IDS } from "@stu/lib";
-import { createUser, importClasses, importTimetable } from "@stu/lib-server";
+import {
+  createUser,
+  importClasses,
+  importTeachers,
+  importTimetable,
+} from "@stu/lib-server";
 
 import { addNamesToExistingUsers } from "./addNamesToExistingUsers";
 import { addSemesters } from "./addSemesters";
@@ -41,6 +46,9 @@ program
     console.log(`Generating license keys for school "${school}"...`);
     await generateLicenses(100, school);
 
+    console.log("Importing teachers...");
+    await importTeachers();
+
     console.log("Adding semesters...");
     await addSemesters(defaultSchoolValue.stateCode);
 
@@ -57,6 +65,12 @@ program.command("import-substitutions").action(async () => {
   console.log("Copying tomorrow's substitutions...");
   await copySubstitutions("igs-lil", "TOMORROW");
 
+  process.exit(0);
+});
+
+program.command("import-teachers").action(async () => {
+  console.log("Importing teachers...");
+  await importTeachers();
   process.exit(0);
 });
 
