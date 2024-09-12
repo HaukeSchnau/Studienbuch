@@ -46,7 +46,7 @@ CREATE TABLE `semester_courses` (
 	`school` text NOT NULL,
 	`semester_type` text NOT NULL,
 	`semester_year` integer NOT NULL,
-	`is_choosable` integer DEFAULT false NOT NULL,
+	`is_mandatory` integer DEFAULT false NOT NULL,
 	PRIMARY KEY(`course`, `semester_type`, `semester_year`, `school`),
 	FOREIGN KEY (`course`) REFERENCES `courses`(`id`) ON UPDATE cascade ON DELETE cascade,
 	FOREIGN KEY (`semester_type`,`semester_year`,`school`) REFERENCES `semesters`(`type`,`year`,`school`) ON UPDATE cascade ON DELETE restrict
