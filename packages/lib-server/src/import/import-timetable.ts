@@ -281,6 +281,7 @@ export const importTimetable = async ({ school, date }: Options) => {
 
   const iservClient = createLazyIservClient();
 
+  // First, we collect all entries for the week over all classes
   const entriesToInsert: ProtoTimetableEntry[] = [];
   for (const cls of kadmosClasses) {
     const timetable = await getTimetable(cls.id, date, jar);
@@ -288,6 +289,10 @@ export const importTimetable = async ({ school, date }: Options) => {
     entriesToInsert.push(...entries);
   }
 
+  // Then, we merge adjacent entries into one timetable entry.
+  // e.g. if two identical entries are back-to-back, we merge them into one.
+  // also, two entries with the same teacher at the same time are merged since it is impossible for a teacher to teach two classes at the same time.
+  const joinedEntries: ProtoTimetableEntry[] = [];
   for (const entry of entriesToInsert) {
     const adjacentEntries = entriesToInsert.filter((otherEntry) =>
       checkOverlap(entry, otherEntry),
@@ -343,107 +348,190 @@ export const importTimetable = async ({ school, date }: Options) => {
     );
     const joinedDuration = (joinedEnd - joinedStart) / 1000 / 60;
 
-    const courseUuid = crypto
+    joinedEntries.push({
+      course: entry.course,
+      classes: joinedClasses,
+      roomNumbers: joinedRooms,
+      teacherNames: joinedTeachers,
+      start: new Date(joinedStart),
+      duration: joinedDuration,
+    });
+  }
+
+  const generateCourseUuid = (
+    entry: Pick<ProtoTimetableEntry, "course" | "classes">,
+  ) => {
+    return crypto
       .createHash("sha256")
       .update(school)
       .update(entry.course.kadmosId.toString())
       .update(
-        joinedClasses
+        entry.classes
           .map((cls) => `${cls.startYear}.${cls.identifierInYear}`)
           .join(","),
       )
       .digest("hex")
       .slice(0, 32);
+  };
 
+  // Finally, we find all distinct courses.
+  // In this step, we join two courses if they have the same name and have at least one class in common.
+  const courses = new BetterMap<
+    string, // the uuid
+    {
+      course: ProtoTimetableEntry["course"];
+      classes: ProtoTimetableEntry["classes"];
+      entries: Omit<ProtoTimetableEntry, "course" | "classes">[];
+    }
+  >();
+  outer: for (const entry of joinedEntries) {
+    const uuid = generateCourseUuid(entry);
+    const existingCourse = courses.get(uuid);
+    if (existingCourse) {
+      existingCourse.entries.push(entry);
+      continue;
+    }
+
+    for (const [uuid, course] of [...courses.entries()]) {
+      // We need to copy the entries because we will modify the map
+      if (
+        course.course.name === entry.course.name &&
+        entry.classes.some((cls) =>
+          course.classes.some(
+            (otherCls) =>
+              otherCls.identifierInYear === cls.identifierInYear &&
+              otherCls.startYear === cls.startYear,
+          ),
+        )
+      ) {
+        const joinedClasses: ProtoTimetableEntry["classes"] = [];
+        for (const cls of entry.classes) {
+          if (
+            !joinedClasses.some(
+              (otherCls) =>
+                otherCls.identifierInYear === cls.identifierInYear &&
+                otherCls.startYear === cls.startYear,
+            )
+          ) {
+            joinedClasses.push(cls);
+          }
+        }
+
+        const newUuid = generateCourseUuid({
+          course: entry.course,
+          classes: joinedClasses,
+        });
+
+        courses.delete(uuid);
+        courses.set(newUuid, {
+          course: entry.course,
+          classes: joinedClasses,
+          entries: [...course.entries, entry],
+        });
+
+        continue outer;
+      }
+    }
+
+    // If we reach this point, we have a new course
+    courses.set(uuid, {
+      course: entry.course,
+      classes: entry.classes,
+      entries: [entry],
+    });
+  }
+
+  // Insert all courses into the database
+  for (const [uuid, course] of courses.entries()) {
     await db
       .insert(Courses)
       .values({
-        id: courseUuid,
-        name: entry.course.name,
-        longName: entry.course.longName,
-        subject: entry.course.subject,
+        id: uuid,
+        name: course.course.name,
+        longName: course.course.longName,
+        subject: course.course.subject,
       })
       .onConflictDoUpdate({
         target: [Courses.id],
         set: {
-          name: entry.course.name,
-          longName: entry.course.longName,
-          subject: entry.course.subject,
+          name: course.course.name,
+          longName: course.course.longName,
+          subject: course.course.subject,
         },
       });
 
-    const semester = await findSemesterFromDate(entry.start, school);
-    await db
-      .insert(SemesterCourses)
-      .values({
-        course: courseUuid,
-        school,
-        semesterType: semester.type,
-        semesterYear: semester.year,
-      })
-      .onConflictDoNothing();
-
-    await db
-      .insert(SemesterCoursesToClasses)
-      .values(
-        joinedClasses.map((cls) => ({
-          classIdentifier: cls.identifierInYear,
-          classStartYear: cls.startYear,
-          course: courseUuid,
-          school,
-          semesterType: semester.type,
-          semesterYear: semester.year,
-        })),
-      )
-      .onConflictDoNothing();
-
-    for (const teacherName of joinedTeachers) {
-      const personId = await iservClient.getOrCreateTeacher(teacherName);
+    for (const entry of course.entries) {
+      const semester = await findSemesterFromDate(entry.start, school);
       await db
-        .insert(SemesterCoursesToTeachers)
+        .insert(SemesterCourses)
         .values({
-          teacher: personId,
-          course: courseUuid,
+          course: uuid,
           school,
           semesterType: semester.type,
           semesterYear: semester.year,
         })
         .onConflictDoNothing();
-    }
 
-    const startDate = new Date(joinedStart);
-
-    await db
-      .insert(TimetableEntries)
-      .values({
-        course: courseUuid,
-        semesterType: semester.type,
-        semesterYear: semester.year,
-        start: startDate,
-        school,
-        duration: `${joinedDuration} minutes`,
-      })
-      .onConflictDoUpdate({
-        target: [TimetableEntries.start, TimetableEntries.course],
-        set: {
-          semesterType: semester.type,
-          semesterYear: semester.year,
-          school,
-          duration: `${joinedDuration} minutes`,
-        },
-      });
-
-    if (joinedRooms.length > 0) {
       await db
-        .insert(TimetableEntryRooms)
+        .insert(SemesterCoursesToClasses)
         .values(
-          joinedRooms.map((room) => ({
-            course: courseUuid,
-            roomNumber: room,
-            start: startDate,
+          course.classes.map((cls) => ({
+            classIdentifier: cls.identifierInYear,
+            classStartYear: cls.startYear,
+            course: uuid,
+            school,
+            semesterType: semester.type,
+            semesterYear: semester.year,
           })),
         )
         .onConflictDoNothing();
+
+      for (const teacherName of entry.teacherNames) {
+        const personId = await iservClient.getOrCreateTeacher(teacherName);
+        await db
+          .insert(SemesterCoursesToTeachers)
+          .values({
+            teacher: personId,
+            course: uuid,
+            school,
+            semesterType: semester.type,
+            semesterYear: semester.year,
+          })
+          .onConflictDoNothing();
+      }
+
+      await db
+        .insert(TimetableEntries)
+        .values({
+          course: uuid,
+          semesterType: semester.type,
+          semesterYear: semester.year,
+          start: entry.start,
+          school,
+          duration: `${entry.duration} minutes`,
+        })
+        .onConflictDoUpdate({
+          target: [TimetableEntries.start, TimetableEntries.course],
+          set: {
+            semesterType: semester.type,
+            semesterYear: semester.year,
+            school,
+            duration: `${entry.duration} minutes`,
+          },
+        });
+
+      if (entry.roomNumbers.length > 0) {
+        await db
+          .insert(TimetableEntryRooms)
+          .values(
+            entry.roomNumbers.map((room) => ({
+              course: uuid,
+              roomNumber: room,
+              start: entry.start,
+            })),
+          )
+          .onConflictDoNothing();
+      }
     }
   }
 };

@@ -1,6 +1,7 @@
 import { exec as execCb } from "child_process";
 import { promisify } from "util";
 import { program } from "@commander-js/extra-typings";
+import { add, format } from "date-fns";
 import { z } from "zod";
 
 import { db } from "@stu/db/client";
@@ -82,12 +83,11 @@ program.command("import-semesters").action(async () => {
 
 program.command("import-timetable").action(async () => {
   const today = new Date();
-  await importTimetable({ school: "igs-lil", date: today });
-  // for (let i = -4; i < 4; i++) {
-  //   const date = add(today, { weeks: i });
-  //   console.log(`Importing timetable for ${format(date, "yyyy-MM-dd")}...`);
-  //   await importTimetable({ school: "igs-lil", date });
-  // }
+  for (let i = -4; i < 4; i++) {
+    const date = add(today, { weeks: i });
+    console.log(`Importing timetable for ${format(date, "yyyy-MM-dd")}...`);
+    await importTimetable({ school: "igs-lil", date });
+  }
 
   process.exit(0);
 });
