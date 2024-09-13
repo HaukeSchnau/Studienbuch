@@ -7,10 +7,12 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import { GRADE_TYPES } from "@stu/lib";
+
 import { Persons } from "../people/persons";
 import { Courses } from "../school/courses";
 
-export const GradeType = pgEnum("grade_type", ["WRITTEN", "ORAL", "MASTER"]);
+export const GradeType = pgEnum("grade_type", GRADE_TYPES);
 
 export const Grades = pgTable("grades", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),

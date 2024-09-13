@@ -11,7 +11,10 @@ import { api } from "~/utils/api";
 
 export const Agenda = () => {
   const today = useMemo(() => new Date(), []);
-  const timetable = api.timetable.getWeek.useQuery(
+  // We intentionally overfetch here to update the cache for the entire week.
+  // This way, we can avoid refetching the data when the user navigates to a different day or wants to see the entire week.
+  // If this is a performance issue, we can consider optimizing.
+  const timetable = api.students.timetable.getWeek.useQuery(
     { date: today },
     {
       select: (data) => data.filter((entry) => isSameDay(entry.start, today)),
@@ -19,14 +22,14 @@ export const Agenda = () => {
   );
 
   return (
-    <Card className="mx-8 py-2" style={{ padding: 0 }}>
+    <Card className="py-2" style={{ padding: 0 }}>
       {timetable.isPending ? (
         <ActivityIndicator />
       ) : timetable.isError ? (
         <Text>Error: {timetable.error.message}</Text>
       ) : (
         timetable.data.map((entry, i) => (
-          <Fragment key={entry.start.toISOString()}>
+          <Fragment key={`${entry.start.toISOString()}-${entry.course.id}`}>
             {i !== 0 && <Divider />}
             <AgendaEntry entry={entry} />
           </Fragment>

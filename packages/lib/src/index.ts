@@ -1,6 +1,7 @@
 export * from "./auth";
 export * from "./classes";
 export * from "./courses";
+export * from "./grades";
 export * from "./infrastructure";
 export * from "./schedule";
 export * from "./schools";

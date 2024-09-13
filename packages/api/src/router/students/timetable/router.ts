@@ -17,7 +17,7 @@ import {
   TimetableEntries,
 } from "@stu/db/schema";
 
-import { protectedProcedure } from "../../procedures";
+import { protectedProcedure } from "../../../procedures";
 
 const Teachers = alias(Persons, "teachers");
 const Substitute = alias(Persons, "substitute");
