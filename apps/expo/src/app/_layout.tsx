@@ -1,7 +1,6 @@
 import "@bacons/text-decoder/install";
 
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 
 import { TRPCProvider } from "~/utils/api";
 
@@ -19,6 +18,7 @@ import {
 } from "@expo-google-fonts/nunito";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 
+import { DevMenu } from "~/components/dev/dev-menu";
 import { db, expoDb } from "~/db/client";
 import migrations from "../../drizzle/migrations";
 
@@ -70,7 +70,8 @@ export default function RootLayout() {
       >
         <Stack.Screen name="(main)" options={{ headerShown: false }} />
       </Stack>
-      <StatusBar />
+
+      <DevMenu />
     </Providers>
   );
 }
