@@ -1,10 +1,12 @@
 import { numeric, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+import { GRADE_TYPES } from "@stu/lib";
+
 import { Persons } from "../people/persons";
 import { Courses } from "../school/courses";
 import { sqliteEnum, timestamp, uuid } from "../utils";
 
-export const GradeType = sqliteEnum(["WRITTEN", "ORAL", "MASTER"]);
+export const GradeType = sqliteEnum(GRADE_TYPES);
 
 export const Grades = sqliteTable("grades", {
   id: uuid("id").primaryKey().notNull(),
