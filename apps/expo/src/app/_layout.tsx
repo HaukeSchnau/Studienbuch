@@ -9,6 +9,7 @@ import "./styles.css";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { UIManager } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 import * as SplashScreen from "expo-splash-screen";
 import {
@@ -19,6 +20,7 @@ import {
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 
 import { DevMenu } from "~/components/dev/dev-menu";
+import { PortalRenderer, usePortalStore } from "~/components/portal";
 import { db, expoDb } from "~/db/client";
 import migrations from "../../drizzle/migrations";
 
@@ -55,23 +57,27 @@ export default function RootLayout() {
 
   return (
     <Providers>
-      <Stack
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: "#33A42B",
-          },
-          headerTitleStyle: {
-            color: "#FFFFFF",
-          },
-          contentStyle: {
-            backgroundColor: "#FFFFFF",
-          },
-        }}
-      >
-        <Stack.Screen name="(main)" options={{ headerShown: false }} />
-      </Stack>
+      <GestureHandlerRootView>
+        <Stack
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: "#33A42B",
+            },
+            headerTitleStyle: {
+              color: "#FFFFFF",
+            },
+            contentStyle: {
+              backgroundColor: "#FFFFFF",
+            },
+          }}
+        >
+          <Stack.Screen name="(main)" options={{ headerShown: false }} />
+        </Stack>
 
-      <DevMenu />
+        <DevMenu />
+
+        <PortalRenderer />
+      </GestureHandlerRootView>
     </Providers>
   );
 }
