@@ -1,31 +1,45 @@
-import { useMemo } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { format, isSameDay } from "date-fns";
 
-import { Card } from "~/components/card";
 import { Text } from "~/components/text";
+import { Absences } from "~/features/absences/absences";
 import { Agenda } from "~/features/agenda/agenda";
+import { Tasks } from "~/features/tasks/tasks";
 import { api } from "~/utils/api";
 import BackgroundImage from "../../../assets/home-bg.svg";
 
 export default function OverviewPage() {
   return (
-    <>
-      <StatusBar style="light" />
-      <Background />
-      <SafeAreaView>
-        <View className="h-4" />
+    <View>
+      <View className="absolute left-0 top-0 h-full w-full">
+        <View className="h-1/2 bg-primary" />
+        <View className="h-1/2 bg-white" />
+      </View>
 
-        <Greeting />
-        <Text className="color-white px-8 text-2xl">Das steht heute an:</Text>
+      <ScrollView>
+        <StatusBar style="light" />
+        <View className="bg-white">
+          <Background />
+          <SafeAreaView>
+            <View className="px-8">
+              <View className="h-4" />
 
-        <View className="h-4" />
+              <Greeting />
+              <Agenda />
 
-        <Agenda />
-      </SafeAreaView>
-    </>
+              <View className="h-8" />
+
+              <Absences />
+            </View>
+
+            <View className="h-8" />
+
+            <Tasks />
+          </SafeAreaView>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -45,7 +59,7 @@ const Greeting = () => {
   }
 
   return (
-    <Text className="color-white px-8 text-4xl" variant="heading">
+    <Text className="color-white text-4xl" variant="heading">
       Moin, {session.data.user.name}!
     </Text>
   );

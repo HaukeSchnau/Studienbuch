@@ -3,7 +3,7 @@ import { Text as RNText } from "react-native";
 import clsx from "clsx";
 
 interface Props extends ComponentProps<typeof RNText> {
-  weight?: "regular" | "bold";
+  weight?: "regular" | "medium" | "bold";
   variant?: "heading";
 }
 
@@ -30,6 +30,8 @@ export const Text = ({ weight = "regular", variant, ...props }: Props) => {
         return "Nunito_400Regular";
       case "bold":
         return "Nunito_700Bold";
+      case "medium":
+        return "Nunito_500Medium";
     }
   })();
 
