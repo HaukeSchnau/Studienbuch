@@ -14,13 +14,14 @@ import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 import * as SplashScreen from "expo-splash-screen";
 import {
   Nunito_400Regular,
+  Nunito_500Medium,
   Nunito_700Bold,
   useFonts,
 } from "@expo-google-fonts/nunito";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 
 import { DevMenu } from "~/components/dev/dev-menu";
-import { PortalRenderer, usePortalStore } from "~/components/portal";
+import { PortalRenderer } from "~/components/portal";
 import { db, expoDb } from "~/db/client";
 import migrations from "../../drizzle/migrations";
 
@@ -39,6 +40,7 @@ export default function RootLayout() {
 
   const [fontLoaded, fontError] = useFonts({
     Nunito_400Regular,
+    Nunito_500Medium,
     Nunito_700Bold,
   });
 
