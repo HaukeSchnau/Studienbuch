@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useReactQueryDevTools } from "@dev-plugins/react-query";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
@@ -51,6 +52,8 @@ export function TRPCProvider(props: { children: React.ReactNode }) {
       ],
     }),
   );
+
+  useReactQueryDevTools(queryClient);
 
   return (
     <api.Provider client={trpcClient} queryClient={queryClient}>

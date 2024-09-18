@@ -1,6 +1,6 @@
 import "@bacons/text-decoder/install";
 
-import { Stack } from "expo-router";
+import { Stack, useNavigationContainerRef } from "expo-router";
 
 import { TRPCProvider } from "~/utils/api";
 
@@ -12,6 +12,7 @@ import { UIManager } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 import * as SplashScreen from "expo-splash-screen";
+import { useReactNavigationDevTools } from "@dev-plugins/react-navigation";
 import {
   Nunito_400Regular,
   Nunito_500Medium,
@@ -32,6 +33,9 @@ if (UIManager.setLayoutAnimationEnabledExperimental) {
 }
 
 export default function RootLayout() {
+  const navigationRef = useNavigationContainerRef();
+  useReactNavigationDevTools(navigationRef);
+
   const { success: migrationSuccess, error: migrationError } = useMigrations(
     db,
     migrations,
