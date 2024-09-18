@@ -5,12 +5,14 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   interpolate,
   runOnJS,
+  useAnimatedKeyboard,
   useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
 
+import { Portal } from "./portal";
 import { shadow } from "./styles/shadow";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -24,9 +26,10 @@ interface Props {
   children: ReactNode;
 }
 
-export default function BottomSheet({ children, onClose }: Props) {
+export function BottomSheet({ children, onClose }: Props) {
   const isOpen = !!children;
   const previousChildren = useRef(children);
+  const keyboard = useAnimatedKeyboard();
   if (isOpen) {
     previousChildren.current = children;
   }
@@ -40,6 +43,8 @@ export default function BottomSheet({ children, onClose }: Props) {
 
   const translateY = useSharedValue(0);
   const context = useSharedValue({ y: 0 });
+
+  const contentHeight = useSharedValue(Number.MAX_SAFE_INTEGER);
 
   useAnimatedReaction(
     () => translateY.value,
@@ -76,7 +81,13 @@ export default function BottomSheet({ children, onClose }: Props) {
    */
   const reanimatedBottomStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ translateY: translateY.value }],
+      transform: [
+        {
+          translateY:
+            Math.max(translateY.value, -contentHeight.value) -
+            keyboard.height.value,
+        },
+      ],
     };
   });
 
@@ -95,7 +106,11 @@ export default function BottomSheet({ children, onClose }: Props) {
    */
   const scrollTo = (destination: number) => {
     "worklet";
-    translateY.value = withSpring(destination, { damping: 50 });
+    translateY.value = withSpring(destination, {
+      damping: 10,
+      mass: 0.4,
+      stiffness: 150,
+    });
   };
 
   useEffect(() => {
@@ -133,6 +148,9 @@ export default function BottomSheet({ children, onClose }: Props) {
         </Pressable>
         <Animated.View
           style={[styles.bottomSheet, reanimatedBottomStyle, shadow]}
+          onLayout={(e) => {
+            contentHeight.value = e.nativeEvent.layout.height;
+          }}
         >
           <View style={styles.line} />
           {previousChildren.current}
@@ -141,6 +159,14 @@ export default function BottomSheet({ children, onClose }: Props) {
     </GestureDetector>
   );
 }
+
+export const PortaledBottomSheet = ({ children, onClose }: Props) => {
+  return (
+    <Portal>
+      <BottomSheet onClose={onClose}>{children}</BottomSheet>
+    </Portal>
+  );
+};
 
 const styles = StyleSheet.create({
   bg: {
@@ -153,10 +179,11 @@ const styles = StyleSheet.create({
     width: "100%",
     backgroundColor: "#fff",
     position: "absolute",
-    height: SCREEN_HEIGHT,
+    paddingBottom: 30,
     top: SCREEN_HEIGHT,
     zIndex: 12000,
-    borderRadius: 25,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
   },
   line: {
     width: 75,
