@@ -19,6 +19,7 @@
     "@expo-google-fonts/nunito": "^0.2.3",
     "@expo/metro-config": "^0.18.11",
     "@expo/vector-icons": "^14.0.2",
+    "@react-native-community/datetimepicker": "8.0.1",
     "@react-native-picker/picker": "2.7.5",
     "@shopify/flash-list": "1.6.4",
     "@stu/expo-native-modules": "workspace:*",
