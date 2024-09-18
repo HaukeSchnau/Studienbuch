@@ -1,5 +1,10 @@
 import type { TRPCRouterRecord } from "@trpc/server";
-import { endOfWeek, startOfWeek } from "date-fns";
+import {
+  endOfISOWeek,
+  setISOWeek,
+  setISOWeekYear,
+  startOfISOWeek,
+} from "date-fns";
 import { z } from "zod";
 
 import type { AgendaEntry } from "@stu/lib";
@@ -26,18 +31,24 @@ export const timetable = {
   getWeek: protectedProcedure
     .input(
       z.object({
-        date: z.date(),
+        isoWeekYear: z.number(),
+        isoWeek: z.number(),
       }),
     )
     .query(
       async ({
-        input: { date },
+        input: { isoWeekYear, isoWeek },
         ctx: {
           session: { user },
         },
       }) => {
-        const start = startOfWeek(date, { weekStartsOn: 1 });
-        const end = endOfWeek(date, { weekStartsOn: 1 });
+        const start = startOfISOWeek(
+          setISOWeek(setISOWeekYear(new Date(), isoWeekYear), isoWeek),
+        );
+        const end = endOfISOWeek(
+          setISOWeek(setISOWeekYear(new Date(), isoWeekYear), isoWeek + 1),
+        );
+
         const rows = await db
           .select()
           .from(TimetableEntries)
@@ -119,7 +130,7 @@ export const timetable = {
               eq(Students.person, user.id),
             ),
           )
-          .orderBy(asc(TimetableEntries.start), asc(TimetableEntries.course));
+          .orderBy(asc(TimetableEntries.start), asc(TimetableEntries.course)); // Frontend expects the entries to be sorted
 
         const timetableEntries: AgendaEntry[] = [];
         let currentEntry: AgendaEntry | null = null;
