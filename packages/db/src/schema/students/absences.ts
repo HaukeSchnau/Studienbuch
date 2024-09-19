@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import { date, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
 
 import { Persons } from "../people/persons";
@@ -32,3 +33,14 @@ export const Absences = pgTable(
     };
   },
 );
+
+export const AbsencesRelations = relations(Absences, ({ one }) => ({
+  course: one(Courses, {
+    fields: [Absences.course],
+    references: [Courses.id],
+  }),
+  student: one(Persons, {
+    fields: [Absences.student],
+    references: [Persons.id],
+  }),
+}));
