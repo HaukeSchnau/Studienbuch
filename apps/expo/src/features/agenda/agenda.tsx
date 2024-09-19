@@ -88,11 +88,11 @@ export const Agenda = () => {
 
   const dateFormatted = (() => {
     if (isSameDay(date, now)) {
-      return "Heute";
+      return "heute";
     }
 
     if (isTomorrow(date)) {
-      return "Morgen";
+      return "morgen";
     }
 
     return `am ${format(date, "EEEE", {
@@ -109,7 +109,7 @@ export const Agenda = () => {
       <View className="h-4" />
 
       <Card className="py-2" style={{ padding: 0 }}>
-        {timetable.data.entries.map((entry, i) => (
+        {entries.map((entry, i) => (
           <Fragment key={`${entry.start.toISOString()}-${entry.course.id}`}>
             {i !== 0 && <Divider />}
             <AgendaEntry entry={entry} />
