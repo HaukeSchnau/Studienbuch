@@ -15,6 +15,7 @@ export class PersistingQueryClient extends QueryClient {
     super({
       defaultOptions: {
         queries: {
+          staleTime: 30 * 1000,
           persister: (queryFn, context, query) => {
             const [path, params] = query.queryKey as [
               string[],
