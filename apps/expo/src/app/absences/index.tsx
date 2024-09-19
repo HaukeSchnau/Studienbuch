@@ -1,11 +1,15 @@
 import { View } from "react-native";
 
-import { Text } from "~/components/text";
+import {
+  ExcusedAbsences,
+  UnexcusedAbsences,
+} from "~/features/absences/absences-list/absence-lists";
 
 export default function AbsencesPage() {
   return (
-    <View>
-      <Text>TODO: AbsencesPage</Text>
+    <View className="gap-16 p-8">
+      <UnexcusedAbsences />
+      <ExcusedAbsences />
     </View>
   );
 }

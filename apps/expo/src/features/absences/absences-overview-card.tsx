@@ -3,6 +3,7 @@ import { ActivityIndicator, View } from "react-native";
 import { Link } from "expo-router";
 import { formatDate } from "date-fns";
 
+import type { Absence } from "@stu/lib";
 import { colors } from "@stu/tailwind-config/native";
 
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
@@ -15,15 +16,7 @@ import { AddAbsence } from "./add-absence";
 import BigCheck from "./big-check.svg";
 import Warning from "./warning.svg";
 
-interface Absence {
-  date: Date;
-  reason: string;
-  course: string;
-  teacherSignature: string | null;
-  parentSignature: string | null;
-}
-
-export const Absences = () => {
+export const AbsencesOverviewCard = () => {
   const [isAddVisible, setIsAddVisible] = useState(false);
   const onClickAdd = () => setIsAddVisible(true);
 

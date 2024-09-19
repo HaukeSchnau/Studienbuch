@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
 import { Text } from "~/components/text";
-import { Absences } from "~/features/absences/absences";
+import { AbsencesOverviewCard } from "~/features/absences/absences-overview-card";
 import { Agenda } from "~/features/agenda/agenda";
 import { Tasks } from "~/features/tasks/tasks";
 import { api } from "~/utils/api";
@@ -30,7 +30,7 @@ export default function OverviewPage() {
 
               <View className="h-8" />
 
-              <Absences />
+              <AbsencesOverviewCard />
             </View>
 
             <View className="h-8" />

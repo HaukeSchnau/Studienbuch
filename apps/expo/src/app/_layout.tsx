@@ -77,7 +77,17 @@ export default function RootLayout() {
             },
           }}
         >
-          <Stack.Screen name="(main)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="(main)"
+            options={{ headerShown: false, title: "" }}
+          />
+          <Stack.Screen
+            name="absences/index"
+            options={{
+              title: "Meine Fehlzeiten",
+              headerTintColor: "#FFFFFF",
+            }}
+          />
         </Stack>
 
         <DevMenu />
