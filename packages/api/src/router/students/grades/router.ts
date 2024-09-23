@@ -1,9 +1,9 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
 
-import { and, eq, isNull } from "@stu/db";
+import { and, eq } from "@stu/db";
 import { db } from "@stu/db/client";
-import { Absences, Grades } from "@stu/db/schema";
+import { Grades } from "@stu/db/schema";
 import { GRADE_TYPES } from "@stu/lib";
 
 import { protectedProcedure } from "../../../procedures";

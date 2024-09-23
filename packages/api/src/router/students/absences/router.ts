@@ -1,7 +1,7 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 import { z } from "zod";
 
-import { and, eq, isNotNull, isNull, or } from "@stu/db";
+import { and, eq, isNotNull, isNull } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Absences } from "@stu/db/schema";
 

@@ -1,5 +1,3 @@
-import { writeFile } from "fs/promises";
-import path from "path";
 import { test } from "vitest";
 
 import { login } from "../auth/login";
@@ -12,5 +10,5 @@ test("Get classes from Kadmos", async () => {
     "App#Hauke2024",
   );
 
-  const response = await getClasses(jar);
+  await getClasses(jar);
 });

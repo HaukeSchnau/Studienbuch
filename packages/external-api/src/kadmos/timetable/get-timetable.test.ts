@@ -10,6 +10,7 @@ describe("Get timetable from Kadmos", () => {
       "hauke.studienbuch",
       "App#Hauke2024",
     );
-    const response = await getTimetable(348, new Date(), jar);
+
+    await getTimetable(348, new Date(), jar);
   });
 });

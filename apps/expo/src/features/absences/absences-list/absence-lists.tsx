@@ -94,7 +94,7 @@ export const UnexcusedAbsences = () => {
       {heading}
       {query.data.byTeacher.map((absence) => (
         <AbsenceItem
-          key={`${absence.date.toISOString()}-${absence.course}`}
+          key={`${absence.date.toISOString()}-${absence.course.id}`}
           absenceGroup={mapAbsenceToGroup(absence)}
         />
       ))}
