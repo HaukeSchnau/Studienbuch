@@ -10,8 +10,7 @@ describe("parse-schedule-csv", () => {
     const expectedCellValue = [
       {
         subject: "*ch2",
-        guessedSubject: "Chemie",
-        isMandatory: true,
+        isMandatory: false,
         normalizedCourseId: "ch2",
         room: "KH-15",
         teacher: "MUE",

@@ -17,8 +17,6 @@
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "generate": "openapi --input https://ferien-api.de/v2/api-docs --output ./src/holidays/generated",
     "lint": "eslint",
-    "test": "vitest run",
-    "test:dev": "vitest",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
@@ -32,6 +30,7 @@
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
     "@stu/prettier-config": "workspace:*",
+    "@stu/testing": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/tough-cookie": "^4.0.5",
@@ -39,7 +38,7 @@
     "openapi-typescript-codegen": "^0.29.0",
     "prettier": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^2.0.5"
+    "vitest": "catalog:"
   },
   "prettier": "@stu/prettier-config"
 }

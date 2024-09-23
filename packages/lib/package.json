@@ -16,25 +16,24 @@
     "dev:internal": "tsc --watch",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
-    "test": "vitest run",
-    "test:dev": "vitest",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
     "dayjs": "^1.11.13",
-    "vitest": "^2.0.5",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
     "@stu/prettier-config": "workspace:*",
+    "@stu/testing": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@total-typescript/shoehorn": "^0.1.2",
     "@total-typescript/ts-reset": "^0.6.1",
     "encoding": "^0.1.13",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "prettier": "@stu/prettier-config"
 }

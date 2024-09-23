@@ -44,6 +44,7 @@ const subjectNameToIdMap: Record<string, SubjectId> = {
   informatik: "if",
   "politik-wirtschaft": "pw",
   "darstellendes spiel": "ds",
+  "werte und normen": "wn",
 
   "will-an-lili 10": "will-an-lili",
   "will-an-lili 8": "will-an-lili",

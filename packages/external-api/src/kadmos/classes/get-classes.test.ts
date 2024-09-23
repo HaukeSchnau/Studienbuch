@@ -13,9 +13,4 @@ test("Get classes from Kadmos", async () => {
   );
 
   const response = await getClasses(jar);
-
-  await writeFile(
-    path.resolve(__dirname, "classes.snapshot.json"),
-    JSON.stringify(response, null, 2),
-  );
 });

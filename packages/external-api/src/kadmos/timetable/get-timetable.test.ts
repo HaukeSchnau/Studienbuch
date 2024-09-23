@@ -1,5 +1,3 @@
-import { writeFile } from "fs/promises";
-import path from "path";
 import { describe, test } from "vitest";
 
 import { login } from "../auth/login";
@@ -13,10 +11,5 @@ describe("Get timetable from Kadmos", () => {
       "App#Hauke2024",
     );
     const response = await getTimetable(348, new Date(), jar);
-
-    await writeFile(
-      path.resolve(__dirname, "timetable.snapshot.json"),
-      JSON.stringify(response, null, 2),
-    );
   });
 });

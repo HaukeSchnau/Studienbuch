@@ -2,7 +2,6 @@ import type { CookieJar } from "tough-cookie";
 import { z } from "zod";
 
 import { fetchWithCookieJar } from "../../fetch-with-cookies";
-import snapshotData from "./classes.snapshot.json";
 
 const responseSchema = z.object({
   data: z.object({
@@ -21,12 +20,8 @@ export type KadmosClassResponse = z.infer<
 >["data"]["elements"];
 
 export const getClasses = async (
-  jar: CookieJar | null,
+  jar: CookieJar,
 ): Promise<KadmosClassResponse> => {
-  if (!jar) {
-    return snapshotData;
-  }
-
   const params = new URLSearchParams();
   params.append("type", "1");
   params.append("isMyTimetableSelected", "false");

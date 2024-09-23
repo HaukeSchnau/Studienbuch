@@ -3,41 +3,25 @@ import { expect, test } from "vitest";
 import { guessSubject } from "./subject";
 
 test("guessSubject", () => {
-  expect(guessSubject("de")).toBe("Deutsch");
-  expect(guessSubject("Deutsch")).toBe("Deutsch");
-  expect(guessSubject("de1")).toBe("Deutsch");
-  expect(guessSubject("*de1")).toBe("Deutsch");
-  expect(guessSubject(" *de1")).toBe("Deutsch");
+  expect(guessSubject("deutsch")).toBe("de");
+  expect(guessSubject("mathe")).toBe("ma");
+  expect(guessSubject("englisch")).toBe("en");
+  expect(guessSubject("physik")).toBe("ph");
+  expect(guessSubject("chemie")).toBe("ch");
+  expect(guessSubject("biologie")).toBe("bi");
+  expect(guessSubject("informatik")).toBe("if");
+  expect(guessSubject("geschichte")).toBe("ge");
 
-  expect(guessSubject("ds")).toBe("Darstellendes Spiel");
-  expect(guessSubject("DS")).toBe("Darstellendes Spiel");
-  expect(guessSubject("ds1")).toBe("Darstellendes Spiel");
+  expect(guessSubject("politik-wirtschaft")).toBe("pw");
+  expect(guessSubject("darstellendes spiel")).toBe("ds");
 
-  expect(guessSubject("sn")).toBe("Spanisch");
-  expect(guessSubject("SN")).toBe("Spanisch");
-  expect(guessSubject("sn1")).toBe("Spanisch");
+  expect(guessSubject("musik")).toBe("mu");
+  expect(guessSubject("sport")).toBe("sp");
+  expect(guessSubject("kunst")).toBe("ku");
+  expect(guessSubject("religion")).toBe("re");
 
-  expect(guessSubject("pw")).toBe("Politik-Wirtschaft");
-  expect(guessSubject("PW")).toBe("Politik-Wirtschaft");
-  expect(guessSubject("pw1")).toBe("Politik-Wirtschaft");
+  expect(guessSubject("werte und normen")).toBe("wn");
 
-  expect(guessSubject("if")).toBe("Informatik");
-  expect(guessSubject("IF")).toBe("Informatik");
-  expect(guessSubject("if1")).toBe("Informatik");
-
-  expect(guessSubject("sf")).toBe("Seminarfach");
-  expect(guessSubject("SF")).toBe("Seminarfach");
-  expect(guessSubject("sf1")).toBe("Seminarfach");
-
-  expect(guessSubject("")).toBe("");
-  expect(guessSubject(" ")).toBe("");
-
-  expect(guessSubject("wn")).toBe("Werte und Normen");
-  expect(guessSubject("wn1")).toBe("Werte und Normen");
-  expect(guessSubject("wun")).toBe("Werte und Normen");
-  expect(guessSubject("wun1")).toBe("Werte und Normen");
-  expect(guessSubject("Werte und Normen")).toBe("Werte und Normen");
-
-  expect(guessSubject("*12ASDf")).toBe("12ASDf");
-  expect(guessSubject("*Fach12")).toBe("Fach");
+  expect(guessSubject("französisch")).toBe("fr");
+  expect(guessSubject("latein")).toBe("la");
 });

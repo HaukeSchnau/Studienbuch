@@ -22,8 +22,8 @@
     "lint:fix": "turbo run lint --continue -- --fix --cache --cache-location .cache/.eslintcache",
     "lint:ws": "pnpm dlx sherif@latest",
     "postinstall": "pnpm lint:ws",
-    "test": "DATABASE_URL=postgresql://stu_test:stu_test@localhost:5433/stu_test turbo run test",
-    "test:dev": "DATABASE_URL=postgresql://stu_test:stu_test@localhost:5433/stu_test turbo run dev:internal test:dev",
+    "test": "vitest run",
+    "test:dev": "vitest",
     "typecheck": "turbo run typecheck",
     "ci": "turbo run format lint typecheck",
     "ci:fix": "run-s format:fix lint:fix"

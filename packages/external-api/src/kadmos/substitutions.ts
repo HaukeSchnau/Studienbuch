@@ -139,7 +139,7 @@ const responseSchema = z.strictObject({
     lastUpdate: z
       .string()
       .transform((date) => dayjs(date, "DD.MM.YYYY HH:mm:ss").format()),
-    absentElements: z.array(z.unknown()).length(0),
+    absentElements: z.array(z.unknown()),
     affectedElements: z.object({ 1: z.array(z.string()).optional() }),
     messageData: z.object({
       messages: z.array(z.object({ subject: z.string(), body: z.string() })),

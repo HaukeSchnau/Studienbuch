@@ -3,7 +3,6 @@ import { format, parse } from "date-fns";
 import { z } from "zod";
 
 import { fetchWithCookieJar } from "../../fetch-with-cookies";
-import snapshotData from "./timetable.snapshot.json";
 
 const convertNumberToDate = (num: number) => {
   const str = num.toString();
@@ -95,12 +94,8 @@ export type KadmosTimetableResponse = z.infer<
 export const getTimetable = async (
   kadmosClassId: number,
   date: Date,
-  cookies: CookieJar | null,
+  cookies: CookieJar,
 ): Promise<KadmosTimetableResponse> => {
-  if (!cookies) {
-    return dataSchema.parse(snapshotData);
-  }
-
   const params = new URLSearchParams();
   params.append("elementType", "1");
   params.append("elementId", kadmosClassId.toString());
