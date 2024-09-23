@@ -26,16 +26,16 @@
     "@shopify/flash-list": "1.6.4",
     "@stu/expo-native-modules": "workspace:*",
     "@stu/lib": "workspace:*",
-    "@tanstack/react-form": "^0.32.0",
+    "@tanstack/react-form": "^0.33.0",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-store": "^0.5.5",
-    "@tanstack/zod-form-adapter": "^0.32.0",
+    "@tanstack/zod-form-adapter": "^0.33.0",
     "@trpc/client": "catalog:",
     "@trpc/react-query": "catalog:",
     "@trpc/server": "catalog:",
     "babel-plugin-inline-import": "^3.0.0",
     "clsx": "^2.1.1",
-    "date-fns": "^3.6.0",
+    "date-fns": "^4.1.0",
     "drizzle-orm": "^0.33.0",
     "expo": "~51.0.32",
     "expo-build-properties": "~0.12.5",
@@ -67,7 +67,7 @@
     "superjson": "2.2.1",
     "uuid": "^10.0.0",
     "zod": "^3.23.8",
-    "zustand": "^4.5.2"
+    "zustand": "5.0.0-rc.2"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
