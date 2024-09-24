@@ -33,3 +33,25 @@ export const Button = forwardRef<ComponentRef<typeof TouchableOpacity>, Props>(
     );
   },
 );
+
+export const OutlinedButton = forwardRef<
+  ComponentRef<typeof TouchableOpacity>,
+  Props
+>(({ className, onPress, label }, ref) => {
+  return (
+    <TouchableOpacity
+      className={clsx(
+        "rounded-3xl px-5 py-2",
+        "border border-danger",
+        className,
+      )}
+      style={shadow}
+      onPress={onPress}
+      ref={ref}
+    >
+      <Text className="w-fit text-center text-lg text-danger" weight="bold">
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+});
