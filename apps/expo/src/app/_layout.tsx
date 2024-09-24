@@ -1,6 +1,6 @@
 import "@bacons/text-decoder/install";
 
-import { Stack, useNavigationContainerRef } from "expo-router";
+import { Stack } from "expo-router";
 
 import { TRPCProvider } from "~/utils/api";
 
@@ -10,9 +10,8 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { UIManager } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
+import Constants from "expo-constants";
 import * as SplashScreen from "expo-splash-screen";
-import { useReactNavigationDevTools } from "@dev-plugins/react-navigation";
 import {
   Nunito_400Regular,
   Nunito_500Medium,
@@ -21,9 +20,9 @@ import {
 } from "@expo-google-fonts/nunito";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 
-import { DevMenu } from "~/components/dev/dev-menu";
+import { DevTools } from "~/components/dev/dev-menu";
 import { PortalRenderer } from "~/components/portal";
-import { db, expoDb } from "~/db/client";
+import { db } from "~/db/client";
 import migrations from "../../drizzle/migrations";
 
 void SplashScreen.preventAutoHideAsync();
@@ -33,14 +32,10 @@ if (UIManager.setLayoutAnimationEnabledExperimental) {
 }
 
 export default function RootLayout() {
-  const navigationRef = useNavigationContainerRef();
-  useReactNavigationDevTools(navigationRef);
-
   const { success: migrationSuccess, error: migrationError } = useMigrations(
     db,
     migrations,
   );
-  useDrizzleStudio(expoDb);
 
   const [fontLoaded, fontError] = useFonts({
     Nunito_400Regular,
@@ -71,26 +66,15 @@ export default function RootLayout() {
             },
             headerTitleStyle: {
               color: "#FFFFFF",
+              fontFamily: "Nunito_700Bold",
             },
             contentStyle: {
               backgroundColor: "#FFFFFF",
             },
           }}
-        >
-          <Stack.Screen
-            name="(main)"
-            options={{ headerShown: false, title: "" }}
-          />
-          <Stack.Screen
-            name="absences/index"
-            options={{
-              title: "Meine Fehlzeiten",
-              headerTintColor: "#FFFFFF",
-            }}
-          />
-        </Stack>
+        />
 
-        <DevMenu />
+        {Constants.debugMode && <DevTools />}
 
         <PortalRenderer />
       </GestureHandlerRootView>

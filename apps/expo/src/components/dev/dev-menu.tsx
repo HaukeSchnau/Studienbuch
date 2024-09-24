@@ -1,23 +1,29 @@
-import { View } from "react-native";
-import { Link } from "expo-router";
+import { DevMenu } from "expo-dev-client";
+import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
+import { router, useNavigationContainerRef } from "expo-router";
+import { useReactNavigationDevTools } from "@dev-plugins/react-navigation";
+import { useReactQueryDevTools } from "@dev-plugins/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
-import { colors } from "@stu/tailwind-config/native";
+import { expoDb } from "~/db/client";
 
-export const DevMenu = () => {
-  return (
-    <View
-      style={{
-        position: "absolute",
-        bottom: 32,
-        right: 8,
-        padding: 8,
-        borderRadius: 8,
-        backgroundColor: colors.accent.DEFAULT,
-      }}
-    >
-      <Link href="/_sitemap" style={{ color: "white" }}>
-        Sitemap
-      </Link>
-    </View>
-  );
+void DevMenu.registerDevMenuItems([
+  {
+    name: "Sitemap",
+    shouldCollapse: true,
+    callback: () => {
+      router.navigate("/_sitemap");
+    },
+  },
+]);
+
+export const DevTools = () => {
+  const navigationRef = useNavigationContainerRef();
+  const queryClient = useQueryClient();
+
+  useReactNavigationDevTools(navigationRef);
+  useDrizzleStudio(expoDb);
+  useReactQueryDevTools(queryClient);
+
+  return null;
 };
