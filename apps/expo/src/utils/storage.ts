@@ -12,6 +12,7 @@ const schemas = {
           id: z.string(),
           name: z.string(),
           isSuperUser: z.boolean(),
+          isOfAge: z.boolean(),
         })
         .nullable(),
       token: z.string(),

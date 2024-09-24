@@ -19,7 +19,11 @@ export const loginWithLicenseKey = publicProcedure
       with: {
         activatedBy: {
           with: {
-            person: true,
+            person: {
+              with: {
+                student: true,
+              },
+            },
           },
         },
       },
@@ -47,6 +51,7 @@ export const loginWithLicenseKey = publicProcedure
       id: license.activatedBy.id,
       name: license.activatedBy.person.name,
       isSuperUser: license.activatedBy.isSuperUser,
+      isOfAge: license.activatedBy.person.student?.isOfAge ?? false,
     });
 
     return {

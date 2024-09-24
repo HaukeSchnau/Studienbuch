@@ -14,7 +14,11 @@ export const getSession = async (
     with: {
       user: {
         with: {
-          person: true,
+          person: {
+            with: {
+              student: true,
+            },
+          },
         },
       },
     },
@@ -36,6 +40,7 @@ export const getSession = async (
           id: session.user.id,
           isSuperUser: session.user.isSuperUser,
           name: session.user.person.name,
+          isOfAge: session.user.person.student?.isOfAge ?? false,
         }
       : null,
     token: session.token,
@@ -45,6 +50,7 @@ export const getSession = async (
 export const createSession = async (user: {
   id: string;
   isSuperUser: boolean;
+  isOfAge: boolean;
   name: string;
 }): Promise<SessionType> => {
   const newSession = await db

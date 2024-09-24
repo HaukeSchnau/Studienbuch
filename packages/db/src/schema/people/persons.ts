@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
   boolean,
   foreignKey,
@@ -22,6 +23,10 @@ export const Persons = pgTable("persons", {
   abbrv: text("abbrv").unique(),
   email: text("email").unique(),
 });
+
+export const PersonsRelations = relations(Persons, ({ one }) => ({
+  student: one(Students),
+}));
 
 export const Students = pgTable(
   "students",
@@ -48,3 +53,10 @@ export const Students = pgTable(
       .onUpdate("cascade"),
   }),
 );
+
+export const StudentsRelations = relations(Students, ({ one }) => ({
+  person: one(Persons, {
+    fields: [Students.person],
+    references: [Persons.id],
+  }),
+}));

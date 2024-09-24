@@ -19,7 +19,11 @@ export const login = publicProcedure
     const user = await db.query.Users.findFirst({
       where: eq(Users.email, email.toLowerCase()),
       with: {
-        person: true,
+        person: {
+          with: {
+            student: true,
+          },
+        },
       },
     });
 
@@ -59,6 +63,7 @@ export const login = publicProcedure
       id: user.id,
       name: user.person.name,
       isSuperUser: user.isSuperUser,
+      isOfAge: user.person.student?.isOfAge ?? false,
     });
 
     return {
