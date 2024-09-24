@@ -1,4 +1,4 @@
-import { useState } from "react";
+// import { useState } from "react";
 import { Platform, TouchableNativeFeedback, View } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -14,12 +14,12 @@ interface Props {
 }
 
 export const DateField = ({ value, label, onChange }: Props) => {
-  const [isOpen, setIsOpen] = useState(false);
+  // const [isOpen, setIsOpen] = useState(false);
   const active = useSharedValue(true);
   const focused = useSharedValue(false);
 
   const onFocus = () => {
-    setIsOpen(true);
+    // setIsOpen(true);
     focused.value = true;
   };
   // const onBlur = () => {
