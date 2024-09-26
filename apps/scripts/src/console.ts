@@ -1,15 +1,9 @@
-import { exec as execCb } from "child_process";
-import { promisify } from "util";
 import { program } from "@commander-js/extra-typings";
 import { add, format } from "date-fns";
 import { z } from "zod";
 
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
-import {
-  findAbbrvName,
-  loginIservWithDefaultCredentials,
-} from "@stu/external-api";
 import { defaultSchools, SCHOOL_IDS } from "@stu/lib";
 import {
   createUser,
@@ -18,13 +12,9 @@ import {
   importTimetable,
 } from "@stu/lib-server";
 
-import { addNamesToExistingUsers } from "./addNamesToExistingUsers";
-import { addSemesters } from "./addSemesters";
-import { copySubstitutions } from "./copyKadmosSubstitutions";
-import { generateDartClient } from "./dartGenerator/generateDartClient";
-import { generateLicenses } from "./seed/generateLicenses";
-
-const exec = promisify(execCb);
+import { addSemesters } from "./seed/add-semesters";
+import { copySubstitutions } from "./seed/copy-kadmos-substitutions";
+import { generateLicenses } from "./seed/generate-licenses";
 
 program
   .name("console")
@@ -136,38 +126,5 @@ program
 
     process.exit(0);
   });
-
-program
-  .command("generate-dart-client")
-  .argument("<fileName>", "Name of the that contains the AppRouter type export")
-  .argument("<outputDir>", "Directory to output the generated dart files")
-  .action(async (fileName, outputDir) => {
-    await generateDartClient(fileName, outputDir);
-
-    await exec(`dart format ${outputDir}`);
-
-    process.exit(0);
-  });
-
-program
-  .command("find-abbrv-name")
-  .argument("<abbrv>", "Abbreviation of the user")
-  .action(async (abbrv) => {
-    console.log(`Finding name for abbreviation "${abbrv}"...`);
-    const makeRequest = await loginIservWithDefaultCredentials();
-    const result = await findAbbrvName(makeRequest, abbrv);
-    console.log(result);
-
-    process.exit(0);
-  });
-
-program.command("add-names-to-existing-users").action(async () => {
-  console.log("Adding names to existing users...");
-
-  await addNamesToExistingUsers();
-
-  console.log("Names added to existing users!");
-  process.exit(0);
-});
 
 program.parse();
