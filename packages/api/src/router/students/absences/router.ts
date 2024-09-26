@@ -97,7 +97,7 @@ export const absences = {
     .input(
       z.object({
         date: z.date(),
-        courseId: z.string().optional(),
+        courseIds: z.array(z.string()),
       }),
     )
     .mutation(
@@ -113,9 +113,7 @@ export const absences = {
             and(
               eq(CourseAbsences.date, input.date),
               eq(CourseAbsences.student, user.id),
-              input.courseId
-                ? eq(CourseAbsences.course, input.courseId)
-                : undefined,
+              inArray(CourseAbsences.course, input.courseIds),
             ),
           );
 

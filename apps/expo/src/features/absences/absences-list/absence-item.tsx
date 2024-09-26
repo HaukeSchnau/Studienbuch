@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { Alert, View } from "react-native";
 import { Link } from "expo-router";
 import clsx from "clsx";
 import { format } from "date-fns";
@@ -19,6 +19,12 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
   const isExcused =
     absenceGroup.isExcusedByTeacher && absenceGroup.isExcusedByParent;
   const { data: session } = api.auth.getSession.useQuery();
+  const utils = api.useUtils();
+  const deleteMutation = api.students.absences.delete.useMutation({
+    onSuccess: async () => {
+      await utils.students.absences.invalidate();
+    },
+  });
 
   if (!session?.user) {
     return null;
@@ -28,6 +34,33 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
   for (const absence of absenceGroup.courses) {
     params.append("course", absence.id.toString());
   }
+
+  const handleDelete = () => {
+    Alert.alert(
+      "Fehlzeit löschen",
+      "Bist du sicher, dass du diese Fehlzeit löschen möchtest?",
+      [
+        {
+          text: "Abbrechen",
+          style: "cancel",
+        },
+        {
+          text: "Löschen",
+          style: "destructive",
+          isPreferred: true,
+          onPress: () => {
+            deleteMutation.mutate({
+              date: absenceGroup.date,
+              courseIds: absenceGroup.courses.map((course) => course.id),
+            });
+          },
+        },
+      ],
+      {
+        cancelable: true,
+      },
+    );
+  };
 
   return (
     <View
@@ -55,7 +88,7 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
           confirmedText="Entschuldigt"
         />
       </View>
-      <View>
+      <View className="items-end gap-1">
         <Link
           href={{
             pathname: `/absences/[date]/[courses]/excuse`,
@@ -70,6 +103,10 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
         >
           <OutlinedButton label="Unterschreiben" />
         </Link>
+
+        {!isExcused && (
+          <OutlinedButton label="Löschen" onPress={handleDelete} />
+        )}
       </View>
     </View>
   );

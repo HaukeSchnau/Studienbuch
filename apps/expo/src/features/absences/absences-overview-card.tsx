@@ -68,6 +68,8 @@ export const AbsencesOverviewCard = () => {
         <UnexcusedAbsences absences={absences.data} />
       )}
 
+      <View className="h-4" />
+
       <Link href="/absences" asChild>
         <Button label="Alle ansehen" className="self-end" />
       </Link>
