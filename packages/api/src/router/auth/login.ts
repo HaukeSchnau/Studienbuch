@@ -1,10 +1,9 @@
 import { z } from "zod";
 
-import { checkPassword } from "@stu/auth/src/password";
-import { createSession } from "@stu/auth/src/session";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Users } from "@stu/db/schema";
+import { checkPassword, createSession } from "@stu/lib-server";
 
 import { publicProcedure } from "../../procedures";
 

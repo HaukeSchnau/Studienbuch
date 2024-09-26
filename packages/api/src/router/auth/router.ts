@@ -1,9 +1,9 @@
 import type { TRPCRouterRecord } from "@trpc/server";
 
-import { getPermissions } from "@stu/auth/src/getPermissions";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Sessions } from "@stu/db/schema";
+import { getPermissions } from "@stu/lib-server";
 
 import { protectedProcedure, publicProcedure } from "../../procedures";
 import { activateLicenseKey } from "./activate-license-key";

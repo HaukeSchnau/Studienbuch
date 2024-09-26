@@ -3,7 +3,6 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import type { Permission, PermissionScope, Salutation } from "@stu/lib";
-import { hashPassword } from "@stu/auth/src/password";
 import { asc, eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import {
@@ -15,7 +14,7 @@ import {
   Users,
 } from "@stu/db/schema";
 import { BetterMap, SALUTATIONS } from "@stu/lib";
-import { createUser } from "@stu/lib-server";
+import { createUser, hashPassword } from "@stu/lib-server";
 
 import { permissionProcedure } from "../../../procedures";
 

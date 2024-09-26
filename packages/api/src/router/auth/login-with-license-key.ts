@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-import { createSession } from "@stu/auth/src/session";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { LicenseKeys } from "@stu/db/schema";
+import { createSession } from "@stu/lib-server";
 
 import { publicProcedure } from "../../procedures";
 

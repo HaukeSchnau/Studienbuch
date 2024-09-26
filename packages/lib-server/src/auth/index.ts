@@ -3,6 +3,12 @@ import { z } from "zod";
 import { getCookies } from "./cookies";
 import { getSession } from "./session";
 
+export { checkPassword, hashPassword } from "./password";
+export { getSession, createSession } from "./session";
+export { getCookies } from "./cookies";
+export { findPermissionScope } from "./hasPermission";
+export { getPermissions } from "./getPermissions";
+
 export interface Session {
   user: {
     id: string;

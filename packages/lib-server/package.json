@@ -14,10 +14,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@stu/auth": "workspace:*",
     "@stu/db": "workspace:*",
     "@stu/external-api": "workspace:*",
     "@stu/lib": "workspace:*",
+    "bcrypt": "^5.1.1",
     "date-fns": "^4.1.0",
     "node-html-parser": "^6.1.13",
     "papaparse": "^5.4.1",
@@ -30,6 +30,7 @@
     "@stu/tsconfig": "workspace:*",
     "@total-typescript/shoehorn": "^0.1.2",
     "@total-typescript/ts-reset": "^0.6.1",
+    "@types/bcrypt": "^5.0.2",
     "@types/papaparse": "^5.3.14",
     "eslint": "catalog:",
     "prettier": "catalog:",

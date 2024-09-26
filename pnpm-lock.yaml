@@ -299,9 +299,6 @@ importers:
       '@stu/api':
         specifier: workspace:*
         version: link:../../packages/api
-      '@stu/auth':
-        specifier: workspace:*
-        version: link:../../packages/auth
       '@stu/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -477,9 +474,9 @@ importers:
       '@stu/api':
         specifier: workspace:*
         version: link:../../packages/api
-      '@stu/auth':
-        specifier: workspace:*
-        version: link:../../packages/auth
+      '@stu/lib-server':
+        specifier: workspace:^
+        version: link:../../packages/lib-server
       '@t3-oss/env-nextjs':
         specifier: ^0.11.1
         version: 0.11.1(typescript@5.6.2)(zod@3.23.8)
@@ -587,9 +584,6 @@ importers:
 
   packages/api:
     dependencies:
-      '@stu/auth':
-        specifier: workspace:*
-        version: link:../auth
       '@stu/db':
         specifier: workspace:*
         version: link:../db
@@ -616,7 +610,7 @@ importers:
         version: 1.11.13
       drizzle-zod:
         specifier: ^0.5.1
-        version: 0.5.1(drizzle-orm@0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@18.3.8)(expo-sqlite@14.0.6(expo@51.0.32(encoding@0.1.13)))(pg@8.13.0)(react@18.3.1))(zod@3.23.8)
+        version: 0.5.1(drizzle-orm@0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@18.3.8)(expo-sqlite@14.0.6(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)))(pg@8.13.0)(react@18.3.1))(zod@3.23.8)
       superjson:
         specifier: 2.2.1
         version: 2.2.1
@@ -643,52 +637,6 @@ importers:
         specifier: 'catalog:'
         version: 5.6.2
 
-  packages/auth:
-    dependencies:
-      '@stu/db':
-        specifier: workspace:*
-        version: link:../db
-      '@stu/lib':
-        specifier: workspace:*
-        version: link:../lib
-      '@t3-oss/env-nextjs':
-        specifier: ^0.11.1
-        version: 0.11.1(typescript@5.6.2)(zod@3.23.8)
-      bcrypt:
-        specifier: ^5.1.1
-        version: 5.1.1(encoding@0.1.13)
-      react:
-        specifier: catalog:react18
-        version: 18.3.1
-      react-dom:
-        specifier: catalog:react18
-        version: 18.3.1(react@18.3.1)
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@stu/eslint-config':
-        specifier: workspace:*
-        version: link:../../tooling/eslint
-      '@stu/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@stu/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/bcrypt':
-        specifier: ^5.0.2
-        version: 5.0.2
-      eslint:
-        specifier: 'catalog:'
-        version: 9.10.0(jiti@1.21.6)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.3.3
-      typescript:
-        specifier: 'catalog:'
-        version: 5.6.2
-
   packages/db:
     dependencies:
       '@stu/lib':
@@ -702,10 +650,10 @@ importers:
         version: 1.11.13
       drizzle-orm:
         specifier: ^0.33.0
-        version: 0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@18.3.8)(expo-sqlite@14.0.6(expo@51.0.32(encoding@0.1.13)))(pg@8.13.0)(react@18.3.1)
+        version: 0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@18.3.8)(expo-sqlite@14.0.6(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)))(pg@8.13.0)(react@18.3.1)
       drizzle-zod:
         specifier: ^0.5.1
-        version: 0.5.1(drizzle-orm@0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@18.3.8)(expo-sqlite@14.0.6(expo@51.0.32(encoding@0.1.13)))(pg@8.13.0)(react@18.3.1))(zod@3.23.8)
+        version: 0.5.1(drizzle-orm@0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@18.3.8)(expo-sqlite@14.0.6(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)))(pg@8.13.0)(react@18.3.1))(zod@3.23.8)
       pg:
         specifier: ^8.13.0
         version: 8.13.0
@@ -891,9 +839,6 @@ importers:
 
   packages/lib-server:
     dependencies:
-      '@stu/auth':
-        specifier: workspace:*
-        version: link:../auth
       '@stu/db':
         specifier: workspace:*
         version: link:../db
@@ -903,6 +848,9 @@ importers:
       '@stu/lib':
         specifier: workspace:*
         version: link:../lib
+      bcrypt:
+        specifier: ^5.1.1
+        version: 5.1.1(encoding@0.1.13)
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -934,6 +882,9 @@ importers:
       '@total-typescript/ts-reset':
         specifier: ^0.6.1
         version: 0.6.1
+      '@types/bcrypt':
+        specifier: ^5.0.2
+        version: 5.0.2
       '@types/papaparse':
         specifier: ^5.3.14
         version: 5.3.14
@@ -969,7 +920,7 @@ importers:
         version: 7.36.1(eslint@9.10.0(jiti@1.21.6))
       eslint-plugin-react-hooks:
         specifier: rc
-        version: 5.1.0-rc-e4953922-20240919(eslint@9.10.0(jiti@1.21.6))
+        version: 5.1.0-rc-204a551e-20240926(eslint@9.10.0(jiti@1.21.6))
       eslint-plugin-turbo:
         specifier: ^2.1.2
         version: 2.1.2(eslint@9.10.0(jiti@1.21.6))
@@ -6054,8 +6005,8 @@ packages:
     peerDependencies:
       eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0
 
-  eslint-plugin-react-hooks@5.1.0-rc-e4953922-20240919:
-    resolution: {integrity: sha512-W/CJVTs49Wn34P3RTMGb5jx7JW8ftUIUzNqYDsWqO/tz26DU3fXrou44jxAvu1HR5VH9DutXgxq7DCgDM2MBGQ==}
+  eslint-plugin-react-hooks@5.1.0-rc-204a551e-20240926:
+    resolution: {integrity: sha512-jJPRdt9j5FEMTQfOcRaOaJX2VmycFrteVK3oDkTc8w7jZROR4OqA5JUElK1h5z1Bu+5TTH+hwQq8Rr/bULHXxA==}
     engines: {node: '>=10'}
     peerDependencies:
       eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0 || ^9.0.0
@@ -16614,18 +16565,18 @@ snapshots:
       pg: 8.13.0
       react: 18.3.1
 
-  drizzle-orm@0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@18.3.8)(expo-sqlite@14.0.6(expo@51.0.32(encoding@0.1.13)))(pg@8.13.0)(react@18.3.1):
+  drizzle-orm@0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@18.3.8)(expo-sqlite@14.0.6(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)))(pg@8.13.0)(react@18.3.1):
     optionalDependencies:
       '@opentelemetry/api': 1.9.0
       '@types/pg': 8.11.10
       '@types/react': 18.3.8
-      expo-sqlite: 14.0.6(expo@51.0.32(encoding@0.1.13))
+      expo-sqlite: 14.0.6(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13))
       pg: 8.13.0
       react: 18.3.1
 
-  drizzle-zod@0.5.1(drizzle-orm@0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@18.3.8)(expo-sqlite@14.0.6(expo@51.0.32(encoding@0.1.13)))(pg@8.13.0)(react@18.3.1))(zod@3.23.8):
+  drizzle-zod@0.5.1(drizzle-orm@0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@18.3.8)(expo-sqlite@14.0.6(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)))(pg@8.13.0)(react@18.3.1))(zod@3.23.8):
     dependencies:
-      drizzle-orm: 0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@18.3.8)(expo-sqlite@14.0.6(expo@51.0.32(encoding@0.1.13)))(pg@8.13.0)(react@18.3.1)
+      drizzle-orm: 0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@18.3.8)(expo-sqlite@14.0.6(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)))(pg@8.13.0)(react@18.3.1)
       zod: 3.23.8
 
   duplexer@0.1.2: {}
@@ -17146,7 +17097,7 @@ snapshots:
     dependencies:
       eslint: 9.11.0(jiti@1.21.6)
 
-  eslint-plugin-react-hooks@5.1.0-rc-e4953922-20240919(eslint@9.10.0(jiti@1.21.6)):
+  eslint-plugin-react-hooks@5.1.0-rc-204a551e-20240926(eslint@9.10.0(jiti@1.21.6)):
     dependencies:
       eslint: 9.10.0(jiti@1.21.6)
 
@@ -17407,16 +17358,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  expo-asset@10.0.10(expo@51.0.32(encoding@0.1.13)):
-    dependencies:
-      expo: 51.0.32(encoding@0.1.13)
-      expo-constants: 16.0.2(expo@51.0.32(encoding@0.1.13))
-      invariant: 2.2.4
-      md5-file: 3.2.3
-    transitivePeerDependencies:
-      - supports-color
-    optional: true
-
   expo-build-properties@0.12.5(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)):
     dependencies:
       ajv: 8.17.1
@@ -17432,15 +17373,6 @@ snapshots:
       expo: 51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)
     transitivePeerDependencies:
       - supports-color
-
-  expo-constants@16.0.2(expo@51.0.32(encoding@0.1.13)):
-    dependencies:
-      '@expo/config': 9.0.2
-      '@expo/env': 0.3.0
-      expo: 51.0.32(encoding@0.1.13)
-    transitivePeerDependencies:
-      - supports-color
-    optional: true
 
   expo-dev-client@4.0.26(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)):
     dependencies:
@@ -17483,21 +17415,10 @@ snapshots:
     dependencies:
       expo: 51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)
 
-  expo-file-system@17.0.1(expo@51.0.32(encoding@0.1.13)):
-    dependencies:
-      expo: 51.0.32(encoding@0.1.13)
-    optional: true
-
   expo-font@12.0.10(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)):
     dependencies:
       expo: 51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)
       fontfaceobserver: 2.3.0
-
-  expo-font@12.0.10(expo@51.0.32(encoding@0.1.13)):
-    dependencies:
-      expo: 51.0.32(encoding@0.1.13)
-      fontfaceobserver: 2.3.0
-    optional: true
 
   expo-image@1.12.15(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)):
     dependencies:
@@ -17508,11 +17429,6 @@ snapshots:
   expo-keep-awake@13.0.2(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)):
     dependencies:
       expo: 51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)
-
-  expo-keep-awake@13.0.2(expo@51.0.32(encoding@0.1.13)):
-    dependencies:
-      expo: 51.0.32(encoding@0.1.13)
-    optional: true
 
   expo-linking@6.3.1(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)):
     dependencies:
@@ -17629,12 +17545,6 @@ snapshots:
       '@expo/websql': 1.0.1
       expo: 51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)
 
-  expo-sqlite@14.0.6(expo@51.0.32(encoding@0.1.13)):
-    dependencies:
-      '@expo/websql': 1.0.1
-      expo: 51.0.32(encoding@0.1.13)
-    optional: true
-
   expo-status-bar@1.12.1: {}
 
   expo-system-ui@3.0.7(expo@51.0.32(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))(encoding@0.1.13)):
@@ -17677,32 +17587,6 @@ snapshots:
       - encoding
       - supports-color
       - utf-8-validate
-
-  expo@51.0.32(encoding@0.1.13):
-    dependencies:
-      '@babel/runtime': 7.25.4
-      '@expo/cli': 0.18.29(encoding@0.1.13)(expo-modules-autolinking@1.11.2)
-      '@expo/config': 9.0.3
-      '@expo/config-plugins': 8.0.8
-      '@expo/metro-config': 0.18.11
-      '@expo/vector-icons': 14.0.3
-      babel-preset-expo: 11.0.14(@babel/core@7.25.2)(@babel/preset-env@7.25.4(@babel/core@7.25.2))
-      expo-asset: 10.0.10(expo@51.0.32(encoding@0.1.13))
-      expo-file-system: 17.0.1(expo@51.0.32(encoding@0.1.13))
-      expo-font: 12.0.10(expo@51.0.32(encoding@0.1.13))
-      expo-keep-awake: 13.0.2(expo@51.0.32(encoding@0.1.13))
-      expo-modules-autolinking: 1.11.2
-      expo-modules-core: 1.12.24
-      fbemitter: 3.0.0(encoding@0.1.13)
-      whatwg-url-without-unicode: 8.0.0-3
-    transitivePeerDependencies:
-      - '@babel/core'
-      - '@babel/preset-env'
-      - bufferutil
-      - encoding
-      - supports-color
-      - utf-8-validate
-    optional: true
 
   exponential-backoff@3.1.1: {}
 

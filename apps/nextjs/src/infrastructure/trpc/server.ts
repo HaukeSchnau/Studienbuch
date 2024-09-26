@@ -5,7 +5,7 @@ import { Logger } from "next-axiom";
 
 import type { AppRouter } from "@stu/api";
 import { createCaller, createTRPCContext } from "@stu/api";
-import { getSessionFromHeaders } from "@stu/auth/src";
+import { getSessionFromHeaders } from "@stu/lib-server";
 
 import { createQueryClient } from "./query-client";
 

@@ -13,7 +13,6 @@ const config = {
   /** Enables hot reloading for local packages without a build step */
   transpilePackages: [
     "@stu/api",
-    "@stu/auth",
     "@stu/db",
     "@stu/lib",
     "@stu/lib-server",

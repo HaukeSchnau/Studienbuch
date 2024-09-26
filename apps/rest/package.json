@@ -22,7 +22,7 @@
     "@hono/zod-openapi": "^0.16.0",
     "@scalar/hono-api-reference": "^0.5.147",
     "@stu/api": "workspace:*",
-    "@stu/auth": "workspace:*",
+    "@stu/lib-server": "workspace:^",
     "@t3-oss/env-nextjs": "^0.11.1",
     "@trpc/server": "catalog:",
     "hono": "^4.6.2",

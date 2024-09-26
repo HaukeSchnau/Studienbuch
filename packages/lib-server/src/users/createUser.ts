@@ -1,7 +1,7 @@
 import type { Salutation } from "@stu/lib";
-import { hashPassword } from "@stu/auth/src/password";
 import { db } from "@stu/db/client";
 import { Persons, Users } from "@stu/db/schema";
+import { hashPassword } from "@stu/lib-server";
 
 export const createUser = async ({
   name,

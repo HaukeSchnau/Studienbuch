@@ -6,7 +6,7 @@ import { prettyJSON } from "hono/pretty-json";
 import { trimTrailingSlash } from "hono/trailing-slash";
 
 import { appRouter, createTRPCContext } from "@stu/api";
-import { getSessionFromHeaders } from "@stu/auth/src";
+import { getSessionFromHeaders } from "@stu/lib-server";
 
 export const createBase = (basePath: string) => {
   const app = new OpenAPIHono().basePath(basePath);

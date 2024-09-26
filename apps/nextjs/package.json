@@ -17,7 +17,6 @@
   },
   "dependencies": {
     "@stu/api": "workspace:*",
-    "@stu/auth": "workspace:*",
     "@stu/db": "workspace:*",
     "@stu/lib": "workspace:*",
     "@stu/lib-server": "workspace:*",

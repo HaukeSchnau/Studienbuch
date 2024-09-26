@@ -19,7 +19,6 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@stu/auth": "workspace:*",
     "@stu/db": "workspace:*",
     "@stu/external-api": "workspace:*",
     "@stu/lib": "workspace:*",

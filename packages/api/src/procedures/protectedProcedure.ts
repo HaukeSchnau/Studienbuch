@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 
 import type { Permission } from "@stu/lib";
-import { findPermissionScope } from "@stu/auth/src/hasPermission";
+import { findPermissionScope } from "@stu/lib-server";
 
 import { t } from "../trpc";
 import { logger } from "./loggingProcedure";
