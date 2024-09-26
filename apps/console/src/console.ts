@@ -85,16 +85,19 @@ program.command("import-semesters").action(async () => {
   process.exit(0);
 });
 
-program.command("import-timetable").action(async () => {
-  const today = new Date();
-  for (let i = -4; i < 4; i++) {
-    const date = add(today, { weeks: i });
-    console.log(`Importing timetable for ${format(date, "yyyy-MM-dd")}...`);
-    await importTimetable({ school: "igs-lil", date });
-  }
+program
+  .command("import-timetable")
+  .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
+  .action(async (school) => {
+    const today = new Date();
+    for (let i = -4; i < 4; i++) {
+      const date = add(today, { weeks: i });
+      console.log(`Importing timetable for ${format(date, "yyyy-MM-dd")}...`);
+      await importTimetable({ school, date });
+    }
 
-  process.exit(0);
-});
+    process.exit(0);
+  });
 
 program
   .command("create-user")
