@@ -1,6 +1,6 @@
 import { View } from "react-native";
 
-import { SelectView } from "@stu/expo-native-modules";
+import { DrawingView, SelectView } from "@stu/expo-native-modules";
 
 export default function App() {
   return (
@@ -13,6 +13,10 @@ export default function App() {
           borderRadius: 10,
         }}
         name="Hello"
+        options={["World", "Universe"]}
+      />
+      <DrawingView
+        style={{ width: "100%", height: 400, backgroundColor: "red" }}
       />
     </View>
   );

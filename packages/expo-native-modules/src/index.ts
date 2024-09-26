@@ -1,3 +1,2 @@
-import { SelectView } from "./SelectModule";
-
-export { SelectView };
+export { SelectView } from "./SelectModule";
+export { DrawingView } from "./DrawingModule";
