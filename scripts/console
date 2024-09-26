@@ -3,4 +3,4 @@
 set -eau
 . .env
 
-tsx apps/scripts/src/console.ts "$@"
+tsx apps/console/src/console.ts "$@"
