@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Native modules for Studienbuch",
+  "type": "module",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
@@ -15,13 +16,7 @@
     "open:ios": "xed example/ios",
     "open:android": "open -a \"Android Studio\" example/android"
   },
-  "repository": "https://github.com/HaukeSchnau/stu-expo-native-modules",
-  "bugs": {
-    "url": "https://github.com/HaukeSchnau/stu-expo-native-modules/issues"
-  },
-  "author": "Hauke Schnau <hauke@schnau-lilienthal.de> (https://github.com/HaukeSchnau)",
   "license": "MIT",
-  "homepage": "https://github.com/HaukeSchnau/stu-expo-native-modules#readme",
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
     "@types/react": "catalog:react18",
