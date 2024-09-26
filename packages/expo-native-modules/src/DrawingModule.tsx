@@ -1,10 +1,17 @@
+import type { RefObject } from "react";
 import type { ViewProps } from "react-native";
 import {
   requireNativeModule,
   requireNativeViewManager,
 } from "expo-modules-core";
 
-interface Props extends ViewProps {}
+export interface DrawingViewRef {
+  getSVG(): Promise<string>;
+}
+
+interface Props extends ViewProps {
+  ref: RefObject<DrawingViewRef>;
+}
 
 type Module = unknown;
 

@@ -1,5 +1,7 @@
-import { View } from "react-native";
+import { useRef } from "react";
+import { Button, View } from "react-native";
 
+import type { DrawingViewRef } from "@stu/expo-native-modules";
 import { DrawingView, SelectView } from "@stu/expo-native-modules";
 
 export default function App() {
@@ -15,9 +17,25 @@ export default function App() {
         name="Hello"
         options={["World", "Universe"]}
       />
-      <DrawingView
-        style={{ width: "100%", height: 400, backgroundColor: "red" }}
-      />
+      <DrawingDemo />
     </View>
   );
 }
+
+const DrawingDemo = () => {
+  const drawingViewRef = useRef<DrawingViewRef>(null);
+
+  const saveAsSVG = async () => {
+    if (drawingViewRef.current) {
+      const svg = await drawingViewRef.current.getSVG();
+      console.log(svg); // Log SVG content
+    }
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <DrawingView ref={drawingViewRef} style={{ height: 300 }} />
+      <Button title="Save as SVG" onPress={saveAsSVG} />
+    </View>
+  );
+};

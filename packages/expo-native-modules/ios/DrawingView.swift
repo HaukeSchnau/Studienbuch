@@ -20,17 +20,23 @@ class DrawingExpoView: ExpoView {
     func clear() {
         drawingView.clear()
     }
+    
+    @objc
+    func getSVG() -> String {
+        return drawingView.toSVG()
+    }
 }
 
+
 class DrawingView: UIView {
-    
-    private var path = UIBezierPath()
-    private var points = [CGPoint]() // Array to store touch points
+
+    private var currentPath = UIBezierPath()
+    private var savedPaths: [UIBezierPath] = [] // Array to store paths
+    private var points: [CGPoint] = [] // Array to store touch points
     
     override init(frame: CGRect) {
         super.init(frame: frame)
         setup()
-        path.cgPath.
     }
     
     required init?(coder: NSCoder) {
@@ -41,7 +47,7 @@ class DrawingView: UIView {
     private func setup() {
         self.backgroundColor = .white
         self.isMultipleTouchEnabled = false
-        path.lineWidth = 5.0
+        currentPath.lineWidth = 5.0
     }
     
     // Calculate the midpoint between two points
@@ -51,37 +57,79 @@ class DrawingView: UIView {
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
-        points.removeAll() // Clear points
+        points.removeAll()
         let point = touch.location(in: self)
-        points.append(point) // Store the initial touch point
-        path.move(to: point)
+        points.append(point)
+        currentPath.move(to: point)
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let point = touch.location(in: self)
-        points.append(point) // Add each touch point
+        points.append(point)
         
-        // Only start drawing after we have at least 2 points (to calculate midpoint)
         if points.count > 1 {
             let midPoint = midpoint(points[points.count - 2], points[points.count - 1])
-            path.addQuadCurve(to: midPoint, controlPoint: points[points.count - 2])
-            setNeedsDisplay() // Trigger redraw
+            currentPath.addQuadCurve(to: midPoint, controlPoint: points[points.count - 2])
+            setNeedsDisplay()
         }
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         points.removeAll()
-        setNeedsDisplay() // Ensure the path is updated
+        savedPaths.append(currentPath) // Save the current path when touch ends
+        currentPath = UIBezierPath() // Start a new path for the next stroke
+        currentPath.lineWidth = 5.0
+        setNeedsDisplay()
     }
     
     override func draw(_ rect: CGRect) {
+        // Set stroke color
         UIColor.black.setStroke()
-        path.stroke() // Draw the current path
+        
+        // Draw all saved paths
+        for path in savedPaths {
+            path.stroke()
+        }
+        
+        // Draw the current path being drawn
+        currentPath.stroke()
     }
     
+    // Clear both saved and current paths
     func clear() {
-        path.removeAllPoints() // Clear the path
-        setNeedsDisplay() // Trigger a redraw
+        savedPaths.removeAll()
+        currentPath.removeAllPoints()
+        setNeedsDisplay()
+    }
+    
+    // Save paths to be reused later
+    func getSavedPaths() -> [UIBezierPath] {
+        return savedPaths
+    }
+    
+    // Restore paths that were saved earlier
+    func setSavedPaths(_ paths: [UIBezierPath]) {
+        savedPaths = paths
+        setNeedsDisplay() // Redraw the view
+    }
+    
+    func toSVG() -> String {
+        let width = Int(self.bounds.width)
+        let height = Int(self.bounds.height)
+        
+        // Start building the SVG string
+        var svgString = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"\(width)\" height=\"\(height)\" viewBox=\"0 0 \(width) \(height)\">"
+        
+        // Add each saved path to the SVG
+        for path in savedPaths {
+            let svgPath = path.toSVGPath()
+            svgString.append("<path d=\"\(svgPath)\" stroke=\"black\" fill=\"none\" stroke-width=\"5\" />")
+        }
+        
+        // Close the SVG string
+        svgString.append("</svg>")
+        
+        return svgString
     }
 }
