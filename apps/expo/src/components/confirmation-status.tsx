@@ -19,7 +19,7 @@ const SingleConfirmationStatus = ({
       {confirmed ? (
         <Icon name="verified" size={24} color={colors.primary.text} />
       ) : (
-        <Cross />
+        <Cross color={colors.danger.DEFAULT} />
       )}
       <Text
         className={clsx(

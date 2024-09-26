@@ -195,12 +195,12 @@ class FullscreenSignature extends HookWidget {
               Container(
                   decoration: const BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(color: Colors.grey),
+                      bottom: BorderSide(color: Color(0xFF9E9E9E)),
                     ),
                   ),
                   child: Signature(
                     controller: signatureController,
-                    backgroundColor: Colors.grey[50]!,
+                    backgroundColor: Color(0xFFFAFAFA)!,
                   )),
               Positioned(
                   bottom: 16,
@@ -210,7 +210,7 @@ class FullscreenSignature extends HookWidget {
                       SvgPicture.asset(
                         "assets/icons/cross.svg",
                         // ignore: deprecated_member_use
-                        color: Colors.black26,
+                        color: Color.fromRGBO(0, 0, 0, 0.259),
                         width: 48,
                       ),
                       const SizedBox(width: 16),

@@ -4,6 +4,16 @@ import { useRouter } from "expo-router";
 import { api } from "./api";
 import { useStorage } from "./storage";
 
+export const useRequiredAuthenticatedSession = () => {
+  const [session] = useStorage("auth.session");
+
+  if (!session?.user) {
+    throw new Error("Session is required");
+  }
+
+  return { ...session, user: session.user };
+};
+
 export const useSession = () => {
   const utils = api.useUtils();
   const router = useRouter();

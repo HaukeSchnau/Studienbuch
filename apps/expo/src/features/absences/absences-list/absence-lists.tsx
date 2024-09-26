@@ -1,53 +1,44 @@
 import { ActivityIndicator, View } from "react-native";
 import Icon from "@expo/vector-icons/MaterialIcons";
 
-import type { Absence } from "@stu/lib";
 import { colors } from "@stu/tailwind-config/native";
 
-import type { AbsenceGroup } from "~/features/absences/absences-list/types";
+import type { AbsenceItem as AbsenceItemType } from "./types";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { AbsenceItem } from "./absence-item";
 
-const mapAbsenceToGroup = (absence: Absence): AbsenceGroup => {
-  return {
-    date: absence.date,
-    reason: absence.reason,
-    isExcusedByTeacher: !!absence.teacherSignature,
-    isExcusedByParent: !!absence.parentSignature,
-    absences: [absence],
-  };
-};
-
 export const UnexcusedAbsences = () => {
   const query = api.students.absences.listUnexcused.useQuery(undefined, {
     select: (absences) => {
-      const unexcusedByTeacher = absences.filter(
-        (absence) => absence.parentSignature && !absence.teacherSignature,
-      );
-      const unexcusedByParent = absences.filter(
-        (absence) => !absence.parentSignature,
-      );
-
-      const absenceGroupsByParent = new Map<number, AbsenceGroup>();
-      for (const absence of unexcusedByParent) {
-        if (!absenceGroupsByParent.has(absence.date.getTime())) {
-          absenceGroupsByParent.set(absence.date.getTime(), {
+      const unexcusedByTeacher: AbsenceItemType[] = [];
+      const unexcusedByParent: AbsenceItemType[] = [];
+      for (const absence of absences) {
+        if (absence.parentSignature) {
+          unexcusedByTeacher.push(
+            ...absence.absenceCourses.map(
+              (course): AbsenceItemType => ({
+                date: absence.date,
+                courses: [course.course],
+                reason: absence.reason,
+                isExcusedByParent: !!absence.parentSignature,
+                isExcusedByTeacher: !!course.teacherSignature,
+              }),
+            ),
+          );
+        } else {
+          unexcusedByParent.push({
             date: absence.date,
+            courses: absence.absenceCourses.map((course) => course.course),
             reason: absence.reason,
+            isExcusedByParent: !!absence.parentSignature,
             isExcusedByTeacher: false,
-            isExcusedByParent: false,
-            absences: [],
           });
         }
-
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- we just set it
-        absenceGroupsByParent
-          .get(absence.date.getTime())!
-          .absences.push(absence);
       }
+
       return {
-        byParent: [...absenceGroupsByParent.values()],
+        byParent: unexcusedByParent,
         byTeacher: unexcusedByTeacher,
       };
     },
@@ -94,8 +85,8 @@ export const UnexcusedAbsences = () => {
       {heading}
       {query.data.byTeacher.map((absence) => (
         <AbsenceItem
-          key={`${absence.date.toISOString()}-${absence.course.id}`}
-          absenceGroup={mapAbsenceToGroup(absence)}
+          key={`${absence.date.toISOString()}-${absence.courses[0]?.id}`}
+          absenceGroup={absence}
         />
       ))}
       {query.data.byParent.map((group) => (
@@ -108,22 +99,13 @@ export const UnexcusedAbsences = () => {
 export const ExcusedAbsences = () => {
   const query = api.students.absences.listExcused.useQuery(undefined, {
     select: (absences) => {
-      const groups = new Map<number, AbsenceGroup>();
-      for (const absence of absences) {
-        if (!groups.has(absence.date.getTime())) {
-          groups.set(absence.date.getTime(), {
-            date: absence.date,
-            reason: absence.reason,
-            isExcusedByTeacher: false,
-            isExcusedByParent: false,
-            absences: [],
-          });
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- we just set it
-        groups.get(absence.date.getTime())!.absences.push(absence);
-      }
-      return [...groups.values()];
+      return absences.map((absence) => ({
+        date: absence.date,
+        courses: absence.absenceCourses.map((course) => course.course),
+        reason: absence.reason,
+        isExcusedByTeacher: true,
+        isExcusedByParent: true,
+      }));
     },
   });
 

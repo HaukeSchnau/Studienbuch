@@ -3,7 +3,7 @@ import { ActivityIndicator, View } from "react-native";
 import { Link } from "expo-router";
 import { formatDate } from "date-fns";
 
-import type { Absence } from "@stu/lib";
+import type { AbsenceDay } from "@stu/lib";
 import { colors } from "@stu/tailwind-config/native";
 
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
@@ -102,7 +102,7 @@ const NoAbsences = () => {
   );
 };
 
-const UnexcusedAbsences = ({ absences }: { absences: Absence[] }) => {
+const UnexcusedAbsences = ({ absences }: { absences: AbsenceDay[] }) => {
   const numberOfDays = new Set(
     absences.map((absence) => formatDate(absence.date, "yyyy-MM-dd")),
   ).size;

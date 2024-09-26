@@ -5,14 +5,14 @@ import { format } from "date-fns";
 
 import { subjectNameMap } from "@stu/lib";
 
-import type { AbsenceGroup } from "./types";
+import type { AbsenceItem as AbsenceItemType } from "./types";
 import { OutlinedButton } from "~/components/button";
 import { ConfirmationStatus } from "~/components/confirmation-status";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 
 interface AbsenceViewProps {
-  absenceGroup: AbsenceGroup;
+  absenceGroup: AbsenceItemType;
 }
 
 export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
@@ -25,8 +25,8 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
   }
 
   const params = new URLSearchParams();
-  for (const absence of absenceGroup.absences) {
-    params.append("course", absence.course.id.toString());
+  for (const absence of absenceGroup.courses) {
+    params.append("course", absence.id.toString());
   }
 
   return (
@@ -39,8 +39,8 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
       <View className="flex-1 gap-1">
         <Text>
           {format(absenceGroup.date, "dd.MM.yyyy")} (
-          {absenceGroup.absences
-            .map((a) => subjectNameMap[a.course.subject])
+          {absenceGroup.courses
+            .map((course) => subjectNameMap[course.subject])
             .join(", ")}
           )
         </Text>
@@ -61,7 +61,9 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
             pathname: `/absences/[date]/[courses]/excuse`,
             params: {
               date: absenceGroup.date.getTime(),
-              courses: absenceGroup.absences.map((a) => a.course.id).join(";"),
+              courses: absenceGroup.courses
+                .map((course) => course.id)
+                .join(";"),
             },
           }}
           asChild

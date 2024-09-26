@@ -1,12 +1,14 @@
 import type { SubjectId } from "../courses";
 
-export interface Absence {
+export interface AbsenceDay {
   date: Date;
   reason: string;
-  course: {
-    id: string;
-    subject: SubjectId;
-  };
-  teacherSignature: string | null;
+  absenceCourses: {
+    teacherSignature: string | null;
+    course: {
+      id: string;
+      subject: SubjectId;
+    };
+  }[];
   parentSignature: string | null;
 }

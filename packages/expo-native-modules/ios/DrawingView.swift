@@ -45,9 +45,10 @@ class DrawingView: UIView {
     }
     
     private func setup() {
-        self.backgroundColor = .white
+        self.backgroundColor = .clear
+        self.isOpaque = false
         self.isMultipleTouchEnabled = false
-        currentPath.lineWidth = 5.0
+        currentPath.lineWidth = 3.0
     }
     
     // Calculate the midpoint between two points
