@@ -10,6 +10,7 @@ export default async function setup({ provide }: GlobalSetupContext) {
     .withTmpFs({
       "/var/lib/postgresql/data": "rw",
     })
+    .withName("studienbuch-test")
     .start();
 
   const { db, client } = await createClient(container.getConnectionUri());
