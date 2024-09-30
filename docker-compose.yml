@@ -1,12 +1,10 @@
 services:
-  db-test:
+  db:
     image: postgres
     restart: always
     ports:
       - 5433:5432
-    tmpfs:
-      - /var/lib/postgresql/data
     environment:
-      POSTGRES_PASSWORD: stu_test
-      POSTGRES_USER: stu_test
-      POSTGRES_DB: stu_test
+      POSTGRES_PASSWORD: stu
+      POSTGRES_USER: stu
+      POSTGRES_DB: stu
