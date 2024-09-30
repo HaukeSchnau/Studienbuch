@@ -5,7 +5,7 @@ export default defineConfig({
     deps: {
       moduleDirectories: ["node_modules", "packages"],
     },
-    setupFiles: ["./database/setup.ts"],
-    globalSetup: ["./database/global-setup.ts"],
+    setupFiles: ["../../packages/db/testing/setup.ts"],
+    globalSetup: ["../../packages/db/testing/global-setup.ts"],
   },
 });

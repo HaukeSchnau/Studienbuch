@@ -7,7 +7,6 @@
     "clean": "git clean -xdf .cache .turbo node_modules"
   },
   "dependencies": {
-    "@stu/db": "workspace:^",
     "@stu/external-api": "workspace:^",
     "@testcontainers/postgresql": "^10.13.1",
     "memfs": "^4.12.0",
