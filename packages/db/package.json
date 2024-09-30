@@ -44,12 +44,14 @@
     "@stu/eslint-config": "workspace:*",
     "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
+    "@testcontainers/postgresql": "^10.13.1",
     "@types/pg": "^8.11.10",
     "dotenv-cli": "^7.4.2",
     "drizzle-kit": "^0.24.2",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "^2.1.1"
   },
   "prettier": "@stu/prettier-config"
 }

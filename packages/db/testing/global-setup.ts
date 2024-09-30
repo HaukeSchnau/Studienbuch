@@ -1,10 +1,11 @@
+import type { GlobalSetupContext } from "vitest/node";
 import { PostgreSqlContainer } from "@testcontainers/postgresql";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 
 import { createClient } from "./client";
 import { insertFixtures } from "./insert-fixtures";
 
-export default async function setup({ provide }) {
+export default async function setup({ provide }: GlobalSetupContext) {
   const container = await new PostgreSqlContainer()
     .withTmpFs({
       "/var/lib/postgresql/data": "rw",

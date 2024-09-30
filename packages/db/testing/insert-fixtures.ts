@@ -1,6 +1,6 @@
 import * as schema from "@stu/db/schema";
 
-import { Client } from "./client";
+import type { Client } from "./client";
 import { personFixtures } from "./fixtures";
 import { userFixtures } from "./fixtures/users";
 

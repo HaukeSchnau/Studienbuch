@@ -1,5 +1,8 @@
 {
   "extends": "@stu/tsconfig/internal-package.json",
-  "include": ["src", "env.ts", "drizzle.config.ts"],
-  "exclude": ["node_modules"]
+  "include": ["src", "testing", "env.ts", "drizzle.config.ts"],
+  "exclude": ["node_modules"],
+  "compilerOptions": {
+    "rootDir": "."
+  }
 }
