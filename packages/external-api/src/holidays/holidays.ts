@@ -53,12 +53,15 @@ const getHolidaysInternal = async (state: State, year?: number) => {
   );
 };
 
-export const getHolidays = async (state: State, year?: number) => {
-  let response: Awaited<ReturnType<typeof getHolidaysInternal>>;
+export const getHolidays = async (
+  state: State,
+  year?: number,
+): Promise<Required<HolidayDto>[]> => {
+  let response: Required<HolidayDto>[];
   try {
     response = await getHolidaysInternal(state, year);
   } catch {
-    return snapshotData;
+    return snapshotData as Required<HolidayDto>[];
   }
 
   await writeFile(
