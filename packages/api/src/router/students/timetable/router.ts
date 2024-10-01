@@ -13,10 +13,9 @@ import { db } from "@stu/db/client";
 import {
   CourseMemberships,
   Courses,
+  CoursesToClasses,
+  CoursesToTeachers,
   Persons,
-  SemesterCourses,
-  SemesterCoursesToClasses,
-  SemesterCoursesToTeachers,
   Students,
   Substitutions,
   TimetableEntries,
@@ -52,67 +51,23 @@ export const timetable = {
         const rows = await db
           .select()
           .from(TimetableEntries)
-          .innerJoin(
-            SemesterCourses,
-            and(
-              eq(TimetableEntries.course, SemesterCourses.course),
-              eq(TimetableEntries.semesterType, SemesterCourses.semesterType),
-              eq(TimetableEntries.semesterYear, SemesterCourses.semesterYear),
-              eq(TimetableEntries.school, SemesterCourses.school),
-            ),
-          )
+          .innerJoin(Courses, eq(TimetableEntries.course, Courses.id))
           .innerJoin(
             CourseMemberships,
-            and(
-              eq(SemesterCourses.course, CourseMemberships.course),
-              eq(SemesterCourses.semesterType, CourseMemberships.semesterType),
-              eq(SemesterCourses.semesterYear, CourseMemberships.semesterYear),
-              eq(SemesterCourses.school, CourseMemberships.school),
-            ),
+            eq(Courses.id, CourseMemberships.course),
           )
+          .innerJoin(CoursesToClasses, eq(CoursesToClasses.course, Courses.id))
           .innerJoin(
-            SemesterCoursesToClasses,
-            and(
-              eq(SemesterCoursesToClasses.course, SemesterCourses.course),
-              eq(
-                SemesterCoursesToClasses.semesterType,
-                SemesterCourses.semesterType,
-              ),
-              eq(
-                SemesterCoursesToClasses.semesterYear,
-                SemesterCourses.semesterYear,
-              ),
-              eq(SemesterCoursesToClasses.school, SemesterCourses.school),
-            ),
+            CoursesToTeachers,
+            eq(CoursesToTeachers.course, Courses.id),
           )
-          .innerJoin(
-            SemesterCoursesToTeachers,
-            and(
-              eq(SemesterCoursesToTeachers.course, SemesterCourses.course),
-              eq(
-                SemesterCoursesToTeachers.semesterType,
-                SemesterCourses.semesterType,
-              ),
-              eq(
-                SemesterCoursesToTeachers.semesterYear,
-                SemesterCourses.semesterYear,
-              ),
-              eq(SemesterCoursesToTeachers.school, SemesterCourses.school),
-            ),
-          )
-          .innerJoin(
-            Teachers,
-            eq(SemesterCoursesToTeachers.teacher, Teachers.id),
-          )
+          .innerJoin(Teachers, eq(CoursesToTeachers.teacher, Teachers.id))
           .innerJoin(
             Students,
             and(
               eq(CourseMemberships.student, Students.person),
-              eq(
-                SemesterCoursesToClasses.classIdentifier,
-                Students.classIdentifier,
-              ),
-              eq(SemesterCoursesToClasses.classStartYear, Students.startYear),
+              eq(CoursesToClasses.classIdentifier, Students.classIdentifier),
+              eq(CoursesToClasses.classStartYear, Students.startYear),
             ),
           )
           .innerJoin(Courses, eq(CourseMemberships.course, Courses.id))

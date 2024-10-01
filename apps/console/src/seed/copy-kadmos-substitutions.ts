@@ -144,19 +144,15 @@ export const copySubstitutions = async (
 
     const courses = await db.query.Courses.findMany({
       with: {
-        semesterCourses: {
+        classes: {
           with: {
-            classes: {
-              with: {
-                class: true,
-              },
-              // where: and(
-              //   eq(Classes.school, school),
-              //   eq(Classes.startYear, sub.classes[0].currentYear),
-              //   eq(Classes.identifierInYear, sub.classes[0].identifierInYear),
-              // ),
-            },
+            class: true,
           },
+          // where: and(
+          //   eq(Classes.school, school),
+          //   eq(Classes.startYear, sub.classes[0].currentYear),
+          //   eq(Classes.identifierInYear, sub.classes[0].identifierInYear),
+          // ),
         },
       },
     });

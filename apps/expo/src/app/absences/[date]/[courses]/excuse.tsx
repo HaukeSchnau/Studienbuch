@@ -156,9 +156,9 @@ const ExcuseTeacher = ({ absence }: { absence: AbsenceDay }) => {
       </Text>
       <View className="h-4" />
       <Text className="text-xl">
-        Ich, {formalName(absenceCourse.course.teacher)} <Text weight="bold">{user.name}</Text> am{" "}
+        {/* Ich, {formalName(absenceCourse.course.teacher)} <Text weight="bold">{user.name}</Text> am{" "}
         <Text weight="bold">{date.toLocaleDateString()}</Text> mit folgender
-        Begründung nicht am Unterricht teilnehmen konnte:
+        Begründung nicht am Unterricht teilnehmen konnte: */}
       </Text>
       <View className="h-4" />
       <Text weight="medium" className="text-xl">

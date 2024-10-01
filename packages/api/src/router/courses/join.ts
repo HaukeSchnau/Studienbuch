@@ -1,10 +1,11 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { and, count, eq } from "@stu/db";
+import { and, count, eq, inArray } from "@stu/db";
 import { db } from "@stu/db/client";
 import {
   CourseMemberships,
+  Courses,
   LicenseKeys,
   Schools,
   Students,
@@ -74,16 +75,23 @@ export const join = protectedProcedure
         });
 
       await db.transaction(async (db) => {
-        await db
-          .delete(CourseMemberships)
-          .where(
-            and(
-              eq(CourseMemberships.student, user.id),
-              eq(CourseMemberships.semesterType, input.semesterType),
-              eq(CourseMemberships.semesterYear, input.semesterYear),
-              eq(CourseMemberships.school, input.school),
+        const coursesInSemester = await db.query.Courses.findMany({
+          where: and(
+            eq(Courses.semesterType, input.semesterType),
+            eq(Courses.semesterYear, input.semesterYear),
+            eq(Courses.school, input.school),
+          ),
+        });
+
+        await db.delete(CourseMemberships).where(
+          and(
+            eq(CourseMemberships.student, user.id),
+            inArray(
+              CourseMemberships.course,
+              coursesInSemester.map((c) => c.id),
             ),
-          );
+          ),
+        );
 
         await db.insert(CourseMemberships).values(
           input.courseIds.map((course) => ({

@@ -3,15 +3,14 @@ import { add, endOfWeek, format, startOfWeek } from "date-fns";
 
 import type { KadmosTimetableResponse } from "@stu/external-api";
 import type { SchoolId, SubjectId } from "@stu/lib";
-import { and, between, eq, gte, lte } from "@stu/db";
+import { and, between, eq, gte, inArray, lte } from "@stu/db";
 import { db } from "@stu/db/client";
 import {
   Courses,
+  CoursesToClasses,
+  CoursesToTeachers,
   Rooms,
   Schools,
-  SemesterCourses,
-  SemesterCoursesToClasses,
-  SemesterCoursesToTeachers,
   Semesters,
   Substitutions,
   TimetableEntries,
@@ -316,11 +315,14 @@ const collectEntries = async (timetable: KadmosTimetableResponse) => {
 export const importTimetable = async ({ school, date }: Options) => {
   const start = startOfWeek(date, { weekStartsOn: 1 });
   const end = endOfWeek(date, { weekStartsOn: 1 });
+  const allCourseIds = await db.query.Courses.findMany({
+    where: eq(Courses.school, school),
+  }).then((courses) => courses.map((course) => course.id));
   await db
     .delete(TimetableEntries)
     .where(
       and(
-        eq(TimetableEntries.school, school),
+        inArray(TimetableEntries.course, allCourseIds),
         between(TimetableEntries.start, start, end),
       ),
     );
@@ -520,45 +522,39 @@ export const importTimetable = async ({ school, date }: Options) => {
 
   // Insert all courses into the database
   for (const [uuid, course] of courses.entries()) {
-    await db
-      .insert(Courses)
-      .values({
-        id: uuid,
-        name: course.course.name,
-        longName: course.course.longName,
-        subject: course.course.subject,
-      })
-      .onConflictDoUpdate({
-        target: [Courses.id],
-        set: {
-          name: course.course.name,
-          longName: course.course.longName,
-          subject: course.course.subject,
-        },
-      });
-
     for (const entry of course.entries) {
       const semester = await findSemesterFromDate(entry.start, school);
       await db
-        .insert(SemesterCourses)
+        .insert(Courses)
         .values({
-          course: uuid,
+          id: uuid,
+          name: course.course.name,
+          longName: course.course.longName,
+          subject: course.course.subject,
           school,
           semesterType: semester.type,
           semesterYear: semester.year,
         })
-        .onConflictDoNothing();
+        .onConflictDoUpdate({
+          target: [Courses.id],
+          set: {
+            name: course.course.name,
+            longName: course.course.longName,
+            subject: course.course.subject,
+            school,
+            semesterType: semester.type,
+            semesterYear: semester.year,
+          },
+        });
 
       await db
-        .insert(SemesterCoursesToClasses)
+        .insert(CoursesToClasses)
         .values(
           course.classes.map((cls) => ({
             classIdentifier: cls.identifierInYear,
             classStartYear: cls.startYear,
             course: uuid,
             school,
-            semesterType: semester.type,
-            semesterYear: semester.year,
           })),
         )
         .onConflictDoNothing();
@@ -566,13 +562,10 @@ export const importTimetable = async ({ school, date }: Options) => {
       for (const teacherName of entry.teacherNames) {
         const personId = await iservClient.getOrCreateTeacher(teacherName);
         await db
-          .insert(SemesterCoursesToTeachers)
+          .insert(CoursesToTeachers)
           .values({
             teacher: personId,
             course: uuid,
-            school,
-            semesterType: semester.type,
-            semesterYear: semester.year,
           })
           .onConflictDoNothing();
       }
@@ -581,18 +574,12 @@ export const importTimetable = async ({ school, date }: Options) => {
         .insert(TimetableEntries)
         .values({
           course: uuid,
-          semesterType: semester.type,
-          semesterYear: semester.year,
           start: entry.start,
-          school,
           duration: entry.duration,
         })
         .onConflictDoUpdate({
           target: [TimetableEntries.start, TimetableEntries.course],
           set: {
-            semesterType: semester.type,
-            semesterYear: semester.year,
-            school,
             duration: entry.duration,
           },
         });

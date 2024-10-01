@@ -20,28 +20,13 @@ import { Semesters, SemesterType } from "./semesters";
 
 export const Subject = pgEnum("subject", SUBJECT_IDS);
 
-export const Courses = pgTable("courses", {
-  id: uuid("id").primaryKey().notNull().defaultRandom(),
-  name: text("name").notNull(),
-  longName: text("long_name").notNull(),
-  subject: Subject("subject").notNull(),
-});
-
-export const CourseRelations = relations(Courses, ({ many }) => ({
-  timetableEntries: many(TimetableEntries),
-  recurringTimetableEntries: many(TimetableEntries),
-  semesterCourses: many(SemesterCourses),
-}));
-
-export const SemesterCourses = pgTable(
-  "semester_courses",
+export const Courses = pgTable(
+  "courses",
   {
-    course: uuid("course")
-      .notNull()
-      .references(() => Courses.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
-      }),
+    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    name: text("name").notNull(),
+    longName: text("long_name").notNull(),
+    subject: Subject("subject").notNull(),
 
     school: SchoolId("school").notNull(),
     semesterType: SemesterType("semester_type").notNull(),
@@ -51,14 +36,6 @@ export const SemesterCourses = pgTable(
   },
   (table) => {
     return {
-      pk: primaryKey({
-        columns: [
-          table.course,
-          table.semesterType,
-          table.semesterYear,
-          table.school,
-        ],
-      }),
       semester_fk: foreignKey({
         columns: [table.semesterType, table.semesterYear, table.school],
         foreignColumns: [Semesters.type, Semesters.year, Semesters.school],
@@ -69,101 +46,65 @@ export const SemesterCourses = pgTable(
   },
 );
 
-export const SemesterCourseRelations = relations(
-  SemesterCourses,
-  ({ one, many }) => ({
-    course: one(Courses, {
-      fields: [SemesterCourses.course],
-      references: [Courses.id],
-    }),
-    teachers: many(SemesterCoursesToTeachers),
-    classes: many(SemesterCoursesToClasses),
-  }),
-);
+export const CourseRelations = relations(Courses, ({ many }) => ({
+  teachers: many(CoursesToTeachers),
+  classes: many(CoursesToClasses),
 
-export const SemesterCoursesToTeachers = pgTable(
-  "semester_courses_to_teachers",
+  timetableEntries: many(TimetableEntries),
+  recurringTimetableEntries: many(TimetableEntries),
+}));
+
+export const CoursesToTeachers = pgTable(
+  "courses_to_teachers",
   {
-    course: uuid("course").notNull(),
-    semesterType: SemesterType("semester_type").notNull(),
-    semesterYear: smallint("semester_year").notNull(),
+    course: uuid("course")
+      .notNull()
+      .references(() => Courses.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
 
-    school: SchoolId("school").notNull(),
-
-    teacher: uuid("teacher").notNull(),
+    teacher: uuid("teacher")
+      .notNull()
+      .references(() => Persons.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
   },
   (table) => {
     return {
       pk: primaryKey({
-        columns: [
-          table.course,
-          table.semesterType,
-          table.semesterYear,
-          table.teacher,
-          table.school,
-        ],
+        columns: [table.course, table.teacher],
       }),
-
-      semester_course_fk: foreignKey({
-        columns: [
-          table.course,
-          table.semesterType,
-          table.semesterYear,
-          table.school,
-        ],
-        foreignColumns: [
-          SemesterCourses.course,
-          SemesterCourses.semesterType,
-          SemesterCourses.semesterYear,
-          SemesterCourses.school,
-        ],
-      })
-        .onDelete("cascade")
-        .onUpdate("cascade"),
-
-      teacher_fk: foreignKey({
-        columns: [table.teacher],
-        foreignColumns: [Persons.id],
-      })
-        .onDelete("cascade")
-        .onUpdate("cascade"),
     };
   },
 );
 
-export const SemesterCoursesToTeachersRelations = relations(
-  SemesterCoursesToTeachers,
+export const CoursesToTeachersRelations = relations(
+  CoursesToTeachers,
   ({ one }) => ({
-    course: one(SemesterCourses, {
-      fields: [
-        SemesterCoursesToTeachers.course,
-        SemesterCoursesToTeachers.semesterType,
-        SemesterCoursesToTeachers.semesterYear,
-        SemesterCoursesToTeachers.school,
-      ],
-      references: [
-        SemesterCourses.course,
-        SemesterCourses.semesterType,
-        SemesterCourses.semesterYear,
-        SemesterCourses.school,
-      ],
+    course: one(Courses, {
+      fields: [CoursesToTeachers.course],
+      references: [Courses.id],
     }),
     teacher: one(Persons, {
-      fields: [SemesterCoursesToTeachers.teacher],
+      fields: [CoursesToTeachers.teacher],
       references: [Persons.id],
     }),
   }),
 );
 
-export const SemesterCoursesToClasses = pgTable(
-  "semester_courses_to_classes",
+export const CoursesToClasses = pgTable(
+  "courses_to_classes",
   {
-    course: uuid("course").notNull(),
-    semesterType: SemesterType("semester_type").notNull(),
-    semesterYear: smallint("semester_year").notNull(),
+    course: uuid("course")
+      .notNull()
+      .references(() => Courses.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
 
     school: SchoolId("school").notNull(),
-
     classIdentifier: text("class_identifier").notNull(),
     classStartYear: smallint("class_start_year").notNull(),
   },
@@ -172,30 +113,11 @@ export const SemesterCoursesToClasses = pgTable(
       pk: primaryKey({
         columns: [
           table.course,
-          table.semesterType,
-          table.semesterYear,
           table.classIdentifier,
           table.classStartYear,
           table.school,
         ],
       }),
-
-      semester_course_fk: foreignKey({
-        columns: [
-          table.course,
-          table.semesterType,
-          table.semesterYear,
-          table.school,
-        ],
-        foreignColumns: [
-          SemesterCourses.course,
-          SemesterCourses.semesterType,
-          SemesterCourses.semesterYear,
-          SemesterCourses.school,
-        ],
-      })
-        .onDelete("cascade")
-        .onUpdate("cascade"),
 
       class_fk: foreignKey({
         columns: [table.classIdentifier, table.classStartYear, table.school],
@@ -211,28 +133,18 @@ export const SemesterCoursesToClasses = pgTable(
   },
 );
 
-export const SemesterCoursesToClassesRelations = relations(
-  SemesterCoursesToClasses,
+export const CoursesToClassesRelations = relations(
+  CoursesToClasses,
   ({ one }) => ({
-    course: one(SemesterCourses, {
-      fields: [
-        SemesterCoursesToClasses.course,
-        SemesterCoursesToClasses.semesterType,
-        SemesterCoursesToClasses.semesterYear,
-        SemesterCoursesToClasses.school,
-      ],
-      references: [
-        SemesterCourses.course,
-        SemesterCourses.semesterType,
-        SemesterCourses.semesterYear,
-        SemesterCourses.school,
-      ],
+    course: one(Courses, {
+      fields: [CoursesToClasses.course],
+      references: [Courses.id],
     }),
     class: one(Classes, {
       fields: [
-        SemesterCoursesToClasses.classIdentifier,
-        SemesterCoursesToClasses.classStartYear,
-        SemesterCoursesToClasses.school,
+        CoursesToClasses.classIdentifier,
+        CoursesToClasses.classStartYear,
+        CoursesToClasses.school,
       ],
       references: [Classes.identifierInYear, Classes.startYear, Classes.school],
     }),

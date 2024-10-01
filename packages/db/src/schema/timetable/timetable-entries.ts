@@ -9,10 +9,8 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { Courses, SemesterCourses } from "../school/courses";
+import { Courses } from "../school/courses";
 import { Rooms } from "../school/rooms";
-import { SchoolId } from "../school/school-id";
-import { SemesterType } from "../school/semesters";
 
 export const TimetableEntries = pgTable(
   "timetable_entries",
@@ -20,30 +18,14 @@ export const TimetableEntries = pgTable(
     start: timestamp("date", { mode: "date" }).notNull(),
     duration: smallint("duration").notNull(),
 
-    course: uuid("course").notNull(),
-    semesterType: SemesterType("semester_type").notNull(),
-    semesterYear: smallint("semester_year").notNull(),
-    school: SchoolId("school").notNull(),
+    course: uuid("course")
+      .notNull()
+      .references(() => Courses.id),
   },
   (table) => {
     return {
       pk: primaryKey({
         columns: [table.start, table.course],
-      }),
-
-      semester_course_fk: foreignKey({
-        columns: [
-          table.course,
-          table.semesterType,
-          table.semesterYear,
-          table.school,
-        ],
-        foreignColumns: [
-          SemesterCourses.course,
-          SemesterCourses.semesterType,
-          SemesterCourses.semesterYear,
-          SemesterCourses.school,
-        ],
       }),
     };
   },

@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { and, eq, inArray, isNotNull, isNull } from "@stu/db";
 import { db } from "@stu/db/client";
-import { AbsenceDays, CourseAbsences, Persons, SemesterCoursesToTeachers } from "@stu/db/schema";
+import { AbsenceDays, CourseAbsences } from "@stu/db/schema";
 
 import { protectedProcedure } from "../../../procedures";
 

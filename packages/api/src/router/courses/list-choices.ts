@@ -6,10 +6,9 @@ import { db } from "@stu/db/client";
 import {
   Classes,
   Courses,
+  CoursesToClasses,
+  CoursesToTeachers,
   Persons,
-  SemesterCourses,
-  SemesterCoursesToClasses,
-  SemesterCoursesToTeachers,
   Semesters,
 } from "@stu/db/schema";
 import { SCHOOL_IDS, SEMESTER_TYPES } from "@stu/lib";
@@ -50,64 +49,32 @@ export const listChoices = publicProcedure
 
     const rows = await db
       .select()
-      .from(SemesterCourses)
-      .innerJoin(Courses, eq(SemesterCourses.course, Courses.id))
-      .innerJoin(
-        SemesterCoursesToClasses,
-        and(
-          eq(SemesterCoursesToClasses.course, SemesterCourses.course),
-          eq(
-            SemesterCoursesToClasses.semesterType,
-            SemesterCourses.semesterType,
-          ),
-          eq(
-            SemesterCoursesToClasses.semesterYear,
-            SemesterCourses.semesterYear,
-          ),
-          eq(SemesterCoursesToClasses.school, SemesterCourses.school),
-        ),
-      )
+      .from(Courses)
+      .innerJoin(CoursesToClasses, eq(CoursesToClasses.course, Courses.id))
       .innerJoin(
         Classes,
         and(
-          eq(
-            SemesterCoursesToClasses.classIdentifier,
-            Classes.identifierInYear,
-          ),
-          eq(SemesterCoursesToClasses.classStartYear, Classes.startYear),
-          eq(SemesterCoursesToClasses.school, Classes.school),
+          eq(CoursesToClasses.classIdentifier, Classes.identifierInYear),
+          eq(CoursesToClasses.classStartYear, Classes.startYear),
+          eq(CoursesToClasses.school, Classes.school),
         ),
       )
       .innerJoin(
         Semesters,
         and(
-          eq(SemesterCourses.school, Semesters.school),
-          eq(Semesters.type, SemesterCourses.semesterType),
-          eq(Semesters.year, SemesterCourses.semesterYear),
+          eq(Semesters.school, Courses.school),
+          eq(Semesters.type, Courses.semesterType),
+          eq(Semesters.year, Courses.semesterYear),
         ),
       )
-      .innerJoin(
-        SemesterCoursesToTeachers,
-        and(
-          eq(SemesterCoursesToTeachers.course, SemesterCourses.course),
-          eq(
-            SemesterCoursesToTeachers.semesterType,
-            SemesterCourses.semesterType,
-          ),
-          eq(
-            SemesterCoursesToTeachers.semesterYear,
-            SemesterCourses.semesterYear,
-          ),
-          eq(SemesterCoursesToTeachers.school, SemesterCourses.school),
-        ),
-      )
-      .innerJoin(Persons, eq(SemesterCoursesToTeachers.teacher, Persons.id))
+      .innerJoin(CoursesToTeachers, eq(CoursesToTeachers.course, Courses.id))
+      .innerJoin(Persons, eq(CoursesToTeachers.teacher, Persons.id))
       .where(
         and(
-          eq(SemesterCourses.isMandatory, false),
-          eq(SemesterCourses.school, input.school),
-          eq(SemesterCourses.semesterYear, semester.year),
-          eq(SemesterCourses.semesterType, semester.type),
+          eq(Courses.isMandatory, false),
+          eq(Courses.school, input.school),
+          eq(Courses.semesterYear, semester.year),
+          eq(Courses.semesterType, semester.type),
           eq(Classes.startYear, input.startYear),
         ),
       );
@@ -140,7 +107,7 @@ export const listChoices = publicProcedure
         result.set(row.courses.id, {
           classes: [],
           id: row.courses.id,
-          isMandatory: row.semester_courses.isMandatory,
+          isMandatory: row.courses.isMandatory,
           name: row.courses.name,
           semesterType: row.semesters.type,
           semesterYear: row.semesters.year,
