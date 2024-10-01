@@ -109,6 +109,8 @@ const UnexcusedAbsences = ({ absences }: { absences: AbsenceDay[] }) => {
     absences.map((absence) => formatDate(absence.date, "yyyy-MM-dd")),
   ).size;
 
+  const numAbsences = absences.flatMap((a) => a.absenceCourses).length;
+
   return (
     <View className="flex-row">
       <Warning width={40} height={50} />
@@ -117,8 +119,8 @@ const UnexcusedAbsences = ({ absences }: { absences: AbsenceDay[] }) => {
 
       <View className="flex-1">
         <Text className="opacity-80">
-          Du hast noch <Text weight="bold">{absences.length}</Text>{" "}
-          unentschuldigte Fehlzeiten an{" "}
+          Du hast noch <Text weight="bold">{numAbsences}</Text> unentschuldigte{" "}
+          {numAbsences === 1 ? "Felzeit" : "Fehlzeiten"} an{" "}
           <Text weight="bold">{numberOfDays}</Text>{" "}
           {numberOfDays === 1 ? "Tag" : "Tagen"}.
         </Text>

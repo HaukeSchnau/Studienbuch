@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import type { Ref } from "react";
 import type { ViewProps } from "react-native";
 import {
   requireNativeModule,
@@ -10,7 +10,7 @@ export interface DrawingViewRef {
 }
 
 interface Props extends ViewProps {
-  ref: RefObject<DrawingViewRef>;
+  ref: Ref<DrawingViewRef>;
 }
 
 type Module = unknown;

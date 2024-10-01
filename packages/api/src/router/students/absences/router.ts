@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { and, eq, inArray, isNotNull, isNull } from "@stu/db";
 import { db } from "@stu/db/client";
-import { AbsenceDays, CourseAbsences } from "@stu/db/schema";
+import { AbsenceDays, CourseAbsences, Persons, SemesterCoursesToTeachers } from "@stu/db/schema";
 
 import { protectedProcedure } from "../../../procedures";
 
@@ -38,17 +38,15 @@ export const absences = {
       },
     ),
 
-  listUnexcused: protectedProcedure
+  getOne: protectedProcedure
     .input(
-      z
-        .object({
-          date: z.date().optional(),
-          courses: z.array(z.string()).optional(),
-        })
-        .default({}),
+      z.object({
+        date: z.date(),
+        courses: z.array(z.string()),
+      }),
     )
-    .query(async ({ ctx, input }) => {
-      const absences = await db.query.AbsenceDays.findMany({
+    .query(async ({ input, ctx }) => {
+      const absence = await db.query.AbsenceDays.findFirst({
         with: {
           absenceCourses: {
             with: {
@@ -57,22 +55,36 @@ export const absences = {
             columns: {
               course: false,
             },
-            where: and(
-              isNull(CourseAbsences.teacherSignature),
-              input.courses
-                ? inArray(CourseAbsences.course, input.courses)
-                : undefined,
-            ),
+            where: inArray(CourseAbsences.course, input.courses),
           },
         },
         where: and(
           eq(AbsenceDays.student, ctx.session.user.id),
-          input.date ? eq(AbsenceDays.date, input.date) : undefined,
+          eq(AbsenceDays.date, input.date),
         ),
       });
 
-      return absences.filter((absence) => absence.absenceCourses.length > 0);
+      return absence && absence.absenceCourses.length > 0 ? absence : null;
     }),
+
+  listUnexcused: protectedProcedure.query(async ({ ctx }) => {
+    const absences = await db.query.AbsenceDays.findMany({
+      with: {
+        absenceCourses: {
+          with: {
+            course: true,
+          },
+          columns: {
+            course: false,
+          },
+          where: isNull(CourseAbsences.teacherSignature),
+        },
+      },
+      where: eq(AbsenceDays.student, ctx.session.user.id),
+    });
+
+    return absences.filter((absence) => absence.absenceCourses.length > 0);
+  }),
 
   listExcused: protectedProcedure.query(async ({ ctx }) => {
     const absences = await db.query.AbsenceDays.findMany({
@@ -136,4 +148,48 @@ export const absences = {
         }
       },
     ),
+
+  excuseParent: protectedProcedure
+    .input(
+      z.object({
+        date: z.date(),
+        signature: z.string(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      await db
+        .update(AbsenceDays)
+        .set({
+          parentSignature: input.signature,
+        })
+        .where(
+          and(
+            eq(AbsenceDays.student, ctx.session.user.id),
+            eq(AbsenceDays.date, input.date),
+          ),
+        );
+    }),
+
+  excuseTeacher: protectedProcedure
+    .input(
+      z.object({
+        date: z.date(),
+        courseId: z.string(),
+        signature: z.string(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      await db
+        .update(CourseAbsences)
+        .set({
+          teacherSignature: input.signature,
+        })
+        .where(
+          and(
+            eq(CourseAbsences.student, ctx.session.user.id),
+            eq(CourseAbsences.date, input.date),
+            eq(CourseAbsences.course, input.courseId),
+          ),
+        );
+    }),
 } satisfies TRPCRouterRecord;

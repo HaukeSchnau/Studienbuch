@@ -1,42 +1,16 @@
 import { useRef } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 
 import type { DrawingViewRef } from "@stu/expo-native-modules";
-import { DrawingView } from "@stu/expo-native-modules";
+import type { AbsenceDay } from "@stu/lib";
+import { formalName, isArraySingleElement } from "@stu/lib";
 
+import { Button, TextButton } from "~/components/button";
+import { SignatureField } from "~/components/signature-field";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
-import Cross from "../.././../../../assets/cross.svg";
-
-interface SignatureProps {
-  label: string;
-}
-
-const Signature = ({ label }: SignatureProps) => {
-  const ref = useRef<DrawingViewRef>(null);
-
-  return (
-    <View
-      className="relative h-80 w-full items-center justify-center"
-      style={{
-        borderBottomColor: "#9E9E9E",
-        borderBottomWidth: 1,
-        backgroundColor: "#F5F5F5",
-      }}
-    >
-      <DrawingView
-        ref={ref}
-        style={{ width: "100%", height: "100%", position: "absolute" }}
-      />
-      <View className="absolute bottom-0 left-0 right-0 flex-row items-center justify-between p-4">
-        <Cross width={35} height={35} color={"rgba(0, 0, 0, 0.25)"} />
-        <Text className="text-lg opacity-60">{label}</Text>
-      </View>
-    </View>
-  );
-};
 
 export default function ExcuseAbsencePage() {
   const { courses: coursesStr, date: dateStr } = useLocalSearchParams<{
@@ -46,11 +20,10 @@ export default function ExcuseAbsencePage() {
   const date = new Date(parseInt(dateStr));
   const courses = coursesStr.split(";");
 
-  const absences = api.students.absences.listUnexcused.useQuery({
+  const absences = api.students.absences.getOne.useQuery({
     date,
     courses,
   });
-  const { user } = useRequiredAuthenticatedSession();
 
   if (absences.isPending) {
     return <ActivityIndicator />;
@@ -60,11 +33,11 @@ export default function ExcuseAbsencePage() {
     return <Text>Error: {absences.error.message}</Text>;
   }
 
-  if (!absences.data[0]) {
+  const absence = absences.data;
+
+  if (!absence) {
     return <Text>Keine unentschuldigten Fehlzeiten gefunden.</Text>;
   }
-
-  const reason = absences.data[0].reason;
 
   return (
     <View className="p-8">
@@ -76,6 +49,43 @@ export default function ExcuseAbsencePage() {
         }}
       />
 
+      {!absence.parentSignature ? (
+        <ExcuseParent absence={absence} />
+      ) : (
+        <ExcuseTeacher absence={absence} />
+      )}
+    </View>
+  );
+}
+
+const ExcuseParent = ({ absence }: { absence: AbsenceDay }) => {
+  const { user } = useRequiredAuthenticatedSession();
+  const router = useRouter();
+  const { date, reason } = absence;
+
+  const utils = api.useUtils();
+  const excuseMutation = api.students.absences.excuseParent.useMutation({
+    onSuccess: async () => {
+      await utils.students.absences.invalidate();
+      router.back();
+    },
+  });
+  const signatureRef = useRef<DrawingViewRef>(null);
+
+  const handleConfirm = async () => {
+    if (!signatureRef.current) {
+      return;
+    }
+
+    const signature = await signatureRef.current.getSVG();
+    excuseMutation.mutate({
+      date: date,
+      signature,
+    });
+  };
+
+  return (
+    <>
       <Text className="text-lg">
         Bitte lasse deine Eltern hier unterschreiben:
       </Text>
@@ -91,7 +101,82 @@ export default function ExcuseAbsencePage() {
       </Text>
       <View className="h-4" />
 
-      <Signature label="Unterschrift des Erziehungsberechtigten" />
-    </View>
+      <SignatureField
+        label="Unterschrift des Erziehungsberechtigten"
+        ref={signatureRef}
+      />
+
+      <View className="h-4" />
+
+      <View className="flex-row items-center justify-end gap-4">
+        <TextButton onPress={() => router.back()} label="Abbrechen" />
+        <Button onPress={handleConfirm} label="Entschuldigen" />
+      </View>
+    </>
   );
-}
+};
+
+const ExcuseTeacher = ({ absence }: { absence: AbsenceDay }) => {
+  const { user } = useRequiredAuthenticatedSession();
+  const router = useRouter();
+  const { date, reason } = absence;
+
+  const utils = api.useUtils();
+  const excuseMutation = api.students.absences.excuseTeacher.useMutation({
+    onSuccess: async () => {
+      await utils.students.absences.invalidate();
+      router.back();
+    },
+  });
+  const signatureRef = useRef<DrawingViewRef>(null);
+
+  if (!isArraySingleElement(absence.absenceCourses)) {
+    return <Text>Ungültige Fehlzeit.</Text>;
+  }
+
+  const [absenceCourse] = absence.absenceCourses;
+
+  const handleConfirm = async () => {
+    if (!signatureRef.current) {
+      return;
+    }
+
+    const signature = await signatureRef.current.getSVG();
+    excuseMutation.mutate({
+      date: date,
+      courseId: absenceCourse.course.id,
+      signature,
+    });
+  };
+
+  return (
+    <>
+      <Text className="text-lg">
+        Bitte lasse deinen Lehrer hier unterschreiben:
+      </Text>
+      <View className="h-4" />
+      <Text className="text-xl">
+        Ich, {formalName(absenceCourse.course.teacher)} <Text weight="bold">{user.name}</Text> am{" "}
+        <Text weight="bold">{date.toLocaleDateString()}</Text> mit folgender
+        Begründung nicht am Unterricht teilnehmen konnte:
+      </Text>
+      <View className="h-4" />
+      <Text weight="medium" className="text-xl">
+        {reason}
+      </Text>
+      <View className="h-4" />
+
+      <SignatureField
+        label="Unterschrift des Erziehungsberechtigten"
+        ref={signatureRef}
+      />
+
+      <View className="h-4" />
+
+      <View className="flex-row items-center justify-end gap-4">
+        <TextButton onPress={() => router.back()} label="Abbrechen" />
+        <Button onPress={handleConfirm} label="Entschuldigen" />
+      </View>
+    </>
+  );
+};
