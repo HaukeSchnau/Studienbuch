@@ -50,7 +50,15 @@ export const absences = {
         with: {
           absenceCourses: {
             with: {
-              course: true,
+              course: {
+                with: {
+                  teachers: {
+                    with: {
+                      teacher: true,
+                    },
+                  },
+                },
+              },
             },
             columns: {
               course: false,
@@ -64,7 +72,20 @@ export const absences = {
         ),
       });
 
-      return absence && absence.absenceCourses.length > 0 ? absence : null;
+      return absence && absence.absenceCourses.length > 0
+        ? {
+            ...absence,
+            absenceCourses: absence.absenceCourses.map((course) => ({
+              ...course,
+              course: {
+                ...course.course,
+                teachers: course.course.teachers.map(
+                  (teacher) => teacher.teacher,
+                ),
+              },
+            })),
+          }
+        : null;
     }),
 
   listUnexcused: protectedProcedure.query(async ({ ctx }) => {

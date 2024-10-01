@@ -74,9 +74,9 @@ export default function HomeLayout() {
         school: "igs-lil",
         semesterType: semester.data.type,
         semesterYear: semester.data.year,
-        courseIds: Object.values(value.chosenCourses).map(
-          (course) => course.id,
-        ),
+        courseIds: Object.values(value.chosenCourses)
+          .filter(Boolean)
+          .map((course) => course.id),
         classIdentifier: value.class.identifierInYear,
         startYear: value.class.startYear,
         isOfAge: value.isOfAge,

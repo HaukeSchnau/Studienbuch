@@ -88,26 +88,26 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
           confirmedText="Entschuldigt"
         />
       </View>
-      <View className="items-end gap-1">
-        <Link
-          href={{
-            pathname: `/absences/[date]/[courses]/excuse`,
-            params: {
-              date: absenceGroup.date.getTime(),
-              courses: absenceGroup.courses
-                .map((course) => course.id)
-                .join(";"),
-            },
-          }}
-          asChild
-        >
-          <OutlinedButton label="Unterschreiben" />
-        </Link>
+      {!isExcused && (
+        <View className="items-end gap-1">
+          <Link
+            href={{
+              pathname: `/absences/[date]/[courses]/excuse`,
+              params: {
+                date: absenceGroup.date.getTime(),
+                courses: absenceGroup.courses
+                  .map((course) => course.id)
+                  .join(";"),
+              },
+            }}
+            asChild
+          >
+            <OutlinedButton label="Unterschreiben" />
+          </Link>
 
-        {!isExcused && (
           <OutlinedButton label="Löschen" onPress={handleDelete} />
-        )}
-      </View>
+        </View>
+      )}
     </View>
   );
 };

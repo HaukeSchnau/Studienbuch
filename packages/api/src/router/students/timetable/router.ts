@@ -70,7 +70,6 @@ export const timetable = {
               eq(CoursesToClasses.classStartYear, Students.startYear),
             ),
           )
-          .innerJoin(Courses, eq(CourseMemberships.course, Courses.id))
           .leftJoin(
             Substitutions,
             and(

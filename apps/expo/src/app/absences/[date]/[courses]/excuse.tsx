@@ -3,7 +3,7 @@ import { ActivityIndicator, View } from "react-native";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 
 import type { DrawingViewRef } from "@stu/expo-native-modules";
-import type { AbsenceDay } from "@stu/lib";
+import type { AbsenceDay, AbsenceDayWithTeachers } from "@stu/lib";
 import { formalName, isArraySingleElement } from "@stu/lib";
 
 import { Button, TextButton } from "~/components/button";
@@ -116,7 +116,7 @@ const ExcuseParent = ({ absence }: { absence: AbsenceDay }) => {
   );
 };
 
-const ExcuseTeacher = ({ absence }: { absence: AbsenceDay }) => {
+const ExcuseTeacher = ({ absence }: { absence: AbsenceDayWithTeachers }) => {
   const { user } = useRequiredAuthenticatedSession();
   const router = useRouter();
   const { date, reason } = absence;
@@ -149,6 +149,12 @@ const ExcuseTeacher = ({ absence }: { absence: AbsenceDay }) => {
     });
   };
 
+  // We ignore other teachers for now
+  const [teacher] = absenceCourse.course.teachers;
+  if (!teacher) {
+    return <Text>Ungültige Fehlzeit.</Text>;
+  }
+
   return (
     <>
       <Text className="text-lg">
@@ -156,9 +162,10 @@ const ExcuseTeacher = ({ absence }: { absence: AbsenceDay }) => {
       </Text>
       <View className="h-4" />
       <Text className="text-xl">
-        {/* Ich, {formalName(absenceCourse.course.teacher)} <Text weight="bold">{user.name}</Text> am{" "}
+        Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
+        <Text weight="bold">{user.name}</Text> am{" "}
         <Text weight="bold">{date.toLocaleDateString()}</Text> mit folgender
-        Begründung nicht am Unterricht teilnehmen konnte: */}
+        Begründung nicht am Unterricht teilnehmen konnte:
       </Text>
       <View className="h-4" />
       <Text weight="medium" className="text-xl">
@@ -167,7 +174,7 @@ const ExcuseTeacher = ({ absence }: { absence: AbsenceDay }) => {
       <View className="h-4" />
 
       <SignatureField
-        label="Unterschrift des Erziehungsberechtigten"
+        label={`Unterschrift von ${formalName(teacher)}`}
         ref={signatureRef}
       />
 
