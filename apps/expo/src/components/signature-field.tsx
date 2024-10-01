@@ -1,4 +1,4 @@
-import React, { forwardRef, useRef } from "react";
+import React, { forwardRef } from "react";
 import { View } from "react-native";
 
 import type { DrawingViewRef } from "@stu/expo-native-modules";
