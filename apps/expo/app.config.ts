@@ -57,5 +57,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         android: {},
       },
     ],
+    [
+      "@sentry/react-native/expo",
+      {
+        url: "https://sentry.io/",
+        project: "studienbuch-mobile",
+        organization: "hauke-schnau",
+      },
+    ],
   ],
 });

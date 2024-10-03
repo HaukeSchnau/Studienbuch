@@ -1,6 +1,6 @@
 import "@bacons/text-decoder/install";
 
-import { Stack } from "expo-router";
+import { Stack, useNavigationContainerRef } from "expo-router";
 
 import { TRPCProvider } from "~/utils/api";
 
@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
 import { useEffect } from "react";
 import { UIManager } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Constants from "expo-constants";
+import Constants, { AppOwnership } from "expo-constants";
 import * as SplashScreen from "expo-splash-screen";
 import {
   Nunito_400Regular,
@@ -18,6 +18,7 @@ import {
   Nunito_700Bold,
   useFonts,
 } from "@expo-google-fonts/nunito";
+import * as Sentry from "@sentry/react-native";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 
 import { DevTools } from "~/components/dev/dev-menu";
@@ -25,13 +26,36 @@ import { PortalRenderer } from "~/components/portal";
 import { db } from "~/db/client";
 import migrations from "../../drizzle/migrations";
 
+const routingInstrumentation = Sentry.reactNavigationIntegration({
+  enableTimeToInitialDisplay: Constants.appOwnership !== AppOwnership.Expo, // Only in native builds, not in Expo Go.
+});
+
+Sentry.init({
+  dsn: "https://d950b351307f4e39b529fe22cff83ecb@o1058251.ingest.us.sentry.io/4508059227258880",
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // enableSpotlight: __DEV__,
+
+  integrations: [
+    Sentry.reactNativeTracingIntegration({
+      routingInstrumentation,
+      enableNativeFramesTracking: Constants.appOwnership !== AppOwnership.Expo, // Only in native builds, not in Expo Go.
+    }),
+  ],
+});
+
 void SplashScreen.preventAutoHideAsync();
 
 if (UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-export default function RootLayout() {
+function RootLayout() {
+  const ref = useNavigationContainerRef();
+  useEffect(() => {
+    routingInstrumentation.registerNavigationContainer(ref);
+  }, [ref]);
+
   const { success: migrationSuccess, error: migrationError } = useMigrations(
     db,
     migrations,
@@ -81,6 +105,8 @@ export default function RootLayout() {
     </Providers>
   );
 }
+
+export default Sentry.wrap(RootLayout);
 
 const Providers = ({ children }: { children: ReactNode }) => {
   return <TRPCProvider>{children}</TRPCProvider>;
