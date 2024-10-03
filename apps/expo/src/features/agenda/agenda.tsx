@@ -82,7 +82,7 @@ export const Agenda = () => {
 
   if (!date) {
     return (
-      <Text className="color-white text-2xl">Heute ist nichts geplant!</Text>
+      <Text className="color-white text-2xl">Heute ist nichts geplant.</Text>
     );
   }
 

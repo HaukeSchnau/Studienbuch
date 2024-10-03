@@ -8,7 +8,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { Persons } from "../people/persons";
+import { Persons, Students } from "../people/persons";
 import { CoursesToClasses } from "./courses";
 import { SchoolId } from "./school-id";
 import { Years } from "./years";
@@ -43,6 +43,7 @@ export const ClassesRelations = relations(Classes, ({ one, many }) => ({
   }),
   teachers: many(TeachersToClasses),
   courses: many(CoursesToClasses),
+  students: many(Students),
 }));
 
 export const TeachersToClasses = pgTable(

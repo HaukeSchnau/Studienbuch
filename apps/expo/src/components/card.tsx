@@ -1,5 +1,6 @@
 import type { StyleProp, ViewStyle } from "react-native";
 import { View } from "react-native";
+import { TouchableOpacity } from "react-native-gesture-handler";
 
 import { shadow } from "./styles/shadow";
 
@@ -7,12 +8,14 @@ export const Card = ({
   children,
   className,
   style,
+  onPress,
 }: {
   children: React.ReactNode;
   className?: string;
   style?: StyleProp<ViewStyle>;
+  onPress?: () => void;
 }) => {
-  return (
+  const content = (
     <View
       style={[
         {
@@ -28,4 +31,10 @@ export const Card = ({
       {children}
     </View>
   );
+
+  if (onPress) {
+    return <TouchableOpacity onPress={onPress}>{content}</TouchableOpacity>;
+  }
+
+  return content;
 };

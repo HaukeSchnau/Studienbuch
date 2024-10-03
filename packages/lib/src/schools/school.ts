@@ -2,7 +2,7 @@ import type { Theme } from "../theme";
 import { defaultTheme } from "../theme";
 
 export interface School {
-  id: number;
+  id: SchoolId;
   name: string;
 }
 

@@ -59,4 +59,8 @@ export const StudentsRelations = relations(Students, ({ one }) => ({
     fields: [Students.person],
     references: [Persons.id],
   }),
+  class: one(Classes, {
+    fields: [Students.classIdentifier, Students.startYear, Students.school],
+    references: [Classes.identifierInYear, Classes.startYear, Classes.school],
+  }),
 }));

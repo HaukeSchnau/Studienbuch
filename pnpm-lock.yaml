@@ -30,23 +30,11 @@ catalogs:
     typescript:
       specifier: ^5.6.2
       version: 5.6.2
-    vitest:
-      specifier: ^2.1.1
-      version: 2.1.1
-    zod:
-      specifier: ^3.23.8
-      version: 3.23.8
   react18:
     '@types/react':
       specifier: ^18.3.9
       version: 18.3.9
-    '@types/react-dom':
-      specifier: ^18.3.0
-      version: 18.3.0
     react:
-      specifier: 18.3.1
-      version: 18.3.1
-    react-dom:
       specifier: 18.3.1
       version: 18.3.1
 

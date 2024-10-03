@@ -20,6 +20,7 @@ export default function TabLayout() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false, title: "Übersicht" }} />
+
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: colors.primary.text,

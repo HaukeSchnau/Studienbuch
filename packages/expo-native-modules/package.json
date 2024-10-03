@@ -2,6 +2,8 @@
   "name": "@stu/expo-native-modules",
   "version": "0.1.0",
   "private": true,
+  "author": "Hauke Schnau",
+  "homepage": "haukeschnau.de",
   "description": "Native modules for Studienbuch",
   "type": "module",
   "main": "build/index.js",
