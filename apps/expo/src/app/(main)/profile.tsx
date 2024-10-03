@@ -7,7 +7,7 @@ import Icon from "@expo/vector-icons/MaterialIcons";
 import type { NonEmptyArray, Semester } from "@stu/lib";
 import { getCurrentYearNum, isArrayNonEmpty } from "@stu/lib";
 
-import { Button, TextButton } from "~/components/button";
+import { TextButton } from "~/components/button";
 import { Card } from "~/components/card";
 import { SubjectIcon } from "~/components/subject-icon";
 import { Table } from "~/components/table";

@@ -1,13 +1,8 @@
 import type { ReactNode } from "react";
-import { ActivityIndicator, ScrollView, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
-import { Text } from "~/components/text";
-import { AbsencesOverviewCard } from "~/features/absences/absences-overview-card";
-import { Agenda } from "~/features/agenda/agenda";
-import { Tasks } from "~/features/tasks/tasks";
-import { api } from "~/utils/api";
 import BackgroundImage from "../../assets/home-bg.svg";
 
 const Background = () => (

@@ -10,8 +10,6 @@ import {
   CoursesToTeachers,
   Persons,
   Semesters,
-  SemesterType,
-  TeachersToClasses,
 } from "@stu/db/schema";
 import { SEMESTER_TYPES } from "@stu/lib";
 
