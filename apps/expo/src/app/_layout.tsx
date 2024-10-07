@@ -23,6 +23,8 @@ import {
 import * as Sentry from "@sentry/react-native";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 
+import { colors } from "@stu/tailwind-config/native";
+
 import { PortalRenderer } from "~/components/portal";
 import { db } from "~/db/client";
 import migrations from "../../drizzle/migrations";
@@ -39,11 +41,10 @@ const routingInstrumentation = Sentry.reactNavigationIntegration({
 
 Sentry.init({
   dsn: __DEV__
-    ? undefined
+    ? "https://2a803fff45e5c6604fb7742583d0acbc@o1058251.ingest.us.sentry.io/4508083332382720"
     : "https://d950b351307f4e39b529fe22cff83ecb@o1058251.ingest.us.sentry.io/4508059227258880",
 
-  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
-  // enableSpotlight: __DEV__,
+  enableSpotlight: __DEV__,
 
   integrations: [
     Sentry.reactNativeTracingIntegration({
@@ -97,7 +98,7 @@ function RootLayout() {
         <Stack
           screenOptions={{
             headerStyle: {
-              backgroundColor: "#33A42B",
+              backgroundColor: colors.primary.DEFAULT,
             },
             headerTitleStyle: {
               color: "#FFFFFF",
@@ -109,7 +110,7 @@ function RootLayout() {
           }}
         />
 
-        {Constants.debugMode && <DevTools />}
+        {__DEV__ && <DevTools />}
 
         <PortalRenderer />
       </GestureHandlerRootView>
