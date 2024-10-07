@@ -1,0 +1,107 @@
+import React, { useMemo, useState } from "react";
+import { View } from "react-native";
+import Icon from "@expo/vector-icons/MaterialIcons";
+import { format } from "date-fns";
+
+import type { Grade } from "@stu/lib";
+import { formatGrade } from "@stu/lib";
+import { colors } from "@stu/tailwind-config/native";
+
+import { PortaledBottomSheet } from "~/components/bottom-sheet";
+import { OutlinedButton } from "~/components/button";
+import { ConfirmationStatus } from "~/components/confirmation-status";
+import { IconButton } from "~/components/icon-button";
+import { Text } from "~/components/text";
+import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { EditMasterGrade } from "./edit-master-grade";
+
+export const MasterGradeRow = ({
+  masterGrades,
+  courseId,
+}: {
+  masterGrades: Grade[];
+  courseId: string;
+}) => {
+  const { user } = useRequiredAuthenticatedSession();
+  const {
+    currentMasterGrade,
+    mostRecentConfirmedMasterGrade,
+    pastMasterGrades,
+  } = useMemo(() => {
+    const currentMasterGrade = masterGrades[0];
+    const mostRecentConfirmedMasterGrade = masterGrades.find(
+      (grade) => grade.parentSignature,
+    );
+    const pastMasterGrades = masterGrades.slice(1);
+
+    return {
+      currentMasterGrade,
+      mostRecentConfirmedMasterGrade,
+      pastMasterGrades,
+    };
+  }, [masterGrades]);
+
+  const [isEditVisible, setIsEditVisible] = useState(false);
+
+  return (
+    <View className="flex-row gap-4">
+      <PortaledBottomSheet onClose={() => setIsEditVisible(false)}>
+        {isEditVisible && <EditMasterGrade courseId={courseId} />}
+      </PortaledBottomSheet>
+
+      <Icon
+        name="star"
+        size={64}
+        color={colors.primary.DEFAULT}
+        style={{
+          opacity:
+            !currentMasterGrade || currentMasterGrade.parentSignature
+              ? 1
+              : 0.25,
+        }}
+      />
+
+      <View className="grow">
+        <View className="flex-row items-center justify-between">
+          <Text className="grow text-3xl" weight="semi-bold" >
+            {currentMasterGrade ? formatGrade(currentMasterGrade.result) : "—"}
+          </Text>
+
+          <IconButton
+            icon="edit"
+            size={24}
+            onPress={() => setIsEditVisible(true)}
+          />
+        </View>
+        <Text className="text-lg opacity-60">aktuelle Gesamtnote</Text>
+        <Text className="text-lg opacity-60">
+          Stand:{" "}
+          {currentMasterGrade
+            ? format(currentMasterGrade.date, "dd.MM.yyyy")
+            : "—"}
+        </Text>
+        {currentMasterGrade && (
+          <>
+            <View className="h-2" />
+            <View className="flex-row items-center gap-2">
+              <ConfirmationStatus
+                isOfAge={user.isOfAge}
+                order="teacherParent"
+                parent={!!currentMasterGrade.parentSignature}
+                teacher={!!currentMasterGrade.teacherSignature}
+              />
+              {currentMasterGrade.parentSignature && (
+                <IconButton icon="visibility" size={20} onPress={() => {}} />
+              )}
+            </View>
+            {!currentMasterGrade.parentSignature && (
+              <View className="flex-row justify-end">
+                <OutlinedButton label="Jetzt bestätigen" onPress={() => {}} />
+              </View>
+            )}
+          </>
+        )}
+      </View>
+    </View>
+  );
+};

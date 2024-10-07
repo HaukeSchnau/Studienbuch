@@ -1,0 +1,55 @@
+import { useState } from "react";
+import { View } from "react-native";
+import { startOfDay } from "date-fns";
+
+import { Button } from "~/components/button";
+import { Text } from "~/components/text";
+import { TextField } from "~/components/text-field";
+import { api } from "~/utils/api";
+
+export const EditMasterGrade = ({ courseId }: { courseId: string }) => {
+  const utils = api.useUtils();
+  const upsertMutation = api.students.grades.upsert.useMutation({
+    onSuccess: async () => {
+      await utils.students.grades.invalidate();
+    },
+  });
+  const [points, setPoints] = useState("");
+  const gradeNum = parseFloat(points.replaceAll(",", "."));
+  const isValid = !isNaN(gradeNum) && gradeNum >= 0 && gradeNum <= 15;
+
+  return (
+    <View className="px-8 py-8">
+      <Text variant="heading" className="text-center">
+        Aktuelle Gesamtnote eintragen
+      </Text>
+      <View className="h-6" />
+      <TextField
+        label="Punkte"
+        value={points}
+        onChangeText={setPoints}
+        keyboardType="numeric"
+      />
+      <View className="h-6" />
+      <Text className="text-lg">
+        Diese Note muss im Nachhinein noch von deiner Lehrkraft und deinen
+        Eltern bestätigt werden.
+      </Text>
+      <View className="h-6" />
+      <Button
+        disabled={!isValid}
+        className="self-end"
+        label="Speichern"
+        onPress={() => {
+          const date = startOfDay(new Date());
+          upsertMutation.mutate({
+            courseId,
+            date,
+            result: gradeNum,
+            type: "MASTER",
+          });
+        }}
+      />
+    </View>
+  );
+};

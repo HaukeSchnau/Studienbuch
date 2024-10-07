@@ -50,15 +50,21 @@ const subjectIconMap: Partial<Record<SubjectId, ReactComponent>> = {
   ds,
 } as const;
 
-export const SubjectIcon = ({ subject }: { subject: SubjectId }) => {
+export const SubjectIcon = ({
+  subject,
+  size = 24,
+}: {
+  subject: SubjectId;
+  size?: number;
+}) => {
   const Icon = subjectIconMap[subject];
   return Icon ? (
-    <Icon width={24} height={24} />
+    <Icon width={size} height={size} />
   ) : (
     <View
       style={{
-        width: 24,
-        height: 24,
+        width: size,
+        height: size,
       }}
     />
   );

@@ -1,7 +1,8 @@
 import type { TRPCRouterRecord } from "@trpc/server";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { and, eq } from "@stu/db";
+import { and, desc, eq, isNull, or } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Grades } from "@stu/db/schema";
 import { GRADE_TYPES } from "@stu/lib";
@@ -9,10 +10,9 @@ import { GRADE_TYPES } from "@stu/lib";
 import { protectedProcedure } from "../../../procedures";
 
 export const grades = {
-  add: protectedProcedure
+  upsert: protectedProcedure
     .input(
       z.object({
-        id: z.string(),
         courseId: z.string(),
         date: z.date(),
         result: z.number(),
@@ -26,13 +26,43 @@ export const grades = {
           session: { user },
         },
       }) => {
+        await db
+          .delete(Grades)
+          .where(
+            and(
+              eq(Grades.student, user.id),
+              eq(Grades.course, input.courseId),
+              eq(Grades.type, input.type),
+              or(
+                isNull(Grades.teacherSignature),
+                isNull(Grades.parentSignature),
+              ),
+            ),
+          );
+
+        const latestGrade = await db.query.Grades.findFirst({
+          where: and(
+            eq(Grades.student, user.id),
+            eq(Grades.course, input.courseId),
+            eq(Grades.type, input.type),
+          ),
+          orderBy: desc(Grades.date),
+        });
+
+        if (latestGrade && latestGrade.date.getTime() >= input.date.getTime()) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "You cannot enter grades for a date in the past",
+          });
+        }
+
         await db.insert(Grades).values({
-          id: input.id,
           course: input.courseId,
           date: input.date,
-          result: input.result.toString(),
+          result: input.result,
           student: user.id,
           type: input.type,
+          parentSignature: user.isOfAge ? "NOT_REQUIRED" : null,
         });
       },
     ),
@@ -52,6 +82,7 @@ export const grades = {
             eq(Grades.student, ctx.session.user.id),
             eq(Grades.course, input.courseId),
           ),
-        );
+        )
+        .orderBy(desc(Grades.date));
     }),
 } satisfies TRPCRouterRecord;

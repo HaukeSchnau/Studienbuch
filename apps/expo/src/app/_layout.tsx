@@ -7,31 +7,40 @@ import { TRPCProvider } from "~/utils/api";
 import "./styles.css";
 
 import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { lazy, useEffect } from "react";
 import { UIManager } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Constants, { AppOwnership } from "expo-constants";
 import * as SplashScreen from "expo-splash-screen";
 import {
   Nunito_400Regular,
+  Nunito_400Regular_Italic,
   Nunito_500Medium,
+  Nunito_600SemiBold,
   Nunito_700Bold,
   useFonts,
 } from "@expo-google-fonts/nunito";
 import * as Sentry from "@sentry/react-native";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 
-import { DevTools } from "~/components/dev/dev-menu";
 import { PortalRenderer } from "~/components/portal";
 import { db } from "~/db/client";
 import migrations from "../../drizzle/migrations";
+
+const DevTools = lazy(() =>
+  import("~/components/dev/dev-menu").then((mod) => ({
+    default: mod.DevTools,
+  })),
+);
 
 const routingInstrumentation = Sentry.reactNavigationIntegration({
   enableTimeToInitialDisplay: Constants.appOwnership !== AppOwnership.Expo, // Only in native builds, not in Expo Go.
 });
 
 Sentry.init({
-  dsn: "https://d950b351307f4e39b529fe22cff83ecb@o1058251.ingest.us.sentry.io/4508059227258880",
+  dsn: __DEV__
+    ? undefined
+    : "https://d950b351307f4e39b529fe22cff83ecb@o1058251.ingest.us.sentry.io/4508059227258880",
 
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)
   // enableSpotlight: __DEV__,
@@ -63,7 +72,9 @@ function RootLayout() {
 
   const [fontLoaded, fontError] = useFonts({
     Nunito_400Regular,
+    Nunito_400Regular_Italic,
     Nunito_500Medium,
+    Nunito_600SemiBold,
     Nunito_700Bold,
   });
 

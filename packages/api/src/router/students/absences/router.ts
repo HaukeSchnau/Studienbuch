@@ -27,6 +27,7 @@ export const absences = {
           date: input.date,
           student: user.id,
           reason: input.reason,
+          parentSignature: user.isOfAge ? "NOT_REQUIRED" : null,
         });
         await db.insert(CourseAbsences).values(
           input.courseIds.map((courseId) => ({

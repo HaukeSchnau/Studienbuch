@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { View } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
@@ -10,7 +11,7 @@ export const Card = ({
   style,
   onPress,
 }: {
-  children: React.ReactNode;
+  children?: ReactNode;
   className?: string;
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;

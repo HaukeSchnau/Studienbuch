@@ -17,6 +17,7 @@ import { formalName, subjectNameMap } from "@stu/lib";
 import { Card } from "~/components/card";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
+import { Divider } from "~/components/divider";
 
 export const Agenda = () => {
   const now = useMemo(() => new Date(), []);
@@ -136,8 +137,4 @@ const AgendaEntry = ({ entry }: { entry: AgendaEntry }) => {
       </View>
     </View>
   );
-};
-
-const Divider = () => {
-  return <View style={{ height: 1, backgroundColor: "#00000022" }} />;
 };

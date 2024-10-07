@@ -123,9 +123,10 @@ const CoursesSelect = ({
   });
 
   useEffect(() => {
-    void form.setFieldValue("courses", []);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDate.state.value]);
+    void form.setFieldValue("courses", [], {
+      dontUpdateMeta: true,
+    });
+  }, [selectedDate.state.value, form]);
 
   const courseOptions = api.students.timetable.getWeek.useQuery({
     isoWeekYear: getISOWeekYear(selectedDate.state.value),
