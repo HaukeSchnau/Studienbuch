@@ -6,6 +6,10 @@ import type { GradeType } from "@stu/lib";
 import { api } from "~/utils/api";
 import { ConfirmMasterGradeParent } from "./master/confirm-master-grade-parent";
 import { ConfirmMasterGradeTeacher } from "./master/confirm-master-grade-teacher";
+import { ConfirmOralGradeParent } from "./oral/confirm-oral-grade-parent";
+import { ConfirmOralGradeTeacher } from "./oral/confirm-oral-grade-teacher";
+import { ConfirmWrittenGradeParent } from "./written/confirm-written-grade-parent";
+import { ConfirmWrittenGradeTeacher } from "./written/confirm-written-grade-teacher";
 
 interface Props {
   date: Date;
@@ -46,5 +50,23 @@ export const GradePage = ({ date, courseId, type }: Props) => {
     }
   }
 
-  return <></>;
+  if (type === "ORAL") {
+    if (!grade.teacherSignature) {
+      return <ConfirmOralGradeTeacher grade={grade} />;
+    }
+
+    if (!grade.parentSignature) {
+      return <ConfirmOralGradeParent grade={grade} />;
+    }
+  }
+
+  if (type === "WRITTEN") {
+    if (!grade.teacherSignature) {
+      return <ConfirmWrittenGradeTeacher grade={grade} />;
+    }
+
+    if (!grade.parentSignature) {
+      return <ConfirmWrittenGradeParent grade={grade} />;
+    }
+  }
 };
