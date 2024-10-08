@@ -1,6 +1,6 @@
+import { relations } from "drizzle-orm";
 import {
   date,
-  numeric,
   pgEnum,
   pgTable,
   primaryKey,
@@ -48,3 +48,14 @@ export const Grades = pgTable(
     };
   },
 );
+
+export const GradesRelations = relations(Grades, ({ one }) => ({
+  course: one(Courses, {
+    fields: [Grades.course],
+    references: [Courses.id],
+  }),
+  student: one(Persons, {
+    fields: [Grades.student],
+    references: [Persons.id],
+  }),
+}));

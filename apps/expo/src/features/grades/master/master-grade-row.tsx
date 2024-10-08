@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { View } from "react-native";
+import { Link } from "expo-router";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import { format } from "date-fns";
 
@@ -46,7 +47,12 @@ export const MasterGradeRow = ({
   return (
     <View className="flex-row gap-4">
       <PortaledBottomSheet onClose={() => setIsEditVisible(false)}>
-        {isEditVisible && <EditMasterGrade courseId={courseId} />}
+        {isEditVisible && (
+          <EditMasterGrade
+            courseId={courseId}
+            onClose={() => setIsEditVisible(false)}
+          />
+        )}
       </PortaledBottomSheet>
 
       <Icon
@@ -63,7 +69,7 @@ export const MasterGradeRow = ({
 
       <View className="grow">
         <View className="flex-row items-center justify-between">
-          <Text className="grow text-3xl" weight="semi-bold" >
+          <Text className="grow text-3xl" weight="semi-bold">
             {currentMasterGrade ? formatGrade(currentMasterGrade.result) : "—"}
           </Text>
 
@@ -96,7 +102,19 @@ export const MasterGradeRow = ({
             </View>
             {!currentMasterGrade.parentSignature && (
               <View className="flex-row justify-end">
-                <OutlinedButton label="Jetzt bestätigen" onPress={() => {}} />
+                <Link
+                  href={{
+                    pathname: "/courses/[course]/grades/[type]/[date]",
+                    params: {
+                      course: courseId,
+                      date: currentMasterGrade.date.getTime(),
+                      type: "MASTER",
+                    },
+                  }}
+                  asChild
+                >
+                  <OutlinedButton label="Jetzt bestätigen" onPress={() => {}} />
+                </Link>
               </View>
             )}
           </>

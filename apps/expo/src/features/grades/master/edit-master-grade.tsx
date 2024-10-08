@@ -7,11 +7,18 @@ import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
 import { api } from "~/utils/api";
 
-export const EditMasterGrade = ({ courseId }: { courseId: string }) => {
+export const EditMasterGrade = ({
+  courseId,
+  onClose,
+}: {
+  courseId: string;
+  onClose: () => void;
+}) => {
   const utils = api.useUtils();
   const upsertMutation = api.students.grades.upsert.useMutation({
     onSuccess: async () => {
       await utils.students.grades.invalidate();
+      onClose();
     },
   });
   const [points, setPoints] = useState("");
@@ -25,6 +32,7 @@ export const EditMasterGrade = ({ courseId }: { courseId: string }) => {
       </Text>
       <View className="h-6" />
       <TextField
+        autoFocus
         label="Punkte"
         value={points}
         onChangeText={setPoints}

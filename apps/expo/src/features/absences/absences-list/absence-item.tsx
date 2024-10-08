@@ -92,7 +92,7 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
         <View className="items-end gap-1">
           <Link
             href={{
-              pathname: `/absences/[date]/[courses]/excuse`,
+              pathname: `/absences/[date]/[courses]`,
               params: {
                 date: absenceGroup.date.getTime(),
                 courses: absenceGroup.courses

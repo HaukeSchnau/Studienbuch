@@ -1,17 +1,3 @@
-import { StyleSheet, Text, View } from "react-native";
-
-export default function Tab() {
-  return (
-    <View style={styles.container}>
-      <Text>Tab Schedule</Text>
-    </View>
-  );
+export default function Schedule() {
+  return <></>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-});
