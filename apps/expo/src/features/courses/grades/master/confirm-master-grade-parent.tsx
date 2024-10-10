@@ -4,8 +4,11 @@ import { formatDate } from "date-fns";
 
 import { formatGrade } from "@stu/lib";
 
-import type { Grade } from "../grade.type";
-import { ConfirmPageContent } from "~/components/confirm-page-content";
+import type { ConfirmedGrade, Grade } from "../grade.type";
+import {
+  ConfirmPageContent,
+  ViewConfirmPageContent,
+} from "~/components/confirm-page-content";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
@@ -52,5 +55,27 @@ export const ConfirmMasterGradeParent = ({ grade }: { grade: Grade }) => {
         <Text weight="bold">{grade.course.longName}</Text> hat.
       </ConfirmPageContent>
     </View>
+  );
+};
+
+export const MasterGradeParentConfirmationView = ({
+  grade,
+}: {
+  grade: ConfirmedGrade;
+}) => {
+  const { user } = useRequiredAuthenticatedSession();
+  const { date, result } = grade;
+
+  return (
+    <ViewConfirmPageContent
+      signatureLabel="Unterschrift eines Erziehungsberechtigten"
+      signatureSvg={grade.parentSignature}
+    >
+      Ich habe zur Kenntnis genommen, dass mein Kind{" "}
+      <Text weight="bold">{user.name}</Text> am{" "}
+      <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Gesamtnote{" "}
+      <Text weight="bold">{formatGrade(result)}</Text> in{" "}
+      <Text weight="bold">{grade.course.longName}</Text> hat.
+    </ViewConfirmPageContent>
   );
 };

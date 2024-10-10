@@ -4,13 +4,16 @@ import { formatDate } from "date-fns";
 
 import { formatGrade } from "@stu/lib";
 
-import type { Grade } from "../grade.type";
-import { ConfirmPageContent } from "~/components/confirm-page-content";
+import type { ConfirmedGrade, Grade } from "../grade.type";
+import {
+  ConfirmPageContent,
+  ViewConfirmPageContent,
+} from "~/components/confirm-page-content";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 
-export const ConfirmOralGradeParent = ({ grade }: { grade: Grade }) => {
+export const ConfirmWrittenGradeParent = ({ grade }: { grade: Grade }) => {
   const { user } = useRequiredAuthenticatedSession();
   const utils = api.useUtils();
   const router = useRouter();
@@ -26,7 +29,7 @@ export const ConfirmOralGradeParent = ({ grade }: { grade: Grade }) => {
       course: grade.course.id,
       date: grade.date,
       signature,
-      type: "ORAL",
+      type: "WRITTEN",
     });
 
   const { date, result } = grade;
@@ -35,7 +38,7 @@ export const ConfirmOralGradeParent = ({ grade }: { grade: Grade }) => {
     <View className="p-8">
       <Stack.Screen
         options={{
-          title: "mündliche Note bestätigen (Eltern)",
+          title: "schriftliche Note bestätigen (Eltern)",
         }}
       />
 
@@ -47,10 +50,32 @@ export const ConfirmOralGradeParent = ({ grade }: { grade: Grade }) => {
       >
         Ich habe zur Kenntnis genommen, dass mein Kind{" "}
         <Text weight="bold">{user.name}</Text> am{" "}
-        <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die
-        mündliche Note <Text weight="bold">{formatGrade(result)}</Text> in{" "}
-        <Text weight="bold">{grade.course.longName}</Text> hat.
+        <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur
+        in <Text weight="bold">{grade.course.longName}</Text> mit der Note{" "}
+        <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
       </ConfirmPageContent>
     </View>
+  );
+};
+
+export const WrittenGradeParentConfirmationView = ({
+  grade,
+}: {
+  grade: ConfirmedGrade;
+}) => {
+  const { user } = useRequiredAuthenticatedSession();
+  const { date, result } = grade;
+
+  return (
+    <ViewConfirmPageContent
+      signatureLabel="Unterschrift eines Erziehungsberechtigten"
+      signatureSvg={grade.parentSignature}
+    >
+      Ich habe zur Kenntnis genommen, dass mein Kind{" "}
+      <Text weight="bold">{user.name}</Text> am{" "}
+      <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur in{" "}
+      <Text weight="bold">{grade.course.longName}</Text> mit der Note{" "}
+      <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
+    </ViewConfirmPageContent>
   );
 };

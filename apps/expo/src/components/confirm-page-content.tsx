@@ -1,11 +1,11 @@
 import type { ComponentRef, ReactNode } from "react";
-import { forwardRef, useRef } from "react";
+import { useRef } from "react";
 import { View } from "react-native";
 import { useRouter } from "expo-router";
 
 import { Text } from "~/components/text";
 import { Button, TextButton } from "./button";
-import { SignatureField } from "./signature-field";
+import { SignatureField, SignatureView } from "./signature-field";
 
 interface Props {
   heading: string;
@@ -60,6 +60,37 @@ export const ConfirmPageContent = ({
           label={confirmLabel}
         />
       </View>
+    </>
+  );
+};
+
+interface ViewProps {
+  children: ReactNode;
+  major?: string;
+  signatureLabel: string;
+  signatureSvg: string;
+}
+
+export const ViewConfirmPageContent = ({
+  children,
+  major,
+  signatureLabel,
+  signatureSvg,
+}: ViewProps) => {
+  return (
+    <>
+      <Text className="text-xl">{children}</Text>
+      {major && (
+        <>
+          <View className="h-4" />
+          <Text weight="medium" className="text-xl">
+            {major}
+          </Text>
+        </>
+      )}
+      <View className="h-4" />
+
+      <SignatureView label={signatureLabel} svg={signatureSvg} />
     </>
   );
 };

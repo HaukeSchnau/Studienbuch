@@ -1,4 +1,5 @@
-import type { ComponentProps } from "react";
+import type { ComponentProps, ComponentRef } from "react";
+import { forwardRef } from "react";
 import { TouchableNativeFeedback } from "react-native";
 import Icon from "@expo/vector-icons/MaterialIcons";
 
@@ -6,13 +7,22 @@ interface Props {
   icon: ComponentProps<typeof Icon>["name"];
   color?: ComponentProps<typeof Icon>["color"];
   size?: ComponentProps<typeof Icon>["size"];
-  onPress: () => void;
+  onPress?: () => void;
+  opacity?: number;
 }
 
-export const IconButton = ({ icon, color, size, onPress }: Props) => {
+export const IconButton = forwardRef<
+  ComponentRef<typeof TouchableNativeFeedback>,
+  Props
+>(({ icon, color, size, onPress, opacity = 1 }, ref) => {
   return (
-    <TouchableNativeFeedback onPress={onPress}>
-      <Icon name={icon} color={color} size={size} style={{ padding: 4 }} />
+    <TouchableNativeFeedback onPress={onPress} ref={ref}>
+      <Icon
+        name={icon}
+        color={color}
+        size={size}
+        style={{ padding: 4, opacity }}
+      />
     </TouchableNativeFeedback>
   );
-};
+});

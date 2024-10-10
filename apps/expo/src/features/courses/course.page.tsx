@@ -10,7 +10,7 @@ import { shadow } from "~/components/styles/shadow";
 import { SubjectIcon } from "~/components/subject-icon";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
-import { GradesOverviewCard } from "../grades/grades-overview-card";
+import { GradesOverviewCard } from "./grades/grades-overview-card";
 
 export const CoursePage = ({ courseId }: { courseId: string }) => {
   const courseQuery = api.students.courses.getOne.useQuery({ id: courseId });

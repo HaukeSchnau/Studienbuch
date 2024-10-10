@@ -4,13 +4,16 @@ import { formatDate } from "date-fns";
 
 import { formalName, formatGrade } from "@stu/lib";
 
-import type { Grade } from "../grade.type";
-import { ConfirmPageContent } from "~/components/confirm-page-content";
+import type { ConfirmedGrade, Grade } from "../grade.type";
+import {
+  ConfirmPageContent,
+  ViewConfirmPageContent,
+} from "~/components/confirm-page-content";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 
-export const ConfirmOralGradeTeacher = ({ grade }: { grade: Grade }) => {
+export const ConfirmWrittenGradeTeacher = ({ grade }: { grade: Grade }) => {
   const { user } = useRequiredAuthenticatedSession();
   const utils = api.useUtils();
   const router = useRouter();
@@ -26,7 +29,7 @@ export const ConfirmOralGradeTeacher = ({ grade }: { grade: Grade }) => {
       course: grade.course.id,
       date: grade.date,
       signature,
-      type: "ORAL",
+      type: "WRITTEN",
     });
 
   const [teacher] = grade.course.teachers;
@@ -40,7 +43,7 @@ export const ConfirmOralGradeTeacher = ({ grade }: { grade: Grade }) => {
     <View className="p-8">
       <Stack.Screen
         options={{
-          title: "mündliche Note bestätigen (Lehrer)",
+          title: "schriftliche Note bestätigen (Lehrer)",
         }}
       />
 
@@ -52,10 +55,38 @@ export const ConfirmOralGradeTeacher = ({ grade }: { grade: Grade }) => {
       >
         Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
         <Text weight="bold">{user.name}</Text> am{" "}
-        <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die
-        mündliche Note <Text weight="bold">{formatGrade(result)}</Text> in{" "}
-        <Text weight="bold">{grade.course.longName}</Text> hat.
+        <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur
+        in <Text weight="bold">{grade.course.longName}</Text> mit der Note{" "}
+        <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
       </ConfirmPageContent>
     </View>
+  );
+};
+
+export const WrittenGradeTeacherConfirmationView = ({
+  grade,
+}: {
+  grade: ConfirmedGrade;
+}) => {
+  const { user } = useRequiredAuthenticatedSession();
+  const { date, result } = grade;
+
+  const [teacher] = grade.course.teachers;
+
+  if (!teacher) {
+    return null;
+  }
+
+  return (
+    <ViewConfirmPageContent
+      signatureLabel={`Unterschrift von ${formalName(teacher)}`}
+      signatureSvg={grade.teacherSignature}
+    >
+      Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
+      <Text weight="bold">{user.name}</Text> am{" "}
+      <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur in{" "}
+      <Text weight="bold">{grade.course.longName}</Text> mit der Note{" "}
+      <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
+    </ViewConfirmPageContent>
   );
 };

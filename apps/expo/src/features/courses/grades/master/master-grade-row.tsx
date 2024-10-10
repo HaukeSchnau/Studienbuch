@@ -75,6 +75,7 @@ export const MasterGradeRow = ({
 
           <IconButton
             icon="edit"
+            opacity={0.8}
             size={24}
             onPress={() => setIsEditVisible(true)}
           />
@@ -89,7 +90,7 @@ export const MasterGradeRow = ({
         {currentMasterGrade && (
           <>
             <View className="h-2" />
-            <View className="flex-row items-center gap-2">
+            <View className="flex-row items-center justify-between gap-2">
               <ConfirmationStatus
                 isOfAge={user.isOfAge}
                 order="teacherParent"
@@ -97,7 +98,19 @@ export const MasterGradeRow = ({
                 teacher={!!currentMasterGrade.teacherSignature}
               />
               {currentMasterGrade.parentSignature && (
-                <IconButton icon="visibility" size={20} onPress={() => {}} />
+                <Link
+                  href={{
+                    pathname: "/courses/[course]/grades/[type]/[date]",
+                    params: {
+                      course: courseId,
+                      date: currentMasterGrade.date.getTime(),
+                      type: "MASTER",
+                    },
+                  }}
+                  asChild
+                >
+                  <IconButton icon="visibility" opacity={0.8} size={24} />
+                </Link>
               )}
             </View>
             {!currentMasterGrade.parentSignature && (

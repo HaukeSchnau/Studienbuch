@@ -2,7 +2,7 @@ import { useLocalSearchParams } from "expo-router";
 
 import type { GradeType } from "@stu/lib";
 
-import { GradePage } from "~/features/grades/grade.page";
+import { GradePage } from "~/features/courses/grades/grade.page";
 
 export default function GradePageEntry() {
   const {

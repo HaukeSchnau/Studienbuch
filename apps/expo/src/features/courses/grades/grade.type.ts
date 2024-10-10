@@ -7,3 +7,11 @@ export interface Grade {
   date: Date;
   course: Course & { longName: string };
 }
+
+export interface ConfirmedGrade {
+  teacherSignature: string;
+  parentSignature: string;
+  result: number;
+  date: Date;
+  course: Course & { longName: string };
+}
