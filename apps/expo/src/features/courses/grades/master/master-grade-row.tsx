@@ -5,7 +5,7 @@ import Icon from "@expo/vector-icons/MaterialIcons";
 import { format } from "date-fns";
 
 import type { Grade } from "@stu/lib";
-import { formatGrade } from "@stu/lib";
+import { formatGrade, isGradeConfirmed } from "@stu/lib";
 import { colors } from "@stu/tailwind-config/native";
 
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
@@ -24,21 +24,17 @@ export const MasterGradeRow = ({
   courseId: string;
 }) => {
   const { user } = useRequiredAuthenticatedSession();
-  const {
-    currentMasterGrade,
-    mostRecentConfirmedMasterGrade,
-    pastMasterGrades,
-  } = useMemo(() => {
+  const { currentMasterGrade, mostRecentConfirmedMasterGrade } = useMemo(() => {
     const currentMasterGrade = masterGrades[0];
-    const mostRecentConfirmedMasterGrade = masterGrades.find(
-      (grade) => grade.parentSignature,
-    );
-    const pastMasterGrades = masterGrades.slice(1);
+    const mostRecentConfirmedMasterGrade =
+      masterGrades.find(isGradeConfirmed) ?? null;
 
     return {
       currentMasterGrade,
-      mostRecentConfirmedMasterGrade,
-      pastMasterGrades,
+      mostRecentConfirmedMasterGrade:
+        currentMasterGrade !== mostRecentConfirmedMasterGrade
+          ? mostRecentConfirmedMasterGrade
+          : null,
     };
   }, [masterGrades]);
 
@@ -51,6 +47,7 @@ export const MasterGradeRow = ({
           <EditMasterGrade
             courseId={courseId}
             onClose={() => setIsEditVisible(false)}
+            mostRecentConfirmedMasterGrade={mostRecentConfirmedMasterGrade}
           />
         )}
       </PortaledBottomSheet>
@@ -61,7 +58,7 @@ export const MasterGradeRow = ({
         color={colors.primary.DEFAULT}
         style={{
           opacity:
-            !currentMasterGrade || currentMasterGrade.parentSignature
+            !currentMasterGrade || isGradeConfirmed(currentMasterGrade)
               ? 1
               : 0.25,
         }}
@@ -97,7 +94,7 @@ export const MasterGradeRow = ({
                 parent={!!currentMasterGrade.parentSignature}
                 teacher={!!currentMasterGrade.teacherSignature}
               />
-              {currentMasterGrade.parentSignature && (
+              {isGradeConfirmed(currentMasterGrade) && (
                 <Link
                   href={{
                     pathname: "/courses/[course]/grades/[type]/[date]",
@@ -113,7 +110,7 @@ export const MasterGradeRow = ({
                 </Link>
               )}
             </View>
-            {!currentMasterGrade.parentSignature && (
+            {!isGradeConfirmed(currentMasterGrade) && (
               <View className="flex-row justify-end">
                 <Link
                   href={{
@@ -126,7 +123,7 @@ export const MasterGradeRow = ({
                   }}
                   asChild
                 >
-                  <OutlinedButton label="Jetzt bestätigen" onPress={() => {}} />
+                  <OutlinedButton label="Jetzt bestätigen" />
                 </Link>
               </View>
             )}

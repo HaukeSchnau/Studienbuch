@@ -24,7 +24,6 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
           headerStyle: {
             backgroundColor: "transparent",
           },
-          headerTintColor: "white",
         }}
       />
     );
@@ -41,7 +40,6 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
           headerStyle: {
             backgroundColor: "transparent",
           },
-          headerTintColor: "white",
         }}
       />
 

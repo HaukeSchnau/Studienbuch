@@ -3,6 +3,8 @@ import { forwardRef } from "react";
 import { TouchableOpacity } from "react-native";
 import clsx from "clsx";
 
+import { colors } from "@stu/tailwind-config/native";
+
 import { shadow } from "./styles/shadow";
 import { Text } from "./text";
 
@@ -11,6 +13,7 @@ interface Props {
   onPress?: () => void;
   className?: string;
   disabled?: boolean;
+  color?: string;
 }
 
 export const Button = forwardRef<ComponentRef<typeof TouchableOpacity>, Props>(
@@ -37,19 +40,24 @@ export const Button = forwardRef<ComponentRef<typeof TouchableOpacity>, Props>(
 export const OutlinedButton = forwardRef<
   ComponentRef<typeof TouchableOpacity>,
   Props
->(({ className, onPress, label }, ref) => {
+>(({ className, onPress, label, color = colors.danger.DEFAULT }, ref) => {
   return (
     <TouchableOpacity
-      className={clsx(
-        "rounded-3xl px-5 py-2",
-        "border border-danger",
-        className,
-      )}
-      style={shadow}
+      className={clsx("rounded-3xl border px-5 py-2", className)}
+      style={[
+        shadow,
+        {
+          borderColor: color,
+        },
+      ]}
       onPress={onPress}
       ref={ref}
     >
-      <Text className="w-fit text-center text-lg text-danger" weight="bold">
+      <Text
+        className="w-fit text-center text-lg"
+        weight="bold"
+        style={{ color }}
+      >
         {label}
       </Text>
     </TouchableOpacity>

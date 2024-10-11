@@ -49,13 +49,13 @@ export const Text = ({
 
   return (
     <RNText
+      {...props}
       style={[
         {
           fontFamily,
         },
         props.style,
       ]}
-      {...props}
     />
   );
 };

@@ -2,7 +2,7 @@ import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { and, desc, eq, isNull, or } from "@stu/db";
+import { and, desc, eq, gt, isNull, or } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Grades } from "@stu/db/schema";
 import { GRADE_TYPES } from "@stu/lib";
@@ -183,6 +183,27 @@ export const grades = {
             eq(Grades.course, input.course),
             eq(Grades.date, input.date),
             eq(Grades.type, input.type),
+          ),
+        );
+    }),
+
+  restore: protectedProcedure
+    .input(
+      z.object({
+        date: z.date(),
+        course: z.string(),
+        type: z.enum(GRADE_TYPES),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      await db
+        .delete(Grades)
+        .where(
+          and(
+            eq(Grades.student, ctx.session.user.id),
+            eq(Grades.course, input.course),
+            eq(Grades.type, input.type),
+            gt(Grades.date, input.date),
           ),
         );
     }),

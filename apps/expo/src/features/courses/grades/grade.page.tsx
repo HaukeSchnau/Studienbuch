@@ -42,7 +42,6 @@ export const GradePage = ({ date, courseId, type }: Props) => {
         <Stack.Screen
           options={{
             title: "Note",
-            headerTintColor: "#FFFFFF",
           }}
         />
         <ActivityIndicator />

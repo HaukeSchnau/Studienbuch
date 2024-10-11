@@ -51,11 +51,14 @@ export const GradesOverviewCard = ({ courseId }: { courseId: string }) => {
       <View className="h-4" />
       <Divider />
       <View className="h-4" />
-      <OralGradesRow oralGrades={grades.data.oral} />
+      <OralGradesRow oralGrades={grades.data.oral} courseId={courseId} />
       <View className="h-4" />
       <Divider />
       <View className="h-4" />
-      <WrittenGradesRow writtenGrades={grades.data.written} />
+      <WrittenGradesRow
+        writtenGrades={grades.data.written}
+        courseId={courseId}
+      />
     </Card>
   );
 };

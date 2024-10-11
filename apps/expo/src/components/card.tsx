@@ -10,11 +10,13 @@ export const Card = ({
   className,
   style,
   onPress,
+  noShadow,
 }: {
   children?: ReactNode;
   className?: string;
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;
+  noShadow?: boolean;
 }) => {
   const content = (
     <View
@@ -24,7 +26,7 @@ export const Card = ({
           borderRadius: 32,
           padding: 24,
         },
-        shadow,
+        noShadow ? undefined : shadow,
         style,
       ]}
       className={className}

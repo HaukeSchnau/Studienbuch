@@ -38,7 +38,6 @@ export const ExcusePage = ({
       <Stack.Screen
         options={{
           title: "Fehlzeit entschuldigen",
-          headerTintColor: "#FFFFFF",
           headerBackTitle: "Zurück",
         }}
       />

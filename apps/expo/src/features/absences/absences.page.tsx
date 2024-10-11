@@ -12,7 +12,6 @@ export const AbsencesPage = () => {
       <Stack.Screen
         options={{
           title: "Meine Fehlzeiten",
-          headerTintColor: "#FFFFFF",
         }}
       />
 

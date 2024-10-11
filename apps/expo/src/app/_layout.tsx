@@ -100,8 +100,9 @@ function RootLayout() {
             headerStyle: {
               backgroundColor: colors.primary.DEFAULT,
             },
+            headerTintColor: colors.on.primary,
             headerTitleStyle: {
-              color: "#FFFFFF",
+              color: colors.on.primary,
               fontFamily: "Nunito_700Bold",
             },
             contentStyle: {

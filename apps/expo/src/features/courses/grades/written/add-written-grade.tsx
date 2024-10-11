@@ -11,14 +11,12 @@ import { TextField } from "~/components/text-field";
 import { api } from "~/utils/api";
 import { GradeCard } from "../grade-card";
 
-export const EditMasterGrade = ({
+export const AddWrittenGrade = ({
   courseId,
   onClose,
-  mostRecentConfirmedMasterGrade,
 }: {
   courseId: string;
   onClose: () => void;
-  mostRecentConfirmedMasterGrade: Grade | null;
 }) => {
   const utils = api.useUtils();
   const upsertMutation = api.students.grades.upsert.useMutation({
@@ -42,7 +40,7 @@ export const EditMasterGrade = ({
   return (
     <View className="px-8 py-8">
       <Text variant="heading" className="text-center">
-        Aktuelle Gesamtnote eintragen
+        Mündliche Mitarbeitsnote eintragen
       </Text>
       <View className="h-6" />
       <TextField
@@ -58,29 +56,6 @@ export const EditMasterGrade = ({
         Eltern bestätigt werden.
       </Text>
 
-      {mostRecentConfirmedMasterGrade && (
-        <>
-          <View className="h-4" />
-          <Divider />
-          <View className="h-4" />
-          <Text className="text-lg">
-            Alternativ kannst du deine letzte bestätigte Note wiederherstellen:
-          </Text>
-          <View className="h-4" />
-          <GradeCard
-            grade={mostRecentConfirmedMasterGrade}
-            actionText="Wiederherstellen"
-            onClick={() =>
-              restoreMutation.mutate({
-                course: courseId,
-                date: mostRecentConfirmedMasterGrade.date,
-                type: "MASTER",
-              })
-            }
-          />
-        </>
-      )}
-
       <View className="h-6" />
       <Button
         disabled={!isValid}
@@ -92,7 +67,7 @@ export const EditMasterGrade = ({
             courseId,
             date,
             result: gradeNum,
-            type: "MASTER",
+            type: "ORAL",
           });
         }}
       />
