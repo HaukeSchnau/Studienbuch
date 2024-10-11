@@ -2,7 +2,8 @@ import fs, { writeFile } from "fs/promises";
 import type { ZodType } from "zod";
 import { z } from "zod";
 
-import { HolidayDto, HolidayWsV1ImplService } from "./generated";
+import type { HolidayDto } from "./generated";
+import { HolidayWsV1ImplService } from "./generated";
 
 const states = [
   "BB",
@@ -31,11 +32,18 @@ const holidaySchema: ZodType<Holiday> = z.object({
   name: z.string(),
   slug: z.string(),
   start: z.string(),
-  stateCode: z.nativeEnum(HolidayDto.stateCode),
+  stateCode: z.enum(states),
   year: z.number(),
 });
 
-export type Holiday = Required<HolidayDto>;
+export interface Holiday {
+  end: string;
+  name: string;
+  slug: string;
+  start: string;
+  stateCode: State;
+  year: number;
+}
 
 const parseHolidayResponse = (result: HolidayDto[]) =>
   z.array(holidaySchema).parse(result);
