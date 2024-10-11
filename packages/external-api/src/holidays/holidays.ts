@@ -1,11 +1,8 @@
-import { writeFile } from "fs/promises";
-import p from "path";
-import { fileURLToPath } from "url";
+import fs, { writeFile } from "fs/promises";
 import type { ZodType } from "zod";
 import { z } from "zod";
 
 import { HolidayDto, HolidayWsV1ImplService } from "./generated";
-import snapshotData from "./holidays.snapshot.json";
 
 const states = [
   "BB",
@@ -29,7 +26,7 @@ const states = [
 export type State = (typeof states)[number];
 export const stateSchema = z.enum(states);
 
-const holidaySchema: ZodType<Required<HolidayDto>> = z.object({
+const holidaySchema: ZodType<Holiday> = z.object({
   end: z.string(),
   name: z.string(),
   slug: z.string(),
@@ -37,6 +34,9 @@ const holidaySchema: ZodType<Required<HolidayDto>> = z.object({
   stateCode: z.nativeEnum(HolidayDto.stateCode),
   year: z.number(),
 });
+
+export type Holiday = Required<HolidayDto>;
+
 const parseHolidayResponse = (result: HolidayDto[]) =>
   z.array(holidaySchema).parse(result);
 
@@ -56,21 +56,18 @@ const getHolidaysInternal = async (state: State, year?: number) => {
 export const getHolidays = async (
   state: State,
   year?: number,
-): Promise<Required<HolidayDto>[]> => {
-  let response: Required<HolidayDto>[];
+): Promise<Holiday[]> => {
+  let response: Holiday[];
+  const snapshotFile = `/tmp/holidays-${state}-${year}.json`;
   try {
     response = await getHolidaysInternal(state, year);
   } catch {
-    return snapshotData as Required<HolidayDto>[];
+    const snapshot = await fs.readFile(snapshotFile, "utf-8");
+    const json = JSON.parse(snapshot);
+    return holidaySchema.array().parse(json);
   }
 
-  await writeFile(
-    p.resolve(
-      p.dirname(fileURLToPath(import.meta.url)),
-      "holidays.snapshot.json",
-    ),
-    JSON.stringify(response, null, 2),
-  );
+  await writeFile(snapshotFile, JSON.stringify(response, null, 2));
 
   return response;
 };

@@ -1,6 +1,7 @@
 import { auth } from "./router/auth/router";
 import { classes } from "./router/classes/router";
 import { courses } from "./router/courses/router";
+import { holidays } from "./router/holidays/router";
 import { management } from "./router/management/router";
 import { schools } from "./router/schools/router";
 import { semesters } from "./router/semesters/router";
@@ -13,6 +14,7 @@ export const appRouter = t.router({
   auth,
   classes,
   courses,
+  holidays,
   management,
   schools,
   semesters,

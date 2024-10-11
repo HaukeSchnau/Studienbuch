@@ -8,6 +8,7 @@ import {
   isAfter,
   isSameDay,
   isTomorrow,
+  isWithinInterval,
 } from "date-fns";
 import { de as localeDE } from "date-fns/locale/de";
 
@@ -15,9 +16,67 @@ import type { AgendaEntry } from "@stu/lib";
 import { formalName, subjectNameMap } from "@stu/lib";
 
 import { Card } from "~/components/card";
+import { Divider } from "~/components/divider";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
-import { Divider } from "~/components/divider";
+
+const matchHolidayName = (name: string) => {
+  const n = name.toLowerCase();
+  if (n.includes("winter")) {
+    return "Winterferien";
+  } else if (n.includes("oster")) {
+    return "Osterferien";
+  } else if (n.includes("pfingst")) {
+    return "Pfingstferien";
+  } else if (n.includes("sommer")) {
+    return "Sommerferien";
+  } else if (n.includes("herbst")) {
+    return "Herbstferien";
+  } else if (n.includes("weihnacht")) {
+    return "Weihnachtsferien";
+  } else {
+    return "Ferien";
+  }
+};
+
+const EmptyState = () => {
+  const holiday = api.holidays.get.useQuery(
+    {
+      year: new Date().getFullYear(),
+    },
+    {
+      select: (holidays) =>
+        holidays.find((holiday) =>
+          isWithinInterval(new Date(), {
+            start: holiday.start,
+            end: holiday.end,
+          }),
+        ),
+    },
+  );
+
+  if (!holiday.data) {
+    return (
+      <Text className="color-white text-2xl">Heute ist nichts geplant. 🎉</Text>
+    );
+  }
+
+  return (
+    <>
+      <View className="h-4" />
+      <Card className="p-8">
+        <Text className="text-center text-2xl">
+          Schöne {matchHolidayName(holiday.data.name)}! 🎉
+        </Text>
+        <View className="h-4" />
+        <Text className="text-center opacity-80">
+          {format(holiday.data.start, "dd.MM.yyyy")} -{" "}
+          {format(holiday.data.end, "dd.MM.yyyy")}
+        </Text>
+      </Card>
+    </>
+  );
+};
 
 export const Agenda = () => {
   const now = useMemo(() => new Date(), []);
@@ -29,8 +88,6 @@ export const Agenda = () => {
     { isoWeekYear: getISOWeekYear(now), isoWeek: getISOWeek(now) },
     {
       select: (entries) => {
-        // const todaysEntries = entries.filter((entry) => isSameDay(entry.start, now));
-
         const nextEntry = entries.find((entry) =>
           isAfter(
             add(entry.start, {
@@ -82,9 +139,7 @@ export const Agenda = () => {
   const { date, entries } = timetable.data;
 
   if (!date) {
-    return (
-      <Text className="color-white text-2xl">Heute ist nichts geplant.</Text>
-    );
+    return <EmptyState />;
   }
 
   const dateFormatted = (() => {
