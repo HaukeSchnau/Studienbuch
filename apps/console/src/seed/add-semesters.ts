@@ -6,6 +6,8 @@ import { db } from "@stu/db/client";
 import { Schools, Semesters } from "@stu/db/schema";
 import { getHolidays } from "@stu/external-api";
 
+import { logger } from "../logger";
+
 export const addSemesters = async (state: State) => {
   const holidays = await getHolidays(state);
   const semesterDelimitingHolidays = holidays.filter(
@@ -15,7 +17,7 @@ export const addSemesters = async (state: State) => {
   );
 
   if (semesterDelimitingHolidays.length === 0) {
-    console.error("Could not find semester delimiting holidays");
+    logger.error("Could not find semester delimiting holidays");
     process.exit(1);
   }
 

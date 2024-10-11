@@ -12,6 +12,7 @@ import {
   importTimetable,
 } from "@stu/lib-server";
 
+import { logger } from "./logger";
 import { addSemesters } from "./seed/add-semesters";
 import { copySubstitutions } from "./seed/copy-kadmos-substitutions";
 import { generateLicenses } from "./seed/generate-licenses";
@@ -27,45 +28,45 @@ program
   .action(async (school) => {
     const defaultSchoolValue = defaultSchools[school];
 
-    console.log(`Seeding school "${school}"...`);
+    logger.info(`Seeding school "${school}"...`);
     await db
       .insert(Schools)
       .values({ id: school, ...defaultSchoolValue })
       .onConflictDoNothing();
 
-    console.log(`Generating license keys for school "${school}"...`);
+    logger.info(`Generating license keys for school "${school}"...`);
     await generateLicenses(100, school);
 
-    console.log("Importing teachers...");
+    logger.info("Importing teachers...");
     await importTeachers();
 
-    console.log("Adding semesters...");
+    logger.info("Adding semesters...");
     await addSemesters(defaultSchoolValue.stateCode);
 
-    console.log("Importing classes...");
+    logger.info("Importing classes...");
     await importClasses({ school });
 
-    console.log("Seeding complete!");
+    logger.info("Seeding complete!");
     process.exit(0);
   });
 
 program.command("import-substitutions").action(async () => {
-  console.log("Copying today's substitutions...");
+  logger.info("Copying today's substitutions...");
   await copySubstitutions("igs-lil", "TODAY");
-  console.log("Copying tomorrow's substitutions...");
+  logger.info("Copying tomorrow's substitutions...");
   await copySubstitutions("igs-lil", "TOMORROW");
 
   process.exit(0);
 });
 
 program.command("import-teachers").action(async () => {
-  console.log("Importing teachers...");
+  logger.info("Importing teachers...");
   await importTeachers();
   process.exit(0);
 });
 
 program.command("import-classes").action(async () => {
-  console.log("Copying classes...");
+  logger.info("Copying classes...");
   await importClasses({ school: "igs-lil" });
 
   process.exit(0);
@@ -80,7 +81,7 @@ program.command("import-semesters").action(async () => {
     await addSemesters(state.stateCode);
   }
 
-  console.log(await db.query.Semesters.findMany());
+  logger.info(await db.query.Semesters.findMany());
 
   process.exit(0);
 });
@@ -92,7 +93,7 @@ program
     const today = new Date();
     for (let i = -4; i < 4; i++) {
       const date = add(today, { weeks: i });
-      console.log(`Importing timetable for ${format(date, "yyyy-MM-dd")}...`);
+      logger.info(`Importing timetable for ${format(date, "yyyy-MM-dd")}...`);
       await importTimetable({ school, date });
     }
 
@@ -105,13 +106,13 @@ program
   .argument("[email]", "Email of the new user")
   .argument("[password]", "Password of the new user")
   .action(async (username, email, password) => {
-    console.log(`Creating user "${username}"...`);
+    logger.info(`Creating user "${username}"...`);
     await createUser({
       name: username,
       email,
       password,
     });
-    console.log(`User "${username}" created!`);
+    logger.info(`User "${username}" created!`);
 
     process.exit(0);
   });
@@ -124,7 +125,7 @@ program
     if (isNaN(number)) program.error("Number must be a number");
     if (number < 1) program.error("Number must be greater than 0");
 
-    console.log(`Generating ${number} licenses...`);
+    logger.info(`Generating ${number} licenses...`);
     await generateLicenses(number, school);
 
     process.exit(0);

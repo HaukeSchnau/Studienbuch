@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@axiomhq/pino": "^1.2.0",
     "@commander-js/extra-typings": "^12.1.0",
     "@stu/api": "workspace:*",
     "@stu/db": "workspace:*",
@@ -18,6 +19,8 @@
     "commander": "^12.1.0",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
+    "pino": "^9.4.0",
+    "pino-pretty": "^11.2.2",
     "tsx": "^4.19.1",
     "zod": "catalog:"
   },

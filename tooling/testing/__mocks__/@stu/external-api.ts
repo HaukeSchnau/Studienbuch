@@ -1,7 +1,5 @@
 import type { getHolidays as getHolidaysBase } from "@stu/external-api";
 
-console.log("Mocking @stu/external-api");
-
 export const getHolidays: typeof getHolidaysBase = async () => {
   return [
     {

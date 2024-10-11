@@ -4,6 +4,8 @@ import type { SchoolId } from "@stu/lib";
 import { db } from "@stu/db/client";
 import { LicenseKeys } from "@stu/db/schema";
 
+import { logger } from "../logger";
+
 function generateLicenseKey(): string {
   return crypto
     .randomBytes(8)
@@ -39,5 +41,5 @@ export const generateLicenses = async (
     });
   }
 
-  console.log(`Generated ${numberOfLicenses} licenses.`);
+  logger.info(`Generated ${numberOfLicenses} licenses.`);
 };

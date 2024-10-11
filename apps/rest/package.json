@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@axiomhq/js": "^1.1.0",
+    "@axiomhq/pino": "^1.2.0",
     "@hono/node-server": "^1.13.1",
     "@hono/trpc-server": "^0.3.2",
     "@hono/zod-openapi": "^0.16.2",
@@ -26,6 +27,8 @@
     "@t3-oss/env-nextjs": "^0.11.1",
     "@trpc/server": "catalog:",
     "hono": "^4.6.3",
+    "pino": "^9.4.0",
+    "pino-pretty": "^11.2.2",
     "ws": "^8.18.0",
     "zod": "catalog:"
   },

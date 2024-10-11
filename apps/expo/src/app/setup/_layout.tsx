@@ -59,7 +59,6 @@ export default function HomeLayout() {
         licenseKey: value.licenseKey,
       });
       if (error) {
-        console.error(error);
         formApi.setFieldMeta(error.field, (prev) => ({
           ...prev,
           errors: prev.errors.concat(error.message),
