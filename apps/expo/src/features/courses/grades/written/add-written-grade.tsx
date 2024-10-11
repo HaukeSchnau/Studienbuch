@@ -2,14 +2,11 @@ import { useState } from "react";
 import { View } from "react-native";
 import { startOfDay } from "date-fns";
 
-import type { Grade } from "@stu/lib";
-
 import { Button } from "~/components/button";
-import { Divider } from "~/components/divider";
+import { DateField } from "~/components/date-field";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
 import { api } from "~/utils/api";
-import { GradeCard } from "../grade-card";
 
 export const AddWrittenGrade = ({
   courseId,
@@ -19,14 +16,7 @@ export const AddWrittenGrade = ({
   onClose: () => void;
 }) => {
   const utils = api.useUtils();
-  const upsertMutation = api.students.grades.upsert.useMutation({
-    onSuccess: async () => {
-      await utils.students.grades.invalidate();
-      onClose();
-    },
-  });
-
-  const restoreMutation = api.students.grades.restore.useMutation({
+  const addMutation = api.students.grades.addWritten.useMutation({
     onSuccess: async () => {
       await utils.students.grades.invalidate();
       onClose();
@@ -35,14 +25,20 @@ export const AddWrittenGrade = ({
 
   const [points, setPoints] = useState("");
   const gradeNum = parseFloat(points.replaceAll(",", "."));
+
+  const [date, setDate] = useState(startOfDay(new Date()));
+
   const isValid = !isNaN(gradeNum) && gradeNum >= 0 && gradeNum <= 15;
 
   return (
     <View className="px-8 py-8">
       <Text variant="heading" className="text-center">
-        Mündliche Mitarbeitsnote eintragen
+        Klausurnote eintragen
       </Text>
       <View className="h-6" />
+      <DateField value={date} onChange={setDate} label="Datum der Klausur" />
+      <View className="h-6" />
+
       <TextField
         autoFocus
         label="Punkte"
@@ -62,12 +58,10 @@ export const AddWrittenGrade = ({
         className="self-end"
         label="Speichern"
         onPress={() => {
-          const date = startOfDay(new Date());
-          upsertMutation.mutate({
+          addMutation.mutate({
             courseId,
             date,
             result: gradeNum,
-            type: "ORAL",
           });
         }}
       />

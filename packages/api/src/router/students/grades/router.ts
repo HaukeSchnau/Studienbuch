@@ -67,6 +67,25 @@ export const grades = {
       },
     ),
 
+  addWritten: protectedProcedure
+    .input(
+      z.object({
+        courseId: z.string(),
+        date: z.date(),
+        result: z.number(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      await db.insert(Grades).values({
+        course: input.courseId,
+        date: input.date,
+        result: input.result,
+        student: ctx.session.user.id,
+        type: "WRITTEN",
+        parentSignature: ctx.session.user.isOfAge ? "NOT_REQUIRED" : null,
+      });
+    }),
+
   list: protectedProcedure
     .input(
       z.object({

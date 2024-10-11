@@ -59,7 +59,7 @@ export const WrittenGradesRow = ({
         }}
       />
 
-      <View className="grow">
+      <View className="shrink grow">
         <View className="flex-row items-center justify-between">
           <Text className="grow text-3xl" weight="semi-bold">
             {averageWrittenGrade ? formatGrade(averageWrittenGrade) : "—"}
