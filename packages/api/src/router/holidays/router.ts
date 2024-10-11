@@ -4,11 +4,10 @@ import { z } from "zod";
 
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
-import { Persons, Schools, Students } from "@stu/db/schema";
+import { Schools, Students } from "@stu/db/schema";
 import { getHolidays } from "@stu/external-api";
-import { STATE_CODES } from "@stu/lib";
 
-import { protectedProcedure, publicProcedure } from "../../procedures";
+import { protectedProcedure } from "../../procedures";
 
 export interface Holdiay {
   end: string;

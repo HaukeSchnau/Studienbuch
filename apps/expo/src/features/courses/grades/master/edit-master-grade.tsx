@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { View } from "react-native";
-import { startOfDay } from "date-fns";
 
 import type { Grade } from "@stu/lib";
 
@@ -69,14 +68,15 @@ export const EditMasterGrade = ({
           <View className="h-4" />
           <GradeCard
             grade={mostRecentConfirmedMasterGrade}
-            actionText="Wiederherstellen"
-            onClick={() =>
-              restoreMutation.mutate({
-                course: courseId,
-                date: mostRecentConfirmedMasterGrade.date,
-                type: "MASTER",
-              })
-            }
+            action={{
+              label: "Wiederherstellen",
+              onClick: () =>
+                restoreMutation.mutate({
+                  course: courseId,
+                  date: mostRecentConfirmedMasterGrade.date,
+                  type: "MASTER",
+                }),
+            }}
           />
         </>
       )}
@@ -87,7 +87,7 @@ export const EditMasterGrade = ({
         className="self-end"
         label="Speichern"
         onPress={() => {
-          const date = startOfDay(new Date());
+          const date = new Date();
           upsertMutation.mutate({
             courseId,
             date,

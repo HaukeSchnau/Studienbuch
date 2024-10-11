@@ -7,9 +7,9 @@ import { isArrayNonEmpty } from "@stu/lib";
 
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
+import { CourseList } from "./course-list";
 import { Header } from "./profile-header";
 import { SemesterSelector } from "./semester-selector";
-import { CourseList } from "./course-list";
 
 const Content = ({ semesters }: { semesters: NonEmptyArray<Semester> }) => {
   const [selectedSemester, setSelectedSemester] = useState<Semester>(

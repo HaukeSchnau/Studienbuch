@@ -1,6 +1,5 @@
 import type { ReactComponent } from "react-native-css-interop/dist/types";
 import { View } from "react-native";
-import Animated from "react-native-reanimated";
 
 import type { SubjectId } from "@stu/lib";
 

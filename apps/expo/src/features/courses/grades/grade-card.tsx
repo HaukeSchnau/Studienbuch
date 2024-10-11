@@ -1,4 +1,6 @@
+import type { Href } from "expo-router";
 import { View } from "react-native";
+import { Link } from "expo-router";
 import { format } from "date-fns";
 
 import type { Grade, GradeType } from "@stu/lib";
@@ -19,15 +21,23 @@ const TYPE_MAP: Record<GradeType, string> = {
 
 export const GradeCard = ({
   grade,
-  actionText,
-  onClick,
+  action,
 }: {
   grade: Grade;
-  actionText: string;
-  onClick: () => void;
+  action:
+    | {
+        label: string;
+        onClick: () => void;
+      }
+    | {
+        label: string;
+        href: Href;
+      }
+    | null;
 }) => {
   const { user } = useRequiredAuthenticatedSession();
   const isConfirmed = !!grade.parentSignature && !!grade.teacherSignature;
+  const actionColor = isConfirmed ? colors.primary.text : colors.danger.DEFAULT;
 
   return (
     <Card
@@ -37,7 +47,7 @@ export const GradeCard = ({
       }}
     >
       <View className="flex-row items-center">
-        <Text weight="bold" className="text-2xl">
+        <Text weight="bold" className="w-8 text-center text-2xl">
           {formatGradeShort(grade.result)}
         </Text>
         <View className="w-3" />
@@ -53,12 +63,27 @@ export const GradeCard = ({
           />
         </View>
       </View>
-      <OutlinedButton
-        label={actionText}
-        color={colors.primary.text}
-        className="self-end"
-        onPress={onClick}
-      />
+      {action && (
+        <>
+          <View className="h-2" />
+          {"href" in action ? (
+            <Link href={action.href} asChild>
+              <OutlinedButton
+                label={action.label}
+                color={actionColor}
+                className="self-end"
+              />
+            </Link>
+          ) : (
+            <OutlinedButton
+              label={action.label}
+              color={actionColor}
+              className="self-end"
+              onPress={action.onClick}
+            />
+          )}
+        </>
+      )}
     </Card>
   );
 };

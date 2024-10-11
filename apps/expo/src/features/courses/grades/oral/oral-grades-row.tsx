@@ -1,12 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { View } from "react-native";
 import { Link } from "expo-router";
-import Icon from "@expo/vector-icons/MaterialIcons";
 import { format } from "date-fns";
 
 import type { Grade } from "@stu/lib";
 import { formatGrade, isGradeConfirmed } from "@stu/lib";
-import { colors } from "@stu/tailwind-config/native";
 
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
 import { OutlinedButton } from "~/components/button";

@@ -21,12 +21,7 @@ const SingleConfirmationStatus = ({
       ) : (
         <Cross color={colors.danger.DEFAULT} />
       )}
-      <Text
-        className={clsx(
-          "text-sm",
-          confirmed ? "text-primary-text" : "text-danger",
-        )}
-      >
+      <Text className={clsx(confirmed ? "text-primary-text" : "text-danger")}>
         {confirmedText}
       </Text>
     </View>
