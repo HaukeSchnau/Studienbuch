@@ -34,6 +34,7 @@ mv "$SRC_DIR/apps/nextjs/.next/standalone" "$BUILD_PATH/server"
 mv "$SRC_DIR/apps/nextjs/.next/static" "$BUILD_PATH/_next/static"
 cp -r "$SRC_DIR/apps/nextjs/public" "$BUILD_PATH/public"
 
+# TODO: Archive the old, unused build directory
 rm -f "$DEPLOYMENT_NAME"
 ln -s "$BUILD_PATH" "$DEPLOYMENT_NAME"
 

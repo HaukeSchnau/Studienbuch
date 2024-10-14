@@ -226,4 +226,26 @@ export const grades = {
           ),
         );
     }),
+
+  deleteUnconfirmed: protectedProcedure
+    .input(
+      z.object({
+        course: z.string(),
+        type: z.enum(GRADE_TYPES),
+        date: z.date(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      await db
+        .delete(Grades)
+        .where(
+          and(
+            eq(Grades.student, ctx.session.user.id),
+            eq(Grades.course, input.course),
+            eq(Grades.type, input.type),
+            eq(Grades.date, input.date),
+            or(isNull(Grades.teacherSignature), isNull(Grades.parentSignature)),
+          ),
+        );
+    }),
 } satisfies TRPCRouterRecord;

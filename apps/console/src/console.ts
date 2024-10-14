@@ -1,9 +1,10 @@
 import "./instrument";
 
 import { program } from "@commander-js/extra-typings";
-import { add, format } from "date-fns";
+import { add, format, weeksToDays } from "date-fns";
 import { z } from "zod";
 
+import type { SchoolId } from "@stu/lib";
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
 import { defaultSchools, SCHOOL_IDS } from "@stu/lib";
@@ -23,6 +24,21 @@ program
   .name("console")
   .description("Studienbuch Console")
   .showSuggestionAfterError();
+
+const importTimetables = async ({
+  school,
+  weekOffsetRange,
+}: {
+  school: SchoolId;
+  weekOffsetRange: [number, number];
+}) => {
+  const today = new Date();
+  for (let i = weekOffsetRange[0]; i < weekOffsetRange[1]; i++) {
+    const date = add(today, { days: weeksToDays(i) });
+    logger.info(`Importing timetable for ${format(date, "yyyy-MM-dd")}...`);
+    await importTimetable({ school, date });
+  }
+};
 
 program
   .command("seed")
@@ -47,6 +63,9 @@ program
 
     logger.info("Importing classes...");
     await importClasses({ school });
+
+    logger.info("Importing timetables...");
+    await importTimetables({ school, weekOffsetRange: [-4, 4] });
 
     logger.info("Seeding complete!");
     process.exit(0);
@@ -92,12 +111,8 @@ program
   .command("import-timetable")
   .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
   .action(async (school) => {
-    const today = new Date();
-    for (let i = -4; i < 4; i++) {
-      const date = add(today, { weeks: i });
-      logger.info(`Importing timetable for ${format(date, "yyyy-MM-dd")}...`);
-      await importTimetable({ school, date });
-    }
+    logger.info(`Importing timetables for school "${school}"...`);
+    await importTimetables({ school, weekOffsetRange: [-4, 4] });
 
     process.exit(0);
   });

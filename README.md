@@ -2,16 +2,25 @@
 
 ## Development Setup
 
-Copy the `.env.example` file to `.env` and fill in the necessary values.
+Copy the `.env.example` file to `.env` and fill in the necessary values. Please note that some scripts assume a database name of `studienbuch-dev`. Then, run the following command to set up the development environment:
 
 ```bash
-pnpm install
+./scripts/dev/setup
+```
 
-createdb studienbuch # Create the database
-pnpm db:push # Pushes the database schema to the database
+If you prefer to automatically spin up the necessary services using Docker, you can set the `DATABASE_URL` environment variable to `postgres://stu:stu@localhost:5433/stu` and run the following command:
 
-pnpm dev:internal # Compiles the TS files of the internal packages
+```bash
+./scripts/dev/setup --docker
+```
 
-scripts/console seed igs-lil # Seeds the database with some data
-scripts/console import-timetable igs-lil # Imports the current timetable
+## Deployment
+
+e
+To deploy the application, run the following commands on the server:
+
+```bash
+git clone git@github.com/HaukeSchnau/studienbuch.git src
+
+./src/scripts/deploy prod src builds
 ```

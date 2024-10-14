@@ -12,4 +12,4 @@ fi
 
 dropdb studienbuch
 createdb studienbuch
-ssh studienbuch@stu.dev "pg_dump" | psql studienbuch
+ssh studienbuch@schnau.dev "pg_dump" | psql studienbuch

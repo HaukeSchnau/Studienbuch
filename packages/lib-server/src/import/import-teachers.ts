@@ -11,6 +11,7 @@ const FISTNAME_SALUTATION_MAP: Record<string, Salutation> = {
   Anke: "Frau",
   "Ann-Kathrin": "Frau",
   Anna: "Frau",
+  Anne: "Frau",
   Arend: "Herr",
   Arvid: "Herr",
   Beate: "Frau",
