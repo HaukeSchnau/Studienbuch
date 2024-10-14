@@ -35,7 +35,7 @@
     "@stu/lib": "workspace:*",
     "@t3-oss/env-core": "^0.11.1",
     "dayjs": "^1.11.13",
-    "drizzle-orm": "^0.33.0",
+    "drizzle-orm": "^0.34.1",
     "drizzle-zod": "^0.5.1",
     "pg": "^8.13.0",
     "zod": "catalog:"
@@ -51,7 +51,7 @@
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^2.1.1"
+    "vitest": "catalog:"
   },
   "prettier": "@stu/prettier-config"
 }

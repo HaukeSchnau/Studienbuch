@@ -32,7 +32,7 @@
     "@stu/testing": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@total-typescript/ts-reset": "^0.6.1",
-    "@types/node": "^22.7.3",
+    "@types/node": "^22.7.5",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
