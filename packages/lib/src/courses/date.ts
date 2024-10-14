@@ -44,11 +44,6 @@ export const normalTimes = [
  */
 export const isNormalTime = (time: number) => normalTimes.includes(time);
 
-export const getNormalTimeIndex = (time: number) =>
-  normalTimes.findIndex((t) => t === time);
-
-export const getNormalTime = (index: number) => normalTimes[index];
-
 /**
  * Formats a number of minutes to a time string in the format "HH:MM".
  */

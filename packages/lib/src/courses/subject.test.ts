@@ -24,4 +24,11 @@ test("guessSubject", () => {
 
   expect(guessSubject("französisch")).toBe("fr");
   expect(guessSubject("latein")).toBe("la");
+
+  expect(guessSubject("IF")).toBe("if");
+  expect(guessSubject("IF23")).toBe("if");
+
+  expect(guessSubject("AWT1")).toBe("awt");
+
+  expect(guessSubject("asdf")).toBe(null);
 });

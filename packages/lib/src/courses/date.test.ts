@@ -1,6 +1,11 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 
-import { isNormalTime, parseTime } from "./date";
+import {
+  formatDateRelative,
+  formatTime,
+  isNormalTime,
+  parseTime,
+} from "./date";
 
 test("parseTime", () => {
   expect(parseTime("08:00")).toBe(8 * 60);
@@ -20,4 +25,12 @@ test("parseTime", () => {
 test("isNormalTime", () => {
   expect(isNormalTime(8 * 60)).toBe(true);
   expect(isNormalTime(8 * 60 + 1)).toBe(false);
+});
+
+test("formatTime", () => {
+  expect(formatTime(8 * 60)).toBe("08:00");
+  expect(formatTime(8 * 60 + 1)).toBe("08:01");
+  expect(formatTime(0)).toBe("00:00");
+  expect(formatTime(1)).toBe("00:01");
+  expect(formatTime(23 * 60 + 59)).toBe("23:59");
 });
