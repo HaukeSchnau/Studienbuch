@@ -11,6 +11,8 @@
   "dependencies": {
     "@axiomhq/pino": "^1.2.0",
     "@commander-js/extra-typings": "^12.1.0",
+    "@sentry/node": "^8.34.0",
+    "@sentry/profiling-node": "^8.34.0",
     "@stu/api": "workspace:*",
     "@stu/db": "workspace:*",
     "@stu/external-api": "workspace:*",

@@ -9,6 +9,7 @@ export const env = createEnv({
   server: {
     AXIOM_DATASET: z.string().min(1),
     AXIOM_TOKEN: z.string().min(1),
+    NODE_ENV: z.enum(["development", "production", "test"]),
   },
   /**
    * Destructure all variables from `process.env` to make sure they aren't tree-shaken away.
@@ -16,6 +17,7 @@ export const env = createEnv({
   experimental__runtimeEnv: {
     AXIOM_DATASET: process.env.NEXT_PUBLIC_AXIOM_DATASET,
     AXIOM_TOKEN: process.env.NEXT_PUBLIC_AXIOM_TOKEN,
+    NODE_ENV: process.env.NODE_ENV,
   },
   skipValidation:
     !!process.env.CI ||
