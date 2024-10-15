@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { skipToken } from "@tanstack/react-query";
 
 import type { Course, SubjectId } from "@stu/lib";
 import {
@@ -37,10 +38,15 @@ export default function ClassAndCourses() {
     startYear: selectedYear.state.value.startYear,
   });
 
-  const courses = api.courses.listChoices.useQuery({
-    school: "igs-lil",
-    startYear: selectedYear.state.value.startYear,
-  });
+  const courses = api.courses.listChoices.useQuery(
+    selectedClass.state.value
+      ? {
+          school: "igs-lil",
+          startYear: selectedYear.state.value.startYear,
+          identifierInYear: selectedClass.state.value.identifierInYear,
+        }
+      : skipToken,
+  );
 
   useEffect(() => {
     if (classes.data && isArraySingleElement(classes.data)) {
@@ -49,21 +55,17 @@ export default function ClassAndCourses() {
   }, [classes.data, form]);
 
   const courseChoices = useMemo(() => {
-    const classVal = selectedClass.state.value;
-    if (courses.data && classVal) {
-      return courses.data
-        .filter((course) =>
-          course.classes.some(
-            (cls) => cls.identifierInYear === classVal.identifierInYear,
-          ),
-        )
-        .reduce<BetterMap<SubjectId, Course[]>>((acc, course) => {
+    if (courses.data) {
+      return courses.data.reduce<BetterMap<SubjectId, Course[]>>(
+        (acc, course) => {
           acc.getWithDefault(course.subject, []).push(course);
           return acc;
-        }, new BetterMap());
+        },
+        new BetterMap(),
+      );
     }
     return new BetterMap<SubjectId, Course[]>();
-  }, [courses.data, selectedClass.state.value]);
+  }, [courses.data]);
 
   if (classes.isPending || courses.isPending) {
     return <ActivityIndicator />;

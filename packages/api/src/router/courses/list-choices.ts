@@ -11,7 +11,7 @@ import {
   Persons,
   Semesters,
 } from "@stu/db/schema";
-import { SCHOOL_IDS, SEMESTER_TYPES } from "@stu/lib";
+import { SCHOOL_IDS } from "@stu/lib";
 
 import { publicProcedure } from "../../procedures";
 
@@ -20,32 +20,18 @@ export const listChoices = publicProcedure
     z.object({
       school: z.enum(SCHOOL_IDS),
       startYear: z.number(),
-      semester: z
-        .object({
-          year: z.number(),
-          type: z.enum(SEMESTER_TYPES),
-        })
-        .optional(),
+      identifierInYear: z.string(),
     }),
   )
   .query(async ({ input }) => {
-    const semester = await (async () => {
-      if (input.semester) {
-        return input.semester;
-      }
-
-      const today = new Date();
-      const semester = await db.query.Semesters.findFirst({
-        where: and(lte(Semesters.start, today), gte(Semesters.end, today)),
-      });
-      if (!semester) {
-        throw new Error("No current semester found");
-      }
-      return {
-        type: semester.type,
-        year: semester.year,
-      };
-    })();
+    const today = new Date();
+    const semester = await db.query.Semesters.findFirst({
+      where: and(lte(Semesters.start, today), gte(Semesters.end, today)),
+      columns: { type: true, year: true },
+    });
+    if (!semester) {
+      throw new Error("No current semester found");
+    }
 
     const rows = await db
       .select()
@@ -76,6 +62,7 @@ export const listChoices = publicProcedure
           eq(Courses.semesterYear, semester.year),
           eq(Courses.semesterType, semester.type),
           eq(Classes.startYear, input.startYear),
+          eq(Classes.identifierInYear, input.identifierInYear),
         ),
       );
 

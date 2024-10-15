@@ -39,6 +39,7 @@ export default function NameAndYear() {
             label="Name"
             value={field.state.value}
             onChangeText={field.setValue}
+            autoCorrect={false}
             error={
               field.state.meta.isTouched &&
               field.state.meta.errors.length &&
