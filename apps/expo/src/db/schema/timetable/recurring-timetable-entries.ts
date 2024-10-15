@@ -1,7 +1,7 @@
 import { int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { Courses } from "../school/courses";
-import { sqliteEnum } from "../utils";
+import { sqliteEnum, uuid } from "../utils";
 
 export const RecurringTimetableEntryWeeks = sqliteEnum(["EVEN", "ODD", "ALL"]);
 
@@ -14,7 +14,7 @@ export const RecurringTimetableEntries = sqliteTable(
     weeks: RecurringTimetableEntryWeeks("weeks").default("ALL").notNull(),
     room: text("room"),
 
-    course: text("course")
+    course: uuid("course")
       .notNull()
       .references(() => Courses.id, {
         onDelete: "cascade",

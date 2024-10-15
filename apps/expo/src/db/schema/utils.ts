@@ -1,8 +1,6 @@
 import { int, text } from "drizzle-orm/sqlite-core";
-import { v4 as uuidv4 } from "uuid";
 
-export const uuid = <TName extends string>(name: TName) =>
-  text(name).$defaultFn(uuidv4);
+export const uuid = <TName extends string>(name: TName) => text(name);
 
 export const sqliteEnum =
   <U extends string, T extends Readonly<[U, ...U[]]>>(values: T) =>

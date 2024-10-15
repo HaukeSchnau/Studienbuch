@@ -7,8 +7,9 @@ import {
   text,
 } from "drizzle-orm/sqlite-core";
 
-import { Persons } from "../people/persons";
-import { SemesterCoursesToClasses } from "./courses";
+import { Persons, Students } from "../people/persons";
+import { uuid } from "../utils";
+import { CoursesToClasses } from "./courses";
 import { SchoolId } from "./school-id";
 import { Years } from "./years";
 
@@ -41,13 +42,14 @@ export const ClassesRelations = relations(Classes, ({ one, many }) => ({
     references: [Years.startYear, Years.school],
   }),
   teachers: many(TeachersToClasses),
-  semesterCourses: many(SemesterCoursesToClasses),
+  courses: many(CoursesToClasses),
+  students: many(Students),
 }));
 
 export const TeachersToClasses = sqliteTable(
   "teachers_to_classes",
   {
-    teacher: text("teacher")
+    teacher: uuid("teacher")
       .notNull()
       .references(() => Persons.id, {
         onDelete: "cascade",

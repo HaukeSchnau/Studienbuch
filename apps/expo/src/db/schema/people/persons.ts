@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import { foreignKey, int, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { SALUTATIONS } from "@stu/lib";
@@ -15,6 +16,10 @@ export const Persons = sqliteTable("persons", {
   abbrv: text("abbrv").unique(),
   email: text("email").unique(),
 });
+
+export const PersonsRelations = relations(Persons, ({ one }) => ({
+  student: one(Students),
+}));
 
 export const Students = sqliteTable(
   "students",
@@ -41,3 +46,14 @@ export const Students = sqliteTable(
       .onUpdate("cascade"),
   }),
 );
+
+export const StudentsRelations = relations(Students, ({ one }) => ({
+  person: one(Persons, {
+    fields: [Students.person],
+    references: [Persons.id],
+  }),
+  class: one(Classes, {
+    fields: [Students.classIdentifier, Students.startYear, Students.school],
+    references: [Classes.identifierInYear, Classes.startYear, Classes.school],
+  }),
+}));
