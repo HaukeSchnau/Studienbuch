@@ -33,7 +33,8 @@
     "**/dist": true,
     "**/build": true,
     "**/.expo": true,
-    "**/.dart_tool": true
+    "**/.dart_tool": true,
+    "**/.idea": true
   },
   "workbench.editor.customLabels.patterns": {
     "**/page.tsx": "${dirname}.page",

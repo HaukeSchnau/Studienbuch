@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="WEB_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/.tmp" />
+      <excludeFolder url="file://$MODULE_DIR$/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/apps/console/.cache" />
+      <excludeFolder url="file://$MODULE_DIR$/apps/console/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/apps/expo/.cache" />
+      <excludeFolder url="file://$MODULE_DIR$/apps/expo/.expo" />
+      <excludeFolder url="file://$MODULE_DIR$/apps/expo/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/apps/expo/ios" />
+      <excludeFolder url="file://$MODULE_DIR$/apps/nextjs/.cache" />
+      <excludeFolder url="file://$MODULE_DIR$/apps/nextjs/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/apps/rest/.cache" />
+      <excludeFolder url="file://$MODULE_DIR$/apps/rest/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/api/.cache" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/api/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/api/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/db/.cache" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/db/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/db/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/expo-native-modules/.cache" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/expo-native-modules/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/expo-native-modules/build" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/external-api/.cache" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/external-api/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/external-api/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/lib-server/.cache" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/lib-server/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/lib/.cache" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/lib/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/lib/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/temp" />
+      <excludeFolder url="file://$MODULE_DIR$/tmp" />
+      <excludeFolder url="file://$MODULE_DIR$/tooling/eslint/.cache" />
+      <excludeFolder url="file://$MODULE_DIR$/tooling/eslint/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/tooling/prettier/.cache" />
+      <excludeFolder url="file://$MODULE_DIR$/tooling/prettier/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/tooling/tailwind/.cache" />
+      <excludeFolder url="file://$MODULE_DIR$/tooling/tailwind/.turbo" />
+      <excludeFolder url="file://$MODULE_DIR$/tooling/testing/.turbo" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>
