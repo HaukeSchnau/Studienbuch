@@ -27,8 +27,8 @@ export const Substitutions = sqliteTable(
       onUpdate: "cascade",
     }),
 
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").notNull(),
+    // createdAt: timestamp("createdAt").defaultNow().notNull(),
+    // updatedAt: timestamp("updatedAt").notNull(),
   },
   (table) => {
     return {

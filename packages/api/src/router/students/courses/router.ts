@@ -14,8 +14,11 @@ import {
 import { SEMESTER_TYPES } from "@stu/lib";
 
 import { protectedProcedure } from "../../../procedures";
+import { join } from "./join";
 
 export const courses = {
+  join,
+
   getForSemester: protectedProcedure
     .input(
       z.object({

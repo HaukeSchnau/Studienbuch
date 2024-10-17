@@ -12,7 +12,7 @@ import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
 import { api } from "~/infrastructure/trpc/react";
 
 export default function YearsPage() {
-  const years = api.years.list.useQuery({});
+  const years = api.schools.years.list.useQuery({});
   const { school } = useParsedParams(
     z.object({
       school: z.string(),

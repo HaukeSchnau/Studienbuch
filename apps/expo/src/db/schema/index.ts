@@ -9,7 +9,6 @@ export * from "./school/semesters";
 export * from "./school/years";
 
 export * from "./students/absences";
-export * from "./students/course-memberships";
 export * from "./students/grades";
 export * from "./students/tasks";
 

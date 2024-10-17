@@ -11,7 +11,7 @@ interface Props {
 }
 
 export const ClassList = ({ year }: Props) => {
-  const classes = api.classes.list.useQuery(year);
+  const classes = api.schools.classes.list.useQuery(year);
 
   if (classes.status === "pending") {
     return <LoadingIndicator />;

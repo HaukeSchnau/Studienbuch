@@ -7,7 +7,7 @@ import {
   text,
 } from "drizzle-orm/sqlite-core";
 
-import { Persons, Students } from "../people/persons";
+import { Persons } from "../people/persons";
 import { uuid } from "../utils";
 import { CoursesToClasses } from "./courses";
 import { SchoolId } from "./school-id";
@@ -43,7 +43,6 @@ export const ClassesRelations = relations(Classes, ({ one, many }) => ({
   }),
   teachers: many(TeachersToClasses),
   courses: many(CoursesToClasses),
-  students: many(Students),
 }));
 
 export const TeachersToClasses = sqliteTable(

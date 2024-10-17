@@ -31,6 +31,7 @@ export const Courses = sqliteTable(
     semesterYear: int("semester_year").notNull(),
 
     isMandatory: boolean("is_mandatory").notNull().default(false),
+    isMember: boolean("is_member").notNull().default(false),
   },
   (table) => {
     return {

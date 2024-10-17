@@ -7,7 +7,7 @@ import { db } from "@stu/db/client";
 import { Years } from "@stu/db/schema";
 import { getMaxActiveGraduationYear, SCHOOL_IDS } from "@stu/lib";
 
-import { publicProcedure } from "../../procedures";
+import { publicProcedure } from "../../../procedures";
 
 export const years = {
   list: publicProcedure

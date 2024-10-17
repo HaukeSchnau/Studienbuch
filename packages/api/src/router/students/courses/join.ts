@@ -13,7 +13,7 @@ import {
 } from "@stu/db/schema";
 import { isArraySingleElement, SCHOOL_IDS, SEMESTER_TYPES } from "@stu/lib";
 
-import { protectedProcedure } from "../../procedures";
+import { protectedProcedure } from "../../../procedures";
 
 export const join = protectedProcedure
   .input(

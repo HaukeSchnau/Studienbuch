@@ -21,7 +21,7 @@ export default function EditYearPage() {
     isPending,
     isError,
     error,
-  } = api.years.getOne.useQuery({
+  } = api.schools.years.getOne.useQuery({
     school: params.school,
     startYear: params.startYear,
   });

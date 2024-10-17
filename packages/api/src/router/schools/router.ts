@@ -8,8 +8,19 @@ import { Schools } from "@stu/db/schema";
 import { defaultTheme, SCHOOL_IDS, themeSchema } from "@stu/lib";
 
 import { publicProcedure } from "../../procedures";
+import { classes } from "./classes/router";
+import { courses } from "./courses/router";
+import { holidays } from "./holidays/router";
+import { semesters } from "./semesters/router";
+import { years } from "./years/router";
 
 export const schools = {
+  classes,
+  courses,
+  holidays,
+  semesters,
+  years,
+
   list: publicProcedure.input(z.void()).query(async () => {
     return db.query.Schools.findMany();
   }),

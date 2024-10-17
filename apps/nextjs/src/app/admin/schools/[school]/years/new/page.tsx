@@ -18,8 +18,8 @@ export default function NewYearPage() {
   const utils = api.useUtils();
   const addYear = api.management.years.add.useMutation({
     onSuccess: () => {
-      void utils.years.list.invalidate();
-      void utils.years.listGroupedBySchool.invalidate();
+      void utils.schools.years.list.invalidate();
+      void utils.schools.years.listGroupedBySchool.invalidate();
       router.push(`/admin/schools/${school}/years`);
     },
   });

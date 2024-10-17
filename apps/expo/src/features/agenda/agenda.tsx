@@ -40,7 +40,7 @@ const matchHolidayName = (name: string) => {
 };
 
 const EmptyState = () => {
-  const holiday = api.holidays.get.useQuery(
+  const holiday = api.schools.holidays.get.useQuery(
     {
       year: new Date().getFullYear(),
     },

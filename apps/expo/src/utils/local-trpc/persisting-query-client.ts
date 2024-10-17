@@ -71,7 +71,6 @@ export function localLink<TRouter extends AnyRouter = AnyRouter>(
                 },
               });
               observer.complete();
-
               next(op).subscribe({
                 next: (value) => {
                   console.log("result", value, op);

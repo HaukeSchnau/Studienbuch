@@ -17,7 +17,7 @@ export default function NameAndYear() {
     step: 1,
     onSubmitStep: () => router.push("/setup/class-and-courses"),
   });
-  const years = api.years.list.useQuery({ activeOnly: true });
+  const years = api.schools.years.list.useQuery({ activeOnly: true });
 
   return (
     <View>

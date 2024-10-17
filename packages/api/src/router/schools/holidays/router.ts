@@ -7,7 +7,7 @@ import { db } from "@stu/db/client";
 import { Schools, Students } from "@stu/db/schema";
 import { getHolidays } from "@stu/external-api";
 
-import { protectedProcedure } from "../../procedures";
+import { protectedProcedure } from "../../../procedures";
 
 export interface Holdiay {
   end: string;

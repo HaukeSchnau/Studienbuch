@@ -4,7 +4,7 @@ import { and, gte, lte } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Semesters } from "@stu/db/schema";
 
-import { publicProcedure } from "../../procedures";
+import { publicProcedure } from "../../../procedures";
 
 export const semesters = {
   getCurrent: publicProcedure.query(async () => {

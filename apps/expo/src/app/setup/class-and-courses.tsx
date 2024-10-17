@@ -33,12 +33,12 @@ export default function ClassAndCourses() {
     name: "class",
   });
 
-  const classes = api.classes.list.useQuery({
+  const classes = api.schools.classes.list.useQuery({
     school: "igs-lil",
     startYear: selectedYear.state.value.startYear,
   });
 
-  const courses = api.courses.listChoices.useQuery(
+  const courses = api.schools.courses.listChoices.useQuery(
     selectedClass.state.value
       ? {
           school: "igs-lil",

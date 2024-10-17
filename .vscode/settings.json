@@ -29,6 +29,7 @@
     ".venv": true,
     "**/.next": true,
     "**/.turbo": true,
+    "**/.cache": true,
     "**/node_modules": true,
     "**/dist": true,
     "**/build": true,

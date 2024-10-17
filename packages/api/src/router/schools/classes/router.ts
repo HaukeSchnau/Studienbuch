@@ -6,7 +6,7 @@ import { db } from "@stu/db/client";
 import { Classes } from "@stu/db/schema";
 import { SCHOOL_IDS } from "@stu/lib";
 
-import { publicProcedure } from "../../procedures";
+import { publicProcedure } from "../../../procedures";
 
 export const classes = {
   list: publicProcedure

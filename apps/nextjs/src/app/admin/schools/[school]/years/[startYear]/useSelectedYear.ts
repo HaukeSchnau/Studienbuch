@@ -10,7 +10,7 @@ export const useSelectedYear = () => {
   const params = useSafeParams(
     z.object({ school: z.enum(SCHOOL_IDS), startYear: z.coerce.number() }),
   );
-  const year = api.years.getOne.useQuery(
+  const year = api.schools.years.getOne.useQuery(
     params.school && params.startYear
       ? {
           school: params.school,

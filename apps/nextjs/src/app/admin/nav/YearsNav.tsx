@@ -15,7 +15,7 @@ interface Props {
 }
 
 export const YearsNav = ({ school }: Props) => {
-  const years = api.years.list.useQuery({ school });
+  const years = api.schools.years.list.useQuery({ school });
   const router = useRouter();
   const params = useSafeParams(z.object({ startYear: z.coerce.number() }));
 

@@ -32,9 +32,9 @@ export default function HomeLayout() {
 
   const activateLicenseKey = api.auth.activateLicenseKey.useMutation();
   const login = api.auth.loginWithLicenseKey.useMutation();
-  const joinCourses = api.courses.join.useMutation();
+  const joinCourses = api.students.courses.join.useMutation();
 
-  const semester = api.semesters.getCurrent.useQuery();
+  const semester = api.schools.semesters.getCurrent.useQuery();
 
   const utils = api.useUtils();
 
