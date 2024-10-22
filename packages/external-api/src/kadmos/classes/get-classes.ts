@@ -32,9 +32,7 @@ export const getClasses = async (
     jar,
   );
 
-  const json = await response.json();
-
-  const parsed = responseSchema.parse(json);
+  const parsed = responseSchema.parse(await response.json());
 
   return parsed.data.elements;
 };
