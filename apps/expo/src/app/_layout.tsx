@@ -27,6 +27,7 @@ import { colors } from "@stu/tailwind-config/native";
 
 import { PortalRenderer } from "~/components/portal";
 import { db } from "~/db/client";
+import { useSessionWatcher } from "~/utils/auth";
 import migrations from "../../drizzle/migrations";
 
 const DevTools = lazy(() =>
@@ -79,8 +80,12 @@ function RootLayout() {
     Nunito_700Bold,
   });
 
+  const sessionLoading = useSessionWatcher();
+
   const isLoaded =
-    (fontLoaded || !!fontError) && (migrationSuccess || !!migrationError);
+    (fontLoaded || !!fontError) &&
+    (migrationSuccess || !!migrationError) &&
+    !sessionLoading;
 
   useEffect(() => {
     if (isLoaded) {
@@ -93,33 +98,39 @@ function RootLayout() {
   }
 
   return (
-    <Providers>
-      <GestureHandlerRootView>
-        <Stack
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: colors.primary.DEFAULT,
-            },
-            headerTintColor: colors.on.primary,
-            headerTitleStyle: {
-              color: colors.on.primary,
-              fontFamily: "Nunito_700Bold",
-            },
-            contentStyle: {
-              backgroundColor: "#FFFFFF",
-            },
-          }}
-        />
+    <GestureHandlerRootView>
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: colors.primary.DEFAULT,
+          },
+          headerTintColor: colors.on.primary,
+          headerTitleStyle: {
+            color: colors.on.primary,
+            fontFamily: "Nunito_700Bold",
+          },
+          contentStyle: {
+            backgroundColor: "#FFFFFF",
+          },
+        }}
+      />
 
-        {__DEV__ && <DevTools />}
+      {__DEV__ && <DevTools />}
 
-        <PortalRenderer />
-      </GestureHandlerRootView>
-    </Providers>
+      <PortalRenderer />
+    </GestureHandlerRootView>
   );
 }
 
-export default Sentry.wrap(RootLayout);
+const RootLayoutWrapper = () => {
+  return (
+    <Providers>
+      <RootLayout />
+    </Providers>
+  );
+};
+
+export default Sentry.wrap(RootLayoutWrapper);
 
 const Providers = ({ children }: { children: ReactNode }) => {
   return <TRPCProvider>{children}</TRPCProvider>;

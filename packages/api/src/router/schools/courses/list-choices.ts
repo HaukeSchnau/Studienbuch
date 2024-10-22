@@ -27,7 +27,6 @@ export const listChoices = publicProcedure
     const today = new Date();
     const semester = await db.query.Semesters.findFirst({
       where: and(lte(Semesters.start, today), gte(Semesters.end, today)),
-      columns: { type: true, year: true },
     });
     if (!semester) {
       throw new Error("No current semester found");
@@ -84,7 +83,7 @@ export const listChoices = publicProcedure
           startYear: number;
           school: string;
         }[];
-        semesterType: string;
+        semesterType: "SUMMER" | "WINTER";
         semesterYear: number;
       }
     >();
@@ -118,5 +117,8 @@ export const listChoices = publicProcedure
       });
     }
 
-    return Array.from(result.values());
+    return {
+      semester,
+      courses: Array.from(result.values()),
+    };
   });

@@ -18,7 +18,7 @@ interface Props extends TextInputProps {
 
 export const TextField = ({ label, placeholder, error, ...props }: Props) => {
   const [isActive, setIsActive] = useState(false);
-  const active = useSharedValue(false);
+  const active = useSharedValue(props.value.length > 0);
   const focused = useSharedValue(false);
 
   const onFocus = () => {

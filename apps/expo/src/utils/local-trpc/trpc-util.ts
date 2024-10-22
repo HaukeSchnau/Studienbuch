@@ -8,7 +8,7 @@ import type {
 
 export interface LocalQuery<Input, Output> {
   persist: (input: Input, output: Output) => void | Promise<void>;
-  read: (input: Input) => Output | Promise<Output>;
+  read?: (input: Input) => Output | Promise<Output>;
 
   mutate?: undefined;
 }

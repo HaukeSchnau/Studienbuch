@@ -6,7 +6,6 @@ import {
   text,
 } from "drizzle-orm/sqlite-core";
 
-import { Persons } from "../people/persons";
 import { Courses } from "../school/courses";
 import { timestamp, uuid } from "../utils";
 
@@ -14,12 +13,6 @@ export const AbsenceDays = sqliteTable(
   "absence_days",
   {
     date: timestamp("date").notNull(),
-    student: uuid("student")
-      .notNull()
-      .references(() => Persons.id, {
-        onDelete: "restrict",
-        onUpdate: "cascade",
-      }),
 
     reason: text("reason").notNull(),
     parentSignature: text("parent_signature"),
@@ -27,7 +20,7 @@ export const AbsenceDays = sqliteTable(
   (table) => {
     return {
       pk: primaryKey({
-        columns: [table.date, table.student],
+        columns: [table.date],
       }),
     };
   },
@@ -37,13 +30,6 @@ export const CourseAbsences = sqliteTable(
   "course_absences",
   {
     date: timestamp("date").notNull(),
-    student: uuid("student")
-      .notNull()
-      .references(() => Persons.id, {
-        onDelete: "restrict",
-        onUpdate: "cascade",
-      }),
-
     course: uuid("course")
       .notNull()
       .references(() => Courses.id, {
@@ -56,35 +42,27 @@ export const CourseAbsences = sqliteTable(
   (table) => {
     return {
       pk: primaryKey({
-        columns: [table.date, table.course, table.student],
+        columns: [table.date, table.course],
       }),
       absence_days_fk: foreignKey({
-        columns: [table.date, table.student],
-        foreignColumns: [AbsenceDays.date, AbsenceDays.student],
+        columns: [table.date],
+        foreignColumns: [AbsenceDays.date],
       }),
     };
   },
 );
 
-export const AbsenceDaysRelations = relations(AbsenceDays, ({ one, many }) => ({
-  student: one(Persons, {
-    fields: [AbsenceDays.student],
-    references: [Persons.id],
-  }),
+export const AbsenceDaysRelations = relations(AbsenceDays, ({ many }) => ({
   absenceCourses: many(CourseAbsences),
 }));
 
 export const AbsenceCoursesRelations = relations(CourseAbsences, ({ one }) => ({
-  student: one(Persons, {
-    fields: [CourseAbsences.student],
-    references: [Persons.id],
-  }),
   course: one(Courses, {
     fields: [CourseAbsences.course],
     references: [Courses.id],
   }),
   absenceDay: one(AbsenceDays, {
-    fields: [CourseAbsences.date, CourseAbsences.student],
-    references: [AbsenceDays.date, AbsenceDays.student],
+    fields: [CourseAbsences.date],
+    references: [AbsenceDays.date],
   }),
 }));

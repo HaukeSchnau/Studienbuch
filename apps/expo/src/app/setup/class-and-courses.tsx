@@ -56,7 +56,7 @@ export default function ClassAndCourses() {
 
   const courseChoices = useMemo(() => {
     if (courses.data) {
-      return courses.data.reduce<BetterMap<SubjectId, Course[]>>(
+      return courses.data.courses.reduce<BetterMap<SubjectId, Course[]>>(
         (acc, course) => {
           acc.getWithDefault(course.subject, []).push(course);
           return acc;
@@ -67,12 +67,17 @@ export default function ClassAndCourses() {
     return new BetterMap<SubjectId, Course[]>();
   }, [courses.data]);
 
-  if (classes.isPending || courses.isPending) {
-    return <ActivityIndicator />;
+  if (classes.isError || courses.isError) {
+    return (
+      <Text>
+        Fehler: {classes.isError ? classes.error.message : ""}{" "}
+        {courses.isError ? courses.error.message : ""}
+      </Text>
+    );
   }
 
-  if (classes.isError || courses.isError) {
-    return <Text>Fehler</Text>;
+  if (classes.isPending || courses.isPending) {
+    return <ActivityIndicator />;
   }
 
   const hasClasses = classes.data.length > 1;

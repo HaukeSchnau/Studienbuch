@@ -9,13 +9,20 @@ export { getCookies } from "./cookies";
 export { findPermissionScope } from "./hasPermission";
 export { getPermissions } from "./getPermissions";
 
+interface User {
+  id: string;
+  name: string;
+  isSuperUser: boolean;
+  isOfAge: boolean;
+}
+
 export interface Session {
-  user: {
-    id: string;
-    name: string;
-    isSuperUser: boolean;
-    isOfAge: boolean;
-  } | null;
+  user: User | null;
+  token: string;
+}
+
+export interface AuthenticatedSession {
+  user: User;
   token: string;
 }
 

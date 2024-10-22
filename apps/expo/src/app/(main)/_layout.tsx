@@ -7,13 +7,9 @@ import { Text } from "~/components/text";
 import { useSession } from "~/utils/auth";
 
 export default function TabLayout() {
-  const authenticated = useSession();
+  const session = useSession();
 
-  if (authenticated === null) {
-    return <Stack.Screen options={{ headerShown: false }} />;
-  }
-
-  if (authenticated === false) {
+  if (!session?.user) {
     return <Redirect href="/setup/license-key" />;
   }
 

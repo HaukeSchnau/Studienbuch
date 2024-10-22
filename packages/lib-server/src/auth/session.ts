@@ -5,7 +5,7 @@ import { db } from "@stu/db/client";
 import { Sessions } from "@stu/db/schema";
 import { isArraySingleElement } from "@stu/lib";
 
-import type { Session, Session as SessionType } from "./index";
+import type { AuthenticatedSession, Session } from "./index";
 
 export const getSession = async (
   sessionToken: string,
@@ -52,7 +52,7 @@ export const createSession = async (user: {
   isSuperUser: boolean;
   isOfAge: boolean;
   name: string;
-}): Promise<SessionType> => {
+}): Promise<AuthenticatedSession> => {
   const newSession = await db
     .insert(Sessions)
     .values({

@@ -25,15 +25,22 @@ export class PersistingQueryClient extends QueryClient {
               ...path,
             ]) as LocalQuery<unknown, unknown> | undefined;
 
+            if (!localProcedure) {
+              throw new Error(
+                `No local procedure found for query ${path.join(".")}`,
+              );
+            }
+
             const promise = queryFn(context);
             if (promise instanceof Promise) {
               void promise.then((data) => {
                 this.setQueryData(query.queryKey, data);
-                return localProcedure?.persist(params.input, data);
+                return localProcedure.persist(params.input, data);
+                // .catch((e) => console.log(query.queryKey, e));
               });
             }
 
-            if (localProcedure) {
+            if (localProcedure.read) {
               return localProcedure.read(params.input);
             }
 

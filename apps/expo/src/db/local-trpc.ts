@@ -10,15 +10,21 @@ import type { AgendaEntry } from "@stu/lib";
 
 import type { ClientRouter } from "../utils/local-trpc/trpc-util";
 import { getStorage, setStorage } from "~/utils/storage";
-import { alias, and, asc, between, eq } from ".";
+import { alias, and, asc, between, eq, inArray, sql } from ".";
 import { db } from "./client";
 import {
+  AbsenceDays,
+  Classes,
+  CourseAbsences,
   Courses,
   CoursesToClasses,
   CoursesToTeachers,
   Persons,
+  Schools,
+  Semesters,
   Substitutions,
   TimetableEntries,
+  Years,
 } from "./schema";
 
 const Teachers = alias(Persons, "teachers");
@@ -31,24 +37,178 @@ export const clientRouter: ClientRouter<AppRouter> = {
       read: () => getStorage("auth.session"),
     },
   },
+  schools: {
+    semesters: {
+      getCurrent: {
+        persist: async (_, output) => {
+          await db
+            .insert(Semesters)
+            .values(output)
+            .onConflictDoUpdate({
+              target: [Semesters.school, Semesters.type, Semesters.year],
+              set: {
+                name: sql.raw(`excluded.${Semesters.name.name}`),
+                start: sql.raw(`excluded.${Semesters.start.name}`),
+                end: sql.raw(`excluded.${Semesters.end.name}`),
+              },
+            });
+        },
+      },
+    },
+    years: {
+      list: {
+        persist: async (_, output) => {
+          // TODO: Make this non-hardcoded
+          await db
+            .insert(Schools)
+            .values({
+              id: "igs-lil",
+              name: "IGS Lilienthal",
+              stateCode: "NI",
+            })
+            .onConflictDoNothing();
+
+          await db
+            .insert(Years)
+            .values(output)
+            .onConflictDoUpdate({
+              target: [Years.startYear, Years.school],
+              set: {
+                name: sql.raw(`excluded.${Years.name.name}`),
+                graduationYear: sql.raw(
+                  `excluded.${Years.graduationYear.name}`,
+                ),
+              },
+            });
+        },
+      },
+    },
+    classes: {
+      list: {
+        persist: async (_, output) => {
+          await db.insert(Classes).values(output).onConflictDoNothing();
+        },
+      },
+    },
+    courses: {
+      listChoices: {
+        persist: async (input, { courses, semester }) => {
+          // TODO: This may not be necessary. Check if semester is already fetched. If it is, reduce the response
+          await db
+            .insert(Semesters)
+            .values(semester)
+            .onConflictDoUpdate({
+              target: [Semesters.school, Semesters.type, Semesters.year],
+              set: {
+                name: sql.raw(`excluded.${Semesters.name.name}`),
+                start: sql.raw(`excluded.${Semesters.start.name}`),
+                end: sql.raw(`excluded.${Semesters.end.name}`),
+              },
+            });
+
+          for (const course of courses) {
+            await db
+              .insert(Courses)
+              .values({
+                id: course.id,
+                longName: course.name, // TODO: wrong field
+                name: course.name,
+                school: input.school,
+                semesterType: course.semesterType,
+                semesterYear: course.semesterYear,
+                subject: course.subject,
+                isMandatory: course.isMandatory,
+                isMember: false,
+              })
+              .onConflictDoUpdate({
+                target: [Courses.id],
+                set: {
+                  isMandatory: course.isMandatory,
+                  longName: course.name,
+                  name: course.name,
+                  school: input.school,
+                  semesterType: course.semesterType,
+                  semesterYear: course.semesterYear,
+                  subject: course.subject,
+                },
+              });
+
+            await db
+              .insert(CoursesToClasses)
+              .values({
+                school: input.school,
+                classIdentifier: input.identifierInYear,
+                classStartYear: input.startYear,
+                course: course.id,
+              })
+              .onConflictDoNothing();
+
+            for (const teacher of course.teachers) {
+              await db
+                .insert(Persons)
+                .values({
+                  id: teacher.id,
+                  name: teacher.name,
+                  abbrv: teacher.abbrv,
+                  salutation: teacher.salutation,
+                })
+                .onConflictDoUpdate({
+                  target: Persons.id,
+                  set: {
+                    abbrv: teacher.abbrv,
+                    name: teacher.name,
+                    salutation: teacher.salutation,
+                  },
+                });
+
+              await db
+                .insert(CoursesToTeachers)
+                .values({
+                  course: course.id,
+                  teacher: teacher.id,
+                })
+                .onConflictDoNothing();
+            }
+          }
+        },
+      },
+    },
+  },
   students: {
     timetable: {
       getWeek: {
-        persist: (_, output) => {
+        persist: async (_, output) => {
           for (const entry of output) {
-            db.insert(TimetableEntries).values({
-              course: entry.course.id,
-              duration: entry.duration,
-              start: entry.start,
-            });
+            await db
+              .insert(TimetableEntries)
+              .values({
+                course: entry.course.id,
+                duration: entry.duration,
+                start: entry.start,
+              })
+              .onConflictDoUpdate({
+                target: [TimetableEntries.course, TimetableEntries.start],
+                set: {
+                  duration: entry.duration,
+                },
+              });
 
             for (const substitution of entry.substitutions) {
-              db.insert(Substitutions).values({
-                course: entry.course.id,
-                start: entry.start,
-                substitute: substitution.substitute?.id,
-                type: substitution.type,
-              });
+              await db
+                .insert(Substitutions)
+                .values({
+                  course: entry.course.id,
+                  start: entry.start,
+                  substitute: substitution.substitute?.id,
+                  type: substitution.type,
+                })
+                .onConflictDoUpdate({
+                  target: [Substitutions.course, Substitutions.start],
+                  set: {
+                    substitute: substitution.substitute?.id,
+                    type: substitution.type,
+                  },
+                });
             }
           }
         },
@@ -128,6 +288,155 @@ export const clientRouter: ClientRouter<AppRouter> = {
           }
 
           return timetableEntries;
+        },
+      },
+    },
+    absences: {
+      listUnexcused: {
+        persist: async (_, output) => {
+          for (const absenceDay of output) {
+            await db
+              .insert(AbsenceDays)
+              .values({
+                date: absenceDay.date,
+                reason: absenceDay.reason,
+                parentSignature: absenceDay.parentSignature,
+              })
+              .onConflictDoUpdate({
+                target: [AbsenceDays.date],
+                set: {
+                  reason: absenceDay.reason,
+                  parentSignature: absenceDay.parentSignature,
+                },
+              });
+
+            for (const courseAbsence of absenceDay.absenceCourses) {
+              await db
+                .insert(CourseAbsences)
+                .values({
+                  date: absenceDay.date,
+                  course: courseAbsence.course.id,
+                  teacherSignature: courseAbsence.teacherSignature,
+                })
+                .onConflictDoUpdate({
+                  target: [CourseAbsences.date, CourseAbsences.course],
+                  set: {
+                    teacherSignature: courseAbsence.teacherSignature,
+                  },
+                });
+            }
+          }
+        },
+      },
+      listExcused: {
+        persist: async (_, output) => {
+          for (const absenceDay of output) {
+            await db
+              .insert(AbsenceDays)
+              .values({
+                date: absenceDay.date,
+                reason: absenceDay.reason,
+                parentSignature: absenceDay.parentSignature,
+              })
+              .onConflictDoUpdate({
+                target: [AbsenceDays.date],
+                set: {
+                  reason: absenceDay.reason,
+                  parentSignature: absenceDay.parentSignature,
+                },
+              });
+
+            for (const courseAbsence of absenceDay.absenceCourses) {
+              await db
+                .insert(CourseAbsences)
+                .values({
+                  date: absenceDay.date,
+                  course: courseAbsence.course.id,
+                  teacherSignature: courseAbsence.teacherSignature,
+                })
+                .onConflictDoUpdate({
+                  target: [CourseAbsences.date, CourseAbsences.course],
+                  set: {
+                    teacherSignature: courseAbsence.teacherSignature,
+                  },
+                });
+            }
+          }
+        },
+      },
+      getOne: {
+        persist: async (input, output) => {
+          if (!output) {
+            return;
+          }
+
+          await db
+            .insert(AbsenceDays)
+            .values({
+              date: input.date,
+              reason: output.reason,
+              parentSignature: output.parentSignature,
+            })
+            .onConflictDoUpdate({
+              target: [AbsenceDays.date],
+              set: {
+                reason: output.reason,
+                parentSignature: output.parentSignature,
+              },
+            });
+
+          for (const courseAbsence of output.absenceCourses) {
+            await db
+              .insert(CourseAbsences)
+              .values({
+                date: input.date,
+                course: courseAbsence.course.id,
+                teacherSignature: courseAbsence.teacherSignature,
+              })
+              .onConflictDoUpdate({
+                target: [CourseAbsences.date, CourseAbsences.course],
+                set: {
+                  teacherSignature: courseAbsence.teacherSignature,
+                },
+              });
+          }
+        },
+      },
+      // add: {
+      //   mutate: async (input) => {
+      //     await db.insert(AbsenceDays).values({
+      //       date: input.date,
+      //       reason: input.reason,
+      //       parentSignature: user.isOfAge ? "NOT_REQUIRED" : null,
+      //     });
+      //     await db.insert(CourseAbsences).values(
+      //       input.courseIds.map((courseId) => ({
+      //         date: input.date,
+      //         course: courseId,
+      //       })),
+      //     );
+      //   },
+      // },
+      delete: {
+        mutate: async (input) => {
+          await db
+            .delete(CourseAbsences)
+            .where(
+              and(
+                eq(CourseAbsences.date, input.date),
+                inArray(CourseAbsences.course, input.courseIds),
+              ),
+            );
+
+          const courseAbsences = await db.query.CourseAbsences.findMany({
+            where: eq(CourseAbsences.date, input.date),
+          });
+
+          if (courseAbsences.length === 0) {
+            await db
+              .delete(AbsenceDays)
+              .where(eq(AbsenceDays.date, input.date));
+          }
         },
       },
     },

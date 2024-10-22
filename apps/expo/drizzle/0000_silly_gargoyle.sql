@@ -65,12 +65,7 @@ CREATE TABLE `rooms` (
 CREATE TABLE `schools` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
-	`image` text NOT NULL,
-	`theme` text NOT NULL,
-	`state_code` text NOT NULL,
-	`kadmos_name` text NOT NULL,
-	`kadmos_username` text NOT NULL,
-	`kadmos_password` text NOT NULL
+	`state_code` text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `semesters` (
@@ -94,23 +89,18 @@ CREATE TABLE `years` (
 );
 --> statement-breakpoint
 CREATE TABLE `absence_days` (
-	`date` integer NOT NULL,
-	`student` text NOT NULL,
+	`date` integer PRIMARY KEY NOT NULL,
 	`reason` text NOT NULL,
-	`parent_signature` text,
-	PRIMARY KEY(`date`, `student`),
-	FOREIGN KEY (`student`) REFERENCES `persons`(`id`) ON UPDATE cascade ON DELETE restrict
+	`parent_signature` text
 );
 --> statement-breakpoint
 CREATE TABLE `course_absences` (
 	`date` integer NOT NULL,
-	`student` text NOT NULL,
 	`course` text NOT NULL,
 	`teacher_signature` text,
-	PRIMARY KEY(`date`, `course`, `student`),
-	FOREIGN KEY (`student`) REFERENCES `persons`(`id`) ON UPDATE cascade ON DELETE restrict,
+	PRIMARY KEY(`date`, `course`),
 	FOREIGN KEY (`course`) REFERENCES `courses`(`id`) ON UPDATE cascade ON DELETE restrict,
-	FOREIGN KEY (`date`,`student`) REFERENCES `absence_days`(`date`,`student`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`date`) REFERENCES `absence_days`(`date`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `grades` (

@@ -20,6 +20,7 @@ import type { SetupForm } from "./form";
 import { shadow } from "~/components/styles/shadow";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
+import { useLicenseKey, useSession } from "~/utils/auth";
 import { setStorage } from "~/utils/storage";
 import logoImage from "../../../assets/icon.png";
 import { FormContext } from "./form";
@@ -38,15 +39,20 @@ export default function HomeLayout() {
 
   const utils = api.useUtils();
 
+  const session = useSession();
+  const licenseKey = useLicenseKey();
+
   const form = useForm<SetupForm, ReturnType<typeof zodValidator>>({
     defaultValues: {
-      licenseKey: "",
-      name: "",
-      isOfAge: false,
+      licenseKey: licenseKey ?? "",
+      name: session?.user?.name ?? "",
+      isOfAge: session?.user?.isOfAge ?? false,
       chosenCourses: {},
     },
     validatorAdapter: zodValidator(),
     onSubmit: async ({ value, formApi }) => {
+      console.log(semester);
+
       if (!semester.data || !value.class) {
         return; // TODO: show error
       }

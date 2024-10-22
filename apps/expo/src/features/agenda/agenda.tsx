@@ -151,9 +151,13 @@ export const Agenda = () => {
       return "morgen";
     }
 
-    return `am ${format(date, "EEEE", {
-      locale: localeDE,
-    })}`;
+    if (isWithinInterval(date, { start: now, end: add(now, { days: 6 }) })) {
+      return `am ${format(date, "EEEE", {
+        locale: localeDE,
+      })}`;
+    }
+
+    return `am ${format(date, "dd.MM.yyyy")}`;
   })();
 
   return (

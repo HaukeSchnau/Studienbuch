@@ -14,26 +14,34 @@ export const useRequiredAuthenticatedSession = () => {
   return { ...session, user: session.user };
 };
 
+export const useLicenseKey = () => {
+  const [licenseKey] = useStorage("auth.licenseKey");
+  return licenseKey;
+};
+
 export const useSession = () => {
+  const [session] = useStorage("auth.session");
+  return session;
+};
+
+export const useSessionWatcher = () => {
   const utils = api.useUtils();
   const router = useRouter();
   const login = api.auth.loginWithLicenseKey.useMutation();
   const [licenseKey] = useStorage("auth.licenseKey");
   const [session, setSession] = useStorage("auth.session");
 
-  const [authenticated, setAuthenticated] = useState<boolean | null>(
-    session === null ? null : true,
-  );
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     if (session) {
-      setAuthenticated(true);
+      setLoading(false);
       return;
     }
 
     void (async () => {
       if (!licenseKey) {
-        setAuthenticated(false);
+        setLoading(false);
         return;
       }
       const { error, session } = await login.mutateAsync({
@@ -41,11 +49,11 @@ export const useSession = () => {
       });
       if (error) {
         console.error(error);
-        setAuthenticated(false);
+        setLoading(false);
         return;
       }
       await setSession(session);
-      setAuthenticated(true);
+      setLoading(false);
 
       await utils.invalidate();
       router.replace("/");
@@ -53,5 +61,5 @@ export const useSession = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [licenseKey]);
 
-  return authenticated;
+  return loading;
 };
