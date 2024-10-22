@@ -1,15 +1,14 @@
-import { fromPartial } from "@total-typescript/shoehorn";
 import { expect, test } from "vitest";
 
 import { formalName } from "./teacher";
 
 test("formalName", () => {
-  expect(formalName(fromPartial({ name: "Bernd" }))).toBe("Bernd");
-  expect(formalName(fromPartial({ name: "Müller" }))).toBe("Müller");
-  expect(formalName(fromPartial({ name: "Bernd Müller" }))).toBe(
+  expect(formalName({ name: "Bernd", salutation: null })).toBe("Bernd");
+  expect(formalName({ name: "Müller", salutation: null })).toBe("Müller");
+  expect(formalName({ name: "Bernd Müller", salutation: null })).toBe(
     "Bernd Müller",
   );
-  expect(
-    formalName(fromPartial({ name: "Bernd Müller", salutation: "Herr" })),
-  ).toBe("Herr Müller");
+  expect(formalName({ name: "Bernd Müller", salutation: "Herr" })).toBe(
+    "Herr Müller",
+  );
 });

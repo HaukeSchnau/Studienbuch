@@ -11,8 +11,6 @@ import { isNormalTime, parseTime } from "@stu/lib";
 
 import { parseTimetableCell } from "./parse-timetable-cell";
 
-import "@total-typescript/ts-reset";
-
 const rowSchema = z.object({
   "": z.string(),
   Montag: z.string(),
@@ -40,7 +38,7 @@ export const parseScheduleCsv = async (
       const parsed = rowSchema.safeParse(row);
       if (parsed.success) return parsed.data;
     })
-    .filter(Boolean)
+    .filter((x) => !!x)
     .map(mapRow);
 
   return parseScheduleRows(rows, areAllCoursesChoosable);

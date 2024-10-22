@@ -71,8 +71,7 @@ export const getHolidays = async (
     response = await getHolidaysInternal(state, year);
   } catch {
     const snapshot = await fs.readFile(snapshotFile, "utf-8");
-    const json = JSON.parse(snapshot);
-    return holidaySchema.array().parse(json);
+    return holidaySchema.array().parse(JSON.parse(snapshot));
   }
 
   await writeFile(snapshotFile, JSON.stringify(response, null, 2));

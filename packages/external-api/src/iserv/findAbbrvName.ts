@@ -28,9 +28,7 @@ export const findAbbrvName = async (
     {},
   );
 
-  const json = await response.json();
-
-  const data = schema.parse(json);
+  const data = schema.parse(await response.json());
   const match = data.find((entry) =>
     entry.extra
       .split(",")

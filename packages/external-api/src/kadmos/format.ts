@@ -22,8 +22,7 @@ export const getFormat = async (
       "Content-Type": "application/json",
     },
   });
-  const json = await response.json();
-  return schema.parse(json).payload;
+  return schema.parse(await response.json()).payload;
 };
 
 const schema = z.strictObject({

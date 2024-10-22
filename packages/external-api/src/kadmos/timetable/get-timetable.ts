@@ -109,9 +109,7 @@ export const getTimetable = async (
     cookies,
   );
 
-  const json = await response.json();
-
-  const parsed = schema.parse(json);
+  const parsed = schema.parse(await response.json());
 
   return parsed.data.result.data;
 };

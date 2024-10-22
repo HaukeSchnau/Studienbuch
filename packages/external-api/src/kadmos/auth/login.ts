@@ -34,11 +34,11 @@ export const login = async (
     jar,
   );
 
-  const json = await response.json();
-
-  z.object({
+  const successResponseSchema = z.object({
     state: z.literal("SUCCESS"),
-  }).parse(json);
+  });
+
+  successResponseSchema.parse(await response.json());
 
   return jar;
 };

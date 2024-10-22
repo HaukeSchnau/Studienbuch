@@ -24,9 +24,8 @@ const getSubstitutionsWithPayload = async (
       "Content-Type": "application/json",
     },
   });
-  const json = await response.json();
 
-  return responseSchema.parse(json).payload;
+  return responseSchema.parse(await response.json()).payload;
 };
 
 export const getSubstitutionsFromKadmos = async (
