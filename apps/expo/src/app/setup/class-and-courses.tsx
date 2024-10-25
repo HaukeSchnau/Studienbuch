@@ -13,6 +13,7 @@ import {
 import { Button } from "~/components/button";
 import { SelectCourse } from "~/components/select-course";
 import { SelectField } from "~/components/select-field";
+import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { useFormContext } from "./form";
@@ -69,10 +70,9 @@ export default function ClassAndCourses() {
 
   if (classes.isError || courses.isError) {
     return (
-      <Text>
-        Fehler: {classes.isError ? classes.error.message : ""}{" "}
-        {courses.isError ? courses.error.message : ""}
-      </Text>
+      <TempError
+        error={`${classes.error?.message} ${courses.error?.message}`}
+      />
     );
   }
 

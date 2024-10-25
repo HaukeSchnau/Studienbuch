@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { ScrollView, View } from "react-native";
+import { ActivityIndicator, ScrollView, View } from "react-native";
 import { Tabs } from "expo-router";
 
 import type { NonEmptyArray, Semester } from "@stu/lib";
 import { isArrayNonEmpty } from "@stu/lib";
 
+import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { CourseList } from "./course-list";
@@ -29,8 +30,12 @@ const Content = ({ semesters }: { semesters: NonEmptyArray<Semester> }) => {
 export const ProfilePage = () => {
   const semesters = api.students.semesters.getOwn.useQuery();
 
-  if (!semesters.data) {
-    return null;
+  if (semesters.isPending) {
+    return <ActivityIndicator />;
+  }
+
+  if (semesters.isError) {
+    return <TempError error={semesters.error.message} />;
   }
 
   return (

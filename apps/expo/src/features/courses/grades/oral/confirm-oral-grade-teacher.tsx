@@ -9,6 +9,7 @@ import {
   ConfirmPageContent,
   ViewConfirmPageContent,
 } from "~/components/confirm-page-content";
+import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
@@ -36,7 +37,7 @@ export const ConfirmOralGradeTeacher = ({ grade }: { grade: Grade }) => {
   const { date, result } = grade;
 
   if (!teacher) {
-    return null;
+    return <TempError />;
   }
 
   return (
@@ -74,7 +75,7 @@ export const OralGradeTeacherConfirmationView = ({
   const [teacher] = grade.course.teachers;
 
   if (!teacher) {
-    return null;
+    return <TempError />;
   }
 
   return (

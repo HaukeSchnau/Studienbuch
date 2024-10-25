@@ -1,9 +1,10 @@
-import { View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "@expo/vector-icons/MaterialIcons";
 
 import { getCurrentYearNum } from "@stu/lib";
 
+import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
@@ -20,8 +21,12 @@ export const Header = () => {
   const { user } = useRequiredAuthenticatedSession();
   const year = api.students.years.getOwn.useQuery();
 
-  if (!year.data) {
-    return null;
+  if (year.isPending) {
+    return <ActivityIndicator />;
+  }
+
+  if (year.isError) {
+    return <TempError error={year.error.message} />;
   }
 
   return (

@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { Stack } from "expo-router";
 
 import {
@@ -8,15 +8,17 @@ import {
 
 export const AbsencesPage = () => {
   return (
-    <View className="gap-16 p-8">
-      <Stack.Screen
-        options={{
-          title: "Meine Fehlzeiten",
-        }}
-      />
+    <ScrollView>
+      <View className="gap-16 p-8">
+        <Stack.Screen
+          options={{
+            title: "Meine Fehlzeiten",
+          }}
+        />
 
-      <UnexcusedAbsences />
-      <ExcusedAbsences />
-    </View>
+        <UnexcusedAbsences />
+        <ExcusedAbsences />
+      </View>
+    </ScrollView>
   );
 };

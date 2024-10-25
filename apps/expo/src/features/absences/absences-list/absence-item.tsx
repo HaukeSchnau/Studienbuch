@@ -10,6 +10,7 @@ import { OutlinedButton } from "~/components/button";
 import { ConfirmationStatus } from "~/components/confirmation-status";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
+import { useRequiredAuthenticatedSession } from "~/utils/auth";
 
 interface AbsenceViewProps {
   absenceGroup: AbsenceItemType;
@@ -18,17 +19,13 @@ interface AbsenceViewProps {
 export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
   const isExcused =
     absenceGroup.isExcusedByTeacher && absenceGroup.isExcusedByParent;
-  const { data: session } = api.auth.getSession.useQuery();
+  const { user } = useRequiredAuthenticatedSession();
   const utils = api.useUtils();
   const deleteMutation = api.students.absences.delete.useMutation({
     onSuccess: async () => {
       await utils.students.absences.invalidate();
     },
   });
-
-  if (!session?.user) {
-    return null;
-  }
 
   const params = new URLSearchParams();
   for (const absence of absenceGroup.courses) {
@@ -83,7 +80,7 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
         <ConfirmationStatus
           parent={absenceGroup.isExcusedByParent}
           teacher={absenceGroup.isExcusedByTeacher}
-          isOfAge={session.user.isOfAge}
+          isOfAge={user.isOfAge}
           order="parentTeacher"
           confirmedText="Entschuldigt"
         />

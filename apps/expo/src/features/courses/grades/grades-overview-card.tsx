@@ -1,5 +1,5 @@
 import React from "react";
-import { View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 
 import type { Grade } from "@stu/lib";
 
@@ -10,6 +10,7 @@ import { api } from "~/utils/api";
 import { MasterGradeRow } from "./master/master-grade-row";
 import { OralGradesRow } from "./oral/oral-grades-row";
 import { WrittenGradesRow } from "./written/written-grades-row";
+import { TempError } from "~/components/temp-error";
 
 export const GradesOverviewCard = ({ courseId }: { courseId: string }) => {
   const grades = api.students.grades.list.useQuery(
@@ -39,8 +40,12 @@ export const GradesOverviewCard = ({ courseId }: { courseId: string }) => {
     },
   );
 
-  if (!grades.data) {
-    return null;
+  if (grades.isPending) {
+    return <ActivityIndicator />;
+  }
+
+  if (grades.isError) {
+    return <TempError error={grades.error.message} />;
   }
 
   return (

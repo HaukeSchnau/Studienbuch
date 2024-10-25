@@ -12,6 +12,7 @@ import {
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { TempError } from "~/components/temp-error";
 
 export const ConfirmWrittenGradeTeacher = ({ grade }: { grade: Grade }) => {
   const { user } = useRequiredAuthenticatedSession();
@@ -36,7 +37,7 @@ export const ConfirmWrittenGradeTeacher = ({ grade }: { grade: Grade }) => {
   const { date, result } = grade;
 
   if (!teacher) {
-    return null;
+    return <TempError />;
   }
 
   return (
@@ -74,7 +75,7 @@ export const WrittenGradeTeacherConfirmationView = ({
   const [teacher] = grade.course.teachers;
 
   if (!teacher) {
-    return null;
+    return <TempError />;
   }
 
   return (

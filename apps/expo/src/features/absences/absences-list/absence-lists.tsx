@@ -4,6 +4,7 @@ import Icon from "@expo/vector-icons/MaterialIcons";
 import { colors } from "@stu/tailwind-config/native";
 
 import type { AbsenceItem as AbsenceItemType } from "./types";
+import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { AbsenceItem } from "./absence-item";
@@ -64,7 +65,7 @@ export const UnexcusedAbsences = () => {
     return (
       <View className="gap-2">
         {heading}
-        <Text className="text-center">Ein Fehler ist aufgetreten</Text>
+        <TempError error={query.error.message} />
       </View>
     );
   }
@@ -131,7 +132,7 @@ export const ExcusedAbsences = () => {
     return (
       <View className="gap-2">
         {heading}
-        <Text className="text-center">Ein Fehler ist aufgetreten</Text>
+        <TempError error={query.error.message} />
       </View>
     );
   }

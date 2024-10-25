@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import type { Semester } from "@stu/lib";
@@ -6,6 +6,7 @@ import type { Semester } from "@stu/lib";
 import { Card } from "~/components/card";
 import { SubjectIcon } from "~/components/subject-icon";
 import { Table } from "~/components/table";
+import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 
@@ -13,8 +14,12 @@ export const CourseList = ({ semester }: { semester: Semester }) => {
   const courses = api.students.courses.getForSemester.useQuery({ semester });
   const router = useRouter();
 
-  if (!courses.data) {
-    return null;
+  if (courses.isPending) {
+    return <ActivityIndicator />;
+  }
+
+  if (courses.isError) {
+    return <TempError error={courses.error.message} />;
   }
 
   return (
