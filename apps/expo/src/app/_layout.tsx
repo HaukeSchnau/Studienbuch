@@ -28,6 +28,7 @@ import { colors } from "@stu/tailwind-config/native";
 import { PortalRenderer } from "~/components/portal";
 import { db } from "~/db/client";
 import { useSessionWatcher } from "~/utils/auth";
+import { MutationManager } from "~/utils/local-trpc/persisting-query-client";
 import migrations from "../../drizzle/migrations";
 
 const DevTools = lazy(() =>
@@ -98,27 +99,29 @@ function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView>
-      <Stack
-        screenOptions={{
-          headerStyle: {
-            backgroundColor: colors.primary.DEFAULT,
-          },
-          headerTintColor: colors.on.primary,
-          headerTitleStyle: {
-            color: colors.on.primary,
-            fontFamily: "Nunito_700Bold",
-          },
-          contentStyle: {
-            backgroundColor: "#FFFFFF",
-          },
-        }}
-      />
+    <MutationManager>
+      <GestureHandlerRootView>
+        <Stack
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: colors.primary.DEFAULT,
+            },
+            headerTintColor: colors.on.primary,
+            headerTitleStyle: {
+              color: colors.on.primary,
+              fontFamily: "Nunito_700Bold",
+            },
+            contentStyle: {
+              backgroundColor: "#FFFFFF",
+            },
+          }}
+        />
 
-      {__DEV__ && <DevTools />}
+        {__DEV__ && <DevTools />}
 
-      <PortalRenderer />
-    </GestureHandlerRootView>
+        <PortalRenderer />
+      </GestureHandlerRootView>
+    </MutationManager>
   );
 }
 

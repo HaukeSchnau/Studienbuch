@@ -1,12 +1,16 @@
 import type { TRPCLink } from "@trpc/client";
 import type { AnyRouter } from "@trpc/server";
+import { useEffect, useState } from "react";
 import { QueryClient } from "@tanstack/react-query";
 import { observable } from "@trpc/server/observable";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
+import { useLiveQuery } from "drizzle-orm/expo-sqlite";
+import { parse, stringify } from "superjson";
 
 import type { ClientRouter, LocalQuery } from "./trpc-util";
 import { db } from "~/db/client";
 import { Mutations } from "~/db/schema";
+import { useTrpcClient } from "../api";
 import { findLocalProcedure } from "./trpc-util";
 
 export class PersistingQueryClient extends QueryClient {
@@ -58,71 +62,111 @@ export function localLink<TRouter extends AnyRouter = AnyRouter>(
 ): TRPCLink<TRouter> {
   return () => {
     return ({ op, next }) => {
-      if (op.type !== "mutation") {
+      if (op.type !== "mutation" || op.context.bypassLocal) {
+        return next(op);
+      }
+
+      const localProcedure = findLocalProcedure(
+        clientRouter,
+        op.path.split("."),
+      );
+
+      if (!localProcedure?.mutate) {
         return next(op);
       }
 
       return observable((observer) => {
-        const localProcedure = findLocalProcedure(
-          clientRouter,
-          op.path.split("."),
-        );
+        void (async () => {
+          const timestamp = new Date();
 
-        if (localProcedure?.mutate) {
-          void (async () => {
-            const handleLocalResponse = (output: unknown) => {
-              observer.next({
-                result: {
-                  data: output,
-                  type: "data",
-                },
-              });
-              observer.complete();
-              next(op).subscribe({
-                next: (value) => {
-                  console.log("result", value, op);
-                  db.update(Mutations)
-                    .set({
-                      status: "PUBLISHED",
-                    })
-                    .where(eq(Mutations.timestamp, timestamp));
-                },
-                error: (err) => {
-                  console.error("err", err, op);
-                  db.update(Mutations)
-                    .set({
-                      status: "REJECTED",
-                    })
-                    .where(eq(Mutations.timestamp, timestamp));
-                },
-                complete: () => {
-                  console.log("complete", op);
-                },
-              });
-            };
+          const localPromiseOrResult = localProcedure.mutate(op.input);
 
-            const timestamp = new Date();
-            await db.insert(Mutations).values({
-              timestamp,
-              path: op.path,
-              input: op.input,
-              status: "PENDING",
+          if (localPromiseOrResult instanceof Promise) {
+            const res = (await localPromiseOrResult) as unknown;
+            observer.next({
+              result: {
+                data: res,
+                type: "data",
+              },
             });
+          } else {
+            observer.next({
+              result: {
+                data: localPromiseOrResult,
+                type: "data",
+              },
+            });
+          }
 
-            const localPromiseOrResult = localProcedure.mutate(op.input);
+          await db.insert(Mutations).values({
+            timestamp,
+            path: op.path,
+            input: stringify(op.input),
+            status: "PENDING",
+          });
 
-            if (localPromiseOrResult instanceof Promise) {
-              void localPromiseOrResult.then(handleLocalResponse);
-            } else {
-              handleLocalResponse(localPromiseOrResult);
-            }
-          })();
-
-          return;
-        }
-
-        return next(op).subscribe(observer);
+          observer.complete();
+        })();
       });
     };
   };
 }
+
+export const MutationManager = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const [initialized, setInitialized] = useState(false);
+  const client = useTrpcClient();
+
+  const { data: muts } = useLiveQuery(
+    db
+      .select()
+      .from(Mutations)
+      .where(eq(Mutations.status, "PENDING"))
+      .orderBy(asc(Mutations.timestamp)),
+  );
+
+  useEffect(() => {
+    const abortSignal = new AbortController();
+    void (async () => {
+      for (const mut of muts) {
+        if (abortSignal.signal.aborted) {
+          return;
+        }
+        const input = parse(mut.input);
+        try {
+          await client.mutation(mut.path, input, {
+            signal: abortSignal.signal,
+            context: {
+              bypassLocal: true,
+            },
+          });
+
+          await db
+            .update(Mutations)
+            .set({
+              status: "PUBLISHED",
+            })
+            .where(eq(Mutations.timestamp, mut.timestamp));
+        } catch (e) {
+          console.error("error handling mutation", mut, e);
+          await db
+            .update(Mutations)
+            .set({
+              status: "REJECTED",
+            })
+            .where(eq(Mutations.timestamp, mut.timestamp));
+        }
+      }
+      setInitialized(true);
+    })();
+
+    return () => {
+      abortSignal.abort();
+    };
+  }, [muts, client]);
+
+  return initialized ? children : null;
+};

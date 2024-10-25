@@ -402,21 +402,26 @@ export const clientRouter: ClientRouter<AppRouter> = {
           }
         },
       },
-      // add: {
-      //   mutate: async (input) => {
-      //     await db.insert(AbsenceDays).values({
-      //       date: input.date,
-      //       reason: input.reason,
-      //       parentSignature: user.isOfAge ? "NOT_REQUIRED" : null,
-      //     });
-      //     await db.insert(CourseAbsences).values(
-      //       input.courseIds.map((courseId) => ({
-      //         date: input.date,
-      //         course: courseId,
-      //       })),
-      //     );
-      //   },
-      // },
+      add: {
+        mutate: async (input) => {
+          const user = getStorage("auth.session")?.user;
+          if (!user) {
+            throw new Error("User not logged in");
+          }
+
+          await db.insert(AbsenceDays).values({
+            date: input.date,
+            reason: input.reason,
+            parentSignature: user.isOfAge ? "NOT_REQUIRED" : null,
+          });
+          await db.insert(CourseAbsences).values(
+            input.courseIds.map((courseId) => ({
+              date: input.date,
+              course: courseId,
+            })),
+          );
+        },
+      },
       delete: {
         mutate: async (input) => {
           await db
