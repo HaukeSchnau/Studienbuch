@@ -10,7 +10,7 @@ import { parse, stringify } from "superjson";
 import type { ClientRouter, LocalQuery } from "./trpc-util";
 import { db } from "~/db/client";
 import { Mutations } from "~/db/schema";
-import { useTrpcClient } from "../api";
+import { useTrpcClient } from "~/utils/api";
 import { findLocalProcedure } from "./trpc-util";
 
 export class PersistingQueryClient extends QueryClient {

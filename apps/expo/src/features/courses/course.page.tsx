@@ -1,7 +1,7 @@
 import { View } from "react-native";
 import { Stack } from "expo-router";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de } from "date-fns/locale/de";
 
 import { formalName } from "@stu/lib";
 

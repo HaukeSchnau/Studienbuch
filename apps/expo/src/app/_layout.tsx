@@ -20,7 +20,7 @@ import {
   Nunito_700Bold,
   useFonts,
 } from "@expo-google-fonts/nunito";
-import * as Sentry from "@sentry/react-native";
+import { init, reactNavigationIntegration, wrap } from "@sentry/react-native";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 
 import { colors } from "@stu/tailwind-config/native";
@@ -37,11 +37,11 @@ const DevTools = lazy(() =>
   })),
 );
 
-const routingInstrumentation = Sentry.reactNavigationIntegration({
+const routingInstrumentation = reactNavigationIntegration({
   enableTimeToInitialDisplay: Constants.appOwnership !== AppOwnership.Expo, // Only in native builds, not in Expo Go.
 });
 
-Sentry.init({
+init({
   dsn: __DEV__
     ? "https://2a803fff45e5c6604fb7742583d0acbc@o1058251.ingest.us.sentry.io/4508083332382720"
     : "https://d950b351307f4e39b529fe22cff83ecb@o1058251.ingest.us.sentry.io/4508059227258880",
@@ -133,7 +133,7 @@ const RootLayoutWrapper = () => {
   );
 };
 
-export default Sentry.wrap(RootLayoutWrapper);
+export default wrap(RootLayoutWrapper);
 
 const Providers = ({ children }: { children: ReactNode }) => {
   return <TRPCProvider>{children}</TRPCProvider>;
