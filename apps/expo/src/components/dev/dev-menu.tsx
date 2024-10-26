@@ -1,13 +1,13 @@
-import { DevMenu } from "expo-dev-client";
-import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
+import { registerDevMenuItems } from "expo-dev-client";
+// import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
 import { router, useNavigationContainerRef } from "expo-router";
 import { useReactNavigationDevTools } from "@dev-plugins/react-navigation";
 import { useReactQueryDevTools } from "@dev-plugins/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { expoDb } from "~/db/client";
+// import { expoDb } from "~/db/client";
 
-void DevMenu.registerDevMenuItems([
+void registerDevMenuItems([
   {
     name: "Sitemap",
     shouldCollapse: true,
@@ -22,7 +22,7 @@ export const DevTools = () => {
   const queryClient = useQueryClient();
 
   useReactNavigationDevTools(navigationRef);
-  useDrizzleStudio(expoDb);
+  // useDrizzleStudio(expoDb);
   useReactQueryDevTools(queryClient);
 
   return null;

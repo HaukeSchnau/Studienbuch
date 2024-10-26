@@ -5,12 +5,12 @@ import type { Grade } from "@stu/lib";
 
 import { Card } from "~/components/card";
 import { Divider } from "~/components/divider";
+import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { MasterGradeRow } from "./master/master-grade-row";
 import { OralGradesRow } from "./oral/oral-grades-row";
 import { WrittenGradesRow } from "./written/written-grades-row";
-import { TempError } from "~/components/temp-error";
 
 export const GradesOverviewCard = ({ courseId }: { courseId: string }) => {
   const grades = api.students.grades.list.useQuery(

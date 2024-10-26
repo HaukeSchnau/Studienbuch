@@ -9,10 +9,10 @@ import {
   ConfirmPageContent,
   ViewConfirmPageContent,
 } from "~/components/confirm-page-content";
+import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
-import { TempError } from "~/components/temp-error";
 
 export const ConfirmWrittenGradeTeacher = ({ grade }: { grade: Grade }) => {
   const { user } = useRequiredAuthenticatedSession();

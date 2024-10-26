@@ -21,13 +21,13 @@
   "license": "MIT",
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
-    "@types/react": "^18.3.11",
-    "expo-module-scripts": "^3.5.2",
-    "expo-modules-core": "^1.12.20"
+    "@types/react": "^18.3.12",
+    "expo-module-scripts": "4.0.0",
+    "expo-modules-core": "2.0.0-preview.4"
   },
   "peerDependencies": {
-    "expo": "*",
+    "expo": "52.0.0-preview.5",
     "react": "*",
-    "react-native": "*"
+    "react-native": "0.76.0"
   }
 }
