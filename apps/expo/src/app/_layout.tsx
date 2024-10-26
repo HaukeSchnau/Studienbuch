@@ -46,13 +46,13 @@ Sentry.init({
     ? "https://2a803fff45e5c6604fb7742583d0acbc@o1058251.ingest.us.sentry.io/4508083332382720"
     : "https://d950b351307f4e39b529fe22cff83ecb@o1058251.ingest.us.sentry.io/4508059227258880",
 
-  enableSpotlight: __DEV__,
+  // enableSpotlight: __DEV__,
 
   integrations: [
-    Sentry.reactNativeTracingIntegration({
-      routingInstrumentation,
-      enableNativeFramesTracking: Constants.appOwnership !== AppOwnership.Expo, // Only in native builds, not in Expo Go.
-    }),
+    // Sentry.reactNativeTracingIntegration({
+    //   routingInstrumentation,
+    //   enableNativeFramesTracking: Constants.appOwnership !== AppOwnership.Expo, // Only in native builds, not in Expo Go.
+    // }),
   ],
 });
 
