@@ -7,8 +7,8 @@ import type { Falsy } from "@stu/lib";
 import { Button } from "~/components/button";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
+import { useFormContext } from "~/features/setup/form";
 import { api } from "~/utils/api";
-import { useFormContext } from "./form";
 
 export default function LicenseKey() {
   const { form, handleSubmitStep } = useFormContext({

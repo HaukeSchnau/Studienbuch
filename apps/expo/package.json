@@ -5,11 +5,11 @@
   "main": "expo-router/entry",
   "scripts": {
     "clean": "git clean -xdf .cache .expo .turbo android ios node_modules",
-    "dev": "EXPO_USE_METRO_WORKSPACE_ROOT=1 expo start --ios -c",
-    "dev:android": "EXPO_USE_METRO_WORKSPACE_ROOT=1 expo start --android",
-    "dev:ios": "EXPO_USE_METRO_WORKSPACE_ROOT=1 expo start --ios",
-    "android": "EXPO_USE_METRO_WORKSPACE_ROOT=1 expo run:android",
-    "ios": "EXPO_USE_METRO_WORKSPACE_ROOT=1 expo run:ios",
+    "dev": "expo start --ios",
+    "dev:android": "expo start --android",
+    "dev:ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"

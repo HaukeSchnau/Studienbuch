@@ -16,14 +16,14 @@ import { openBrowserAsync } from "expo-web-browser";
 import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 
-import type { SetupForm } from "./form";
+import type { SetupForm } from "~/features/setup/form";
 import { shadow } from "~/components/styles/shadow";
 import { Text } from "~/components/text";
+import { FormContext } from "~/features/setup/form";
 import { api } from "~/utils/api";
 import { useLicenseKey, useSession } from "~/utils/auth";
 import { setStorage } from "~/utils/storage";
 import logoImage from "../../../assets/icon.png";
-import { FormContext } from "./form";
 
 export default function HomeLayout() {
   const { height } = useAnimatedKeyboard();

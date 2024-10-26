@@ -49,7 +49,11 @@
   "prettier": "@stu/prettier-config",
   "pnpm": {
     "patchedDependencies": {
-      "expo-module-scripts": "patches/expo-module-scripts.patch"
+      "expo-module-scripts": "patches/expo-module-scripts.patch",
+      "drizzle-orm": "patches/drizzle-orm.patch"
+    },
+    "overrides": {
+      "expo-sqlite": "15.0.1"
     }
   }
 }

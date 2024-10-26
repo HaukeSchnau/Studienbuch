@@ -9,8 +9,8 @@ import { CheckboxRow } from "~/components/checkbox-row";
 import { SelectField } from "~/components/select-field";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
+import { useFormContext } from "~/features/setup/form";
 import { api } from "~/utils/api";
-import { useFormContext } from "./form";
 
 export default function NameAndYear() {
   const { form, handleSubmitStep } = useFormContext({

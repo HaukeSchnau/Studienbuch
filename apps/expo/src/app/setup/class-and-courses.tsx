@@ -15,8 +15,8 @@ import { SelectCourse } from "~/components/select-course";
 import { SelectField } from "~/components/select-field";
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
+import { useFormContext } from "~/features/setup/form";
 import { api } from "~/utils/api";
-import { useFormContext } from "./form";
 
 export default function ClassAndCourses() {
   const { form, handleSubmitStep } = useFormContext({
