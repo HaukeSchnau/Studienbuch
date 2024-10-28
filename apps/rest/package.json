@@ -18,7 +18,7 @@
   "dependencies": {
     "@axiomhq/js": "^1.1.0",
     "@axiomhq/pino": "^1.2.0",
-    "@hono/node-server": "^1.13.2",
+    "@hono/node-server": "^1.13.3",
     "@hono/trpc-server": "^0.3.2",
     "@hono/zod-openapi": "^0.16.4",
     "@scalar/hono-api-reference": "^0.5.154",
@@ -39,7 +39,7 @@
     "@types/ws": "^8.5.12",
     "eslint": "^9.12.0",
     "prettier": "^3.3.3",
-    "tsx": "^4.19.1",
+    "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   },
   "prettier": "@stu/prettier-config"
