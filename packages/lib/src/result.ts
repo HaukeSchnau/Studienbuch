@@ -33,16 +33,4 @@ export namespace Result {
   export function isErr<E>(result: Result<unknown, E>): result is Err<E> {
     return result._tag === "err";
   }
-
-  export function match<T, E, Ok, Err>(
-    onOk: (value: T) => Ok,
-    onErr: (error: E) => Err,
-  ) {
-    return (result: Result<T, E>): Ok | Err => {
-      if (isOk(result)) {
-        return onOk(result.value);
-      }
-      return onErr(result.error);
-    };
-  }
 }
