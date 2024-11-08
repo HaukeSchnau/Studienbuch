@@ -1,4 +1,5 @@
 {
+  "window.title": "${activeEditorShort}${separator}Studienbuch${separator}${profileName}",
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
