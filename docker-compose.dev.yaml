@@ -1,0 +1,27 @@
+name: "studienbuch"
+
+include:
+  - docker/common-services.yaml
+
+services:
+  dev:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.pnpm
+    stdin_open: true
+    tty: true
+    environment:
+      LIBSQL_URL: http://libsql:8080
+      LIBSQL_ADMIN_URL: http://libsql:9090
+      LIBSQL_ADMIN_AUTH_KEY: admin
+      RABBITMQ_HOST: rabbitmq
+      POSTGRES_URL: postgresql://stu:stu@postgres:5432/stu
+    volumes:
+      - .:/usr/src/app
+      - pnpm_store:/pnpm
+      - /usr/src/app/.turbo
+
+volumes:
+  pnpm_store:
+    external: true
