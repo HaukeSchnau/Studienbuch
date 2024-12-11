@@ -1,9 +1,6 @@
 import { z } from "zod";
 
-import { eq } from "@stu/db";
-import { db } from "@stu/db/client";
-import { LicenseKeys } from "@stu/db/schema";
-
+import { db, eq, tables } from "../../postgres";
 import { publicProcedure } from "../../procedures";
 
 export const checkLicenseKey = publicProcedure
@@ -13,8 +10,8 @@ export const checkLicenseKey = publicProcedure
     }),
   )
   .mutation(async ({ input }) => {
-    const licenseKey = await db.query.LicenseKeys.findFirst({
-      where: eq(LicenseKeys.key, input.licenseKey),
+    const licenseKey = await db.query.licenseKeys.findFirst({
+      where: eq(tables.licenseKeys.key, input.licenseKey),
     });
     if (!licenseKey) {
       return "INVALID" as const;

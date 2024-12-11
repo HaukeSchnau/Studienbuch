@@ -1,8 +1,8 @@
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
 
 import { CoreLayout } from "~/components/core-layout";
 import { Text } from "~/components/text";
-import { api } from "~/utils/api";
+import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { AbsencesOverviewCard } from "./absences/absences-overview-card";
 import { Agenda } from "./agenda/agenda";
 import { Tasks } from "./tasks/tasks";
@@ -29,23 +29,11 @@ export const OverviewPage = () => {
 };
 
 const Greeting = () => {
-  const session = api.auth.getSession.useQuery();
-
-  if (session.isPending) {
-    return <ActivityIndicator />;
-  }
-
-  if (session.error) {
-    return <Text>Session Error: {session.error.message}</Text>;
-  }
-
-  if (!session.data?.user) {
-    return <Text>Not authenticated. This should not happen.</Text>;
-  }
+  const session = useRequiredAuthenticatedSession();
 
   return (
     <Text className="color-white text-4xl" variant="heading">
-      Moin, {session.data.user.name}!
+      Moin, {session.user.name}!
     </Text>
   );
 };

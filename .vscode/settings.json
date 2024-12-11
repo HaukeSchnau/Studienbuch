@@ -60,5 +60,8 @@
   "typescript.preferences.autoImportSpecifierExcludeRegexes": [
     "^drizzle-orm/mysql-core$",
     "^drizzle-orm/.+/columns(/.+)?$"
-  ]
+  ],
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }

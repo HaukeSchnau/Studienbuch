@@ -1,9 +1,7 @@
 export interface Session {
   user: {
+    isOfAge?: undefined;
     id: string;
-    name: string;
-    isSuperUser: boolean;
-    isOfAge: boolean;
-  } | null;
+  };
   token: string;
 }

@@ -2,7 +2,7 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { withAxiom } from "next-axiom";
 
 import { appRouter, createTRPCContext } from "@stu/api";
-import { getSessionFromHeaders } from "@stu/lib-server";
+import { getSessionTokenFromHeaders } from "@stu/lib-server";
 
 /**
  * Configure basic CORS headers
@@ -31,7 +31,7 @@ const handler = withAxiom(async (req) => {
     createContext: async () =>
       createTRPCContext({
         source: req.headers.get("x-trpc-source") ?? "unknown",
-        session: await getSessionFromHeaders(req.headers),
+        sessionToken: getSessionTokenFromHeaders(req.headers),
         log: req.log.with({
           source: req.headers.get("x-trpc-source") ?? "unknown",
         }),

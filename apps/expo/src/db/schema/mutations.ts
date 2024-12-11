@@ -1,6 +1,12 @@
-import { sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { int, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-import { sqliteEnum, timestamp } from "./utils";
+export const sqliteEnum =
+  <U extends string, T extends Readonly<[U, ...U[]]>>(values: T) =>
+  <TName extends string>(name: TName) =>
+    text(name, { enum: values });
+
+export const timestamp = <TName extends string>(name: TName) =>
+  int(name, { mode: "timestamp_ms" });
 
 const MutationStatus = sqliteEnum([
   "PENDING",

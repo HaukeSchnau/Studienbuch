@@ -7,7 +7,7 @@ import { trimTrailingSlash } from "hono/trailing-slash";
 import pino from "pino";
 
 import { appRouter, createTRPCContext } from "@stu/api";
-import { getSessionFromHeaders } from "@stu/lib-server";
+import { getSessionTokenFromHeaders } from "@stu/lib-server";
 
 import { env } from "./env";
 
@@ -73,7 +73,7 @@ export const createBase = (basePath: string) => {
       createContext: async ({ req }) =>
         createTRPCContext({
           source: req.headers.get("x-trpc-source") ?? "unknown",
-          session: await getSessionFromHeaders(req.headers),
+          sessionToken: getSessionTokenFromHeaders(req.headers),
           log: appLogger,
         }),
     }),

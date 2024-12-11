@@ -1,7 +1,7 @@
 import { openDatabaseSync } from "expo-sqlite";
 import { drizzle } from "drizzle-orm/expo-sqlite";
 
-import * as schema from "./schema";
+import * as schema from "@stu/student/schema";
 
 export const expoDb = openDatabaseSync("local.db", {
   enableChangeListener: true, // Needed for live queries

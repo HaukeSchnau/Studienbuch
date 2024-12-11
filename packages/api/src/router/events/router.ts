@@ -44,7 +44,6 @@ export const events = {
         }
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       const serverApplicator = serverApplicators[eventData.type] as
         | ServerEventApplicator<EventName>
         | undefined;

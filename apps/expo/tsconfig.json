@@ -5,7 +5,7 @@
     "paths": {
       "~/*": ["./src/*"]
     },
-    "jsx": "react-native",
+    "jsx": "react-jsx",
     "types": ["nativewind/types"],
     "checkJs": false
   },

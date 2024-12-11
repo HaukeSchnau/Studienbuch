@@ -13,6 +13,34 @@ import { ZodError } from "zod";
 import type { Logger } from "./interfaces/logger";
 import type { Session } from "./interfaces/session";
 import { env } from "../env";
+import { db, eq, tables } from "./postgres";
+
+const getSession = async (sessionToken: string): Promise<Session | null> => {
+  const session = await db.query.sessions.findFirst({
+    where: eq(tables.sessions.token, sessionToken),
+    with: {
+      user: true,
+    },
+  });
+
+  if (!session) {
+    return null;
+  }
+
+  if (session.expires < new Date() || !session.user) {
+    await db
+      .delete(tables.sessions)
+      .where(eq(tables.sessions.token, sessionToken));
+    return null;
+  }
+
+  return {
+    token: session.token,
+    user: {
+      id: session.user.id,
+    },
+  };
+};
 
 /**
  * 1. CONTEXT
@@ -26,21 +54,23 @@ import { env } from "../env";
  *
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = ({
-  session,
+export const createTRPCContext = async ({
+  sessionToken,
   source,
   log,
 }: {
-  session: Session | null;
+  sessionToken: string | null;
   source: string;
   log: Logger;
 }) => {
+  const session = sessionToken ? await getSession(sessionToken) : null;
+
   if (env.NODE_ENV === "development") {
     console.log(
       ">>> tRPC Request from",
       source,
       "by",
-      session?.user?.name ?? "Anonymous",
+      session?.user.id ?? "Anonymous",
     );
   }
 

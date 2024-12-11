@@ -6,7 +6,6 @@ import type { ReactNode } from "react";
 import type { Permission } from "@stu/lib";
 
 import type { IconName } from "~/components/icon";
-import { api } from "~/infrastructure/trpc/react";
 import { NavigationItem } from "./NavigationItem";
 
 interface PermissionNavigationItemProps<TUrl extends string> {
@@ -21,15 +20,15 @@ export const PermissionNavigationItem = <TUrl extends string>({
   href,
   children,
   icon,
-  permission,
   exact,
 }: PermissionNavigationItemProps<TUrl>) => {
-  const permissions = api.auth.getPermissions.useQuery();
+  // TODO: Reactivate when permissions are implemented
+  // const permissions = api.auth.getPermissions.useQuery();
 
-  if (!permissions.data) return null;
-  if (!permissions.data.isSuperUser && !permissions.data[permission]) {
-    return null;
-  }
+  // if (!permissions.data) return null;
+  // if (!permissions.data.isSuperUser && !permissions.data[permission]) {
+  //   return null;
+  // }
 
   return (
     <NavigationItem href={href} icon={icon} exact={exact}>

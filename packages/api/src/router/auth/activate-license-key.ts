@@ -1,10 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { eq } from "@stu/db";
-import { db } from "@stu/db/client";
-import { LicenseKeys, Persons, Users } from "@stu/db/schema";
-
+import { db, eq, tables } from "../../postgres";
 import { publicProcedure } from "../../procedures";
 
 export const activateLicenseKey = publicProcedure
@@ -15,8 +12,8 @@ export const activateLicenseKey = publicProcedure
     }),
   )
   .mutation(async ({ input }) => {
-    const licenseKey = await db.query.LicenseKeys.findFirst({
-      where: eq(LicenseKeys.key, input.licenseKey),
+    const licenseKey = await db.query.licenseKeys.findFirst({
+      where: eq(tables.licenseKeys.key, input.licenseKey),
     });
     if (!licenseKey) {
       throw new TRPCError({
@@ -37,22 +34,10 @@ export const activateLicenseKey = publicProcedure
       return;
     }
 
-    const [person] = await db
-      .insert(Persons)
-      .values({
-        name: input.name,
-      })
-      .returning();
-    if (!person) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to create person",
-      });
-    }
     const [user] = await db
-      .insert(Users)
+      .insert(tables.users)
       .values({
-        id: person.id,
+        type: "student",
       })
       .returning();
     if (!user) {
@@ -62,10 +47,10 @@ export const activateLicenseKey = publicProcedure
       });
     }
     await db
-      .update(LicenseKeys)
+      .update(tables.licenseKeys)
       .set({
         activatedAt: new Date(),
         activatedBy: user.id,
       })
-      .where(eq(LicenseKeys.key, licenseKey.key));
+      .where(eq(tables.licenseKeys.key, licenseKey.key));
   });

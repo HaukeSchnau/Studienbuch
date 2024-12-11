@@ -12,3 +12,4 @@ export * from "./years";
 export * from "./semesters";
 export * from "./theme";
 export * from "./result";
+export * from "./events";

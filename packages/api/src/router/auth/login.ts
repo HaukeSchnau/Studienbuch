@@ -1,10 +1,8 @@
 import { z } from "zod";
 
-import { eq } from "@stu/db";
-import { db } from "@stu/db/client";
-import { Users } from "@stu/db/schema";
 import { checkPassword, createSession } from "@stu/lib-server";
 
+import { db, eq, tables } from "../../postgres";
 import { publicProcedure } from "../../procedures";
 
 export const login = publicProcedure
@@ -15,15 +13,8 @@ export const login = publicProcedure
     }),
   )
   .mutation(async ({ input: { email, password } }) => {
-    const user = await db.query.Users.findFirst({
-      where: eq(Users.email, email.toLowerCase()),
-      with: {
-        person: {
-          with: {
-            student: true,
-          },
-        },
-      },
+    const user = await db.query.users.findFirst({
+      where: eq(tables.users.email, email.toLowerCase()),
     });
 
     if (!user) {
@@ -32,7 +23,6 @@ export const login = publicProcedure
           field: "email" as const,
           message: "Kein Nutzer mit dieser E-Mail gefunden",
         },
-        sessionToken: undefined,
       };
     }
 
@@ -43,7 +33,6 @@ export const login = publicProcedure
           message:
             "Für diesen Nutzer wurde kein Passwort festgelegt. Bitte kontaktiere den Support.",
         },
-        sessionToken: undefined,
       };
     }
 
@@ -54,20 +43,16 @@ export const login = publicProcedure
           field: "password" as const,
           message: "Falsches Passwort",
         },
-        sessionToken: undefined,
       };
     }
 
-    const session = await createSession({
+    const session = createSession({
       id: user.id,
-      name: user.person.name,
-      isSuperUser: user.isSuperUser,
-      isOfAge: user.person.student?.isOfAge ?? false,
     });
 
+    await db.insert(tables.sessions).values(session);
+
     return {
-      sessionToken: session.token,
-      session: session,
-      error: undefined,
+      session,
     };
   });

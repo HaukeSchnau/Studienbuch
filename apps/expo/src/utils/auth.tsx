@@ -6,12 +6,13 @@ import { useStorage } from "./storage";
 
 export const useRequiredAuthenticatedSession = () => {
   const [session] = useStorage("auth.session");
+  const [user] = useStorage("user");
 
-  if (!session?.user) {
+  if (!user || !session) {
     throw new Error("Session is required");
   }
 
-  return { ...session, user: session.user };
+  return { ...session, user };
 };
 
 export const useLicenseKey = () => {
@@ -21,7 +22,8 @@ export const useLicenseKey = () => {
 
 export const useSession = () => {
   const [session] = useStorage("auth.session");
-  return session;
+  const [user] = useStorage("user");
+  return session ? { ...session, user } : null;
 };
 
 export const useSessionWatcher = () => {

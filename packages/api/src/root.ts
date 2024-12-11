@@ -1,11 +1,13 @@
+import { management } from "./router-legacy/management/router";
+import { schools } from "./router-legacy/schools/router";
+import { students } from "./router-legacy/students/router";
 import { auth } from "./router/auth/router";
-import { management } from "./router/management/router";
-import { schools } from "./router/schools/router";
-import { students } from "./router/students/router";
+import { events } from "./router/events/router";
 import { t } from "./trpc";
 
 export const appRouter = t.router({
   auth,
+  events,
   management,
   schools,
   students,

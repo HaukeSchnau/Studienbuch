@@ -1,10 +1,8 @@
 import { z } from "zod";
 
-import { eq } from "@stu/db";
-import { db } from "@stu/db/client";
-import { LicenseKeys } from "@stu/db/schema";
 import { createSession } from "@stu/lib-server";
 
+import { db, eq, tables } from "../../postgres";
 import { publicProcedure } from "../../procedures";
 
 export const loginWithLicenseKey = publicProcedure
@@ -14,19 +12,8 @@ export const loginWithLicenseKey = publicProcedure
     }),
   )
   .mutation(async ({ input: { licenseKey } }) => {
-    const license = await db.query.LicenseKeys.findFirst({
-      where: eq(LicenseKeys.key, licenseKey),
-      with: {
-        activatedBy: {
-          with: {
-            person: {
-              with: {
-                student: true,
-              },
-            },
-          },
-        },
-      },
+    const license = await db.query.licenseKeys.findFirst({
+      where: eq(tables.licenseKeys.key, licenseKey),
     });
 
     if (!license) {
@@ -47,14 +34,13 @@ export const loginWithLicenseKey = publicProcedure
       };
     }
 
-    const session = await createSession({
-      id: license.activatedBy.id,
-      name: license.activatedBy.person.name,
-      isSuperUser: license.activatedBy.isSuperUser,
-      isOfAge: license.activatedBy.person.student?.isOfAge ?? false,
-    });
+    const session = await db
+      .insert(tables.sessions)
+      .values(createSession({ id: license.activatedBy }))
+      .returning();
 
     return {
-      session: session,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      session: session[0]!,
     };
   });

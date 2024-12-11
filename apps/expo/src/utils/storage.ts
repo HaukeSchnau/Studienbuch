@@ -7,17 +7,14 @@ import { z } from "zod";
 const schemas = {
   "auth.session": z
     .object({
-      user: z
-        .object({
-          id: z.string(),
-          name: z.string(),
-          isSuperUser: z.boolean(),
-          isOfAge: z.boolean(),
-        })
-        .nullable(),
+      user: z.string(),
       token: z.string(),
     })
     .nullable(),
+  user: z.object({
+    name: z.string(),
+    isOfAge: z.boolean(),
+  }),
   "auth.licenseKey": z.string(),
 } as const satisfies Record<string, ZodSchema>;
 

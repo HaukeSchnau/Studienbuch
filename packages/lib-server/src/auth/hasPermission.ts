@@ -11,9 +11,15 @@ import {
 
 // TODO: Produce a single query to get the permission scope and maybe cache it
 export const findPermissionScope = async (
-  user: { id: string; isSuperUser: boolean },
+  userId: string,
   permission: Permission,
 ): Promise<PermissionScope | null> => {
+  const user = await db.query.Users.findFirst({
+    where: eq(Users.id, userId),
+  });
+  if (!user) {
+    return null;
+  }
   if (user.isSuperUser) {
     return {};
   }

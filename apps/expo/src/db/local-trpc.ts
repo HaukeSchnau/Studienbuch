@@ -7,11 +7,6 @@ import {
 
 import type { AppRouter } from "@stu/api";
 import type { AgendaEntry } from "@stu/lib";
-
-import type { ClientRouter } from "../utils/local-trpc/trpc-util";
-import { getStorage, setStorage } from "~/utils/storage";
-import { alias, and, asc, between, eq, inArray, sql } from ".";
-import { db } from "./client";
 import {
   AbsenceDays,
   Classes,
@@ -25,18 +20,22 @@ import {
   Substitutions,
   TimetableEntries,
   Years,
-} from "./schema";
+} from "@stu/student/schema";
+
+import type { ClientRouter } from "../utils/local-trpc/trpc-util";
+import { alias, and, asc, between, eq, inArray, sql } from ".";
+import { db } from "./client";
 
 const Teachers = alias(Persons, "teachers");
 const Substitute = alias(Persons, "substitute");
 
 export const clientRouter: ClientRouter<AppRouter> = {
-  auth: {
-    getSession: {
-      persist: (_, session) => setStorage("auth.session", session),
-      read: () => getStorage("auth.session"),
-    },
-  },
+  // auth: {
+  //   getSession: {
+  //     persist: (_, session) => setStorage("auth.session", session),
+  //     read: () => getStorage("auth.session"),
+  //   },
+  // },
   schools: {
     semesters: {
       getCurrent: {
@@ -402,26 +401,26 @@ export const clientRouter: ClientRouter<AppRouter> = {
           }
         },
       },
-      add: {
-        mutate: async (input) => {
-          const user = getStorage("auth.session")?.user;
-          if (!user) {
-            throw new Error("User not logged in");
-          }
+      // add: {
+      //   mutate: async (input) => {
+      //     const user = getStorage("auth.session")?.user;
+      //     if (!user) {
+      //       throw new Error("User not logged in");
+      //     }
 
-          await db.insert(AbsenceDays).values({
-            date: input.date,
-            reason: input.reason,
-            parentSignature: user.isOfAge ? "NOT_REQUIRED" : null,
-          });
-          await db.insert(CourseAbsences).values(
-            input.courseIds.map((courseId) => ({
-              date: input.date,
-              course: courseId,
-            })),
-          );
-        },
-      },
+      //     await db.insert(AbsenceDays).values({
+      //       date: input.date,
+      //       reason: input.reason,
+      //       parentSignature: user.isOfAge ? "NOT_REQUIRED" : null,
+      //     });
+      //     await db.insert(CourseAbsences).values(
+      //       input.courseIds.map((courseId) => ({
+      //         date: input.date,
+      //         course: courseId,
+      //       })),
+      //     );
+      //   },
+      // },
       delete: {
         mutate: async (input) => {
           await db
