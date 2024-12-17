@@ -1,77 +1,126 @@
 import { z } from "zod";
 
-export const Event = z
-  .discriminatedUnion("type", [
-    z.object({
-      type: z.literal("absence.recorded"),
-      data: z.object({
-        absenceId: z.string(),
-      }),
-    }),
-    z.object({
-      type: z.literal("absence.parentApproved"),
-      data: z.object({}),
-    }),
-    // z.object({
-    //   type: z.literal("absence.teacherApproved"),
-    //   data: z.object({}),
-    // }),
-    // z.object({
-    //   type: z.literal("absence.discarded"),
-    //   data: z.object({}),
-    // }),
+import { GRADE_TYPES } from "./grades";
 
-    // z.object({
-    //   type: z.literal("grades.currentGradeSet"),
-    //   data: z.object({}),
-    // }),
-    // z.object({
-    //   type: z.literal("grades.writtenGradeRecorded"),
-    //   data: z.object({}),
-    // }),
-    // z.object({
-    //   type: z.literal("grades.parentApproved"),
-    //   data: z.object({}),
-    // }),
-    // z.object({
-    //   type: z.literal("grades.teacherApproved"),
-    //   data: z.object({}),
-    // }),
-    // z.object({
-    //   type: z.literal("grades.discarded"),
-    //   data: z.object({}),
-    // }),
-    // z.object({
-    //   type: z.literal("grades.latestRestored"),
-    //   data: z.object({}),
-    // }),
-
-    // z.object({
-    //   type: z.literal("student.classAssigned"),
-    //   data: z.object({}),
-    // }),
-    // z.object({
-    //   type: z.literal("student.courseAssigned"),
-    //   data: z.object({}),
-    // }),
-
-    // z.object({
-    //   type: z.literal("user.activated"),
-    //   data: z.object({}),
-    // }),
-  ])
-  .and(
-    z.object({
-      id: z.string(),
-      timestamp: z.coerce.date(),
+const DomainEvent = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("absence.recorded"),
+    data: z.object({
+      date: z.date(),
+      reason: z.string(),
+      courseIds: z.array(z.string()).min(1),
     }),
-  );
+  }),
+  z.object({
+    type: z.literal("absence.parentApproved"),
+    data: z.object({
+      date: z.date(),
+      signature: z.string(),
+    }),
+  }),
+  z.object({
+    type: z.literal("absence.teacherApproved"),
+    data: z.object({
+      date: z.date(),
+      courseId: z.string(),
+      signature: z.string(),
+    }),
+  }),
+  z.object({
+    type: z.literal("absence.discarded"),
+    data: z.object({
+      date: z.date(),
+      courseIds: z.array(z.string()),
+    }),
+  }),
+
+  z.object({
+    type: z.literal("grades.currentGradeSet"),
+    data: z.object({
+      courseId: z.string(),
+      date: z.date(),
+      result: z.number(),
+      type: z.enum(GRADE_TYPES),
+    }),
+  }),
+  z.object({
+    type: z.literal("grades.writtenGradeRecorded"),
+    data: z.object({
+      courseId: z.string(),
+      date: z.date(),
+      result: z.number(),
+    }),
+  }),
+  z.object({
+    type: z.literal("grades.teacherApproved"),
+    data: z.object({
+      date: z.date(),
+      course: z.string(),
+      type: z.enum(GRADE_TYPES),
+      signature: z.string(),
+    }),
+  }),
+  z.object({
+    type: z.literal("grades.parentApproved"),
+    data: z.object({
+      date: z.date(),
+      course: z.string(),
+      type: z.enum(GRADE_TYPES),
+      signature: z.string(),
+    }),
+  }),
+  z.object({
+    type: z.literal("grades.discarded"),
+    data: z.object({
+      course: z.string(),
+      type: z.enum(GRADE_TYPES),
+      date: z.date(),
+    }),
+  }),
+  z.object({
+    type: z.literal("grades.latestRestored"),
+    data: z.object({
+      course: z.string(),
+      type: z.enum(GRADE_TYPES),
+    }),
+  }),
+
+  // z.object({
+  //   type: z.literal("student.classAssigned"),
+  //   data: z.object({}),
+  // }),
+  // z.object({
+  //   type: z.literal("student.courseAssigned"),
+  //   data: z.object({}),
+  // }),
+
+  // z.object({
+  //   type: z.literal("user.activated"),
+  //   data: z.object({}),
+  // }),
+]);
+
+export const Event = DomainEvent.and(
+  z.object({
+    id: z.string(),
+    timestamp: z.coerce.date(),
+  }),
+);
 export type Event = z.infer<typeof Event>;
 export type EventName = Event["type"];
+export const EVENT_TYPES = DomainEvent.options.map(
+  (thing) => thing.shape.type.value,
+) as [EventName, ...EventName[]]; // Assure TS that it's non-empty
 
-export interface EventApplicator<TEventName extends Event["type"]> {
-  verify: (event: Extract<Event, { type: TEventName }>) => Promise<boolean>;
-  apply: (event: Extract<Event, { type: TEventName }>) => Promise<void>;
+export interface EventApplicator<TEventName extends Event["type"], Extra> {
+  verify: (
+    event: Extract<Event, { type: TEventName }>,
+    extra: Extra,
+  ) => Promise<boolean>;
+  apply: (
+    event: Extract<Event, { type: TEventName }>,
+    extra: Extra,
+  ) => Promise<void>;
 }
 
 interface PersistedEvent {
@@ -92,8 +141,8 @@ export interface ServerEventApplicator<TEventName extends Event["type"]> {
   ) => Promise<PersistedEvent[]>;
 }
 
-export type EventApplicators = {
-  [TEventName in Event["type"]]?: EventApplicator<TEventName>;
+export type EventApplicators<Extra> = {
+  [TEventName in Event["type"]]?: EventApplicator<TEventName, Extra>;
 };
 
 export interface EventApplicatorInterface {

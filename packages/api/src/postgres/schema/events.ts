@@ -9,9 +9,10 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import { EVENT_TYPES } from "@stu/lib";
+
 import { users } from "./users";
 
-const EVENT_TYPES = ["absence.recorded", "absence.parentApproved"] as const;
 export const eventType = pgEnum("event_type", EVENT_TYPES);
 
 export const events = pgTable(
