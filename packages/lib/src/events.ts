@@ -141,8 +141,18 @@ export interface ServerEventApplicator<TEventName extends Event["type"]> {
   ) => Promise<PersistedEvent[]>;
 }
 
+export const NAMESPACES = ["absence", "grades"] as const;
+type Namespace = (typeof NAMESPACES)[number];
+export type NamespaceEventApplicators<TNamespace extends Namespace, Extra> = {
+  [TEventName in Event["type"] as TEventName extends `${TNamespace}.${infer T}`
+    ? T
+    : never]: EventApplicator<TEventName, Extra>;
+};
+
 export type EventApplicators<Extra> = {
   [TEventName in Event["type"]]?: EventApplicator<TEventName, Extra>;
+} & {
+  [TNamespace in Namespace]?: NamespaceEventApplicators<TNamespace, Extra>;
 };
 
 export interface EventApplicatorInterface {

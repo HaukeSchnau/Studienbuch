@@ -9,7 +9,7 @@ import {
 import { Courses } from "../school/courses";
 import { timestamp, uuid } from "../utils";
 
-export const AbsenceDays = sqliteTable(
+export const absenceDays = sqliteTable(
   "absence_days",
   {
     date: timestamp("date").notNull(),
@@ -26,7 +26,7 @@ export const AbsenceDays = sqliteTable(
   },
 );
 
-export const CourseAbsences = sqliteTable(
+export const courseAbsences = sqliteTable(
   "course_absences",
   {
     date: timestamp("date").notNull(),
@@ -46,23 +46,23 @@ export const CourseAbsences = sqliteTable(
       }),
       absence_days_fk: foreignKey({
         columns: [table.date],
-        foreignColumns: [AbsenceDays.date],
+        foreignColumns: [absenceDays.date],
       }),
     };
   },
 );
 
-export const AbsenceDaysRelations = relations(AbsenceDays, ({ many }) => ({
-  absenceCourses: many(CourseAbsences),
+export const AbsenceDaysRelations = relations(absenceDays, ({ many }) => ({
+  absenceCourses: many(courseAbsences),
 }));
 
-export const AbsenceCoursesRelations = relations(CourseAbsences, ({ one }) => ({
+export const AbsenceCoursesRelations = relations(courseAbsences, ({ one }) => ({
   course: one(Courses, {
-    fields: [CourseAbsences.course],
+    fields: [courseAbsences.course],
     references: [Courses.id],
   }),
-  absenceDay: one(AbsenceDays, {
-    fields: [CourseAbsences.date],
-    references: [AbsenceDays.date],
+  absenceDay: one(absenceDays, {
+    fields: [courseAbsences.date],
+    references: [absenceDays.date],
   }),
 }));

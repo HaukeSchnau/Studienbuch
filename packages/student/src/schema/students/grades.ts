@@ -3,13 +3,12 @@ import { primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { GRADE_TYPES } from "@stu/lib";
 
-import { Persons } from "../people/persons";
 import { Courses } from "../school/courses";
 import { sqliteEnum, timestamp, uuid } from "../utils";
 
 export const GradeType = sqliteEnum(GRADE_TYPES);
 
-export const Grades = sqliteTable(
+export const grades = sqliteTable(
   "grades",
   {
     date: timestamp("date").notNull(),
@@ -25,30 +24,19 @@ export const Grades = sqliteTable(
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
-
-    student: uuid("student")
-      .notNull()
-      .references(() => Persons.id, {
-        onDelete: "restrict",
-        onUpdate: "cascade",
-      }),
   },
   (table) => {
     return {
       pk: primaryKey({
-        columns: [table.date, table.course, table.student, table.type],
+        columns: [table.date, table.course, table.type],
       }),
     };
   },
 );
 
-export const GradesRelations = relations(Grades, ({ one }) => ({
+export const GradesRelations = relations(grades, ({ one }) => ({
   course: one(Courses, {
-    fields: [Grades.course],
+    fields: [grades.course],
     references: [Courses.id],
-  }),
-  student: one(Persons, {
-    fields: [Grades.student],
-    references: [Persons.id],
   }),
 }));
