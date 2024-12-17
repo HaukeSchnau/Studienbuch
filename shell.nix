@@ -8,4 +8,8 @@ pkgs.mkShellNoCC {
     pnpm
     nodejs_22
   ];
+
+  shellHook = ''
+    docker compose -f docker-compose.dev.yaml up -d
+  '';
 }

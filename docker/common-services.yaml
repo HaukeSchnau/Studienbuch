@@ -12,17 +12,12 @@ services:
       context: .
       dockerfile: Dockerfile.rabbitmq
     restart: unless-stopped
-    ports:
-      - 15672:15672
     environment:
       - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_stream
         advertised_host localhost
 
   libsql:
     image: ghcr.io/tursodatabase/libsql-server:latest
-    ports:
-      - 8080:8080
-      - 9090:9090
     environment:
       SQLD_NODE: primary
       LIBSQL_ADMIN_AUTH_KEY: admin
