@@ -42,6 +42,7 @@
     "@vitest/ui": "^2.1.4",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.3.3",
+    "tsx": "^4.19.2",
     "turbo": "^2.1.3",
     "typescript": "^5.6.3",
     "vitest": "^2.1.4"
@@ -49,7 +50,8 @@
   "prettier": "@stu/prettier-config",
   "pnpm": {
     "patchedDependencies": {
-      "expo-module-scripts": "patches/expo-module-scripts.patch"
+      "expo-module-scripts": "patches/expo-module-scripts.patch",
+      "drizzle-kit": "patches/drizzle-kit.patch"
     }
   }
 }

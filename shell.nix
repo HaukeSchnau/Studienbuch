@@ -7,6 +7,7 @@ pkgs.mkShellNoCC {
   packages = with pkgs; [
     pnpm
     nodejs_22
+    git
   ];
 
   shellHook = ''

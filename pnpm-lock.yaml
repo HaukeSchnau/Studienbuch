@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
+  drizzle-kit:
+    hash: 7qi5kn6kltsjrsjmebvjmv4yre
+    path: patches/drizzle-kit.patch
   expo-module-scripts:
     hash: wzewkjphfjgcbewtb2doi24yvu
     path: patches/expo-module-scripts.patch
@@ -21,7 +24,7 @@ importers:
         version: 2.3.3(@types/node@22.10.1)(typescript@5.7.2)
       '@vitest/coverage-v8':
         specifier: ^2.1.4
-        version: 2.1.8(vitest@2.1.8(@types/node@22.10.1)(@vitest/ui@2.1.8)(jsdom@20.0.3)(lightningcss@1.28.1)(terser@5.37.0))
+        version: 2.1.8(vitest@2.1.8)
       '@vitest/ui':
         specifier: ^2.1.4
         version: 2.1.8(vitest@2.1.8)
@@ -31,6 +34,9 @@ importers:
       prettier:
         specifier: ^3.3.3
         version: 3.4.2
+      tsx:
+        specifier: ^4.19.2
+        version: 4.19.2
       turbo:
         specifier: ^2.1.3
         version: 2.3.3
@@ -56,7 +62,7 @@ importers:
         specifier: ^8.34.0
         version: 8.42.0
       '@stu/api':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../packages/api
       '@stu/db':
         specifier: workspace:*
@@ -317,7 +323,7 @@ importers:
         version: 18.3.14
       drizzle-kit:
         specifier: ^0.28.1
-        version: 0.28.1
+        version: 0.28.1(patch_hash=7qi5kn6kltsjrsjmebvjmv4yre)
       eslint:
         specifier: ^9.12.0
         version: 9.16.0(jiti@2.4.1)
@@ -681,7 +687,7 @@ importers:
         version: 7.4.4
       drizzle-kit:
         specifier: ^0.28.1
-        version: 0.28.1
+        version: 0.28.1(patch_hash=7qi5kn6kltsjrsjmebvjmv4yre)
       eslint:
         specifier: ^9.12.0
         version: 9.16.0(jiti@2.4.1)
@@ -939,7 +945,7 @@ importers:
         version: 7.4.4
       drizzle-kit:
         specifier: ^0.28.1
-        version: 0.28.1
+        version: 0.28.1(patch_hash=7qi5kn6kltsjrsjmebvjmv4yre)
       eslint:
         specifier: ^9.12.0
         version: 9.16.0(jiti@2.4.1)
@@ -10159,9 +10165,11 @@ packages:
 
   sudo-prompt@8.2.5:
     resolution: {integrity: sha512-rlBo3HU/1zAJUrkY6jNxDOC9eVYliG6nS4JA8u8KAshITd07tafMc/Br7xQwCSseXwJ2iCcHCE8SNWX3q8Z+kw==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   sudo-prompt@9.1.1:
     resolution: {integrity: sha512-es33J1g2HjMpyAhz8lOR+ICmXXAqTuKbuXuUWLhOLew20oN9oUCgCJx615U/v7aioZg7IX5lIh9x34vwneu4pA==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   superjson@2.2.1:
     resolution: {integrity: sha512-8iGv75BYOa0xRJHK5vRLEjE2H/i4lulTjzpUXic3Eg8akftYjkmQDa8JARQ42rlczXyFR3IeRoeFCc7RxHsYZA==}
@@ -15486,7 +15494,7 @@ snapshots:
       wonka: 6.3.4
     optional: true
 
-  '@vitest/coverage-v8@2.1.8(vitest@2.1.8(@types/node@22.10.1)(@vitest/ui@2.1.8)(jsdom@20.0.3)(lightningcss@1.28.1)(terser@5.37.0))':
+  '@vitest/coverage-v8@2.1.8(vitest@2.1.8)':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
@@ -17095,7 +17103,7 @@ snapshots:
 
   dotenv@16.4.7: {}
 
-  drizzle-kit@0.28.1:
+  drizzle-kit@0.28.1(patch_hash=7qi5kn6kltsjrsjmebvjmv4yre):
     dependencies:
       '@drizzle-team/brocli': 0.10.2
       '@esbuild-kit/esm-loader': 2.6.5
