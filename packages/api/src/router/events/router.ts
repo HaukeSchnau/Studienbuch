@@ -11,21 +11,28 @@ import { Event } from "@stu/lib";
 import { EventApplicator as StudentEventApplicatoe } from "@stu/student";
 import * as studentSchema from "@stu/student/schema";
 
+import { createNamespace, createNamespaceClient } from "../../libsql";
 import { db, tables } from "../../postgres";
 import { protectedProcedure } from "../../procedures";
 import { rabbitMqClientPromise } from "../../rabbitmq";
 import { serverApplicators } from "../../server-applicators";
 
-const buildStudentApplicator = (userId: string) => {
-  const db = drizzle(":memory:", { schema: studentSchema });
+const buildStudentApplicator = async (userId: string) => {
+  const namespace = `student-${userId}`;
+  await createNamespace(namespace);
+
+  const client = createNamespaceClient(namespace);
+  const db = drizzle(client, { schema: studentSchema });
+
   return new StudentEventApplicatoe(db, userId);
 };
 
 const applicatorUserMap = new Map<string, EventApplicatorInterface[]>();
-const getApplicators = (userId: string) => {
+const getApplicators = async (userId: string) => {
   if (!applicatorUserMap.has(userId)) {
-    applicatorUserMap.set(userId, [buildStudentApplicator(userId)]);
+    applicatorUserMap.set(userId, [await buildStudentApplicator(userId)]);
   }
+
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion --- we just set it
   return applicatorUserMap.get(userId)!;
 };
@@ -34,7 +41,8 @@ export const events = {
   ingest: protectedProcedure
     .input(Event)
     .query(async ({ ctx: { session }, input: eventData }) => {
-      const applicators = getApplicators(session.user.id);
+      const applicators = await getApplicators(session.user.id);
+
       for (const applicator of applicators) {
         if (!(await applicator.verify(eventData))) {
           throw new TRPCError({
