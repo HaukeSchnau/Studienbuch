@@ -21,7 +21,7 @@ importers:
         version: 2.3.3(@types/node@22.10.1)(typescript@5.7.2)
       '@vitest/coverage-v8':
         specifier: ^2.1.4
-        version: 2.1.8(vitest@2.1.8)
+        version: 2.1.8(vitest@2.1.8(@types/node@22.10.1)(@vitest/ui@2.1.8)(jsdom@20.0.3)(lightningcss@1.28.1)(terser@5.37.0))
       '@vitest/ui':
         specifier: ^2.1.4
         version: 2.1.8(vitest@2.1.8)
@@ -116,55 +116,6 @@ importers:
       vitest:
         specifier: ^2.1.4
         version: 2.1.8(@types/node@22.10.1)(@vitest/ui@2.1.8)(jsdom@20.0.3)(lightningcss@1.28.1)(terser@5.37.0)
-
-  apps/event-broker:
-    dependencies:
-      '@hono/zod-validator':
-        specifier: ^0.4.1
-        version: 0.4.1(hono@4.6.13)(zod@3.23.8)
-      '@libsql/client':
-        specifier: ^0.14.0
-        version: 0.14.0
-      '@stu/lib':
-        specifier: workspace:^
-        version: link:../../packages/lib
-      '@stu/student':
-        specifier: workspace:^
-        version: link:../../packages/student
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.4.7
-      drizzle-orm:
-        specifier: ^0.36.4
-        version: 0.36.4(@libsql/client@0.14.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@19.0.0)(expo-sqlite@15.0.3(expo@52.0.17(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@expo/metro-runtime@4.0.0(react-native@0.76.3(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@types/react@19.0.0)(encoding@0.1.13)(react@19.0.0)))(encoding@0.1.13)(graphql@15.9.0)(react-native@0.76.3(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@types/react@19.0.0)(encoding@0.1.13)(react@19.0.0))(react@19.0.0))(react-native@0.76.3(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@types/react@19.0.0)(encoding@0.1.13)(react@19.0.0))(react@19.0.0))(pg@8.13.1)(react@19.0.0)
-      hono:
-        specifier: ^4.6.12
-        version: 4.6.13
-      pg:
-        specifier: ^8.13.1
-        version: 8.13.1
-      rabbitmq-stream-js-client:
-        specifier: ^0.4.2
-        version: 0.4.2
-      zod:
-        specifier: ^3.23.8
-        version: 3.23.8
-    devDependencies:
-      '@biomejs/biome':
-        specifier: ^1.9.4
-        version: 1.9.4
-      '@stu/tsconfig':
-        specifier: workspace:^
-        version: link:../../tooling/typescript
-      '@types/node':
-        specifier: ^22.9.0
-        version: 22.10.1
-      '@types/pg':
-        specifier: ^8.11.10
-        version: 8.11.10
-      drizzle-kit:
-        specifier: ^0.28.1
-        version: 0.28.1
 
   apps/expo:
     dependencies:
@@ -1902,59 +1853,6 @@ packages:
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
 
-  '@biomejs/biome@1.9.4':
-    resolution: {integrity: sha512-1rkd7G70+o9KkTn5KLmDYXihGoTaIGO9PIIN2ZB7UJxFrWw04CZHPYiMRjYsaDvVV7hP1dYNRLxSANLaBFGpog==}
-    engines: {node: '>=14.21.3'}
-    hasBin: true
-
-  '@biomejs/cli-darwin-arm64@1.9.4':
-    resolution: {integrity: sha512-bFBsPWrNvkdKrNCYeAp+xo2HecOGPAy9WyNyB/jKnnedgzl4W4Hb9ZMzYNbf8dMCGmUdSavlYHiR01QaYR58cw==}
-    engines: {node: '>=14.21.3'}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@biomejs/cli-darwin-x64@1.9.4':
-    resolution: {integrity: sha512-ngYBh/+bEedqkSevPVhLP4QfVPCpb+4BBe2p7Xs32dBgs7rh9nY2AIYUL6BgLw1JVXV8GlpKmb/hNiuIxfPfZg==}
-    engines: {node: '>=14.21.3'}
-    cpu: [x64]
-    os: [darwin]
-
-  '@biomejs/cli-linux-arm64-musl@1.9.4':
-    resolution: {integrity: sha512-v665Ct9WCRjGa8+kTr0CzApU0+XXtRgwmzIf1SeKSGAv+2scAlW6JR5PMFo6FzqqZ64Po79cKODKf3/AAmECqA==}
-    engines: {node: '>=14.21.3'}
-    cpu: [arm64]
-    os: [linux]
-
-  '@biomejs/cli-linux-arm64@1.9.4':
-    resolution: {integrity: sha512-fJIW0+LYujdjUgJJuwesP4EjIBl/N/TcOX3IvIHJQNsAqvV2CHIogsmA94BPG6jZATS4Hi+xv4SkBBQSt1N4/g==}
-    engines: {node: '>=14.21.3'}
-    cpu: [arm64]
-    os: [linux]
-
-  '@biomejs/cli-linux-x64-musl@1.9.4':
-    resolution: {integrity: sha512-gEhi/jSBhZ2m6wjV530Yy8+fNqG8PAinM3oV7CyO+6c3CEh16Eizm21uHVsyVBEB6RIM8JHIl6AGYCv6Q6Q9Tg==}
-    engines: {node: '>=14.21.3'}
-    cpu: [x64]
-    os: [linux]
-
-  '@biomejs/cli-linux-x64@1.9.4':
-    resolution: {integrity: sha512-lRCJv/Vi3Vlwmbd6K+oQ0KhLHMAysN8lXoCI7XeHlxaajk06u7G+UsFSO01NAs5iYuWKmVZjmiOzJ0OJmGsMwg==}
-    engines: {node: '>=14.21.3'}
-    cpu: [x64]
-    os: [linux]
-
-  '@biomejs/cli-win32-arm64@1.9.4':
-    resolution: {integrity: sha512-tlbhLk+WXZmgwoIKwHIHEBZUwxml7bRJgk0X2sPyNR3S93cdRq6XulAZRQJ17FYGGzWne0fgrXBKpl7l4M87Hg==}
-    engines: {node: '>=14.21.3'}
-    cpu: [arm64]
-    os: [win32]
-
-  '@biomejs/cli-win32-x64@1.9.4':
-    resolution: {integrity: sha512-8Y5wMhVIPaWe6jw2H+KlEm4wP/f7EW3810ZLmDlrEEy5KvBsb9ECEfu/kMWD484ijfQ8+nIi0giMgu9g1UAuuA==}
-    engines: {node: '>=14.21.3'}
-    cpu: [x64]
-    os: [win32]
-
   '@commander-js/extra-typings@12.1.0':
     resolution: {integrity: sha512-wf/lwQvWAA0goIghcb91dQYpkLBcyhOhQNqG/VgWhnKzgt+UOMvra7EX/2fv70arm5RW+PUHoQHHDa6/p77Eqg==}
     peerDependencies:
@@ -2881,12 +2779,6 @@ packages:
 
   '@hono/zod-validator@0.3.0':
     resolution: {integrity: sha512-7XcTk3yYyk6ldrO/VuqsroE7stvDZxHJQcpATRAyha8rUxJNBPV3+6waDrARfgEqxOVlzIadm3/6sE/dPseXgQ==}
-    peerDependencies:
-      hono: '>=3.9.0'
-      zod: ^3.19.1
-
-  '@hono/zod-validator@0.4.1':
-    resolution: {integrity: sha512-I8LyfeJfvVmC5hPjZ2Iij7RjexlgSBT7QJudZ4JvNPLxn0JQ3sqclz2zydlwISAnw21D2n4LQ0nfZdoiv9fQQA==}
     peerDependencies:
       hono: '>=3.9.0'
       zod: ^3.19.1
@@ -12199,41 +12091,6 @@ snapshots:
 
   '@bcoe/v8-coverage@0.2.3': {}
 
-  '@biomejs/biome@1.9.4':
-    optionalDependencies:
-      '@biomejs/cli-darwin-arm64': 1.9.4
-      '@biomejs/cli-darwin-x64': 1.9.4
-      '@biomejs/cli-linux-arm64': 1.9.4
-      '@biomejs/cli-linux-arm64-musl': 1.9.4
-      '@biomejs/cli-linux-x64': 1.9.4
-      '@biomejs/cli-linux-x64-musl': 1.9.4
-      '@biomejs/cli-win32-arm64': 1.9.4
-      '@biomejs/cli-win32-x64': 1.9.4
-
-  '@biomejs/cli-darwin-arm64@1.9.4':
-    optional: true
-
-  '@biomejs/cli-darwin-x64@1.9.4':
-    optional: true
-
-  '@biomejs/cli-linux-arm64-musl@1.9.4':
-    optional: true
-
-  '@biomejs/cli-linux-arm64@1.9.4':
-    optional: true
-
-  '@biomejs/cli-linux-x64-musl@1.9.4':
-    optional: true
-
-  '@biomejs/cli-linux-x64@1.9.4':
-    optional: true
-
-  '@biomejs/cli-win32-arm64@1.9.4':
-    optional: true
-
-  '@biomejs/cli-win32-x64@1.9.4':
-    optional: true
-
   '@commander-js/extra-typings@12.1.0(commander@12.1.0)':
     dependencies:
       commander: 12.1.0
@@ -13188,11 +13045,6 @@ snapshots:
       zod: 3.23.8
 
   '@hono/zod-validator@0.3.0(hono@4.6.13)(zod@3.23.8)':
-    dependencies:
-      hono: 4.6.13
-      zod: 3.23.8
-
-  '@hono/zod-validator@0.4.1(hono@4.6.13)(zod@3.23.8)':
     dependencies:
       hono: 4.6.13
       zod: 3.23.8
@@ -15634,7 +15486,7 @@ snapshots:
       wonka: 6.3.4
     optional: true
 
-  '@vitest/coverage-v8@2.1.8(vitest@2.1.8)':
+  '@vitest/coverage-v8@2.1.8(vitest@2.1.8(@types/node@22.10.1)(@vitest/ui@2.1.8)(jsdom@20.0.3)(lightningcss@1.28.1)(terser@5.37.0))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
