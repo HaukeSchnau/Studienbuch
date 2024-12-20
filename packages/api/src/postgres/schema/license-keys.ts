@@ -10,7 +10,7 @@ import {
 
 import { users } from "./users";
 
-const SchoolId = pgEnum("school_id", ["igs-lil"]);
+export const SchoolId = pgEnum("school_id", ["igs-lil"]);
 
 export const licenseKeys = pgTable("license_keys", {
   key: text("key").notNull().primaryKey(),

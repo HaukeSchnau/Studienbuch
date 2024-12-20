@@ -11,10 +11,12 @@ import { NAMESPACES } from "@stu/lib";
 import type { DB, Extra } from "./event-handlers/types";
 import { absenceApplicators } from "./event-handlers/absences";
 import { gradeApplicators } from "./event-handlers/grades";
+import { orgApplicators } from "./event-handlers/org";
 
 const applicators: EventApplicators<Extra> = {
   absence: absenceApplicators,
   grades: gradeApplicators,
+  org: orgApplicators,
 };
 
 export class EventApplicator implements EventApplicatorInterface {

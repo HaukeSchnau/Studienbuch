@@ -22,8 +22,8 @@ const SHARED_SCHEMA_NAMESPACE = "schema";
 export const createSchemaClient = () =>
   createNamespaceClient(SHARED_SCHEMA_NAMESPACE);
 
-export const createSharedSchema = async () => {
-  await fetch(
+export const createSharedSchema = () =>
+  fetch(
     `${env.LIBSQL_ADMIN_URL}/v1/namespaces/${SHARED_SCHEMA_NAMESPACE}/create`,
     {
       method: "POST",
@@ -34,10 +34,9 @@ export const createSharedSchema = async () => {
       body: JSON.stringify({ shared_schema: true }),
     },
   );
-};
 
-export const createNamespace = async (namespace: string) => {
-  await fetch(`${env.LIBSQL_ADMIN_URL}/v1/namespaces/${namespace}/create`, {
+export const createNamespace = (namespace: string) =>
+  fetch(`${env.LIBSQL_ADMIN_URL}/v1/namespaces/${namespace}/create`, {
     method: "POST",
     headers: {
       Authorization: `Basic ${env.LIBSQL_ADMIN_AUTH_KEY}`,
@@ -45,4 +44,3 @@ export const createNamespace = async (namespace: string) => {
     },
     body: JSON.stringify({ shared_schema_name: SHARED_SCHEMA_NAMESPACE }),
   });
-};

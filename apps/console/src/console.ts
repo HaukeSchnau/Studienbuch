@@ -8,13 +8,10 @@ import type { SchoolId } from "@stu/lib";
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
 import { defaultSchools, SCHOOL_IDS } from "@stu/lib";
-import {
-  createUser,
-  importClasses,
-  importTeachers,
-  importTimetable,
-} from "@stu/lib-server";
+import { createUser, importClasses, importTimetable } from "@stu/lib-server";
 
+import { api } from "./caller";
+import { importTeachers } from "./import-teachers";
 import { logger } from "./logger";
 import { addSemesters } from "./seed/add-semesters";
 import { copySubstitutions } from "./seed/copy-kadmos-substitutions";
@@ -47,28 +44,34 @@ program
     const defaultSchoolValue = defaultSchools[school];
 
     logger.info(`Seeding school "${school}"...`);
-    await db
-      .insert(Schools)
-      .values({ id: school, ...defaultSchoolValue })
-      .onConflictDoNothing();
+    await api.events.ingest({
+      type: "org.school.founded",
+      data: {
+        id: school,
+        name: defaultSchoolValue.name,
+        state: defaultSchoolValue.stateCode,
+      },
+      id: crypto.randomUUID(),
+      timestamp: defaultSchoolValue.founded,
+    });
 
     logger.info(`Generating license keys for school "${school}"...`);
-    await generateLicenses(100, school);
+    await generateLicenses(10, school);
 
     logger.info("Importing teachers...");
     await importTeachers();
 
-    logger.info("Adding semesters...");
+    logger.info("Importing holidays...");
     await addSemesters(defaultSchoolValue.stateCode);
 
-    logger.info("Importing classes...");
-    await importClasses({ school });
+    // logger.info("Importing classes...");
+    // await importClasses({ school });
 
-    logger.info("Importing timetables...");
-    await importTimetables({ school, weekOffsetRange: [-4, 4] });
+    // logger.info("Importing timetables...");
+    // await importTimetables({ school, weekOffsetRange: [-4, 4] });
 
-    logger.info("Seeding complete!");
-    process.exit(0);
+    // logger.info("Seeding complete!");
+    // process.exit(0);
   });
 
 program.command("import-substitutions").action(async () => {

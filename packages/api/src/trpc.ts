@@ -42,6 +42,22 @@ const getSession = async (sessionToken: string): Promise<Session | null> => {
   };
 };
 
+const consoleUserId = "00000000-0000-0000-0000-000000000000";
+
+const getSystemSession = async (): Promise<Session> => {
+  await db.insert(tables.users).values({
+    id: consoleUserId,
+    type: "system",
+  }).onConflictDoNothing();
+
+  return {
+    token: "",
+    user: {
+      id: consoleUserId,
+    },
+  };
+};
+
 /**
  * 1. CONTEXT
  *
@@ -56,14 +72,25 @@ const getSession = async (sessionToken: string): Promise<Session | null> => {
  */
 export const createTRPCContext = async ({
   sessionToken,
+  authority,
   source,
   log,
 }: {
-  sessionToken: string | null;
   source: string;
   log: Logger;
-}) => {
-  const session = sessionToken ? await getSession(sessionToken) : null;
+} & (
+  | {
+      sessionToken: string | null;
+      authority?: never;
+    }
+  | { authority: "console"; sessionToken?: never }
+)) => {
+  const session: Session | null =
+    authority === "console"
+      ? await getSystemSession()
+      : sessionToken
+        ? await getSession(sessionToken)
+        : null;
 
   if (env.NODE_ENV === "development") {
     console.log(

@@ -1,8 +1,7 @@
 import type { Salutation } from "@stu/lib";
-import { sql } from "@stu/db";
-import { db } from "@stu/db/client";
-import { Persons } from "@stu/db/schema";
 import { getTeachers } from "@stu/external-api";
+
+import { api } from "./caller";
 
 const FISTNAME_SALUTATION_MAP: Record<string, Salutation> = {
   Afrodite: "Frau",
@@ -110,23 +109,19 @@ const FISTNAME_SALUTATION_MAP: Record<string, Salutation> = {
 };
 
 export const importTeachers = async () => {
-  const teachers = getTeachers();
-
-  await db
-    .insert(Persons)
-    .values(
-      teachers.map((teacher) => ({
+  for (const teacher of getTeachers()) {
+    await api.events.ingest({
+      type: "org.teacher.joined",
+      data: {
+        personId: crypto.randomUUID(),
         name: `${teacher.firstName} ${teacher.lastName}`,
         abbrv: teacher.abbrv,
         salutation:
           FISTNAME_SALUTATION_MAP[teacher.firstName.split(" ")[0] ?? ""],
-      })),
-    )
-    .onConflictDoUpdate({
-      target: [Persons.abbrv],
-      set: {
-        name: sql.raw(`excluded.${Persons.name.name}`), // excluded is a special table that contains the conflicting row
-        salutation: sql.raw(`excluded.${Persons.salutation.name}`),
+        school: "igs-lil",
       },
+      id: crypto.randomUUID(),
+      timestamp: new Date(),
     });
+  }
 };

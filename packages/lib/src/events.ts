@@ -1,109 +1,207 @@
-import { z } from "zod";
+import {
+  array,
+  date,
+  discriminatedUnion,
+  literal,
+  number,
+  object,
+  string,
+  z,
+} from "zod";
 
 import { GRADE_TYPES } from "./grades";
+import { SCHOOL_IDS, SEMESTER_TYPES, STATE_CODES } from "./schools";
+import { SALUTATIONS } from "./users";
 
-const DomainEvent = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("absence.recorded"),
-    data: z.object({
-      date: z.date(),
-      reason: z.string(),
-      courseIds: z.array(z.string()).min(1),
+const DomainEvent = discriminatedUnion("type", [
+  object({
+    type: literal("absence.recorded"),
+    data: object({
+      date: date(),
+      reason: string(),
+      courseIds: array(string().uuid()).min(1),
     }),
   }),
-  z.object({
-    type: z.literal("absence.parentApproved"),
-    data: z.object({
-      date: z.date(),
-      signature: z.string(),
+  object({
+    type: literal("absence.parentApproved"),
+    data: object({
+      date: date(),
+      signature: string(),
     }),
   }),
-  z.object({
-    type: z.literal("absence.teacherApproved"),
-    data: z.object({
-      date: z.date(),
-      courseId: z.string(),
-      signature: z.string(),
+  object({
+    type: literal("absence.teacherApproved"),
+    data: object({
+      date: date(),
+      courseId: string().uuid(),
+      signature: string(),
     }),
   }),
-  z.object({
-    type: z.literal("absence.discarded"),
-    data: z.object({
-      date: z.date(),
-      courseIds: z.array(z.string()),
-    }),
-  }),
-
-  z.object({
-    type: z.literal("grades.currentGradeSet"),
-    data: z.object({
-      courseId: z.string(),
-      date: z.date(),
-      result: z.number(),
-      type: z.enum(GRADE_TYPES),
-    }),
-  }),
-  z.object({
-    type: z.literal("grades.writtenGradeRecorded"),
-    data: z.object({
-      courseId: z.string(),
-      date: z.date(),
-      result: z.number(),
-    }),
-  }),
-  z.object({
-    type: z.literal("grades.teacherApproved"),
-    data: z.object({
-      date: z.date(),
-      course: z.string(),
-      type: z.enum(GRADE_TYPES),
-      signature: z.string(),
-    }),
-  }),
-  z.object({
-    type: z.literal("grades.parentApproved"),
-    data: z.object({
-      date: z.date(),
-      course: z.string(),
-      type: z.enum(GRADE_TYPES),
-      signature: z.string(),
-    }),
-  }),
-  z.object({
-    type: z.literal("grades.discarded"),
-    data: z.object({
-      course: z.string(),
-      type: z.enum(GRADE_TYPES),
-      date: z.date(),
-    }),
-  }),
-  z.object({
-    type: z.literal("grades.latestRestored"),
-    data: z.object({
-      course: z.string(),
-      type: z.enum(GRADE_TYPES),
+  object({
+    type: literal("absence.discarded"),
+    data: object({
+      date: date(),
+      courseIds: array(string().uuid()),
     }),
   }),
 
-  // z.object({
-  //   type: z.literal("student.classAssigned"),
-  //   data: z.object({}),
+  object({
+    type: literal("grades.currentGradeSet"),
+    data: object({
+      courseId: string().uuid(),
+      date: date(),
+      result: number(),
+      type: z.enum(GRADE_TYPES),
+    }),
+  }),
+  object({
+    type: literal("grades.writtenGradeRecorded"),
+    data: object({
+      courseId: string(),
+      date: date(),
+      result: number(),
+    }),
+  }),
+  object({
+    type: literal("grades.teacherApproved"),
+    data: object({
+      date: date(),
+      course: string(),
+      type: z.enum(GRADE_TYPES),
+      signature: string(),
+    }),
+  }),
+  object({
+    type: literal("grades.parentApproved"),
+    data: object({
+      date: date(),
+      course: string().uuid(),
+      type: z.enum(GRADE_TYPES),
+      signature: string(),
+    }),
+  }),
+  object({
+    type: literal("grades.discarded"),
+    data: object({
+      course: string().uuid(),
+      type: z.enum(GRADE_TYPES),
+      date: date(),
+    }),
+  }),
+  object({
+    type: literal("grades.latestRestored"),
+    data: object({
+      course: string().uuid(),
+      type: z.enum(GRADE_TYPES),
+    }),
+  }),
+
+  object({
+    type: literal("org.school.founded"),
+    data: object({
+      id: z.enum(SCHOOL_IDS),
+      name: string(),
+      state: z.enum(STATE_CODES),
+    }),
+  }),
+  object({
+    type: literal("org.year.started"),
+    data: object({
+      name: string(),
+      startYear: number(),
+      graduationYear: number(),
+      school: z.enum(SCHOOL_IDS),
+      classes: array(
+        object({
+          identifierInYear: string(),
+          teachers: array(string().uuid()),
+        }),
+      ),
+    }),
+  }),
+  object({
+    type: literal("org.teacher.joined"),
+    data: object({
+      personId: string().uuid(),
+      name: string(),
+      abbrv: string(),
+      salutation: z.enum(SALUTATIONS).optional(),
+      school: z.enum(SCHOOL_IDS),
+    }),
+  }),
+  object({
+    type: literal("org.holiday.created"),
+    data: object({
+      name: string(),
+      start: date(),
+      end: date(),
+      state: z.enum(STATE_CODES),
+      year: number(),
+    }),
+  }),
+  object({
+    type: literal("org.courses.created"),
+    data: object({
+      id: string().uuid(),
+      name: string(),
+      longName: string(),
+      subject: z.enum(GRADE_TYPES),
+      school: z.enum(SCHOOL_IDS),
+      semesterType: z.enum(SEMESTER_TYPES),
+      semesterYear: number(),
+      classes: array(
+        object({
+          identifierInYear: string(),
+          startYear: number(),
+        }),
+      ),
+      teachers: array(string().uuid()),
+    }),
+  }),
+  object({
+    type: literal("org.timetable.entryCreated"),
+    data: object({
+      course: string().uuid(),
+      start: date(),
+      duration: number(),
+      rooms: array(string()),
+    }),
+  }),
+  object({
+    type: literal("org.timetable.substituted"),
+    data: object({
+      course: string().uuid(),
+      start: date(),
+      substitute: string().uuid(),
+    }),
+  }),
+  object({
+    type: literal("org.timetable.canceled"),
+    data: object({
+      course: string().uuid(),
+      start: date(),
+    }),
+  }),
+
+  // object({
+  //   type: literal("student.classAssigned"),
+  //   data: object({}),
   // }),
-  // z.object({
-  //   type: z.literal("student.courseAssigned"),
-  //   data: z.object({}),
+  // object({
+  //   type: literal("student.courseAssigned"),
+  //   data: object({}),
   // }),
 
-  // z.object({
-  //   type: z.literal("user.activated"),
-  //   data: z.object({}),
+  // object({
+  //   type: literal("user.activated"),
+  //   data: object({}),
   // }),
 ]);
 
 export const Event = DomainEvent.and(
-  z.object({
-    id: z.string(),
-    timestamp: z.coerce.date(),
+  object({
+    id: string().uuid(),
+    timestamp: date(),
   }),
 );
 export type Event = z.infer<typeof Event>;
@@ -141,7 +239,7 @@ export interface ServerEventApplicator<TEventName extends Event["type"]> {
   ) => Promise<PersistedEvent[]>;
 }
 
-export const NAMESPACES = ["absence", "grades"] as const;
+export const NAMESPACES = ["absence", "grades", "org"] as const;
 type Namespace = (typeof NAMESPACES)[number];
 export type NamespaceEventApplicators<TNamespace extends Namespace, Extra> = {
   [TEventName in Event["type"] as TEventName extends `${TNamespace}.${infer T}`
