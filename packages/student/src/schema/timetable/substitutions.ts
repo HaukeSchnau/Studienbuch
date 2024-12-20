@@ -8,7 +8,7 @@ import {
 
 import { SUBSTITUTION_TYPES } from "@stu/lib";
 
-import { Persons } from "../people/persons";
+import { persons } from "../people/persons";
 import { Rooms } from "../school/rooms";
 import { sqliteEnum, timestamp, uuid } from "../utils";
 import { TimetableEntries } from "./timetable-entries";
@@ -22,7 +22,7 @@ export const Substitutions = sqliteTable(
     course: uuid("course").notNull(),
     type: SubstitutionType("type"),
 
-    substitute: uuid("substitute").references(() => Persons.id, {
+    substitute: uuid("substitute").references(() => persons.id, {
       onDelete: "set null",
       onUpdate: "cascade",
     }),
@@ -44,9 +44,9 @@ export const Substitutions = sqliteTable(
 );
 
 export const SubstitutionRelations = relations(Substitutions, ({ one }) => ({
-  substitute: one(Persons, {
+  substitute: one(persons, {
     fields: [Substitutions.substitute],
-    references: [Persons.id],
+    references: [persons.id],
   }),
   timetableEntry: one(TimetableEntries, {
     fields: [Substitutions.start, Substitutions.course],

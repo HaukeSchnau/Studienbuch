@@ -6,7 +6,7 @@ import { sqliteEnum, uuid } from "../utils";
 
 export const Salutation = sqliteEnum(SALUTATIONS);
 
-export const Persons = sqliteTable("persons", {
+export const persons = sqliteTable("persons", {
   id: uuid("id").primaryKey().notNull(),
   name: text("name").notNull(),
   salutation: Salutation("salutation"),

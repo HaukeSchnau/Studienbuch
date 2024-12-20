@@ -5,11 +5,11 @@ import { SEMESTER_TYPES } from "@stu/lib";
 
 import { sqliteEnum, timestamp } from "../utils";
 import { SchoolId } from "./school-id";
-import { Schools } from "./schools";
+import { schools, StateCode } from "./schools";
 
 export const SemesterType = sqliteEnum(SEMESTER_TYPES);
 
-export const Semesters = sqliteTable(
+export const semesters = sqliteTable(
   "semesters",
   {
     name: text("name").notNull(),
@@ -17,7 +17,7 @@ export const Semesters = sqliteTable(
     end: timestamp("end").notNull(),
     school: SchoolId("school")
       .notNull()
-      .references(() => Schools.id, {
+      .references(() => schools.id, {
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
@@ -33,9 +33,27 @@ export const Semesters = sqliteTable(
   },
 );
 
-export const SemesterRelations = relations(Semesters, ({ one }) => ({
-  school: one(Schools, {
-    fields: [Semesters.school],
-    references: [Schools.id],
+export const holidays = sqliteTable(
+  "holidays",
+  {
+    name: text("name").notNull(),
+    start: timestamp("start").notNull(),
+    end: timestamp("end").notNull(),
+    state: StateCode("state").notNull(),
+    year: int("year").notNull(),
+  },
+  (table) => {
+    return {
+      pk: primaryKey({
+        columns: [table.name, table.start, table.end, table.state, table.year],
+      }),
+    };
+  },
+);
+
+export const SemesterRelations = relations(semesters, ({ one }) => ({
+  school: one(schools, {
+    fields: [semesters.school],
+    references: [schools.id],
   }),
 }));

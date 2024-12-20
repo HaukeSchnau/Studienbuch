@@ -7,11 +7,11 @@ import {
   text,
 } from "drizzle-orm/sqlite-core";
 
-import { Persons } from "../people/persons";
+import { persons } from "../people/persons";
 import { uuid } from "../utils";
 import { CoursesToClasses } from "./courses";
 import { SchoolId } from "./school-id";
-import { Years } from "./years";
+import { years } from "./years";
 
 export const Classes = sqliteTable(
   "classes",
@@ -28,7 +28,7 @@ export const Classes = sqliteTable(
       }),
       year_fk: foreignKey({
         columns: [table.startYear, table.school],
-        foreignColumns: [Years.startYear, Years.school],
+        foreignColumns: [years.startYear, years.school],
       })
         .onDelete("restrict")
         .onUpdate("cascade"),
@@ -37,9 +37,9 @@ export const Classes = sqliteTable(
 );
 
 export const ClassesRelations = relations(Classes, ({ one, many }) => ({
-  year: one(Years, {
+  year: one(years, {
     fields: [Classes.startYear, Classes.school],
-    references: [Years.startYear, Years.school],
+    references: [years.startYear, years.school],
   }),
   teachers: many(TeachersToClasses),
   courses: many(CoursesToClasses),
@@ -50,7 +50,7 @@ export const TeachersToClasses = sqliteTable(
   {
     teacher: uuid("teacher")
       .notNull()
-      .references(() => Persons.id, {
+      .references(() => persons.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
@@ -85,9 +85,9 @@ export const TeachersToClasses = sqliteTable(
 export const TeachersToClassesRelations = relations(
   TeachersToClasses,
   ({ one }) => ({
-    teacher: one(Persons, {
+    teacher: one(persons, {
       fields: [TeachersToClasses.teacher],
-      references: [Persons.id],
+      references: [persons.id],
     }),
     class: one(Classes, {
       fields: [

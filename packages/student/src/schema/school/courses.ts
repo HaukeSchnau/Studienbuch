@@ -9,12 +9,12 @@ import {
 
 import { SUBJECT_IDS } from "@stu/lib";
 
-import { Persons } from "../people/persons";
+import { persons } from "../people/persons";
 import { TimetableEntries } from "../timetable/timetable-entries";
 import { boolean, sqliteEnum, uuid } from "../utils";
 import { Classes } from "./classes";
 import { SchoolId } from "./school-id";
-import { Semesters, SemesterType } from "./semesters";
+import { semesters, SemesterType } from "./semesters";
 
 export const Subject = sqliteEnum(SUBJECT_IDS);
 
@@ -37,7 +37,7 @@ export const Courses = sqliteTable(
     return {
       semester_fk: foreignKey({
         columns: [table.semesterType, table.semesterYear, table.school],
-        foreignColumns: [Semesters.type, Semesters.year, Semesters.school],
+        foreignColumns: [semesters.type, semesters.year, semesters.school],
       })
         .onDelete("restrict")
         .onUpdate("cascade"),
@@ -65,7 +65,7 @@ export const CoursesToTeachers = sqliteTable(
 
     teacher: uuid("teacher")
       .notNull()
-      .references(() => Persons.id, {
+      .references(() => persons.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
@@ -86,9 +86,9 @@ export const CoursesToTeachersRelations = relations(
       fields: [CoursesToTeachers.course],
       references: [Courses.id],
     }),
-    teacher: one(Persons, {
+    teacher: one(persons, {
       fields: [CoursesToTeachers.teacher],
-      references: [Persons.id],
+      references: [persons.id],
     }),
   }),
 );
