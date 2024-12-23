@@ -6,7 +6,7 @@ import {
   text,
 } from "drizzle-orm/sqlite-core";
 
-import { Courses } from "../school/courses";
+import { courses } from "../school/courses";
 import { timestamp, uuid } from "../utils";
 
 export const absenceDays = sqliteTable(
@@ -32,7 +32,7 @@ export const courseAbsences = sqliteTable(
     date: timestamp("date").notNull(),
     course: uuid("course")
       .notNull()
-      .references(() => Courses.id, {
+      .references(() => courses.id, {
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
@@ -57,9 +57,9 @@ export const AbsenceDaysRelations = relations(absenceDays, ({ many }) => ({
 }));
 
 export const AbsenceCoursesRelations = relations(courseAbsences, ({ one }) => ({
-  course: one(Courses, {
+  course: one(courses, {
     fields: [courseAbsences.course],
-    references: [Courses.id],
+    references: [courses.id],
   }),
   absenceDay: one(absenceDays, {
     fields: [courseAbsences.date],

@@ -10,15 +10,15 @@ import {
 import { SUBJECT_IDS } from "@stu/lib";
 
 import { persons } from "../people/persons";
-import { TimetableEntries } from "../timetable/timetable-entries";
+import { timetableEntries } from "../timetable/timetable-entries";
 import { boolean, sqliteEnum, uuid } from "../utils";
-import { Classes } from "./classes";
+import { classes } from "./classes";
 import { SchoolId } from "./school-id";
 import { semesters, SemesterType } from "./semesters";
 
 export const Subject = sqliteEnum(SUBJECT_IDS);
 
-export const Courses = sqliteTable(
+export const courses = sqliteTable(
   "courses",
   {
     id: uuid("id").primaryKey().notNull(),
@@ -45,20 +45,20 @@ export const Courses = sqliteTable(
   },
 );
 
-export const CourseRelations = relations(Courses, ({ many }) => ({
-  teachers: many(CoursesToTeachers),
-  classes: many(CoursesToClasses),
+export const CourseRelations = relations(courses, ({ many }) => ({
+  teachers: many(coursesToTeachers),
+  classes: many(coursesToClasses),
 
-  timetableEntries: many(TimetableEntries),
-  recurringTimetableEntries: many(TimetableEntries),
+  timetableEntries: many(timetableEntries),
+  recurringTimetableEntries: many(timetableEntries),
 }));
 
-export const CoursesToTeachers = sqliteTable(
+export const coursesToTeachers = sqliteTable(
   "courses_to_teachers",
   {
     course: uuid("course")
       .notNull()
-      .references(() => Courses.id, {
+      .references(() => courses.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
@@ -80,25 +80,25 @@ export const CoursesToTeachers = sqliteTable(
 );
 
 export const CoursesToTeachersRelations = relations(
-  CoursesToTeachers,
+  coursesToTeachers,
   ({ one }) => ({
-    course: one(Courses, {
-      fields: [CoursesToTeachers.course],
-      references: [Courses.id],
+    course: one(courses, {
+      fields: [coursesToTeachers.course],
+      references: [courses.id],
     }),
     teacher: one(persons, {
-      fields: [CoursesToTeachers.teacher],
+      fields: [coursesToTeachers.teacher],
       references: [persons.id],
     }),
   }),
 );
 
-export const CoursesToClasses = sqliteTable(
+export const coursesToClasses = sqliteTable(
   "courses_to_classes",
   {
     course: uuid("course")
       .notNull()
-      .references(() => Courses.id, {
+      .references(() => courses.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
@@ -121,9 +121,9 @@ export const CoursesToClasses = sqliteTable(
       class_fk: foreignKey({
         columns: [table.classIdentifier, table.classStartYear, table.school],
         foreignColumns: [
-          Classes.identifierInYear,
-          Classes.startYear,
-          Classes.school,
+          classes.identifierInYear,
+          classes.startYear,
+          classes.school,
         ],
       })
         .onDelete("cascade")
@@ -133,19 +133,19 @@ export const CoursesToClasses = sqliteTable(
 );
 
 export const CoursesToClassesRelations = relations(
-  CoursesToClasses,
+  coursesToClasses,
   ({ one }) => ({
-    course: one(Courses, {
-      fields: [CoursesToClasses.course],
-      references: [Courses.id],
+    course: one(courses, {
+      fields: [coursesToClasses.course],
+      references: [courses.id],
     }),
-    class: one(Classes, {
+    class: one(classes, {
       fields: [
-        CoursesToClasses.classIdentifier,
-        CoursesToClasses.classStartYear,
-        CoursesToClasses.school,
+        coursesToClasses.classIdentifier,
+        coursesToClasses.classStartYear,
+        coursesToClasses.school,
       ],
-      references: [Classes.identifierInYear, Classes.startYear, Classes.school],
+      references: [classes.identifierInYear, classes.startYear, classes.school],
     }),
   }),
 );

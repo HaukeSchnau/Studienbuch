@@ -1,7 +1,7 @@
 import { relations } from "drizzle-orm";
 import { int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-import { Classes } from "./classes";
+import { classes } from "./classes";
 import { SchoolId } from "./school-id";
 import { schools } from "./schools";
 
@@ -33,5 +33,5 @@ export const YearsRelations = relations(years, ({ one, many }) => ({
     fields: [years.school],
     references: [schools.id],
   }),
-  classes: many(Classes),
+  classes: many(classes),
 }));

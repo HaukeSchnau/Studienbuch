@@ -11,11 +11,11 @@ import { SUBSTITUTION_TYPES } from "@stu/lib";
 import { persons } from "../people/persons";
 import { Rooms } from "../school/rooms";
 import { sqliteEnum, timestamp, uuid } from "../utils";
-import { TimetableEntries } from "./timetable-entries";
+import { timetableEntries } from "./timetable-entries";
 
 export const SubstitutionType = sqliteEnum(SUBSTITUTION_TYPES);
 
-export const Substitutions = sqliteTable(
+export const substitutions = sqliteTable(
   "substitutions",
   {
     start: timestamp("date").notNull(),
@@ -35,7 +35,7 @@ export const Substitutions = sqliteTable(
       pk: primaryKey({ columns: [table.start, table.course] }),
       timetable_entry_fk: foreignKey({
         columns: [table.start, table.course],
-        foreignColumns: [TimetableEntries.start, TimetableEntries.course],
+        foreignColumns: [timetableEntries.start, timetableEntries.course],
       })
         .onDelete("cascade")
         .onUpdate("cascade"),
@@ -43,14 +43,14 @@ export const Substitutions = sqliteTable(
   },
 );
 
-export const SubstitutionRelations = relations(Substitutions, ({ one }) => ({
+export const SubstitutionRelations = relations(substitutions, ({ one }) => ({
   substitute: one(persons, {
-    fields: [Substitutions.substitute],
+    fields: [substitutions.substitute],
     references: [persons.id],
   }),
-  timetableEntry: one(TimetableEntries, {
-    fields: [Substitutions.start, Substitutions.course],
-    references: [TimetableEntries.start, TimetableEntries.course],
+  timetableEntry: one(timetableEntries, {
+    fields: [substitutions.start, substitutions.course],
+    references: [timetableEntries.start, timetableEntries.course],
   }),
 }));
 
@@ -69,8 +69,8 @@ export const RoomChanges = sqliteTable("room_changes", {
 });
 
 export const RoomChangeRelations = relations(RoomChanges, ({ one }) => ({
-  timetableEntry: one(TimetableEntries, {
+  timetableEntry: one(timetableEntries, {
     fields: [RoomChanges.start, RoomChanges.course],
-    references: [TimetableEntries.start, TimetableEntries.course],
+    references: [timetableEntries.start, timetableEntries.course],
   }),
 }));

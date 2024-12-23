@@ -1,7 +1,7 @@
 import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { persons } from "../people/persons";
-import { Courses } from "../school/courses";
+import { courses } from "../school/courses";
 import { boolean, jsonb, timestamp, uuid } from "../utils";
 
 export const Tasks = sqliteTable("tasks", {
@@ -11,7 +11,7 @@ export const Tasks = sqliteTable("tasks", {
   dueDate: timestamp("due_date").notNull(),
   course: uuid("course")
     .notNull()
-    .references(() => Courses.id, {
+    .references(() => courses.id, {
       onDelete: "restrict",
       onUpdate: "cascade",
     }),

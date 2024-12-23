@@ -3,7 +3,7 @@ import { primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { GRADE_TYPES } from "@stu/lib";
 
-import { Courses } from "../school/courses";
+import { courses } from "../school/courses";
 import { sqliteEnum, timestamp, uuid } from "../utils";
 
 export const GradeType = sqliteEnum(GRADE_TYPES);
@@ -20,7 +20,7 @@ export const grades = sqliteTable(
 
     course: uuid("course")
       .notNull()
-      .references(() => Courses.id, {
+      .references(() => courses.id, {
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
@@ -35,8 +35,8 @@ export const grades = sqliteTable(
 );
 
 export const GradesRelations = relations(grades, ({ one }) => ({
-  course: one(Courses, {
+  course: one(courses, {
     fields: [grades.course],
-    references: [Courses.id],
+    references: [courses.id],
   }),
 }));

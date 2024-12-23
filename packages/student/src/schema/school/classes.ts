@@ -9,11 +9,11 @@ import {
 
 import { persons } from "../people/persons";
 import { uuid } from "../utils";
-import { CoursesToClasses } from "./courses";
+import { coursesToClasses } from "./courses";
 import { SchoolId } from "./school-id";
 import { years } from "./years";
 
-export const Classes = sqliteTable(
+export const classes = sqliteTable(
   "classes",
   {
     identifierInYear: text("identifier_in_year").notNull(),
@@ -36,16 +36,16 @@ export const Classes = sqliteTable(
   },
 );
 
-export const ClassesRelations = relations(Classes, ({ one, many }) => ({
+export const ClassesRelations = relations(classes, ({ one, many }) => ({
   year: one(years, {
-    fields: [Classes.startYear, Classes.school],
+    fields: [classes.startYear, classes.school],
     references: [years.startYear, years.school],
   }),
-  teachers: many(TeachersToClasses),
-  courses: many(CoursesToClasses),
+  teachers: many(teachersToClasses),
+  courses: many(coursesToClasses),
 }));
 
-export const TeachersToClasses = sqliteTable(
+export const teachersToClasses = sqliteTable(
   "teachers_to_classes",
   {
     teacher: uuid("teacher")
@@ -71,9 +71,9 @@ export const TeachersToClasses = sqliteTable(
       class_fk: foreignKey({
         columns: [table.classIdentifier, table.classStartYear, table.school],
         foreignColumns: [
-          Classes.identifierInYear,
-          Classes.startYear,
-          Classes.school,
+          classes.identifierInYear,
+          classes.startYear,
+          classes.school,
         ],
       })
         .onDelete("cascade")
@@ -83,19 +83,19 @@ export const TeachersToClasses = sqliteTable(
 );
 
 export const TeachersToClassesRelations = relations(
-  TeachersToClasses,
+  teachersToClasses,
   ({ one }) => ({
     teacher: one(persons, {
-      fields: [TeachersToClasses.teacher],
+      fields: [teachersToClasses.teacher],
       references: [persons.id],
     }),
-    class: one(Classes, {
+    class: one(classes, {
       fields: [
-        TeachersToClasses.classIdentifier,
-        TeachersToClasses.classStartYear,
-        TeachersToClasses.school,
+        teachersToClasses.classIdentifier,
+        teachersToClasses.classStartYear,
+        teachersToClasses.school,
       ],
-      references: [Classes.identifierInYear, Classes.startYear, Classes.school],
+      references: [classes.identifierInYear, classes.startYear, classes.school],
     }),
   }),
 );

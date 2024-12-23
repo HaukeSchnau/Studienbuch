@@ -7,11 +7,11 @@ import {
   text,
 } from "drizzle-orm/sqlite-core";
 
-import { Courses } from "../school/courses";
+import { courses } from "../school/courses";
 import { Rooms } from "../school/rooms";
 import { timestamp, uuid } from "../utils";
 
-export const TimetableEntries = sqliteTable(
+export const timetableEntries = sqliteTable(
   "timetable_entries",
   {
     start: timestamp("date").notNull(),
@@ -19,7 +19,7 @@ export const TimetableEntries = sqliteTable(
 
     course: uuid("course")
       .notNull()
-      .references(() => Courses.id),
+      .references(() => courses.id),
   },
   (table) => {
     return {
@@ -30,7 +30,7 @@ export const TimetableEntries = sqliteTable(
   },
 );
 
-export const TimetableEntryRooms = sqliteTable(
+export const timetableEntryRooms = sqliteTable(
   "timetable_entry_rooms",
   {
     start: timestamp("start").notNull(),
@@ -49,7 +49,7 @@ export const TimetableEntryRooms = sqliteTable(
       }),
       timetable_entry_fk: foreignKey({
         columns: [table.start, table.course],
-        foreignColumns: [TimetableEntries.start, TimetableEntries.course],
+        foreignColumns: [timetableEntries.start, timetableEntries.course],
       })
         .onDelete("cascade")
         .onUpdate("cascade"),
@@ -58,25 +58,25 @@ export const TimetableEntryRooms = sqliteTable(
 );
 
 export const TimetableEntryRelations = relations(
-  TimetableEntries,
+  timetableEntries,
   ({ one, many }) => ({
-    course: one(Courses, {
-      fields: [TimetableEntries.course],
-      references: [Courses.id],
+    course: one(courses, {
+      fields: [timetableEntries.course],
+      references: [courses.id],
     }),
-    rooms: many(TimetableEntryRooms),
+    rooms: many(timetableEntryRooms),
   }),
 );
 
 export const TimetableEntryRoomsRelations = relations(
-  TimetableEntryRooms,
+  timetableEntryRooms,
   ({ one }) => ({
-    timetableEntry: one(TimetableEntries, {
-      fields: [TimetableEntryRooms.start, TimetableEntryRooms.course],
-      references: [TimetableEntries.start, TimetableEntries.course],
+    timetableEntry: one(timetableEntries, {
+      fields: [timetableEntryRooms.start, timetableEntryRooms.course],
+      references: [timetableEntries.start, timetableEntries.course],
     }),
     room: one(Rooms, {
-      fields: [TimetableEntryRooms.roomNumber],
+      fields: [timetableEntryRooms.roomNumber],
       references: [Rooms.roomNumber],
     }),
   }),
