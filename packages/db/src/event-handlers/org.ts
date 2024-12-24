@@ -1,33 +1,40 @@
 import { eq } from "drizzle-orm";
 
 import type { NamespaceEventApplicators } from "@stu/lib";
+import { defaultSchools } from "@stu/lib";
 
-import type { Extra } from "./types";
+import { db } from "../client";
 import * as tables from "../schema";
 
-export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
+export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
   "school.founded": {
-    verify: async ({ data }, { db }) => {
-      const school = await db.query.schools.findFirst({
-        where: eq(tables.schools.id, data.id),
+    verify: async ({ data }) => {
+      const school = await db.query.Schools.findFirst({
+        where: eq(tables.Schools.id, data.id),
       });
 
       if (school) {
         return "EXISTS";
       }
     },
-    apply: async ({ data }, { db }) => {
-      await db.insert(tables.schools).values({
+    apply: async ({ data }) => {
+      const defaultSchoolValue = defaultSchools[data.id];
+      await db.insert(tables.Schools).values({
         id: data.id,
         name: data.name,
         stateCode: data.state,
+        image: defaultSchoolValue.image,
+        theme: defaultSchoolValue.theme,
+        kadmosName: defaultSchoolValue.kadmosName,
+        kadmosUsername: defaultSchoolValue.kadmosUsername,
+        kadmosPassword: defaultSchoolValue.kadmosPassword,
       });
     },
   },
   "teacher.joined": {
     verify: () => Promise.resolve(undefined),
-    apply: async ({ data }, { db }) => {
-      await db.insert(tables.persons).values({
+    apply: async ({ data }) => {
+      await db.insert(tables.Persons).values({
         id: data.personId,
         name: data.name,
         salutation: data.salutation,
@@ -37,7 +44,7 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
   },
   "holiday.created": {
     verify: () => Promise.resolve(undefined),
-    apply: async ({ data }, { db }) => {
+    apply: async ({ data }) => {
       await db.insert(tables.holidays).values({
         name: data.name,
         start: data.start,
@@ -90,15 +97,15 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
         });
       }
 
-      const affectedSchools = await db.query.schools.findMany({
-        where: eq(tables.schools.stateCode, data.state),
+      const affectedSchools = await db.query.Schools.findMany({
+        where: eq(tables.Schools.stateCode, data.state),
       });
 
       console.log(semesters);
       console.log(affectedSchools);
 
       await db
-        .insert(tables.semesters)
+        .insert(tables.Semesters)
         .values(
           affectedSchools.flatMap((school) =>
             semesters.map((semester) => ({
@@ -113,8 +120,8 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
   },
   "year.started": {
     verify: () => Promise.resolve(undefined),
-    apply: async ({ data }, { db }) => {
-      await db.insert(tables.years).values({
+    apply: async ({ data }) => {
+      await db.insert(tables.Years).values({
         name: data.name,
         startYear: data.startYear,
         graduationYear: data.graduationYear,
@@ -122,14 +129,14 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
       });
 
       for (const cls of data.classes) {
-        await db.insert(tables.classes).values({
+        await db.insert(tables.Classes).values({
           identifierInYear: cls.identifierInYear,
           startYear: data.startYear,
           school: data.school,
         });
 
         for (const teacher of cls.teachers) {
-          await db.insert(tables.teachersToClasses).values({
+          await db.insert(tables.TeachersToClasses).values({
             teacher,
             classIdentifier: cls.identifierInYear,
             classStartYear: data.startYear,
@@ -141,8 +148,8 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
   },
   "courses.created": {
     verify: () => Promise.resolve(undefined),
-    apply: async ({ data }, { db }) => {
-      await db.insert(tables.courses).values({
+    apply: async ({ data }) => {
+      await db.insert(tables.Courses).values({
         id: data.id,
         name: data.name,
         longName: data.longName,
@@ -151,18 +158,17 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
         semesterType: data.semesterType,
         semesterYear: data.semesterYear,
         isMandatory: data.isMandatory,
-        isMember: false,
       });
 
       for (const teacher of data.teachers) {
-        await db.insert(tables.coursesToTeachers).values({
+        await db.insert(tables.CoursesToTeachers).values({
           course: data.id,
           teacher,
         });
       }
 
       for (const cls of data.classes) {
-        await db.insert(tables.coursesToClasses).values({
+        await db.insert(tables.CoursesToClasses).values({
           course: data.id,
           classIdentifier: cls.identifierInYear,
           classStartYear: cls.startYear,
@@ -173,15 +179,15 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
   },
   "timetable.entryCreated": {
     verify: () => Promise.resolve(undefined),
-    apply: async ({ data }, { db }) => {
-      await db.insert(tables.timetableEntries).values({
+    apply: async ({ data }) => {
+      await db.insert(tables.TimetableEntries).values({
         start: data.start,
         duration: data.duration,
         course: data.course,
       });
 
       for (const room of data.rooms) {
-        await db.insert(tables.timetableEntryRooms).values({
+        await db.insert(tables.TimetableEntryRooms).values({
           start: data.start,
           course: data.course,
           roomNumber: room,
@@ -191,22 +197,24 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
   },
   "timetable.substituted": {
     verify: () => Promise.resolve(undefined),
-    apply: async ({ data }, { db }) => {
-      await db.insert(tables.substitutions).values({
-        start: data.start,
+    apply: async ({ data }) => {
+      await db.insert(tables.Substitutions).values({
         course: data.course,
+        start: data.start,
         substitute: data.substitute,
+        updatedAt: new Date(),
         type: "VERTRETUNG",
       });
     },
   },
   "timetable.canceled": {
     verify: () => Promise.resolve(undefined),
-    apply: async ({ data }, { db }) => {
-      await db.insert(tables.substitutions).values({
+    apply: async ({ data }) => {
+      await db.insert(tables.Substitutions).values({
         start: data.start,
         course: data.course,
         substitute: null,
+        updatedAt: new Date(),
         type: "ENTFALL",
       });
     },
