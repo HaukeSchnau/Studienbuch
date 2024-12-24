@@ -6,14 +6,14 @@ import { GRADE_TYPES } from "@stu/lib";
 import { courses } from "../school/courses";
 import { sqliteEnum, timestamp, uuid } from "../utils";
 
-export const GradeType = sqliteEnum(GRADE_TYPES);
+export const gradeType = sqliteEnum(GRADE_TYPES);
 
 export const grades = sqliteTable(
   "grades",
   {
     date: timestamp("date").notNull(),
     result: real("result").notNull(),
-    type: GradeType("type").notNull(),
+    type: gradeType("type").notNull(),
 
     teacherSignature: text("teacher_signature"),
     parentSignature: text("parent_signature"),
@@ -34,7 +34,7 @@ export const grades = sqliteTable(
   },
 );
 
-export const GradesRelations = relations(grades, ({ one }) => ({
+export const gradesRelations = relations(grades, ({ one }) => ({
   course: one(courses, {
     fields: [grades.course],
     references: [courses.id],

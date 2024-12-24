@@ -13,10 +13,10 @@ import { persons } from "../people/persons";
 import { timetableEntries } from "../timetable/timetable-entries";
 import { boolean, sqliteEnum, uuid } from "../utils";
 import { classes } from "./classes";
-import { SchoolId } from "./school-id";
-import { semesters, SemesterType } from "./semesters";
+import { schoolId } from "./school-id";
+import { semesters, semesterType } from "./semesters";
 
-export const Subject = sqliteEnum(SUBJECT_IDS);
+export const subject = sqliteEnum(SUBJECT_IDS);
 
 export const courses = sqliteTable(
   "courses",
@@ -24,10 +24,10 @@ export const courses = sqliteTable(
     id: uuid("id").primaryKey().notNull(),
     name: text("name").notNull(),
     longName: text("long_name").notNull(),
-    subject: Subject("subject").notNull(),
+    subject: subject("subject").notNull(),
 
-    school: SchoolId("school").notNull(),
-    semesterType: SemesterType("semester_type").notNull(),
+    school: schoolId("school").notNull(),
+    semesterType: semesterType("semester_type").notNull(),
     semesterYear: int("semester_year").notNull(),
 
     isMandatory: boolean("is_mandatory").notNull().default(false),
@@ -45,7 +45,7 @@ export const courses = sqliteTable(
   },
 );
 
-export const CourseRelations = relations(courses, ({ many }) => ({
+export const courseRelations = relations(courses, ({ many }) => ({
   teachers: many(coursesToTeachers),
   classes: many(coursesToClasses),
 
@@ -79,7 +79,7 @@ export const coursesToTeachers = sqliteTable(
   },
 );
 
-export const CoursesToTeachersRelations = relations(
+export const coursesToTeachersRelations = relations(
   coursesToTeachers,
   ({ one }) => ({
     course: one(courses, {
@@ -103,7 +103,7 @@ export const coursesToClasses = sqliteTable(
         onUpdate: "cascade",
       }),
 
-    school: SchoolId("school").notNull(),
+    school: schoolId("school").notNull(),
     classIdentifier: text("class_identifier").notNull(),
     classStartYear: int("class_start_year").notNull(),
   },
@@ -132,7 +132,7 @@ export const coursesToClasses = sqliteTable(
   },
 );
 
-export const CoursesToClassesRelations = relations(
+export const coursesToClassesRelations = relations(
   coursesToClasses,
   ({ one }) => ({
     course: one(courses, {

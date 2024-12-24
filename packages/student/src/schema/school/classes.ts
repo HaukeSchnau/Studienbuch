@@ -10,7 +10,7 @@ import {
 import { persons } from "../people/persons";
 import { uuid } from "../utils";
 import { coursesToClasses } from "./courses";
-import { SchoolId } from "./school-id";
+import { schoolId } from "./school-id";
 import { years } from "./years";
 
 export const classes = sqliteTable(
@@ -19,7 +19,7 @@ export const classes = sqliteTable(
     identifierInYear: text("identifier_in_year").notNull(),
 
     startYear: int("start_year").notNull(),
-    school: SchoolId("school").notNull(),
+    school: schoolId("school").notNull(),
   },
   (table) => {
     return {
@@ -36,7 +36,7 @@ export const classes = sqliteTable(
   },
 );
 
-export const ClassesRelations = relations(classes, ({ one, many }) => ({
+export const classesRelations = relations(classes, ({ one, many }) => ({
   year: one(years, {
     fields: [classes.startYear, classes.school],
     references: [years.startYear, years.school],
@@ -56,7 +56,7 @@ export const teachersToClasses = sqliteTable(
       }),
     classIdentifier: text("class_identifier").notNull(),
     classStartYear: int("class_start_year").notNull(),
-    school: SchoolId("school").notNull(),
+    school: schoolId("school").notNull(),
   },
   (table) => {
     return {
@@ -82,7 +82,7 @@ export const teachersToClasses = sqliteTable(
   },
 );
 
-export const TeachersToClassesRelations = relations(
+export const teachersToClassesRelations = relations(
   teachersToClasses,
   ({ one }) => ({
     teacher: one(persons, {

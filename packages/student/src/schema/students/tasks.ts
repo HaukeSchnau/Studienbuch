@@ -4,7 +4,7 @@ import { persons } from "../people/persons";
 import { courses } from "../school/courses";
 import { boolean, jsonb, timestamp, uuid } from "../utils";
 
-export const Tasks = sqliteTable("tasks", {
+export const tasks = sqliteTable("tasks", {
   id: uuid("id").primaryKey().notNull(),
   title: text("title").notNull(),
   description: text("description").notNull(),

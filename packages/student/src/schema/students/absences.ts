@@ -52,11 +52,11 @@ export const courseAbsences = sqliteTable(
   },
 );
 
-export const AbsenceDaysRelations = relations(absenceDays, ({ many }) => ({
+export const absenceDaysRelations = relations(absenceDays, ({ many }) => ({
   absenceCourses: many(courseAbsences),
 }));
 
-export const AbsenceCoursesRelations = relations(courseAbsences, ({ one }) => ({
+export const absenceCoursesRelations = relations(courseAbsences, ({ one }) => ({
   course: one(courses, {
     fields: [courseAbsences.course],
     references: [courses.id],

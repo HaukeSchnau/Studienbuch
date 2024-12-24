@@ -7,12 +7,12 @@ import * as tables from "../schema";
 
 export const absenceApplicators: NamespaceEventApplicators<"absence", Extra> = {
   recorded: {
-    verify: () => Promise.resolve(true),
+    verify: () => Promise.resolve(undefined),
     apply: async (event, { db, user }) => {
       await db.insert(tables.absenceDays).values({
         date: event.data.date,
         reason: event.data.reason,
-        parentSignature: user.isOfAge ? "NOT_REQUIRED" : null,
+        parentSignature: user.isOfAge ? "NOT_REQUIRED" : undefined,
       });
       await db.insert(tables.courseAbsences).values(
         event.data.courseIds.map((courseId) => ({
@@ -24,7 +24,7 @@ export const absenceApplicators: NamespaceEventApplicators<"absence", Extra> = {
   },
 
   parentApproved: {
-    verify: () => Promise.resolve(true),
+    verify: () => Promise.resolve(undefined),
     apply: async (event, { db }) => {
       await db
         .update(tables.absenceDays)
@@ -36,7 +36,7 @@ export const absenceApplicators: NamespaceEventApplicators<"absence", Extra> = {
   },
 
   teacherApproved: {
-    verify: () => Promise.resolve(true),
+    verify: () => Promise.resolve(undefined),
     apply: async (event, { db }) => {
       await db
         .update(tables.courseAbsences)
@@ -53,7 +53,7 @@ export const absenceApplicators: NamespaceEventApplicators<"absence", Extra> = {
   },
 
   discarded: {
-    verify: () => Promise.resolve(true),
+    verify: () => Promise.resolve(undefined),
     apply: async (event, { db }) => {
       await db
         .delete(tables.courseAbsences)

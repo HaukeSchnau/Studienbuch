@@ -2,7 +2,7 @@ import { relations } from "drizzle-orm";
 import { int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { classes } from "./classes";
-import { SchoolId } from "./school-id";
+import { schoolId } from "./school-id";
 import { schools } from "./schools";
 
 export const years = sqliteTable(
@@ -12,7 +12,7 @@ export const years = sqliteTable(
     startYear: int("start_year").notNull(),
     graduationYear: int("graduation_year").notNull(),
 
-    school: SchoolId("school")
+    school: schoolId("school")
       .notNull()
       .references(() => schools.id, {
         onDelete: "restrict",
@@ -28,7 +28,7 @@ export const years = sqliteTable(
   },
 );
 
-export const YearsRelations = relations(years, ({ one, many }) => ({
+export const yearsRelations = relations(years, ({ one, many }) => ({
   school: one(schools, {
     fields: [years.school],
     references: [schools.id],

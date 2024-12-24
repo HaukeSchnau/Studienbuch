@@ -3,15 +3,15 @@ import { int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { courses } from "../school/courses";
 import { sqliteEnum, uuid } from "../utils";
 
-export const RecurringTimetableEntryWeeks = sqliteEnum(["EVEN", "ODD", "ALL"]);
+export const recurringTimetableEntryWeeks = sqliteEnum(["EVEN", "ODD", "ALL"]);
 
-export const RecurringTimetableEntries = sqliteTable(
+export const recurringTimetableEntries = sqliteTable(
   "recurring_timetable_entries",
   {
     weekday: int("weekday").notNull(),
     start: int("start").notNull(),
     duration: int("duration").notNull(),
-    weeks: RecurringTimetableEntryWeeks("weeks").default("ALL").notNull(),
+    weeks: recurringTimetableEntryWeeks("weeks").default("ALL").notNull(),
     room: text("room"),
 
     course: uuid("course")

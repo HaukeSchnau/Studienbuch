@@ -4,10 +4,10 @@ import { int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { SEMESTER_TYPES } from "@stu/lib";
 
 import { sqliteEnum, timestamp } from "../utils";
-import { SchoolId } from "./school-id";
-import { schools, StateCode } from "./schools";
+import { schoolId } from "./school-id";
+import { schools, stateCode } from "./schools";
 
-export const SemesterType = sqliteEnum(SEMESTER_TYPES);
+export const semesterType = sqliteEnum(SEMESTER_TYPES);
 
 export const semesters = sqliteTable(
   "semesters",
@@ -15,13 +15,13 @@ export const semesters = sqliteTable(
     name: text("name").notNull(),
     start: timestamp("start").notNull(),
     end: timestamp("end").notNull(),
-    school: SchoolId("school")
+    school: schoolId("school")
       .notNull()
       .references(() => schools.id, {
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
-    type: SemesterType("type").notNull(),
+    type: semesterType("type").notNull(),
     year: int("year").notNull(),
   },
   (table) => {
@@ -39,7 +39,7 @@ export const holidays = sqliteTable(
     name: text("name").notNull(),
     start: timestamp("start").notNull(),
     end: timestamp("end").notNull(),
-    state: StateCode("state").notNull(),
+    state: stateCode("state").notNull(),
     year: int("year").notNull(),
   },
   (table) => {
@@ -51,7 +51,7 @@ export const holidays = sqliteTable(
   },
 );
 
-export const SemesterRelations = relations(semesters, ({ one }) => ({
+export const semesterRelations = relations(semesters, ({ one }) => ({
   school: one(schools, {
     fields: [semesters.school],
     references: [schools.id],

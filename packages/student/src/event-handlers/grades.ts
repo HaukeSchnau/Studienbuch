@@ -7,7 +7,7 @@ import * as tables from "../schema";
 
 export const gradeApplicators: NamespaceEventApplicators<"grades", Extra> = {
   currentGradeSet: {
-    verify: () => Promise.resolve(true),
+    verify: () => Promise.resolve(undefined),
     apply: async (event, { db, user }) => {
       await db
         .delete(tables.grades)
@@ -48,7 +48,7 @@ export const gradeApplicators: NamespaceEventApplicators<"grades", Extra> = {
   },
 
   writtenGradeRecorded: {
-    verify: () => Promise.resolve(true),
+    verify: () => Promise.resolve(undefined),
     apply: async (event, { db, user }) => {
       await db.insert(tables.grades).values({
         course: event.data.courseId,
@@ -61,7 +61,7 @@ export const gradeApplicators: NamespaceEventApplicators<"grades", Extra> = {
   },
 
   teacherApproved: {
-    verify: () => Promise.resolve(true),
+    verify: () => Promise.resolve(undefined),
     apply: async (event, { db }) => {
       await db
         .update(tables.grades)
@@ -79,7 +79,7 @@ export const gradeApplicators: NamespaceEventApplicators<"grades", Extra> = {
   },
 
   parentApproved: {
-    verify: () => Promise.resolve(true),
+    verify: () => Promise.resolve(undefined),
     apply: async (event, { db }) => {
       await db
         .update(tables.grades)
@@ -97,7 +97,7 @@ export const gradeApplicators: NamespaceEventApplicators<"grades", Extra> = {
   },
 
   latestRestored: {
-    verify: () => Promise.resolve(true),
+    verify: () => Promise.resolve(undefined),
     apply: async (event, { db }) => {
       const latestConfirmedGrade = await db.query.grades.findFirst({
         where: and(
@@ -126,7 +126,7 @@ export const gradeApplicators: NamespaceEventApplicators<"grades", Extra> = {
   },
 
   discarded: {
-    verify: () => Promise.resolve(true),
+    verify: () => Promise.resolve(undefined),
     apply: async (event, { db }) => {
       await db
         .delete(tables.grades)

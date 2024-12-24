@@ -9,18 +9,18 @@ import {
 import { SUBSTITUTION_TYPES } from "@stu/lib";
 
 import { persons } from "../people/persons";
-import { Rooms } from "../school/rooms";
+import { rooms } from "../school/rooms";
 import { sqliteEnum, timestamp, uuid } from "../utils";
 import { timetableEntries } from "./timetable-entries";
 
-export const SubstitutionType = sqliteEnum(SUBSTITUTION_TYPES);
+export const substitutionType = sqliteEnum(SUBSTITUTION_TYPES);
 
 export const substitutions = sqliteTable(
   "substitutions",
   {
     start: timestamp("date").notNull(),
     course: uuid("course").notNull(),
-    type: SubstitutionType("type"),
+    type: substitutionType("type"),
 
     substitute: uuid("substitute").references(() => persons.id, {
       onDelete: "set null",
@@ -43,7 +43,7 @@ export const substitutions = sqliteTable(
   },
 );
 
-export const SubstitutionRelations = relations(substitutions, ({ one }) => ({
+export const substitutionRelations = relations(substitutions, ({ one }) => ({
   substitute: one(persons, {
     fields: [substitutions.substitute],
     references: [persons.id],
@@ -54,12 +54,12 @@ export const SubstitutionRelations = relations(substitutions, ({ one }) => ({
   }),
 }));
 
-export const RoomChanges = sqliteTable("room_changes", {
+export const roomChanges = sqliteTable("room_changes", {
   start: timestamp("date").notNull(),
   course: uuid("course").notNull(),
   room: text("room")
     .notNull()
-    .references(() => Rooms.roomNumber, {
+    .references(() => rooms.roomNumber, {
       onDelete: "set null",
       onUpdate: "cascade",
     }),
@@ -68,9 +68,9 @@ export const RoomChanges = sqliteTable("room_changes", {
   updatedAt: timestamp("updatedAt").notNull(),
 });
 
-export const RoomChangeRelations = relations(RoomChanges, ({ one }) => ({
+export const roomChangeRelations = relations(roomChanges, ({ one }) => ({
   timetableEntry: one(timetableEntries, {
-    fields: [RoomChanges.start, RoomChanges.course],
+    fields: [roomChanges.start, roomChanges.course],
     references: [timetableEntries.start, timetableEntries.course],
   }),
 }));
