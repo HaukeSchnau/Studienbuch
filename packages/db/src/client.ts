@@ -5,7 +5,7 @@ import { env } from "../env";
 import * as schema from "./schema";
 
 const client = new pg.Client({
-  connectionString: env.DATABASE_URL,
+  connectionString: env.MANAGEMENT_DATABASE_URL,
 });
 
 await client.connect();

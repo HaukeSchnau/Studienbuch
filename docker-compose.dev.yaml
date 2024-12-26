@@ -1,13 +1,19 @@
 name: "studienbuch"
 
 services:
-  postgres:
+  core-data-storage:
     extends:
       file: docker/common-services.yaml
       service: postgres
     ports:
       - 5432:5432
-  rabbitmq:
+  management-data-storage:
+    extends:
+      file: docker/common-services.yaml
+      service: postgres
+    ports:
+      - 5433:5432
+  event-stream:
     extends:
       file: docker/common-services.yaml
       service: rabbitmq
@@ -15,7 +21,7 @@ services:
       - 5552:5552
       - 5672:5672
       - 15672:15672
-  libsql:
+  student-data-storage:
     extends:
       file: docker/common-services.yaml
       service: libsql

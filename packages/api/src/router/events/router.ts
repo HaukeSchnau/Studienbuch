@@ -6,15 +6,19 @@ import type {
   EventName,
   ServerEventApplicator,
 } from "@stu/lib";
+import { eventApplicator as systemApplicator } from "@stu/db";
 import { EventApplicator as StudentEventApplicator } from "@stu/student";
 import * as studentSchema from "@stu/student/schema";
 
+import { SYSTEM_USER } from "../../constants";
 import { createNamespace, createNamespaceClient } from "../../libsql";
 import { db, tables } from "../../postgres";
 import { rabbitMqClientPromise } from "../../rabbitmq";
 import { serverApplicators } from "../../server-applicators";
 
-const buildStudentApplicator = async (userId: string) => {
+const buildStudentApplicator = async (
+  userId: string,
+): Promise<EventApplicatorInterface> => {
   const namespace = `student-${userId}`;
   await createNamespace(namespace);
 
@@ -25,7 +29,9 @@ const buildStudentApplicator = async (userId: string) => {
 };
 
 const applicatorUserMap = new Map<string, EventApplicatorInterface[]>();
-const getApplicators = async (userId: string) => {
+const getStudentApplicators = async (
+  userId: string,
+): Promise<EventApplicatorInterface[]> => {
   if (!applicatorUserMap.has(userId)) {
     applicatorUserMap.set(userId, [await buildStudentApplicator(userId)]);
   }
@@ -34,11 +40,30 @@ const getApplicators = async (userId: string) => {
   return applicatorUserMap.get(userId)!;
 };
 
+const getApplicators = async (
+  userId: string,
+): Promise<EventApplicatorInterface[]> => {
+  if (userId === SYSTEM_USER) {
+    return [systemApplicator];
+  }
+
+  const userApplicators = await getStudentApplicators(userId);
+  return [...userApplicators, systemApplicator];
+};
+
 export const ingest = async <TEventName extends Event["type"]>(
   eventName: TEventName,
   eventData: Omit<Extract<Event, { type: TEventName }>, "errors" | "type">,
   initiatorUserId: string,
 ) => {
+  await db
+    .insert(tables.users)
+    .values({
+      id: SYSTEM_USER,
+      type: "system",
+    })
+    .onConflictDoNothing();
+
   const applicators = await getApplicators(initiatorUserId);
   const eventDataWithName = {
     ...eventData,
