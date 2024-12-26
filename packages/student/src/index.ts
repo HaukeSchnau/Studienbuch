@@ -25,11 +25,9 @@ export class EventApplicator implements EventApplicatorInterface {
     private userId: string,
   ) {}
 
-  private findApplicator(event: Event) {
-    type AnyEventApplicator = EventApplicatorType<typeof event.type, Extra>;
-
+  private findApplicator<TEvent extends Event>(event: Omit<TEvent, "errors">) {
     const applicatorDirect = applicators[event.type] as
-      | AnyEventApplicator
+      | EventApplicatorType<TEvent["type"], Extra>
       | undefined;
 
     const [ns, ...rest] = event.type.split(".");
@@ -38,26 +36,28 @@ export class EventApplicator implements EventApplicatorInterface {
 
     const applicatorNamespace = applicators[namespace];
     const eventName = rest.join(".") as keyof typeof applicatorNamespace;
-    return applicatorNamespace?.[eventName] as AnyEventApplicator | undefined;
+    return applicatorNamespace?.[eventName] as
+      | EventApplicatorType<TEvent["type"], Extra>
+      | undefined;
   }
 
   private getUser() {
     return { isOfAge: true, userId: this.userId };
   }
 
-  async verify(event: Event) {
+  verify<TEvent extends Event>(event: Omit<TEvent, "errors">) {
     const applicator = this.findApplicator(event);
     if (!applicator) {
       return true;
     }
 
-    return await applicator.verify(event, {
+    return applicator.verify(event as any, {
       db: this.db,
       user: this.getUser(),
-    });
+    }) as any
   }
 
-  async apply(event: Event) {
+  async apply(event: Omit<Event, "errors">) {
     const applicator = this.findApplicator(event);
     if (!applicator) {
       return;

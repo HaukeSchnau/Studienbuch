@@ -1,17 +1,26 @@
 import {
   array,
+  boolean,
   date,
   discriminatedUnion,
   literal,
   number,
   object,
+  preprocess,
   string,
   z,
 } from "zod";
 
+import { SUBJECT_IDS } from "./courses";
 import { GRADE_TYPES } from "./grades";
 import { SCHOOL_IDS, SEMESTER_TYPES, STATE_CODES } from "./schools";
 import { SALUTATIONS } from "./users";
+
+const virtual = <const T>(type: T) =>
+  z
+    .any()
+    .optional()
+    .transform(() => type);
 
 const DomainEvent = discriminatedUnion("type", [
   object({
@@ -103,6 +112,7 @@ const DomainEvent = discriminatedUnion("type", [
       name: string(),
       state: z.enum(STATE_CODES),
     }),
+    errors: virtual(["EXISTS"]),
   }),
   object({
     type: literal("org.year.started"),
@@ -145,7 +155,8 @@ const DomainEvent = discriminatedUnion("type", [
       id: string().uuid(),
       name: string(),
       longName: string(),
-      subject: z.enum(GRADE_TYPES),
+      subject: z.enum(SUBJECT_IDS),
+      isMandatory: boolean(),
       school: z.enum(SCHOOL_IDS),
       semesterType: z.enum(SEMESTER_TYPES),
       semesterYear: number(),
@@ -198,12 +209,17 @@ const DomainEvent = discriminatedUnion("type", [
   // }),
 ]);
 
-export const Event = DomainEvent.and(
-  object({
-    id: string().uuid(),
-    timestamp: date(),
-  }),
-);
+export const Event = preprocess(
+  (input) => (typeof input === "object" ? { ...input, errors: [] } : input),
+  z.object({}),
+)
+  .and(DomainEvent)
+  .and(
+    object({
+      id: string().uuid(),
+      timestamp: date(),
+    }),
+  );
 export type Event = z.infer<typeof Event>;
 export type EventName = Event["type"];
 export const EVENT_TYPES = DomainEvent.options.map(
@@ -212,11 +228,21 @@ export const EVENT_TYPES = DomainEvent.options.map(
 
 export interface EventApplicator<TEventName extends Event["type"], Extra> {
   verify: (
-    event: Extract<Event, { type: TEventName }>,
+    event: Omit<Extract<Event, { type: TEventName }>, "errors">,
     extra: Extra,
-  ) => Promise<boolean>;
+  ) => Promise<
+    | ("errors" extends keyof Extract<Event, { type: TEventName }>
+        ? Extract<
+            Event,
+            { type: TEventName }
+          >["errors"] extends readonly (infer E)[]
+          ? E
+          : "fun"
+        : "ERROR")
+    | undefined
+  >;
   apply: (
-    event: Extract<Event, { type: TEventName }>,
+    event: Omit<Extract<Event, { type: TEventName }>, "errors">,
     extra: Extra,
   ) => Promise<void>;
 }
@@ -232,10 +258,10 @@ interface PersistedEvent {
 
 export interface ServerEventApplicator<TEventName extends Event["type"]> {
   recipients?: (
-    event: Extract<Event, { type: TEventName }>,
+    event: Omit<Extract<Event, { type: TEventName }>, "errors">,
   ) => Promise<string[]>; // Returns user IDs
   related?: (
-    event: Extract<Event, { type: TEventName }>,
+    event: Omit<Extract<Event, { type: TEventName }>, "errors">,
   ) => Promise<PersistedEvent[]>;
 }
 
@@ -254,8 +280,17 @@ export type EventApplicators<Extra> = {
 };
 
 export interface EventApplicatorInterface {
-  verify: (event: Event) => Promise<boolean>;
-  apply: (event: Event) => Promise<void>;
+  verify: <TEvent extends Event>(
+    event: Omit<TEvent, "errors">,
+  ) => Promise<
+    | ("errors" extends keyof TEvent
+        ? TEvent["errors"] extends readonly (infer E)[]
+          ? E
+          : TEvent["errors"]
+        : "ERROR")
+    | undefined
+  >;
+  apply: (event: Omit<Event, "errors">) => Promise<void>;
 }
 
 export type ServerEventApplicators = {

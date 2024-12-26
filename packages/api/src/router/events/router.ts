@@ -1,19 +1,16 @@
-import type { TRPCRouterRecord } from "@trpc/server";
-import { TRPCError } from "@trpc/server";
 import { drizzle } from "drizzle-orm/libsql";
 
 import type {
+  Event,
   EventApplicatorInterface,
   EventName,
   ServerEventApplicator,
 } from "@stu/lib";
-import { Event } from "@stu/lib";
-import { EventApplicator as StudentEventApplicatoe } from "@stu/student";
+import { EventApplicator as StudentEventApplicator } from "@stu/student";
 import * as studentSchema from "@stu/student/schema";
 
 import { createNamespace, createNamespaceClient } from "../../libsql";
 import { db, tables } from "../../postgres";
-import { protectedProcedure } from "../../procedures";
 import { rabbitMqClientPromise } from "../../rabbitmq";
 import { serverApplicators } from "../../server-applicators";
 
@@ -24,7 +21,7 @@ const buildStudentApplicator = async (userId: string) => {
   const client = createNamespaceClient(namespace);
   const db = drizzle(client, { schema: studentSchema });
 
-  return new StudentEventApplicatoe(db, userId);
+  return new StudentEventApplicator(db, userId);
 };
 
 const applicatorUserMap = new Map<string, EventApplicatorInterface[]>();
@@ -37,54 +34,56 @@ const getApplicators = async (userId: string) => {
   return applicatorUserMap.get(userId)!;
 };
 
-export const events = {
-  ingest: protectedProcedure
-    .input(Event)
-    .query(async ({ ctx: { session }, input: eventData }) => {
-      const applicators = await getApplicators(session.user.id);
+export const ingest = async <TEventName extends Event["type"]>(
+  eventName: TEventName,
+  eventData: Omit<Extract<Event, { type: TEventName }>, "errors" | "type">,
+  initiatorUserId: string,
+) => {
+  const applicators = await getApplicators(initiatorUserId);
+  const eventDataWithName = {
+    ...eventData,
+    type: eventName,
+  } as Omit<Extract<Event, { type: TEventName }>, "errors">;
 
-      for (const applicator of applicators) {
-        if (!(await applicator.verify(eventData))) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Invalid event",
-          });
-        }
-      }
+  for (const applicator of applicators) {
+    const error = await applicator.verify(eventDataWithName);
+    if (error) {
+      return error;
+    }
+  }
 
-      const serverApplicator = serverApplicators[eventData.type] as
-        | ServerEventApplicator<EventName>
-        | undefined;
-      const recipients =
-        (await serverApplicator?.recipients?.(eventData)) ?? [];
-      //   const related = (await serverApplicator?.related?.(eventData)) ?? []; TODO use this
+  const serverApplicator = serverApplicators[eventDataWithName.type] as
+    | ServerEventApplicator<EventName>
+    | undefined;
+  const recipients =
+    (await serverApplicator?.recipients?.(eventDataWithName)) ?? [];
+  //   const related = (await serverApplicator?.related?.(eventData)) ?? []; TODO use this
 
-      for (const applicator of applicators) {
-        await applicator.apply(eventData);
-      }
+  for (const applicator of applicators) {
+    await applicator.apply(eventDataWithName);
+  }
 
-      const persistedEvent = {
-        id: eventData.id,
-        timestamp: eventData.timestamp,
-        data: eventData.data,
-        type: eventData.type,
-        initator: session.user.id,
-      };
-      await db.insert(tables.events).values(persistedEvent);
+  const persistedEvent = {
+    id: eventData.id,
+    timestamp: eventData.timestamp,
+    data: eventData.data,
+    type: eventDataWithName.type,
+    initator: initiatorUserId,
+  };
+  await db.insert(tables.events).values(persistedEvent);
 
-      const rabbitMqClient = await rabbitMqClientPromise;
-      for (const recipient of recipients) {
-        const streamName = `events-${recipient}`;
-        const streamSizeRetention = 5 * 1e9;
-        await rabbitMqClient.createStream({
-          stream: streamName,
-          arguments: { "max-length-bytes": streamSizeRetention },
-        });
+  const rabbitMqClient = await rabbitMqClientPromise;
+  for (const recipient of recipients) {
+    const streamName = `events-${recipient}`;
+    const streamSizeRetention = 5 * 1e9;
+    await rabbitMqClient.createStream({
+      stream: streamName,
+      arguments: { "max-length-bytes": streamSizeRetention },
+    });
 
-        const publisher = await rabbitMqClient.declarePublisher({
-          stream: streamName,
-        });
-        await publisher.send(Buffer.from(JSON.stringify(persistedEvent)));
-      }
-    }),
-} satisfies TRPCRouterRecord;
+    const publisher = await rabbitMqClient.declarePublisher({
+      stream: streamName,
+    });
+    await publisher.send(Buffer.from(JSON.stringify(persistedEvent)));
+  }
+};
