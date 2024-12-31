@@ -29,7 +29,8 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
     apply: async ({ data }, { db }) => {
       await db.insert(tables.persons).values({
         id: data.personId,
-        name: data.name,
+        firstName: data.firstName,
+        lastName: data.lastName,
         salutation: data.salutation,
         abbrv: data.abbrv,
       });
@@ -93,9 +94,6 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
       const affectedSchools = await db.query.schools.findMany({
         where: eq(tables.schools.stateCode, data.state),
       });
-
-      console.log(semesters);
-      console.log(affectedSchools);
 
       await db
         .insert(tables.semesters)

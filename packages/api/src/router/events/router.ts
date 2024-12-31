@@ -71,7 +71,9 @@ export const ingest = async <TEventName extends Event["type"]>(
   } as Omit<Extract<Event, { type: TEventName }>, "errors">;
 
   for (const applicator of applicators) {
-    const error = await applicator.verify(eventDataWithName);
+    const error = await applicator.verify(eventDataWithName, {
+      initiatorUserId,
+    });
     if (error) {
       return error;
     }
@@ -85,7 +87,14 @@ export const ingest = async <TEventName extends Event["type"]>(
   //   const related = (await serverApplicator?.related?.(eventData)) ?? []; TODO use this
 
   for (const applicator of applicators) {
-    await applicator.apply(eventDataWithName);
+    try {
+      await applicator.apply(eventDataWithName);
+    } catch (err) {
+      console.error(
+        `Could not apply event ${eventDataWithName.type} with data ${JSON.stringify(eventDataWithName.data)}`,
+      );
+      throw err;
+    }
   }
 
   const persistedEvent = {

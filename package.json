@@ -16,7 +16,7 @@
     "build:internal": "turbo run --filter=\"./packages/*\" build",
     "clean": "git clean -xdf node_modules",
     "clean:workspaces": "turbo run clean",
-    "db:push": "turbo push",
+    "db:push": "turbo push --ui=tui",
     "db:studio": "turbo -F @stu/db studio",
     "db:deploy": "pnpm -F db deployment",
     "dev": "turbo watch dev dev:internal",

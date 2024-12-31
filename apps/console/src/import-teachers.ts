@@ -1,9 +1,10 @@
 import type { Salutation } from "@stu/lib";
+import { ingest, SYSTEM_USER } from "@stu/api";
 import { getTeachers } from "@stu/external-api";
 
-import { api } from "./caller";
+import { logger } from "./logger";
 
-const FISTNAME_SALUTATION_MAP: Record<string, Salutation> = {
+const FIRSTNAME_SALUTATION_MAP: Record<string, Salutation> = {
   Afrodite: "Frau",
   Alexander: "Herr",
   Andrea: "Frau",
@@ -110,18 +111,32 @@ const FISTNAME_SALUTATION_MAP: Record<string, Salutation> = {
 
 export const importTeachers = async () => {
   for (const teacher of getTeachers()) {
-    await api.events.ingest({
-      type: "org.teacher.joined",
-      data: {
-        personId: crypto.randomUUID(),
-        name: `${teacher.firstName} ${teacher.lastName}`,
-        abbrv: teacher.abbrv,
-        salutation:
-          FISTNAME_SALUTATION_MAP[teacher.firstName.split(" ")[0] ?? ""],
-        school: "igs-lil",
+    const err = await ingest(
+      "org.teacher.joined",
+      {
+        data: {
+          personId: crypto.randomUUID(),
+          firstName: teacher.firstName,
+          lastName: teacher.lastName,
+          abbrv: teacher.abbrv,
+          salutation:
+            FIRSTNAME_SALUTATION_MAP[teacher.firstName.split(" ")[0] ?? ""],
+          school: "igs-lil",
+        },
+        id: crypto.randomUUID(),
+        timestamp: new Date(),
       },
-      id: crypto.randomUUID(),
-      timestamp: new Date(),
-    });
+      SYSTEM_USER,
+    );
+
+    if (err === "EXISTS") {
+      logger.debug(`Teacher ${teacher.abbrv} already joined!`);
+    } else if (err) {
+      logger.error(
+        `Could not ingest teacher joined event for ${teacher.abbrv}: ${err}`,
+      );
+    } else {
+      logger.info(`Teacher ${teacher.abbrv} joined!`);
+    }
   }
 };

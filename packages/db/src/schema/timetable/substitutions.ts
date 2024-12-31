@@ -24,6 +24,12 @@ export const Substitutions = pgTable(
     course: uuid("course").notNull(),
     type: SubstitutionType("type"),
 
+    originalTeacher: uuid("originalTeacher")
+      .references(() => Persons.id, {
+        onDelete: "set null",
+        onUpdate: "cascade",
+      })
+      .notNull(),
     substitute: uuid("substitute").references(() => Persons.id, {
       onDelete: "set null",
       onUpdate: "cascade",
@@ -39,7 +45,9 @@ export const Substitutions = pgTable(
   },
   (table) => {
     return {
-      pk: primaryKey({ columns: [table.start, table.course] }),
+      pk: primaryKey({
+        columns: [table.start, table.course, table.originalTeacher],
+      }),
       timetable_entry_fk: foreignKey({
         columns: [table.start, table.course],
         foreignColumns: [TimetableEntries.start, TimetableEntries.course],

@@ -2,7 +2,6 @@ export * from "./people/persons";
 
 export * from "./school/classes";
 export * from "./school/courses";
-export * from "./school/rooms";
 export * from "./school/schools";
 export * from "./school/school-id";
 export * from "./school/semesters";

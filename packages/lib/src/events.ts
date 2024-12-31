@@ -112,7 +112,7 @@ const DomainEvent = discriminatedUnion("type", [
       name: string(),
       state: z.enum(STATE_CODES),
     }),
-    errors: virtual(["EXISTS"]),
+    errors: virtual(["EXISTS", "NOT_ALLOWED"]),
   }),
   object({
     type: literal("org.year.started"),
@@ -128,16 +128,19 @@ const DomainEvent = discriminatedUnion("type", [
         }),
       ),
     }),
+    errors: virtual(["EXISTS", "NOT_ALLOWED"]),
   }),
   object({
     type: literal("org.teacher.joined"),
     data: object({
       personId: string().uuid(),
-      name: string(),
+      firstName: string().optional(),
+      lastName: string().optional(),
       abbrv: string(),
       salutation: z.enum(SALUTATIONS).optional(),
       school: z.enum(SCHOOL_IDS),
     }),
+    errors: virtual(["EXISTS", "NOT_ALLOWED"]),
   }),
   object({
     type: literal("org.holiday.created"),
@@ -148,6 +151,7 @@ const DomainEvent = discriminatedUnion("type", [
       state: z.enum(STATE_CODES),
       year: number(),
     }),
+    errors: virtual(["EXISTS", "NOT_ALLOWED"]),
   }),
   object({
     type: literal("org.courses.created"),
@@ -168,6 +172,7 @@ const DomainEvent = discriminatedUnion("type", [
       ),
       teachers: array(string().uuid()),
     }),
+    errors: virtual(["EXISTS", "CLASS_NOT_FOUND", "NOT_ALLOWED"]),
   }),
   object({
     type: literal("org.timetable.entryCreated"),
@@ -177,21 +182,26 @@ const DomainEvent = discriminatedUnion("type", [
       duration: number(),
       rooms: array(string()),
     }),
+    errors: virtual(["NOT_ALLOWED", "COURSE_NOT_FOUND"]),
   }),
   object({
     type: literal("org.timetable.substituted"),
     data: object({
       course: string().uuid(),
       start: date(),
+      originalTeacher: string().uuid(),
       substitute: string().uuid(),
     }),
+    errors: virtual(["EXISTS", "NOT_ALLOWED"]),
   }),
   object({
     type: literal("org.timetable.canceled"),
     data: object({
       course: string().uuid(),
       start: date(),
+      originalTeacher: string().uuid(),
     }),
+    errors: virtual(["EXISTS", "NOT_ALLOWED"]),
   }),
 
   // object({
@@ -229,7 +239,7 @@ export const EVENT_TYPES = DomainEvent.options.map(
 export interface EventApplicator<TEventName extends Event["type"], Extra> {
   verify: (
     event: Omit<Extract<Event, { type: TEventName }>, "errors">,
-    extra: Extra,
+    extra: Extra & { initiatorUserId: string },
   ) => Promise<
     | ("errors" extends keyof Extract<Event, { type: TEventName }>
         ? Extract<
@@ -237,8 +247,9 @@ export interface EventApplicator<TEventName extends Event["type"], Extra> {
             { type: TEventName }
           >["errors"] extends readonly (infer E)[]
           ? E
-          : "fun"
+          : Extract<Event, { type: TEventName }>["errors"]
         : "ERROR")
+    | "UNEXPECTED"
     | undefined
   >;
   apply: (
@@ -282,12 +293,14 @@ export type EventApplicators<Extra> = {
 export interface EventApplicatorInterface {
   verify: <TEvent extends Event>(
     event: Omit<TEvent, "errors">,
+    extra: { initiatorUserId: string },
   ) => Promise<
     | ("errors" extends keyof TEvent
         ? TEvent["errors"] extends readonly (infer E)[]
           ? E
           : TEvent["errors"]
         : "ERROR")
+    | "UNEXPECTED"
     | undefined
   >;
   apply: (event: Omit<Event, "errors">) => Promise<void>;

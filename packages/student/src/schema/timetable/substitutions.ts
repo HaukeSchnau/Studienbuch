@@ -9,7 +9,6 @@ import {
 import { SUBSTITUTION_TYPES } from "@stu/lib";
 
 import { persons } from "../people/persons";
-import { rooms } from "../school/rooms";
 import { sqliteEnum, timestamp, uuid } from "../utils";
 import { timetableEntries } from "./timetable-entries";
 
@@ -57,12 +56,7 @@ export const substitutionRelations = relations(substitutions, ({ one }) => ({
 export const roomChanges = sqliteTable("room_changes", {
   start: timestamp("date").notNull(),
   course: uuid("course").notNull(),
-  room: text("room")
-    .notNull()
-    .references(() => rooms.roomNumber, {
-      onDelete: "set null",
-      onUpdate: "cascade",
-    }),
+  room: text("room").notNull(),
 
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").notNull(),

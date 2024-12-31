@@ -14,6 +14,7 @@ import type { Logger } from "./interfaces/logger";
 import type { Session } from "./interfaces/session";
 import { env } from "../env";
 import { db, eq, tables } from "./postgres";
+import { SYSTEM_USER } from ".";
 
 const getSession = async (sessionToken: string): Promise<Session | null> => {
   const session = await db.query.sessions.findFirst({
@@ -42,18 +43,16 @@ const getSession = async (sessionToken: string): Promise<Session | null> => {
   };
 };
 
-const consoleUserId = "00000000-0000-0000-0000-000000000000";
-
 const getSystemSession = async (): Promise<Session> => {
   await db.insert(tables.users).values({
-    id: consoleUserId,
+    id: SYSTEM_USER,
     type: "system",
   }).onConflictDoNothing();
 
   return {
     token: "",
     user: {
-      id: consoleUserId,
+      id: SYSTEM_USER,
     },
   };
 };

@@ -8,7 +8,6 @@ import {
 } from "drizzle-orm/sqlite-core";
 
 import { courses } from "../school/courses";
-import { rooms } from "../school/rooms";
 import { timestamp, uuid } from "../utils";
 
 export const timetableEntries = sqliteTable(
@@ -35,12 +34,7 @@ export const timetableEntryRooms = sqliteTable(
   {
     start: timestamp("start").notNull(),
     course: uuid("course").notNull(),
-    roomNumber: text("room")
-      .notNull()
-      .references(() => rooms.roomNumber, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
-      }),
+    roomNumber: text("room").notNull(),
   },
   (table) => {
     return {
@@ -74,10 +68,6 @@ export const timetableEntryRoomsRelations = relations(
     timetableEntry: one(timetableEntries, {
       fields: [timetableEntryRooms.start, timetableEntryRooms.course],
       references: [timetableEntries.start, timetableEntries.course],
-    }),
-    room: one(rooms, {
-      fields: [timetableEntryRooms.roomNumber],
-      references: [rooms.roomNumber],
     }),
   }),
 );

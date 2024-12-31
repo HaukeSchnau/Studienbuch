@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import type { NamespaceEventApplicators } from "@stu/lib";
 import { defaultSchools } from "@stu/lib";
@@ -6,16 +6,18 @@ import { defaultSchools } from "@stu/lib";
 import { db } from "../client";
 import * as tables from "../schema";
 
+const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
+
 export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
   "school.founded": {
-    verify: async ({ data }) => {
+    verify: async ({ data }, { initiatorUserId }) => {
+      if (initiatorUserId !== SYSTEM_USER) return "NOT_ALLOWED";
+
       const school = await db.query.Schools.findFirst({
         where: eq(tables.Schools.id, data.id),
       });
 
-      if (school) {
-        return "EXISTS";
-      }
+      if (school) return "EXISTS";
     },
     apply: async ({ data }) => {
       const defaultSchoolValue = defaultSchools[data.id];
@@ -32,18 +34,40 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
     },
   },
   "teacher.joined": {
-    verify: () => Promise.resolve(undefined),
+    verify: async ({ data }, { initiatorUserId }) => {
+      if (initiatorUserId !== SYSTEM_USER) return "NOT_ALLOWED";
+
+      const person = await db.query.Persons.findFirst({
+        where: eq(tables.Persons.abbrv, data.abbrv),
+      });
+
+      if (person) return "EXISTS";
+    },
     apply: async ({ data }) => {
       await db.insert(tables.Persons).values({
         id: data.personId,
-        name: data.name,
+        name: `${data.firstName} ${data.lastName}`,
         salutation: data.salutation,
         abbrv: data.abbrv,
       });
     },
   },
   "holiday.created": {
-    verify: () => Promise.resolve(undefined),
+    verify: async ({ data }, { initiatorUserId }) => {
+      if (initiatorUserId !== SYSTEM_USER) return "NOT_ALLOWED";
+
+      const holiday = await db.query.holidays.findFirst({
+        where: and(
+          eq(tables.holidays.name, data.name),
+          eq(tables.holidays.start, data.start),
+          eq(tables.holidays.end, data.end),
+          eq(tables.holidays.state, data.state),
+          eq(tables.holidays.year, data.year),
+        ),
+      });
+
+      if (holiday) return "EXISTS";
+    },
     apply: async ({ data }) => {
       await db.insert(tables.holidays).values({
         name: data.name,
@@ -101,9 +125,6 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
         where: eq(tables.Schools.stateCode, data.state),
       });
 
-      console.log(semesters);
-      console.log(affectedSchools);
-
       await db
         .insert(tables.Semesters)
         .values(
@@ -119,7 +140,18 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
     },
   },
   "year.started": {
-    verify: () => Promise.resolve(undefined),
+    verify: async ({ data }, { initiatorUserId }) => {
+      if (initiatorUserId !== SYSTEM_USER) return "NOT_ALLOWED";
+
+      const year = await db.query.Years.findFirst({
+        where: and(
+          eq(tables.Years.startYear, data.startYear),
+          eq(tables.Years.school, data.school),
+        ),
+      });
+
+      if (year) return "EXISTS";
+    },
     apply: async ({ data }) => {
       await db.insert(tables.Years).values({
         name: data.name,
@@ -147,7 +179,29 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
     },
   },
   "courses.created": {
-    verify: () => Promise.resolve(undefined),
+    verify: async ({ data }, { initiatorUserId }) => {
+      if (initiatorUserId !== SYSTEM_USER) return "NOT_ALLOWED";
+
+      const course = await db.query.Courses.findFirst({
+        where: and(
+          eq(tables.Courses.id, data.id),
+          eq(tables.Courses.school, data.school),
+        ),
+      });
+      if (course) return "EXISTS";
+
+      for (const clsData of data.classes) {
+        const cls = await db.query.Classes.findFirst({
+          where: and(
+            eq(tables.Classes.school, data.school),
+            eq(tables.Classes.identifierInYear, clsData.identifierInYear),
+            eq(tables.Classes.startYear, clsData.startYear),
+          ),
+        });
+
+        if (!cls) return "CLASS_NOT_FOUND";
+      }
+    },
     apply: async ({ data }) => {
       await db.insert(tables.Courses).values({
         id: data.id,
@@ -178,29 +232,71 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
     },
   },
   "timetable.entryCreated": {
-    verify: () => Promise.resolve(undefined),
-    apply: async ({ data }) => {
-      await db.insert(tables.TimetableEntries).values({
-        start: data.start,
-        duration: data.duration,
-        course: data.course,
+    verify: async ({ data }, { initiatorUserId }) => {
+      if (initiatorUserId !== SYSTEM_USER) return "NOT_ALLOWED";
+
+      const course = await db.query.Courses.findFirst({
+        where: and(eq(tables.Courses.id, data.course)),
       });
 
-      for (const room of data.rooms) {
-        await db.insert(tables.TimetableEntryRooms).values({
+      if (!course) return "COURSE_NOT_FOUND";
+    },
+    apply: async ({ data }) => {
+      const existingTimetableEntry = await db.query.TimetableEntries.findFirst({
+        where: and(
+          eq(tables.TimetableEntries.course, data.course),
+          eq(tables.TimetableEntries.start, data.start),
+        ),
+      });
+
+      await db
+        .insert(tables.TimetableEntries)
+        .values({
           start: data.start,
+          duration: data.duration,
           course: data.course,
-          roomNumber: room,
+          rooms: data.rooms,
+        })
+        .onConflictDoUpdate({
+          target: [
+            tables.TimetableEntries.start,
+            tables.TimetableEntries.course,
+          ],
+          set: {
+            // TODO: We might want to overwrite these values
+            duration: Math.max(
+              existingTimetableEntry?.duration ?? 0,
+              data.duration,
+            ),
+            rooms: [
+              ...new Set([
+                ...data.rooms,
+                ...(existingTimetableEntry?.rooms ?? []),
+              ]),
+            ],
+          },
         });
-      }
     },
   },
   "timetable.substituted": {
-    verify: () => Promise.resolve(undefined),
+    verify: async ({ data }, { initiatorUserId }) => {
+      if (initiatorUserId !== SYSTEM_USER) return "NOT_ALLOWED";
+
+      const existingSubstitution = await db.query.Substitutions.findFirst({
+        where: and(
+          eq(tables.Substitutions.start, data.start),
+          eq(tables.Substitutions.course, data.course),
+          eq(tables.Substitutions.originalTeacher, data.originalTeacher),
+        ),
+      });
+
+      if (existingSubstitution) return "EXISTS";
+    },
     apply: async ({ data }) => {
       await db.insert(tables.Substitutions).values({
         course: data.course,
         start: data.start,
+        originalTeacher: data.originalTeacher,
         substitute: data.substitute,
         updatedAt: new Date(),
         type: "VERTRETUNG",
@@ -208,11 +304,24 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
     },
   },
   "timetable.canceled": {
-    verify: () => Promise.resolve(undefined),
+    verify: async ({ data }, { initiatorUserId }) => {
+      if (initiatorUserId !== SYSTEM_USER) return "NOT_ALLOWED";
+
+      const existingSubstitution = await db.query.Substitutions.findFirst({
+        where: and(
+          eq(tables.Substitutions.start, data.start),
+          eq(tables.Substitutions.course, data.course),
+          eq(tables.Substitutions.originalTeacher, data.originalTeacher),
+        ),
+      });
+
+      if (existingSubstitution) return "EXISTS";
+    },
     apply: async ({ data }) => {
       await db.insert(tables.Substitutions).values({
         start: data.start,
         course: data.course,
+        originalTeacher: data.originalTeacher,
         substitute: null,
         updatedAt: new Date(),
         type: "ENTFALL",

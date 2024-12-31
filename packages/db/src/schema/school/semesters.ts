@@ -1,17 +1,19 @@
 import { relations } from "drizzle-orm";
 import {
   date,
+  integer,
   pgEnum,
   pgTable,
   primaryKey,
   smallint,
   text,
+  timestamp,
 } from "drizzle-orm/pg-core";
 
 import { SEMESTER_TYPES } from "@stu/lib";
 
 import { SchoolId } from "./school-id";
-import { Schools } from "./schools";
+import { Schools, StateCode } from "./schools";
 
 export const SemesterType = pgEnum("semester_type", SEMESTER_TYPES);
 
@@ -45,3 +47,21 @@ export const SemesterRelations = relations(Semesters, ({ one }) => ({
     references: [Schools.id],
   }),
 }));
+
+export const holidays = pgTable(
+  "holidays",
+  {
+    name: text("name").notNull(),
+    start: timestamp("start").notNull(),
+    end: timestamp("end").notNull(),
+    state: StateCode("state").notNull(),
+    year: integer("year").notNull(),
+  },
+  (table) => {
+    return {
+      pk: primaryKey({
+        columns: [table.name, table.start, table.end, table.state, table.year],
+      }),
+    };
+  },
+);

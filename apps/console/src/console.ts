@@ -5,13 +5,15 @@ import { add, format, weeksToDays } from "date-fns";
 import { z } from "zod";
 
 import type { SchoolId } from "@stu/lib";
+import { ingest, SYSTEM_USER } from "@stu/api";
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
 import { defaultSchools, SCHOOL_IDS } from "@stu/lib";
-import { createUser, importClasses, importTimetable } from "@stu/lib-server";
+import { createUser } from "@stu/lib-server";
 
-import { api } from "./caller";
+import { importClasses } from "./import-classes";
 import { importTeachers } from "./import-teachers";
+import { importTimetable } from "./import-timetable";
 import { logger } from "./logger";
 import { addSemesters } from "./seed/add-semesters";
 import { copySubstitutions } from "./seed/copy-kadmos-substitutions";
@@ -44,18 +46,29 @@ program
     const defaultSchoolValue = defaultSchools[school];
 
     logger.info(`Seeding school "${school}"...`);
-    await api.events.ingest({
-      type: "org.school.founded",
-      data: {
-        id: school,
-        name: defaultSchoolValue.name,
-        state: defaultSchoolValue.stateCode,
+    const err = await ingest(
+      "org.school.founded",
+      {
+        data: {
+          id: school,
+          name: defaultSchoolValue.name,
+          state: defaultSchoolValue.stateCode,
+        },
+        id: crypto.randomUUID(),
+        timestamp: defaultSchoolValue.founded,
       },
-      id: crypto.randomUUID(),
-      timestamp: defaultSchoolValue.founded,
-    });
+      SYSTEM_USER,
+    );
+    if (err === "EXISTS") {
+      logger.debug(`School "${school}" already founded!`);
+    } else if (err) {
+      logger.error(`Could not ingest school founded event: ${err}`);
+    } else {
+      logger.info(`School "${school}" founded!`);
+    }
 
-    logger.info(`Generating license keys for school "${school}"...`);
+    logger.info(`Generating license keys for school "${school}".
+      ..`);
     await generateLicenses(10, school);
 
     logger.info("Importing teachers...");
@@ -64,14 +77,14 @@ program
     logger.info("Importing holidays...");
     await addSemesters(defaultSchoolValue.stateCode);
 
-    // logger.info("Importing classes...");
-    // await importClasses({ school });
+    logger.info("Importing classes...");
+    await importClasses({ school });
 
-    // logger.info("Importing timetables...");
-    // await importTimetables({ school, weekOffsetRange: [-4, 4] });
+    logger.info("Importing timetables...");
+    await importTimetables({ school, weekOffsetRange: [-4, 4] });
 
-    // logger.info("Seeding complete!");
-    // process.exit(0);
+    logger.info("Seeding complete!");
+    process.exit(0);
   });
 
 program.command("import-substitutions").action(async () => {

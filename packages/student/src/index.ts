@@ -48,13 +48,14 @@ export class EventApplicator implements EventApplicatorInterface {
   verify<TEvent extends Event>(event: Omit<TEvent, "errors">) {
     const applicator = this.findApplicator(event);
     if (!applicator) {
-      return true;
+      return undefined;
     }
 
     return applicator.verify(event as any, {
       db: this.db,
       user: this.getUser(),
-    }) as any
+      initiatorUserId: this.userId,
+    }) as any;
   }
 
   async apply(event: Omit<Event, "errors">) {
