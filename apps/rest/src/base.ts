@@ -1,12 +1,21 @@
 import { trpcServer } from "@hono/trpc-server";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { apiReference } from "@scalar/hono-api-reference";
+import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
+import { stream, streamSSE, streamText } from "hono/streaming";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import pino from "pino";
+import rabbit from "rabbitmq-stream-js-client";
 
-import { appRouter, createTRPCContext } from "@stu/api";
+import {
+  appRouter,
+  createTRPCContext,
+  ensureStream,
+  getSession,
+  rabbitMqClientPromise,
+} from "@stu/api";
 import { getSessionTokenFromHeaders } from "@stu/lib-server";
 
 import { env } from "./env";
@@ -78,6 +87,53 @@ export const createBase = (basePath: string) => {
         }),
     }),
   );
+
+  app.get("/events", async (c) => {
+    const sessionToken = getSessionTokenFromHeaders(
+      new Headers(c.req.header()),
+    );
+    if (!sessionToken) {
+      c.status(401);
+      return c.text("Unauthorized");
+    }
+
+    const session = await getSession(sessionToken);
+    if (!session) {
+      c.status(401);
+      return c.text("Unauthorized");
+    }
+
+    const streamName = `events-${session.user.id}`;
+    const offset = c.req.query("offset");
+
+    const rabbitMqClient = await rabbitMqClientPromise;
+    await ensureStream(rabbitMqClient, streamName);
+
+    return streamSSE(c, async (stream) => {
+      const consumer = await rabbitMqClient.declareConsumer(
+        {
+          stream: streamName,
+          offset:
+            offset !== undefined
+              ? rabbit.Offset.offset(BigInt(offset))
+              : rabbit.Offset.first(),
+        },
+        async (message) => {
+          console.log(`Received message ${message.content.toString()}`);
+          await stream.writeSSE({
+            data: message.content.toString(),
+          });
+        },
+      );
+
+      stream.onAbort(() => {
+        consumer.close(true);
+      });
+
+      // Never close the stream
+      await new Promise(() => {});
+    });
+  });
 
   return app;
 };

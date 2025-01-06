@@ -9,3 +9,16 @@ export const rabbitMqClientPromise = rabbit.connect({
   password: "guest",
   vhost: "/",
 });
+
+export type RabbitMQClient = Awaited<typeof rabbitMqClientPromise>;
+
+export const ensureStream = async (
+  client: RabbitMQClient,
+  streamName: string,
+) => {
+  const streamSizeRetention = 5 * 1e9;
+  await client.createStream({
+    stream: streamName,
+    arguments: { "max-length-bytes": streamSizeRetention },
+  });
+};

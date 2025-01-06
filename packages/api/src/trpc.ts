@@ -12,11 +12,13 @@ import { ZodError } from "zod";
 
 import type { Logger } from "./interfaces/logger";
 import type { Session } from "./interfaces/session";
+import { SYSTEM_USER } from ".";
 import { env } from "../env";
 import { db, eq, tables } from "./postgres";
-import { SYSTEM_USER } from ".";
 
-const getSession = async (sessionToken: string): Promise<Session | null> => {
+export const getSession = async (
+  sessionToken: string,
+): Promise<Session | null> => {
   const session = await db.query.sessions.findFirst({
     where: eq(tables.sessions.token, sessionToken),
     with: {
@@ -44,10 +46,13 @@ const getSession = async (sessionToken: string): Promise<Session | null> => {
 };
 
 const getSystemSession = async (): Promise<Session> => {
-  await db.insert(tables.users).values({
-    id: SYSTEM_USER,
-    type: "system",
-  }).onConflictDoNothing();
+  await db
+    .insert(tables.users)
+    .values({
+      id: SYSTEM_USER,
+      type: "system",
+    })
+    .onConflictDoNothing();
 
   return {
     token: "",

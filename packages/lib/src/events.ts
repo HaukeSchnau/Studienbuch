@@ -236,10 +236,14 @@ export const EVENT_TYPES = DomainEvent.options.map(
   (thing) => thing.shape.type.value,
 ) as [EventName, ...EventName[]]; // Assure TS that it's non-empty
 
+interface BaseExtra {
+  initiatorUserId: string;
+}
+
 export interface EventApplicator<TEventName extends Event["type"], Extra> {
   verify: (
     event: Omit<Extract<Event, { type: TEventName }>, "errors">,
-    extra: Extra & { initiatorUserId: string },
+    extra: Extra & BaseExtra,
   ) => Promise<
     | ("errors" extends keyof Extract<Event, { type: TEventName }>
         ? Extract<
@@ -270,9 +274,11 @@ interface PersistedEvent {
 export interface ServerEventApplicator<TEventName extends Event["type"]> {
   recipients?: (
     event: Omit<Extract<Event, { type: TEventName }>, "errors">,
+    extra: BaseExtra,
   ) => Promise<string[]>; // Returns user IDs
   related?: (
     event: Omit<Extract<Event, { type: TEventName }>, "errors">,
+    extra: BaseExtra,
   ) => Promise<PersistedEvent[]>;
 }
 
@@ -293,7 +299,7 @@ export type EventApplicators<Extra> = {
 export interface EventApplicatorInterface {
   verify: <TEvent extends Event>(
     event: Omit<TEvent, "errors">,
-    extra: { initiatorUserId: string },
+    extra: BaseExtra,
   ) => Promise<
     | ("errors" extends keyof TEvent
         ? TEvent["errors"] extends readonly (infer E)[]
