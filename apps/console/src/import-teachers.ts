@@ -110,6 +110,8 @@ const FIRSTNAME_SALUTATION_MAP: Record<string, Salutation> = {
 };
 
 export const importTeachers = async () => {
+  logger.info("Importing teachers...");
+
   for (const teacher of getTeachers()) {
     const err = await ingest(
       "org.teacher.joined",

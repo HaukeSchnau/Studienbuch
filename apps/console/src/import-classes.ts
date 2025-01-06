@@ -15,6 +15,8 @@ interface Options {
 }
 
 export const importClasses = async ({ school }: Options) => {
+  logger.info(`Importing classes for school "${school}"...`);
+
   const schoolEntity = await db.query.Schools.findFirst({
     where: eq(Schools.id, school),
   });

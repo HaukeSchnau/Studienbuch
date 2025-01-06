@@ -19,6 +19,9 @@ export const generateLicenses = async (
   numberOfLicenses: number,
   school: SchoolId,
 ) => {
+  logger.info(`Generating ${numberOfLicenses} license keys for school "${school}".
+    ..`);
+
   for (let i = 0; i < numberOfLicenses; i++) {
     const licenseKey =
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- We may have more schools in the future

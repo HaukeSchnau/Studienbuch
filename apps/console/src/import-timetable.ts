@@ -52,6 +52,29 @@ interface ProtoTimetableEntry {
   duration: number;
 }
 
+/**
+ * A course is uniquely identified by the combination of:
+ * - The school
+ * - The kadmos id (in the case of IGS Lilienthal, this is unique per subject)
+ * - The class(es) it is taught in
+ */
+const generateCourseUuid = (
+  school: SchoolId,
+  entry: Pick<ProtoTimetableEntry, "course" | "classes">,
+) => {
+  return crypto
+    .createHash("sha256")
+    .update(school)
+    .update(entry.course.kadmosId.toString())
+    .update(
+      entry.classes
+        .map((cls) => `${cls.startYear}.${cls.identifierInYear}`)
+        .join(","),
+    )
+    .digest("hex")
+    .slice(0, 32);
+};
+
 const findSemesterFromDate = async (date: Date, school: SchoolId) => {
   const semesters = await db.query.Semesters.findMany({
     where: and(
@@ -444,22 +467,6 @@ export const importTimetable = async ({ school, date }: Options) => {
     });
   }
 
-  const generateCourseUuid = (
-    entry: Pick<ProtoTimetableEntry, "course" | "classes">,
-  ) => {
-    return crypto
-      .createHash("sha256")
-      .update(school)
-      .update(entry.course.kadmosId.toString())
-      .update(
-        entry.classes
-          .map((cls) => `${cls.startYear}.${cls.identifierInYear}`)
-          .join(","),
-      )
-      .digest("hex")
-      .slice(0, 32);
-  };
-
   // Finally, we find all distinct courses.
   // In this step, we join two courses if they have the same name and have at least one class in common.
   const courses = new BetterMap<
@@ -471,7 +478,7 @@ export const importTimetable = async ({ school, date }: Options) => {
     }
   >();
   outer: for (const entry of joinedEntries) {
-    const uuid = generateCourseUuid(entry);
+    const uuid = generateCourseUuid(school, entry);
     const existingCourse = courses.get(uuid);
     if (existingCourse) {
       existingCourse.entries.push(entry);
@@ -503,7 +510,7 @@ export const importTimetable = async ({ school, date }: Options) => {
           }
         }
 
-        const newUuid = generateCourseUuid({
+        const newUuid = generateCourseUuid(school, {
           course: entry.course,
           classes: joinedClasses,
         });

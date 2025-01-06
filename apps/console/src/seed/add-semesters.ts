@@ -8,6 +8,8 @@ import { getHolidays } from "@stu/external-api";
 import { logger } from "../logger";
 
 export const addSemesters = async (state: State) => {
+  logger.info(`Importing holidays for ${state}...`);
+
   const holidays = await getHolidays(state);
   for (const holiday of holidays) {
     const err = await ingest(
