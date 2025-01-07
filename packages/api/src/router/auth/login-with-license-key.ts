@@ -1,8 +1,10 @@
 import { z } from "zod";
 
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import * as tables from "@stu/db/schema";
 import { createSession } from "@stu/lib-server";
 
-import { db, eq, tables } from "../../postgres";
 import { publicProcedure } from "../../procedures";
 
 export const loginWithLicenseKey = publicProcedure
@@ -12,8 +14,8 @@ export const loginWithLicenseKey = publicProcedure
     }),
   )
   .mutation(async ({ input: { licenseKey } }) => {
-    const license = await db.query.licenseKeys.findFirst({
-      where: eq(tables.licenseKeys.key, licenseKey),
+    const license = await db.query.LicenseKeys.findFirst({
+      where: eq(tables.LicenseKeys.key, licenseKey),
     });
 
     if (!license) {
@@ -35,7 +37,7 @@ export const loginWithLicenseKey = publicProcedure
     }
 
     const session = await db
-      .insert(tables.sessions)
+      .insert(tables.Sessions)
       .values(createSession({ id: license.activatedBy }))
       .returning();
 

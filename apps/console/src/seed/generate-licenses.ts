@@ -1,8 +1,7 @@
 import crypto from "crypto";
 
 import type { SchoolId } from "@stu/lib";
-import { db } from "@stu/db/client";
-import { LicenseKeys } from "@stu/db/schema";
+import { ingest, SYSTEM_USER } from "@stu/api";
 
 import { logger } from "../logger";
 
@@ -31,17 +30,19 @@ export const generateLicenses = async (
     const expiresAt = new Date();
     expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
-    const data = {
-      key: licenseKey,
-      expiresAt: i == 0 ? null : expiresAt,
-      isSuperKey: i == 0,
-      school,
-    };
-
-    await db.insert(LicenseKeys).values(data).onConflictDoUpdate({
-      target: LicenseKeys.key,
-      set: data,
-    });
+    await ingest(
+      "auth.licenseGenerated",
+      {
+        data: {
+          school,
+          licenseKey,
+          expiryDate: expiresAt,
+        },
+        timestamp: new Date(),
+        id: crypto.randomUUID(),
+      },
+      SYSTEM_USER,
+    );
   }
 
   logger.info(`Generated ${numberOfLicenses} licenses.`);

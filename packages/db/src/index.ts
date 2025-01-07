@@ -9,6 +9,7 @@ import type {
 import { NAMESPACES } from "@stu/lib";
 
 import { orgApplicators } from "./event-handlers/org";
+import { studentApplicators } from "./event-handlers/student";
 
 export * from "drizzle-orm/sql";
 export { alias } from "drizzle-orm/pg-core";
@@ -17,6 +18,7 @@ type Extra = unknown;
 
 const applicators: EventApplicators<Extra> = {
   org: orgApplicators,
+  student: studentApplicators,
 };
 
 function findApplicator<TEvent extends Event>(event: Omit<TEvent, "errors">) {

@@ -1,18 +1,12 @@
 name: "studienbuch"
 
 services:
-  core-data-storage:
-    extends:
-      file: docker/common-services.yaml
-      service: postgres
-    ports:
-      - 5432:5432
   management-data-storage:
     extends:
       file: docker/common-services.yaml
       service: postgres
     ports:
-      - 5433:5432
+      - 5432:5432
   event-stream:
     extends:
       file: docker/common-services.yaml

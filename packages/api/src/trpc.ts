@@ -10,17 +10,20 @@ import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import * as tables from "@stu/db/schema";
+
 import type { Logger } from "./interfaces/logger";
 import type { Session } from "./interfaces/session";
 import { SYSTEM_USER } from ".";
 import { env } from "../env";
-import { db, eq, tables } from "./postgres";
 
 export const getSession = async (
   sessionToken: string,
 ): Promise<Session | null> => {
-  const session = await db.query.sessions.findFirst({
-    where: eq(tables.sessions.token, sessionToken),
+  const session = await db.query.Sessions.findFirst({
+    where: eq(tables.Sessions.token, sessionToken),
     with: {
       user: true,
     },
@@ -32,8 +35,8 @@ export const getSession = async (
 
   if (session.expires < new Date() || !session.user) {
     await db
-      .delete(tables.sessions)
-      .where(eq(tables.sessions.token, sessionToken));
+      .delete(tables.Sessions)
+      .where(eq(tables.Sessions.token, sessionToken));
     return null;
   }
 
@@ -47,10 +50,10 @@ export const getSession = async (
 
 const getSystemSession = async (): Promise<Session> => {
   await db
-    .insert(tables.users)
+    .insert(tables.Users)
     .values({
       id: SYSTEM_USER,
-      type: "system",
+      isSuperUser: true,
     })
     .onConflictDoNothing();
 

@@ -1,8 +1,10 @@
 import { z } from "zod";
 
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import * as tables from "@stu/db/schema";
 import { checkPassword, createSession } from "@stu/lib-server";
 
-import { db, eq, tables } from "../../postgres";
 import { publicProcedure } from "../../procedures";
 
 export const login = publicProcedure
@@ -13,8 +15,8 @@ export const login = publicProcedure
     }),
   )
   .mutation(async ({ input: { email, password } }) => {
-    const user = await db.query.users.findFirst({
-      where: eq(tables.users.email, email.toLowerCase()),
+    const user = await db.query.Users.findFirst({
+      where: eq(tables.Users.email, email.toLowerCase()),
     });
 
     if (!user) {
@@ -50,7 +52,7 @@ export const login = publicProcedure
       id: user.id,
     });
 
-    await db.insert(tables.sessions).values(session);
+    await db.insert(tables.Sessions).values(session);
 
     return {
       session,

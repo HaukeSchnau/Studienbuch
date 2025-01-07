@@ -3,7 +3,7 @@ import { add, endOfWeek, format, startOfWeek } from "date-fns";
 
 import type { KadmosTimetableResponse } from "@stu/external-api";
 import type { SchoolId, SubjectId } from "@stu/lib";
-import { and, between, eq, gte, inArray, lte } from "@stu/db";
+import { and, between, eq, gte, lte } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Schools, Semesters, TimetableEntries } from "@stu/db/schema";
 import { getClasses, getTimetable, login } from "@stu/external-api";
@@ -342,21 +342,6 @@ const collectEntries = (timetable: KadmosTimetableResponse) => {
 };
 
 export const importTimetable = async ({ school, date }: Options) => {
-  const start = startOfWeek(date, { weekStartsOn: 1 });
-  const end = endOfWeek(date, { weekStartsOn: 1 });
-  // TODO: find timetable entries present in db but not in kadmos
-  // const allCourseIds = await db.query.Courses.findMany({
-  //   where: eq(Courses.school, school),
-  // }).then((courses) => courses.map((course) => course.id));
-  // await db
-  //   .delete(TimetableEntries)
-  //   .where(
-  //     and(
-  //       inArray(TimetableEntries.course, allCourseIds),
-  //       between(TimetableEntries.start, start, end),
-  //     ),
-  //   );
-
   const schoolEntity = await db.query.Schools.findFirst({
     where: eq(Schools.id, school),
   });
@@ -533,6 +518,9 @@ export const importTimetable = async ({ school, date }: Options) => {
       entries: [entry],
     });
   }
+
+  const start = startOfWeek(date, { weekStartsOn: 1 });
+  const end = endOfWeek(date, { weekStartsOn: 1 });
 
   // Insert all courses into the database
   for (const [uuid, course] of courses.entries()) {

@@ -7,12 +7,13 @@ import type {
   ServerEventApplicator,
 } from "@stu/lib";
 import { eventApplicator as systemApplicator } from "@stu/db";
+import { db } from "@stu/db/client";
+import * as tables from "@stu/db/schema";
 import { EventApplicator as StudentEventApplicator } from "@stu/student";
 import * as studentSchema from "@stu/student/schema";
 
 import { SYSTEM_USER } from "../../constants";
 import { createNamespace, createNamespaceClient } from "../../libsql";
-import { db, tables } from "../../postgres";
 import {
   ensureStream,
   RabbitMQClient,
@@ -80,10 +81,10 @@ const publishEvent = async (
 
 const ensureSystemUser = async () => {
   await db
-    .insert(tables.users)
+    .insert(tables.Users)
     .values({
       id: SYSTEM_USER,
-      type: "system",
+      isSuperUser: true,
     })
     .onConflictDoNothing();
 };

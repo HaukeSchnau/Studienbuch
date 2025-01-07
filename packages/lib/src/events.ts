@@ -174,6 +174,7 @@ const DomainEvent = discriminatedUnion("type", [
     }),
     errors: virtual(["EXISTS", "CLASS_NOT_FOUND", "NOT_ALLOWED"]),
   }),
+
   object({
     type: literal("org.timetable.entryCreated"),
     data: object({
@@ -204,19 +205,48 @@ const DomainEvent = discriminatedUnion("type", [
     errors: virtual(["EXISTS", "NOT_ALLOWED"]),
   }),
 
-  // object({
-  //   type: literal("student.classAssigned"),
-  //   data: object({}),
-  // }),
-  // object({
-  //   type: literal("student.courseAssigned"),
-  //   data: object({}),
-  // }),
+  object({
+    type: literal("auth.licenseGenerated"),
+    data: object({
+      licenseKey: string(),
+      school: z.enum(SCHOOL_IDS),
+      expiryDate: date(),
+    }),
+    errors: virtual(["EXISTS", "NOT_ALLOWED"]),
+  }),
 
-  // object({
-  //   type: literal("user.activated"),
-  //   data: object({}),
-  // }),
+  object({
+    type: literal("auth.licenseActivated"),
+    data: object({
+      userId: string().uuid(),
+      licenseKey: string(),
+    }),
+    errors: virtual(["EXISTS", "INVALID_LICENSE_KEY"]),
+  }),
+
+  object({
+    type: literal("student.joined"),
+    data: object({
+      studentId: string().uuid(),
+      name: string(),
+      school: z.enum(SCHOOL_IDS),
+      isOfAge: boolean(),
+      class: object({
+        identifier: string(),
+        startYear: number(),
+      }),
+    }),
+    errors: virtual(["NOT_ALLOWED", "INVALID_CLASS"]),
+  }),
+
+  object({
+    type: literal("student.courseAssigned"),
+    data: object({
+      studentId: string().uuid(),
+      courseId: string().uuid(),
+    }),
+    errors: virtual(["ALREADY_ASSIGNED", "NOT_ALLOWED", "INVALID_COURSE"]),
+  }),
 ]);
 
 export const Event = preprocess(
@@ -282,7 +312,13 @@ export interface ServerEventApplicator<TEventName extends Event["type"]> {
   ) => Promise<PersistedEvent[]>;
 }
 
-export const NAMESPACES = ["absence", "grades", "org"] as const;
+export const NAMESPACES = [
+  "absence",
+  "grades",
+  "org",
+  "student",
+  "auth",
+] as const;
 type Namespace = (typeof NAMESPACES)[number];
 export type NamespaceEventApplicators<TNamespace extends Namespace, Extra> = {
   [TEventName in Event["type"] as TEventName extends `${TNamespace}.${infer T}`

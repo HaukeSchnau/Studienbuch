@@ -62,7 +62,7 @@ importers:
         specifier: ^8.34.0
         version: 8.42.0
       '@stu/api':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/api
       '@stu/db':
         specifier: workspace:*
@@ -605,9 +605,6 @@ importers:
       dayjs:
         specifier: ^1.11.13
         version: 1.11.13
-      drizzle-orm:
-        specifier: ^0.36.4
-        version: 0.36.4(@libsql/client@0.14.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@19.0.0)(expo-sqlite@15.0.3(expo@52.0.17(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@expo/metro-runtime@4.0.0(react-native@0.76.3(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@types/react@19.0.0)(encoding@0.1.13)(react@19.0.0)))(encoding@0.1.13)(graphql@15.9.0)(react-native@0.76.3(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@types/react@19.0.0)(encoding@0.1.13)(react@19.0.0))(react@19.0.0))(react-native@0.76.3(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@types/react@19.0.0)(encoding@0.1.13)(react@19.0.0))(react@19.0.0))(pg@8.13.1)(react@19.0.0)
       drizzle-zod:
         specifier: ^0.5.1
         version: 0.5.1(drizzle-orm@0.36.4(@libsql/client@0.14.0)(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@19.0.0)(expo-sqlite@15.0.3(expo@52.0.17(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@expo/metro-runtime@4.0.0(react-native@0.76.3(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@types/react@19.0.0)(encoding@0.1.13)(react@19.0.0)))(encoding@0.1.13)(graphql@15.9.0)(react-native@0.76.3(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@types/react@19.0.0)(encoding@0.1.13)(react@19.0.0))(react@19.0.0))(react-native@0.76.3(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(@types/react@19.0.0)(encoding@0.1.13)(react@19.0.0))(react@19.0.0))(pg@8.13.1)(react@19.0.0))(zod@3.23.8)

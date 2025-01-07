@@ -7,7 +7,6 @@ export const env = createEnv({
     LIBSQL_URL: z.string(),
     LIBSQL_ADMIN_URL: z.string(),
     LIBSQL_ADMIN_AUTH_KEY: z.string(),
-    CORE_DATABASE_URL: z.string(),
     RABBITMQ_HOST: z.string(),
   },
   client: {},
