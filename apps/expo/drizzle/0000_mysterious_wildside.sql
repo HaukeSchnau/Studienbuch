@@ -1,6 +1,7 @@
 CREATE TABLE `persons` (
 	`id` text PRIMARY KEY NOT NULL,
-	`name` text NOT NULL,
+	`first_name` text,
+	`last_name` text,
 	`salutation` text,
 	`abbrv` text,
 	`email` text
@@ -57,15 +58,19 @@ CREATE TABLE `courses_to_teachers` (
 	FOREIGN KEY (`teacher`) REFERENCES `persons`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `rooms` (
-	`room_number` text PRIMARY KEY NOT NULL,
-	`name` text NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE `schools` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
 	`state_code` text NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE `holidays` (
+	`name` text NOT NULL,
+	`start` integer NOT NULL,
+	`end` integer NOT NULL,
+	`state` text NOT NULL,
+	`year` integer NOT NULL,
+	PRIMARY KEY(`name`, `start`, `end`, `state`, `year`)
 );
 --> statement-breakpoint
 CREATE TABLE `semesters` (
@@ -110,10 +115,8 @@ CREATE TABLE `grades` (
 	`teacher_signature` text,
 	`parent_signature` text,
 	`course` text NOT NULL,
-	`student` text NOT NULL,
-	PRIMARY KEY(`date`, `course`, `student`, `type`),
-	FOREIGN KEY (`course`) REFERENCES `courses`(`id`) ON UPDATE cascade ON DELETE restrict,
-	FOREIGN KEY (`student`) REFERENCES `persons`(`id`) ON UPDATE cascade ON DELETE restrict
+	PRIMARY KEY(`date`, `course`, `type`),
+	FOREIGN KEY (`course`) REFERENCES `courses`(`id`) ON UPDATE cascade ON DELETE restrict
 );
 --> statement-breakpoint
 CREATE TABLE `tasks` (
@@ -134,8 +137,7 @@ CREATE TABLE `room_changes` (
 	`course` text NOT NULL,
 	`room` text NOT NULL,
 	`createdAt` integer DEFAULT (cast((julianday('now') - 2440587.5)*86400000 as integer)) NOT NULL,
-	`updatedAt` integer NOT NULL,
-	FOREIGN KEY (`room`) REFERENCES `rooms`(`room_number`) ON UPDATE cascade ON DELETE set null
+	`updatedAt` integer NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `substitutions` (
@@ -161,7 +163,6 @@ CREATE TABLE `timetable_entry_rooms` (
 	`course` text NOT NULL,
 	`room` text NOT NULL,
 	PRIMARY KEY(`start`, `course`, `room`),
-	FOREIGN KEY (`room`) REFERENCES `rooms`(`room_number`) ON UPDATE cascade ON DELETE cascade,
 	FOREIGN KEY (`start`,`course`) REFERENCES `timetable_entries`(`date`,`course`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
@@ -176,9 +177,26 @@ CREATE TABLE `recurring_timetable_entries` (
 	FOREIGN KEY (`course`) REFERENCES `courses`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `mutations` (
-	`timestamp` integer PRIMARY KEY NOT NULL,
-	`path` text NOT NULL,
-	`input` text NOT NULL,
-	`mutation_status` text NOT NULL
+CREATE TABLE `entities` (
+	`id` text PRIMARY KEY NOT NULL,
+	`type` text NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE `events` (
+	`order` integer PRIMARY KEY NOT NULL,
+	`id` text NOT NULL,
+	`type` text NOT NULL,
+	`data` text NOT NULL,
+	`timestamp` integer NOT NULL,
+	`status` text NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `events_id_unique` ON `events` (`id`);--> statement-breakpoint
+CREATE INDEX `id_idx` ON `events` (`id`);--> statement-breakpoint
+CREATE TABLE `events_to_entities` (
+	`event` text NOT NULL,
+	`entity` text NOT NULL,
+	PRIMARY KEY(`entity`, `event`),
+	FOREIGN KEY (`event`) REFERENCES `events`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`entity`) REFERENCES `entities`(`id`) ON UPDATE no action ON DELETE no action
 );

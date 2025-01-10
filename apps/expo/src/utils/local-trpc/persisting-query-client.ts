@@ -1,116 +1,13 @@
-import type { TRPCLink } from "@trpc/client";
-import type { AnyRouter } from "@trpc/server";
 import { useEffect, useState } from "react";
-import { QueryClient } from "@tanstack/react-query";
-import { observable } from "@trpc/server/observable";
 import { asc, eq } from "drizzle-orm";
 import { useLiveQuery } from "drizzle-orm/expo-sqlite";
-import { parse, stringify } from "superjson";
+import superjson from "superjson";
 
-import type { ClientRouter, LocalQuery } from "./trpc-util";
+import { Event } from "@stu/lib";
+import * as tables from "@stu/student/schema";
+
 import { db } from "~/db/client";
-import { Mutations } from "~/db/schema";
-import { useTrpcClient } from "~/utils/api";
-import { findLocalProcedure } from "./trpc-util";
-
-export class PersistingQueryClient extends QueryClient {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  constructor(clientRouter: ClientRouter<any>) {
-    super({
-      defaultOptions: {
-        queries: {
-          staleTime: 30 * 1000,
-          persister: (queryFn, context, query) => {
-            const [path, params] = query.queryKey as [
-              string[],
-              { input: unknown },
-            ];
-            const localProcedure = findLocalProcedure(clientRouter, [
-              ...path,
-            ]) as LocalQuery<unknown, unknown> | undefined;
-
-            if (!localProcedure) {
-              throw new Error(
-                `No local procedure found for query ${path.join(".")}`,
-              );
-            }
-
-            const promise = queryFn(context);
-            if (promise instanceof Promise) {
-              void promise.then((data) => {
-                this.setQueryData(query.queryKey, data);
-                return localProcedure.persist(params.input, data);
-                // .catch((e) => console.log(query.queryKey, e));
-              });
-            }
-
-            if (localProcedure.read) {
-              return localProcedure.read(params.input);
-            }
-
-            return promise;
-          },
-        },
-      },
-    });
-  }
-}
-
-export function localLink<TRouter extends AnyRouter = AnyRouter>(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  clientRouter: ClientRouter<any>,
-): TRPCLink<TRouter> {
-  return () => {
-    return ({ op, next }) => {
-      if (op.type !== "mutation" || op.context.bypassLocal) {
-        return next(op);
-      }
-
-      const localProcedure = findLocalProcedure(
-        clientRouter,
-        op.path.split("."),
-      );
-
-      if (!localProcedure?.mutate) {
-        return next(op);
-      }
-
-      return observable((observer) => {
-        void (async () => {
-          const timestamp = new Date();
-
-          const localPromiseOrResult = localProcedure.mutate(op.input);
-
-          if (localPromiseOrResult instanceof Promise) {
-            const res = (await localPromiseOrResult) as unknown;
-            observer.next({
-              result: {
-                data: res,
-                type: "data",
-              },
-            });
-          } else {
-            observer.next({
-              result: {
-                data: localPromiseOrResult,
-                type: "data",
-              },
-            });
-          }
-
-          await db.insert(Mutations).values({
-            timestamp,
-            path: op.path,
-            input: stringify(op.input),
-            status: "PENDING",
-          });
-
-          observer.complete();
-        })();
-      });
-    };
-  };
-}
+import { publishEvent } from "../api";
 
 export const MutationManager = ({
   children,
@@ -118,14 +15,13 @@ export const MutationManager = ({
   children: React.ReactNode;
 }) => {
   const [initialized, setInitialized] = useState(false);
-  const client = useTrpcClient();
 
   const { data: muts } = useLiveQuery(
     db
       .select()
-      .from(Mutations)
-      .where(eq(Mutations.status, "PENDING"))
-      .orderBy(asc(Mutations.timestamp)),
+      .from(tables.events)
+      .where(eq(tables.events.status, "APPLIED"))
+      .orderBy(asc(tables.events.timestamp)),
   );
 
   useEffect(() => {
@@ -135,29 +31,44 @@ export const MutationManager = ({
         if (abortSignal.signal.aborted) {
           return;
         }
-        const input = parse(mut.input);
+        const input = superjson.parse(mut.data);
+        const event = Event.safeParse(input);
+
+        if (!event.success) {
+          console.error("error parsing event", mut, event.error);
+          await db
+            .update(tables.events)
+            .set({ status: "FAILED" })
+            .where(eq(tables.events.id, mut.id));
+          continue;
+        }
+
         try {
-          await client.mutation(mut.path, input, {
-            signal: abortSignal.signal,
-            context: {
-              bypassLocal: true,
-            },
-          });
+          const res = await publishEvent(event.data);
+
+          if (res.status !== 200) {
+            console.error("error publishing event", mut, res);
+            await db
+              .update(tables.events)
+              .set({ status: "FAILED" })
+              .where(eq(tables.events.id, mut.id));
+            continue;
+          }
 
           await db
-            .update(Mutations)
+            .update(tables.events)
             .set({
               status: "PUBLISHED",
             })
-            .where(eq(Mutations.timestamp, mut.timestamp));
+            .where(eq(tables.events.timestamp, mut.timestamp));
         } catch (e) {
-          console.error("error handling mutation", mut, e);
+          console.error("error publishing event", mut, e);
           await db
-            .update(Mutations)
+            .update(tables.events)
             .set({
-              status: "REJECTED",
+              status: "FAILED",
             })
-            .where(eq(Mutations.timestamp, mut.timestamp));
+            .where(eq(tables.events.timestamp, mut.timestamp));
         }
       }
       setInitialized(true);
@@ -166,7 +77,7 @@ export const MutationManager = ({
     return () => {
       abortSignal.abort();
     };
-  }, [muts, client]);
+  }, [muts]);
 
   return initialized ? children : null;
 };

@@ -12,12 +12,13 @@ import {
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { useIngest } from "~/utils/ingest";
 
 export const ConfirmOralGradeParent = ({ grade }: { grade: Grade }) => {
   const { user } = useRequiredAuthenticatedSession();
   const utils = api.useUtils();
   const router = useRouter();
-  const confirmMutation = api.students.grades.confirmParent.useMutation({
+  const confirmMutation = useIngest("grades.parentApproved", {
     onSuccess: async () => {
       await utils.students.grades.invalidate();
       router.back();

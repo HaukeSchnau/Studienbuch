@@ -12,6 +12,7 @@ import { DateField } from "~/components/date-field";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
 import { api } from "~/utils/api";
+import { useIngest } from "~/utils/ingest";
 
 interface AbsenceForm {
   date: Date;
@@ -25,7 +26,7 @@ interface Props {
 
 export const AddAbsence = ({ onClose }: Props) => {
   const utils = api.useUtils();
-  const mutation = api.students.absences.add.useMutation({
+  const mutation = useIngest("absence.recorded", {
     onSettled: () => {
       void utils.students.absences.listUnexcused.invalidate();
       onClose();

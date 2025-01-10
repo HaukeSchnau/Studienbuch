@@ -13,6 +13,7 @@ export type SetupForm = InitialForm<Steps>;
 type Steps = [
   {
     licenseKey: string;
+    userId: string;
   },
   {
     name: string;

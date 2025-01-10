@@ -1,17 +1,13 @@
 import { createContext, useContext, useState } from "react";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import superjson from "superjson";
 
 import type { AppRouter } from "@stu/api";
+import type { Event } from "@stu/lib";
 
-import { clientRouter } from "~/db/local-trpc";
 import { getBaseUrl } from "./base-url";
-import {
-  localLink,
-  PersistingQueryClient,
-} from "./local-trpc/persisting-query-client";
 import { getStorage } from "./storage";
 
 /**
@@ -30,12 +26,32 @@ export const useTrpcClient = () => {
   return useContext(trpcClientContext);
 };
 
+const getHeaders = () => {
+  const headers = new Map<string, string>();
+  headers.set("x-trpc-source", "expo-react");
+  const session = getStorage("auth.session");
+  if (session?.token) headers.set("x-session", session.token);
+
+  return headers;
+};
+
+export const publishEvent = (event: Omit<Event, "errors">) => {
+  const headers = getHeaders();
+  headers.set("Content-Type", "application/json");
+
+  return fetch(`${getBaseUrl()}/events`, {
+    method: "POST",
+    body: superjson.stringify(event),
+    headers: Object.fromEntries(headers),
+  });
+};
+
 /**
  * A wrapper for your app that provides the TRPC context.
  * Use only in _app.tsx
  */
 export function TRPCProvider(props: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new PersistingQueryClient(clientRouter));
+  const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
     api.createClient({
       links: [
@@ -45,18 +61,10 @@ export function TRPCProvider(props: { children: React.ReactNode }) {
             (opts.direction === "down" && opts.result instanceof Error),
           colorMode: "ansi",
         }),
-        localLink(clientRouter),
         httpBatchLink({
           url: `${getBaseUrl()}/trpc`,
           transformer: superjson,
-          headers() {
-            const headers = new Map<string, string>();
-            headers.set("x-trpc-source", "expo-react");
-            const session = getStorage("auth.session");
-            if (session?.token) headers.set("x-session", session.token);
-
-            return Object.fromEntries(headers);
-          },
+          headers: getHeaders(),
         }),
       ],
     }),

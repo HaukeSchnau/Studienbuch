@@ -266,7 +266,7 @@ export const EVENT_TYPES = DomainEvent.options.map(
   (thing) => thing.shape.type.value,
 ) as [EventName, ...EventName[]]; // Assure TS that it's non-empty
 
-interface BaseExtra {
+export interface BaseExtra {
   initiatorUserId: string;
 }
 
@@ -274,18 +274,7 @@ export interface EventApplicator<TEventName extends Event["type"], Extra> {
   verify: (
     event: Omit<Extract<Event, { type: TEventName }>, "errors">,
     extra: Extra & BaseExtra,
-  ) => Promise<
-    | ("errors" extends keyof Extract<Event, { type: TEventName }>
-        ? Extract<
-            Event,
-            { type: TEventName }
-          >["errors"] extends readonly (infer E)[]
-          ? E
-          : Extract<Event, { type: TEventName }>["errors"]
-        : "ERROR")
-    | "UNEXPECTED"
-    | undefined
-  >;
+  ) => Promise<EventErrorsByName<TEventName>>;
   apply: (
     event: Omit<Extract<Event, { type: TEventName }>, "errors">,
     extra: Extra,
@@ -336,18 +325,27 @@ export interface EventApplicatorInterface {
   verify: <TEvent extends Event>(
     event: Omit<TEvent, "errors">,
     extra: BaseExtra,
-  ) => Promise<
-    | ("errors" extends keyof TEvent
-        ? TEvent["errors"] extends readonly (infer E)[]
-          ? E
-          : TEvent["errors"]
-        : "ERROR")
-    | "UNEXPECTED"
-    | undefined
-  >;
+  ) => Promise<EventErrorsByEvent<TEvent>>;
   apply: (event: Omit<Event, "errors">) => Promise<void>;
 }
 
 export type ServerEventApplicators = {
   [TEventName in Event["type"]]?: ServerEventApplicator<TEventName>;
 };
+
+export type EventErrorsByName<TEventName extends Event["type"]> =
+  EventErrorsByEvent<Extract<Event, { type: TEventName }>>;
+
+export type EventErrorsByEvent<TEvent extends Event> =
+  | ("errors" extends keyof TEvent
+      ? TEvent["errors"] extends readonly (infer E)[]
+        ? E
+        : TEvent["errors"]
+      : never)
+  | "UNEXPECTED"
+  | undefined;
+
+export type EventDataByName<TEventName extends Event["type"]> = Extract<
+  Event,
+  { type: TEventName }
+>["data"];

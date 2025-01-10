@@ -7,6 +7,7 @@ import { ConfirmPageContent } from "~/components/confirm-page-content";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { useIngest } from "~/utils/ingest";
 
 export const ExcuseTeacher = ({
   absence,
@@ -18,7 +19,7 @@ export const ExcuseTeacher = ({
   const { date, reason } = absence;
 
   const utils = api.useUtils();
-  const excuseMutation = api.students.absences.excuseTeacher.useMutation({
+  const excuseMutation = useIngest("absence.teacherApproved", {
     onSuccess: async () => {
       await utils.students.absences.invalidate();
       router.back();

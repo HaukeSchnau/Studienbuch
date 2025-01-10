@@ -1,21 +1,23 @@
 import { trpcServer } from "@hono/trpc-server";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { apiReference } from "@scalar/hono-api-reference";
-import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
-import { stream, streamSSE, streamText } from "hono/streaming";
+import { streamSSE } from "hono/streaming";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import pino from "pino";
 import rabbit from "rabbitmq-stream-js-client";
+import superjson from "superjson";
 
 import {
   appRouter,
   createTRPCContext,
   ensureStream,
   getSession,
+  ingest,
   rabbitMqClientPromise,
 } from "@stu/api";
+import { Event } from "@stu/lib";
 import { getSessionTokenFromHeaders } from "@stu/lib-server";
 
 import { env } from "./env";
@@ -118,21 +120,56 @@ export const createBase = (basePath: string) => {
               ? rabbit.Offset.offset(BigInt(offset))
               : rabbit.Offset.first(),
         },
-        async (message) => {
+        (message) => {
           console.log(`Received message ${message.content.toString()}`);
-          await stream.writeSSE({
+          void stream.writeSSE({
             data: message.content.toString(),
           });
         },
       );
 
-      stream.onAbort(() => {
-        consumer.close(true);
+      stream.onAbort(async () => {
+        await consumer.close(true);
       });
 
-      // Never close the stream
-      await new Promise(() => {});
+      await new Promise(() => {
+        // Keep the stream open indefinitely
+      });
     });
+  });
+
+  app.post("/events", async (c) => {
+    const sessionToken = getSessionTokenFromHeaders(
+      new Headers(c.req.header()),
+    );
+    if (!sessionToken) {
+      c.status(401);
+      return c.text("Unauthorized");
+    }
+
+    const session = await getSession(sessionToken);
+    if (!session) {
+      c.status(401);
+      return c.text("Unauthorized");
+    }
+
+    const bodyRaw = await c.req.text();
+    const eventJson = superjson.parse(bodyRaw);
+    const event = Event.safeParse(eventJson);
+
+    if (!event.success) {
+      c.status(400);
+      return c.text("Invalid event");
+    }
+
+    const res = await ingest(event.data.type, event.data, session.user.id);
+
+    if (res !== undefined) {
+      c.status(400);
+      return c.text("Failed to ingest event");
+    }
+
+    return c.text("Event ingested");
   });
 
   return app;

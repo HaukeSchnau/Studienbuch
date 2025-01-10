@@ -13,12 +13,14 @@ import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { useIngest } from "~/utils/ingest";
 
 export const ConfirmWrittenGradeTeacher = ({ grade }: { grade: Grade }) => {
   const { user } = useRequiredAuthenticatedSession();
   const utils = api.useUtils();
   const router = useRouter();
-  const confirmMutation = api.students.grades.confirmTeacher.useMutation({
+
+  const confirmMutation = useIngest("grades.teacherApproved", {
     onSuccess: async () => {
       await utils.students.grades.invalidate();
       router.back();

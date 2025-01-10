@@ -12,7 +12,7 @@ export const useRequiredAuthenticatedSession = () => {
     throw new Error("Session is required");
   }
 
-  return { ...session, user };
+  return { userId: session.user, token: session.token, user };
 };
 
 export const useLicenseKey = () => {
@@ -23,7 +23,7 @@ export const useLicenseKey = () => {
 export const useSession = () => {
   const [session] = useStorage("auth.session");
   const [user] = useStorage("user");
-  return session ? { ...session, user } : null;
+  return session ? { userId: session.user, token: session.token, user } : null;
 };
 
 export const useSessionWatcher = () => {

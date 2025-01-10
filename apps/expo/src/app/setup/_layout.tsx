@@ -10,11 +10,14 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Crypto from "expo-crypto";
 import { Image } from "expo-image";
 import { router, Slot, Stack, usePathname } from "expo-router";
 import { openBrowserAsync } from "expo-web-browser";
 import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
+
+import { Result } from "@stu/lib";
 
 import type { SetupForm } from "~/features/setup/form";
 import { shadow } from "~/components/styles/shadow";
@@ -22,18 +25,12 @@ import { Text } from "~/components/text";
 import { FormContext } from "~/features/setup/form";
 import { api } from "~/utils/api";
 import { useLicenseKey, useSession } from "~/utils/auth";
+import { ingest } from "~/utils/ingest";
 import { setStorage } from "~/utils/storage";
 import logoImage from "../../../assets/icon.png";
 
-export default function HomeLayout() {
-  const { height } = useAnimatedKeyboard();
-  const animatedStyle = useAnimatedStyle(() => ({
-    paddingBottom: height.value,
-  }));
-
-  const activateLicenseKey = api.auth.activateLicenseKey.useMutation();
+const useSetupForm = () => {
   const login = api.auth.loginWithLicenseKey.useMutation();
-  const joinCourses = api.students.courses.join.useMutation();
 
   const semester = api.schools.semesters.getCurrent.useQuery();
 
@@ -42,8 +39,9 @@ export default function HomeLayout() {
   const session = useSession();
   const licenseKey = useLicenseKey();
 
-  const form = useForm<SetupForm, ReturnType<typeof zodValidator>>({
+  return useForm<SetupForm, ReturnType<typeof zodValidator>>({
     defaultValues: {
+      userId: session?.userId ?? "",
       licenseKey: licenseKey ?? "",
       name: session?.user?.name ?? "",
       isOfAge: session?.user?.isOfAge ?? false,
@@ -57,10 +55,17 @@ export default function HomeLayout() {
         return; // TODO: show error
       }
 
-      await activateLicenseKey.mutateAsync({
+      const userId = Crypto.randomUUID();
+
+      const activationResult = await ingest("auth.licenseActivated", userId, {
         licenseKey: value.licenseKey,
-        name: value.name,
+        userId,
       });
+      if (Result.isErr(activationResult)) {
+        console.error("ACTIVATION_FAILED", activationResult.error);
+        return;
+      }
+
       const { error, session } = await login.mutateAsync({
         licenseKey: value.licenseKey,
       });
@@ -75,23 +80,40 @@ export default function HomeLayout() {
       await setStorage("auth.licenseKey", value.licenseKey);
       await setStorage("auth.session", session);
 
-      await joinCourses.mutateAsync({
-        school: "igs-lil",
-        semesterType: semester.data.type,
-        semesterYear: semester.data.year,
-        courseIds: Object.values(value.chosenCourses)
-          .filter(Boolean)
-          .map((course) => course.id),
-        classIdentifier: value.class.identifierInYear,
-        startYear: value.class.startYear,
+      await ingest("student.joined", userId, {
+        class: {
+          identifier: value.class.identifierInYear,
+          startYear: value.class.startYear,
+        },
         isOfAge: value.isOfAge,
+        name: value.name,
+        school: "igs-lil",
+        studentId: userId,
       });
+
+      for (const courseId of Object.values(value.chosenCourses)
+        .filter(Boolean)
+        .map((course) => course.id)) {
+        await ingest("student.courseAssigned", userId, {
+          courseId,
+          studentId: userId,
+        });
+      }
 
       await utils.invalidate();
 
       router.replace("/");
     },
   });
+};
+
+export default function SetupLayout() {
+  const { height } = useAnimatedKeyboard();
+  const animatedStyle = useAnimatedStyle(() => ({
+    paddingBottom: height.value,
+  }));
+
+  const form = useSetupForm();
 
   const pathname = usePathname();
   useEffect(() => {

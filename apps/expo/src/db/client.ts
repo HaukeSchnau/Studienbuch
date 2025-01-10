@@ -1,4 +1,4 @@
-import { openDatabaseSync } from "expo-sqlite";
+import { deleteDatabaseSync, openDatabaseSync } from "expo-sqlite";
 import { drizzle } from "drizzle-orm/expo-sqlite";
 
 import * as schema from "@stu/student/schema";

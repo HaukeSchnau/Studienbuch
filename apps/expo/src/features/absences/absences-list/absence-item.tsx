@@ -11,6 +11,7 @@ import { ConfirmationStatus } from "~/components/confirmation-status";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { useIngest } from "~/utils/ingest";
 
 interface AbsenceViewProps {
   absenceGroup: AbsenceItemType;
@@ -21,7 +22,7 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
     absenceGroup.isExcusedByTeacher && absenceGroup.isExcusedByParent;
   const { user } = useRequiredAuthenticatedSession();
   const utils = api.useUtils();
-  const deleteMutation = api.students.absences.delete.useMutation({
+  const deleteMutation = useIngest("absence.discarded", {
     onSuccess: async () => {
       await utils.students.absences.invalidate();
     },

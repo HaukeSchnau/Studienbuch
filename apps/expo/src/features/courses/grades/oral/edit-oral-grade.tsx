@@ -8,6 +8,7 @@ import { Divider } from "~/components/divider";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
 import { api } from "~/utils/api";
+import { useIngest } from "~/utils/ingest";
 import { GradeCard } from "../grade-card";
 
 export const EditOralGrade = ({
@@ -20,14 +21,14 @@ export const EditOralGrade = ({
   mostRecentConfirmedOralGrade: Grade | null;
 }) => {
   const utils = api.useUtils();
-  const upsertMutation = api.students.grades.upsert.useMutation({
+  const upsertMutation = useIngest("grades.currentGradeSet", {
     onSuccess: async () => {
       await utils.students.grades.invalidate();
       onClose();
     },
   });
 
-  const restoreMutation = api.students.grades.restore.useMutation({
+  const restoreMutation = useIngest("grades.latestRestored", {
     onSuccess: async () => {
       await utils.students.grades.invalidate();
       onClose();
@@ -73,7 +74,6 @@ export const EditOralGrade = ({
               onClick: () =>
                 restoreMutation.mutate({
                   course: courseId,
-                  date: mostRecentConfirmedOralGrade.date,
                   type: "ORAL",
                 }),
             }}

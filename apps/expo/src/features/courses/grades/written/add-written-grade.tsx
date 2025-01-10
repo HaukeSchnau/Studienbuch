@@ -7,6 +7,7 @@ import { DateField } from "~/components/date-field";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
 import { api } from "~/utils/api";
+import { useIngest } from "~/utils/ingest";
 
 export const AddWrittenGrade = ({
   courseId,
@@ -16,7 +17,7 @@ export const AddWrittenGrade = ({
   onClose: () => void;
 }) => {
   const utils = api.useUtils();
-  const addMutation = api.students.grades.addWritten.useMutation({
+  const addMutation = useIngest("grades.writtenGradeRecorded", {
     onSuccess: async () => {
       await utils.students.grades.invalidate();
       onClose();

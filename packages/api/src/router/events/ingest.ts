@@ -1,24 +1,16 @@
 import { drizzle } from "drizzle-orm/libsql";
 
-import type {
-  Event,
-  EventApplicatorInterface,
-  EventName,
-  ServerEventApplicator,
-} from "@stu/lib";
+import type { Event, EventApplicatorInterface } from "@stu/lib";
 import { eventApplicator as systemApplicator } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
 import { EventApplicator as StudentEventApplicator } from "@stu/student";
 import * as studentSchema from "@stu/student/schema";
 
+import type { RabbitMQClient } from "../../rabbitmq";
 import { SYSTEM_USER } from "../../constants";
 import { createNamespace, createNamespaceClient } from "../../libsql";
-import {
-  ensureStream,
-  RabbitMQClient,
-  rabbitMqClientPromise,
-} from "../../rabbitmq";
+import { ensureStream, rabbitMqClientPromise } from "../../rabbitmq";
 import { serverApplicators } from "../../server-applicators";
 
 const buildStudentApplicator = async (
@@ -66,7 +58,7 @@ const publishEvent = async (
   const publisher = await rabbitMqClient.declarePublisher({
     stream: streamName,
   });
-  const { initator, ...publicEvent } = persistedEvent;
+  const { initator: _, ...publicEvent } = persistedEvent;
 
   await publisher.basicSend(
     BigInt(persistedEvent.order),
@@ -105,9 +97,7 @@ export const ingest = async <TEventName extends Event["type"]>(
     type: eventName,
   } as Omit<Extract<Event, { type: TEventName }>, "errors">;
 
-  const serverApplicator = serverApplicators[eventName] as
-    | ServerEventApplicator<TEventName>
-    | undefined;
+  const serverApplicator = serverApplicators[eventName];
 
   const recipientIds = new Set(
     await serverApplicator?.recipients?.(eventDataWithName, context),
