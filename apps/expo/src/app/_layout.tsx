@@ -1,6 +1,4 @@
-import "@bacons/text-decoder/install";
-
-import { Stack, useNavigationContainerRef } from "expo-router";
+import { Stack } from "expo-router";
 
 import { TRPCProvider } from "~/utils/api";
 
@@ -20,7 +18,6 @@ import {
   Nunito_700Bold,
   useFonts,
 } from "@expo-google-fonts/nunito";
-import { init, reactNavigationIntegration, wrap } from "@sentry/react-native";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 
 import { colors } from "@stu/tailwind-config/native";
@@ -37,25 +34,6 @@ const DevTools = lazy(() =>
   })),
 );
 
-const routingInstrumentation = reactNavigationIntegration({
-  enableTimeToInitialDisplay: Constants.appOwnership !== AppOwnership.Expo, // Only in native builds, not in Expo Go.
-});
-
-init({
-  dsn: __DEV__
-    ? "https://2a803fff45e5c6604fb7742583d0acbc@o1058251.ingest.us.sentry.io/4508083332382720"
-    : "https://d950b351307f4e39b529fe22cff83ecb@o1058251.ingest.us.sentry.io/4508059227258880",
-
-  // enableSpotlight: __DEV__,
-
-  integrations: [
-    // Sentry.reactNativeTracingIntegration({
-    //   routingInstrumentation,
-    //   enableNativeFramesTracking: Constants.appOwnership !== AppOwnership.Expo, // Only in native builds, not in Expo Go.
-    // }),
-  ],
-});
-
 void SplashScreen.preventAutoHideAsync();
 
 if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -63,11 +41,6 @@ if (UIManager.setLayoutAnimationEnabledExperimental) {
 }
 
 function RootLayout() {
-  const ref = useNavigationContainerRef();
-  useEffect(() => {
-    routingInstrumentation.registerNavigationContainer(ref);
-  }, [ref]);
-
   const { success: migrationSuccess, error: migrationError } = useMigrations(
     db,
     migrations,
@@ -133,7 +106,7 @@ const RootLayoutWrapper = () => {
   );
 };
 
-export default wrap(RootLayoutWrapper);
+export default RootLayoutWrapper;
 
 const Providers = ({ children }: { children: ReactNode }) => {
   return <TRPCProvider>{children}</TRPCProvider>;

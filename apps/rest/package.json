@@ -9,11 +9,10 @@
   "license": "MIT",
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "dev": "pnpm with-env tsx watch src/bin/http.ts",
+    "dev": "tsx src/bin/http.ts",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
-    "with-env": "dotenv -e ../../.env --"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@axiomhq/js": "^1.1.0",
@@ -23,6 +22,8 @@
     "@hono/zod-openapi": "^0.16.4",
     "@scalar/hono-api-reference": "^0.5.154",
     "@stu/api": "workspace:*",
+    "@stu/db": "workspace:^",
+    "@stu/lib": "workspace:^",
     "@stu/lib-server": "workspace:^",
     "@t3-oss/env-nextjs": "^0.11.1",
     "@trpc/server": "^11.0.0-rc.477",

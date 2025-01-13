@@ -65,7 +65,8 @@
     "PORT",
     "BASE_URL",
     "NEXT_PUBLIC_DEPLOYMENT_ENV",
-    "SKIP_ENV_VALIDATION"
+    "SKIP_ENV_VALIDATION",
+    "API_PORT"
   ],
   "globalPassThroughEnv": [
     "NODE_ENV",

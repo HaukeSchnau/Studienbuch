@@ -42,7 +42,7 @@
     "use-immer": "^0.10.0",
     "uuid": "^11.0.2",
     "zod": "^3.23.8",
-    "zustand": "5.0.0"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.0.1",
@@ -59,7 +59,7 @@
     "@stu/tsconfig": "workspace:*",
     "@tanstack/react-query-devtools": "^5.59.13",
     "@types/node": "^22.9.0",
-    "@types/react": "^18.3.12",
+    "@types/react": "~18.3.12",
     "@types/react-dom": "^18.3.1",
     "dotenv-cli": "^7.4.2",
     "eslint": "^9.12.0",

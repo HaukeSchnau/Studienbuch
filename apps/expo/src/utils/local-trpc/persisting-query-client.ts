@@ -31,8 +31,13 @@ export const MutationManager = ({
         if (abortSignal.signal.aborted) {
           return;
         }
-        const input = superjson.parse(mut.data);
-        const event = Event.safeParse(input);
+        const data = superjson.parse(mut.data);
+        const event = Event.safeParse({
+          type: mut.type,
+          data,
+          id: mut.id,
+          timestamp: mut.timestamp,
+        });
 
         if (!event.success) {
           console.error("error parsing event", mut, event.error);
@@ -46,7 +51,7 @@ export const MutationManager = ({
         try {
           const res = await publishEvent(event.data);
 
-          if (res.status !== 200) {
+          if (res.status !== 200 && res.status !== 409) {
             console.error("error publishing event", mut, res);
             await db
               .update(tables.events)

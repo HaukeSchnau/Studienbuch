@@ -1,6 +1,5 @@
 #!/bin/bash
 
 set -eau
-. .env
 
 pnpm exec tsx apps/console/src/console.ts "$@"

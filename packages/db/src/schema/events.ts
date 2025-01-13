@@ -40,9 +40,7 @@ export const eventsToEntities = pgTable(
     event: uuid()
       .notNull()
       .references(() => events.id),
-    entity: uuid()
-      .notNull()
-      .references(() => entities.id),
+    entity: uuid().notNull(),
   },
   (table) => [
     {
@@ -52,11 +50,3 @@ export const eventsToEntities = pgTable(
     },
   ],
 );
-
-const ENTITY_TYPES = ["absence"] as const;
-export const entityType = pgEnum("entity_type", ENTITY_TYPES);
-
-export const entities = pgTable("entities", {
-  id: uuid().primaryKey(),
-  type: entityType().notNull(),
-});

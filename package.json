@@ -22,7 +22,7 @@
     "dev": "turbo watch dev dev:internal",
     "dev:internal": "turbo watch dev:internal",
     "dev:next": "turbo watch dev dev:internal -F @stu/nextjs...",
-    "dev:mobile": "turbo watch dev dev:internal -F @stu/rest... -F @stu/expo... --ui=tui",
+    "dev:mobile": "turbo watch dev dev:internal -F @stu/rest... -F @stu/mobile... --ui=tui",
     "format": "turbo run format --continue -- --cache --cache-location .cache/.prettiercache",
     "format:fix": "turbo run format --continue -- --write --cache --cache-location .cache/.prettiercache",
     "lint": "turbo run lint --continue -- --cache --cache-location .cache/.eslintcache",
@@ -50,7 +50,6 @@
   "prettier": "@stu/prettier-config",
   "pnpm": {
     "patchedDependencies": {
-      "expo-module-scripts": "patches/expo-module-scripts.patch",
       "drizzle-kit": "patches/drizzle-kit.patch"
     }
   }

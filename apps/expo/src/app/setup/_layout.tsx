@@ -30,6 +30,7 @@ import { setStorage } from "~/utils/storage";
 import logoImage from "../../../assets/icon.png";
 
 const useSetupForm = () => {
+  const activateLicenseKey = api.auth.activateLicenseKey.useMutation();
   const login = api.auth.loginWithLicenseKey.useMutation();
 
   const semester = api.schools.semesters.getCurrent.useQuery();
@@ -55,16 +56,9 @@ const useSetupForm = () => {
         return; // TODO: show error
       }
 
-      const userId = Crypto.randomUUID();
-
-      const activationResult = await ingest("auth.licenseActivated", userId, {
+      const { userId } = await activateLicenseKey.mutateAsync({
         licenseKey: value.licenseKey,
-        userId,
       });
-      if (Result.isErr(activationResult)) {
-        console.error("ACTIVATION_FAILED", activationResult.error);
-        return;
-      }
 
       const { error, session } = await login.mutateAsync({
         licenseKey: value.licenseKey,

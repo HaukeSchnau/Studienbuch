@@ -17,6 +17,9 @@ import {
   ingest,
   rabbitMqClientPromise,
 } from "@stu/api";
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import * as tables from "@stu/db/schema";
 import { Event } from "@stu/lib";
 import { getSessionTokenFromHeaders } from "@stu/lib-server";
 
@@ -160,6 +163,16 @@ export const createBase = (basePath: string) => {
     if (!event.success) {
       c.status(400);
       return c.text("Invalid event");
+    }
+
+    const existingEvent = await db
+      .select()
+      .from(tables.events)
+      .where(eq(tables.events.id, event.data.id));
+
+    if (existingEvent.length > 0) {
+      c.status(409);
+      return c.text("Event already exists");
     }
 
     const res = await ingest(event.data.type, event.data, session.user.id);

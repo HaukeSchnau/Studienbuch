@@ -295,10 +295,14 @@ export interface ServerEventApplicator<TEventName extends Event["type"]> {
     event: Omit<Extract<Event, { type: TEventName }>, "errors">,
     extra: BaseExtra,
   ) => Promise<string[]>; // Returns user IDs
-  related?: (
+  relatedEvents?: (
     event: Omit<Extract<Event, { type: TEventName }>, "errors">,
     extra: BaseExtra,
   ) => Promise<PersistedEvent[]>;
+  entities?: (
+    event: Omit<Extract<Event, { type: TEventName }>, "errors">,
+    extra: BaseExtra,
+  ) => Promise<string[]>; // Returns entity IDs
 }
 
 export const NAMESPACES = [
@@ -330,7 +334,7 @@ export interface EventApplicatorInterface {
 }
 
 export type ServerEventApplicators = {
-  [TEventName in Event["type"]]?: ServerEventApplicator<TEventName>;
+  [TEventName in Event["type"]]: ServerEventApplicator<TEventName>;
 };
 
 export type EventErrorsByName<TEventName extends Event["type"]> =

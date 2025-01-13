@@ -1,12 +1,11 @@
+const { getDefaultConfig } = require("@expo/metro-config");
 const { FileStore } = require("metro-cache");
 const { withNativeWind } = require("nativewind/metro");
 const path = require("path");
 
-const { getSentryExpoConfig } = require("@sentry/react-native/metro");
-
 const config = withTurborepoManagedCache(
   withMonorepoPaths(
-    withNativeWind(getSentryExpoConfig(__dirname), {
+    withNativeWind(getDefaultConfig(__dirname), {
       input: "./src/app/styles.css",
       configPath: "./tailwind.config.ts",
     }),

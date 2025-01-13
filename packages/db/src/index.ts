@@ -8,6 +8,7 @@ import type {
 } from "@stu/lib";
 import { NAMESPACES } from "@stu/lib";
 
+import { authApplicators } from "./event-handlers/auth";
 import { orgApplicators } from "./event-handlers/org";
 import { studentApplicators } from "./event-handlers/student";
 
@@ -19,6 +20,7 @@ type Extra = unknown;
 const applicators: EventApplicators<Extra> = {
   org: orgApplicators,
   student: studentApplicators,
+  auth: authApplicators,
 };
 
 function findApplicator<TEvent extends Event>(event: Omit<TEvent, "errors">) {

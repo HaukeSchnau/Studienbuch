@@ -100,7 +100,7 @@ export const ingest = async <TEventName extends Event["type"]>(
   const serverApplicator = serverApplicators[eventName];
 
   const recipientIds = new Set(
-    await serverApplicator?.recipients?.(eventDataWithName, context),
+    await serverApplicator.recipients?.(eventDataWithName, context),
   );
   recipientIds.add(SYSTEM_USER);
   recipientIds.add(initiatorUserId);
@@ -139,6 +139,18 @@ export const ingest = async <TEventName extends Event["type"]>(
       initator: initiatorUserId,
     })
     .returning();
+  const entityIds = await serverApplicator.entities?.(eventDataWithName, {
+    initiatorUserId,
+  });
+  if (entityIds?.length) {
+    await db.insert(tables.eventsToEntities).values(
+      entityIds.map((entityId) => ({
+        event: eventData.id,
+        entity: entityId,
+      })),
+    );
+  }
+
   if (!persistedEvent) {
     throw new Error("Could not persist event");
   }

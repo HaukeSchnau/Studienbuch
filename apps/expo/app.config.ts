@@ -53,22 +53,5 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         ],
       },
     ],
-    [
-      "expo-build-properties",
-      {
-        ios: {
-          deploymentTarget: "15.1",
-        },
-        android: {},
-      },
-    ],
-    [
-      "@sentry/react-native/expo",
-      {
-        url: "https://sentry.io/",
-        project: "studienbuch-mobile",
-        organization: "hauke-schnau",
-      },
-    ],
   ],
 });

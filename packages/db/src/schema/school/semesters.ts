@@ -60,7 +60,7 @@ export const holidays = pgTable(
   (table) => {
     return {
       pk: primaryKey({
-        columns: [table.name, table.start, table.end, table.state, table.year],
+        columns: [table.name, table.state, table.year],
       }),
     };
   },
