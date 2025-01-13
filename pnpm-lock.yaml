@@ -312,9 +312,6 @@ importers:
       '@stu/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@types/jest':
-        specifier: ^29.5.12
-        version: 29.5.14
       '@types/react':
         specifier: ~18.3.12
         version: 18.3.18
@@ -469,9 +466,6 @@ importers:
       '@types/react-dom':
         specifier: ^18.3.1
         version: 18.3.5(@types/react@18.3.18)
-      dotenv-cli:
-        specifier: ^7.4.2
-        version: 7.4.4
       eslint:
         specifier: ^9.12.0
         version: 9.17.0(jiti@2.4.2)
@@ -679,9 +673,6 @@ importers:
       '@types/pg':
         specifier: ^8.11.10
         version: 8.11.10
-      dotenv-cli:
-        specifier: ^7.4.2
-        version: 7.4.4
       drizzle-kit:
         specifier: ^0.28.1
         version: 0.28.1(patch_hash=7qi5kn6kltsjrsjmebvjmv4yre)
@@ -937,9 +928,6 @@ importers:
       '@types/pg':
         specifier: ^8.11.10
         version: 8.11.10
-      dotenv-cli:
-        specifier: ^7.4.2
-        version: 7.4.4
       drizzle-kit:
         specifier: ^0.28.1
         version: 0.28.1(patch_hash=7qi5kn6kltsjrsjmebvjmv4yre)
@@ -5665,14 +5653,6 @@ packages:
 
   dot-case@3.0.4:
     resolution: {integrity: sha512-Kv5nKlh6yRrdrGvxeJ2e5y2eRUpkUosIW4A2AS38zwSz27zu7ufDwQPi5Jhs3XAlGNetl3bmnGhQsMtkKJnj3w==}
-
-  dotenv-cli@7.4.4:
-    resolution: {integrity: sha512-XkBYCG0tPIes+YZr4SpfFv76SQrV/LeCE8CI7JSEMi3VR9MvTihCGTOtbIexD6i2mXF+6px7trb1imVCXSNMDw==}
-    hasBin: true
-
-  dotenv-expand@10.0.0:
-    resolution: {integrity: sha512-GopVGCpVS1UKH75VKHGuQFqS1Gusej0z4FyQkPdwjil2gNIv+LNsqBlboOzpJFZKVT95GkCyWJbBSdFEFUWI2A==}
-    engines: {node: '>=12'}
 
   dotenv-expand@11.0.7:
     resolution: {integrity: sha512-zIHwmZPRshsCdpMDyVsqGmgyP0yT8GAgXUnkdAoJisxvf33k7yO6OuoKmcTGuXPWSsm8Oh88nZicRLA9Y0rUeA==}
@@ -16290,15 +16270,6 @@ snapshots:
     dependencies:
       no-case: 3.0.4
       tslib: 2.8.1
-
-  dotenv-cli@7.4.4:
-    dependencies:
-      cross-spawn: 7.0.6
-      dotenv: 16.4.7
-      dotenv-expand: 10.0.0
-      minimist: 1.2.8
-
-  dotenv-expand@10.0.0: {}
 
   dotenv-expand@11.0.7:
     dependencies:
