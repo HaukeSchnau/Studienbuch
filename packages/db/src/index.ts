@@ -13,6 +13,7 @@ import { orgApplicators } from "./event-handlers/org";
 import { studentApplicators } from "./event-handlers/student";
 
 export * from "drizzle-orm/sql";
+
 export { alias } from "drizzle-orm/pg-core";
 
 type Extra = unknown;

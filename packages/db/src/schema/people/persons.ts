@@ -18,7 +18,8 @@ export const Salutation = pgEnum("salutation", SALUTATIONS);
 
 export const Persons = pgTable("persons", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
-  name: text("name").notNull(),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
   salutation: Salutation("salutation"),
   abbrv: text("abbrv").unique(),
   email: text("email").unique(),

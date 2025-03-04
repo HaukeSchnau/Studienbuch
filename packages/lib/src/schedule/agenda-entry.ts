@@ -11,7 +11,8 @@ export interface AgendaEntry {
     subject: SubjectId;
     teachers: {
       id: string;
-      name: string;
+      firstName: string;
+      lastName: string;
       abbrv: string | null;
       salutation: Salutation | null;
     }[];
@@ -20,7 +21,8 @@ export interface AgendaEntry {
     type: SubstitutionType | null;
     substitute: {
       id: string;
-      name: string;
+      firstName: string;
+      lastName: string;
       abbrv: string | null;
       salutation: Salutation | null;
     } | null;

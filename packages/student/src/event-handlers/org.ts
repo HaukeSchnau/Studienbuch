@@ -146,8 +146,8 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
         longName: data.longName,
         subject: data.subject,
         school: data.school,
-        semesterType: data.semesterType,
-        semesterYear: data.semesterYear,
+        semesterType: data.semester.type,
+        semesterYear: data.semester.year,
         isMandatory: data.isMandatory,
         isMember: false,
       });

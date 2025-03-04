@@ -6,8 +6,6 @@ import { isArraySingleElement } from "@stu/lib";
 import { db } from "../client";
 import * as tables from "../schema";
 
-const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
-
 export const studentApplicators: NamespaceEventApplicators<"student", unknown> =
   {
     joined: {
@@ -47,16 +45,21 @@ export const studentApplicators: NamespaceEventApplicators<"student", unknown> =
         if (!cls) return "INVALID_CLASS";
       },
       apply: async ({ data }) => {
+        const [firstName, ...lastNameParts] = data.name.split(" ");
+        const lastName = lastNameParts.join(" ");
+
         await db
           .insert(tables.Persons)
           .values({
             id: data.studentId,
-            name: data.name,
+            firstName: firstName ?? "",
+            lastName,
           })
           .onConflictDoUpdate({
             target: [tables.Persons.id],
             set: {
-              name: data.name,
+              firstName: firstName ?? "",
+              lastName,
             },
           });
 

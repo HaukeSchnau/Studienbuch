@@ -162,8 +162,10 @@ const DomainEvent = discriminatedUnion("type", [
       subject: z.enum(SUBJECT_IDS),
       isMandatory: boolean(),
       school: z.enum(SCHOOL_IDS),
-      semesterType: z.enum(SEMESTER_TYPES),
-      semesterYear: number(),
+      semester: object({
+        type: z.enum(SEMESTER_TYPES),
+        year: number().int().min(2000).max(2100),
+      }),
       classes: array(
         object({
           identifierInYear: string(),

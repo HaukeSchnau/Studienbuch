@@ -1,14 +1,24 @@
+import type { Class } from "../classes";
 import type { Salutation } from "../users";
 import type { SubjectId } from "./subject";
 
 export interface Course {
   id: string;
   name: string;
+  longName: string;
   subject: SubjectId;
   isMandatory: boolean;
+}
+
+export interface WithClasses {
+  classes: Class[];
+}
+
+export interface WithTeachers {
   teachers: {
     id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     abbrv: string | null;
     salutation: Salutation | null;
   }[];

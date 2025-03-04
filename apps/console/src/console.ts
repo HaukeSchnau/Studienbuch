@@ -144,7 +144,8 @@ program
   .action(async (username, email, password) => {
     logger.info(`Creating user "${username}"...`);
     await createUser({
-      name: username,
+      firstName: username,
+      lastName: username,
       email,
       password,
     });
