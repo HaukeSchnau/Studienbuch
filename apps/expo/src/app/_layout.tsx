@@ -8,7 +8,6 @@ import type { ReactNode } from "react";
 import { lazy, useEffect } from "react";
 import { UIManager } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Constants, { AppOwnership } from "expo-constants";
 import * as SplashScreen from "expo-splash-screen";
 import {
   Nunito_400Regular,

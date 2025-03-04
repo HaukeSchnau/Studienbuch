@@ -8,8 +8,9 @@ export const logger = t.middleware(async ({ ctx, next, path, type }) => {
   const durationMs = performance.now() - start;
   const meta = { path, type, durationMs };
 
-  ctx.log.info("tRPC", { trpc: meta });
-  await ctx.log.flush();
+  // TODO reactivate
+  // ctx.log.info("tRPC", { trpc: meta });
+  // await ctx.log.flush();
 
   return result;
 });

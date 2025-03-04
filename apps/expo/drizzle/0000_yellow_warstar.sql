@@ -9,6 +9,16 @@ CREATE TABLE `persons` (
 --> statement-breakpoint
 CREATE UNIQUE INDEX `persons_abbrv_unique` ON `persons` (`abbrv`);--> statement-breakpoint
 CREATE UNIQUE INDEX `persons_email_unique` ON `persons` (`email`);--> statement-breakpoint
+CREATE TABLE `students` (
+	`person` text PRIMARY KEY NOT NULL,
+	`is_of_age` integer,
+	`class_identifier` text NOT NULL,
+	`start_year` integer NOT NULL,
+	`school` text NOT NULL,
+	FOREIGN KEY (`person`) REFERENCES `persons`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`class_identifier`,`start_year`,`school`) REFERENCES `classes`(`identifier_in_year`,`start_year`,`school`) ON UPDATE cascade ON DELETE restrict
+);
+--> statement-breakpoint
 CREATE TABLE `classes` (
 	`identifier_in_year` text NOT NULL,
 	`start_year` integer NOT NULL,
@@ -82,6 +92,16 @@ CREATE TABLE `semesters` (
 	`year` integer NOT NULL,
 	PRIMARY KEY(`school`, `type`, `year`),
 	FOREIGN KEY (`school`) REFERENCES `schools`(`id`) ON UPDATE cascade ON DELETE restrict
+);
+--> statement-breakpoint
+CREATE TABLE `year_semesters` (
+	`school` text NOT NULL,
+	`start_year` integer NOT NULL,
+	`semester_year` integer NOT NULL,
+	`semester_type` text NOT NULL,
+	PRIMARY KEY(`school`, `start_year`, `semester_year`, `semester_type`),
+	FOREIGN KEY (`school`,`start_year`) REFERENCES `years`(`school`,`start_year`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`school`,`semester_year`,`semester_type`) REFERENCES `semesters`(`school`,`year`,`type`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
 CREATE TABLE `years` (
@@ -177,26 +197,12 @@ CREATE TABLE `recurring_timetable_entries` (
 	FOREIGN KEY (`course`) REFERENCES `courses`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `entities` (
-	`id` text PRIMARY KEY NOT NULL,
-	`type` text NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE `events` (
-	`order` integer PRIMARY KEY NOT NULL,
-	`id` text NOT NULL,
+	`id` text PRIMARY KEY NOT NULL,
 	`type` text NOT NULL,
 	`data` text NOT NULL,
 	`timestamp` integer NOT NULL,
-	`status` text NOT NULL
-);
---> statement-breakpoint
-CREATE UNIQUE INDEX `events_id_unique` ON `events` (`id`);--> statement-breakpoint
-CREATE INDEX `id_idx` ON `events` (`id`);--> statement-breakpoint
-CREATE TABLE `events_to_entities` (
-	`event` text NOT NULL,
-	`entity` text NOT NULL,
-	PRIMARY KEY(`entity`, `event`),
-	FOREIGN KEY (`event`) REFERENCES `events`(`id`) ON UPDATE no action ON DELETE no action,
-	FOREIGN KEY (`entity`) REFERENCES `entities`(`id`) ON UPDATE no action ON DELETE no action
+	`is_published` integer DEFAULT false NOT NULL,
+	`is_applied_locally` integer DEFAULT false NOT NULL,
+	`is_failed` integer DEFAULT false NOT NULL
 );

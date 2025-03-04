@@ -1,6 +1,13 @@
 import { createContext, useContext } from "react";
 
-import type { Class, Course, SubjectId, Year } from "@stu/lib";
+import type {
+  Class,
+  Course,
+  SubjectId,
+  WithClasses,
+  WithTeachers,
+  Year,
+} from "@stu/lib";
 
 import type {
   CombinedForm,
@@ -22,7 +29,7 @@ type Steps = [
   },
   {
     class?: Class;
-    chosenCourses: Partial<Record<SubjectId, Course | undefined>>;
+    chosenCourses: Partial<Record<SubjectId, Course & WithTeachers>>;
   },
 ];
 const stepsKeys = [

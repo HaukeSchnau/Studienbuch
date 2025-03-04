@@ -11,10 +11,6 @@ const schemas = {
       token: z.string(),
     })
     .nullable(),
-  user: z.object({
-    name: z.string(),
-    isOfAge: z.boolean(),
-  }),
   "auth.licenseKey": z.string(),
 } as const satisfies Record<string, ZodSchema>;
 

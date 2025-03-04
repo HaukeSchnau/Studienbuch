@@ -16,7 +16,7 @@ const PersonsSchema = createInsertSchema(Persons);
 export const persons = {
   list: editUsersProcedure.query(async () => {
     return await db.query.Persons.findMany({
-      orderBy: asc(Persons.name),
+      orderBy: [asc(Persons.lastName), asc(Persons.firstName)],
     });
   }),
 
@@ -36,7 +36,8 @@ export const persons = {
   add: editUsersProcedure
     .input(
       z.object({
-        name: z.string(),
+        firstName: z.string(),
+        lastName: z.string(),
         email: z.string().optional(),
         salutation: z.enum(SALUTATIONS).optional(),
         abbrv: z.string().optional(),
@@ -44,7 +45,8 @@ export const persons = {
     )
     .mutation(async ({ input }) =>
       db.insert(Persons).values({
-        name: input.name,
+        firstName: input.firstName,
+        lastName: input.lastName,
         email: input.email,
         salutation: input.salutation,
         abbrv: input.abbrv,

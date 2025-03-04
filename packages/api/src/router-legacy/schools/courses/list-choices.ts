@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { Salutation, SubjectId } from "@stu/lib";
+import type { Course, WithTeachers } from "@stu/lib";
 import { and, eq, gte, lte } from "@stu/db";
 import { db } from "@stu/db/client";
 import {
@@ -18,19 +18,39 @@ import { publicProcedure } from "../../../procedures";
 export const listChoices = publicProcedure
   .input(
     z.object({
-      school: z.enum(SCHOOL_IDS),
-      startYear: z.number(),
-      identifierInYear: z.string(),
+      class: z.object({
+        identifierInYear: z.string(),
+        startYear: z.number(),
+        school: z.enum(SCHOOL_IDS),
+      }),
+      semester: z
+        .object({
+          type: z.enum(["SUMMER", "WINTER"]),
+          year: z.number(),
+        })
+        .optional(),
     }),
   )
   .query(async ({ input }) => {
-    const today = new Date();
-    const semester = await db.query.Semesters.findFirst({
-      where: and(lte(Semesters.start, today), gte(Semesters.end, today)),
-    });
-    if (!semester) {
-      throw new Error("No current semester found");
-    }
+    const {
+      class: { identifierInYear, startYear, school },
+    } = input;
+
+    const semester = await (async () => {
+      if (input.semester) {
+        return input.semester;
+      }
+
+      const today = new Date();
+      const semester = await db.query.Semesters.findFirst({
+        where: and(lte(Semesters.start, today), gte(Semesters.end, today)),
+      });
+      if (!semester) {
+        throw new Error("No current semester found");
+      }
+
+      return semester;
+    })();
 
     const rows = await db
       .select()
@@ -57,46 +77,23 @@ export const listChoices = publicProcedure
       .where(
         and(
           eq(Courses.isMandatory, false),
-          eq(Courses.school, input.school),
+          eq(Courses.school, school),
           eq(Courses.semesterYear, semester.year),
           eq(Courses.semesterType, semester.type),
-          eq(Classes.startYear, input.startYear),
-          eq(Classes.identifierInYear, input.identifierInYear),
+          eq(Classes.startYear, startYear),
+          eq(Classes.identifierInYear, identifierInYear),
         ),
       );
 
-    const result = new Map<
-      string,
-      {
-        id: string;
-        name: string;
-        subject: SubjectId;
-        isMandatory: boolean;
-        teachers: {
-          id: string;
-          name: string;
-          abbrv: string | null;
-          salutation: Salutation | null;
-        }[];
-        classes: {
-          identifierInYear: string;
-          startYear: number;
-          school: string;
-        }[];
-        semesterType: "SUMMER" | "WINTER";
-        semesterYear: number;
-      }
-    >();
+    const result = new Map<string, Course & WithTeachers>();
 
     for (const row of rows) {
       if (!result.has(row.courses.id)) {
         result.set(row.courses.id, {
-          classes: [],
           id: row.courses.id,
           isMandatory: row.courses.isMandatory,
+          longName: row.courses.longName,
           name: row.courses.name,
-          semesterType: row.semesters.type,
-          semesterYear: row.semesters.year,
           subject: row.courses.subject,
           teachers: [],
         });
@@ -104,15 +101,11 @@ export const listChoices = publicProcedure
 
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const course = result.get(row.courses.id)!;
-      course.classes.push({
-        identifierInYear: row.classes.identifierInYear,
-        school: row.classes.school,
-        startYear: row.classes.startYear,
-      });
       course.teachers.push({
         abbrv: row.persons.abbrv,
         id: row.persons.id,
-        name: row.persons.name,
+        firstName: row.persons.firstName,
+        lastName: row.persons.lastName,
         salutation: row.persons.salutation,
       });
     }

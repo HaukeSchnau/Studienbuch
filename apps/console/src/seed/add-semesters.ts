@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import type { State } from "@stu/external-api";
 import { ingest, SYSTEM_USER } from "@stu/api";
 import { getHolidays } from "@stu/external-api";
+import { Result } from "@stu/lib";
 
 import { logger } from "../logger";
 
@@ -28,10 +29,12 @@ export const addSemesters = async (state: State) => {
       SYSTEM_USER,
     );
 
-    if (err === "EXISTS") {
-      logger.debug(`Holiday ${holiday.name} already created!`);
-    } else if (err) {
-      logger.error(`Could not ingest holiday created event: ${err}`);
+    if (Result.isErr(err)) {
+      if (err.error === "EXISTS") {
+        logger.debug(`Holiday ${holiday.name} already created!`);
+      } else {
+        logger.error(`Could not ingest holiday created event: ${err}`);
+      }
     } else {
       logger.info(`Holiday ${holiday.name} created!`);
     }

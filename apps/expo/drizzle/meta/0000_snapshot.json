@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "16fd7e3c-2cda-4d36-a03e-80a7e0a47801",
+  "id": "bdbf3705-f83b-4241-b9ef-64a6f3c1db83",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "persons": {
@@ -67,6 +67,82 @@
         }
       },
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "students": {
+      "name": "students",
+      "columns": {
+        "person": {
+          "name": "person",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "is_of_age": {
+          "name": "is_of_age",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "class_identifier": {
+          "name": "class_identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "start_year": {
+          "name": "start_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "school": {
+          "name": "school",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "students_person_persons_id_fk": {
+          "name": "students_person_persons_id_fk",
+          "tableFrom": "students",
+          "tableTo": "persons",
+          "columnsFrom": [
+            "person"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "students_class_identifier_start_year_school_classes_identifier_in_year_start_year_school_fk": {
+          "name": "students_class_identifier_start_year_school_classes_identifier_in_year_start_year_school_fk",
+          "tableFrom": "students",
+          "tableTo": "classes",
+          "columnsFrom": [
+            "class_identifier",
+            "start_year",
+            "school"
+          ],
+          "columnsTo": [
+            "identifier_in_year",
+            "start_year",
+            "school"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -594,6 +670,87 @@
             "year"
           ],
           "name": "semesters_school_type_year_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "year_semesters": {
+      "name": "year_semesters",
+      "columns": {
+        "school": {
+          "name": "school",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "start_year": {
+          "name": "start_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "semester_year": {
+          "name": "semester_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "semester_type": {
+          "name": "semester_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "year_semesters_school_start_year_years_school_start_year_fk": {
+          "name": "year_semesters_school_start_year_years_school_start_year_fk",
+          "tableFrom": "year_semesters",
+          "tableTo": "years",
+          "columnsFrom": [
+            "school",
+            "start_year"
+          ],
+          "columnsTo": [
+            "school",
+            "start_year"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "year_semesters_school_semester_year_semester_type_semesters_school_year_type_fk": {
+          "name": "year_semesters_school_semester_year_semester_type_semesters_school_year_type_fk",
+          "tableFrom": "year_semesters",
+          "tableTo": "semesters",
+          "columnsFrom": [
+            "school",
+            "semester_year",
+            "semester_type"
+          ],
+          "columnsTo": [
+            "school",
+            "year",
+            "type"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "year_semesters_school_start_year_semester_year_semester_type_pk": {
+          "columns": [
+            "school",
+            "start_year",
+            "semester_year",
+            "semester_type"
+          ],
+          "name": "year_semesters_school_start_year_semester_year_semester_type_pk"
         }
       },
       "uniqueConstraints": {},
@@ -1232,44 +1389,13 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "entities": {
-      "name": "entities",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "type": {
-          "name": "type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "events": {
       "name": "events",
       "columns": {
-        "order": {
-          "name": "order",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
         "id": {
           "name": "id",
           "type": "text",
-          "primaryKey": false,
+          "primaryKey": true,
           "notNull": true,
           "autoincrement": false
         },
@@ -1294,91 +1420,34 @@
           "notNull": true,
           "autoincrement": false
         },
-        "status": {
-          "name": "status",
-          "type": "text",
+        "is_published": {
+          "name": "is_published",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "events_id_unique": {
-          "name": "events_id_unique",
-          "columns": [
-            "id"
-          ],
-          "isUnique": true
+          "autoincrement": false,
+          "default": false
         },
-        "id_idx": {
-          "name": "id_idx",
-          "columns": [
-            "id"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "events_to_entities": {
-      "name": "events_to_entities",
-      "columns": {
-        "event": {
-          "name": "event",
-          "type": "text",
+        "is_applied_locally": {
+          "name": "is_applied_locally",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": false
         },
-        "entity": {
-          "name": "entity",
-          "type": "text",
+        "is_failed": {
+          "name": "is_failed",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": false
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "events_to_entities_event_events_id_fk": {
-          "name": "events_to_entities_event_events_id_fk",
-          "tableFrom": "events_to_entities",
-          "tableTo": "events",
-          "columnsFrom": [
-            "event"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "events_to_entities_entity_entities_id_fk": {
-          "name": "events_to_entities_entity_entities_id_fk",
-          "tableFrom": "events_to_entities",
-          "tableTo": "entities",
-          "columnsFrom": [
-            "entity"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "events_to_entities_entity_event_pk": {
-          "columns": [
-            "entity",
-            "event"
-          ],
-          "name": "events_to_entities_entity_event_pk"
-        }
-      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
     }

@@ -1,55 +1,53 @@
-import { drizzle } from "drizzle-orm/libsql";
+import superjson from "superjson";
 
-import type { Event, EventApplicatorInterface } from "@stu/lib";
+import type { Event, EventApplicatorInterface, PersistedEvent } from "@stu/lib";
 import { eventApplicator as systemApplicator } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
-import { EventApplicator as StudentEventApplicator } from "@stu/student";
-import * as studentSchema from "@stu/student/schema";
+import { Result } from "@stu/lib";
 
 import type { RabbitMQClient } from "../../rabbitmq";
 import { SYSTEM_USER } from "../../constants";
-import { createNamespace, createNamespaceClient } from "../../libsql";
 import { ensureStream, rabbitMqClientPromise } from "../../rabbitmq";
 import { serverApplicators } from "../../server-applicators";
 
-const buildStudentApplicator = async (
-  userId: string,
-): Promise<EventApplicatorInterface> => {
-  const namespace = `student-${userId}`;
-  await createNamespace(namespace);
+// const buildStudentApplicator = async (
+//   userId: string,
+// ): Promise<EventApplicatorInterface> => {
+//   const namespace = `student-${userId}`;
+//   await createNamespace(namespace);
 
-  const client = createNamespaceClient(namespace);
-  const db = drizzle(client, { schema: studentSchema });
+//   const client = createNamespaceClient(namespace);
+//   const db = drizzle(client, { schema: studentSchema });
 
-  return new StudentEventApplicator(db, userId);
-};
+//   return new StudentEventApplicator(db, userId);
+// };
 
-const applicatorUserMap = new Map<string, EventApplicatorInterface>();
-const getStudentApplicators = async (
-  userId: string,
-): Promise<EventApplicatorInterface> => {
-  if (!applicatorUserMap.has(userId)) {
-    applicatorUserMap.set(userId, await buildStudentApplicator(userId));
-  }
+// const applicatorUserMap = new Map<string, EventApplicatorInterface>();
+// const getStudentApplicators = async (
+//   userId: string,
+// ): Promise<EventApplicatorInterface> => {
+//   if (!applicatorUserMap.has(userId)) {
+//     applicatorUserMap.set(userId, await buildStudentApplicator(userId));
+//   }
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion --- we just set it
-  return applicatorUserMap.get(userId)!;
-};
+//   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion --- we just set it
+//   return applicatorUserMap.get(userId)!;
+// };
 
-const getApplicators = async (
-  userId: string,
-): Promise<EventApplicatorInterface> => {
-  if (userId === SYSTEM_USER) {
-    return systemApplicator;
-  }
-
-  return getStudentApplicators(userId);
-};
+// const getApplicators = async (
+//   userId: string,
+// ): Promise<EventApplicatorInterface> => {
+//   // if (userId === SYSTEM_USER) {
+//   return systemApplicator;
+//   // }
+//   //
+//   // return getStudentApplicators(userId);
+// };
 
 const publishEvent = async (
   rabbitMqClient: RabbitMQClient,
-  persistedEvent: typeof tables.events.$inferSelect,
+  persistedEvent: PersistedEvent,
   recipient: string,
 ) => {
   const streamName = `events-${recipient}`;
@@ -58,11 +56,11 @@ const publishEvent = async (
   const publisher = await rabbitMqClient.declarePublisher({
     stream: streamName,
   });
-  const { initator: _, ...publicEvent } = persistedEvent;
+  const { initiator: _, ...publicEvent } = persistedEvent;
 
   await publisher.basicSend(
-    BigInt(persistedEvent.order),
-    Buffer.from(JSON.stringify(publicEvent)),
+    BigInt(persistedEvent.timestamp.getTime()),
+    Buffer.from(superjson.stringify(publicEvent)),
     {
       messageProperties: {
         messageId: persistedEvent.id,
@@ -99,64 +97,39 @@ export const ingest = async <TEventName extends Event["type"]>(
 
   const serverApplicator = serverApplicators[eventName];
 
+  const error = await systemApplicator.verify(eventDataWithName, context);
+  if (error) {
+    return Result.err(error);
+  }
+
+  try {
+    await systemApplicator.apply(eventDataWithName);
+  } catch (err) {
+    console.error(
+      `Could not apply event ${eventDataWithName.type} with data ${JSON.stringify(eventDataWithName.data)}`,
+    );
+    throw err;
+  }
+
+  const persistedEvent: PersistedEvent = {
+    ...eventDataWithName,
+    initiator: initiatorUserId,
+    entities:
+      (await serverApplicator.entities?.(eventDataWithName, context))?.filter(
+        (entity) => entity !== undefined,
+      ) ?? [],
+  };
+  await db.insert(tables.events).values(persistedEvent);
+
   const recipientIds = new Set(
     await serverApplicator.recipients?.(eventDataWithName, context),
   );
   recipientIds.add(SYSTEM_USER);
   recipientIds.add(initiatorUserId);
-
-  for (const recipientId of recipientIds) {
-    const applicator = await getApplicators(recipientId);
-
-    const error = await applicator.verify(eventDataWithName, {
-      initiatorUserId,
-    });
-    if (error) {
-      return error;
-    }
-  }
-
-  for (const recipientId of recipientIds) {
-    const applicator = await getApplicators(recipientId);
-
-    try {
-      await applicator.apply(eventDataWithName);
-    } catch (err) {
-      console.error(
-        `Could not apply event ${eventDataWithName.type} with data ${JSON.stringify(eventDataWithName.data)}`,
-      );
-      throw err;
-    }
-  }
-
-  const [persistedEvent] = await db
-    .insert(tables.events)
-    .values({
-      id: eventData.id,
-      timestamp: eventData.timestamp,
-      data: eventData.data,
-      type: eventDataWithName.type,
-      initator: initiatorUserId,
-    })
-    .returning();
-  const entityIds = await serverApplicator.entities?.(eventDataWithName, {
-    initiatorUserId,
-  });
-  if (entityIds?.length) {
-    await db.insert(tables.eventsToEntities).values(
-      entityIds.map((entityId) => ({
-        event: eventData.id,
-        entity: entityId,
-      })),
-    );
-  }
-
-  if (!persistedEvent) {
-    throw new Error("Could not persist event");
-  }
-
   const rabbitMqClient = await rabbitMqClientPromise;
   for (const recipientId of recipientIds) {
     await publishEvent(rabbitMqClient, persistedEvent, recipientId);
   }
+
+  return Result.ok(undefined);
 };

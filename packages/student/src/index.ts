@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import type {
@@ -5,6 +6,7 @@ import type {
   EventApplicatorInterface,
   EventApplicators,
   EventApplicator as EventApplicatorType,
+  PersistedEvent,
 } from "@stu/lib";
 import { NAMESPACES } from "@stu/lib";
 
@@ -12,11 +14,14 @@ import type { DB, Extra } from "./event-handlers/types";
 import { absenceApplicators } from "./event-handlers/absences";
 import { gradeApplicators } from "./event-handlers/grades";
 import { orgApplicators } from "./event-handlers/org";
+import { studentApplicators } from "./event-handlers/student";
+import * as tables from "./schema";
 
 const applicators: EventApplicators<Extra> = {
   absence: absenceApplicators,
   grades: gradeApplicators,
   org: orgApplicators,
+  student: studentApplicators,
 };
 
 export class EventApplicator implements EventApplicatorInterface {
@@ -68,5 +73,12 @@ export class EventApplicator implements EventApplicatorInterface {
     }
 
     await applicator.apply(event, { db: this.db, user: this.getUser() });
+  }
+
+  async isEventAlreadyKnown(event: PersistedEvent) {
+    const existingEvent = await this.db.query.events.findFirst({
+      where: eq(tables.events.id, event.id),
+    });
+    return existingEvent !== undefined;
   }
 }

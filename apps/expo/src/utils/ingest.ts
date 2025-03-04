@@ -5,13 +5,12 @@ import { eq } from "drizzle-orm";
 import superjson from "superjson";
 
 import type {
-  Event,
   EventApplicatorInterface,
   EventDataByName,
   EventErrorsByName,
   EventName,
 } from "@stu/lib";
-import { Result } from "@stu/lib";
+import { Event, Result } from "@stu/lib";
 import { EventApplicator } from "@stu/student";
 import * as tables from "@stu/student/schema";
 
@@ -19,13 +18,19 @@ import { db } from "~/db/client";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { publishEvent } from "./api";
 
+type ExpoPersistedEvent = Omit<Event, "errors"> & {};
+interface EventMetadata {
+  isFailed: boolean;
+  isPublished: boolean;
+  isAppliedLocally: boolean;
+}
+
 export const ingest = async <TEventName extends EventName>(
   eventName: TEventName,
   userId: string,
   data: EventDataByName<TEventName>,
-  connectionRequired?: boolean,
+  localOnly = false,
 ): Promise<Result<undefined, EventErrorsByName<TEventName>>> => {
-  const applicator: EventApplicatorInterface = new EventApplicator(db, userId);
   const eventDataWithName = {
     data,
     type: eventName,
@@ -36,13 +41,36 @@ export const ingest = async <TEventName extends EventName>(
     "errors"
   >;
 
-  // Zeroth: Verify locally
-  const error = await applicator.verify(eventDataWithName, {
-    initiatorUserId: userId,
+  // First: Save to local events table
+  await db.insert(tables.events).values({
+    type: eventName,
+    id: eventDataWithName.id,
+    data: superjson.stringify(eventDataWithName.data),
+    timestamp: eventDataWithName.timestamp,
+    isAppliedLocally: false,
+    isPublished: localOnly,
+    isFailed: false,
   });
-  if (error) {
-    return Result.err(error as EventErrorsByName<TEventName>);
-  }
+
+  return ingestExistingEvent<TEventName>(eventDataWithName.id, userId);
+};
+
+export const ingestRemoteEvent = async <TEventName extends EventName>(
+  eventName: TEventName,
+  userId: string,
+  data: EventDataByName<TEventName>,
+  timestamp: Date,
+  id: string,
+) => {
+  const eventDataWithName = {
+    data,
+    type: eventName,
+    timestamp,
+    id,
+  } satisfies Omit<Event, "errors"> as Omit<
+    Extract<Event, { type: TEventName }>,
+    "errors"
+  >;
 
   // First: Save to local events table
   await db.insert(tables.events).values({
@@ -50,31 +78,106 @@ export const ingest = async <TEventName extends EventName>(
     id: eventDataWithName.id,
     data: superjson.stringify(eventDataWithName.data),
     timestamp: eventDataWithName.timestamp,
-    status: "PENDING",
+    isAppliedLocally: false,
+    isPublished: true,
+    isFailed: false,
   });
 
-  // Second: Apply locally
-  await applicator.apply(eventDataWithName);
+  return ingestExistingEvent<TEventName>(eventDataWithName.id, userId);
+};
+
+export interface LocalEvent {
+  event: ExpoPersistedEvent;
+  metadata: EventMetadata;
+}
+
+export const parseLocalEvent = (
+  row: typeof tables.events.$inferSelect,
+): LocalEvent | undefined => {
+  const event = Event.safeParse({
+    ...row,
+    data: superjson.parse(row.data),
+  });
+
+  if (!event.success) {
+    console.error("error parsing event", row, event.error);
+    return undefined;
+  }
+
+  return {
+    event: event.data,
+    metadata: {
+      isPublished: row.isPublished,
+      isAppliedLocally: row.isAppliedLocally,
+      isFailed: row.isFailed,
+    },
+  };
+};
+
+const getEventFromDb = async (id: string): Promise<LocalEvent | undefined> => {
+  const [row] = await db
+    .select()
+    .from(tables.events)
+    .where(eq(tables.events.id, id));
+  if (!row) {
+    return undefined;
+  }
+
+  return parseLocalEvent(row);
+};
+
+export const ingestExistingEvent = async <TEventName extends EventName>(
+  id: string,
+  userId: string,
+) => {
+  const data = await getEventFromDb(id);
+  if (!data) {
+    console.warn("event not found in db", id);
+    return Result.ok(undefined);
+  }
+  const { event, metadata } = data;
+  const applicator: EventApplicatorInterface = new EventApplicator(db, userId);
+
+  console.log("verifying event", event);
+
+  // Second: Verify locally
+  let error = (await applicator.verify(event, {
+    initiatorUserId: userId,
+  })) as EventErrorsByName<TEventName> | undefined;
+  if (error) {
+    console.log("error verifying event", error);
+    console.log("metadata", metadata);
+    if (metadata.isPublished) {
+      return Result.err(error);
+    }
+
+    // The error may be due to missing events, so first, we want to try to publish the event
+    // in order to get the missing events, and then verify again. If it still fails, we return the error
+    // as it's not possible to apply the event locally without the missing events
+    const res = await publishEvent(event);
+    if (Result.isErr(res) && res.error !== "CONFLICT") {
+      console.warn(
+        "error publishing event while trying to receive additional events",
+        event,
+        res,
+      );
+      return Result.err(error);
+    }
+
+    error = (await applicator.verify(event, {
+      initiatorUserId: userId,
+    })) as EventErrorsByName<TEventName> | undefined;
+    if (error) {
+      return Result.err(error);
+    }
+  }
+
+  // Third: Apply locally
+  await applicator.apply(event);
   await db
     .update(tables.events)
-    .set({ status: "APPLIED" })
-    .where(eq(tables.events.id, eventDataWithName.id));
-
-  // Commented out because it's done in the background
-  // // Third: Publish to API
-  // try {
-  //   await publishEvent(eventDataWithName);
-  //   await db
-  //     .update(tables.events)
-  //     .set({ status: "PUBLISHED" })
-  //     .where(eq(tables.events.id, eventDataWithName.id));
-  // } catch (e) {
-  //   console.warn("fetch failed", e);
-
-  //   if (connectionRequired) {
-  //     throw e;
-  //   }
-  // }
+    .set({ isAppliedLocally: true })
+    .where(eq(tables.events.id, event.id));
 
   return Result.ok(undefined);
 };

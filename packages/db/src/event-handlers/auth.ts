@@ -28,7 +28,8 @@ export const authApplicators: NamespaceEventApplicators<"auth", unknown> = {
   },
   licenseActivated: {
     verify: async ({ data }, { initiatorUserId }) => {
-      if (initiatorUserId !== data.userId) return "UNEXPECTED";
+      if (initiatorUserId !== SYSTEM_USER && initiatorUserId !== data.userId)
+        return "UNEXPECTED";
 
       const key = await db.query.LicenseKeys.findFirst({
         where: eq(tables.LicenseKeys.key, data.licenseKey),

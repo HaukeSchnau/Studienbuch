@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { skipToken } from "@tanstack/react-query";
 
-import type { Course, SubjectId } from "@stu/lib";
+import type { Course as BaseCourse, SubjectId, WithTeachers } from "@stu/lib";
 import {
   BetterMap,
   formalNameShort,
@@ -18,11 +18,15 @@ import { Text } from "~/components/text";
 import { useFormContext } from "~/features/setup/form";
 import { api } from "~/utils/api";
 
+type Course = BaseCourse & WithTeachers;
+
 export default function ClassAndCourses() {
   const { form, handleSubmitStep } = useFormContext({
     step: 2,
     onSubmitStep: async () => {
-      await form.handleSubmit();
+      await form.handleSubmit().catch((e) => {
+        console.error(e);
+      });
     },
   });
 
@@ -42,9 +46,11 @@ export default function ClassAndCourses() {
   const courses = api.schools.courses.listChoices.useQuery(
     selectedClass.state.value
       ? {
-          school: "igs-lil",
-          startYear: selectedYear.state.value.startYear,
-          identifierInYear: selectedClass.state.value.identifierInYear,
+          class: {
+            school: "igs-lil",
+            startYear: selectedYear.state.value.startYear,
+            identifierInYear: selectedClass.state.value.identifierInYear,
+          },
         }
       : skipToken,
   );

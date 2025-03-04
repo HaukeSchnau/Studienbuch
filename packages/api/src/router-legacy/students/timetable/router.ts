@@ -110,7 +110,8 @@ export const timetable = {
           }
           currentEntry.course.teachers.push({
             id: row.teachers.id,
-            name: row.teachers.name,
+            firstName: row.teachers.firstName,
+            lastName: row.teachers.lastName,
             abbrv: row.teachers.abbrv,
             salutation: row.teachers.salutation,
           });
@@ -121,7 +122,8 @@ export const timetable = {
                 ? {
                     id: row.substitute.id,
                     abbrv: row.substitute.abbrv,
-                    name: row.substitute.name,
+                    firstName: row.substitute.firstName,
+                    lastName: row.substitute.lastName,
                     salutation: row.substitute.salutation,
                   }
                 : null,

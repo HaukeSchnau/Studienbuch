@@ -1,12 +1,17 @@
 import { createContext, useContext, useState } from "react";
+import EventSource from "react-native-sse";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
+import { eq } from "drizzle-orm";
 import superjson from "superjson";
 
 import type { AppRouter } from "@stu/api";
 import type { Event } from "@stu/lib";
+import { Result } from "@stu/lib";
+import * as tables from "@stu/student/schema";
 
+import { db } from "~/db/client";
 import { getBaseUrl } from "./base-url";
 import { getStorage } from "./storage";
 
@@ -27,23 +32,94 @@ export const useTrpcClient = () => {
 };
 
 const getHeaders = () => {
+  const session = getStorage("auth.session");
+
+  return buildHeaders(session?.token);
+};
+
+export const buildHeaders = (sessionToken?: string) => {
   const headers = new Map<string, string>();
   headers.set("x-trpc-source", "expo-react");
-  const session = getStorage("auth.session");
-  if (session?.token) headers.set("x-session", session.token);
+  if (sessionToken) headers.set("x-session", sessionToken);
 
   return headers;
 };
 
-export const publishEvent = (event: Omit<Event, "errors">) => {
+export const getEventStream = (sessionToken?: string) => {
+  console.log("getting event stream", sessionToken);
+  return new EventSource(`${getBaseUrl()}/events`, {
+    headers: {
+      "x-session": sessionToken
+        ? {
+            toString: function () {
+              return sessionToken;
+            },
+          }
+        : undefined,
+    },
+  });
+};
+
+export const publishEvent = async (
+  event: Omit<Event, "errors">,
+): Promise<
+  Result<
+    undefined,
+    "CONFLICT" | "NETWORK_NOT_REACHABLE" | "INVALID_RESPONSE" | Response
+  >
+> => {
+  console.log("publishing event");
   const headers = getHeaders();
   headers.set("Content-Type", "application/json");
 
-  return fetch(`${getBaseUrl()}/events`, {
-    method: "POST",
-    body: superjson.stringify(event),
-    headers: Object.fromEntries(headers),
-  });
+  try {
+    const response = await fetch(`${getBaseUrl()}/events`, {
+      method: "POST",
+      body: superjson.stringify(event),
+      headers: Object.fromEntries(headers),
+    });
+    if (response.status === 409) {
+      await db
+        .update(tables.events)
+        .set({
+          isPublished: true,
+        })
+        .where(eq(tables.events.id, event.id));
+
+      return Result.err("CONFLICT" as const);
+    }
+
+    if (response.status !== 200) {
+      // await db
+      //   .update(tables.events)
+      //   .set({
+      //     isFailed: true,
+      //     isPublished: true,
+      //   })
+      //   .where(eq(tables.events.id, event.id));
+      return Result.err(response);
+    }
+
+    const json = await response.text();
+    const parsed = superjson.parse(json);
+    console.log(parsed);
+
+    await db
+      .update(tables.events)
+      .set({
+        isPublished: true,
+      })
+      .where(eq(tables.events.id, event.id));
+
+    return Result.ok(undefined);
+  } catch (e) {
+    if (e instanceof TypeError) {
+      console.warn(e);
+      return Result.err("NETWORK_NOT_REACHABLE" as const);
+    }
+
+    throw e;
+  }
 };
 
 /**
@@ -51,7 +127,16 @@ export const publishEvent = (event: Omit<Event, "errors">) => {
  * Use only in _app.tsx
  */
 export function TRPCProvider(props: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            retry: true,
+          },
+        },
+      }),
+  );
   const [trpcClient] = useState(() =>
     api.createClient({
       links: [

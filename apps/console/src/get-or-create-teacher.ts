@@ -3,6 +3,7 @@ import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Persons } from "@stu/db/schema";
 import { IservClient } from "@stu/external-api";
+import { Result } from "@stu/lib";
 
 import { logger } from "./logger";
 
@@ -37,12 +38,14 @@ export class ConsoleIservClient extends IservClient {
       SYSTEM_USER,
     );
 
-    if (err === "EXISTS") {
-      logger.debug(`Teacher ${abbrv} already joined!`);
-    } else if (err) {
-      logger.error(
-        `Could not ingest teacher joined event for ${abbrv}: ${err}`,
-      );
+    if (Result.isErr(err)) {
+      if (err.error === "EXISTS") {
+        logger.debug(`Teacher ${abbrv} already joined!`);
+      } else {
+        logger.error(
+          `Could not ingest teacher joined event for ${abbrv}: ${err}`,
+        );
+      }
     } else {
       logger.info(`Teacher ${abbrv} joined!`);
     }

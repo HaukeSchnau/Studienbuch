@@ -2,6 +2,7 @@ import crypto from "crypto";
 
 import type { SchoolId } from "@stu/lib";
 import { ingest, SYSTEM_USER } from "@stu/api";
+import { Result } from "@stu/lib";
 
 import { logger } from "../logger";
 
@@ -30,7 +31,7 @@ export const generateLicenses = async (
     const expiresAt = new Date();
     expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
-    await ingest(
+    const res = await ingest(
       "auth.licenseGenerated",
       {
         data: {
@@ -43,6 +44,14 @@ export const generateLicenses = async (
       },
       SYSTEM_USER,
     );
+
+    if (Result.isErr(res)) {
+      if (res.error === "EXISTS") {
+        logger.debug(`License key ${licenseKey} already generated!`);
+      } else {
+        logger.error(`Could not ingest license generated event: ${res}`);
+      }
+    }
   }
 
   logger.info(`Generated ${numberOfLicenses} licenses.`);

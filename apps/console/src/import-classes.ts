@@ -4,7 +4,7 @@ import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
 import { getClasses, login } from "@stu/external-api";
-import { BetterMap, startYearToNameMap } from "@stu/lib";
+import { BetterMap, Result, startYearToNameMap } from "@stu/lib";
 
 import { ConsoleIservClient } from "./get-or-create-teacher";
 import { logger } from "./logger";
@@ -88,10 +88,12 @@ export const importClasses = async ({ school }: Options) => {
       SYSTEM_USER,
     );
 
-    if (err === "EXISTS") {
-      logger.debug(`Year ${name} already started!`);
-    } else if (err) {
-      logger.error(`Could not ingest year started event: ${err}`);
+    if (Result.isErr(err)) {
+      if (err.error === "EXISTS") {
+        logger.debug(`Year ${name} already started!`);
+      } else {
+        logger.error(`Could not ingest year started event: ${err.error}`);
+      }
     } else {
       logger.info(`Year ${name} started!`);
     }

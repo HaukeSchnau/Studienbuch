@@ -7,10 +7,10 @@ import * as tables from "@stu/db/schema";
 // import { getPermissions } from "@stu/lib-server";
 
 import { protectedProcedure, publicProcedure } from "../../procedures";
+import { activateLicenseKey } from "./activate-license-key";
 import { checkLicenseKey } from "./check-license-key";
 import { login } from "./login";
 import { loginWithLicenseKey } from "./login-with-license-key";
-import { activateLicenseKey } from "./activate-license-key";
 
 export const auth = {
   getSession: publicProcedure.query(({ ctx }) => ctx.session),

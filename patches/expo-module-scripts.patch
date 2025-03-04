@@ -1,5 +1,5 @@
 diff --git a/bin/npx b/bin/npx
-index 30c3df13b7d40712e122d4d8291666bba1b0982e..9a3b95e9c3e157dccde88eb45ee754cdc48cf1b5 100755
+index 30c3df13b7d40712e122d4d8291666bba1b0982e..be018443522fc82f003610fc15e5d5bbc0488045 100755
 --- a/bin/npx
 +++ b/bin/npx
 @@ -4,8 +4,4 @@
@@ -11,4 +11,4 @@ index 30c3df13b7d40712e122d4d8291666bba1b0982e..9a3b95e9c3e157dccde88eb45ee754cd
 -else
 -  npx "$@"
 -fi
-+npx "$@"
++pnpx "$@"

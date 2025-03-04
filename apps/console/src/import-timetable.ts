@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { add, endOfWeek, format, startOfWeek } from "date-fns";
+import { z } from "zod";
 
 import type { KadmosTimetableResponse } from "@stu/external-api";
 import type { SchoolId, SubjectId } from "@stu/lib";
@@ -62,7 +63,7 @@ const generateCourseUuid = (
   school: SchoolId,
   entry: Pick<ProtoTimetableEntry, "course" | "classes">,
 ) => {
-  return crypto
+  const uuid = crypto
     .createHash("sha256")
     .update(school)
     .update(entry.course.kadmosId.toString())
@@ -73,6 +74,9 @@ const generateCourseUuid = (
     )
     .digest("hex")
     .slice(0, 32);
+
+  const formattedUuid = `${uuid.slice(0, 8)}-${uuid.slice(8, 12)}-${uuid.slice(12, 16)}-${uuid.slice(16, 20)}-${uuid.slice(20)}`;
+  return z.string().uuid().parse(formattedUuid);
 };
 
 const findSemesterFromDate = async (date: Date, school: SchoolId) => {

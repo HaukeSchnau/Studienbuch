@@ -8,7 +8,7 @@ import type { SchoolId } from "@stu/lib";
 import { ingest, SYSTEM_USER } from "@stu/api";
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
-import { defaultSchools, SCHOOL_IDS } from "@stu/lib";
+import { defaultSchools, Result, SCHOOL_IDS } from "@stu/lib";
 import { createUser } from "@stu/lib-server";
 
 import { importClasses } from "./import-classes";
@@ -81,10 +81,12 @@ program
       },
       SYSTEM_USER,
     );
-    if (err === "EXISTS") {
-      logger.debug(`School "${school}" already founded!`);
-    } else if (err) {
-      logger.error(`Could not ingest school founded event: ${err}`);
+    if (Result.isErr(err)) {
+      if (err.error === "EXISTS") {
+        logger.debug(`School "${school}" already founded!`);
+      } else {
+        logger.error(`Could not ingest school founded event: ${err}`);
+      }
     } else {
       logger.info(`School "${school}" founded!`);
     }

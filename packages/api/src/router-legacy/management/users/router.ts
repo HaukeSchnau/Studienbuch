@@ -33,7 +33,7 @@ export const users = {
       .leftJoin(PermissionsToUsers, eq(Users.id, PermissionsToUsers.user))
       .leftJoin(RolesToUsers, eq(Users.id, RolesToUsers.user))
       .leftJoin(Roles, eq(Roles.id, RolesToUsers.role))
-      .orderBy(asc(Persons.name));
+      .orderBy(asc(Persons.lastName), asc(Persons.firstName));
 
     const map = new BetterMap<
       string,
@@ -42,7 +42,8 @@ export const users = {
         email: string | null;
         person: {
           id: string;
-          name: string;
+          firstName: string;
+          lastName: string;
           email: string | null;
           salutation: Salutation | null;
           abbrv: string | null;
@@ -64,7 +65,8 @@ export const users = {
           email: row.users.email,
           person: {
             id: row.persons.id,
-            name: row.persons.name,
+            firstName: row.persons.firstName,
+            lastName: row.persons.lastName,
             email: row.persons.email,
             salutation: row.persons.salutation,
             abbrv: row.persons.abbrv,
@@ -105,7 +107,8 @@ export const users = {
   add: editUsersProcedure
     .input(
       z.object({
-        name: z.string(),
+        firstName: z.string(),
+        lastName: z.string(),
         email: z.string().optional(),
         password: z.string().optional(),
         salutation: z.enum(SALUTATIONS).optional(),

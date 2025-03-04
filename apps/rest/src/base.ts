@@ -20,7 +20,7 @@ import {
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
-import { Event } from "@stu/lib";
+import { Event, Result } from "@stu/lib";
 import { getSessionTokenFromHeaders } from "@stu/lib-server";
 
 import { env } from "./env";
@@ -124,7 +124,6 @@ export const createBase = (basePath: string) => {
               : rabbit.Offset.first(),
         },
         (message) => {
-          console.log(`Received message ${message.content.toString()}`);
           void stream.writeSSE({
             data: message.content.toString(),
           });
@@ -161,6 +160,7 @@ export const createBase = (basePath: string) => {
     const event = Event.safeParse(eventJson);
 
     if (!event.success) {
+      console.log("INVALID EVENT", event.error, bodyRaw, eventJson);
       c.status(400);
       return c.text("Invalid event");
     }
@@ -177,12 +177,13 @@ export const createBase = (basePath: string) => {
 
     const res = await ingest(event.data.type, event.data, session.user.id);
 
-    if (res !== undefined) {
+    if (Result.isErr(res)) {
+      console.log("FAILED TO INGEST EVENT", event.data, res);
       c.status(400);
       return c.text("Failed to ingest event");
     }
 
-    return c.text("Event ingested");
+    return c.status(200);
   });
 
   return app;

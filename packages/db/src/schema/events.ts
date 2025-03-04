@@ -1,10 +1,9 @@
 import {
-  index,
-  json,
+  jsonb,
   pgEnum,
   pgTable,
   primaryKey,
-  serial,
+  text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -15,38 +14,44 @@ import { Users } from "./people/users";
 
 export const eventType = pgEnum("event_type", EVENT_TYPES);
 
-export const events = pgTable(
-  "events",
-  {
-    id: uuid().primaryKey(),
-    order: serial().notNull().unique(),
-    type: eventType().notNull(),
-    data: json().notNull(),
-    timestamp: timestamp().notNull(),
-    initator: uuid()
-      .notNull()
-      .references(() => Users.id),
-  },
-  (table) => [
-    {
-      orderIdx: index("order_idx").on(table.order),
-    },
-  ],
-);
+export const events = pgTable("events", {
+  id: uuid().primaryKey(),
+  type: eventType().notNull(),
+  data: jsonb().notNull(),
+  timestamp: timestamp().notNull(),
+  initiator: uuid()
+    .notNull()
+    .references(() => Users.id),
+});
 
-export const eventsToEntities = pgTable(
-  "events_to_entities",
+export const topics = pgTable("topics", {
+  id: text().primaryKey(),
+});
+
+export const eventDestinations = pgTable(
+  "event_destinations",
   {
     event: uuid()
       .notNull()
       .references(() => events.id),
-    entity: uuid().notNull(),
+    topic: text().references(() => topics.id),
   },
   (table) => [
     {
-      pk: primaryKey({
-        columns: [table.entity, table.event],
-      }),
+      pk: primaryKey({ columns: [table.event, table.topic] }),
+    },
+  ],
+);
+
+export const topicSubscriptions = pgTable(
+  "topic_subscriptions",
+  {
+    topic: text().references(() => topics.id),
+    user: uuid().references(() => Users.id),
+  },
+  (table) => [
+    {
+      pk: primaryKey({ columns: [table.topic, table.user] }),
     },
   ],
 );

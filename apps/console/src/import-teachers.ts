@@ -1,6 +1,7 @@
 import type { Salutation } from "@stu/lib";
 import { ingest, SYSTEM_USER } from "@stu/api";
 import { getTeachers } from "@stu/external-api";
+import { Result } from "@stu/lib";
 
 import { logger } from "./logger";
 
@@ -131,12 +132,14 @@ export const importTeachers = async () => {
       SYSTEM_USER,
     );
 
-    if (err === "EXISTS") {
-      logger.debug(`Teacher ${teacher.abbrv} already joined!`);
-    } else if (err) {
-      logger.error(
-        `Could not ingest teacher joined event for ${teacher.abbrv}: ${err}`,
-      );
+    if (Result.isErr(err)) {
+      if (err.error === "EXISTS") {
+        logger.debug(`Teacher ${teacher.abbrv} already joined!`);
+      } else {
+        logger.error(
+          `Could not ingest teacher joined event for ${teacher.abbrv}: ${err.error}`,
+        );
+      }
     } else {
       logger.info(`Teacher ${teacher.abbrv} joined!`);
     }

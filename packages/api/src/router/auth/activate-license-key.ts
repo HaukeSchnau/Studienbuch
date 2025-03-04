@@ -1,4 +1,7 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+
+import { Result } from "@stu/lib";
 
 import { publicProcedure } from "../../procedures";
 import { ingest } from "../events/ingest";
@@ -11,7 +14,7 @@ export const activateLicenseKey = publicProcedure
   )
   .mutation(async ({ input }) => {
     const userId = crypto.randomUUID();
-    await ingest(
+    const res = await ingest(
       "auth.licenseActivated",
       {
         data: {
@@ -23,6 +26,14 @@ export const activateLicenseKey = publicProcedure
       },
       userId,
     );
+
+    if (Result.isErr(res)) {
+      console.error(res);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: res.error,
+      });
+    }
 
     return {
       userId,

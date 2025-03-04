@@ -1,11 +1,11 @@
-import type { Course } from "@stu/lib";
+import type { Course, WithTeachers } from "@stu/lib";
 
 export interface Grade {
   teacherSignature: string | null;
   parentSignature: string | null;
   result: number;
   date: Date;
-  course: Course & { longName: string };
+  course: Course & WithTeachers;
 }
 
 export interface ConfirmedGrade {
@@ -13,5 +13,5 @@ export interface ConfirmedGrade {
   parentSignature: string;
   result: number;
   date: Date;
-  course: Course & { longName: string };
+  course: Course & WithTeachers;
 }
