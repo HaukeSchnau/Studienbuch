@@ -1,6 +1,5 @@
 import { trpcServer } from "@hono/trpc-server";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { apiReference } from "@scalar/hono-api-reference";
 import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
 import { streamSSE } from "hono/streaming";
@@ -69,16 +68,6 @@ export const createBase = (basePath: string) => {
       },
     ],
   });
-
-  app.get(
-    "/reference",
-    apiReference({
-      theme: "purple",
-      spec: {
-        url: "/openapi",
-      },
-    }),
-  );
 
   app.use(
     "/trpc/*",
