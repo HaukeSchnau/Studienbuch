@@ -3,3 +3,10 @@ packages:
   - packages/*
   - packages/expo-native-modules/example
   - tooling/*
+onlyBuiltDependencies:
+  - '@sentry/profiling-node'
+  - core-js-pure
+  - cpu-features
+  - esbuild
+  - sharp
+  - ssh2
