@@ -14,10 +14,10 @@
     "react-native": "0.76.7"
   },
   "devDependencies": {
-    "@babel/core": "^7.25.2",
+    "@babel/core": "^7.26.9",
     "@types/react": "~18.3.12",
-    "metro": "^0.81.0",
-    "typescript": "^5.6.3"
+    "metro": "^0.81.3",
+    "typescript": "^5.8.2"
   },
   "private": true,
   "expo": {

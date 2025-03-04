@@ -30,20 +30,20 @@
     "dayjs": "^1.11.13",
     "drizzle-orm": "^0.36.4",
     "drizzle-zod": "^0.5.1",
-    "pg": "^8.13.1",
-    "zod": "^3.23.8"
+    "pg": "^8.13.3",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
     "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
-    "@testcontainers/postgresql": "^10.13.1",
-    "@types/pg": "^8.11.10",
+    "@testcontainers/postgresql": "^10.18.0",
+    "@types/pg": "^8.11.11",
     "drizzle-kit": "^0.28.1",
-    "eslint": "^9.12.0",
-    "prettier": "^3.3.3",
-    "typescript": "^5.6.3",
-    "vitest": "^2.1.4"
+    "eslint": "^9.21.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2",
+    "vitest": "^2.1.9"
   },
   "prettier": "@stu/prettier-config"
 }
