@@ -61,6 +61,8 @@ function withMonorepoPaths(config) {
     path.resolve(workspaceRoot, "node_modules"),
   ];
 
+  config.resolver.disableHierarchicalLookup = true;
+
   return config;
 }
 
