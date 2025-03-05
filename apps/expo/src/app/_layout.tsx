@@ -9,14 +9,6 @@ import { lazy, useEffect } from "react";
 import { UIManager } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import * as SplashScreen from "expo-splash-screen";
-import {
-  Nunito_400Regular,
-  Nunito_400Regular_Italic,
-  Nunito_500Medium,
-  Nunito_600SemiBold,
-  Nunito_700Bold,
-  useFonts,
-} from "@expo-google-fonts/nunito";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 
 import { colors } from "@stu/tailwind-config/native";
@@ -45,24 +37,13 @@ function RootLayout() {
     migrations,
   );
 
-  const [fontLoaded, fontError] = useFonts({
-    Nunito_400Regular,
-    Nunito_400Regular_Italic,
-    Nunito_500Medium,
-    Nunito_600SemiBold,
-    Nunito_700Bold,
-  });
-
   const sessionLoading = useSessionWatcher();
 
-  const isLoaded =
-    (fontLoaded || !!fontError) &&
-    (migrationSuccess || !!migrationError) &&
-    !sessionLoading;
+  const isLoaded = (migrationSuccess || !!migrationError) && !sessionLoading;
 
   useEffect(() => {
     if (isLoaded) {
-      void SplashScreen.hideAsync();
+      SplashScreen.hide();
     }
   }, [isLoaded]);
 

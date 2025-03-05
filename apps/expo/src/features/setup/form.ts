@@ -1,13 +1,7 @@
 import { createContext, useContext } from "react";
+import { createFormHook, createFormHookContexts } from "@tanstack/react-form";
 
-import type {
-  Class,
-  Course,
-  SubjectId,
-  WithClasses,
-  WithTeachers,
-  Year,
-} from "@stu/lib";
+import type { Class, Course, SubjectId, WithTeachers, Year } from "@stu/lib";
 
 import type {
   CombinedForm,
@@ -86,3 +80,11 @@ export const useFormContext = <Step extends number>({
     },
   };
 };
+
+export const { fieldContext, formContext } = createFormHookContexts();
+export const { useAppForm, withForm } = createFormHook({
+  fieldComponents: {},
+  formComponents: {},
+  fieldContext,
+  formContext,
+});

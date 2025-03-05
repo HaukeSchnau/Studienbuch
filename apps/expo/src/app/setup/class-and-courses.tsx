@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { useStore } from "@tanstack/react-form";
 import { skipToken } from "@tanstack/react-query";
 
 import type { Course as BaseCourse, SubjectId, WithTeachers } from "@stu/lib";
@@ -30,26 +31,21 @@ export default function ClassAndCourses() {
     },
   });
 
-  const selectedYear = form.useField({
-    name: "year",
-  });
-
-  const selectedClass = form.useField({
-    name: "class",
-  });
+  const selectedYear = useStore(form.store, (state) => state.values.year);
+  const selectedClass = useStore(form.store, (state) => state.values.class);
 
   const classes = api.schools.classes.list.useQuery({
     school: "igs-lil",
-    startYear: selectedYear.state.value.startYear,
+    startYear: selectedYear.startYear,
   });
 
   const courses = api.schools.courses.listChoices.useQuery(
-    selectedClass.state.value
+    selectedClass
       ? {
           class: {
             school: "igs-lil",
-            startYear: selectedYear.state.value.startYear,
-            identifierInYear: selectedClass.state.value.identifierInYear,
+            startYear: selectedYear.startYear,
+            identifierInYear: selectedClass.identifierInYear,
           },
         }
       : skipToken,
@@ -110,9 +106,7 @@ export default function ClassAndCourses() {
                 options={classes.data}
                 label="Klasse"
                 getKey={(item) => item.identifierInYear}
-                getOptionLabel={(item) =>
-                  formatClassName(item, selectedYear.state.value)
-                }
+                getOptionLabel={(item) => formatClassName(item, selectedYear)}
                 onChange={field.setValue}
                 value={field.state.value}
               />

@@ -63,5 +63,16 @@ export type InitialForm<Steps extends unknown[]> = JoinedStepsNonRequired<
   Steps["length"]
 >;
 
-export type CombinedForm<TForm> = FormApi<TForm, ZodValidator> &
-  ReactFormApi<TForm, ZodValidator>;
+export type CombinedForm<TForm> = FormApi<
+  TForm,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any
+> &
+  ReactFormApi<TForm, any, any, any, any, any, any, any, any, any>;

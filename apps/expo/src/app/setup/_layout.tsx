@@ -13,8 +13,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { router, Slot, Stack, usePathname } from "expo-router";
 import { openBrowserAsync } from "expo-web-browser";
-import { useForm } from "@tanstack/react-form";
-import { zodValidator } from "@tanstack/zod-form-adapter";
+import {
+  createFormHook,
+  createFormHookContexts,
+  useForm,
+} from "@tanstack/react-form";
 import { and, eq, sql } from "drizzle-orm";
 import { pk } from "node_modules/@stu/student/src/schema/utils";
 
@@ -213,7 +216,7 @@ const useSetupForm = () => {
 
   const semester = api.schools.semesters.getCurrent.useQuery();
 
-  return useForm<SetupForm, ReturnType<typeof zodValidator>>({
+  return useForm({
     defaultValues: {
       userId: session?.userId ?? "",
       licenseKey: licenseKey ?? "KJ27-MP16-LS14-JM22",
@@ -223,8 +226,7 @@ const useSetupForm = () => {
       name: "Hauke",
       isOfAge: true,
       chosenCourses: {},
-    },
-    validatorAdapter: zodValidator(),
+    } satisfies SetupForm as SetupForm,
     onSubmit: async ({ value, formApi }) => {
       console.log("onSubmit");
       if (!semester.data) {
