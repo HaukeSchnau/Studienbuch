@@ -2,7 +2,7 @@
   "name": "studienbuch",
   "private": true,
   "engines": {
-    "node": ">=20.16.0"
+    "node": ">=22.14.0"
   },
   "workspaces": [
     "apps/*",

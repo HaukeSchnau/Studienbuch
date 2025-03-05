@@ -10,36 +10,36 @@ interface Props extends ComponentProps<typeof RNText> {
 
 const fontNames = {
   regular: Platform.select({
-    ios: "Nunito_400Regular",
-    android: "Nunito-Regular",
+    android: "Nunito_400Regular",
+    ios: "Nunito-Regular",
   }),
   "regular-italic": Platform.select({
-    ios: "Nunito_400Regular_Italic",
-    android: "Nunito-Italic",
+    android: "Nunito_400Regular_Italic",
+    ios: "Nunito-Italic",
   }),
   medium: Platform.select({
-    ios: "Nunito_500Medium",
-    android: "Nunito-Medium",
+    android: "Nunito_500Medium",
+    ios: "Nunito-Medium",
   }),
   "medium-italic": Platform.select({
-    ios: "Nunito_500Medium_Italic",
-    android: "Nunito-Medium-Italic",
+    android: "Nunito_500Medium_Italic",
+    ios: "Nunito-Medium-Italic",
   }),
   "semi-bold": Platform.select({
-    ios: "Nunito_600SemiBold",
-    android: "Nunito-SemiBold",
+    android: "Nunito_600SemiBold",
+    ios: "Nunito-SemiBold",
   }),
   "semi-bold-italic": Platform.select({
-    ios: "Nunito_600SemiBold_Italic",
-    android: "Nunito-SemiBold-Italic",
+    android: "Nunito_600SemiBold_Italic",
+    ios: "Nunito-SemiBold-Italic",
   }),
   bold: Platform.select({
-    ios: "Nunito_700Bold",
-    android: "Nunito-Bold",
+    android: "Nunito_700Bold",
+    ios: "Nunito-Bold",
   }),
   "bold-italic": Platform.select({
-    ios: "Nunito_700Bold_Italic",
-    android: "Nunito-Bold-Italic",
+    android: "Nunito_700Bold_Italic",
+    ios: "Nunito-Bold-Italic",
   }),
 };
 

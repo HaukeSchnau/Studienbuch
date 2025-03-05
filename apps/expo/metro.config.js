@@ -1,4 +1,4 @@
-const { getDefaultConfig } = require("@expo/metro-config");
+const { getDefaultConfig } = require("expo/metro-config");
 const { FileStore } = require("metro-cache");
 const { withNativeWind } = require("nativewind/metro");
 const path = require("path");
@@ -31,12 +31,25 @@ config.resolver.assetExts = config.resolver.assetExts.filter(
   (ext) => ext !== "svg",
 );
 
-// XXX: Resolve our exports in workspace packages
-// https://github.com/expo/expo/issues/26926
-config.resolver.unstable_enablePackageExports = true;
-
 config.resolver.sourceExts.push("sql");
 config.resolver.sourceExts.push("svg");
+
+const originalResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === "@stu/lib") {
+    return context.resolveRequest(context, "@stu/lib/src/index.ts", platform);
+  }
+
+  if (moduleName === "@stu/student/schema") {
+    return context.resolveRequest(
+      context,
+      "@stu/student/src/schema/index.ts",
+      platform,
+    );
+  }
+
+  return originalResolveRequest(context, moduleName, platform);
+};
 
 module.exports = config;
 
@@ -60,8 +73,6 @@ function withMonorepoPaths(config) {
     path.resolve(projectRoot, "node_modules"),
     path.resolve(workspaceRoot, "node_modules"),
   ];
-
-  config.resolver.disableHierarchicalLookup = true;
 
   return config;
 }

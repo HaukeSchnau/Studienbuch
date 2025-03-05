@@ -13,11 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { router, Slot, Stack, usePathname } from "expo-router";
 import { openBrowserAsync } from "expo-web-browser";
-import {
-  createFormHook,
-  createFormHookContexts,
-  useForm,
-} from "@tanstack/react-form";
+import { useForm } from "@tanstack/react-form";
 import { and, eq, sql } from "drizzle-orm";
 import { pk } from "node_modules/@stu/student/src/schema/utils";
 
