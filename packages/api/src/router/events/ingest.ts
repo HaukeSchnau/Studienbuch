@@ -1,6 +1,6 @@
 import superjson from "superjson";
 
-import type { Event, EventApplicatorInterface, PersistedEvent } from "@stu/lib";
+import type { Event, PersistedEvent } from "@stu/lib";
 import { eventApplicator as systemApplicator } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
@@ -9,7 +9,6 @@ import { Result } from "@stu/lib";
 import type { RabbitMQClient } from "../../rabbitmq";
 import { SYSTEM_USER } from "../../constants";
 import { ensureStream, rabbitMqClientPromise } from "../../rabbitmq";
-import { serverApplicators } from "../../server-applicators";
 
 // const buildStudentApplicator = async (
 //   userId: string,
@@ -95,8 +94,6 @@ export const ingest = async <TEventName extends Event["type"]>(
     type: eventName,
   } as Omit<Extract<Event, { type: TEventName }>, "errors">;
 
-  const serverApplicator = serverApplicators[eventName];
-
   const error = await systemApplicator.verify(eventDataWithName, context);
   if (error) {
     return Result.err(error);
@@ -114,15 +111,11 @@ export const ingest = async <TEventName extends Event["type"]>(
   const persistedEvent: PersistedEvent = {
     ...eventDataWithName,
     initiator: initiatorUserId,
-    entities:
-      (await serverApplicator.entities?.(eventDataWithName, context))?.filter(
-        (entity) => entity !== undefined,
-      ) ?? [],
   };
   await db.insert(tables.events).values(persistedEvent);
 
   const recipientIds = new Set(
-    await serverApplicator.recipients?.(eventDataWithName, context),
+    await systemApplicator.topics?.(eventDataWithName),
   );
   recipientIds.add(SYSTEM_USER);
   recipientIds.add(initiatorUserId);

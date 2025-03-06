@@ -62,4 +62,13 @@ export const eventApplicator: EventApplicatorInterface = {
 
     await applicator.apply(event, {});
   },
+
+  async topics(event: Omit<Event, "errors">) {
+    const applicator = findApplicator(event);
+    if (!applicator) {
+      return Promise.resolve([]);
+    }
+
+    return applicator.topics?.(event, {}) ?? [];
+  },
 };

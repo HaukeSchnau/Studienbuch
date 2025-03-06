@@ -1,6 +1,5 @@
 import { preprocess, z } from "zod";
 
-import type { Entity } from "./entities";
 import type { NAMESPACES } from "./events";
 import { DomainEvent, EventMetadata } from "./events";
 
@@ -29,29 +28,18 @@ export interface EventApplicator<TEventName extends Event["type"], Extra> {
     event: Omit<Extract<Event, { type: TEventName }>, "errors">,
     extra: Extra,
   ) => Promise<void>;
+  topics?: (
+    event: Omit<Extract<Event, { type: TEventName }>, "errors">,
+    extra: Extra,
+  ) => Promise<string[]> | string[];
 }
+
 export type PersistedEvent = Omit<Event, "errors"> & {
   initiator: string;
-  entities: Entity[];
 };
 
 export const PublicPersistedEvent = DomainEvent.and(EventMetadata);
 export type PublicPersistedEvent = z.infer<typeof PublicPersistedEvent>;
-
-export interface ServerEventApplicator<TEventName extends Event["type"]> {
-  recipients?: (
-    event: Omit<Extract<Event, { type: TEventName }>, "errors">,
-    extra: BaseExtra,
-  ) => Promise<string[]>; // Returns user IDs
-  topics?: (
-    event: Omit<Extract<Event, { type: TEventName }>, "errors">,
-    extra: BaseExtra,
-  ) => Promise<string[]>; // Returns topic IDs
-  entities?: (
-    event: Omit<Extract<Event, { type: TEventName }>, "errors">,
-    extra: BaseExtra,
-  ) => Promise<(Entity | undefined)[] | undefined>;
-}
 
 type Namespace = (typeof NAMESPACES)[number];
 export type NamespaceEventApplicators<TNamespace extends Namespace, Extra> = {
@@ -72,11 +60,8 @@ export interface EventApplicatorInterface {
     extra: BaseExtra,
   ) => Promise<EventErrorsByEvent<TEvent>>;
   apply: (event: Omit<Event, "errors">) => Promise<void>;
+  topics?: (event: Omit<Event, "errors">) => Promise<string[]>;
 }
-
-export type ServerEventApplicators = {
-  [TEventName in Event["type"]]: ServerEventApplicator<TEventName>;
-};
 
 export type EventErrorsByName<TEventName extends Event["type"]> =
   EventErrorsByEvent<Extract<Event, { type: TEventName }>>;

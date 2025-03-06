@@ -8,6 +8,8 @@ import * as tables from "../schema";
 
 const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
 
+const courseTopic = (courseId: string) => `courses.${courseId}`;
+
 export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
   "school.founded": {
     verify: async ({ data }, { initiatorUserId }) => {
@@ -231,6 +233,7 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
         });
       }
     },
+    topics: ({ data }) => [courseTopic(data.id)],
   },
   "timetable.entryCreated": {
     verify: async ({ data }, { initiatorUserId }) => {
@@ -278,6 +281,7 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
           },
         });
     },
+    topics: ({ data }) => [courseTopic(data.course)],
   },
   "timetable.substituted": {
     verify: async ({ data }, { initiatorUserId }) => {
@@ -303,6 +307,7 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
         type: "VERTRETUNG",
       });
     },
+    topics: ({ data }) => [courseTopic(data.course)],
   },
   "timetable.canceled": {
     verify: async ({ data }, { initiatorUserId }) => {
@@ -328,5 +333,6 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
         type: "ENTFALL",
       });
     },
+    topics: ({ data }) => [courseTopic(data.course)],
   },
 };
