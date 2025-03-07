@@ -8,7 +8,7 @@ interface Props extends ComponentProps<typeof RNText> {
   variant?: "heading";
 }
 
-const fontNames = {
+export const fontNames = {
   regular: Platform.select({
     android: "Nunito_400Regular",
     ios: "Nunito-Regular",

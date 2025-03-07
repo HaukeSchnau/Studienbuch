@@ -4,6 +4,8 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { fontNames } from "./text";
+
 interface Props {
   label: string;
   active: SharedValue<boolean>;
@@ -20,9 +22,9 @@ export const FieldLabel = ({ label, active, focused }: Props) => {
     <Animated.Text
       style={[
         {
-          fontFamily: "Nunito_400Regular",
+          fontFamily: fontNames.regular,
           position: "absolute",
-          left: 6 * 4,
+          left: 20,
           transform: [{ translateY: -8 }],
           pointerEvents: "none",
         },

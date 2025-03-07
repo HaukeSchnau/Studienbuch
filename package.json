@@ -10,7 +10,7 @@
     "packages/expo-native-modules/example",
     "tooling/*"
   ],
-  "packageManager": "pnpm@10.5.2",
+  "packageManager": "pnpm@10.6.1+sha512.40ee09af407fa9fbb5fbfb8e1cb40fbb74c0af0c3e10e9224d7b53c7658528615b2c92450e74cfad91e3a2dcafe3ce4050d80bda71d757756d2ce2b66213e9a3",
   "scripts": {
     "build": "turbo run build",
     "build:internal": "turbo run --filter=\"./packages/*\" build",
@@ -23,7 +23,7 @@
     "dev:internal": "turbo watch dev:internal",
     "dev:next": "turbo watch dev dev:internal -F @stu/nextjs...",
     "dev:mobile": "turbo watch dev dev:internal -F @stu/rest... -F @stu/mobile... --ui=tui",
-    "dev:rest": "turbo watch dev dev:internal -F @stu/rest...",
+    "dev:rest": "turbo watch dev dev:internal -F @stu/rest... --ui=tui",
     "format": "turbo run format --continue -- --cache --cache-location .cache/.prettiercache",
     "format:fix": "turbo run format --continue -- --write --cache --cache-location .cache/.prettiercache",
     "lint": "turbo run lint --continue -- --cache --cache-location .cache/.eslintcache",

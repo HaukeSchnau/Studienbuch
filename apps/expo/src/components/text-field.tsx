@@ -6,7 +6,7 @@ import { useSharedValue } from "react-native-reanimated";
 import type { Falsy } from "@stu/lib";
 
 import { FieldLabel } from "./field-label";
-import { Text } from "./text";
+import { fontNames, Text } from "./text";
 
 interface Props extends TextInputProps {
   label: string;
@@ -42,7 +42,7 @@ export const TextField = ({ label, placeholder, error, ...props }: Props) => {
           placeholder={isActive ? placeholder : ""}
           className="rounded-3xl bg-[#E6E6E6] px-6 py-6"
           style={{
-            fontFamily: "Nunito_400Regular",
+            fontFamily: fontNames.regular,
           }}
           onFocus={onFocus}
           onBlur={onBlur}
