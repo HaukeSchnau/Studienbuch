@@ -1,9 +1,6 @@
 import type { Ref } from "react";
 import type { ViewProps } from "react-native";
-import {
-  requireNativeModule,
-  requireNativeViewManager,
-} from "expo-modules-core";
+import { NativeModule, requireNativeModule, requireNativeView } from "expo";
 
 export interface DrawingViewRef {
   getSVG(): Promise<string>;
@@ -13,7 +10,7 @@ interface Props extends ViewProps {
   ref: Ref<DrawingViewRef>;
 }
 
-type Module = unknown;
+declare class Module extends NativeModule<{}> {}
 
-export const DrawingView = requireNativeViewManager<Props>("DrawingModule");
+export const DrawingView = requireNativeView<Props>("DrawingModule");
 export const DrawingModule = requireNativeModule<Module>("DrawingModule");

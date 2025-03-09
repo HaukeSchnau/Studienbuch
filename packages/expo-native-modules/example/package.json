@@ -1,7 +1,7 @@
 {
-  "name": "expo-native-modules-example",
+  "name": "stu-expo-native-example",
   "version": "1.0.0",
-  "main": "./AppEntry.ts",
+  "main": "index.ts",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",

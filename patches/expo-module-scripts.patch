@@ -11,4 +11,4 @@ index 30c3df13b7d40712e122d4d8291666bba1b0982e..be018443522fc82f003610fc15e5d5bb
 -else
 -  npx "$@"
 -fi
-+pnpx "$@"
++pnpm exec "$@"

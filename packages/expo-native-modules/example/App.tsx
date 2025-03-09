@@ -1,41 +1,73 @@
-import { useRef } from "react";
-import { Button, View } from "react-native";
-
-import type { DrawingViewRef } from "@stu/expo-native-modules";
-import { DrawingView, SelectView } from "@stu/expo-native-modules";
+import { Button, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { useEvent } from "expo";
+import StuExpoNative, { StuExpoNativeView } from "stu-expo-native";
 
 export default function App() {
+  const onChangePayload = useEvent(StuExpoNative, "onChange");
+
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <SelectView
-        style={{
-          width: 100,
-          height: 50,
-          backgroundColor: "purple",
-          borderRadius: 10,
-        }}
-        name="Hello"
-        options={["World", "Universe"]}
-      />
-      <DrawingDemo />
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.container}>
+        <Text style={styles.header}>Module API Example</Text>
+        <Group name="Constants">
+          <Text>{StuExpoNative.PI}</Text>
+        </Group>
+        <Group name="Functions">
+          <Text>{StuExpoNative.hello()}</Text>
+        </Group>
+        <Group name="Async functions">
+          <Button
+            title="Set value"
+            onPress={async () => {
+              await StuExpoNative.setValueAsync("Hello from JS!");
+            }}
+          />
+        </Group>
+        <Group name="Events">
+          <Text>{onChangePayload?.value}</Text>
+        </Group>
+        <Group name="Views">
+          <StuExpoNativeView
+            url="https://www.example.com"
+            onLoad={({ nativeEvent: { url } }) => console.log(`Loaded: ${url}`)}
+            style={styles.view}
+          />
+        </Group>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function Group(props: { name: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.group}>
+      <Text style={styles.groupHeader}>{props.name}</Text>
+      {props.children}
     </View>
   );
 }
 
-const DrawingDemo = () => {
-  const drawingViewRef = useRef<DrawingViewRef>(null);
-
-  const saveAsSVG = async () => {
-    if (drawingViewRef.current) {
-      const svg = await drawingViewRef.current.getSVG();
-      console.log(svg); // Log SVG content
-    }
-  };
-
-  return (
-    <View style={{ flex: 1 }}>
-      <DrawingView ref={drawingViewRef} style={{ height: 300 }} />
-      <Button title="Save as SVG" onPress={saveAsSVG} />
-    </View>
-  );
+const styles = {
+  header: {
+    fontSize: 30,
+    margin: 20,
+  },
+  groupHeader: {
+    fontSize: 20,
+    marginBottom: 20,
+  },
+  group: {
+    margin: 20,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#eee",
+  },
+  view: {
+    flex: 1,
+    height: 200,
+  },
 };
