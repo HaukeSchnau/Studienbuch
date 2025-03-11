@@ -9,12 +9,12 @@
   "dependencies": {
     "@stu/external-api": "workspace:^",
     "memfs": "^4.14.0",
-    "vitest": "^3.0.7"
+    "vitest": "^3.0.8"
   },
   "devDependencies": {
     "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
-    "eslint": "^9.21.0",
+    "eslint": "^9.22.0",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2"
   },

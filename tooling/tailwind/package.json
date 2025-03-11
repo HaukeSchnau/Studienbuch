@@ -23,7 +23,7 @@
     "@stu/eslint-config": "workspace:*",
     "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
-    "eslint": "^9.21.0",
+    "eslint": "^9.22.0",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2"
   },

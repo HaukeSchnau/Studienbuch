@@ -11,8 +11,8 @@
   "dependencies": {
     "@axiomhq/pino": "^1.2.0",
     "@commander-js/extra-typings": "^13.1.0",
-    "@sentry/node": "^9.3.0",
-    "@sentry/profiling-node": "^9.3.0",
+    "@sentry/node": "^9.5.0",
+    "@sentry/profiling-node": "^9.5.0",
     "@stu/api": "workspace:*",
     "@stu/db": "workspace:*",
     "@stu/external-api": "workspace:*",
@@ -31,9 +31,9 @@
     "@stu/prettier-config": "workspace:*",
     "@stu/testing": "workspace:*",
     "@stu/tsconfig": "workspace:*",
-    "@types/node": "^22.13.9",
-    "eslint": "^9.21.0",
+    "@types/node": "^22.13.10",
+    "eslint": "^9.22.0",
     "typescript": "^5.8.2",
-    "vitest": "^3.0.7"
+    "vitest": "^3.0.8"
   }
 }

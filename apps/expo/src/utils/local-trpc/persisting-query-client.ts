@@ -34,6 +34,7 @@ export const MutationManager = ({
 }) => {
   const initialize = useMutationStore((state) => state.initialize);
   const head = useMutationStore((state) => state.queue[0]);
+  const pop = useMutationStore((state) => state.pop);
 
   const [session] = useStorage("auth.session");
   const sessionToken = session?.token;
@@ -105,6 +106,16 @@ export const MutationManager = ({
             "\n\t",
             JSON.stringify(res, null, 2),
           );
+
+          await db
+            .update(tables.events)
+            .set({
+              isFailed: true,
+            })
+            .where(eq(tables.events.id, event.id));
+
+          pop();
+
           return;
         }
       }
@@ -116,6 +127,8 @@ export const MutationManager = ({
           console.error("failed to apply locally", res);
         }
       }
+
+      pop();
     },
   });
 
