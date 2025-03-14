@@ -1,10 +1,10 @@
 import { Stack, useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 
 import type { AbsenceDay } from "@stu/lib";
 
 import { ConfirmPageContent } from "~/components/confirm-page-content";
 import { Text } from "~/components/text";
-import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { useIngest } from "~/utils/ingest";
 
@@ -13,10 +13,12 @@ export const ExcuseParent = ({ absence }: { absence: AbsenceDay }) => {
   const router = useRouter();
   const { date, reason } = absence;
 
-  const utils = api.useUtils();
+  const queryClient = useQueryClient();
   const excuseMutation = useIngest("absence.parentApproved", {
     onSuccess: async () => {
-      await utils.students.absences.invalidate();
+      await queryClient.invalidateQueries({
+        queryKey: ["absences"],
+      });
       router.back();
     },
   });

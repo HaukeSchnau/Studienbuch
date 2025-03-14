@@ -1,5 +1,6 @@
 import React from "react";
 import { ActivityIndicator, View } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 
 import type { Grade } from "@stu/lib";
 
@@ -7,38 +8,36 @@ import { Card } from "~/components/card";
 import { Divider } from "~/components/divider";
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
-import { api } from "~/utils/api";
 import { MasterGradeRow } from "./master/master-grade-row";
 import { OralGradesRow } from "./oral/oral-grades-row";
+import { listGrades } from "./queries/list-grades";
 import { WrittenGradesRow } from "./written/written-grades-row";
 
 export const GradesOverviewCard = ({ courseId }: { courseId: string }) => {
-  const grades = api.students.grades.list.useQuery(
-    { courseId },
-    {
-      select: (grades) => {
-        const oral: Grade[] = [];
-        const written: Grade[] = [];
-        const master: Grade[] = [];
+  const grades = useQuery({
+    ...listGrades({ courseId }),
+    select: (grades) => {
+      const oral: Grade[] = [];
+      const written: Grade[] = [];
+      const master: Grade[] = [];
 
-        for (const grade of grades) {
-          if (grade.type === "ORAL") {
-            oral.push(grade);
-          } else if (grade.type === "WRITTEN") {
-            written.push(grade);
-          } else {
-            master.push(grade);
-          }
+      for (const grade of grades) {
+        if (grade.type === "ORAL") {
+          oral.push(grade);
+        } else if (grade.type === "WRITTEN") {
+          written.push(grade);
+        } else {
+          master.push(grade);
         }
+      }
 
-        return {
-          oral,
-          written,
-          master,
-        };
-      },
+      return {
+        oral,
+        written,
+        master,
+      };
     },
-  );
+  });
 
   if (grades.isPending) {
     return <ActivityIndicator />;

@@ -1,9 +1,10 @@
 import React from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Stack } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 
 import { Text } from "~/components/text";
-import { api } from "~/utils/api";
+import { getOne } from "../queries";
 import { ExcuseParent } from "./excuse-parent";
 import { ExcuseTeacher } from "./excuse-teacher";
 
@@ -14,9 +15,8 @@ export const ExcusePage = ({
   date: Date;
   courseIds: string[];
 }) => {
-  const absences = api.students.absences.getOne.useQuery({
-    date,
-    courses: courseIds,
+  const absences = useQuery({
+    ...getOne({ date, courseIds }),
   });
 
   if (absences.isPending) {

@@ -1,16 +1,18 @@
 import { ActivityIndicator, View } from "react-native";
 import Icon from "@expo/vector-icons/MaterialIcons";
+import { useQuery } from "@tanstack/react-query";
 
 import { colors } from "@stu/tailwind-config/native";
 
 import type { AbsenceItem as AbsenceItemType } from "./types";
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
-import { api } from "~/utils/api";
+import { listExcused, listUnexcused } from "../queries";
 import { AbsenceItem } from "./absence-item";
 
 export const UnexcusedAbsences = () => {
-  const query = api.students.absences.listUnexcused.useQuery(undefined, {
+  const query = useQuery({
+    ...listUnexcused(),
     select: (absences) => {
       const unexcusedByTeacher: AbsenceItemType[] = [];
       const unexcusedByParent: AbsenceItemType[] = [];
@@ -98,7 +100,8 @@ export const UnexcusedAbsences = () => {
 };
 
 export const ExcusedAbsences = () => {
-  const query = api.students.absences.listExcused.useQuery(undefined, {
+  const query = useQuery({
+    ...listExcused(),
     select: (absences) => {
       return absences.map((absence) => ({
         date: absence.date,

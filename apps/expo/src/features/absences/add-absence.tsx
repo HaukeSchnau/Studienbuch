@@ -6,6 +6,7 @@ import {
   formOptions,
   useStore,
 } from "@tanstack/react-form";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getISOWeek, getISOWeekYear, isSameDay, startOfDay } from "date-fns";
 
 import { subjectNameMap } from "@stu/lib";
@@ -15,8 +16,9 @@ import { CheckboxRow } from "~/components/checkbox-row";
 import { DateField } from "~/components/date-field";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
-import { api } from "~/utils/api";
 import { useIngest } from "~/utils/ingest";
+import { getTimetableWeek } from "../agenda/queries/week";
+import { listUnexcused } from "./queries";
 
 const { fieldContext, formContext } = createFormHookContexts();
 
@@ -46,10 +48,12 @@ interface Props {
 }
 
 export const AddAbsence = ({ onClose }: Props) => {
-  const utils = api.useUtils();
+  const queryClient = useQueryClient();
   const mutation = useIngest("absence.recorded", {
     onSettled: () => {
-      void utils.students.absences.listUnexcused.invalidate();
+      void queryClient.invalidateQueries({
+        queryKey: listUnexcused().queryKey,
+      });
       onClose();
     },
   });
@@ -142,10 +146,12 @@ const CoursesSelect = withForm({
       });
     }, [selectedDate, form]);
 
-    const courseOptions = api.students.timetable.getWeek.useQuery({
-      isoWeekYear: getISOWeekYear(selectedDate),
-      isoWeek: getISOWeek(selectedDate),
-    });
+    const courseOptions = useQuery(
+      getTimetableWeek({
+        isoWeekYear: getISOWeekYear(selectedDate),
+        isoWeek: getISOWeek(selectedDate),
+      }),
+    );
 
     if (courseOptions.isPending) {
       return <ActivityIndicator />;

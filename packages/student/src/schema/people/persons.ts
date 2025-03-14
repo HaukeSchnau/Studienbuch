@@ -5,14 +5,16 @@ import { SALUTATIONS } from "@stu/lib";
 
 import { classes } from "../school/classes";
 import { schoolId } from "../school/school-id";
+import { schools } from "../school/schools";
+import { years } from "../school/years";
 import { boolean, sqliteEnum, uuid } from "../utils";
 
 export const salutation = sqliteEnum(SALUTATIONS);
 
 export const persons = sqliteTable("persons", {
   id: uuid("id").primaryKey().notNull(),
-  firstName: text("first_name"),
-  lastName: text("last_name"),
+  firstName: text("first_name").notNull(),
+  lastName: text("last_name").notNull(),
   salutation: salutation("salutation"),
   abbrv: text("abbrv").unique(),
   email: text("email").unique(),
@@ -50,3 +52,18 @@ export const students = sqliteTable(
       .onUpdate("cascade"),
   }),
 );
+
+export const studentRelations = relations(students, ({ one }) => ({
+  class: one(classes, {
+    fields: [students.classIdentifier, students.startYear, students.school],
+    references: [classes.identifierInYear, classes.startYear, classes.school],
+  }),
+  year: one(years, {
+    fields: [students.startYear, students.school],
+    references: [years.startYear, years.school],
+  }),
+  school: one(schools, {
+    fields: [students.school],
+    references: [schools.id],
+  }),
+}));

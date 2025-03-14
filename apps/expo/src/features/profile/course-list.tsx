@@ -1,5 +1,6 @@
 import { ActivityIndicator, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 
 import type { Semester } from "@stu/lib";
 
@@ -8,10 +9,10 @@ import { SubjectIcon } from "~/components/subject-icon";
 import { Table } from "~/components/table";
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
-import { api } from "~/utils/api";
+import { getMyCoursesForSemester } from "./queries/get-my-courses";
 
 export const CourseList = ({ semester }: { semester: Semester }) => {
-  const courses = api.students.courses.getForSemester.useQuery({ semester });
+  const courses = useQuery(getMyCoursesForSemester({ semester }));
   const router = useRouter();
 
   if (courses.isPending) {

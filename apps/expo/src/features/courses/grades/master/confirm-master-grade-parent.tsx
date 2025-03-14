@@ -1,5 +1,6 @@
 import { View } from "react-native";
 import { Stack, useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatDate } from "date-fns";
 
 import { formatGrade } from "@stu/lib";
@@ -10,17 +11,18 @@ import {
   ViewConfirmPageContent,
 } from "~/components/confirm-page-content";
 import { Text } from "~/components/text";
-import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { useIngest } from "~/utils/ingest";
 
 export const ConfirmMasterGradeParent = ({ grade }: { grade: Grade }) => {
   const { user } = useRequiredAuthenticatedSession();
-  const utils = api.useUtils();
+  const queryClient = useQueryClient();
   const router = useRouter();
   const confirmMutation = useIngest("grades.parentApproved", {
     onSuccess: async () => {
-      await utils.students.grades.invalidate();
+      await queryClient.invalidateQueries({
+        queryKey: ["grades"],
+      });
       router.back();
     },
   });

@@ -1,15 +1,17 @@
 import React, { useState } from "react";
 import { ActivityIndicator, ScrollView, View } from "react-native";
 import { Tabs } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 
 import type { NonEmptyArray, Semester } from "@stu/lib";
 import { isArrayNonEmpty } from "@stu/lib";
 
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
-import { api } from "~/utils/api";
+import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { CourseList } from "./course-list";
 import { Header } from "./profile-header";
+import { getMySemesters } from "./queries/get-my-semesters";
 import { SemesterSelector } from "./semester-selector";
 
 const Content = ({ semesters }: { semesters: NonEmptyArray<Semester> }) => {
@@ -28,7 +30,8 @@ const Content = ({ semesters }: { semesters: NonEmptyArray<Semester> }) => {
 };
 
 export const ProfilePage = () => {
-  const semesters = api.students.semesters.getOwn.useQuery();
+  const { userId } = useRequiredAuthenticatedSession();
+  const semesters = useQuery(getMySemesters({ userId }));
 
   if (semesters.isPending) {
     return <ActivityIndicator />;

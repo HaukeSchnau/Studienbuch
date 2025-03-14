@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Link } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { formatDate } from "date-fns";
 
 import type { AbsenceDay } from "@stu/lib";
@@ -11,16 +12,16 @@ import { Button } from "~/components/button";
 import { Card } from "~/components/card";
 import { IconButton } from "~/components/icon-button";
 import { Text } from "~/components/text";
-import { api } from "~/utils/api";
 import { AddAbsence } from "./add-absence";
 import BigCheck from "./big-check.svg";
+import { listUnexcused } from "./queries";
 import Warning from "./warning.svg";
 
 export const AbsencesOverviewCard = () => {
   const [isAddVisible, setIsAddVisible] = useState(false);
   const onClickAdd = () => setIsAddVisible(true);
 
-  const absences = api.students.absences.listUnexcused.useQuery();
+  const absences = useQuery(listUnexcused());
 
   if (absences.isPending) {
     return (

@@ -1,9 +1,9 @@
 import { ActivityIndicator, View } from "react-native";
 import { Stack } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 
 import type { GradeType } from "@stu/lib";
 
-import { api } from "~/utils/api";
 import {
   ConfirmMasterGradeParent,
   MasterGradeParentConfirmationView,
@@ -20,6 +20,7 @@ import {
   ConfirmOralGradeTeacher,
   OralGradeTeacherConfirmationView,
 } from "./oral/confirm-oral-grade-teacher";
+import { getGrade } from "./queries/get-grade";
 import { ConfirmWrittenGradeParent } from "./written/confirm-written-grade-parent";
 import { ConfirmWrittenGradeTeacher } from "./written/confirm-written-grade-teacher";
 
@@ -30,11 +31,7 @@ interface Props {
 }
 
 export const GradePage = ({ date, courseId, type }: Props) => {
-  const gradeQuery = api.students.grades.getOne.useQuery({
-    date,
-    course: courseId,
-    type,
-  });
+  const gradeQuery = useQuery(getGrade({ date, courseId, type }));
 
   if (!gradeQuery.data) {
     return (

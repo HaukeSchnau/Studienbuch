@@ -30,7 +30,7 @@ export const studentApplicators: NamespaceEventApplicators<"student", Extra> = {
       }
     },
     apply: async ({ data }, { db }) => {
-      const firstName = data.name.split(" ")[0];
+      const firstName = data.name.split(" ")[0] ?? "";
       const lastName = data.name.split(" ").slice(1).join(" ");
 
       await db

@@ -29,8 +29,8 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
     apply: async ({ data }, { db }) => {
       await db.insert(tables.persons).values({
         id: data.personId,
-        firstName: data.firstName,
-        lastName: data.lastName,
+        firstName: data.firstName ?? "",
+        lastName: data.lastName ?? "",
         salutation: data.salutation,
         abbrv: data.abbrv,
       });
