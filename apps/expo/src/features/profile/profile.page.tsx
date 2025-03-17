@@ -22,7 +22,11 @@ const Content = ({ semesters }: { semesters: NonEmptyArray<Semester> }) => {
 
   return (
     <View className="px-6 py-4">
-      <SemesterSelector choices={semesters} onSelect={setSelectedSemester} selectedSemester={selectedSemester} />
+      <SemesterSelector
+        choices={semesters}
+        onSelect={setSelectedSemester}
+        selectedSemester={selectedSemester}
+      />
       <View className="h-4" />
       <CourseList semester={selectedSemester} />
     </View>
