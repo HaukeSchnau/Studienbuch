@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import type { KadmosTimetableResponse } from "@stu/external-api";
 import type { SchoolId, SubjectId } from "@stu/lib";
+import { ingest, SYSTEM_USER } from "@stu/api";
 import { and, between, eq, gte, lte } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Schools, Semesters, TimetableEntries } from "@stu/db/schema";
@@ -13,10 +14,12 @@ import {
   guessSubject,
   isArrayNonEmpty,
   isArraySingleElement,
+  Result,
 } from "@stu/lib";
 
 import { ConsoleIservClient } from "./get-or-create-teacher";
 import { ingestTimetableEntry } from "./ingest-timetable-entry";
+import { logger } from "./logger";
 import { mapKadmosClass } from "./map-kadmos-class";
 
 interface Options {
@@ -542,9 +545,36 @@ export const importTimetable = async ({ school, date }: Options) => {
           entry.start.getTime() === existingTimetableEntry.start.getTime(),
       );
       if (!existingEntry) {
-        throw new Error(
-          `Timetable entry ${existingTimetableEntry.start} is not present in the current timetable. Need to implement this event!`,
+        const res = await ingest(
+          "org.timetable.discarded",
+          {
+            data: {
+              course: uuid,
+              start: existingTimetableEntry.start,
+            },
+            id: crypto.randomUUID(),
+            timestamp: new Date(),
+          },
+          SYSTEM_USER,
         );
+
+        if (Result.isErr(res)) {
+          if (res.error === "DOES_NOT_EXIST") {
+            logger.error(
+              `Timetable entry does not exist. Could not discard: ${JSON.stringify(
+                existingTimetableEntry,
+              )}`,
+            );
+          } else {
+            logger.error(
+              `Could not ingest timetable discarded event for ${uuid}: ${res.error}`,
+            );
+          }
+        } else {
+          logger.info(
+            `Timetable entry discarded: ${JSON.stringify(existingTimetableEntry)}`,
+          );
+        }
       }
     }
 

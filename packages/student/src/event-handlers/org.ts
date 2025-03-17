@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import type { NamespaceEventApplicators } from "@stu/lib";
 
@@ -207,6 +207,19 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
         substitute: null,
         type: "ENTFALL",
       });
+    },
+  },
+  "timetable.discarded": {
+    verify: () => Promise.resolve(undefined),
+    apply: async ({ data }, { db }) => {
+      await db
+        .delete(tables.timetableEntries)
+        .where(
+          and(
+            eq(tables.timetableEntries.course, data.course),
+            eq(tables.timetableEntries.start, data.start),
+          ),
+        );
     },
   },
 };

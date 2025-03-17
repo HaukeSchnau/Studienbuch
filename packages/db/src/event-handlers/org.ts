@@ -335,4 +335,29 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
     },
     topics: ({ data }) => [courseTopic(data.course)],
   },
+  "timetable.discarded": {
+    verify: async ({ data }, { initiatorUserId }) => {
+      if (initiatorUserId !== SYSTEM_USER) return "NOT_ALLOWED";
+
+      const existingTimetableEntry = await db.query.TimetableEntries.findFirst({
+        where: and(
+          eq(tables.TimetableEntries.course, data.course),
+          eq(tables.TimetableEntries.start, data.start),
+        ),
+      });
+
+      if (!existingTimetableEntry) return "DOES_NOT_EXIST";
+    },
+    apply: async ({ data }) => {
+      await db
+        .delete(tables.TimetableEntries)
+        .where(
+          and(
+            eq(tables.TimetableEntries.course, data.course),
+            eq(tables.TimetableEntries.start, data.start),
+          ),
+        );
+    },
+    topics: ({ data }) => [courseTopic(data.course)],
+  },
 };

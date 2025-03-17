@@ -205,6 +205,14 @@ export const DomainEvent = discriminatedUnion("type", [
     }),
     errors: virtual(["EXISTS", "NOT_ALLOWED"]),
   }),
+  object({
+    type: literal("org.timetable.discarded"),
+    data: object({
+      course: string().uuid(),
+      start: date(),
+    }),
+    errors: virtual(["DOES_NOT_EXIST", "NOT_ALLOWED"]),
+  }),
 
   object({
     type: literal("auth.licenseGenerated"),
