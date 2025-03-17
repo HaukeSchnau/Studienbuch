@@ -17,12 +17,12 @@ import { SemesterSelector } from "./semester-selector";
 const Content = ({ semesters }: { semesters: NonEmptyArray<Semester> }) => {
   const [selectedSemester, setSelectedSemester] = useState<Semester>(
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    semesters.at(-2)!,
+    semesters.at(-1)!,
   );
 
   return (
     <View className="px-6 py-4">
-      <SemesterSelector choices={semesters} onSelect={setSelectedSemester} />
+      <SemesterSelector choices={semesters} onSelect={setSelectedSemester} selectedSemester={selectedSemester} />
       <View className="h-4" />
       <CourseList semester={selectedSemester} />
     </View>
