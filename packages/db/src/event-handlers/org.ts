@@ -1,14 +1,18 @@
 import { and, eq } from "drizzle-orm";
 
 import type { NamespaceEventApplicators } from "@stu/lib";
-import { defaultSchools } from "@stu/lib";
+import {
+  defaultSchools,
+  studentsOfCourse,
+  studentsOfSchool,
+  studentsOfState,
+  studentsOfYear,
+} from "@stu/lib";
 
 import { db } from "../client";
 import * as tables from "../schema";
 
 const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
-
-const courseTopic = (courseId: string) => `courses.${courseId}`;
 
 export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
   "school.founded": {
@@ -34,6 +38,7 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
         kadmosPassword: defaultSchoolValue.kadmosPassword,
       });
     },
+    topics: ({ data }) => [studentsOfSchool(data.id)],
   },
   "teacher.joined": {
     verify: async ({ data }, { initiatorUserId }) => {
@@ -141,6 +146,7 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
         .onConflictDoNothing()
         .execute();
     },
+    topics: ({ data }) => [studentsOfState(data.state)],
   },
   "year.started": {
     verify: async ({ data }, { initiatorUserId }) => {
@@ -180,6 +186,12 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
         }
       }
     },
+    topics: ({ data }) => [
+      studentsOfYear({
+        school: data.school,
+        startYear: data.startYear,
+      }),
+    ],
   },
   "courses.created": {
     verify: async ({ data }, { initiatorUserId }) => {
@@ -233,7 +245,7 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
         });
       }
     },
-    topics: ({ data }) => [courseTopic(data.id)],
+    topics: ({ data }) => [studentsOfCourse(data.id)],
   },
   "timetable.entryCreated": {
     verify: async ({ data }, { initiatorUserId }) => {
@@ -281,7 +293,7 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
           },
         });
     },
-    topics: ({ data }) => [courseTopic(data.course)],
+    topics: ({ data }) => [studentsOfCourse(data.course)],
   },
   "timetable.substituted": {
     verify: async ({ data }, { initiatorUserId }) => {
@@ -307,7 +319,7 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
         type: "VERTRETUNG",
       });
     },
-    topics: ({ data }) => [courseTopic(data.course)],
+    topics: ({ data }) => [studentsOfCourse(data.course)],
   },
   "timetable.canceled": {
     verify: async ({ data }, { initiatorUserId }) => {
@@ -333,7 +345,7 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
         type: "ENTFALL",
       });
     },
-    topics: ({ data }) => [courseTopic(data.course)],
+    topics: ({ data }) => [studentsOfCourse(data.course)],
   },
   "timetable.discarded": {
     verify: async ({ data }, { initiatorUserId }) => {
@@ -358,6 +370,6 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
           ),
         );
     },
-    topics: ({ data }) => [courseTopic(data.course)],
+    topics: ({ data }) => [studentsOfCourse(data.course)],
   },
 };

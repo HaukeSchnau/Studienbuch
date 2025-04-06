@@ -82,7 +82,7 @@ export const publishEvent = async (
       await db
         .update(tables.events)
         .set({
-          isPublished: true,
+          publishStatus: "success",
         })
         .where(eq(tables.events.id, event.id));
 
@@ -100,14 +100,13 @@ export const publishEvent = async (
       return Result.err(response);
     }
 
-    const json = await response.text();
-    const parsed = superjson.parse(json);
-    console.log(parsed);
+    const rtext = await response.text();
+    console.log(rtext);
 
     await db
       .update(tables.events)
       .set({
-        isPublished: true,
+        publishStatus: "success",
       })
       .where(eq(tables.events.id, event.id));
 

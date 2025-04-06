@@ -33,6 +33,7 @@ export const SUBJECT_IDS = [
   "lp",
   "kr",
   "wpk",
+  "wal",
   "will-an-lili",
   "präsenz",
   "bläser_k",
@@ -88,6 +89,7 @@ export const subjectNameMap: Record<SubjectId, string> = {
   präsenz: "Präsenz",
   bläser_k: "Bläserklasse",
   nachhaltigkeit: "Nachhaltigkeit",
+  wal: "WAL",
 };
 
 export const guessSubject = (name: string): SubjectId | null => {

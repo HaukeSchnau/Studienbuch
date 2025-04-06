@@ -1,7 +1,8 @@
 import type { UseMutationOptions } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
 import { useMutation } from "@tanstack/react-query";
-import { eq } from "drizzle-orm";
+import { jsonlStreamConsumer } from "@trpc/server/unstable-core-do-not-import";
+import { asc, eq, or } from "drizzle-orm";
 import superjson from "superjson";
 
 import type {
@@ -20,11 +21,11 @@ import { publishEvent } from "./api";
 
 type ExpoPersistedEvent = Omit<Event, "errors"> & {};
 interface EventMetadata {
-  isFailed: boolean;
-  isPublished: boolean;
-  isAppliedLocally: boolean;
+  localStatus: "pending" | "error" | "success";
+  publishStatus: "pending" | "error" | "success";
 }
 
+// Ingest is for locally occuring events. They are stored locally,
 export const ingest = async <TEventName extends EventName>(
   eventName: TEventName,
   userId: string,
@@ -47,40 +48,11 @@ export const ingest = async <TEventName extends EventName>(
     id: eventDataWithName.id,
     data: superjson.stringify(eventDataWithName.data),
     timestamp: eventDataWithName.timestamp,
-    isAppliedLocally: false,
-    isPublished: localOnly,
-    isFailed: false,
-  });
-
-  return ingestExistingEvent<TEventName>(eventDataWithName.id, userId);
-};
-
-export const ingestRemoteEvent = async <TEventName extends EventName>(
-  eventName: TEventName,
-  userId: string,
-  data: EventDataByName<TEventName>,
-  timestamp: Date,
-  id: string,
-) => {
-  const eventDataWithName = {
-    data,
-    type: eventName,
-    timestamp,
-    id,
-  } satisfies Omit<Event, "errors"> as Omit<
-    Extract<Event, { type: TEventName }>,
-    "errors"
-  >;
-
-  // First: Save to local events table
-  await db.insert(tables.events).values({
-    type: eventName,
-    id: eventDataWithName.id,
-    data: superjson.stringify(eventDataWithName.data),
-    timestamp: eventDataWithName.timestamp,
-    isAppliedLocally: false,
-    isPublished: true,
-    isFailed: false,
+    // isAppliedLocally: false,
+    // isPublished: localOnly,
+    // isFailed: false,
+    publishStatus: localOnly ? "success" : "pending",
+    localStatus: "pending",
   });
 
   return ingestExistingEvent<TEventName>(eventDataWithName.id, userId);
@@ -91,7 +63,7 @@ export interface LocalEvent {
   metadata: EventMetadata;
 }
 
-export const parseLocalEvent = (
+const parseLocalEvent = (
   row: typeof tables.events.$inferSelect,
 ): LocalEvent | undefined => {
   const event = Event.safeParse({
@@ -107,11 +79,25 @@ export const parseLocalEvent = (
   return {
     event: event.data,
     metadata: {
-      isPublished: row.isPublished,
-      isAppliedLocally: row.isAppliedLocally,
-      isFailed: row.isFailed,
+      localStatus: row.localStatus,
+      publishStatus: row.publishStatus,
     },
   };
+};
+
+export const getEventsToBePushed = async () => {
+  const rows = await db
+    .select()
+    .from(tables.events)
+    .where(
+      or(
+        eq(tables.events.localStatus, "pending"),
+        eq(tables.events.publishStatus, "pending"),
+      ),
+    )
+    .orderBy(asc(tables.events.timestamp));
+
+  return rows.map(parseLocalEvent).filter((mut) => mut !== undefined);
 };
 
 const getEventFromDb = async (id: string): Promise<LocalEvent | undefined> => {
@@ -126,6 +112,7 @@ const getEventFromDb = async (id: string): Promise<LocalEvent | undefined> => {
   return parseLocalEvent(row);
 };
 
+// Apply an event that is already in the local event log
 export const ingestExistingEvent = async <TEventName extends EventName>(
   id: string,
   userId: string,
@@ -138,8 +125,6 @@ export const ingestExistingEvent = async <TEventName extends EventName>(
   const { event, metadata } = data;
   const applicator: EventApplicatorInterface = new EventApplicator(db, userId);
 
-  console.log("verifying event", event);
-
   // Second: Verify locally
   let error = (await applicator.verify(event, {
     initiatorUserId: userId,
@@ -147,7 +132,7 @@ export const ingestExistingEvent = async <TEventName extends EventName>(
   if (error) {
     console.log("error verifying event", error);
     console.log("metadata", metadata);
-    if (metadata.isPublished) {
+    if (metadata.publishStatus === "success") {
       return Result.err(error);
     }
 
@@ -173,15 +158,22 @@ export const ingestExistingEvent = async <TEventName extends EventName>(
   }
 
   // Third: Apply locally
-  await applicator.apply(event);
+  console.log(`Applying a ${event.type} event locally. ID: ${event.id}`);
+  try {
+    await applicator.apply(event);
+  } catch (e) {
+    console.error(`Error while applying:`, e);
+    throw e;
+  }
   await db
     .update(tables.events)
-    .set({ isAppliedLocally: true })
+    .set({ localStatus: "success" })
     .where(eq(tables.events.id, event.id));
 
   return Result.ok(undefined);
 };
 
+// useIngest is used to ingest locally ocurring events
 export const useIngest = <TEventName extends EventName>(
   eventName: TEventName,
   options?: Omit<
@@ -200,7 +192,7 @@ export const useIngest = <TEventName extends EventName>(
   return useIngestMutation(eventName, userId, options, connectionRequired);
 };
 
-export const useIngestMutation = <TEventName extends EventName>(
+const useIngestMutation = <TEventName extends EventName>(
   eventName: TEventName,
   userId: string,
   options?: Omit<

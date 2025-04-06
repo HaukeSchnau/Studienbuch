@@ -1,71 +1,40 @@
-import superjson from "superjson";
-
 import type { Event, PersistedEvent } from "@stu/lib";
 import { eventApplicator as systemApplicator } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
-import { Result } from "@stu/lib";
+import { Result, serializeEvent } from "@stu/lib";
 
-import type { RabbitMQClient } from "../../rabbitmq";
 import { SYSTEM_USER } from "../../constants";
 import { ensureStream, rabbitMqClientPromise } from "../../rabbitmq";
+import { sendMissingEventsToStudent } from "./send-missing-events";
 
-// const buildStudentApplicator = async (
-//   userId: string,
-// ): Promise<EventApplicatorInterface> => {
-//   const namespace = `student-${userId}`;
-//   await createNamespace(namespace);
-
-//   const client = createNamespaceClient(namespace);
-//   const db = drizzle(client, { schema: studentSchema });
-
-//   return new StudentEventApplicator(db, userId);
-// };
-
-// const applicatorUserMap = new Map<string, EventApplicatorInterface>();
-// const getStudentApplicators = async (
-//   userId: string,
-// ): Promise<EventApplicatorInterface> => {
-//   if (!applicatorUserMap.has(userId)) {
-//     applicatorUserMap.set(userId, await buildStudentApplicator(userId));
-//   }
-
-//   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion --- we just set it
-//   return applicatorUserMap.get(userId)!;
-// };
-
-// const getApplicators = async (
-//   userId: string,
-// ): Promise<EventApplicatorInterface> => {
-//   // if (userId === SYSTEM_USER) {
-//   return systemApplicator;
-//   // }
-//   //
-//   // return getStudentApplicators(userId);
-// };
-
-const publishEvent = async (
-  rabbitMqClient: RabbitMQClient,
-  persistedEvent: PersistedEvent,
+export const publishEvent = async (
+  event: Omit<Event, "errors">,
   recipient: string,
 ) => {
-  const streamName = `events-${recipient}`;
-  await ensureStream(rabbitMqClient, streamName);
+  if (recipient === SYSTEM_USER) {
+    return;
+  }
 
+  const rabbitMqClient = await rabbitMqClientPromise;
+  await ensureStream(rabbitMqClient, recipient);
   const publisher = await rabbitMqClient.declarePublisher({
-    stream: streamName,
+    stream: recipient,
   });
-  const { initiator: _, ...publicEvent } = persistedEvent;
-
   await publisher.basicSend(
-    BigInt(persistedEvent.timestamp.getTime()),
-    Buffer.from(superjson.stringify(publicEvent)),
+    BigInt(event.timestamp.getTime()),
+    Buffer.from(serializeEvent(event)),
     {
       messageProperties: {
-        messageId: persistedEvent.id,
+        messageId: event.id,
       },
     },
   );
+
+  await db.insert(tables.eventsSentToUsers).values({
+    event: event.id,
+    user: recipient,
+  });
 };
 
 const ensureSystemUser = async () => {
@@ -114,14 +83,23 @@ export const ingest = async <TEventName extends Event["type"]>(
   };
   await db.insert(tables.events).values(persistedEvent);
 
+  const topics = await systemApplicator.topics?.(eventDataWithName);
+  if (topics?.length) {
+    await db.insert(tables.eventTopics).values(
+      topics.map((topic) => ({
+        event: persistedEvent.id,
+        topic,
+      })),
+    );
+  }
+
   const recipientIds = new Set(
-    await systemApplicator.topics?.(eventDataWithName),
+    (await systemApplicator.recipients?.(eventDataWithName)) ?? [],
   );
-  recipientIds.add(SYSTEM_USER);
   recipientIds.add(initiatorUserId);
-  const rabbitMqClient = await rabbitMqClientPromise;
+  await sendMissingEventsToStudent(initiatorUserId);
   for (const recipientId of recipientIds) {
-    await publishEvent(rabbitMqClient, persistedEvent, recipientId);
+    await publishEvent(eventDataWithName, recipientId);
   }
 
   return Result.ok(undefined);

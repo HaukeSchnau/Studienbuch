@@ -18,6 +18,7 @@ services:
 
   libsql:
     image: ghcr.io/tursodatabase/libsql-server:latest
+    restart: unless-stopped
     environment:
       SQLD_NODE: primary
       LIBSQL_ADMIN_AUTH_KEY: admin

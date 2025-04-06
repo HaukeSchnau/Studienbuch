@@ -1,3 +1,5 @@
+import type { SafeParseReturnType } from "zod";
+import superjson from "superjson";
 import { preprocess, z } from "zod";
 
 import type { NAMESPACES } from "./events";
@@ -61,6 +63,7 @@ export interface EventApplicatorInterface {
   ) => Promise<EventErrorsByEvent<TEvent>>;
   apply: (event: Omit<Event, "errors">) => Promise<void>;
   topics?: (event: Omit<Event, "errors">) => Promise<string[]>;
+  recipients?: (event: Omit<Event, "errors">) => Promise<string[]>;
 }
 
 export type EventErrorsByName<TEventName extends Event["type"]> =
@@ -79,3 +82,13 @@ export type EventDataByName<TEventName extends Event["type"]> = Extract<
   Event,
   { type: TEventName }
 >["data"];
+
+export const serializeEvent = (event: Omit<Event, "errors">): string => {
+  return superjson.stringify(event);
+};
+
+export const deserializeEvent = (
+  event: string,
+): SafeParseReturnType<unknown, Event> => {
+  return Event.safeParse(superjson.parse(event));
+};

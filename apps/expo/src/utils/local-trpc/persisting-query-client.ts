@@ -1,16 +1,16 @@
 import { useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { asc, eq, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import superjson from "superjson";
 import { create } from "zustand";
 
-import { Event, Result } from "@stu/lib";
+import { deserializeEvent, Result } from "@stu/lib";
 import * as tables from "@stu/student/schema";
 
 import type { LocalEvent } from "../ingest";
 import { db } from "~/db/client";
 import { getEventStream, publishEvent } from "../api";
-import { ingestExistingEvent, parseLocalEvent } from "../ingest";
+import { getEventsToBePushed, ingestExistingEvent } from "../ingest";
 import { useStorage } from "../storage";
 
 interface MutationStore {
@@ -35,24 +35,59 @@ export const MutationManager = ({
   const initialize = useMutationStore((state) => state.initialize);
   const head = useMutationStore((state) => state.queue[0]);
   const pop = useMutationStore((state) => state.pop);
+  const push = useMutationStore((state) => state.push);
 
   const [session] = useStorage("auth.session");
   const sessionToken = session?.token;
 
-  // Subscribe to rabbitmq events
   useEffect(() => {
-    if (!sessionToken) return;
+    console.log("initializing local events");
 
-    console.log("user id", session.user);
+    // Initialize the queue with events that are not done yet
+    getEventsToBePushed()
+      .then((muts) => {
+        console.log("initialized", muts);
+        initialize(muts);
+      })
+      .catch((reason) =>
+        console.error("error while finding mutations", reason),
+      );
+  }, []);
+
+  useEffect(() => {
+    // Subscribe to rabbitmq events
+    if (!sessionToken) return;
     const eventStream = getEventStream(sessionToken);
-    eventStream.addEventListener("message", (event) => {
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    eventStream.addEventListener("message", async (event) => {
       if (!event.data) {
         console.error("no data in event", event);
         return;
       }
-      const data = superjson.parse(event.data);
-      const e = Event.safeParse(data);
-      console.log("REMOTE RMQ EVENT ---", e.data?.type, e.data?.data);
+      const e = deserializeEvent(event.data);
+      console.log("RECEIVED REMOTE EVENT >>>", e.data?.type);
+
+      if (e.success) {
+        // First: Save to local events table
+        await db.insert(tables.events).values({
+          type: e.data.type,
+          id: e.data.id,
+          data: superjson.stringify(e.data.data),
+          timestamp: e.data.timestamp,
+          localStatus: "pending",
+          publishStatus: "success",
+        });
+
+        push({
+          event: e.data,
+          metadata: {
+            localStatus: "pending",
+            publishStatus: "success",
+          },
+        });
+      } else {
+        console.error("Failed to parse event", e.error);
+      }
     });
 
     return () => {
@@ -60,44 +95,56 @@ export const MutationManager = ({
     };
   }, [sessionToken]);
 
-  // Initialize the queue with events that are not done yet
-  useEffect(() => {
-    console.log("initializing");
-
-    db.select()
-      .from(tables.events)
-      .where(
-        or(
-          eq(tables.events.isAppliedLocally, false),
-          eq(tables.events.isPublished, false),
-        ),
-      )
-      .orderBy(asc(tables.events.timestamp))
-      .then((muts) => {
-        console.log("initialized", muts);
-        initialize(
-          muts.map(parseLocalEvent).filter((mut) => mut !== undefined),
-        );
-      })
-      .catch((reason) =>
-        console.error("error while finding mutations", reason),
-      );
-  }, []);
-
   const handleMutation = useMutation({
     retry: true,
+    onError: (error, { event }) => {
+      console.error(
+        `Event ${event.id}: Error while handling. Will retry. Error: ${error}`,
+      );
+    },
     mutationFn: async ({ event, metadata }: LocalEvent) => {
-      console.log("handling mutation", event);
+      console.log(`Event ${event.id}: Starting to handle`);
+
       if (!session?.user) {
+        console.warn(`Event ${event.id}: No user in session`);
         throw new Error("NO_USER_IN_SESSION");
       }
 
-      if (!metadata.isPublished) {
+      if (metadata.localStatus === "pending") {
+        const res = await ingestExistingEvent(event.id, session.user);
+        if (Result.isErr(res)) {
+          console.error(
+            `Event ${event.id}: Failed to handle locally. Error: ${res.error}`,
+          );
+          await db
+            .update(tables.events)
+            .set({
+              localStatus: "error",
+            })
+            .where(eq(tables.events.id, event.id));
+        } else {
+          console.log(`Event ${event.id}: Successfully handled locally.`);
+          await db
+            .update(tables.events)
+            .set({
+              localStatus: "success",
+            })
+            .where(eq(tables.events.id, event.id));
+        }
+      }
+
+      if (metadata.publishStatus === "pending") {
         const res = await publishEvent(event);
 
         if (Result.isErr(res) && res.error !== "CONFLICT") {
           if (res.error === "NETWORK_NOT_REACHABLE") {
+            // Retry by throwing error
             throw new Error("NETWORK_NOT_REACHABLE");
+          }
+
+          if (res.error instanceof Response && res.error.status >= 500) {
+            // Retry by throwing error
+            throw new Error("SERVER_ERROR");
           }
 
           console.error(
@@ -110,30 +157,27 @@ export const MutationManager = ({
           await db
             .update(tables.events)
             .set({
-              isFailed: true,
+              publishStatus: "error",
             })
             .where(eq(tables.events.id, event.id));
-
-          pop();
-
-          return;
+        } else {
+          console.log(`Event ${event.id}: Successfully published event.`);
+          await db
+            .update(tables.events)
+            .set({
+              publishStatus: "success",
+            })
+            .where(eq(tables.events.id, event.id));
         }
       }
 
-      if (!metadata.isAppliedLocally) {
-        console.log("applying locally");
-        const res = await ingestExistingEvent(event.id, session.user);
-        if (Result.isErr(res)) {
-          console.error("failed to apply locally", res);
-        }
-      }
+      console.log(`Event ${event.id}: Successfully handled.`);
 
       pop();
     },
   });
 
   useEffect(() => {
-    console.log("head", head);
     if (head) {
       handleMutation.mutate(head);
     }

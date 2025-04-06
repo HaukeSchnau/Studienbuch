@@ -10,6 +10,7 @@ import {
   z,
 } from "zod";
 
+import type { SchoolId, StateCode } from "./schools";
 import { SUBJECT_IDS } from "./courses";
 import { GRADE_TYPES } from "./grades";
 import { SCHOOL_IDS, SEMESTER_TYPES, STATE_CODES } from "./schools";
@@ -298,3 +299,17 @@ export const Snapshot = discriminatedUnion("type", [
     }),
   }),
 ]);
+
+export const studentsOfCourse = (courseId: string) =>
+  `students.courses.${courseId}`;
+
+export const studentsOfYear = (options: {
+  school: SchoolId;
+  startYear: number;
+}) => `students.schools.${options.school}.years.${options.startYear}`;
+
+export const studentsOfSchool = (school: SchoolId) =>
+  `students.schools.${school}`;
+
+export const studentsOfState = (stateCode: StateCode) =>
+  `students.states.${stateCode}`;

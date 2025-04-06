@@ -1,7 +1,7 @@
 CREATE TABLE `persons` (
 	`id` text PRIMARY KEY NOT NULL,
-	`first_name` text,
-	`last_name` text,
+	`first_name` text NOT NULL,
+	`last_name` text NOT NULL,
 	`salutation` text,
 	`abbrv` text,
 	`email` text
@@ -202,7 +202,6 @@ CREATE TABLE `events` (
 	`type` text NOT NULL,
 	`data` text NOT NULL,
 	`timestamp` integer NOT NULL,
-	`is_published` integer DEFAULT false NOT NULL,
-	`is_applied_locally` integer DEFAULT false NOT NULL,
-	`is_failed` integer DEFAULT false NOT NULL
+	`publish_status` text NOT NULL,
+	`local_status` text NOT NULL
 );

@@ -13,6 +13,9 @@ import { SALUTATIONS } from "@stu/lib";
 
 import { Classes } from "../school/classes";
 import { SchoolId } from "../school/school-id";
+import { Schools } from "../school/schools";
+import { Years } from "../school/years";
+import { CourseMemberships } from "../students/course-memberships";
 
 export const Salutation = pgEnum("salutation", SALUTATIONS);
 
@@ -55,7 +58,7 @@ export const Students = pgTable(
   }),
 );
 
-export const StudentsRelations = relations(Students, ({ one }) => ({
+export const StudentsRelations = relations(Students, ({ one, many }) => ({
   person: one(Persons, {
     fields: [Students.person],
     references: [Persons.id],
@@ -64,4 +67,13 @@ export const StudentsRelations = relations(Students, ({ one }) => ({
     fields: [Students.classIdentifier, Students.startYear, Students.school],
     references: [Classes.identifierInYear, Classes.startYear, Classes.school],
   }),
+  year: one(Years, {
+    fields: [Students.startYear, Students.school],
+    references: [Years.startYear, Years.school],
+  }),
+  school: one(Schools, {
+    fields: [Students.school],
+    references: [Schools.id],
+  }),
+  courses: many(CourseMemberships),
 }));

@@ -5,21 +5,18 @@ import { prettyJSON } from "hono/pretty-json";
 import { streamSSE } from "hono/streaming";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import pino from "pino";
-import rabbit from "rabbitmq-stream-js-client";
-import superjson from "superjson";
 
 import {
   appRouter,
   createTRPCContext,
-  ensureStream,
   getSession,
   ingest,
-  rabbitMqClientPromise,
+  subscribe,
 } from "@stu/api";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
-import { Event, Result } from "@stu/lib";
+import { deserializeEvent, Result, serializeEvent } from "@stu/lib";
 import { getSessionTokenFromHeaders } from "@stu/lib-server";
 
 import { env } from "./env";
@@ -97,30 +94,17 @@ export const createBase = (basePath: string) => {
       return c.text("Unauthorized");
     }
 
-    const streamName = `events-${session.user.id}`;
     const offset = c.req.query("offset");
 
-    const rabbitMqClient = await rabbitMqClientPromise;
-    await ensureStream(rabbitMqClient, streamName);
-
     return streamSSE(c, async (stream) => {
-      const consumer = await rabbitMqClient.declareConsumer(
-        {
-          stream: streamName,
-          offset:
-            offset !== undefined
-              ? rabbit.Offset.offset(BigInt(offset))
-              : rabbit.Offset.first(),
-        },
-        (message) => {
-          void stream.writeSSE({
-            data: message.content.toString(),
-          });
-        },
-      );
+      const consumer = await subscribe(session.user.id, offset, (event) => {
+        void stream.writeSSE({
+          data: serializeEvent(event),
+        });
+      });
 
       stream.onAbort(async () => {
-        await consumer.close(true);
+        await consumer.close();
       });
 
       await new Promise(() => {
@@ -145,11 +129,16 @@ export const createBase = (basePath: string) => {
     }
 
     const bodyRaw = await c.req.text();
-    const eventJson = superjson.parse(bodyRaw);
-    const event = Event.safeParse(eventJson);
+    const event = deserializeEvent(bodyRaw);
 
     if (!event.success) {
-      console.log("INVALID EVENT", event.error, bodyRaw, eventJson);
+      console.log(
+        "INVALID EVENT",
+        event.error,
+        bodyRaw,
+        event.error.format(),
+        bodyRaw,
+      );
       c.status(400);
       return c.text("Invalid event");
     }
