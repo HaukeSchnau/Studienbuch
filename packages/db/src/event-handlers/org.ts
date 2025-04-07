@@ -59,6 +59,7 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
         abbrv: data.abbrv,
       });
     },
+    topics: ({ data }) => [studentsOfSchool(data.school)],
   },
   "holiday.created": {
     verify: async ({ data }, { initiatorUserId }) => {

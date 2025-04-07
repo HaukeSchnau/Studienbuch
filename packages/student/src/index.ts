@@ -72,6 +72,7 @@ export class EventApplicator implements EventApplicatorInterface {
       return;
     }
 
+    // TODO: try/catch and return result type
     await applicator.apply(event, { db: this.db, user: this.getUser() });
   }
 

@@ -20,7 +20,7 @@ interface MutationStore {
   pop: () => void;
 }
 
-const useMutationStore = create<MutationStore>((set) => ({
+export const useMutationStore = create<MutationStore>((set) => ({
   queue: [],
   initialize: (muts) => set({ queue: muts }),
   push: (mut) => set((state) => ({ queue: [...state.queue, mut] })),

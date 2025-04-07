@@ -18,6 +18,7 @@ import * as tables from "@stu/student/schema";
 import { db } from "~/db/client";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { publishEvent } from "./api";
+import { useMutationStore } from "./local-trpc/persisting-query-client";
 
 type ExpoPersistedEvent = Omit<Event, "errors"> & {};
 interface EventMetadata {
@@ -55,7 +56,20 @@ export const ingest = async <TEventName extends EventName>(
     localStatus: "pending",
   });
 
-  return ingestExistingEvent<TEventName>(eventDataWithName.id, userId);
+  const result = await ingestExistingEvent<TEventName>(
+    eventDataWithName.id,
+    userId,
+  );
+
+  useMutationStore.getState().push({
+    event: eventDataWithName,
+    metadata: {
+      localStatus: "pending",
+      publishStatus: Result.isOk(result) ? "success" : "error",
+    },
+  });
+
+  return result;
 };
 
 export interface LocalEvent {
@@ -163,7 +177,7 @@ export const ingestExistingEvent = async <TEventName extends EventName>(
     await applicator.apply(event);
   } catch (e) {
     console.error(`Error while applying:`, e);
-    throw e;
+    return Result.err("UNEXPECTED" as const);
   }
   await db
     .update(tables.events)
