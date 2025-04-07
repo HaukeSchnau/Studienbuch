@@ -4,7 +4,6 @@ import { TRPCProvider } from "~/utils/api";
 
 import "./styles.css";
 
-import type { ReactNode } from "react";
 import { lazy, useEffect } from "react";
 import { UIManager } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -78,16 +77,8 @@ function RootLayout() {
   );
 }
 
-const RootLayoutWrapper = () => {
-  return (
-    <Providers>
-      <RootLayout />
-    </Providers>
-  );
-};
-
-export default RootLayoutWrapper;
-
-const Providers = ({ children }: { children: ReactNode }) => {
-  return <TRPCProvider>{children}</TRPCProvider>;
-};
+export default () => (
+  <TRPCProvider>
+    <RootLayout />
+  </TRPCProvider>
+);
