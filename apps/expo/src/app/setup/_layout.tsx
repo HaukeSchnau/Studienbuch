@@ -14,6 +14,7 @@ import { Image } from "expo-image";
 import { router, Slot, Stack, usePathname } from "expo-router";
 import { openBrowserAsync } from "expo-web-browser";
 import { useForm } from "@tanstack/react-form";
+import { useQuery } from "@tanstack/react-query";
 import { and, eq, sql } from "drizzle-orm";
 import { pk } from "node_modules/@stu/student/src/schema/utils";
 
@@ -22,6 +23,7 @@ import type {
   SchoolId,
   SemesterType,
   StateCode,
+  SubjectId,
   WithTeachers,
 } from "@stu/lib";
 import * as t from "@stu/student/schema";
@@ -30,9 +32,11 @@ import type { SetupForm } from "~/features/setup/form";
 import { shadow } from "~/components/styles/shadow";
 import { Text } from "~/components/text";
 import { db } from "~/db/client";
+import { currentStudent } from "~/db/queries/user";
+import { getMyCoursesForSemester } from "~/features/profile/queries/get-my-courses";
 import { FormContext } from "~/features/setup/form";
 import { api } from "~/utils/api";
-import { useLicenseKey, useSession } from "~/utils/auth";
+import { useLicenseKey } from "~/utils/auth";
 import { ingest } from "~/utils/events/ingest";
 import { setStorage } from "~/utils/storage";
 import logoImage from "../../../assets/icon.png";
@@ -201,8 +205,9 @@ const bootstrap = async ({
   }
 };
 
+const DEFAULT_LICENSE_KEY = __DEV__ ? "KJ27-MP16-LS14-JM22" : "";
+
 const useSetupForm = () => {
-  const session = useSession();
   const licenseKey = useLicenseKey();
 
   const utils = api.useUtils();
@@ -212,16 +217,26 @@ const useSetupForm = () => {
 
   const semester = api.schools.semesters.getCurrent.useQuery();
 
+  const currentUser = useQuery(currentStudent());
+  const courses = useQuery(getMyCoursesForSemester(semester.data));
+
   return useForm({
     defaultValues: {
-      userId: session?.userId ?? "",
-      licenseKey: licenseKey ?? "KJ27-MP16-LS14-JM22",
-      // name: session?.user?.name ?? "Hauke",
-      // isOfAge: session?.user?.isOfAge ?? false,
-      // todo: get from db
-      name: "Hauke",
-      isOfAge: true,
-      chosenCourses: {},
+      licenseKey: licenseKey ?? DEFAULT_LICENSE_KEY,
+      name: currentUser.data
+        ? `${currentUser.data.person.firstName} ${currentUser.data.person.lastName}`
+        : "Hauke",
+      isOfAge: currentUser.data?.isOfAge ?? false,
+      year: currentUser.data?.year,
+      class: currentUser.data?.class,
+      chosenCourses:
+        courses.data?.reduce(
+          (acc, course) => {
+            acc[course.subject] = course;
+            return acc;
+          },
+          {} as Partial<Record<SubjectId, Course & WithTeachers>>,
+        ) ?? {},
     } satisfies SetupForm as SetupForm,
     onSubmit: async ({ value, formApi }) => {
       console.log("onSubmit");

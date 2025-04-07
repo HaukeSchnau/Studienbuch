@@ -12,7 +12,7 @@ import { Text } from "~/components/text";
 import { getMyCoursesForSemester } from "./queries/get-my-courses";
 
 export const CourseList = ({ semester }: { semester: Semester }) => {
-  const courses = useQuery(getMyCoursesForSemester({ semester }));
+  const courses = useQuery(getMyCoursesForSemester(semester));
   const router = useRouter();
 
   if (courses.isPending) {

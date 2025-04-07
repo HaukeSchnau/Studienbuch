@@ -54,6 +54,10 @@ export const students = sqliteTable(
 );
 
 export const studentRelations = relations(students, ({ one }) => ({
+  person: one(persons, {
+    fields: [students.person],
+    references: [persons.id],
+  }),
   class: one(classes, {
     fields: [students.classIdentifier, students.startYear, students.school],
     references: [classes.identifierInYear, classes.startYear, classes.school],
