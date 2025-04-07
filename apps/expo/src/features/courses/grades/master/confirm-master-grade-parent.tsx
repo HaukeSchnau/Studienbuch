@@ -12,7 +12,7 @@ import {
 } from "~/components/confirm-page-content";
 import { Text } from "~/components/text";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
-import { useIngest } from "~/utils/ingest";
+import { useIngest } from "~/utils/events/ingest";
 
 export const ConfirmMasterGradeParent = ({ grade }: { grade: Grade }) => {
   const { user } = useRequiredAuthenticatedSession();

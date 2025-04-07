@@ -8,7 +8,7 @@ import { Button } from "~/components/button";
 import { Divider } from "~/components/divider";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
-import { useIngest } from "~/utils/ingest";
+import { useIngest } from "~/utils/events/ingest";
 import { GradeCard } from "../grade-card";
 
 export const EditOralGrade = ({

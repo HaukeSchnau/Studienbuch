@@ -16,7 +16,7 @@ import { colors } from "@stu/tailwind-config/native";
 import { PortalRenderer } from "~/components/portal";
 import { db } from "~/db/client";
 import { useSessionWatcher } from "~/utils/auth";
-import { MutationManager } from "~/utils/local-trpc/persisting-query-client";
+import { MutationManager } from "~/utils/events/mutation-manager";
 import migrations from "../../drizzle/migrations";
 
 const DevTools = lazy(() =>

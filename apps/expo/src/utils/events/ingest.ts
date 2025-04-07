@@ -17,8 +17,8 @@ import * as tables from "@stu/student/schema";
 
 import { db } from "~/db/client";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
-import { publishEvent } from "./api";
-import { useMutationStore } from "./local-trpc/persisting-query-client";
+import { publishEvent } from "../api";
+import { useMutationStore } from "./mutation-manager";
 
 type ExpoPersistedEvent = Omit<Event, "errors"> & {};
 interface EventMetadata {

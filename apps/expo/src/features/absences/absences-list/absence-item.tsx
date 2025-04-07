@@ -11,7 +11,7 @@ import { OutlinedButton } from "~/components/button";
 import { ConfirmationStatus } from "~/components/confirmation-status";
 import { Text } from "~/components/text";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
-import { useIngest } from "~/utils/ingest";
+import { useIngest } from "~/utils/events/ingest";
 
 interface AbsenceViewProps {
   absenceGroup: AbsenceItemType;

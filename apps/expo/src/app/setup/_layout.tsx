@@ -33,7 +33,7 @@ import { db } from "~/db/client";
 import { FormContext } from "~/features/setup/form";
 import { api } from "~/utils/api";
 import { useLicenseKey, useSession } from "~/utils/auth";
-import { ingest } from "~/utils/ingest";
+import { ingest } from "~/utils/events/ingest";
 import { setStorage } from "~/utils/storage";
 import logoImage from "../../../assets/icon.png";
 

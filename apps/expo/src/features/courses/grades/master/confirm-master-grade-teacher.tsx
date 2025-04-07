@@ -13,7 +13,7 @@ import {
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
-import { useIngest } from "~/utils/ingest";
+import { useIngest } from "~/utils/events/ingest";
 
 export const ConfirmMasterGradeTeacher = ({ grade }: { grade: Grade }) => {
   const { user } = useRequiredAuthenticatedSession();

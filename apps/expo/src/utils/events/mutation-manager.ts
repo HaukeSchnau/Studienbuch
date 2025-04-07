@@ -7,11 +7,11 @@ import { create } from "zustand";
 import { deserializeEvent, Result } from "@stu/lib";
 import * as tables from "@stu/student/schema";
 
-import type { LocalEvent } from "../ingest";
+import type { LocalEvent } from "./ingest";
 import { db } from "~/db/client";
 import { getEventStream, publishEvent } from "../api";
-import { getEventsToBePushed, ingestExistingEvent } from "../ingest";
 import { useStorage } from "../storage";
+import { getEventsToBePushed, ingestExistingEvent } from "./ingest";
 
 interface MutationStore {
   queue: LocalEvent[];

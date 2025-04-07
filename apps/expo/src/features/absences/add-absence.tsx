@@ -16,7 +16,7 @@ import { CheckboxRow } from "~/components/checkbox-row";
 import { DateField } from "~/components/date-field";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
-import { useIngest } from "~/utils/ingest";
+import { useIngest } from "~/utils/events/ingest";
 import { getTimetableWeek } from "../agenda/queries/week";
 import { listUnexcused } from "./queries";
 

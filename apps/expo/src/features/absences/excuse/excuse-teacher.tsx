@@ -7,7 +7,7 @@ import { formalName, isArraySingleElement } from "@stu/lib";
 import { ConfirmPageContent } from "~/components/confirm-page-content";
 import { Text } from "~/components/text";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
-import { useIngest } from "~/utils/ingest";
+import { useIngest } from "~/utils/events/ingest";
 
 export const ExcuseTeacher = ({
   absence,

@@ -7,7 +7,7 @@ import { Button } from "~/components/button";
 import { DateField } from "~/components/date-field";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
-import { useIngest } from "~/utils/ingest";
+import { useIngest } from "~/utils/events/ingest";
 
 export const AddWrittenGrade = ({
   courseId,
