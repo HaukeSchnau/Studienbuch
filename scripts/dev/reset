@@ -3,7 +3,6 @@
 docker compose -f docker-compose.dev.yaml down --volumes --remove-orphans
 docker compose -f docker-compose.dev.yaml up -d --wait
 sleep 3
-docker compose -f docker-compose.dev.yaml exec management-data-storage psql -U stu -c "CREATE EXTENSION ltree;"
 nr db:push
 sleep 3
 scripts/console seed igs-lil

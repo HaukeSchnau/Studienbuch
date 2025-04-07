@@ -14,12 +14,6 @@ import { EVENT_TYPES } from "@stu/lib";
 
 import { Users } from "./people/users";
 
-// const ltree = customType<{ data: string }>({
-//   dataType() {
-//     return "ltree";
-//   },
-// });
-
 const superjsonb = customType<{ data: unknown }>({
   dataType() {
     return "jsonb";
