@@ -1,8 +1,8 @@
 import crypto from "crypto";
 
 import type { SchoolId } from "@stu/lib";
-import { db } from "@stu/db/client";
-import { LicenseKeys } from "@stu/db/schema";
+import { ingest, SYSTEM_USER } from "@stu/api";
+import { Result } from "@stu/lib";
 
 import { logger } from "../logger";
 
@@ -19,6 +19,9 @@ export const generateLicenses = async (
   numberOfLicenses: number,
   school: SchoolId,
 ) => {
+  logger.info(`Generating ${numberOfLicenses} license keys for school "${school}".
+    ..`);
+
   for (let i = 0; i < numberOfLicenses; i++) {
     const licenseKey =
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- We may have more schools in the future
@@ -28,17 +31,27 @@ export const generateLicenses = async (
     const expiresAt = new Date();
     expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
-    const data = {
-      key: licenseKey,
-      expiresAt: i == 0 ? null : expiresAt,
-      isSuperKey: i == 0,
-      school,
-    };
+    const res = await ingest(
+      "auth.licenseGenerated",
+      {
+        data: {
+          school,
+          licenseKey,
+          expiryDate: expiresAt,
+        },
+        timestamp: new Date(),
+        id: crypto.randomUUID(),
+      },
+      SYSTEM_USER,
+    );
 
-    await db.insert(LicenseKeys).values(data).onConflictDoUpdate({
-      target: LicenseKeys.key,
-      set: data,
-    });
+    if (Result.isErr(res)) {
+      if (res.error === "EXISTS") {
+        logger.debug(`License key ${licenseKey} already generated!`);
+      } else {
+        logger.error(`Could not ingest license generated event: ${res.error}`);
+      }
+    }
   }
 
   logger.info(`Generated ${numberOfLicenses} licenses.`);

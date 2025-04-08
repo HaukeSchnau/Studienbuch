@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "986f1e59-cf7e-457c-80b5-f7a1b1ac4fa1",
+  "id": "e8d26136-8be0-451c-bd6f-bb539dfad437",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "persons": {
@@ -14,8 +14,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "name": {
-          "name": "name",
+        "first_name": {
+          "name": "first_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_name": {
+          "name": "last_name",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -57,7 +64,72 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "students": {
+      "name": "students",
+      "columns": {
+        "person": {
+          "name": "person",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "is_of_age": {
+          "name": "is_of_age",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "class_identifier": {
+          "name": "class_identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "start_year": {
+          "name": "start_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "school": {
+          "name": "school",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "students_person_persons_id_fk": {
+          "name": "students_person_persons_id_fk",
+          "tableFrom": "students",
+          "tableTo": "persons",
+          "columnsFrom": ["person"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "students_class_identifier_start_year_school_classes_identifier_in_year_start_year_school_fk": {
+          "name": "students_class_identifier_start_year_school_classes_identifier_in_year_start_year_school_fk",
+          "tableFrom": "students",
+          "tableTo": "classes",
+          "columnsFrom": ["class_identifier", "start_year", "school"],
+          "columnsTo": ["identifier_in_year", "start_year", "school"],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "classes": {
       "name": "classes",
@@ -102,7 +174,8 @@
           "name": "classes_identifier_in_year_start_year_school_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "teachers_to_classes": {
       "name": "teachers_to_classes",
@@ -168,7 +241,8 @@
           "name": "teachers_to_classes_teacher_class_identifier_class_start_year_school_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "courses": {
       "name": "courses",
@@ -252,7 +326,8 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "courses_to_classes": {
       "name": "courses_to_classes",
@@ -318,7 +393,8 @@
           "name": "courses_to_classes_course_class_identifier_class_start_year_school_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "courses_to_teachers": {
       "name": "courses_to_teachers",
@@ -365,30 +441,8 @@
           "name": "courses_to_teachers_course_teacher_pk"
         }
       },
-      "uniqueConstraints": {}
-    },
-    "rooms": {
-      "name": "rooms",
-      "columns": {
-        "room_number": {
-          "name": "room_number",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "schools": {
       "name": "schools",
@@ -418,7 +472,58 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "holidays": {
+      "name": "holidays",
+      "columns": {
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "start": {
+          "name": "start",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "end": {
+          "name": "end",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "holidays_name_start_end_state_year_pk": {
+          "columns": ["name", "start", "end", "state", "year"],
+          "name": "holidays_name_start_end_state_year_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "semesters": {
       "name": "semesters",
@@ -484,7 +589,70 @@
           "name": "semesters_school_type_year_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "year_semesters": {
+      "name": "year_semesters",
+      "columns": {
+        "school": {
+          "name": "school",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "start_year": {
+          "name": "start_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "semester_year": {
+          "name": "semester_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "semester_type": {
+          "name": "semester_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "year_semesters_school_start_year_years_school_start_year_fk": {
+          "name": "year_semesters_school_start_year_years_school_start_year_fk",
+          "tableFrom": "year_semesters",
+          "tableTo": "years",
+          "columnsFrom": ["school", "start_year"],
+          "columnsTo": ["school", "start_year"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "year_semesters_school_semester_year_semester_type_semesters_school_year_type_fk": {
+          "name": "year_semesters_school_semester_year_semester_type_semesters_school_year_type_fk",
+          "tableFrom": "year_semesters",
+          "tableTo": "semesters",
+          "columnsFrom": ["school", "semester_year", "semester_type"],
+          "columnsTo": ["school", "year", "type"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "year_semesters_school_start_year_semester_year_semester_type_pk": {
+          "columns": ["school", "start_year", "semester_year", "semester_type"],
+          "name": "year_semesters_school_start_year_semester_year_semester_type_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "years": {
       "name": "years",
@@ -536,7 +704,8 @@
           "name": "years_start_year_school_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "absence_days": {
       "name": "absence_days",
@@ -566,7 +735,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "course_absences": {
       "name": "course_absences",
@@ -620,7 +790,8 @@
           "name": "course_absences_date_course_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "grades": {
       "name": "grades",
@@ -666,13 +837,6 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
-        },
-        "student": {
-          "name": "student",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
         }
       },
       "indexes": {},
@@ -685,24 +849,16 @@
           "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
-        },
-        "grades_student_persons_id_fk": {
-          "name": "grades_student_persons_id_fk",
-          "tableFrom": "grades",
-          "tableTo": "persons",
-          "columnsFrom": ["student"],
-          "columnsTo": ["id"],
-          "onDelete": "restrict",
-          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
-        "grades_date_course_student_type_pk": {
-          "columns": ["date", "course", "student", "type"],
-          "name": "grades_date_course_student_type_pk"
+        "grades_date_course_type_pk": {
+          "columns": ["date", "course", "type"],
+          "name": "grades_date_course_type_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "tasks": {
       "name": "tasks",
@@ -788,7 +944,8 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "room_changes": {
       "name": "room_changes",
@@ -831,19 +988,10 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "room_changes_room_rooms_room_number_fk": {
-          "name": "room_changes_room_rooms_room_number_fk",
-          "tableFrom": "room_changes",
-          "tableTo": "rooms",
-          "columnsFrom": ["room"],
-          "columnsTo": ["room_number"],
-          "onDelete": "set null",
-          "onUpdate": "cascade"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "substitutions": {
       "name": "substitutions",
@@ -904,7 +1052,8 @@
           "name": "substitutions_date_course_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "timetable_entries": {
       "name": "timetable_entries",
@@ -949,7 +1098,8 @@
           "name": "timetable_entries_date_course_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "timetable_entry_rooms": {
       "name": "timetable_entry_rooms",
@@ -978,15 +1128,6 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "timetable_entry_rooms_room_rooms_room_number_fk": {
-          "name": "timetable_entry_rooms_room_rooms_room_number_fk",
-          "tableFrom": "timetable_entry_rooms",
-          "tableTo": "rooms",
-          "columnsFrom": ["room"],
-          "columnsTo": ["room_number"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
         "timetable_entry_rooms_start_course_timetable_entries_date_course_fk": {
           "name": "timetable_entry_rooms_start_course_timetable_entries_date_course_fk",
           "tableFrom": "timetable_entry_rooms",
@@ -1003,7 +1144,8 @@
           "name": "timetable_entry_rooms_start_course_room_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "recurring_timetable_entries": {
       "name": "recurring_timetable_entries",
@@ -1070,34 +1212,49 @@
           "name": "recurring_timetable_entries_weekday_start_course_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
-    "mutations": {
-      "name": "mutations",
+    "events": {
+      "name": "events",
       "columns": {
-        "timestamp": {
-          "name": "timestamp",
-          "type": "integer",
+        "id": {
+          "name": "id",
+          "type": "text",
           "primaryKey": true,
           "notNull": true,
           "autoincrement": false
         },
-        "path": {
-          "name": "path",
+        "type": {
+          "name": "type",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "input": {
-          "name": "input",
+        "data": {
+          "name": "data",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "mutation_status": {
-          "name": "mutation_status",
+        "timestamp": {
+          "name": "timestamp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "publish_status": {
+          "name": "publish_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "local_status": {
+          "name": "local_status",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -1107,9 +1264,11 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     }
   },
+  "views": {},
   "enums": {},
   "_meta": {
     "schemas": {},

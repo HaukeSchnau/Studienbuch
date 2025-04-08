@@ -1,5 +1,6 @@
 import { Fragment, useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 import {
   add,
   format,
@@ -18,7 +19,9 @@ import { formalName, subjectNameMap } from "@stu/lib";
 import { Card } from "~/components/card";
 import { Divider } from "~/components/divider";
 import { Text } from "~/components/text";
-import { api } from "~/utils/api";
+import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { getHolidays } from "../holidays/queries/get-holidays";
+import { getTimetableWeek } from "./queries/week";
 
 const matchHolidayName = (name: string) => {
   const n = name.toLowerCase();
@@ -40,20 +43,20 @@ const matchHolidayName = (name: string) => {
 };
 
 const EmptyState = () => {
-  const holiday = api.schools.holidays.get.useQuery(
-    {
+  const { userId } = useRequiredAuthenticatedSession();
+  const holiday = useQuery({
+    ...getHolidays({
       year: new Date().getFullYear(),
-    },
-    {
-      select: (holidays) =>
-        holidays.find((holiday) =>
-          isWithinInterval(new Date(), {
-            start: holiday.start,
-            end: holiday.end,
-          }),
-        ),
-    },
-  );
+      userId,
+    }),
+    select: (holidays) =>
+      holidays.find((holiday) =>
+        isWithinInterval(new Date(), {
+          start: holiday.start,
+          end: holiday.end,
+        }),
+      ),
+  });
 
   if (!holiday.data) {
     return (
@@ -84,35 +87,36 @@ export const Agenda = () => {
   // We intentionally overfetch here to update the cache for the entire week.
   // This way, we can avoid refetching the data when the user navigates to a different day or wants to see the entire week.
   // If this is a performance issue, we can consider optimizing.
-  const timetable = api.students.timetable.getWeek.useQuery(
-    { isoWeekYear: getISOWeekYear(now), isoWeek: getISOWeek(now) },
-    {
-      select: (entries) => {
-        const nextEntry = entries.find((entry) =>
-          isAfter(
-            add(entry.start, {
-              minutes: entry.duration,
-            }),
-            now,
-          ),
-        );
+  const timetable = useQuery({
+    ...getTimetableWeek({
+      isoWeekYear: getISOWeekYear(now),
+      isoWeek: getISOWeek(now),
+    }),
+    select: (entries) => {
+      const nextEntry = entries.find((entry) =>
+        isAfter(
+          add(entry.start, {
+            minutes: entry.duration,
+          }),
+          now,
+        ),
+      );
 
-        if (!nextEntry) {
-          return {
-            entries: [],
-            date: null,
-          };
-        }
-
+      if (!nextEntry) {
         return {
-          entries: entries.filter((entry) =>
-            isSameDay(entry.start, nextEntry.start),
-          ),
-          date: nextEntry.start,
+          entries: [],
+          date: null,
         };
-      },
+      }
+
+      return {
+        entries: entries.filter((entry) =>
+          isSameDay(entry.start, nextEntry.start),
+        ),
+        date: nextEntry.start,
+      };
     },
-  );
+  });
 
   if (timetable.isPending) {
     return (

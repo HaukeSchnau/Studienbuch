@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { View } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import { startOfDay } from "date-fns";
 
 import { Button } from "~/components/button";
 import { DateField } from "~/components/date-field";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
-import { api } from "~/utils/api";
+import { useIngest } from "~/utils/events/ingest";
 
 export const AddWrittenGrade = ({
   courseId,
@@ -15,10 +16,12 @@ export const AddWrittenGrade = ({
   courseId: string;
   onClose: () => void;
 }) => {
-  const utils = api.useUtils();
-  const addMutation = api.students.grades.addWritten.useMutation({
+  const queryClient = useQueryClient();
+  const addMutation = useIngest("grades.writtenGradeRecorded", {
     onSuccess: async () => {
-      await utils.students.grades.invalidate();
+      await queryClient.invalidateQueries({
+        queryKey: ["grades"],
+      });
       onClose();
     },
   });

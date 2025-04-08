@@ -47,7 +47,7 @@ export const LoginForm = () => {
         return;
       }
 
-      const newSessionToken = response.sessionToken;
+      const newSessionToken = response.session.token;
       await setSessionToken(newSessionToken);
     },
   });

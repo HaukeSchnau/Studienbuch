@@ -1,4 +1,4 @@
-import type { ConfigContext, ExpoConfig } from "expo/config";
+import type { ConfigContext, ExpoConfig } from "@expo/config";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -9,6 +9,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "automatic",
+  newArchEnabled: true,
   splash: {
     image: "./assets/icon.png",
     resizeMode: "contain",
@@ -45,25 +46,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         fonts: [
           "../../node_modules/@expo-google-fonts/nunito/Nunito_400Regular.ttf",
+          "../../node_modules/@expo-google-fonts/nunito/Nunito_400Regular_Italic.ttf",
+          "../../node_modules/@expo-google-fonts/nunito/Nunito_500Medium.ttf",
+          "../../node_modules/@expo-google-fonts/nunito/Nunito_600SemiBold.ttf",
+          "../../node_modules/@expo-google-fonts/nunito/Nunito_700Bold.ttf",
         ],
       },
     ],
-    [
-      "expo-build-properties",
-      {
-        ios: {
-          deploymentTarget: "15.0",
-        },
-        android: {},
-      },
-    ],
-    [
-      "@sentry/react-native/expo",
-      {
-        url: "https://sentry.io/",
-        project: "studienbuch-mobile",
-        organization: "hauke-schnau",
-      },
-    ],
+    "expo-secure-store",
+    "expo-sqlite",
   ],
 });

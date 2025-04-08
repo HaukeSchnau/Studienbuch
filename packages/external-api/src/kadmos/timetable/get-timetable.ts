@@ -37,7 +37,7 @@ const dataSchema = z.object({
         hasPeriodText: z.boolean(),
         periodInfo: z.string(),
         hasInfo: z.boolean(),
-        cellState: z.enum(["STANDARD", "SUBSTITUTION", "ADDITIONAL"]),
+        cellState: z.enum(["STANDARD", "SUBSTITUTION", "ADDITIONAL", "EXAM"]),
         elements: z.array(
           z.object({
             type: typeSchema,

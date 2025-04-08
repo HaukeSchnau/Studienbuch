@@ -1,33 +1,43 @@
 {
-  "name": "@stu/expo-native-modules",
+  "name": "stu-expo-native",
   "version": "0.1.0",
-  "private": true,
-  "author": "Hauke Schnau",
-  "homepage": "haukeschnau.de",
   "description": "Native modules for Studienbuch",
-  "type": "module",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "scripts": {
-    "build": "EXPO_NONINTERACTIVE=1 expo-module build",
+    "build": "EXPO_NONINTERACTIVE=true expo-module build",
     "clean": "expo-module clean",
     "lint": "expo-module lint",
     "test": "expo-module test",
+    "prepare": "expo-module prepare",
     "prepublishOnly": "expo-module prepublishOnly",
     "expo-module": "expo-module",
     "open:ios": "xed example/ios",
     "open:android": "open -a \"Android Studio\" example/android"
   },
-  "license": "MIT",
-  "devDependencies": {
-    "@stu/eslint-config": "workspace:*",
-    "@types/react": "^18.3.11",
-    "expo-module-scripts": "^3.5.2",
-    "expo-modules-core": "^1.12.20"
+  "keywords": [
+    "react-native",
+    "expo",
+    "stu-expo-native",
+    "StuExpoNative"
+  ],
+  "repository": "https://example.com",
+  "bugs": {
+    "url": "https://example.com/issues"
   },
+  "author": "Hauke Schnau <hauke@schnau-lilienthal.de> (HaukeSchnau)",
+  "license": "MIT",
+  "homepage": "https://example.com#readme",
   "peerDependencies": {
     "expo": "*",
     "react": "*",
     "react-native": "*"
+  },
+  "devDependencies": {
+    "@stu/eslint-config": "workspace:^",
+    "@types/react": "~18.3.12",
+    "expo": "~52.0.44",
+    "expo-module-scripts": "^4.0.3",
+    "react-native": "0.76.9"
   }
 }

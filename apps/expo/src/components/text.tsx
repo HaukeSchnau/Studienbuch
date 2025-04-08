@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { Text as RNText } from "react-native";
+import { Platform, Text as RNText } from "react-native";
 import clsx from "clsx";
 
 interface Props extends ComponentProps<typeof RNText> {
@@ -7,6 +7,41 @@ interface Props extends ComponentProps<typeof RNText> {
   italic?: boolean;
   variant?: "heading";
 }
+
+export const fontNames = {
+  regular: Platform.select({
+    android: "Nunito_400Regular",
+    ios: "Nunito-Regular",
+  }),
+  "regular-italic": Platform.select({
+    android: "Nunito_400Regular_Italic",
+    ios: "Nunito-Italic",
+  }),
+  medium: Platform.select({
+    android: "Nunito_500Medium",
+    ios: "Nunito-Medium",
+  }),
+  "medium-italic": Platform.select({
+    android: "Nunito_500Medium_Italic",
+    ios: "Nunito-Medium-Italic",
+  }),
+  "semi-bold": Platform.select({
+    android: "Nunito_600SemiBold",
+    ios: "Nunito-SemiBold",
+  }),
+  "semi-bold-italic": Platform.select({
+    android: "Nunito_600SemiBold_Italic",
+    ios: "Nunito-SemiBold-Italic",
+  }),
+  bold: Platform.select({
+    android: "Nunito_700Bold",
+    ios: "Nunito-Bold",
+  }),
+  "bold-italic": Platform.select({
+    android: "Nunito_700Bold_Italic",
+    ios: "Nunito-Bold-Italic",
+  }),
+};
 
 export const Text = ({
   weight = "regular",
@@ -21,7 +56,7 @@ export const Text = ({
           {...props}
           style={[
             {
-              fontFamily: "Nunito_700Bold",
+              fontFamily: fontNames.bold,
             },
             props.style,
           ]}
@@ -30,22 +65,9 @@ export const Text = ({
       );
   }
 
-  const fontFamilyWithWeight = (() => {
-    switch (weight) {
-      case "regular":
-        return "Nunito_400Regular";
-      case "medium":
-        return "Nunito_500Medium";
-      case "semi-bold":
-        return "Nunito_600SemiBold";
-      case "bold":
-        return "Nunito_700Bold";
-    }
-  })();
-
   const fontFamily = italic
-    ? `${fontFamilyWithWeight}_Italic`
-    : fontFamilyWithWeight;
+    ? `${fontNames[`${weight}-italic`]}`
+    : fontNames[weight];
 
   return (
     <RNText

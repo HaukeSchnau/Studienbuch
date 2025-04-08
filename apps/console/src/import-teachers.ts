@@ -1,0 +1,147 @@
+import type { Salutation } from "@stu/lib";
+import { ingest, SYSTEM_USER } from "@stu/api";
+import { getTeachers } from "@stu/external-api";
+import { Result } from "@stu/lib";
+
+import { logger } from "./logger";
+
+const FIRSTNAME_SALUTATION_MAP: Record<string, Salutation> = {
+  Afrodite: "Frau",
+  Alexander: "Herr",
+  Andrea: "Frau",
+  Anke: "Frau",
+  "Ann-Kathrin": "Frau",
+  Anna: "Frau",
+  Anne: "Frau",
+  Arend: "Herr",
+  Arvid: "Herr",
+  Beate: "Frau",
+  Bernd: "Herr",
+  Bianca: "Frau",
+  Birte: "Frau",
+  Brigitte: "Frau",
+  Carmen: "Frau",
+  Carsten: "Herr",
+  Catharina: "Frau",
+  Christian: "Herr",
+  Claudia: "Frau",
+  Corinna: "Frau",
+  Daniel: "Herr",
+  David: "Herr",
+  Derek: "Herr",
+  Domenik: "Herr",
+  Dominik: "Herr",
+  Dorothea: "Frau",
+  Dorothee: "Frau",
+  Dörte: "Frau",
+  Eren: "Herr",
+  Eva: "Frau",
+  Felix: "Herr",
+  Fiona: "Frau",
+  Frank: "Herr",
+  Frederic: "Herr",
+  Frederik: "Herr",
+  Georg: "Herr",
+  Hagen: "Herr",
+  Hauke: "Herr",
+  Imke: "Frau",
+  Inken: "Frau",
+  Irma: "Frau",
+  Ivonne: "Frau",
+  Jan: "Herr",
+  Janika: "Frau",
+  Janine: "Frau",
+  Jasper: "Herr",
+  Jendrik: "Herr",
+  Jennifer: "Frau",
+  Jens: "Herr",
+  Julia: "Frau",
+  Julian: "Herr",
+  Kathrin: "Frau",
+  Katja: "Frau",
+  Katrin: "Frau",
+  Keno: "Herr",
+  Kerstin: "Frau",
+  Kirsten: "Frau",
+  Kristina: "Frau",
+  Leif: "Herr",
+  Linda: "Frau",
+  Lioba: "Frau",
+  Lisa: "Frau",
+  Lukas: "Herr",
+  Marcus: "Herr",
+  Mario: "Herr",
+  Marion: "Frau",
+  Marita: "Frau",
+  Markus: "Herr",
+  Martin: "Herr",
+  Maximilian: "Herr",
+  Melanie: "Frau",
+  Melinda: "Frau",
+  Michael: "Herr",
+  Michelle: "Frau",
+  Moritz: "Herr",
+  Natalia: "Frau",
+  Nathalie: "Frau",
+  Nesli: "Frau",
+  Nico: "Herr",
+  Paurnima: "Frau",
+  Rebecca: "Frau",
+  Roman: "Herr",
+  Sabine: "Frau",
+  Sabrina: "Frau",
+  Sandra: "Frau",
+  Sebastian: "Herr",
+  Simon: "Herr",
+  Sonja: "Frau",
+  Susanne: "Frau",
+  Sybille: "Frau",
+  Tanja: "Frau",
+  Tatjana: "Frau",
+  Thomas: "Herr",
+  Thorge: "Herr",
+  Thorsten: "Herr",
+  Tobias: "Herr",
+  Tom: "Herr",
+  Veronica: "Frau",
+  Viktor: "Herr",
+  Viviane: "Frau",
+  Wiebke: "Frau",
+  Wolfgang: "Herr",
+};
+
+export const importTeachers = async () => {
+  logger.info("Importing teachers...");
+
+  for (const teacher of getTeachers()) {
+    const err = await ingest(
+      "org.teacher.joined",
+      {
+        data: {
+          personId: crypto.randomUUID(),
+          firstName: teacher.firstName,
+          lastName: teacher.lastName,
+          abbrv: teacher.abbrv,
+          salutation:
+            FIRSTNAME_SALUTATION_MAP[teacher.firstName.split(" ")[0] ?? ""],
+          school: "igs-lil",
+        },
+        id: crypto.randomUUID(),
+        timestamp: new Date(),
+      },
+      SYSTEM_USER,
+    );
+
+    if (Result.isErr(err)) {
+      if (err.error === "EXISTS") {
+        logger.debug(`Teacher ${teacher.abbrv} already joined!`);
+      } else {
+        logger.error(
+          `Could not ingest teacher joined event for ${teacher.abbrv}: ${err.error}`,
+        );
+      }
+    } else {
+      logger.info(`Teacher ${teacher.abbrv} joined!`);
+    }
+  }
+};

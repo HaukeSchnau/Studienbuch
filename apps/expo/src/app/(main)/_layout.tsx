@@ -9,7 +9,9 @@ import { useSession } from "~/utils/auth";
 export default function TabLayout() {
   const session = useSession();
 
-  if (!session?.user) {
+  console.log("session", session);
+
+  if (!session) {
     return <Redirect href="/setup/license-key" />;
   }
 

@@ -1,7 +1,8 @@
 import { View } from "react-native";
 import { Stack } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de } from "date-fns/locale/de";
 
 import { formalName } from "@stu/lib";
 
@@ -9,11 +10,13 @@ import { CoreLayout } from "~/components/core-layout";
 import { shadow } from "~/components/styles/shadow";
 import { SubjectIcon } from "~/components/subject-icon";
 import { Text } from "~/components/text";
-import { api } from "~/utils/api";
 import { GradesOverviewCard } from "./grades/grades-overview-card";
+import { getCourse } from "./queries/get-course";
 
 export const CoursePage = ({ courseId }: { courseId: string }) => {
-  const courseQuery = api.students.courses.getOne.useQuery({ id: courseId });
+  const courseQuery = useQuery(getCourse({ courseId }));
+
+  console.log(courseQuery.status);
 
   if (!courseQuery.data) {
     return (

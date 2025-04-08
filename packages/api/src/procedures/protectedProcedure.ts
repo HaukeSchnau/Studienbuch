@@ -1,7 +1,6 @@
 import { TRPCError } from "@trpc/server";
 
 import type { Permission } from "@stu/lib";
-import { findPermissionScope } from "@stu/lib-server";
 
 import { t } from "../trpc";
 import { logger } from "./loggingProcedure";
@@ -11,13 +10,13 @@ import { logger } from "./loggingProcedure";
  * procedure
  */
 const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
-  if (!ctx.session?.user) {
+  if (!ctx.session) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
   return next({
     ctx: {
       // infers the `session` as non-nullable
-      session: { ...ctx.session, user: ctx.session.user },
+      session: ctx.session,
     },
   });
 });
@@ -35,7 +34,7 @@ export const protectedProcedure = t.procedure
   .use(logger)
   .use(enforceUserIsAuthed);
 
-export const permissionProcedure = (permission: Permission) =>
+export const permissionProcedure = (_permission: Permission) =>
   t.procedure.use(
     t.middleware(async ({ ctx, next }) => {
       const user = ctx.session?.user;
@@ -43,7 +42,9 @@ export const permissionProcedure = (permission: Permission) =>
         throw new TRPCError({ code: "UNAUTHORIZED" });
       }
 
-      const permissionScope = await findPermissionScope(user, permission);
+      // const permissionScope = await findPermissionScope(user, permission);
+      const permissionScope = null;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- TODO: implement
       if (!permissionScope) {
         throw new TRPCError({ code: "FORBIDDEN" });
       }

@@ -1,8 +1,9 @@
 import { useEffect, useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { useStore } from "@tanstack/react-form";
 import { skipToken } from "@tanstack/react-query";
 
-import type { Course, SubjectId } from "@stu/lib";
+import type { Course as BaseCourse, SubjectId, WithTeachers } from "@stu/lib";
 import {
   BetterMap,
   formalNameShort,
@@ -15,36 +16,37 @@ import { SelectCourse } from "~/components/select-course";
 import { SelectField } from "~/components/select-field";
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
+import { useFormContext } from "~/features/setup/form";
 import { api } from "~/utils/api";
-import { useFormContext } from "./form";
+
+type Course = BaseCourse & WithTeachers;
 
 export default function ClassAndCourses() {
   const { form, handleSubmitStep } = useFormContext({
     step: 2,
     onSubmitStep: async () => {
-      await form.handleSubmit();
+      await form.handleSubmit().catch((e) => {
+        console.error(e);
+      });
     },
   });
 
-  const selectedYear = form.useField({
-    name: "year",
-  });
-
-  const selectedClass = form.useField({
-    name: "class",
-  });
+  const selectedYear = useStore(form.store, (state) => state.values.year);
+  const selectedClass = useStore(form.store, (state) => state.values.class);
 
   const classes = api.schools.classes.list.useQuery({
     school: "igs-lil",
-    startYear: selectedYear.state.value.startYear,
+    startYear: selectedYear.startYear,
   });
 
   const courses = api.schools.courses.listChoices.useQuery(
-    selectedClass.state.value
+    selectedClass
       ? {
-          school: "igs-lil",
-          startYear: selectedYear.state.value.startYear,
-          identifierInYear: selectedClass.state.value.identifierInYear,
+          class: {
+            school: "igs-lil",
+            startYear: selectedYear.startYear,
+            identifierInYear: selectedClass.identifierInYear,
+          },
         }
       : skipToken,
   );
@@ -104,9 +106,7 @@ export default function ClassAndCourses() {
                 options={classes.data}
                 label="Klasse"
                 getKey={(item) => item.identifierInYear}
-                getOptionLabel={(item) =>
-                  formatClassName(item, selectedYear.state.value)
-                }
+                getOptionLabel={(item) => formatClassName(item, selectedYear)}
                 onChange={field.setValue}
                 value={field.state.value}
               />

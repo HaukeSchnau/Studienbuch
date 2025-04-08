@@ -1,4 +1,5 @@
 {
+  "window.title": "${activeEditorShort}${separator}Studienbuch${separator}${profileName}",
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
@@ -59,5 +60,10 @@
   "typescript.preferences.autoImportSpecifierExcludeRegexes": [
     "^drizzle-orm/mysql-core$",
     "^drizzle-orm/.+/columns(/.+)?$"
-  ]
+  ],
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
+  "files.autoSave": "afterDelay"
 }

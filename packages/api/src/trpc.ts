@@ -10,9 +10,60 @@ import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
+import { eq } from "@stu/db";
+import { db } from "@stu/db/client";
+import * as tables from "@stu/db/schema";
+
 import type { Logger } from "./interfaces/logger";
 import type { Session } from "./interfaces/session";
+import { SYSTEM_USER } from ".";
 import { env } from "../env";
+
+export const getSession = async (
+  sessionToken: string,
+): Promise<Session | null> => {
+  const session = await db.query.Sessions.findFirst({
+    where: eq(tables.Sessions.token, sessionToken),
+    with: {
+      user: true,
+    },
+  });
+
+  if (!session) {
+    return null;
+  }
+
+  if (session.expires < new Date() || !session.user) {
+    await db
+      .delete(tables.Sessions)
+      .where(eq(tables.Sessions.token, sessionToken));
+    return null;
+  }
+
+  return {
+    token: session.token,
+    user: {
+      id: session.user.id,
+    },
+  };
+};
+
+const getSystemSession = async (): Promise<Session> => {
+  await db
+    .insert(tables.Users)
+    .values({
+      id: SYSTEM_USER,
+      isSuperUser: true,
+    })
+    .onConflictDoNothing();
+
+  return {
+    token: "",
+    user: {
+      id: SYSTEM_USER,
+    },
+  };
+};
 
 /**
  * 1. CONTEXT
@@ -26,21 +77,34 @@ import { env } from "../env";
  *
  * @see https://trpc.io/docs/server/context
  */
-export const createTRPCContext = ({
-  session,
+export const createTRPCContext = async ({
+  sessionToken,
+  authority,
   source,
   log,
 }: {
-  session: Session | null;
   source: string;
   log: Logger;
-}) => {
+} & (
+  | {
+      sessionToken: string | null;
+      authority?: never;
+    }
+  | { authority: "console"; sessionToken?: never }
+)) => {
+  const session: Session | null =
+    authority === "console"
+      ? await getSystemSession()
+      : sessionToken
+        ? await getSession(sessionToken)
+        : null;
+
   if (env.NODE_ENV === "development") {
     console.log(
       ">>> tRPC Request from",
       source,
       "by",
-      session?.user?.name ?? "Anonymous",
+      session?.user.id ?? "Anonymous",
     );
   }
 

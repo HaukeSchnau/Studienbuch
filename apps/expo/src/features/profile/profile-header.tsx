@@ -1,13 +1,14 @@
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "@expo/vector-icons/MaterialIcons";
+import { useQuery } from "@tanstack/react-query";
 
 import { getCurrentYearNum } from "@stu/lib";
 
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
-import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { getMyYear } from "./queries/get-my-year";
 
 const Avatar = () => {
   return (
@@ -18,8 +19,8 @@ const Avatar = () => {
 };
 
 export const Header = () => {
-  const { user } = useRequiredAuthenticatedSession();
-  const year = api.students.years.getOwn.useQuery();
+  const { user, userId } = useRequiredAuthenticatedSession();
+  const year = useQuery(getMyYear({ userId }));
 
   if (year.isPending) {
     return <ActivityIndicator />;
@@ -41,7 +42,8 @@ export const Header = () => {
           <View className="h-2" />
           <View className="items-center">
             <Text className="text-xl text-white">
-              Jahrgang {year.data.name} ({getCurrentYearNum(year.data)}. Klasse)
+              Jahrgang {year.data.year.name} (
+              {getCurrentYearNum(year.data.year)}. Klasse)
             </Text>
             <Text className="text-xl text-white">{year.data.school.name}</Text>
           </View>

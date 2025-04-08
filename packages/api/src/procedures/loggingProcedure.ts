@@ -1,15 +1,18 @@
 import { t } from "../trpc";
 
-export const logger = t.middleware(async ({ ctx, next, path, type }) => {
-  const start = performance.now();
+// export const logger = t.middleware(async ({ ctx, next, path, type }) => {
+//   const start = performance.now();
 
-  const result = await next();
+//   const result = await next();
 
-  const durationMs = performance.now() - start;
-  const meta = { path, type, durationMs };
+//   const durationMs = performance.now() - start;
+//   const meta = { path, type, durationMs };
 
-  ctx.log.info("tRPC", { trpc: meta });
-  await ctx.log.flush();
+//   // TODO reactivate
+//   ctx.log.info("tRPC", { trpc: meta });
+//   await ctx.log.flush();
 
-  return result;
-});
+//   return result;
+// });
+
+export const logger = t.middleware(({ next }) => next());

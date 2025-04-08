@@ -7,15 +7,18 @@ import type { Falsy } from "@stu/lib";
 import { Button } from "~/components/button";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
+import { useFormContext } from "~/features/setup/form";
 import { api } from "~/utils/api";
-import { useFormContext } from "./form";
 
 export default function LicenseKey() {
+  const checkMutation = api.auth.checkLicenseKey.useMutation();
+
   const { form, handleSubmitStep } = useFormContext({
     step: 0,
-    onSubmitStep: () => router.push("/setup/name-and-year"),
+    onSubmitStep: () => {
+      router.push("/setup/name-and-year");
+    },
   });
-  const checkMutation = api.auth.checkLicenseKey.useMutation();
 
   return (
     <View>

@@ -1,12 +1,11 @@
+const { getDefaultConfig } = require("expo/metro-config");
 const { FileStore } = require("metro-cache");
 const { withNativeWind } = require("nativewind/metro");
 const path = require("path");
 
-const { getSentryExpoConfig } = require("@sentry/react-native/metro");
-
 const config = withTurborepoManagedCache(
   withMonorepoPaths(
-    withNativeWind(getSentryExpoConfig(__dirname), {
+    withNativeWind(getDefaultConfig(__dirname), {
       input: "./src/app/styles.css",
       configPath: "./tailwind.config.ts",
     }),
@@ -25,19 +24,32 @@ config.transformer.babelTransformerPath = require.resolve(
 );
 
 config.resolver.extraNodeModules = {
-  "@stu/expo-native-modules": "../../packages/expo-native-modules",
+  "stu-expo-native": "../../packages/expo-native-modules",
 };
 
 config.resolver.assetExts = config.resolver.assetExts.filter(
   (ext) => ext !== "svg",
 );
 
-// XXX: Resolve our exports in workspace packages
-// https://github.com/expo/expo/issues/26926
-config.resolver.unstable_enablePackageExports = true;
-
 config.resolver.sourceExts.push("sql");
 config.resolver.sourceExts.push("svg");
+
+const originalResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === "@stu/lib") {
+    return context.resolveRequest(context, "@stu/lib/src/index.ts", platform);
+  }
+
+  if (moduleName === "@stu/student/schema") {
+    return context.resolveRequest(
+      context,
+      "@stu/student/src/schema/index.ts",
+      platform,
+    );
+  }
+
+  return originalResolveRequest(context, moduleName, platform);
+};
 
 module.exports = config;
 

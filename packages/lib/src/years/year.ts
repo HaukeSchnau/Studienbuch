@@ -47,6 +47,7 @@ export const startYearToNameMap = new Map<number, string>([
   [2020, "Bernhard"],
   [2021, "Frieda"],
   [2022, "Richard"],
+  [2023, "Emmy"],
 ]);
 
 export const formatYear = (year: Year) => {

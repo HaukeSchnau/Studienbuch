@@ -26,32 +26,31 @@
     "dev:internal": "tsc --watch",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
-    "push": "pnpm with-env drizzle-kit push",
-    "studio": "pnpm with-env drizzle-kit studio",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
-    "with-env": "dotenv -e ../../.env --"
+    "push": "drizzle-kit push",
+    "studio": "drizzle-kit studio",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
     "@stu/lib": "workspace:*",
-    "@t3-oss/env-core": "^0.11.1",
+    "@t3-oss/env-core": "^0.12.0",
     "dayjs": "^1.11.13",
-    "drizzle-orm": "^0.34.1",
-    "drizzle-zod": "^0.5.1",
-    "pg": "^8.13.0",
-    "zod": "^3.23.8"
+    "drizzle-orm": "^0.40.0",
+    "drizzle-zod": "^0.7.0",
+    "pg": "^8.13.3",
+    "superjson": "2.2.2",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
     "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
-    "@testcontainers/postgresql": "^10.13.1",
-    "@types/pg": "^8.11.10",
-    "dotenv-cli": "^7.4.2",
-    "drizzle-kit": "^0.25.0",
-    "eslint": "^9.12.0",
-    "prettier": "^3.3.3",
-    "typescript": "^5.6.3",
-    "vitest": "^2.1.3"
+    "@testcontainers/postgresql": "^10.18.0",
+    "@types/pg": "^8.11.11",
+    "drizzle-kit": "^0.30.5",
+    "eslint": "^9.22.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8"
   },
   "prettier": "@stu/prettier-config"
 }

@@ -18,7 +18,7 @@ const handler = applyWSSHandler({
         flush: () => {},
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
-      session: null,
+      sessionToken: null,
       source: "ws",
     }),
   // Enable heartbeat messages to keep connection open (disabled by default)

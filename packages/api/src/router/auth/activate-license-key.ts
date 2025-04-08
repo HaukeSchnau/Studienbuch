@@ -1,71 +1,41 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { eq } from "@stu/db";
-import { db } from "@stu/db/client";
-import { LicenseKeys, Persons, Users } from "@stu/db/schema";
+import { Result } from "@stu/lib";
 
 import { publicProcedure } from "../../procedures";
+import { ingest } from "../events/ingest";
 
 export const activateLicenseKey = publicProcedure
   .input(
     z.object({
       licenseKey: z.string(),
-      name: z.string().min(2),
     }),
   )
   .mutation(async ({ input }) => {
-    const licenseKey = await db.query.LicenseKeys.findFirst({
-      where: eq(LicenseKeys.key, input.licenseKey),
-    });
-    if (!licenseKey) {
+    const userId = crypto.randomUUID();
+    const res = await ingest(
+      "auth.licenseActivated",
+      {
+        data: {
+          licenseKey: input.licenseKey,
+          userId,
+        },
+        id: crypto.randomUUID(),
+        timestamp: new Date(),
+      },
+      userId,
+    );
+
+    if (Result.isErr(res)) {
+      console.error(res);
       throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: "License key not found",
+        code: "INTERNAL_SERVER_ERROR",
+        message: res.error,
       });
-    }
-    // if (licenseKey.isSuperKey) {
-    //   return;
-    // }
-    // if (licenseKey.expiresAt && licenseKey.expiresAt < new Date()) {
-    //   throw new TRPCError({
-    //     code: "BAD_REQUEST",
-    //     message: "License key expired",
-    //   });
-    // }
-    if (licenseKey.activatedBy) {
-      return;
     }
 
-    const [person] = await db
-      .insert(Persons)
-      .values({
-        name: input.name,
-      })
-      .returning();
-    if (!person) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to create person",
-      });
-    }
-    const [user] = await db
-      .insert(Users)
-      .values({
-        id: person.id,
-      })
-      .returning();
-    if (!user) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to create user",
-      });
-    }
-    await db
-      .update(LicenseKeys)
-      .set({
-        activatedAt: new Date(),
-        activatedBy: user.id,
-      })
-      .where(eq(LicenseKeys.key, licenseKey.key));
+    return {
+      userId,
+    };
   });

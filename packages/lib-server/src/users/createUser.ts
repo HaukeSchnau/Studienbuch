@@ -1,16 +1,19 @@
 import type { Salutation } from "@stu/lib";
 import { db } from "@stu/db/client";
 import { Persons, Users } from "@stu/db/schema";
-import { hashPassword } from "@stu/lib-server";
+
+import { hashPassword } from "../auth";
 
 export const createUser = async ({
-  name,
+  firstName,
+  lastName,
   email,
   password,
   salutation,
   abbrv,
 }: {
-  name: string;
+  firstName: string;
+  lastName: string;
   email?: string;
   password?: string;
   salutation?: Salutation;
@@ -21,7 +24,8 @@ export const createUser = async ({
   const personId = await db
     .insert(Persons)
     .values({
-      name,
+      firstName,
+      lastName,
       salutation,
       abbrv,
       email,

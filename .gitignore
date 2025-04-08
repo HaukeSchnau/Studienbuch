@@ -61,3 +61,5 @@ dist/
 __snapshots__
 
 /packages/expo-native-modules/.eslintrc.js
+
+.env.secrets

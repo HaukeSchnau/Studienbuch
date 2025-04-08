@@ -1,9 +1,9 @@
 {
-  "platforms": ["ios", "android"],
-  "ios": {
+  "platforms": ["apple", "android", "web"],
+  "apple": {
     "modules": ["SelectModule", "DrawingModule"]
   },
   "android": {
-    "modules": ["de.haukeschnau.stunativemodules.StuNativeModulesModule"]
+    "modules": ["de.haukeschnau.studienbuch.exponative.StuExpoNativeModule"]
   }
 }

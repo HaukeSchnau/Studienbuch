@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
-import { LicenseKeys } from "@stu/db/schema";
+import * as tables from "@stu/db/schema";
 import { createSession } from "@stu/lib-server";
 
 import { publicProcedure } from "../../procedures";
@@ -15,18 +15,7 @@ export const loginWithLicenseKey = publicProcedure
   )
   .mutation(async ({ input: { licenseKey } }) => {
     const license = await db.query.LicenseKeys.findFirst({
-      where: eq(LicenseKeys.key, licenseKey),
-      with: {
-        activatedBy: {
-          with: {
-            person: {
-              with: {
-                student: true,
-              },
-            },
-          },
-        },
-      },
+      where: eq(tables.LicenseKeys.key, licenseKey),
     });
 
     if (!license) {
@@ -42,19 +31,18 @@ export const loginWithLicenseKey = publicProcedure
       return {
         error: {
           field: "licenseKey" as const,
-          message: "Dieser Lizenkschlüssel wurde noch nicht aktiviert",
+          message: "Dieser Lizenzschlüssel wurde noch nicht aktiviert",
         },
       };
     }
 
-    const session = await createSession({
-      id: license.activatedBy.id,
-      name: license.activatedBy.person.name,
-      isSuperUser: license.activatedBy.isSuperUser,
-      isOfAge: license.activatedBy.person.student?.isOfAge ?? false,
-    });
+    const session = await db
+      .insert(tables.Sessions)
+      .values(createSession({ id: license.activatedBy }))
+      .returning();
 
     return {
-      session: session,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      session: session[0]!,
     };
   });

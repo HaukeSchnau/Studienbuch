@@ -1,17 +1,82 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
+import { skipToken, useQuery } from "@tanstack/react-query";
+import { eq } from "drizzle-orm";
 
+import { persons } from "@stu/student/schema";
+
+import { db } from "~/db/client";
 import { api } from "./api";
 import { useStorage } from "./storage";
 
+const useUserQuery = (userId: string | null) =>
+  useQuery({
+    queryKey: ["user", userId],
+    queryFn: userId
+      ? async () => {
+          const user = await db.query.persons.findFirst({
+            where: eq(persons.id, userId),
+            with: {
+              student: true,
+            },
+          });
+          if (!user) {
+            throw new Error("User not found");
+          }
+          return user;
+        }
+      : skipToken,
+    // TODO: remove need for placeholder data
+    placeholderData: {
+      id: userId ?? "",
+      abbrv: "",
+      email: "",
+      firstName: "",
+      lastName: "",
+      salutation: null,
+      student: {
+        person: "",
+        isOfAge: null,
+        classIdentifier: "",
+        startYear: 0,
+        school: "igs-lil",
+      },
+    },
+  });
+
 export const useRequiredAuthenticatedSession = () => {
   const [session] = useStorage("auth.session");
+  const user = useUserQuery(session?.user ?? null);
 
-  if (!session?.user) {
+  if (!session) {
     throw new Error("Session is required");
   }
 
-  return { ...session, user: session.user };
+  if (!user.data) {
+    throw new Error("No user in query data");
+  }
+
+  const formatName = (firstName: string | null, lastName: string | null) => {
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    }
+    if (firstName) {
+      return firstName;
+    }
+    if (lastName) {
+      return lastName;
+    }
+    return "";
+  };
+
+  return {
+    userId: session.user,
+    token: session.token,
+    user: {
+      isOfAge: user.data.student.isOfAge ?? false,
+      name: formatName(user.data.firstName, user.data.lastName),
+    },
+  };
 };
 
 export const useLicenseKey = () => {
@@ -21,7 +86,7 @@ export const useLicenseKey = () => {
 
 export const useSession = () => {
   const [session] = useStorage("auth.session");
-  return session;
+  return session ? { userId: session.user, token: session.token } : null;
 };
 
 export const useSessionWatcher = () => {

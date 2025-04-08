@@ -10,6 +10,6 @@ export async function initAction() {}
 
 export async function logout() {
   await api.auth.logout();
-  cookies().delete("session");
+  (await cookies()).delete("session");
   redirect("/");
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 
 import type { Grade } from "@stu/lib";
 
@@ -7,7 +8,7 @@ import { Button } from "~/components/button";
 import { Divider } from "~/components/divider";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
-import { api } from "~/utils/api";
+import { useIngest } from "~/utils/events/ingest";
 import { GradeCard } from "../grade-card";
 
 export const EditMasterGrade = ({
@@ -19,17 +20,21 @@ export const EditMasterGrade = ({
   onClose: () => void;
   mostRecentConfirmedMasterGrade: Grade | null;
 }) => {
-  const utils = api.useUtils();
-  const upsertMutation = api.students.grades.upsert.useMutation({
+  const queryClient = useQueryClient();
+  const upsertMutation = useIngest("grades.currentGradeSet", {
     onSuccess: async () => {
-      await utils.students.grades.invalidate();
+      await queryClient.invalidateQueries({
+        queryKey: ["grades"],
+      });
       onClose();
     },
   });
 
-  const restoreMutation = api.students.grades.restore.useMutation({
+  const restoreMutation = useIngest("grades.latestRestored", {
     onSuccess: async () => {
-      await utils.students.grades.invalidate();
+      await queryClient.invalidateQueries({
+        queryKey: ["grades"],
+      });
       onClose();
     },
   });
@@ -73,7 +78,6 @@ export const EditMasterGrade = ({
               onClick: () =>
                 restoreMutation.mutate({
                   course: courseId,
-                  date: mostRecentConfirmedMasterGrade.date,
                   type: "MASTER",
                 }),
             }}

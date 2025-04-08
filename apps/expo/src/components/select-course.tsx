@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from "react-native";
+import { SelectView } from "stu-expo-native";
 
 import type { SubjectId } from "@stu/lib";
-import { SelectView } from "@stu/expo-native-modules";
 import { isArraySingleElement, subjectNameMap } from "@stu/lib";
 import { colors } from "@stu/tailwind-config/native";
 

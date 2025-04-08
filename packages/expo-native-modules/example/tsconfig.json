@@ -3,8 +3,8 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@stu/expo-native-modules": ["../src/index"],
-      "@stu/expo-native-modules/*": ["../src/*"]
+      "stu-expo-native": ["../src/index"],
+      "stu-expo-native/*": ["../src/*"]
     }
   }
 }

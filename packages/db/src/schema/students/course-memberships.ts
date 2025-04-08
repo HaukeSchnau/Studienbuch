@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import { pgTable, primaryKey, uuid } from "drizzle-orm/pg-core";
 
 import { Students } from "../people/persons";
@@ -27,4 +28,18 @@ export const CourseMemberships = pgTable(
       }),
     };
   },
+);
+
+export const CourseMembershipsRelations = relations(
+  CourseMemberships,
+  ({ one }) => ({
+    student: one(Students, {
+      fields: [CourseMemberships.student],
+      references: [Students.person],
+    }),
+    course: one(Courses, {
+      fields: [CourseMemberships.course],
+      references: [Courses.id],
+    }),
+  }),
 );

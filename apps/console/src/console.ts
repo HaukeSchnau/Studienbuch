@@ -5,19 +5,17 @@ import { add, format, weeksToDays } from "date-fns";
 import { z } from "zod";
 
 import type { SchoolId } from "@stu/lib";
+import { ingest, SYSTEM_USER } from "@stu/api";
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
-import { defaultSchools, SCHOOL_IDS } from "@stu/lib";
-import {
-  createUser,
-  importClasses,
-  importTeachers,
-  importTimetable,
-} from "@stu/lib-server";
+import { defaultSchools, Result, SCHOOL_IDS } from "@stu/lib";
+import { createUser } from "@stu/lib-server";
 
+import { importClasses } from "./import-classes";
+import { importTeachers } from "./import-teachers";
+import { importTimetable } from "./import-timetable";
 import { logger } from "./logger";
 import { addSemesters } from "./seed/add-semesters";
-import { copySubstitutions } from "./seed/copy-kadmos-substitutions";
 import { generateLicenses } from "./seed/generate-licenses";
 
 program
@@ -25,18 +23,41 @@ program
   .description("Studienbuch Console")
   .showSuggestionAfterError();
 
+const clamp = (min: number, max: number, value: number) => {
+  return Math.min(Math.max(min, value), max);
+};
+
 const importTimetables = async ({
   school,
-  weekOffsetRange,
+  weekOffsetRange: [offsetStart, offsetEnd],
 }: {
   school: SchoolId;
   weekOffsetRange: [number, number];
 }) => {
   const today = new Date();
-  for (let i = weekOffsetRange[0]; i < weekOffsetRange[1]; i++) {
+  logger.info(
+    `Importing timetables for school "${school}" from ${format(
+      add(today, { days: weeksToDays(offsetStart) }),
+      "yyyy-MM-dd",
+    )} to ${format(
+      add(today, { days: weeksToDays(offsetEnd) }),
+      "yyyy-MM-dd",
+    )}...`,
+  );
+
+  for (
+    let i = clamp(offsetStart, offsetEnd, 0), dir = Math.sign(offsetStart);
+    i <= offsetEnd;
+    i += dir
+  ) {
     const date = add(today, { days: weeksToDays(i) });
     logger.info(`Importing timetable for ${format(date, "yyyy-MM-dd")}...`);
     await importTimetable({ school, date });
+
+    if (i === offsetStart && dir === -1) {
+      i = 0;
+      dir = 1;
+    }
   }
 };
 
@@ -47,38 +68,38 @@ program
     const defaultSchoolValue = defaultSchools[school];
 
     logger.info(`Seeding school "${school}"...`);
-    await db
-      .insert(Schools)
-      .values({ id: school, ...defaultSchoolValue })
-      .onConflictDoNothing();
+    const err = await ingest(
+      "org.school.founded",
+      {
+        data: {
+          id: school,
+          name: defaultSchoolValue.name,
+          state: defaultSchoolValue.stateCode,
+        },
+        id: crypto.randomUUID(),
+        timestamp: defaultSchoolValue.founded,
+      },
+      SYSTEM_USER,
+    );
+    if (Result.isErr(err)) {
+      if (err.error === "EXISTS") {
+        logger.debug(`School "${school}" already founded!`);
+      } else {
+        logger.error(`Could not ingest school founded event: ${err.error}`);
+      }
+    } else {
+      logger.info(`School "${school}" founded!`);
+    }
 
-    logger.info(`Generating license keys for school "${school}"...`);
-    await generateLicenses(100, school);
-
-    logger.info("Importing teachers...");
+    await generateLicenses(10, school);
     await importTeachers();
-
-    logger.info("Adding semesters...");
     await addSemesters(defaultSchoolValue.stateCode);
-
-    logger.info("Importing classes...");
     await importClasses({ school });
-
-    logger.info("Importing timetables...");
-    await importTimetables({ school, weekOffsetRange: [-4, 4] });
+    await importTimetables({ school, weekOffsetRange: [-2, 26] });
 
     logger.info("Seeding complete!");
     process.exit(0);
   });
-
-program.command("import-substitutions").action(async () => {
-  logger.info("Copying today's substitutions...");
-  await copySubstitutions("igs-lil", "TODAY");
-  logger.info("Copying tomorrow's substitutions...");
-  await copySubstitutions("igs-lil", "TOMORROW");
-
-  process.exit(0);
-});
 
 program.command("import-teachers").action(async () => {
   logger.info("Importing teachers...");
@@ -125,7 +146,8 @@ program
   .action(async (username, email, password) => {
     logger.info(`Creating user "${username}"...`);
     await createUser({
-      name: username,
+      firstName: username,
+      lastName: username,
       email,
       password,
     });

@@ -36,6 +36,7 @@ export const defaultSchools: Record<
   {
     name: string;
     image: string;
+    founded: Date;
     theme: Theme;
     kadmosName: string;
     kadmosUsername: string;
@@ -46,6 +47,7 @@ export const defaultSchools: Record<
   "igs-lil": {
     name: "IGS Lilienthal",
     image: "",
+    founded: new Date("2012-09-01"),
     theme: defaultTheme,
     kadmosName: "IGS Lilienthal",
     kadmosUsername: "hauke.studienbuch",

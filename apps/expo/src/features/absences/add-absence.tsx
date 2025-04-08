@@ -1,7 +1,12 @@
-import type { FormApi, ReactFormApi } from "@tanstack/react-form";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { useForm } from "@tanstack/react-form";
+import {
+  createFormHook,
+  createFormHookContexts,
+  formOptions,
+  useStore,
+} from "@tanstack/react-form";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getISOWeek, getISOWeekYear, isSameDay, startOfDay } from "date-fns";
 
 import { subjectNameMap } from "@stu/lib";
@@ -11,7 +16,26 @@ import { CheckboxRow } from "~/components/checkbox-row";
 import { DateField } from "~/components/date-field";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
-import { api } from "~/utils/api";
+import { useIngest } from "~/utils/events/ingest";
+import { getTimetableWeek } from "../agenda/queries/week";
+import { listUnexcused } from "./queries";
+
+const { fieldContext, formContext } = createFormHookContexts();
+
+const { useAppForm, withForm } = createFormHook({
+  fieldComponents: {},
+  formComponents: {},
+  fieldContext,
+  formContext,
+});
+
+const formOpts = formOptions({
+  defaultValues: {
+    date: startOfDay(new Date()),
+    courses: [],
+    reason: "",
+  } satisfies AbsenceForm as AbsenceForm,
+});
 
 interface AbsenceForm {
   date: Date;
@@ -24,20 +48,18 @@ interface Props {
 }
 
 export const AddAbsence = ({ onClose }: Props) => {
-  const utils = api.useUtils();
-  const mutation = api.students.absences.add.useMutation({
+  const queryClient = useQueryClient();
+  const mutation = useIngest("absence.recorded", {
     onSettled: () => {
-      void utils.students.absences.listUnexcused.invalidate();
+      void queryClient.invalidateQueries({
+        queryKey: listUnexcused().queryKey,
+      });
       onClose();
     },
   });
 
-  const form = useForm<AbsenceForm>({
-    defaultValues: {
-      date: startOfDay(new Date()),
-      courses: [],
-      reason: "",
-    },
+  const form = useAppForm({
+    ...formOpts,
     onSubmit: ({ value }) => {
       mutation.mutate({
         date: value.date,
@@ -104,7 +126,7 @@ export const AddAbsence = ({ onClose }: Props) => {
           <Button
             className="self-end"
             label="Eintragen"
-            onPress={form.handleSubmit}
+            onPress={() => form.handleSubmit()}
             disabled={isSubmitting}
           />
         )}
@@ -113,68 +135,67 @@ export const AddAbsence = ({ onClose }: Props) => {
   );
 };
 
-const CoursesSelect = ({
-  form,
-}: {
-  form: FormApi<AbsenceForm, undefined> & ReactFormApi<AbsenceForm, undefined>;
-}) => {
-  const selectedDate = form.useField({
-    name: "date",
-  });
+const CoursesSelect = withForm({
+  ...formOpts,
+  render: function Render({ form }) {
+    const selectedDate = useStore(form.store, (state) => state.values.date);
 
-  useEffect(() => {
-    void form.setFieldValue("courses", [], {
-      dontUpdateMeta: true,
-    });
-  }, [selectedDate.state.value, form]);
+    useEffect(() => {
+      void form.setFieldValue("courses", [], {
+        dontUpdateMeta: true,
+      });
+    }, [selectedDate, form]);
 
-  const courseOptions = api.students.timetable.getWeek.useQuery({
-    isoWeekYear: getISOWeekYear(selectedDate.state.value),
-    isoWeek: getISOWeek(selectedDate.state.value),
-  });
+    const courseOptions = useQuery(
+      getTimetableWeek({
+        isoWeekYear: getISOWeekYear(selectedDate),
+        isoWeek: getISOWeek(selectedDate),
+      }),
+    );
 
-  if (courseOptions.isPending) {
-    return <ActivityIndicator />;
-  }
+    if (courseOptions.isPending) {
+      return <ActivityIndicator />;
+    }
 
-  if (courseOptions.isError) {
-    return <Text>Error: {courseOptions.error.message}</Text>;
-  }
+    if (courseOptions.isError) {
+      return <Text>Error: {courseOptions.error.message}</Text>;
+    }
 
-  const courseOptionsForDay = courseOptions.data
-    .filter((entry) => isSameDay(entry.start, selectedDate.state.value))
-    .sort((a, b) => a.start.getTime() - b.start.getTime());
+    const courseOptionsForDay = courseOptions.data
+      .filter((entry) => isSameDay(entry.start, selectedDate))
+      .sort((a, b) => a.start.getTime() - b.start.getTime());
 
-  if (courseOptionsForDay.length === 0) {
-    return <Text className="px-8">An diesem Tag hast du keine Kurse.</Text>;
-  }
+    if (courseOptionsForDay.length === 0) {
+      return <Text className="px-8">An diesem Tag hast du keine Kurse.</Text>;
+    }
 
-  return (
-    <form.Field name="courses" mode="array">
-      {(field) => (
-        <View className="gap-4 px-4">
-          <Text className="px-4 text-xl" weight="medium">
-            Fächer, in denen du gefehlt hast:
-          </Text>
-          {courseOptionsForDay.map((entry) => (
-            <CheckboxRow
-              textStyle={{ fontSize: 16, color: "#000000dd" }}
-              key={`${entry.course.id}-${entry.start.toISOString()}`}
-              label={subjectNameMap[entry.course.subject]}
-              value={field.state.value.includes(entry.course.id)}
-              onChange={(checked) => {
-                if (checked) {
-                  field.pushValue(entry.course.id);
-                } else {
-                  void field.removeValue(
-                    field.state.value.indexOf(entry.course.id),
-                  );
-                }
-              }}
-            />
-          ))}
-        </View>
-      )}
-    </form.Field>
-  );
-};
+    return (
+      <form.Field name="courses" mode="array">
+        {(field) => (
+          <View className="gap-4 px-4">
+            <Text className="px-4 text-xl" weight="medium">
+              Fächer, in denen du gefehlt hast:
+            </Text>
+            {courseOptionsForDay.map((entry) => (
+              <CheckboxRow
+                textStyle={{ fontSize: 16, color: "#000000dd" }}
+                key={`${entry.course.id}-${entry.start.toISOString()}`}
+                label={subjectNameMap[entry.course.subject]}
+                value={field.state.value.includes(entry.course.id)}
+                onChange={(checked) => {
+                  if (checked) {
+                    field.pushValue(entry.course.id);
+                  } else {
+                    void field.removeValue(
+                      field.state.value.indexOf(entry.course.id),
+                    );
+                  }
+                }}
+              />
+            ))}
+          </View>
+        )}
+      </form.Field>
+    );
+  },
+});

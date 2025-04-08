@@ -1,0 +1,8 @@
+#!/bin/bash
+
+docker compose -f docker-compose.dev.yaml down --volumes --remove-orphans
+docker compose -f docker-compose.dev.yaml up -d --wait
+sleep 3
+nr db:push
+sleep 3
+scripts/console seed igs-lil

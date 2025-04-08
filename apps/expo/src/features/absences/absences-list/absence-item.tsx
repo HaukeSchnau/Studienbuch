@@ -1,5 +1,6 @@
 import { Alert, View } from "react-native";
 import { Link } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import { format } from "date-fns";
 
@@ -9,8 +10,8 @@ import type { AbsenceItem as AbsenceItemType } from "./types";
 import { OutlinedButton } from "~/components/button";
 import { ConfirmationStatus } from "~/components/confirmation-status";
 import { Text } from "~/components/text";
-import { api } from "~/utils/api";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { useIngest } from "~/utils/events/ingest";
 
 interface AbsenceViewProps {
   absenceGroup: AbsenceItemType;
@@ -20,10 +21,12 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
   const isExcused =
     absenceGroup.isExcusedByTeacher && absenceGroup.isExcusedByParent;
   const { user } = useRequiredAuthenticatedSession();
-  const utils = api.useUtils();
-  const deleteMutation = api.students.absences.delete.useMutation({
+  const queryClient = useQueryClient();
+  const deleteMutation = useIngest("absence.discarded", {
     onSuccess: async () => {
-      await utils.students.absences.invalidate();
+      await queryClient.invalidateQueries({
+        queryKey: ["absences"],
+      });
     },
   });
 

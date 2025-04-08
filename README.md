@@ -8,7 +8,7 @@ Copy the `.env.example` file to `.env` and fill in the necessary values. Please 
 ./scripts/dev/setup
 ```
 
-If you prefer to automatically spin up the necessary services using Docker, you can set the `DATABASE_URL` environment variable to `postgres://stu:stu@localhost:5433/stu` and run the following command:
+If you prefer to automatically spin up the necessary services using Docker, you can set the `DATABASE_URL` environment variable to `postgres://stu:stu@localhost:5432/stu` and run the following command:
 
 ```bash
 ./scripts/dev/setup --docker

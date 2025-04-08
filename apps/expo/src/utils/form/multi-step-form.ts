@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FormApi, ReactFormApi } from "@tanstack/react-form";
-import type { ZodValidator } from "@tanstack/zod-form-adapter";
 
 type TakeUntil<Objs extends unknown[], Num extends number> = Objs extends [
   ...infer Head,
@@ -63,5 +63,16 @@ export type InitialForm<Steps extends unknown[]> = JoinedStepsNonRequired<
   Steps["length"]
 >;
 
-export type CombinedForm<TForm> = FormApi<TForm, ZodValidator> &
-  ReactFormApi<TForm, ZodValidator>;
+export type CombinedForm<TForm> = FormApi<
+  TForm,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any,
+  any
+> &
+  ReactFormApi<TForm, any, any, any, any, any, any, any, any, any>;
