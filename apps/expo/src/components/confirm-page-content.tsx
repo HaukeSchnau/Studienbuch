@@ -77,6 +77,10 @@ export const ViewConfirmPageContent = ({
   signatureLabel,
   signatureSvg,
 }: ViewProps) => {
+  if (signatureSvg === "NOT_REQUIRED") {
+    return null;
+  }
+
   return (
     <>
       <Text className="text-xl">{children}</Text>
