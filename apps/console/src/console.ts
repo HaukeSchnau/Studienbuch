@@ -85,7 +85,7 @@ program
       if (err.error === "EXISTS") {
         logger.debug(`School "${school}" already founded!`);
       } else {
-        logger.error(`Could not ingest school founded event: ${err}`);
+        logger.error(`Could not ingest school founded event: ${err.error}`);
       }
     } else {
       logger.info(`School "${school}" founded!`);

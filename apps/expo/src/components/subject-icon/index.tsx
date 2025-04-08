@@ -1,4 +1,5 @@
-import type { ReactComponent } from "react-native-css-interop/dist/types";
+import type { ComponentType } from "react";
+import type { SvgProps } from "react-native-svg";
 import { View } from "react-native";
 
 import type { SubjectId } from "@stu/lib";
@@ -26,7 +27,7 @@ import sportTheorie from "./icons/sp.svg";
 import wn from "./icons/wn.svg";
 
 // TODO: Remove partial when all subjects have icons
-const subjectIconMap: Partial<Record<SubjectId, ReactComponent>> = {
+const subjectIconMap: Partial<Record<SubjectId, ComponentType<SvgProps>>> = {
   de,
   en,
   ma,

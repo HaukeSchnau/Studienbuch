@@ -34,6 +34,7 @@
     "react-native": "*"
   },
   "devDependencies": {
+    "@stu/eslint-config": "workspace:^",
     "@types/react": "~18.3.12",
     "expo": "~52.0.44",
     "expo-module-scripts": "^4.0.3",

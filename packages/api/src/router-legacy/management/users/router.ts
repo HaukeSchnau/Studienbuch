@@ -203,7 +203,7 @@ export const users = {
         input.permissions.map((permission) => ({
           user: input.userId,
           permission: permission.permission,
-          scope: permission.scope ? permission.scope : undefined,
+          scope: permission.scope ?? undefined,
         })),
       );
     }),

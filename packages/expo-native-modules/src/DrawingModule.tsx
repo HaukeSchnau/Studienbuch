@@ -10,7 +10,7 @@ interface Props extends ViewProps {
   ref: Ref<DrawingViewRef>;
 }
 
-declare class Module extends NativeModule<{}> {}
+declare class Module extends NativeModule {}
 
 export const DrawingView = requireNativeView<Props>("DrawingModule");
 export const DrawingModule = requireNativeModule<Module>("DrawingModule");

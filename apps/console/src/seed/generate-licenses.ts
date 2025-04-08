@@ -49,7 +49,7 @@ export const generateLicenses = async (
       if (res.error === "EXISTS") {
         logger.debug(`License key ${licenseKey} already generated!`);
       } else {
-        logger.error(`Could not ingest license generated event: ${res}`);
+        logger.error(`Could not ingest license generated event: ${res.error}`);
       }
     }
   }

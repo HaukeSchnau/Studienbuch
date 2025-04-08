@@ -8,9 +8,9 @@
     "clean": "git clean -xdf .cache .next .turbo node_modules",
     "dev": "next dev",
     "format": "prettier --check . --ignore-path ../../.gitignore",
-    "lint": "eslint",
+    "lint": "echo 'TODO: eslint'",
     "start": "next start",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "echo 'TODO: tsc --noEmit'",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },

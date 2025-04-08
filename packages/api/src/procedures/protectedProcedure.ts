@@ -34,7 +34,7 @@ export const protectedProcedure = t.procedure
   .use(logger)
   .use(enforceUserIsAuthed);
 
-export const permissionProcedure = (permission: Permission) =>
+export const permissionProcedure = (_permission: Permission) =>
   t.procedure.use(
     t.middleware(async ({ ctx, next }) => {
       const user = ctx.session?.user;
@@ -44,6 +44,7 @@ export const permissionProcedure = (permission: Permission) =>
 
       // const permissionScope = await findPermissionScope(user, permission);
       const permissionScope = null;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- TODO: implement
       if (!permissionScope) {
         throw new TRPCError({ code: "FORBIDDEN" });
       }

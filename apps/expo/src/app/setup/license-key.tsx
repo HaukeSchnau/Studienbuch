@@ -15,7 +15,7 @@ export default function LicenseKey() {
 
   const { form, handleSubmitStep } = useFormContext({
     step: 0,
-    onSubmitStep: async () => {
+    onSubmitStep: () => {
       router.push("/setup/name-and-year");
     },
   });

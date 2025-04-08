@@ -43,7 +43,7 @@ export class ConsoleIservClient extends IservClient {
         logger.debug(`Teacher ${abbrv} already joined!`);
       } else {
         logger.error(
-          `Could not ingest teacher joined event for ${abbrv}: ${err}`,
+          `Could not ingest teacher joined event for ${abbrv}: ${err.error}`,
         );
       }
     } else {

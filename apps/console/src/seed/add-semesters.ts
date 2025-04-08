@@ -33,7 +33,7 @@ export const addSemesters = async (state: State) => {
       if (err.error === "EXISTS") {
         logger.debug(`Holiday ${holiday.name} already created!`);
       } else {
-        logger.error(`Could not ingest holiday created event: ${err}`);
+        logger.error(`Could not ingest holiday created event: ${err.error}`);
       }
     } else {
       logger.info(`Holiday ${holiday.name} created!`);

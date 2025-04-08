@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { expect, it } from "vitest";
 
 import type { Event } from "@stu/lib";

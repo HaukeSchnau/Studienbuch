@@ -26,11 +26,11 @@ export namespace Result {
     };
   }
 
-  export function isOk<T>(result: Result<T, any>): result is Ok<T> {
+  export function isOk<T>(result: Result<T, unknown>): result is Ok<T> {
     return result._tag === "ok";
   }
 
-  export function isErr<E>(result: Result<any, E>): result is Err<E> {
+  export function isErr<E>(result: Result<unknown, E>): result is Err<E> {
     return result._tag === "err";
   }
 }

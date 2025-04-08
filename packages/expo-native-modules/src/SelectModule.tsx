@@ -11,7 +11,7 @@ interface Props extends ViewProps {
   onSelect?: (event: { nativeEvent: OnChangeEvent }) => void;
 }
 
-declare class Module extends NativeModule<{}> {}
+declare class Module extends NativeModule {}
 
 export const SelectView = requireNativeView<Props>("SelectModule");
 export const SelectModule = requireNativeModule<Module>("SelectModule");

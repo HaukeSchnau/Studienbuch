@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FormApi, ReactFormApi } from "@tanstack/react-form";
-import type { ZodValidator } from "@tanstack/zod-form-adapter";
 
 type TakeUntil<Objs extends unknown[], Num extends number> = Objs extends [
   ...infer Head,

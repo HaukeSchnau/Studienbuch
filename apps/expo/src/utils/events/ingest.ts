@@ -1,7 +1,6 @@
 import type { UseMutationOptions } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
 import { useMutation } from "@tanstack/react-query";
-import { jsonlStreamConsumer } from "@trpc/server/unstable-core-do-not-import";
 import { asc, eq, or } from "drizzle-orm";
 import superjson from "superjson";
 
@@ -229,6 +228,7 @@ const useIngestMutation = <TEventName extends EventName>(
     ...options,
     mutationFn: async (data) => {
       const result = await ingest(eventName, userId, data, connectionRequired);
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       if (Result.isErr(result)) throw result.error;
     },
   });

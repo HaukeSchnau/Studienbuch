@@ -24,7 +24,6 @@ export default function RoadmapPage() {
           </div>
         }
       >
-        {/* @ts-expect-error */}
         <StateColumns />
       </Suspense>
     </div>
@@ -37,7 +36,6 @@ const StateColumns = async () => {
   return (
     <div className={clsx(style.stateColumns, "px-12 pt-10 md:px-[10vw]")}>
       {states.map((state, idx) => (
-        // @ts-expect-error
         <StateColumn
           key={state.id}
           state={state}
@@ -67,7 +65,6 @@ const StateColumn = async ({ state, isLast }: StateColumnProps) => {
       <h2 className="pl-4 font-medium">{state.name}</h2>
       <div className="flex flex-col gap-4">
         {issues.map((issue) => (
-          // @ts-expect-error
           <IssueCard key={issue.id} issue={issue} color={state.color} />
         ))}
       </div>
