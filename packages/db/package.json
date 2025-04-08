@@ -34,9 +34,9 @@
     "@stu/lib": "workspace:*",
     "@t3-oss/env-core": "^0.12.0",
     "dayjs": "^1.11.13",
-    "drizzle-orm": "^0.40.0",
-    "drizzle-zod": "^0.7.0",
-    "pg": "^8.13.3",
+    "drizzle-orm": "^0.41.0",
+    "drizzle-zod": "^0.7.1",
+    "pg": "^8.14.1",
     "superjson": "2.2.2",
     "zod": "^3.24.2"
   },
@@ -44,13 +44,13 @@
     "@stu/eslint-config": "workspace:*",
     "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
-    "@testcontainers/postgresql": "^10.18.0",
+    "@testcontainers/postgresql": "^10.24.0",
     "@types/pg": "^8.11.11",
-    "drizzle-kit": "^0.30.5",
-    "eslint": "^9.22.0",
+    "drizzle-kit": "^0.30.6",
+    "eslint": "^9.24.0",
     "prettier": "^3.5.3",
-    "typescript": "^5.8.2",
-    "vitest": "^3.0.8"
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
   },
   "prettier": "@stu/prettier-config"
 }

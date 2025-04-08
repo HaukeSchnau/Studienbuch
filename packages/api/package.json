@@ -21,20 +21,20 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@libsql/client": "^0.14.0",
+    "@libsql/client": "^0.15.2",
     "@stu/db": "workspace:*",
     "@stu/external-api": "workspace:*",
     "@stu/lib": "workspace:*",
     "@stu/lib-server": "workspace:*",
     "@stu/student": "workspace:^",
     "@t3-oss/env-nextjs": "^0.12.0",
-    "@trpc/server": "11.0.0-rc.824",
+    "@trpc/server": "11.0.3",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
-    "drizzle-orm": "^0.40.0",
-    "drizzle-zod": "^0.7.0",
+    "drizzle-orm": "^0.41.0",
+    "drizzle-zod": "^0.7.1",
     "hono": "^4.7.4",
-    "pg": "^8.13.3",
+    "pg": "^8.14.1",
     "rabbitmq-stream-js-client": "^0.6.0",
     "superjson": "2.2.2",
     "zod": "^3.24.2"
@@ -43,10 +43,10 @@
     "@stu/eslint-config": "workspace:*",
     "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
-    "eslint": "^9.22.0",
+    "eslint": "^9.24.0",
     "prettier": "^3.5.3",
-    "typescript": "^5.8.2",
-    "vitest": "^3.0.8"
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
   },
   "prettier": "@stu/prettier-config"
 }

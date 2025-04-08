@@ -15,4 +15,4 @@ import { t } from "../trpc";
 //   return result;
 // });
 
-export const logger = t.middleware(({ next }) => next());
+export const logger = t.middleware(async ({ next }) => await next());
