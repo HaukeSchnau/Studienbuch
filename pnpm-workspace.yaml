@@ -4,10 +4,11 @@ packages:
   - packages/expo-native-modules/example
   - tooling/*
 onlyBuiltDependencies:
-  - '@sentry-internal/node-cpu-profiler'
-  - '@sentry/profiling-node'
+  - "@sentry-internal/node-cpu-profiler"
+  - "@sentry/profiling-node"
   - core-js-pure
   - cpu-features
   - esbuild
   - sharp
   - ssh2
+injectWorkspacePackages: true
