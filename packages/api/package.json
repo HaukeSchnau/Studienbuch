@@ -21,7 +21,6 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@libsql/client": "^0.15.2",
     "@stu/db": "workspace:*",
     "@stu/external-api": "workspace:*",
     "@stu/lib": "workspace:*",
