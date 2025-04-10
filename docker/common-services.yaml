@@ -1,11 +1,13 @@
 services:
   postgres:
-    image: postgres
+    image: postgres:17-alpine
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: stu
       POSTGRES_USER: stu
       POSTGRES_DB: stu
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   rabbitmq:
     build:
@@ -15,3 +17,5 @@ services:
     environment:
       - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_stream
         advertised_host localhost
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq

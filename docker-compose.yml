@@ -1,0 +1,36 @@
+name: "studienbuch-prod"
+
+services:
+  management-data-storage:
+    extends:
+      file: docker/common-services.yaml
+      service: postgres
+  event-stream:
+    extends:
+      file: docker/common-services.yaml
+      service: rabbitmq
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - $API_PORT:80
+    depends_on:
+      management-data-storage:
+        condition: service_started
+      event-stream:
+        condition: service_started
+    environment:
+      MANAGEMENT_DATABASE_URL: postgresql://stu:stu@management-data-storage:5432/stu
+      RABBITMQ_HOST: event-stream
+      ISERV_USERNAME: $ISERV_USERNAME
+      ISERV_PASSWORD: $ISER_PASSWORD
+      LINEAR_API_KEY: $LINEAR_API_KEY
+      NEXT_PUBLIC_AXIOM_DATASET: $AXIOM_DATASET
+      NEXT_PUBLIC_AXIOM_TOKEN: $AXIOM_TOKEN
+
+volumes:
+  postgres_data:
+  rabbitmq_data:
