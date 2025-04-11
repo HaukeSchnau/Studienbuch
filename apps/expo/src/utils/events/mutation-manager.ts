@@ -1,17 +1,17 @@
 import { useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { eq } from "drizzle-orm";
-import superjson from "superjson";
 import { create } from "zustand";
 
-import { deserializeEvent, Result } from "@stu/lib";
+import { Result } from "@stu/lib";
 import * as tables from "@stu/student/schema";
 
 import type { LocalEvent } from "./ingest";
 import { db } from "~/db/client";
-import { getEventStream, publishEvent } from "../api";
+import { publishEvent } from "../api";
 import { useStorage } from "../storage";
 import { getEventsToBePushed, ingestExistingEvent } from "./ingest";
+import { useRemoteEventStream } from "./use-event-stream";
 
 interface MutationStore {
   queue: LocalEvent[];
@@ -41,12 +41,12 @@ export const MutationManager = ({
   const sessionToken = session?.token;
 
   useEffect(() => {
-    console.log("initializing local events");
+    console.log("Initializing local events"); 
 
     // Initialize the queue with events that are not done yet
     getEventsToBePushed()
       .then((muts) => {
-        console.log("initialized", muts);
+        console.log("Initialized local events to be pushed", muts);
         initialize(muts);
       })
       .catch((reason) =>
@@ -54,46 +54,7 @@ export const MutationManager = ({
       );
   }, []);
 
-  useEffect(() => {
-    // Subscribe to rabbitmq events
-    if (!sessionToken) return;
-    const eventStream = getEventStream(sessionToken);
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    eventStream.addEventListener("message", async (event) => {
-      if (!event.data) {
-        console.error("no data in event", event);
-        return;
-      }
-      const e = deserializeEvent(event.data);
-      console.log("RECEIVED REMOTE EVENT >>>", e.data?.type);
-
-      if (e.success) {
-        // First: Save to local events table
-        await db.insert(tables.events).values({
-          type: e.data.type,
-          id: e.data.id,
-          data: superjson.stringify(e.data.data),
-          timestamp: e.data.timestamp,
-          localStatus: "pending",
-          publishStatus: "success",
-        });
-
-        push({
-          event: e.data,
-          metadata: {
-            localStatus: "pending",
-            publishStatus: "success",
-          },
-        });
-      } else {
-        console.error("Failed to parse event", e.error);
-      }
-    });
-
-    return () => {
-      eventStream.close();
-    };
-  }, [sessionToken]);
+  useRemoteEventStream({ sessionToken, onEvent: push });
 
   const handleMutation = useMutation({
     retry: true,

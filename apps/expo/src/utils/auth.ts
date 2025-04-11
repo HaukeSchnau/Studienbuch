@@ -89,12 +89,36 @@ export const useSession = () => {
   return session ? { userId: session.user, token: session.token } : null;
 };
 
+/**
+ * The session watcher populates the session in the local storage if it doesnt exist yet and returns whether
+ * the underlying application is ready to start.
+ * It'll also try to re-authenticate with an existing License Key in the background.
+ */
 export const useSessionWatcher = () => {
   const utils = api.useUtils();
   const router = useRouter();
-  const login = api.auth.loginWithLicenseKey.useMutation();
+  const login = api.auth.loginWithLicenseKey.useMutation({
+    retry: 3,
+    onSuccess: async ({ error, session }) => {
+      if (error) {
+        console.error(
+          "Error while trying to log in with existing license key in background",
+          error,
+        );
+        setSession(null);
+        setLoading(false);
+      } else {
+        await setSession(session);
+        setLoading(false);
+
+        await utils.invalidate();
+        router.replace("/");
+      }
+    },
+  });
   const [licenseKey] = useStorage("auth.licenseKey");
   const [session, setSession] = useStorage("auth.session");
+  const getSessionQuery = api.auth.getSession.useQuery();
 
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -104,27 +128,46 @@ export const useSessionWatcher = () => {
       return;
     }
 
-    void (async () => {
-      if (!licenseKey) {
-        setLoading(false);
-        return;
-      }
-      const { error, session } = await login.mutateAsync({
+    if (!licenseKey) {
+      setLoading(false);
+      return;
+    }
+
+    login.mutate({
+      licenseKey,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [licenseKey]);
+
+  useEffect(() => {
+    if (getSessionQuery.status !== "success") {
+      console.error("Failed to get session.");
+      return;
+    }
+
+    if (!licenseKey) {
+      return;
+    }
+
+    if (getSessionQuery.data === null) {
+      login.mutate({
         licenseKey,
       });
-      if (error) {
-        console.error(error);
-        setLoading(false);
-        return;
-      }
-      await setSession(session);
-      setLoading(false);
+      return;
+    }
 
+    const data = getSessionQuery.data;
+
+    void (async () => {
+      await setSession({
+        token: data.token,
+        user: data.user.id,
+      });
       await utils.invalidate();
       router.replace("/");
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [licenseKey]);
+  }, [getSessionQuery.status, getSessionQuery.data, licenseKey]);
 
   return loading;
 };
