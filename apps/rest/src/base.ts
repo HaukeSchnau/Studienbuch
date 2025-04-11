@@ -1,5 +1,5 @@
 import { trpcServer } from "@hono/trpc-server";
-import { OpenAPIHono } from "@hono/zod-openapi";
+import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
 import { streamSSE } from "hono/streaming";
@@ -42,29 +42,11 @@ const appLogger = pino({
 });
 
 export const createBase = (basePath: string) => {
-  const app = new OpenAPIHono().basePath(basePath);
+  const app = new Hono().basePath(basePath);
 
   app.use(trimTrailingSlash());
   app.use(prettyJSON());
   app.use(logger((str, ...rest) => appLogger.info(str, ...rest)));
-
-  app.doc("/openapi", {
-    openapi: "3.0.0",
-    info: {
-      version: "1.0.0",
-      title: "My API",
-    },
-    servers: [
-      {
-        description: "Production server",
-        url: "https://api.studienbuch.app",
-      },
-      {
-        description: "Development server",
-        url: "http://localhost:3000",
-      },
-    ],
-  });
 
   app.use(
     "/trpc/*",

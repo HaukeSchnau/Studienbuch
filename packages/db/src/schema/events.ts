@@ -55,12 +55,10 @@ export const eventTopics = pgTable(
       .references(() => events.id),
     topic: text().notNull(),
   },
-  (table) => [
-    {
-      pk: primaryKey({ columns: [table.event, table.topic] }),
-      idx_event_topics: index().on(table.event, table.topic),
-    },
-  ],
+  (table) => ({
+    pk: primaryKey({ columns: [table.event, table.topic] }),
+    idx_event_topics: index().on(table.event, table.topic),
+  }),
 );
 
 export const eventsSentToUsers = pgTable(
@@ -69,10 +67,8 @@ export const eventsSentToUsers = pgTable(
     event: uuid().references(() => events.id),
     user: uuid().references(() => Users.id),
   },
-  (table) => [
-    {
-      pk: primaryKey({ columns: [table.event, table.user] }),
-      idx_event_user: index().on(table.event, table.user),
-    },
-  ],
+  (table) => ({
+    pk: primaryKey({ columns: [table.event, table.user] }),
+    idx_event_user: index().on(table.event, table.user),
+  }),
 );

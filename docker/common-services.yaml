@@ -1,11 +1,13 @@
 services:
   postgres:
-    image: postgres
+    image: postgres:17-alpine
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: stu
       POSTGRES_USER: stu
       POSTGRES_DB: stu
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   rabbitmq:
     build:
@@ -15,12 +17,5 @@ services:
     environment:
       - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_stream
         advertised_host localhost
-
-  libsql:
-    image: ghcr.io/tursodatabase/libsql-server:latest
-    restart: unless-stopped
-    environment:
-      SQLD_NODE: primary
-      LIBSQL_ADMIN_AUTH_KEY: admin
-      SQLD_ADMIN_LISTEN_ADDR: 0.0.0.0:9090
-    command: /bin/sqld --enable-http-console --enable-namespaces
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq

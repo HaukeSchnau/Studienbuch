@@ -45,6 +45,7 @@ export const DateField = ({ value, label, onChange }: Props) => {
           <DateTimePicker
             style={{
               alignSelf: "flex-start",
+              width: "100%",
             }}
             value={value}
             onChange={(e, date) => {

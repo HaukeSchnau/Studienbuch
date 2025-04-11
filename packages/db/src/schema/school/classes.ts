@@ -21,8 +21,8 @@ export const Classes = pgTable(
     startYear: smallint("start_year").notNull(),
     school: SchoolId("school").notNull(),
   },
-  (table) => [
-    {
+  (table) => {
+    return {
       pk: primaryKey({
         columns: [table.identifierInYear, table.startYear, table.school],
       }),
@@ -32,8 +32,8 @@ export const Classes = pgTable(
       })
         .onDelete("restrict")
         .onUpdate("cascade"),
-    },
-  ],
+    };
+  },
 );
 
 export const ClassesRelations = relations(Classes, ({ one, many }) => ({
@@ -59,28 +59,26 @@ export const TeachersToClasses = pgTable(
     classStartYear: smallint("class_start_year").notNull(),
     school: SchoolId("school").notNull(),
   },
-  (table) => [
-    {
-      pk: primaryKey({
-        columns: [
-          table.teacher,
-          table.classIdentifier,
-          table.classStartYear,
-          table.school,
-        ],
-      }),
-      class_fk: foreignKey({
-        columns: [table.classIdentifier, table.classStartYear, table.school],
-        foreignColumns: [
-          Classes.identifierInYear,
-          Classes.startYear,
-          Classes.school,
-        ],
-      })
-        .onDelete("cascade")
-        .onUpdate("cascade"),
-    },
-  ],
+  (table) => ({
+    pk: primaryKey({
+      columns: [
+        table.teacher,
+        table.classIdentifier,
+        table.classStartYear,
+        table.school,
+      ],
+    }),
+    class_fk: foreignKey({
+      columns: [table.classIdentifier, table.classStartYear, table.school],
+      foreignColumns: [
+        Classes.identifierInYear,
+        Classes.startYear,
+        Classes.school,
+      ],
+    })
+      .onDelete("cascade")
+      .onUpdate("cascade"),
+  }),
 );
 
 export const TeachersToClassesRelations = relations(
