@@ -12,14 +12,15 @@ RUN --mount=type=cache,target=/root/.bun bun install --frozen-lockfile --ignore-
 FROM base AS builder
 COPY --from=install /temp/dev/node_modules /usr/src/app/node_modules
 COPY . .
-RUN --mount=type=cache,target=/root/.bun bun install --frozen-lockfile
 
 WORKDIR /usr/src/app/apps/rest
+ENV NODE_ENV=production
 RUN bun ./build.ts
 
 FROM base AS runner
 WORKDIR /app
 COPY --from=builder /usr/src/app/apps/rest/dist/ /app/
+COPY --from=builder /usr/src/app/packages/db/drizzle/ /app/drizzle
 
 ENV NODE_ENV=production
 ENV PORT=80

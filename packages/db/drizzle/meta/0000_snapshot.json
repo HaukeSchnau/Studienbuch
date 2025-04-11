@@ -1,5 +1,5 @@
 {
-  "id": "1dbabb88-c249-4c65-bcdf-6d0208eaf8f0",
+  "id": "c76a7cc2-b1e4-4a89-b2f5-b6d40bca1dd5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -15,8 +15,14 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "name": {
-          "name": "name",
+        "first_name": {
+          "name": "first_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_name": {
+          "name": "last_name",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -48,14 +54,21 @@
         "persons_abbrv_unique": {
           "name": "persons_abbrv_unique",
           "nullsNotDistinct": false,
-          "columns": ["abbrv"]
+          "columns": [
+            "abbrv"
+          ]
         },
         "persons_email_unique": {
           "name": "persons_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         }
-      }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.students": {
       "name": "students",
@@ -99,8 +112,12 @@
           "name": "students_person_persons_id_fk",
           "tableFrom": "students",
           "tableTo": "persons",
-          "columnsFrom": ["person"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "person"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -108,14 +125,25 @@
           "name": "students_class_identifier_start_year_school_classes_identifier_in_year_start_year_school_fk",
           "tableFrom": "students",
           "tableTo": "classes",
-          "columnsFrom": ["class_identifier", "start_year", "school"],
-          "columnsTo": ["identifier_in_year", "start_year", "school"],
+          "columnsFrom": [
+            "class_identifier",
+            "start_year",
+            "school"
+          ],
+          "columnsTo": [
+            "identifier_in_year",
+            "start_year",
+            "school"
+          ],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.users": {
       "name": "users",
@@ -154,19 +182,12 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "users_id_persons_id_fk": {
-          "name": "users_id_persons_id_fk",
-          "tableFrom": "users",
-          "tableTo": "persons",
-          "columnsFrom": ["id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.classes": {
       "name": "classes",
@@ -198,8 +219,14 @@
           "name": "classes_start_year_school_years_start_year_school_fk",
           "tableFrom": "classes",
           "tableTo": "years",
-          "columnsFrom": ["start_year", "school"],
-          "columnsTo": ["start_year", "school"],
+          "columnsFrom": [
+            "start_year",
+            "school"
+          ],
+          "columnsTo": [
+            "start_year",
+            "school"
+          ],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -207,10 +234,17 @@
       "compositePrimaryKeys": {
         "classes_identifier_in_year_start_year_school_pk": {
           "name": "classes_identifier_in_year_start_year_school_pk",
-          "columns": ["identifier_in_year", "start_year", "school"]
+          "columns": [
+            "identifier_in_year",
+            "start_year",
+            "school"
+          ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.teachers_to_classes": {
       "name": "teachers_to_classes",
@@ -248,8 +282,12 @@
           "name": "teachers_to_classes_teacher_persons_id_fk",
           "tableFrom": "teachers_to_classes",
           "tableTo": "persons",
-          "columnsFrom": ["teacher"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "teacher"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -257,8 +295,16 @@
           "name": "teachers_to_classes_class_identifier_class_start_year_school_classes_identifier_in_year_start_year_school_fk",
           "tableFrom": "teachers_to_classes",
           "tableTo": "classes",
-          "columnsFrom": ["class_identifier", "class_start_year", "school"],
-          "columnsTo": ["identifier_in_year", "start_year", "school"],
+          "columnsFrom": [
+            "class_identifier",
+            "class_start_year",
+            "school"
+          ],
+          "columnsTo": [
+            "identifier_in_year",
+            "start_year",
+            "school"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -274,7 +320,10 @@
           ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.courses": {
       "name": "courses",
@@ -303,22 +352,6 @@
           "name": "subject",
           "type": "subject",
           "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "public.semester_courses": {
-      "name": "semester_courses",
-      "schema": "",
-      "columns": {
-        "course": {
-          "name": "course",
-          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
@@ -352,53 +385,37 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "semester_courses_course_courses_id_fk": {
-          "name": "semester_courses_course_courses_id_fk",
-          "tableFrom": "semester_courses",
-          "tableTo": "courses",
-          "columnsFrom": ["course"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
-        "semester_courses_semester_type_semester_year_school_semesters_type_year_school_fk": {
-          "name": "semester_courses_semester_type_semester_year_school_semesters_type_year_school_fk",
-          "tableFrom": "semester_courses",
+        "courses_semester_type_semester_year_school_semesters_type_year_school_fk": {
+          "name": "courses_semester_type_semester_year_school_semesters_type_year_school_fk",
+          "tableFrom": "courses",
           "tableTo": "semesters",
-          "columnsFrom": ["semester_type", "semester_year", "school"],
-          "columnsTo": ["type", "year", "school"],
+          "columnsFrom": [
+            "semester_type",
+            "semester_year",
+            "school"
+          ],
+          "columnsTo": [
+            "type",
+            "year",
+            "school"
+          ],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
       },
-      "compositePrimaryKeys": {
-        "semester_courses_course_semester_type_semester_year_school_pk": {
-          "name": "semester_courses_course_semester_type_semester_year_school_pk",
-          "columns": ["course", "semester_type", "semester_year", "school"]
-        }
-      },
-      "uniqueConstraints": {}
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.semester_courses_to_classes": {
-      "name": "semester_courses_to_classes",
+    "public.courses_to_classes": {
+      "name": "courses_to_classes",
       "schema": "",
       "columns": {
         "course": {
           "name": "course",
           "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "semester_type": {
-          "name": "semester_type",
-          "type": "semester_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "semester_year": {
-          "name": "semester_year",
-          "type": "smallint",
           "primaryKey": false,
           "notNull": true
         },
@@ -424,67 +441,60 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "semester_courses_to_classes_course_semester_type_semester_year_school_semester_courses_course_semester_type_semester_year_school_fk": {
-          "name": "semester_courses_to_classes_course_semester_type_semester_year_school_semester_courses_course_semester_type_semester_year_school_fk",
-          "tableFrom": "semester_courses_to_classes",
-          "tableTo": "semester_courses",
-          "columnsFrom": ["course", "semester_type", "semester_year", "school"],
-          "columnsTo": ["course", "semester_type", "semester_year", "school"],
+        "courses_to_classes_course_courses_id_fk": {
+          "name": "courses_to_classes_course_courses_id_fk",
+          "tableFrom": "courses_to_classes",
+          "tableTo": "courses",
+          "columnsFrom": [
+            "course"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
-        "semester_courses_to_classes_class_identifier_class_start_year_school_classes_identifier_in_year_start_year_school_fk": {
-          "name": "semester_courses_to_classes_class_identifier_class_start_year_school_classes_identifier_in_year_start_year_school_fk",
-          "tableFrom": "semester_courses_to_classes",
+        "courses_to_classes_class_identifier_class_start_year_school_classes_identifier_in_year_start_year_school_fk": {
+          "name": "courses_to_classes_class_identifier_class_start_year_school_classes_identifier_in_year_start_year_school_fk",
+          "tableFrom": "courses_to_classes",
           "tableTo": "classes",
-          "columnsFrom": ["class_identifier", "class_start_year", "school"],
-          "columnsTo": ["identifier_in_year", "start_year", "school"],
+          "columnsFrom": [
+            "class_identifier",
+            "class_start_year",
+            "school"
+          ],
+          "columnsTo": [
+            "identifier_in_year",
+            "start_year",
+            "school"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
-        "semester_courses_to_classes_course_semester_type_semester_year_class_identifier_class_start_year_school_pk": {
-          "name": "semester_courses_to_classes_course_semester_type_semester_year_class_identifier_class_start_year_school_pk",
+        "courses_to_classes_course_class_identifier_class_start_year_school_pk": {
+          "name": "courses_to_classes_course_class_identifier_class_start_year_school_pk",
           "columns": [
             "course",
-            "semester_type",
-            "semester_year",
             "class_identifier",
             "class_start_year",
             "school"
           ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
-    "public.semester_courses_to_teachers": {
-      "name": "semester_courses_to_teachers",
+    "public.courses_to_teachers": {
+      "name": "courses_to_teachers",
       "schema": "",
       "columns": {
         "course": {
           "name": "course",
           "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "semester_type": {
-          "name": "semester_type",
-          "type": "semester_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "semester_year": {
-          "name": "semester_year",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "school": {
-          "name": "school",
-          "type": "school_id",
-          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -497,38 +507,46 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "semester_courses_to_teachers_course_semester_type_semester_year_school_semester_courses_course_semester_type_semester_year_school_fk": {
-          "name": "semester_courses_to_teachers_course_semester_type_semester_year_school_semester_courses_course_semester_type_semester_year_school_fk",
-          "tableFrom": "semester_courses_to_teachers",
-          "tableTo": "semester_courses",
-          "columnsFrom": ["course", "semester_type", "semester_year", "school"],
-          "columnsTo": ["course", "semester_type", "semester_year", "school"],
+        "courses_to_teachers_course_courses_id_fk": {
+          "name": "courses_to_teachers_course_courses_id_fk",
+          "tableFrom": "courses_to_teachers",
+          "tableTo": "courses",
+          "columnsFrom": [
+            "course"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
-        "semester_courses_to_teachers_teacher_persons_id_fk": {
-          "name": "semester_courses_to_teachers_teacher_persons_id_fk",
-          "tableFrom": "semester_courses_to_teachers",
+        "courses_to_teachers_teacher_persons_id_fk": {
+          "name": "courses_to_teachers_teacher_persons_id_fk",
+          "tableFrom": "courses_to_teachers",
           "tableTo": "persons",
-          "columnsFrom": ["teacher"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "teacher"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
-        "semester_courses_to_teachers_course_semester_type_semester_year_teacher_school_pk": {
-          "name": "semester_courses_to_teachers_course_semester_type_semester_year_teacher_school_pk",
+        "courses_to_teachers_course_teacher_pk": {
+          "name": "courses_to_teachers_course_teacher_pk",
           "columns": [
             "course",
-            "semester_type",
-            "semester_year",
-            "teacher",
-            "school"
+            "teacher"
           ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.rooms": {
       "name": "rooms",
@@ -550,7 +568,10 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.schools": {
       "name": "schools",
@@ -610,7 +631,10 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.semesters": {
       "name": "semesters",
@@ -661,8 +685,12 @@
           "name": "semesters_school_schools_id_fk",
           "tableFrom": "semesters",
           "tableTo": "schools",
-          "columnsFrom": ["school"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "school"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -670,10 +698,70 @@
       "compositePrimaryKeys": {
         "semesters_school_type_year_pk": {
           "name": "semesters_school_type_year_pk",
-          "columns": ["school", "type", "year"]
+          "columns": [
+            "school",
+            "type",
+            "year"
+          ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.holidays": {
+      "name": "holidays",
+      "schema": "",
+      "columns": {
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start": {
+          "name": "start",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end": {
+          "name": "end",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "state_code",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "year": {
+          "name": "year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "holidays_name_state_year_pk": {
+          "name": "holidays_name_state_year_pk",
+          "columns": [
+            "name",
+            "state",
+            "year"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.years": {
       "name": "years",
@@ -711,8 +799,12 @@
           "name": "years_school_schools_id_fk",
           "tableFrom": "years",
           "tableTo": "schools",
-          "columnsFrom": ["school"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "school"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -720,10 +812,16 @@
       "compositePrimaryKeys": {
         "years_start_year_school_pk": {
           "name": "years_start_year_school_pk",
-          "columns": ["start_year", "school"]
+          "columns": [
+            "start_year",
+            "school"
+          ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.license_keys": {
       "name": "license_keys",
@@ -781,8 +879,12 @@
           "name": "license_keys_school_id_schools_id_fk",
           "tableFrom": "license_keys",
           "tableTo": "schools",
-          "columnsFrom": ["school_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "school_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -790,14 +892,21 @@
           "name": "license_keys_activated_by_users_id_fk",
           "tableFrom": "license_keys",
           "tableTo": "users",
-          "columnsFrom": ["activated_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "activated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.permissions_to_roles": {
       "name": "permissions_to_roles",
@@ -829,8 +938,12 @@
           "name": "permissions_to_roles_role_roles_id_fk",
           "tableFrom": "permissions_to_roles",
           "tableTo": "roles",
-          "columnsFrom": ["role"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "role"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -838,10 +951,16 @@
       "compositePrimaryKeys": {
         "permissions_to_roles_permission_role_pk": {
           "name": "permissions_to_roles_permission_role_pk",
-          "columns": ["permission", "role"]
+          "columns": [
+            "permission",
+            "role"
+          ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.permissions_to_users": {
       "name": "permissions_to_users",
@@ -873,8 +992,12 @@
           "name": "permissions_to_users_user_users_id_fk",
           "tableFrom": "permissions_to_users",
           "tableTo": "users",
-          "columnsFrom": ["user"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -882,10 +1005,16 @@
       "compositePrimaryKeys": {
         "permissions_to_users_permission_user_pk": {
           "name": "permissions_to_users_permission_user_pk",
-          "columns": ["permission", "user"]
+          "columns": [
+            "permission",
+            "user"
+          ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.roles": {
       "name": "roles",
@@ -918,9 +1047,14 @@
         "roles_name_unique": {
           "name": "roles_name_unique",
           "nullsNotDistinct": false,
-          "columns": ["name"]
+          "columns": [
+            "name"
+          ]
         }
-      }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.roles_to_users": {
       "name": "roles_to_users",
@@ -945,8 +1079,12 @@
           "name": "roles_to_users_role_roles_id_fk",
           "tableFrom": "roles_to_users",
           "tableTo": "roles",
-          "columnsFrom": ["role"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "role"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -954,8 +1092,12 @@
           "name": "roles_to_users_user_users_id_fk",
           "tableFrom": "roles_to_users",
           "tableTo": "users",
-          "columnsFrom": ["user"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -963,10 +1105,16 @@
       "compositePrimaryKeys": {
         "roles_to_users_role_user_pk": {
           "name": "roles_to_users_role_user_pk",
-          "columns": ["role", "user"]
+          "columns": [
+            "role",
+            "user"
+          ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.sessions": {
       "name": "sessions",
@@ -976,7 +1124,7 @@
           "name": "user",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "expires": {
           "name": "expires",
@@ -997,14 +1145,21 @@
           "name": "sessions_user_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": ["user"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.absence_days": {
       "name": "absence_days",
@@ -1041,8 +1196,12 @@
           "name": "absence_days_student_persons_id_fk",
           "tableFrom": "absence_days",
           "tableTo": "persons",
-          "columnsFrom": ["student"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "student"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -1050,10 +1209,16 @@
       "compositePrimaryKeys": {
         "absence_days_date_student_pk": {
           "name": "absence_days_date_student_pk",
-          "columns": ["date", "student"]
+          "columns": [
+            "date",
+            "student"
+          ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.course_absences": {
       "name": "course_absences",
@@ -1090,8 +1255,12 @@
           "name": "course_absences_student_persons_id_fk",
           "tableFrom": "course_absences",
           "tableTo": "persons",
-          "columnsFrom": ["student"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "student"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
@@ -1099,8 +1268,12 @@
           "name": "course_absences_course_courses_id_fk",
           "tableFrom": "course_absences",
           "tableTo": "courses",
-          "columnsFrom": ["course"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "course"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
@@ -1108,8 +1281,14 @@
           "name": "course_absences_date_student_absence_days_date_student_fk",
           "tableFrom": "course_absences",
           "tableTo": "absence_days",
-          "columnsFrom": ["date", "student"],
-          "columnsTo": ["date", "student"],
+          "columnsFrom": [
+            "date",
+            "student"
+          ],
+          "columnsTo": [
+            "date",
+            "student"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1117,10 +1296,17 @@
       "compositePrimaryKeys": {
         "course_absences_date_course_student_pk": {
           "name": "course_absences_date_course_student_pk",
-          "columns": ["date", "course", "student"]
+          "columns": [
+            "date",
+            "course",
+            "student"
+          ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.course_memberships": {
       "name": "course_memberships",
@@ -1137,26 +1323,6 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
-        },
-        "semester_type": {
-          "name": "semester_type",
-          "type": "semester_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "semester_year": {
-          "name": "semester_year",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "school": {
-          "name": "school",
-          "type": "school_id",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
         }
       },
       "indexes": {},
@@ -1165,46 +1331,47 @@
           "name": "course_memberships_student_students_person_fk",
           "tableFrom": "course_memberships",
           "tableTo": "students",
-          "columnsFrom": ["student"],
-          "columnsTo": ["person"],
+          "columnsFrom": [
+            "student"
+          ],
+          "columnsTo": [
+            "person"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
-        "course_memberships_course_semester_type_semester_year_school_semester_courses_course_semester_type_semester_year_school_fk": {
-          "name": "course_memberships_course_semester_type_semester_year_school_semester_courses_course_semester_type_semester_year_school_fk",
+        "course_memberships_course_courses_id_fk": {
+          "name": "course_memberships_course_courses_id_fk",
           "tableFrom": "course_memberships",
-          "tableTo": "semester_courses",
-          "columnsFrom": ["course", "semester_type", "semester_year", "school"],
-          "columnsTo": ["course", "semester_type", "semester_year", "school"],
+          "tableTo": "courses",
+          "columnsFrom": [
+            "course"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
-        "course_memberships_student_course_semester_type_semester_year_school_pk": {
-          "name": "course_memberships_student_course_semester_type_semester_year_school_pk",
+        "course_memberships_student_course_pk": {
+          "name": "course_memberships_student_course_pk",
           "columns": [
             "student",
-            "course",
-            "semester_type",
-            "semester_year",
-            "school"
+            "course"
           ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.grades": {
       "name": "grades",
       "schema": "",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
         "date": {
           "name": "date",
           "type": "date",
@@ -1213,7 +1380,7 @@
         },
         "result": {
           "name": "result",
-          "type": "numeric(65, 30)",
+          "type": "real",
           "primaryKey": false,
           "notNull": true
         },
@@ -1255,8 +1422,12 @@
           "name": "grades_course_courses_id_fk",
           "tableFrom": "grades",
           "tableTo": "courses",
-          "columnsFrom": ["course"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "course"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
@@ -1264,14 +1435,31 @@
           "name": "grades_student_persons_id_fk",
           "tableFrom": "grades",
           "tableTo": "persons",
-          "columnsFrom": ["student"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "student"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
       },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "compositePrimaryKeys": {
+        "grades_date_course_student_type_pk": {
+          "name": "grades_date_course_student_type_pk",
+          "columns": [
+            "date",
+            "course",
+            "student",
+            "type"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.tasks": {
       "name": "tasks",
@@ -1335,8 +1523,12 @@
           "name": "tasks_course_courses_id_fk",
           "tableFrom": "tasks",
           "tableTo": "courses",
-          "columnsFrom": ["course"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "course"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
@@ -1344,14 +1536,21 @@
           "name": "tasks_assignee_persons_id_fk",
           "tableFrom": "tasks",
           "tableTo": "persons",
-          "columnsFrom": ["assignee"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "assignee"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.room_changes": {
       "name": "room_changes",
@@ -1395,14 +1594,21 @@
           "name": "room_changes_room_rooms_room_number_fk",
           "tableFrom": "room_changes",
           "tableTo": "rooms",
-          "columnsFrom": ["room"],
-          "columnsTo": ["room_number"],
+          "columnsFrom": [
+            "room"
+          ],
+          "columnsTo": [
+            "room_number"
+          ],
           "onDelete": "set null",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.substitutions": {
       "name": "substitutions",
@@ -1427,6 +1633,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "originalTeacher": {
+          "name": "originalTeacher",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
         "substitute": {
           "name": "substitute",
           "type": "uuid",
@@ -1449,12 +1661,29 @@
       },
       "indexes": {},
       "foreignKeys": {
+        "substitutions_originalTeacher_persons_id_fk": {
+          "name": "substitutions_originalTeacher_persons_id_fk",
+          "tableFrom": "substitutions",
+          "tableTo": "persons",
+          "columnsFrom": [
+            "originalTeacher"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "cascade"
+        },
         "substitutions_substitute_persons_id_fk": {
           "name": "substitutions_substitute_persons_id_fk",
           "tableFrom": "substitutions",
           "tableTo": "persons",
-          "columnsFrom": ["substitute"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "substitute"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "cascade"
         },
@@ -1462,19 +1691,32 @@
           "name": "substitutions_date_course_timetable_entries_date_course_fk",
           "tableFrom": "substitutions",
           "tableTo": "timetable_entries",
-          "columnsFrom": ["date", "course"],
-          "columnsTo": ["date", "course"],
+          "columnsFrom": [
+            "date",
+            "course"
+          ],
+          "columnsTo": [
+            "date",
+            "course"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
-        "substitutions_date_course_pk": {
-          "name": "substitutions_date_course_pk",
-          "columns": ["date", "course"]
+        "substitutions_date_course_originalTeacher_pk": {
+          "name": "substitutions_date_course_originalTeacher_pk",
+          "columns": [
+            "date",
+            "course",
+            "originalTeacher"
+          ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.timetable_entries": {
       "name": "timetable_entries",
@@ -1492,41 +1734,31 @@
           "primaryKey": false,
           "notNull": true
         },
+        "rooms": {
+          "name": "rooms",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
         "course": {
           "name": "course",
           "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "semester_type": {
-          "name": "semester_type",
-          "type": "semester_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "semester_year": {
-          "name": "semester_year",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "school": {
-          "name": "school",
-          "type": "school_id",
-          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         }
       },
       "indexes": {},
       "foreignKeys": {
-        "timetable_entries_course_semester_type_semester_year_school_semester_courses_course_semester_type_semester_year_school_fk": {
-          "name": "timetable_entries_course_semester_type_semester_year_school_semester_courses_course_semester_type_semester_year_school_fk",
+        "timetable_entries_course_courses_id_fk": {
+          "name": "timetable_entries_course_courses_id_fk",
           "tableFrom": "timetable_entries",
-          "tableTo": "semester_courses",
-          "columnsFrom": ["course", "semester_type", "semester_year", "school"],
-          "columnsTo": ["course", "semester_type", "semester_year", "school"],
+          "tableTo": "courses",
+          "columnsFrom": [
+            "course"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1534,62 +1766,16 @@
       "compositePrimaryKeys": {
         "timetable_entries_date_course_pk": {
           "name": "timetable_entries_date_course_pk",
-          "columns": ["date", "course"]
+          "columns": [
+            "date",
+            "course"
+          ]
         }
       },
-      "uniqueConstraints": {}
-    },
-    "public.timetable_entry_rooms": {
-      "name": "timetable_entry_rooms",
-      "schema": "",
-      "columns": {
-        "start": {
-          "name": "start",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "course": {
-          "name": "course",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "room": {
-          "name": "room",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "timetable_entry_rooms_room_rooms_room_number_fk": {
-          "name": "timetable_entry_rooms_room_rooms_room_number_fk",
-          "tableFrom": "timetable_entry_rooms",
-          "tableTo": "rooms",
-          "columnsFrom": ["room"],
-          "columnsTo": ["room_number"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
-        "timetable_entry_rooms_start_course_timetable_entries_date_course_fk": {
-          "name": "timetable_entry_rooms_start_course_timetable_entries_date_course_fk",
-          "tableFrom": "timetable_entry_rooms",
-          "tableTo": "timetable_entries",
-          "columnsFrom": ["start", "course"],
-          "columnsTo": ["date", "course"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {
-        "timetable_entry_rooms_start_course_room_pk": {
-          "name": "timetable_entry_rooms_start_course_room_pk",
-          "columns": ["start", "course", "room"]
-        }
-      },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.recurring_timetable_entries": {
       "name": "recurring_timetable_entries",
@@ -1640,8 +1826,12 @@
           "name": "recurring_timetable_entries_course_courses_id_fk",
           "tableFrom": "recurring_timetable_entries",
           "tableTo": "courses",
-          "columnsFrom": ["course"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "course"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1649,17 +1839,236 @@
       "compositePrimaryKeys": {
         "recurring_timetable_entries_weekday_start_course_pk": {
           "name": "recurring_timetable_entries_weekday_start_course_pk",
-          "columns": ["weekday", "start", "course"]
+          "columns": [
+            "weekday",
+            "start",
+            "course"
+          ]
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.event_topics": {
+      "name": "event_topics",
+      "schema": "",
+      "columns": {
+        "event": {
+          "name": "event",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "topic": {
+          "name": "topic",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "event_topics_event_topic_index": {
+          "name": "event_topics_event_topic_index",
+          "columns": [
+            {
+              "expression": "event",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "topic",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "event_topics_event_events_id_fk": {
+          "name": "event_topics_event_events_id_fk",
+          "tableFrom": "event_topics",
+          "tableTo": "events",
+          "columnsFrom": [
+            "event"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "event_topics_event_topic_pk": {
+          "name": "event_topics_event_topic_pk",
+          "columns": [
+            "event",
+            "topic"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.events": {
+      "name": "events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "event_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data": {
+          "name": "data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "initiator": {
+          "name": "initiator",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "events_initiator_users_id_fk": {
+          "name": "events_initiator_users_id_fk",
+          "tableFrom": "events",
+          "tableTo": "users",
+          "columnsFrom": [
+            "initiator"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.events_sent_to_users": {
+      "name": "events_sent_to_users",
+      "schema": "",
+      "columns": {
+        "event": {
+          "name": "event",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user": {
+          "name": "user",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "events_sent_to_users_event_user_index": {
+          "name": "events_sent_to_users_event_user_index",
+          "columns": [
+            {
+              "expression": "event",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "events_sent_to_users_event_events_id_fk": {
+          "name": "events_sent_to_users_event_events_id_fk",
+          "tableFrom": "events_sent_to_users",
+          "tableTo": "events",
+          "columnsFrom": [
+            "event"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "events_sent_to_users_user_users_id_fk": {
+          "name": "events_sent_to_users_user_users_id_fk",
+          "tableFrom": "events_sent_to_users",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "events_sent_to_users_event_user_pk": {
+          "name": "events_sent_to_users_event_user_pk",
+          "columns": [
+            "event",
+            "user"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {
     "public.salutation": {
       "name": "salutation",
       "schema": "public",
-      "values": ["Herr", "Frau"]
+      "values": [
+        "Herr",
+        "Frau"
+      ]
     },
     "public.subject": {
       "name": "subject",
@@ -1697,6 +2106,7 @@
         "lp",
         "kr",
         "wpk",
+        "wal",
         "will-an-lili",
         "präsenz",
         "bläser_k",
@@ -1728,12 +2138,17 @@
     "public.school_id": {
       "name": "school_id",
       "schema": "public",
-      "values": ["igs-lil"]
+      "values": [
+        "igs-lil"
+      ]
     },
     "public.semester_type": {
       "name": "semester_type",
       "schema": "public",
-      "values": ["SUMMER", "WINTER"]
+      "values": [
+        "SUMMER",
+        "WINTER"
+      ]
     },
     "public.permission": {
       "name": "permission",
@@ -1751,7 +2166,11 @@
     "public.grade_type": {
       "name": "grade_type",
       "schema": "public",
-      "values": ["WRITTEN", "ORAL", "MASTER"]
+      "values": [
+        "WRITTEN",
+        "ORAL",
+        "MASTER"
+      ]
     },
     "public.substitution_type": {
       "name": "substitution_type",
@@ -1767,11 +2186,47 @@
     "public.recurring_timetable_entry_weeks": {
       "name": "recurring_timetable_entry_weeks",
       "schema": "public",
-      "values": ["EVEN", "ODD", "ALL"]
+      "values": [
+        "EVEN",
+        "ODD",
+        "ALL"
+      ]
+    },
+    "public.event_type": {
+      "name": "event_type",
+      "schema": "public",
+      "values": [
+        "absence.recorded",
+        "absence.parentApproved",
+        "absence.teacherApproved",
+        "absence.discarded",
+        "grades.currentGradeSet",
+        "grades.writtenGradeRecorded",
+        "grades.teacherApproved",
+        "grades.parentApproved",
+        "grades.discarded",
+        "grades.latestRestored",
+        "org.school.founded",
+        "org.year.started",
+        "org.teacher.joined",
+        "org.holiday.created",
+        "org.courses.created",
+        "org.timetable.entryCreated",
+        "org.timetable.substituted",
+        "org.timetable.canceled",
+        "org.timetable.discarded",
+        "auth.licenseGenerated",
+        "auth.licenseActivated",
+        "student.joined",
+        "student.courseAssigned"
+      ]
     }
   },
   "schemas": {},
   "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},
