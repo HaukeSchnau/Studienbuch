@@ -1,21 +1,34 @@
 import { View } from "react-native";
 import { useMaskedInputProps } from "react-native-mask-input";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 
 import type { Falsy } from "@stu/lib";
 
 import { Button } from "~/components/button";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
-import { useFormContext } from "~/features/setup/form";
+import { useAppForm } from "~/features/setup/form";
 import { api } from "~/utils/api";
+import { useStorage } from "~/utils/storage";
 
 export default function LicenseKey() {
   const checkMutation = api.auth.checkLicenseKey.useMutation();
+  const router = useRouter();
+  const [licenseKey, setLicenseKey] = useStorage("auth.licenseKey");
 
-  const { form, handleSubmitStep } = useFormContext({
-    step: 0,
-    onSubmitStep: () => {
+  // const { form, handleSubmitStep } = useFormContext({
+  //   step: 0,
+  //   onSubmitStep: () => {
+  //     router.push("/setup/name-and-year");
+  //   },
+  // });
+
+  const form = useAppForm({
+    defaultValues: {
+      licenseKey: licenseKey ?? "",
+    },
+    onSubmit: async ({ value }) => {
+      setLicenseKey(value.licenseKey);
       router.push("/setup/name-and-year");
     },
   });
@@ -35,7 +48,7 @@ export default function LicenseKey() {
       <form.Field
         name="licenseKey"
         validators={{
-          onSubmitAsync: async ({ value }) => {
+          onChangeAsync: async ({ value }) => {
             const result = await checkMutation.mutateAsync({
               licenseKey: value,
             });
@@ -43,6 +56,14 @@ export default function LicenseKey() {
               ? undefined
               : "Ungültiger Lizenzschlüssel";
           },
+          // onSubmitAsync: async ({ value }) => {
+          //   const result = await checkMutation.mutateAsync({
+          //     licenseKey: value,
+          //   });
+          //   return result === "VALID"
+          //     ? undefined
+          //     : "Ungültiger Lizenzschlüssel";
+          // },
         }}
         children={(field) => (
           <LicenseKeyField
@@ -57,7 +78,11 @@ export default function LicenseKey() {
         )}
       />
       <View className="h-6" />
-      <Button label="Weiter" className="self-end" onPress={handleSubmitStep} />
+      <Button
+        label="Weiter"
+        className="self-end"
+        onPress={() => form.handleSubmit()}
+      />
     </View>
   );
 }

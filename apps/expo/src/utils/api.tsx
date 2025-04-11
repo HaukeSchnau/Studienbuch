@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from "react";
-import EventSource from "react-native-sse";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
@@ -43,21 +43,6 @@ export const buildHeaders = (sessionToken?: string) => {
   if (sessionToken) headers.set("x-session", sessionToken);
 
   return headers;
-};
-
-export const getEventStream = (sessionToken?: string) => {
-  console.log("getting event stream", sessionToken);
-  return new EventSource(`${getBaseUrl()}/events`, {
-    headers: {
-      "x-session": sessionToken
-        ? {
-            toString: function () {
-              return sessionToken;
-            },
-          }
-        : undefined,
-    },
-  });
 };
 
 export const publishEvent = async (

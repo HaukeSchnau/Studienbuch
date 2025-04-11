@@ -97,7 +97,7 @@ export const useSession = () => {
 export const useSessionWatcher = () => {
   const utils = api.useUtils();
   const router = useRouter();
-  const login = api.auth.loginWithLicenseKey.useMutation({
+  const login = api.auth.activateLicenseKey.useMutation({
     retry: 3,
     onSuccess: async ({ error, session }) => {
       if (error) {
@@ -108,7 +108,10 @@ export const useSessionWatcher = () => {
         setSession(null);
         setLoading(false);
       } else {
-        await setSession(session);
+        await setSession({
+          token: session.token,
+          user: session.userId,
+        });
         setLoading(false);
 
         await utils.invalidate();

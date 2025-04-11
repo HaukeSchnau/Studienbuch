@@ -213,7 +213,6 @@ const useSetupForm = () => {
   const utils = api.useUtils();
 
   const activateLicenseKey = api.auth.activateLicenseKey.useMutation();
-  const login = api.auth.loginWithLicenseKey.useMutation();
 
   const semester = api.schools.semesters.getCurrent.useQuery();
 
@@ -265,20 +264,7 @@ const useSetupForm = () => {
       });
       console.log("bootstrapped");
 
-      const { userId } = await activateLicenseKey.mutateAsync({
-        licenseKey: value.licenseKey,
-      });
-      await ingest(
-        "auth.licenseActivated",
-        userId,
-        {
-          licenseKey: value.licenseKey,
-          userId,
-        },
-        true,
-      );
-
-      const { error, session } = await login.mutateAsync({
+      const { session, error } = await activateLicenseKey.mutateAsync({
         licenseKey: value.licenseKey,
       });
       if (error) {
@@ -290,10 +276,23 @@ const useSetupForm = () => {
 
         return;
       }
-      await setStorage("auth.licenseKey", value.licenseKey);
-      await setStorage("auth.session", session);
+      await ingest(
+        "auth.licenseActivated",
+        session.userId,
+        {
+          licenseKey: value.licenseKey,
+          userId: session.userId,
+        },
+        true,
+      );
 
-      await ingest("student.joined", userId, {
+      await setStorage("auth.licenseKey", value.licenseKey);
+      await setStorage("auth.session", {
+        token: session.token,
+        user: session.userId,
+      });
+
+      await ingest("student.joined", session.userId, {
         class: {
           identifier: value.class.identifierInYear,
           startYear: value.class.startYear,
@@ -301,14 +300,14 @@ const useSetupForm = () => {
         isOfAge: value.isOfAge,
         name: value.name,
         school: "igs-lil",
-        studentId: userId,
+        studentId: session.userId,
       });
 
       await Promise.all(
         courses.map((course) =>
-          ingest("student.courseAssigned", userId, {
+          ingest("student.courseAssigned", session.userId, {
             courseId: course.id,
-            studentId: userId,
+            studentId: session.userId,
           }),
         ),
       );

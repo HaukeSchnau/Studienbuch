@@ -24,6 +24,7 @@
     "dev:next": "turbo watch dev dev:internal -F @stu/nextjs...",
     "dev:mobile": "turbo watch dev dev:internal -F @stu/rest... -F @stu/mobile... --ui=tui",
     "dev:rest": "turbo watch dev dev:internal -F @stu/rest... --ui=tui",
+    "dev:expo": "turbo watch dev dev:internal -F @stu/mobile... --ui=tui",
     "format": "turbo run format --continue -- --cache --cache-location .cache/.prettiercache",
     "format:fix": "turbo run format --continue -- --write --cache --cache-location .cache/.prettiercache",
     "lint": "turbo run lint --continue -- --cache --cache-location .cache/.eslintcache",

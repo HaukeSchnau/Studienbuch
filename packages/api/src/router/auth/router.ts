@@ -10,7 +10,6 @@ import { protectedProcedure, publicProcedure } from "../../procedures";
 import { activateLicenseKey } from "./activate-license-key";
 import { checkLicenseKey } from "./check-license-key";
 import { login } from "./login";
-import { loginWithLicenseKey } from "./login-with-license-key";
 
 export const auth = {
   getSession: publicProcedure.query(({ ctx }) => ctx.session),
@@ -23,7 +22,6 @@ export const auth = {
   //   return getPermissions(ctx.session.user);
   // }),
 
-  loginWithLicenseKey,
   login,
 
   logout: protectedProcedure.mutation(async ({ ctx }) => {
