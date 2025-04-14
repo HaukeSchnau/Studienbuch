@@ -392,9 +392,6 @@
         "typescript": "^5.8.3",
       },
     },
-    "tooling/github": {
-      "name": "@stu/github",
-    },
     "tooling/tailwind": {
       "name": "@stu/tailwind-config",
       "version": "0.1.0",
@@ -1346,8 +1343,6 @@
     "@stu/eslint-config": ["@stu/eslint-config@workspace:tooling/eslint"],
 
     "@stu/external-api": ["@stu/external-api@workspace:packages/external-api"],
-
-    "@stu/github": ["@stu/github@workspace:tooling/github"],
 
     "@stu/lib": ["@stu/lib@workspace:packages/lib"],
 
