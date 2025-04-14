@@ -1,5 +1,4 @@
-import { createContext, useContext, useState } from "react";
-
+import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
@@ -20,16 +19,6 @@ import { getStorage } from "./storage";
  */
 export const api = createTRPCReact<AppRouter>();
 export { type RouterInputs, type RouterOutputs } from "@stu/api";
-
-// Not sure why we can't use the client from useUtils directly
-const trpcClientContext = createContext<ReturnType<typeof api.createClient>>(
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  null!,
-);
-
-export const useTrpcClient = () => {
-  return useContext(trpcClientContext);
-};
 
 const getHeaders = () => {
   const session = getStorage("auth.session");
@@ -140,12 +129,10 @@ export function TRPCProvider(props: { children: React.ReactNode }) {
   );
 
   return (
-    <trpcClientContext.Provider value={trpcClient}>
-      <api.Provider client={trpcClient} queryClient={queryClient}>
-        <QueryClientProvider client={queryClient}>
-          {props.children}
-        </QueryClientProvider>
-      </api.Provider>
-    </trpcClientContext.Provider>
+    <api.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        {props.children}
+      </QueryClientProvider>
+    </api.Provider>
   );
 }
