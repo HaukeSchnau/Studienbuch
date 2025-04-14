@@ -105,7 +105,7 @@ export const useSessionWatcher = () => {
           "Error while trying to log in with existing license key in background",
           error,
         );
-        setSession(null);
+        await setSession(null);
         setLoading(false);
       } else {
         await setSession({
