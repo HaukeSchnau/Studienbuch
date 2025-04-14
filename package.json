@@ -25,8 +25,8 @@
     "dev:mobile": "turbo watch dev dev:internal -F @stu/rest... -F @stu/mobile... --ui=tui",
     "dev:rest": "turbo watch dev dev:internal -F @stu/rest... --ui=tui",
     "dev:expo": "turbo watch dev dev:internal -F @stu/mobile... --ui=tui",
-    "format": "turbo run format --continue -- --cache --cache-location .cache/.prettiercache",
-    "format:fix": "turbo run format --continue -- --write --cache --cache-location .cache/.prettiercache",
+    "format": "turbo run format --continue",
+    "format:fix": "turbo run format --continue -- --write",
     "lint": "turbo run lint --continue -- --cache --cache-location .cache/.eslintcache",
     "lint:fix": "turbo run lint --continue -- --fix --cache --cache-location .cache/.eslintcache",
     "lint:ws": "bunx sherif@latest",
@@ -38,19 +38,17 @@
     "ci:fix": "run-s format:fix lint:fix"
   },
   "devDependencies": {
-    "@stu/prettier-config": "workspace:*",
+    "@biomejs/biome": "^1.9.4",
     "@turbo/gen": "^2.5.0",
     "@types/bun": "^1.2.9",
     "@vitest/coverage-v8": "^3.1.1",
     "@vitest/ui": "^3.1.1",
     "npm-run-all": "^4.1.5",
-    "prettier": "^3.5.3",
     "tsx": "4.19.3",
     "turbo": "^2.5.0",
     "typescript": "^5.8.3",
     "vitest": "^3.1.1"
   },
-  "prettier": "@stu/prettier-config",
   "patchedDependencies": {
     "expo-module-scripts@4.0.5": "patches/expo-module-scripts@4.0.5.patch"
   }

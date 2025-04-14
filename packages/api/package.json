@@ -16,7 +16,7 @@
     "push": "pnpm db:push-sqlite",
     "db:push-sqlite": "drizzle-kit push --config drizzle.config.sqlite.ts",
     "dev:internal": "tsc --watch",
-    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "format": "biome format",
     "lint": "eslint",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
@@ -40,12 +40,9 @@
   },
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
-    "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "eslint": "^9.24.0",
-    "prettier": "^3.5.3",
     "typescript": "^5.8.3",
     "vitest": "^3.1.1"
-  },
-  "prettier": "@stu/prettier-config"
+  }
 }

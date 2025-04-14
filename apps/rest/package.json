@@ -10,7 +10,7 @@
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev": "tsx watch src/bin/http.ts",
-    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "format": "biome format",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },
@@ -35,14 +35,11 @@
   },
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
-    "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@types/ws": "^8.18.1",
     "bun-plugin-pino": "^1.4.0",
     "eslint": "^9.24.0",
-    "prettier": "^3.5.3",
     "tsx": "4.19.3",
     "typescript": "^5.8.3"
-  },
-  "prettier": "@stu/prettier-config"
+  }
 }

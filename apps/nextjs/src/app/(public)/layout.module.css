@@ -1,13 +1,11 @@
 .wrapper {
-  background:
-    url("/assets/blob-blue.svg") no-repeat top right,
+  background: url("/assets/blob-blue.svg") no-repeat top right,
     url("/assets/blob-green.svg") no-repeat bottom left;
 }
 
 @media (min-width: 768px) {
   .wrapper {
-    background:
-      url("/assets/blob-blue-md.svg") no-repeat top right,
+    background: url("/assets/blob-blue-md.svg") no-repeat top right,
       url("/assets/blob-green-md.svg") no-repeat bottom left;
   }
 }

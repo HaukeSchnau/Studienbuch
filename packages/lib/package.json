@@ -14,7 +14,7 @@
     "build": "tsc",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev:internal": "tsc --watch",
-    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "format": "biome format",
     "lint": "eslint",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
@@ -26,14 +26,11 @@
   },
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
-    "@stu/prettier-config": "workspace:*",
     "@stu/testing": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "encoding": "^0.1.13",
     "eslint": "^9.24.0",
-    "prettier": "^3.5.3",
     "typescript": "^5.8.3",
     "vitest": "^3.1.1"
-  },
-  "prettier": "@stu/prettier-config"
+  }
 }

@@ -7,7 +7,7 @@
     "build": "next build",
     "clean": "git clean -xdf .cache .next .turbo node_modules",
     "dev": "next dev",
-    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "format": "biome format",
     "lint": "echo 'TODO: eslint'",
     "start": "next start",
     "typecheck": "echo 'TODO: tsc --noEmit'",
@@ -52,7 +52,6 @@
     "@storybook/preview-api": "^8.6.12",
     "@storybook/react": "^8.6.12",
     "@stu/eslint-config": "workspace:*",
-    "@stu/prettier-config": "workspace:*",
     "@stu/tailwind-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@tanstack/react-query-devtools": "^5.72.1",
@@ -62,10 +61,8 @@
     "eslint": "^9.24.0",
     "eslint-plugin-storybook": "^0.12.0",
     "jiti": "^2.3.3",
-    "prettier": "^3.5.3",
     "storybook": "^8.6.12",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.8.3"
-  },
-  "prettier": "@stu/prettier-config"
+  }
 }

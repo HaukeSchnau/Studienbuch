@@ -28,7 +28,6 @@
   },
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
-    "@stu/prettier-config": "workspace:*",
     "@stu/testing": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@types/node": "^22.14.0",

@@ -9,7 +9,7 @@
   "license": "MIT",
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "format": "biome format",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
   },
@@ -25,15 +25,12 @@
   },
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
-    "@stu/prettier-config": "workspace:*",
     "@stu/testing": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@total-typescript/shoehorn": "^0.1.2",
     "@types/papaparse": "^5.3.14",
     "eslint": "^9.24.0",
-    "prettier": "^3.5.3",
     "typescript": "^5.8.3",
     "vitest": "^3.1.1"
-  },
-  "prettier": "@stu/prettier-config"
+  }
 }

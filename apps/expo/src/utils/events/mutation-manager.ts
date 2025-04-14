@@ -41,7 +41,7 @@ export const MutationManager = ({
   const sessionToken = session?.token;
 
   useEffect(() => {
-    console.log("Initializing local events"); 
+    console.log("Initializing local events");
 
     // Initialize the queue with events that are not done yet
     getEventsToBePushed()

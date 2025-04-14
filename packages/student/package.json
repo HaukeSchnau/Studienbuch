@@ -20,7 +20,7 @@
     "build": "tsc",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev:internal": "tsc --watch",
-    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "format": "biome format",
     "lint": "eslint",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
@@ -35,15 +35,12 @@
   },
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
-    "@stu/prettier-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@testcontainers/postgresql": "^10.24.0",
     "@types/pg": "^8.11.11",
     "drizzle-kit": "^0.30.6",
     "eslint": "^9.24.0",
-    "prettier": "^3.5.3",
     "typescript": "^5.8.3",
     "vitest": "^3.1.1"
-  },
-  "prettier": "@stu/prettier-config"
+  }
 }
