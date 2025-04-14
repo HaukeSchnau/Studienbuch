@@ -52,11 +52,11 @@ export const MutationManager = ({
       .catch((reason) =>
         console.error("error while finding mutations", reason),
       );
-  }, []);
+  }, [initialize]);
 
   useRemoteEventStream({ sessionToken, onEvent: push });
 
-  const handleMutation = useMutation({
+  const { mutate: handle } = useMutation({
     retry: true,
     onError: (error, { event }) => {
       console.error(
@@ -140,9 +140,9 @@ export const MutationManager = ({
 
   useEffect(() => {
     if (head) {
-      handleMutation.mutate(head);
+      handle(head);
     }
-  }, [head]);
+  }, [handle, head]);
 
   return children;
 };

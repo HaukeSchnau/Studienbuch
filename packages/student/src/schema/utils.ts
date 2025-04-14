@@ -1,5 +1,4 @@
-import type { SQLiteTable } from "drizzle-orm/sqlite-core";
-import { getTableConfig, int, text } from "drizzle-orm/sqlite-core";
+import { int, text } from "drizzle-orm/sqlite-core";
 
 export const uuid = <TName extends string>(name: TName) => text(name);
 

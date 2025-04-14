@@ -28,7 +28,7 @@ export default function LicenseKey() {
       licenseKey: licenseKey ?? "",
     },
     onSubmit: async ({ value }) => {
-      setLicenseKey(value.licenseKey);
+      await setLicenseKey(value.licenseKey);
       router.push("/setup/name-and-year");
     },
   });
