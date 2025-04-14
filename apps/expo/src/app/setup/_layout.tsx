@@ -16,7 +16,7 @@ import { openBrowserAsync } from "expo-web-browser";
 import { useForm } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { and, eq, sql } from "drizzle-orm";
-import { pk } from "node_modules/@stu/student/src/schema/utils";
+import { pk } from "@stu/student/schema";
 
 import type {
   Course,

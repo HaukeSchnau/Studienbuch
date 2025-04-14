@@ -16,20 +16,3 @@ export const jsonb = <TName extends string>(name: TName) =>
 
 export const timestamp = <TName extends string>(name: TName) =>
   int(name, { mode: "timestamp_ms" });
-
-export const pk = <TTable extends SQLiteTable>(table: TTable) => {
-  const conf = getTableConfig(table);
-  const [pk] = conf.primaryKeys;
-
-  if (pk) {
-    return pk.columns;
-  }
-
-  const pkCol = conf.columns.find((c) => c.primary);
-  if (pkCol) {
-    return [pkCol];
-  }
-
-  console.error("Table has no primary key");
-  throw new Error("Table has no primary key");
-};
