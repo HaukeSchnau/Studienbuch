@@ -6,7 +6,7 @@ import { db } from "@stu/db/client";
 import { Result } from "@stu/lib";
 
 import { ingest } from "./router/events/ingest";
-import { subscribe } from "./router/events/subscribe";
+import { subscribe } from "./router/events/messaging-client";
 
 const myUserId = crypto.randomUUID();
 

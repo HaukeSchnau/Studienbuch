@@ -10,7 +10,7 @@ import {
   studentsOfYear,
 } from "@stu/lib";
 
-import { publishEvent } from "./ingest";
+import { publishEvent } from "./messaging-client";
 
 const getMissingEvents = async (userId: string, topics: string[]) => {
   const events = await db

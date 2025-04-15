@@ -4,7 +4,7 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     NODE_ENV: z.enum(["development", "production", "test"]),
-    RABBITMQ_HOST: z.string(),
+    PULSAR_URL: z.string(),
   },
   client: {},
   experimental__runtimeEnv: {},

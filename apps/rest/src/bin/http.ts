@@ -6,9 +6,20 @@ import { env } from "../env";
 const port = env.API_PORT;
 const { app } = makeRestApi("/");
 
-console.log(`Starting server on port ${port}`);
-
-serve({
-  fetch: app.fetch,
-  port,
+process.on("SIGINT", () => {
+  process.exit(0);
 });
+
+process.on("SIGTERM", () => {
+  process.exit(0);
+});
+
+serve(
+  {
+    fetch: app.fetch,
+    port,
+  },
+  (info) => {
+    console.log(`Server is running on port ${info.port}`);
+  },
+);

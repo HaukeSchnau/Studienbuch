@@ -51,5 +51,8 @@
   },
   "patchedDependencies": {
     "expo-module-scripts@4.0.5": "patches/expo-module-scripts@4.0.5.patch"
-  }
+  },
+  "trustedDependencies": [
+    "pulsar-client"
+  ]
 }

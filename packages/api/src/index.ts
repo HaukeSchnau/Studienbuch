@@ -1,11 +1,10 @@
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 
-import type { RabbitMQClient } from "./rabbitmq";
 import type { AppRouter } from "./root";
 import { SYSTEM_USER } from "./constants";
 import { appRouter } from "./root";
 import { ingest } from "./router/events/ingest";
-import { subscribe } from "./router/events/subscribe";
+import { subscribe } from "./router/events/messaging-client";
 import { createCallerFactory, createTRPCContext, getSession } from "./trpc";
 
 const createCaller = createCallerFactory(appRouter);
@@ -22,4 +21,4 @@ export {
   SYSTEM_USER,
   getSession,
 };
-export type { AppRouter, RouterInputs, RouterOutputs, RabbitMQClient };
+export type { AppRouter, RouterInputs, RouterOutputs };

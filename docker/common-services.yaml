@@ -19,3 +19,14 @@ services:
         advertised_host localhost
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+
+  pulsar:
+    image: apachepulsar/pulsar:latest
+    restart: unless-stopped
+    command: bin/pulsar standalone
+    environment: 
+      - PULSAR_STANDALONE_USE_ZOOKEEPER=1
+    volumes:
+      - pulsar_data:/pulsar/data
+      - pulsar_config:/pulsar/conf
+    

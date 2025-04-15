@@ -7,7 +7,7 @@ RUN mkdir -p /temp/dev
 WORKDIR /temp/dev
 
 COPY --parents package.json bun.lock patches */*/package.json packages/expo-native-modules/example/package.json /temp/dev/
-RUN --mount=type=cache,target=/root/.bun bun install --frozen-lockfile --ignore-scripts
+RUN --mount=type=cache,target=/root/.bun bun install --frozen-lockfile
 
 FROM base AS builder
 COPY --from=install /temp/dev/node_modules /usr/src/app/node_modules
@@ -15,9 +15,15 @@ COPY . .
 
 WORKDIR /usr/src/app/apps/rest
 ENV NODE_ENV=production
-RUN bun ./build.ts
+# Sadly, pulsar doesnt work with bun just yet
+# RUN bun ./build.ts
+RUN bun ./build-node.ts
 
-FROM base AS runner
+# FROM base AS runner
+FROM node:22-alpine AS runner
+# Annoying: pulsar client doesn't play well with bundlers
+COPY --from=install /temp/dev/node_modules/pulsar-client /usr/src/app/node_modules/pulsar-client
+
 WORKDIR /app
 COPY --from=builder /usr/src/app/apps/rest/dist/ /app/
 COPY --from=builder /usr/src/app/packages/db/drizzle/ /app/drizzle
@@ -26,4 +32,5 @@ ENV NODE_ENV=production
 ENV PORT=80
 ENV API_PORT=80
 
-ENTRYPOINT ["bun", "run", "server"]
+# ENTRYPOINT ["bun", "run", "server"]
+ENTRYPOINT ["node", "http.js"]

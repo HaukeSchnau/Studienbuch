@@ -2,40 +2,11 @@ import type { Event, PersistedEvent } from "@stu/lib";
 import { eventApplicator as systemApplicator } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
-import { Result, serializeEvent } from "@stu/lib";
+import { Result } from "@stu/lib";
 
 import { SYSTEM_USER } from "../../constants";
-import { ensureStream, rabbitMqClientPromise } from "../../rabbitmq";
 import { sendMissingEventsToStudent } from "./send-missing-events";
-
-export const publishEvent = async (
-  event: Omit<Event, "errors">,
-  recipient: string,
-) => {
-  if (recipient === SYSTEM_USER) {
-    return;
-  }
-
-  const rabbitMqClient = await rabbitMqClientPromise;
-  await ensureStream(rabbitMqClient, recipient);
-  const publisher = await rabbitMqClient.declarePublisher({
-    stream: recipient,
-  });
-  await publisher.basicSend(
-    BigInt(event.timestamp.getTime()),
-    Buffer.from(serializeEvent(event)),
-    {
-      messageProperties: {
-        messageId: event.id,
-      },
-    },
-  );
-
-  await db.insert(tables.eventsSentToUsers).values({
-    event: event.id,
-    user: recipient,
-  });
-};
+import { publishEvent } from "./messaging-client";
 
 const ensureSystemUser = async () => {
   await db

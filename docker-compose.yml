@@ -10,7 +10,10 @@ services:
   event-stream:
     extends:
       file: docker/common-services.yaml
-      service: rabbitmq
+      service: pulsar
+    ports:
+      - 6650:6650
+      - 8080:8080
 
   api:
     build:
@@ -26,7 +29,7 @@ services:
         condition: service_started
     environment:
       MANAGEMENT_DATABASE_URL: postgresql://stu:stu@management-data-storage:5432/stu
-      RABBITMQ_HOST: event-stream
+      PULSAR_URL: pulsar://event-stream:6650
       ISERV_USERNAME: $ISERV_USERNAME
       ISERV_PASSWORD: $ISERV_PASSWORD
       LINEAR_API_KEY: $LINEAR_API_KEY
@@ -35,4 +38,5 @@ services:
 
 volumes:
   postgres_data:
-  rabbitmq_data:
+  pulsar_data:
+  pulsar_config:
