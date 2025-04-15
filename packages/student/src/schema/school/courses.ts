@@ -14,7 +14,7 @@ import { timetableEntries } from "../timetable/timetable-entries";
 import { boolean, sqliteEnum, uuid } from "../utils";
 import { classes } from "./classes";
 import { schoolId } from "./school-id";
-import { semesters, semesterType } from "./semesters";
+import { semesterType, semesters } from "./semesters";
 
 export const subject = sqliteEnum(SUBJECT_IDS);
 

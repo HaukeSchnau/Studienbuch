@@ -1,8 +1,8 @@
-import { View } from "react-native";
-import { Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { de } from "date-fns/locale/de";
+import { Stack } from "expo-router";
+import { View } from "react-native";
 
 import { formalName } from "@stu/lib";
 

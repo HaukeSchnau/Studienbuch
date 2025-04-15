@@ -4,11 +4,11 @@ import { z } from "zod";
 
 import { formalName, generateRandomPassword } from "@stu/lib";
 
-import type { User } from "../user.type";
 import { Button } from "~/components/form/Button";
 import { TextField } from "~/components/form/TextField";
 import { submitHandler } from "~/infrastructure/forms/submitHandler";
 import { api } from "~/infrastructure/trpc/react";
+import type { User } from "../user.type";
 
 interface ChangePasswordModalContentProps {
   user: User;

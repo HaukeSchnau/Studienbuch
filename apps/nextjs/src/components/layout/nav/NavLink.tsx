@@ -1,10 +1,10 @@
 "use client";
 
+import clsx from "clsx";
 import type { Route } from "next";
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import clsx from "clsx";
+import type { ReactNode } from "react";
 
 import type { IconName } from "~/components/icon";
 

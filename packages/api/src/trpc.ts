@@ -14,10 +14,10 @@ import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
 
-import type { Logger } from "./interfaces/logger";
-import type { Session } from "./interfaces/session";
 import { SYSTEM_USER } from ".";
 import { env } from "../env";
+import type { Logger } from "./interfaces/logger";
+import type { Session } from "./interfaces/session";
 
 export const getSession = async (
   sessionToken: string,

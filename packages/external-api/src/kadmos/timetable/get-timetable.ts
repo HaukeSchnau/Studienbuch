@@ -1,5 +1,5 @@
-import type { CookieJar } from "tough-cookie";
 import { format, parse } from "date-fns";
+import type { CookieJar } from "tough-cookie";
 import { z } from "zod";
 
 import { fetchWithCookieJar } from "../../fetch-with-cookies";

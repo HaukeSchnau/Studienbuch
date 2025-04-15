@@ -1,5 +1,5 @@
-import { Stack, Tabs } from "expo-router";
 import FontAwesome from "@expo/vector-icons/MaterialIcons";
+import { Stack, Tabs } from "expo-router";
 
 import { colors } from "@stu/tailwind-config/native";
 

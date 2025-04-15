@@ -1,7 +1,7 @@
-import type { Route } from "next";
-import type { ReactNode } from "react";
-import Link from "next/link";
 import clsx from "clsx";
+import type { Route } from "next";
+import Link from "next/link";
+import type { ReactNode } from "react";
 
 type ButtonProps<TUrl extends string> = {
   children: ReactNode;

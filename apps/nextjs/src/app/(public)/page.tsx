@@ -1,5 +1,5 @@
-import type { Metadata, NextPage } from "next";
 import clsx from "clsx";
+import type { Metadata, NextPage } from "next";
 
 import styles from "./home.module.css";
 

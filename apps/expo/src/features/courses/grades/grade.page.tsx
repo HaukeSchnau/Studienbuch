@@ -1,6 +1,6 @@
-import { ActivityIndicator, View } from "react-native";
-import { Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import { Stack } from "expo-router";
+import { ActivityIndicator, View } from "react-native";
 
 import type { GradeType } from "@stu/lib";
 

@@ -4,11 +4,11 @@ import { program } from "@commander-js/extra-typings";
 import { add, format, weeksToDays } from "date-fns";
 import { z } from "zod";
 
-import type { SchoolId } from "@stu/lib";
-import { ingest, SYSTEM_USER } from "@stu/api";
+import { SYSTEM_USER, ingest } from "@stu/api";
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
-import { defaultSchools, Result, SCHOOL_IDS } from "@stu/lib";
+import type { SchoolId } from "@stu/lib";
+import { Result, SCHOOL_IDS, defaultSchools } from "@stu/lib";
 import { createUser } from "@stu/lib-server";
 
 import { importClasses } from "./import-classes";

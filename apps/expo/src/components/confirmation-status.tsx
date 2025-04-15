@@ -1,6 +1,6 @@
-import { View } from "react-native";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import clsx from "clsx";
+import { View } from "react-native";
 
 import { colors } from "@stu/tailwind-config/native";
 

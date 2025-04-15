@@ -1,6 +1,6 @@
-import type { GlobalSetupContext } from "vitest/node";
 import { PostgreSqlContainer } from "@testcontainers/postgresql";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
+import type { GlobalSetupContext } from "vitest/node";
 
 import { createClient } from "./client";
 import { insertFixtures } from "./insert-fixtures";

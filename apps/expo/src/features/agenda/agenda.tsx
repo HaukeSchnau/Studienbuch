@@ -1,5 +1,3 @@
-import { Fragment, useMemo } from "react";
-import { ActivityIndicator, View } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import {
   add,
@@ -12,6 +10,8 @@ import {
   isWithinInterval,
 } from "date-fns";
 import { de as localeDE } from "date-fns/locale/de";
+import { Fragment, useMemo } from "react";
+import { ActivityIndicator, View } from "react-native";
 
 import type { AgendaEntry } from "@stu/lib";
 import { formalName, subjectNameMap } from "@stu/lib";

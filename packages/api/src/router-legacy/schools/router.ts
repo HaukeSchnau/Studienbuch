@@ -5,7 +5,7 @@ import { z } from "zod";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
-import { defaultTheme, SCHOOL_IDS, themeSchema } from "@stu/lib";
+import { SCHOOL_IDS, defaultTheme, themeSchema } from "@stu/lib";
 
 import { publicProcedure } from "../../procedures";
 import { classes } from "./classes/router";

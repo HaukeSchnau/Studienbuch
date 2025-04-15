@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useImmer } from "use-immer";
 
-import type { Person } from "./user.type";
 import { Button } from "~/components/form/Button";
 import { Card } from "~/components/layout/Card";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
@@ -12,6 +11,7 @@ import { PageHeading } from "~/components/layout/PageHeading";
 import { api } from "~/infrastructure/trpc/react";
 import { DeleteUserModalContent } from "./components/DeleteUserModalContent";
 import { PersonsTable } from "./components/PersonsTable";
+import type { Person } from "./user.type";
 
 export default function UsersPage() {
   const {

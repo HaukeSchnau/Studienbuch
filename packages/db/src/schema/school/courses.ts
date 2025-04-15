@@ -16,7 +16,7 @@ import { Persons } from "../people/persons";
 import { TimetableEntries } from "../timetable/timetable-entries";
 import { Classes } from "./classes";
 import { SchoolId } from "./school-id";
-import { Semesters, SemesterType } from "./semesters";
+import { SemesterType, Semesters } from "./semesters";
 
 export const Subject = pgEnum("subject", SUBJECT_IDS);
 

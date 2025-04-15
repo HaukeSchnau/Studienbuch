@@ -1,6 +1,6 @@
+import clsx from "clsx";
 import type { Route } from "next";
 import Link from "next/link";
-import clsx from "clsx";
 
 interface CardProps<TUrl extends string> {
   children: React.ReactNode;

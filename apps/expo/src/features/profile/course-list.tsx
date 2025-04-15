@@ -1,6 +1,6 @@
-import { ActivityIndicator, View } from "react-native";
-import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
+import { ActivityIndicator, View } from "react-native";
 
 import type { Semester } from "@stu/lib";
 

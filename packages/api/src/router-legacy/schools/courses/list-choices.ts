@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import type { Course, WithTeachers } from "@stu/lib";
 import { and, eq, gte, lte } from "@stu/db";
 import { db } from "@stu/db/client";
 import {
@@ -11,6 +10,7 @@ import {
   Persons,
   Semesters,
 } from "@stu/db/schema";
+import type { Course, WithTeachers } from "@stu/lib";
 import { SCHOOL_IDS } from "@stu/lib";
 
 import { publicProcedure } from "../../../procedures";

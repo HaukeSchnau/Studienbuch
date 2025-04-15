@@ -1,7 +1,7 @@
+import Icon from "@expo/vector-icons/MaterialIcons";
 import type { ComponentProps, ComponentRef } from "react";
 import { forwardRef } from "react";
 import { TouchableNativeFeedback } from "react-native";
-import Icon from "@expo/vector-icons/MaterialIcons";
 
 interface Props {
   icon: ComponentProps<typeof Icon>["name"];

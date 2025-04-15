@@ -1,8 +1,8 @@
+import { Picker } from "@react-native-picker/picker";
 import type { Key } from "react";
 import { useEffect } from "react";
 import { View } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
-import { Picker } from "@react-native-picker/picker";
 
 import { isArrayNonEmpty } from "@stu/lib";
 

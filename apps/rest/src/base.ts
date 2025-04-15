@@ -16,7 +16,7 @@ import {
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
-import { deserializeEvent, Result, serializeEvent } from "@stu/lib";
+import { Result, deserializeEvent, serializeEvent } from "@stu/lib";
 import { getSessionTokenFromHeaders } from "@stu/lib-server";
 
 import { env } from "./env";

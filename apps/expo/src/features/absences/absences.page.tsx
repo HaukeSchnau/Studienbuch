@@ -1,5 +1,5 @@
-import { ScrollView, View } from "react-native";
 import { Stack } from "expo-router";
+import { ScrollView, View } from "react-native";
 
 import {
   ExcusedAbsences,

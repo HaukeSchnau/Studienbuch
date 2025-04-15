@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
 import { skipToken } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { z } from "zod";
 
 import { SCHOOL_IDS } from "@stu/lib";

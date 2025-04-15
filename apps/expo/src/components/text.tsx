@@ -1,6 +1,6 @@
+import clsx from "clsx";
 import type { ComponentProps } from "react";
 import { Platform, Text as RNText } from "react-native";
-import clsx from "clsx";
 
 interface Props extends ComponentProps<typeof RNText> {
   weight?: "regular" | "medium" | "semi-bold" | "bold";

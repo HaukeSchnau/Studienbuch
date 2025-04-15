@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { ActivityIndicator, View } from "react-native";
-import { Link } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { formatDate } from "date-fns";
+import { Link } from "expo-router";
+import { useState } from "react";
+import { ActivityIndicator, View } from "react-native";
 
 import type { AbsenceDay } from "@stu/lib";
 import { colors } from "@stu/tailwind-config/native";

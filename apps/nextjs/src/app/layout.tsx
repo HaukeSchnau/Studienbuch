@@ -4,8 +4,8 @@ import localFont from "next/font/local";
 
 import "./globals.css";
 
-import type { ReactNode } from "react";
 import { AxiomWebVitals } from "next-axiom";
+import type { ReactNode } from "react";
 
 import { Theme } from "~/components/Theme";
 import { env } from "~/env";

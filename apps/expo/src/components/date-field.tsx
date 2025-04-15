@@ -1,7 +1,7 @@
+import DateTimePicker from "@react-native-community/datetimepicker";
 // import { useState } from "react";
 import { Platform, TouchableNativeFeedback, View } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
-import DateTimePicker from "@react-native-community/datetimepicker";
 
 import { colors } from "@stu/tailwind-config/native";
 

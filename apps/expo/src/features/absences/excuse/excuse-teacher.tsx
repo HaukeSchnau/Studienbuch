@@ -1,5 +1,5 @@
-import { Stack, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { Stack, useRouter } from "expo-router";
 
 import type { AbsenceDayWithTeachers } from "@stu/lib";
 import { formalName, isArraySingleElement } from "@stu/lib";

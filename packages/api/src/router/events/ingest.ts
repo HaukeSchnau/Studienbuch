@@ -1,12 +1,12 @@
-import type { Event, PersistedEvent } from "@stu/lib";
 import { eventApplicator as systemApplicator } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
+import type { Event, PersistedEvent } from "@stu/lib";
 import { Result } from "@stu/lib";
 
 import { SYSTEM_USER } from "../../constants";
-import { sendMissingEventsToStudent } from "./send-missing-events";
 import { publishEvent } from "./messaging-client";
+import { sendMissingEventsToStudent } from "./send-missing-events";
 
 const ensureSystemUser = async () => {
   await db

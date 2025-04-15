@@ -2,8 +2,8 @@ import { and, eq } from "drizzle-orm";
 
 import type { NamespaceEventApplicators } from "@stu/lib";
 
-import type { Extra } from "./types";
 import * as tables from "../schema";
+import type { Extra } from "./types";
 
 export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
   "school.founded": {

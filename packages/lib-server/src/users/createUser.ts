@@ -1,6 +1,6 @@
-import type { Salutation } from "@stu/lib";
 import { db } from "@stu/db/client";
 import { Persons, Users } from "@stu/db/schema";
+import type { Salutation } from "@stu/lib";
 
 import { hashPassword } from "../auth";
 

@@ -1,7 +1,7 @@
+import { useRouter } from "expo-router";
 import type { ComponentRef, ReactNode } from "react";
 import { useRef } from "react";
 import { View } from "react-native";
-import { useRouter } from "expo-router";
 
 import { Text } from "~/components/text";
 import { Button, TextButton } from "./button";

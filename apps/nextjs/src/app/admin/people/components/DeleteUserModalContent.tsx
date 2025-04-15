@@ -1,8 +1,8 @@
 import { formalName } from "@stu/lib";
 
-import type { Person } from "../user.type";
 import { Button } from "~/components/form/Button";
 import { api } from "~/infrastructure/trpc/react";
+import type { Person } from "../user.type";
 
 interface Props {
   user: Person;

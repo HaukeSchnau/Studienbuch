@@ -1,6 +1,6 @@
+import { NativeModule, requireNativeModule, requireNativeView } from "expo";
 import type { Ref } from "react";
 import type { ViewProps } from "react-native";
-import { NativeModule, requireNativeModule, requireNativeView } from "expo";
 
 export interface DrawingViewRef {
   getSVG(): Promise<string>;

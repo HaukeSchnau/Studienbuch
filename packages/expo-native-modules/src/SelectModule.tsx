@@ -1,5 +1,5 @@
-import type { ViewProps } from "react-native";
 import { NativeModule, requireNativeModule, requireNativeView } from "expo";
+import type { ViewProps } from "react-native";
 
 interface OnChangeEvent {
   index: number;

@@ -1,6 +1,6 @@
+import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import type {
   Course as BaseCourse,
@@ -12,20 +12,20 @@ import type {
 } from "@stu/lib";
 import { BetterMap, formalNameShort } from "@stu/lib";
 
+import * as t from "@stu/student/schema";
+import { pk } from "@stu/student/schema";
+import { and, eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { Button } from "~/components/button";
 import { SelectCourse } from "~/components/select-course";
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
-import { api } from "~/utils/api";
-import { currentStudent } from "~/db/queries/user";
-import { useAppForm } from "~/utils/form";
-import * as t from "@stu/student/schema";
 import { db } from "~/db/client";
-import { eq, and } from "drizzle-orm";
-import { sql } from "drizzle-orm";
-import { pk } from "@stu/student/schema";
+import { currentStudent } from "~/db/queries/user";
 import { getMyCoursesForSemester } from "~/features/profile/queries/get-my-courses";
+import { api } from "~/utils/api";
 import { ingest } from "~/utils/events/ingest";
+import { useAppForm } from "~/utils/form";
 
 const bootstrap = async ({
   school,

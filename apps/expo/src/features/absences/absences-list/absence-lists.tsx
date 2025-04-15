@@ -1,14 +1,14 @@
-import { ActivityIndicator, View } from "react-native";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import { useQuery } from "@tanstack/react-query";
+import { ActivityIndicator, View } from "react-native";
 
 import { colors } from "@stu/tailwind-config/native";
 
-import type { AbsenceItem as AbsenceItemType } from "./types";
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { listExcused, listUnexcused } from "../queries";
 import { AbsenceItem } from "./absence-item";
+import type { AbsenceItem as AbsenceItemType } from "./types";
 
 export const UnexcusedAbsences = () => {
   const query = useQuery({

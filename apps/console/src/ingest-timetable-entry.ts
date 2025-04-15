@@ -1,8 +1,8 @@
-import type { SchoolId, SubjectId } from "@stu/lib";
-import { ingest, SYSTEM_USER } from "@stu/api";
+import { SYSTEM_USER, ingest } from "@stu/api";
 import { and, eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
+import type { SchoolId, SubjectId } from "@stu/lib";
 import { Result } from "@stu/lib";
 
 import type { ConsoleIservClient } from "./get-or-create-teacher";

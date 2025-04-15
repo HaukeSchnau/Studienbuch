@@ -2,19 +2,19 @@ import crypto from "crypto";
 import { add, endOfWeek, format, startOfWeek } from "date-fns";
 import { z } from "zod";
 
-import type { KadmosTimetableResponse } from "@stu/external-api";
-import type { SchoolId, SubjectId } from "@stu/lib";
-import { ingest, SYSTEM_USER } from "@stu/api";
+import { SYSTEM_USER, ingest } from "@stu/api";
 import { and, between, eq, gte, lte } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Schools, Semesters, TimetableEntries } from "@stu/db/schema";
+import type { KadmosTimetableResponse } from "@stu/external-api";
 import { getClasses, getTimetable, login } from "@stu/external-api";
+import type { SchoolId, SubjectId } from "@stu/lib";
 import {
   BetterMap,
+  Result,
   guessSubject,
   isArrayNonEmpty,
   isArraySingleElement,
-  Result,
 } from "@stu/lib";
 
 import { ConsoleIservClient } from "./get-or-create-teacher";

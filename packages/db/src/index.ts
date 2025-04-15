@@ -3,8 +3,8 @@ import { z } from "zod";
 import type {
   Event,
   EventApplicatorInterface,
-  EventApplicators,
   EventApplicator as EventApplicatorType,
+  EventApplicators,
 } from "@stu/lib";
 import { NAMESPACES } from "@stu/lib";
 

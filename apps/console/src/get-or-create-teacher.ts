@@ -1,4 +1,4 @@
-import { ingest, SYSTEM_USER } from "@stu/api";
+import { SYSTEM_USER, ingest } from "@stu/api";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Persons } from "@stu/db/schema";

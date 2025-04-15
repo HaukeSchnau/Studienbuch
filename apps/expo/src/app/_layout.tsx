@@ -4,11 +4,11 @@ import { TRPCProvider } from "~/utils/api";
 
 import "./styles.css";
 
+import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
+import * as SplashScreen from "expo-splash-screen";
 import { lazy, useEffect } from "react";
 import { UIManager } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import * as SplashScreen from "expo-splash-screen";
-import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 
 import { colors } from "@stu/tailwind-config/native";
 
@@ -16,8 +16,8 @@ import { PortalRenderer } from "~/components/portal";
 import { db } from "~/db/client";
 import { useSessionWatcher } from "~/utils/auth";
 import { MutationManager } from "~/utils/events/mutation-manager";
-import migrations from "../../drizzle/migrations";
 import { MissingInfoGuard } from "~/utils/missing-info-guard";
+import migrations from "../../drizzle/migrations";
 
 const DevTools = lazy(() =>
   import("~/components/dev/dev-menu").then((mod) => ({

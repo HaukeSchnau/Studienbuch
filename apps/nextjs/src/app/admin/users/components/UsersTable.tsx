@@ -1,10 +1,10 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 
 import type { User } from "../user.type";
 import { Actions } from "./Actions";

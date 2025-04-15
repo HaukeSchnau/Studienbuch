@@ -3,12 +3,12 @@ import { useForm } from "@tanstack/react-form";
 import type { Permission, ScopeOption } from "@stu/lib";
 import { formalName } from "@stu/lib";
 
-import type { User } from "../user.type";
 import { Button } from "~/components/form/Button";
 import { SelectField } from "~/components/form/SelectField";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { submitHandler } from "~/infrastructure/forms/submitHandler";
 import { api } from "~/infrastructure/trpc/react";
+import type { User } from "../user.type";
 
 interface Props {
   user: User;

@@ -1,7 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
+import { Tabs } from "expo-router";
 import React, { useState } from "react";
 import { ActivityIndicator, ScrollView, View } from "react-native";
-import { Tabs } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
 
 import type { NonEmptyArray, Semester } from "@stu/lib";
 import { isArrayNonEmpty } from "@stu/lib";

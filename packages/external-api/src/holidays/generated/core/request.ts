@@ -1,12 +1,12 @@
+import { ApiError } from "./ApiError";
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
 /* eslint-disable */
 import type { ApiRequestOptions } from "./ApiRequestOptions";
 import type { ApiResult } from "./ApiResult";
 import type { OnCancel } from "./CancelablePromise";
-import type { OpenAPIConfig } from "./OpenAPI";
-import { ApiError } from "./ApiError";
 import { CancelablePromise } from "./CancelablePromise";
+import type { OpenAPIConfig } from "./OpenAPI";
 
 export const isDefined = <T>(
   value: T | null | undefined,

@@ -1,11 +1,10 @@
-import { View } from "react-native";
-import { Stack, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDate } from "date-fns";
+import { Stack, useRouter } from "expo-router";
+import { View } from "react-native";
 
 import { formatGrade } from "@stu/lib";
 
-import type { ConfirmedGrade, Grade } from "../grade.type";
 import {
   ConfirmPageContent,
   ViewConfirmPageContent,
@@ -13,6 +12,7 @@ import {
 import { Text } from "~/components/text";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { useIngest } from "~/utils/events/ingest";
+import type { ConfirmedGrade, Grade } from "../grade.type";
 
 export const ConfirmWrittenGradeParent = ({ grade }: { grade: Grade }) => {
   const { user } = useRequiredAuthenticatedSession();

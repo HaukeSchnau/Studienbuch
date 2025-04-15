@@ -1,3 +1,6 @@
+import { Image } from "expo-image";
+import { Slot, Stack, usePathname } from "expo-router";
+import { openBrowserAsync } from "expo-web-browser";
 import { useEffect } from "react";
 import {
   LayoutAnimation,
@@ -10,9 +13,6 @@ import Animated, {
   useAnimatedStyle,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Image } from "expo-image";
-import { Slot, Stack, usePathname } from "expo-router";
-import { openBrowserAsync } from "expo-web-browser";
 
 import { shadow } from "~/components/styles/shadow";
 import { Text } from "~/components/text";

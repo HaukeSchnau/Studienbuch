@@ -1,8 +1,8 @@
-import { Fragment, Suspense } from "react";
 import clsx from "clsx";
+import { Fragment, Suspense } from "react";
 
-import type { Issue, WorkflowState } from "@stu/lib-server";
 import { formatDateRelative } from "@stu/lib";
+import type { Issue, WorkflowState } from "@stu/lib-server";
 import { getStates, getTicketsForState } from "@stu/lib-server";
 
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";

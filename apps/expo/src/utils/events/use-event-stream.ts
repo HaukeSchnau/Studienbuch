@@ -5,9 +5,9 @@ import superjson from "superjson";
 import { deserializeEvent } from "@stu/lib";
 import * as tables from "@stu/student/schema";
 
-import type { LocalEvent } from "./ingest";
 import { db } from "~/db/client";
 import { getBaseUrl } from "../base-url";
+import type { LocalEvent } from "./ingest";
 
 const getEventStream = (sessionToken?: string) => {
   console.log("getting event stream", sessionToken);

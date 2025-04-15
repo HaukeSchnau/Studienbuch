@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import type { DrawingViewRef } from "stu-expo-native";
 import React, { forwardRef } from "react";
 import { View } from "react-native";
 import { SvgXml } from "react-native-svg";
+import type { DrawingViewRef } from "stu-expo-native";
 import { DrawingView } from "stu-expo-native";
 
 import Cross from "../.././assets/cross.svg";

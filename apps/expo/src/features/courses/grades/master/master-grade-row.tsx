@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from "react";
-import { View } from "react-native";
-import { Link } from "expo-router";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import { format } from "date-fns";
+import { Link } from "expo-router";
+import React, { useMemo, useState } from "react";
+import { View } from "react-native";
 
 import type { Grade } from "@stu/lib";
 import { formatGrade, isGradeConfirmed } from "@stu/lib";

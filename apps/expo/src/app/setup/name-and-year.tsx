@@ -3,23 +3,23 @@ import { z } from "zod";
 
 import { formatClassName, formatYear, isArraySingleElement } from "@stu/lib";
 
+import type { Class, SchoolId, StateCode, Year } from "@stu/lib";
+import * as t from "@stu/student/schema";
+import { pk } from "@stu/student/schema";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Button } from "~/components/button";
 import { CheckboxRow } from "~/components/checkbox-row";
 import { SelectField } from "~/components/select-field";
+import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
-import * as t from "@stu/student/schema";
+import { db } from "~/db/client";
+import { currentStudent } from "~/db/queries/user";
 import { useAppForm } from "~/features/setup/form";
 import { api } from "~/utils/api";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { currentStudent } from "~/db/queries/user";
-import type { Class, SchoolId, StateCode, Year } from "@stu/lib";
 import { useSession } from "~/utils/auth";
 import { ingest } from "~/utils/events/ingest";
-import { db } from "~/db/client";
-import { pk } from "@stu/student/schema";
-import { TempError } from "~/components/temp-error";
-import { useEffect } from "react";
 
 const bootstrap = async ({
   school,

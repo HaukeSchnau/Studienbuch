@@ -1,5 +1,5 @@
-import type { SafeParseReturnType } from "zod";
 import superjson from "superjson";
+import type { SafeParseReturnType } from "zod";
 import { preprocess, z } from "zod";
 
 import type { NAMESPACES } from "./events";

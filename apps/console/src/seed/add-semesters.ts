@@ -1,8 +1,8 @@
 import { randomUUID } from "crypto";
 import dayjs from "dayjs";
 
+import { SYSTEM_USER, ingest } from "@stu/api";
 import type { State } from "@stu/external-api";
-import { ingest, SYSTEM_USER } from "@stu/api";
 import { getHolidays } from "@stu/external-api";
 import { Result } from "@stu/lib";
 

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { Card, CardHeading } from "~/components/layout/Card";
-import { isLoggedIn } from "~/features/auth/isLoggedIn";
 import { LoginForm } from "~/features/auth/LoginForm";
+import { isLoggedIn } from "~/features/auth/isLoggedIn";
 
 export const metadata: Metadata = {
   title: "Anmelden | Digitales Studienbuch",

@@ -1,7 +1,7 @@
-import { ActivityIndicator, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "@expo/vector-icons/MaterialIcons";
 import { useQuery } from "@tanstack/react-query";
+import { ActivityIndicator, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { getCurrentYearNum } from "@stu/lib";
 

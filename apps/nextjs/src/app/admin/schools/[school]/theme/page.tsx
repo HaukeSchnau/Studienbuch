@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-condition */
 "use client";
 
-import { useRef } from "react";
 import { useForm } from "@tanstack/react-form";
+import { useRef } from "react";
 
 import type { SchoolId } from "@stu/lib";
 

@@ -1,7 +1,7 @@
+import { format } from "date-fns";
+import { Link } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { View } from "react-native";
-import { Link } from "expo-router";
-import { format } from "date-fns";
 
 import type { Grade } from "@stu/lib";
 import { formatGrade, isGradeConfirmed } from "@stu/lib";

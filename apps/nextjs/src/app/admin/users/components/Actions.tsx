@@ -1,5 +1,5 @@
-import type { User } from "../user.type";
 import { IconButton } from "~/components/form/IconButton";
+import type { User } from "../user.type";
 
 interface Props {
   user: User;

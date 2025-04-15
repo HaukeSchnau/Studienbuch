@@ -4,17 +4,17 @@ import { z } from "zod";
 import type {
   Event,
   EventApplicatorInterface,
-  EventApplicators,
   EventApplicator as EventApplicatorType,
+  EventApplicators,
   PersistedEvent,
 } from "@stu/lib";
 import { NAMESPACES } from "@stu/lib";
 
-import type { DB, Extra } from "./event-handlers/types";
 import { absenceApplicators } from "./event-handlers/absences";
 import { gradeApplicators } from "./event-handlers/grades";
 import { orgApplicators } from "./event-handlers/org";
 import { studentApplicators } from "./event-handlers/student";
+import type { DB, Extra } from "./event-handlers/types";
 import * as tables from "./schema";
 
 const applicators: EventApplicators<Extra> = {

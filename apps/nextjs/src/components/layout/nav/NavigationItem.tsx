@@ -1,10 +1,10 @@
 "use client";
 
+import cx from "clsx";
 import type { Route } from "next";
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import cx from "clsx";
+import type { ReactNode } from "react";
 
 import type { IconName } from "~/components/icon";
 import { logout } from "~/features/auth/serverActions/logout";

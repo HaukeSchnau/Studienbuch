@@ -2,10 +2,10 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { z } from "zod";
 
-import type { SchoolId, SubstitutionType } from "@stu/lib";
-import type { KadmosSubstitution } from "@stu/lib-server";
 import { db } from "@stu/db/client";
+import type { SchoolId, SubstitutionType } from "@stu/lib";
 import { SUBSTITUTION_TYPES } from "@stu/lib";
+import type { KadmosSubstitution } from "@stu/lib-server";
 import { getSubstitutions } from "@stu/lib-server";
 
 dayjs.extend(utc);

@@ -10,9 +10,9 @@ import {
   z,
 } from "zod";
 
-import type { SchoolId, StateCode } from "./schools";
 import { SUBJECT_IDS } from "./courses";
 import { GRADE_TYPES } from "./grades";
+import type { SchoolId, StateCode } from "./schools";
 import { SCHOOL_IDS, SEMESTER_TYPES, STATE_CODES } from "./schools";
 import { SALUTATIONS } from "./users";
 

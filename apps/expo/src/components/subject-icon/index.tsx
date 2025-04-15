@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
-import type { SvgProps } from "react-native-svg";
 import { View } from "react-native";
+import type { SvgProps } from "react-native-svg";
 
 import type { SubjectId } from "@stu/lib";
 

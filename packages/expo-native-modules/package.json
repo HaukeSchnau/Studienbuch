@@ -16,12 +16,7 @@
     "open:android": "open -a \"Android Studio\" example/android",
     "typecheck": "tsc --noEmit"
   },
-  "keywords": [
-    "react-native",
-    "expo",
-    "stu-expo-native",
-    "StuExpoNative"
-  ],
+  "keywords": ["react-native", "expo", "stu-expo-native", "StuExpoNative"],
   "repository": "https://example.com",
   "bugs": {
     "url": "https://example.com/issues"

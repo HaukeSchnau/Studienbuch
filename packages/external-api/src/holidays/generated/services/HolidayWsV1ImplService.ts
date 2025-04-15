@@ -2,9 +2,9 @@
 /* istanbul ignore file */
 /* eslint-disable */
 import type { CancelablePromise } from "../core/CancelablePromise";
-import type { HolidayDto } from "../models/HolidayDto";
 import { OpenAPI } from "../core/OpenAPI";
 import { request as __request } from "../core/request";
+import type { HolidayDto } from "../models/HolidayDto";
 
 export class HolidayWsV1ImplService {
   /**

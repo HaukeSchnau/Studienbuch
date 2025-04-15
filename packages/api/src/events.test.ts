@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { expect, it } from "vitest";
 
-import type { Event } from "@stu/lib";
 import { db } from "@stu/db/client";
+import type { Event } from "@stu/lib";
 import { Result } from "@stu/lib";
 
 import { ingest } from "./router/events/ingest";

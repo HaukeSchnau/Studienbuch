@@ -1,9 +1,9 @@
-import type { SchoolId } from "@stu/lib";
-import { ingest, SYSTEM_USER } from "@stu/api";
+import { SYSTEM_USER, ingest } from "@stu/api";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
 import { getClasses, login } from "@stu/external-api";
+import type { SchoolId } from "@stu/lib";
 import { BetterMap, Result, startYearToNameMap } from "@stu/lib";
 
 import { ConsoleIservClient } from "./get-or-create-teacher";

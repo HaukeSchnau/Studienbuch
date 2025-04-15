@@ -1,7 +1,7 @@
 import crypto from "crypto";
 
+import { SYSTEM_USER, ingest } from "@stu/api";
 import type { SchoolId } from "@stu/lib";
-import { ingest, SYSTEM_USER } from "@stu/api";
 import { Result } from "@stu/lib";
 
 import { logger } from "../logger";

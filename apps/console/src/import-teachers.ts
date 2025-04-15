@@ -1,6 +1,6 @@
-import type { Salutation } from "@stu/lib";
-import { ingest, SYSTEM_USER } from "@stu/api";
+import { SYSTEM_USER, ingest } from "@stu/api";
 import { getTeachers } from "@stu/external-api";
+import type { Salutation } from "@stu/lib";
 import { Result } from "@stu/lib";
 
 import { logger } from "./logger";

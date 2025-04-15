@@ -1,7 +1,7 @@
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 
-import type { AppRouter } from "./root";
 import { SYSTEM_USER } from "./constants";
+import type { AppRouter } from "./root";
 import { appRouter } from "./root";
 import { ingest } from "./router/events/ingest";
 import { subscribe } from "./router/events/messaging-client";

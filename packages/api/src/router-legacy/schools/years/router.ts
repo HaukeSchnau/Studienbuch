@@ -5,7 +5,7 @@ import { z } from "zod";
 import { and, desc, eq, gte } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Years } from "@stu/db/schema";
-import { getMaxActiveGraduationYear, SCHOOL_IDS } from "@stu/lib";
+import { SCHOOL_IDS, getMaxActiveGraduationYear } from "@stu/lib";
 
 import { publicProcedure } from "../../../procedures";
 

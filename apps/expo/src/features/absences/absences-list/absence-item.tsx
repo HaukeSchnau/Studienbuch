@@ -1,17 +1,17 @@
-import { Alert, View } from "react-native";
-import { Link } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import { format } from "date-fns";
+import { Link } from "expo-router";
+import { Alert, View } from "react-native";
 
 import { subjectNameMap } from "@stu/lib";
 
-import type { AbsenceItem as AbsenceItemType } from "./types";
 import { OutlinedButton } from "~/components/button";
 import { ConfirmationStatus } from "~/components/confirmation-status";
 import { Text } from "~/components/text";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { useIngest } from "~/utils/events/ingest";
+import type { AbsenceItem as AbsenceItemType } from "./types";
 
 interface AbsenceViewProps {
   absenceGroup: AbsenceItemType;

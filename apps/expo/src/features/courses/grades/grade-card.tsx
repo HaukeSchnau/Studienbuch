@@ -1,7 +1,7 @@
-import type { Href } from "expo-router";
-import { View } from "react-native";
-import { Link } from "expo-router";
 import { format } from "date-fns";
+import type { Href } from "expo-router";
+import { Link } from "expo-router";
+import { View } from "react-native";
 
 import type { Grade, GradeType } from "@stu/lib";
 import { formatGradeShort } from "@stu/lib";

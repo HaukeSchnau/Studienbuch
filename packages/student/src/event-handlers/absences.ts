@@ -2,8 +2,8 @@ import { and, eq, inArray } from "drizzle-orm";
 
 import type { NamespaceEventApplicators } from "@stu/lib";
 
-import type { Extra } from "./types";
 import * as tables from "../schema";
+import type { Extra } from "./types";
 
 export const absenceApplicators: NamespaceEventApplicators<"absence", Extra> = {
   recorded: {

@@ -1,7 +1,7 @@
-import { Redirect, useSegments } from "expo-router";
-import { useSession } from "./auth";
 import { useQuery } from "@tanstack/react-query";
+import { Redirect, useSegments } from "expo-router";
 import { currentStudent } from "~/db/queries/user";
+import { useSession } from "./auth";
 
 export const MissingInfoGuard = ({
   children,

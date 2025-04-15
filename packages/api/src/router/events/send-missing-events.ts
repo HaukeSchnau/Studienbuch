@@ -1,8 +1,8 @@
 import { and, asc, eq, getTableColumns, inArray, isNull } from "drizzle-orm";
 
-import type { Event } from "@stu/lib";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
+import type { Event } from "@stu/lib";
 import {
   studentsOfCourse,
   studentsOfSchool,

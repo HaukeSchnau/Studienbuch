@@ -1,7 +1,7 @@
-import type { Route } from "next";
-import type { CSSProperties } from "react";
-import Link from "next/link";
 import clsx from "clsx";
+import type { Route } from "next";
+import Link from "next/link";
+import type { CSSProperties } from "react";
 
 import type { IconName } from "../icon";
 

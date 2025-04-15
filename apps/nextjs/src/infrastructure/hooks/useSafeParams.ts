@@ -1,5 +1,5 @@
-import type { ZodSchema } from "zod";
 import { useParams } from "next/navigation";
+import type { ZodSchema } from "zod";
 
 export const useParsedParams = <T>(schema: ZodSchema<T>) => {
   const params = useParams();

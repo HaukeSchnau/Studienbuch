@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useImmer } from "use-immer";
 
-import type { User } from "./user.type";
 import { Button } from "~/components/form/Button";
 import { Card } from "~/components/layout/Card";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
@@ -14,6 +13,7 @@ import { DeleteUserModalContent } from "./components/DeleteUserModalContent";
 import { ChangePasswordModalContent } from "./components/NewPasswordModalContent";
 import { PermissionsModalContent } from "./components/PermissionsModalContent";
 import { UsersTable } from "./components/UsersTable";
+import type { User } from "./user.type";
 
 export default function UsersPage() {
   const {
