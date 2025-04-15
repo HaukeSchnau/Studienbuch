@@ -143,8 +143,12 @@ export const useSessionWatcher = () => {
   }, [licenseKey]);
 
   useEffect(() => {
-    if (getSessionQuery.status !== "success") {
+    if (getSessionQuery.status === "error") {
       console.error("Failed to get session.");
+      return;
+    }
+
+    if (getSessionQuery.status === "pending") {
       return;
     }
 
