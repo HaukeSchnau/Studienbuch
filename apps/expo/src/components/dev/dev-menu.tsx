@@ -1,11 +1,5 @@
-import { useReactNavigationDevTools } from "@dev-plugins/react-navigation";
-import { useReactQueryDevTools } from "@dev-plugins/react-query";
-import { useQueryClient } from "@tanstack/react-query";
 import { registerDevMenuItems } from "expo-dev-client";
-import { useDrizzleStudio } from "expo-drizzle-studio-plugin/";
-import { router, useNavigationContainerRef } from "expo-router";
-
-import { expoDb } from "~/db/client";
+import { router } from "expo-router";
 
 void registerDevMenuItems([
   {
@@ -18,13 +12,13 @@ void registerDevMenuItems([
 ]);
 
 export const DevTools = () => {
-  const navigationRef = useNavigationContainerRef();
-  const queryClient = useQueryClient();
+  // const navigationRef = useNavigationContainerRef();
+  // const queryClient = useQueryClient();
 
-  useReactNavigationDevTools(navigationRef);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- For some reason, this plugin is not typed
-  useDrizzleStudio(expoDb);
-  useReactQueryDevTools(queryClient);
+  // useReactNavigationDevTools(navigationRef);
+
+  // useDrizzleStudio(expoDb);
+  // useReactQueryDevTools(queryClient);
 
   return null;
 };

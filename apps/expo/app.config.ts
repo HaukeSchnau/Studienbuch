@@ -55,5 +55,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     "expo-secure-store",
     "expo-sqlite",
+    "expo-web-browser",
   ],
 });

@@ -34,23 +34,6 @@ config.resolver.assetExts = config.resolver.assetExts.filter(
 config.resolver.sourceExts.push("sql");
 config.resolver.sourceExts.push("svg");
 
-const originalResolveRequest = config.resolver.resolveRequest;
-config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (moduleName === "@stu/lib") {
-    return context.resolveRequest(context, "@stu/lib/src/index.ts", platform);
-  }
-
-  if (moduleName === "@stu/student/schema") {
-    return context.resolveRequest(
-      context,
-      "@stu/student/src/schema/index.ts",
-      platform,
-    );
-  }
-
-  return originalResolveRequest(context, moduleName, platform);
-};
-
 module.exports = config;
 
 /**
