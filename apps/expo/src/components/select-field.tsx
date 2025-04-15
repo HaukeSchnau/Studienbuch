@@ -10,7 +10,7 @@ import { FieldLabel } from "./field-label";
 
 interface Props<TOption> {
   label: string;
-  value: TOption;
+  value: TOption | undefined;
   getOptionLabel: (option: NonNullable<TOption>) => string;
   getKey: (option: NonNullable<TOption>) => Key;
   options: NonNullable<TOption>[];

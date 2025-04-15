@@ -5,8 +5,8 @@ import { db } from "~/db/client";
 export const currentStudent = () =>
   queryOptions({
     queryKey: ["currentStudent"],
-    queryFn: () =>
-      db.query.students.findFirst({
+    queryFn: async () =>
+      (await db.query.students.findFirst({
         with: {
           person: true,
           year: true,
@@ -15,5 +15,5 @@ export const currentStudent = () =>
         columns: {
           person: false,
         },
-      }),
+      })) ?? null,
   });

@@ -1,61 +1,223 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { useStore } from "@tanstack/react-form";
-import { skipToken } from "@tanstack/react-query";
+import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { Course as BaseCourse, SubjectId, WithTeachers } from "@stu/lib";
-import {
-  BetterMap,
-  formalNameShort,
-  formatClassName,
-  isArraySingleElement,
+import type {
+  Course as BaseCourse,
+  SchoolId,
+  SemesterType,
+  StateCode,
+  SubjectId,
+  WithTeachers,
 } from "@stu/lib";
+import { BetterMap, formalNameShort } from "@stu/lib";
 
 import { Button } from "~/components/button";
 import { SelectCourse } from "~/components/select-course";
-import { SelectField } from "~/components/select-field";
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
-import { useFormContext } from "~/features/setup/form";
 import { api } from "~/utils/api";
+import { currentStudent } from "~/db/queries/user";
+import { useAppForm } from "~/utils/form";
+import * as t from "@stu/student/schema";
+import { db } from "~/db/client";
+import { eq, and } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import { pk } from "@stu/student/schema";
+import { getMyCoursesForSemester } from "~/features/profile/queries/get-my-courses";
+import { ingest } from "~/utils/events/ingest";
+
+const bootstrap = async ({
+  school,
+  year,
+  classIdentifier,
+  semester,
+  courses,
+}: {
+  school: { id: SchoolId; name: string; stateCode: StateCode };
+  year: { name: string; graduationYear: number; startYear: number };
+  classIdentifier: string;
+  semester: {
+    name: string;
+    type: SemesterType;
+    year: number;
+    start: Date;
+    end: Date;
+  };
+  courses: (Course & WithTeachers)[];
+}) => {
+  await db
+    .insert(t.semesters)
+    .values({
+      name: semester.name,
+      year: semester.year,
+      type: semester.type,
+      start: semester.start,
+      end: semester.end,
+      school: school.id,
+    })
+    .onConflictDoUpdate({
+      target: pk(t.semesters),
+      set: {
+        name: semester.name,
+        start: semester.start,
+        end: semester.end,
+      },
+    });
+
+  await db
+    .delete(t.yearSemesters)
+    .where(
+      and(
+        eq(t.yearSemesters.school, school.id),
+        eq(t.yearSemesters.startYear, year.startYear),
+      ),
+    )
+    .execute();
+  await db
+    .insert(t.yearSemesters)
+    .values({
+      school: school.id,
+      startYear: year.startYear,
+      semesterYear: semester.year,
+      semesterType: semester.type,
+    })
+    .execute();
+
+  await db
+    .insert(t.courses)
+    .values(
+      courses.map((course) => ({
+        id: course.id,
+        name: course.name,
+        longName: course.longName,
+        subject: course.subject,
+        isMandatory: course.isMandatory,
+        school: school.id,
+        semesterType: semester.type,
+        semesterYear: semester.year,
+      })),
+    )
+    .onConflictDoUpdate({
+      target: pk(t.courses),
+      set: {
+        name: sql.raw(`excluded.${t.courses.name.name}`),
+        longName: sql.raw(`excluded.${t.courses.longName.name}`),
+        subject: sql.raw(`excluded.${t.courses.subject.name}`),
+        isMandatory: sql.raw(`excluded.${t.courses.isMandatory.name}`),
+        semesterType: sql.raw(`excluded.${t.courses.semesterType.name}`),
+        semesterYear: sql.raw(`excluded.${t.courses.semesterYear.name}`),
+        school: sql.raw(`excluded.${t.courses.school.name}`),
+        isMember: sql.raw(`excluded.${t.courses.isMember.name}`),
+      },
+    });
+
+  for (const course of courses) {
+    await db
+      .insert(t.coursesToClasses)
+      .values({
+        course: course.id,
+        school: school.id,
+        classIdentifier: classIdentifier,
+        classStartYear: year.startYear,
+      })
+      .onConflictDoNothing();
+
+    for (const teacher of course.teachers) {
+      await db
+        .insert(t.persons)
+        .values({
+          id: teacher.id,
+          firstName: teacher.firstName,
+          lastName: teacher.lastName,
+          abbrv: teacher.abbrv,
+          salutation: teacher.salutation,
+        })
+        .onConflictDoUpdate({
+          target: pk(t.persons),
+          set: {
+            firstName: teacher.firstName,
+            lastName: teacher.lastName,
+            abbrv: teacher.abbrv,
+            salutation: teacher.salutation,
+          },
+        });
+
+      await db
+        .insert(t.coursesToTeachers)
+        .values({
+          course: course.id,
+          teacher: teacher.id,
+        })
+        .onConflictDoNothing();
+    }
+  }
+};
 
 type Course = BaseCourse & WithTeachers;
 
 export default function ClassAndCourses() {
-  const { form, handleSubmitStep } = useFormContext({
-    step: 2,
-    onSubmitStep: async () => {
-      await form.handleSubmit().catch((e) => {
-        console.error(e);
+  const studentQuery = useQuery(currentStudent());
+  const semester = api.schools.semesters.getCurrent.useQuery();
+  const currentCourses = useQuery(getMyCoursesForSemester(semester.data));
+  const queryClient = useQueryClient();
+  const form = useAppForm({
+    defaultValues: {
+      chosenCourses:
+        currentCourses.data?.reduce(
+          (acc, course) => {
+            acc[course.subject] = course;
+            return acc;
+          },
+          {} as Partial<Record<SubjectId, Course & WithTeachers>>,
+        ) ?? {},
+    },
+    onSubmit: async ({ value }) => {
+      if (!semester.data) {
+        console.error("No semesters");
+        return; // TODO: show error
+      }
+      const student = studentQuery.data;
+      if (!student) {
+        console.error("No class");
+        return; // TODO: show error
+      }
+      const courses = Object.values(value.chosenCourses).filter(Boolean);
+      await bootstrap({
+        school: {
+          id: student.year.school,
+          name: "IGS Lilienthal",
+          stateCode: "NI",
+        },
+        year: student.year,
+        classIdentifier: student.class.identifierInYear,
+        semester: semester.data,
+        courses,
       });
+      console.log("bootstrapped");
+      await Promise.all(
+        courses.map((course) =>
+          ingest("student.courseAssigned", student.person.id, {
+            courseId: course.id,
+            studentId: student.person.id,
+          }),
+        ),
+      );
+      await queryClient.invalidateQueries();
     },
   });
 
-  const selectedYear = useStore(form.store, (state) => state.values.year);
-  const selectedClass = useStore(form.store, (state) => state.values.class);
-
-  const classes = api.schools.classes.list.useQuery({
-    school: "igs-lil",
-    startYear: selectedYear.startYear,
-  });
-
   const courses = api.schools.courses.listChoices.useQuery(
-    selectedClass
+    studentQuery.data
       ? {
           class: {
             school: "igs-lil",
-            startYear: selectedYear.startYear,
-            identifierInYear: selectedClass.identifierInYear,
+            startYear: studentQuery.data.year.startYear,
+            identifierInYear: studentQuery.data.class.identifierInYear,
           },
         }
       : skipToken,
   );
-
-  useEffect(() => {
-    if (classes.data && isArraySingleElement(classes.data)) {
-      form.setFieldValue("class", classes.data[0]);
-    }
-  }, [classes.data, form]);
 
   const courseChoices = useMemo(() => {
     if (courses.data) {
@@ -70,51 +232,25 @@ export default function ClassAndCourses() {
     return new BetterMap<SubjectId, Course[]>();
   }, [courses.data]);
 
-  if (classes.isError || courses.isError) {
-    return (
-      <TempError
-        error={`${classes.error?.message} ${courses.error?.message}`}
-      />
-    );
+  if (courses.isError) {
+    return <TempError error={courses.error.message} />;
   }
 
-  if (classes.isPending || courses.isPending) {
+  if (courses.isPending) {
     return <ActivityIndicator />;
   }
-
-  const hasClasses = classes.data.length > 1;
 
   return (
     <View>
       <Text variant="heading" className="text-center">
-        {hasClasses ? "Klassen und Kurse" : "Kurse"}
+        Kurse
       </Text>
       <Text>
-        {hasClasses
-          ? "Bitte wähle deine Klasse und deine Wahlpflichtkurse aus. Du kannst diese später jederzeit ändern. Tippe auf die Fächer, um deine Kurse auszuwählen."
-          : "Bitte wähle deine Kurse aus. Du kannst diese später jederzeit ändern. Tippe auf die Fächer, um deine Kurse auszuwählen."}
+        Bitte wähle deine Kurse aus. Du kannst diese später jederzeit ändern.
+        Tippe auf die Fächer, um deine Kurse auszuwählen.
       </Text>
 
       <View className="h-6" />
-
-      {hasClasses && (
-        <>
-          <form.Field
-            name="class"
-            children={(field) => (
-              <SelectField
-                options={classes.data}
-                label="Klasse"
-                getKey={(item) => item.identifierInYear}
-                getOptionLabel={(item) => formatClassName(item, selectedYear)}
-                onChange={field.setValue}
-                value={field.state.value}
-              />
-            )}
-          />
-          <View className="h-6" />
-        </>
-      )}
 
       <View className="flex flex-row flex-wrap">
         {Array.from(courseChoices.entries()).map(([subject, courses], idx) => (
@@ -151,7 +287,11 @@ export default function ClassAndCourses() {
 
       <View className="h-6" />
 
-      <Button label="Fertig" className="self-end" onPress={handleSubmitStep} />
+      <Button
+        label="Fertig"
+        className="self-end"
+        onPress={() => form.handleSubmit()}
+      />
     </View>
   );
 }

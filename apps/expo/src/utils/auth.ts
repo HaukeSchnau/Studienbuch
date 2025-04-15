@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useRouter } from "expo-router";
 import { skipToken, useQuery } from "@tanstack/react-query";
 import { eq } from "drizzle-orm";
 
@@ -57,15 +56,9 @@ export const useRequiredAuthenticatedSession = () => {
   }
 
   const formatName = (firstName: string | null, lastName: string | null) => {
-    if (firstName && lastName) {
-      return `${firstName} ${lastName}`;
-    }
-    if (firstName) {
-      return firstName;
-    }
-    if (lastName) {
-      return lastName;
-    }
+    if (firstName && lastName) return `${firstName} ${lastName}`;
+    if (firstName) return firstName;
+    if (lastName) return lastName;
     return "";
   };
 
@@ -96,7 +89,6 @@ export const useSession = () => {
  */
 export const useSessionWatcher = () => {
   const utils = api.useUtils();
-  const router = useRouter();
   const login = api.auth.activateLicenseKey.useMutation({
     retry: 3,
     onSuccess: async ({ error, session }) => {
@@ -115,7 +107,6 @@ export const useSessionWatcher = () => {
         setLoading(false);
 
         await utils.invalidate();
-        router.replace("/");
       }
     },
   });
@@ -171,7 +162,6 @@ export const useSessionWatcher = () => {
         user: data.user.id,
       });
       await utils.invalidate();
-      router.replace("/");
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [getSessionQuery.status, getSessionQuery.data, licenseKey]);

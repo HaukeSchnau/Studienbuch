@@ -1,6 +1,5 @@
 import { View } from "react-native";
 import { useMaskedInputProps } from "react-native-mask-input";
-import { useRouter } from "expo-router";
 
 import type { Falsy } from "@stu/lib";
 
@@ -13,15 +12,7 @@ import { useStorage } from "~/utils/storage";
 
 export default function LicenseKey() {
   const checkMutation = api.auth.checkLicenseKey.useMutation();
-  const router = useRouter();
   const [licenseKey, setLicenseKey] = useStorage("auth.licenseKey");
-
-  // const { form, handleSubmitStep } = useFormContext({
-  //   step: 0,
-  //   onSubmitStep: () => {
-  //     router.push("/setup/name-and-year");
-  //   },
-  // });
 
   const form = useAppForm({
     defaultValues: {
@@ -29,7 +20,6 @@ export default function LicenseKey() {
     },
     onSubmit: async ({ value }) => {
       await setLicenseKey(value.licenseKey);
-      router.push("/setup/name-and-year");
     },
   });
 
@@ -56,14 +46,7 @@ export default function LicenseKey() {
               ? undefined
               : "Ungültiger Lizenzschlüssel";
           },
-          // onSubmitAsync: async ({ value }) => {
-          //   const result = await checkMutation.mutateAsync({
-          //     licenseKey: value,
-          //   });
-          //   return result === "VALID"
-          //     ? undefined
-          //     : "Ungültiger Lizenzschlüssel";
-          // },
+          onChangeAsyncDebounceMs: 200,
         }}
         children={(field) => (
           <LicenseKeyField

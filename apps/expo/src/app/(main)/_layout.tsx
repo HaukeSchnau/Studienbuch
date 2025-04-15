@@ -1,20 +1,11 @@
-import { Redirect, Stack, Tabs } from "expo-router";
+import { Stack, Tabs } from "expo-router";
 import FontAwesome from "@expo/vector-icons/MaterialIcons";
 
 import { colors } from "@stu/tailwind-config/native";
 
 import { Text } from "~/components/text";
-import { useSession } from "~/utils/auth";
 
 export default function TabLayout() {
-  const session = useSession();
-
-  console.log("session", session);
-
-  if (!session) {
-    return <Redirect href="/setup/license-key" />;
-  }
-
   return (
     <>
       <Stack.Screen options={{ headerShown: false, title: "Übersicht" }} />

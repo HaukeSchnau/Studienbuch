@@ -17,6 +17,7 @@ import { db } from "~/db/client";
 import { useSessionWatcher } from "~/utils/auth";
 import { MutationManager } from "~/utils/events/mutation-manager";
 import migrations from "../../drizzle/migrations";
+import { MissingInfoGuard } from "~/utils/missing-info-guard";
 
 const DevTools = lazy(() =>
   import("~/components/dev/dev-menu").then((mod) => ({
@@ -54,6 +55,9 @@ function RootLayout() {
     <MutationManager>
       <GestureHandlerRootView>
         <Stack
+          layout={({ children }) => (
+            <MissingInfoGuard>{children}</MissingInfoGuard>
+          )}
           screenOptions={{
             headerStyle: {
               backgroundColor: colors.primary.DEFAULT,
