@@ -1,8 +1,8 @@
 import type { Serve } from "bun";
 
-import { makeRestApi } from "../index";
+import { createBase } from "../src/base";
 
-const { app } = makeRestApi("/");
+const app = createBase("/");
 
 process.on("SIGINT", () => {
   process.exit(0);

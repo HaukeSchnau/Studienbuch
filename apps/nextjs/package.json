@@ -19,7 +19,6 @@
     "@stu/db": "workspace:*",
     "@stu/lib": "workspace:*",
     "@stu/lib-server": "workspace:*",
-    "@stu/rest": "workspace:*",
     "@t3-oss/env-nextjs": "^0.12.0",
     "@tanstack/react-form": "^1.3.0",
     "@tanstack/react-query": "^5.72.1",

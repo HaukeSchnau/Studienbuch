@@ -22,3 +22,4 @@ export {
   getSession,
 };
 export type { AppRouter, RouterInputs, RouterOutputs };
+export { createBase } from "./base";

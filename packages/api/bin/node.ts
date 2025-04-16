@@ -1,10 +1,10 @@
 import { serve } from "@hono/node-server";
 
-import { makeRestApi } from "..";
+import { createBase } from "../src/base";
 import { env } from "../env";
 
 const port = env.API_PORT;
-const { app } = makeRestApi("/");
+const app = createBase("/");
 
 process.on("SIGINT", () => {
   process.exit(0);

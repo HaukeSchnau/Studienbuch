@@ -1,7 +1,8 @@
-import { makeRestApi } from "@stu/rest";
+import { createBase } from "@stu/api";
+import { handle } from "hono/vercel";
 
-const api = makeRestApi("/api");
-const handler = api.nextHandler();
+const api = createBase("/api");
+const handler = handle(api);
 
 export const GET = handler;
 export const POST = handler;

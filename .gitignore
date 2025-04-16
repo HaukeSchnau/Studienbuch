@@ -23,9 +23,6 @@ apps/expo/.gitignore
 apps/expo/ios
 apps/expo/android
 
-# production
-build
-
 # misc
 .DS_Store
 *.pem

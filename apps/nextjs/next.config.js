@@ -10,13 +10,7 @@ const config = {
   reactStrictMode: true,
 
   /** Enables hot reloading for local packages without a build step */
-  transpilePackages: [
-    "@stu/api",
-    "@stu/db",
-    "@stu/lib",
-    "@stu/lib-server",
-    "@stu/rest",
-  ],
+  transpilePackages: ["@stu/api", "@stu/db", "@stu/lib", "@stu/lib-server"],
 
   /** We already do linting and typechecking as separate tasks in CI */
   eslint: { ignoreDuringBuilds: true },

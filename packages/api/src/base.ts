@@ -19,7 +19,7 @@ import * as tables from "@stu/db/schema";
 import { Result, deserializeEvent, serializeEvent } from "@stu/lib";
 import { getSessionTokenFromHeaders } from "@stu/lib-server";
 
-import { env } from "./env";
+import { env } from "../env";
 
 const appLogger = pino({
   transport: {
