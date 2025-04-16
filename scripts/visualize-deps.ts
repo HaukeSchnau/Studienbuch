@@ -21,7 +21,11 @@ for await (const file of glob.scan(p.resolve(import.meta.dir, ".."))) {
     ...Object.entries(pkg.dependencies ?? {}),
     ...Object.entries(pkg.devDependencies ?? {}),
   ]) {
-    if (version.startsWith("workspace:") && !dep.endsWith("config")) {
+    if (
+      version.startsWith("workspace:") &&
+      !dep.endsWith("config") &&
+      !dep.endsWith("testing")
+    ) {
       deps.add(dep);
     }
   }
@@ -52,4 +56,5 @@ dot += "}\n";
 await Bun.write("workspace-deps.dot", dot);
 console.log("Generated workspace-deps.dot");
 await $`dot -Tpng workspace-deps.dot -o workspace-deps.png`;
+await $`rm workspace-deps.dot`;
 console.log("Generated workspace-deps.png");
