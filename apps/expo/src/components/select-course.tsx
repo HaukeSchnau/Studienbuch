@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, View } from "react-native";
-import { SelectView } from "stu-expo-native";
+import { SelectView } from "@stu/expo-native";
 
 import type { SubjectId } from "@stu/lib";
 import { isArraySingleElement, subjectNameMap } from "@stu/lib";

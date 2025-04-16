@@ -21,7 +21,7 @@ config.resolver.nodeModulesPaths = [
 ];
 
 config.resolver.extraNodeModules = {
-  "stu-expo-native": "..",
+  "@stu/expo-native": "..",
 };
 
 config.watchFolders = [path.resolve(__dirname, "..")];
