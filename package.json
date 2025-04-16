@@ -6,7 +6,6 @@
   },
   "workspaces": [
     "packages/*",
-    "packages/expo-native/example",
     "tooling/*"
   ],
   "packageManager": "bun@1.2.8",

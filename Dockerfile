@@ -6,7 +6,7 @@ FROM base AS install
 RUN mkdir -p /temp/dev
 WORKDIR /temp/dev
 
-COPY --parents package.json bun.lock patches */*/package.json packages/expo-native/example/package.json /temp/dev/
+COPY --parents package.json bun.lock patches */*/package.json /temp/dev/
 RUN --mount=type=cache,target=/root/.bun bun install --frozen-lockfile
 
 FROM base AS builder

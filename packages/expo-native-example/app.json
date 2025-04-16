@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "stu-expo-native-example",
-    "slug": "stu-expo-native-example",
+    "name": "expo-native-example",
+    "slug": "expo-native-example",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,14 +14,13 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "de.haukeschnau.studienbuch.exponative.example"
+      "bundleIdentifier": "com.urbsdotone.expo-native-example"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "package": "de.haukeschnau.studienbuch.exponative.example"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"

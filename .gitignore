@@ -19,9 +19,9 @@ next-env.d.ts
 
 # expo
 .expo/
-packages/expo/.gitignore
-packages/expo/ios
-packages/expo/android
+packages/app-mobile/.gitignore
+packages/app-mobile/ios
+packages/app-mobile/android
 
 # misc
 .DS_Store
