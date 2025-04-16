@@ -1,5 +1,5 @@
 import type { KadmosFormat } from "./format";
-import type { KadmosSubstitionsPayload } from "./substitutions";
+import type { KadmosSubstitionsPayload } from "./subs";
 
 const convertDateToNumber = (date: Date) => {
   return parseInt(

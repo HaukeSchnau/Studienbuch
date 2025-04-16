@@ -63,3 +63,5 @@ __snapshots__
 /packages/expo-native/.eslintrc.js
 
 .env.secrets
+
+expo-env.d.ts

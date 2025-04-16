@@ -11,7 +11,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "format": "biome format",
-    "lint": "eslint",
+    "lint": "expo customize tsconfig.json && eslint",
     "typecheck": "expo customize tsconfig.json && tsc --noEmit"
   },
   "dependencies": {

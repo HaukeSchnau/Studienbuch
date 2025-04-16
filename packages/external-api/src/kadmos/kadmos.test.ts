@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getSubstitutionsFromKadmos } from "./substitutions";
+import { getSubstitutionsFromKadmos } from "./subs";
 
 describe("Kadmos", () => {
   it("should fetch substitutions", async () => {

@@ -2,11 +2,9 @@
   "name": "@stu/expo-native",
   "version": "0.1.0",
   "description": "Native modules for Studienbuch",
-  "main": "build/index.js",
-  "types": "build/index.d.ts",
+  "main": "src/index.ts",
   "type": "module",
   "scripts": {
-    "build": "EXPO_NONINTERACTIVE=true expo-module build",
     "clean": "expo-module clean",
     "lint": "eslint",
     "test": "expo-module test",
