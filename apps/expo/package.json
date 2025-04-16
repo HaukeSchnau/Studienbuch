@@ -12,7 +12,7 @@
     "ios": "expo run:ios",
     "format": "biome format",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "expo customize tsconfig.json && tsc --noEmit"
   },
   "dependencies": {
     "@dev-plugins/react-navigation": "^0.2.0",
