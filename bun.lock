@@ -9,6 +9,7 @@
         "@types/bun": "^1.2.9",
         "@vitest/coverage-v8": "^3.1.1",
         "@vitest/ui": "^3.1.1",
+        "graphviz-cli": "^2.0.0",
         "npm-run-all": "^4.1.5",
         "tsx": "4.19.3",
         "turbo": "^2.5.0",
@@ -28,7 +29,6 @@
         "@stu/db": "workspace:*",
         "@stu/external-api": "workspace:*",
         "@stu/lib": "workspace:*",
-        "@stu/lib-server": "workspace:*",
         "commander": "^13.1.0",
         "date-fns": "^4.1.0",
         "dayjs": "^1.11.13",
@@ -207,7 +207,6 @@
       "version": "0.1.0",
       "dependencies": {
         "@stu/db": "workspace:*",
-        "@stu/external-api": "workspace:*",
         "@stu/lib": "workspace:*",
         "@stu/lib-server": "workspace:*",
         "@stu/student": "workspace:^",
@@ -295,8 +294,10 @@
       "dependencies": {
         "@linear/sdk": "^38.0.0",
         "@t3-oss/env-nextjs": "^0.12.0",
+        "@total-typescript/shoehorn": "^0.1.2",
         "date-fns": "^4.1.0",
         "dayjs": "^1.11.13",
+        "node-html-parser": "^7.0.1",
         "tough-cookie": "^5.1.2",
         "zod": "^3.24.2",
       },
@@ -338,7 +339,6 @@
         "@stu/lib": "workspace:*",
         "bcryptjs": "^3.0.2",
         "date-fns": "^4.1.0",
-        "node-html-parser": "^7.0.1",
         "papaparse": "^5.5.2",
         "zod": "^3.24.2",
       },
@@ -346,7 +346,6 @@
         "@stu/eslint-config": "workspace:*",
         "@stu/testing": "workspace:*",
         "@stu/tsconfig": "workspace:*",
-        "@total-typescript/shoehorn": "^0.1.2",
         "@types/papaparse": "^5.3.14",
         "eslint": "^9.24.0",
         "typescript": "^5.8.3",
@@ -439,6 +438,8 @@
     "@0no-co/graphql.web": ["@0no-co/graphql.web@1.1.2", "", { "peerDependencies": { "graphql": "^14.0.0 || ^15.0.0 || ^16.0.0" }, "optionalPeers": ["graphql"] }, "sha512-N2NGsU5FLBhT8NZ+3l2YrzZSHITjNXNuDhC4iDiikv0IujaJ0Xc6xIxQZ/Ek3Cb+rgPjnLHYyJm11tInuJn+cw=="],
 
     "@adobe/css-tools": ["@adobe/css-tools@4.4.2", "", {}, "sha512-baYZExFpsdkBNuvGKTKWCwKH57HRZLVtycZS05WTQNVOiXVSeAki3nU35zlRbToeMW8aHlJfyS+1C4BOv27q0A=="],
+
+    "@aduh95/viz.js": ["@aduh95/viz.js@3.7.0", "", {}, "sha512-20Pk2Z98fbPLkECcrZSJszKos/OgtvJJR3NcbVfgCJ6EQjDNzW2P1BKqImOz3tJ952dvO2DWEhcLhQ1Wz1e9ng=="],
 
     "@alloc/quick-lru": ["@alloc/quick-lru@5.2.0", "", {}, "sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw=="],
 
@@ -2477,6 +2478,8 @@
     "graphemer": ["graphemer@1.4.0", "", {}, "sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag=="],
 
     "graphql": ["graphql@15.10.1", "", {}, "sha512-BL/Xd/T9baO6NFzoMpiMD7YUZ62R6viR5tp/MULVEnbYJXZA//kRNW7J0j1w/wXArgL0sCxhDfK5dczSKn3+cg=="],
+
+    "graphviz-cli": ["graphviz-cli@2.0.0", "", { "dependencies": { "@aduh95/viz.js": "3.7.0" }, "bin": { "graphviz": "bin/graphviz.cjs" } }, "sha512-DsjHNZTbH+mhcsMsgVh9xSXcpGX8ve7fn1nDywToFSXsamrfV+EyIpBGiOTqxk+FjEYm1985OQhO5PLw7wk17g=="],
 
     "gzip-size": ["gzip-size@6.0.0", "", { "dependencies": { "duplexer": "^0.1.2" } }, "sha512-ax7ZYomf6jqPTQ4+XCpUGyXKHk5WweS+e05MBO4/y3WJ5RkmPXNKvX+bx1behVILVwr6JSQvZAku021CHPXG3Q=="],
 

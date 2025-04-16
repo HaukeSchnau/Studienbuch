@@ -1,4 +1,4 @@
-import type { KadmosFormat } from "@stu/external-api";
+import type { KadmosFormat } from "../format";
 
 interface Column {
   key: string;

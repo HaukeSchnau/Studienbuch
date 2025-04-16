@@ -9,7 +9,6 @@ import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
 import type { SchoolId } from "@stu/lib";
 import { Result, SCHOOL_IDS, defaultSchools } from "@stu/lib";
-import { createUser } from "@stu/lib-server";
 
 import { importClasses } from "./import-classes";
 import { importTeachers } from "./import-teachers";
@@ -134,24 +133,6 @@ program
   .action(async (school) => {
     logger.info(`Importing timetables for school "${school}"...`);
     await importTimetables({ school, weekOffsetRange: [-4, 4] });
-
-    process.exit(0);
-  });
-
-program
-  .command("create-user")
-  .argument("<username>", "Username of the new user")
-  .argument("[email]", "Email of the new user")
-  .argument("[password]", "Password of the new user")
-  .action(async (username, email, password) => {
-    logger.info(`Creating user "${username}"...`);
-    await createUser({
-      firstName: username,
-      lastName: username,
-      email,
-      password,
-    });
-    logger.info(`User "${username}" created!`);
 
     process.exit(0);
   });

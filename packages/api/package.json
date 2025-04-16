@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "@stu/db": "workspace:*",
-    "@stu/external-api": "workspace:*",
     "@stu/lib": "workspace:*",
     "@stu/lib-server": "workspace:*",
     "@stu/student": "workspace:^",

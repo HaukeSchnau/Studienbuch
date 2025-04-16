@@ -1,6 +1,6 @@
 import { parse } from "node-html-parser";
 
-import { getSubstitutionsFromKadmos } from "@stu/external-api";
+import { getSubstitutionsFromKadmos } from "./http";
 
 import {
   convertKadmosRowsToSubstitutionsTable,

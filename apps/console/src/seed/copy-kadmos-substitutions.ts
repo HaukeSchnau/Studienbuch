@@ -5,8 +5,8 @@ import { z } from "zod";
 import { db } from "@stu/db/client";
 import type { SchoolId, SubstitutionType } from "@stu/lib";
 import { SUBSTITUTION_TYPES } from "@stu/lib";
-import type { KadmosSubstitution } from "@stu/lib-server";
-import { getSubstitutions } from "@stu/lib-server";
+import type { KadmosSubstitution } from "@stu/external-api";
+import { getSubstitutions } from "@stu/external-api";
 
 dayjs.extend(utc);
 
