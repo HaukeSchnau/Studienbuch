@@ -1,4 +1,0 @@
-#!/bin/bash
-
-docker exec -it studienbuch-event-store-1 mongoexport mongodb://root:root@localhost:27017/events --authenticationDatabase=admin --collection=events --jsonArray --pretty -o /tmp/stubu-export.json
-docker cp studienbuch-event-store-1:/tmp/stubu-export.json .
