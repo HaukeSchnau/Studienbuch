@@ -258,7 +258,7 @@
         "vitest": "^3.1.1",
       },
     },
-    "packages/expo-native-modules": {
+    "packages/expo-native": {
       "name": "@stu/expo-native",
       "version": "0.1.0",
       "devDependencies": {
@@ -274,7 +274,7 @@
         "react-native": "*",
       },
     },
-    "packages/expo-native-modules/example": {
+    "packages/expo-native/example": {
       "name": "stu-expo-native-example",
       "version": "1.0.0",
       "dependencies": {
@@ -1322,7 +1322,7 @@
 
     "@stu/eslint-config": ["@stu/eslint-config@workspace:tooling/eslint"],
 
-    "@stu/expo-native": ["@stu/expo-native@workspace:packages/expo-native-modules"],
+    "@stu/expo-native": ["@stu/expo-native@workspace:packages/expo-native"],
 
     "@stu/external-api": ["@stu/external-api@workspace:packages/external-api"],
 
@@ -3668,7 +3668,7 @@
 
     "structured-headers": ["structured-headers@0.4.1", "", {}, "sha512-0MP/Cxx5SzeeZ10p/bZI0S6MpgD+yxAhi1BOQ34jgnMXsCq3j1t6tQnZu+KdlL7dvJTLT3g9xN8tl10TqgFMcg=="],
 
-    "stu-expo-native-example": ["stu-expo-native-example@workspace:packages/expo-native-modules/example"],
+    "stu-expo-native-example": ["stu-expo-native-example@workspace:packages/expo-native/example"],
 
     "style-loader": ["style-loader@3.3.4", "", { "peerDependencies": { "webpack": "^5.0.0" } }, "sha512-0WqXzrsMTyb8yjZJHDqwmnwRJvhALK9LfRtRc6B4UTWe8AijYLZYZ9thuJTZc2VfQWINADW/j+LiJnfy2RoC1w=="],
 

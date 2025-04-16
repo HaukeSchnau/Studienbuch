@@ -24,7 +24,7 @@ config.transformer.babelTransformerPath = require.resolve(
 );
 
 config.resolver.extraNodeModules = {
-  "@stu/expo-native": "../../packages/expo-native-modules",
+  "@stu/expo-native": "../../packages/expo-native",
 };
 
 config.resolver.assetExts = config.resolver.assetExts.filter(
