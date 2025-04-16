@@ -2,4 +2,4 @@
 
 set -eau
 
-bunx tsx apps/console/src/console.ts "$@"
+bunx tsx packages/console/src/console.ts "$@"
