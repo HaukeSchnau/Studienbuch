@@ -12,7 +12,8 @@ export interface User {
   permissions: PermissionOnUser[];
   person: {
     id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     abbrv: string | null;
     salutation: Salutation | null;
   };

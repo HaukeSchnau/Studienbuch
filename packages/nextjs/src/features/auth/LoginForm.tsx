@@ -8,15 +8,10 @@ import { submitHandler } from "~/infrastructure/forms/submitHandler";
 import { api } from "~/infrastructure/trpc/react";
 import { setSessionToken } from "./serverActions/setSessionToken";
 
-interface LoginFormValues {
-  email: string;
-  password: string;
-}
-
 export const LoginForm = () => {
   const loginMutation = api.auth.login.useMutation();
 
-  const { Field, handleSubmit } = useForm<LoginFormValues>({
+  const form = useForm({
     defaultValues: {
       email: "",
       password: "",
@@ -42,6 +37,7 @@ export const LoginForm = () => {
           isPristine: true,
           isDirty: false,
           isBlurred: false,
+          errorSourceMap: {},
         });
 
         return;
@@ -55,9 +51,9 @@ export const LoginForm = () => {
   return (
     <form
       className="flex flex-col gap-4"
-      onSubmit={submitHandler(handleSubmit)}
+      onSubmit={submitHandler(() => form.handleSubmit())}
     >
-      <Field name="email">
+      <form.Field name="email">
         {(field) => (
           <TextField
             label="Email"
@@ -69,9 +65,9 @@ export const LoginForm = () => {
             error={field.state.meta.errors.join(",")}
           />
         )}
-      </Field>
+      </form.Field>
 
-      <Field name="password">
+      <form.Field name="password">
         {(field) => (
           <TextField
             label="Passwort"
@@ -83,7 +79,7 @@ export const LoginForm = () => {
             error={field.state.meta.errors.join(",")}
           />
         )}
-      </Field>
+      </form.Field>
 
       {loginMutation.isError && (
         <p className="text-danger">{loginMutation.error.message}</p>

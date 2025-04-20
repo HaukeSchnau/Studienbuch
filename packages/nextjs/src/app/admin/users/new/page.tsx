@@ -28,7 +28,8 @@ export default function NewUserPage() {
         <UserForm
           onSubmit={({ value }) => {
             addUser.mutate({
-              name: value.name,
+              firstName: value.firstName,
+              lastName: value.lastName,
               email: value.email,
               password: value.password,
               salutation: value.title,

@@ -13,7 +13,8 @@ import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { submitHandler } from "~/infrastructure/forms/submitHandler";
 
 interface UserFormValues {
-  name: string;
+  firstName: string;
+  lastName: string;
   email?: string;
   password?: string;
   passwordConfirmation?: string;
