@@ -51,5 +51,5 @@
   "patchedDependencies": {
     "expo-module-scripts@4.0.5": "patches/expo-module-scripts@4.0.5.patch"
   },
-  "trustedDependencies": ["pulsar-client"]
+  "trustedDependencies": ["@biomejs/biome", "@sentry-internal/node-cpu-profiler", "aws-sdk", "core-js-pure", "cpu-features", "esbuild", "protobufjs", "pulsar-client", "sharp", "ssh2"]
 }

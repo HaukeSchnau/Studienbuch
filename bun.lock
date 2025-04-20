@@ -405,7 +405,16 @@
     },
   },
   "trustedDependencies": [
+    "esbuild",
     "pulsar-client",
+    "@biomejs/biome",
+    "sharp",
+    "core-js-pure",
+    "ssh2",
+    "@sentry-internal/node-cpu-profiler",
+    "protobufjs",
+    "aws-sdk",
+    "cpu-features",
   ],
   "patchedDependencies": {
     "expo-module-scripts@4.0.5": "patches/expo-module-scripts@4.0.5.patch",
