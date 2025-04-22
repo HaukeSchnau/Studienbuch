@@ -1,8 +1,8 @@
 {
-  "extends": "expo-module-scripts/tsconfig.base",
+  "extends": "@stu/tsconfig/internal-package.json",
   "compilerOptions": {
     "outDir": "./build",
-    "emitDeclarationOnly": true
+    "jsx": "react-native"
   },
   "include": ["./components", "./src"],
   "exclude": ["**/__mocks__/*", "**/__tests__/*", "**/__rsc_tests__/*"]

@@ -1,4 +1,4 @@
-import { NativeModule, requireNativeModule, requireNativeView } from "expo";
+import { requireNativeView } from "expo";
 import type { Ref } from "react";
 import type { ViewProps } from "react-native";
 
@@ -10,7 +10,4 @@ interface Props extends ViewProps {
   ref: Ref<DrawingViewRef>;
 }
 
-declare class Module extends NativeModule {}
-
-export const DrawingView = requireNativeView<Props>("DrawingModule");
-export const DrawingModule = requireNativeModule<Module>("DrawingModule");
+export const DrawingView = requireNativeView<Props>("ExpoUI", "DrawingView");

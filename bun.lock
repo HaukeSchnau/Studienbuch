@@ -186,6 +186,7 @@
         "@stu/eslint-config": "workspace:*",
         "@types/react": "~19.0.10",
         "expo": "^53.0.0-preview.9",
+        "expo-modules-core": "^2.2.3",
         "react-native": "0.79.1",
         "typescript": "^5.8.3",
       },

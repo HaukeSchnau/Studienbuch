@@ -1,9 +1,9 @@
 {
   "platforms": ["apple", "android"],
   "apple": {
-    "modules": ["SelectModule", "DrawingModule"]
+    "modules": ["ExpoUIModule"]
   },
   "android": {
-    "modules": ["de.haukeschnau.studienbuch.exponative.StuExpoNativeModule"]
+    "modules": ["expo.modules.ui.ExpoUIModule"]
   }
 }

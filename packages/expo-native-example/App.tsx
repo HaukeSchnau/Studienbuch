@@ -1,4 +1,4 @@
-import { Picker } from "@stu/expo-native/Picker";
+import { Picker } from "@stu/expo-native";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, Text, View } from "react-native";
 
