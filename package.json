@@ -1,11 +1,8 @@
 {
   "name": "studienbuch",
   "private": true,
-  "engines": {
-    "node": ">=22.14.0"
-  },
   "workspaces": ["packages/*", "tooling/*"],
-  "packageManager": "bun@1.2.8",
+  "packageManager": "bun@1.2.10",
   "scripts": {
     "build": "turbo run build",
     "build:internal": "turbo run --filter=\"./packages/*\" build",
@@ -28,7 +25,7 @@
     "test": "vitest run",
     "test:dev": "vitest --ui --coverage",
     "typecheck": "turbo run typecheck --filter=!@stu/nextjs",
-    "ci": "turbo run --no-cache format lint typecheck",
+    "ci": "turbo run format lint typecheck",
     "ci:fix": "run-s format:fix lint:fix"
   },
   "devDependencies": {
