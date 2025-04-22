@@ -29,7 +29,7 @@
     "@stu/eslint-config": "workspace:*",
     "@stu/testing": "workspace:*",
     "@stu/tsconfig": "workspace:*",
-    "@types/node": "^22.14.0",
+    "@types/bun": "^1.2.10",
     "eslint": "^9.24.0",
     "typescript": "^5.8.3",
     "vitest": "^3.1.1"

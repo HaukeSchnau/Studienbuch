@@ -54,7 +54,7 @@
     "@stu/tailwind-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@tanstack/react-query-devtools": "^5.72.1",
-    "@types/node": "^22.14.0",
+    "@types/bun": "^1.2.10",
     "@types/react": "~19.0.02",
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.24.0",

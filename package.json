@@ -38,7 +38,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@turbo/gen": "^2.5.0",
-    "@types/bun": "^1.2.9",
+    "@types/bun": "^1.2.10",
     "@vitest/coverage-v8": "^3.1.1",
     "@vitest/ui": "^3.1.1",
     "graphviz-cli": "^2.0.0",
