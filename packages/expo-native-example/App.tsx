@@ -1,4 +1,4 @@
-import { SelectView } from "@stu/expo-native";
+import { Picker } from "@stu/expo-native/Picker";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -9,9 +9,10 @@ export default function App() {
 
       <Text>Hello</Text>
 
-      <SelectView options={["Option 1", "Option 2", "Option 3"]} name={"test"}>
-        <Text>Hello</Text>
-      </SelectView>
+      <Picker
+        options={["Option 1", "Option 2", "Option 3"]}
+        selectedIndex={0}
+      />
     </View>
   );
 }
