@@ -4,16 +4,12 @@
   "engines": {
     "node": ">=22.14.0"
   },
-  "workspaces": [
-    "packages/*",
-    "tooling/*"
-  ],
+  "workspaces": ["packages/*", "tooling/*"],
   "packageManager": "bun@1.2.8",
   "scripts": {
     "build": "turbo run build",
     "build:internal": "turbo run --filter=\"./packages/*\" build",
-    "clean": "git clean -xdf node_modules",
-    "clean:workspaces": "turbo run clean",
+    "clean": "turbo run clean",
     "db:push": "turbo push --ui=tui",
     "db:studio": "turbo -F @stu/db studio",
     "db:deploy": "pnpm -F db deployment",
@@ -51,5 +47,16 @@
   "patchedDependencies": {
     "expo-module-scripts@4.0.5": "patches/expo-module-scripts@4.0.5.patch"
   },
-  "trustedDependencies": ["@biomejs/biome", "@sentry-internal/node-cpu-profiler", "aws-sdk", "core-js-pure", "cpu-features", "esbuild", "protobufjs", "pulsar-client", "sharp", "ssh2"]
+  "trustedDependencies": [
+    "@biomejs/biome",
+    "@sentry-internal/node-cpu-profiler",
+    "aws-sdk",
+    "core-js-pure",
+    "cpu-features",
+    "esbuild",
+    "protobufjs",
+    "pulsar-client",
+    "sharp",
+    "ssh2"
+  ]
 }

@@ -84,6 +84,9 @@
       "reactNativeDirectoryCheck": {
         "enabled": true
       }
+    },
+    "autolinking": {
+      "searchPaths": ["../expo-native"]
     }
   }
 }
