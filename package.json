@@ -9,7 +9,7 @@
   "scripts": {
     "build": "turbo run build",
     "build:internal": "turbo run --filter=\"./packages/*\" build",
-    "clean": "turbo run clean",
+    "clean:workspaces": "turbo run clean",
     "db:push": "turbo push --ui=tui",
     "db:studio": "turbo -F @stu/db studio",
     "db:deploy": "pnpm -F db deployment",

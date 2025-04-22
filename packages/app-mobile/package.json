@@ -37,7 +37,7 @@
     "drizzle-orm": "^0.41.0",
     "expo": "^53.0.0-preview.9",
     "expo-checkbox": "~4.1.1",
-    "expo-constants": "~17.1.1",
+    "expo-constants": "~17.1.2",
     "expo-crypto": "~14.1.1",
     "expo-dev-client": "^5.1.2",
     "expo-drizzle-studio-plugin": "^0.1.2",
@@ -84,9 +84,6 @@
       "reactNativeDirectoryCheck": {
         "enabled": true
       }
-    },
-    "autolinking": {
-      "searchPaths": ["../expo-native"]
     }
   }
 }

@@ -1,16 +1,17 @@
-import { Picker } from "@expo/ui/Picker";
+import { SelectView } from "@stu/expo-native";
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function App() {
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
 
-      <Picker
-        options={["Option 1", "Option 2", "Option 3"]}
-        selectedIndex={0}
-      />
+      <Text>Hello</Text>
+
+      <SelectView options={["Option 1", "Option 2", "Option 3"]} name={"test"}>
+        <Text>Hello</Text>
+      </SelectView>
     </View>
   );
 }
