@@ -10,4 +10,7 @@ interface Props extends ViewProps {
   ref: Ref<DrawingViewRef>;
 }
 
-export const DrawingView = requireNativeView<Props>("ExpoUI", "DrawingView");
+export const DrawingView = requireNativeView<Props>(
+  "ExpoUI",
+  "DrawingExpoView",
+);

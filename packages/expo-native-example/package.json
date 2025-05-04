@@ -11,12 +11,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@expo/ui": "~0.1.1-alpha.3",
     "@stu/expo-native": "workspace:*",
-    "expo": "^53.0.0-preview.9",
-    "expo-constants": "~17.1.2",
+    "expo": "^53.0.7",
+    "expo-constants": "~17.1.5",
+    "expo-dev-client": "~5.1.8",
     "react": "19.0.0",
-    "react-native": "0.79.1"
+    "react-native": "0.79.2"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",

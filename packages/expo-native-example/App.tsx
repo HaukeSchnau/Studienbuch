@@ -1,19 +1,32 @@
-import { Picker } from "@stu/expo-native";
+import {
+  DateTimePicker,
+  DrawingView,
+  DrawingViewRef,
+  Picker,
+} from "@stu/expo-native";
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
+import { useRef } from "react";
+import { ScrollView, StyleSheet } from "react-native";
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <StatusBar style="auto" />
+  const drawingViewRef = useRef<DrawingViewRef>(null);
 
-      <Text>Hello</Text>
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <StatusBar style="auto" />
 
       <Picker
         options={["Option 1", "Option 2", "Option 3"]}
         selectedIndex={0}
       />
-    </View>
+
+      <DateTimePicker iosVariant="compact" />
+
+      <DrawingView
+        ref={drawingViewRef}
+        style={{ width: "100%", height: "100%", position: "absolute" }}
+      />
+    </ScrollView>
   );
 }
 

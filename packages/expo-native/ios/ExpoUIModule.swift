@@ -39,7 +39,7 @@ public class ExpoUIModule: Module {
         }
     }
 
-    View(SelectExpoView.self) {
+    View(SelectView.self) {
         Events("onSelect")
         
         // Defines a setter for the `name` prop.
