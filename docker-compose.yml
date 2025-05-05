@@ -76,7 +76,8 @@ services:
 configs:
   crontab:
     content: |
-      * * * * * console pull igs-lil
+      */10 * * * * console pull igs-lil
+      @reboot console pull igs-lil
 
 volumes:
   postgres_data:

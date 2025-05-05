@@ -112,10 +112,32 @@ program
   .action(async (school) => {
     const defaultSchoolValue = defaultSchools[school];
     logger.info("Pulling data...");
+    const err = await ingest(
+      "org.school.founded",
+      {
+        data: {
+          id: school,
+          name: defaultSchoolValue.name,
+          state: defaultSchoolValue.stateCode,
+        },
+        id: crypto.randomUUID(),
+        timestamp: defaultSchoolValue.founded,
+      },
+      SYSTEM_USER,
+    );
+    if (Result.isErr(err)) {
+      if (err.error === "EXISTS") {
+        logger.debug(`School "${school}" already founded!`);
+      } else {
+        logger.error(`Could not ingest school founded event: ${err.error}`);
+      }
+    } else {
+      logger.info(`School "${school}" founded!`);
+    }
     await importTeachers();
     await addSemesters(defaultSchoolValue.stateCode);
     await importClasses({ school });
-    await importTimetables({ school, weekOffsetRange: [-2, 26] });
+    await importTimetables({ school, weekOffsetRange: [-2, 8] });
     process.exit(0);
   });
 
