@@ -146,6 +146,7 @@
         "@stu/testing": "workspace:*",
         "@stu/tsconfig": "workspace:*",
         "@types/bun": "^1.2.10",
+        "bun-plugin-pino": "^1.4.0",
         "eslint": "^9.24.0",
         "typescript": "^5.8.3",
         "vitest": "^3.1.1",
