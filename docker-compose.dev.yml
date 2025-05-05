@@ -7,11 +7,16 @@ services:
       service: postgres
     ports:
       - 5432:5432
+
   event-stream:
     extends:
       file: docker/common-services.yaml
-      service: rabbitmq
+      service: pulsar
     ports:
-      - 5552:5552
-      - 5672:5672
-      - 15672:15672
+      - 6650:6650
+      - 8080:8080
+
+volumes:
+  postgres_data:
+  pulsar_data:
+  pulsar_config:

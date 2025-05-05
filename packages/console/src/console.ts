@@ -1,5 +1,3 @@
-import "./instrument";
-
 import { program } from "@commander-js/extra-typings";
 import { add, format, weeksToDays } from "date-fns";
 import { z } from "zod";

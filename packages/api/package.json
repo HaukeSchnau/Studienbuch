@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsc",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "dev": "tsx watch src/bin/http.ts",
+    "dev": "bun run --watch bin/bun.ts",
     "push": "pnpm db:push-sqlite",
     "db:push-sqlite": "drizzle-kit push --config drizzle.config.sqlite.ts",
     "dev:internal": "tsc --watch",
@@ -52,7 +52,6 @@
     "@stu/tsconfig": "workspace:*",
     "bun-plugin-pino": "^1.4.0",
     "eslint": "^9.24.0",
-    "tsx": "4.19.3",
     "typescript": "^5.8.3",
     "vitest": "^3.1.1"
   }
