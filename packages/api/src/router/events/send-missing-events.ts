@@ -52,8 +52,7 @@ export const sendMissingEventsToStudent = async (userId: string) => {
   });
 
   if (!student) {
-    console.warn("Student not found");
-    return;
+    throw new Error("Student not found");
   }
 
   const topics = [

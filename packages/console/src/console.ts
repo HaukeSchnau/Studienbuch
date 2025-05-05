@@ -15,6 +15,14 @@ import { logger } from "./logger";
 import { addSemesters } from "./seed/add-semesters";
 import { generateLicenses } from "./seed/generate-licenses";
 
+process.on("SIGINT", () => {
+  process.exit(0);
+});
+
+process.on("SIGTERM", () => {
+  process.exit(0);
+});
+
 program
   .name("console")
   .description("Studienbuch Console")
@@ -95,6 +103,19 @@ program
     await importTimetables({ school, weekOffsetRange: [-2, 26] });
 
     logger.info("Seeding complete!");
+    process.exit(0);
+  });
+
+program
+  .command("pull")
+  .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
+  .action(async (school) => {
+    const defaultSchoolValue = defaultSchools[school];
+    logger.info("Pulling data...");
+    await importTeachers();
+    await addSemesters(defaultSchoolValue.stateCode);
+    await importClasses({ school });
+    await importTimetables({ school, weekOffsetRange: [-2, 26] });
     process.exit(0);
   });
 

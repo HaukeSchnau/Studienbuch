@@ -29,9 +29,54 @@ services:
       PULSAR_URL: pulsar://event-stream:6650
       ISERV_USERNAME: $ISERV_USERNAME
       ISERV_PASSWORD: $ISERV_PASSWORD
-      LINEAR_API_KEY: $LINEAR_API_KEY
+      LINEAR_API_KEY: $LINEAR_API_KEY # TODO: remove
       NEXT_PUBLIC_AXIOM_DATASET: $AXIOM_DATASET
       NEXT_PUBLIC_AXIOM_TOKEN: $AXIOM_TOKEN
+
+  console:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: console
+    depends_on:
+      management-data-storage:
+        condition: service_started
+      event-stream:
+        condition: service_started
+    environment:
+      LINEAR_API_KEY: $LINEAR_API_KEY # TODO: remove
+      ISERV_USERNAME: $ISERV_USERNAME
+      ISERV_PASSWORD: $ISERV_PASSWORD
+      NEXT_PUBLIC_AXIOM_DATASET: $AXIOM_DATASET
+      NEXT_PUBLIC_AXIOM_TOKEN: $AXIOM_TOKEN
+      PULSAR_URL: pulsar://event-stream:6650
+      API_PORT: 3001 # TODO: remove
+      MANAGEMENT_DATABASE_URL: postgresql://stu:stu@management-data-storage:5432/stu
+
+  cron:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: cron
+    environment:
+      LINEAR_API_KEY: $LINEAR_API_KEY
+      ISERV_USERNAME: $ISERV_USERNAME
+      ISERV_PASSWORD: $ISERV_PASSWORD
+      AXIOM_DATASET: $AXIOM_DATASET
+      AXIOM_TOKEN: $AXIOM_TOKEN
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    init: true
+    tty: true
+    configs:
+      - source: crontab
+        target: /var/spool/cron/crontabs/root
+
+configs:
+  crontab:
+    content: |
+      * * * * * console pull igs-lil
 
 volumes:
   postgres_data:

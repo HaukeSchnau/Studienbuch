@@ -68,7 +68,9 @@ export const ingest = async <TEventName extends Event["type"]>(
     (await systemApplicator.recipients?.(eventDataWithName)) ?? [],
   );
   recipientIds.add(initiatorUserId);
-  await sendMissingEventsToStudent(initiatorUserId);
+  if (initiatorUserId !== SYSTEM_USER) {
+    await sendMissingEventsToStudent(initiatorUserId);
+  }
   for (const recipientId of recipientIds) {
     await publishEvent(eventDataWithName, recipientId);
   }

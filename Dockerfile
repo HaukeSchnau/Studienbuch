@@ -10,8 +10,11 @@ RUN --mount=type=cache,target=/root/.bun/install/cache bun install --frozen-lock
 FROM base AS builder
 COPY --from=install /app/node_modules /app/node_modules
 
-FROM base AS api-prune
+FROM base AS prune
 COPY . .
+
+# BEGIN: API
+FROM prune AS api-prune
 RUN turbo prune @stu/api
 
 FROM builder AS api-builder
@@ -22,7 +25,7 @@ RUN bun ./build/build-node.ts
 
 FROM node:22-alpine AS api
 WORKDIR /app
-# Annoying: pulsar client doesn't play well with bundlers
+# Annoying: pulsar client doesn't play well with bundlers and expects to be installed in node_modules
 COPY --from=install /app/node_modules/pulsar-client /app/node_modules/pulsar-client
 COPY --from=api-builder /app/packages/api/dist/ /app/
 COPY --from=api-builder /app/packages/db/drizzle/ /app/drizzle
@@ -30,4 +33,38 @@ COPY --from=api-builder /app/packages/db/drizzle/ /app/drizzle
 ENV NODE_ENV=production
 ENV PORT=80
 ENV API_PORT=80
-ENTRYPOINT ["node", "node.js"]
+ENTRYPOINT ["node", "node.js"]  
+# END: API
+
+# BEGIN: CONSOLE
+FROM prune AS console-prune
+RUN turbo prune @stu/console
+
+FROM builder AS console-builder
+COPY --from=console-prune /app/out/ .
+WORKDIR /app/packages/console
+ENV NODE_ENV=production
+RUN bun ./build/build-node.ts
+
+FROM node:22-alpine AS console
+WORKDIR /app
+# Annoying: pulsar client doesn't play well with bundlers and expects to be installed in node_modules
+COPY --from=install /app/node_modules/pulsar-client /app/node_modules/pulsar-client
+COPY --from=console-builder /app/packages/console/dist/ /app/
+COPY --from=console-builder /app/packages/db/drizzle/ /app/drizzle
+
+ENV NODE_ENV=production
+ENTRYPOINT ["node", "console.js"]
+# END: CONSOLE
+
+# BEGIN: CRON
+FROM docker:cli AS cron
+
+COPY ./docker-compose.yml /docker-compose.yml
+COPY ./docker /docker/
+
+RUN echo "docker compose run --rm -T --interactive=false console \$@" > /bin/console
+RUN chmod +x /bin/console
+
+ENTRYPOINT ["crond", "-f", "-l", "0"]
+# END: CRON

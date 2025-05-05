@@ -14,8 +14,6 @@
     "build": "tsc",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev": "bun run --watch bin/bun.ts",
-    "push": "pnpm db:push-sqlite",
-    "db:push-sqlite": "drizzle-kit push --config drizzle.config.sqlite.ts",
     "dev:internal": "tsc --watch",
     "format": "biome format",
     "lint": "eslint",
