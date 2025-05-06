@@ -6,7 +6,10 @@
     "useIgnoreFile": true,
     "defaultBranch": "main"
   },
-  "files": { "ignoreUnknown": false, "ignore": [] },
+  "files": {
+    "ignoreUnknown": false,
+    "ignore": ["node_modules", "dist", "build"]
+  },
   "formatter": {
     "enabled": true,
     "formatWithErrors": false,

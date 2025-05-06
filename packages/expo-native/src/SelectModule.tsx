@@ -1,4 +1,4 @@
-import { requireNativeView } from "expo";
+import { NativeModule, requireNativeModule, requireNativeView } from "expo";
 import type { ViewProps } from "react-native";
 
 interface OnChangeEvent {
@@ -11,4 +11,7 @@ interface Props extends ViewProps {
   onSelect?: (event: { nativeEvent: OnChangeEvent }) => void;
 }
 
-export const SelectView = requireNativeView<Props>("ExpoUI", "SelectView");
+declare class Module extends NativeModule {}
+
+export const SelectView = requireNativeView<Props>("SelectModule");
+export const SelectModule = requireNativeModule<Module>("SelectModule");
