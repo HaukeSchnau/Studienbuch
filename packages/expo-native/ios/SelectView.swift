@@ -3,7 +3,7 @@ import UIKit
 
 class SelectView: ExpoView {
     let button = UIButton(type: .system)
-    let onSelect = EventDispatcher()
+    let onSelectItem = EventDispatcher()
 
     required init(appContext: AppContext? = nil) {
         super.init(appContext: appContext)

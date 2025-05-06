@@ -4,6 +4,9 @@
     "modules": ["SelectModule", "DrawingModule"]
   },
   "android": {
-    "modules": ["de.haukeschnau.studienbuch.exponative.StuExpoNativeModule"]
+    "modules": [
+      "de.haukeschnau.studienbuch.exponative.SelectModule",
+      "de.haukeschnau.studienbuch.exponative.DrawingModule"
+    ]
   }
 }

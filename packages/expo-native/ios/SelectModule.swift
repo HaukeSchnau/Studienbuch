@@ -13,7 +13,7 @@ public class SelectModule: Module {
         // Enables the module to be used as a native view. Definition components that are accepted as part of the
         // view definition: Prop, Events.
         View(SelectView.self) {
-            Events("onSelect")
+            Events("onSelectItem")
             
             // Defines a setter for the `name` prop.
             Prop("name") { (view: SelectView, prop: String) in
@@ -25,7 +25,7 @@ public class SelectModule: Module {
                     title: view.button.menu?.title ?? "",
                     children: prop.enumerated().map { index, title in
                         UIAction(title: title, handler: { _ in
-                            view.onSelect([
+                            view.onSelectItem([
                                 "index": index
                             ])
                         })

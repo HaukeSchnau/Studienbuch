@@ -8,7 +8,7 @@ interface OnChangeEvent {
 interface Props extends ViewProps {
   name: string;
   options: string[];
-  onSelect?: (event: { nativeEvent: OnChangeEvent }) => void;
+  onSelectItem?: (event: { nativeEvent: OnChangeEvent }) => void;
 }
 
 declare class Module extends NativeModule {}

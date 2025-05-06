@@ -2,9 +2,8 @@ package de.haukeschnau.studienbuch.exponative
 
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
-import java.net.URL
 
-class SelectModule : Module() {
+class DrawingModule : Module() {
   // Each module class must implement the definition function. The definition consists of components
   // that describes the module's functionality and behavior.
   // See https://docs.expo.dev/modules/module-api for more details about available components.
@@ -12,20 +11,13 @@ class SelectModule : Module() {
     // Sets the name of the module that JavaScript code will use to refer to the module. Takes a string as an argument.
     // Can be inferred from module's class name, but it's recommended to set it explicitly for clarity.
     // The module will be accessible from `requireNativeModule('StuExpoNative')` in JavaScript.
-    Name("SelectModule")
+    Name("DrawingModule")
 
-    // Enables the module to be used as a native view. Definition components that are accepted as part of
-    // the view definition: Prop, Events.
-    View(SelectView::class) {
-      Prop("options") { view: SelectView, options: List<String> ->
-        // Sets the items of the select view.
-        view.popup.menu.clear()
-        for (option in options) {
-          view.popup.menu.add(option)
+    View(DrawingExpoView::class) {
+        AsyncFunction("getSVG") { view: DrawingExpoView ->
+          // Returns the SVG string from the DrawingExpoView
+          view.getSVG()
         }
-      }
-
-      Events("onSelectItem")
     }
   }
 }
