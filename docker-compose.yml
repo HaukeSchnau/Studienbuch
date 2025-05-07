@@ -24,9 +24,11 @@ services:
     restart: unless-stopped
     depends_on:
       management-data-storage:
-        condition: service_started
+        condition: service_healthy
       event-stream:
         condition: service_started
+      migrations:
+        condition: service_completed_successfully
     environment:
       MANAGEMENT_DATABASE_URL: postgresql://stu:stu@management-data-storage:5432/stu
       PULSAR_URL: pulsar://event-stream:6650
@@ -43,9 +45,11 @@ services:
       target: console
     depends_on:
       management-data-storage:
-        condition: service_started
+        condition: service_healthy
       event-stream:
         condition: service_started
+      migrations:
+        condition: service_completed_successfully
     environment:
       LINEAR_API_KEY: $LINEAR_API_KEY # TODO: remove
       ISERV_USERNAME: $ISERV_USERNAME
@@ -75,6 +79,17 @@ services:
     configs:
       - source: crontab
         target: /var/spool/cron/crontabs/root
+
+  migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrations
+    environment:
+      MANAGEMENT_DATABASE_URL: postgresql://stu:stu@management-data-storage:5432/stu
+    depends_on:
+      management-data-storage:
+        condition: service_healthy
 
 configs:
   crontab:

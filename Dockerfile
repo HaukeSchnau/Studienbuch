@@ -28,7 +28,6 @@ WORKDIR /app
 # Annoying: pulsar client doesn't play well with bundlers and expects to be installed in node_modules
 COPY --from=install /app/node_modules/pulsar-client /app/node_modules/pulsar-client
 COPY --from=api-builder /app/packages/api/dist/ /app/
-COPY --from=api-builder /app/packages/db/drizzle/ /app/drizzle
 
 ENV NODE_ENV=production
 ENV PORT=80
@@ -51,7 +50,6 @@ WORKDIR /app
 # Annoying: pulsar client doesn't play well with bundlers and expects to be installed in node_modules
 COPY --from=install /app/node_modules/pulsar-client /app/node_modules/pulsar-client
 COPY --from=console-builder /app/packages/console/dist/ /app/
-COPY --from=console-builder /app/packages/db/drizzle/ /app/drizzle
 
 ENV NODE_ENV=production
 ENTRYPOINT ["node", "console.js"]
@@ -68,3 +66,16 @@ RUN chmod +x /bin/console
 
 ENTRYPOINT ["crond", "-f", "-l", "0"]
 # END: CRON
+
+# BEGIN: MIGRATIONS
+FROM prune AS migrations-prune
+RUN turbo prune @stu/db
+
+FROM builder AS migrations
+COPY --from=migrations-prune /app/out/ .
+WORKDIR /app/packages/db
+
+ENV NODE_ENV=production
+
+ENTRYPOINT [ "bun", "drizzle-kit", "migrate" ]
+# END: MIGRATIONS

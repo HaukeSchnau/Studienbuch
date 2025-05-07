@@ -6,6 +6,11 @@ services:
       POSTGRES_PASSWORD: stu
       POSTGRES_USER: stu
       POSTGRES_DB: stu
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   rabbitmq:
     build:
