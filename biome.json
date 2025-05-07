@@ -8,7 +8,15 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": ["node_modules", "dist", "build"]
+    "ignore": [
+      "node_modules",
+      "dist",
+      "build",
+      "expo-native-example/android",
+      "expo-native-example/ios",
+      "app-mobile/android",
+      "app-mobile/ios"
+    ]
   },
   "formatter": {
     "enabled": true,

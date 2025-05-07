@@ -88,7 +88,7 @@ export const SelectCourse = <TOption,>({
     <SelectView
       name={subjectNameMap[subject]}
       options={options.map(getOptionLabel).concat("nicht belegt")}
-      onSelect={(event) => {
+      onSelectItem={(event) => {
         onChange(options[event.nativeEvent.index]);
       }}
       style={[
