@@ -53,20 +53,12 @@ COPY --from=console-builder /app/packages/console/dist/ /app/
 
 ENV NODE_ENV=production
 ENTRYPOINT ["node", "console.js"]
-# END: CONSOLE
 
-# BEGIN: CRON
-FROM docker:cli AS cron
-
-COPY ./docker-compose.yml /docker-compose.yml
-COPY ./docker /docker/
-
-RUN echo "docker compose -p studienbuch-prod run --rm -T --interactive=false console \$@" > /bin/console
+FROM console AS console-cron
+RUN echo "cd /app && node console.js \$@" > /bin/console
 RUN chmod +x /bin/console
-RUN touch .env
-
 ENTRYPOINT ["crond", "-f", "-l", "0"]
-# END: CRON
+# END: CONSOLE
 
 # BEGIN: MIGRATIONS
 FROM prune AS migrations-prune
