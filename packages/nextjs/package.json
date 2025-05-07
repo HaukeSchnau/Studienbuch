@@ -10,9 +10,7 @@
     "format": "biome format",
     "lint": "echo 'TODO: eslint'",
     "start": "next start",
-    "typecheck": "echo 'TODO: tsc --noEmit'",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "typecheck": "echo 'TODO: tsc --noEmit'"
   },
   "dependencies": {
     "@stu/api": "workspace:*",
@@ -43,13 +41,6 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.2.4",
-    "@storybook/addon-essentials": "^8.6.12",
-    "@storybook/addon-interactions": "^8.6.12",
-    "@storybook/addon-links": "^8.6.12",
-    "@storybook/blocks": "^8.6.12",
-    "@storybook/nextjs": "^8.6.12",
-    "@storybook/preview-api": "^8.6.12",
-    "@storybook/react": "^8.6.12",
     "@stu/eslint-config": "workspace:*",
     "@stu/tailwind-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
@@ -58,9 +49,7 @@
     "@types/react": "~19.0.02",
     "@types/react-dom": "^19.0.0",
     "eslint": "^9.24.0",
-    "eslint-plugin-storybook": "^0.12.0",
     "jiti": "^2.3.3",
-    "storybook": "^8.6.12",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.8.3"
   }
