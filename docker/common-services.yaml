@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: stu
       POSTGRES_DB: stu
     healthcheck:
-      test: ["CMD", "pg_isready"]
+      test: ["CMD", "pg_isready", "-U", "stu", "-d", "stu"]
       interval: 10s
       timeout: 5s
       retries: 5
