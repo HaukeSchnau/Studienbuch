@@ -19,11 +19,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   assetBundlePatterns: ["**/*"],
   ios: {
-    bundleIdentifier: "de.haukeschnau.studienbuch",
+    bundleIdentifier: "dev.schnau.studienbuch",
     supportsTablet: true,
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
-    package: "de.haukeschnau.studienbuch",
+    package: "dev.schnau.studienbuch",
     adaptiveIcon: {
       foregroundImage: "./assets/icon.png",
       backgroundColor: "#FFFFFF",
@@ -32,7 +35,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   extra: {
     eas: {
-      projectId: "ae447793-ffd9-47fd-bee7-321ed3af41e8",
+      projectId: "76a4b2c7-e6dc-40fa-808e-27c1b574d342",
     },
   },
   experiments: {
