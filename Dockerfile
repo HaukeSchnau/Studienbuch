@@ -61,7 +61,7 @@ FROM docker:cli AS cron
 COPY ./docker-compose.yml /docker-compose.yml
 COPY ./docker /docker/
 
-RUN echo "docker compose run --rm -T --interactive=false console \$@" > /bin/console
+RUN echo "docker compose -p studienbuch-prod run --rm -T --interactive=false console \$@" > /bin/console
 RUN chmod +x /bin/console
 RUN touch .env
 
