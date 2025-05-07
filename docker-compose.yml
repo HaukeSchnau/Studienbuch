@@ -90,6 +90,7 @@ services:
     depends_on:
       management-data-storage:
         condition: service_healthy
+    restart: no
 
 configs:
   crontab:
