@@ -59,6 +59,7 @@ services:
       PULSAR_URL: pulsar://event-stream:6650
       API_PORT: 3001 # TODO: remove
       MANAGEMENT_DATABASE_URL: postgresql://stu:stu@management-data-storage:5432/stu
+    restart: no
 
   cron:
     build:

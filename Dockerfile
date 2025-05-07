@@ -63,6 +63,7 @@ COPY ./docker /docker/
 
 RUN echo "docker compose run --rm -T --interactive=false console \$@" > /bin/console
 RUN chmod +x /bin/console
+RUN touch .env
 
 ENTRYPOINT ["crond", "-f", "-l", "0"]
 # END: CRON
