@@ -6,8 +6,6 @@ services:
       POSTGRES_PASSWORD: stu
       POSTGRES_USER: stu
       POSTGRES_DB: stu
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
   rabbitmq:
     build:
@@ -26,7 +24,4 @@ services:
     command: bin/pulsar standalone
     environment: 
       - PULSAR_STANDALONE_USE_ZOOKEEPER=1
-    volumes:
-      - pulsar_data:/pulsar/data
-      - pulsar_config:/pulsar/conf
     

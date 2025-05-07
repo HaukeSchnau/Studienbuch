@@ -5,11 +5,16 @@ services:
     extends:
       file: docker/common-services.yaml
       service: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   event-stream:
     extends:
       file: docker/common-services.yaml
       service: pulsar
+    volumes:
+      - pulsar_data:/pulsar/data
+      - pulsar_config:/pulsar/conf
 
   api:
     build:
