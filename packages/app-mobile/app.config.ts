@@ -31,7 +31,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: "./assets/icon.png",
       backgroundColor: "#FFFFFF",
     },
-    edgeToEdgeEnabled: true,
   },
   extra: {
     eas: {
