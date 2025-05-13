@@ -1,25 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="studienbuch-legacy2@localhost" uuid="0db84fbe-2ca7-4a83-bb4a-9bdc5bf3e4ea">
+    <data-source source="LOCAL" name="Legacy DB" uuid="cfe9e82a-ed3e-4794-ac6c-bc663ddef54f">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
-      <jdbc-url>jdbc:postgresql://localhost:5432/studienbuch-legacy2</jdbc-url>
+      <jdbc-url>jdbc:postgresql://localhost:5433/postgres</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="stu@localhost" uuid="4c164419-a2c2-413e-876e-10e09130fbfe">
+    <data-source source="LOCAL" name="Studienbuch" uuid="dccf8fe7-39cb-4c06-82a8-045dc0fb7c37">
       <driver-ref>postgresql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.postgresql.Driver</jdbc-driver>
-      <jdbc-url>jdbc:postgresql://localhost:5433/stu</jdbc-url>
-      <working-dir>$ProjectFileDir$</working-dir>
-    </data-source>
-    <data-source source="LOCAL" name="stu@localhost [2]" uuid="a79a2cd9-d34a-4bb1-9ec6-de789c5a4f98">
-      <driver-ref>postgresql</driver-ref>
-      <synchronize>true</synchronize>
-      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
-      <jdbc-url>jdbc:postgresql://localhost:5433/stu</jdbc-url>
+      <jdbc-url>jdbc:postgresql://localhost:5432/stu</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>
