@@ -34,8 +34,8 @@ export const SUBJECT_IDS = [
   "kr",
   "wpk",
   "wal",
-  "will-an-lili",
-  "präsenz",
+  // "will-an-lili",
+  // "präsenz",
   "bläser_k",
   "nachhaltigkeit",
 ] as const;
@@ -47,9 +47,9 @@ const subjectNameToIdMap: Record<string, SubjectId> = {
   "darstellendes spiel": "ds",
   "werte und normen": "wn",
 
-  "will-an-lili 10": "will-an-lili",
-  "will-an-lili 8": "will-an-lili",
-  "will-an-lili 9": "will-an-lili",
+  // "will-an-lili 10": "will-an-lili",
+  // "will-an-lili 8": "will-an-lili",
+  // "will-an-lili 9": "will-an-lili",
 };
 
 export const subjectNameMap: Record<SubjectId, string> = {
@@ -84,9 +84,9 @@ export const subjectNameMap: Record<SubjectId, string> = {
   swb: "SWB",
   lp: "LP",
   kr: "KR",
-  wpk: "WPK",
-  "will-an-lili": "Will an Lili",
-  präsenz: "Präsenz",
+  wpk: "Wahlpflichtkurs",
+  // "will-an-lili": "Will an Lili",
+  // präsenz: "Präsenz",
   bläser_k: "Bläserklasse",
   nachhaltigkeit: "Nachhaltigkeit",
   wal: "WAL",
