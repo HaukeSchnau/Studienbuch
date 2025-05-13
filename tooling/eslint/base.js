@@ -6,6 +6,8 @@ import eslint from "@eslint/js";
 import importPlugin from "eslint-plugin-import";
 import turboPlugin from "eslint-plugin-turbo";
 import tseslint from "typescript-eslint";
+// @ts-expect-error - no types for eslint-config-biome
+import biome from "eslint-config-biome";
 
 /**
  * All packages that leverage t3-env should use this rule
@@ -87,4 +89,5 @@ export default tseslint.config(
     linterOptions: { reportUnusedDisableDirectives: true },
     languageOptions: { parserOptions: { projectService: true } },
   },
+  biome,
 );
