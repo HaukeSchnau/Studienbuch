@@ -8,23 +8,11 @@ import { SYSTEM_USER } from "../../constants";
 import { publishEvent } from "./messaging-client";
 import { sendMissingEventsToStudent } from "./send-missing-events";
 
-const ensureSystemUser = async () => {
-  await db
-    .insert(tables.Users)
-    .values({
-      id: SYSTEM_USER,
-      isSuperUser: true,
-    })
-    .onConflictDoNothing();
-};
-
 export const ingest = async <TEventName extends Event["type"]>(
   eventName: TEventName,
   eventData: Omit<Extract<Event, { type: TEventName }>, "errors" | "type">,
   initiatorUserId: string,
 ) => {
-  await ensureSystemUser();
-
   const context = {
     initiatorUserId,
   };

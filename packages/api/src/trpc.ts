@@ -49,14 +49,6 @@ export const getSession = async (
 };
 
 const getSystemSession = async (): Promise<Session> => {
-  await db
-    .insert(tables.Users)
-    .values({
-      id: SYSTEM_USER,
-      isSuperUser: true,
-    })
-    .onConflictDoNothing();
-
   return {
     token: "",
     user: {

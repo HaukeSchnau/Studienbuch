@@ -25,6 +25,7 @@
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev:internal": "tsc --watch",
     "format": "biome format",
+    "generate": "drizzle-kit generate",
     "lint": "eslint",
     "push": "drizzle-kit push",
     "studio": "drizzle-kit studio",

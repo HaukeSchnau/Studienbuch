@@ -36,9 +36,7 @@ export const events = pgTable(
     type: eventType().notNull(),
     data: superjsonb("data").notNull(),
     timestamp: timestamp().notNull(),
-    initiator: uuid()
-      .notNull()
-      .references(() => Users.id),
+    initiator: uuid().notNull(),
   },
   (table) => [
     {
