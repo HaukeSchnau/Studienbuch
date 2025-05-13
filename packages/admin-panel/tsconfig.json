@@ -1,8 +1,9 @@
 {
-  "extends": "@stu/tsconfig/internal-package.json",
+  "extends": "@stu/tsconfig/base.json",
   "include": ["src"],
   "compilerOptions": {
-    "rootDir": "."
+    "rootDir": ".",
+    "jsx": "react-jsx"
   },
   "exclude": ["node_modules"]
 }
