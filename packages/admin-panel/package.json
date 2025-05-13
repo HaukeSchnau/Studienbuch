@@ -1,0 +1,24 @@
+{
+  "name": "@stu/admin-panel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "scripts": {
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "format": "biome format",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "@stu/api": "workspace:*",
+    "@stu/db": "workspace:*"
+  },
+  "devDependencies": {
+    "@stu/eslint-config": "workspace:*",
+    "@stu/tsconfig": "workspace:*",
+    "bun-plugin-pino": "^1.4.0",
+    "eslint": "^9.24.0",
+    "typescript": "^5.8.3"
+  }
+}
