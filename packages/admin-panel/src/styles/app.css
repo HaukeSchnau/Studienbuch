@@ -1,6 +1,14 @@
+@import url("https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+  font-family: "Material Symbols Rounded";
+  font-style: normal;
+  src: url("/assets/MaterialSymbolsRounded.woff") format("woff");
+}
 
 .shake-horizontal {
   animation: shake-horizontal 0.8s cubic-bezier(0.455, 0.03, 0.515, 0.955) both;
