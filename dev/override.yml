@@ -1,0 +1,13 @@
+services:
+  management-data-storage:
+    ports:
+      - 5432:5432
+
+  event-stream:
+    ports:
+      - 6650:6650
+      - 8080:8080
+
+  api:
+    ports:
+      - 3001:80

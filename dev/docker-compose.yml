@@ -1,0 +1,6 @@
+name: "studienbuch-dev"
+
+include:
+  - path : 
+      - ../docker-compose.yml
+      - override.yml

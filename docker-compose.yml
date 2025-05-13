@@ -1,17 +1,27 @@
-name: "studienbuch-prod"
+name: "studienbuch"
 
 services:
   management-data-storage:
-    extends:
-      file: docker/common-services.yaml
-      service: postgres
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: stu
+      POSTGRES_USER: stu
+      POSTGRES_DB: stu
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "stu", "-d", "stu"]
+      interval: 1s
+      timeout: 5s
+      retries: 60
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   event-stream:
-    extends:
-      file: docker/common-services.yaml
-      service: pulsar
+    image: apachepulsar/pulsar:latest
+    restart: unless-stopped
+    command: bin/pulsar standalone
+    environment: 
+      - PULSAR_STANDALONE_USE_ZOOKEEPER=1
     volumes:
       - pulsar_data:/pulsar/data
       - pulsar_config:/pulsar/conf
@@ -61,6 +71,7 @@ services:
       PULSAR_URL: pulsar://event-stream:6650
       API_PORT: 3001 # TODO: remove
       MANAGEMENT_DATABASE_URL: postgresql://stu:stu@management-data-storage:5432/stu
+      LEGACY_DATABASE_URL: postgresql://postgres:postgres@docker.host.internal:5433/postgres
     restart: unless-stopped
     configs:
       - source: crontab
