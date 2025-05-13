@@ -17,7 +17,7 @@ export const SchoolLogo = () => {
       <img
         src="/assets/stu-logo.png"
         className="rounded-full"
-        alt="Schullogo"
+        alt="Studienbuch"
       />
     );
   }

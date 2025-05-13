@@ -26,7 +26,8 @@ const createContext = async () => {
   });
 };
 
-const getQueryClient = () => {
+// eslint-disable-next-line @typescript-eslint/require-await
+const getQueryClient = async () => {
   "use cache";
   return createQueryClient();
 };

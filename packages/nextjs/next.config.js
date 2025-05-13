@@ -1,6 +1,7 @@
-import { fileURLToPath } from "url";
+import { fileURLToPath } from "node:url";
 import createJiti from "jiti";
 import { withAxiom } from "next-axiom";
+import { PinoWebpackPlugin } from "pino-webpack-plugin";
 
 // Import env files to validate at build time. Use jiti so we can load .ts files in here.
 createJiti(fileURLToPath(import.meta.url))("./src/env");
@@ -18,6 +19,12 @@ const config = {
 
   experimental: {
     typedRoutes: true,
+    useCache: true,
+  },
+
+  webpack: (config) => {
+    config.externals = [...config.externals, "pulsar-client"];
+    return config;
   },
 
   output: "standalone",
