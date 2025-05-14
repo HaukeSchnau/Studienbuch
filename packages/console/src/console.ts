@@ -1,11 +1,9 @@
 import { program } from "@commander-js/extra-typings";
-import { add, format, weeksToDays } from "date-fns";
 import { z } from "zod";
 
 import { SYSTEM_USER, ingest } from "@stu/api";
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
-import type { SchoolId } from "@stu/lib";
 import { Result, SCHOOL_IDS, defaultSchools } from "@stu/lib";
 
 import { importClasses } from "./import-classes";
@@ -27,44 +25,6 @@ program
   .name("console")
   .description("Studienbuch Console")
   .showSuggestionAfterError();
-
-const clamp = (min: number, max: number, value: number) => {
-  return Math.min(Math.max(min, value), max);
-};
-
-const importTimetables = async ({
-  school,
-  weekOffsetRange: [offsetStart, offsetEnd],
-}: {
-  school: SchoolId;
-  weekOffsetRange: [number, number];
-}) => {
-  const today = new Date();
-  logger.info(
-    `Importing timetables for school "${school}" from ${format(
-      add(today, { days: weeksToDays(offsetStart) }),
-      "yyyy-MM-dd",
-    )} to ${format(
-      add(today, { days: weeksToDays(offsetEnd) }),
-      "yyyy-MM-dd",
-    )}...`,
-  );
-
-  for (
-    let i = clamp(offsetStart, offsetEnd, 0), dir = Math.sign(offsetStart);
-    i <= offsetEnd;
-    i += dir
-  ) {
-    const date = add(today, { days: weeksToDays(i) });
-    logger.info(`Importing timetable for ${format(date, "yyyy-MM-dd")}...`);
-    await importTimetable({ school, date });
-
-    if (i === offsetStart && dir === -1) {
-      i = 0;
-      dir = 1;
-    }
-  }
-};
 
 program
   .command("seed")
@@ -100,7 +60,11 @@ program
     await importTeachers();
     await addSemesters(defaultSchoolValue.stateCode);
     await importClasses({ school });
-    await importTimetables({ school, weekOffsetRange: [-2, 26] });
+    await importTimetable({
+      school,
+      date: new Date(),
+      monthOffsetRange: [-2, 2],
+    });
 
     logger.info("Seeding complete!");
     process.exit(0);
@@ -137,7 +101,11 @@ program
     await importTeachers();
     await addSemesters(defaultSchoolValue.stateCode);
     await importClasses({ school });
-    await importTimetables({ school, weekOffsetRange: [-2, 8] });
+    await importTimetable({
+      school,
+      date: new Date(),
+      monthOffsetRange: [-2, 2],
+    });
     process.exit(0);
   });
 
@@ -173,17 +141,21 @@ program
   .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
   .action(async (school) => {
     logger.info(`Importing timetables for school "${school}"...`);
-    await importTimetables({ school, weekOffsetRange: [-4, 4] });
+    await importTimetable({
+      school,
+      date: new Date(),
+      monthOffsetRange: [-4, 4],
+    });
 
     process.exit(0);
   });
 
 program
   .command("generate-licenses")
-  .argument("<number>", "Number of licenses to generate", parseInt)
+  .argument("<number>", "Number of licenses to generate", Number.parseInt)
   .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
   .action(async (number, school) => {
-    if (isNaN(number)) program.error("Number must be a number");
+    if (Number.isNaN(number)) program.error("Number must be a number");
     if (number < 1) program.error("Number must be greater than 0");
 
     logger.info(`Generating ${number} licenses...`);

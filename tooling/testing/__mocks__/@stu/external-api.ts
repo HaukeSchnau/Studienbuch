@@ -1,6 +1,7 @@
-import type { getHolidays as getHolidaysBase } from "@stu/external-api";
+// import type { getHolidays as getHolidaysBase } from "@stu/external-api";
 
-export const getHolidays: typeof getHolidaysBase = async () => {
+// todo: resolve cyclic dependency
+export const getHolidays = async () => {
   return [
     {
       end: "2024-02-02",

@@ -38,7 +38,6 @@ export const getCourse = ({ courseId }: { courseId: string }) =>
       return {
         id: first.courses.id,
         name: first.courses.name,
-        longName: first.courses.longName,
         subject: first.courses.subject,
         teachers: rows.map((row) => row.teachers),
         semester: first.semesters,

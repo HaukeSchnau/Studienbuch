@@ -25,7 +25,6 @@ export const Courses = pgTable(
   {
     id: uuid("id").primaryKey().notNull().defaultRandom(),
     name: text("name").notNull(),
-    longName: text("long_name").notNull(),
     subject: Subject("subject").notNull(),
 
     school: SchoolId("school").notNull(),

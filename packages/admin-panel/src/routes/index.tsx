@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
-import { and, asc, eq, or } from "@stu/db";
+import { and, asc, eq, isNotNull, or } from "@stu/db";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
-import { Fragment, use, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { format, parse } from "date-fns";
@@ -82,7 +82,10 @@ const getTimetableEntries = createServerFn()
       .where(
         or(
           eq(tables.CoursesToTeachers.teacher, teacherId),
-          eq(tables.Substitutions.substitute, teacherId),
+          and(
+            isNotNull(tables.Substitutions.substitute),
+            eq(tables.Substitutions.substitute, teacherId),
+          ),
         ),
       )
       .orderBy(asc(tables.TimetableEntries.start));
@@ -164,9 +167,11 @@ const Timetable = ({ teacherId }: { teacherId: string }) => {
 
         return (
           <Fragment key={key}>
-            <div>{format(day, "dd.MM.yyyy", { locale: de })}</div>
-            <div>{format(day, "EEE", { locale: de })}</div>
-            <div className="relative w-full">
+            <div className="border-b">
+              {format(day, "dd.MM.yyyy", { locale: de })}
+            </div>
+            <div className="border-b">{format(day, "EEE", { locale: de })}</div>
+            <div className="relative w-full border-b">
               {timeTicks}
               {timetableEntries
                 .find(([day]) => day === key)?.[1]
@@ -175,7 +180,7 @@ const Timetable = ({ teacherId }: { teacherId: string }) => {
                   const duration = entry.timetable_entries.duration;
 
                   const startInMinutes =
-                    start.getHours() * 60 + start.getMinutes() - 120;
+                    start.getHours() * 60 + start.getMinutes();
                   const endInMinutes = startInMinutes + duration;
 
                   const startInPercent =

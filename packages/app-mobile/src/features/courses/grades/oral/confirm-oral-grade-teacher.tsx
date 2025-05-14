@@ -3,7 +3,7 @@ import { formatDate } from "date-fns";
 import { Stack, useRouter } from "expo-router";
 import { View } from "react-native";
 
-import { formalName, formatGrade } from "@stu/lib";
+import { formalName, formatGrade, subjectNameMap } from "@stu/lib";
 
 import {
   ConfirmPageContent,
@@ -61,7 +61,7 @@ export const ConfirmOralGradeTeacher = ({ grade }: { grade: Grade }) => {
         <Text weight="bold">{user.name}</Text> am{" "}
         <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die
         mündliche Note <Text weight="bold">{formatGrade(result)}</Text> in{" "}
-        <Text weight="bold">{grade.course.longName}</Text> hat.
+        <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> hat.
       </ConfirmPageContent>
     </View>
   );
@@ -90,7 +90,7 @@ export const OralGradeTeacherConfirmationView = ({
       <Text weight="bold">{user.name}</Text> am{" "}
       <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die mündliche
       Note <Text weight="bold">{formatGrade(result)}</Text> in{" "}
-      <Text weight="bold">{grade.course.longName}</Text> hat.
+      <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> hat.
     </ViewConfirmPageContent>
   );
 };

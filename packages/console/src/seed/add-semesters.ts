@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 import dayjs from "dayjs";
 
 import { SYSTEM_USER, ingest } from "@stu/api";

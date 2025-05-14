@@ -1,115 +1,128 @@
-import { format, parse } from "date-fns";
 import type { CookieJar } from "tough-cookie";
 import { z } from "zod";
 
 import { fetchWithCookieJar } from "../../fetch-with-cookies";
+import {
+  formatSimpleDate,
+  parseSimpleDate,
+  parseSimpleTimeOfDay,
+} from "@stu/lib";
+import type { SimpleDate } from "@stu/lib";
 
-const convertNumberToDate = (num: number) => {
-  const str = num.toString();
-  return parse(str, "yyyyMMdd", new Date());
+const parseDurationComponent = (
+  duration: string,
+): {
+  date: SimpleDate;
+  time: number;
+} => {
+  const [date, time] = duration.split("T");
+  if (!date || !time) throw new Error(`Invalid duration: ${duration}`);
+  return {
+    date: parseSimpleDate(date),
+    time: parseSimpleTimeOfDay(time),
+  };
 };
 
-const convertNumberToTimeOfDay = (num: number) => {
-  const str = num.toString().padStart(4, "0");
-  const date = parse(str, "HHmm", new Date());
-  const minutes = date.getHours() * 60 + date.getMinutes();
-  if (isNaN(minutes)) {
-    throw new Error(`Invalid time number ${num}`);
-  }
-  return minutes;
+const parseDuration = (duration: { start: string; end: string }) => {
+  return {
+    start: parseDurationComponent(duration.start),
+    end: parseDurationComponent(duration.end),
+  };
 };
 
-const typeSchema = z
-  .literal(1)
-  .or(z.literal(2))
-  .or(z.literal(3))
-  .or(z.literal(4));
-
-const dataSchema = z.object({
-  elementPeriods: z.record(
-    z.string(),
-    z.array(
-      z.object({
-        date: z.number().transform(convertNumberToDate),
-        startTime: z.number().transform(convertNumberToTimeOfDay),
-        endTime: z.number().transform(convertNumberToTimeOfDay),
-        periodText: z.string(),
-        hasPeriodText: z.boolean(),
-        periodInfo: z.string(),
-        hasInfo: z.boolean(),
-        cellState: z.enum(["STANDARD", "SUBSTITUTION", "ADDITIONAL", "EXAM"]),
-        elements: z.array(
-          z.object({
-            type: typeSchema,
-            id: z.number(),
-            orgId: z.number(),
-            missing: z.boolean(),
-            state: z.enum(["REGULAR", "SUBSTITUTED", "ABSENT"]),
-          }),
-        ),
-      }),
-    ),
-  ),
-  elements: z.array(
-    z.discriminatedUnion("type", [
-      z.object({
-        type: z.literal(1),
-        id: z.number(),
-        name: z.string(),
-        longName: z.string(),
-      }),
-      z.object({
-        type: z.literal(2),
-        id: z.number(),
-        name: z.string(),
-      }),
-      z.object({
-        type: z.literal(3),
-        id: z.number(),
-        name: z.string(),
-        longName: z.string(),
-      }),
-      z.object({
-        type: z.literal(4),
-        id: z.number(),
-        name: z.string(),
-        longName: z.string(),
-      }),
-    ]),
-  ),
+const PositionSchema = z.object({
+  current: z
+    .object({
+      type: z.enum(["SUBJECT", "TEACHER", "ROOM", "CLASS", "INFO"]),
+      status: z.enum(["REGULAR", "ADDED"]),
+      shortName: z.string(),
+      longName: z.string(),
+      displayName: z.string(),
+    })
+    .nullable(),
+  removed: z
+    .object({
+      type: z.enum(["TEACHER", "ROOM", "CLASS"]),
+      status: z.enum(["REMOVED"]),
+      shortName: z.string(),
+      longName: z.string(),
+      displayName: z.string(),
+    })
+    .nullable(),
 });
 
-const schema = z.object({
-  data: z.object({
-    result: z.object({
-      data: dataSchema,
+const PositionValueSchema = z
+  .array(PositionSchema)
+  .or(PositionSchema)
+  .nullable();
+
+const v2Schema = z.object({
+  errors: z.tuple([]),
+  days: z.array(
+    z.object({
+      date: z.string().transform(parseSimpleDate),
+      resourceType: z.enum(["CLASS"]),
+      resource: z.object({
+        id: z.number(),
+        shortName: z.string(),
+        longName: z.string(),
+        displayName: z.string(),
+      }),
+      status: z.enum(["REGULAR", "NO_DATA"]),
+      dayEntries: z.tuple([]),
+      gridEntries: z.array(
+        z.object({
+          ids: z.array(z.number()),
+          duration: z
+            .object({
+              start: z.string(),
+              end: z.string(),
+            })
+            .transform(parseDuration),
+          type: z.enum(["NORMAL_TEACHING_PERIOD", "EVENT", "EXAM"]),
+          status: z.enum(["REGULAR", "CHANGED", "ADDITIONAL"]),
+          statusDetail: z.null(),
+          position1: PositionValueSchema,
+          position2: PositionValueSchema,
+          position3: PositionValueSchema,
+          position4: PositionValueSchema,
+          position5: PositionValueSchema,
+        }),
+      ),
     }),
-  }),
+  ),
 });
 
-export type KadmosTimetableResponse = z.infer<
-  typeof schema
->["data"]["result"]["data"];
+export type KadmosTimetableV2Response = z.infer<typeof v2Schema>;
 
-export const getTimetable = async (
+export const getTimetableV2 = async (
+  start: SimpleDate,
+  end: SimpleDate,
   kadmosClassId: number,
-  date: Date,
   cookies: CookieJar,
-): Promise<KadmosTimetableResponse> => {
+  bearerToken: string,
+): Promise<KadmosTimetableV2Response> => {
   const params = new URLSearchParams();
-  params.append("elementType", "1");
-  params.append("elementId", kadmosClassId.toString());
-  params.append("date", format(date, "yyyy-MM-dd"));
-  params.append("formatId", "0");
-  params.append("filter.departmentId", "-1");
+  params.append("start", formatSimpleDate(start));
+  params.append("end", formatSimpleDate(end));
+  params.append("format", "0");
+  params.append("resourceType", "CLASS");
+  params.append("resources", kadmosClassId.toString());
+  params.append("periodTypes", "");
+  params.append("timetableType", "STANDARD");
 
   const response = await fetchWithCookieJar(
-    `https://kadmos.webuntis.com/WebUntis/api/public/timetable/weekly/data?${params.toString()}`,
-    {},
+    `https://kadmos.webuntis.com/WebUntis/api/rest/view/v1/timetable/entries?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${bearerToken}`,
+      },
+    },
     cookies,
   );
 
-  const parsed = schema.parse(await response.json());
+  const json = await response.json();
+  const parsed = v2Schema.parse(json);
 
-  return parsed.data.result.data;
+  return parsed;
 };

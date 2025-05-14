@@ -14,3 +14,4 @@ export * from "./theme";
 export * from "./result";
 export * from "./events";
 export * from "./events-infra";
+export * from "./dates";

@@ -20,7 +20,7 @@ export const SubstitutionType = pgEnum("substitution_type", SUBSTITUTION_TYPES);
 export const Substitutions = pgTable(
   "substitutions",
   {
-    start: timestamp("date").notNull(),
+    start: timestamp("date", { mode: "date", withTimezone: true }).notNull(),
     course: uuid("course").notNull(),
     type: SubstitutionType("type"),
 

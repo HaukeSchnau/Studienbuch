@@ -4,7 +4,7 @@ import { de } from "date-fns/locale/de";
 import { Stack } from "expo-router";
 import { View } from "react-native";
 
-import { formalName } from "@stu/lib";
+import { formalName, subjectNameMap } from "@stu/lib";
 
 import { CoreLayout } from "~/components/core-layout";
 import { shadow } from "~/components/styles/shadow";
@@ -51,12 +51,12 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
           <View>
             <View className="h-12" />
             <Text weight="bold" className="text-4xl text-white">
-              {course.longName}
+              {subjectNameMap[course.subject]}
             </Text>
             <Text className="text-2xl text-white">
               {course.teachers.map(formalName).join(", ")}
             </Text>
-            <View className="h-2"></View>
+            <View className="h-2" />
             <Text italic className="text-lg text-white">
               {course.semester.name}
             </Text>

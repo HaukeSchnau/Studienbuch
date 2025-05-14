@@ -7,7 +7,6 @@
     "clean": "git clean -xdf .cache .turbo node_modules"
   },
   "dependencies": {
-    "@stu/external-api": "workspace:^",
     "memfs": "^4.14.0",
     "vitest": "^3.1.1"
   },

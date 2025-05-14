@@ -8,7 +8,7 @@ import { SUBSTITUTION_TYPES } from "@stu/lib";
 import type { KadmosSubstitution } from "@stu/external-api";
 import { getSubstitutions } from "@stu/external-api";
 
-dayjs.extend(utc); 
+dayjs.extend(utc);
 
 interface ProcessedSubstitution {
   startTimeOfDay: number;
@@ -49,7 +49,7 @@ const preprocess = (substitutions: KadmosSubstitution[]) => {
         process.exit(1);
       }
 
-      const yearNum = parseInt(yearNumStr);
+      const yearNum = Number.parseInt(yearNumStr);
 
       processedClasses.push({
         currentYear: yearNum,

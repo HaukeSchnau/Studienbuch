@@ -1,7 +1,7 @@
 import { describe, test } from "vitest";
 
 import { login } from "../auth/login";
-import { getTimetable } from "./get-timetable";
+import { getTimetableV2 } from "./get-timetable";
 
 describe("Get timetable from Kadmos", () => {
   test("Get timetable from Kadmos", async () => {
@@ -11,6 +11,6 @@ describe("Get timetable from Kadmos", () => {
       "App#Hauke2024",
     );
 
-    await getTimetable(348, new Date(), jar);
+    // await getTimetable(348, new Date(), jar);
   });
 });

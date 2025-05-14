@@ -3,7 +3,7 @@ import { formatDate } from "date-fns";
 import { Stack, useRouter } from "expo-router";
 import { View } from "react-native";
 
-import { formalName, formatGrade } from "@stu/lib";
+import { formalName, formatGrade, subjectNameMap } from "@stu/lib";
 
 import {
   ConfirmPageContent,
@@ -61,7 +61,7 @@ export const ConfirmWrittenGradeTeacher = ({ grade }: { grade: Grade }) => {
         Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
         <Text weight="bold">{user.name}</Text> am{" "}
         <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur
-        in <Text weight="bold">{grade.course.longName}</Text> mit der Note{" "}
+        in <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der Note{" "}
         <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
       </ConfirmPageContent>
     </View>
@@ -90,7 +90,7 @@ export const WrittenGradeTeacherConfirmationView = ({
       Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
       <Text weight="bold">{user.name}</Text> am{" "}
       <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur in{" "}
-      <Text weight="bold">{grade.course.longName}</Text> mit der Note{" "}
+      <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der Note{" "}
       <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
     </ViewConfirmPageContent>
   );

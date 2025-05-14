@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 
+import { subjectNameMap } from "@stu/lib";
 import type { Semester } from "@stu/lib";
 
 import { Card } from "~/components/card";
@@ -42,7 +43,7 @@ export const CourseList = ({ semester }: { semester: Semester }) => {
           <View className="items-center">
             <SubjectIcon subject={course.subject} />
             <View className="h-2" />
-            <Text weight="bold">{course.longName}</Text>
+            <Text weight="bold">{subjectNameMap[course.subject]}</Text>
           </View>
         </Card>
       )}

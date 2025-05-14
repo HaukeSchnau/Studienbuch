@@ -5,7 +5,6 @@ import type { SubjectId } from "./subject";
 export interface Course {
   id: string;
   name: string;
-  longName: string;
   subject: SubjectId;
   isMandatory: boolean;
 }

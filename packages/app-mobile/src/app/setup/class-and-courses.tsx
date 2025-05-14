@@ -90,7 +90,6 @@ const bootstrap = async ({
       courses.map((course) => ({
         id: course.id,
         name: course.name,
-        longName: course.longName,
         subject: course.subject,
         isMandatory: course.isMandatory,
         school: school.id,
@@ -102,7 +101,6 @@ const bootstrap = async ({
       target: pk(t.courses),
       set: {
         name: sql.raw(`excluded.${t.courses.name.name}`),
-        longName: sql.raw(`excluded.${t.courses.longName.name}`),
         subject: sql.raw(`excluded.${t.courses.subject.name}`),
         isMandatory: sql.raw(`excluded.${t.courses.isMandatory.name}`),
         semesterType: sql.raw(`excluded.${t.courses.semesterType.name}`),

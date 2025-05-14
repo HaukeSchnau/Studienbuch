@@ -158,7 +158,6 @@ export const DomainEvent = discriminatedUnion("type", [
     data: object({
       id: string().uuid(),
       name: string(),
-      longName: string(),
       subject: z.enum(SUBJECT_IDS),
       isMandatory: boolean(),
       school: z.enum(SCHOOL_IDS),

@@ -12,7 +12,6 @@ interface Entry {
   uuid: string;
   course: {
     name: string;
-    longName: string;
     subject: SubjectId;
   };
   classes: {
@@ -63,7 +62,6 @@ export const ingestTimetableEntry = async (
       data: {
         id: uuid,
         name: course.name,
-        longName: course.longName,
         subject: course.subject,
         isMandatory: false,
         school,
@@ -127,23 +125,23 @@ export const ingestTimetableEntry = async (
         `Could not ingest timetable entry created event for ${course.name}: ${timetableEntryCreatedErr.error}`,
       );
       return;
+    }
+
+    if (existingTimetableEntry) {
+      logger.info(
+        `Timetable entry updated for ${course.name}!\n${JSON.stringify(existingTimetableEntry, null, 2)}\n${JSON.stringify(
+          {
+            course: uuid,
+            start: start,
+            duration: duration,
+            rooms: roomNumbers,
+          },
+          null,
+          2,
+        )}`,
+      );
     } else {
-      if (existingTimetableEntry) {
-        logger.info(
-          `Timetable entry updated for ${course.name}!\n${JSON.stringify(existingTimetableEntry, null, 2)}\n${JSON.stringify(
-            {
-              course: uuid,
-              start: start,
-              duration: duration,
-              rooms: roomNumbers,
-            },
-            null,
-            2,
-          )}`,
-        );
-      } else {
-        logger.info(`Timetable entry created for ${course.name}!`);
-      }
+      logger.info(`Timetable entry created for ${course.name} on ${start}!`);
     }
   }
 

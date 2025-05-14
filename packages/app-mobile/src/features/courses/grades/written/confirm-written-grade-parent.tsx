@@ -3,7 +3,7 @@ import { formatDate } from "date-fns";
 import { Stack, useRouter } from "expo-router";
 import { View } from "react-native";
 
-import { formatGrade } from "@stu/lib";
+import { formatGrade, subjectNameMap } from "@stu/lib";
 
 import {
   ConfirmPageContent,
@@ -54,7 +54,7 @@ export const ConfirmWrittenGradeParent = ({ grade }: { grade: Grade }) => {
         Ich habe zur Kenntnis genommen, dass mein Kind{" "}
         <Text weight="bold">{user.name}</Text> am{" "}
         <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur
-        in <Text weight="bold">{grade.course.longName}</Text> mit der Note{" "}
+        in <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der Note{" "}
         <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
       </ConfirmPageContent>
     </View>
@@ -77,7 +77,7 @@ export const WrittenGradeParentConfirmationView = ({
       Ich habe zur Kenntnis genommen, dass mein Kind{" "}
       <Text weight="bold">{user.name}</Text> am{" "}
       <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur in{" "}
-      <Text weight="bold">{grade.course.longName}</Text> mit der Note{" "}
+      <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der Note{" "}
       <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
     </ViewConfirmPageContent>
   );

@@ -18,7 +18,7 @@ export const fetchWithCookieJar = async (
   response.headers.forEach((cookieStr, key) => {
     if (key === "set-cookie") {
       const cookie = Cookie.parse(cookieStr);
-      if (!cookie) throw new Error("Could not parse cookie: " + cookieStr);
+      if (!cookie) throw new Error(`Could not parse cookie: ${cookieStr}`);
 
       jar.setCookieSync(cookie, url);
     }

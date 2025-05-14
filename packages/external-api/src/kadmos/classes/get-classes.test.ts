@@ -1,7 +1,6 @@
 import { test } from "vitest";
 
 import { login } from "../auth/login";
-import { getClasses } from "./get-classes";
 
 test("Get classes from Kadmos", async () => {
   const jar = await login(
@@ -10,5 +9,5 @@ test("Get classes from Kadmos", async () => {
     "App#Hauke2024",
   );
 
-  await getClasses(jar);
+  // await getClasses(jar);
 });

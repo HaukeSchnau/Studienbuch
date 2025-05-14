@@ -42,3 +42,13 @@ export const login = async (
 
   return jar;
 };
+
+export const getBearerToken = async (jar: CookieJar) => {
+  const response = await fetchWithCookieJar(
+    "https://kadmos.webuntis.com/WebUntis/api/token/new",
+    {},
+    jar,
+  );
+
+  return response.text();
+};

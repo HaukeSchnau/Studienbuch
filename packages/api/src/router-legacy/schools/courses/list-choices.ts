@@ -92,14 +92,13 @@ export const listChoices = publicProcedure
         result.set(row.courses.id, {
           id: row.courses.id,
           isMandatory: row.courses.isMandatory,
-          longName: row.courses.longName,
           name: row.courses.name,
           subject: row.courses.subject,
           teachers: [],
         });
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      // biome-ignore lint/style/noNonNullAssertion: We ensure that the course is in the map above
       const course = result.get(row.courses.id)!;
       course.teachers.push({
         abbrv: row.persons.abbrv,

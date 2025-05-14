@@ -23,7 +23,6 @@ export const courses = sqliteTable(
   {
     id: uuid("id").primaryKey().notNull(),
     name: text("name").notNull(),
-    longName: text("long_name").notNull(),
     subject: subject("subject").notNull(),
 
     school: schoolId("school").notNull(),

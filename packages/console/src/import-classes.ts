@@ -2,13 +2,17 @@ import { SYSTEM_USER, ingest } from "@stu/api";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
-import { getClasses, login } from "@stu/external-api";
+import {
+  getBearerToken,
+  getClassesV2,
+  login,
+} from "@stu/external-api";
 import type { SchoolId } from "@stu/lib";
 import { BetterMap, Result, startYearToNameMap } from "@stu/lib";
 
 import { ConsoleIservClient } from "./get-or-create-teacher";
 import { logger } from "./logger";
-import { mapKadmosClass } from "./map-kadmos-class";
+import { mapKadmosClassV2 } from "./map-kadmos-class";
 
 interface Options {
   school: SchoolId;
@@ -25,9 +29,21 @@ export const importClasses = async ({ school }: Options) => {
   const { kadmosName, kadmosUsername, kadmosPassword } = schoolEntity;
 
   const jar = await login(kadmosName, kadmosUsername, kadmosPassword);
-  const kadmosClasses = await getClasses(jar);
-
-  const classes = kadmosClasses.map(mapKadmosClass);
+  const bearerToken = await getBearerToken(jar);
+  const today = new Date();
+  const start = {
+    year: today.getFullYear(),
+    month: today.getMonth() + 1,
+    day: today.getDate(),
+  };
+  const end = {
+    year: today.getFullYear() + 1,
+    month: today.getMonth() + 1,
+    day: today.getDate(),
+  };
+  const classes = await getClassesV2(start, end, jar, bearerToken).then(
+    (classes) => classes.classes.map(mapKadmosClassV2),
+  );
 
   const years = BetterMap.uniqueFromValues(
     classes.map(({ startYear, yearName }) => ({
@@ -76,7 +92,7 @@ export const importClasses = async ({ school }: Options) => {
               identifierInYear: cls.identifierInYear,
               teachers: await Promise.all(
                 cls.teachers.map((teacher) =>
-                  iservClient.getOrCreateTeacher(teacher),
+                  iservClient.getOrCreateTeacher(teacher.abbrv),
                 ),
               ),
             })),

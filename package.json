@@ -46,9 +46,11 @@
   },
   "trustedDependencies": [
     "@biomejs/biome",
+    "@parcel/watcher",
     "aws-sdk",
     "core-js-pure",
     "cpu-features",
+    "dtrace-provider",
     "esbuild",
     "protobufjs",
     "pulsar-client",

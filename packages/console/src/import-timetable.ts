@@ -1,59 +1,31 @@
-import crypto from "crypto";
-import { add, endOfWeek, format, startOfWeek } from "date-fns";
+import crypto from "node:crypto";
+import { endOfWeek, startOfWeek } from "date-fns";
 import { z } from "zod";
 
-import { SYSTEM_USER, ingest } from "@stu/api";
 import { and, between, eq, gte, lte } from "@stu/db";
 import { db } from "@stu/db/client";
-import { Schools, Semesters, TimetableEntries } from "@stu/db/schema";
-import type { KadmosTimetableResponse } from "@stu/external-api";
-import { getClasses, getTimetable, login } from "@stu/external-api";
-import type { SchoolId, SubjectId } from "@stu/lib";
+import { Schools, Semesters } from "@stu/db/schema";
 import {
-  BetterMap,
-  Result,
-  guessSubject,
-  isArrayNonEmpty,
-  isArraySingleElement,
-} from "@stu/lib";
+  getBearerToken,
+  getClassesV2,
+  getTimetableV2,
+  login,
+} from "@stu/external-api";
+import { BetterMap, isArraySingleElement, Result } from "@stu/lib";
+import type { SchoolId } from "@stu/lib";
 
 import { ConsoleIservClient } from "./get-or-create-teacher";
-import { ingestTimetableEntry } from "./ingest-timetable-entry";
+import { mapKadmosClassV2, mapKadmosTimetableEntry } from "./map-kadmos-class";
+import type { ProtoTimetableEntry } from "./map-kadmos-class";
+import * as tables from "@stu/db/schema";
+import { ingest, SYSTEM_USER } from "@stu/api";
 import { logger } from "./logger";
-import { mapKadmosClass } from "./map-kadmos-class";
+import { ingestTimetableEntry } from "./ingest-timetable-entry";
 
 interface Options {
   school: SchoolId;
   date: Date;
-}
-
-interface ProtoTimetableEntry {
-  course: {
-    kadmosId: number;
-    name: string;
-    longName: string;
-    subject: SubjectId;
-  };
-  classes: {
-    identifierInYear: string;
-    startYear: number;
-  }[];
-  substitutions: (
-    | {
-        type: "SUBSTITUTION";
-        originalTeacherName: string;
-        substituteName: string;
-      }
-    | {
-        type: "ABSENT";
-        originalTeacherName: string;
-        substituteName?: never;
-      }
-  )[];
-  teacherNames: string[];
-  roomNumbers: string[];
-  start: Date;
-  duration: number;
+  monthOffsetRange: [number, number];
 }
 
 /**
@@ -69,7 +41,7 @@ const generateCourseUuid = (
   const uuid = crypto
     .createHash("sha256")
     .update(school)
-    .update(entry.course.kadmosId.toString())
+    .update(entry.course.name)
     .update(
       entry.classes
         .map((cls) => `${cls.startYear}.${cls.identifierInYear}`)
@@ -98,257 +70,11 @@ const findSemesterFromDate = async (date: Date, school: SchoolId) => {
   return semesters[0];
 };
 
-const checkOverlap = (a: ProtoTimetableEntry, b: ProtoTimetableEntry) => {
-  if (a.course.kadmosId !== b.course.kadmosId) return false;
-
-  const aStart = a.start.getTime();
-  const aEnd = add(a.start, { minutes: a.duration }).getTime();
-  const bStart = b.start.getTime();
-  const bEnd = add(b.start, { minutes: b.duration }).getTime();
-
-  const doTimesTouch = aStart <= bEnd && bStart <= aEnd;
-
-  if (!doTimesTouch) return false;
-
-  const areTeachersEqual =
-    a.teacherNames.length === b.teacherNames.length &&
-    a.teacherNames.every((name) => b.teacherNames.includes(name));
-
-  const areRoomsEqual =
-    a.roomNumbers.length === b.roomNumbers.length &&
-    a.roomNumbers.every((room) => b.roomNumbers.includes(room));
-
-  const areClassesEqual =
-    a.classes.length === b.classes.length &&
-    a.classes.every((cls) =>
-      b.classes.some(
-        (otherCls) =>
-          cls.identifierInYear === otherCls.identifierInYear &&
-          cls.startYear === otherCls.startYear,
-      ),
-    );
-
-  if (areTeachersEqual && areRoomsEqual && areClassesEqual) {
-    return true;
-  }
-
-  const doTimesOverlap =
-    (aStart < bEnd && bStart < aEnd) || aStart === bStart || aEnd === bEnd;
-
-  if (doTimesOverlap && areTeachersEqual) {
-    return true;
-  }
-
-  return false;
-};
-
-const collectEntries = (timetable: KadmosTimetableResponse) => {
-  const { elementPeriods, elements } = timetable;
-
-  const classes = BetterMap.uniqueFromValues(
-    elements.filter((element) => element.type === 1),
-    "id",
-  );
-  const teachers = BetterMap.uniqueFromValues(
-    elements.filter((element) => element.type === 2),
-    "id",
-  );
-  const courses = BetterMap.uniqueFromValues(
-    elements.filter((element) => element.type === 3),
-    "id",
-  );
-  const rooms = BetterMap.uniqueFromValues(
-    elements.filter((element) => element.type === 4),
-    "id",
-  );
-
-  const entriesToInsert: ProtoTimetableEntry[] = [];
-
-  for (const period of Object.values(elementPeriods).flat()) {
-    const periodClasses = period.elements
-      .filter((el) => el.type === 1)
-      .map((el) => classes.get(el.orgId || el.id))
-      .filter((cls) => !!cls);
-    const periodTeachers = period.elements
-      .filter((el) => el.type === 2)
-      .map((el) => ({
-        state: el.state,
-        substitute: el.orgId > 0 ? teachers.get(el.id) : undefined,
-        teacher: teachers.get(el.orgId || el.id),
-      }))
-      .map((el) => ({
-        state: el.state,
-        substitute: el.substitute?.name === "---" ? undefined : el.substitute,
-        teacher: el.teacher?.name === "---" ? undefined : el.teacher,
-      }));
-
-    const periodCourses = period.elements
-      .filter((el) => el.type === 3)
-      .map((el) => courses.get(el.orgId || el.id))
-      .filter((course) => !!course);
-    const periodRooms = period.elements
-      .filter((el) => el.type === 4)
-      .map((el) => rooms.get(el.orgId || el.id))
-      .filter((room) => !!room)
-      .filter((room) => room.name !== "---");
-
-    if (periodClasses.length === 0) {
-      throw new Error(
-        `Expected at least one class in period: ${JSON.stringify(period)} ${JSON.stringify(
-          periodCourses.map((el) => el.name + " " + el.longName),
-        )}`,
-      );
-    }
-
-    if (periodTeachers.length === 0) {
-      // console.warn(
-      //   `No teachers found for period with classes ${periodClasses
-      //     .map((el) => `${el.name} ${el.longName}`)
-      //     .join(", ")} on date ${format(period.date, "yyyy-MM-dd")}`,
-      // );
-      continue;
-    }
-
-    if (!isArraySingleElement(periodCourses)) {
-      // console.warn(
-      //   `Expected exactly one course in period with classes ${periodClasses
-      //     .map((el) => `${el.name} ${el.longName}`)
-      //     .join(
-      //       ", ",
-      //     )} on date ${format(period.date, "yyyy-MM-dd")}. Found ${periodCourses.length} courses.`,
-      // );
-      continue;
-    }
-
-    const [course] = periodCourses;
-
-    const subject = guessSubject(course.name);
-
-    if (!subject) {
-      console.warn(`Unknown subject: "${course.name}". Skipping this course.`);
-      continue;
-    }
-
-    // TODO: re-enable this
-    // if (periodRooms.length > 0) {
-    //   await db
-    //     .insert(Rooms)
-    //     .values(
-    //       periodRooms.map((room) => ({
-    //         roomNumber: room.name,
-    //         name: room.longName,
-    //       })),
-    //     )
-    //     .onConflictDoNothing();
-    // }
-
-    // Some sanity checks
-    // if (period.cellState === "SUBSTITUTION") {
-    //   if (period.elements.every((element) => element.state !== "SUBSTITUTED")) {
-    //     console.warn(
-    //       `Substitution without substituted elements found for period with classes ${periodClasses
-    //         .map((el) => `${el.name} ${el.longName}`)
-    //         .join(
-    //           ", ",
-    //         )} on date ${format(period.date, "yyyy-MM-dd")}. ${period.elements
-    //         .filter((element) => element.state !== "SUBSTITUTED")
-    //         .map((element) => `${element.type} ${element.state}`)
-    //         .join(", ")}`,
-    //     );
-    //   }
-    //   if (
-    //     period.elements.some(
-    //       (element) =>
-    //         element.type !== 2 &&
-    //         element.type !== 4 &&
-    //         element.state !== "REGULAR",
-    //     )
-    //   ) {
-    //     console.warn(
-    //       `Substitution with non-regular elements found for period with classes ${periodClasses
-    //         .map((el) => `${el.name} ${el.longName}`)
-    //         .join(
-    //           ", ",
-    //         )} on date ${format(period.date, "yyyy-MM-dd")}. ${period.elements
-    //         .filter(
-    //           (element) => element.type !== 2 && element.state !== "REGULAR",
-    //         )
-    //         .map((element) => `${element.type} ${element.state}`)
-    //         .join(", ")}`,
-    //     );
-    //   }
-    // }
-
-    const entryTeachers: string[] = [];
-    const substitutions: ProtoTimetableEntry["substitutions"] = [];
-    for (const teacher of periodTeachers) {
-      if (teacher.state === "SUBSTITUTED") {
-        if (!teacher.substitute) {
-          throw new Error("Substitute is missing");
-        }
-
-        if (!teacher.teacher) {
-          throw new Error("Teacher is missing");
-        }
-
-        substitutions.push({
-          type: "SUBSTITUTION",
-          originalTeacherName: teacher.teacher.name,
-          substituteName: teacher.substitute.name,
-        });
-        continue;
-      }
-
-      if (teacher.state === "ABSENT") {
-        if (teacher.substitute) {
-          throw new Error(
-            `Absent should have no substitute. Classes: ${JSON.stringify(periodClasses.map(mapKadmosClass))}\nDate: ${format(period.date, "yyyy-MM-dd")}`,
-          );
-        }
-
-        if (!teacher.teacher) {
-          throw new Error("Teacher is missing");
-        }
-
-        substitutions.push({
-          type: "ABSENT",
-          originalTeacherName: teacher.teacher.name,
-        });
-        continue;
-      }
-
-      // Regular
-      if (teacher.substitute) {
-        throw new Error("Regular should have no substitute");
-      }
-
-      if (!teacher.teacher) {
-        throw new Error("Teacher is missing");
-      }
-
-      entryTeachers.push(teacher.teacher.name);
-    }
-
-    entriesToInsert.push({
-      course: {
-        kadmosId: course.id,
-        longName: course.longName,
-        name: course.name,
-        subject,
-      },
-      classes: periodClasses.map(mapKadmosClass),
-      duration: period.endTime - period.startTime,
-      start: add(period.date, { minutes: period.startTime }),
-      roomNumbers: periodRooms.map((room) => room.name),
-      teacherNames: entryTeachers,
-      substitutions,
-    });
-  }
-
-  return entriesToInsert;
-};
-
-export const importTimetable = async ({ school, date }: Options) => {
+export const importTimetable = async ({
+  school,
+  date,
+  monthOffsetRange: [offsetStart, offsetEnd],
+}: Options) => {
   const schoolEntity = await db.query.Schools.findFirst({
     where: eq(Schools.id, school),
   });
@@ -356,9 +82,27 @@ export const importTimetable = async ({ school, date }: Options) => {
 
   const { kadmosName, kadmosUsername, kadmosPassword } = schoolEntity;
 
+  const startDate = startOfWeek(date, { weekStartsOn: 1 });
+  const endDate = endOfWeek(date, { weekStartsOn: 1 });
+  const start = {
+    year: startDate.getFullYear(),
+    month: startDate.getMonth() + 1 + offsetStart,
+    day: startDate.getDate(),
+  };
+  const end = {
+    year: endDate.getFullYear(),
+    month: endDate.getMonth() + 1 + offsetEnd,
+    day: endDate.getDate(),
+  };
+
+  logger.info(
+    `Downloading timetable for ${start.year}-${start.month}-${start.day} to ${end.year}-${end.month}-${end.day}...`,
+  );
+
   const jar = await login(kadmosName, kadmosUsername, kadmosPassword);
-  const kadmosClasses = await getClasses(jar).then((classes) =>
-    classes.map(mapKadmosClass),
+  const bearerToken = await getBearerToken(jar);
+  const kadmosClasses = await getClassesV2(start, end, jar, bearerToken).then(
+    (classes) => classes.classes.map(mapKadmosClassV2),
   );
 
   const iservClient = new ConsoleIservClient();
@@ -366,101 +110,25 @@ export const importTimetable = async ({ school, date }: Options) => {
   // First, we collect all entries for the week over all classes
   const entriesToInsert: ProtoTimetableEntry[] = [];
   for (const cls of kadmosClasses) {
-    const timetable = await getTimetable(cls.id, date, jar);
-    const entries = collectEntries(timetable);
-    entriesToInsert.push(...entries);
-  }
-
-  // Then, we merge adjacent entries into one timetable entry.
-  // e.g. if two identical entries are back-to-back, we merge them into one.
-  // also, two entries with the same teacher at the same time are merged since it is impossible for a teacher to teach two classes at the same time.
-  const joinedEntries: ProtoTimetableEntry[] = [];
-  for (const entry of entriesToInsert) {
-    const adjacentEntries = entriesToInsert.filter((otherEntry) =>
-      checkOverlap(entry, otherEntry),
+    const timetable = await getTimetableV2(
+      start,
+      end,
+      cls.kadmosId,
+      jar,
+      bearerToken,
     );
 
-    if (!isArrayNonEmpty(adjacentEntries)) {
-      throw new Error(
-        "LogicError: Expected at least one adjacent entry for " +
-          JSON.stringify(entry),
-      );
-    }
-
-    const joinedRooms: string[] = [];
-    for (const entry of adjacentEntries) {
-      for (const room of entry.roomNumbers) {
-        if (!joinedRooms.includes(room)) {
-          joinedRooms.push(room);
-        }
-      }
-    }
-
-    const joinedTeachers: string[] = [];
-    for (const entry of adjacentEntries) {
-      for (const teacher of entry.teacherNames) {
-        if (!joinedTeachers.includes(teacher)) {
-          joinedTeachers.push(teacher);
-        }
-      }
-    }
-
-    const joinedClasses: ProtoTimetableEntry["classes"] = [];
-    for (const entry of adjacentEntries) {
-      for (const cls of entry.classes) {
-        if (
-          !joinedClasses.some(
-            (otherCls) =>
-              otherCls.identifierInYear === cls.identifierInYear &&
-              otherCls.startYear === cls.startYear,
-          )
-        ) {
-          joinedClasses.push(cls);
-        }
-      }
-    }
-
-    const joinedSubstitutions: ProtoTimetableEntry["substitutions"] = [];
-    for (const entry of adjacentEntries) {
-      for (const substitution of entry.substitutions) {
-        if (
-          !joinedSubstitutions.some(
-            (otherSubstitution) =>
-              otherSubstitution.type === substitution.type &&
-              (substitution.type === "SUBSTITUTION"
-                ? otherSubstitution.substituteName ===
-                  substitution.substituteName
-                : true),
-          )
-        ) {
-          joinedSubstitutions.push(substitution);
-        }
-      }
-    }
-
-    const joinedStart = Math.min(
-      ...adjacentEntries.map((entry) => entry.start.getTime()),
+    entriesToInsert.push(
+      ...timetable.days
+        .flatMap((day) =>
+          day.gridEntries.map((entry) => mapKadmosTimetableEntry(entry, cls)),
+        )
+        .filter((x) => x !== null),
     );
-    const joinedEnd = Math.max(
-      ...adjacentEntries.map((entry) =>
-        add(entry.start, { minutes: entry.duration }).getTime(),
-      ),
-    );
-    const joinedDuration = (joinedEnd - joinedStart) / 1000 / 60;
-
-    joinedEntries.push({
-      course: entry.course,
-      classes: joinedClasses,
-      roomNumbers: joinedRooms,
-      teacherNames: joinedTeachers,
-      start: new Date(joinedStart),
-      duration: joinedDuration,
-      substitutions: joinedSubstitutions,
-    });
   }
 
   // Finally, we find all distinct courses.
-  // In this step, we join two courses if they have the same name and have at least one class in common.
+  // In this step, we join two courses if they have the same name and the same teachers.
   const courses = new BetterMap<
     string, // the uuid
     {
@@ -469,7 +137,7 @@ export const importTimetable = async ({ school, date }: Options) => {
       entries: Omit<ProtoTimetableEntry, "course" | "classes">[];
     }
   >();
-  outer: for (const entry of joinedEntries) {
+  outer: for (const entry of entriesToInsert) {
     const uuid = generateCourseUuid(school, entry);
     const existingCourse = courses.get(uuid);
     if (existingCourse) {
@@ -478,17 +146,25 @@ export const importTimetable = async ({ school, date }: Options) => {
     }
 
     for (const [uuid, course] of [...courses.entries()]) {
-      // We need to copy the entries because we will modify the map
+      const matchesTeacherAndTime = (entry: ProtoTimetableEntry) => {
+        const entryAtSameTime = course.entries.find(
+          (otherEntry) =>
+            otherEntry.start.getTime() === entry.start.getTime() &&
+            otherEntry.duration === entry.duration,
+        );
+        if (!entryAtSameTime) return false;
+        return entryAtSameTime.teachers.every((teacher) =>
+          entry.teachers.some(
+            (otherTeacher) => otherTeacher.abbrv === teacher.abbrv,
+          ),
+        );
+      };
+
       if (
         course.course.name === entry.course.name &&
-        entry.classes.some((cls) =>
-          course.classes.some(
-            (otherCls) =>
-              otherCls.identifierInYear === cls.identifierInYear &&
-              otherCls.startYear === cls.startYear,
-          ),
-        )
+        matchesTeacherAndTime(entry)
       ) {
+        // We need to copy the entries because we will modify the map
         const joinedClasses: ProtoTimetableEntry["classes"] = [];
         for (const cls of entry.classes) {
           if (
@@ -526,15 +202,28 @@ export const importTimetable = async ({ school, date }: Options) => {
     });
   }
 
-  const start = startOfWeek(date, { weekStartsOn: 1 });
-  const end = endOfWeek(date, { weekStartsOn: 1 });
-
-  // Insert all courses into the database
+  // // Insert all courses into the database
   for (const [uuid, course] of courses.entries()) {
+    // We need to make sure all course.classes are unique. They might be duplicated because of kadmos weirdness.
+    // TODO: Handle classes.change === "REMOVED"
+    course.classes = course.classes.filter(
+      (cls, index, self) =>
+        index ===
+        self.findIndex(
+          (otherCls) =>
+            otherCls.identifierInYear === cls.identifierInYear &&
+            otherCls.startYear === cls.startYear,
+        ),
+    );
+
     const existingTimetableEntries = await db.query.TimetableEntries.findMany({
       where: and(
-        eq(TimetableEntries.course, uuid),
-        between(TimetableEntries.start, start, end),
+        eq(tables.TimetableEntries.course, uuid),
+        between(
+          tables.TimetableEntries.start,
+          new Date(start.year, start.month - 1, start.day),
+          new Date(end.year, end.month - 1, end.day),
+        ),
       ),
     });
 
@@ -589,9 +278,34 @@ export const importTimetable = async ({ school, date }: Options) => {
 
           start: entry.start,
           duration: entry.duration,
-          substitutions: entry.substitutions,
-          teacherNames: entry.teacherNames,
-          roomNumbers: entry.roomNumbers,
+          substitutions: entry.teachers
+            .map((teacher) =>
+              teacher.change === null
+                ? null
+                : teacher.change.type === "REPLACED"
+                  ? {
+                      type: "SUBSTITUTION" as const,
+                      originalTeacherName: teacher.abbrv,
+                      substituteName: teacher.change.abbrv,
+                    }
+                  : {
+                      type: "ABSENT" as const,
+                      originalTeacherName: teacher.abbrv,
+                    },
+            )
+            .filter((x) => x !== null),
+          teacherNames: entry.teachers
+            .map((teacher) => (teacher.change === null ? teacher.abbrv : null))
+            .filter((x) => x !== null),
+          roomNumbers: entry.roomNumbers
+            .map((room) =>
+              room.change === null
+                ? room.name
+                : room.change.type === "REPLACED"
+                  ? room.change.name
+                  : null,
+            )
+            .filter((x) => x !== null),
 
           classes: course.classes,
           course: course.course,

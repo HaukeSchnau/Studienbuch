@@ -143,7 +143,6 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
       await db.insert(tables.courses).values({
         id: data.id,
         name: data.name,
-        longName: data.longName,
         subject: data.subject,
         school: data.school,
         semesterType: data.semester.type,

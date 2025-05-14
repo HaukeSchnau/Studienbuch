@@ -15,6 +15,20 @@
       "when": 1747131365791,
       "tag": "0001_fat_quicksilver",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1747169554495,
+      "tag": "0002_concerned_hannibal_king",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1747238337220,
+      "tag": "0003_quick_paibok",
+      "breakpoints": true
     }
   ]
 }

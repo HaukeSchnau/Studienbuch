@@ -13,7 +13,7 @@ import { Courses } from "../school/courses";
 export const TimetableEntries = pgTable(
   "timetable_entries",
   {
-    start: timestamp("date", { mode: "date" }).notNull(),
+    start: timestamp("date", { mode: "date", withTimezone: true }).notNull(),
     duration: smallint("duration").notNull(),
     rooms: text("rooms").array().notNull(),
 
