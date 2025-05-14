@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd $(dirname "$0")/../..
+
+docker compose -f dev/docker-compose.yml up -d --build --remove-orphans 

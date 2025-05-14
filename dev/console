@@ -1,5 +1,0 @@
-#!/bin/bash
-
-set -eau
-
-bun --bun packages/console/src/console.ts "$@"
