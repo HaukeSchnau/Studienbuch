@@ -9,12 +9,12 @@ interface PackageJson {
   devDependencies?: Record<string, string>;
 }
 
-const projectRoot = p.resolve(import.meta.dir, "../..");
+const projectRoot = p.resolve(import.meta.dir, "..");
 const glob = new Glob("packages/*/package.json");
 const packages: Map<string, Set<string>> = new Map();
 
 // Collect all workspace packages and their dependencies
-for await (const file of glob.scan(p.resolve(import.meta.dir, ".."))) {
+for await (const file of glob.scan(projectRoot)) {
   const pkg = (await Bun.file(file).json()) as PackageJson;
   const deps = new Set<string>();
 
