@@ -54,8 +54,9 @@ export const ConfirmWrittenGradeParent = ({ grade }: { grade: Grade }) => {
         Ich habe zur Kenntnis genommen, dass mein Kind{" "}
         <Text weight="bold">{user.name}</Text> am{" "}
         <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur
-        in <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der Note{" "}
-        <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
+        in <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit
+        der Note <Text weight="bold">{formatGrade(result)}</Text> geschrieben
+        hat.
       </ConfirmPageContent>
     </View>
   );
@@ -77,8 +78,8 @@ export const WrittenGradeParentConfirmationView = ({
       Ich habe zur Kenntnis genommen, dass mein Kind{" "}
       <Text weight="bold">{user.name}</Text> am{" "}
       <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur in{" "}
-      <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der Note{" "}
-      <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
+      <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der
+      Note <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
     </ViewConfirmPageContent>
   );
 };

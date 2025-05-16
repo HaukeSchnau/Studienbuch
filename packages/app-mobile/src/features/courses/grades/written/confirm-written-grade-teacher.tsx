@@ -61,8 +61,9 @@ export const ConfirmWrittenGradeTeacher = ({ grade }: { grade: Grade }) => {
         Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
         <Text weight="bold">{user.name}</Text> am{" "}
         <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur
-        in <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der Note{" "}
-        <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
+        in <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit
+        der Note <Text weight="bold">{formatGrade(result)}</Text> geschrieben
+        hat.
       </ConfirmPageContent>
     </View>
   );
@@ -90,8 +91,8 @@ export const WrittenGradeTeacherConfirmationView = ({
       Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
       <Text weight="bold">{user.name}</Text> am{" "}
       <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur in{" "}
-      <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der Note{" "}
-      <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
+      <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der
+      Note <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
     </ViewConfirmPageContent>
   );
 };
