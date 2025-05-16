@@ -141,7 +141,9 @@ export const ingestTimetableEntry = async (
         )}`,
       );
     } else {
-      logger.info(`Timetable entry created for ${course.name} on ${start}!`);
+      logger.info(
+        `Timetable entry created for ${course.name} on ${start.toISOString()}!`,
+      );
     }
   }
 

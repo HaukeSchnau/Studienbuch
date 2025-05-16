@@ -121,8 +121,5 @@ export const getTimetableV2 = async (
     cookies,
   );
 
-  const json = await response.json();
-  const parsed = v2Schema.parse(json);
-
-  return parsed;
+  return v2Schema.parse(await response.json());
 };

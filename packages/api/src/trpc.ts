@@ -48,7 +48,7 @@ export const getSession = async (
   };
 };
 
-const getSystemSession = async (): Promise<Session> => {
+const getSystemSession = (): Session => {
   return {
     token: "",
     user: {
@@ -86,7 +86,7 @@ export const createTRPCContext = async ({
 )) => {
   const session: Session | null =
     authority === "console"
-      ? await getSystemSession()
+      ? getSystemSession()
       : sessionToken
         ? await getSession(sessionToken)
         : null;

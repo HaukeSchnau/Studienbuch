@@ -33,7 +33,7 @@ export const createUser = async ({
     .returning({
       id: Persons.id,
     })
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // biome-ignore lint/style/noNonNullAssertion: TODO
     .then((rows) => rows[0]!.id);
 
   await db.insert(Users).values({

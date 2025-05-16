@@ -191,7 +191,7 @@ export const mapKadmosTimetableEntry = (
 
           if ((pos.current && pos.removed) || (!pos.current && !pos.removed))
             throw new Error(
-              `Invalid class: ${startDate} ${JSON.stringify(pos)} ${JSON.stringify(baseClass)}`,
+              `Invalid class: ${startDate.toISOString()} ${JSON.stringify(pos)} ${JSON.stringify(baseClass)}`,
             );
 
           const val = pos.current ?? pos.removed;
@@ -234,7 +234,7 @@ export const mapKadmosTimetableEntry = (
 
         if (!pos.current) {
           throw new Error(
-            `Room needs a value: ${startDate} ${JSON.stringify(pos)} ${JSON.stringify(baseClass)}`,
+            `Room needs a value: ${startDate.toISOString()} ${JSON.stringify(pos)} ${JSON.stringify(baseClass)}`,
           );
         }
 
@@ -273,7 +273,7 @@ export const mapKadmosTimetableEntry = (
 
         if (!pos.current) {
           throw new Error(
-            `Teacher needs a value: ${startDate} ${JSON.stringify(pos)} ${JSON.stringify(baseClass)}`,
+            `Teacher needs a value: ${startDate.toISOString()} ${JSON.stringify(pos)} ${JSON.stringify(baseClass)}`,
           );
         }
 
