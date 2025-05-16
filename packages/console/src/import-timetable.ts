@@ -294,9 +294,7 @@ export const importTimetable = async ({
                     },
             )
             .filter((x) => x !== null),
-          teacherNames: entry.teachers
-            .map((teacher) => (teacher.change === null ? teacher.abbrv : null))
-            .filter((x) => x !== null),
+          teacherNames: entry.teachers.map((teacher) => teacher.abbrv),
           roomNumbers: entry.roomNumbers
             .map((room) =>
               room.change === null
