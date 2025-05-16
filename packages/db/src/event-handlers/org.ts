@@ -68,8 +68,6 @@ export const orgApplicators: NamespaceEventApplicators<"org", unknown> = {
       const holiday = await db.query.holidays.findFirst({
         where: and(
           eq(tables.holidays.name, data.name),
-          eq(tables.holidays.start, data.start),
-          eq(tables.holidays.end, data.end),
           eq(tables.holidays.state, data.state),
           eq(tables.holidays.year, data.year),
         ),
