@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import type { HolidayDto } from "./generated";
 import { HolidayWsV1ImplService } from "./generated";
+import { env } from "../../env";
 
 const states = [
   "BB",
@@ -66,7 +67,7 @@ export const getHolidays = async (
   year?: number,
 ): Promise<Holiday[]> => {
   let response: Holiday[];
-  const snapshotFile = `/tmp/holidays-${state}-${year}.json`;
+  const snapshotFile = `${env.CACHE_DIR}/holidays-${state}-${year}.json`;
   try {
     response = await getHolidaysInternal(state, year);
   } catch (e) {

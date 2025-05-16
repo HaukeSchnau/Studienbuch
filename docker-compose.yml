@@ -47,6 +47,9 @@ services:
       LINEAR_API_KEY: $LINEAR_API_KEY # TODO: remove
       NEXT_PUBLIC_AXIOM_DATASET: $AXIOM_DATASET
       NEXT_PUBLIC_AXIOM_TOKEN: $AXIOM_TOKEN
+      CACHE_DIR: /cache
+    volumes:
+      - cache:/cache
 
   console-cron:
     build:
@@ -72,6 +75,9 @@ services:
       API_PORT: 3001 # TODO: remove
       MANAGEMENT_DATABASE_URL: postgresql://stu:stu@management-data-storage:5432/stu
       LEGACY_DATABASE_URL: postgresql://postgres:postgres@docker.host.internal:5433/postgres
+      CACHE_DIR: /cache
+    volumes:
+      - cache:/cache
     restart: unless-stopped
     configs:
       - source: crontab
@@ -99,3 +105,4 @@ volumes:
   postgres_data:
   pulsar_data:
   pulsar_config:
+  cache:

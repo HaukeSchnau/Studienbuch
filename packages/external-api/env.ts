@@ -6,6 +6,7 @@ export const env = createEnv({
     LINEAR_API_KEY: z.string().min(1),
     ISERV_USERNAME: z.string().min(1),
     ISERV_PASSWORD: z.string().min(1),
+    CACHE_DIR: z.string().min(1),
   },
   client: {},
   experimental__runtimeEnv: {},
