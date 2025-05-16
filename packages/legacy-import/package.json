@@ -1,0 +1,35 @@
+{
+  "name": "@stu/legacy-import",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "format": "biome format",
+    "lint": "eslint",
+    "push": "drizzle-kit push",
+    "studio": "drizzle-kit studio",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "@stu/lib": "workspace:*",
+    "@t3-oss/env-core": "^0.12.0",
+    "dayjs": "^1.11.13",
+    "drizzle-orm": "^0.41.0",
+    "drizzle-zod": "^0.7.1",
+    "pg": "^8.14.1",
+    "superjson": "2.2.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@stu/eslint-config": "workspace:*",
+    "@stu/tsconfig": "workspace:*",
+    "@types/pg": "^8.11.11",
+    "drizzle-kit": "^0.30.6",
+    "eslint": "^9.24.0",
+    "typescript": "^5.8.3"
+  }
+}
