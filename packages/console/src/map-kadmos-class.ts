@@ -1,6 +1,5 @@
 import { TZDate } from "@date-fns/tz";
 import type {
-  KadmosClassResponse,
   KadmosClassV2Response,
   KadmosTimetableV2Response,
 } from "@stu/external-api";
@@ -8,11 +7,6 @@ import { convertCurrentYearToStartYear, guessSubject } from "@stu/lib";
 import type { SubjectId } from "@stu/lib";
 import { differenceInMinutes } from "date-fns";
 import { logger } from "./logger";
-
-const extractTeachersAbbrvs = (longName: string) => {
-  const abbrvs = longName.trim().split("/");
-  return abbrvs.filter((abbrv) => abbrv.length === 3);
-};
 
 const isTeachersAbbrvString = (longName: string) => {
   const regex = /^([A-ZÄÖÜ]{3})(\/[A-ZÄÖÜ]{3})*$/i;
@@ -25,18 +19,6 @@ const extractYearNum = (name: string) => {
 
   return Number.parseInt(yearStr);
 };
-
-export const mapKadmosClass = ({
-  name,
-  longName,
-  id,
-}: KadmosClassResponse[number]) => ({
-  id,
-  startYear: convertCurrentYearToStartYear(extractYearNum(name)),
-  yearName: isTeachersAbbrvString(longName) ? null : longName,
-  identifierInYear: name.split(".")[1] ?? "",
-  teachers: extractTeachersAbbrvs(longName),
-});
 
 const mapKadmosClassTeacher = (
   teacher:
@@ -192,7 +174,7 @@ export const mapKadmosTimetableEntry = (
     return null;
   }
 
-  return {
+  const ret: ProtoTimetableEntry = {
     course: {
       subject,
       name: course.shortName,
@@ -303,4 +285,6 @@ export const mapKadmosTimetableEntry = (
       })
       .filter((x) => x !== null),
   };
+
+  return ret;
 };
