@@ -33,7 +33,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.41.0",
-    "expo": "~53.0.8",
+    "expo": "53.0.9",
     "expo-checkbox": "~4.1.4",
     "expo-constants": "~17.1.5",
     "expo-crypto": "~14.1.4",
@@ -59,7 +59,7 @@
     "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "^4.9.2",
     "react-native-sse": "^1.2.1",
-    "react-native-svg": "^15.11.2",
+    "react-native-svg": "15.11.2",
     "superjson": "2.2.2",
     "zod": "^3.24.2",
     "zustand": "^5.0.3"
