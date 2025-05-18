@@ -29,7 +29,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: "dev.schnau.studienbuch",
     adaptiveIcon: {
       foregroundImage: "./assets/icon.png",
-      backgroundColor: "#6EB867F",
+      backgroundColor: "#6DB769",
     },
   },
   extra: {
