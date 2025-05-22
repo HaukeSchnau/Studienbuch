@@ -1,26 +1,15 @@
 # Studienbuch Monorepo
 
-## Development Setup
-
-Copy the `.env.example` file to `.env` and fill in the necessary values. Please note that some scripts assume a database name of `studienbuch-dev`. Then, run the following command to set up the development environment:
-
+## Development Setup (with `direnv`)
 ```bash
-./scripts/dev/setup
+direnv allow
+up # This will run the bin/up script and start all the services
 ```
 
-If you prefer to automatically spin up the necessary services using Docker, you can set the `DATABASE_URL` environment variable to `postgres://stu:stu@localhost:5432/stu` and run the following command:
-
+## Available Scripts
 ```bash
-./scripts/dev/setup --docker
-```
-
-## Deployment
-
-e
-To deploy the application, run the following commands on the server:
-
-```bash
-git clone git@github.com/HaukeSchnau/studienbuch.git src
-
-./src/scripts/deploy prod src builds
+up # Starts the entire stack
+up-reset # Starts and resets the entire stack
+console # Allows to execute predefined commands
+visualize-deps # Visualizes the dependencies between the JS packages
 ```

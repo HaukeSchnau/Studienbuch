@@ -58,5 +58,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-secure-store",
     "expo-sqlite",
     "expo-web-browser",
+    [
+      "expo-notifications",
+      {
+        icon: "./assets/icon.png",
+        color: "#6DB769",
+        defaultChannel: "default",
+        enableBackgroundRemoteNotifications: false,
+      },
+    ],
   ],
 });

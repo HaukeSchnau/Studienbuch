@@ -12,7 +12,7 @@ export const Users = pgTable("users", {
   email: text("email"),
   passwordHash: text("password_hash"),
   isSuperUser: boolean("is_super_user").default(false).notNull(),
-  notificationKey: text("notification_key"),
+  notificationKeys: text("notification_keys").array(),
 });
 
 export const UserRelations = relations(Users, ({ many }) => ({
