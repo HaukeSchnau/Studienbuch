@@ -75,5 +75,6 @@
   },
   "[swift]": {
     "editor.defaultFormatter": "vknabel.vscode-apple-swift-format"
-  }
+  },
+  "typescript.experimental.useTsgo": true
 }

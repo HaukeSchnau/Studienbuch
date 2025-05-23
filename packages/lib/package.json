@@ -6,12 +6,10 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/src/index.d.ts",
       "default": "./src/index.ts"
     }
   },
   "scripts": {
-    "build": "tsc",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev:internal": "tsc --watch",
     "format": "biome format",
