@@ -31,6 +31,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: "./assets/icon.png",
       backgroundColor: "#6DB769",
     },
+    googleServicesFile: "./google-services.json",  
   },
   extra: {
     eas: {

@@ -72,11 +72,6 @@ export const useRequiredAuthenticatedSession = () => {
   };
 };
 
-export const useLicenseKey = () => {
-  const [licenseKey] = useStorage("auth.licenseKey");
-  return licenseKey;
-};
-
 export const useSession = () => {
   const [session] = useStorage("auth.session");
   return session ? { userId: session.user, token: session.token } : null;

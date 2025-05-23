@@ -1,5 +1,5 @@
 import { SYSTEM_USER, ingest } from "@stu/api";
-import { and, eq } from "@stu/db";
+import { and, eq, or } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
 import type { SchoolId, SubjectId } from "@stu/lib";
@@ -182,6 +182,34 @@ export const ingestTimetableEntry = async (
         }
       } else {
         logger.info(`Timetable substituted for ${course.name}!`);
+
+        const affectedStudents = await db
+          .select()
+          .from(tables.Students)
+          .innerJoin(
+            tables.CourseMemberships,
+            eq(tables.Students.person, tables.CourseMemberships.student),
+          )
+          .innerJoin(
+            tables.CoursesToClasses,
+            and(
+              eq(
+                tables.Students.classIdentifier,
+                tables.CoursesToClasses.classIdentifier,
+              ),
+              eq(
+                tables.Students.startYear,
+                tables.CoursesToClasses.classStartYear,
+              ),
+              eq(tables.Students.school, tables.CoursesToClasses.school),
+            ),
+          )
+          .where(
+            or(
+              eq(tables.CourseMemberships.course, uuid),
+              eq(tables.CoursesToClasses.course, uuid),
+            ),
+          );
       }
     } else {
       const canceledErr = await ingest(

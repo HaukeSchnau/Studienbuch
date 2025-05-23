@@ -18,6 +18,11 @@ const handleRegistrationError = (error: string) => {
 };
 
 export async function registerForPushNotificationsAsync() {
+  // seems like this event listener is required for the push token to be fetched and the promise below to be resolved
+  Notifications.addPushTokenListener((token) => {
+    console.log("THE PUSH TOKEN HAS BEEN ACQUIRED", token);
+  });
+
   if (Platform.OS === "android") {
     void Notifications.setNotificationChannelAsync("default", {
       name: "default",
@@ -55,7 +60,6 @@ export async function registerForPushNotificationsAsync() {
           projectId,
         })
       ).data;
-      console.log(pushTokenString);
       return pushTokenString;
     } catch (e: unknown) {
       handleRegistrationError(`${e}`);

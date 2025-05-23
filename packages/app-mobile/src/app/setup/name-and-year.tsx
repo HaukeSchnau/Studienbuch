@@ -20,6 +20,7 @@ import { useAppForm } from "~/features/setup/form";
 import { api } from "~/utils/api";
 import { useSession } from "~/utils/auth";
 import { ingest } from "~/utils/events/ingest";
+import { router } from "expo-router";
 
 const bootstrap = async ({
   school,
@@ -116,6 +117,8 @@ export default function NameAndYear() {
       });
 
       await queryClient.invalidateQueries();
+
+      router.push("/setup/class-and-courses");
     },
   });
 
