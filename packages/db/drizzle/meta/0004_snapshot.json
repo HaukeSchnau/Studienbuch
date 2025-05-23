@@ -54,16 +54,12 @@
         "persons_abbrv_unique": {
           "name": "persons_abbrv_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "abbrv"
-          ]
+          "columns": ["abbrv"]
         },
         "persons_email_unique": {
           "name": "persons_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -112,12 +108,8 @@
           "name": "students_person_persons_id_fk",
           "tableFrom": "students",
           "tableTo": "persons",
-          "columnsFrom": [
-            "person"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["person"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -125,16 +117,8 @@
           "name": "students_class_identifier_start_year_school_classes_identifier_in_year_start_year_school_fk",
           "tableFrom": "students",
           "tableTo": "classes",
-          "columnsFrom": [
-            "class_identifier",
-            "start_year",
-            "school"
-          ],
-          "columnsTo": [
-            "identifier_in_year",
-            "start_year",
-            "school"
-          ],
+          "columnsFrom": ["class_identifier", "start_year", "school"],
+          "columnsTo": ["identifier_in_year", "start_year", "school"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -187,12 +171,8 @@
           "name": "users_id_persons_id_fk",
           "tableFrom": "users",
           "tableTo": "persons",
-          "columnsFrom": [
-            "id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -233,14 +213,8 @@
           "name": "classes_start_year_school_years_start_year_school_fk",
           "tableFrom": "classes",
           "tableTo": "years",
-          "columnsFrom": [
-            "start_year",
-            "school"
-          ],
-          "columnsTo": [
-            "start_year",
-            "school"
-          ],
+          "columnsFrom": ["start_year", "school"],
+          "columnsTo": ["start_year", "school"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -248,11 +222,7 @@
       "compositePrimaryKeys": {
         "classes_identifier_in_year_start_year_school_pk": {
           "name": "classes_identifier_in_year_start_year_school_pk",
-          "columns": [
-            "identifier_in_year",
-            "start_year",
-            "school"
-          ]
+          "columns": ["identifier_in_year", "start_year", "school"]
         }
       },
       "uniqueConstraints": {},
@@ -296,12 +266,8 @@
           "name": "teachers_to_classes_teacher_persons_id_fk",
           "tableFrom": "teachers_to_classes",
           "tableTo": "persons",
-          "columnsFrom": [
-            "teacher"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["teacher"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -309,16 +275,8 @@
           "name": "teachers_to_classes_class_identifier_class_start_year_school_classes_identifier_in_year_start_year_school_fk",
           "tableFrom": "teachers_to_classes",
           "tableTo": "classes",
-          "columnsFrom": [
-            "class_identifier",
-            "class_start_year",
-            "school"
-          ],
-          "columnsTo": [
-            "identifier_in_year",
-            "start_year",
-            "school"
-          ],
+          "columnsFrom": ["class_identifier", "class_start_year", "school"],
+          "columnsTo": ["identifier_in_year", "start_year", "school"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -397,16 +355,8 @@
           "name": "courses_semester_type_semester_year_school_semesters_type_year_school_fk",
           "tableFrom": "courses",
           "tableTo": "semesters",
-          "columnsFrom": [
-            "semester_type",
-            "semester_year",
-            "school"
-          ],
-          "columnsTo": [
-            "type",
-            "year",
-            "school"
-          ],
+          "columnsFrom": ["semester_type", "semester_year", "school"],
+          "columnsTo": ["type", "year", "school"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -453,12 +403,8 @@
           "name": "courses_to_classes_course_courses_id_fk",
           "tableFrom": "courses_to_classes",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -466,16 +412,8 @@
           "name": "courses_to_classes_class_identifier_class_start_year_school_classes_identifier_in_year_start_year_school_fk",
           "tableFrom": "courses_to_classes",
           "tableTo": "classes",
-          "columnsFrom": [
-            "class_identifier",
-            "class_start_year",
-            "school"
-          ],
-          "columnsTo": [
-            "identifier_in_year",
-            "start_year",
-            "school"
-          ],
+          "columnsFrom": ["class_identifier", "class_start_year", "school"],
+          "columnsTo": ["identifier_in_year", "start_year", "school"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -519,12 +457,8 @@
           "name": "courses_to_teachers_course_courses_id_fk",
           "tableFrom": "courses_to_teachers",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -532,12 +466,8 @@
           "name": "courses_to_teachers_teacher_persons_id_fk",
           "tableFrom": "courses_to_teachers",
           "tableTo": "persons",
-          "columnsFrom": [
-            "teacher"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["teacher"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -545,10 +475,7 @@
       "compositePrimaryKeys": {
         "courses_to_teachers_course_teacher_pk": {
           "name": "courses_to_teachers_course_teacher_pk",
-          "columns": [
-            "course",
-            "teacher"
-          ]
+          "columns": ["course", "teacher"]
         }
       },
       "uniqueConstraints": {},
@@ -693,12 +620,8 @@
           "name": "semesters_school_schools_id_fk",
           "tableFrom": "semesters",
           "tableTo": "schools",
-          "columnsFrom": [
-            "school"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["school"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -706,11 +629,7 @@
       "compositePrimaryKeys": {
         "semesters_school_type_year_pk": {
           "name": "semesters_school_type_year_pk",
-          "columns": [
-            "school",
-            "type",
-            "year"
-          ]
+          "columns": ["school", "type", "year"]
         }
       },
       "uniqueConstraints": {},
@@ -759,11 +678,7 @@
       "compositePrimaryKeys": {
         "holidays_name_state_year_pk": {
           "name": "holidays_name_state_year_pk",
-          "columns": [
-            "name",
-            "state",
-            "year"
-          ]
+          "columns": ["name", "state", "year"]
         }
       },
       "uniqueConstraints": {},
@@ -807,12 +722,8 @@
           "name": "years_school_schools_id_fk",
           "tableFrom": "years",
           "tableTo": "schools",
-          "columnsFrom": [
-            "school"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["school"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -820,10 +731,7 @@
       "compositePrimaryKeys": {
         "years_start_year_school_pk": {
           "name": "years_start_year_school_pk",
-          "columns": [
-            "start_year",
-            "school"
-          ]
+          "columns": ["start_year", "school"]
         }
       },
       "uniqueConstraints": {},
@@ -887,12 +795,8 @@
           "name": "license_keys_school_id_schools_id_fk",
           "tableFrom": "license_keys",
           "tableTo": "schools",
-          "columnsFrom": [
-            "school_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["school_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -900,12 +804,8 @@
           "name": "license_keys_activated_by_users_id_fk",
           "tableFrom": "license_keys",
           "tableTo": "users",
-          "columnsFrom": [
-            "activated_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["activated_by"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "cascade"
         }
@@ -946,12 +846,8 @@
           "name": "permissions_to_roles_role_roles_id_fk",
           "tableFrom": "permissions_to_roles",
           "tableTo": "roles",
-          "columnsFrom": [
-            "role"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["role"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -959,10 +855,7 @@
       "compositePrimaryKeys": {
         "permissions_to_roles_permission_role_pk": {
           "name": "permissions_to_roles_permission_role_pk",
-          "columns": [
-            "permission",
-            "role"
-          ]
+          "columns": ["permission", "role"]
         }
       },
       "uniqueConstraints": {},
@@ -1000,12 +893,8 @@
           "name": "permissions_to_users_user_users_id_fk",
           "tableFrom": "permissions_to_users",
           "tableTo": "users",
-          "columnsFrom": [
-            "user"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -1013,10 +902,7 @@
       "compositePrimaryKeys": {
         "permissions_to_users_permission_user_pk": {
           "name": "permissions_to_users_permission_user_pk",
-          "columns": [
-            "permission",
-            "user"
-          ]
+          "columns": ["permission", "user"]
         }
       },
       "uniqueConstraints": {},
@@ -1055,9 +941,7 @@
         "roles_name_unique": {
           "name": "roles_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
+          "columns": ["name"]
         }
       },
       "policies": {},
@@ -1087,12 +971,8 @@
           "name": "roles_to_users_role_roles_id_fk",
           "tableFrom": "roles_to_users",
           "tableTo": "roles",
-          "columnsFrom": [
-            "role"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["role"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1100,12 +980,8 @@
           "name": "roles_to_users_user_users_id_fk",
           "tableFrom": "roles_to_users",
           "tableTo": "users",
-          "columnsFrom": [
-            "user"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1113,10 +989,7 @@
       "compositePrimaryKeys": {
         "roles_to_users_role_user_pk": {
           "name": "roles_to_users_role_user_pk",
-          "columns": [
-            "role",
-            "user"
-          ]
+          "columns": ["role", "user"]
         }
       },
       "uniqueConstraints": {},
@@ -1153,12 +1026,8 @@
           "name": "sessions_user_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1204,12 +1073,8 @@
           "name": "absence_days_student_persons_id_fk",
           "tableFrom": "absence_days",
           "tableTo": "persons",
-          "columnsFrom": [
-            "student"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["student"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -1217,10 +1082,7 @@
       "compositePrimaryKeys": {
         "absence_days_date_student_pk": {
           "name": "absence_days_date_student_pk",
-          "columns": [
-            "date",
-            "student"
-          ]
+          "columns": ["date", "student"]
         }
       },
       "uniqueConstraints": {},
@@ -1263,12 +1125,8 @@
           "name": "course_absences_student_persons_id_fk",
           "tableFrom": "course_absences",
           "tableTo": "persons",
-          "columnsFrom": [
-            "student"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["student"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
@@ -1276,12 +1134,8 @@
           "name": "course_absences_course_courses_id_fk",
           "tableFrom": "course_absences",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
@@ -1289,14 +1143,8 @@
           "name": "course_absences_date_student_absence_days_date_student_fk",
           "tableFrom": "course_absences",
           "tableTo": "absence_days",
-          "columnsFrom": [
-            "date",
-            "student"
-          ],
-          "columnsTo": [
-            "date",
-            "student"
-          ],
+          "columnsFrom": ["date", "student"],
+          "columnsTo": ["date", "student"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1304,11 +1152,7 @@
       "compositePrimaryKeys": {
         "course_absences_date_course_student_pk": {
           "name": "course_absences_date_course_student_pk",
-          "columns": [
-            "date",
-            "course",
-            "student"
-          ]
+          "columns": ["date", "course", "student"]
         }
       },
       "uniqueConstraints": {},
@@ -1339,12 +1183,8 @@
           "name": "course_memberships_student_students_person_fk",
           "tableFrom": "course_memberships",
           "tableTo": "students",
-          "columnsFrom": [
-            "student"
-          ],
-          "columnsTo": [
-            "person"
-          ],
+          "columnsFrom": ["student"],
+          "columnsTo": ["person"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1352,12 +1192,8 @@
           "name": "course_memberships_course_courses_id_fk",
           "tableFrom": "course_memberships",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1365,10 +1201,7 @@
       "compositePrimaryKeys": {
         "course_memberships_student_course_pk": {
           "name": "course_memberships_student_course_pk",
-          "columns": [
-            "student",
-            "course"
-          ]
+          "columns": ["student", "course"]
         }
       },
       "uniqueConstraints": {},
@@ -1430,12 +1263,8 @@
           "name": "grades_course_courses_id_fk",
           "tableFrom": "grades",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
@@ -1443,12 +1272,8 @@
           "name": "grades_student_persons_id_fk",
           "tableFrom": "grades",
           "tableTo": "persons",
-          "columnsFrom": [
-            "student"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["student"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -1456,12 +1281,7 @@
       "compositePrimaryKeys": {
         "grades_date_course_student_type_pk": {
           "name": "grades_date_course_student_type_pk",
-          "columns": [
-            "date",
-            "course",
-            "student",
-            "type"
-          ]
+          "columns": ["date", "course", "student", "type"]
         }
       },
       "uniqueConstraints": {},
@@ -1531,12 +1351,8 @@
           "name": "tasks_course_courses_id_fk",
           "tableFrom": "tasks",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         },
@@ -1544,12 +1360,8 @@
           "name": "tasks_assignee_persons_id_fk",
           "tableFrom": "tasks",
           "tableTo": "persons",
-          "columnsFrom": [
-            "assignee"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["assignee"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "cascade"
         }
@@ -1602,12 +1414,8 @@
           "name": "room_changes_room_rooms_room_number_fk",
           "tableFrom": "room_changes",
           "tableTo": "rooms",
-          "columnsFrom": [
-            "room"
-          ],
-          "columnsTo": [
-            "room_number"
-          ],
+          "columnsFrom": ["room"],
+          "columnsTo": ["room_number"],
           "onDelete": "set null",
           "onUpdate": "cascade"
         }
@@ -1673,12 +1481,8 @@
           "name": "substitutions_originalTeacher_persons_id_fk",
           "tableFrom": "substitutions",
           "tableTo": "persons",
-          "columnsFrom": [
-            "originalTeacher"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["originalTeacher"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "cascade"
         },
@@ -1686,12 +1490,8 @@
           "name": "substitutions_substitute_persons_id_fk",
           "tableFrom": "substitutions",
           "tableTo": "persons",
-          "columnsFrom": [
-            "substitute"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["substitute"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "cascade"
         },
@@ -1699,14 +1499,8 @@
           "name": "substitutions_date_course_timetable_entries_date_course_fk",
           "tableFrom": "substitutions",
           "tableTo": "timetable_entries",
-          "columnsFrom": [
-            "date",
-            "course"
-          ],
-          "columnsTo": [
-            "date",
-            "course"
-          ],
+          "columnsFrom": ["date", "course"],
+          "columnsTo": ["date", "course"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1714,11 +1508,7 @@
       "compositePrimaryKeys": {
         "substitutions_date_course_originalTeacher_pk": {
           "name": "substitutions_date_course_originalTeacher_pk",
-          "columns": [
-            "date",
-            "course",
-            "originalTeacher"
-          ]
+          "columns": ["date", "course", "originalTeacher"]
         }
       },
       "uniqueConstraints": {},
@@ -1761,12 +1551,8 @@
           "name": "timetable_entries_course_courses_id_fk",
           "tableFrom": "timetable_entries",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1774,10 +1560,7 @@
       "compositePrimaryKeys": {
         "timetable_entries_date_course_pk": {
           "name": "timetable_entries_date_course_pk",
-          "columns": [
-            "date",
-            "course"
-          ]
+          "columns": ["date", "course"]
         }
       },
       "uniqueConstraints": {},
@@ -1834,12 +1617,8 @@
           "name": "recurring_timetable_entries_course_courses_id_fk",
           "tableFrom": "recurring_timetable_entries",
           "tableTo": "courses",
-          "columnsFrom": [
-            "course"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["course"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -1847,11 +1626,7 @@
       "compositePrimaryKeys": {
         "recurring_timetable_entries_weekday_start_course_pk": {
           "name": "recurring_timetable_entries_weekday_start_course_pk",
-          "columns": [
-            "weekday",
-            "start",
-            "course"
-          ]
+          "columns": ["weekday", "start", "course"]
         }
       },
       "uniqueConstraints": {},
@@ -1904,12 +1679,8 @@
           "name": "event_topics_event_events_id_fk",
           "tableFrom": "event_topics",
           "tableTo": "events",
-          "columnsFrom": [
-            "event"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["event"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1917,10 +1688,7 @@
       "compositePrimaryKeys": {
         "event_topics_event_topic_pk": {
           "name": "event_topics_event_topic_pk",
-          "columns": [
-            "event",
-            "topic"
-          ]
+          "columns": ["event", "topic"]
         }
       },
       "uniqueConstraints": {},
@@ -2017,12 +1785,8 @@
           "name": "events_sent_to_users_event_events_id_fk",
           "tableFrom": "events_sent_to_users",
           "tableTo": "events",
-          "columnsFrom": [
-            "event"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["event"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2030,12 +1794,8 @@
           "name": "events_sent_to_users_user_users_id_fk",
           "tableFrom": "events_sent_to_users",
           "tableTo": "users",
-          "columnsFrom": [
-            "user"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2043,10 +1803,7 @@
       "compositePrimaryKeys": {
         "events_sent_to_users_event_user_pk": {
           "name": "events_sent_to_users_event_user_pk",
-          "columns": [
-            "event",
-            "user"
-          ]
+          "columns": ["event", "user"]
         }
       },
       "uniqueConstraints": {},
@@ -2059,10 +1816,7 @@
     "public.salutation": {
       "name": "salutation",
       "schema": "public",
-      "values": [
-        "Herr",
-        "Frau"
-      ]
+      "values": ["Herr", "Frau"]
     },
     "public.subject": {
       "name": "subject",
@@ -2129,17 +1883,12 @@
     "public.school_id": {
       "name": "school_id",
       "schema": "public",
-      "values": [
-        "igs-lil"
-      ]
+      "values": ["igs-lil"]
     },
     "public.semester_type": {
       "name": "semester_type",
       "schema": "public",
-      "values": [
-        "SUMMER",
-        "WINTER"
-      ]
+      "values": ["SUMMER", "WINTER"]
     },
     "public.permission": {
       "name": "permission",
@@ -2157,11 +1906,7 @@
     "public.grade_type": {
       "name": "grade_type",
       "schema": "public",
-      "values": [
-        "WRITTEN",
-        "ORAL",
-        "MASTER"
-      ]
+      "values": ["WRITTEN", "ORAL", "MASTER"]
     },
     "public.substitution_type": {
       "name": "substitution_type",
@@ -2177,11 +1922,7 @@
     "public.recurring_timetable_entry_weeks": {
       "name": "recurring_timetable_entry_weeks",
       "schema": "public",
-      "values": [
-        "EVEN",
-        "ODD",
-        "ALL"
-      ]
+      "values": ["EVEN", "ODD", "ALL"]
     },
     "public.event_type": {
       "name": "event_type",

@@ -23,3 +23,4 @@ export * from "./timetable/timetable-entries";
 export * from "./timetable/recurring-timetable-entries";
 
 export * from "./events";
+export * from "./notifications";

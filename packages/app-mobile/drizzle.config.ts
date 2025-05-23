@@ -6,4 +6,5 @@ export default {
   dialect: "sqlite",
   driver: "expo",
   verbose: true,
+  casing: "snake_case",
 } satisfies Config;

@@ -1,12 +1,14 @@
 import { SYSTEM_USER, ingest } from "@stu/api";
-import { and, eq, or } from "@stu/db";
+import { and, eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
 import type { SchoolId, SubjectId } from "@stu/lib";
-import { Result } from "@stu/lib";
+import { Result, subjectNameMap } from "@stu/lib";
 
 import type { ConsoleIservClient } from "./get-or-create-teacher";
 import { logger } from "./logger";
+import { sendNotifications } from "@stu/lib-server";
+import { format } from "date-fns";
 
 interface Entry {
   uuid: string;
@@ -148,6 +150,54 @@ export const ingestTimetableEntry = async (
   }
 
   for (const substitution of substitutions) {
+    const studentsWithExplicitMembership = await db
+      .select({
+        studentId: tables.CourseMemberships.student,
+        notificationTokens: tables.Users.notificationTokens,
+      })
+      .from(tables.CourseMemberships)
+      .innerJoin(
+        tables.Users,
+        eq(tables.CourseMemberships.student, tables.Users.id),
+      )
+      .where(eq(tables.CourseMemberships.course, uuid));
+
+    const studentsWithImplicitMembership = await db
+      .select({
+        studentId: tables.Users.id,
+        notificationTokens: tables.Users.notificationTokens,
+      })
+      .from(tables.Courses)
+      .innerJoin(
+        tables.CoursesToClasses,
+        eq(tables.Courses.id, tables.CoursesToClasses.course),
+      )
+      .innerJoin(
+        tables.Students,
+        and(
+          eq(
+            tables.Students.classIdentifier,
+            tables.CoursesToClasses.classIdentifier,
+          ),
+          eq(tables.Students.startYear, tables.CoursesToClasses.classStartYear),
+          eq(tables.Students.school, tables.Courses.school),
+        ),
+      )
+      .innerJoin(tables.Users, eq(tables.Students.person, tables.Users.id))
+      .where(
+        and(eq(tables.Courses.isMandatory, false), eq(tables.Courses.id, uuid)),
+      );
+
+    const allStudents = new Map<string, string[]>();
+    for (const student of studentsWithExplicitMembership) {
+      allStudents.set(student.studentId, student.notificationTokens);
+    }
+    for (const student of studentsWithImplicitMembership) {
+      allStudents.set(student.studentId, student.notificationTokens);
+    }
+
+    const allNotificationTokens = Array.from(allStudents.values()).flat();
+
     if (substitution.type === "SUBSTITUTION") {
       // todo: if substitute exists but not in kadmos, ingest canceled substitution event
 
@@ -183,33 +233,11 @@ export const ingestTimetableEntry = async (
       } else {
         logger.info(`Timetable substituted for ${course.name}!`);
 
-        const affectedStudents = await db
-          .select()
-          .from(tables.Students)
-          .innerJoin(
-            tables.CourseMemberships,
-            eq(tables.Students.person, tables.CourseMemberships.student),
-          )
-          .innerJoin(
-            tables.CoursesToClasses,
-            and(
-              eq(
-                tables.Students.classIdentifier,
-                tables.CoursesToClasses.classIdentifier,
-              ),
-              eq(
-                tables.Students.startYear,
-                tables.CoursesToClasses.classStartYear,
-              ),
-              eq(tables.Students.school, tables.CoursesToClasses.school),
-            ),
-          )
-          .where(
-            or(
-              eq(tables.CourseMemberships.course, uuid),
-              eq(tables.CoursesToClasses.course, uuid),
-            ),
-          );
+        await sendNotifications(
+          allNotificationTokens,
+          `Vertretungsplan: ${subjectNameMap[course.subject]}`,
+          `${subjectNameMap[course.subject]} wird am ${format(start, "dd.MM.")} von ${substitution.substituteName} vertreten`,
+        );
       }
     } else {
       const canceledErr = await ingest(
@@ -240,6 +268,12 @@ export const ingestTimetableEntry = async (
         }
       } else {
         logger.info(`Timetable canceled for ${course.name}!`);
+
+        await sendNotifications(
+          allNotificationTokens,
+          `Vertretungsplan: ${subjectNameMap[course.subject]}`,
+          `${subjectNameMap[course.subject]} fällt am ${format(start, "dd.MM.")} aus`,
+        );
       }
     }
   }

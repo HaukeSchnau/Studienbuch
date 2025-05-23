@@ -26,6 +26,7 @@ import { getMyCoursesForSemester } from "~/features/profile/queries/get-my-cours
 import { api } from "~/utils/api";
 import { ingest } from "~/utils/events/ingest";
 import { useAppForm } from "~/utils/form";
+import { router } from "expo-router";
 
 const bootstrap = async ({
   school,
@@ -202,6 +203,7 @@ export default function ClassAndCourses() {
         ),
       );
       await queryClient.invalidateQueries();
+      router.push("/");
     },
   });
 

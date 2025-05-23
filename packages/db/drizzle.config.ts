@@ -7,4 +7,5 @@ export default {
   dialect: "postgresql",
   dbCredentials: { url: env.MANAGEMENT_DATABASE_URL },
   verbose: true,
+  casing: "snake_case",
 } satisfies Config;
