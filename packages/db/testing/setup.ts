@@ -32,7 +32,6 @@ beforeAll(async ({ id }) => {
     database: testDbName,
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- we mock it below
   vi.mock(import("@stu/db/client"), () => ({ db: null! }));
   vi.spyOn(exports, "db", "get").mockReturnValue(db);
 });

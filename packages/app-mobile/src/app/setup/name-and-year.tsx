@@ -220,7 +220,7 @@ const ClassField = ({
 }: {
   selectedYear: Year;
   value: Class | undefined;
-  onChange: (value: Class) => void;
+  onChange: (value: Class | undefined) => void;
 }) => {
   const classes = api.schools.classes.list.useQuery({
     school: "igs-lil",

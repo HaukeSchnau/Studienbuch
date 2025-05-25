@@ -1,6 +1,6 @@
 import Icon from "@expo/vector-icons/MaterialIcons";
 import { useQuery } from "@tanstack/react-query";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { getCurrentYearNum } from "@stu/lib";
@@ -9,6 +9,7 @@ import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { getMyYear } from "./queries/get-my-year";
+import { router } from "expo-router";
 
 const Avatar = () => {
   return (
@@ -33,11 +34,11 @@ export const Header = () => {
   return (
     <View className="rounded-b-3xl bg-primary">
       <SafeAreaView edges={["top"]}>
-        <View className="flex-col items-center py-10">
+        <View className="flex-col items-center py-10 relative">
           <Avatar />
           <View className="h-6" />
           <Text weight="bold" className="text-3xl text-white">
-            {user.name}s Profil
+            {user.name}'s Profil
           </Text>
           <View className="h-2" />
           <View className="items-center">
@@ -46,6 +47,16 @@ export const Header = () => {
               {getCurrentYearNum(year.data.year)}. Klasse)
             </Text>
             <Text className="text-xl text-white">{year.data.school.name}</Text>
+          </View>
+
+          <View className="absolute top-4 right-4">
+            <TouchableOpacity
+              onPress={() => {
+                router.push("/setup/name-and-year");
+              }}
+            >
+              <Icon name="edit" size={24} color="white" />
+            </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>

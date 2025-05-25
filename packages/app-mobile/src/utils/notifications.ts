@@ -62,6 +62,7 @@ export async function registerForPushNotificationsAsync() {
       ).data;
       return pushTokenString;
     } catch (e: unknown) {
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
       handleRegistrationError(`${e}`);
     }
   } else {

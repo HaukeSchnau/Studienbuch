@@ -17,6 +17,7 @@ export const sendNotifications = async (
 
     // Check that all your push tokens appear to be valid Expo push tokens
     if (!Expo.isExpoPushToken(pushToken)) {
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- ExpoPushToken is a string, so it evaluates to never here. Not great typing on Expo's side.
       console.error(`Push token ${pushToken} is not a valid Expo push token`);
       continue;
     }

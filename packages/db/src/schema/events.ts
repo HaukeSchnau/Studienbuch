@@ -22,7 +22,7 @@ const superjsonb = customType<{ data: unknown }>({
     return superjson.stringify(value);
   },
   fromDriver(value) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return superjson.deserialize(value as any);
   },
 });

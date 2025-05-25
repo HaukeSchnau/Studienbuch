@@ -14,7 +14,7 @@ interface Props<TOption> {
   getOptionLabel: (option: NonNullable<TOption>) => string;
   getKey: (option: NonNullable<TOption>) => Key;
   options: NonNullable<TOption>[];
-  onChange: (value: TOption) => void;
+  onChange: (value: TOption | undefined) => void;
 }
 
 export const SelectField = <TOption,>({
@@ -38,8 +38,7 @@ export const SelectField = <TOption,>({
     <View>
       <Picker
         selectedValue={value ? getKey(value) : undefined}
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        onValueChange={(_, idx) => onChange(options[idx]!)}
+        onValueChange={(_, idx) => onChange(options[idx])}
         style={{
           backgroundColor: "#E6E6E6",
           borderRadius: 32,

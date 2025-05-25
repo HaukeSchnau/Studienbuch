@@ -16,8 +16,7 @@ import { SemesterSelector } from "./semester-selector";
 
 const Content = ({ semesters }: { semesters: NonEmptyArray<Semester> }) => {
   const [selectedSemester, setSelectedSemester] = useState<Semester>(
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    semesters.at(-1)!,
+    semesters.at(-1),
   );
 
   return (

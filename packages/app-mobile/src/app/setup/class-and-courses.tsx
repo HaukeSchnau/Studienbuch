@@ -182,6 +182,7 @@ export default function ClassAndCourses() {
         return; // TODO: show error
       }
       const courses = Object.values(value.chosenCourses).filter(Boolean);
+
       await bootstrap({
         school: {
           id: student.year.school,

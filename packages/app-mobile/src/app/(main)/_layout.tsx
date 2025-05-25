@@ -20,21 +20,22 @@ Notifications.setNotificationHandler({
 });
 
 export default function TabLayout() {
-  const registerNotificationToken = api.auth.addNotificationToken.useMutation({
-    onSuccess: () => {
-      console.log("Notification token registered");
-    },
-    onError: (error) => {
-      console.error("Error registering notification token", error);
-    },
-  });
+  const { mutate: registerNotificationToken } =
+    api.auth.addNotificationToken.useMutation({
+      onSuccess: () => {
+        console.log("Notification token registered");
+      },
+      onError: (error) => {
+        console.error("Error registering notification token", error);
+      },
+    });
 
   useEffect(() => {
     void registerForPushNotificationsAsync()
       .then((token) => {
         console.log("Token", token);
         if (token) {
-          registerNotificationToken.mutate({ notificationToken: token });
+          registerNotificationToken({ notificationToken: token });
         }
       })
       .catch((error) => {
@@ -56,7 +57,7 @@ export default function TabLayout() {
       notificationListener.remove();
       responseListener.remove();
     };
-  }, [registerNotificationToken.mutate]);
+  }, [registerNotificationToken]);
 
   return (
     <>

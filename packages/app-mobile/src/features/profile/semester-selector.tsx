@@ -24,7 +24,7 @@ export const SemesterSelector = ({
         (semester) => semester.name === selectedSemester.name,
       )}
       onChange={(event) => {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- The index is guaranteed to be in bounds because the values are mapped from the choices array.
+        // biome-ignore lint/style/noNonNullAssertion: The index is guaranteed to be in bounds because the values are mapped from the choices array.
         onSelect(choices[event.nativeEvent.selectedSegmentIndex]!);
       }}
     />

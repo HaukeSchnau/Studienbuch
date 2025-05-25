@@ -20,7 +20,7 @@ export const getHolidays = ({
   userId: string;
 }) =>
   queryOptions({
-    queryKey: ["holidays", { year }],
+    queryKey: ["holidays", { year, userId }],
     queryFn: async (): Promise<Holdiay[]> => {
       const holidays = await db
         .select({

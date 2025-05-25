@@ -50,7 +50,6 @@ export const eventApplicator: EventApplicatorInterface = {
     // eslint-disable-next-line
     return applicator.verify(event as any, {
       initiatorUserId,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any;
   },
 

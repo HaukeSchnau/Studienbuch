@@ -57,12 +57,11 @@ export class EventApplicator implements EventApplicatorInterface {
       return undefined;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-argument
     return applicator.verify(event as any, {
       db: this.db,
       user: this.getUser(),
       initiatorUserId: this.userId,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }) as any;
   }
 
