@@ -18,7 +18,7 @@ import { getStorage } from "./storage";
  * A set of typesafe hooks for consuming your API.
  */
 export const api = createTRPCReact<AppRouter>();
-export { type RouterInputs, type RouterOutputs } from "@stu/api";
+export type { RouterInputs, RouterOutputs } from "@stu/api";
 
 const getHeaders = () => {
   const session = getStorage("auth.session");

@@ -1,10 +1,12 @@
 import type { ConfigContext, ExpoConfig } from "@expo/config";
 
+const IS_DEV = process.env.APP_VARIANT === "development";
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: "Studienbuch",
+  name: IS_DEV ? "Studienbuch (Dev)" : "Studienbuch",
   slug: "studienbuch",
-  scheme: "expo",
+  scheme: "studienbuch",
   version: "0.1.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
@@ -19,14 +21,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   assetBundlePatterns: ["**/*"],
   ios: {
-    bundleIdentifier: "dev.schnau.studienbuch",
+    bundleIdentifier: IS_DEV
+      ? "dev.schnau.studienbuch.dev"
+      : "dev.schnau.studienbuch",
     supportsTablet: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {
-    package: "dev.schnau.studienbuch",
+    package: IS_DEV ? "dev.schnau.studienbuch.dev" : "dev.schnau.studienbuch",
     adaptiveIcon: {
       foregroundImage: "./assets/icon.png",
       backgroundColor: "#6DB769",
@@ -44,6 +48,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     "expo-router",
+    [
+      "expo-dev-client",
+      {
+        addGeneratedScheme: !!IS_DEV,
+      },
+    ],
     [
       "expo-font",
       {
