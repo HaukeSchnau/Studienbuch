@@ -2,7 +2,7 @@
   "name": "studienbuch",
   "private": true,
   "workspaces": ["packages/*", "tooling/*"],
-  "packageManager": "bun@1.2.10",
+  "packageManager": "bun@1.2.15",
   "scripts": {
     "build": "turbo run build",
     "build:internal": "turbo run --filter=\"./packages/*\" build",
