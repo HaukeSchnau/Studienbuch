@@ -33,13 +33,14 @@ export default function TabLayout() {
   useEffect(() => {
     void registerForPushNotificationsAsync()
       .then((token) => {
-        console.log("Token", token);
-        if (token) {
-          registerNotificationToken({ notificationToken: token });
+        if (token.isOk()) {
+          registerNotificationToken({ notificationToken: token.value });
+        } else {
+          console.error("Error registering notification token:", token.error);
         }
       })
       .catch((error) => {
-        console.error("Error registering notification token", error);
+        console.error("Error registering notification token:", error);
       });
 
     const notificationListener = Notifications.addNotificationReceivedListener(
