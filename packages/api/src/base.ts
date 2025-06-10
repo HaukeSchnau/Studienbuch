@@ -149,6 +149,7 @@ export const createBase = (basePath: string) => {
 
   app.onError((err, c) => {
     appLogger.error(
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- TODO
       `Error while handling request: ${c.req.method} ${c.req.path}: ${err.message}\n${err.stack}\n${err.cause}\n${err.name}`,
     );
 

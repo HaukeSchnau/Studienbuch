@@ -24,6 +24,7 @@ export namespace Result {
     return {
       _tag: "err",
       error,
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- TODO
       message: message ?? `${error}`,
     };
   }

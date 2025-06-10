@@ -97,7 +97,7 @@ const parseLocalEvent = (
     return undefined;
   }
 
-  return {  
+  return {
     event: event.data,
     metadata: {
       localStatus: row.localStatus,
@@ -196,9 +196,11 @@ export const applyLocallyExistingEvent = async <TEventName extends EventName>(
       .update(tables.events)
       .set({
         localStatus: "error",
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- TODO
         applyError: `${e}`,
       })
       .where(eq(tables.events.id, event.id));
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- TODO
     return Result.err("UNEXPECTED" as const, `${e}`);
   }
   await db
