@@ -116,7 +116,6 @@
         "expo-crypto": "~14.1.4",
         "expo-dev-client": "~5.1.8",
         "expo-device": "~7.1.4",
-        "expo-drizzle-studio-plugin": "^0.1.2",
         "expo-font": "~13.3.1",
         "expo-image": "~2.1.6",
         "expo-linking": "~7.1.4",
@@ -126,6 +125,7 @@
         "expo-secure-store": "~14.2.3",
         "expo-splash-screen": "~0.30.8",
         "expo-sqlite": "~15.2.9",
+        "expo-sqlite-devtools": "^0.0.2",
         "expo-status-bar": "~2.2.3",
         "expo-web-browser": "~14.1.6",
         "nativewind": "~4.1.23",
@@ -2340,8 +2340,6 @@
 
     "expo-device": ["expo-device@7.1.4", "", { "dependencies": { "ua-parser-js": "^0.7.33" }, "peerDependencies": { "expo": "*" } }, "sha512-HS04IiE1Fy0FRjBLurr9e5A6yj3kbmQB+2jCZvbSGpsjBnCLdSk/LCii4f5VFhPIBWJLyYuN5QqJyEAw6BcS4Q=="],
 
-    "expo-drizzle-studio-plugin": ["expo-drizzle-studio-plugin@0.1.2", "", { "dependencies": { "expo-sqlite": "^15.0.3" }, "peerDependencies": { "expo": "*" } }, "sha512-lodzNOOhSPpnd62PNTM7kWdWnQQn+j3WSWC4R/ehbYXRwZK1kvM9fjz50MnoMGrOcFDL9RtzY1zdXF/flrT3Gw=="],
-
     "expo-file-system": ["expo-file-system@18.1.10", "", { "peerDependencies": { "expo": "*", "react-native": "*" } }, "sha512-SyaWg+HitScLuyEeSG9gMSDT0hIxbM9jiZjSBP9l9zMnwZjmQwsusE6+7qGiddxJzdOhTP4YGUfvEzeeS0YL3Q=="],
 
     "expo-font": ["expo-font@13.3.1", "", { "dependencies": { "fontfaceobserver": "^2.1.0" }, "peerDependencies": { "expo": "*", "react": "*" } }, "sha512-d+xrHYvSM9WB42wj8vP9OOFWyxed5R1evphfDb6zYBmC1dA9Hf89FpT7TNFtj2Bk3clTnpmVqQTCYbbA2P3CLg=="],
@@ -2373,6 +2371,8 @@
     "expo-splash-screen": ["expo-splash-screen@0.30.8", "", { "dependencies": { "@expo/prebuild-config": "^9.0.5" }, "peerDependencies": { "expo": "*" } }, "sha512-2eh+uA543brfeG5HILXmtNKA7E2/pfywKzNumzy3Ef6OtDjYy6zJUGNSbhnZRbVEjUZo3/QNRs0JRBfY80okZg=="],
 
     "expo-sqlite": ["expo-sqlite@15.2.10", "", { "dependencies": { "await-lock": "^2.2.2" }, "peerDependencies": { "expo": "*", "react": "*", "react-native": "*" } }, "sha512-F7IYvXSOh3vIqhRkmaUvIP595Oqh8888CV5wpys94/437LkMYAOzMnqoscr+TCCmcO9XWURsMbBGsCVPHanlYQ=="],
+
+    "expo-sqlite-devtools": ["expo-sqlite-devtools@0.0.2", "", { "dependencies": { "expo-sqlite": "^15.0.3" }, "peerDependencies": { "expo": "*" } }, "sha512-nfKM/yzsP+ojXpt7alk8DBN7phD3vucFvoo6XD/gsJlLMYeC8RrnIRVgaqolrBfmDsEC0SW+dqzAUxwe+eLddw=="],
 
     "expo-status-bar": ["expo-status-bar@2.2.3", "", { "dependencies": { "react-native-edge-to-edge": "1.6.0", "react-native-is-edge-to-edge": "^1.1.6" }, "peerDependencies": { "react": "*", "react-native": "*" } }, "sha512-+c8R3AESBoduunxTJ8353SqKAKpxL6DvcD8VKBuh81zzJyUUbfB4CVjr1GufSJEKsMzNPXZU+HJwXx7Xh7lx8Q=="],
 

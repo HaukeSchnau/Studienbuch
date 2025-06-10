@@ -25,7 +25,15 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
     },
   },
   "teacher.joined": {
-    verify: () => Promise.resolve(undefined),
+    verify: async ({ data }, { db }) => {
+      const person = await db.query.persons.findFirst({
+        where: eq(tables.persons.id, data.personId),
+      });
+
+      if (person) {
+        return "EXISTS";
+      }
+    },
     apply: async ({ data }, { db }) => {
       await db.insert(tables.persons).values({
         id: data.personId,
@@ -37,7 +45,15 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
     },
   },
   "holiday.created": {
-    verify: () => Promise.resolve(undefined),
+    verify: async ({ data }, { db }) => {
+      const holiday = await db.query.holidays.findFirst({
+        where: eq(tables.holidays.name, data.name),
+      });
+
+      if (holiday) {
+        return "EXISTS";
+      }
+    },
     apply: async ({ data }, { db }) => {
       await db.insert(tables.holidays).values({
         name: data.name,
@@ -110,7 +126,18 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
     },
   },
   "year.started": {
-    verify: () => Promise.resolve(undefined),
+    verify: async ({ data }, { db }) => {
+      const year = await db.query.years.findFirst({
+        where: and(
+          eq(tables.years.startYear, data.startYear),
+          eq(tables.years.school, data.school),
+        ),
+      });
+
+      if (year) {
+        return "EXISTS";
+      }
+    },
     apply: async ({ data }, { db }) => {
       await db.insert(tables.years).values({
         name: data.name,
@@ -138,7 +165,15 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
     },
   },
   "courses.created": {
-    verify: () => Promise.resolve(undefined),
+    verify: async ({ data }, { db }) => {
+      const course = await db.query.courses.findFirst({
+        where: eq(tables.courses.id, data.id),
+      });
+
+      if (course) {
+        return "EXISTS";
+      }
+    },
     apply: async ({ data }, { db }) => {
       await db.insert(tables.courses).values({
         id: data.id,
@@ -169,7 +204,15 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
     },
   },
   "timetable.entryCreated": {
-    verify: () => Promise.resolve(undefined),
+    verify: async ({ data }, { db }) => {
+      const timetableEntry = await db.query.timetableEntries.findFirst({
+        where: and(eq(tables.timetableEntries.course, data.course)),
+      });
+
+      if (timetableEntry) {
+        return "EXISTS";
+      }
+    },
     apply: async ({ data }, { db }) => {
       await db.insert(tables.timetableEntries).values({
         start: data.start,

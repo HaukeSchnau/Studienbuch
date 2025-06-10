@@ -25,7 +25,7 @@ interface EventMetadata {
   publishStatus: "pending" | "error" | "success";
 }
 
-// Ingest is for locally occuring events. They are stored locally,
+// Ingest is for locally occuring events. They are stored locally and are then pushed to the mutation queue, which sends them to the server.
 export const ingest = async <TEventName extends EventName>(
   eventName: TEventName,
   userId: string,
@@ -43,19 +43,27 @@ export const ingest = async <TEventName extends EventName>(
   >;
 
   // First: Save to local events table
-  await db.insert(tables.events).values({
-    type: eventName,
-    id: eventDataWithName.id,
-    data: superjson.stringify(eventDataWithName.data),
-    timestamp: eventDataWithName.timestamp,
-    // isAppliedLocally: false,
-    // isPublished: localOnly,
-    // isFailed: false,
-    publishStatus: localOnly ? "success" : "pending",
-    localStatus: "pending",
-  });
+  await db
+    .insert(tables.events)
+    .values({
+      type: eventName,
+      id: eventDataWithName.id,
+      data: superjson.stringify(eventDataWithName.data),
+      timestamp: eventDataWithName.timestamp,
+      // isAppliedLocally: false,
+      // isPublished: localOnly,
+      // isFailed: false,
+      publishStatus: localOnly ? "success" : "pending",
+      localStatus: "pending",
+    })
+    .onConflictDoUpdate({
+      target: [tables.events.id],
+      set: {
+        publishStatus: "success",
+      },
+    });
 
-  const result = await ingestExistingEvent<TEventName>(
+  const result = await applyLocallyExistingEvent<TEventName>(
     eventDataWithName.id,
     userId,
   );
@@ -85,11 +93,11 @@ const parseLocalEvent = (
   });
 
   if (!event.success) {
-    console.error("error parsing event", row, event.error);
+    console.error("error parsing local event", row, event.error);
     return undefined;
   }
 
-  return {
+  return {  
     event: event.data,
     metadata: {
       localStatus: row.localStatus,
@@ -126,7 +134,7 @@ const getEventFromDb = async (id: string): Promise<LocalEvent | undefined> => {
 };
 
 // Apply an event that is already in the local event log
-export const ingestExistingEvent = async <TEventName extends EventName>(
+export const applyLocallyExistingEvent = async <TEventName extends EventName>(
   id: string,
   userId: string,
 ) => {
@@ -153,7 +161,7 @@ export const ingestExistingEvent = async <TEventName extends EventName>(
     // in order to get the missing events, and then verify again. If it still fails, we return the error
     // as it's not possible to apply the event locally without the missing events
     const res = await publishEvent(event);
-    if (Result.isErr(res) && res.error !== "CONFLICT") {
+    if (Result.isErr(res)) {
       console.warn(
         "error publishing event while trying to receive additional events",
         event,
@@ -161,6 +169,14 @@ export const ingestExistingEvent = async <TEventName extends EventName>(
       );
       return Result.err(error);
     }
+
+    console.log(`Event ${event.id}: Successfully published event.`);
+    await db
+      .update(tables.events)
+      .set({
+        publishStatus: "success",
+      })
+      .where(eq(tables.events.id, event.id));
 
     error = (await applicator.verify(event, {
       initiatorUserId: userId,
@@ -175,8 +191,15 @@ export const ingestExistingEvent = async <TEventName extends EventName>(
   try {
     await applicator.apply(event);
   } catch (e) {
-    console.error(`Error while applying:`, e);
-    return Result.err("UNEXPECTED" as const);
+    console.error("Error while applying", e);
+    await db
+      .update(tables.events)
+      .set({
+        localStatus: "error",
+        applyError: `${e}`,
+      })
+      .where(eq(tables.events.id, event.id));
+    return Result.err("UNEXPECTED" as const, `${e}`);
   }
   await db
     .update(tables.events)
@@ -186,7 +209,7 @@ export const ingestExistingEvent = async <TEventName extends EventName>(
   return Result.ok(undefined);
 };
 
-// useIngest is used to ingest locally ocurring events
+// useIngest is used to ingest locally ocurring events. It wraps the ingest function in a mutation hook.
 export const useIngest = <TEventName extends EventName>(
   eventName: TEventName,
   options?: Omit<
@@ -198,28 +221,10 @@ export const useIngest = <TEventName extends EventName>(
     >,
     "mutationFn"
   >,
-  connectionRequired?: boolean,
 ) => {
   const { userId } = useRequiredAuthenticatedSession();
 
-  return useIngestMutation(eventName, userId, options, connectionRequired);
-};
-
-const useIngestMutation = <TEventName extends EventName>(
-  eventName: TEventName,
-  userId: string,
-  options?: Omit<
-    UseMutationOptions<
-      void,
-      EventErrorsByName<TEventName>,
-      EventDataByName<TEventName>,
-      unknown
-    >,
-    "mutationFn"
-  >,
-  connectionRequired?: boolean,
-) =>
-  useMutation<
+  return useMutation<
     void,
     EventErrorsByName<TEventName>,
     EventDataByName<TEventName>,
@@ -227,8 +232,9 @@ const useIngestMutation = <TEventName extends EventName>(
   >({
     ...options,
     mutationFn: async (data) => {
-      const result = await ingest(eventName, userId, data, connectionRequired);
+      const result = await ingest(eventName, userId, data);
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       if (Result.isErr(result)) throw result.error;
     },
   });
+};

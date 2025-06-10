@@ -10,7 +10,7 @@ import { db } from "~/db/client";
 import { publishEvent } from "../api";
 import { useStorage } from "../storage";
 import type { LocalEvent } from "./ingest";
-import { getEventsToBePushed, ingestExistingEvent } from "./ingest";
+import { applyLocallyExistingEvent, getEventsToBePushed } from "./ingest";
 import { useRemoteEventStream } from "./use-event-stream";
 
 interface MutationStore {
@@ -23,7 +23,22 @@ interface MutationStore {
 export const useMutationStore = create<MutationStore>((set) => ({
   queue: [],
   initialize: (muts) => set({ queue: muts }),
-  push: (mut) => set((state) => ({ queue: [...state.queue, mut] })),
+  push: (mut) =>
+    set((state) => {
+      const insertIndex = state.queue.findIndex(
+        (existing) => existing.event.timestamp > mut.event.timestamp,
+      );
+      if (insertIndex === -1) {
+        return { queue: [...state.queue, mut] };
+      }
+      return {
+        queue: [
+          ...state.queue.slice(0, insertIndex),
+          mut,
+          ...state.queue.slice(insertIndex),
+        ],
+      };
+    }),
   pop: () => set((state) => ({ queue: state.queue.slice(1) })),
 }));
 
@@ -43,14 +58,17 @@ export const MutationManager = ({
   useEffect(() => {
     console.log("Initializing local events");
 
-    // Initialize the queue with events that are not done yet
+    // Initialize the queue with events that are not done (either not published or not applied locally) yet
     getEventsToBePushed()
       .then((muts) => {
         console.log("Initialized local events to be pushed", muts);
         initialize(muts);
       })
       .catch((reason) =>
-        console.error("error while finding mutations", reason),
+        console.error(
+          "error while finding local events to be pushed during startup",
+          reason,
+        ),
       );
   }, [initialize]);
 
@@ -59,8 +77,8 @@ export const MutationManager = ({
   const { mutate: handle } = useMutation({
     retry: true,
     onError: (error, { event }) => {
-      console.error(
-        `Event ${event.id}: Error while handling. Will retry. Error: ${error}`,
+      console.warn(
+        `Event ${event.id}: Recoverable error while handling. Will retry. Error: ${error}`,
       );
     },
     mutationFn: async ({ event, metadata }: LocalEvent) => {
@@ -72,7 +90,8 @@ export const MutationManager = ({
       }
 
       if (metadata.localStatus === "pending") {
-        const res = await ingestExistingEvent(event.id, session.user);
+        console.log(`Event ${event.id}: Applying locally.`);
+        const res = await applyLocallyExistingEvent(event.id, session.user);
         if (Result.isErr(res)) {
           console.error(
             `Event ${event.id}: Failed to handle locally. Error: ${res.error}`,
@@ -81,6 +100,7 @@ export const MutationManager = ({
             .update(tables.events)
             .set({
               localStatus: "error",
+              applyError: res.message,
             })
             .where(eq(tables.events.id, event.id));
         } else {
@@ -95,9 +115,10 @@ export const MutationManager = ({
       }
 
       if (metadata.publishStatus === "pending") {
+        console.log(`Event ${event.id}: Publishing event.`);
         const res = await publishEvent(event);
 
-        if (Result.isErr(res) && res.error !== "CONFLICT") {
+        if (Result.isErr(res)) {
           if (res.error === "NETWORK_NOT_REACHABLE") {
             // Retry by throwing error
             throw new Error("NETWORK_NOT_REACHABLE");
@@ -133,15 +154,13 @@ export const MutationManager = ({
       }
 
       console.log(`Event ${event.id}: Successfully handled.`);
-
       pop();
     },
   });
 
+  // Whenever the head changes, handle the event
   useEffect(() => {
-    if (head) {
-      handle(head);
-    }
+    if (head) handle(head);
   }, [handle, head]);
 
   return children;

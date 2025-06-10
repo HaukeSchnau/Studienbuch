@@ -15,6 +15,13 @@
       "when": 1748010067906,
       "tag": "0001_talented_arclight",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1748976815278,
+      "tag": "0002_brown_cable",
+      "breakpoints": true
     }
   ]
 }

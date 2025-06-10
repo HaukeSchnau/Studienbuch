@@ -15,9 +15,7 @@ const getEventStream = (sessionToken?: string) => {
     headers: {
       "x-session": sessionToken
         ? {
-            toString: function () {
-              return sessionToken;
-            },
+            toString: () => sessionToken,
           }
         : undefined,
     },
@@ -48,33 +46,46 @@ export const useRemoteEventStream = ({
         return;
       }
       const e = deserializeEvent(event.data);
-      console.log("RECEIVED REMOTE EVENT >>>", e.data?.type);
+      if (!e.success) {
+        console.error(
+          "Failed to parse event. Error: ",
+          e.error,
+          "Event: ",
+          event.data,
+        );
+        return;
+      }
 
-      if (e.success) {
-        // First: Save to local events table
-        await db.insert(tables.events).values({
+      console.log("RECEIVED REMOTE EVENT >>>", e.data.type);
+
+      // First: Save to local events table
+      const [row] = await db
+        .insert(tables.events)
+        .values({
           type: e.data.type,
           id: e.data.id,
           data: superjson.stringify(e.data.data),
           timestamp: e.data.timestamp,
           localStatus: "pending",
           publishStatus: "success",
-        });
-
-        onEvent({
-          event: e.data,
-          metadata: {
-            localStatus: "pending",
+        })
+        .onConflictDoUpdate({
+          target: [tables.events.id],
+          set: {
             publishStatus: "success",
           },
-        });
-      } else {
-        console.error("Failed to parse event", e.error);
-      }
+        })
+        .returning();
+
+      onEvent({
+        event: e.data,
+        metadata: {
+          localStatus: row?.localStatus ?? "pending",
+          publishStatus: row?.publishStatus ?? "success",
+        },
+      });
     });
 
-    return () => {
-      eventStream.close();
-    };
+    return () => eventStream.close();
   }, [sessionToken, retries, onEvent]);
 };

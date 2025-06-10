@@ -36,7 +36,7 @@ export const TextField = ({ label, placeholder, error, ...props }: Props) => {
 
   return (
     <View>
-      <View>
+      <View className="relative h-16">
         <TextInput
           {...props}
           placeholder={isActive ? placeholder : ""}

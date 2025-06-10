@@ -143,7 +143,17 @@ export const createBase = (basePath: string) => {
       return c.text("Failed to ingest event");
     }
 
-    return c.status(200);
+    c.status(200);
+    return c.text("Event ingested");
+  });
+
+  app.onError((err, c) => {
+    appLogger.error(
+      `Error while handling request: ${c.req.method} ${c.req.path}: ${err.message}\n${err.stack}\n${err.cause}\n${err.name}`,
+    );
+
+    c.status(500);
+    return c.text("Internal server error");
   });
 
   return app;

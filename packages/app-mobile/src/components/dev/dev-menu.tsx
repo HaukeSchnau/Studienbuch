@@ -1,5 +1,7 @@
 import { registerDevMenuItems } from "expo-dev-client";
 import { router } from "expo-router";
+import { expoDb } from "~/db/client";
+import { useSQLiteDevTools } from "expo-sqlite-devtools";
 
 void registerDevMenuItems([
   {
@@ -16,6 +18,8 @@ export const DevTools = () => {
   // const queryClient = useQueryClient();
 
   // useReactNavigationDevTools(navigationRef);
+
+  useSQLiteDevTools(expoDb);
 
   // useDrizzleStudio(expoDb);
   // useReactQueryDevTools(queryClient);

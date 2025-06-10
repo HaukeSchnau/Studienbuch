@@ -184,7 +184,7 @@ export const DomainEvent = discriminatedUnion("type", [
       duration: number(),
       rooms: array(string()),
     }),
-    errors: virtual(["NOT_ALLOWED", "COURSE_NOT_FOUND"]),
+    errors: virtual(["NOT_ALLOWED", "COURSE_NOT_FOUND", "EXISTS"]),
   }),
   object({
     type: literal("org.timetable.substituted"),

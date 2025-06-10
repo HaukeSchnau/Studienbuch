@@ -15,4 +15,5 @@ export const events = sqliteTable("events", {
   timestamp: timestamp("timestamp").notNull(),
   publishStatus: eventStatus("publish_status").notNull(),
   localStatus: eventStatus("local_status").notNull(),
+  applyError: text("apply_error"),
 });

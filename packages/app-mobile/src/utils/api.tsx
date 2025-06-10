@@ -1,16 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
-import { eq } from "drizzle-orm";
 import { useState } from "react";
 import superjson from "superjson";
 
 import type { AppRouter } from "@stu/api";
 import type { Event } from "@stu/lib";
 import { Result } from "@stu/lib";
-import * as tables from "@stu/student/schema";
 
-import { db } from "~/db/client";
 import { getBaseUrl } from "./base-url";
 import { getStorage } from "./storage";
 
@@ -34,13 +31,15 @@ export const buildHeaders = (sessionToken?: string) => {
   return headers;
 };
 
+/**
+ * Publish an event to the server.
+ * @param event - The event to publish. It must already be persisted in the local database.
+ * @returns A result indicating success or failure.
+ */
 export const publishEvent = async (
   event: Omit<Event, "errors">,
 ): Promise<
-  Result<
-    undefined,
-    "CONFLICT" | "NETWORK_NOT_REACHABLE" | "INVALID_RESPONSE" | Response
-  >
+  Result<undefined, "NETWORK_NOT_REACHABLE" | "INVALID_RESPONSE" | Response>
 > => {
   console.log("publishing event");
   const headers = getHeaders();
@@ -53,36 +52,15 @@ export const publishEvent = async (
       headers: Object.fromEntries(headers),
     });
     if (response.status === 409) {
-      await db
-        .update(tables.events)
-        .set({
-          publishStatus: "success",
-        })
-        .where(eq(tables.events.id, event.id));
-
-      return Result.err("CONFLICT" as const);
+      return Result.ok(undefined);
     }
 
     if (response.status !== 200) {
-      // await db
-      //   .update(tables.events)
-      //   .set({
-      //     isFailed: true,
-      //     isPublished: true,
-      //   })
-      //   .where(eq(tables.events.id, event.id));
       return Result.err(response);
     }
 
     const rtext = await response.text();
     console.log(rtext);
-
-    await db
-      .update(tables.events)
-      .set({
-        publishStatus: "success",
-      })
-      .where(eq(tables.events.id, event.id));
 
     return Result.ok(undefined);
   } catch (e) {

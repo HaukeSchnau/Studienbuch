@@ -10,6 +10,7 @@ export namespace Result {
   export interface Err<E> {
     _tag: "err";
     error: E;
+    message: string;
   }
 
   export function ok<T>(value: T): Ok<T> {
@@ -19,10 +20,11 @@ export namespace Result {
     };
   }
 
-  export function err<E>(error: E): Err<E> {
+  export function err<E>(error: E, message?: string): Err<E> {
     return {
       _tag: "err",
       error,
+      message: message ?? `${error}`,
     };
   }
 
