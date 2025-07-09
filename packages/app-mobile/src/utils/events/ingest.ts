@@ -30,7 +30,6 @@ export const ingest = async <TEventName extends EventName>(
   eventName: TEventName,
   userId: string,
   data: EventDataByName<TEventName>,
-  localOnly = false,
 ): Promise<Result<undefined, EventErrorsByName<TEventName>>> => {
   const eventDataWithName = {
     data,
@@ -53,7 +52,7 @@ export const ingest = async <TEventName extends EventName>(
       // isAppliedLocally: false,
       // isPublished: localOnly,
       // isFailed: false,
-      publishStatus: localOnly ? "success" : "pending",
+      publishStatus: "pending",
       localStatus: "pending",
     })
     .onConflictDoUpdate({

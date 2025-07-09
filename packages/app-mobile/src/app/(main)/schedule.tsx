@@ -1,3 +1,3 @@
-export default function Schedule() {
-  return <></>;
-}
+import { SchedulePage } from "~/features/schedule/schedule.page";
+
+export default SchedulePage;

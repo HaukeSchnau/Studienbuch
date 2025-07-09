@@ -206,7 +206,10 @@ export const orgApplicators: NamespaceEventApplicators<"org", Extra> = {
   "timetable.entryCreated": {
     verify: async ({ data }, { db }) => {
       const timetableEntry = await db.query.timetableEntries.findFirst({
-        where: and(eq(tables.timetableEntries.course, data.course)),
+        where: and(
+          eq(tables.timetableEntries.course, data.course),
+          eq(tables.timetableEntries.start, data.start),
+        ),
       });
 
       if (timetableEntry) {
