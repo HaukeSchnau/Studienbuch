@@ -1,91 +1,63 @@
-import { and, eq } from "drizzle-orm";
+import type { DomainEvent } from "@stu/lib";
+import { StudentRepository as StudentRepo } from "./student.repo";
 
-import type { NamespaceEventApplicators } from "@stu/lib";
+import type { NamespaceApplicatorMap } from "@groundswell/core";
+import { ValidationError } from "@groundswell/core";
+import type { Database } from "../database";
+import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
+import type { GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
+import { Effect } from "effect";
 
-import * as tables from "../schema";
-import type { Extra } from "./types";
+const failIfTrue = (message: string) =>
+  Effect.flatMap((bool) => (bool ? Effect.fail(new ValidationError({ cause: message })) : Effect.void));
 
-export const studentApplicators: NamespaceEventApplicators<"student", Extra> = {
+export const studentApplicators: NamespaceApplicatorMap<
+  DomainEvent,
+  "student",
+  DatabaseError<GenericSqliteError>,
+  Database | StudentRepo
+> = {
   joined: {
-    verify: async ({ data }, { db, initiatorUserId }) => {
-      if (initiatorUserId !== data.studentId) {
-        return "NOT_ALLOWED";
+    verify: Effect.fn(function* (event, { initiatorId }) {
+      if (initiatorId !== event.data.studentId) {
+        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED" }));
       }
 
-      const cls = await db
-        .select()
-        .from(tables.classes)
-        .where(
-          and(
-            eq(tables.classes.identifierInYear, data.class.identifier),
-            eq(tables.classes.startYear, data.class.startYear),
-            eq(tables.classes.school, data.school),
-          ),
-        );
+      const repo = yield* StudentRepo;
+      const classExists = yield* repo.doesClassExist({
+        identifier: event.data.class.identifier,
+        startYear: event.data.class.startYear,
+        school: event.data.school,
+      });
 
-      console.log(data);
-
-      if (cls.length === 0) {
-        return "INVALID_CLASS";
+      if (!classExists) {
+        return yield* Effect.fail(new ValidationError({ cause: "INVALID_CLASS" }));
       }
-    },
-    apply: async ({ data }, { db }) => {
-      const firstName = data.name.split(" ")[0] ?? "";
-      const lastName = data.name.split(" ").slice(1).join(" ");
-
-      await db
-        .insert(tables.persons)
-        .values({
-          id: data.studentId,
-          firstName,
-          lastName,
-        })
-        .onConflictDoUpdate({
-          target: [tables.persons.id],
-          set: {
-            firstName,
-            lastName,
-          },
-        });
-
-      await db
-        .insert(tables.students)
-        .values({
-          person: data.studentId,
-          school: data.school,
-          startYear: data.class.startYear,
-          classIdentifier: data.class.identifier,
-          isOfAge: data.isOfAge,
-        })
-        .onConflictDoUpdate({
-          target: [tables.students.person],
-          set: {
-            school: data.school,
-            startYear: data.class.startYear,
-            classIdentifier: data.class.identifier,
-            isOfAge: data.isOfAge,
-          },
-        });
-    },
+    }),
+    apply: (event) =>
+      StudentRepo.use((repo) =>
+        repo.createStudent({
+          studentId: event.data.studentId,
+          name: event.data.name,
+          school: event.data.school,
+          class: event.data.class,
+          isOfAge: event.data.isOfAge,
+        }),
+      ),
   },
-  courseAssigned: {
-    verify: async ({ data }, { db }) => {
-      const course = await db
-        .select()
-        .from(tables.courses)
-        .where(eq(tables.courses.id, data.courseId));
 
-      if (course.length === 0) {
-        return "INVALID_COURSE";
-      }
-    },
-    apply: async ({ data }, { db }) => {
-      await db
-        .update(tables.courses)
-        .set({
-          isMember: true,
-        })
-        .where(eq(tables.courses.id, data.courseId));
-    },
+  courseAssigned: {
+    verify: (event) =>
+      StudentRepo.use((repo) =>
+        repo.doesCourseExist({
+          courseId: event.data.courseId,
+        }),
+      ).pipe(failIfTrue("INVALID_COURSE")),
+    apply: (event) =>
+      StudentRepo.use((repo) =>
+        repo.assignCourse({
+          courseId: event.data.courseId,
+        }),
+      ),
   },
 };

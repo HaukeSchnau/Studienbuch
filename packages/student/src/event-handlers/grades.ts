@@ -1,146 +1,95 @@
-import { and, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
+import { StudentRepository, type DomainEvent } from "@stu/lib";
 
-import type { NamespaceEventApplicators } from "@stu/lib";
+import type { NamespaceApplicatorMap } from "@groundswell/core";
+import type { Database } from "../database";
+import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
+import type { GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
+import { Effect } from "effect";
+import { GradeRepository } from "./grades.repo";
 
-import * as tables from "../schema";
-import type { Extra } from "./types";
-
-export const gradeApplicators: NamespaceEventApplicators<"grades", Extra> = {
+export const gradeApplicators: NamespaceApplicatorMap<
+  DomainEvent,
+  "grades",
+  DatabaseError<GenericSqliteError>,
+  Database | StudentRepository | GradeRepository
+> = {
   currentGradeSet: {
-    verify: () => Promise.resolve(undefined),
-    apply: async (event, { db, user }) => {
-      await db
-        .delete(tables.grades)
-        .where(
-          and(
-            eq(tables.grades.course, event.data.courseId),
-            eq(tables.grades.type, event.data.type),
-            or(
-              isNull(tables.grades.teacherSignature),
-              isNull(tables.grades.parentSignature),
-            ),
-          ),
-        );
+    verify: () => Effect.void,
+    apply: Effect.fn(function* (event, { initiatorId }) {
+      const student = yield* StudentRepository.use((repo) => repo.getStudent(initiatorId));
+      const repo = yield* GradeRepository;
 
-      const latestGrade = await db.query.grades.findFirst({
-        where: and(
-          eq(tables.grades.course, event.data.courseId),
-          eq(tables.grades.type, event.data.type),
-        ),
-        orderBy: desc(tables.grades.date),
-      });
-
-      if (
-        latestGrade &&
-        latestGrade.date.getTime() >= event.data.date.getTime()
-      ) {
-        throw new Error("You cannot enter grades for a date in the past");
-      }
-
-      await db.insert(tables.grades).values({
-        course: event.data.courseId,
+      yield* repo.setCurrentGrade({
+        courseId: event.data.courseId,
         date: event.data.date,
         result: event.data.result,
         type: event.data.type,
-        parentSignature: user.isOfAge ? "NOT_REQUIRED" : null,
+        isSignatureRequired: !student.isOfAge,
       });
-    },
+    }),
   },
 
   writtenGradeRecorded: {
-    verify: () => Promise.resolve(undefined),
-    apply: async (event, { db, user }) => {
-      await db.insert(tables.grades).values({
-        course: event.data.courseId,
+    verify: () => Effect.void,
+    apply: Effect.fn(function* (event, { initiatorId }) {
+      const student = yield* StudentRepository.use((repo) => repo.getStudent(initiatorId));
+      const repo = yield* GradeRepository;
+
+      yield* repo.recordWrittenGrade({
+        courseId: event.data.courseId,
         date: event.data.date,
         result: event.data.result,
-        type: "WRITTEN",
-        parentSignature: user.isOfAge ? "NOT_REQUIRED" : null,
+        isSignatureRequired: !student.isOfAge,
       });
-    },
+    }),
   },
 
   teacherApproved: {
-    verify: () => Promise.resolve(undefined),
-    apply: async (event, { db }) => {
-      await db
-        .update(tables.grades)
-        .set({
-          teacherSignature: event.data.signature,
-        })
-        .where(
-          and(
-            eq(tables.grades.course, event.data.course),
-            eq(tables.grades.date, event.data.date),
-            eq(tables.grades.type, event.data.type),
-          ),
-        );
-    },
+    verify: () => Effect.void,
+    apply: (event) =>
+      GradeRepository.use((repo) =>
+        repo.setTeacherSignature({
+          course: event.data.course,
+          date: event.data.date,
+          type: event.data.type,
+          signature: event.data.signature,
+        }),
+      ),
   },
 
   parentApproved: {
-    verify: () => Promise.resolve(undefined),
-    apply: async (event, { db }) => {
-      await db
-        .update(tables.grades)
-        .set({
-          parentSignature: event.data.signature,
-        })
-        .where(
-          and(
-            eq(tables.grades.course, event.data.course),
-            eq(tables.grades.date, event.data.date),
-            eq(tables.grades.type, event.data.type),
-          ),
-        );
-    },
+    verify: () => Effect.void,
+    apply: (event) =>
+      GradeRepository.use((repo) =>
+        repo.setParentSignature({
+          course: event.data.course,
+          date: event.data.date,
+          type: event.data.type,
+          signature: event.data.signature,
+        }),
+      ),
   },
 
   latestRestored: {
-    verify: () => Promise.resolve(undefined),
-    apply: async (event, { db }) => {
-      const latestConfirmedGrade = await db.query.grades.findFirst({
-        where: and(
-          eq(tables.grades.course, event.data.course),
-          eq(tables.grades.type, event.data.type),
-          isNotNull(tables.grades.teacherSignature),
-          isNotNull(tables.grades.parentSignature),
-        ),
-        orderBy: desc(tables.grades.date),
-      });
-
-      if (!latestConfirmedGrade) {
-        throw new Error("No grades to restore");
-      }
-
-      await db
-        .delete(tables.grades)
-        .where(
-          and(
-            eq(tables.grades.course, event.data.course),
-            eq(tables.grades.type, event.data.type),
-            gt(tables.grades.date, latestConfirmedGrade.date),
-          ),
-        );
-    },
+    verify: () => Effect.void,
+    apply: (event) =>
+      GradeRepository.use((repo) =>
+        repo.restoreLatest({
+          course: event.data.course,
+          type: event.data.type,
+        }),
+      ),
   },
 
   discarded: {
-    verify: () => Promise.resolve(undefined),
-    apply: async (event, { db }) => {
-      await db
-        .delete(tables.grades)
-        .where(
-          and(
-            eq(tables.grades.course, event.data.course),
-            eq(tables.grades.type, event.data.type),
-            eq(tables.grades.date, event.data.date),
-            or(
-              isNull(tables.grades.teacherSignature),
-              isNull(tables.grades.parentSignature),
-            ),
-          ),
-        );
-    },
+    verify: () => Effect.void,
+    apply: (event) =>
+      GradeRepository.use((repo) =>
+        repo.discardGrade({
+          course: event.data.course,
+          date: event.data.date,
+          type: event.data.type,
+        }),
+      ),
   },
 };

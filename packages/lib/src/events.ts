@@ -1,122 +1,104 @@
-import {
-  array,
-  boolean,
-  date,
-  discriminatedUnion,
-  literal,
-  number,
-  object,
-  string,
-  z,
-} from "zod";
+import { array, boolean, date, discriminatedUnion, literal, number, object, string, z } from "zod";
 
 import { SUBJECT_IDS } from "./courses";
 import { GRADE_TYPES } from "./grades";
 import type { SchoolId, StateCode } from "./schools";
 import { SCHOOL_IDS, SEMESTER_TYPES, STATE_CODES } from "./schools";
 import { SALUTATIONS } from "./users";
+import { createDomainEvent as event, createEventUnion } from "@groundswell/zod-helpers";
 
-const virtual = <const T>(type: T) =>
-  z
-    .any()
-    .optional()
-    .transform(() => type);
-
-export const DomainEvent = discriminatedUnion("type", [
-  object({
-    type: literal("absence.recorded"),
-    data: object({
+export const DomainEvent = createEventUnion([
+  event(
+    "absence.recorded",
+    object({
       date: date(),
       reason: string(),
       courseIds: array(string().uuid()).min(1),
     }),
-  }),
-  object({
-    type: literal("absence.parentApproved"),
-    data: object({
+  ),
+  event(
+    "absence.parentApproved",
+    object({
       date: date(),
       signature: string(),
     }),
-  }),
-  object({
-    type: literal("absence.teacherApproved"),
-    data: object({
+  ),
+  event(
+    "absence.teacherApproved",
+    object({
       date: date(),
       courseId: string().uuid(),
       signature: string(),
     }),
-  }),
-  object({
-    type: literal("absence.discarded"),
-    data: object({
+  ),
+  event(
+    "absence.discarded",
+    object({
       date: date(),
       courseIds: array(string().uuid()),
     }),
-  }),
-
-  object({
-    type: literal("grades.currentGradeSet"),
-    data: object({
+  ),
+  event(
+    "grades.currentGradeSet",
+    object({
       courseId: string().uuid(),
       date: date(),
       result: number(),
       type: z.enum(GRADE_TYPES),
     }),
-  }),
-  object({
-    type: literal("grades.writtenGradeRecorded"),
-    data: object({
+  ),
+  event(
+    "grades.writtenGradeRecorded",
+    object({
       courseId: string(),
       date: date(),
       result: number(),
     }),
-  }),
-  object({
-    type: literal("grades.teacherApproved"),
-    data: object({
+  ),
+  event(
+    "grades.teacherApproved",
+    object({
       date: date(),
       course: string(),
       type: z.enum(GRADE_TYPES),
       signature: string(),
     }),
-  }),
-  object({
-    type: literal("grades.parentApproved"),
-    data: object({
+  ),
+  event(
+    "grades.parentApproved",
+    object({
       date: date(),
       course: string().uuid(),
       type: z.enum(GRADE_TYPES),
       signature: string(),
     }),
-  }),
-  object({
-    type: literal("grades.discarded"),
-    data: object({
+  ),
+  event(
+    "grades.discarded",
+    object({
       course: string().uuid(),
       type: z.enum(GRADE_TYPES),
       date: date(),
     }),
-  }),
-  object({
-    type: literal("grades.latestRestored"),
-    data: object({
+  ),
+  event(
+    "grades.latestRestored",
+    object({
       course: string().uuid(),
       type: z.enum(GRADE_TYPES),
     }),
-  }),
-
-  object({
-    type: literal("org.school.founded"),
-    data: object({
+  ),
+  event(
+    "org.school.founded",
+    object({
       id: z.enum(SCHOOL_IDS),
       name: string(),
       state: z.enum(STATE_CODES),
     }),
-    errors: virtual(["EXISTS", "NOT_ALLOWED"]),
-  }),
-  object({
-    type: literal("org.year.started"),
-    data: object({
+  ),
+  event(
+    "org.year.started",
+    object({
       name: string(),
       startYear: number(),
       graduationYear: number(),
@@ -128,11 +110,10 @@ export const DomainEvent = discriminatedUnion("type", [
         }),
       ),
     }),
-    errors: virtual(["EXISTS", "NOT_ALLOWED"]),
-  }),
-  object({
-    type: literal("org.teacher.joined"),
-    data: object({
+  ),
+  event(
+    "org.teacher.joined",
+    object({
       personId: string().uuid(),
       firstName: string().optional(),
       lastName: string().optional(),
@@ -140,22 +121,20 @@ export const DomainEvent = discriminatedUnion("type", [
       salutation: z.enum(SALUTATIONS).optional(),
       school: z.enum(SCHOOL_IDS),
     }),
-    errors: virtual(["EXISTS", "NOT_ALLOWED"]),
-  }),
-  object({
-    type: literal("org.holiday.created"),
-    data: object({
+  ),
+  event(
+    "org.holiday.created",
+    object({
       name: string(),
       start: date(),
       end: date(),
       state: z.enum(STATE_CODES),
       year: number(),
     }),
-    errors: virtual(["EXISTS", "NOT_ALLOWED"]),
-  }),
-  object({
-    type: literal("org.courses.created"),
-    data: object({
+  ),
+  event(
+    "org.courses.created",
+    object({
       id: string().uuid(),
       name: string(),
       subject: z.enum(SUBJECT_IDS),
@@ -173,70 +152,58 @@ export const DomainEvent = discriminatedUnion("type", [
       ),
       teachers: array(string().uuid()),
     }),
-    errors: virtual(["EXISTS", "CLASS_NOT_FOUND", "NOT_ALLOWED"]),
-  }),
-
-  object({
-    type: literal("org.timetable.entryCreated"),
-    data: object({
+  ),
+  event(
+    "org.timetable.entryCreated",
+    object({
       course: string().uuid(),
       start: date(),
       duration: number(),
       rooms: array(string()),
     }),
-    errors: virtual(["NOT_ALLOWED", "COURSE_NOT_FOUND", "EXISTS"]),
-  }),
-  object({
-    type: literal("org.timetable.substituted"),
-    data: object({
+  ),
+  event(
+    "org.timetable.substituted",
+    object({
       course: string().uuid(),
       start: date(),
       originalTeacher: string().uuid(),
       substitute: string().uuid(),
     }),
-    errors: virtual(["EXISTS", "NOT_ALLOWED"]),
-  }),
-  object({
-    type: literal("org.timetable.canceled"),
-    data: object({
+  ),
+  event(
+    "org.timetable.canceled",
+    object({
       course: string().uuid(),
       start: date(),
       originalTeacher: string().uuid(),
     }),
-    errors: virtual(["EXISTS", "NOT_ALLOWED"]),
-  }),
-  object({
-    type: literal("org.timetable.discarded"),
-    data: object({
+  ),
+  event(
+    "org.timetable.discarded",
+    object({
       course: string().uuid(),
       start: date(),
     }),
-    errors: virtual(["DOES_NOT_EXIST", "NOT_ALLOWED"]),
-  }),
-
-  object({
-    type: literal("auth.licenseGenerated"),
-    data: object({
+  ),
+  event(
+    "auth.licenseGenerated",
+    object({
       licenseKey: string(),
       school: z.enum(SCHOOL_IDS),
       expiryDate: date(),
     }),
-    errors: virtual(["EXISTS", "NOT_ALLOWED"]),
-  }),
-
-  object({
-    type: literal("auth.licenseActivated"),
-    data: object({
+  ),
+  event(
+    "auth.licenseActivated",
+    object({
       userId: string().uuid(),
       licenseKey: string(),
     }),
-    errors: virtual(["EXISTS", "INVALID_LICENSE_KEY"]),
-  }),
-
-  // This causes the user to be subscribed to the year topic
-  object({
-    type: literal("student.joined"),
-    data: object({
+  ),
+  event(
+    "student.joined",
+    object({
       studentId: string().uuid(),
       name: string(),
       school: z.enum(SCHOOL_IDS),
@@ -246,69 +213,26 @@ export const DomainEvent = discriminatedUnion("type", [
         startYear: number(),
       }),
     }),
-    errors: virtual(["NOT_ALLOWED", "INVALID_CLASS"]),
-  }),
-
-  // This causes the user to be subscribed to the course topic
-  object({
-    type: literal("student.courseAssigned"),
-    data: object({
+  ),
+  event(
+    "student.courseAssigned",
+    object({
       studentId: string().uuid(),
       courseId: string().uuid(),
     }),
-    errors: virtual(["ALREADY_ASSIGNED", "NOT_ALLOWED", "INVALID_COURSE"]),
-  }),
+  ),
 ]);
+export type DomainEvent = z.infer<typeof DomainEvent>;
+export type EventName = DomainEvent["type"];
+export const EVENT_TYPES = DomainEvent.options.map((thing) => thing.shape.type.value) as [EventName, ...EventName[]]; // Assure TS that it's non-empty
 
-export const EventMetadata = object({
-  id: string().uuid(),
-  timestamp: date(),
-});
-
-export const NAMESPACES = [
-  "absence",
-  "grades",
-  "org",
-  "student",
-  "auth",
-] as const;
-
-export const Snapshot = discriminatedUnion("type", [
-  object({
-    type: literal("year"),
-    data: object({
-      name: string(),
-      startYear: number(),
-      graduationYear: number(),
-
-      school: object({
-        id: z.enum(SCHOOL_IDS),
-        name: string(),
-        state: z.enum(STATE_CODES),
-      }),
-
-      semesters: array(
-        object({
-          type: z.enum(SEMESTER_TYPES),
-          year: number(),
-          start: date(),
-          end: date(),
-        }),
-      ),
-    }),
-  }),
-]);
-
-export const studentsOfCourse = (courseId: string) =>
-  `students.courses.${courseId}`;
+export const studentsOfCourse = (courseId: string) => `students.courses.${courseId}`;
 
 export const studentsOfYear = (options: {
   school: SchoolId;
   startYear: number;
 }) => `students.schools.${options.school}.years.${options.startYear}`;
 
-export const studentsOfSchool = (school: SchoolId) =>
-  `students.schools.${school}`;
+export const studentsOfSchool = (school: SchoolId) => `students.schools.${school}`;
 
-export const studentsOfState = (stateCode: StateCode) =>
-  `students.states.${stateCode}`;
+export const studentsOfState = (stateCode: StateCode) => `students.states.${stateCode}`;
