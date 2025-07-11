@@ -31,7 +31,7 @@
     "aws-sdk": "^2.1692.0",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
-    "drizzle-orm": "^0.41.0",
+    "drizzle-orm": "^0.44.2",
     "drizzle-zod": "^0.7.1",
     "hono": "^4.7.7",
     "mock-aws-s3": "^4.0.2",
