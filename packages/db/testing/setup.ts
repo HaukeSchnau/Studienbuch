@@ -1,8 +1,8 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 import pg from "pg";
 import { beforeAll, inject, vi } from "vitest";
 
-import * as exports from "@stu/db/client";
+// import * as exports from "@stu/db/client";
 
 import { createClient } from "./client";
 
@@ -20,9 +20,7 @@ beforeAll(async ({ id }) => {
   const testDbName = `test_${idHash}`;
 
   await client.connect();
-  await client.query(
-    `CREATE DATABASE ${testDbName} WITH TEMPLATE ${database.database};`,
-  );
+  await client.query(`CREATE DATABASE ${testDbName} WITH TEMPLATE ${database.database};`);
 
   const { db } = await createClient({
     host: database.host,
@@ -32,6 +30,6 @@ beforeAll(async ({ id }) => {
     database: testDbName,
   });
 
-  vi.mock(import("@stu/db/client"), () => ({ db: null! }));
-  vi.spyOn(exports, "db", "get").mockReturnValue(db);
+  // vi.mock(import("@stu/db/client"), () => ({ db: null! }));
+  // vi.spyOn(exports, "db", "get").mockReturnValue(db);
 });
