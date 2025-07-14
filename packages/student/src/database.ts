@@ -3,7 +3,7 @@ import type * as Schema from "./schema";
 import { Effect } from "effect";
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
 
-export class Database extends Effect.Tag("Database")<Database, GenericDatabaseService<typeof Schema>>() {
+export class Database extends Effect.Tag("student/Database")<Database, GenericDatabaseService<typeof Schema>>() {
   static readonly asTransaction = (prev: Effect.Effect<void, DatabaseError<GenericSqliteError>, Database>) =>
     Database.use((db) => db.transaction(prev));
 }

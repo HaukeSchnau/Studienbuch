@@ -22,7 +22,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@groundswell/core": "^0.0.3",
+    "@groundswell/core": "^0.0.6",
     "@schnau/effect-drizzle": "0.5.0",
     "@stu/lib": "workspace:*",
     "@t3-oss/env-core": "^0.12.0",

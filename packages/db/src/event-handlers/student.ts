@@ -1,105 +1,82 @@
-import { and, count, eq } from "drizzle-orm";
+import type { DomainEvent } from "@stu/lib";
+import { StudentRepository } from "./student.repo";
 
-import type { NamespaceEventApplicators } from "@stu/lib";
-import { isArraySingleElement } from "@stu/lib";
+import type { NamespaceServerApplicatorMap } from "@groundswell/core";
+import { ValidationError } from "@groundswell/core";
+import type { Database } from "../database";
+import type { DatabaseError } from "@schnau/effect-drizzle/postgres";
+import { Effect } from "effect";
 
-import { db } from "../client";
-import * as tables from "../schema";
+export const studentApplicators: NamespaceServerApplicatorMap<
+  DomainEvent,
+  "student",
+  DatabaseError,
+  Database | StudentRepository
+> = {
+  joined: {
+    verify: Effect.fn(function* (event, { initiatorId }) {
+      if (initiatorId !== event.data.studentId) {
+        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED" }));
+      }
 
-export const studentApplicators: NamespaceEventApplicators<"student", unknown> =
-  {
-    joined: {
-      verify: async ({ data }, { initiatorUserId }) => {
-        if (initiatorUserId !== data.studentId) return "NOT_ALLOWED";
+      const repo = yield* StudentRepository;
+      const school = yield* repo.getSchoolOfUser({
+        studentId: event.data.studentId,
+      });
+      if (!school || school !== event.data.school) {
+        return yield* Effect.fail(new ValidationError({ cause: "INVALID_SCHOOL" }));
+      }
 
-        const rows = await db
-          .select({
-            count: count(),
-          })
-          .from(tables.Users)
-          .innerJoin(
-            tables.LicenseKeys,
-            eq(tables.Users.id, tables.LicenseKeys.activatedBy),
-          )
-          .innerJoin(
-            tables.Schools,
-            eq(tables.LicenseKeys.school, tables.Schools.id),
-          )
-          .where(
-            and(
-              eq(tables.Users.id, data.studentId),
-              eq(tables.Schools.id, data.school),
-            ),
-          );
-        if (!isArraySingleElement(rows))
-          throw new Error("Unexpected number of rows");
-        if (rows[0].count === 0) return "NOT_ALLOWED";
+      const classExists = yield* repo.doesClassExist({
+        identifier: event.data.class.identifier,
+        startYear: event.data.class.startYear,
+        school: event.data.school,
+      });
 
-        const cls = await db.query.Classes.findFirst({
-          where: and(
-            eq(tables.Classes.school, data.school),
-            eq(tables.Classes.startYear, data.class.startYear),
-            eq(tables.Classes.identifierInYear, data.class.identifier),
-          ),
+      if (!classExists) {
+        return yield* Effect.fail(new ValidationError({ cause: "INVALID_CLASS" }));
+      }
+    }),
+    apply: (event) =>
+      StudentRepository.use((repo) => {
+        const firstName = event.data.name.split(" ")[0] ?? "";
+        const lastName = event.data.name.split(" ").slice(1).join(" ");
+
+        return repo.createStudent({
+          studentId: event.data.studentId,
+          firstName: firstName,
+          lastName: lastName,
+          school: event.data.school,
+          class: event.data.class,
+          isOfAge: event.data.isOfAge,
         });
-        if (!cls) return "INVALID_CLASS";
-      },
-      apply: async ({ data }) => {
-        const [firstName, ...lastNameParts] = data.name.split(" ");
-        const lastName = lastNameParts.join(" ");
+      }),
+    getEventTopics: () => Effect.succeed([]),
+  },
 
-        await db
-          .insert(tables.Persons)
-          .values({
-            id: data.studentId,
-            firstName: firstName ?? "",
-            lastName,
-          })
-          .onConflictDoUpdate({
-            target: [tables.Persons.id],
-            set: {
-              firstName: firstName ?? "",
-              lastName,
-            },
-          });
+  courseAssigned: {
+    verify: Effect.fn(function* (event, { initiatorId }) {
+      if (initiatorId !== event.data.studentId) {
+        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED" }));
+      }
 
-        await db
-          .insert(tables.Students)
-          .values({
-            person: data.studentId,
-            school: data.school,
-            startYear: data.class.startYear,
-            classIdentifier: data.class.identifier,
-            isOfAge: data.isOfAge,
-          })
-          .onConflictDoUpdate({
-            target: [tables.Students.person],
-            set: {
-              school: data.school,
-              startYear: data.class.startYear,
-              classIdentifier: data.class.identifier,
-              isOfAge: data.isOfAge,
-            },
-          });
-      },
-    },
-    courseAssigned: {
-      verify: async ({ data }, { initiatorUserId }) => {
-        if (initiatorUserId !== data.studentId) return "NOT_ALLOWED";
+      const repo = yield* StudentRepository;
+      const isAssigned = yield* repo.isAssignedToCourse({
+        studentId: event.data.studentId,
+        courseId: event.data.courseId,
+      });
 
-        const assignment = await db.query.CourseMemberships.findFirst({
-          where: and(
-            eq(tables.CourseMemberships.student, data.studentId),
-            eq(tables.CourseMemberships.course, data.courseId),
-          ),
-        });
-        if (assignment) return "ALREADY_ASSIGNED";
-      },
-      apply: async ({ data }) => {
-        await db.insert(tables.CourseMemberships).values({
-          student: data.studentId,
-          course: data.courseId,
-        });
-      },
-    },
-  };
+      if (isAssigned) {
+        return yield* Effect.fail(new ValidationError({ cause: "ALREADY_ASSIGNED" }));
+      }
+    }),
+    apply: (event) =>
+      StudentRepository.use((repo) =>
+        repo.assignCourse({
+          studentId: event.data.studentId,
+          courseId: event.data.courseId,
+        }),
+      ),
+    getEventTopics: () => Effect.succeed([]),
+  },
+};

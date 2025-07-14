@@ -1,64 +1,73 @@
-import { eq } from "drizzle-orm";
+import type { DomainEvent } from "@stu/lib";
+import { AuthRepository } from "./auth.repo";
 
-import type { NamespaceEventApplicators } from "@stu/lib";
-
-import { db } from "../client";
-import * as tables from "../schema";
+import type { NamespaceServerApplicatorMap } from "@groundswell/core";
+import { ValidationError } from "@groundswell/core";
+import { Database } from "../database";
+import type { DatabaseError } from "@schnau/effect-drizzle/postgres";
+import { Effect } from "effect";
 
 const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
 
-export const authApplicators: NamespaceEventApplicators<"auth", unknown> = {
+export const authApplicators: NamespaceServerApplicatorMap<
+  DomainEvent,
+  "auth",
+  DatabaseError,
+  Database | AuthRepository
+> = {
   licenseGenerated: {
-    verify: async ({ data }, { initiatorUserId }) => {
-      if (initiatorUserId !== SYSTEM_USER) return "NOT_ALLOWED";
+    verify: Effect.fn(function* (event, { initiatorId }) {
+      if (initiatorId !== SYSTEM_USER) {
+        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED" }));
+      }
 
-      const key = await db.query.LicenseKeys.findFirst({
-        where: eq(tables.LicenseKeys.key, data.licenseKey),
-      });
-      if (key) return "EXISTS";
-    },
-    apply: async ({ data }) => {
-      await db.insert(tables.LicenseKeys).values({
-        key: data.licenseKey,
-        school: data.school,
-        expiresAt: data.expiryDate,
-        isSuperKey: data.licenseKey === "KJ27-MP16-LS14-JM22",
-      });
-    },
+      const repo = yield* AuthRepository;
+      if (yield* repo.doesLicenseKeyExist({ key: event.data.licenseKey })) {
+        return yield* Effect.fail(new ValidationError({ cause: "EXISTS" }));
+      }
+    }),
+    apply: (event) =>
+      AuthRepository.use((repo) =>
+        repo.createLicenseKey({
+          key: event.data.licenseKey,
+          school: event.data.school,
+          expiresAt: event.data.expiryDate,
+          isSuperKey: event.data.licenseKey === "KJ27-MP16-LS14-JM22",
+        }),
+      ),
+    getEventTopics: () => Effect.succeed([]),
   },
+
   licenseActivated: {
-    verify: async ({ data }, { initiatorUserId }) => {
-      if (initiatorUserId !== SYSTEM_USER && initiatorUserId !== data.userId)
-        return "UNEXPECTED";
+    verify: Effect.fn(function* (event, { initiatorId }) {
+      if (initiatorId !== SYSTEM_USER && initiatorId !== event.data.userId) {
+        return yield* Effect.fail(new ValidationError({ cause: "UNEXPECTED" }));
+      }
 
-      const key = await db.query.LicenseKeys.findFirst({
-        where: eq(tables.LicenseKeys.key, data.licenseKey),
-      });
-      if (!key) return "INVALID_LICENSE_KEY";
+      const repo = yield* AuthRepository;
+      const key = yield* repo.getLicenseKey({ key: event.data.licenseKey });
 
-      if (key.isSuperKey) return;
+      if (key === undefined) {
+        return yield* Effect.fail(new ValidationError({ cause: "INVALID_LICENSE_KEY" }));
+      }
 
-      if (key.expiresAt && key.expiresAt < new Date())
-        return "INVALID_LICENSE_KEY";
-      if (key.activatedBy) return "INVALID_LICENSE_KEY";
+      if (key.isSuperKey) {
+        return yield* Effect.succeed(void 0);
+      }
 
-      const user = await db.query.Users.findFirst({
-        where: eq(tables.Users.id, initiatorUserId),
-      });
-      if (user) return "EXISTS";
-    },
-    apply: async ({ data }) => {
-      await db.insert(tables.Users).values({
-        id: data.userId,
-      });
+      if (key.expiresAt && key.expiresAt < new Date()) {
+        return yield* Effect.fail(new ValidationError({ cause: "EXPIRED" }));
+      }
 
-      await db
-        .update(tables.LicenseKeys)
-        .set({
-          activatedAt: new Date(),
-          activatedBy: data.userId,
-        })
-        .where(eq(tables.LicenseKeys.key, data.licenseKey));
-    },
+      if (key.activatedBy) {
+        return yield* Effect.fail(new ValidationError({ cause: "ALREADY_ACTIVATED" }));
+      }
+    }),
+    apply: Effect.fn(function* (event) {
+      const repo = yield* AuthRepository;
+      yield* repo.createUser({ userId: event.data.userId });
+      yield* repo.activateLicenseKey({ key: event.data.licenseKey, userId: event.data.userId });
+    }, Database.asTransaction),
+    getEventTopics: () => Effect.succeed([]),
   },
 };

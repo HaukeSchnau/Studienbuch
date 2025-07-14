@@ -8,8 +8,8 @@ import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import { Effect } from "effect";
 
-const failIfTrue = (message: string) =>
-  Effect.flatMap((bool) => (bool ? Effect.fail(new ValidationError({ cause: message })) : Effect.void));
+const failIfFalse = (message: string) =>
+  Effect.flatMap((bool) => (bool ? Effect.void : Effect.fail(new ValidationError({ cause: message }))));
 
 export const studentApplicators: NamespaceApplicatorMap<
   DomainEvent,
@@ -52,7 +52,7 @@ export const studentApplicators: NamespaceApplicatorMap<
         repo.doesCourseExist({
           courseId: event.data.courseId,
         }),
-      ).pipe(failIfTrue("INVALID_COURSE")),
+      ).pipe(failIfFalse("INVALID_COURSE")),
     apply: (event) =>
       StudentRepo.use((repo) =>
         repo.assignCourse({
