@@ -1,5 +1,5 @@
 import type { DomainEvent } from "@stu/lib";
-import { AuthRepository } from "./auth.repo";
+import { AuthRepository } from "../repositories/auth.repo";
 
 import type { NamespaceServerApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
@@ -18,12 +18,12 @@ export const authApplicators: NamespaceServerApplicatorMap<
   licenseGenerated: {
     verify: Effect.fn(function* (event, { initiatorId }) {
       if (initiatorId !== SYSTEM_USER) {
-        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED" }));
+        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
       }
 
       const repo = yield* AuthRepository;
       if (yield* repo.doesLicenseKeyExist({ key: event.data.licenseKey })) {
-        return yield* Effect.fail(new ValidationError({ cause: "EXISTS" }));
+        return yield* Effect.fail(new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }));
       }
     }),
     apply: (event) =>
@@ -41,14 +41,14 @@ export const authApplicators: NamespaceServerApplicatorMap<
   licenseActivated: {
     verify: Effect.fn(function* (event, { initiatorId }) {
       if (initiatorId !== SYSTEM_USER && initiatorId !== event.data.userId) {
-        return yield* Effect.fail(new ValidationError({ cause: "UNEXPECTED" }));
+        return yield* Effect.fail(new ValidationError({ cause: "UNEXPECTED", reason: "NOT_ALLOWED" }));
       }
 
       const repo = yield* AuthRepository;
       const key = yield* repo.getLicenseKey({ key: event.data.licenseKey });
 
       if (key === undefined) {
-        return yield* Effect.fail(new ValidationError({ cause: "INVALID_LICENSE_KEY" }));
+        return yield* Effect.fail(new ValidationError({ cause: "INVALID_LICENSE_KEY", reason: "INVALID" }));
       }
 
       if (key.isSuperKey) {
@@ -56,11 +56,11 @@ export const authApplicators: NamespaceServerApplicatorMap<
       }
 
       if (key.expiresAt && key.expiresAt < new Date()) {
-        return yield* Effect.fail(new ValidationError({ cause: "EXPIRED" }));
+        return yield* Effect.fail(new ValidationError({ cause: "EXPIRED", reason: "INVALID" }));
       }
 
       if (key.activatedBy) {
-        return yield* Effect.fail(new ValidationError({ cause: "ALREADY_ACTIVATED" }));
+        return yield* Effect.fail(new ValidationError({ cause: "ALREADY_ACTIVATED", reason: "INVALID" }));
       }
     }),
     apply: Effect.fn(function* (event) {

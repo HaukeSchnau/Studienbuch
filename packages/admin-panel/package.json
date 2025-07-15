@@ -25,6 +25,7 @@
     "@tanstack/react-start": "^1.120.3",
     "autoprefixer": "^10.4.20",
     "date-fns": "^4.1.0",
+    "effect": "^3.16.13",
     "postcss": "^8.5.3",
     "react": "19.0.0",
     "react-dom": "19.0.0",

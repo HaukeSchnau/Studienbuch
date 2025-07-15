@@ -1,30 +1,43 @@
 import type { DomainEvent } from "@stu/lib";
+import { SchoolRepository } from "../repositories/school.repo";
+import { PersonRepository } from "../repositories/person.repo";
+import { YearRepository } from "../repositories/year.repo";
+import { CourseRepository } from "../repositories/course.repo";
+import { TimetableRepository } from "../repositories/timetable.repo";
+import { HolidayRepository } from "../repositories/holiday.repo";
 
 import { ValidationError, type NamespaceApplicatorMap } from "@groundswell/core";
 import type { Database } from "../database";
 import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import { Effect } from "effect";
-import { OrgRepository } from "./org.repo";
+import { SemesterRepository } from "../repositories/semester.repo";
 
-const failIfTrue = (message: string) =>
-  Effect.flatMap((bool) => (bool ? Effect.fail(new ValidationError({ cause: message })) : Effect.void));
+const failIfTrue = (message: string, reason: "DUPLICATE" | "NOT_FOUND" | "NOT_ALLOWED" | "INVALID" | "UNKNOWN") =>
+  Effect.flatMap((bool) => (bool ? Effect.fail(new ValidationError({ cause: message, reason })) : Effect.void));
 
 export const orgApplicators: NamespaceApplicatorMap<
   DomainEvent,
   "org",
   DatabaseError<GenericSqliteError>,
-  Database | OrgRepository
+  | Database
+  | SchoolRepository
+  | PersonRepository
+  | YearRepository
+  | CourseRepository
+  | TimetableRepository
+  | HolidayRepository
+  | SemesterRepository
 > = {
   "school.founded": {
     verify: (event) =>
-      OrgRepository.use((repo) =>
+      SchoolRepository.use((repo) =>
         repo.doesSchoolExist({
           id: event.data.id,
         }),
-      ).pipe(failIfTrue("School already exists")),
+      ).pipe(failIfTrue("School already exists", "DUPLICATE")),
     apply: (event) =>
-      OrgRepository.use((repo) =>
+      SchoolRepository.use((repo) =>
         repo.createSchool({
           id: event.data.id,
           name: event.data.name,
@@ -32,16 +45,15 @@ export const orgApplicators: NamespaceApplicatorMap<
         }),
       ),
   },
-
   "teacher.joined": {
     verify: (event) =>
-      OrgRepository.use((repo) =>
+      PersonRepository.use((repo) =>
         repo.doesTeacherExist({
           id: event.data.personId,
         }),
-      ).pipe(failIfTrue("Teacher already exists")),
+      ).pipe(failIfTrue("Teacher already exists", "DUPLICATE")),
     apply: (event) =>
-      OrgRepository.use((repo) =>
+      PersonRepository.use((repo) =>
         repo.createTeacher({
           personId: event.data.personId,
           firstName: event.data.firstName,
@@ -51,10 +63,9 @@ export const orgApplicators: NamespaceApplicatorMap<
         }),
       ),
   },
-
   "holiday.created": {
     verify: (event) =>
-      OrgRepository.use((repo) =>
+      HolidayRepository.use((repo) =>
         repo.doesHolidayExist({
           name: event.data.name,
           start: event.data.start,
@@ -62,31 +73,83 @@ export const orgApplicators: NamespaceApplicatorMap<
           state: event.data.state,
           year: event.data.year,
         }),
-      ).pipe(failIfTrue("Holiday already exists")),
-    apply: (event) =>
-      OrgRepository.use((repo) =>
-        repo.createHoliday({
-          name: event.data.name,
-          start: event.data.start,
-          end: event.data.end,
-          state: event.data.state,
-          year: event.data.year,
-        }),
-      ),
-  },
+      ).pipe(failIfTrue("Holiday already exists", "DUPLICATE")),
+    apply: Effect.fn(function* (event) {
+      const holidayRepo = yield* HolidayRepository;
+      const semesterRepo = yield* SemesterRepository;
+      const schoolRepo = yield* SchoolRepository;
+      yield* holidayRepo.createHoliday({
+        name: event.data.name,
+        start: event.data.start,
+        end: event.data.end,
+        state: event.data.state,
+        year: event.data.year,
+      });
 
+      const allHolidays = yield* holidayRepo.getAllHolidays();
+
+      const semesterDelimitingHolidays = allHolidays.filter(
+        (holiday) =>
+          holiday.name.toLowerCase().includes("sommerferien") || holiday.name.toLowerCase().includes("winterferien"),
+      );
+
+      if (semesterDelimitingHolidays.length < 2) {
+        return;
+      }
+
+      const semesters: {
+        start: Date;
+        end: Date;
+        name: string;
+        type: "WINTER" | "SUMMER";
+        year: number;
+      }[] = [];
+
+      for (let i = 0; i < semesterDelimitingHolidays.length - 1; i++) {
+        const start = semesterDelimitingHolidays[i];
+        const end = semesterDelimitingHolidays[i + 1];
+
+        if (!start || !end) throw new Error("Start or end holidays are undfined"); // TODO: Effect.fail
+
+        const type = start.name.toLowerCase().includes("sommerferien") ? "WINTER" : "SUMMER";
+
+        const formattedYearRange = start.year === end.year ? start.year : `${start.year}/${end.year}`;
+        const formattedType = type === "WINTER" ? "Winter" : "Sommer";
+        const name = `${formattedType} ${formattedYearRange}`;
+
+        semesters.push({
+          start: start.end,
+          end: end.start,
+          name,
+          type,
+          year: start.year,
+        });
+      }
+
+      const affectedSchools = yield* schoolRepo.getSchoolsByState({ state: event.data.state });
+
+      yield* semesterRepo.createSemesters(
+        affectedSchools.flatMap((school) =>
+          semesters.map((semester) => ({
+            ...semester,
+            school: school.id,
+          })),
+        ),
+      );
+    }),
+  },
   "year.started": {
     verify: (event) =>
-      OrgRepository.use((repo) =>
+      YearRepository.use((repo) =>
         repo.doesYearExist({
           name: event.data.name,
           startYear: event.data.startYear,
           graduationYear: event.data.graduationYear,
           school: event.data.school,
         }),
-      ).pipe(failIfTrue("Year already exists")),
+      ).pipe(failIfTrue("Year already exists", "DUPLICATE")),
     apply: (event) =>
-      OrgRepository.use((repo) =>
+      YearRepository.use((repo) =>
         repo.createYear({
           name: event.data.name,
           startYear: event.data.startYear,
@@ -96,16 +159,15 @@ export const orgApplicators: NamespaceApplicatorMap<
         }),
       ),
   },
-
   "courses.created": {
     verify: (event) =>
-      OrgRepository.use((repo) =>
+      CourseRepository.use((repo) =>
         repo.doesCourseExist({
           id: event.data.id,
         }),
-      ).pipe(failIfTrue("Course already exists")),
+      ).pipe(failIfTrue("Course already exists", "DUPLICATE")),
     apply: (event) =>
-      OrgRepository.use((repo) =>
+      CourseRepository.use((repo) =>
         repo.createCourse({
           id: event.data.id,
           name: event.data.name,
@@ -118,17 +180,16 @@ export const orgApplicators: NamespaceApplicatorMap<
         }),
       ),
   },
-
   "timetable.entryCreated": {
     verify: (event) =>
-      OrgRepository.use((repo) =>
+      TimetableRepository.use((repo) =>
         repo.doesTimetableEntryExist({
           start: event.data.start,
           course: event.data.course,
         }),
-      ).pipe(failIfTrue("Timetable entry already exists")),
+      ).pipe(failIfTrue("Timetable entry already exists", "DUPLICATE")),
     apply: (event) =>
-      OrgRepository.use((repo) =>
+      TimetableRepository.use((repo) =>
         repo.createTimetableEntry({
           start: event.data.start,
           duration: event.data.duration,
@@ -137,11 +198,10 @@ export const orgApplicators: NamespaceApplicatorMap<
         }),
       ),
   },
-
   "timetable.substituted": {
     verify: () => Effect.void,
     apply: (event) =>
-      OrgRepository.use((repo) =>
+      TimetableRepository.use((repo) =>
         repo.createSubstitution({
           start: event.data.start,
           course: event.data.course,
@@ -154,7 +214,7 @@ export const orgApplicators: NamespaceApplicatorMap<
   "timetable.canceled": {
     verify: () => Effect.void,
     apply: (event) =>
-      OrgRepository.use((repo) =>
+      TimetableRepository.use((repo) =>
         repo.createSubstitution({
           start: event.data.start,
           course: event.data.course,
@@ -167,7 +227,7 @@ export const orgApplicators: NamespaceApplicatorMap<
   "timetable.discarded": {
     verify: () => Effect.void,
     apply: (event) =>
-      OrgRepository.use((repo) =>
+      TimetableRepository.use((repo) =>
         repo.deleteTimetableEntry({
           start: event.data.start,
           course: event.data.course,

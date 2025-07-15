@@ -5,7 +5,7 @@ import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import { Effect } from "effect";
 import type { Database } from "../database";
-import { AbsenceRepository } from "./absences.repo";
+import { AbsenceRepository } from "../repositories/absences.repo";
 
 export const absenceApplicators: NamespaceApplicatorMap<
   DomainEvent,

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { SYSTEM_USER, ingest } from "@stu/api";
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
-import { Result, SCHOOL_IDS, defaultSchools } from "@stu/lib";
+import { SCHOOL_IDS, defaultSchools } from "@stu/lib";
 
 import { importClasses } from "./import-classes";
 import { importTeachers } from "./import-teachers";
@@ -16,6 +16,7 @@ import { extractCourses } from "./extract-courses";
 import { upsertCourses } from "@stu/legacy-import";
 import * as tables from "@stu/db/schema";
 import { alias, and, eq, ne } from "@stu/db";
+import { Exit } from "effect";
 
 process.on("SIGINT", () => {
   process.exit(0);
@@ -25,10 +26,7 @@ process.on("SIGTERM", () => {
   process.exit(0);
 });
 
-program
-  .name("console")
-  .description("Studienbuch Console")
-  .showSuggestionAfterError();
+program.name("console").description("Studienbuch Console").showSuggestionAfterError();
 
 program
   .command("seed")
@@ -38,8 +36,8 @@ program
 
     logger.info(`Seeding school "${school}"...`);
     const err = await ingest(
-      "org.school.founded",
       {
+        type: "org.school.founded",
         data: {
           id: school,
           name: defaultSchoolValue.name,
@@ -50,11 +48,11 @@ program
       },
       SYSTEM_USER,
     );
-    if (Result.isErr(err)) {
-      if (err.error === "EXISTS") {
+    if (Exit.isFailure(err)) {
+      if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
         logger.debug(`School "${school}" already founded!`);
       } else {
-        logger.error(`Could not ingest school founded event: ${err.error}`);
+        logger.error(`Could not ingest school founded event: ${err.cause.toString()}`);
       }
     } else {
       logger.info(`School "${school}" founded!`);
@@ -81,8 +79,8 @@ program
     const defaultSchoolValue = defaultSchools[school];
     logger.info("Pulling data...");
     const err = await ingest(
-      "org.school.founded",
       {
+        type: "org.school.founded",
         data: {
           id: school,
           name: defaultSchoolValue.name,
@@ -93,11 +91,11 @@ program
       },
       SYSTEM_USER,
     );
-    if (Result.isErr(err)) {
-      if (err.error === "EXISTS") {
+    if (Exit.isFailure(err)) {
+      if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
         logger.debug(`School "${school}" already founded!`);
       } else {
-        logger.error(`Could not ingest school founded event: ${err.error}`);
+        logger.error(`Could not ingest school founded event: ${err.cause.toString()}`);
       }
     } else {
       logger.info(`School "${school}" founded!`);
@@ -127,9 +125,7 @@ program.command("import-classes").action(async () => {
 });
 
 program.command("import-semesters").action(async () => {
-  const states = await db
-    .selectDistinct({ stateCode: Schools.stateCode })
-    .from(Schools);
+  const states = await db.selectDistinct({ stateCode: Schools.stateCode }).from(Schools);
 
   for (const state of states) {
     await addSemesters(state.stateCode);
@@ -180,30 +176,18 @@ program.command("prune-conflicts").action(async () => {
   const te2 = alias(tables.TimetableEntries, "te2");
   const course1 = alias(tables.Courses, "course1");
   const course2 = alias(tables.Courses, "course2");
-  const coursesToTeachers1 = alias(
-    tables.CoursesToTeachers,
-    "coursesToTeachers1",
-  );
-  const coursesToTeachers2 = alias(
-    tables.CoursesToTeachers,
-    "coursesToTeachers2",
-  );
+  const coursesToTeachers1 = alias(tables.CoursesToTeachers, "coursesToTeachers1");
+  const coursesToTeachers2 = alias(tables.CoursesToTeachers, "coursesToTeachers2");
   // find all courses with the same teacher that have at least one overlapping time
   const conflicts = await db
     .select()
     .from(course1)
     .innerJoin(te1, eq(course1.id, te1.course))
     .innerJoin(coursesToTeachers1, eq(course1.id, coursesToTeachers1.course))
-    .innerJoin(
-      coursesToTeachers2,
-      eq(coursesToTeachers1.teacher, coursesToTeachers2.teacher),
-    )
+    .innerJoin(coursesToTeachers2, eq(coursesToTeachers1.teacher, coursesToTeachers2.teacher))
     .innerJoin(course2, eq(coursesToTeachers2.course, course2.id))
     .innerJoin(te2, eq(course2.id, te2.course))
-    .innerJoin(
-      tables.Persons,
-      eq(coursesToTeachers1.teacher, tables.Persons.id),
-    )
+    .innerJoin(tables.Persons, eq(coursesToTeachers1.teacher, tables.Persons.id))
     .where(and(eq(te1.start, te2.start), ne(course1.id, course2.id)));
 
   console.log(conflicts);

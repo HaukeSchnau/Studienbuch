@@ -3,12 +3,13 @@ import { and, eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
 import type { SchoolId, SubjectId } from "@stu/lib";
-import { Result, subjectNameMap } from "@stu/lib";
+import { subjectNameMap } from "@stu/lib";
 
 import type { ConsoleIservClient } from "./get-or-create-teacher";
 import { logger } from "./logger";
 import { sendNotifications } from "@stu/lib-server";
 import { format } from "date-fns";
+import { Exit } from "effect";
 
 interface Entry {
   uuid: string;
@@ -59,8 +60,8 @@ export const ingestTimetableEntry = async (
   iservClient: ConsoleIservClient,
 ) => {
   const courseCreatedErr = await ingest(
-    "org.courses.created",
     {
+      type: "org.courses.created",
       data: {
         id: uuid,
         name: course.name,
@@ -83,12 +84,12 @@ export const ingestTimetableEntry = async (
     },
     SYSTEM_USER,
   );
-  if (Result.isErr(courseCreatedErr)) {
-    if (courseCreatedErr.error === "EXISTS") {
+  if (Exit.isFailure(courseCreatedErr)) {
+    if (courseCreatedErr.cause._tag === "Fail" && courseCreatedErr.cause.error.reason === "DUPLICATE") {
       logger.debug(`Course ${course.name} already created!`);
     } else {
       logger.error(
-        `Could not ingest course created event for ${course.name}: ${courseCreatedErr.error}`,
+        `Could not ingest course created event for ${course.name}: ${courseCreatedErr.cause.toString()}`,
       );
     }
   } else {
@@ -109,8 +110,8 @@ export const ingestTimetableEntry = async (
     roomNumbers.some((room) => !existingTimetableEntry.rooms.includes(room))
   ) {
     const timetableEntryCreatedErr = await ingest(
-      "org.timetable.entryCreated",
       {
+        type: "org.timetable.entryCreated",
         data: {
           course: uuid,
           start: start,
@@ -122,9 +123,9 @@ export const ingestTimetableEntry = async (
       },
       SYSTEM_USER,
     );
-    if (Result.isErr(timetableEntryCreatedErr)) {
+    if (Exit.isFailure(timetableEntryCreatedErr)) {
       logger.error(
-        `Could not ingest timetable entry created event for ${course.name}: ${timetableEntryCreatedErr.error}`,
+        `Could not ingest timetable entry created event for ${course.name}: ${timetableEntryCreatedErr.cause.toString()}`,
       );
       return;
     }
@@ -202,8 +203,8 @@ export const ingestTimetableEntry = async (
       // todo: if substitute exists but not in kadmos, ingest canceled substitution event
 
       const substitutedErr = await ingest(
-        "org.timetable.substituted",
         {
+          type: "org.timetable.substituted",
           data: {
             course: uuid,
             start,
@@ -220,14 +221,14 @@ export const ingestTimetableEntry = async (
         SYSTEM_USER,
       );
 
-      if (Result.isErr(substitutedErr)) {
-        if (substitutedErr.error === "EXISTS") {
+      if (Exit.isFailure(substitutedErr)) {
+        if (substitutedErr.cause._tag === "Fail" && substitutedErr.cause.error.reason === "DUPLICATE") {
           logger.debug(
             `Timetable substituted event for ${course.name} already exists!`,
           );
         } else {
           logger.error(
-            `Could not ingest timetable substituted event for ${course.name}: ${substitutedErr.error}`,
+            `Could not ingest timetable substituted event for ${course.name}: ${substitutedErr.cause.toString()}`,
           );
         }
       } else {
@@ -241,8 +242,8 @@ export const ingestTimetableEntry = async (
       }
     } else {
       const canceledErr = await ingest(
-        "org.timetable.canceled",
         {
+          type: "org.timetable.canceled",
           data: {
             course: uuid,
             start,
@@ -256,14 +257,14 @@ export const ingestTimetableEntry = async (
         SYSTEM_USER,
       );
 
-      if (Result.isErr(canceledErr)) {
-        if (canceledErr.error === "EXISTS") {
+      if (Exit.isFailure(canceledErr)) {
+        if (canceledErr.cause._tag === "Fail" && canceledErr.cause.error.reason === "DUPLICATE") {
           logger.debug(
             `Timetable canceled event for ${course.name} already exists!`,
           );
         } else {
           logger.error(
-            `Could not ingest timetable canceled event for ${course.name}: ${canceledErr.error}`,
+            `Could not ingest timetable canceled event for ${course.name}: ${canceledErr.cause.toString()}`,
           );
         }
       } else {

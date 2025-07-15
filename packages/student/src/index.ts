@@ -6,16 +6,33 @@ import { applicatorTreeFactory, type NamespaceApplicatorTree } from "@groundswel
 import type { DomainEvent, StudentRepository } from "@stu/lib";
 import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { Database } from "./database";
-import type { AbsenceRepository } from "./event-handlers/absences.repo";
-import type { GradeRepository } from "./event-handlers/grades.repo";
-import type { OrgRepository } from "./event-handlers/org.repo";
-import type { StudentRepository as StudentRepo } from "./event-handlers/student.repo";
+import type { AbsenceRepository } from "./repositories/absences.repo";
+import type { GradeRepository } from "./repositories/grades.repo";
+import type { SchoolRepository } from "./repositories/school.repo";
+import type { PersonRepository } from "./repositories/person.repo";
+import type { YearRepository } from "./repositories/year.repo";
+import type { CourseRepository } from "./repositories/course.repo";
+import type { TimetableRepository } from "./repositories/timetable.repo";
+import type { HolidayRepository } from "./repositories/holiday.repo";
+import type { StudentRepository as StudentRepo } from "./repositories/student.repo";
+import type { SemesterRepository } from "./repositories/semester.repo";
 
 const applicatorTree: Partial<
   NamespaceApplicatorTree<
     DomainEvent,
     DatabaseError<GenericSqliteError>,
-    Database | StudentRepository | StudentRepo | AbsenceRepository | GradeRepository | OrgRepository // TODO: Merge StudentRepo and StudentRepository
+    | Database
+    | StudentRepository
+    | StudentRepo
+    | AbsenceRepository
+    | GradeRepository
+    | SchoolRepository
+    | PersonRepository
+    | YearRepository
+    | CourseRepository
+    | TimetableRepository
+    | HolidayRepository
+    | SemesterRepository
   >
 > = {
   absence: absenceApplicators,

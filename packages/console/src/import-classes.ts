@@ -2,17 +2,14 @@ import { SYSTEM_USER, ingest } from "@stu/api";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
-import {
-  getBearerToken,
-  getClassesV2,
-  login,
-} from "@stu/external-api";
+import { getBearerToken, getClassesV2, login } from "@stu/external-api";
 import type { SchoolId } from "@stu/lib";
-import { BetterMap, Result, startYearToNameMap } from "@stu/lib";
+import { BetterMap, startYearToNameMap } from "@stu/lib";
 
 import { ConsoleIservClient } from "./get-or-create-teacher";
 import { logger } from "./logger";
 import { mapKadmosClassV2 } from "./map-kadmos-class";
+import { Exit } from "effect";
 
 interface Options {
   school: SchoolId;
@@ -41,8 +38,8 @@ export const importClasses = async ({ school }: Options) => {
     month: today.getMonth() + 1,
     day: today.getDate(),
   };
-  const classes = await getClassesV2(start, end, jar, bearerToken).then(
-    (classes) => classes.classes.map(mapKadmosClassV2),
+  const classes = await getClassesV2(start, end, jar, bearerToken).then((classes) =>
+    classes.classes.map(mapKadmosClassV2),
   );
 
   const years = BetterMap.uniqueFromValues(
@@ -56,23 +53,14 @@ export const importClasses = async ({ school }: Options) => {
   const iservClient = new ConsoleIservClient();
 
   for (const year of years) {
-    const classesInYear = classes.filter(
-      (cls) => cls.startYear === year.startYear,
-    );
+    const classesInYear = classes.filter((cls) => cls.startYear === year.startYear);
 
     // make sure that classes are unique by identifierInYear
     const classesInYearUnique = classesInYear.filter(
-      (cls, index, self) =>
-        index ===
-        self.findIndex(
-          (otherCls) => otherCls.identifierInYear === cls.identifierInYear,
-        ),
+      (cls, index, self) => index === self.findIndex((otherCls) => otherCls.identifierInYear === cls.identifierInYear),
     );
 
-    const name =
-      startYearToNameMap.get(year.startYear) ??
-      year.name ??
-      year.startYear.toString();
+    const name = startYearToNameMap.get(year.startYear) ?? year.name ?? year.startYear.toString();
 
     // if (!name) {
     //   logger.error(`Could not find name for year ${year.startYear}`);
@@ -80,8 +68,8 @@ export const importClasses = async ({ school }: Options) => {
     // }
 
     const err = await ingest(
-      "org.year.started",
       {
+        type: "org.year.started",
         data: {
           name,
           graduationYear: year.startYear + 9,
@@ -90,11 +78,7 @@ export const importClasses = async ({ school }: Options) => {
           classes: await Promise.all(
             classesInYearUnique.map(async (cls) => ({
               identifierInYear: cls.identifierInYear,
-              teachers: await Promise.all(
-                cls.teachers.map((teacher) =>
-                  iservClient.getOrCreateTeacher(teacher.abbrv),
-                ),
-              ),
+              teachers: await Promise.all(cls.teachers.map((teacher) => iservClient.getOrCreateTeacher(teacher.abbrv))),
             })),
           ),
         },
@@ -104,11 +88,11 @@ export const importClasses = async ({ school }: Options) => {
       SYSTEM_USER,
     );
 
-    if (Result.isErr(err)) {
-      if (err.error === "EXISTS") {
+    if (Exit.isFailure(err)) {
+      if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
         logger.debug(`Year ${name} already started!`);
       } else {
-        logger.error(`Could not ingest year started event: ${err.error}`);
+        logger.error(`Could not ingest year started event: ${err.cause.toString()}`);
       }
     } else {
       logger.info(`Year ${name} started!`);
