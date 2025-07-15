@@ -3,7 +3,7 @@ import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Persons } from "@stu/db/schema";
 import { IservClient } from "@stu/external-api";
-import { Result } from "@stu/lib";
+import { Exit } from "effect";
 
 import { logger } from "./logger";
 
@@ -23,8 +23,8 @@ export class ConsoleIservClient extends IservClient {
     const firstName = iservUser?.name.split(" ").slice(0, -1).join(" ");
     const lastName = iservUser?.name.split(" ").at(-1);
     const err = await ingest(
-      "org.teacher.joined",
       {
+        type: "org.teacher.joined",
         data: {
           personId: id,
           firstName,
@@ -38,13 +38,11 @@ export class ConsoleIservClient extends IservClient {
       SYSTEM_USER,
     );
 
-    if (Result.isErr(err)) {
-      if (err.error === "EXISTS") {
+    if (Exit.isFailure(err)) {
+      if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
         logger.debug(`Teacher ${abbrv} already joined!`);
       } else {
-        logger.error(
-          `Could not ingest teacher joined event for ${abbrv}: ${err.error}`,
-        );
+        logger.error(`Could not ingest teacher joined event for ${abbrv}: ${err.cause.toString()}`);
       }
     } else {
       logger.info(`Teacher ${abbrv} joined!`);

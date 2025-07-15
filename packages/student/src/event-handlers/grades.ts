@@ -5,7 +5,7 @@ import type { Database } from "../database";
 import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import { Effect } from "effect";
-import { GradeRepository } from "./grades.repo";
+import { GradeRepository } from "../repositories/grades.repo";
 
 export const gradeApplicators: NamespaceApplicatorMap<
   DomainEvent,

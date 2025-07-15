@@ -1,10 +1,10 @@
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 import { SYSTEM_USER, ingest } from "@stu/api";
 import type { SchoolId } from "@stu/lib";
-import { Result } from "@stu/lib";
 
 import { logger } from "../logger";
+import { Exit } from "effect";
 
 function generateLicenseKey(): string {
   return crypto
@@ -15,25 +15,20 @@ function generateLicenseKey(): string {
     .slice(0, -1);
 }
 
-export const generateLicenses = async (
-  numberOfLicenses: number,
-  school: SchoolId,
-) => {
+export const generateLicenses = async (numberOfLicenses: number, school: SchoolId) => {
   logger.info(`Generating ${numberOfLicenses} license keys for school "${school}".
     ..`);
 
   for (let i = 0; i < numberOfLicenses; i++) {
     const licenseKey =
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- We may have more schools in the future
-      i == 0 && school === "igs-lil"
-        ? "KJ27-MP16-LS14-JM22"
-        : generateLicenseKey();
+      i === 0 && school === "igs-lil" ? "KJ27-MP16-LS14-JM22" : generateLicenseKey();
     const expiresAt = new Date();
     expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
     const res = await ingest(
-      "auth.licenseGenerated",
       {
+        type: "auth.licenseGenerated",
         data: {
           school,
           licenseKey,
@@ -45,11 +40,11 @@ export const generateLicenses = async (
       SYSTEM_USER,
     );
 
-    if (Result.isErr(res)) {
-      if (res.error === "EXISTS") {
+    if (Exit.isFailure(res)) {
+      if (res.cause._tag === "Fail" && res.cause.error.reason === "DUPLICATE") {
         logger.debug(`License key ${licenseKey} already generated!`);
       } else {
-        logger.error(`Could not ingest license generated event: ${res.error}`);
+        logger.error(`Could not ingest license generated event: ${res.cause.toString()}`);
       }
     }
   }

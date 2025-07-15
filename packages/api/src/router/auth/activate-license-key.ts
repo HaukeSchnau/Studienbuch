@@ -4,11 +4,11 @@ import { z } from "zod";
 
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
-import { Result } from "@stu/lib";
 import { createSession } from "@stu/lib-server";
 
 import { publicProcedure } from "../../procedures";
 import { ingest } from "../events/ingest";
+import { Exit } from "effect";
 
 const activate = async (license: {
   activatedBy: string | null;
@@ -21,8 +21,8 @@ const activate = async (license: {
   const userId = crypto.randomUUID();
 
   const res = await ingest(
-    "auth.licenseActivated",
     {
+      type: "auth.licenseActivated",
       data: {
         licenseKey: license.key,
         userId,
@@ -33,11 +33,11 @@ const activate = async (license: {
     userId,
   );
 
-  if (Result.isErr(res)) {
+  if (Exit.isFailure(res)) {
     console.error(res);
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message: res.error,
+      message: res.toString(),
     });
   }
 

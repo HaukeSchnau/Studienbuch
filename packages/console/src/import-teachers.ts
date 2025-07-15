@@ -1,9 +1,9 @@
 import { SYSTEM_USER, ingest } from "@stu/api";
 import { getTeachers } from "@stu/external-api";
 import type { Salutation } from "@stu/lib";
-import { Result } from "@stu/lib";
 
 import { logger } from "./logger";
+import { Exit } from "effect";
 
 const FIRSTNAME_SALUTATION_MAP: Record<string, Salutation> = {
   Afrodite: "Frau",
@@ -115,15 +115,14 @@ export const importTeachers = async () => {
 
   for (const teacher of getTeachers()) {
     const err = await ingest(
-      "org.teacher.joined",
       {
+        type: "org.teacher.joined",
         data: {
           personId: crypto.randomUUID(),
           firstName: teacher.firstName,
           lastName: teacher.lastName,
           abbrv: teacher.abbrv,
-          salutation:
-            FIRSTNAME_SALUTATION_MAP[teacher.firstName.split(" ")[0] ?? ""],
+          salutation: FIRSTNAME_SALUTATION_MAP[teacher.firstName.split(" ")[0] ?? ""],
           school: "igs-lil",
         },
         id: crypto.randomUUID(),
@@ -132,13 +131,11 @@ export const importTeachers = async () => {
       SYSTEM_USER,
     );
 
-    if (Result.isErr(err)) {
-      if (err.error === "EXISTS") {
+    if (Exit.isFailure(err)) {
+      if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
         logger.debug(`Teacher ${teacher.abbrv} already joined!`);
       } else {
-        logger.error(
-          `Could not ingest teacher joined event for ${teacher.abbrv}: ${err.error}`,
-        );
+        logger.error(`Could not ingest teacher joined event for ${teacher.abbrv}: ${err.cause.toString()}`);
       }
     } else {
       logger.info(`Teacher ${teacher.abbrv} joined!`);

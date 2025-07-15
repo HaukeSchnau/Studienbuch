@@ -1,13 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { db } from "@stu/db/client";
-import * as tables from "@stu/db/schema";
-import { and, asc, eq, isNotNull, or } from "@stu/db";
+import {
+  and,
+  asc,
+  eq,
+  isNotNull,
+  or,
+  tables,
+  DatabaseLive,
+  PersonRepository,
+  TimetableRepository,
+  Database,
+} from "@stu/db";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
 import { Fragment, useEffect, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { format, parse } from "date-fns";
 import { de } from "date-fns/locale";
+import { Effect, Layer, ManagedRuntime } from "effect";
 
 const cn = (...args: unknown[]) => args.filter(Boolean).join(" ");
 
@@ -15,10 +25,10 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-const getTeachers = createServerFn().handler(async () => {
-  const teachers = await db.select().from(tables.Persons);
-  return teachers;
-});
+const runtime = ManagedRuntime.make(Layer.merge(DatabaseLive, PersonRepository.Default));
+
+const allTeachers = PersonRepository.use((repo) => repo.getAllPersons());
+const getTeachers = createServerFn().handler(() => runtime.runPromise(allTeachers));
 
 const TeacherSelectField = ({
   selectedTeacherId,
@@ -54,24 +64,15 @@ const TeacherSelectField = ({
   );
 };
 
-const getTimetableEntries = createServerFn()
-  .validator(
-    z.object({
-      teacherId: z.string(),
-    }),
-  )
-  .handler(async ({ data: { teacherId } }) => {
-    const timetableEntries = await db
+const getTimetableEntriesFn = Effect.fn(function* (teacherId: string) {
+  const db = yield* Database;
+
+  const timetableEntries = yield* db.execute((db) =>
+    db
       .select()
       .from(tables.TimetableEntries)
-      .innerJoin(
-        tables.Courses,
-        eq(tables.TimetableEntries.course, tables.Courses.id),
-      )
-      .innerJoin(
-        tables.CoursesToTeachers,
-        eq(tables.CoursesToTeachers.course, tables.Courses.id),
-      )
+      .innerJoin(tables.Courses, eq(tables.TimetableEntries.course, tables.Courses.id))
+      .innerJoin(tables.CoursesToTeachers, eq(tables.CoursesToTeachers.course, tables.Courses.id))
       .leftJoin(
         tables.Substitutions,
         and(
@@ -82,25 +83,31 @@ const getTimetableEntries = createServerFn()
       .where(
         or(
           eq(tables.CoursesToTeachers.teacher, teacherId),
-          and(
-            isNotNull(tables.Substitutions.substitute),
-            eq(tables.Substitutions.substitute, teacherId),
-          ),
+          and(isNotNull(tables.Substitutions.substitute), eq(tables.Substitutions.substitute, teacherId)),
         ),
       )
-      .orderBy(asc(tables.TimetableEntries.start));
+      .orderBy(asc(tables.TimetableEntries.start)),
+  );
 
-    const groupedByDay = new Map<string, typeof timetableEntries>();
-    for (const entry of timetableEntries) {
-      const day = format(entry.timetable_entries.start, "yyyy-MM-dd");
-      if (!groupedByDay.has(day)) {
-        groupedByDay.set(day, []);
-      }
-      groupedByDay.get(day)?.push(entry);
+  const groupedByDay = new Map<string, typeof timetableEntries>();
+  for (const entry of timetableEntries) {
+    const day = format(entry.timetable_entries.start, "yyyy-MM-dd");
+    if (!groupedByDay.has(day)) {
+      groupedByDay.set(day, []);
     }
+    groupedByDay.get(day)?.push(entry);
+  }
 
-    return [...groupedByDay.entries()];
-  });
+  return [...groupedByDay.entries()];
+});
+
+const getTimetableEntries = createServerFn()
+  .validator(
+    z.object({
+      teacherId: z.string(),
+    }),
+  )
+  .handler(async ({ data: { teacherId } }) => runtime.runPromise(getTimetableEntriesFn(teacherId)));
 
 const Timetable = ({ teacherId }: { teacherId: string }) => {
   const getTimetableEntriesFn = useServerFn(getTimetableEntries);
@@ -109,20 +116,10 @@ const Timetable = ({ teacherId }: { teacherId: string }) => {
     queryFn: () => getTimetableEntriesFn({ data: { teacherId } }),
   });
 
-  const minDate = parse(
-    timetableEntries[0]?.[0] ?? "",
-    "yyyy-MM-dd",
-    new Date(),
-  );
-  const maxDate = parse(
-    timetableEntries.at(-1)?.[0] ?? "",
-    "yyyy-MM-dd",
-    new Date(),
-  );
+  const minDate = parse(timetableEntries[0]?.[0] ?? "", "yyyy-MM-dd", new Date());
+  const maxDate = parse(timetableEntries.at(-1)?.[0] ?? "", "yyyy-MM-dd", new Date());
 
-  const numDays = Math.ceil(
-    (maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24),
-  );
+  const numDays = Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24));
 
   const START_OF_DAY_IN_MINUTES = 8 * 60;
   const END_OF_DAY_IN_MINUTES = 17 * 60;
@@ -130,15 +127,11 @@ const Timetable = ({ teacherId }: { teacherId: string }) => {
   const timeTickWidth = 60;
   const timeTicks = Array.from(
     {
-      length: Math.floor(
-        (END_OF_DAY_IN_MINUTES - START_OF_DAY_IN_MINUTES) / timeTickWidth,
-      ),
+      length: Math.floor((END_OF_DAY_IN_MINUTES - START_OF_DAY_IN_MINUTES) / timeTickWidth),
     },
     (_, index) => {
       const minutes = START_OF_DAY_IN_MINUTES + index * timeTickWidth;
-      const leftPercent =
-        (minutes - START_OF_DAY_IN_MINUTES) /
-        (END_OF_DAY_IN_MINUTES - START_OF_DAY_IN_MINUTES);
+      const leftPercent = (minutes - START_OF_DAY_IN_MINUTES) / (END_OF_DAY_IN_MINUTES - START_OF_DAY_IN_MINUTES);
       return (
         <div
           key={minutes}
@@ -167,9 +160,7 @@ const Timetable = ({ teacherId }: { teacherId: string }) => {
 
         return (
           <Fragment key={key}>
-            <div className="border-b">
-              {format(day, "dd.MM.yyyy", { locale: de })}
-            </div>
+            <div className="border-b">{format(day, "dd.MM.yyyy", { locale: de })}</div>
             <div className="border-b">{format(day, "EEE", { locale: de })}</div>
             <div className="relative w-full border-b">
               {timeTicks}
@@ -179,16 +170,13 @@ const Timetable = ({ teacherId }: { teacherId: string }) => {
                   const start = entry.timetable_entries.start;
                   const duration = entry.timetable_entries.duration;
 
-                  const startInMinutes =
-                    start.getHours() * 60 + start.getMinutes();
+                  const startInMinutes = start.getHours() * 60 + start.getMinutes();
                   const endInMinutes = startInMinutes + duration;
 
                   const startInPercent =
-                    (startInMinutes - START_OF_DAY_IN_MINUTES) /
-                    (END_OF_DAY_IN_MINUTES - START_OF_DAY_IN_MINUTES);
+                    (startInMinutes - START_OF_DAY_IN_MINUTES) / (END_OF_DAY_IN_MINUTES - START_OF_DAY_IN_MINUTES);
                   const endInPercent =
-                    (endInMinutes - START_OF_DAY_IN_MINUTES) /
-                    (END_OF_DAY_IN_MINUTES - START_OF_DAY_IN_MINUTES);
+                    (endInMinutes - START_OF_DAY_IN_MINUTES) / (END_OF_DAY_IN_MINUTES - START_OF_DAY_IN_MINUTES);
 
                   return (
                     <div
@@ -215,24 +203,17 @@ const Timetable = ({ teacherId }: { teacherId: string }) => {
 };
 
 function Home() {
-  const [selectedTeacherId, setSelectedTeacherId] = useState<
-    string | undefined
-  >(undefined);
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string | undefined>(undefined);
 
   return (
     <div className="p-4 flex flex-row gap-4">
-      <TeacherSelectField
-        selectedTeacherId={selectedTeacherId}
-        setSelectedTeacherId={setSelectedTeacherId}
-      />
+      <TeacherSelectField selectedTeacherId={selectedTeacherId} setSelectedTeacherId={setSelectedTeacherId} />
 
       <div className="flex-1">
         {selectedTeacherId ? (
           <Timetable teacherId={selectedTeacherId} />
         ) : (
-          <div className="grid place-items-center h-full">
-            Bitte wählen Sie einen Lehrer
-          </div>
+          <div className="grid place-items-center h-full">Bitte wählen Sie einen Lehrer</div>
         )}
       </div>
     </div>

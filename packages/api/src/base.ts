@@ -1,25 +1,18 @@
 import { trpcServer } from "@hono/trpc-server";
-import { Hono } from "hono";
+import { type Context, Hono } from "hono";
 import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
-import { streamSSE } from "hono/streaming";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import pino from "pino";
+import { attachSyncServer } from "@groundswell/adapter-hono-server";
 
-import {
-  appRouter,
-  createTRPCContext,
-  getSession,
-  ingest,
-  subscribe,
-} from "@stu/api";
-import { eq } from "@stu/db";
-import { db } from "@stu/db/client";
-import * as tables from "@stu/db/schema";
-import { Result, deserializeEvent, serializeEvent } from "@stu/lib";
+import { appRouter, createTRPCContext, getSession } from "@stu/api";
 import { getSessionTokenFromHeaders } from "@stu/lib-server";
 
 import { env } from "../env";
+import { DomainIngestEngine, DomainBroadcast } from "./boilerplate";
+import { DomainEvent } from "@stu/lib";
+import { Effect } from "effect";
 
 const appLogger = pino({
   transport: {
@@ -41,7 +34,10 @@ const appLogger = pino({
   },
 });
 
-export const createBase = (basePath: string) => {
+export const createBase = Effect.fn(function* (basePath: string) {
+  const ingestEngine = yield* DomainIngestEngine;
+  const broadcast = yield* DomainBroadcast;
+
   const app = new Hono().basePath(basePath);
 
   app.use(trimTrailingSlash());
@@ -61,90 +57,21 @@ export const createBase = (basePath: string) => {
     }),
   );
 
-  app.get("/events", async (c) => {
-    const sessionToken = getSessionTokenFromHeaders(
-      new Headers(c.req.header()),
-    );
-    if (!sessionToken) {
-      c.status(401);
-      return c.text("Unauthorized");
-    }
+  const getUserId = async (c: Context) => {
+    const sessionToken = getSessionTokenFromHeaders(new Headers(c.req.header()));
+    if (!sessionToken) return null;
 
     const session = await getSession(sessionToken);
-    if (!session) {
-      c.status(401);
-      return c.text("Unauthorized");
-    }
+    if (!session) return null;
 
-    const offset = c.req.query("offset");
+    return session.user.id;
+  };
 
-    return streamSSE(c, async (stream) => {
-      const consumer = await subscribe(session.user.id, offset, (event) => {
-        void stream.writeSSE({
-          data: serializeEvent(event),
-        });
-      });
-
-      stream.onAbort(async () => {
-        await consumer.close();
-      });
-
-      await new Promise(() => {
-        // Keep the stream open indefinitely
-      });
-    });
-  });
-
-  app.post("/events", async (c) => {
-    const sessionToken = getSessionTokenFromHeaders(
-      new Headers(c.req.header()),
-    );
-    if (!sessionToken) {
-      c.status(401);
-      return c.text("Unauthorized");
-    }
-
-    const session = await getSession(sessionToken);
-    if (!session) {
-      c.status(401);
-      return c.text("Unauthorized");
-    }
-
-    const bodyRaw = await c.req.text();
-    const event = deserializeEvent(bodyRaw);
-
-    if (!event.success) {
-      console.log(
-        "INVALID EVENT",
-        event.error,
-        bodyRaw,
-        event.error.format(),
-        bodyRaw,
-      );
-      c.status(400);
-      return c.text("Invalid event");
-    }
-
-    const existingEvent = await db
-      .select()
-      .from(tables.events)
-      .where(eq(tables.events.id, event.data.id));
-
-    if (existingEvent.length > 0) {
-      c.status(409);
-      return c.text("Event already exists");
-    }
-
-    const res = await ingest(event.data.type, event.data, session.user.id);
-
-    if (Result.isErr(res)) {
-      console.log("FAILED TO INGEST EVENT", event.data, res);
-      c.status(400);
-      return c.text("Failed to ingest event");
-    }
-
-    c.status(200);
-    return c.text("Event ingested");
+  attachSyncServer(app, {
+    ingestEngine,
+    broadcast,
+    getUserId,
+    eventSchema: DomainEvent,
   });
 
   app.onError((err, c) => {
@@ -158,4 +85,4 @@ export const createBase = (basePath: string) => {
   });
 
   return app;
-};
+});

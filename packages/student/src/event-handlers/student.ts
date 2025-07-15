@@ -1,5 +1,5 @@
 import type { DomainEvent } from "@stu/lib";
-import { StudentRepository as StudentRepo } from "./student.repo";
+import { StudentRepository as StudentRepo } from "../repositories/student.repo";
 
 import type { NamespaceApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
@@ -8,8 +8,8 @@ import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import { Effect } from "effect";
 
-const failIfFalse = (message: string) =>
-  Effect.flatMap((bool) => (bool ? Effect.void : Effect.fail(new ValidationError({ cause: message }))));
+const failIfFalse = (message: string, reason: "DUPLICATE" | "INVALID" | "NOT_ALLOWED" | "NOT_FOUND" | "UNKNOWN") =>
+  Effect.flatMap((bool) => (bool ? Effect.void : Effect.fail(new ValidationError({ cause: message, reason }))));
 
 export const studentApplicators: NamespaceApplicatorMap<
   DomainEvent,
@@ -20,7 +20,7 @@ export const studentApplicators: NamespaceApplicatorMap<
   joined: {
     verify: Effect.fn(function* (event, { initiatorId }) {
       if (initiatorId !== event.data.studentId) {
-        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED" }));
+        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
       }
 
       const repo = yield* StudentRepo;
@@ -31,7 +31,7 @@ export const studentApplicators: NamespaceApplicatorMap<
       });
 
       if (!classExists) {
-        return yield* Effect.fail(new ValidationError({ cause: "INVALID_CLASS" }));
+        return yield* Effect.fail(new ValidationError({ cause: "INVALID_CLASS", reason: "NOT_FOUND" }));
       }
     }),
     apply: (event) =>
@@ -52,7 +52,7 @@ export const studentApplicators: NamespaceApplicatorMap<
         repo.doesCourseExist({
           courseId: event.data.courseId,
         }),
-      ).pipe(failIfFalse("INVALID_COURSE")),
+      ).pipe(failIfFalse("INVALID_COURSE", "NOT_FOUND")),
     apply: (event) =>
       StudentRepo.use((repo) =>
         repo.assignCourse({

@@ -5,13 +5,8 @@ import { z } from "zod";
 import { and, between, eq, gte, lte } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Schools, Semesters } from "@stu/db/schema";
-import {
-  getBearerToken,
-  getClassesV2,
-  getTimetableV2,
-  login,
-} from "@stu/external-api";
-import { BetterMap, isArraySingleElement, Result } from "@stu/lib";
+import { getBearerToken, getClassesV2, getTimetableV2, login } from "@stu/external-api";
+import { BetterMap, isArraySingleElement } from "@stu/lib";
 import type { SchoolId } from "@stu/lib";
 
 import { ConsoleIservClient } from "./get-or-create-teacher";
@@ -21,6 +16,7 @@ import * as tables from "@stu/db/schema";
 import { ingest, SYSTEM_USER } from "@stu/api";
 import { logger } from "./logger";
 import { ingestTimetableEntry } from "./ingest-timetable-entry";
+import { Exit } from "effect";
 
 interface Options {
   school: SchoolId;
@@ -34,19 +30,12 @@ interface Options {
  * - The kadmos id (in the case of IGS Lilienthal, this is unique per subject)
  * - The class(es) it is taught in
  */
-const generateCourseUuid = (
-  school: SchoolId,
-  entry: Pick<ProtoTimetableEntry, "course" | "classes">,
-) => {
+const generateCourseUuid = (school: SchoolId, entry: Pick<ProtoTimetableEntry, "course" | "classes">) => {
   const uuid = crypto
     .createHash("sha256")
     .update(school)
     .update(entry.course.name)
-    .update(
-      entry.classes
-        .map((cls) => `${cls.startYear}.${cls.identifierInYear}`)
-        .join(","),
-    )
+    .update(entry.classes.map((cls) => `${cls.startYear}.${cls.identifierInYear}`).join(","))
     .digest("hex")
     .slice(0, 32);
 
@@ -56,11 +45,7 @@ const generateCourseUuid = (
 
 const findSemesterFromDate = async (date: Date, school: SchoolId) => {
   const semesters = await db.query.Semesters.findMany({
-    where: and(
-      eq(Semesters.school, school),
-      lte(Semesters.start, date),
-      gte(Semesters.end, date),
-    ),
+    where: and(eq(Semesters.school, school), lte(Semesters.start, date), gte(Semesters.end, date)),
   });
 
   if (!isArraySingleElement(semesters)) {
@@ -70,11 +55,7 @@ const findSemesterFromDate = async (date: Date, school: SchoolId) => {
   return semesters[0];
 };
 
-export const importTimetable = async ({
-  school,
-  date,
-  monthOffsetRange: [offsetStart, offsetEnd],
-}: Options) => {
+export const importTimetable = async ({ school, date, monthOffsetRange: [offsetStart, offsetEnd] }: Options) => {
   const schoolEntity = await db.query.Schools.findFirst({
     where: eq(Schools.id, school),
   });
@@ -101,8 +82,8 @@ export const importTimetable = async ({
 
   const jar = await login(kadmosName, kadmosUsername, kadmosPassword);
   const bearerToken = await getBearerToken(jar);
-  const kadmosClasses = await getClassesV2(start, end, jar, bearerToken).then(
-    (classes) => classes.classes.map(mapKadmosClassV2),
+  const kadmosClasses = await getClassesV2(start, end, jar, bearerToken).then((classes) =>
+    classes.classes.map(mapKadmosClassV2),
   );
 
   const iservClient = new ConsoleIservClient();
@@ -110,19 +91,11 @@ export const importTimetable = async ({
   // First, we collect all entries for the week over all classes
   const entriesToInsert: ProtoTimetableEntry[] = [];
   for (const cls of kadmosClasses) {
-    const timetable = await getTimetableV2(
-      start,
-      end,
-      cls.kadmosId,
-      jar,
-      bearerToken,
-    );
+    const timetable = await getTimetableV2(start, end, cls.kadmosId, jar, bearerToken);
 
     entriesToInsert.push(
       ...timetable.days
-        .flatMap((day) =>
-          day.gridEntries.map((entry) => mapKadmosTimetableEntry(entry, cls)),
-        )
+        .flatMap((day) => day.gridEntries.map((entry) => mapKadmosTimetableEntry(entry, cls)))
         .filter((x) => x !== null),
     );
   }
@@ -149,29 +122,21 @@ export const importTimetable = async ({
       const matchesTeacherAndTime = (entry: ProtoTimetableEntry) => {
         const entryAtSameTime = course.entries.find(
           (otherEntry) =>
-            otherEntry.start.getTime() === entry.start.getTime() &&
-            otherEntry.duration === entry.duration,
+            otherEntry.start.getTime() === entry.start.getTime() && otherEntry.duration === entry.duration,
         );
         if (!entryAtSameTime) return false;
         return entryAtSameTime.teachers.every((teacher) =>
-          entry.teachers.some(
-            (otherTeacher) => otherTeacher.abbrv === teacher.abbrv,
-          ),
+          entry.teachers.some((otherTeacher) => otherTeacher.abbrv === teacher.abbrv),
         );
       };
 
-      if (
-        course.course.name === entry.course.name &&
-        matchesTeacherAndTime(entry)
-      ) {
+      if (course.course.name === entry.course.name && matchesTeacherAndTime(entry)) {
         // We need to copy the entries because we will modify the map
         const joinedClasses: ProtoTimetableEntry["classes"] = [];
         for (const cls of entry.classes) {
           if (
             !joinedClasses.some(
-              (otherCls) =>
-                otherCls.identifierInYear === cls.identifierInYear &&
-                otherCls.startYear === cls.startYear,
+              (otherCls) => otherCls.identifierInYear === cls.identifierInYear && otherCls.startYear === cls.startYear,
             )
           ) {
             joinedClasses.push(cls);
@@ -210,9 +175,7 @@ export const importTimetable = async ({
       (cls, index, self) =>
         index ===
         self.findIndex(
-          (otherCls) =>
-            otherCls.identifierInYear === cls.identifierInYear &&
-            otherCls.startYear === cls.startYear,
+          (otherCls) => otherCls.identifierInYear === cls.identifierInYear && otherCls.startYear === cls.startYear,
         ),
     );
 
@@ -230,13 +193,12 @@ export const importTimetable = async ({
     // Check if any existing timetable entries are not in the current kadmos timetable
     for (const existingTimetableEntry of existingTimetableEntries) {
       const existingEntry = course.entries.find(
-        (entry) =>
-          entry.start.getTime() === existingTimetableEntry.start.getTime(),
+        (entry) => entry.start.getTime() === existingTimetableEntry.start.getTime(),
       );
       if (!existingEntry) {
         const res = await ingest(
-          "org.timetable.discarded",
           {
+            type: "org.timetable.discarded",
             data: {
               course: uuid,
               start: existingTimetableEntry.start,
@@ -247,22 +209,16 @@ export const importTimetable = async ({
           SYSTEM_USER,
         );
 
-        if (Result.isErr(res)) {
-          if (res.error === "DOES_NOT_EXIST") {
+        if (Exit.isFailure(res)) {
+          if (res.cause._tag === "Fail" && res.cause.error.reason === "NOT_FOUND") {
             logger.error(
-              `Timetable entry does not exist. Could not discard: ${JSON.stringify(
-                existingTimetableEntry,
-              )}`,
+              `Timetable entry does not exist. Could not discard: ${JSON.stringify(existingTimetableEntry)}`,
             );
           } else {
-            logger.error(
-              `Could not ingest timetable discarded event for ${uuid}: ${res.error}`,
-            );
+            logger.error(`Could not ingest timetable discarded event for ${uuid}: ${res.cause.toString()}`);
           }
         } else {
-          logger.info(
-            `Timetable entry discarded: ${JSON.stringify(existingTimetableEntry)}`,
-          );
+          logger.info(`Timetable entry discarded: ${JSON.stringify(existingTimetableEntry)}`);
         }
       }
     }
@@ -297,11 +253,7 @@ export const importTimetable = async ({
           teacherNames: entry.teachers.map((teacher) => teacher.abbrv),
           roomNumbers: entry.roomNumbers
             .map((room) =>
-              room.change === null
-                ? room.name
-                : room.change.type === "REPLACED"
-                  ? room.change.name
-                  : null,
+              room.change === null ? room.name : room.change.type === "REPLACED" ? room.change.name : null,
             )
             .filter((x) => x !== null),
 

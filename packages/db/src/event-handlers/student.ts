@@ -1,5 +1,5 @@
 import type { DomainEvent } from "@stu/lib";
-import { StudentRepository } from "./student.repo";
+import { StudentRepository } from "../repositories/student.repo";
 
 import type { NamespaceServerApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
@@ -16,7 +16,7 @@ export const studentApplicators: NamespaceServerApplicatorMap<
   joined: {
     verify: Effect.fn(function* (event, { initiatorId }) {
       if (initiatorId !== event.data.studentId) {
-        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED" }));
+        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
       }
 
       const repo = yield* StudentRepository;
@@ -24,7 +24,7 @@ export const studentApplicators: NamespaceServerApplicatorMap<
         studentId: event.data.studentId,
       });
       if (!school || school !== event.data.school) {
-        return yield* Effect.fail(new ValidationError({ cause: "INVALID_SCHOOL" }));
+        return yield* Effect.fail(new ValidationError({ cause: "INVALID_SCHOOL", reason: "NOT_FOUND" }));
       }
 
       const classExists = yield* repo.doesClassExist({
@@ -34,7 +34,7 @@ export const studentApplicators: NamespaceServerApplicatorMap<
       });
 
       if (!classExists) {
-        return yield* Effect.fail(new ValidationError({ cause: "INVALID_CLASS" }));
+        return yield* Effect.fail(new ValidationError({ cause: "INVALID_CLASS", reason: "NOT_FOUND" }));
       }
     }),
     apply: (event) =>
@@ -57,7 +57,7 @@ export const studentApplicators: NamespaceServerApplicatorMap<
   courseAssigned: {
     verify: Effect.fn(function* (event, { initiatorId }) {
       if (initiatorId !== event.data.studentId) {
-        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED" }));
+        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
       }
 
       const repo = yield* StudentRepository;
@@ -67,7 +67,7 @@ export const studentApplicators: NamespaceServerApplicatorMap<
       });
 
       if (isAssigned) {
-        return yield* Effect.fail(new ValidationError({ cause: "ALREADY_ASSIGNED" }));
+        return yield* Effect.fail(new ValidationError({ cause: "ALREADY_ASSIGNED", reason: "DUPLICATE" }));
       }
     }),
     apply: (event) =>

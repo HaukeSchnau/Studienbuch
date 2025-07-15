@@ -1,21 +1,13 @@
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
-import {
-  PermissionsToRoles,
-  PermissionsToUsers,
-  Roles,
-  RolesToUsers,
-  Users,
-} from "@stu/db/schema";
+import { PermissionsToRoles, PermissionsToUsers, Roles, RolesToUsers, Users } from "@stu/db/schema";
 import type { Permission, PermissionScope } from "@stu/lib";
 
 // TODO: Produce a single query to get the permission scope and maybe cache it
 export const getPermissions = async (user: {
   id: string;
   isSuperUser: boolean;
-}): Promise<
-  { isSuperUser: boolean } & Partial<Record<Permission, PermissionScope>>
-> => {
+}): Promise<{ isSuperUser: boolean } & Partial<Record<Permission, PermissionScope>>> => {
   if (user.isSuperUser) {
     return {
       isSuperUser: true,
@@ -31,9 +23,7 @@ export const getPermissions = async (user: {
     .leftJoin(Roles, eq(Roles.id, RolesToUsers.role))
     .leftJoin(PermissionsToRoles, eq(PermissionsToRoles.role, Roles.id));
 
-  const ret: { isSuperUser: boolean } & Partial<
-    Record<Permission, PermissionScope>
-  > = {
+  const ret: { isSuperUser: boolean } & Partial<Record<Permission, PermissionScope>> = {
     isSuperUser: false,
   };
 
@@ -43,13 +33,11 @@ export const getPermissions = async (user: {
     }
 
     if (thing.permissions_to_roles) {
-      ret[thing.permissions_to_roles.permission] = (thing.permissions_to_roles
-        .scope ?? {}) as PermissionScope;
+      ret[thing.permissions_to_roles.permission] = (thing.permissions_to_roles.scope ?? {}) as PermissionScope;
     }
 
     if (thing.permissions_to_users) {
-      ret[thing.permissions_to_users.permission] = (thing.permissions_to_users
-        .scope ?? {}) as PermissionScope;
+      ret[thing.permissions_to_users.permission] = (thing.permissions_to_users.scope ?? {}) as PermissionScope;
     }
   }
 
