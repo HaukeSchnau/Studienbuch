@@ -11,10 +11,10 @@
   },
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "dev:internal": "tsc --watch",
+    "dev:internal": "tsgo --watch",
     "format": "biome format",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+    "typecheck": "tsgo --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
     "@groundswell/zod-helpers": "^0.0.12",
@@ -30,7 +30,7 @@
     "@stu/tsconfig": "workspace:*",
     "encoding": "^0.1.13",
     "eslint": "^9.24.0",
-    "typescript": "^5.8.3",
+
     "vitest": "^3.1.1"
   }
 }

@@ -12,7 +12,7 @@
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "format": "biome format",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
     "@stu/db": "workspace:*",
@@ -30,7 +30,7 @@
     "@stu/tsconfig": "workspace:*",
     "@types/papaparse": "^5.3.14",
     "eslint": "^9.24.0",
-    "typescript": "^5.8.3",
+
     "vitest": "^3.1.1"
   }
 }

@@ -9,7 +9,7 @@
     "lint": "eslint",
     "open:ios": "xed ios",
     "open:android": "open -a \"Android Studio\" android",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsgo --noEmit"
   },
   "author": "Hauke Schnau <hauke@schnau-lilienthal.de> (HaukeSchnau)",
   "license": "MIT",
