@@ -53,9 +53,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
             <Text weight="bold" className="text-4xl text-white">
               {subjectNameMap[course.subject]}
             </Text>
-            <Text className="text-2xl text-white">
-              {course.teachers.map(formalName).join(", ")}
-            </Text>
+            <Text className="text-2xl text-white">{course.teachers.map(formalName).join(", ")}</Text>
             <View className="h-2" />
             <Text italic className="text-lg text-white">
               {course.semester.name}
@@ -66,10 +64,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
             </Text>
           </View>
 
-          <View
-            className="aspect-square h-28 items-center justify-center rounded-2xl bg-white"
-            style={shadow}
-          >
+          <View className="aspect-square h-28 items-center justify-center rounded-2xl bg-white" style={shadow}>
             <SubjectIcon subject={course.subject} size={52} />
           </View>
         </View>

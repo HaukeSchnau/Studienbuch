@@ -46,20 +46,12 @@ export default async function SubstitutionPage() {
     const current = substitutions[i]!;
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const previous = substitutions[i - 1]!;
-    if (
-      previous.time &&
-      current.time &&
-      current.time.data === previous.time.data
-    ) {
+    if (previous.time && current.time && current.time.data === previous.time.data) {
       previous.time.rowSpan = current.time.rowSpan + previous.time.rowSpan;
       current.time = undefined;
     }
 
-    if (
-      previous.hour &&
-      current.hour &&
-      current.hour.data === previous.hour.data
-    ) {
+    if (previous.hour && current.hour && current.hour.data === previous.hour.data) {
       previous.hour.rowSpan = current.hour.rowSpan + previous.hour.rowSpan;
       current.hour = undefined;
     }
@@ -70,19 +62,14 @@ export default async function SubstitutionPage() {
       <PageHeading color="white">
         Vertretungsplan für {school} am {dayjs(date).format("DD.MM.YYYY")}
       </PageHeading>
-      <div className="pb-4 text-white">
-        Stand: {dayjs(lastUpdate).format("DD.MM.YYYY HH:mm")}
-      </div>
+      <div className="pb-4 text-white">Stand: {dayjs(lastUpdate).format("DD.MM.YYYY HH:mm")}</div>
 
       <Card noPadding className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
             <tr>
               {columns.map((column) => (
-                <th
-                  className="border-l border-grey-100 py-4 font-normal"
-                  key={column.key}
-                >
+                <th className="border-l border-grey-100 py-4 font-normal" key={column.key}>
                   {column.name}
                 </th>
               ))}

@@ -7,11 +7,7 @@ interface TextFieldCellProps {
   isDirty: boolean;
 }
 
-export const TextFieldCell = ({
-  value: initialValue,
-  updateData,
-  isDirty,
-}: TextFieldCellProps) => {
+export const TextFieldCell = ({ value: initialValue, updateData, isDirty }: TextFieldCellProps) => {
   const [value, setValue] = useState(initialValue);
 
   const onBlur = () => {

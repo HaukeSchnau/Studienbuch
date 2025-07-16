@@ -1,14 +1,10 @@
 import type { ExtendedProtoCourse } from "@stu/lib";
 import { guessSubject, protoCourseSchema } from "@stu/lib";
 
-export const parseTimetableCell = (
-  coursesRaw: string,
-): ExtendedProtoCourse[] => {
+export const parseTimetableCell = (coursesRaw: string): ExtendedProtoCourse[] => {
   if (!coursesRaw) return [];
 
-  const coursesForDay = coursesRaw
-    .split("\n")
-    .filter((course) => course.trim());
+  const coursesForDay = coursesRaw.split("\n").filter((course) => course.trim());
 
   const coursesForDayProcessed: ExtendedProtoCourse[] = [];
 
@@ -18,15 +14,9 @@ export const parseTimetableCell = (
 
     while (
       components.length == 1 ||
-      (components.length < 3 &&
-        !coursesForDay[i + 1]?.startsWith("*") &&
-        i + 1 < coursesForDay.length)
+      (components.length < 3 && !coursesForDay[i + 1]?.startsWith("*") && i + 1 < coursesForDay.length)
     ) {
-      components.push(
-        ...(coursesForDay[i + 1]
-          ?.split(" ")
-          .filter((course) => course.trim()) ?? []),
-      );
+      components.push(...(coursesForDay[i + 1]?.split(" ").filter((course) => course.trim()) ?? []));
       i++;
 
       // TODO: Remove this once the PDF is fixed
@@ -52,9 +42,7 @@ export const parseTimetableCell = (
     coursesForDayProcessed.push({
       ...parsedProtoCourse,
       isMandatory: !parsedProtoCourse.subject.startsWith("*"),
-      normalizedCourseId: parsedProtoCourse.subject
-        .replaceAll("*", "")
-        .toLowerCase(),
+      normalizedCourseId: parsedProtoCourse.subject.replaceAll("*", "").toLowerCase(),
     });
   }
 

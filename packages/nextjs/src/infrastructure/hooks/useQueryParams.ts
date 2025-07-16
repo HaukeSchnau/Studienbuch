@@ -1,9 +1,6 @@
 import { useRouter } from "next/router";
 
-export const useQueryParams = <
-  U extends string,
-  T extends Readonly<[U, ...U[]]>,
->(
+export const useQueryParams = <U extends string, T extends Readonly<[U, ...U[]]>>(
   expectedParams: T,
 ): Record<U, string> | null => {
   const router = useRouter();

@@ -5,10 +5,7 @@ import { View } from "react-native";
 
 import { formalName, formatGrade, subjectNameMap } from "@stu/lib";
 
-import {
-  ConfirmPageContent,
-  ViewConfirmPageContent,
-} from "~/components/confirm-page-content";
+import { ConfirmPageContent, ViewConfirmPageContent } from "~/components/confirm-page-content";
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
@@ -58,12 +55,10 @@ export const ConfirmWrittenGradeTeacher = ({ grade }: { grade: Grade }) => {
         confirmLabel="Bestätigen"
         signatureLabel={`Unterschrift von ${formalName(teacher)}`}
       >
-        Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
-        <Text weight="bold">{user.name}</Text> am{" "}
-        <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur
-        in <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit
-        der Note <Text weight="bold">{formatGrade(result)}</Text> geschrieben
-        hat.
+        Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in <Text weight="bold">{user.name}</Text> am{" "}
+        <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur in{" "}
+        <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der Note{" "}
+        <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
       </ConfirmPageContent>
     </View>
   );
@@ -88,11 +83,10 @@ export const WrittenGradeTeacherConfirmationView = ({
       signatureLabel={`Unterschrift von ${formalName(teacher)}`}
       signatureSvg={grade.teacherSignature}
     >
-      Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
-      <Text weight="bold">{user.name}</Text> am{" "}
+      Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in <Text weight="bold">{user.name}</Text> am{" "}
       <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur in{" "}
-      <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der
-      Note <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
+      <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der Note{" "}
+      <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
     </ViewConfirmPageContent>
   );
 };

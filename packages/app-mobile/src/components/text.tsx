@@ -43,12 +43,7 @@ export const fontNames = {
   }),
 };
 
-export const Text = ({
-  weight = "regular",
-  italic,
-  variant,
-  ...props
-}: Props) => {
+export const Text = ({ weight = "regular", italic, variant, ...props }: Props) => {
   switch (variant) {
     case "heading":
       return (
@@ -65,9 +60,7 @@ export const Text = ({
       );
   }
 
-  const fontFamily = italic
-    ? `${fontNames[`${weight}-italic`]}`
-    : fontNames[weight];
+  const fontFamily = italic ? `${fontNames[`${weight}-italic`]}` : fontNames[weight];
 
   return (
     <RNText

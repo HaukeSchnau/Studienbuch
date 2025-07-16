@@ -38,24 +38,13 @@ export const SchoolsNav = () => {
 
       {params.school && (
         <>
-          <NavigationItem
-            href={`/admin/schools/${params.school}/theme`}
-            icon="palette"
-          >
+          <NavigationItem href={`/admin/schools/${params.school}/theme`} icon="palette">
             Theme
           </NavigationItem>
 
-          <NavigationItem
-            href={`/admin/schools/${params.school}/substitutions`}
-          >
-            Vertretungspläne
-          </NavigationItem>
+          <NavigationItem href={`/admin/schools/${params.school}/substitutions`}>Vertretungspläne</NavigationItem>
 
-          <PermissionNavigationItem
-            permission="EDIT_YEARS"
-            href={`/admin/schools/${params.school}/years`}
-            exact
-          >
+          <PermissionNavigationItem permission="EDIT_YEARS" href={`/admin/schools/${params.school}/years`} exact>
             Jahrgänge
           </PermissionNavigationItem>
 

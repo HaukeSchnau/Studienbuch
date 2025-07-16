@@ -24,9 +24,7 @@ const store = new Store<
 
 type StorageValue<TKey extends Keys> = z.infer<(typeof schemas)[TKey]>;
 
-const getStorageValue = <TKey extends Keys>(
-  key: TKey,
-): StorageValue<TKey> | null => {
+const getStorageValue = <TKey extends Keys>(key: TKey): StorageValue<TKey> | null => {
   const strValue = SecureStore.getItem(key);
   if (strValue === null) return null;
 
@@ -43,14 +41,8 @@ const getStorageValue = <TKey extends Keys>(
 
 export const useStorage = <TKey extends Keys>(
   key: TKey,
-): [
-  StorageValue<TKey> | null,
-  (newValue: StorageValue<TKey>) => Promise<void>,
-] => {
-  const value = useStore(store, (state) => state[key]) as
-    | StorageValue<TKey>
-    | null
-    | undefined;
+): [StorageValue<TKey> | null, (newValue: StorageValue<TKey>) => Promise<void>] => {
+  const value = useStore(store, (state) => state[key]) as StorageValue<TKey> | null | undefined;
 
   const set = useCallback(
     async (newValue: StorageValue<TKey>) => {
@@ -74,19 +66,14 @@ export const useStorage = <TKey extends Keys>(
   return [definedValue, set] as const;
 };
 
-export const setStorage = async <TKey extends Keys>(
-  key: TKey,
-  newValue: StorageValue<TKey>,
-): Promise<void> => {
+export const setStorage = async <TKey extends Keys>(key: TKey, newValue: StorageValue<TKey>): Promise<void> => {
   store.setState(() => ({ [key]: newValue }));
 
   const strValue = JSON.stringify(newValue);
   await SecureStore.setItemAsync(key, strValue);
 };
 
-export const getStorage = <TKey extends Keys>(
-  key: TKey,
-): StorageValue<TKey> | null => {
+export const getStorage = <TKey extends Keys>(key: TKey): StorageValue<TKey> | null => {
   const val = store.state[key];
   if (val === undefined) {
     const newValue = getStorageValue(key);

@@ -1,12 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  jsonb,
-  pgEnum,
-  pgTable,
-  primaryKey,
-  text,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { jsonb, pgEnum, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
 
 import { Users } from "../people/users";
 
@@ -79,15 +72,12 @@ export const PermissionsToUsers = pgTable(
   },
 );
 
-export const PermissionsToUsersRelations = relations(
-  PermissionsToUsers,
-  ({ one }) => ({
-    user: one(Users, {
-      fields: [PermissionsToUsers.user],
-      references: [Users.id],
-    }),
+export const PermissionsToUsersRelations = relations(PermissionsToUsers, ({ one }) => ({
+  user: one(Users, {
+    fields: [PermissionsToUsers.user],
+    references: [Users.id],
   }),
-);
+}));
 
 export const PermissionsToRoles = pgTable(
   "permissions_to_roles",

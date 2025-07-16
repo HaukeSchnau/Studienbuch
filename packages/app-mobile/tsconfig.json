@@ -9,14 +9,6 @@
     "types": ["nativewind/types"],
     "checkJs": false
   },
-  "include": [
-    "src",
-    "*.ts",
-    "*.js",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts",
-    "nativewind-env.d.ts",
-    "drizzle"
-  ],
+  "include": ["src", "*.ts", "*.js", ".expo/types/**/*.ts", "expo-env.d.ts", "nativewind-env.d.ts", "drizzle"],
   "exclude": ["node_modules"]
 }

@@ -9,8 +9,7 @@ import { buildSubstitutionsPayload } from "../payloadBuilder";
 
 dayjs.extend(customParseFormat);
 
-const buildSubstitutionsUrl = (school: string) =>
-  `${BASE_URL}/substitution/data?school=${school}`;
+const buildSubstitutionsUrl = (school: string) => `${BASE_URL}/substitution/data?school=${school}`;
 
 const getSubstitutionsWithPayload = async (
   schoolName: string,
@@ -37,18 +36,9 @@ export const getSubstitutionsFromKadmos = async (
 ) => {
   const payload = await getFormat(school, formatName);
   const format = { ...payload, ...formatOverrides };
-  const substitutionsPayload = buildSubstitutionsPayload(
-    formatName,
-    school,
-    date,
-    hideCancelCausedByEvent,
-    format,
-  );
+  const substitutionsPayload = buildSubstitutionsPayload(formatName, school, date, hideCancelCausedByEvent, format);
   return {
-    substitutions: await getSubstitutionsWithPayload(
-      school,
-      substitutionsPayload,
-    ),
+    substitutions: await getSubstitutionsWithPayload(school, substitutionsPayload),
     format,
   };
 };
@@ -100,11 +90,7 @@ const convertNumberToDate = (number: number | null) => {
 
   const date = number.toString();
   return new Date(
-    Date.UTC(
-      parseInt(date.substring(0, 4)),
-      parseInt(date.substring(4, 6)) - 1,
-      parseInt(date.substring(6, 8)),
-    ),
+    Date.UTC(parseInt(date.substring(0, 4)), parseInt(date.substring(4, 6)) - 1, parseInt(date.substring(6, 8))),
   );
 };
 
@@ -135,9 +121,7 @@ const responseSchema = z.strictObject({
         }),
       ]),
     ),
-    lastUpdate: z
-      .string()
-      .transform((date) => dayjs(date, "DD.MM.YYYY HH:mm:ss").format()),
+    lastUpdate: z.string().transform((date) => dayjs(date, "DD.MM.YYYY HH:mm:ss").format()),
     absentElements: z.array(z.unknown()),
     affectedElements: z.object({ 1: z.array(z.string()).optional() }),
     messageData: z.object({

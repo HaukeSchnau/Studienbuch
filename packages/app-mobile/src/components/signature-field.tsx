@@ -37,18 +37,13 @@ interface Props {
   label: string;
 }
 
-export const SignatureField = forwardRef<DrawingViewRef, Props>(
-  ({ label }, ref) => {
-    return (
-      <SignatureFrame label={label}>
-        <DrawingView
-          ref={ref}
-          style={{ width: "100%", height: "100%", position: "absolute" }}
-        />
-      </SignatureFrame>
-    );
-  },
-);
+export const SignatureField = forwardRef<DrawingViewRef, Props>(({ label }, ref) => {
+  return (
+    <SignatureFrame label={label}>
+      <DrawingView ref={ref} style={{ width: "100%", height: "100%", position: "absolute" }} />
+    </SignatureFrame>
+  );
+});
 
 export const SignatureView = ({
   svg,
@@ -59,10 +54,7 @@ export const SignatureView = ({
 }) => {
   return (
     <SignatureFrame label={label}>
-      <SvgXml
-        xml={svg}
-        style={{ width: "100%", height: "100%", position: "absolute" }}
-      />
+      <SvgXml xml={svg} style={{ width: "100%", height: "100%", position: "absolute" }} />
     </SignatureFrame>
   );
 };

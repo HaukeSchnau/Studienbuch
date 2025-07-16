@@ -21,9 +21,7 @@ const SingleConfirmationStatus = ({
       ) : (
         <Cross color={colors.danger.DEFAULT} />
       )}
-      <Text className={clsx(confirmed ? "text-primary-text" : "text-danger")}>
-        {confirmedText}
-      </Text>
+      <Text className={clsx(confirmed ? "text-primary-text" : "text-danger")}>{confirmedText}</Text>
     </View>
   );
 };
@@ -46,9 +44,7 @@ export const ConfirmationStatus = ({
   }
 
   if (isOfAge) {
-    return (
-      <SingleConfirmationStatus confirmed={teacher} confirmedText="Lehrer" />
-    );
+    return <SingleConfirmationStatus confirmed={teacher} confirmedText="Lehrer" />;
   }
 
   if (order === "parentTeacher") {

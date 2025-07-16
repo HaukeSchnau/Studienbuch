@@ -31,7 +31,5 @@ export const Portal = ({ children }: { children: ReactNode }): ReactNode => {
 export const PortalRenderer = (): ReactNode => {
   const portals = usePortalStore((state) => state.portals);
 
-  return Object.entries(portals).map(([id, portal]) => (
-    <Fragment key={id}>{portal}</Fragment>
-  ));
+  return Object.entries(portals).map(([id, portal]) => <Fragment key={id}>{portal}</Fragment>);
 };

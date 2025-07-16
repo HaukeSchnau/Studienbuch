@@ -5,9 +5,7 @@ export const env = createEnv({
   shared: {
     BASE_URL: z.string().min(1),
     PORT: z.coerce.number().default(3000),
-    NODE_ENV: z
-      .enum(["development", "production", "test"])
-      .default("development"),
+    NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
     NEXT_PUBLIC_DEPLOYMENT_ENV: z.enum(["dev", "beta", "prod"]),
   },
   /**
@@ -32,8 +30,5 @@ export const env = createEnv({
     NEXT_PUBLIC_DEPLOYMENT_ENV: process.env.NEXT_PUBLIC_DEPLOYMENT_ENV,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
-  skipValidation:
-    !!process.env.CI ||
-    !!process.env.SKIP_ENV_VALIDATION ||
-    process.env.npm_lifecycle_event === "lint",
+  skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION || process.env.npm_lifecycle_event === "lint",
 });

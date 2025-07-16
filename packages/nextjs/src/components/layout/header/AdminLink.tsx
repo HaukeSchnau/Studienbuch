@@ -4,12 +4,7 @@ import { api } from "~/infrastructure/trpc/react";
 import { NavLink } from "../nav/NavLink";
 
 export const AdminLink = () => {
-  const {
-    data: sessionData,
-    isPending,
-    isError,
-    error,
-  } = api.auth.getSession.useQuery();
+  const { data: sessionData, isPending, isError, error } = api.auth.getSession.useQuery();
 
   if (isPending) {
     return null;

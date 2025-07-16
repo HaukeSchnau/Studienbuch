@@ -25,15 +25,12 @@ export const OralGradesRow = ({
   const { user } = useRequiredAuthenticatedSession();
   const { currentOralGrade, mostRecentConfirmedOralGrade } = useMemo(() => {
     const currentOralGrade = oralGrades[0];
-    const mostRecentConfirmedOralGrade =
-      oralGrades.find(isGradeConfirmed) ?? null;
+    const mostRecentConfirmedOralGrade = oralGrades.find(isGradeConfirmed) ?? null;
 
     return {
       currentOralGrade,
       mostRecentConfirmedOralGrade:
-        currentOralGrade !== mostRecentConfirmedOralGrade
-          ? mostRecentConfirmedOralGrade
-          : null,
+        currentOralGrade !== mostRecentConfirmedOralGrade ? mostRecentConfirmedOralGrade : null,
     };
   }, [oralGrades]);
 
@@ -55,8 +52,7 @@ export const OralGradesRow = ({
         width={64}
         height={64}
         style={{
-          opacity:
-            !currentOralGrade || isGradeConfirmed(currentOralGrade) ? 1 : 0.25,
+          opacity: !currentOralGrade || isGradeConfirmed(currentOralGrade) ? 1 : 0.25,
         }}
       />
 
@@ -66,17 +62,11 @@ export const OralGradesRow = ({
             {currentOralGrade ? formatGrade(currentOralGrade.result) : "—"}
           </Text>
 
-          <IconButton
-            icon="edit"
-            opacity={0.8}
-            size={24}
-            onPress={() => setIsEditVisible(true)}
-          />
+          <IconButton icon="edit" opacity={0.8} size={24} onPress={() => setIsEditVisible(true)} />
         </View>
         <Text className="text-lg opacity-60">mündlich</Text>
         <Text className="text-lg opacity-60">
-          Stand:{" "}
-          {currentOralGrade ? format(currentOralGrade.date, "dd.MM.yyyy") : "—"}
+          Stand: {currentOralGrade ? format(currentOralGrade.date, "dd.MM.yyyy") : "—"}
         </Text>
         {currentOralGrade && (
           <>

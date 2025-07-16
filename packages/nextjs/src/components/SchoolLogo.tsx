@@ -13,16 +13,8 @@ export const SchoolLogo = () => {
   const query = api.schools.getTheme.useQuery(school ? school : skipToken);
 
   if (!query.data?.image) {
-    return (
-      <img
-        src="/assets/stu-logo.png"
-        className="rounded-full"
-        alt="Studienbuch"
-      />
-    );
+    return <img src="/assets/stu-logo.png" className="rounded-full" alt="Studienbuch" />;
   }
 
-  return (
-    <img src={query.data.image} className="rounded-full" alt="Schullogo" />
-  );
+  return <img src={query.data.image} className="rounded-full" alt="Schullogo" />;
 };

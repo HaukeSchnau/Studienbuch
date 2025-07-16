@@ -1,7 +1,4 @@
-import {
-  LogoutButton,
-  NavigationItem,
-} from "~/components/layout/nav/NavigationItem";
+import { LogoutButton, NavigationItem } from "~/components/layout/nav/NavigationItem";
 import { PermissionNavigationItem } from "~/components/layout/nav/PermissionNavigationItem";
 import { SchoolsNav } from "./SchoolsNav";
 
@@ -10,18 +7,10 @@ export const AdminNav = () => {
     <>
       <SchoolsNav />
       <hr className="opacity-20" />
-      <PermissionNavigationItem
-        permission="EDIT_USERS"
-        href="/admin/users"
-        icon="person"
-      >
+      <PermissionNavigationItem permission="EDIT_USERS" href="/admin/users" icon="person">
         Nutzer
       </PermissionNavigationItem>
-      <PermissionNavigationItem
-        permission="EDIT_USERS"
-        href="/admin/people"
-        icon="person"
-      >
+      <PermissionNavigationItem permission="EDIT_USERS" href="/admin/people" icon="person">
         Personen
       </PermissionNavigationItem>
       <NavigationItem href="/impressum">Impressum</NavigationItem>

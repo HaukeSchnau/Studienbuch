@@ -13,9 +13,7 @@ export const revalidate = 3600; // 1 hour
 export default function RoadmapPage() {
   return (
     <div className="py-12 md:py-16">
-      <h1 className="px-12 text-4xl font-bold text-primary-text md:px-[10vw]">
-        Woran wird gerade gearbeitet?
-      </h1>
+      <h1 className="px-12 text-4xl font-bold text-primary-text md:px-[10vw]">Woran wird gerade gearbeitet?</h1>
 
       <Suspense
         fallback={
@@ -36,11 +34,7 @@ const StateColumns = async () => {
   return (
     <div className={clsx(style.stateColumns, "px-12 pt-10 md:px-[10vw]")}>
       {states.map((state, idx) => (
-        <StateColumn
-          key={state.id}
-          state={state}
-          isLast={idx === states.length - 1}
-        />
+        <StateColumn key={state.id} state={state} isLast={idx === states.length - 1} />
       ))}
     </div>
   );
@@ -56,12 +50,7 @@ const StateColumn = async ({ state, isLast }: StateColumnProps) => {
   issues.sort((a, b) => a.priority - b.priority);
 
   return (
-    <div
-      className={clsx(
-        "flex flex-col gap-4 border-black-20",
-        !isLast && "mr-4 border-r pr-4",
-      )}
-    >
+    <div className={clsx("flex flex-col gap-4 border-black-20", !isLast && "mr-4 border-r pr-4")}>
       <h2 className="pl-4 font-medium">{state.name}</h2>
       <div className="flex flex-col gap-4">
         {issues.map((issue) => (
@@ -87,27 +76,17 @@ const IssueCard = async ({ issue, color }: IssueCardProps) => {
 
   return (
     <div
-      className={clsx(
-        "flex flex-col gap-2 rounded-2xl bg-surface p-4 shadow-md",
-        style.issueCard,
-      )}
+      className={clsx("flex flex-col gap-2 rounded-2xl bg-surface p-4 shadow-md", style.issueCard)}
       style={{ backgroundColor: color }}
       tabIndex={canExpand ? 0 : undefined}
       role={canExpand ? "button" : undefined}
     >
-      {project && (
-        <span className="text-sm italic opacity-80">{project.name}</span>
-      )}
+      {project && <span className="text-sm italic opacity-80">{project.name}</span>}
       {title}
       {description && (
         <div className="min-h-4">
           <div className={style.descriptionExpander}>
-            <div
-              className={clsx(
-                "flex flex-col gap-2 text-sm opacity-80",
-                style.description,
-              )}
-            >
+            <div className={clsx("flex flex-col gap-2 text-sm opacity-80", style.description)}>
               <Paragraphs text={description} />
             </div>
           </div>
@@ -125,9 +104,7 @@ const IssueCard = async ({ issue, color }: IssueCardProps) => {
           </span>
         ))}
 
-        <div className="text-xs opacity-80">
-          {formatDateRelative(issue.updatedAt)}
-        </div>
+        <div className="text-xs opacity-80">{formatDateRelative(issue.updatedAt)}</div>
       </div>
     </div>
   );
@@ -135,14 +112,7 @@ const IssueCard = async ({ issue, color }: IssueCardProps) => {
 
 const MoreTextIndicator = ({ className }: { className?: string }) => {
   return (
-    <div
-      className={clsx(
-        "h-4 w-min rounded-full bg-black-20 px-2 leading-none transition-all",
-        className,
-      )}
-    >
-      ⋯
-    </div>
+    <div className={clsx("h-4 w-min rounded-full bg-black-20 px-2 leading-none transition-all", className)}>⋯</div>
   );
 };
 

@@ -37,12 +37,7 @@ export const WrittenGradesRow = ({
     <>
       <View className="flex-row gap-4">
         <PortaledBottomSheet onClose={() => setIsAddVisible(false)}>
-          {isAddVisible && (
-            <AddWrittenGrade
-              courseId={courseId}
-              onClose={() => setIsAddVisible(false)}
-            />
-          )}
+          {isAddVisible && <AddWrittenGrade courseId={courseId} onClose={() => setIsAddVisible(false)} />}
         </PortaledBottomSheet>
 
         <WrittenIcon
@@ -59,18 +54,11 @@ export const WrittenGradesRow = ({
               {averageWrittenGrade ? formatGrade(averageWrittenGrade) : "—"}
             </Text>
 
-            <IconButton
-              icon="add"
-              opacity={0.8}
-              size={24}
-              onPress={() => setIsAddVisible(true)}
-            />
+            <IconButton icon="add" opacity={0.8} size={24} onPress={() => setIsAddVisible(true)} />
           </View>
           <Text className="text-lg opacity-60">schriftlich</Text>
           {writtenGrades.length > 0 && (
-            <Text className="text-lg">
-              Deine Note setzt sich aus diesen Ergebnissen zusammen:
-            </Text>
+            <Text className="text-lg">Deine Note setzt sich aus diesen Ergebnissen zusammen:</Text>
           )}
         </View>
       </View>

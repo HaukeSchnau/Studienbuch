@@ -1,10 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  foreignKey,
-  primaryKey,
-  sqliteTable,
-  text,
-} from "drizzle-orm/sqlite-core";
+import { foreignKey, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { courses } from "../school/courses";
 import { timestamp, uuid } from "../utils";

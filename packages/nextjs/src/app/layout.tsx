@@ -64,13 +64,7 @@ export const metadata: Metadata = {
       url: "https://play.google.com/store/apps/details?id=de.haukeschnau.class_mate",
     },
   },
-  keywords: [
-    "Studienbuch",
-    "IGS Lilienthal",
-    "Lilienthal",
-    "Schule",
-    "Digitales Studienbuch",
-  ],
+  keywords: ["Studienbuch", "IGS Lilienthal", "Lilienthal", "Schule", "Digitales Studienbuch"],
 };
 
 export const viewport: Viewport = {
@@ -82,13 +76,7 @@ export default function Layout(props: { children: ReactNode }) {
     <html lang="de">
       <AxiomWebVitals />
 
-      <body
-        className={[
-          "font-sans",
-          fontSans.variable,
-          materialIcons.variable,
-        ].join(" ")}
-      >
+      <body className={["font-sans", fontSans.variable, materialIcons.variable].join(" ")}>
         <TRPCReactProvider>
           <Theme />
           {props.children}

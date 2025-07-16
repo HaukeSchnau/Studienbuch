@@ -20,10 +20,7 @@ export const CourseCard = ({ course }: CourseCardProps) => {
   );
 
   return (
-    <Card
-      href={`/admin/schools/${school}/years/${year}/courses/${course.id}`}
-      className="flex flex-col"
-    >
+    <Card href={`/admin/schools/${school}/years/${year}/courses/${course.id}`} className="flex flex-col">
       <CardHeading>{course.name}</CardHeading>
       <span>{course.name}</span>
     </Card>

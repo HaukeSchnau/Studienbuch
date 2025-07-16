@@ -6,10 +6,7 @@ interface PageHeadingProps {
   color?: "green" | "white";
 }
 
-export const PageHeading = ({
-  children,
-  color = "green",
-}: PageHeadingProps) => {
+export const PageHeading = ({ children, color = "green" }: PageHeadingProps) => {
   return (
     <h1
       className={clsx("text-5xl font-semibold", {

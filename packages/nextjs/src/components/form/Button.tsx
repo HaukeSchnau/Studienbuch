@@ -18,18 +18,12 @@ type ButtonProps<TUrl extends string> = {
     }
 );
 
-export function Button<TUrl extends string>({
-  children,
-  className,
-  variant = "primary",
-  ...props
-}: ButtonProps<TUrl>) {
+export function Button<TUrl extends string>({ children, className, variant = "primary", ...props }: ButtonProps<TUrl>) {
   const classes = clsx(
     "rounded-3xl border-b-4 border-t-4 px-8 py-4 font-bold uppercase transition-all",
     variant === "primary" &&
       "border-b-accent-sec border-t-accent bg-accent hover:border-t-accent-sec hover:bg-accent-sec text-on-accent",
-    variant === "secondary" &&
-      "border-transparent hover:bg-neutral-sec text-neutral",
+    variant === "secondary" && "border-transparent hover:bg-neutral-sec text-neutral",
     variant === "alert" &&
       "border-b-alert-sec border-t-alert bg-alert hover:border-t-alert-sec hover:bg-alert-sec text-white",
     variant === "danger" &&

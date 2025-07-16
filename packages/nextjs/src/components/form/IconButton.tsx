@@ -38,15 +38,7 @@ export const IconButton = <TUrl extends string>({
   );
 
   const content = (
-    <i
-      className={clsx(
-        size === "sm" && "text-sm",
-        size === "md" && "text-lg",
-        size === "lg" && "text-2xl",
-      )}
-    >
-      {icon}
-    </i>
+    <i className={clsx(size === "sm" && "text-sm", size === "md" && "text-lg", size === "lg" && "text-2xl")}>{icon}</i>
   );
 
   if (onClick) {

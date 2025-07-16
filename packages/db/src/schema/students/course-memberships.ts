@@ -30,16 +30,13 @@ export const CourseMemberships = pgTable(
   },
 );
 
-export const CourseMembershipsRelations = relations(
-  CourseMemberships,
-  ({ one }) => ({
-    student: one(Students, {
-      fields: [CourseMemberships.student],
-      references: [Students.person],
-    }),
-    course: one(Courses, {
-      fields: [CourseMemberships.course],
-      references: [Courses.id],
-    }),
+export const CourseMembershipsRelations = relations(CourseMemberships, ({ one }) => ({
+  student: one(Students, {
+    fields: [CourseMemberships.student],
+    references: [Students.person],
   }),
-);
+  course: one(Courses, {
+    fields: [CourseMemberships.course],
+    references: [Courses.id],
+  }),
+}));

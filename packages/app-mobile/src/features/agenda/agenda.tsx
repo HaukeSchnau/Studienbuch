@@ -1,14 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  add,
-  format,
-  getISOWeek,
-  getISOWeekYear,
-  isAfter,
-  isSameDay,
-  isTomorrow,
-  isWithinInterval,
-} from "date-fns";
+import { add, format, getISOWeek, getISOWeekYear, isAfter, isSameDay, isTomorrow, isWithinInterval } from "date-fns";
 import { de as localeDE } from "date-fns/locale/de";
 import { Fragment, useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
@@ -59,22 +50,17 @@ const EmptyState = () => {
   });
 
   if (!holiday.data) {
-    return (
-      <Text className="color-white text-2xl">Heute ist nichts geplant. 🎉</Text>
-    );
+    return <Text className="color-white text-2xl">Heute ist nichts geplant. 🎉</Text>;
   }
 
   return (
     <>
       <View className="h-4" />
       <Card className="p-8">
-        <Text className="text-center text-2xl">
-          Schöne {matchHolidayName(holiday.data.name)}! 🎉
-        </Text>
+        <Text className="text-center text-2xl">Schöne {matchHolidayName(holiday.data.name)}! 🎉</Text>
         <View className="h-4" />
         <Text className="text-center opacity-80">
-          {format(holiday.data.start, "dd.MM.yyyy")} -{" "}
-          {format(holiday.data.end, "dd.MM.yyyy")}
+          {format(holiday.data.start, "dd.MM.yyyy")} - {format(holiday.data.end, "dd.MM.yyyy")}
         </Text>
       </Card>
     </>
@@ -110,9 +96,7 @@ export const Agenda = () => {
       }
 
       return {
-        entries: entries.filter((entry) =>
-          isSameDay(entry.start, nextEntry.start),
-        ),
+        entries: entries.filter((entry) => isSameDay(entry.start, nextEntry.start)),
         date: nextEntry.start,
       };
     },
@@ -166,9 +150,7 @@ export const Agenda = () => {
 
   return (
     <>
-      <Text className="color-white text-2xl">
-        Das steht {dateFormatted} an:
-      </Text>
+      <Text className="color-white text-2xl">Das steht {dateFormatted} an:</Text>
 
       <View className="h-4" />
 
@@ -188,15 +170,9 @@ const AgendaEntry = ({ entry }: { entry: AgendaEntry }) => {
   return (
     <View className="flex-row px-6 py-2">
       <View>
-        <Text className="text-sm opacity-80">
-          {format(entry.start, "HH:mm")}
-        </Text>
-        <Text className="text-lg text-primary-text">
-          {subjectNameMap[entry.course.subject]}
-        </Text>
-        <Text className="text-md opacity-80">
-          {entry.course.teachers.map(formalName).join(", ")}
-        </Text>
+        <Text className="text-sm opacity-80">{format(entry.start, "HH:mm")}</Text>
+        <Text className="text-lg text-primary-text">{subjectNameMap[entry.course.subject]}</Text>
+        <Text className="text-md opacity-80">{entry.course.teachers.map(formalName).join(", ")}</Text>
       </View>
     </View>
   );

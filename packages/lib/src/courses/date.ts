@@ -18,26 +18,13 @@ export const parseTime = (time: string) => {
   const hours = parseInt(split[0]);
   const minutes = parseInt(split[1]);
 
-  if (
-    isNaN(hours) ||
-    isNaN(minutes) ||
-    hours < 0 ||
-    hours > 23 ||
-    minutes < 0 ||
-    minutes > 59
-  )
+  if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59)
     throw new Error(`Invalid time given: ${time}`);
 
   return hours * 60 + minutes;
 };
 
-export const normalTimes = [
-  8 * 60,
-  9 * 60 + 45,
-  11 * 60 + 30,
-  13 * 60 + 50,
-  15 * 60 + 15,
-];
+export const normalTimes = [8 * 60, 9 * 60 + 45, 11 * 60 + 30, 13 * 60 + 50, 15 * 60 + 15];
 
 /**
  * Checks if a time is a normal time. Normal times are 8:00, 9:45, 11:30, 13:50 and 15:15.
@@ -51,9 +38,7 @@ export const formatTime = (time: number) => {
   const hours = Math.floor(time / 60);
   const minutes = time % 60;
 
-  return `${hours.toString().padStart(2, "0")}:${minutes
-    .toString()
-    .padStart(2, "0")}`;
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 };
 
 export const formatDateRelative = (date: Date) => {

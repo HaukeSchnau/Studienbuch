@@ -15,17 +15,11 @@ import { getMySemesters } from "./queries/get-my-semesters";
 import { SemesterSelector } from "./semester-selector";
 
 const Content = ({ semesters }: { semesters: NonEmptyArray<Semester> }) => {
-  const [selectedSemester, setSelectedSemester] = useState<Semester>(
-    semesters.at(-1),
-  );
+  const [selectedSemester, setSelectedSemester] = useState<Semester>(semesters.at(-1));
 
   return (
     <View className="px-6 py-4">
-      <SemesterSelector
-        choices={semesters}
-        onSelect={setSelectedSemester}
-        selectedSemester={selectedSemester}
-      />
+      <SemesterSelector choices={semesters} onSelect={setSelectedSemester} selectedSemester={selectedSemester} />
       <View className="h-4" />
       <CourseList semester={selectedSemester} />
     </View>

@@ -34,9 +34,7 @@ export function TRPCReactProvider(props: { children: ReactNode }) {
     api.createClient({
       links: [
         loggerLink({
-          enabled: (op) =>
-            env.NODE_ENV === "development" ||
-            (op.direction === "down" && op.result instanceof Error),
+          enabled: (op) => env.NODE_ENV === "development" || (op.direction === "down" && op.result instanceof Error),
         }),
         httpBatchLink({
           transformer: SuperJSON,

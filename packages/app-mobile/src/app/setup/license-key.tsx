@@ -30,9 +30,8 @@ export default function LicenseKey() {
       </Text>
       <View className="h-4" />
       <Text>
-        Bitte gib zunächst deinen Lizenzschlüssel ein, um fortzufahren und die
-        App zu aktivieren. Du hast deinen Lizenzschlüssel von deiner Lehrkraft
-        erhalten.
+        Bitte gib zunächst deinen Lizenzschlüssel ein, um fortzufahren und die App zu aktivieren. Du hast deinen
+        Lizenzschlüssel von deiner Lehrkraft erhalten.
       </Text>
       <View className="h-6" />
       <form.Field
@@ -42,9 +41,7 @@ export default function LicenseKey() {
             const result = await checkMutation.mutateAsync({
               licenseKey: value,
             });
-            return result === "VALID"
-              ? undefined
-              : "Ungültiger Lizenzschlüssel";
+            return result === "VALID" ? undefined : "Ungültiger Lizenzschlüssel";
           },
           onChangeAsyncDebounceMs: 200,
         }}
@@ -52,20 +49,12 @@ export default function LicenseKey() {
           <LicenseKeyField
             value={field.state.value}
             setValue={field.setValue}
-            error={
-              field.state.meta.isTouched &&
-              field.state.meta.errors.length &&
-              field.state.meta.errors.join(", ")
-            }
+            error={field.state.meta.isTouched && field.state.meta.errors.length && field.state.meta.errors.join(", ")}
           />
         )}
       />
       <View className="h-6" />
-      <Button
-        label="Weiter"
-        className="self-end"
-        onPress={() => form.handleSubmit()}
-      />
+      <Button label="Weiter" className="self-end" onPress={() => form.handleSubmit()} />
     </View>
   );
 }
@@ -89,12 +78,6 @@ const LicenseKeyField = ({
   });
 
   return (
-    <TextField
-      label="Lizenzschlüssel"
-      error={error}
-      {...maskedInputProps}
-      autoCorrect={false}
-      autoComplete="off"
-    />
+    <TextField label="Lizenzschlüssel" error={error} {...maskedInputProps} autoCorrect={false} autoComplete="off" />
   );
 };

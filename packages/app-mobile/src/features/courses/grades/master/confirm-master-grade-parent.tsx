@@ -5,10 +5,7 @@ import { View } from "react-native";
 
 import { formatGrade, subjectNameMap } from "@stu/lib";
 
-import {
-  ConfirmPageContent,
-  ViewConfirmPageContent,
-} from "~/components/confirm-page-content";
+import { ConfirmPageContent, ViewConfirmPageContent } from "~/components/confirm-page-content";
 import { Text } from "~/components/text";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { useIngest } from "~/utils/events/ingest";
@@ -51,11 +48,9 @@ export const ConfirmMasterGradeParent = ({ grade }: { grade: Grade }) => {
         confirmLabel="Bestätigen"
         signatureLabel="Unterschrift eines Erziehungsberechtigten"
       >
-        Ich habe zur Kenntnis genommen, dass mein Kind{" "}
-        <Text weight="bold">{user.name}</Text> am{" "}
-        <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die
-        Gesamtnote <Text weight="bold">{formatGrade(result)}</Text> in{" "}
-        <Text weight="bold">{grade.course.name}</Text> hat.
+        Ich habe zur Kenntnis genommen, dass mein Kind <Text weight="bold">{user.name}</Text> am{" "}
+        <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Gesamtnote{" "}
+        <Text weight="bold">{formatGrade(result)}</Text> in <Text weight="bold">{grade.course.name}</Text> hat.
       </ConfirmPageContent>
     </View>
   );
@@ -74,8 +69,7 @@ export const MasterGradeParentConfirmationView = ({
       signatureLabel="Unterschrift eines Erziehungsberechtigten"
       signatureSvg={grade.parentSignature}
     >
-      Ich habe zur Kenntnis genommen, dass mein Kind{" "}
-      <Text weight="bold">{user.name}</Text> am{" "}
+      Ich habe zur Kenntnis genommen, dass mein Kind <Text weight="bold">{user.name}</Text> am{" "}
       <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Gesamtnote{" "}
       <Text weight="bold">{formatGrade(result)}</Text> in{" "}
       <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> hat.

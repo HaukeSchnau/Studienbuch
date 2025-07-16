@@ -27,10 +27,7 @@ export const Basic: Story = () => {
 
   return (
     <View>
-      <DrawingView
-        ref={ref}
-        style={{ width: 300, height: 300, backgroundColor: "green" }}
-      />
+      <DrawingView ref={ref} style={{ width: 300, height: 300, backgroundColor: "green" }} />
       <Button
         title="Show SVG Code"
         onPress={async () => {

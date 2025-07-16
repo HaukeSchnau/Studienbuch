@@ -1,9 +1,6 @@
 export const Footer = () => {
   return (
-    <footer
-      className="flex flex-col items-center gap-2"
-      style={{ gridArea: "footer" }}
-    >
+    <footer className="flex flex-col items-center gap-2" style={{ gridArea: "footer" }}>
       <div className="text-md opacity-80">
         {/* <a href="https: //haukeschnau.de" target="_blank" rel="noreferrer"> */}
         Eine Hauke Schnau Produktion

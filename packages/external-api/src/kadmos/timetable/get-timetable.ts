@@ -2,11 +2,7 @@ import type { CookieJar } from "tough-cookie";
 import { z } from "zod";
 
 import { fetchWithCookieJar } from "../../fetch-with-cookies";
-import {
-  formatSimpleDate,
-  parseSimpleDate,
-  parseSimpleTimeOfDay,
-} from "@stu/lib";
+import { formatSimpleDate, parseSimpleDate, parseSimpleTimeOfDay } from "@stu/lib";
 import type { SimpleDate } from "@stu/lib";
 
 const parseDurationComponent = (
@@ -51,10 +47,7 @@ const PositionSchema = z.object({
     .nullable(),
 });
 
-const PositionValueSchema = z
-  .array(PositionSchema)
-  .or(PositionSchema)
-  .nullable();
+const PositionValueSchema = z.array(PositionSchema).or(PositionSchema).nullable();
 
 const v2Schema = z.object({
   errors: z.tuple([]),

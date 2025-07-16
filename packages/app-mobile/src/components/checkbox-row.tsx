@@ -19,11 +19,7 @@ export const CheckboxRow = ({ label, textStyle, value, onChange }: Props) => {
     <TouchableNativeFeedback onPress={() => onChange(!value)}>
       <View className="flex-row justify-between px-4">
         <Text style={textStyle}>{label}</Text>
-        <Checkbox
-          value={value}
-          onValueChange={onChange}
-          color={colors.primary.DEFAULT}
-        />
+        <Checkbox value={value} onValueChange={onChange} color={colors.primary.DEFAULT} />
       </View>
     </TouchableNativeFeedback>
   );

@@ -8,11 +8,7 @@ interface SemesterSelectorProps {
   selectedSemester: Semester;
 }
 
-export const SemesterSelector = ({
-  choices,
-  selectedSemester,
-  onSelect,
-}: SemesterSelectorProps) => {
+export const SemesterSelector = ({ choices, selectedSemester, onSelect }: SemesterSelectorProps) => {
   if (choices.length <= 1) {
     return null;
   }
@@ -20,9 +16,7 @@ export const SemesterSelector = ({
   return (
     <SegmentedControl
       values={choices.map((semester) => semester.name)}
-      selectedIndex={choices.findIndex(
-        (semester) => semester.name === selectedSemester.name,
-      )}
+      selectedIndex={choices.findIndex((semester) => semester.name === selectedSemester.name)}
       onChange={(event) => {
         // biome-ignore lint/style/noNonNullAssertion: The index is guaranteed to be in bounds because the values are mapped from the choices array.
         onSelect(choices[event.nativeEvent.selectedSegmentIndex]!);

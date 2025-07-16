@@ -9,10 +9,6 @@ export const listGrades = ({ courseId }: { courseId: string }) =>
   queryOptions({
     queryKey: ["grades", { courseId }],
     queryFn: async () => {
-      return db
-        .select()
-        .from(t.grades)
-        .where(eq(t.grades.course, courseId))
-        .orderBy(desc(t.grades.date));
+      return db.select().from(t.grades).where(eq(t.grades.course, courseId)).orderBy(desc(t.grades.date));
     },
   });

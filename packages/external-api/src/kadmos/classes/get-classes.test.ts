@@ -4,11 +4,7 @@ import { getBearerToken, login } from "../auth/login";
 import { getClassesV2 } from "./get-classes";
 
 test("Get classes from Kadmos", async () => {
-  const jar = await login(
-    "IGS Lilienthal",
-    "hauke.studienbuch",
-    "App#Hauke2024",
-  );
+  const jar = await login("IGS Lilienthal", "hauke.studienbuch", "App#Hauke2024");
 
   const token = await getBearerToken(jar);
 

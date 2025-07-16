@@ -49,9 +49,7 @@ export const TextField = ({ label, placeholder, error, ...props }: Props) => {
         />
         <FieldLabel label={label} active={active} focused={focused} />
       </View>
-      {error ? (
-        <Text className="px-6 pt-1 text-danger">{error}</Text>
-      ) : undefined}
+      {error ? <Text className="px-6 pt-1 text-danger">{error}</Text> : undefined}
     </View>
   );
 };

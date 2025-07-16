@@ -18,9 +18,7 @@ export const LoginForm = () => {
     },
     onSubmit: async ({ value, formApi }) => {
       const { email, password } = value;
-      const response = await loginMutation
-        .mutateAsync({ email, password })
-        .catch(() => null);
+      const response = await loginMutation.mutateAsync({ email, password }).catch(() => null);
 
       if (!response) {
         return;
@@ -49,10 +47,7 @@ export const LoginForm = () => {
   });
 
   return (
-    <form
-      className="flex flex-col gap-4"
-      onSubmit={submitHandler(() => form.handleSubmit())}
-    >
+    <form className="flex flex-col gap-4" onSubmit={submitHandler(() => form.handleSubmit())}>
       <form.Field name="email">
         {(field) => (
           <TextField
@@ -81,9 +76,7 @@ export const LoginForm = () => {
         )}
       </form.Field>
 
-      {loginMutation.isError && (
-        <p className="text-danger">{loginMutation.error.message}</p>
-      )}
+      {loginMutation.isError && <p className="text-danger">{loginMutation.error.message}</p>}
 
       <Button type="submit">Anmelden</Button>
     </form>

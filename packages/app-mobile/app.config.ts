@@ -21,9 +21,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   assetBundlePatterns: ["**/*"],
   ios: {
-    bundleIdentifier: IS_DEV
-      ? "dev.schnau.studienbuch.dev"
-      : "dev.schnau.studienbuch",
+    bundleIdentifier: IS_DEV ? "dev.schnau.studienbuch.dev" : "dev.schnau.studienbuch",
     supportsTablet: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,

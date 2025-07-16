@@ -8,12 +8,7 @@ interface Props {
   onClickDelete: (user: User) => void;
 }
 
-export const Actions = ({
-  user,
-  onClickChangePassword,
-  onClickPermissions,
-  onClickDelete,
-}: Props) => {
+export const Actions = ({ user, onClickChangePassword, onClickPermissions, onClickDelete }: Props) => {
   return (
     <div className="flex w-full items-center justify-between">
       <IconButton icon="key" onClick={() => onClickChangePassword(user)} />

@@ -3,16 +3,13 @@ import { Redirect, useSegments } from "expo-router";
 import { currentStudent } from "~/db/queries/user";
 import { useSession } from "./auth";
 
-export const MissingInfoGuard = ({
-  children,
-}: { children: React.ReactNode }) => {
+export const MissingInfoGuard = ({ children }: { children: React.ReactNode }) => {
   const pathname = useSegments();
   const session = useSession();
   const currentStudentQuery = useQuery(currentStudent());
 
   if (!session) {
-    if (pathname[0] === "setup" && pathname[1] === "license-key")
-      return children;
+    if (pathname[0] === "setup" && pathname[1] === "license-key") return children;
 
     return <Redirect href="/setup/license-key" />;
   }
@@ -22,8 +19,7 @@ export const MissingInfoGuard = ({
   }
 
   if (!currentStudentQuery.data) {
-    if (pathname[0] === "setup" && pathname[1] === "name-and-year")
-      return children;
+    if (pathname[0] === "setup" && pathname[1] === "name-and-year") return children;
 
     return <Redirect href="/setup/name-and-year" />;
   }

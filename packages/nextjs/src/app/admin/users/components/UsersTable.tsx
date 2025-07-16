@@ -1,9 +1,4 @@
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
 
 import type { User } from "../user.type";
@@ -13,10 +8,7 @@ import { Status } from "./Status";
 
 interface Props {
   users: User[];
-  updateRow: (
-    rowIndex: number,
-    update: Pick<User, "id"> & Partial<User>,
-  ) => void;
+  updateRow: (rowIndex: number, update: Pick<User, "id"> & Partial<User>) => void;
   updates: Map<string, Partial<User>>;
   onClickChangePassword: (user: User) => void;
   onClickPermissions: (user: User) => void;
@@ -138,13 +130,7 @@ export const UsersTable = ({
         ),
       }),
     ],
-    [
-      handleUpdateRow,
-      onClickChangePassword,
-      onClickDelete,
-      onClickPermissions,
-      updates,
-    ],
+    [handleUpdateRow, onClickChangePassword, onClickDelete, onClickPermissions, updates],
   );
 
   const table = useReactTable({
@@ -165,16 +151,8 @@ export const UsersTable = ({
       {table.getHeaderGroups().map((headerGroup) => (
         <Fragment key={headerGroup.id}>
           {headerGroup.headers.map((header) => (
-            <div
-              key={header.id}
-              className="px-2 py-4 outline outline-1 outline-grey-100"
-            >
-              {header.isPlaceholder
-                ? null
-                : flexRender(
-                    header.column.columnDef.header,
-                    header.getContext(),
-                  )}
+            <div key={header.id} className="px-2 py-4 outline outline-1 outline-grey-100">
+              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
             </div>
           ))}
         </Fragment>
@@ -182,10 +160,7 @@ export const UsersTable = ({
       {table.getRowModel().rows.map((row) => (
         <Fragment key={row.id}>
           {row.getVisibleCells().map((cell) => (
-            <div
-              key={cell.id}
-              className="flex items-center outline outline-1 outline-grey-100"
-            >
+            <div key={cell.id} className="flex items-center outline outline-1 outline-grey-100">
               {flexRender(cell.column.columnDef.cell, cell.getContext())}
             </div>
           ))}

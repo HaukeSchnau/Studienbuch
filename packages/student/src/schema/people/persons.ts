@@ -42,11 +42,7 @@ export const students = sqliteTable(
   (table) => ({
     class_fk: foreignKey({
       columns: [table.classIdentifier, table.startYear, table.school],
-      foreignColumns: [
-        classes.identifierInYear,
-        classes.startYear,
-        classes.school,
-      ],
+      foreignColumns: [classes.identifierInYear, classes.startYear, classes.school],
     })
       .onDelete("restrict")
       .onUpdate("cascade"),

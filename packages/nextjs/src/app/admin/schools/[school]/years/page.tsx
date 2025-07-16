@@ -23,9 +23,7 @@ export default function YearsPage() {
     <div>
       <div className="flex items-center justify-between">
         <PageHeading color="white">Jahrgänge</PageHeading>
-        <Button href={`/admin/schools/${school}/years/new`}>
-          Neuer Jahrgang
-        </Button>
+        <Button href={`/admin/schools/${school}/years/new`}>Neuer Jahrgang</Button>
       </div>
 
       <div className="h-4" />
@@ -39,10 +37,7 @@ export default function YearsPage() {
           <Grid
             data={years.data}
             renderItem={(year) => (
-              <Card
-                key={year.startYear}
-                className={!isYearActive(year) && "opacity-60"}
-              >
+              <Card key={year.startYear} className={!isYearActive(year) && "opacity-60"}>
                 <CardHeading>{year.name}</CardHeading>
 
                 <div className="pb-4">
@@ -50,11 +45,7 @@ export default function YearsPage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button
-                    href={`/admin/schools/${school}/years/${year.startYear}`}
-                  >
-                    Bearbeiten
-                  </Button>
+                  <Button href={`/admin/schools/${school}/years/${year.startYear}`}>Bearbeiten</Button>
                 </div>
               </Card>
             )}

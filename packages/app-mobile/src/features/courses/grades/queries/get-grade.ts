@@ -19,11 +19,7 @@ export const getGrade = ({
     queryKey: ["grades", { date, courseId, type }],
     queryFn: async () => {
       const grade = await db.query.grades.findFirst({
-        where: and(
-          eq(t.grades.course, courseId),
-          eq(t.grades.date, date),
-          eq(t.grades.type, type),
-        ),
+        where: and(eq(t.grades.course, courseId), eq(t.grades.date, date), eq(t.grades.type, type)),
         columns: {
           course: false,
         },

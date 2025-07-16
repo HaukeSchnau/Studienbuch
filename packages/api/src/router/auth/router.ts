@@ -27,9 +27,7 @@ export const auth = {
 
   logout: protectedProcedure.mutation(async ({ ctx }) => {
     ctx.log.info("Logging out");
-    await db
-      .delete(tables.Sessions)
-      .where(eq(tables.Sessions.token, ctx.session.token));
+    await db.delete(tables.Sessions).where(eq(tables.Sessions.token, ctx.session.token));
   }),
 
   checkLicenseKey,

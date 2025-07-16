@@ -16,12 +16,7 @@ import { UsersTable } from "./components/UsersTable";
 import type { User } from "./user.type";
 
 export default function UsersPage() {
-  const {
-    data: users,
-    isPending,
-    isError,
-    error,
-  } = api.management.users.list.useQuery();
+  const { data: users, isPending, isError, error } = api.management.users.list.useQuery();
 
   return isPending ? (
     <LoadingIndicator />
@@ -42,11 +37,8 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
   }, [initialUsers, setUsers]);
 
   const [deleteModalUser, setDeleteModalUser] = useState<User | null>(null);
-  const [permissionsModalUser, setPermissionsModalUser] = useState<User | null>(
-    null,
-  );
-  const [changePasswordModalUser, setChangePasswordModalUser] =
-    useState<User | null>(null);
+  const [permissionsModalUser, setPermissionsModalUser] = useState<User | null>(null);
+  const [changePasswordModalUser, setChangePasswordModalUser] = useState<User | null>(null);
 
   // const updateUsersMutation = api.management.users.updateMany.useMutation({
   //   onSuccess: () => {
@@ -55,8 +47,7 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
   //   },
   // });
 
-  const { reset: resetDeleteMutation } =
-    api.management.users.delete.useMutation();
+  const { reset: resetDeleteMutation } = api.management.users.delete.useMutation();
 
   const closeDeleteModal = () => {
     resetDeleteMutation();
@@ -116,34 +107,16 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: User[] }) => {
         />
       </Card>
 
-      <ModalWithData
-        data={changePasswordModalUser}
-        onClose={() => setChangePasswordModalUser(null)}
-      >
-        {(user) => (
-          <ChangePasswordModalContent
-            user={user}
-            onClose={() => setChangePasswordModalUser(null)}
-          />
-        )}
+      <ModalWithData data={changePasswordModalUser} onClose={() => setChangePasswordModalUser(null)}>
+        {(user) => <ChangePasswordModalContent user={user} onClose={() => setChangePasswordModalUser(null)} />}
       </ModalWithData>
 
       <ModalWithData data={deleteModalUser} onClose={closeDeleteModal}>
-        {(user) => (
-          <DeleteUserModalContent user={user} onClose={closeDeleteModal} />
-        )}
+        {(user) => <DeleteUserModalContent user={user} onClose={closeDeleteModal} />}
       </ModalWithData>
 
-      <ModalWithData
-        data={permissionsModalUser}
-        onClose={() => setPermissionsModalUser(null)}
-      >
-        {(user) => (
-          <PermissionsModalContent
-            user={user}
-            onClose={() => setPermissionsModalUser(null)}
-          />
-        )}
+      <ModalWithData data={permissionsModalUser} onClose={() => setPermissionsModalUser(null)}>
+        {(user) => <PermissionsModalContent user={user} onClose={() => setPermissionsModalUser(null)} />}
       </ModalWithData>
     </div>
   );

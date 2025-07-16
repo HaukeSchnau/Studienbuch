@@ -62,10 +62,7 @@ export const getClassesV2 = async (
     "start",
     `${start.year}-${start.month.toString().padStart(2, "0")}-${start.day.toString().padStart(2, "0")}`,
   );
-  params.append(
-    "end",
-    `${end.year}-${end.month.toString().padStart(2, "0")}-${end.day.toString().padStart(2, "0")}`,
-  );
+  params.append("end", `${end.year}-${end.month.toString().padStart(2, "0")}-${end.day.toString().padStart(2, "0")}`);
 
   const response = await fetchWithCookieJar(
     `https://kadmos.webuntis.com/WebUntis/api/rest/view/v1/timetable/filter?${params.toString()}`,

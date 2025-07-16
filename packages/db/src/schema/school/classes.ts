@@ -1,12 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  foreignKey,
-  pgTable,
-  primaryKey,
-  smallint,
-  text,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { foreignKey, pgTable, primaryKey, smallint, text, uuid } from "drizzle-orm/pg-core";
 
 import { Persons, Students } from "../people/persons";
 import { CoursesToClasses } from "./courses";
@@ -61,40 +54,24 @@ export const TeachersToClasses = pgTable(
   },
   (table) => ({
     pk: primaryKey({
-      columns: [
-        table.teacher,
-        table.classIdentifier,
-        table.classStartYear,
-        table.school,
-      ],
+      columns: [table.teacher, table.classIdentifier, table.classStartYear, table.school],
     }),
     class_fk: foreignKey({
       columns: [table.classIdentifier, table.classStartYear, table.school],
-      foreignColumns: [
-        Classes.identifierInYear,
-        Classes.startYear,
-        Classes.school,
-      ],
+      foreignColumns: [Classes.identifierInYear, Classes.startYear, Classes.school],
     })
       .onDelete("cascade")
       .onUpdate("cascade"),
   }),
 );
 
-export const TeachersToClassesRelations = relations(
-  TeachersToClasses,
-  ({ one }) => ({
-    teacher: one(Persons, {
-      fields: [TeachersToClasses.teacher],
-      references: [Persons.id],
-    }),
-    class: one(Classes, {
-      fields: [
-        TeachersToClasses.classIdentifier,
-        TeachersToClasses.classStartYear,
-        TeachersToClasses.school,
-      ],
-      references: [Classes.identifierInYear, Classes.startYear, Classes.school],
-    }),
+export const TeachersToClassesRelations = relations(TeachersToClasses, ({ one }) => ({
+  teacher: one(Persons, {
+    fields: [TeachersToClasses.teacher],
+    references: [Persons.id],
   }),
-);
+  class: one(Classes, {
+    fields: [TeachersToClasses.classIdentifier, TeachersToClasses.classStartYear, TeachersToClasses.school],
+    references: [Classes.identifierInYear, Classes.startYear, Classes.school],
+  }),
+}));

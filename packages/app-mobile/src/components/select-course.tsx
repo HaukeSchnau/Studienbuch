@@ -31,13 +31,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export const SelectCourse = <TOption,>({
-  getOptionLabel,
-  subject,
-  value,
-  onChange,
-  options,
-}: Props<TOption>) => {
+export const SelectCourse = <TOption,>({ getOptionLabel, subject, value, onChange, options }: Props<TOption>) => {
   const content = (
     <>
       <SubjectIcon subject={subject} />
@@ -65,16 +59,12 @@ export const SelectCourse = <TOption,>({
 
   if (isArraySingleElement(options)) {
     return (
-      <Pressable
-        onPress={() => (value ? onChange(undefined) : onChange(options[0]))}
-      >
+      <Pressable onPress={() => (value ? onChange(undefined) : onChange(options[0]))}>
         <View
           style={[
             styles.container,
             {
-              backgroundColor: value
-                ? colors.primary.DEFAULT
-                : colors.neutral.sec,
+              backgroundColor: value ? colors.primary.DEFAULT : colors.neutral.sec,
             },
           ]}
         >

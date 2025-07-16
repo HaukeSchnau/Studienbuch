@@ -13,10 +13,7 @@ export const classes = {
     .input(z.object({ school: z.enum(SCHOOL_IDS), startYear: z.number() }))
     .query(async ({ input }) => {
       return db.query.Classes.findMany({
-        where: and(
-          eq(Classes.school, input.school),
-          eq(Classes.startYear, input.startYear),
-        ),
+        where: and(eq(Classes.school, input.school), eq(Classes.startYear, input.startYear)),
       });
     }),
 } satisfies TRPCRouterRecord;

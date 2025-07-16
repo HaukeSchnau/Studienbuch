@@ -4,13 +4,7 @@ import p from "path";
 
 import type { ProtoCourseWithTimes } from "@stu/lib";
 import { isArraySingleElement } from "@stu/lib";
-import {
-  convertPdf,
-  ensureParentDir,
-  getFileHash,
-  parseScheduleCsv,
-  writeFile,
-} from "@stu/lib-server";
+import { convertPdf, ensureParentDir, getFileHash, parseScheduleCsv, writeFile } from "@stu/lib-server";
 
 const cacheDir = p.join(os.tmpdir(), "studienbuch", "imported-schedules");
 
@@ -28,10 +22,7 @@ export async function POST(request: Request) {
 
   const csvPath = p.join(cacheDir, fileId, "schedule.csv");
 
-  if (
-    !fs.existsSync(p.dirname(csvPath)) ||
-    (await fs.promises.readdir(p.dirname(csvPath))).length === 0
-  ) {
+  if (!fs.existsSync(p.dirname(csvPath)) || (await fs.promises.readdir(p.dirname(csvPath))).length === 0) {
     const pdfPath = p.join(cacheDir, fileId + ".pdf");
 
     await ensureParentDir(pdfPath);
@@ -55,12 +46,9 @@ export async function POST(request: Request) {
 
   const csvFiles = await fs.promises.readdir(p.dirname(csvPath));
   if (!isArraySingleElement(csvFiles)) {
-    return new Response(
-      JSON.stringify({ message: "Nicht genau eine CSV-Datei gefunden" }),
-      {
-        status: 400,
-      },
-    );
+    return new Response(JSON.stringify({ message: "Nicht genau eine CSV-Datei gefunden" }), {
+      status: 400,
+    });
   }
 
   const csvFileName = csvFiles[0];

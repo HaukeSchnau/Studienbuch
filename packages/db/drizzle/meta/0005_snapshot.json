@@ -285,12 +285,7 @@
       "compositePrimaryKeys": {
         "teachers_to_classes_teacher_class_identifier_class_start_year_school_pk": {
           "name": "teachers_to_classes_teacher_class_identifier_class_start_year_school_pk",
-          "columns": [
-            "teacher",
-            "class_identifier",
-            "class_start_year",
-            "school"
-          ]
+          "columns": ["teacher", "class_identifier", "class_start_year", "school"]
         }
       },
       "uniqueConstraints": {},
@@ -422,12 +417,7 @@
       "compositePrimaryKeys": {
         "courses_to_classes_course_class_identifier_class_start_year_school_pk": {
           "name": "courses_to_classes_course_class_identifier_class_start_year_school_pk",
-          "columns": [
-            "course",
-            "class_identifier",
-            "class_start_year",
-            "school"
-          ]
+          "columns": ["course", "class_identifier", "class_start_year", "school"]
         }
       },
       "uniqueConstraints": {},
@@ -1862,24 +1852,7 @@
     "public.state_code": {
       "name": "state_code",
       "schema": "public",
-      "values": [
-        "BB",
-        "BE",
-        "BW",
-        "BY",
-        "HB",
-        "HE",
-        "HH",
-        "MV",
-        "NI",
-        "NW",
-        "RP",
-        "SH",
-        "SL",
-        "SN",
-        "ST",
-        "TH"
-      ]
+      "values": ["BB", "BE", "BW", "BY", "HB", "HE", "HH", "MV", "NI", "NW", "RP", "SH", "SL", "SN", "ST", "TH"]
     },
     "public.school_id": {
       "name": "school_id",
@@ -1912,13 +1885,7 @@
     "public.substitution_type": {
       "name": "substitution_type",
       "schema": "public",
-      "values": [
-        "FREISETZUNG",
-        "VERTRETUNG",
-        "BETREUUNG",
-        "ENTFALL",
-        "TROTZ_ABSENZ"
-      ]
+      "values": ["FREISETZUNG", "VERTRETUNG", "BETREUUNG", "ENTFALL", "TROTZ_ABSENZ"]
     },
     "public.recurring_timetable_entry_weeks": {
       "name": "recurring_timetable_entry_weeks",

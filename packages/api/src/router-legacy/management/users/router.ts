@@ -4,14 +4,7 @@ import { z } from "zod";
 
 import { asc, eq } from "@stu/db";
 import { db } from "@stu/db/client";
-import {
-  PERMISSIONS,
-  PermissionsToUsers,
-  Persons,
-  Roles,
-  RolesToUsers,
-  Users,
-} from "@stu/db/schema";
+import { PERMISSIONS, PermissionsToUsers, Persons, Roles, RolesToUsers, Users } from "@stu/db/schema";
 import type { Permission, PermissionScope, Salutation } from "@stu/lib";
 import { BetterMap, SALUTATIONS } from "@stu/lib";
 import { createUser, hashPassword } from "@stu/lib-server";
@@ -126,57 +119,52 @@ export const users = {
     )
     .mutation(async ({ input }) => {
       const hashedPassword = await hashPassword(input.password);
-      await db
-        .update(Users)
-        .set({ passwordHash: hashedPassword })
-        .where(eq(Users.id, input.id));
+      await db.update(Users).set({ passwordHash: hashedPassword }).where(eq(Users.id, input.id));
     }),
 
   delete: editUsersProcedure.input(z.string()).mutation(async ({ input }) => {
     await db.delete(Users).where(eq(Users.id, input));
   }),
 
-  listScopeOptions: editUsersProcedure
-    .input(z.enum(scopeOptions))
-    .query(async ({ input: option }) => {
-      switch (option) {
-        case "schools":
-          return await db.query.Schools.findMany({
-            columns: {
-              name: true,
-            },
-          });
-        case "years":
-          return db.query.Years.findMany({
-            columns: {
-              name: true,
-              startYear: true,
-              school: true,
-            },
-          });
-        case "classes":
-          return db.query.Classes.findMany({
-            columns: {
-              school: true,
-              startYear: true,
-              identifierInYear: true,
-            },
-          }).then((classes) =>
-            classes.map(({ school, startYear, identifierInYear: name }) => ({
-              school,
-              startYear,
-              name,
-            })),
-          );
-        case "courses":
-          return db.query.Courses.findMany({
-            columns: {
-              id: true,
-              name: true,
-            },
-          });
-      }
-    }),
+  listScopeOptions: editUsersProcedure.input(z.enum(scopeOptions)).query(async ({ input: option }) => {
+    switch (option) {
+      case "schools":
+        return await db.query.Schools.findMany({
+          columns: {
+            name: true,
+          },
+        });
+      case "years":
+        return db.query.Years.findMany({
+          columns: {
+            name: true,
+            startYear: true,
+            school: true,
+          },
+        });
+      case "classes":
+        return db.query.Classes.findMany({
+          columns: {
+            school: true,
+            startYear: true,
+            identifierInYear: true,
+          },
+        }).then((classes) =>
+          classes.map(({ school, startYear, identifierInYear: name }) => ({
+            school,
+            startYear,
+            name,
+          })),
+        );
+      case "courses":
+        return db.query.Courses.findMany({
+          columns: {
+            id: true,
+            name: true,
+          },
+        });
+    }
+  }),
 
   setPermissions: editUsersProcedure
     .input(
@@ -192,13 +180,8 @@ export const users = {
       }),
     )
     .mutation(async ({ input }) => {
-      await db
-        .update(Users)
-        .set({ isSuperUser: input.isSuperUser })
-        .where(eq(Users.id, input.userId));
-      await db
-        .delete(PermissionsToUsers)
-        .where(eq(PermissionsToUsers.user, input.userId));
+      await db.update(Users).set({ isSuperUser: input.isSuperUser }).where(eq(Users.id, input.userId));
+      await db.delete(PermissionsToUsers).where(eq(PermissionsToUsers.user, input.userId));
       await db.insert(PermissionsToUsers).values(
         input.permissions.map((permission) => ({
           user: input.userId,

@@ -26,15 +26,12 @@ export const MasterGradeRow = ({
   const { user } = useRequiredAuthenticatedSession();
   const { currentMasterGrade, mostRecentConfirmedMasterGrade } = useMemo(() => {
     const currentMasterGrade = masterGrades[0];
-    const mostRecentConfirmedMasterGrade =
-      masterGrades.find(isGradeConfirmed) ?? null;
+    const mostRecentConfirmedMasterGrade = masterGrades.find(isGradeConfirmed) ?? null;
 
     return {
       currentMasterGrade,
       mostRecentConfirmedMasterGrade:
-        currentMasterGrade !== mostRecentConfirmedMasterGrade
-          ? mostRecentConfirmedMasterGrade
-          : null,
+        currentMasterGrade !== mostRecentConfirmedMasterGrade ? mostRecentConfirmedMasterGrade : null,
     };
   }, [masterGrades]);
 
@@ -57,10 +54,7 @@ export const MasterGradeRow = ({
         size={64}
         color={colors.primary.DEFAULT}
         style={{
-          opacity:
-            !currentMasterGrade || isGradeConfirmed(currentMasterGrade)
-              ? 1
-              : 0.25,
+          opacity: !currentMasterGrade || isGradeConfirmed(currentMasterGrade) ? 1 : 0.25,
         }}
       />
 
@@ -70,19 +64,11 @@ export const MasterGradeRow = ({
             {currentMasterGrade ? formatGrade(currentMasterGrade.result) : "—"}
           </Text>
 
-          <IconButton
-            icon="edit"
-            opacity={0.8}
-            size={24}
-            onPress={() => setIsEditVisible(true)}
-          />
+          <IconButton icon="edit" opacity={0.8} size={24} onPress={() => setIsEditVisible(true)} />
         </View>
         <Text className="text-lg opacity-60">aktuelle Gesamtnote</Text>
         <Text className="text-lg opacity-60">
-          Stand:{" "}
-          {currentMasterGrade
-            ? format(currentMasterGrade.date, "dd.MM.yyyy")
-            : "—"}
+          Stand: {currentMasterGrade ? format(currentMasterGrade.date, "dd.MM.yyyy") : "—"}
         </Text>
         {currentMasterGrade && (
           <>

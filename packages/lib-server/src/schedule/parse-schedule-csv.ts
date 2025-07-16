@@ -2,11 +2,7 @@ import fs from "fs/promises";
 import Papa from "papaparse";
 import { z } from "zod";
 
-import type {
-  CourseTimeWeeks,
-  ExtendedProtoCourse,
-  ProtoCourseWithTimes,
-} from "@stu/lib";
+import type { CourseTimeWeeks, ExtendedProtoCourse, ProtoCourseWithTimes } from "@stu/lib";
 import { isNormalTime, parseTime } from "@stu/lib";
 
 import { parseTimetableCell } from "./parse-timetable-cell";
@@ -51,9 +47,7 @@ export const mapRow = (row: z.infer<typeof rowSchema>) => {
   const [start, end] = time.split("\n");
   const startMinutes = parseTime(start ?? "0");
   const endMinutes = parseTime(end ?? "40") + 40;
-  const cols = [Montag, Dienstag, Mittwoch, Donnerstag, Freitag].map(
-    parseTimetableCell,
-  );
+  const cols = [Montag, Dienstag, Mittwoch, Donnerstag, Freitag].map(parseTimetableCell);
 
   return {
     startMinutes,
@@ -62,10 +56,7 @@ export const mapRow = (row: z.infer<typeof rowSchema>) => {
   };
 };
 
-export const parseScheduleRows = (
-  rows: Row[],
-  areAllCoursesChoosable: boolean,
-): ProtoCourseWithTimes[] => {
+export const parseScheduleRows = (rows: Row[], areAllCoursesChoosable: boolean): ProtoCourseWithTimes[] => {
   const courses: ProtoCourseWithTimes[] = [];
   for (const [rowNum, row] of rows.entries()) {
     for (const [dayNum, coursesForDay] of row.cols.entries()) {
@@ -82,20 +73,12 @@ export const parseScheduleRows = (
         endMinutes -= 40;
       }
 
-      if (
-        normalTime &&
-        coursesForDay.length > 0 &&
-        cellBelow &&
-        cellBelow.length > 0
-      ) {
+      if (normalTime && coursesForDay.length > 0 && cellBelow && cellBelow.length > 0) {
         weeks = "ODD";
       }
 
       for (const course of coursesForDay) {
-        const existingCourse = courses.find(
-          (candidate) =>
-            candidate.normalizedCourseId === course.normalizedCourseId,
-        );
+        const existingCourse = courses.find((candidate) => candidate.normalizedCourseId === course.normalizedCourseId);
 
         const time = {
           weekday: dayNum + 1,

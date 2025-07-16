@@ -18,8 +18,7 @@ interface AbsenceViewProps {
 }
 
 export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
-  const isExcused =
-    absenceGroup.isExcusedByTeacher && absenceGroup.isExcusedByParent;
+  const isExcused = absenceGroup.isExcusedByTeacher && absenceGroup.isExcusedByParent;
   const { user } = useRequiredAuthenticatedSession();
   const queryClient = useQueryClient();
   const deleteMutation = useIngest("absence.discarded", {
@@ -63,19 +62,11 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
   };
 
   return (
-    <View
-      className={clsx(
-        "flex-row gap-1 rounded-2xl p-6",
-        isExcused ? "bg-primary-des" : "bg-danger-des",
-      )}
-    >
+    <View className={clsx("flex-row gap-1 rounded-2xl p-6", isExcused ? "bg-primary-des" : "bg-danger-des")}>
       <View className="flex-1 gap-1">
         <Text>
           {format(absenceGroup.date, "dd.MM.yyyy")} (
-          {absenceGroup.courses
-            .map((course) => subjectNameMap[course.subject])
-            .join(", ")}
-          )
+          {absenceGroup.courses.map((course) => subjectNameMap[course.subject]).join(", ")})
         </Text>
         <Text weight="medium" className="text-xl">
           {absenceGroup.reason}
@@ -95,9 +86,7 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
               pathname: `/absences/[date]/[courses]`,
               params: {
                 date: absenceGroup.date.getTime(),
-                courses: absenceGroup.courses
-                  .map((course) => course.id)
-                  .join(";"),
+                courses: absenceGroup.courses.map((course) => course.id).join(";"),
               },
             }}
             asChild

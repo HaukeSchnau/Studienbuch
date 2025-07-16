@@ -2,13 +2,9 @@ import { z } from "zod";
 
 import { BASE_URL } from "./constants";
 
-const buildFormatUrl = (school: string) =>
-  `${BASE_URL}/substitution/format?school=${school}`;
+const buildFormatUrl = (school: string) => `${BASE_URL}/substitution/format?school=${school}`;
 
-export const getFormat = async (
-  schoolName: string,
-  formatName: string,
-): Promise<KadmosFormat> => {
+export const getFormat = async (schoolName: string, formatName: string): Promise<KadmosFormat> => {
   const url = buildFormatUrl(schoolName);
   const payload = {
     formatName,

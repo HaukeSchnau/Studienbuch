@@ -23,34 +23,32 @@ export const schools = {
     return db.query.Schools.findMany();
   }),
 
-  getTheme: publicProcedure
-    .input(z.enum(SCHOOL_IDS))
-    .query(async ({ input }) => {
-      const school = await db.query.Schools.findFirst({
-        where: eq(Schools.id, input),
-        columns: {
-          theme: true,
-          image: true,
-        },
+  getTheme: publicProcedure.input(z.enum(SCHOOL_IDS)).query(async ({ input }) => {
+    const school = await db.query.Schools.findFirst({
+      where: eq(Schools.id, input),
+      columns: {
+        theme: true,
+        image: true,
+      },
+    });
+    if (!school) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "School not found",
       });
-      if (!school) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "School not found",
-        });
-      }
+    }
 
-      const parsedTheme = themeSchema.safeParse(school.theme);
+    const parsedTheme = themeSchema.safeParse(school.theme);
 
-      if (!parsedTheme.success) {
-        return {
-          theme: defaultTheme,
-        };
-      }
-
+    if (!parsedTheme.success) {
       return {
-        theme: parsedTheme.data,
-        image: school.image,
+        theme: defaultTheme,
       };
-    }),
+    }
+
+    return {
+      theme: parsedTheme.data,
+      image: school.image,
+    };
+  }),
 } satisfies TRPCRouterRecord;

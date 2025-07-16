@@ -3,11 +3,7 @@ import { z } from "zod";
 
 import { fetchWithCookieJar } from "../../fetch-with-cookies";
 
-export const login = async (
-  school: string,
-  username: string,
-  password: string,
-) => {
+export const login = async (school: string, username: string, password: string) => {
   const jar = new CookieJar();
 
   let response = await fetchWithCookieJar(
@@ -44,11 +40,7 @@ export const login = async (
 };
 
 export const getBearerToken = async (jar: CookieJar) => {
-  const response = await fetchWithCookieJar(
-    "https://kadmos.webuntis.com/WebUntis/api/token/new",
-    {},
-    jar,
-  );
+  const response = await fetchWithCookieJar("https://kadmos.webuntis.com/WebUntis/api/token/new", {}, jar);
 
   return response.text();
 };

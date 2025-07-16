@@ -1,19 +1,8 @@
-import {
-  pgEnum,
-  pgTable,
-  primaryKey,
-  smallint,
-  text,
-  time,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, primaryKey, smallint, text, time, uuid } from "drizzle-orm/pg-core";
 
 import { Courses } from "../school/courses";
 
-export const RecurringTimetableEntryWeeks = pgEnum(
-  "recurring_timetable_entry_weeks",
-  ["EVEN", "ODD", "ALL"],
-);
+export const RecurringTimetableEntryWeeks = pgEnum("recurring_timetable_entry_weeks", ["EVEN", "ODD", "ALL"]);
 
 export const RecurringTimetableEntries = pgTable(
   "recurring_timetable_entries",

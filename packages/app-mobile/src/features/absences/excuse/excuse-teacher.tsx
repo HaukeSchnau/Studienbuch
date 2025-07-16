@@ -60,10 +60,9 @@ export const ExcuseTeacher = ({
         onConfirm={handleConfirm}
         signatureLabel={`Unterschrift von ${formalName(teacher)}`}
       >
-        Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
-        <Text weight="bold">{user.name}</Text> am{" "}
-        <Text weight="bold">{date.toLocaleDateString()}</Text> mit folgender
-        Begründung nicht am Unterricht teilnehmen konnte:
+        Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in <Text weight="bold">{user.name}</Text> am{" "}
+        <Text weight="bold">{date.toLocaleDateString()}</Text> mit folgender Begründung nicht am Unterricht teilnehmen
+        konnte:
       </ConfirmPageContent>
     </>
   );

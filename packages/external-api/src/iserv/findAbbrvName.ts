@@ -16,17 +16,11 @@ const schema = z.array(
   }),
 );
 
-export const findAbbrvName = async (
-  makeRequest: MakeRequest,
-  abbrv: string,
-) => {
+export const findAbbrvName = async (makeRequest: MakeRequest, abbrv: string) => {
   const params = new URLSearchParams();
   params.set("type", "mail,list");
   params.set("query", abbrv);
-  const response = await makeRequest(
-    `https://igslilienthal.de/iserv/core/autocomplete/api?${params.toString()}`,
-    {},
-  );
+  const response = await makeRequest(`https://igslilienthal.de/iserv/core/autocomplete/api?${params.toString()}`, {});
 
   const data = schema.parse(await response.json());
   const match = data.find((entry) =>
@@ -40,8 +34,7 @@ export const findAbbrvName = async (
     return null;
   }
 
-  const regex =
-    /^([a-zA-ZäöüÄÖÜ\- ]+) <(([a-z-]+\.)+[a-z-]+@igslilienthal\.de)>$/;
+  const regex = /^([a-zA-ZäöüÄÖÜ\- ]+) <(([a-z-]+\.)+[a-z-]+@igslilienthal\.de)>$/;
   const matchResult = regex.exec(match.text);
   if (!matchResult) {
     throw new Error(`Could not parse name and email from "${match.text}"`);

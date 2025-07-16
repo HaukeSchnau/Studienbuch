@@ -18,13 +18,7 @@ export default async function LoginPage() {
     <div>
       <svg className="absolute h-full w-full">
         <circle cx="0" cy="2%" r="20%" opacity=".5" className="fill-accent" />
-        <circle
-          cx="100%"
-          cy="50%"
-          r="15%"
-          opacity=".5"
-          className="fill-primary"
-        />
+        <circle cx="100%" cy="50%" r="15%" opacity=".5" className="fill-primary" />
         <circle cx="0" cy="80%" r="10%" opacity=".5" className="fill-danger" />
       </svg>
       <div className="relative z-10 flex h-screen flex-col items-center justify-center">

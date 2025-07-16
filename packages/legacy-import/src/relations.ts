@@ -28,15 +28,12 @@ export const schoolRelations = relations(school, ({ many }) => ({
   years: many(year),
 }));
 
-export const courseSubscriptionRelations = relations(
-  courseSubscription,
-  ({ one }) => ({
-    course: one(course, {
-      fields: [courseSubscription.courseId],
-      references: [course.id],
-    }),
+export const courseSubscriptionRelations = relations(courseSubscription, ({ one }) => ({
+  course: one(course, {
+    fields: [courseSubscription.courseId],
+    references: [course.id],
   }),
-);
+}));
 
 export const courseRelations = relations(course, ({ one, many }) => ({
   courseSubscriptions: many(courseSubscription),
@@ -113,22 +110,16 @@ export const substitutionRelations = relations(substitution, ({ one }) => ({
   }),
 }));
 
-export const permissionOnUserRelations = relations(
-  permissionOnUser,
-  ({ one }) => ({
-    user: one(user, {
-      fields: [permissionOnUser.userId],
-      references: [user.id],
-    }),
+export const permissionOnUserRelations = relations(permissionOnUser, ({ one }) => ({
+  user: one(user, {
+    fields: [permissionOnUser.userId],
+    references: [user.id],
   }),
-);
+}));
 
-export const permissionOnRoleRelations = relations(
-  permissionOnRole,
-  ({ one }) => ({
-    role: one(role, {
-      fields: [permissionOnRole.roleId],
-      references: [role.id],
-    }),
+export const permissionOnRoleRelations = relations(permissionOnRole, ({ one }) => ({
+  role: one(role, {
+    fields: [permissionOnRole.roleId],
+    references: [role.id],
   }),
-);
+}));

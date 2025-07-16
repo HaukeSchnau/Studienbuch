@@ -1,11 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  foreignKey,
-  int,
-  primaryKey,
-  sqliteTable,
-  text,
-} from "drizzle-orm/sqlite-core";
+import { foreignKey, int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { persons } from "../people/persons";
 import { uuid } from "../utils";
@@ -61,20 +55,11 @@ export const teachersToClasses = sqliteTable(
   (table) => {
     return {
       pk: primaryKey({
-        columns: [
-          table.teacher,
-          table.classIdentifier,
-          table.classStartYear,
-          table.school,
-        ],
+        columns: [table.teacher, table.classIdentifier, table.classStartYear, table.school],
       }),
       class_fk: foreignKey({
         columns: [table.classIdentifier, table.classStartYear, table.school],
-        foreignColumns: [
-          classes.identifierInYear,
-          classes.startYear,
-          classes.school,
-        ],
+        foreignColumns: [classes.identifierInYear, classes.startYear, classes.school],
       })
         .onDelete("cascade")
         .onUpdate("cascade"),
@@ -82,20 +67,13 @@ export const teachersToClasses = sqliteTable(
   },
 );
 
-export const teachersToClassesRelations = relations(
-  teachersToClasses,
-  ({ one }) => ({
-    teacher: one(persons, {
-      fields: [teachersToClasses.teacher],
-      references: [persons.id],
-    }),
-    class: one(classes, {
-      fields: [
-        teachersToClasses.classIdentifier,
-        teachersToClasses.classStartYear,
-        teachersToClasses.school,
-      ],
-      references: [classes.identifierInYear, classes.startYear, classes.school],
-    }),
+export const teachersToClassesRelations = relations(teachersToClasses, ({ one }) => ({
+  teacher: one(persons, {
+    fields: [teachersToClasses.teacher],
+    references: [persons.id],
   }),
-);
+  class: one(classes, {
+    fields: [teachersToClasses.classIdentifier, teachersToClasses.classStartYear, teachersToClasses.school],
+    references: [classes.identifierInYear, classes.startYear, classes.school],
+  }),
+}));
