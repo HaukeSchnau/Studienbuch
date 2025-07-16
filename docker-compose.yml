@@ -16,16 +16,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  event-stream:
-    image: apachepulsar/pulsar:latest
-    restart: unless-stopped
-    command: bin/pulsar standalone
-    environment: 
-      - PULSAR_STANDALONE_USE_ZOOKEEPER=1
-    volumes:
-      - pulsar_data:/pulsar/data
-      - pulsar_config:/pulsar/conf
-
   api:
     build:
       context: .
@@ -103,6 +93,4 @@ configs:
 
 volumes:
   postgres_data:
-  pulsar_data:
-  pulsar_config:
   cache:

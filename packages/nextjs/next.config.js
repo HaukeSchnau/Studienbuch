@@ -22,11 +22,6 @@ const config = {
     useCache: true,
   },
 
-  webpack: (config) => {
-    config.externals = [...config.externals, "pulsar-client"];
-    return config;
-  },
-
   output: "standalone",
 };
 

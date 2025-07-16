@@ -12,8 +12,8 @@ import {
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
-import { useIngest } from "~/utils/events/ingest";
 import type { ConfirmedGrade, Grade } from "../grade.type";
+import { useIngest } from "~/utils/events/ingest";
 
 export const ConfirmWrittenGradeTeacher = ({ grade }: { grade: Grade }) => {
   const { user } = useRequiredAuthenticatedSession();

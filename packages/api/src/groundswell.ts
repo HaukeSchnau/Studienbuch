@@ -115,26 +115,6 @@ export const canonicalStorageLive = DrizzleCanonicalStorage.createDrizzleCanonic
 
 export const appServerLayer = Layer.provide(ingestEngine, serverApplicatorLive);
 
-//   // Recover from errors during layer construction
-
-//   Layer.catchAll((configError) =>
-
-//     Layer.effect(
-
-//       HTTPServer,
-
-//       Effect.gen(function* () {
-
-//         console.log(`Recovering from error:\n${configError}`)
-
-//         console.log(`Listening on http://localhost:3000`)
-
-//       })
-
-//     )
-
-//   )
-
 const databaseRetrySchedule: Schedule.Schedule<number, DatabaseConnectionLostError, never> = Schedule.exponential(
   "1 second",
   2,

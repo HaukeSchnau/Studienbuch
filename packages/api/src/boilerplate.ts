@@ -1,7 +1,7 @@
 import type { Broadcast, CanonicalStorage, IngestEngine, ServerApplicator } from "@groundswell/core-server";
 import { ingestEngineLive } from "@groundswell/core-server";
 import type { DomainEvent } from "@stu/lib";
-import { Context, Layer, ManagedRuntime } from "effect";
+import { Context } from "effect";
 
 export class DomainCanonicalStorage extends Context.Tag("CanonicalStorage")<
   DomainCanonicalStorage,

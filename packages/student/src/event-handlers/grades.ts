@@ -1,22 +1,26 @@
-import { StudentRepository, type DomainEvent } from "@stu/lib";
+import type { DomainEvent } from "@stu/lib";
 
-import type { NamespaceApplicatorMap } from "@groundswell/core";
+import { ApplicatorError, type NamespaceApplicatorMap } from "@groundswell/core";
 import type { Database } from "../database";
 import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import { Effect } from "effect";
-import { GradeRepository } from "../repositories/grades.repo";
+import { StudentRepository, GradeRepository } from "../repositories";
 
 export const gradeApplicators: NamespaceApplicatorMap<
   DomainEvent,
   "grades",
-  DatabaseError<GenericSqliteError>,
+  DatabaseError<GenericSqliteError> | ApplicatorError,
   Database | StudentRepository | GradeRepository
 > = {
   currentGradeSet: {
     verify: () => Effect.void,
     apply: Effect.fn(function* (event, { initiatorId }) {
-      const student = yield* StudentRepository.use((repo) => repo.getStudent(initiatorId));
+      const student = yield* StudentRepository.use((repo) => repo.getStudent({ studentId: initiatorId }));
+      if (!student) {
+        return yield* Effect.fail(new ApplicatorError({ cause: `Student ${initiatorId} not found` }));
+      }
+
       const repo = yield* GradeRepository;
 
       yield* repo.setCurrentGrade({
@@ -32,7 +36,11 @@ export const gradeApplicators: NamespaceApplicatorMap<
   writtenGradeRecorded: {
     verify: () => Effect.void,
     apply: Effect.fn(function* (event, { initiatorId }) {
-      const student = yield* StudentRepository.use((repo) => repo.getStudent(initiatorId));
+      const student = yield* StudentRepository.use((repo) => repo.getStudent({ studentId: initiatorId }));
+      if (!student) {
+        return yield* Effect.fail(new ApplicatorError({ cause: `Student ${initiatorId} not found` }));
+      }
+
       const repo = yield* GradeRepository;
 
       yield* repo.recordWrittenGrade({

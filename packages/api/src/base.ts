@@ -67,7 +67,7 @@ export const createBase = Effect.fn(function* (basePath: string) {
     return session.user.id;
   };
 
-  attachSyncServer(app, {
+  attachSyncServer(app.basePath("/api"), {
     ingestEngine,
     broadcast,
     getUserId,

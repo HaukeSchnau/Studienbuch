@@ -1,22 +1,28 @@
-import { StudentRepository, type DomainEvent } from "@stu/lib";
+import type { DomainEvent } from "@stu/lib";
 
-import type { NamespaceApplicatorMap } from "@groundswell/core";
+import { ApplicatorError, type NamespaceApplicatorMap } from "@groundswell/core";
 import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import { Effect } from "effect";
 import type { Database } from "../database";
 import { AbsenceRepository } from "../repositories/absences.repo";
+import { StudentRepository } from "../repositories/student.repo";
 
 export const absenceApplicators: NamespaceApplicatorMap<
   DomainEvent,
   "absence",
-  DatabaseError<GenericSqliteError>,
+  DatabaseError<GenericSqliteError> | ApplicatorError,
   Database | StudentRepository | AbsenceRepository
 > = {
   recorded: {
     verify: () => Effect.void,
     apply: Effect.fn(function* (event, { initiatorId }) {
-      const student = yield* StudentRepository.use((repo) => repo.getStudent(initiatorId));
+      const student = yield* StudentRepository.use((repo) => repo.getStudent({ studentId: initiatorId }));
+
+      if (!student) {
+        return yield* Effect.fail(new ApplicatorError({ cause: `Student ${initiatorId} not found` }));
+      }
+
       const repo = yield* AbsenceRepository;
 
       repo.addAbsence({

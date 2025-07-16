@@ -43,18 +43,5 @@
   },
   "patchedDependencies": {
     "expo-module-scripts@4.0.5": "patches/expo-module-scripts@4.0.5.patch"
-  },
-  "trustedDependencies": [
-    "@biomejs/biome",
-    "@parcel/watcher",
-    "aws-sdk",
-    "core-js-pure",
-    "cpu-features",
-    "dtrace-provider",
-    "esbuild",
-    "protobufjs",
-    "pulsar-client",
-    "sharp",
-    "ssh2"
-  ]
+  }
 }

@@ -110,11 +110,24 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       );
     });
 
+    const getStudent = Effect.fn(function* (payload: {
+      studentId: string;
+    }) {
+      const { execute } = yield* Database;
+
+      return yield* execute((db) =>
+        db.query.students.findFirst({
+          where: eq(tables.students.person, payload.studentId),
+        }),
+      );
+    });
+
     return {
       doesClassExist,
       doesCourseExist,
       createStudent,
       assignCourse,
+      getStudent,
     };
   }),
 }) {}

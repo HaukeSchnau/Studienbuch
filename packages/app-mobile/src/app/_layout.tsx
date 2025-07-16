@@ -13,11 +13,13 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { colors } from "@stu/tailwind-config/native";
 
 import { PortalRenderer } from "~/components/portal";
-import { db } from "~/db/client";
+import { DatabaseLive, db } from "~/db/client";
 import { useSessionWatcher } from "~/utils/auth";
-import { MutationManager } from "~/utils/events/mutation-manager";
 import { MissingInfoGuard } from "~/utils/missing-info-guard";
 import migrations from "../../drizzle/migrations";
+import { Layer, ManagedRuntime } from "effect";
+import { SyncEngineLive } from "~/utils/groundswell";
+import { SyncEngineProvider } from "~/utils/events/ingest";
 
 const DevTools = lazy(() =>
   import("~/components/dev/dev-menu").then((mod) => ({
@@ -31,11 +33,10 @@ if (UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+const runtime = ManagedRuntime.make(SyncEngineLive.pipe(Layer.provideMerge(DatabaseLive)));
+
 function RootLayout() {
-  const { success: migrationSuccess, error: migrationError } = useMigrations(
-    db,
-    migrations,
-  );
+  const { success: migrationSuccess, error: migrationError } = useMigrations(db, migrations);
 
   const sessionLoading = useSessionWatcher();
 
@@ -52,12 +53,10 @@ function RootLayout() {
   }
 
   return (
-    <MutationManager>
+    <SyncEngineProvider value={runtime}>
       <GestureHandlerRootView>
         <Stack
-          layout={({ children }) => (
-            <MissingInfoGuard>{children}</MissingInfoGuard>
-          )}
+          layout={({ children }) => <MissingInfoGuard>{children}</MissingInfoGuard>}
           screenOptions={{
             headerStyle: {
               backgroundColor: colors.primary.DEFAULT,
@@ -77,7 +76,7 @@ function RootLayout() {
 
         <PortalRenderer />
       </GestureHandlerRootView>
-    </MutationManager>
+    </SyncEngineProvider>
   );
 }
 
