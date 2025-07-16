@@ -16,6 +16,20 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  event-stream:
+    image: rabbitmq:4-management-alpine
+    restart: unless-stopped
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    configs:
+      - source: enabled_plugins
+        target: /etc/rabbitmq/enabled_plugins
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "is_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+
   api:
     build:
       context: .
@@ -91,6 +105,11 @@ configs:
       */10 * * * * console pull igs-lil
       @reboot console pull igs-lil
 
+  enabled_plugins:
+    content: |
+      [rabbitmq_stream,rabbitmq_stream_management].
+
 volumes:
   postgres_data:
   cache:
+  rabbitmq_data:

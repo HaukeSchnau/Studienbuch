@@ -1,16 +1,15 @@
-import type { TRPCRouterRecord } from "@trpc/server";
-
-import { eq, and, sql } from "@stu/db";
+import { and, eq, sql } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
+import type { TRPCRouterRecord } from "@trpc/server";
 
 // import { getPermissions } from "@stu/lib-server";
 
+import { z } from "zod";
 import { protectedProcedure, publicProcedure } from "../../procedures";
 import { activateLicenseKey } from "./activate-license-key";
 import { checkLicenseKey } from "./check-license-key";
 import { login } from "./login";
-import { z } from "zod";
 
 export const auth = {
   getSession: publicProcedure.query(({ ctx }) => ctx.session),

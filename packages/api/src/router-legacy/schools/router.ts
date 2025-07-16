@@ -1,11 +1,10 @@
-import type { TRPCRouterRecord } from "@trpc/server";
-import { TRPCError } from "@trpc/server";
-import { z } from "zod";
-
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Schools } from "@stu/db/schema";
-import { SCHOOL_IDS, defaultTheme, themeSchema } from "@stu/lib";
+import { defaultTheme, SCHOOL_IDS, themeSchema } from "@stu/lib";
+import type { TRPCRouterRecord } from "@trpc/server";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 
 import { publicProcedure } from "../../procedures";
 import { classes } from "./classes/router";

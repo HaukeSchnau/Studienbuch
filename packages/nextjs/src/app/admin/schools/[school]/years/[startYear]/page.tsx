@@ -1,9 +1,8 @@
 "use client";
 
+import { SCHOOL_IDS } from "@stu/lib";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
-
-import { SCHOOL_IDS } from "@stu/lib";
 
 import { Card } from "~/components/layout/Card";
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";

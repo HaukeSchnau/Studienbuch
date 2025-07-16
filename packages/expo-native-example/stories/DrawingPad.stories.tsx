@@ -1,7 +1,7 @@
-import { Button, View, Text } from "react-native";
 import type { Meta, StoryFn } from "@storybook/react";
-import { DrawingView, DrawingViewRef } from "@stu/expo-native";
+import { DrawingView, type DrawingViewRef } from "@stu/expo-native";
 import { useRef, useState } from "react";
+import { Button, Text, View } from "react-native";
 
 const meta = {
   title: "DrawingPad",

@@ -1,13 +1,11 @@
 import FontAwesome from "@expo/vector-icons/MaterialIcons";
-import { Stack, Tabs } from "expo-router";
-
 import { colors } from "@stu/tailwind-config/native";
-
-import { Text } from "~/components/text";
-import { useEffect } from "react";
-import { registerForPushNotificationsAsync } from "~/utils/notifications";
-import { api } from "~/utils/api";
 import * as Notifications from "expo-notifications";
+import { Stack, Tabs } from "expo-router";
+import { useEffect } from "react";
+import { Text } from "~/components/text";
+import { api } from "~/utils/api";
+import { registerForPushNotificationsAsync } from "~/utils/notifications";
 
 Notifications.setNotificationHandler({
   // eslint-disable-next-line @typescript-eslint/require-await

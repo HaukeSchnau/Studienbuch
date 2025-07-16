@@ -1,10 +1,9 @@
-import { createHydrationHelpers } from "@trpc/react-query/rsc";
-import { Logger } from "next-axiom";
-import { headers } from "next/headers";
-
 import type { AppRouter } from "@stu/api";
 import { createCaller, createTRPCContext } from "@stu/api";
 import { getSessionTokenFromHeaders } from "@stu/lib-server";
+import { createHydrationHelpers } from "@trpc/react-query/rsc";
+import { headers } from "next/headers";
+import { Logger } from "next-axiom";
 
 import { createQueryClient } from "./query-client";
 

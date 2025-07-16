@@ -1,18 +1,16 @@
+import { attachSyncServer } from "@groundswell/adapter-hono-server";
 import { trpcServer } from "@hono/trpc-server";
+import { appRouter, createTRPCContext, getSession } from "@stu/api";
+import { DomainEvent } from "@stu/lib";
+import { getSessionTokenFromHeaders } from "@stu/lib-server";
+import { Effect } from "effect";
 import { type Context, Hono } from "hono";
 import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import pino from "pino";
-import { attachSyncServer } from "@groundswell/adapter-hono-server";
-
-import { appRouter, createTRPCContext, getSession } from "@stu/api";
-import { getSessionTokenFromHeaders } from "@stu/lib-server";
-
 import { env } from "../env";
-import { DomainIngestEngine, DomainBroadcast } from "./boilerplate";
-import { DomainEvent } from "@stu/lib";
-import { Effect } from "effect";
+import { DomainBroadcast, DomainIngestEngine } from "./boilerplate";
 
 const appLogger = pino({
   transport: {

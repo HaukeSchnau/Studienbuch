@@ -1,8 +1,7 @@
 import Icon from "@expo/vector-icons/MaterialIcons";
+import { colors } from "@stu/tailwind-config/native";
 import { useQuery } from "@tanstack/react-query";
 import { ActivityIndicator, View } from "react-native";
-
-import { colors } from "@stu/tailwind-config/native";
 
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";

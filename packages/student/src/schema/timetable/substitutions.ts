@@ -1,7 +1,6 @@
+import { SUBSTITUTION_TYPES } from "@stu/lib";
 import { relations } from "drizzle-orm";
 import { foreignKey, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
-
-import { SUBSTITUTION_TYPES } from "@stu/lib";
 
 import { persons } from "../people/persons";
 import { sqliteEnum, timestamp, uuid } from "../utils";

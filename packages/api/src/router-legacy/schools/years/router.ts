@@ -1,11 +1,10 @@
-import type { TRPCRouterRecord } from "@trpc/server";
-import { TRPCError } from "@trpc/server";
-import { z } from "zod";
-
 import { and, desc, eq, gte } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Years } from "@stu/db/schema";
-import { SCHOOL_IDS, getMaxActiveGraduationYear } from "@stu/lib";
+import { getMaxActiveGraduationYear, SCHOOL_IDS } from "@stu/lib";
+import type { TRPCRouterRecord } from "@trpc/server";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 
 import { publicProcedure } from "../../../procedures";
 

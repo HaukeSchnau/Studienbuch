@@ -1,8 +1,7 @@
+import type { Grade } from "@stu/lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { View } from "react-native";
-
-import type { Grade } from "@stu/lib";
 
 import { Button } from "~/components/button";
 import { Divider } from "~/components/divider";
@@ -40,8 +39,8 @@ export const EditOralGrade = ({
   });
 
   const [points, setPoints] = useState("");
-  const gradeNum = parseFloat(points.replaceAll(",", "."));
-  const isValid = !isNaN(gradeNum) && gradeNum >= 0 && gradeNum <= 15;
+  const gradeNum = Number.parseFloat(points.replaceAll(",", "."));
+  const isValid = !Number.isNaN(gradeNum) && gradeNum >= 0 && gradeNum <= 15;
 
   return (
     <View className="px-8 py-8">

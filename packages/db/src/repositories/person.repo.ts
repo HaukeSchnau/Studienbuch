@@ -1,7 +1,7 @@
-import { Effect } from "effect";
 import type { Salutation } from "@stu/lib";
-import { Database } from "../database";
 import { eq } from "drizzle-orm";
+import { Effect } from "effect";
+import { Database } from "../database";
 import * as tables from "../schema";
 
 export class PersonRepository extends Effect.Service<PersonRepository>()("db/PersonRepository", {

@@ -2,11 +2,11 @@ import { z } from "zod";
 
 import { getCookies } from "./cookies";
 
+export { getCookies } from "./cookies";
+export { getPermissions } from "./getPermissions";
+export { findPermissionScope } from "./hasPermission";
 export { checkPassword, hashPassword } from "./password";
 export { createSession } from "./session";
-export { getCookies } from "./cookies";
-export { findPermissionScope } from "./hasPermission";
-export { getPermissions } from "./getPermissions";
 
 export interface Session {
   user: {

@@ -1,19 +1,19 @@
-import {
-  pgTable,
-  varchar,
-  timestamp,
-  text,
-  integer,
-  uniqueIndex,
-  foreignKey,
-  serial,
-  index,
-  boolean,
-  jsonb,
-  primaryKey,
-  pgEnum,
-} from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import {
+  boolean,
+  foreignKey,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  serial,
+  text,
+  timestamp,
+  uniqueIndex,
+  varchar,
+} from "drizzle-orm/pg-core";
 
 export const courseTimeWeeks = pgEnum("CourseTimeWeeks", ["EVEN", "ODD", "BOTH"]);
 export const permission = pgEnum("Permission", [

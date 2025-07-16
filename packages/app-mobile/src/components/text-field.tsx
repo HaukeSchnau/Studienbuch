@@ -1,12 +1,11 @@
+import type { Falsy } from "@stu/lib";
 import { useState } from "react";
 import type { TextInputProps } from "react-native";
 import { TextInput, View } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
 
-import type { Falsy } from "@stu/lib";
-
 import { FieldLabel } from "./field-label";
-import { Text, fontNames } from "./text";
+import { fontNames, Text } from "./text";
 
 interface Props extends TextInputProps {
   label: string;

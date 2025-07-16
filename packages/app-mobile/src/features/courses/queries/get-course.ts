@@ -1,8 +1,7 @@
+import * as t from "@stu/student/schema";
 import { queryOptions } from "@tanstack/react-query";
 import { and, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
-
-import * as t from "@stu/student/schema";
 
 import { db } from "~/db/client";
 

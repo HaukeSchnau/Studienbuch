@@ -1,9 +1,7 @@
+import { colors } from "@stu/tailwind-config/native";
 import { Checkbox } from "expo-checkbox";
-import React from "react";
 import type { StyleProp, TextStyle } from "react-native";
 import { TouchableNativeFeedback, View } from "react-native";
-
-import { colors } from "@stu/tailwind-config/native";
 
 import { Text } from "./text";
 

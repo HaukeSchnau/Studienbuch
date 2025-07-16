@@ -6,16 +6,15 @@
  * tl;dr - this is where all the tRPC server stuff is created and plugged in.
  * The pieces you will need to use are documented accordingly near the end
  */
-import { initTRPC } from "@trpc/server";
-import superjson from "superjson";
-import { ZodError } from "zod";
 
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
-
-import { SYSTEM_USER } from ".";
+import { initTRPC } from "@trpc/server";
+import superjson from "superjson";
+import { ZodError } from "zod";
 import { env } from "../env";
+import { SYSTEM_USER } from ".";
 import type { Logger } from "./interfaces/logger";
 import type { Session } from "./interfaces/session";
 

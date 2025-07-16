@@ -10,8 +10,8 @@
     "dev:ios": "APP_VARIANT=development expo start --ios",
     "android": "APP_VARIANT=production expo run:android",
     "ios": "APP_VARIANT=development expo run:ios",
-    "format": "biome format",
-    "lint": "expo customize tsconfig.json && eslint",
+    "lint": "biome check",
+    "eslint": "expo customize tsconfig.json && eslint",
     "typecheck": "expo customize tsconfig.json && tsc --noEmit"
   },
   "dependencies": {

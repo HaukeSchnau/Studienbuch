@@ -4,4 +4,4 @@ export const getStates = () => getStatesFromApi();
 
 export const getTicketsForState = (state: string) => getTicketsForStateFromApi(state);
 
-export type { WorkflowState, Issue } from "@stu/external-api";
+export type { Issue, WorkflowState } from "@stu/external-api";

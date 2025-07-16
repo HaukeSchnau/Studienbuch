@@ -1,11 +1,10 @@
-import type { DomainEvent } from "@stu/lib";
-import { AuthRepository } from "../repositories/auth.repo";
-
 import type { NamespaceServerApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
-import { Database } from "../database";
 import type { DatabaseError } from "@schnau/effect-drizzle/postgres";
+import type { DomainEvent } from "@stu/lib";
 import { Effect } from "effect";
+import { Database } from "../database";
+import { AuthRepository } from "../repositories/auth.repo";
 
 const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
 

@@ -8,8 +8,8 @@
   "license": "MIT",
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "format": "biome format",
-    "lint": "eslint",
+    "lint": "biome check",
+    "eslint": "eslint",
     "push": "drizzle-kit push",
     "studio": "drizzle-kit studio",
     "typecheck": "tsgo --noEmit --emitDeclarationOnly false"

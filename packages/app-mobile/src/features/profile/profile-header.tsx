@@ -1,15 +1,13 @@
 import Icon from "@expo/vector-icons/MaterialIcons";
+import { getCurrentYearNum } from "@stu/lib";
 import { useQuery } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { ActivityIndicator, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-import { getCurrentYearNum } from "@stu/lib";
-
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { getMyYear } from "./queries/get-my-year";
-import { router } from "expo-router";
 
 const Avatar = () => {
   return (

@@ -1,9 +1,8 @@
+import { formalName, formatGrade, subjectNameMap } from "@stu/lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDate } from "date-fns";
 import { Stack, useRouter } from "expo-router";
 import { View } from "react-native";
-
-import { formalName, formatGrade, subjectNameMap } from "@stu/lib";
 
 import { ConfirmPageContent, ViewConfirmPageContent } from "~/components/confirm-page-content";
 import { TempError } from "~/components/temp-error";
@@ -63,11 +62,7 @@ export const ConfirmMasterGradeTeacher = ({ grade }: { grade: Grade }) => {
   );
 };
 
-export const MasterGradeTeacherConfirmationView = ({
-  grade,
-}: {
-  grade: ConfirmedGrade;
-}) => {
+export const MasterGradeTeacherConfirmationView = ({ grade }: { grade: ConfirmedGrade }) => {
   const { user } = useRequiredAuthenticatedSession();
   const { date, result } = grade;
 

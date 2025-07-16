@@ -1,2 +1,2 @@
-export { SelectView } from "./SelectModule";
 export { DrawingView, type DrawingViewRef } from "./DrawingModule";
+export { SelectView } from "./SelectModule";

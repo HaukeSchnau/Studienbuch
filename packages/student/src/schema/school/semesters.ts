@@ -1,7 +1,6 @@
+import { SEMESTER_TYPES } from "@stu/lib";
 import { relations } from "drizzle-orm";
 import { foreignKey, int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
-
-import { SEMESTER_TYPES } from "@stu/lib";
 
 import { sqliteEnum, timestamp } from "../utils";
 import { schoolId } from "./school-id";

@@ -1,7 +1,7 @@
-import { Effect } from "effect";
 import type { SchoolId } from "@stu/lib";
-import { Database } from "../database";
 import { and, eq } from "drizzle-orm";
+import { Effect } from "effect";
+import { Database } from "../database";
 import * as tables from "../schema";
 
 export class YearRepository extends Effect.Service<YearRepository>()("student/YearRepository", {

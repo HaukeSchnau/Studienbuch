@@ -1,10 +1,9 @@
-import { format } from "date-fns";
-import { Link } from "expo-router";
-import React, { useMemo, useState } from "react";
-import { View } from "react-native";
-
 import type { Grade } from "@stu/lib";
 import { formatGrade, isGradeConfirmed } from "@stu/lib";
+import { format } from "date-fns";
+import { Link } from "expo-router";
+import { useMemo, useState } from "react";
+import { View } from "react-native";
 
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
 import { OutlinedButton } from "~/components/button";
@@ -15,13 +14,7 @@ import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { EditOralGrade } from "./edit-oral-grade";
 import OralIcon from "./oral.svg";
 
-export const OralGradesRow = ({
-  oralGrades,
-  courseId,
-}: {
-  oralGrades: Grade[];
-  courseId: string;
-}) => {
+export const OralGradesRow = ({ oralGrades, courseId }: { oralGrades: Grade[]; courseId: string }) => {
   const { user } = useRequiredAuthenticatedSession();
   const { currentOralGrade, mostRecentConfirmedOralGrade } = useMemo(() => {
     const currentOralGrade = oralGrades[0];

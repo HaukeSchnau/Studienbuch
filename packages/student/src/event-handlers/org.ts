@@ -1,17 +1,15 @@
+import { type NamespaceApplicatorMap, ValidationError } from "@groundswell/core";
+import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { DomainEvent } from "@stu/lib";
-import { SchoolRepository } from "../repositories/school.repo";
-import { PersonRepository } from "../repositories/person.repo";
-import { YearRepository } from "../repositories/year.repo";
-import { CourseRepository } from "../repositories/course.repo";
-import { TimetableRepository } from "../repositories/timetable.repo";
-import { HolidayRepository } from "../repositories/holiday.repo";
-
-import { ValidationError, type NamespaceApplicatorMap } from "@groundswell/core";
-import type { Database } from "../database";
-import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
-import type { GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import { Effect } from "effect";
+import type { Database } from "../database";
+import { CourseRepository } from "../repositories/course.repo";
+import { HolidayRepository } from "../repositories/holiday.repo";
+import { PersonRepository } from "../repositories/person.repo";
+import { SchoolRepository } from "../repositories/school.repo";
 import { SemesterRepository } from "../repositories/semester.repo";
+import { TimetableRepository } from "../repositories/timetable.repo";
+import { YearRepository } from "../repositories/year.repo";
 
 const failIfTrue = (message: string, reason: "DUPLICATE" | "NOT_FOUND" | "NOT_ALLOWED" | "INVALID" | "UNKNOWN") =>
   Effect.flatMap((bool) => (bool ? Effect.fail(new ValidationError({ cause: message, reason })) : Effect.void));

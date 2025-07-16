@@ -1,9 +1,8 @@
+import { formatGrade, subjectNameMap } from "@stu/lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDate } from "date-fns";
 import { Stack, useRouter } from "expo-router";
 import { View } from "react-native";
-
-import { formatGrade, subjectNameMap } from "@stu/lib";
 
 import { ConfirmPageContent, ViewConfirmPageContent } from "~/components/confirm-page-content";
 import { Text } from "~/components/text";
@@ -57,11 +56,7 @@ export const ConfirmWrittenGradeParent = ({ grade }: { grade: Grade }) => {
   );
 };
 
-export const WrittenGradeParentConfirmationView = ({
-  grade,
-}: {
-  grade: ConfirmedGrade;
-}) => {
+export const WrittenGradeParentConfirmationView = ({ grade }: { grade: ConfirmedGrade }) => {
   const { user } = useRequiredAuthenticatedSession();
   const { date, result } = grade;
 

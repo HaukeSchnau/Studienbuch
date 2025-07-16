@@ -1,13 +1,11 @@
-import { serve } from "@hono/node-server";
-
-import { createBase } from "../src/base";
-import { env } from "../env";
-import { Effect } from "effect";
-import { appServerLayer, canonicalStorageLive, memoryBroadcastLive } from "../src/groundswell";
-import { Layer } from "effect";
-import { NodeSocket, NodeRuntime } from "@effect/platform-node";
 import { DevTools } from "@effect/experimental";
+import { NodeRuntime, NodeSocket } from "@effect/platform-node";
+import { serve } from "@hono/node-server";
 import { DatabaseLive } from "@stu/db";
+import { Effect, Layer } from "effect";
+import { env } from "../env";
+import { createBase } from "../src/base";
+import { appServerLayer, canonicalStorageLive, memoryBroadcastLive } from "../src/groundswell";
 
 const server = Effect.gen(function* () {
   const port = env.API_PORT;

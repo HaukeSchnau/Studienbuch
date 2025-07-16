@@ -1,19 +1,14 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { Stack, useRouter } from "expo-router";
-
 import type { AbsenceDayWithTeachers } from "@stu/lib";
 import { formalName, isArraySingleElement } from "@stu/lib";
+import { useQueryClient } from "@tanstack/react-query";
+import { Stack, useRouter } from "expo-router";
 
 import { ConfirmPageContent } from "~/components/confirm-page-content";
 import { Text } from "~/components/text";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { useIngest } from "~/utils/events/ingest";
 
-export const ExcuseTeacher = ({
-  absence,
-}: {
-  absence: AbsenceDayWithTeachers;
-}) => {
+export const ExcuseTeacher = ({ absence }: { absence: AbsenceDayWithTeachers }) => {
   const { user } = useRequiredAuthenticatedSession();
   const router = useRouter();
   const { date, reason } = absence;

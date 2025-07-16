@@ -5,8 +5,8 @@
   "main": "./src/index.ts",
   "scripts": {
     "clean": "git clean -xdf .cache .turbo node_modules",
-    "format": "biome format",
-    "lint": "eslint",
+    "lint": "biome check",
+    "eslint": "eslint",
     "open:ios": "xed ios",
     "open:android": "open -a \"Android Studio\" android",
     "typecheck": "tsgo --noEmit"

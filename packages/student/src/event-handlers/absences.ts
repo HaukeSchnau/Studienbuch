@@ -1,8 +1,6 @@
-import type { DomainEvent } from "@stu/lib";
-
 import { ApplicatorError, type NamespaceApplicatorMap } from "@groundswell/core";
-import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
-import type { GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
+import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
+import type { DomainEvent } from "@stu/lib";
 import { Effect } from "effect";
 import type { Database } from "../database";
 import { AbsenceRepository } from "../repositories/absences.repo";

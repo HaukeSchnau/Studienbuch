@@ -20,7 +20,7 @@ export const loginIserv = async (username: string, password: string) => {
     response.headers.forEach((cookieStr, key) => {
       if (key === "set-cookie") {
         const cookie = Cookie.parse(cookieStr);
-        if (!cookie) throw new Error("Could not parse cookie: " + cookieStr);
+        if (!cookie) throw new Error(`Could not parse cookie: ${cookieStr}`);
 
         jar.setCookieSync(cookie, url);
       }

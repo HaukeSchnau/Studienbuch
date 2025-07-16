@@ -1,7 +1,6 @@
-import { useForm } from "@tanstack/react-form";
-
 import type { Permission, ScopeOption } from "@stu/lib";
 import { formalName } from "@stu/lib";
+import { useForm } from "@tanstack/react-form";
 
 import { Button } from "~/components/form/Button";
 import { SelectField } from "~/components/form/SelectField";

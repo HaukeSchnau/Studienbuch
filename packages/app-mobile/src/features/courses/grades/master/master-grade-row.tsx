@@ -1,12 +1,11 @@
 import Icon from "@expo/vector-icons/MaterialIcons";
-import { format } from "date-fns";
-import { Link } from "expo-router";
-import React, { useMemo, useState } from "react";
-import { View } from "react-native";
-
 import type { Grade } from "@stu/lib";
 import { formatGrade, isGradeConfirmed } from "@stu/lib";
 import { colors } from "@stu/tailwind-config/native";
+import { format } from "date-fns";
+import { Link } from "expo-router";
+import { useMemo, useState } from "react";
+import { View } from "react-native";
 
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
 import { OutlinedButton } from "~/components/button";
@@ -16,13 +15,7 @@ import { Text } from "~/components/text";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { EditMasterGrade } from "./edit-master-grade";
 
-export const MasterGradeRow = ({
-  masterGrades,
-  courseId,
-}: {
-  masterGrades: Grade[];
-  courseId: string;
-}) => {
+export const MasterGradeRow = ({ masterGrades, courseId }: { masterGrades: Grade[]; courseId: string }) => {
   const { user } = useRequiredAuthenticatedSession();
   const { currentMasterGrade, mostRecentConfirmedMasterGrade } = useMemo(() => {
     const currentMasterGrade = masterGrades[0];

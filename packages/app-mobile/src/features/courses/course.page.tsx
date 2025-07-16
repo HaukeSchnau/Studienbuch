@@ -1,10 +1,9 @@
+import { formalName, subjectNameMap } from "@stu/lib";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { de } from "date-fns/locale/de";
 import { Stack } from "expo-router";
 import { View } from "react-native";
-
-import { formalName, subjectNameMap } from "@stu/lib";
 
 import { CoreLayout } from "~/components/core-layout";
 import { shadow } from "~/components/styles/shadow";

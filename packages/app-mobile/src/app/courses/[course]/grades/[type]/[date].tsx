@@ -1,6 +1,5 @@
-import { useLocalSearchParams } from "expo-router";
-
 import type { GradeType } from "@stu/lib";
+import { useLocalSearchParams } from "expo-router";
 
 import { GradePage } from "~/features/courses/grades/grade.page";
 
@@ -14,7 +13,7 @@ export default function GradePageEntry() {
     date: string;
     type: GradeType;
   }>();
-  const date = new Date(parseInt(dateStr));
+  const date = new Date(Number.parseInt(dateStr));
 
   return <GradePage date={date} courseId={course} type={type} />;
 }

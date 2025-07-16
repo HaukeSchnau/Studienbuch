@@ -1,14 +1,13 @@
+import { SUBJECT_IDS } from "@stu/lib";
 import { relations } from "drizzle-orm";
 import { foreignKey, int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
-
-import { SUBJECT_IDS } from "@stu/lib";
 
 import { persons } from "../people/persons";
 import { timetableEntries } from "../timetable/timetable-entries";
 import { boolean, sqliteEnum, uuid } from "../utils";
 import { classes } from "./classes";
 import { schoolId } from "./school-id";
-import { semesterType, semesters } from "./semesters";
+import { semesters, semesterType } from "./semesters";
 
 export const subject = sqliteEnum(SUBJECT_IDS);
 

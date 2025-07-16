@@ -1,14 +1,12 @@
-import { Effect } from "effect";
 import type { SchoolId } from "@stu/lib";
+import { and, count, eq } from "drizzle-orm";
+import { Effect } from "effect";
 import { Database } from "../database";
-import { and, eq, count } from "drizzle-orm";
 import * as tables from "../schema";
 
 export class AuthRepository extends Effect.Service<AuthRepository>()("auth/AuthRepository", {
   effect: Effect.gen(function* () {
-    const getLicenseKey = Effect.fn(function* (payload: {
-      key: string;
-    }) {
+    const getLicenseKey = Effect.fn(function* (payload: { key: string }) {
       const { execute } = yield* Database;
       const rows = yield* execute((db) =>
         db.select().from(tables.LicenseKeys).where(eq(tables.LicenseKeys.key, payload.key)),
@@ -16,9 +14,7 @@ export class AuthRepository extends Effect.Service<AuthRepository>()("auth/AuthR
       return rows[0];
     });
 
-    const doesLicenseKeyExist = Effect.fn(function* (payload: {
-      key: string;
-    }) {
+    const doesLicenseKeyExist = Effect.fn(function* (payload: { key: string }) {
       const licenseKey = yield* getLicenseKey({ key: payload.key });
       return licenseKey !== undefined;
     });
@@ -40,10 +36,7 @@ export class AuthRepository extends Effect.Service<AuthRepository>()("auth/AuthR
       );
     });
 
-    const verifyUserLicense = Effect.fn(function* (payload: {
-      userId: string;
-      schoolId: SchoolId;
-    }) {
+    const verifyUserLicense = Effect.fn(function* (payload: { userId: string; schoolId: SchoolId }) {
       const { execute } = yield* Database;
 
       const rows = yield* execute((db) =>
@@ -60,17 +53,12 @@ export class AuthRepository extends Effect.Service<AuthRepository>()("auth/AuthR
       return (rows[0]?.count ?? 0) > 0;
     });
 
-    const createUser = Effect.fn(function* (payload: {
-      userId: string;
-    }) {
+    const createUser = Effect.fn(function* (payload: { userId: string }) {
       const { execute } = yield* Database;
       yield* execute((db) => db.insert(tables.Users).values({ id: payload.userId }));
     });
 
-    const activateLicenseKey = Effect.fn(function* (payload: {
-      key: string;
-      userId: string;
-    }) {
+    const activateLicenseKey = Effect.fn(function* (payload: { key: string; userId: string }) {
       const { execute } = yield* Database;
       yield* execute((db) =>
         db

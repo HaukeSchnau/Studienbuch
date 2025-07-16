@@ -1,10 +1,9 @@
-import fs, { writeFile } from "fs/promises";
+import fs, { writeFile } from "node:fs/promises";
 import type { ZodType } from "zod";
 import { z } from "zod";
-
+import { env } from "../../env";
 import type { HolidayDto } from "./generated";
 import { HolidayWsV1ImplService } from "./generated";
-import { env } from "../../env";
 
 const states = [
   "BB",

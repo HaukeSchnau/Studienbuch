@@ -1,20 +1,14 @@
-import type { ReactNode } from "react";
-import React, { forwardRef } from "react";
-import { View } from "react-native";
-import { SvgXml } from "react-native-svg";
 import type { DrawingViewRef } from "@stu/expo-native";
 import { DrawingView } from "@stu/expo-native";
+import type { ReactNode } from "react";
+import { forwardRef } from "react";
+import { View } from "react-native";
+import { SvgXml } from "react-native-svg";
 
 import Cross from "../.././assets/cross.svg";
 import { Text } from "./text";
 
-const SignatureFrame = ({
-  children,
-  label,
-}: {
-  children: ReactNode;
-  label: string;
-}) => {
+const SignatureFrame = ({ children, label }: { children: ReactNode; label: string }) => {
   return (
     <View
       className="h-80 w-full items-center justify-center"
@@ -45,13 +39,7 @@ export const SignatureField = forwardRef<DrawingViewRef, Props>(({ label }, ref)
   );
 });
 
-export const SignatureView = ({
-  svg,
-  label,
-}: {
-  svg: string;
-  label: string;
-}) => {
+export const SignatureView = ({ svg, label }: { svg: string; label: string }) => {
   return (
     <SignatureFrame label={label}>
       <SvgXml xml={svg} style={{ width: "100%", height: "100%", position: "absolute" }} />

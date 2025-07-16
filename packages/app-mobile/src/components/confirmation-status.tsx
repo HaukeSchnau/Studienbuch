@@ -1,19 +1,12 @@
 import Icon from "@expo/vector-icons/MaterialIcons";
+import { colors } from "@stu/tailwind-config/native";
 import clsx from "clsx";
 import { View } from "react-native";
-
-import { colors } from "@stu/tailwind-config/native";
 
 import Cross from "../../assets/cross.svg";
 import { Text } from "./text";
 
-const SingleConfirmationStatus = ({
-  confirmed,
-  confirmedText,
-}: {
-  confirmed: boolean;
-  confirmedText: string;
-}) => {
+const SingleConfirmationStatus = ({ confirmed, confirmedText }: { confirmed: boolean; confirmedText: string }) => {
   return (
     <View className="flex-row items-center gap-1">
       {confirmed ? (
@@ -54,12 +47,11 @@ export const ConfirmationStatus = ({
         <SingleConfirmationStatus confirmed={teacher} confirmedText="Lehrer" />
       </View>
     );
-  } else {
-    return (
-      <View className="flex-row gap-2">
-        <SingleConfirmationStatus confirmed={teacher} confirmedText="Lehrer" />
-        <SingleConfirmationStatus confirmed={parent} confirmedText="Eltern" />
-      </View>
-    );
   }
+  return (
+    <View className="flex-row gap-2">
+      <SingleConfirmationStatus confirmed={teacher} confirmedText="Lehrer" />
+      <SingleConfirmationStatus confirmed={parent} confirmedText="Eltern" />
+    </View>
+  );
 };

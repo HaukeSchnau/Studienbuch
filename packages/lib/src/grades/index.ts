@@ -10,7 +10,7 @@ export interface Grade {
 }
 
 export const formatGrade = (grade: number) => {
-  if (isNaN(grade)) {
+  if (Number.isNaN(grade)) {
     return "—";
   }
 
@@ -22,7 +22,7 @@ export const formatGrade = (grade: number) => {
 };
 
 export const formatGradeShort = (grade: number) => {
-  if (isNaN(grade)) {
+  if (Number.isNaN(grade)) {
     return "—";
   }
 

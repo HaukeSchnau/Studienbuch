@@ -4,22 +4,22 @@ import { TRPCProvider } from "~/utils/api";
 
 import "./styles.css";
 
+import { colors } from "@stu/tailwind-config/native";
+import { setDefaultOptions } from "date-fns";
+import { de } from "date-fns/locale";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
+import { Layer, ManagedRuntime } from "effect";
 import * as SplashScreen from "expo-splash-screen";
 import { lazy, useEffect } from "react";
 import { UIManager } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-
-import { colors } from "@stu/tailwind-config/native";
-
 import { PortalRenderer } from "~/components/portal";
 import { DatabaseLive, db } from "~/db/client";
 import { useSessionWatcher } from "~/utils/auth";
+import { SyncEngineProvider } from "~/utils/events/ingest";
+import { SyncEngineLive } from "~/utils/groundswell";
 import { MissingInfoGuard } from "~/utils/missing-info-guard";
 import migrations from "../../drizzle/migrations";
-import { Layer, ManagedRuntime } from "effect";
-import { SyncEngineLive } from "~/utils/groundswell";
-import { SyncEngineProvider } from "~/utils/events/ingest";
 
 const DevTools = lazy(() =>
   import("~/components/dev/dev-menu").then((mod) => ({
@@ -34,6 +34,8 @@ if (UIManager.setLayoutAnimationEnabledExperimental) {
 }
 
 const runtime = ManagedRuntime.make(SyncEngineLive.pipe(Layer.provideMerge(DatabaseLive)));
+
+setDefaultOptions({ locale: de });
 
 function RootLayout() {
   const { success: migrationSuccess, error: migrationError } = useMigrations(db, migrations);

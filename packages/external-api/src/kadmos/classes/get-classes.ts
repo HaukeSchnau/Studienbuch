@@ -1,8 +1,7 @@
+import type { SimpleDate } from "@stu/lib";
 import type { CookieJar } from "tough-cookie";
 import { z } from "zod";
-
 import { fetchWithCookieJar } from "../../fetch-with-cookies";
-import type { SimpleDate } from "@stu/lib";
 
 const v2Schema = z.object({
   departments: z.array(

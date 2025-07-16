@@ -1,7 +1,6 @@
+import * as t from "@stu/student/schema";
 import { queryOptions } from "@tanstack/react-query";
 import { eq, inArray, isNotNull, isNull } from "drizzle-orm";
-
-import * as t from "@stu/student/schema";
 
 import { db } from "~/db/client";
 
@@ -47,13 +46,7 @@ export const listExcused = () =>
         .then((absences) => absences.filter((absence) => absence.absenceCourses.length > 0)),
   });
 
-export const getOne = ({
-  date,
-  courseIds,
-}: {
-  date: Date;
-  courseIds: string[];
-}) =>
+export const getOne = ({ date, courseIds }: { date: Date; courseIds: string[] }) =>
   queryOptions({
     queryKey: ["absences", "getOne", date, courseIds],
     queryFn: async () => {

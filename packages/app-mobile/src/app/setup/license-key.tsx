@@ -1,7 +1,6 @@
+import type { Falsy } from "@stu/lib";
 import { View } from "react-native";
 import { useMaskedInputProps } from "react-native-mask-input";
-
-import type { Falsy } from "@stu/lib";
 
 import { Button } from "~/components/button";
 import { Text } from "~/components/text";

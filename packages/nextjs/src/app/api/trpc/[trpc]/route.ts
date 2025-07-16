@@ -1,8 +1,7 @@
-import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { withAxiom } from "next-axiom";
-
 import { appRouter, createTRPCContext } from "@stu/api";
 import { getSessionTokenFromHeaders } from "@stu/lib-server";
+import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
+import { withAxiom } from "next-axiom";
 
 /**
  * Configure basic CORS headers

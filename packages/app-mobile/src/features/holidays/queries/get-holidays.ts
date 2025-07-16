@@ -1,7 +1,6 @@
+import * as t from "@stu/student/schema";
 import { queryOptions } from "@tanstack/react-query";
 import { eq } from "drizzle-orm";
-
-import * as t from "@stu/student/schema";
 
 import { db } from "~/db/client";
 
@@ -12,13 +11,7 @@ export interface Holdiay {
   year: number;
 }
 
-export const getHolidays = ({
-  year,
-  userId,
-}: {
-  year: number;
-  userId: string;
-}) =>
+export const getHolidays = ({ year, userId }: { year: number; userId: string }) =>
   queryOptions({
     queryKey: ["holidays", { year, userId }],
     queryFn: async (): Promise<Holdiay[]> => {

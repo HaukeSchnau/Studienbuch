@@ -7,5 +7,7 @@ type NumberFieldProps = Omit<ComponentProps<typeof TextField>, "type" | "onChang
 };
 
 export const NumberField = ({ onChange, ...rest }: NumberFieldProps) => {
-  return <TextField {...rest} type="number" onChange={(value) => onChange(value === "" ? NaN : Number(value))} />;
+  return (
+    <TextField {...rest} type="number" onChange={(value) => onChange(value === "" ? Number.NaN : Number(value))} />
+  );
 };

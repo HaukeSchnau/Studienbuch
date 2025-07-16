@@ -1,11 +1,10 @@
+import type { AgendaEntry } from "@stu/lib";
+import { formalName, subjectNameMap } from "@stu/lib";
 import { useQuery } from "@tanstack/react-query";
 import { add, format, getISOWeek, getISOWeekYear, isAfter, isSameDay, isTomorrow, isWithinInterval } from "date-fns";
 import { de as localeDE } from "date-fns/locale/de";
 import { Fragment, useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
-
-import type { AgendaEntry } from "@stu/lib";
-import { formalName, subjectNameMap } from "@stu/lib";
 
 import { Card } from "~/components/card";
 import { Divider } from "~/components/divider";
@@ -18,19 +17,23 @@ const matchHolidayName = (name: string) => {
   const n = name.toLowerCase();
   if (n.includes("winter")) {
     return "Winterferien";
-  } else if (n.includes("oster")) {
-    return "Osterferien";
-  } else if (n.includes("pfingst")) {
-    return "Pfingstferien";
-  } else if (n.includes("sommer")) {
-    return "Sommerferien";
-  } else if (n.includes("herbst")) {
-    return "Herbstferien";
-  } else if (n.includes("weihnacht")) {
-    return "Weihnachtsferien";
-  } else {
-    return "Ferien";
   }
+  if (n.includes("oster")) {
+    return "Osterferien";
+  }
+  if (n.includes("pfingst")) {
+    return "Pfingstferien";
+  }
+  if (n.includes("sommer")) {
+    return "Sommerferien";
+  }
+  if (n.includes("herbst")) {
+    return "Herbstferien";
+  }
+  if (n.includes("weihnacht")) {
+    return "Weihnachtsferien";
+  }
+  return "Ferien";
 };
 
 const EmptyState = () => {
@@ -158,7 +161,7 @@ export const Agenda = () => {
         {entries.map((entry, i) => (
           <Fragment key={`${entry.start.toISOString()}-${entry.course.id}`}>
             {i !== 0 && <Divider />}
-            <AgendaEntry entry={entry} />
+            <AgendaEntryView entry={entry} />
           </Fragment>
         ))}
       </Card>
@@ -166,7 +169,7 @@ export const Agenda = () => {
   );
 };
 
-const AgendaEntry = ({ entry }: { entry: AgendaEntry }) => {
+const AgendaEntryView = ({ entry }: { entry: AgendaEntry }) => {
   return (
     <View className="flex-row px-6 py-2">
       <View>

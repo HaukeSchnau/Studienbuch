@@ -1,20 +1,11 @@
+import type { GradeType } from "@stu/lib";
+import * as t from "@stu/student/schema";
 import { queryOptions } from "@tanstack/react-query";
 import { and, eq } from "drizzle-orm";
 
-import type { GradeType } from "@stu/lib";
-import * as t from "@stu/student/schema";
-
 import { db } from "~/db/client";
 
-export const getGrade = ({
-  date,
-  courseId,
-  type,
-}: {
-  date: Date;
-  courseId: string;
-  type: GradeType;
-}) =>
+export const getGrade = ({ date, courseId, type }: { date: Date; courseId: string; type: GradeType }) =>
   queryOptions({
     queryKey: ["grades", { date, courseId, type }],
     queryFn: async () => {

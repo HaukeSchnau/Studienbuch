@@ -1,13 +1,11 @@
-import { serve } from "bun";
-
-import { createBase } from "../src/base";
-import { env } from "../env";
-import { Effect } from "effect";
-import { appServerLayer, canonicalStorageLive, memoryBroadcastLive } from "../src/groundswell";
-import { Layer } from "effect";
-import { BunSocket, BunRuntime } from "@effect/platform-bun";
 import { DevTools } from "@effect/experimental";
+import { BunRuntime, BunSocket } from "@effect/platform-bun";
 import { DatabaseLive } from "@stu/db";
+import { serve } from "bun";
+import { Effect, Layer } from "effect";
+import { env } from "../env";
+import { createBase } from "../src/base";
+import { appServerLayer, canonicalStorageLive, memoryBroadcastLive } from "../src/groundswell";
 
 const server = Effect.gen(function* () {
   const port = env.API_PORT;

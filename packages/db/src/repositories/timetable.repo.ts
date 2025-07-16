@@ -1,8 +1,8 @@
+import type { SubstitutionType } from "@stu/lib";
+import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { Database } from "../database";
-import { and, eq } from "drizzle-orm";
 import * as tables from "../schema";
-import type { SubstitutionType } from "@stu/lib";
 
 export class TimetableRepository extends Effect.Service<TimetableRepository>()("db/TimetableRepository", {
   effect: Effect.gen(function* () {

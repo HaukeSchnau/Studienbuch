@@ -1,8 +1,8 @@
+import type { Salutation } from "@stu/lib";
+import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { Database } from "../database";
-import type { Salutation } from "@stu/lib";
 import * as tables from "../schema";
-import { eq } from "drizzle-orm";
 
 export class PersonRepository extends Effect.Service<PersonRepository>()("student/PersonRepository", {
   effect: Effect.gen(function* () {

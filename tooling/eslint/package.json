@@ -10,7 +10,7 @@
   },
   "scripts": {
     "clean": "git clean -xdf .cache .turbo node_modules",
-    "format": "biome format",
+    "lint": "biome check",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {

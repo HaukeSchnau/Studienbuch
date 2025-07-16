@@ -1,8 +1,7 @@
 "use client";
 
-import { z } from "zod";
-
 import type { Course } from "@stu/lib";
+import { z } from "zod";
 
 import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
 import { Card, CardHeading } from "../layout/Card";

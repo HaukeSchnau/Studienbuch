@@ -1,7 +1,7 @@
 import type { DatabaseError, GenericDatabaseService, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
-import type * as Schema from "./schema";
-import { Effect } from "effect";
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
+import { Effect } from "effect";
+import type * as Schema from "./schema";
 
 export class Database extends Effect.Tag("student/Database")<Database, GenericDatabaseService<typeof Schema>>() {
   static readonly asTransaction = <E, R>(

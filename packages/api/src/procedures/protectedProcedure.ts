@@ -1,6 +1,5 @@
-import { TRPCError } from "@trpc/server";
-
 import type { Permission } from "@stu/lib";
+import { TRPCError } from "@trpc/server";
 
 import { t } from "../trpc";
 import { logger } from "./loggingProcedure";

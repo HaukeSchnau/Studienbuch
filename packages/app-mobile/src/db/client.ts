@@ -1,10 +1,9 @@
-import { Layer, Redacted } from "effect";
-
-import * as schema from "@stu/student/schema";
-import { Database } from "@stu/student";
 import { makeService } from "@schnau/effect-drizzle/expo-sqlite";
-import { openDatabaseSync } from "expo-sqlite";
+import { Database } from "@stu/student";
+import * as schema from "@stu/student/schema";
 import { drizzle } from "drizzle-orm/expo-sqlite";
+import { Layer } from "effect";
+import { openDatabaseSync } from "expo-sqlite";
 
 // deleteDatabaseSync("local.db");
 export const expoDb = openDatabaseSync("local.db");

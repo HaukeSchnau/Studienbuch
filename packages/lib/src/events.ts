@@ -1,11 +1,10 @@
+import { createEventUnion, createDomainEvent as event } from "@groundswell/zod-helpers";
 import { array, boolean, date, number, object, string, z } from "zod";
-
 import { SUBJECT_IDS } from "./courses";
 import { GRADE_TYPES } from "./grades";
 import type { SchoolId, StateCode } from "./schools";
 import { SCHOOL_IDS, SEMESTER_TYPES, STATE_CODES } from "./schools";
 import { SALUTATIONS } from "./users";
-import { createDomainEvent as event, createEventUnion } from "@groundswell/zod-helpers";
 
 export const DomainEvent = createEventUnion([
   event("absence.recorded", {
@@ -159,10 +158,8 @@ export const EVENT_TYPES = DomainEvent.options.map((thing) => thing.shape.type.v
 
 export const studentsOfCourse = (courseId: string) => `students.courses.${courseId}`;
 
-export const studentsOfYear = (options: {
-  school: SchoolId;
-  startYear: number;
-}) => `students.schools.${options.school}.years.${options.startYear}`;
+export const studentsOfYear = (options: { school: SchoolId; startYear: number }) =>
+  `students.schools.${options.school}.years.${options.startYear}`;
 
 export const studentsOfSchool = (school: SchoolId) => `students.schools.${school}`;
 

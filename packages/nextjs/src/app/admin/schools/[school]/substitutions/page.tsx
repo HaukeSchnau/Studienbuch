@@ -1,7 +1,6 @@
+import { addRowSpans, getSubstitutions } from "@stu/lib-server";
 import dayjs from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
-
-import { addRowSpans, getSubstitutions } from "@stu/lib-server";
 
 import { Card } from "~/components/layout/Card";
 import { PageHeading } from "~/components/layout/PageHeading";
@@ -96,7 +95,7 @@ export default async function SubstitutionPage() {
         </table>
       </Card>
 
-      <div className="h-16"></div>
+      <div className="h-16" />
 
       <Card noPadding className="overflow-x-auto">
         <DBSubstitutionTable />

@@ -20,9 +20,9 @@
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev:internal": "tsgo --watch",
-    "format": "biome format",
+    "lint": "biome check",
     "generate": "drizzle-kit generate",
-    "lint": "eslint",
+    "eslint": "eslint",
     "push": "drizzle-kit push",
     "studio": "drizzle-kit studio",
     "typecheck": "tsgo --noEmit --emitDeclarationOnly false"

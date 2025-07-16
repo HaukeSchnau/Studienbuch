@@ -1,6 +1,6 @@
-import { exec as execCb } from "child_process";
-import p from "path";
-import util from "util";
+import { exec as execCb } from "node:child_process";
+import p from "node:path";
+import util from "node:util";
 
 const exec = util.promisify(execCb);
 

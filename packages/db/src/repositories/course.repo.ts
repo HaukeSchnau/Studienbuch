@@ -1,7 +1,7 @@
-import { Effect } from "effect";
 import type { SchoolId, SemesterType } from "@stu/lib";
-import { Database } from "../database";
 import { eq } from "drizzle-orm";
+import { Effect } from "effect";
+import { Database } from "../database";
 import * as tables from "../schema";
 import type { Subject } from "../schema/school/courses";
 

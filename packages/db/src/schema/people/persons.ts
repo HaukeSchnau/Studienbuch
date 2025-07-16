@@ -1,7 +1,6 @@
+import { SALUTATIONS } from "@stu/lib";
 import { relations } from "drizzle-orm";
 import { boolean, foreignKey, pgEnum, pgTable, smallint, text, uuid } from "drizzle-orm/pg-core";
-
-import { SALUTATIONS } from "@stu/lib";
 
 import { Classes } from "../school/classes";
 import { SchoolId } from "../school/school-id";

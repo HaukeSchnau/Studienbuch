@@ -1,7 +1,6 @@
+import { GRADE_TYPES } from "@stu/lib";
 import { relations } from "drizzle-orm";
 import { date, pgEnum, pgTable, primaryKey, real, text, uuid } from "drizzle-orm/pg-core";
-
-import { GRADE_TYPES } from "@stu/lib";
 
 import { Persons } from "../people/persons";
 import { Courses } from "../school/courses";
