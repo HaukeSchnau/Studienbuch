@@ -20,30 +20,10 @@ env:
   npm_token: ${{ secrets.npm_token }}
 
 jobs:
-  # TODO: Replace eslint with biome
-  # lint:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-
-  #     - name: Install bun
-  #       uses: oven-sh/setup-bun@v2
-
-  #     - name: Install dependencies
-  #       run: bun install --frozen-lockfile
-
-  #     # - name: Copy env
-  #     #   shell: bash
-  #     #   run: cp .env.example .env
-
-  #     - name: Lint
-  #       run: bun lint
-
-  format:
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install bun
         uses: oven-sh/setup-bun@v2
@@ -51,8 +31,12 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Format
-        run: bun format
+      # - name: Copy env
+      #   shell: bash
+      #   run: cp .env.example .env
+
+      - name: Lint
+        run: bun lint
 
   typecheck:
     runs-on: ubuntu-latest
