@@ -5,7 +5,6 @@ import { formatClassName, formatYear, isArraySingleElement } from "@stu/lib";
 
 import type { Class, SchoolId, StateCode, Year } from "@stu/lib";
 import * as t from "@stu/student/schema";
-import { pk } from "@stu/student/schema";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Button } from "~/components/button";
@@ -19,8 +18,9 @@ import { currentStudent } from "~/db/queries/user";
 import { useAppForm } from "~/features/setup/form";
 import { api } from "~/utils/api";
 import { useSession } from "~/utils/auth";
-import { ingest } from "~/utils/events/ingest";
+import { useIngest, useSimpleIngest } from "~/utils/events/ingest";
 import { router } from "expo-router";
+import { pk } from "@stu/student";
 
 const bootstrap = async ({
   school,
@@ -75,12 +75,16 @@ export default function NameAndYear() {
   const currentUser = useQuery(currentStudent());
   const session = useSession();
   const queryClient = useQueryClient();
+  const studentJoined = useIngest("student.joined", {
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+      router.push("/setup/class-and-courses");
+    },
+  });
 
   const form = useAppForm({
     defaultValues: {
-      name: currentUser.data
-        ? `${currentUser.data.person.firstName} ${currentUser.data.person.lastName}`
-        : "",
+      name: currentUser.data ? `${currentUser.data.person.firstName} ${currentUser.data.person.lastName}` : "",
       isOfAge: currentUser.data?.isOfAge ?? false,
       year: currentUser.data?.year,
       class: currentUser.data?.class,
@@ -105,7 +109,7 @@ export default function NameAndYear() {
         classIdentifier: value.class.identifierInYear,
       });
 
-      await ingest("student.joined", session.userId, {
+      studentJoined.mutate({
         class: {
           identifier: value.class.identifierInYear,
           startYear: value.class.startYear,
@@ -115,10 +119,6 @@ export default function NameAndYear() {
         school: "igs-lil",
         studentId: session.userId,
       });
-
-      await queryClient.invalidateQueries();
-
-      router.push("/setup/class-and-courses");
     },
   });
 
@@ -180,11 +180,7 @@ export default function NameAndYear() {
             <form.Field
               name="class"
               children={(field) => (
-                <ClassField
-                  selectedYear={year}
-                  value={field.state.value}
-                  onChange={field.handleChange}
-                />
+                <ClassField selectedYear={year} value={field.state.value} onChange={field.handleChange} />
               )}
             />
           )
@@ -194,21 +190,13 @@ export default function NameAndYear() {
       <form.Field
         name="isOfAge"
         children={(field) => (
-          <CheckboxRow
-            label="Ich bin volljährig"
-            value={field.state.value}
-            onChange={field.setValue}
-          />
+          <CheckboxRow label="Ich bin volljährig" value={field.state.value} onChange={field.setValue} />
         )}
       />
 
       <View className="h-6" />
 
-      <Button
-        label="Weiter"
-        className="self-end"
-        onPress={() => form.handleSubmit()}
-      />
+      <Button label="Weiter" className="self-end" onPress={() => form.handleSubmit()} />
     </View>
   );
 }

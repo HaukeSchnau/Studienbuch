@@ -1,3 +1,5 @@
+import { ClientStorage } from "@groundswell/adapter-drizzle-sqlite";
+
 export * from "./people/persons";
 
 export * from "./school/classes";
@@ -15,4 +17,4 @@ export * from "./timetable/substitutions";
 export * from "./timetable/timetable-entries";
 export * from "./timetable/recurring-timetable-entries";
 
-export * from "./events";
+export const eventLog = ClientStorage.EventsTable;

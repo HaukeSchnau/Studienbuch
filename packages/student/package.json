@@ -22,8 +22,9 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@groundswell/core": "^0.0.11",
-    "@schnau/effect-drizzle": "0.5.1",
+    "@groundswell/adapter-drizzle-sqlite": "^0.0.12",
+    "@groundswell/core": "^0.0.12",
+    "@schnau/effect-drizzle": "0.5.5",
     "@stu/lib": "workspace:*",
     "@t3-oss/env-core": "^0.12.0",
     "dayjs": "^1.11.13",

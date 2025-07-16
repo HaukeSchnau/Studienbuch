@@ -1,241 +1,26 @@
-import type { UseMutationOptions } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
-import { asc, eq, or } from "drizzle-orm";
-import * as Crypto from "expo-crypto";
-import superjson from "superjson";
+import type { DomainEvent } from "@stu/lib";
+import { type UseMutationOptions, useMutation } from "@tanstack/react-query";
+import { clientSyncEngine } from "../groundswell";
+import { Exit, type Effect } from "effect";
 
-import type {
-  EventApplicatorInterface,
-  EventDataByName,
-  EventErrorsByName,
-  EventName,
-} from "@stu/lib";
-import { Event, Result } from "@stu/lib";
-import { EventApplicator } from "@stu/student";
-import * as tables from "@stu/student/schema";
-
-import { db } from "~/db/client";
-import { useRequiredAuthenticatedSession } from "~/utils/auth";
-import { publishEvent } from "../api";
-import { useMutationStore } from "./mutation-manager";
-
-type ExpoPersistedEvent = Omit<Event, "errors"> & {};
-interface EventMetadata {
-  localStatus: "pending" | "error" | "success";
-  publishStatus: "pending" | "error" | "success";
-}
-
-// Ingest is for locally occuring events. They are stored locally and are then pushed to the mutation queue, which sends them to the server.
-export const ingest = async <TEventName extends EventName>(
-  eventName: TEventName,
-  userId: string,
-  data: EventDataByName<TEventName>,
-): Promise<Result<undefined, EventErrorsByName<TEventName>>> => {
-  const eventDataWithName = {
-    data,
-    type: eventName,
-    timestamp: new Date(),
-    id: Crypto.randomUUID(),
-  } satisfies Omit<Event, "errors"> as Omit<
-    Extract<Event, { type: TEventName }>,
-    "errors"
-  >;
-
-  // First: Save to local events table
-  await db
-    .insert(tables.events)
-    .values({
-      type: eventName,
-      id: eventDataWithName.id,
-      data: superjson.stringify(eventDataWithName.data),
-      timestamp: eventDataWithName.timestamp,
-      // isAppliedLocally: false,
-      // isPublished: localOnly,
-      // isFailed: false,
-      publishStatus: "pending",
-      localStatus: "pending",
-    })
-    .onConflictDoUpdate({
-      target: [tables.events.id],
-      set: {
-        publishStatus: "success",
-      },
-    });
-
-  const result = await applyLocallyExistingEvent<TEventName>(
-    eventDataWithName.id,
-    userId,
-  );
-
-  useMutationStore.getState().push({
-    event: eventDataWithName,
-    metadata: {
-      localStatus: "pending",
-      publishStatus: Result.isOk(result) ? "success" : "error",
-    },
-  });
-
-  return result;
-};
-
-export interface LocalEvent {
-  event: ExpoPersistedEvent;
-  metadata: EventMetadata;
-}
-
-const parseLocalEvent = (
-  row: typeof tables.events.$inferSelect,
-): LocalEvent | undefined => {
-  const event = Event.safeParse({
-    ...row,
-    data: superjson.parse(row.data),
-  });
-
-  if (!event.success) {
-    console.error("error parsing local event", row, event.error);
-    return undefined;
-  }
-
-  return {
-    event: event.data,
-    metadata: {
-      localStatus: row.localStatus,
-      publishStatus: row.publishStatus,
-    },
-  };
-};
-
-export const getEventsToBePushed = async () => {
-  const rows = await db
-    .select()
-    .from(tables.events)
-    .where(
-      or(
-        eq(tables.events.localStatus, "pending"),
-        eq(tables.events.publishStatus, "pending"),
-      ),
-    )
-    .orderBy(asc(tables.events.timestamp));
-
-  return rows.map(parseLocalEvent).filter((mut) => mut !== undefined);
-};
-
-const getEventFromDb = async (id: string): Promise<LocalEvent | undefined> => {
-  const [row] = await db
-    .select()
-    .from(tables.events)
-    .where(eq(tables.events.id, id));
-  if (!row) {
-    return undefined;
-  }
-
-  return parseLocalEvent(row);
-};
-
-// Apply an event that is already in the local event log
-export const applyLocallyExistingEvent = async <TEventName extends EventName>(
-  id: string,
-  userId: string,
+export const { SyncEngineProvider, useSyncStatus, useRuntime, useIngest: useSimpleIngest } = clientSyncEngine;
+type IngestError = Effect.Effect.Error<Awaited<ReturnType<ReturnType<typeof clientSyncEngine.useIngest>>>>;
+export const useIngest = <TEvent extends DomainEvent>(
+  type: TEvent["type"],
+  options?: Omit<UseMutationOptions<void, IngestError, TEvent["data"], unknown>, "mutationFn">,
 ) => {
-  const data = await getEventFromDb(id);
-  if (!data) {
-    console.warn("event not found in db", id);
-    return Result.ok(undefined);
-  }
-  const { event, metadata } = data;
-  const applicator: EventApplicatorInterface = new EventApplicator(db, userId);
+  const ingest = clientSyncEngine.useIngest();
 
-  // Second: Verify locally
-  let error = (await applicator.verify(event, {
-    initiatorUserId: userId,
-  })) as EventErrorsByName<TEventName> | undefined;
-  if (error) {
-    console.log("error verifying event", error);
-    console.log("metadata", metadata);
-    if (metadata.publishStatus === "success") {
-      return Result.err(error);
-    }
-
-    // The error may be due to missing events, so first, we want to try to publish the event
-    // in order to get the missing events, and then verify again. If it still fails, we return the error
-    // as it's not possible to apply the event locally without the missing events
-    const res = await publishEvent(event);
-    if (Result.isErr(res)) {
-      console.warn(
-        "error publishing event while trying to receive additional events",
-        event,
-        res,
-      );
-      return Result.err(error);
-    }
-
-    console.log(`Event ${event.id}: Successfully published event.`);
-    await db
-      .update(tables.events)
-      .set({
-        publishStatus: "success",
-      })
-      .where(eq(tables.events.id, event.id));
-
-    error = (await applicator.verify(event, {
-      initiatorUserId: userId,
-    })) as EventErrorsByName<TEventName> | undefined;
-    if (error) {
-      return Result.err(error);
-    }
-  }
-
-  // Third: Apply locally
-  console.log(`Applying a ${event.type} event locally. ID: ${event.id}`);
-  try {
-    await applicator.apply(event);
-  } catch (e) {
-    console.error("Error while applying", e);
-    await db
-      .update(tables.events)
-      .set({
-        localStatus: "error",
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- TODO
-        applyError: `${e}`,
-      })
-      .where(eq(tables.events.id, event.id));
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- TODO
-    return Result.err("UNEXPECTED" as const, `${e}`);
-  }
-  await db
-    .update(tables.events)
-    .set({ localStatus: "success" })
-    .where(eq(tables.events.id, event.id));
-
-  return Result.ok(undefined);
-};
-
-// useIngest is used to ingest locally ocurring events. It wraps the ingest function in a mutation hook.
-export const useIngest = <TEventName extends EventName>(
-  eventName: TEventName,
-  options?: Omit<
-    UseMutationOptions<
-      void,
-      EventErrorsByName<TEventName>,
-      EventDataByName<TEventName>,
-      unknown
-    >,
-    "mutationFn"
-  >,
-) => {
-  const { userId } = useRequiredAuthenticatedSession();
-
-  return useMutation<
-    void,
-    EventErrorsByName<TEventName>,
-    EventDataByName<TEventName>,
-    unknown
-  >({
+  return useMutation<void, IngestError, TEvent["data"], unknown>({
     ...options,
     mutationFn: async (data) => {
-      const result = await ingest(eventName, userId, data);
-      // eslint-disable-next-line @typescript-eslint/only-throw-error
-      if (Result.isErr(result)) throw result.error;
+      const result = await ingest({
+        type,
+        data,
+      });
+      if (Exit.isFailure(result) && result.cause._tag === "Fail") {
+        throw result.cause.error;
+      }
     },
   });
 };

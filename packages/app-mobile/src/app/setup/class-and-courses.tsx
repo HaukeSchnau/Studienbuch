@@ -2,18 +2,11 @@ import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
 
-import type {
-  Course as BaseCourse,
-  SchoolId,
-  SemesterType,
-  StateCode,
-  SubjectId,
-  WithTeachers,
-} from "@stu/lib";
+import type { Course as BaseCourse, SchoolId, SemesterType, StateCode, SubjectId, WithTeachers } from "@stu/lib";
 import { BetterMap, formalNameShort } from "@stu/lib";
 
 import * as t from "@stu/student/schema";
-import { pk } from "@stu/student/schema";
+import { pk } from "@stu/student";
 import { and, eq } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { Button } from "~/components/button";
@@ -24,7 +17,7 @@ import { db } from "~/db/client";
 import { currentStudent } from "~/db/queries/user";
 import { getMyCoursesForSemester } from "~/features/profile/queries/get-my-courses";
 import { api } from "~/utils/api";
-import { ingest } from "~/utils/events/ingest";
+import { useIngest } from "~/utils/events/ingest";
 import { useAppForm } from "~/utils/form";
 import { router } from "expo-router";
 
@@ -68,12 +61,7 @@ const bootstrap = async ({
 
   await db
     .delete(t.yearSemesters)
-    .where(
-      and(
-        eq(t.yearSemesters.school, school.id),
-        eq(t.yearSemesters.startYear, year.startYear),
-      ),
-    )
+    .where(and(eq(t.yearSemesters.school, school.id), eq(t.yearSemesters.startYear, year.startYear)))
     .execute();
   await db
     .insert(t.yearSemesters)
@@ -160,6 +148,7 @@ export default function ClassAndCourses() {
   const semester = api.schools.semesters.getCurrent.useQuery();
   const currentCourses = useQuery(getMyCoursesForSemester(semester.data));
   const queryClient = useQueryClient();
+  const courseAssigned = useIngest("student.courseAssigned");
   const form = useAppForm({
     defaultValues: {
       chosenCourses:
@@ -197,7 +186,7 @@ export default function ClassAndCourses() {
       console.log("bootstrapped");
       await Promise.all(
         courses.map((course) =>
-          ingest("student.courseAssigned", student.person.id, {
+          courseAssigned.mutateAsync({
             courseId: course.id,
             studentId: student.person.id,
           }),
@@ -222,13 +211,10 @@ export default function ClassAndCourses() {
 
   const courseChoices = useMemo(() => {
     if (courses.data) {
-      return courses.data.courses.reduce<BetterMap<SubjectId, Course[]>>(
-        (acc, course) => {
-          acc.getWithDefault(course.subject, []).push(course);
-          return acc;
-        },
-        new BetterMap(),
-      );
+      return courses.data.courses.reduce<BetterMap<SubjectId, Course[]>>((acc, course) => {
+        acc.getWithDefault(course.subject, []).push(course);
+        return acc;
+      }, new BetterMap());
     }
     return new BetterMap<SubjectId, Course[]>();
   }, [courses.data]);
@@ -247,8 +233,8 @@ export default function ClassAndCourses() {
         Kurse
       </Text>
       <Text>
-        Bitte wähle deine Kurse aus. Du kannst diese später jederzeit ändern.
-        Tippe auf die Fächer, um deine Kurse auszuwählen.
+        Bitte wähle deine Kurse aus. Du kannst diese später jederzeit ändern. Tippe auf die Fächer, um deine Kurse
+        auszuwählen.
       </Text>
 
       <View className="h-6" />
@@ -268,9 +254,7 @@ export default function ClassAndCourses() {
               name={`chosenCourses.${subject}`}
               children={(field) => (
                 <SelectCourse
-                  options={courses
-                    .slice()
-                    .sort((a, b) => a.name.localeCompare(b.name))}
+                  options={courses.slice().sort((a, b) => a.name.localeCompare(b.name))}
                   subject={subject}
                   getOptionLabel={(item) =>
                     item
@@ -288,11 +272,7 @@ export default function ClassAndCourses() {
 
       <View className="h-6" />
 
-      <Button
-        label="Fertig"
-        className="self-end"
-        onPress={() => form.handleSubmit()}
-      />
+      <Button label="Fertig" className="self-end" onPress={() => form.handleSubmit()} />
     </View>
   );
 }
