@@ -232,12 +232,7 @@
       },
       "compositePrimaryKeys": {
         "teachers_to_classes_teacher_class_identifier_class_start_year_school_pk": {
-          "columns": [
-            "teacher",
-            "class_identifier",
-            "class_start_year",
-            "school"
-          ],
+          "columns": ["teacher", "class_identifier", "class_start_year", "school"],
           "name": "teachers_to_classes_teacher_class_identifier_class_start_year_school_pk"
         }
       },
@@ -377,12 +372,7 @@
       },
       "compositePrimaryKeys": {
         "courses_to_classes_course_class_identifier_class_start_year_school_pk": {
-          "columns": [
-            "course",
-            "class_identifier",
-            "class_start_year",
-            "school"
-          ],
+          "columns": ["course", "class_identifier", "class_start_year", "school"],
           "name": "courses_to_classes_course_class_identifier_class_start_year_school_pk"
         }
       },

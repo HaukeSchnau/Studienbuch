@@ -5,11 +5,7 @@ import type { ExpoPushMessage } from "expo-server-sdk";
 // optionally providing an access token if you have enabled push security
 const expo = new Expo();
 
-export const sendNotifications = async (
-  pushTokens: string[],
-  title: string,
-  message: string,
-) => {
+export const sendNotifications = async (pushTokens: string[], title: string, message: string) => {
   // Create the messages that you want to send to clients
   const messages: ExpoPushMessage[] = [];
   for (const pushToken of pushTokens) {

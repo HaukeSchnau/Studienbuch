@@ -4,22 +4,10 @@ import { ActivityIndicator, View } from "react-native";
 
 import type { GradeType } from "@stu/lib";
 
-import {
-  ConfirmMasterGradeParent,
-  MasterGradeParentConfirmationView,
-} from "./master/confirm-master-grade-parent";
-import {
-  ConfirmMasterGradeTeacher,
-  MasterGradeTeacherConfirmationView,
-} from "./master/confirm-master-grade-teacher";
-import {
-  ConfirmOralGradeParent,
-  OralGradeParentConfirmationView,
-} from "./oral/confirm-oral-grade-parent";
-import {
-  ConfirmOralGradeTeacher,
-  OralGradeTeacherConfirmationView,
-} from "./oral/confirm-oral-grade-teacher";
+import { ConfirmMasterGradeParent, MasterGradeParentConfirmationView } from "./master/confirm-master-grade-parent";
+import { ConfirmMasterGradeTeacher, MasterGradeTeacherConfirmationView } from "./master/confirm-master-grade-teacher";
+import { ConfirmOralGradeParent, OralGradeParentConfirmationView } from "./oral/confirm-oral-grade-parent";
+import { ConfirmOralGradeTeacher, OralGradeTeacherConfirmationView } from "./oral/confirm-oral-grade-teacher";
 import { getGrade } from "./queries/get-grade";
 import { ConfirmWrittenGradeParent } from "./written/confirm-written-grade-parent";
 import { ConfirmWrittenGradeTeacher } from "./written/confirm-written-grade-teacher";

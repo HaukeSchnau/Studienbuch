@@ -19,9 +19,7 @@ export const Grid = <T,>(props: Props<T>) => {
         gridTemplateColumns: "repeat(auto-fill, minmax(15rem, 1fr))",
       }}
     >
-      {props.data
-        ? props.data.map((item) => props.renderItem(item))
-        : props.children}
+      {props.data ? props.data.map((item) => props.renderItem(item)) : props.children}
     </div>
   );
 };

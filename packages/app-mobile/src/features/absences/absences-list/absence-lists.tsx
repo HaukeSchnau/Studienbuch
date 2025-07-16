@@ -76,9 +76,7 @@ export const UnexcusedAbsences = () => {
     return (
       <View className="gap-2">
         {heading}
-        <Text className="text-center">
-          Keine unentschuldigten Fehlzeiten gefunden
-        </Text>
+        <Text className="text-center">Keine unentschuldigten Fehlzeiten gefunden</Text>
       </View>
     );
   }
@@ -87,10 +85,7 @@ export const UnexcusedAbsences = () => {
     <View className="gap-2">
       {heading}
       {query.data.byTeacher.map((absence) => (
-        <AbsenceItem
-          key={`${absence.date.toISOString()}-${absence.courses[0]?.id}`}
-          absenceGroup={absence}
-        />
+        <AbsenceItem key={`${absence.date.toISOString()}-${absence.courses[0]?.id}`} absenceGroup={absence} />
       ))}
       {query.data.byParent.map((group) => (
         <AbsenceItem key={group.date.toISOString()} absenceGroup={group} />
@@ -116,9 +111,7 @@ export const ExcusedAbsences = () => {
   const heading = (
     <View className="flex-row gap-2">
       <Icon name="verified" size={24} color={colors.primary.text} />
-      <Text className="text-lg text-primary-text">
-        entschuldigte Fehlzeiten
-      </Text>
+      <Text className="text-lg text-primary-text">entschuldigte Fehlzeiten</Text>
     </View>
   );
 
@@ -144,9 +137,7 @@ export const ExcusedAbsences = () => {
     return (
       <View className="gap-2">
         {heading}
-        <Text className="text-center">
-          Keine entschuldigten Fehlzeiten gefunden
-        </Text>
+        <Text className="text-center">Keine entschuldigten Fehlzeiten gefunden</Text>
       </View>
     );
   }

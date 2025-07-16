@@ -101,10 +101,6 @@ export const addRowSpans = (
   );
 };
 
-export const getSubstituionTableColumns = (
-  format: KadmosFormat,
-): ColumnConfiguration => {
-  return columns.filter((column) =>
-    "condition" in column ? format[column.condition] : true,
-  );
+export const getSubstituionTableColumns = (format: KadmosFormat): ColumnConfiguration => {
+  return columns.filter((column) => ("condition" in column ? format[column.condition] : true));
 };

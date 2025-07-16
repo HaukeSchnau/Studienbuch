@@ -22,10 +22,7 @@ export const getCourse = ({ courseId }: { courseId: string }) =>
             eq(t.semesters.year, t.courses.semesterYear),
           ),
         )
-        .innerJoin(
-          t.coursesToTeachers,
-          eq(t.coursesToTeachers.course, t.courses.id),
-        )
+        .innerJoin(t.coursesToTeachers, eq(t.coursesToTeachers.course, t.courses.id))
         .innerJoin(teachers, eq(teachers.id, t.coursesToTeachers.teacher))
         .where(eq(t.courses.id, courseId));
 

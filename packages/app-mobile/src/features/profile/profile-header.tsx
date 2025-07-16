@@ -43,8 +43,7 @@ export const Header = () => {
           <View className="h-2" />
           <View className="items-center">
             <Text className="text-xl text-white">
-              Jahrgang {year.data.year.name} (
-              {getCurrentYearNum(year.data.year)}. Klasse)
+              Jahrgang {year.data.year.name} ({getCurrentYearNum(year.data.year)}. Klasse)
             </Text>
             <Text className="text-xl text-white">{year.data.school.name}</Text>
           </View>

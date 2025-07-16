@@ -1,11 +1,7 @@
 import type { CookieJar } from "tough-cookie";
 import { Cookie } from "tough-cookie";
 
-export const fetchWithCookieJar = async (
-  url: string,
-  options: RequestInit,
-  jar: CookieJar,
-) => {
+export const fetchWithCookieJar = async (url: string, options: RequestInit, jar: CookieJar) => {
   const response = await fetch(url, {
     ...options,
     headers: {

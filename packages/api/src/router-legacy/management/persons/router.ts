@@ -25,10 +25,7 @@ export const persons = {
     .mutation(async ({ input }) => {
       await Promise.all(
         input.map((update) => {
-          return db
-            .update(Persons)
-            .set(update)
-            .where(eq(Persons.id, update.id));
+          return db.update(Persons).set(update).where(eq(Persons.id, update.id));
         }),
       );
     }),

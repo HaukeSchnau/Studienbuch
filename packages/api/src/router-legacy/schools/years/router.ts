@@ -21,9 +21,7 @@ export const years = {
       return db.query.Years.findMany({
         where: and(
           school !== undefined ? eq(Years.school, school) : undefined,
-          activeOnly
-            ? gte(Years.graduationYear, getMaxActiveGraduationYear())
-            : undefined,
+          activeOnly ? gte(Years.graduationYear, getMaxActiveGraduationYear()) : undefined,
         ),
         orderBy: desc(Years.startYear),
       });
@@ -48,10 +46,7 @@ export const years = {
     )
     .query(async ({ input }) => {
       const year = await db.query.Years.findFirst({
-        where: and(
-          eq(Years.school, input.school),
-          eq(Years.startYear, input.startYear),
-        ),
+        where: and(eq(Years.school, input.school), eq(Years.startYear, input.startYear)),
       });
 
       if (!year) {

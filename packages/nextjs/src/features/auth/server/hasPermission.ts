@@ -3,9 +3,7 @@ import { findPermissionScope } from "@stu/lib-server";
 
 import { api } from "~/infrastructure/trpc/server";
 
-export const hasPermission = async (
-  permission: Permission,
-): Promise<boolean> => {
+export const hasPermission = async (permission: Permission): Promise<boolean> => {
   "use cache";
 
   const session = await api.auth.getSession();

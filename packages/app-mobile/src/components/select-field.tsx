@@ -17,14 +17,7 @@ interface Props<TOption> {
   onChange: (value: TOption | undefined) => void;
 }
 
-export const SelectField = <TOption,>({
-  label,
-  value,
-  getOptionLabel,
-  getKey,
-  options,
-  onChange,
-}: Props<TOption>) => {
+export const SelectField = <TOption,>({ label, value, getOptionLabel, getKey, options, onChange }: Props<TOption>) => {
   const active = useSharedValue(true);
   const focused = useSharedValue(false);
 
@@ -45,11 +38,7 @@ export const SelectField = <TOption,>({
         }}
       >
         {options.map((option) => (
-          <Picker.Item
-            key={getKey(option)}
-            label={getOptionLabel(option)}
-            value={getKey(option)}
-          />
+          <Picker.Item key={getKey(option)} label={getOptionLabel(option)} value={getKey(option)} />
         ))}
       </Picker>
       <FieldLabel label={label} active={active} focused={focused} />

@@ -59,10 +59,7 @@ export const GradesOverviewCard = ({ courseId }: { courseId: string }) => {
       <View className="h-4" />
       <Divider />
       <View className="h-4" />
-      <WrittenGradesRow
-        writtenGrades={grades.data.written}
-        courseId={courseId}
-      />
+      <WrittenGradesRow writtenGrades={grades.data.written} courseId={courseId} />
     </Card>
   );
 };

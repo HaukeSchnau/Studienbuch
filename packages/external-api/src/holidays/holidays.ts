@@ -46,26 +46,17 @@ export interface Holiday {
   year: number;
 }
 
-const parseHolidayResponse = (result: HolidayDto[]) =>
-  z.array(holidaySchema).parse(result);
+const parseHolidayResponse = (result: HolidayDto[]) => z.array(holidaySchema).parse(result);
 
 const getHolidaysInternal = async (state: State, year?: number) => {
   if (year) {
-    return HolidayWsV1ImplService.getHolidaysForStateAndYearUsingGet(
-      state,
-      year,
-    ).then(parseHolidayResponse);
+    return HolidayWsV1ImplService.getHolidaysForStateAndYearUsingGet(state, year).then(parseHolidayResponse);
   }
 
-  return HolidayWsV1ImplService.getHolidaysForStateUsingGet(state).then(
-    parseHolidayResponse,
-  );
+  return HolidayWsV1ImplService.getHolidaysForStateUsingGet(state).then(parseHolidayResponse);
 };
 
-export const getHolidays = async (
-  state: State,
-  year?: number,
-): Promise<Holiday[]> => {
+export const getHolidays = async (state: State, year?: number): Promise<Holiday[]> => {
   let response: Holiday[];
   const snapshotFile = `${env.CACHE_DIR}/holidays-${state}-${year}.json`;
   try {

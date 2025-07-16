@@ -14,12 +14,7 @@ import { PersonsTable } from "./components/PersonsTable";
 import type { Person } from "./user.type";
 
 export default function UsersPage() {
-  const {
-    data: users,
-    isPending,
-    isError,
-    error,
-  } = api.management.persons.list.useQuery();
+  const { data: users, isPending, isError, error } = api.management.persons.list.useQuery();
 
   return isPending ? (
     <LoadingIndicator />
@@ -48,8 +43,7 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: Person[] }) => {
     },
   });
 
-  const { reset: resetDeleteMutation } =
-    api.management.persons.delete.useMutation();
+  const { reset: resetDeleteMutation } = api.management.persons.delete.useMutation();
 
   const closeDeleteModal = () => {
     resetDeleteMutation();
@@ -99,18 +93,11 @@ const UsersPageContent = ({ initialUsers }: { initialUsers: Person[] }) => {
       </div>
 
       <Card noPadding className="overflow-hidden">
-        <PersonsTable
-          users={users}
-          updateRow={updateRow}
-          updates={updates}
-          onClickDelete={setDeleteModalUser}
-        />
+        <PersonsTable users={users} updateRow={updateRow} updates={updates} onClickDelete={setDeleteModalUser} />
       </Card>
 
       <ModalWithData data={deleteModalUser} onClose={closeDeleteModal}>
-        {(user) => (
-          <DeleteUserModalContent user={user} onClose={closeDeleteModal} />
-        )}
+        {(user) => <DeleteUserModalContent user={user} onClose={closeDeleteModal} />}
       </ModalWithData>
     </div>
   );

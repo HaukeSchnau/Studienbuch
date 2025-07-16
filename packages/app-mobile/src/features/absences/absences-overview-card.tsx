@@ -54,20 +54,11 @@ export const AbsencesOverviewCard = () => {
         >
           Fehlzeiten
         </Text>
-        <IconButton
-          onPress={onClickAdd}
-          icon="add"
-          size={28}
-          color={colors.primary.text}
-        />
+        <IconButton onPress={onClickAdd} icon="add" size={28} color={colors.primary.text} />
       </View>
       <View className="h-2" />
 
-      {absences.data.length === 0 ? (
-        <NoAbsences />
-      ) : (
-        <UnexcusedAbsences absences={absences.data} />
-      )}
+      {absences.data.length === 0 ? <NoAbsences /> : <UnexcusedAbsences absences={absences.data} />}
 
       <View className="h-4" />
 
@@ -90,25 +81,18 @@ const NoAbsences = () => {
       <View className="w-4" />
 
       <View className="flex-1">
-        <Text className="opacity-80">
-          Super! All deine Fehlzeiten sind entschuldigt!
-        </Text>
+        <Text className="opacity-80">Super! All deine Fehlzeiten sind entschuldigt!</Text>
 
         <View className="h-2" />
 
-        <Text className="opacity-80">
-          Wirst du heute oder morgen fehlen? Dann trage es am besten direkt hier
-          ein.
-        </Text>
+        <Text className="opacity-80">Wirst du heute oder morgen fehlen? Dann trage es am besten direkt hier ein.</Text>
       </View>
     </View>
   );
 };
 
 const UnexcusedAbsences = ({ absences }: { absences: AbsenceDay[] }) => {
-  const numberOfDays = new Set(
-    absences.map((absence) => formatDate(absence.date, "yyyy-MM-dd")),
-  ).size;
+  const numberOfDays = new Set(absences.map((absence) => formatDate(absence.date, "yyyy-MM-dd"))).size;
 
   const numAbsences = absences.flatMap((a) => a.absenceCourses).length;
 
@@ -121,8 +105,7 @@ const UnexcusedAbsences = ({ absences }: { absences: AbsenceDay[] }) => {
       <View className="flex-1">
         <Text className="opacity-80">
           Du hast noch <Text weight="bold">{numAbsences}</Text> unentschuldigte{" "}
-          {numAbsences === 1 ? "Felzeit" : "Fehlzeiten"} an{" "}
-          <Text weight="bold">{numberOfDays}</Text>{" "}
+          {numAbsences === 1 ? "Felzeit" : "Fehlzeiten"} an <Text weight="bold">{numberOfDays}</Text>{" "}
           {numberOfDays === 1 ? "Tag" : "Tagen"}.
         </Text>
       </View>

@@ -23,9 +23,7 @@ export const NavLink = <TUrl extends string>({
   return (
     <Link href={href} className="flex gap-2">
       {icon && <i className="text-base">{icon}</i>}
-      <span className={clsx("hover:underline", isActive && "underline")}>
-        {children}
-      </span>
+      <span className={clsx("hover:underline", isActive && "underline")}>{children}</span>
     </Link>
   );
 };

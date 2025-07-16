@@ -23,9 +23,7 @@ export const listUnexcused = () =>
             },
           },
         })
-        .then((absences) =>
-          absences.filter((absence) => absence.absenceCourses.length > 0),
-        ),
+        .then((absences) => absences.filter((absence) => absence.absenceCourses.length > 0)),
   });
 
 export const listExcused = () =>
@@ -46,9 +44,7 @@ export const listExcused = () =>
             },
           },
         })
-        .then((absences) =>
-          absences.filter((absence) => absence.absenceCourses.length > 0),
-        ),
+        .then((absences) => absences.filter((absence) => absence.absenceCourses.length > 0)),
   });
 
 export const getOne = ({
@@ -91,9 +87,7 @@ export const getOne = ({
               ...course,
               course: {
                 ...course.course,
-                teachers: course.course.teachers.map(
-                  (teacher) => teacher.teacher,
-                ),
+                teachers: course.course.teachers.map((teacher) => teacher.teacher),
               },
             })),
           }

@@ -19,9 +19,7 @@ import { env } from "../env";
 import type { Logger } from "./interfaces/logger";
 import type { Session } from "./interfaces/session";
 
-export const getSession = async (
-  sessionToken: string,
-): Promise<Session | null> => {
+export const getSession = async (sessionToken: string): Promise<Session | null> => {
   const session = await db.query.Sessions.findFirst({
     where: eq(tables.Sessions.token, sessionToken),
     with: {
@@ -34,9 +32,7 @@ export const getSession = async (
   }
 
   if (session.expires < new Date() || !session.user) {
-    await db
-      .delete(tables.Sessions)
-      .where(eq(tables.Sessions.token, sessionToken));
+    await db.delete(tables.Sessions).where(eq(tables.Sessions.token, sessionToken));
     return null;
   }
 
@@ -85,19 +81,10 @@ export const createTRPCContext = async ({
   | { authority: "console"; sessionToken?: never }
 )) => {
   const session: Session | null =
-    authority === "console"
-      ? getSystemSession()
-      : sessionToken
-        ? await getSession(sessionToken)
-        : null;
+    authority === "console" ? getSystemSession() : sessionToken ? await getSession(sessionToken) : null;
 
   if (env.NODE_ENV === "development") {
-    console.log(
-      ">>> tRPC Request from",
-      source,
-      "by",
-      session?.user.id ?? "Anonymous",
-    );
+    console.log(">>> tRPC Request from", source, "by", session?.user.id ?? "Anonymous");
   }
 
   return {

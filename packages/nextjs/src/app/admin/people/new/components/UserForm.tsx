@@ -47,12 +47,7 @@ interface Props {
   isPending?: boolean;
 }
 
-export const UserForm = ({
-  onSubmit,
-  defaultUser,
-  error,
-  isPending,
-}: Props) => {
+export const UserForm = ({ onSubmit, defaultUser, error, isPending }: Props) => {
   const { Field, handleSubmit } = useForm<UserFormValues, ZodValidator>({
     validatorAdapter: zodValidator(),
     defaultValues: {
@@ -68,10 +63,7 @@ export const UserForm = ({
   });
 
   return (
-    <form
-      onSubmit={submitHandler(handleSubmit)}
-      className="flex flex-col gap-4"
-    >
+    <form onSubmit={submitHandler(handleSubmit)} className="flex flex-col gap-4">
       <Field
         name="name"
         validators={{

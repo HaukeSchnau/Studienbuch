@@ -42,11 +42,7 @@ export const ExcusePage = ({
         }}
       />
 
-      {!absence.parentSignature ? (
-        <ExcuseParent absence={absence} />
-      ) : (
-        <ExcuseTeacher absence={absence} />
-      )}
+      {!absence.parentSignature ? <ExcuseParent absence={absence} /> : <ExcuseTeacher absence={absence} />}
     </View>
   );
 };

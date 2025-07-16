@@ -1,8 +1,5 @@
 export class BetterMap<K, V> extends Map<K, V> {
-  static uniqueFromValues<V extends object, VKey extends keyof V>(
-    values: V[],
-    key: VKey,
-  ) {
+  static uniqueFromValues<V extends object, VKey extends keyof V>(values: V[], key: VKey) {
     const map = new BetterMap<V[VKey], V>();
 
     for (const v of values) {

@@ -10,10 +10,7 @@ import * as tables from "./schema";
 import type { SubjectId } from "@stu/lib";
 import { isArrayNonEmpty, subjectNameMap } from "@stu/lib";
 
-export type CourseTime = Omit<
-  typeof courseTime.$inferSelect,
-  "id" | "courseId" | "createdAt" | "updatedAt"
->;
+export type CourseTime = Omit<typeof courseTime.$inferSelect, "id" | "courseId" | "createdAt" | "updatedAt">;
 
 const findExistingCourseWeak = async (discoveredCourse: Course) => {
   const subjectLongName = subjectNameMap[discoveredCourse.name];
@@ -27,19 +24,14 @@ const findExistingCourseWeak = async (discoveredCourse: Course) => {
       teacherAbbrv: tables.user.abbrv,
     })
     .from(tables.course)
-    .innerJoin(
-      tables.courseTime,
-      eq(tables.course.id, tables.courseTime.courseId),
-    )
+    .innerJoin(tables.courseTime, eq(tables.course.id, tables.courseTime.courseId))
     .innerJoin(tables.user, eq(tables.course.teacherId, tables.user.id))
     .where(
       and(
         eq(sql`lower(${tables.course.name})`, subjectLongName.toLowerCase()),
         inArray(
           sql`lower(${tables.user.abbrv})`,
-          discoveredCourse.teachers
-            .map((t) => t.abbrv?.toLowerCase())
-            .filter((x) => x !== undefined),
+          discoveredCourse.teachers.map((t) => t.abbrv?.toLowerCase()).filter((x) => x !== undefined),
         ),
       ),
     )
@@ -52,10 +44,7 @@ const findExistingCourseWeak = async (discoveredCourse: Course) => {
     .leftJoin(coursePlus, eq(coursePlus.classId, tables.clazz.id))
     .where(
       and(
-        eq(
-          tables.clazz.identifierInYear,
-          discoveredCourse.class.identifierInYear,
-        ),
+        eq(tables.clazz.identifierInYear, discoveredCourse.class.identifierInYear),
         eq(tables.year.startYear, discoveredCourse.class.startYear),
       ),
     );
@@ -66,8 +55,7 @@ const findExistingCourseWeak = async (discoveredCourse: Course) => {
     );
   }
 
-  const [{ Year: year, Class: clazz, course_plus: existingCourse }] =
-    existingCourses;
+  const [{ Year: year, Class: clazz, course_plus: existingCourse }] = existingCourses;
 
   return { year, clazz, existingCourse };
 };
@@ -78,10 +66,7 @@ const findExistingCourseWeak = async (discoveredCourse: Course) => {
 //    - the "course ID" (e.g. if23) matches case-insensetively
 //    - subject name and teacher abbrv match
 const findExistingCourse = async (discoveredCourse: Course) => {
-  const fixedCourseId =
-    discoveredCourse.courseId === "WPK O"
-      ? "wpk"
-      : discoveredCourse.courseId.toLowerCase();
+  const fixedCourseId = discoveredCourse.courseId === "WPK O" ? "wpk" : discoveredCourse.courseId.toLowerCase();
 
   const coursePlus = db
     .select({
@@ -92,10 +77,7 @@ const findExistingCourse = async (discoveredCourse: Course) => {
       teacherAbbrv: tables.user.abbrv,
     })
     .from(tables.course)
-    .innerJoin(
-      tables.courseTime,
-      eq(tables.course.id, tables.courseTime.courseId),
-    )
+    .innerJoin(tables.courseTime, eq(tables.course.id, tables.courseTime.courseId))
     .innerJoin(tables.user, eq(tables.course.teacherId, tables.user.id))
     .where(eq(sql`lower(${tables.course.courseId})`, fixedCourseId))
     .as("course_plus");
@@ -107,10 +89,7 @@ const findExistingCourse = async (discoveredCourse: Course) => {
     .leftJoin(coursePlus, eq(coursePlus.classId, tables.clazz.id))
     .where(
       and(
-        eq(
-          tables.clazz.identifierInYear,
-          discoveredCourse.class.identifierInYear,
-        ),
+        eq(tables.clazz.identifierInYear, discoveredCourse.class.identifierInYear),
         eq(tables.year.startYear, discoveredCourse.class.startYear),
       ),
     );
@@ -121,8 +100,7 @@ const findExistingCourse = async (discoveredCourse: Course) => {
     );
   }
 
-  const [{ Year: year, Class: clazz, course_plus: existingCourse }] =
-    existingCourses;
+  const [{ Year: year, Class: clazz, course_plus: existingCourse }] = existingCourses;
 
   return { year, clazz, existingCourse };
 };
@@ -145,20 +123,11 @@ export interface Course {
   };
 }
 
-const insert = async (
-  discoveredCourse: Course,
-  yearId: number,
-  classId: number,
-) => {
-  const fixedCourseId =
-    discoveredCourse.courseId === "WPK O"
-      ? "wpk"
-      : discoveredCourse.courseId.toLowerCase();
+const insert = async (discoveredCourse: Course, yearId: number, classId: number) => {
+  const fixedCourseId = discoveredCourse.courseId === "WPK O" ? "wpk" : discoveredCourse.courseId.toLowerCase();
   const teacherInput = discoveredCourse.teachers[0];
   if (!teacherInput) {
-    throw new Error(
-      `Invalid state: No teacher found for ${discoveredCourse.name}`,
-    );
+    throw new Error(`Invalid state: No teacher found for ${discoveredCourse.name}`);
   }
   const teacher = await getOrCreateTeacher(teacherInput);
   const [course] = await db
@@ -207,9 +176,7 @@ const getOrCreateTeacher = async (teacherInput: Course["teachers"][number]) => {
       })
       .returning();
     if (!newTeacher) {
-      throw new Error(
-        `Invalid state: No teacher found for ${teacherInput.abbrv}`,
-      );
+      throw new Error(`Invalid state: No teacher found for ${teacherInput.abbrv}`);
     }
     return newTeacher.id;
   }
@@ -224,15 +191,10 @@ const update = async (
   },
   discoveredCourse: Course,
 ) => {
-  const fixedCourseId =
-    discoveredCourse.courseId === "WPK O"
-      ? "wpk"
-      : discoveredCourse.courseId.toLowerCase();
+  const fixedCourseId = discoveredCourse.courseId === "WPK O" ? "wpk" : discoveredCourse.courseId.toLowerCase();
   const teacherInput = discoveredCourse.teachers[0];
   if (!teacherInput) {
-    throw new Error(
-      `Invalid state: No teacher found for ${discoveredCourse.name}`,
-    );
+    throw new Error(`Invalid state: No teacher found for ${discoveredCourse.name}`);
   }
   const newTeacherId = await getOrCreateTeacher(teacherInput);
   await db
@@ -269,8 +231,7 @@ export const upsertCourses = async (courses: Course[]) => {
   let unknownCount = 0;
 
   for (const discoveredCourse of courses) {
-    const { clazz, existingCourse, year } =
-      await findExistingCourse(discoveredCourse);
+    const { clazz, existingCourse, year } = await findExistingCourse(discoveredCourse);
 
     if (existingCourse) {
       await update(
@@ -282,8 +243,7 @@ export const upsertCourses = async (courses: Course[]) => {
         discoveredCourse,
       );
     } else {
-      const { existingCourse: existingCourseWeak } =
-        await findExistingCourseWeak(discoveredCourse);
+      const { existingCourse: existingCourseWeak } = await findExistingCourseWeak(discoveredCourse);
 
       if (!existingCourseWeak) {
         console.log(`Not found: ${JSON.stringify(discoveredCourse)}`);

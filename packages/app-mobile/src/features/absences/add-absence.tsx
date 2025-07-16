@@ -1,9 +1,4 @@
-import {
-  createFormHook,
-  createFormHookContexts,
-  formOptions,
-  useStore,
-} from "@tanstack/react-form";
+import { createFormHook, createFormHookContexts, formOptions, useStore } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getISOWeek, getISOWeekYear, isSameDay, startOfDay } from "date-fns";
 import { useEffect } from "react";
@@ -78,13 +73,7 @@ export const AddAbsence = ({ onClose }: Props) => {
       <View className="h-4" />
 
       <form.Field name="date">
-        {(field) => (
-          <DateField
-            onChange={(date) => field.setValue(date)}
-            value={field.state.value}
-            label="Datum"
-          />
-        )}
+        {(field) => <DateField onChange={(date) => field.setValue(date)} value={field.state.value} label="Datum" />}
       </form.Field>
 
       <View
@@ -110,25 +99,14 @@ export const AddAbsence = ({ onClose }: Props) => {
       <View className="h-4" />
 
       <form.Field name="reason">
-        {(field) => (
-          <TextField
-            label="Begrundung"
-            onChangeText={field.setValue}
-            value={field.state.value}
-          />
-        )}
+        {(field) => <TextField label="Begrundung" onChangeText={field.setValue} value={field.state.value} />}
       </form.Field>
 
       <View className="h-6" />
 
       <form.Subscribe selector={(form) => form.isSubmitting}>
         {(isSubmitting) => (
-          <Button
-            className="self-end"
-            label="Eintragen"
-            onPress={() => form.handleSubmit()}
-            disabled={isSubmitting}
-          />
+          <Button className="self-end" label="Eintragen" onPress={() => form.handleSubmit()} disabled={isSubmitting} />
         )}
       </form.Subscribe>
     </View>
@@ -186,9 +164,7 @@ const CoursesSelect = withForm({
                   if (checked) {
                     field.pushValue(entry.course.id);
                   } else {
-                    void field.removeValue(
-                      field.state.value.indexOf(entry.course.id),
-                    );
+                    void field.removeValue(field.state.value.indexOf(entry.course.id));
                   }
                 }}
               />

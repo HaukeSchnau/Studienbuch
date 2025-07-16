@@ -1,10 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import {
-  endOfISOWeek,
-  setISOWeek,
-  setISOWeekYear,
-  startOfISOWeek,
-} from "date-fns";
+import { endOfISOWeek, setISOWeek, setISOWeekYear, startOfISOWeek } from "date-fns";
 import { and, asc, between, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 
@@ -23,12 +18,8 @@ export const getTimetableWeek = ({
   queryOptions({
     queryKey: ["timetable.week", { isoWeekYear, isoWeek }],
     queryFn: async () => {
-      const start = startOfISOWeek(
-        setISOWeek(setISOWeekYear(new Date(), isoWeekYear), isoWeek),
-      );
-      const end = endOfISOWeek(
-        setISOWeek(setISOWeekYear(new Date(), isoWeekYear), isoWeek + 1),
-      );
+      const start = startOfISOWeek(setISOWeek(setISOWeekYear(new Date(), isoWeekYear), isoWeek));
+      const end = endOfISOWeek(setISOWeek(setISOWeekYear(new Date(), isoWeekYear), isoWeek + 1));
 
       const teachers = alias(t.persons, "teachers");
       const substitute = alias(t.persons, "substitute");
@@ -37,14 +28,8 @@ export const getTimetableWeek = ({
         .select()
         .from(t.timetableEntries)
         .innerJoin(t.courses, eq(t.timetableEntries.course, t.courses.id))
-        .innerJoin(
-          t.coursesToClasses,
-          eq(t.courses.id, t.coursesToClasses.course),
-        )
-        .innerJoin(
-          t.coursesToTeachers,
-          eq(t.courses.id, t.coursesToTeachers.course),
-        )
+        .innerJoin(t.coursesToClasses, eq(t.courses.id, t.coursesToClasses.course))
+        .innerJoin(t.coursesToTeachers, eq(t.courses.id, t.coursesToTeachers.course))
         .innerJoin(teachers, eq(t.coursesToTeachers.teacher, teachers.id))
         .leftJoin(
           t.substitutions,
@@ -54,12 +39,7 @@ export const getTimetableWeek = ({
           ),
         )
         .leftJoin(substitute, eq(t.substitutions.substitute, substitute.id))
-        .where(
-          and(
-            between(t.timetableEntries.start, start, end),
-            eq(t.courses.isMember, true),
-          ),
-        )
+        .where(and(between(t.timetableEntries.start, start, end), eq(t.courses.isMember, true)))
         .orderBy(asc(t.timetableEntries.start), asc(t.timetableEntries.course));
 
       const timetableEntries: AgendaEntry[] = [];
@@ -67,8 +47,7 @@ export const getTimetableWeek = ({
       for (const row of rows) {
         if (
           !currentEntry ||
-          currentEntry.start.getTime() !==
-            row.timetable_entries.start.getTime() ||
+          currentEntry.start.getTime() !== row.timetable_entries.start.getTime() ||
           currentEntry.course.id !== row.timetable_entries.course
         ) {
           currentEntry = {

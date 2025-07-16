@@ -68,19 +68,10 @@ export const GradeCard = ({
           <View className="h-2" />
           {"href" in action ? (
             <Link href={action.href} asChild>
-              <OutlinedButton
-                label={action.label}
-                color={actionColor}
-                className="self-end"
-              />
+              <OutlinedButton label={action.label} color={actionColor} className="self-end" />
             </Link>
           ) : (
-            <OutlinedButton
-              label={action.label}
-              color={actionColor}
-              className="self-end"
-              onPress={action.onClick}
-            />
+            <OutlinedButton label={action.label} color={actionColor} className="self-end" onPress={action.onClick} />
           )}
         </>
       )}

@@ -50,24 +50,12 @@ export default function ThemePage({
       <Grid>
         <Card>
           <Field name="theme.primary.default">
-            {(field) => (
-              <ColorField
-                field={field}
-                label="Primary Default"
-                cssVar="--primary"
-                onCssVar="--on-primary"
-              />
-            )}
+            {(field) => <ColorField field={field} label="Primary Default" cssVar="--primary" onCssVar="--on-primary" />}
           </Field>
 
           <Field name="theme.primary.pale">
             {(field) => (
-              <ColorField
-                field={field}
-                label="Primary Pale"
-                cssVar="--primary-pale"
-                onCssVar="--on-primary-pale"
-              />
+              <ColorField field={field} label="Primary Pale" cssVar="--primary-pale" onCssVar="--on-primary-pale" />
             )}
           </Field>
 
@@ -85,129 +73,66 @@ export default function ThemePage({
 
         <Card>
           <Field name="theme.accent.default">
-            {(field) => (
-              <ColorField
-                field={field}
-                label="Accent Default"
-                cssVar="--accent"
-                onCssVar="--on-accent"
-              />
-            )}
+            {(field) => <ColorField field={field} label="Accent Default" cssVar="--accent" onCssVar="--on-accent" />}
           </Field>
 
           <Field name="theme.accent.sec">
             {(field) => (
-              <ColorField
-                field={field}
-                label="Accent Secondary"
-                cssVar="--accent-sec"
-                onCssVar="--on-accent-sec"
-              />
+              <ColorField field={field} label="Accent Secondary" cssVar="--accent-sec" onCssVar="--on-accent-sec" />
             )}
           </Field>
 
           <Field name="theme.accent.pale">
             {(field) => (
-              <ColorField
-                field={field}
-                label="Accent Pale"
-                cssVar="--accent-pale"
-                onCssVar="--on-accent-pale"
-              />
+              <ColorField field={field} label="Accent Pale" cssVar="--accent-pale" onCssVar="--on-accent-pale" />
             )}
           </Field>
 
           <Field name="theme.accent.des">
             {(field) => (
-              <ColorField
-                field={field}
-                label="Accent Desaturated"
-                cssVar="--accent-des"
-                onCssVar="--on-accent-des"
-              />
+              <ColorField field={field} label="Accent Desaturated" cssVar="--accent-des" onCssVar="--on-accent-des" />
             )}
           </Field>
         </Card>
 
         <Card>
           <Field name="theme.danger.default">
-            {(field) => (
-              <ColorField
-                field={field}
-                label="Danger Default"
-                cssVar="--danger"
-                onCssVar="--on-danger"
-              />
-            )}
+            {(field) => <ColorField field={field} label="Danger Default" cssVar="--danger" onCssVar="--on-danger" />}
           </Field>
 
           <Field name="theme.danger.sec">
             {(field) => (
-              <ColorField
-                field={field}
-                label="Danger Secondary"
-                cssVar="--danger-sec"
-                onCssVar="--on-danger-sec"
-              />
+              <ColorField field={field} label="Danger Secondary" cssVar="--danger-sec" onCssVar="--on-danger-sec" />
             )}
           </Field>
 
           <Field name="theme.danger.des">
             {(field) => (
-              <ColorField
-                field={field}
-                label="Danger Desaturated"
-                cssVar="--danger-des"
-                onCssVar="--on-danger-des"
-              />
+              <ColorField field={field} label="Danger Desaturated" cssVar="--danger-des" onCssVar="--on-danger-des" />
             )}
           </Field>
         </Card>
 
         <Card>
           <Field name="theme.alert.default">
-            {(field) => (
-              <ColorField
-                field={field}
-                label="Alert Default"
-                cssVar="--alert"
-                onCssVar="--on-alert"
-              />
-            )}
+            {(field) => <ColorField field={field} label="Alert Default" cssVar="--alert" onCssVar="--on-alert" />}
           </Field>
 
           <Field name="theme.alert.des">
             {(field) => (
-              <ColorField
-                field={field}
-                label="Alert Desaturated"
-                cssVar="--alert-des"
-                onCssVar="--on-alert-des"
-              />
+              <ColorField field={field} label="Alert Desaturated" cssVar="--alert-des" onCssVar="--on-alert-des" />
             )}
           </Field>
         </Card>
 
         <Card>
           <Field name="theme.success.default">
-            {(field) => (
-              <ColorField
-                field={field}
-                label="Success Default"
-                cssVar="--success"
-                onCssVar="--on-success"
-              />
-            )}
+            {(field) => <ColorField field={field} label="Success Default" cssVar="--success" onCssVar="--on-success" />}
           </Field>
 
           <Field name="theme.success.pale">
             {(field) => (
-              <ColorField
-                field={field}
-                label="Success Pale"
-                cssVar="--success-pale"
-                onCssVar="--on-success-pale"
-              />
+              <ColorField field={field} label="Success Pale" cssVar="--success-pale" onCssVar="--on-success-pale" />
             )}
           </Field>
 
@@ -225,60 +150,30 @@ export default function ThemePage({
 
         <Card>
           <Field name="theme.neutral.default">
-            {(field) => (
-              <ColorField
-                field={field}
-                label="Neutral Default"
-                cssVar="--neutral"
-                onCssVar="--on-neutral"
-              />
-            )}
+            {(field) => <ColorField field={field} label="Neutral Default" cssVar="--neutral" onCssVar="--on-neutral" />}
           </Field>
 
           <Field name="theme.neutral.sec">
             {(field) => (
-              <ColorField
-                field={field}
-                label="Neutral Secondary"
-                cssVar="--neutral-sec"
-                onCssVar="--on-neutral-sec"
-              />
+              <ColorField field={field} label="Neutral Secondary" cssVar="--neutral-sec" onCssVar="--on-neutral-sec" />
             )}
           </Field>
         </Card>
 
         <Card>
           <Field name="theme.surface.default">
-            {(field) => (
-              <ColorField
-                field={field}
-                label="Surface Default"
-                cssVar="--surface"
-                onCssVar="--on-surface"
-              />
-            )}
+            {(field) => <ColorField field={field} label="Surface Default" cssVar="--surface" onCssVar="--on-surface" />}
           </Field>
 
           <Field name="theme.primary.text">
-            {(field) => (
-              <TextColorField
-                field={field}
-                label="Primary Text"
-                cssVar="--primary-text"
-              />
-            )}
+            {(field) => <TextColorField field={field} label="Primary Text" cssVar="--primary-text" />}
           </Field>
         </Card>
 
         <Card>
           <Field name="theme.background.default">
             {(field) => (
-              <ColorField
-                field={field}
-                label="Background Default"
-                cssVar="--background"
-                onCssVar="--on-background"
-              />
+              <ColorField field={field} label="Background Default" cssVar="--background" onCssVar="--on-background" />
             )}
           </Field>
         </Card>

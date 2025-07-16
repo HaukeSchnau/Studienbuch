@@ -1,13 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  boolean,
-  foreignKey,
-  pgEnum,
-  pgTable,
-  smallint,
-  text,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { boolean, foreignKey, pgEnum, pgTable, smallint, text, uuid } from "drizzle-orm/pg-core";
 
 import { SALUTATIONS } from "@stu/lib";
 
@@ -47,11 +39,7 @@ export const Students = pgTable(
   (table) => ({
     class_fk: foreignKey({
       columns: [table.classIdentifier, table.startYear, table.school],
-      foreignColumns: [
-        Classes.identifierInYear,
-        Classes.startYear,
-        Classes.school,
-      ],
+      foreignColumns: [Classes.identifierInYear, Classes.startYear, Classes.school],
     })
       .onDelete("restrict")
       .onUpdate("cascade"),

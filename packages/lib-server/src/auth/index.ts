@@ -26,7 +26,6 @@ const cookieSchema = z.object({
 
 const extractTokens = (headers: Headers) => {
   return {
-    sessionToken:
-      headers.get("x-session") ?? getCookies(headers, cookieSchema)?.session,
+    sessionToken: headers.get("x-session") ?? getCookies(headers, cookieSchema)?.session,
   };
 };

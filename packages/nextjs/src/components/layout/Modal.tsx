@@ -40,11 +40,7 @@ interface ModalWithDataProps<T> {
   onClose: () => void;
 }
 
-export const ModalWithData = <T,>({
-  data,
-  children,
-  onClose,
-}: ModalWithDataProps<T>) => {
+export const ModalWithData = <T,>({ data, children, onClose }: ModalWithDataProps<T>) => {
   return (
     <Modal open={!!data} onClose={onClose}>
       {data && children(data)}

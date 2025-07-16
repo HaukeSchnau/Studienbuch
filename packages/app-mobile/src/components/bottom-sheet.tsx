@@ -83,9 +83,7 @@ export function BottomSheet({ children, onClose }: Props) {
     return {
       transform: [
         {
-          translateY:
-            Math.max(translateY.value, -contentHeight.value) -
-            keyboard.height.value,
+          translateY: Math.max(translateY.value, -contentHeight.value) - keyboard.height.value,
         },
       ],
     };
@@ -93,11 +91,7 @@ export function BottomSheet({ children, onClose }: Props) {
 
   const animatedBackgroundStyle = useAnimatedStyle(() => {
     return {
-      opacity: interpolate(
-        translateY.value,
-        [FULLY_CLOSED, FULLY_OPEN],
-        [0, 0.5],
-      ),
+      opacity: interpolate(translateY.value, [FULLY_CLOSED, FULLY_OPEN], [0, 0.5]),
     };
   });
 

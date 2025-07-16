@@ -1,11 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  foreignKey,
-  int,
-  primaryKey,
-  sqliteTable,
-  text,
-} from "drizzle-orm/sqlite-core";
+import { foreignKey, int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { SEMESTER_TYPES } from "@stu/lib";
 
@@ -51,12 +45,7 @@ export const yearSemesters = sqliteTable(
   (table) => {
     return {
       pk: primaryKey({
-        columns: [
-          table.school,
-          table.startYear,
-          table.semesterYear,
-          table.semesterType,
-        ],
+        columns: [table.school, table.startYear, table.semesterYear, table.semesterType],
       }),
       year_fk: foreignKey({
         columns: [table.school, table.startYear],

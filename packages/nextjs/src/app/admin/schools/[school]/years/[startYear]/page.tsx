@@ -13,9 +13,7 @@ import { useParsedParams } from "~/infrastructure/hooks/useSafeParams";
 import { api } from "~/infrastructure/trpc/react";
 
 export default function EditYearPage() {
-  const params = useParsedParams(
-    z.object({ school: z.enum(SCHOOL_IDS), startYear: z.coerce.number() }),
-  );
+  const params = useParsedParams(z.object({ school: z.enum(SCHOOL_IDS), startYear: z.coerce.number() }));
   const {
     data: year,
     isPending,

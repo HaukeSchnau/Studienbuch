@@ -14,10 +14,7 @@ const parseCookie = (str: string) =>
       return acc;
     }, {} as Cookies);
 
-export const getCookies = <TCookies>(
-  headers: Headers,
-  schema: ZodSchema<TCookies>,
-) => {
+export const getCookies = <TCookies>(headers: Headers, schema: ZodSchema<TCookies>) => {
   const cookieString = headers.get("cookie");
   const cookieObj = cookieString ? parseCookie(cookieString) : {};
   const parsed = schema.safeParse(cookieObj);

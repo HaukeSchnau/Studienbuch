@@ -15,19 +15,10 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const getPushToken = ResultAsync.fromThrowable(
-  Notifications.getExpoPushTokenAsync,
-  intoError,
-);
+const getPushToken = ResultAsync.fromThrowable(Notifications.getExpoPushTokenAsync, intoError);
 
 export async function registerForPushNotificationsAsync(): Promise<
-  Result<
-    string,
-    | "PERMISSION_NOT_GRANTED"
-    | "PROJECT_ID_NOT_FOUND"
-    | "PHYSICAL_DEVICE_REQUIRED"
-    | Error
-  >
+  Result<string, "PERMISSION_NOT_GRANTED" | "PROJECT_ID_NOT_FOUND" | "PHYSICAL_DEVICE_REQUIRED" | Error>
 > {
   // seems like this event listener is required for the push token to be fetched and the promise below to be resolved
   Notifications.addPushTokenListener((token) => {
@@ -57,8 +48,7 @@ export async function registerForPushNotificationsAsync(): Promise<
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const projectId: string | undefined =
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    Constants.expoConfig?.extra?.eas?.projectId ??
-    Constants.easConfig?.projectId;
+    Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
   if (!projectId) {
     return err("PROJECT_ID_NOT_FOUND");
   }

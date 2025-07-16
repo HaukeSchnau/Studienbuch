@@ -25,8 +25,7 @@ export const NavigationItem = <TUrl extends string>({
   exact,
 }: NavigationItemProps<TUrl>) => {
   const pathname = usePathname();
-  const active =
-    href && pathname && (exact ? pathname === href : pathname.startsWith(href));
+  const active = href && pathname && (exact ? pathname === href : pathname.startsWith(href));
 
   const content = (
     <div className="flex items-center gap-2">

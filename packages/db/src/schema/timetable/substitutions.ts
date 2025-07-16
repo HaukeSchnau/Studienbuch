@@ -1,13 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  foreignKey,
-  pgEnum,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { foreignKey, pgEnum, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { SUBSTITUTION_TYPES } from "@stu/lib";
 
@@ -35,9 +27,7 @@ export const Substitutions = pgTable(
       onUpdate: "cascade",
     }),
 
-    createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
-      .defaultNow()
-      .notNull(),
+    createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updatedAt", {
       precision: 3,
       mode: "date",
@@ -79,9 +69,7 @@ export const RoomChanges = pgTable("room_changes", {
       onUpdate: "cascade",
     }),
 
-  createdAt: timestamp("createdAt", { precision: 3, mode: "date" })
-    .defaultNow()
-    .notNull(),
+  createdAt: timestamp("createdAt", { precision: 3, mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { precision: 3, mode: "date" }).notNull(),
 });
 

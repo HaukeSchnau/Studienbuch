@@ -1,10 +1,7 @@
 import { Stack } from "expo-router";
 import { ScrollView, View } from "react-native";
 
-import {
-  ExcusedAbsences,
-  UnexcusedAbsences,
-} from "./absences-list/absence-lists";
+import { ExcusedAbsences, UnexcusedAbsences } from "./absences-list/absence-lists";
 
 export const AbsencesPage = () => {
   return (

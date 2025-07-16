@@ -1,12 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  pgTable,
-  primaryKey,
-  smallint,
-  text,
-  timestamp,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { pgTable, primaryKey, smallint, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { Courses } from "../school/courses";
 
@@ -30,12 +23,9 @@ export const TimetableEntries = pgTable(
   },
 );
 
-export const TimetableEntryRelations = relations(
-  TimetableEntries,
-  ({ one }) => ({
-    course: one(Courses, {
-      fields: [TimetableEntries.course],
-      references: [Courses.id],
-    }),
+export const TimetableEntryRelations = relations(TimetableEntries, ({ one }) => ({
+  course: one(Courses, {
+    fields: [TimetableEntries.course],
+    references: [Courses.id],
   }),
-);
+}));

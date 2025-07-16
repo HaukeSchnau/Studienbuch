@@ -19,17 +19,13 @@ config.transformer.getTransformOptions = async () => ({
   },
 });
 
-config.transformer.babelTransformerPath = require.resolve(
-  "react-native-svg-transformer/expo",
-);
+config.transformer.babelTransformerPath = require.resolve("react-native-svg-transformer/expo");
 
 config.resolver.extraNodeModules = {
   "@stu/expo-native": "../packages/expo-native",
 };
 
-config.resolver.assetExts = config.resolver.assetExts.filter(
-  (ext) => ext !== "svg",
-);
+config.resolver.assetExts = config.resolver.assetExts.filter((ext) => ext !== "svg");
 
 config.resolver.sourceExts.push("sql");
 config.resolver.sourceExts.push("svg");
@@ -69,8 +65,6 @@ function withMonorepoPaths(config) {
  * @returns {import('expo/metro-config').MetroConfig}
  */
 function withTurborepoManagedCache(config) {
-  config.cacheStores = [
-    new FileStore({ root: path.join(__dirname, ".cache/metro") }),
-  ];
+  config.cacheStores = [new FileStore({ root: path.join(__dirname, ".cache/metro") })];
   return config;
 }

@@ -42,17 +42,10 @@ export const AddWrittenGrade = ({
       <DateField value={date} onChange={setDate} label="Datum der Klausur" />
       <View className="h-6" />
 
-      <TextField
-        autoFocus
-        label="Punkte"
-        value={points}
-        onChangeText={setPoints}
-        keyboardType="numeric"
-      />
+      <TextField autoFocus label="Punkte" value={points} onChangeText={setPoints} keyboardType="numeric" />
       <View className="h-6" />
       <Text className="text-lg">
-        Diese Note muss im Nachhinein noch von deiner Lehrkraft und deinen
-        Eltern bestätigt werden.
+        Diese Note muss im Nachhinein noch von deiner Lehrkraft und deinen Eltern bestätigt werden.
       </Text>
 
       <View className="h-6" />

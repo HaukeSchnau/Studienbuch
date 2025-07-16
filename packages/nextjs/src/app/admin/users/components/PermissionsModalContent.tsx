@@ -37,25 +37,18 @@ const availablePermissions = new Map<Permission, PermissionMeta>([
       scopeOptions: ["schools", "years", "classes"],
     },
   ],
-  [
-    "EDIT_YEARS",
-    { description: "Jahrgänge verwalten", scopeOptions: ["schools"] },
-  ],
-  [
-    "EDIT_CLASSES",
-    { description: "Klassen verwalten", scopeOptions: ["schools", "years"] },
-  ],
+  ["EDIT_YEARS", { description: "Jahrgänge verwalten", scopeOptions: ["schools"] }],
+  ["EDIT_CLASSES", { description: "Klassen verwalten", scopeOptions: ["schools", "years"] }],
   ["EDIT_SCHOOLS", { description: "Schulen verwalten" }],
   ["VIEW_LOGS", { description: "Logs einsehen" }],
 ]);
 
 export const PermissionsModalContent = ({ user, onClose }: Props) => {
-  const setPermissionsMutation =
-    api.management.users.setPermissions.useMutation({
-      onSuccess: () => {
-        onClose();
-      },
-    });
+  const setPermissionsMutation = api.management.users.setPermissions.useMutation({
+    onSuccess: () => {
+      onClose();
+    },
+  });
 
   const { Field, handleSubmit } = useForm({
     defaultValues: {
@@ -73,9 +66,7 @@ export const PermissionsModalContent = ({ user, onClose }: Props) => {
 
   return (
     <form onSubmit={submitHandler(handleSubmit)}>
-      <h2 className="text-xl font-bold text-primary-text">
-        Berechtigungen von {formalName(user.person)} bearbeiten
-      </h2>
+      <h2 className="text-xl font-bold text-primary-text">Berechtigungen von {formalName(user.person)} bearbeiten</h2>
       <Field name="isSuperUser">
         {(field) => (
           <label>
@@ -97,10 +88,7 @@ export const PermissionsModalContent = ({ user, onClose }: Props) => {
             {field.getValue().map(({ permission }, index) => (
               <>
                 <hr className="my-4 opacity-30" />
-                <div
-                  key={permission}
-                  className="flex items-start justify-between"
-                >
+                <div key={permission} className="flex items-start justify-between">
                   <Field name={`permissions[${index}].scope`}>
                     {(scopeField) => (
                       <ScopesField
@@ -111,18 +99,13 @@ export const PermissionsModalContent = ({ user, onClose }: Props) => {
                             ...scopeField.getValue(),
                             [option]: value
                               ? [...(scopeField.getValue()?.[option] ?? []), id]
-                              : (scopeField.getValue()?.[option] ?? []).filter(
-                                  (i) => i !== id,
-                                ),
+                              : (scopeField.getValue()?.[option] ?? []).filter((i) => i !== id),
                           })
                         }
                       />
                     )}
                   </Field>
-                  <Button
-                    onClick={() => field.removeValue(index)}
-                    variant="danger"
-                  >
+                  <Button onClick={() => field.removeValue(index)} variant="danger">
                     ✕
                   </Button>
                 </div>
@@ -130,10 +113,7 @@ export const PermissionsModalContent = ({ user, onClose }: Props) => {
             ))}
             <SelectField
               options={Array.from(availablePermissions)
-                .filter(
-                  ([permission]) =>
-                    !field.getValue().some((p) => p.permission === permission),
-                )
+                .filter(([permission]) => !field.getValue().some((p) => p.permission === permission))
                 .map(([permission, meta]) => ({
                   value: permission,
                   label: meta.description,
@@ -172,11 +152,7 @@ interface ScopesFieldProps {
   onSetScopeOption: (scope: ScopeOption, id: number, value: boolean) => void;
 }
 
-const ScopesField = ({
-  permission,
-  onSetScopeOption,
-  scope,
-}: ScopesFieldProps) => {
+const ScopesField = ({ permission, onSetScopeOption, scope }: ScopesFieldProps) => {
   const meta = availablePermissions.get(permission);
 
   if (!meta) {

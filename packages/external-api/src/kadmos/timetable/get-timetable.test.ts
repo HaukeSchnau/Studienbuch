@@ -6,11 +6,7 @@ import { parseSimpleDate } from "@stu/lib";
 
 describe("Get timetable from Kadmos", () => {
   test("Get timetable from Kadmos", async () => {
-    const jar = await login(
-      "IGS Lilienthal",
-      "hauke.studienbuch",
-      "App#Hauke2024",
-    );
+    const jar = await login("IGS Lilienthal", "hauke.studienbuch", "App#Hauke2024");
     const token = await getBearerToken(jar);
 
     const timetable = await getTimetableV2(

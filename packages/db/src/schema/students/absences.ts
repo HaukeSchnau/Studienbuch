@@ -1,12 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  date,
-  foreignKey,
-  pgTable,
-  primaryKey,
-  text,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { date, foreignKey, pgTable, primaryKey, text, uuid } from "drizzle-orm/pg-core";
 
 import { Persons } from "../people/persons";
 import { Courses } from "../school/courses";

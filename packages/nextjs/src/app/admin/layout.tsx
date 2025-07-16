@@ -30,20 +30,13 @@ export default async function AdminLayout({ children }: Props) {
           <AdminNav />
         </ul>
       </div>
-      <div className="relative flex-1 overflow-y-auto px-16 py-12">
-        {children}
-      </div>
+      <div className="relative flex-1 overflow-y-auto px-16 py-12">{children}</div>
     </div>
   );
 }
 
 const MainBlob = ({ className }: { className?: string }) => (
-  <svg
-    viewBox="0 0 1440 300"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className={className}
-  >
+  <svg viewBox="0 0 1440 300" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
     <path
       d="M-15 281.825V44.5745V-26L1567 -2.97571C1564.92 33.8965 1537.03 133.168 1482.09 153.189C1413.42 178.215 1296.67 174.712 1186.17 175.713C1075.67 176.714 897.662 138.356 790.983 233.774C699.21 315.861 222.654 299.01 -15 281.825Z"
       fill={colors.primary.DEFAULT}

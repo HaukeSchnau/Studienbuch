@@ -1,11 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  foreignKey,
-  int,
-  primaryKey,
-  sqliteTable,
-  text,
-} from "drizzle-orm/sqlite-core";
+import { foreignKey, int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { SUBJECT_IDS } from "@stu/lib";
 
@@ -78,19 +72,16 @@ export const coursesToTeachers = sqliteTable(
   },
 );
 
-export const coursesToTeachersRelations = relations(
-  coursesToTeachers,
-  ({ one }) => ({
-    course: one(courses, {
-      fields: [coursesToTeachers.course],
-      references: [courses.id],
-    }),
-    teacher: one(persons, {
-      fields: [coursesToTeachers.teacher],
-      references: [persons.id],
-    }),
+export const coursesToTeachersRelations = relations(coursesToTeachers, ({ one }) => ({
+  course: one(courses, {
+    fields: [coursesToTeachers.course],
+    references: [courses.id],
   }),
-);
+  teacher: one(persons, {
+    fields: [coursesToTeachers.teacher],
+    references: [persons.id],
+  }),
+}));
 
 export const coursesToClasses = sqliteTable(
   "courses_to_classes",
@@ -109,21 +100,12 @@ export const coursesToClasses = sqliteTable(
   (table) => {
     return {
       pk: primaryKey({
-        columns: [
-          table.course,
-          table.classIdentifier,
-          table.classStartYear,
-          table.school,
-        ],
+        columns: [table.course, table.classIdentifier, table.classStartYear, table.school],
       }),
 
       class_fk: foreignKey({
         columns: [table.classIdentifier, table.classStartYear, table.school],
-        foreignColumns: [
-          classes.identifierInYear,
-          classes.startYear,
-          classes.school,
-        ],
+        foreignColumns: [classes.identifierInYear, classes.startYear, classes.school],
       })
         .onDelete("cascade")
         .onUpdate("cascade"),
@@ -131,20 +113,13 @@ export const coursesToClasses = sqliteTable(
   },
 );
 
-export const coursesToClassesRelations = relations(
-  coursesToClasses,
-  ({ one }) => ({
-    course: one(courses, {
-      fields: [coursesToClasses.course],
-      references: [courses.id],
-    }),
-    class: one(classes, {
-      fields: [
-        coursesToClasses.classIdentifier,
-        coursesToClasses.classStartYear,
-        coursesToClasses.school,
-      ],
-      references: [classes.identifierInYear, classes.startYear, classes.school],
-    }),
+export const coursesToClassesRelations = relations(coursesToClasses, ({ one }) => ({
+  course: one(courses, {
+    fields: [coursesToClasses.course],
+    references: [courses.id],
   }),
-);
+  class: one(classes, {
+    fields: [coursesToClasses.classIdentifier, coursesToClasses.classStartYear, coursesToClasses.school],
+    references: [classes.identifierInYear, classes.startYear, classes.school],
+  }),
+}));

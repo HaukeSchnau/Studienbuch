@@ -50,15 +50,11 @@ export function SelectField<TOption, TGroup = unknown>({
           onChange(
             EMPTY_VALUE === e.target.value
               ? undefined
-              : allOptions.find(
-                  (option) => String(getOptionId(option)) === e.target.value,
-                ),
+              : allOptions.find((option) => String(getOptionId(option)) === e.target.value),
           )
         }
       >
-        {(!valueId || allowEmpty) && (
-          <option value={EMPTY_VALUE}>{emptyLabel}</option>
-        )}
+        {(!valueId || allowEmpty) && <option value={EMPTY_VALUE}>{emptyLabel}</option>}
 
         {options
           ? options.map((option) => (

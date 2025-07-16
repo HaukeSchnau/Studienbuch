@@ -20,15 +20,14 @@ Notifications.setNotificationHandler({
 });
 
 export default function TabLayout() {
-  const { mutate: registerNotificationToken } =
-    api.auth.addNotificationToken.useMutation({
-      onSuccess: () => {
-        console.log("Notification token registered");
-      },
-      onError: (error) => {
-        console.error("Error registering notification token", error);
-      },
-    });
+  const { mutate: registerNotificationToken } = api.auth.addNotificationToken.useMutation({
+    onSuccess: () => {
+      console.log("Notification token registered");
+    },
+    onError: (error) => {
+      console.error("Error registering notification token", error);
+    },
+  });
 
   useEffect(() => {
     void registerForPushNotificationsAsync()
@@ -43,16 +42,13 @@ export default function TabLayout() {
         console.error("Error registering notification token:", error);
       });
 
-    const notificationListener = Notifications.addNotificationReceivedListener(
-      (notification) => {
-        console.log("Notification received", notification);
-      },
-    );
+    const notificationListener = Notifications.addNotificationReceivedListener((notification) => {
+      console.log("Notification received", notification);
+    });
 
-    const responseListener =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log("Notification response received", response);
-      });
+    const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
+      console.log("Notification response received", response);
+    });
 
     return () => {
       notificationListener.remove();
@@ -78,36 +74,24 @@ export default function TabLayout() {
           options={{
             headerShown: false,
             title: "Übersicht",
-            tabBarIcon: ({ color }) => (
-              <FontAwesome size={28} name="home" color={color} />
-            ),
-            tabBarLabel: ({ children, color }) => (
-              <Text style={{ color }}>{children}</Text>
-            ),
+            tabBarIcon: ({ color }) => <FontAwesome size={28} name="home" color={color} />,
+            tabBarLabel: ({ children, color }) => <Text style={{ color }}>{children}</Text>,
           }}
         />
         <Tabs.Screen
           name="schedule"
           options={{
             title: "Meine Woche",
-            tabBarIcon: ({ color }) => (
-              <FontAwesome size={28} name="calendar-today" color={color} />
-            ),
-            tabBarLabel: ({ children, color }) => (
-              <Text style={{ color }}>{children}</Text>
-            ),
+            tabBarIcon: ({ color }) => <FontAwesome size={28} name="calendar-today" color={color} />,
+            tabBarLabel: ({ children, color }) => <Text style={{ color }}>{children}</Text>,
           }}
         />
         <Tabs.Screen
           name="profile"
           options={{
             title: "Mein Profil",
-            tabBarIcon: ({ color }) => (
-              <FontAwesome size={28} name="person" color={color} />
-            ),
-            tabBarLabel: ({ children, color }) => (
-              <Text style={{ color }}>{children}</Text>
-            ),
+            tabBarIcon: ({ color }) => <FontAwesome size={28} name="person" color={color} />,
+            tabBarLabel: ({ children, color }) => <Text style={{ color }}>{children}</Text>,
           }}
         />
       </Tabs>

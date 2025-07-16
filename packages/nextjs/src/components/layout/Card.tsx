@@ -9,25 +9,14 @@ interface CardProps<TUrl extends string> {
   href?: Route<TUrl>;
 }
 
-export const Card = <TUrl extends string>({
-  children,
-  className,
-  noPadding,
-  href,
-}: CardProps<TUrl>) => {
+export const Card = <TUrl extends string>({ children, className, noPadding, href }: CardProps<TUrl>) => {
   const classes = clsx("rounded-3xl bg-white shadow-md", className, {
     "p-8": !noPadding,
   });
 
   if (href)
     return (
-      <Link
-        href={href}
-        className={clsx(
-          classes,
-          "transition-all hover:-rotate-3 hover:scale-110",
-        )}
-      >
+      <Link href={href} className={clsx(classes, "transition-all hover:-rotate-3 hover:scale-110")}>
         {children}
       </Link>
     );

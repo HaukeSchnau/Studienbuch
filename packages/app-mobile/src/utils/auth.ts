@@ -88,10 +88,7 @@ export const useSessionWatcher = () => {
     retry: 3,
     onSuccess: async ({ error, session }) => {
       if (error) {
-        console.error(
-          "Error while trying to log in with existing license key in background",
-          error,
-        );
+        console.error("Error while trying to log in with existing license key in background", error);
         await setSession(null);
         setLoading(false);
       } else {

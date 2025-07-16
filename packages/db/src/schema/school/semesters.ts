@@ -1,14 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  date,
-  integer,
-  pgEnum,
-  pgTable,
-  primaryKey,
-  smallint,
-  text,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { date, integer, pgEnum, pgTable, primaryKey, smallint, text, timestamp } from "drizzle-orm/pg-core";
 
 import { SEMESTER_TYPES } from "@stu/lib";
 

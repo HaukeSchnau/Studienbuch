@@ -2,14 +2,7 @@ import { z } from "zod";
 
 import { and, eq, gte, lte } from "@stu/db";
 import { db } from "@stu/db/client";
-import {
-  Classes,
-  Courses,
-  CoursesToClasses,
-  CoursesToTeachers,
-  Persons,
-  Semesters,
-} from "@stu/db/schema";
+import { Classes, Courses, CoursesToClasses, CoursesToTeachers, Persons, Semesters } from "@stu/db/schema";
 import type { Course, WithTeachers } from "@stu/lib";
 import { SCHOOL_IDS } from "@stu/lib";
 

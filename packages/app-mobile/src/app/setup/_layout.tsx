@@ -2,16 +2,8 @@ import { Image } from "expo-image";
 import { Slot, Stack, usePathname } from "expo-router";
 import { openBrowserAsync } from "expo-web-browser";
 import { useEffect } from "react";
-import {
-  LayoutAnimation,
-  ScrollView,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import Animated, {
-  useAnimatedKeyboard,
-  useAnimatedStyle,
-} from "react-native-reanimated";
+import { LayoutAnimation, ScrollView, TouchableOpacity, View } from "react-native";
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { shadow } from "~/components/styles/shadow";
@@ -55,10 +47,7 @@ export default function SetupLayout() {
             ]}
           >
             <Logo />
-            <View
-              className="w-full rounded-3xl bg-white px-6 py-8"
-              style={shadow}
-            >
+            <View className="w-full rounded-3xl bg-white px-6 py-8" style={shadow}>
               <Slot />
             </View>
 
@@ -73,14 +62,10 @@ export default function SetupLayout() {
 const LegalText = () => {
   return (
     <View className="gap-4 self-center">
-      <TouchableOpacity
-        onPress={() => openBrowserAsync("https://studienbuch.app/impressum")}
-      >
+      <TouchableOpacity onPress={() => openBrowserAsync("https://studienbuch.app/impressum")}>
         <Text className="text-md text-center text-[#6A6A6A]">Impressum</Text>
       </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => openBrowserAsync("https://studienbuch.app/datenschutz")}
-      >
+      <TouchableOpacity onPress={() => openBrowserAsync("https://studienbuch.app/datenschutz")}>
         <Text className="text-md text-center text-[#6A6A6A]">Datenschutz</Text>
       </TouchableOpacity>
     </View>
@@ -89,14 +74,8 @@ const LegalText = () => {
 
 const Logo = () => {
   return (
-    <View
-      className="mx-auto flex h-40 w-40 items-center justify-center rounded-full bg-[#6EB867]"
-      style={shadow}
-    >
-      <Image
-        source={logoImage}
-        style={{ width: 120, height: 120, borderRadius: 50 }}
-      />
+    <View className="mx-auto flex h-40 w-40 items-center justify-center rounded-full bg-[#6EB867]" style={shadow}>
+      <Image source={logoImage} style={{ width: 120, height: 120, borderRadius: 50 }} />
     </View>
   );
 };

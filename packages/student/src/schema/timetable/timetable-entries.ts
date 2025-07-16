@@ -1,11 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  foreignKey,
-  int,
-  primaryKey,
-  sqliteTable,
-  text,
-} from "drizzle-orm/sqlite-core";
+import { foreignKey, int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { courses } from "../school/courses";
 import { timestamp, uuid } from "../utils";
@@ -51,23 +45,17 @@ export const timetableEntryRooms = sqliteTable(
   },
 );
 
-export const timetableEntryRelations = relations(
-  timetableEntries,
-  ({ one, many }) => ({
-    course: one(courses, {
-      fields: [timetableEntries.course],
-      references: [courses.id],
-    }),
-    rooms: many(timetableEntryRooms),
+export const timetableEntryRelations = relations(timetableEntries, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [timetableEntries.course],
+    references: [courses.id],
   }),
-);
+  rooms: many(timetableEntryRooms),
+}));
 
-export const timetableEntryRoomsRelations = relations(
-  timetableEntryRooms,
-  ({ one }) => ({
-    timetableEntry: one(timetableEntries, {
-      fields: [timetableEntryRooms.start, timetableEntryRooms.course],
-      references: [timetableEntries.start, timetableEntries.course],
-    }),
+export const timetableEntryRoomsRelations = relations(timetableEntryRooms, ({ one }) => ({
+  timetableEntry: one(timetableEntries, {
+    fields: [timetableEntryRooms.start, timetableEntryRooms.course],
+    references: [timetableEntries.start, timetableEntries.course],
   }),
-);
+}));

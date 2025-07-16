@@ -12,11 +12,7 @@ export default function SchedulesPage() {
       <div className="flex items-center justify-between">
         <PageHeading color="white">Stundenpläne</PageHeading>
       </div>
-      {selectedYear ? (
-        <TimetableManager year={selectedYear} />
-      ) : (
-        <div>Bitte wähle ein Jahr aus</div>
-      )}
+      {selectedYear ? <TimetableManager year={selectedYear} /> : <div>Bitte wähle ein Jahr aus</div>}
     </div>
   );
 }

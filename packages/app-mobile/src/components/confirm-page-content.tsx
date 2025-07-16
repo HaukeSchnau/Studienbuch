@@ -16,14 +16,7 @@ interface Props {
   onConfirm: (signatureSvg: string) => void;
 }
 
-export const ConfirmPageContent = ({
-  heading,
-  children,
-  major,
-  signatureLabel,
-  confirmLabel,
-  onConfirm,
-}: Props) => {
+export const ConfirmPageContent = ({ heading, children, major, signatureLabel, confirmLabel, onConfirm }: Props) => {
   const router = useRouter();
   const signatureRef = useRef<ComponentRef<typeof SignatureField>>(null);
 
@@ -71,12 +64,7 @@ interface ViewProps {
   signatureSvg: string;
 }
 
-export const ViewConfirmPageContent = ({
-  children,
-  major,
-  signatureLabel,
-  signatureSvg,
-}: ViewProps) => {
+export const ViewConfirmPageContent = ({ children, major, signatureLabel, signatureSvg }: ViewProps) => {
   if (signatureSvg === "NOT_REQUIRED") {
     return null;
   }

@@ -32,8 +32,7 @@ export const login = publicProcedure
       return {
         error: {
           field: "email" as const,
-          message:
-            "Für diesen Nutzer wurde kein Passwort festgelegt. Bitte kontaktiere den Support.",
+          message: "Für diesen Nutzer wurde kein Passwort festgelegt. Bitte kontaktiere den Support.",
         },
       };
     }

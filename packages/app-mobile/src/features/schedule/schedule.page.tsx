@@ -14,24 +14,13 @@ const getCurrentWeek = () => {
   };
 };
 
-const TICKS = [
-  8 * 60,
-  9 * 60 + 20,
-  9 * 60 + 45,
-  11 * 60 + 5,
-  11 * 60 + 30,
-  12 * 60 + 50,
-  13 * 60 + 50,
-  15 * 60 + 10,
-];
+const TICKS = [8 * 60, 9 * 60 + 20, 9 * 60 + 45, 11 * 60 + 5, 11 * 60 + 30, 12 * 60 + 50, 13 * 60 + 50, 15 * 60 + 10];
 
 const DAY_START = 8 * 60;
 const DAY_END = 17 * 60;
 const DAY_DURATION = DAY_END - DAY_START;
 
-const ScheduleView = ({
-  calendarWeek,
-}: { calendarWeek: { week: number; year: number } }) => {
+const ScheduleView = ({ calendarWeek }: { calendarWeek: { week: number; year: number } }) => {
   const { data: timetable } = useQuery({
     ...getTimetableWeek({
       isoWeek: calendarWeek.week,

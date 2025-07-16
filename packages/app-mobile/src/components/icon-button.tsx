@@ -11,18 +11,12 @@ interface Props {
   opacity?: number;
 }
 
-export const IconButton = forwardRef<
-  ComponentRef<typeof TouchableNativeFeedback>,
-  Props
->(({ icon, color, size, onPress, opacity = 1 }, ref) => {
-  return (
-    <TouchableNativeFeedback onPress={onPress} ref={ref}>
-      <Icon
-        name={icon}
-        color={color}
-        size={size}
-        style={{ padding: 4, opacity }}
-      />
-    </TouchableNativeFeedback>
-  );
-});
+export const IconButton = forwardRef<ComponentRef<typeof TouchableNativeFeedback>, Props>(
+  ({ icon, color, size, onPress, opacity = 1 }, ref) => {
+    return (
+      <TouchableNativeFeedback onPress={onPress} ref={ref}>
+        <Icon name={icon} color={color} size={size} style={{ padding: 4, opacity }} />
+      </TouchableNativeFeedback>
+    );
+  },
+);

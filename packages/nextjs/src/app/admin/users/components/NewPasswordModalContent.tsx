@@ -15,16 +15,12 @@ interface ChangePasswordModalContentProps {
   onClose: () => void;
 }
 
-export const ChangePasswordModalContent = ({
-  user,
-  onClose,
-}: ChangePasswordModalContentProps) => {
-  const updatePasswordMutation =
-    api.management.users.updatePassword.useMutation({
-      onSuccess: () => {
-        onClose();
-      },
-    });
+export const ChangePasswordModalContent = ({ user, onClose }: ChangePasswordModalContentProps) => {
+  const updatePasswordMutation = api.management.users.updatePassword.useMutation({
+    onSuccess: () => {
+      onClose();
+    },
+  });
 
   const { Field, Subscribe, handleSubmit } = useForm({
     defaultValues: {
@@ -48,9 +44,7 @@ export const ChangePasswordModalContent = ({
 
   return (
     <form onSubmit={submitHandler(handleSubmit)}>
-      <h1 className="text-2xl font-bold text-primary-text">
-        Passwort von {formalName(user.person)} ändern
-      </h1>
+      <h1 className="text-2xl font-bold text-primary-text">Passwort von {formalName(user.person)} ändern</h1>
 
       <div className="h-4" />
 
@@ -58,9 +52,7 @@ export const ChangePasswordModalContent = ({
         name="password"
         validatorAdapter={zodValidator()}
         validators={{
-          onChange: z
-            .string()
-            .min(8, "Passwort muss mindestens 8 Zeichen lang sein"),
+          onChange: z.string().min(8, "Passwort muss mindestens 8 Zeichen lang sein"),
         }}
       >
         {(field) => (
@@ -115,21 +107,11 @@ export const ChangePasswordModalContent = ({
         {(error) => <div className="text-danger">{error.join(", ")}</div>}
       </Subscribe>
 
-      {updatePasswordMutation.isError && (
-        <div className="text-danger">
-          {updatePasswordMutation.error.message}
-        </div>
-      )}
+      {updatePasswordMutation.isError && <div className="text-danger">{updatePasswordMutation.error.message}</div>}
 
       <div className="h-4" />
 
-      <Subscribe
-        selector={(form) =>
-          !!form.errors.length ||
-          form.isSubmitting ||
-          updatePasswordMutation.isPending
-        }
-      >
+      <Subscribe selector={(form) => !!form.errors.length || form.isSubmitting || updatePasswordMutation.isPending}>
         {(disabled) => (
           <Button type="submit" disabled={disabled}>
             Speichern
