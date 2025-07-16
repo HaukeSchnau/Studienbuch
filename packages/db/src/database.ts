@@ -20,4 +20,4 @@ export const DatabaseLive = Layer.scoped(
   ),
 );
 
-export type { DatabaseConnectionLostError } from "@schnau/effect-drizzle/postgres";
+export type { DatabaseError } from "@schnau/effect-drizzle/postgres";

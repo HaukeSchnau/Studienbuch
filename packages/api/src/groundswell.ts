@@ -14,13 +14,13 @@ import {
   TimetableRepository,
   StudentRepository,
   DatabaseLive,
+  type DatabaseError,
 } from "@stu/db";
 import { CanonicalStorage as DrizzleCanonicalStorage } from "@groundswell/adapter-drizzle-postgres";
 import { DomainEvent } from "@stu/lib";
 import { ApplicatorError } from "@groundswell/core";
 import { BroadcastError, ServerValidationError } from "@groundswell/core-server";
 import type { CanonicalStorage } from "@groundswell/core-server";
-import type { DatabaseConnectionLostError } from "@stu/db";
 import { getUserTopics } from "./router/events/send-missing-events";
 
 const repositories = Layer.mergeAll(
@@ -115,10 +115,7 @@ export const canonicalStorageLive = DrizzleCanonicalStorage.createDrizzleCanonic
 
 export const appServerLayer = Layer.provide(ingestEngine, serverApplicatorLive);
 
-const databaseRetrySchedule: Schedule.Schedule<number, DatabaseConnectionLostError, never> = Schedule.exponential(
-  "1 second",
-  2,
-).pipe(
+const databaseRetrySchedule: Schedule.Schedule<number, DatabaseError, never> = Schedule.exponential("1 second", 2).pipe(
   Schedule.modifyDelay(Duration.min("8 seconds")),
   Schedule.jittered,
   Schedule.repetitions,
