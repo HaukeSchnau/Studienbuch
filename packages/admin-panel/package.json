@@ -11,7 +11,7 @@
     "format": "biome format",
     "lint": "eslint",
     "start": "vinxi start",
-    "typecheck": "tsc"
+    "typecheck": "tsgo"
   },
   "dependencies": {
     "@stu/api": "workspace:*",
@@ -40,7 +40,7 @@
     "@types/react-dom": "^19.0.0",
     "bun-plugin-pino": "^1.4.0",
     "eslint": "^9.24.0",
-    "typescript": "^5.8.3",
+
     "vite-tsconfig-paths": "^5.1.4"
   }
 }

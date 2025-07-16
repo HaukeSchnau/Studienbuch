@@ -12,7 +12,7 @@
     "clean": "git clean -xdf .cache .turbo node_modules",
     "format": "biome format",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
     "postcss": "^8.5.3",
