@@ -1,3 +1,12 @@
+CREATE TABLE `event_log` (
+	`id` text PRIMARY KEY NOT NULL,
+	`type` text NOT NULL,
+	`data` text NOT NULL,
+	`timestamp` integer NOT NULL,
+	`local_status` text NOT NULL,
+	`remote_status` text NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE `persons` (
 	`id` text PRIMARY KEY NOT NULL,
 	`first_name` text NOT NULL,
@@ -40,7 +49,6 @@ CREATE TABLE `teachers_to_classes` (
 CREATE TABLE `courses` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
-	`long_name` text NOT NULL,
 	`subject` text NOT NULL,
 	`school` text NOT NULL,
 	`semester_type` text NOT NULL,
@@ -152,6 +160,17 @@ CREATE TABLE `tasks` (
 	FOREIGN KEY (`assignee`) REFERENCES `persons`(`id`) ON UPDATE cascade ON DELETE restrict
 );
 --> statement-breakpoint
+CREATE TABLE `recurring_timetable_entries` (
+	`weekday` integer NOT NULL,
+	`start` integer NOT NULL,
+	`duration` integer NOT NULL,
+	`weeks` text DEFAULT 'ALL' NOT NULL,
+	`room` text,
+	`course` text NOT NULL,
+	PRIMARY KEY(`weekday`, `start`, `course`),
+	FOREIGN KEY (`course`) REFERENCES `courses`(`id`) ON UPDATE cascade ON DELETE cascade
+);
+--> statement-breakpoint
 CREATE TABLE `room_changes` (
 	`date` integer NOT NULL,
 	`course` text NOT NULL,
@@ -184,24 +203,4 @@ CREATE TABLE `timetable_entry_rooms` (
 	`room` text NOT NULL,
 	PRIMARY KEY(`start`, `course`, `room`),
 	FOREIGN KEY (`start`,`course`) REFERENCES `timetable_entries`(`date`,`course`) ON UPDATE cascade ON DELETE cascade
-);
---> statement-breakpoint
-CREATE TABLE `recurring_timetable_entries` (
-	`weekday` integer NOT NULL,
-	`start` integer NOT NULL,
-	`duration` integer NOT NULL,
-	`weeks` text DEFAULT 'ALL' NOT NULL,
-	`room` text,
-	`course` text NOT NULL,
-	PRIMARY KEY(`weekday`, `start`, `course`),
-	FOREIGN KEY (`course`) REFERENCES `courses`(`id`) ON UPDATE cascade ON DELETE cascade
-);
---> statement-breakpoint
-CREATE TABLE `events` (
-	`id` text PRIMARY KEY NOT NULL,
-	`type` text NOT NULL,
-	`data` text NOT NULL,
-	`timestamp` integer NOT NULL,
-	`publish_status` text NOT NULL,
-	`local_status` text NOT NULL
 );

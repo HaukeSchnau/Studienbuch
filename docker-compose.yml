@@ -1,7 +1,7 @@
 name: "studienbuch"
 
 services:
-  management-data-storage:
+  database:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
@@ -35,16 +35,18 @@ services:
       context: .
       dockerfile: Dockerfile
       target: api
+      secrets:
+        - npm_token
     restart: unless-stopped
     depends_on:
-      management-data-storage:
+      database:
         condition: service_healthy
       event-stream:
         condition: service_started
       migrations:
         condition: service_completed_successfully
     environment:
-      MANAGEMENT_DATABASE_URL: postgresql://stu:stu@management-data-storage:5432/stu
+      MANAGEMENT_DATABASE_URL: postgresql://stu:stu@database:5432/stu
       PULSAR_URL: pulsar://event-stream:6650
       ISERV_USERNAME: $ISERV_USERNAME
       ISERV_PASSWORD: $ISERV_PASSWORD
@@ -60,13 +62,17 @@ services:
       context: .
       dockerfile: Dockerfile
       target: console-cron
+      secrets:
+        - npm_token
     depends_on:
-      management-data-storage:
+      database:
         condition: service_healthy
       event-stream:
         condition: service_started
       migrations:
         condition: service_completed_successfully
+      legacy-database:
+        condition: service_healthy
     init: true
     tty: true
     environment:
@@ -77,8 +83,8 @@ services:
       NEXT_PUBLIC_AXIOM_TOKEN: $AXIOM_TOKEN
       PULSAR_URL: pulsar://event-stream:6650
       API_PORT: 3001 # TODO: remove
-      MANAGEMENT_DATABASE_URL: postgresql://stu:stu@management-data-storage:5432/stu
-      LEGACY_DATABASE_URL: postgresql://postgres:postgres@docker.host.internal:5433/postgres
+      MANAGEMENT_DATABASE_URL: postgresql://stu:stu@database:5432/stu
+      LEGACY_DATABASE_URL: postgresql://postgres:postgres@legacy-database:5432/postgres
       CACHE_DIR: /cache
     volumes:
       - cache:/cache
@@ -92,12 +98,29 @@ services:
       context: .
       dockerfile: Dockerfile
       target: migrations
+      secrets:
+        - npm_token
     environment:
-      MANAGEMENT_DATABASE_URL: postgresql://stu:stu@management-data-storage:5432/stu
+      MANAGEMENT_DATABASE_URL: postgresql://stu:stu@database:5432/stu
     depends_on:
-      management-data-storage:
+      database:
         condition: service_healthy
     restart: no
+
+  legacy-database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "postgres"]
+      interval: 1s
+      timeout: 5s
+      retries: 60
+    volumes:
+      - postgres_legacy_data:/var/lib/postgresql/data
 
 configs:
   crontab:
@@ -113,3 +136,8 @@ volumes:
   postgres_data:
   cache:
   rabbitmq_data:
+  postgres_legacy_data:
+
+secrets:
+  npm_token:
+    environment: npm_token

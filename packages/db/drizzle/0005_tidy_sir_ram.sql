@@ -1,1 +1,0 @@
-ALTER TABLE "users" RENAME COLUMN "notification_keys" TO "notification_tokens";

@@ -1,27 +1,27 @@
 import crypto from "node:crypto";
-import { endOfWeek, startOfWeek } from "date-fns";
-import { z } from "zod";
-
+import { ingest, SYSTEM_USER } from "@stu/api";
 import { and, between, eq, gte, lte } from "@stu/db";
 import { db } from "@stu/db/client";
-import { Schools, Semesters } from "@stu/db/schema";
-import { getBearerToken, getClassesV2, getTimetableV2, login } from "@stu/external-api";
-import { BetterMap, isArraySingleElement } from "@stu/lib";
-import type { SchoolId } from "@stu/lib";
-
-import { ConsoleIservClient } from "./get-or-create-teacher";
-import { mapKadmosClassV2, mapKadmosTimetableEntry } from "./map-kadmos-class";
-import type { ProtoTimetableEntry } from "./map-kadmos-class";
 import * as tables from "@stu/db/schema";
-import { ingest, SYSTEM_USER } from "@stu/api";
-import { logger } from "./logger";
-import { ingestTimetableEntry } from "./ingest-timetable-entry";
+import { Semesters } from "@stu/db/schema";
+import { type AuthContext, getClassesV2, getTimetableV2 } from "@stu/external-api";
+import type { SchoolId, SimpleDate } from "@stu/lib";
+import { BetterMap, isArraySingleElement } from "@stu/lib";
+import { endOfWeek, startOfWeek } from "date-fns";
 import { Exit } from "effect";
+import { z } from "zod";
+import { ConsoleIservClient } from "./get-or-create-teacher";
+import { ingestTimetableEntry } from "./ingest-timetable-entry";
+import { logger } from "./logger";
+import type { ProtoTimetableEntry } from "./map-kadmos-class";
+import { mapKadmosClassV2, mapKadmosTimetableEntry } from "./map-kadmos-class";
 
 interface Options {
   school: SchoolId;
   date: Date;
   monthOffsetRange: [number, number];
+  dryRun: boolean;
+  schoolYearId: number;
 }
 
 /**
@@ -55,14 +55,14 @@ const findSemesterFromDate = async (date: Date, school: SchoolId) => {
   return semesters[0];
 };
 
-export const importTimetable = async ({ school, date, monthOffsetRange: [offsetStart, offsetEnd] }: Options) => {
-  const schoolEntity = await db.query.Schools.findFirst({
-    where: eq(Schools.id, school),
-  });
-  if (!schoolEntity) throw new Error(`School ${school} not found`);
+const getTimetable = async (options: Options, authContext: AuthContext) => {
+  
+}
 
-  const { kadmosName, kadmosUsername, kadmosPassword } = schoolEntity;
-
+export const importTimetable = async (
+  options: Options,
+  authContext: AuthContext,
+) => {
   const startDate = startOfWeek(date, { weekStartsOn: 1 });
   const endDate = endOfWeek(date, { weekStartsOn: 1 });
   const start = {
@@ -80,9 +80,7 @@ export const importTimetable = async ({ school, date, monthOffsetRange: [offsetS
     `Downloading timetable for ${start.year}-${start.month}-${start.day} to ${end.year}-${end.month}-${end.day}...`,
   );
 
-  const jar = await login(kadmosName, kadmosUsername, kadmosPassword);
-  const bearerToken = await getBearerToken(jar);
-  const kadmosClasses = await getClassesV2(start, end, jar, bearerToken).then((classes) =>
+  const kadmosClasses = await getClassesV2(start, end, schoolYearId, authContext).then((classes) =>
     classes.classes.map(mapKadmosClassV2),
   );
 
@@ -91,7 +89,7 @@ export const importTimetable = async ({ school, date, monthOffsetRange: [offsetS
   // First, we collect all entries for the week over all classes
   const entriesToInsert: ProtoTimetableEntry[] = [];
   for (const cls of kadmosClasses) {
-    const timetable = await getTimetableV2(start, end, cls.kadmosId, jar, bearerToken);
+    const timetable = await getTimetableV2(start, end, cls.kadmosId, authContext);
 
     entriesToInsert.push(
       ...timetable.days

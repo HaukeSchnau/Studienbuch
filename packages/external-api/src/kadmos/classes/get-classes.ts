@@ -1,7 +1,7 @@
 import type { SimpleDate } from "@stu/lib";
-import type { CookieJar } from "tough-cookie";
 import { z } from "zod";
 import { fetchWithCookieJar } from "../../fetch-with-cookies";
+import type { AuthContext } from "../auth/login";
 
 const v2Schema = z.object({
   departments: z.array(
@@ -51,8 +51,8 @@ export type KadmosClassV2Response = z.infer<typeof v2Schema>;
 export const getClassesV2 = async (
   start: SimpleDate,
   end: SimpleDate,
-  jar: CookieJar,
-  bearerToken: string,
+  schoolYearId: number,
+  authContext: AuthContext,
 ): Promise<KadmosClassV2Response> => {
   const params = new URLSearchParams();
   params.append("resourceType", "CLASS");
@@ -63,14 +63,17 @@ export const getClassesV2 = async (
   );
   params.append("end", `${end.year}-${end.month.toString().padStart(2, "0")}-${end.day.toString().padStart(2, "0")}`);
 
+  console.log(`https://kadmos.webuntis.com/WebUntis/api/rest/view/v1/timetable/filter?${params.toString()}`);
+
   const response = await fetchWithCookieJar(
     `https://kadmos.webuntis.com/WebUntis/api/rest/view/v1/timetable/filter?${params.toString()}`,
     {
       headers: {
-        Authorization: `Bearer ${bearerToken}`,
+        Authorization: `Bearer ${authContext.bearerToken}`,
+        "x-webuntis-api-school-year-id": schoolYearId.toString(),
       },
     },
-    jar,
+    authContext.jar,
   );
 
   return v2Schema.parse(await response.json());

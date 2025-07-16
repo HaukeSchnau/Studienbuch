@@ -1,22 +1,21 @@
 import { program } from "@commander-js/extra-typings";
-import { z } from "zod";
-
-import { SYSTEM_USER, ingest } from "@stu/api";
+import { ingest, SYSTEM_USER } from "@stu/api";
+import { alias, and, eq, ne } from "@stu/db";
 import { db } from "@stu/db/client";
+import * as tables from "@stu/db/schema";
 import { Schools } from "@stu/db/schema";
-import { SCHOOL_IDS, defaultSchools } from "@stu/lib";
-
-import { importClasses } from "./import-classes";
-import { importTeachers } from "./import-teachers";
+import { upsertCourses } from "@stu/legacy-import";
+import { defaultSchools, SCHOOL_IDS } from "@stu/lib";
+import { Exit } from "effect";
+import { z } from "zod";
+import { extractCourses } from "./extract-courses";
 import { importTimetable } from "./import-timetable";
+import { importClasses } from "./kadmos/import-classes";
+import { importTeachers } from "./kadmos/import-teachers";
+import { getCurrentSchoolYearId, setupAuth } from "./kadmos/kadmos-utils";
 import { logger } from "./logger";
 import { addSemesters } from "./seed/add-semesters";
 import { generateLicenses } from "./seed/generate-licenses";
-import { extractCourses } from "./extract-courses";
-import { upsertCourses } from "@stu/legacy-import";
-import * as tables from "@stu/db/schema";
-import { alias, and, eq, ne } from "@stu/db";
-import { Exit } from "effect";
 
 process.on("SIGINT", () => {
   process.exit(0);
@@ -28,127 +27,139 @@ process.on("SIGTERM", () => {
 
 program.name("console").description("Studienbuch Console").showSuggestionAfterError();
 
-program
-  .command("seed")
-  .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
-  .action(async (school) => {
-    const defaultSchoolValue = defaultSchools[school];
+// program
+//   .command("seed")
+//   .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
+//   .option("--dry-run", "Only print the data that would be ingested")
+//   .action(async (school, { dryRun = false }) => {
+//     const defaultSchoolValue = defaultSchools[school];
 
-    logger.info(`Seeding school "${school}"...`);
-    const err = await ingest(
-      {
-        type: "org.school.founded",
-        data: {
-          id: school,
-          name: defaultSchoolValue.name,
-          state: defaultSchoolValue.stateCode,
-        },
-        id: crypto.randomUUID(),
-        timestamp: defaultSchoolValue.founded,
-      },
-      SYSTEM_USER,
-    );
-    if (Exit.isFailure(err)) {
-      if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
-        logger.debug(`School "${school}" already founded!`);
-      } else {
-        logger.error(`Could not ingest school founded event: ${err.cause.toString()}`);
-      }
-    } else {
-      logger.info(`School "${school}" founded!`);
-    }
+//     logger.info(`Seeding school "${school}"...`);
+//     if (!dryRun) {
+//       const err = await ingest(
+//         {
+//           type: "org.school.founded",
+//           data: {
+//             id: school,
+//             name: defaultSchoolValue.name,
+//             state: defaultSchoolValue.stateCode,
+//           },
+//           id: crypto.randomUUID(),
+//           timestamp: defaultSchoolValue.founded,
+//         },
+//         SYSTEM_USER,
+//       );
+//       if (Exit.isFailure(err)) {
+//         if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
+//           logger.debug(`School "${school}" already founded!`);
+//         } else {
+//           logger.error(`Could not ingest school founded event: ${err.cause.toString()}`);
+//         }
+//       } else {
+//         logger.info(`School "${school}" founded!`);
+//       }
+//     } else {
+//       logger.info(`School: ${JSON.stringify(defaultSchoolValue, null, 2)}`);
+//     }
 
-    await generateLicenses(10, school);
-    await importTeachers();
-    await addSemesters(defaultSchoolValue.stateCode);
-    await importClasses({ school });
-    await importTimetable({
-      school,
-      date: new Date(),
-      monthOffsetRange: [-2, 2],
-    });
+//
+//     await importTeachers(dryRun);
 
-    logger.info("Seeding complete!");
-    process.exit(0);
-  });
+//     await addSemesters(defaultSchoolValue.stateCode, dryRun);
+//     await importClasses({ school, dryRun });
+//     await importTimetable({ school, date: new Date(), monthOffsetRange: [-2, 2], dryRun });
+
+//     logger.info("Seeding complete!");
+//     process.exit(0);
+//   });
 
 program
   .command("pull")
   .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
-  .action(async (school) => {
+  .option("--dry-run", "Only print the data that would be ingested")
+  .action(async (school, { dryRun = false }) => {
     const defaultSchoolValue = defaultSchools[school];
     logger.info("Pulling data...");
-    const err = await ingest(
-      {
-        type: "org.school.founded",
-        data: {
-          id: school,
-          name: defaultSchoolValue.name,
-          state: defaultSchoolValue.stateCode,
+    if (!dryRun) {
+      const err = await ingest(
+        {
+          type: "org.school.founded",
+          data: {
+            id: school,
+            name: defaultSchoolValue.name,
+            state: defaultSchoolValue.stateCode,
+          },
+          id: crypto.randomUUID(),
+          timestamp: defaultSchoolValue.founded,
         },
-        id: crypto.randomUUID(),
-        timestamp: defaultSchoolValue.founded,
-      },
-      SYSTEM_USER,
-    );
-    if (Exit.isFailure(err)) {
-      if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
-        logger.debug(`School "${school}" already founded!`);
+        SYSTEM_USER,
+      );
+      if (Exit.isFailure(err)) {
+        if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
+          logger.debug(`School "${school}" already founded!`);
+        } else {
+          logger.error(`Could not ingest school founded event: ${err.cause.toString()}`);
+        }
       } else {
-        logger.error(`Could not ingest school founded event: ${err.cause.toString()}`);
+        logger.info(`School "${school}" founded!`);
       }
     } else {
-      logger.info(`School "${school}" founded!`);
+      logger.info(`School: ${JSON.stringify(defaultSchoolValue, null, 2)}`);
     }
-    await importTeachers();
-    await addSemesters(defaultSchoolValue.stateCode);
-    await importClasses({ school });
-    await importTimetable({
-      school,
-      date: new Date(),
-      monthOffsetRange: [-2, 2],
-    });
+
+    await generateLicenses(10, school, dryRun);
+
+    const authContext = await setupAuth(school);
+    const schoolYearId = await getCurrentSchoolYearId(authContext);
+    await importTeachers({ school, schoolYearId, dryRun }, authContext);
+    await addSemesters(defaultSchoolValue.stateCode, dryRun);
+    await importClasses({ school, schoolYearId, dryRun }, authContext);
+    // await importTimetable({
+    //   school,
+    //   date: new Date(),
+    //   monthOffsetRange: [-2, 2],
+    // });
     process.exit(0);
   });
 
-program.command("import-teachers").action(async () => {
-  logger.info("Importing teachers...");
-  await importTeachers();
-  process.exit(0);
-});
+// program.command("import-teachers").action(async () => {
+//   logger.info("Importing teachers...");
+//   await importTeachers();
+//   process.exit(0);
+// });
 
-program.command("import-classes").action(async () => {
-  logger.info("Copying classes...");
-  await importClasses({ school: "igs-lil" });
+// program.command("import-classes").action(async () => {
+//   logger.info("Copying classes...");
+//   await importClasses({ school: "igs-lil" });
 
-  process.exit(0);
-});
+//   process.exit(0);
+// });
 
-program.command("import-semesters").action(async () => {
-  const states = await db.selectDistinct({ stateCode: Schools.stateCode }).from(Schools);
+// program.command("import-semesters").action(async () => {
+//   const states = await db.selectDistinct({ stateCode: Schools.stateCode }).from(Schools);
 
-  for (const state of states) {
-    await addSemesters(state.stateCode);
-  }
+//   for (const state of states) {
+//     await addSemesters(state.stateCode);
+//   }
 
-  logger.info(await db.query.Semesters.findMany());
+//   logger.info(await db.query.Semesters.findMany());
 
-  process.exit(0);
-});
+//   process.exit(0);
+// });
 
-program
-  .command("import-timetable")
-  .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
-  .action(async (school) => {
-    logger.info(`Importing timetables for school "${school}"...`);
-    await importTimetable({
-      school,
-      date: new Date(),
-      monthOffsetRange: [-4, 4],
-    });
+// program
+//   .command("import-timetable")
+//   .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
+//   .action(async (school) => {
+//     logger.info(`Importing timetables for school "${school}"...`);
+//     await importTimetable({
+//       school,
+//       date: new Date(),
+//       monthOffsetRange: [-4, 4],
+//     });
 
-    process.exit(0);
-  });
+//     process.exit(0);
+//   });
 
 program
   .command("generate-licenses")
@@ -159,7 +170,7 @@ program
     if (number < 1) program.error("Number must be greater than 0");
 
     logger.info(`Generating ${number} licenses...`);
-    await generateLicenses(number, school);
+    await generateLicenses(number, school, false);
 
     process.exit(0);
   });

@@ -1,10 +1,9 @@
 import crypto from "node:crypto";
 
-import { SYSTEM_USER, ingest } from "@stu/api";
+import { ingest, SYSTEM_USER } from "@stu/api";
 import type { SchoolId } from "@stu/lib";
-
-import { logger } from "../logger";
 import { Exit } from "effect";
+import { logger } from "../logger";
 
 function generateLicenseKey(): string {
   return crypto
@@ -15,7 +14,7 @@ function generateLicenseKey(): string {
     .slice(0, -1);
 }
 
-export const generateLicenses = async (numberOfLicenses: number, school: SchoolId) => {
+export const generateLicenses = async (numberOfLicenses: number, school: SchoolId, dryRun: boolean) => {
   logger.info(`Generating ${numberOfLicenses} license keys for school "${school}".
     ..`);
 
@@ -26,25 +25,27 @@ export const generateLicenses = async (numberOfLicenses: number, school: SchoolI
     const expiresAt = new Date();
     expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 
-    const res = await ingest(
-      {
-        type: "auth.licenseGenerated",
-        data: {
-          school,
-          licenseKey,
-          expiryDate: expiresAt,
+    if (!dryRun) {
+      const res = await ingest(
+        {
+          type: "auth.licenseGenerated",
+          data: {
+            school,
+            licenseKey,
+            expiryDate: expiresAt,
+          },
+          timestamp: new Date(),
+          id: crypto.randomUUID(),
         },
-        timestamp: new Date(),
-        id: crypto.randomUUID(),
-      },
-      SYSTEM_USER,
-    );
+        SYSTEM_USER,
+      );
 
-    if (Exit.isFailure(res)) {
-      if (res.cause._tag === "Fail" && res.cause.error.reason === "DUPLICATE") {
-        logger.debug(`License key ${licenseKey} already generated!`);
-      } else {
-        logger.error(`Could not ingest license generated event: ${res.cause.toString()}`);
+      if (Exit.isFailure(res)) {
+        if (res.cause._tag === "Fail" && res.cause.error.reason === "DUPLICATE") {
+          logger.debug(`License key ${licenseKey} already generated!`);
+        } else {
+          logger.error(`Could not ingest license generated event: ${res.cause.toString()}`);
+        }
       }
     }
   }

@@ -1,7 +1,11 @@
 services:
-  management-data-storage:
+  database:
     ports:
       - 5432:5432
+
+  legacy-database:
+    ports:
+      - 5433:5432
 
   event-stream:
     ports:

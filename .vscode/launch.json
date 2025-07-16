@@ -7,7 +7,7 @@
     {
       "type": "expo",
       "request": "attach",
-      "name": "Debug Mobile app",
+      "name": "Debug Mobile App",
       "projectRoot": "${workspaceFolder}/packages/app-mobile",
       "bundlerPort": "8081",
       "bundlerHost": "127.0.0.1"

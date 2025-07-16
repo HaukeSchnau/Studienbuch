@@ -1,4 +1,4 @@
-import fs, { writeFile } from "node:fs/promises";
+import fs, { writeFile, mkdir } from "node:fs/promises";
 import type { ZodType } from "zod";
 import { z } from "zod";
 import { env } from "../../env";
@@ -73,6 +73,7 @@ export const getHolidays = async (state: State, year?: number): Promise<Holiday[
     }
   }
 
+  await mkdir(env.CACHE_DIR, { recursive: true });
   await writeFile(snapshotFile, JSON.stringify(response, null, 2));
 
   return response;

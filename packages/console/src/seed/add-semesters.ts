@@ -1,42 +1,44 @@
 import { randomUUID } from "node:crypto";
-import dayjs from "dayjs";
-
-import { SYSTEM_USER, ingest } from "@stu/api";
+import { ingest, SYSTEM_USER } from "@stu/api";
 import type { State } from "@stu/external-api";
 import { getHolidays } from "@stu/external-api";
-
-import { logger } from "../logger";
+import dayjs from "dayjs";
 import { Exit } from "effect";
+import { logger } from "../logger";
 
-export const addSemesters = async (state: State) => {
+export const addSemesters = async (state: State, dryRun: boolean) => {
   logger.info(`Importing holidays for ${state}...`);
 
   const holidays = await getHolidays(state);
   for (const holiday of holidays) {
-    const err = await ingest(
-      {
-        type: "org.holiday.created",
-        id: randomUUID(),
-        timestamp: new Date(),
-        data: {
-          name: holiday.name,
-          start: dayjs(holiday.start).toDate(),
-          end: dayjs(holiday.end).toDate(),
-          state: holiday.stateCode,
-          year: holiday.year,
+    if (!dryRun) {
+      const err = await ingest(
+        {
+          type: "org.holiday.created",
+          id: randomUUID(),
+          timestamp: new Date(),
+          data: {
+            name: holiday.name,
+            start: dayjs(holiday.start).toDate(),
+            end: dayjs(holiday.end).toDate(),
+            state: holiday.stateCode,
+            year: holiday.year,
+          },
         },
-      },
-      SYSTEM_USER,
-    );
+        SYSTEM_USER,
+      );
 
-    if (Exit.isFailure(err)) {
-      if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
-        logger.debug(`Holiday ${holiday.name} already created!`);
+      if (Exit.isFailure(err)) {
+        if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
+          logger.debug(`Holiday ${holiday.name} already created!`);
+        } else {
+          logger.error(`Could not ingest holiday created event: ${err.cause.toString()}`);
+        }
       } else {
-        logger.error(`Could not ingest holiday created event: ${err.cause.toString()}`);
+        logger.info(`Holiday ${holiday.name} created!`);
       }
     } else {
-      logger.info(`Holiday ${holiday.name} created!`);
+      logger.info(`Holiday: ${JSON.stringify(holiday, null, 2)}`);
     }
   }
 };
