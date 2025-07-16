@@ -1,0 +1,3 @@
+[install.scopes]
+"@schnau" = { url = "https://npm.schnau.dev/", token = "$npm_token" }
+"@groundswell" = { url = "https://npm.schnau.dev/", token = "$npm_token" }
