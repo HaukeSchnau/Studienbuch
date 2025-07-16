@@ -1,9 +1,8 @@
 "use client";
 
+import { SCHOOL_IDS } from "@stu/lib";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
-
-import { SCHOOL_IDS } from "@stu/lib";
 
 import { SelectField } from "~/components/form/SelectField";
 import { NavigationItem } from "~/components/layout/nav/NavigationItem";

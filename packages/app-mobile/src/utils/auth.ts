@@ -1,8 +1,7 @@
+import { persons } from "@stu/student/schema";
 import { skipToken, useQuery } from "@tanstack/react-query";
 import { eq } from "drizzle-orm";
 import { useEffect, useState } from "react";
-
-import { persons } from "@stu/student/schema";
 
 import { db } from "~/db/client";
 import { api } from "./api";
@@ -122,8 +121,7 @@ export const useSessionWatcher = () => {
     login.mutate({
       licenseKey,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [licenseKey]);
+  }, [licenseKey, login.mutate, session]);
 
   useEffect(() => {
     if (getSessionQuery.status === "error") {
@@ -155,8 +153,7 @@ export const useSessionWatcher = () => {
       });
       await utils.invalidate();
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getSessionQuery.status, getSessionQuery.data, licenseKey]);
+  }, [getSessionQuery.status, getSessionQuery.data, licenseKey, setSession, login.mutate, utils.invalidate]);
 
   return loading;
 };

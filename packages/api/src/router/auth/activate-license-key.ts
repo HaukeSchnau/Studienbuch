@@ -1,19 +1,14 @@
-import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
-import { z } from "zod";
-
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
 import { createSession } from "@stu/lib-server";
-
+import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
+import { Exit } from "effect";
+import { z } from "zod";
 import { publicProcedure } from "../../procedures";
 import { ingest } from "../events/ingest";
-import { Exit } from "effect";
 
-const activate = async (license: {
-  activatedBy: string | null;
-  key: string;
-}) => {
+const activate = async (license: { activatedBy: string | null; key: string }) => {
   if (license.activatedBy) {
     return license.activatedBy;
   }

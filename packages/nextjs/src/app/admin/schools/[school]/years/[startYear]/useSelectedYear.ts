@@ -1,7 +1,6 @@
+import { SCHOOL_IDS } from "@stu/lib";
 import { skipToken } from "@tanstack/react-query";
 import { z } from "zod";
-
-import { SCHOOL_IDS } from "@stu/lib";
 
 import { useSafeParams } from "~/infrastructure/hooks/useSafeParams";
 import { api } from "~/infrastructure/trpc/react";

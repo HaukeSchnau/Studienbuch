@@ -1,16 +1,12 @@
-import { Effect } from "effect";
 import type { SchoolId } from "@stu/lib";
-import { Database } from "../database";
 import { and, eq } from "drizzle-orm";
+import { Effect } from "effect";
+import { Database } from "../database";
 import * as tables from "../schema";
 
 export class StudentRepository extends Effect.Service<StudentRepository>()("student/StudentRepository", {
   effect: Effect.gen(function* () {
-    const doesClassExist = Effect.fn(function* (payload: {
-      identifier: string;
-      startYear: number;
-      school: SchoolId;
-    }) {
+    const doesClassExist = Effect.fn(function* (payload: { identifier: string; startYear: number; school: SchoolId }) {
       const { execute } = yield* Database;
 
       const cls = yield* execute((db) =>
@@ -29,9 +25,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       return cls.length > 0;
     });
 
-    const getSchoolOfUser = Effect.fn(function* (payload: {
-      studentId: string;
-    }) {
+    const getSchoolOfUser = Effect.fn(function* (payload: { studentId: string }) {
       const { execute } = yield* Database;
 
       const rows = yield* execute((db) =>
@@ -99,9 +93,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       );
     }, Database.asTransaction);
 
-    const doesCourseExist = Effect.fn(function* (payload: {
-      courseId: string;
-    }) {
+    const doesCourseExist = Effect.fn(function* (payload: { courseId: string }) {
       const { execute } = yield* Database;
 
       const course = yield* execute((db) =>
@@ -111,10 +103,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       return course.length > 0;
     });
 
-    const isAssignedToCourse = Effect.fn(function* (payload: {
-      studentId: string;
-      courseId: string;
-    }) {
+    const isAssignedToCourse = Effect.fn(function* (payload: { studentId: string; courseId: string }) {
       const { execute } = yield* Database;
 
       const assignment = yield* execute((db) =>
@@ -129,10 +118,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       return !!assignment;
     });
 
-    const assignCourse = Effect.fn(function* (payload: {
-      studentId: string;
-      courseId: string;
-    }) {
+    const assignCourse = Effect.fn(function* (payload: { studentId: string; courseId: string }) {
       const { execute } = yield* Database;
 
       yield* execute((db) =>

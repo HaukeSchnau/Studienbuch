@@ -1,9 +1,8 @@
+import { colors } from "@stu/tailwind-config/native";
 import clsx from "clsx";
 import type { ComponentRef } from "react";
 import { forwardRef } from "react";
 import { TouchableOpacity } from "react-native";
-
-import { colors } from "@stu/tailwind-config/native";
 
 import { shadow } from "./styles/shadow";
 import { Text } from "./text";

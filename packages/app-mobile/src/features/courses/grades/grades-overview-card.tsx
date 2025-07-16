@@ -1,8 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
-import React from "react";
-import { ActivityIndicator, View } from "react-native";
-
 import type { Grade } from "@stu/lib";
+import { useQuery } from "@tanstack/react-query";
+import { ActivityIndicator, View } from "react-native";
 
 import { Card } from "~/components/card";
 import { Divider } from "~/components/divider";

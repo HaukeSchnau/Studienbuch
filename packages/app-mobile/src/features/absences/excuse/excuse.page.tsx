@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { Stack } from "expo-router";
-import React from "react";
 import { ActivityIndicator, View } from "react-native";
 
 import { Text } from "~/components/text";
@@ -8,13 +7,7 @@ import { getOne } from "../queries";
 import { ExcuseParent } from "./excuse-parent";
 import { ExcuseTeacher } from "./excuse-teacher";
 
-export const ExcusePage = ({
-  date,
-  courseIds,
-}: {
-  date: Date;
-  courseIds: string[];
-}) => {
+export const ExcusePage = ({ date, courseIds }: { date: Date; courseIds: string[] }) => {
   const absences = useQuery({
     ...getOne({ date, courseIds }),
   });

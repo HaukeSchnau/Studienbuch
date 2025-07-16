@@ -1,10 +1,9 @@
+import type { AppRouter } from "@stu/api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import { useState } from "react";
 import superjson from "superjson";
-
-import type { AppRouter } from "@stu/api";
 
 import { getBaseUrl } from "./base-url";
 import { getStorage } from "./storage";

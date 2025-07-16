@@ -1,8 +1,7 @@
+import { parseSimpleDate } from "@stu/lib";
 import { describe, test } from "vitest";
-
 import { getBearerToken, login } from "../auth/login";
 import { getTimetableV2 } from "./get-timetable";
-import { parseSimpleDate } from "@stu/lib";
 
 describe("Get timetable from Kadmos", () => {
   test("Get timetable from Kadmos", async () => {

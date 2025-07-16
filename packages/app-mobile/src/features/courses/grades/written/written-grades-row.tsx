@@ -1,8 +1,7 @@
-import React, { useMemo, useState } from "react";
-import { View } from "react-native";
-
 import type { Grade } from "@stu/lib";
 import { formatGrade, isGradeConfirmed } from "@stu/lib";
+import { useMemo, useState } from "react";
+import { View } from "react-native";
 
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
 import { IconButton } from "~/components/icon-button";
@@ -11,13 +10,7 @@ import { GradeCard } from "../grade-card";
 import { AddWrittenGrade } from "./add-written-grade";
 import WrittenIcon from "./written.svg";
 
-export const WrittenGradesRow = ({
-  writtenGrades,
-  courseId,
-}: {
-  writtenGrades: Grade[];
-  courseId: string;
-}) => {
+export const WrittenGradesRow = ({ writtenGrades, courseId }: { writtenGrades: Grade[]; courseId: string }) => {
   const averageWrittenGrade = useMemo(() => {
     const confirmedGrades = writtenGrades.filter(isGradeConfirmed);
 

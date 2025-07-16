@@ -1,6 +1,6 @@
+import { and, eq, inArray } from "drizzle-orm";
 import { Effect } from "effect";
 import { Database } from "../database";
-import { and, eq, inArray } from "drizzle-orm";
 import * as tables from "../schema";
 
 export class AbsenceRepository extends Effect.Service<AbsenceRepository>()("student/AbsenceRepository", {
@@ -31,10 +31,7 @@ export class AbsenceRepository extends Effect.Service<AbsenceRepository>()("stud
       );
     }, Database.asTransaction);
 
-    const setParentSignature = Effect.fn(function* (payload: {
-      date: Date;
-      signature: string;
-    }) {
+    const setParentSignature = Effect.fn(function* (payload: { date: Date; signature: string }) {
       const { execute } = yield* Database;
 
       yield* execute((db) =>
@@ -45,11 +42,7 @@ export class AbsenceRepository extends Effect.Service<AbsenceRepository>()("stud
       );
     });
 
-    const setTeacherSignature = Effect.fn(function* (payload: {
-      date: Date;
-      courseId: string;
-      signature: string;
-    }) {
+    const setTeacherSignature = Effect.fn(function* (payload: { date: Date; courseId: string; signature: string }) {
       const { execute } = yield* Database;
 
       yield* execute((db) =>
@@ -60,10 +53,7 @@ export class AbsenceRepository extends Effect.Service<AbsenceRepository>()("stud
       );
     });
 
-    const deleteAbsence = Effect.fn(function* (payload: {
-      date: Date;
-      courseIds: string[];
-    }) {
+    const deleteAbsence = Effect.fn(function* (payload: { date: Date; courseIds: string[] }) {
       const { execute } = yield* Database;
 
       yield* execute((db) =>

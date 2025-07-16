@@ -1,9 +1,8 @@
-import clsx from "clsx";
-import { Fragment, Suspense } from "react";
-
 import { formatDateRelative } from "@stu/lib";
 import type { Issue, WorkflowState } from "@stu/lib-server";
 import { getStates, getTicketsForState } from "@stu/lib-server";
+import clsx from "clsx";
+import { Fragment, Suspense } from "react";
 
 import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import style from "./roadmap.module.css";

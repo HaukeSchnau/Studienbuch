@@ -185,11 +185,11 @@ export const getRequestBody = (options: ApiRequestOptions): any => {
   if (options.body !== undefined) {
     if (options.mediaType?.includes("/json")) {
       return JSON.stringify(options.body);
-    } else if (isString(options.body) || isBlob(options.body) || isFormData(options.body)) {
-      return options.body;
-    } else {
-      return JSON.stringify(options.body);
     }
+    if (isString(options.body) || isBlob(options.body) || isFormData(options.body)) {
+      return options.body;
+    }
+    return JSON.stringify(options.body);
   }
   return undefined;
 };
@@ -240,9 +240,8 @@ export const getResponseBody = async (response: Response): Promise<any> => {
         const isJSON = jsonTypes.some((type) => contentType.toLowerCase().startsWith(type));
         if (isJSON) {
           return await response.json();
-        } else {
-          return await response.text();
         }
+        return await response.text();
       }
     } catch (error) {
       console.error(error);

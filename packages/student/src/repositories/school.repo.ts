@@ -1,8 +1,7 @@
-import { Effect } from "effect";
-import type { SchoolId } from "@stu/lib";
-import { Database } from "../database";
-import type { StateCode } from "@stu/lib";
+import type { SchoolId, StateCode } from "@stu/lib";
 import { eq } from "drizzle-orm";
+import { Effect } from "effect";
+import { Database } from "../database";
 import * as tables from "../schema";
 
 export class SchoolRepository extends Effect.Service<SchoolRepository>()("student/SchoolRepository", {

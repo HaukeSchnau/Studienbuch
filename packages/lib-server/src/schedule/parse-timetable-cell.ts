@@ -13,7 +13,7 @@ export const parseTimetableCell = (coursesRaw: string): ExtendedProtoCourse[] =>
     let components = course?.split(" ").filter((course) => course.trim()) ?? [];
 
     while (
-      components.length == 1 ||
+      components.length === 1 ||
       (components.length < 3 && !coursesForDay[i + 1]?.startsWith("*") && i + 1 < coursesForDay.length)
     ) {
       components.push(...(coursesForDay[i + 1]?.split(" ").filter((course) => course.trim()) ?? []));

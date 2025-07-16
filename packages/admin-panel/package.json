@@ -8,8 +8,8 @@
     "build": "vinxi build",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev": "vinxi dev",
-    "format": "biome format",
-    "lint": "eslint",
+    "lint": "biome check",
+    "eslint": "eslint",
     "start": "vinxi start",
     "typecheck": "tsgo"
   },

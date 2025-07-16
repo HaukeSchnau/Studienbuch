@@ -1,33 +1,34 @@
-import {
-  ApplicatorError,
-  syncEngineLive,
-  ValidationError,
-  type Applicator,
-  type Storage,
-  type SyncEngine,
-  type Transport,
-} from "@groundswell/core";
-import { syncEngineFactory } from "@groundswell/react";
-import { DomainEvent, EventName } from "@stu/lib";
-import { Context, Data, Effect, Layer } from "effect";
-import { applicators, Database } from "@stu/student";
 import { ClientStorage } from "@groundswell/adapter-drizzle-sqlite";
 import { createSseTransportLayer } from "@groundswell/adapter-sse-client";
 import { ReactNativeEventSourceServiceLive } from "@groundswell/adapter-sse-client/react-native";
 import {
+  type Applicator,
+  ApplicatorError,
+  type Storage,
+  type SyncEngine,
+  syncEngineLive,
+  type Transport,
+  ValidationError,
+} from "@groundswell/core";
+import { syncEngineFactory } from "@groundswell/react";
+import { DomainEvent } from "@stu/lib";
+import {
   AbsenceRepository,
-  GradeRepository,
-  StudentRepository,
-  SchoolRepository,
-  PersonRepository,
-  YearRepository,
+  applicators,
   CourseRepository,
-  TimetableRepository,
+  Database,
+  GradeRepository,
   HolidayRepository,
+  PersonRepository,
+  SchoolRepository,
   SemesterRepository,
+  StudentRepository,
+  TimetableRepository,
+  YearRepository,
 } from "@stu/student";
-import { getStorage } from "./storage";
+import { Context, Data, Effect, Layer } from "effect";
 import { getBaseUrl } from "./base-url";
+import { getStorage } from "./storage";
 
 export class DomainApplicator extends Context.Tag("Applicator")<DomainApplicator, Applicator<DomainEvent>>() {}
 

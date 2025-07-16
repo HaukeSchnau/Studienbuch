@@ -1,13 +1,12 @@
+import { SUBJECT_IDS } from "@stu/lib";
 import { relations } from "drizzle-orm";
 import { boolean, foreignKey, pgEnum, pgTable, primaryKey, smallint, text, uuid } from "drizzle-orm/pg-core";
-
-import { SUBJECT_IDS } from "@stu/lib";
 
 import { Persons } from "../people/persons";
 import { TimetableEntries } from "../timetable/timetable-entries";
 import { Classes } from "./classes";
 import { SchoolId } from "./school-id";
-import { SemesterType, Semesters } from "./semesters";
+import { Semesters, SemesterType } from "./semesters";
 
 export const Subject = pgEnum("subject", SUBJECT_IDS);
 

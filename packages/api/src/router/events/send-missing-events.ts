@@ -1,8 +1,7 @@
-import { eq } from "drizzle-orm";
-
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
 import { studentsOfCourse, studentsOfSchool, studentsOfState, studentsOfYear } from "@stu/lib";
+import { eq } from "drizzle-orm";
 
 export const getUserTopics = async (userId: string) => {
   const student = await db.query.Students.findFirst({

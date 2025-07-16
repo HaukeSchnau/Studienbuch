@@ -1,20 +1,13 @@
+import type { AgendaEntry } from "@stu/lib";
+import * as t from "@stu/student/schema";
 import { queryOptions } from "@tanstack/react-query";
 import { endOfISOWeek, setISOWeek, setISOWeekYear, startOfISOWeek } from "date-fns";
 import { and, asc, between, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 
-import type { AgendaEntry } from "@stu/lib";
-import * as t from "@stu/student/schema";
-
 import { db } from "~/db/client";
 
-export const getTimetableWeek = ({
-  isoWeekYear,
-  isoWeek,
-}: {
-  isoWeekYear: number;
-  isoWeek: number;
-}) =>
+export const getTimetableWeek = ({ isoWeekYear, isoWeek }: { isoWeekYear: number; isoWeek: number }) =>
   queryOptions({
     queryKey: ["timetable.week", { isoWeekYear, isoWeek }],
     queryFn: async () => {

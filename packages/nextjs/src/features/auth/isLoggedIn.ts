@@ -1,10 +1,9 @@
-import { headers } from "next/headers";
-import { z } from "zod";
-
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Sessions } from "@stu/db/schema";
 import { getCookies } from "@stu/lib-server";
+import { headers } from "next/headers";
+import { z } from "zod";
 
 export const isLoggedIn = async () => {
   const cookie = getCookies(await headers(), z.object({ session: z.string() }));

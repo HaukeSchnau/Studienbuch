@@ -1,10 +1,9 @@
+import { subjectNameMap } from "@stu/lib";
 import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import { format } from "date-fns";
 import { Link } from "expo-router";
 import { Alert, View } from "react-native";
-
-import { subjectNameMap } from "@stu/lib";
 
 import { OutlinedButton } from "~/components/button";
 import { ConfirmationStatus } from "~/components/confirmation-status";
@@ -83,7 +82,7 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
         <View className="items-end gap-1">
           <Link
             href={{
-              pathname: `/absences/[date]/[courses]`,
+              pathname: "/absences/[date]/[courses]",
               params: {
                 date: absenceGroup.date.getTime(),
                 courses: absenceGroup.courses.map((course) => course.id).join(";"),

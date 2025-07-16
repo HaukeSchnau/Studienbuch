@@ -1,8 +1,7 @@
-import type { TRPCRouterRecord } from "@trpc/server";
-
 import { and, gte, lte } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Semesters } from "@stu/db/schema";
+import type { TRPCRouterRecord } from "@trpc/server";
 
 import { publicProcedure } from "../../../procedures";
 

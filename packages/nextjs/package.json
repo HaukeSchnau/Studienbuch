@@ -7,8 +7,8 @@
     "build": "next build",
     "clean": "git clean -xdf .cache .next .turbo node_modules",
     "dev": "next dev",
-    "format": "biome format",
-    "lint": "echo 'TODO: eslint'",
+    "lint": "biome format # TODO: biome check",
+    "eslint": "echo 'TODO: eslint'",
     "start": "next start",
     "typecheck": "echo 'TODO: tsc --noEmit'"
   },

@@ -1,6 +1,6 @@
+import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { Database } from "../database";
-import { and, eq } from "drizzle-orm";
 import * as tables from "../schema";
 
 export class TimetableRepository extends Effect.Service<TimetableRepository>()("student/TimetableRepository", {

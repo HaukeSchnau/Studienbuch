@@ -1,13 +1,12 @@
-import type { TRPCRouterRecord } from "@trpc/server";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
-
 import { asc, eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { PERMISSIONS, PermissionsToUsers, Persons, Roles, RolesToUsers, Users } from "@stu/db/schema";
 import type { Permission, PermissionScope, Salutation } from "@stu/lib";
 import { BetterMap, SALUTATIONS } from "@stu/lib";
 import { createUser, hashPassword } from "@stu/lib-server";
+import type { TRPCRouterRecord } from "@trpc/server";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 
 import { permissionProcedure } from "../../../procedures";
 

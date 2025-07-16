@@ -9,13 +9,7 @@ import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
 import { useIngest } from "~/utils/events/ingest";
 
-export const AddWrittenGrade = ({
-  courseId,
-  onClose,
-}: {
-  courseId: string;
-  onClose: () => void;
-}) => {
+export const AddWrittenGrade = ({ courseId, onClose }: { courseId: string; onClose: () => void }) => {
   const queryClient = useQueryClient();
   const addMutation = useIngest("grades.writtenGradeRecorded", {
     onSuccess: async () => {
@@ -27,11 +21,11 @@ export const AddWrittenGrade = ({
   });
 
   const [points, setPoints] = useState("");
-  const gradeNum = parseFloat(points.replaceAll(",", "."));
+  const gradeNum = Number.parseFloat(points.replaceAll(",", "."));
 
   const [date, setDate] = useState(startOfDay(new Date()));
 
-  const isValid = !isNaN(gradeNum) && gradeNum >= 0 && gradeNum <= 15;
+  const isValid = !Number.isNaN(gradeNum) && gradeNum >= 0 && gradeNum <= 15;
 
   return (
     <View className="px-8 py-8">

@@ -1,11 +1,10 @@
-import type { DomainEvent } from "@stu/lib";
-import { StudentRepository } from "../repositories/student.repo";
-
 import type { NamespaceServerApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
-import type { Database } from "../database";
 import type { DatabaseError } from "@schnau/effect-drizzle/postgres";
+import type { DomainEvent } from "@stu/lib";
 import { Effect } from "effect";
+import type { Database } from "../database";
+import { StudentRepository } from "../repositories/student.repo";
 
 export const studentApplicators: NamespaceServerApplicatorMap<
   DomainEvent,

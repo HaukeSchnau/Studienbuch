@@ -15,7 +15,7 @@ export const MissingInfoGuard = ({ children }: { children: React.ReactNode }) =>
   }
 
   if (currentStudentQuery.isPending) {
-    return <></>;
+    return null;
   }
 
   if (!currentStudentQuery.data) {

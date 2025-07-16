@@ -12,9 +12,9 @@
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev:internal": "tsgo --watch",
-    "format": "biome format",
+    "lint": "biome check",
     "generate": "openapi --input https://ferien-api.de/v2/api-docs --output ./src/holidays/generated",
-    "lint": "eslint",
+    "eslint": "eslint",
     "typecheck": "tsgo --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {

@@ -1,7 +1,6 @@
-import { View } from "react-native";
 import type { Meta, StoryObj } from "@storybook/react";
 import { SelectView } from "@stu/expo-native";
-import { Text } from "react-native";
+import { Text, View } from "react-native";
 
 const meta = {
   title: "SelectView",

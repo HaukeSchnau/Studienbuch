@@ -1,9 +1,8 @@
+import type { Semester } from "@stu/lib";
+import { subjectNameMap } from "@stu/lib";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
-
-import { subjectNameMap } from "@stu/lib";
-import type { Semester } from "@stu/lib";
 
 import { Card } from "~/components/card";
 import { SubjectIcon } from "~/components/subject-icon";

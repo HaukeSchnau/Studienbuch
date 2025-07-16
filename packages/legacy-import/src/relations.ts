@@ -1,18 +1,18 @@
 import { relations } from "drizzle-orm/relations";
 import {
-  school,
-  year,
+  clazz,
   course,
   courseSubscription,
+  courseTime,
+  permissionOnRole,
+  permissionOnUser,
   role,
   roleToUser,
-  user,
-  clazz,
-  courseTime,
+  school,
   session,
   substitution,
-  permissionOnUser,
-  permissionOnRole,
+  user,
+  year,
 } from "./schema";
 
 export const yearRelations = relations(year, ({ one, many }) => ({

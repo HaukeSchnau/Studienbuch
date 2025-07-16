@@ -1,7 +1,7 @@
 import { type DatabaseError, type DatabaseService, makeService } from "@schnau/effect-drizzle/postgres";
-import * as Schema from "./schema";
-import { Effect, Redacted, Layer } from "effect";
+import { Effect, Layer, Redacted } from "effect";
 import { env } from "../env";
+import * as Schema from "./schema";
 
 export class Database extends Effect.Tag("db/Database")<Database, DatabaseService<typeof Schema>>() {
   static readonly asTransaction = <E, R>(prev: Effect.Effect<void, DatabaseError | E, Database | R>) =>

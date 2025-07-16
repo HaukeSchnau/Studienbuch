@@ -3,11 +3,11 @@
 import * as path from "node:path";
 import { includeIgnoreFile } from "@eslint/compat";
 import eslint from "@eslint/js";
+// @ts-expect-error - no types for eslint-config-biome
+import biome from "eslint-config-biome";
 import importPlugin from "eslint-plugin-import";
 import turboPlugin from "eslint-plugin-turbo";
 import tseslint from "typescript-eslint";
-// @ts-expect-error - no types for eslint-config-biome
-import biome from "eslint-config-biome";
 
 /**
  * All packages that leverage t3-env should use this rule

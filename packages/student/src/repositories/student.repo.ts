@@ -1,16 +1,12 @@
-import { Effect } from "effect";
 import type { SchoolId } from "@stu/lib";
-import { Database } from "../database";
 import { and, eq } from "drizzle-orm";
+import { Effect } from "effect";
+import { Database } from "../database";
 import * as tables from "../schema";
 
 export class StudentRepository extends Effect.Service<StudentRepository>()("student/StudentRepository", {
   effect: Effect.gen(function* () {
-    const doesClassExist = Effect.fn(function* (payload: {
-      identifier: string;
-      startYear: number;
-      school: SchoolId;
-    }) {
+    const doesClassExist = Effect.fn(function* (payload: { identifier: string; startYear: number; school: SchoolId }) {
       const { execute } = yield* Database;
 
       const cls = yield* execute((db) =>
@@ -83,9 +79,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       );
     }, Database.asTransaction);
 
-    const doesCourseExist = Effect.fn(function* (payload: {
-      courseId: string;
-    }) {
+    const doesCourseExist = Effect.fn(function* (payload: { courseId: string }) {
       const { execute } = yield* Database;
 
       const course = yield* execute((db) =>
@@ -95,9 +89,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       return course.length > 0;
     });
 
-    const assignCourse = Effect.fn(function* (payload: {
-      courseId: string;
-    }) {
+    const assignCourse = Effect.fn(function* (payload: { courseId: string }) {
       const { execute } = yield* Database;
 
       yield* execute((db) =>
@@ -110,9 +102,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       );
     });
 
-    const getStudent = Effect.fn(function* (payload: {
-      studentId: string;
-    }) {
+    const getStudent = Effect.fn(function* (payload: { studentId: string }) {
       const { execute } = yield* Database;
 
       return yield* execute((db) =>

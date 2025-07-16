@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-condition */
 "use client";
 
+import type { SchoolId } from "@stu/lib";
 import { useForm } from "@tanstack/react-form";
 import { useRef } from "react";
-
-import type { SchoolId } from "@stu/lib";
 
 import { Button } from "~/components/form/Button";
 import { IconButton } from "~/components/form/IconButton";
@@ -264,15 +263,7 @@ const ColorField = ({
   );
 };
 
-const TextColorField = ({
-  field,
-  label,
-  cssVar,
-}: {
-  field: GenericField<string>;
-  label: string;
-  cssVar: string;
-}) => {
+const TextColorField = ({ field, label, cssVar }: { field: GenericField<string>; label: string; cssVar: string }) => {
   const onField = useRef<HTMLInputElement>(null);
   const changeHandler = (value: string) => {
     document.documentElement.style.setProperty(cssVar, value);

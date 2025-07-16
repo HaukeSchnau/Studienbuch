@@ -1,6 +1,6 @@
-import crypto from "crypto";
-import fs from "fs";
-import p from "path";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import p from "node:path";
 
 export const fileExists = async (path: string) => {
   try {

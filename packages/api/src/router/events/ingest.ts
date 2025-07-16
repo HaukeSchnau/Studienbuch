@@ -1,6 +1,6 @@
+import type { DomainEvent } from "@stu/lib";
 import { Effect } from "effect";
 import { DomainIngestEngine } from "../../boilerplate";
-import type { DomainEvent } from "@stu/lib";
 import { runtime } from "../../groundswell";
 
 export const ingestEffect = Effect.fn(

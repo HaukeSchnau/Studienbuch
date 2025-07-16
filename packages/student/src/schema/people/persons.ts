@@ -1,7 +1,6 @@
+import { SALUTATIONS } from "@stu/lib";
 import { relations } from "drizzle-orm";
 import { foreignKey, int, sqliteTable, text } from "drizzle-orm/sqlite-core";
-
-import { SALUTATIONS } from "@stu/lib";
 
 import { classes } from "../school/classes";
 import { schoolId } from "../school/school-id";

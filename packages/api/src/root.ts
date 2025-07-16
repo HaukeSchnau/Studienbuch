@@ -1,6 +1,6 @@
+import { auth } from "./router/auth/router";
 import { management } from "./router-legacy/management/router";
 import { schools } from "./router-legacy/schools/router";
-import { auth } from "./router/auth/router";
 import { t } from "./trpc";
 
 export const appRouter = t.router({

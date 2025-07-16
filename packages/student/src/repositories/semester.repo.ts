@@ -1,5 +1,5 @@
-import { Effect } from "effect";
 import type { SchoolId } from "@stu/lib";
+import { Effect } from "effect";
 import { Database } from "../database";
 import * as tables from "../schema";
 

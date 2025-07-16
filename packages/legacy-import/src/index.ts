@@ -3,12 +3,12 @@ import { db } from "./client";
 import type { courseTime } from "./schema";
 
 export * from "./client";
-export * from "./schema";
 export * from "./relations";
+export * from "./schema";
 
-import * as tables from "./schema";
 import type { SubjectId } from "@stu/lib";
 import { isArrayNonEmpty, subjectNameMap } from "@stu/lib";
+import * as tables from "./schema";
 
 export type CourseTime = Omit<typeof courseTime.$inferSelect, "id" | "courseId" | "createdAt" | "updatedAt">;
 

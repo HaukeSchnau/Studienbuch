@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dimensions, Pressable, StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -107,6 +107,7 @@ export function BottomSheet({ children, onClose }: Props) {
     });
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scrollTo is not stable and I haven't tested using useCallback on it yet.
   useEffect(() => {
     // Initial scroll to show the bottom sheet partially
     if (isOpen) {
@@ -114,7 +115,6 @@ export function BottomSheet({ children, onClose }: Props) {
     } else {
       scrollTo(FULLY_CLOSED);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   if (isClosed) {

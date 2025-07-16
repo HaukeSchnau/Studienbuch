@@ -1,8 +1,7 @@
+import { formalName, generateRandomPassword } from "@stu/lib";
 import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { z } from "zod";
-
-import { formalName, generateRandomPassword } from "@stu/lib";
 
 import { Button } from "~/components/form/Button";
 import { TextField } from "~/components/form/TextField";

@@ -1,6 +1,6 @@
+import pluginQuery from "@tanstack/eslint-plugin-query";
 import reactPlugin from "eslint-plugin-react";
 import hooksPlugin from "eslint-plugin-react-hooks";
-import pluginQuery from "@tanstack/eslint-plugin-query";
 
 /** @type {Awaited<import('typescript-eslint').Config>} */
 export default [

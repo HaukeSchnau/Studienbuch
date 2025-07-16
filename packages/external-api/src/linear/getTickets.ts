@@ -27,4 +27,4 @@ export const getTicketsForState = async (stateId: string) => {
   return issuesResponse.nodes;
 };
 
-export type { WorkflowState, Issue } from "@linear/sdk";
+export type { Issue, WorkflowState } from "@linear/sdk";

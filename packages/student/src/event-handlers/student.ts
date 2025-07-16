@@ -1,12 +1,10 @@
-import type { DomainEvent } from "@stu/lib";
-import { StudentRepository as StudentRepo } from "../repositories/student.repo";
-
 import type { NamespaceApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
-import type { Database } from "../database";
-import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
-import type { GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
+import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
+import type { DomainEvent } from "@stu/lib";
 import { Effect } from "effect";
+import type { Database } from "../database";
+import { StudentRepository as StudentRepo } from "../repositories/student.repo";
 
 const failIfFalse = (message: string, reason: "DUPLICATE" | "INVALID" | "NOT_ALLOWED" | "NOT_FOUND" | "UNKNOWN") =>
   Effect.flatMap((bool) => (bool ? Effect.void : Effect.fail(new ValidationError({ cause: message, reason }))));

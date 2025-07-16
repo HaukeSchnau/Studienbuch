@@ -1,11 +1,10 @@
+import type { Grade, GradeType } from "@stu/lib";
+import { formatGradeShort } from "@stu/lib";
+import { colors } from "@stu/tailwind-config/native";
 import { format } from "date-fns";
 import type { Href } from "expo-router";
 import { Link } from "expo-router";
 import { View } from "react-native";
-
-import type { Grade, GradeType } from "@stu/lib";
-import { formatGradeShort } from "@stu/lib";
-import { colors } from "@stu/tailwind-config/native";
 
 import { OutlinedButton } from "~/components/button";
 import { Card } from "~/components/card";

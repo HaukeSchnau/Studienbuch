@@ -1,7 +1,7 @@
-import { Effect } from "effect";
-import { Database } from "../database";
 import type { GradeType } from "@stu/lib";
 import { and, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
+import { Effect } from "effect";
+import { Database } from "../database";
 import * as tables from "../schema";
 
 export class GradeRepository extends Effect.Service<GradeRepository>()("student/GradeRepository", {
@@ -116,10 +116,7 @@ export class GradeRepository extends Effect.Service<GradeRepository>()("student/
       );
     });
 
-    const restoreLatest = Effect.fn(function* (payload: {
-      course: string;
-      type: GradeType;
-    }) {
+    const restoreLatest = Effect.fn(function* (payload: { course: string; type: GradeType }) {
       const { execute } = yield* Database;
 
       const latestConfirmedGrade = yield* execute((db) =>
@@ -151,11 +148,7 @@ export class GradeRepository extends Effect.Service<GradeRepository>()("student/
       );
     }, Database.asTransaction);
 
-    const discardGrade = Effect.fn(function* (payload: {
-      course: string;
-      date: Date;
-      type: GradeType;
-    }) {
+    const discardGrade = Effect.fn(function* (payload: { course: string; date: Date; type: GradeType }) {
       const { execute } = yield* Database;
 
       yield* execute((db) =>

@@ -1,7 +1,6 @@
+import { STATE_CODES } from "@stu/lib";
 import { relations } from "drizzle-orm";
 import { jsonb, pgEnum, pgTable, text } from "drizzle-orm/pg-core";
-
-import { STATE_CODES } from "@stu/lib";
 
 import { SchoolId } from "./school-id";
 import { Semesters } from "./semesters";

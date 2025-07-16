@@ -1,7 +1,6 @@
+import type { AbsenceDay } from "@stu/lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useRouter } from "expo-router";
-
-import type { AbsenceDay } from "@stu/lib";
 
 import { ConfirmPageContent } from "~/components/confirm-page-content";
 import { Text } from "~/components/text";

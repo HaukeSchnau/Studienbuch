@@ -1,7 +1,6 @@
+import { GRADE_TYPES } from "@stu/lib";
 import { relations } from "drizzle-orm";
 import { primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
-
-import { GRADE_TYPES } from "@stu/lib";
 
 import { courses } from "../school/courses";
 import { sqliteEnum, timestamp, uuid } from "../utils";

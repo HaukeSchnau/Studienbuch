@@ -1,10 +1,9 @@
+import type { Salutation } from "@stu/lib";
+import { SALUTATIONS } from "@stu/lib";
 import type { FormApi } from "@tanstack/react-form";
 import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
 import { z } from "zod";
-
-import type { Salutation } from "@stu/lib";
-import { SALUTATIONS } from "@stu/lib";
 
 import { Button } from "~/components/form/Button";
 import { SelectField } from "~/components/form/SelectField";
@@ -39,10 +38,7 @@ interface Props {
     salutation: Salutation;
     abbrv: string;
   };
-  onSubmit: (props: {
-    value: UserOutput;
-    formApi: FormApi<UserFormValues, ZodValidator>;
-  }) => void;
+  onSubmit: (props: { value: UserOutput; formApi: FormApi<UserFormValues, ZodValidator> }) => void;
   error?: string;
   isPending?: boolean;
 }

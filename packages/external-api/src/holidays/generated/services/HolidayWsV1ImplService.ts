@@ -17,9 +17,9 @@ export class HolidayWsV1ImplService {
       method: "GET",
       url: "/api/v1/holidays",
       errors: {
-        401: `Unauthorized`,
-        403: `Forbidden`,
-        404: `Not Found`,
+        401: "Unauthorized",
+        403: "Forbidden",
+        404: "Not Found",
       },
     });
   }
@@ -33,9 +33,9 @@ export class HolidayWsV1ImplService {
       method: "GET",
       url: "/api/v1/holidays.json",
       errors: {
-        401: `Unauthorized`,
-        403: `Forbidden`,
-        404: `Not Found`,
+        401: "Unauthorized",
+        403: "Forbidden",
+        404: "Not Found",
       },
     });
   }
@@ -71,9 +71,9 @@ export class HolidayWsV1ImplService {
         state: state,
       },
       errors: {
-        401: `Unauthorized`,
-        403: `Forbidden`,
-        404: `Not Found`,
+        401: "Unauthorized",
+        403: "Forbidden",
+        404: "Not Found",
       },
     });
   }
@@ -109,9 +109,9 @@ export class HolidayWsV1ImplService {
         state: state,
       },
       errors: {
-        401: `Unauthorized`,
-        403: `Forbidden`,
-        404: `Not Found`,
+        401: "Unauthorized",
+        403: "Forbidden",
+        404: "Not Found",
       },
     });
   }
@@ -150,9 +150,9 @@ export class HolidayWsV1ImplService {
         year: year,
       },
       errors: {
-        401: `Unauthorized`,
-        403: `Forbidden`,
-        404: `Not Found`,
+        401: "Unauthorized",
+        403: "Forbidden",
+        404: "Not Found",
       },
     });
   }
@@ -191,9 +191,9 @@ export class HolidayWsV1ImplService {
         year: year,
       },
       errors: {
-        401: `Unauthorized`,
-        403: `Forbidden`,
-        404: `Not Found`,
+        401: "Unauthorized",
+        403: "Forbidden",
+        404: "Not Found",
       },
     });
   }

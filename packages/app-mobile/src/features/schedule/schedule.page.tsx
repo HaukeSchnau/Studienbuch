@@ -1,10 +1,9 @@
-import { View } from "react-native";
-import { useState } from "react";
-import { getISOWeek, getISOWeekYear } from "date-fns";
-import { de } from "date-fns/locale";
-import { getTimetableWeek } from "../agenda/queries/week";
 import { useQuery } from "@tanstack/react-query";
+import { getISOWeek, getISOWeekYear } from "date-fns";
+import { useState } from "react";
+import { View } from "react-native";
 import { Text } from "~/components/text";
+import { getTimetableWeek } from "../agenda/queries/week";
 
 const getCurrentWeek = () => {
   const today = new Date();
@@ -21,6 +20,7 @@ const DAY_END = 17 * 60;
 const DAY_DURATION = DAY_END - DAY_START;
 
 const ScheduleView = ({ calendarWeek }: { calendarWeek: { week: number; year: number } }) => {
+  // biome-ignore lint/correctness/noUnusedVariables: work in progress
   const { data: timetable } = useQuery({
     ...getTimetableWeek({
       isoWeek: calendarWeek.week,
@@ -52,7 +52,7 @@ const ScheduleView = ({ calendarWeek }: { calendarWeek: { week: number; year: nu
 };
 
 export const SchedulePage = () => {
-  const [calendarWeek, setCalendarWeek] = useState(getCurrentWeek());
+  const [calendarWeek] = useState(getCurrentWeek());
 
   return <ScheduleView calendarWeek={calendarWeek} />;
 };

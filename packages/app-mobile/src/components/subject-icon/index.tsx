@@ -1,8 +1,7 @@
+import type { SubjectId } from "@stu/lib";
 import type { ComponentType } from "react";
 import { View } from "react-native";
 import type { SvgProps } from "react-native-svg";
-
-import type { SubjectId } from "@stu/lib";
 
 import bi from "./icons/bi.svg";
 import ch from "./icons/ch.svg";
@@ -51,13 +50,7 @@ const subjectIconMap: Partial<Record<SubjectId, ComponentType<SvgProps>>> = {
   ds,
 } as const;
 
-export const SubjectIcon = ({
-  subject,
-  size = 24,
-}: {
-  subject: SubjectId;
-  size?: number;
-}) => {
+export const SubjectIcon = ({ subject, size = 24 }: { subject: SubjectId; size?: number }) => {
   const Icon = subjectIconMap[subject];
   return Icon ? (
     <Icon width={size} height={size} />

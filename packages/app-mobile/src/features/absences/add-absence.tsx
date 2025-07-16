@@ -1,10 +1,9 @@
+import { subjectNameMap } from "@stu/lib";
 import { createFormHook, createFormHookContexts, formOptions, useStore } from "@tanstack/react-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getISOWeek, getISOWeekYear, isSameDay, startOfDay } from "date-fns";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
-
-import { subjectNameMap } from "@stu/lib";
 
 import { Button } from "~/components/button";
 import { CheckboxRow } from "~/components/checkbox-row";
@@ -118,6 +117,7 @@ const CoursesSelect = withForm({
   render: function Render({ form }) {
     const selectedDate = useStore(form.store, (state) => state.values.date);
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: We want to reset the courses when the date changes
     useEffect(() => {
       void form.setFieldValue("courses", [], {
         dontUpdateMeta: true,

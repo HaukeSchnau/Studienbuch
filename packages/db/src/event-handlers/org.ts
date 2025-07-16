@@ -1,19 +1,18 @@
+import type { NamespaceServerApplicatorMap } from "@groundswell/core";
+import { ValidationError } from "@groundswell/core";
+import type { DatabaseError } from "@schnau/effect-drizzle/postgres";
 import type { DomainEvent } from "@stu/lib";
-import { SchoolRepository } from "../repositories/school.repo";
-import { PersonRepository } from "../repositories/person.repo";
-import { YearRepository } from "../repositories/year.repo";
+import { defaultSchools, studentsOfCourse, studentsOfSchool, studentsOfState, studentsOfYear } from "@stu/lib";
+import { Effect } from "effect";
+import type { Database } from "../database";
 import { ClassRepository } from "../repositories/class.repo";
 import { CourseRepository } from "../repositories/course.repo";
 import { HolidayRepository } from "../repositories/holiday.repo";
-import { TimetableRepository } from "../repositories/timetable.repo";
+import { PersonRepository } from "../repositories/person.repo";
+import { SchoolRepository } from "../repositories/school.repo";
 import { SemesterRepository } from "../repositories/semester.repo";
-
-import type { NamespaceServerApplicatorMap } from "@groundswell/core";
-import { ValidationError } from "@groundswell/core";
-import type { Database } from "../database";
-import type { DatabaseError } from "@schnau/effect-drizzle/postgres";
-import { Effect } from "effect";
-import { defaultSchools, studentsOfCourse, studentsOfSchool, studentsOfState, studentsOfYear } from "@stu/lib";
+import { TimetableRepository } from "../repositories/timetable.repo";
+import { YearRepository } from "../repositories/year.repo";
 
 const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
 

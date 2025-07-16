@@ -1,9 +1,9 @@
-import { Platform } from "react-native";
+import { intoError } from "@stu/lib";
+import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
-import Constants from "expo-constants";
-import { type Result, ok, err, ResultAsync } from "neverthrow";
-import { intoError } from "@stu/lib";
+import { err, type Result, ResultAsync } from "neverthrow";
+import { Platform } from "react-native";
 
 Notifications.setNotificationHandler({
   // eslint-disable-next-line @typescript-eslint/require-await

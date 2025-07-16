@@ -1,7 +1,6 @@
+import { SUBSTITUTION_TYPES } from "@stu/lib";
 import { relations } from "drizzle-orm";
 import { foreignKey, pgEnum, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
-
-import { SUBSTITUTION_TYPES } from "@stu/lib";
 
 import { Persons } from "../people/persons";
 import { Rooms } from "../school/rooms";

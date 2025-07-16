@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "lint": "eslint",
+    "eslint": "eslint",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {

@@ -1,23 +1,21 @@
-import { z } from "zod";
-
+import type { NamespaceServerApplicatorTree } from "@groundswell/core";
+import { serverApplicatorTreeFactory } from "@groundswell/core";
+import type { DatabaseError } from "@schnau/effect-drizzle/postgres";
+import type { DomainEvent } from "@stu/lib";
+import type { Database } from "./database";
 import { authApplicators } from "./event-handlers/auth";
 import { orgApplicators } from "./event-handlers/org";
 import { studentApplicators } from "./event-handlers/student";
-import { serverApplicatorTreeFactory } from "@groundswell/core";
-import type { NamespaceServerApplicatorTree } from "@groundswell/core";
-import type { DomainEvent } from "@stu/lib";
-import type { DatabaseError } from "@schnau/effect-drizzle/postgres";
-import type { Database } from "./database";
 import type { AuthRepository } from "./repositories/auth.repo";
-import type { SchoolRepository } from "./repositories/school.repo";
-import type { PersonRepository } from "./repositories/person.repo";
-import type { YearRepository } from "./repositories/year.repo";
 import type { ClassRepository } from "./repositories/class.repo";
 import type { CourseRepository } from "./repositories/course.repo";
 import type { HolidayRepository } from "./repositories/holiday.repo";
-import type { TimetableRepository } from "./repositories/timetable.repo";
+import type { PersonRepository } from "./repositories/person.repo";
+import type { SchoolRepository } from "./repositories/school.repo";
 import type { SemesterRepository } from "./repositories/semester.repo";
 import type { StudentRepository } from "./repositories/student.repo";
+import type { TimetableRepository } from "./repositories/timetable.repo";
+import type { YearRepository } from "./repositories/year.repo";
 
 const applicatorTree: Partial<
   NamespaceServerApplicatorTree<
@@ -59,9 +57,9 @@ export const applicators: ReturnType<
     | StudentRepository
   >
 > = serverApplicatorTreeFactory(applicatorTree);
-export * from "./database";
 export * from "drizzle-orm";
 export { alias } from "drizzle-orm/pg-core";
+export * from "./database";
+export * from "./repositories";
 export * as schema from "./schema";
 export * as tables from "./schema";
-export * from "./repositories";

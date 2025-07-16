@@ -1,9 +1,8 @@
-import fs from "fs/promises";
-import Papa from "papaparse";
-import { z } from "zod";
-
+import fs from "node:fs/promises";
 import type { CourseTimeWeeks, ExtendedProtoCourse, ProtoCourseWithTimes } from "@stu/lib";
 import { isNormalTime, parseTime } from "@stu/lib";
+import Papa from "papaparse";
+import { z } from "zod";
 
 import { parseTimetableCell } from "./parse-timetable-cell";
 

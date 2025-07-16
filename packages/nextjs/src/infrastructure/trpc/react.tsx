@@ -1,5 +1,6 @@
 "use client";
 
+import type { AppRouter } from "@stu/api";
 import type { QueryClient } from "@tanstack/react-query";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -9,20 +10,18 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import SuperJSON from "superjson";
 
-import type { AppRouter } from "@stu/api";
-
 import { env } from "~/env";
 import { createQueryClient } from "./query-client";
 
-let clientQueryClientSingleton: QueryClient | undefined = undefined;
+let clientQueryClientSingleton: QueryClient | undefined;
 const getQueryClient = () => {
   if (typeof window === "undefined") {
     // Server: always make a new query client
     return createQueryClient();
-  } else {
-    // Browser: use singleton pattern to keep the same query client
-    return (clientQueryClientSingleton ??= createQueryClient());
   }
+  // Browser: use singleton pattern to keep the same query client
+  clientQueryClientSingleton ??= createQueryClient();
+  return clientQueryClientSingleton;
 };
 
 export const api = createTRPCReact<AppRouter>();

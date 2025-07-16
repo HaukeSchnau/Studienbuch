@@ -1,7 +1,6 @@
+import * as t from "@stu/student/schema";
 import { queryOptions } from "@tanstack/react-query";
 import { desc, eq } from "drizzle-orm";
-
-import * as t from "@stu/student/schema";
 
 import { db } from "~/db/client";
 

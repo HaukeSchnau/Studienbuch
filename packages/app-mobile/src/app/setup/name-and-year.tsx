@@ -1,12 +1,12 @@
-import { ActivityIndicator, View } from "react-native";
-import { z } from "zod";
-
-import { formatClassName, formatYear, isArraySingleElement } from "@stu/lib";
-
 import type { Class, SchoolId, StateCode, Year } from "@stu/lib";
+import { formatClassName, formatYear, isArraySingleElement } from "@stu/lib";
+import { pk } from "@stu/student";
 import * as t from "@stu/student/schema";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { router } from "expo-router";
 import { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
+import { z } from "zod";
 import { Button } from "~/components/button";
 import { CheckboxRow } from "~/components/checkbox-row";
 import { SelectField } from "~/components/select-field";
@@ -18,9 +18,7 @@ import { currentStudent } from "~/db/queries/user";
 import { useAppForm } from "~/features/setup/form";
 import { api } from "~/utils/api";
 import { useSession } from "~/utils/auth";
-import { useIngest, useSimpleIngest } from "~/utils/events/ingest";
-import { router } from "expo-router";
-import { pk } from "@stu/student";
+import { useIngest } from "~/utils/events/ingest";
 
 const bootstrap = async ({
   school,

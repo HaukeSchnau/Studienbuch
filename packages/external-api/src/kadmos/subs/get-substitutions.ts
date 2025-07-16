@@ -1,8 +1,6 @@
 import { parse } from "node-html-parser";
-
-import { getSubstitutionsFromKadmos } from "./http";
-
 import { convertKadmosRowsToSubstitutionsTable, getSubstituionTableColumns } from "./convert-substitutions";
+import { getSubstitutionsFromKadmos } from "./http";
 
 export const getSubstitutions = async (school: string, formatName: string) => {
   const {
