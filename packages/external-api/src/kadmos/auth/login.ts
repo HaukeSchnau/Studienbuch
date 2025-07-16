@@ -3,6 +3,11 @@ import { z } from "zod";
 
 import { fetchWithCookieJar } from "../../fetch-with-cookies";
 
+export interface AuthContext {
+  jar: CookieJar;
+  bearerToken: string;
+}
+
 export const login = async (school: string, username: string, password: string) => {
   const jar = new CookieJar();
 

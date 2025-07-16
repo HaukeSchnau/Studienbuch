@@ -1,11 +1,14 @@
-# syntax=docker/dockerfile:1.7-labs
+# syntax=docker/dockerfile:1.17.1-labs
 FROM oven/bun:1-alpine AS base
 WORKDIR /app
 RUN --mount=type=cache,target=/root/.bun/install/cache bun install -g turbo@2
 
 FROM base AS install
-COPY --parents package.json bun.lock patches */*/package.json /app/
-RUN --mount=type=cache,target=/root/.bun/install/cache bun install --frozen-lockfile
+COPY --parents package.json bunfig.toml bun.lock patches */*/package.json /app/
+
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    --mount=type=secret,id=npm_token,env=npm_token \
+    bun install --frozen-lockfile
 
 FROM base AS builder
 COPY --from=install /app/node_modules /app/node_modules
@@ -25,8 +28,6 @@ RUN bun ./build/build-node.ts
 
 FROM node:22-alpine AS api
 WORKDIR /app
-# Annoying: pulsar client doesn't play well with bundlers and expects to be installed in node_modules
-COPY --from=install /app/node_modules/pulsar-client /app/node_modules/pulsar-client
 COPY --from=api-builder /app/packages/api/dist/ /app/
 
 ENV NODE_ENV=production
@@ -47,8 +48,6 @@ RUN bun ./build/build-node.ts
 
 FROM node:22-alpine AS console
 WORKDIR /app
-# Annoying: pulsar client doesn't play well with bundlers and expects to be installed in node_modules
-COPY --from=install /app/node_modules/pulsar-client /app/node_modules/pulsar-client
 COPY --from=console-builder /app/packages/console/dist/ /app/
 
 ENV NODE_ENV=production
@@ -61,14 +60,14 @@ ENTRYPOINT ["crond", "-f", "-l", "0"]
 # END: CONSOLE
 
 # BEGIN: MIGRATIONS
-FROM prune AS migrations-prune
-RUN turbo prune @stu/db
+FROM base AS migrations
 
-FROM builder AS migrations
-COPY --from=migrations-prune /app/out/ .
 WORKDIR /app/packages/db
+RUN bun install -g drizzle-kit drizzle-orm pg
+COPY packages/db/drizzle.config.ts /app/packages/db/drizzle.config.ts
+COPY packages/db/drizzle /app/packages/db/drizzle
 
 ENV NODE_ENV=production
 
-ENTRYPOINT [ "bun", "drizzle-kit", "migrate" ]
+ENTRYPOINT [ "drizzle-kit", "migrate" ]
 # END: MIGRATIONS

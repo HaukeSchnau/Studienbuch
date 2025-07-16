@@ -22,9 +22,10 @@
     "typecheck": "tsgo --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@groundswell/adapter-drizzle-sqlite": "^0.0.12",
-    "@groundswell/core": "^0.0.12",
-    "@schnau/effect-drizzle": "0.5.5",
+    "@effect/vitest": "^0.24.1",
+    "@groundswell/adapter-drizzle-sqlite": "^0.0.14",
+    "@groundswell/core": "^0.0.14",
+    "@schnau/effect-drizzle": "0.5.6",
     "@stu/lib": "workspace:*",
     "@t3-oss/env-core": "^0.12.0",
     "dayjs": "^1.11.13",
@@ -41,7 +42,6 @@
     "@types/pg": "^8.11.11",
     "drizzle-kit": "^0.30.6",
     "eslint": "^9.24.0",
-
     "vitest": "^3.1.1"
   }
 }

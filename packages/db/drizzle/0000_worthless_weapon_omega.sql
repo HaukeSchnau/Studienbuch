@@ -1,13 +1,38 @@
 CREATE TYPE "public"."salutation" AS ENUM('Herr', 'Frau');--> statement-breakpoint
-CREATE TYPE "public"."subject" AS ENUM('de', 'en', 'ma', 'ph', 'ch', 'bi', 'if', 'ge', 'pw', 'mu', 'sp', 'ku', 're', 'wn', 'fr', 'la', 'sn', 'sport-theorie', 'sf', 'tutorium', 'ds', 'ek', 'nw', 'gsl', 'theo', 'awt', 'igl', 'sw', 'swb', 'lp', 'kr', 'wpk', 'wal', 'will-an-lili', 'präsenz', 'bläser_k', 'nachhaltigkeit');--> statement-breakpoint
-CREATE TYPE "public"."state_code" AS ENUM('BB', 'BE', 'BW', 'BY', 'HB', 'HE', 'HH', 'MV', 'NI', 'NW', 'RP', 'SH', 'SL', 'SN', 'ST', 'TH');--> statement-breakpoint
+CREATE TYPE "public"."subject" AS ENUM('de', 'en', 'ma', 'ph', 'ch', 'bi', 'if', 'ge', 'pw', 'mu', 'sp', 'ku', 're', 'wn', 'fr', 'la', 'sn', 'sport-theorie', 'sf', 'tutorium', 'ds', 'ek', 'nw', 'gsl', 'theo', 'awt', 'sw', 'swb', 'lp', 'kr', 'wpk', 'wal', 'bläser_k', 'nachhaltigkeit');--> statement-breakpoint
 CREATE TYPE "public"."school_id" AS ENUM('igs-lil');--> statement-breakpoint
+CREATE TYPE "public"."state_code" AS ENUM('BB', 'BE', 'BW', 'BY', 'HB', 'HE', 'HH', 'MV', 'NI', 'NW', 'RP', 'SH', 'SL', 'SN', 'ST', 'TH');--> statement-breakpoint
 CREATE TYPE "public"."semester_type" AS ENUM('SUMMER', 'WINTER');--> statement-breakpoint
 CREATE TYPE "public"."permission" AS ENUM('EDIT_INFO_PAGES', 'EDIT_USERS', 'EDIT_COURSES', 'EDIT_YEARS', 'EDIT_CLASSES', 'EDIT_SCHOOLS', 'VIEW_LOGS');--> statement-breakpoint
 CREATE TYPE "public"."grade_type" AS ENUM('WRITTEN', 'ORAL', 'MASTER');--> statement-breakpoint
-CREATE TYPE "public"."substitution_type" AS ENUM('FREISETZUNG', 'VERTRETUNG', 'BETREUUNG', 'ENTFALL', 'TROTZ_ABSENZ');--> statement-breakpoint
 CREATE TYPE "public"."recurring_timetable_entry_weeks" AS ENUM('EVEN', 'ODD', 'ALL');--> statement-breakpoint
-CREATE TYPE "public"."event_type" AS ENUM('absence.recorded', 'absence.parentApproved', 'absence.teacherApproved', 'absence.discarded', 'grades.currentGradeSet', 'grades.writtenGradeRecorded', 'grades.teacherApproved', 'grades.parentApproved', 'grades.discarded', 'grades.latestRestored', 'org.school.founded', 'org.year.started', 'org.teacher.joined', 'org.holiday.created', 'org.courses.created', 'org.timetable.entryCreated', 'org.timetable.substituted', 'org.timetable.canceled', 'org.timetable.discarded', 'auth.licenseGenerated', 'auth.licenseActivated', 'student.joined', 'student.courseAssigned');--> statement-breakpoint
+CREATE TYPE "public"."substitution_type" AS ENUM('FREISETZUNG', 'VERTRETUNG', 'BETREUUNG', 'ENTFALL', 'TROTZ_ABSENZ');--> statement-breakpoint
+CREATE TABLE "canonical_event_topics" (
+	"event" uuid NOT NULL,
+	"topic" text NOT NULL,
+	CONSTRAINT "canonical_event_topics_event_topic_pk" PRIMARY KEY("event","topic")
+);
+--> statement-breakpoint
+CREATE TABLE "canonical_events" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"timestamp" timestamp NOT NULL,
+	"type" text NOT NULL,
+	"data" text NOT NULL,
+	"initiator" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "canonical_events_sent_to_users" (
+	"event" uuid NOT NULL,
+	"user" uuid NOT NULL,
+	"sent_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "canonical_events_sent_to_users_event_user_pk" PRIMARY KEY("event","user")
+);
+--> statement-breakpoint
+CREATE TABLE "notification_tickets" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"ticket" jsonb NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "persons" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"first_name" text NOT NULL,
@@ -32,7 +57,7 @@ CREATE TABLE "users" (
 	"email" text,
 	"password_hash" text,
 	"is_super_user" boolean DEFAULT false NOT NULL,
-	"notification_key" text
+	"notification_tokens" text[] DEFAULT '{}' NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "classes" (
@@ -53,7 +78,6 @@ CREATE TABLE "teachers_to_classes" (
 CREATE TABLE "courses" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
-	"long_name" text NOT NULL,
 	"subject" "subject" NOT NULL,
 	"school" "school_id" NOT NULL,
 	"semester_type" "semester_type" NOT NULL,
@@ -205,33 +229,6 @@ CREATE TABLE "tasks" (
 	"done" boolean DEFAULT false NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "room_changes" (
-	"date" timestamp NOT NULL,
-	"course" uuid NOT NULL,
-	"room" text NOT NULL,
-	"createdAt" timestamp (3) DEFAULT now() NOT NULL,
-	"updatedAt" timestamp (3) NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "substitutions" (
-	"date" timestamp NOT NULL,
-	"course" uuid NOT NULL,
-	"type" "substitution_type",
-	"originalTeacher" uuid NOT NULL,
-	"substitute" uuid,
-	"createdAt" timestamp (3) DEFAULT now() NOT NULL,
-	"updatedAt" timestamp (3) NOT NULL,
-	CONSTRAINT "substitutions_date_course_originalTeacher_pk" PRIMARY KEY("date","course","originalTeacher")
-);
---> statement-breakpoint
-CREATE TABLE "timetable_entries" (
-	"date" timestamp NOT NULL,
-	"duration" smallint NOT NULL,
-	"rooms" text[] NOT NULL,
-	"course" uuid NOT NULL,
-	CONSTRAINT "timetable_entries_date_course_pk" PRIMARY KEY("date","course")
-);
---> statement-breakpoint
 CREATE TABLE "recurring_timetable_entries" (
 	"weekday" smallint NOT NULL,
 	"start" time NOT NULL,
@@ -242,26 +239,35 @@ CREATE TABLE "recurring_timetable_entries" (
 	CONSTRAINT "recurring_timetable_entries_weekday_start_course_pk" PRIMARY KEY("weekday","start","course")
 );
 --> statement-breakpoint
-CREATE TABLE "event_topics" (
-	"event" uuid NOT NULL,
-	"topic" text NOT NULL,
-	CONSTRAINT "event_topics_event_topic_pk" PRIMARY KEY("event","topic")
+CREATE TABLE "room_changes" (
+	"date" timestamp NOT NULL,
+	"course" uuid NOT NULL,
+	"room" text NOT NULL,
+	"createdAt" timestamp (3) DEFAULT now() NOT NULL,
+	"updatedAt" timestamp (3) NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "events" (
-	"id" uuid PRIMARY KEY NOT NULL,
-	"type" "event_type" NOT NULL,
-	"data" jsonb NOT NULL,
-	"timestamp" timestamp NOT NULL,
-	"initiator" uuid NOT NULL
+CREATE TABLE "substitutions" (
+	"date" timestamp with time zone NOT NULL,
+	"course" uuid NOT NULL,
+	"type" "substitution_type",
+	"originalTeacher" uuid NOT NULL,
+	"substitute" uuid,
+	"createdAt" timestamp (3) DEFAULT now() NOT NULL,
+	"updatedAt" timestamp (3) NOT NULL,
+	CONSTRAINT "substitutions_date_course_originalTeacher_pk" PRIMARY KEY("date","course","originalTeacher")
 );
 --> statement-breakpoint
-CREATE TABLE "events_sent_to_users" (
-	"event" uuid,
-	"user" uuid,
-	CONSTRAINT "events_sent_to_users_event_user_pk" PRIMARY KEY("event","user")
+CREATE TABLE "timetable_entries" (
+	"date" timestamp with time zone NOT NULL,
+	"duration" smallint NOT NULL,
+	"rooms" text[] NOT NULL,
+	"course" uuid NOT NULL,
+	CONSTRAINT "timetable_entries_date_course_pk" PRIMARY KEY("date","course")
 );
 --> statement-breakpoint
+ALTER TABLE "canonical_event_topics" ADD CONSTRAINT "canonical_event_topics_event_canonical_events_id_fk" FOREIGN KEY ("event") REFERENCES "public"."canonical_events"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "canonical_events_sent_to_users" ADD CONSTRAINT "canonical_events_sent_to_users_event_canonical_events_id_fk" FOREIGN KEY ("event") REFERENCES "public"."canonical_events"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "students" ADD CONSTRAINT "students_person_persons_id_fk" FOREIGN KEY ("person") REFERENCES "public"."persons"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "students" ADD CONSTRAINT "students_class_identifier_start_year_school_classes_identifier_in_year_start_year_school_fk" FOREIGN KEY ("class_identifier","start_year","school") REFERENCES "public"."classes"("identifier_in_year","start_year","school") ON DELETE restrict ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "classes" ADD CONSTRAINT "classes_start_year_school_years_start_year_school_fk" FOREIGN KEY ("start_year","school") REFERENCES "public"."years"("start_year","school") ON DELETE restrict ON UPDATE cascade;--> statement-breakpoint
@@ -291,15 +297,11 @@ ALTER TABLE "grades" ADD CONSTRAINT "grades_course_courses_id_fk" FOREIGN KEY ("
 ALTER TABLE "grades" ADD CONSTRAINT "grades_student_persons_id_fk" FOREIGN KEY ("student") REFERENCES "public"."persons"("id") ON DELETE restrict ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "tasks" ADD CONSTRAINT "tasks_course_courses_id_fk" FOREIGN KEY ("course") REFERENCES "public"."courses"("id") ON DELETE restrict ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "tasks" ADD CONSTRAINT "tasks_assignee_persons_id_fk" FOREIGN KEY ("assignee") REFERENCES "public"."persons"("id") ON DELETE restrict ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE "recurring_timetable_entries" ADD CONSTRAINT "recurring_timetable_entries_course_courses_id_fk" FOREIGN KEY ("course") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "room_changes" ADD CONSTRAINT "room_changes_room_rooms_room_number_fk" FOREIGN KEY ("room") REFERENCES "public"."rooms"("room_number") ON DELETE set null ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "substitutions" ADD CONSTRAINT "substitutions_originalTeacher_persons_id_fk" FOREIGN KEY ("originalTeacher") REFERENCES "public"."persons"("id") ON DELETE set null ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "substitutions" ADD CONSTRAINT "substitutions_substitute_persons_id_fk" FOREIGN KEY ("substitute") REFERENCES "public"."persons"("id") ON DELETE set null ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "substitutions" ADD CONSTRAINT "substitutions_date_course_timetable_entries_date_course_fk" FOREIGN KEY ("date","course") REFERENCES "public"."timetable_entries"("date","course") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "timetable_entries" ADD CONSTRAINT "timetable_entries_course_courses_id_fk" FOREIGN KEY ("course") REFERENCES "public"."courses"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "recurring_timetable_entries" ADD CONSTRAINT "recurring_timetable_entries_course_courses_id_fk" FOREIGN KEY ("course") REFERENCES "public"."courses"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
-ALTER TABLE "event_topics" ADD CONSTRAINT "event_topics_event_events_id_fk" FOREIGN KEY ("event") REFERENCES "public"."events"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "events" ADD CONSTRAINT "events_initiator_users_id_fk" FOREIGN KEY ("initiator") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "events_sent_to_users" ADD CONSTRAINT "events_sent_to_users_event_events_id_fk" FOREIGN KEY ("event") REFERENCES "public"."events"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "events_sent_to_users" ADD CONSTRAINT "events_sent_to_users_user_users_id_fk" FOREIGN KEY ("user") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "event_topics_event_topic_index" ON "event_topics" USING btree ("event","topic");--> statement-breakpoint
-CREATE INDEX "events_sent_to_users_event_user_index" ON "events_sent_to_users" USING btree ("event","user");
+CREATE INDEX "canonical_event_topics_event_topic_index" ON "canonical_event_topics" USING btree ("event","topic");--> statement-breakpoint
+CREATE INDEX "canonical_events_sent_to_users_event_user_index" ON "canonical_events_sent_to_users" USING btree ("event","user");

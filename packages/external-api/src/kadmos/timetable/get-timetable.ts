@@ -3,6 +3,7 @@ import { formatSimpleDate, parseSimpleDate, parseSimpleTimeOfDay } from "@stu/li
 import type { CookieJar } from "tough-cookie";
 import { z } from "zod";
 import { fetchWithCookieJar } from "../../fetch-with-cookies";
+import type { AuthContext } from "../auth/login";
 
 const parseDurationComponent = (
   duration: string,
@@ -91,8 +92,7 @@ export const getTimetableV2 = async (
   start: SimpleDate,
   end: SimpleDate,
   kadmosClassId: number,
-  cookies: CookieJar,
-  bearerToken: string,
+  authContext: AuthContext,
 ): Promise<KadmosTimetableV2Response> => {
   const params = new URLSearchParams();
   params.append("start", formatSimpleDate(start));
@@ -107,10 +107,10 @@ export const getTimetableV2 = async (
     `https://kadmos.webuntis.com/WebUntis/api/rest/view/v1/timetable/entries?${params.toString()}`,
     {
       headers: {
-        Authorization: `Bearer ${bearerToken}`,
+        Authorization: `Bearer ${authContext.bearerToken}`,
       },
     },
-    cookies,
+    authContext.jar,
   );
 
   return v2Schema.parse(await response.json());

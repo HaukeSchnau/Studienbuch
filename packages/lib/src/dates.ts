@@ -36,3 +36,7 @@ export const parseSimpleTimeOfDay = (time: string) => {
   }
   return hours * 60 + minutes;
 };
+
+export const simpleDateToDate = (date: SimpleDate) => {
+  return new Date(date.year, date.month - 1, date.day);
+}; 
