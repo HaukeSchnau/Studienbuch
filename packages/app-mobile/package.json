@@ -24,7 +24,7 @@
     "@react-native-community/datetimepicker": "^8.3.0",
     "@react-native-picker/picker": "^2.9.0",
     "@react-native-segmented-control/segmented-control": "2.5.7",
-    "@schnau/effect-drizzle": "0.5.6",
+    "@schnau/effect-drizzle": "0.5.7",
     "@stu/expo-native": "workspace:*",
     "@stu/lib": "workspace:*",
     "@stu/student": "workspace:^",

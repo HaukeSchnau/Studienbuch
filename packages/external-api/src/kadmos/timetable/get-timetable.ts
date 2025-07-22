@@ -74,7 +74,7 @@ const v2Schema = z.object({
             .transform(parseDuration),
           type: z.enum(["NORMAL_TEACHING_PERIOD", "EVENT", "EXAM"]),
           status: z.enum(["REGULAR", "CHANGED", "ADDITIONAL"]),
-          statusDetail: z.null(),
+          statusDetail: z.enum(["SUBSTITUTED"]).nullable(),
           position1: PositionValueSchema,
           position2: PositionValueSchema,
           position3: PositionValueSchema,
@@ -88,12 +88,18 @@ const v2Schema = z.object({
 
 export type KadmosTimetableV2Response = z.infer<typeof v2Schema>;
 
+interface Options {
+  start: SimpleDate;
+  end: SimpleDate;
+  kadmosClassId: number;
+  schoolYearId: number;
+}
+
 export const getTimetableV2 = async (
-  start: SimpleDate,
-  end: SimpleDate,
-  kadmosClassId: number,
+  options: Options,
   authContext: AuthContext,
 ): Promise<KadmosTimetableV2Response> => {
+  const { start, end, kadmosClassId, schoolYearId } = options;
   const params = new URLSearchParams();
   params.append("start", formatSimpleDate(start));
   params.append("end", formatSimpleDate(end));
@@ -103,11 +109,17 @@ export const getTimetableV2 = async (
   params.append("periodTypes", "");
   params.append("timetableType", "STANDARD");
 
+  // const url = `https://kadmos.webuntis.com/WebUntis/api/rest/view/v1/timetable/entries?${params.toString()}`;
+  // const cookies = authContext.jar.getCookiesSync(url);
+  // const correspondingCurlCommand = `curl -X GET "${url}" -H "Authorization: Bearer ${authContext.bearerToken}" -H "x-webuntis-api-school-year-id: ${schoolYearId}" -b "${cookies.map((c) => `${c.key}=${c.value}`).join("; ")}"`;
+  // console.log(correspondingCurlCommand);
+
   const response = await fetchWithCookieJar(
     `https://kadmos.webuntis.com/WebUntis/api/rest/view/v1/timetable/entries?${params.toString()}`,
     {
       headers: {
         Authorization: `Bearer ${authContext.bearerToken}`,
+        "x-webuntis-api-school-year-id": schoolYearId.toString(),
       },
     },
     authContext.jar,

@@ -21,5 +21,5 @@ test("Get classes from Kadmos", async () => {
     6,
     { jar, bearerToken },
   );
-  console.log(classes);
+  console.dir(classes.classes, { depth: null });
 });

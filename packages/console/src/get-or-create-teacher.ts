@@ -1,4 +1,4 @@
-import { SYSTEM_USER, ingest } from "@stu/api";
+import { ingest, SYSTEM_USER } from "@stu/api";
 import { eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Persons } from "@stu/db/schema";
@@ -40,7 +40,7 @@ export class ConsoleIservClient extends IservClient {
 
     if (Exit.isFailure(err)) {
       if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
-        logger.debug(`Teacher ${abbrv} already joined!`);
+        logger.info(`Teacher ${abbrv} already joined!`);
       } else {
         logger.error(`Could not ingest teacher joined event for ${abbrv}: ${err.cause.toString()}`);
       }

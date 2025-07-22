@@ -31,6 +31,7 @@ services:
       retries: 60
 
   api:
+    profiles: [live]
     build:
       context: .
       dockerfile: Dockerfile
@@ -58,6 +59,7 @@ services:
       - cache:/cache
 
   console-cron:
+    profiles: [live]
     build:
       context: .
       dockerfile: Dockerfile
@@ -94,6 +96,7 @@ services:
         target: /var/spool/cron/crontabs/root
 
   migrations:
+    profiles: [live]
     build:
       context: .
       dockerfile: Dockerfile

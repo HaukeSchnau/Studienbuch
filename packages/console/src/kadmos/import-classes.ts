@@ -68,7 +68,7 @@ export const importClasses = async ({ school, schoolYearId, dryRun }: Options, a
 
       if (Exit.isFailure(err)) {
         if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
-          logger.debug(`Year ${name} already started!`);
+          logger.info(`Year ${name} already started!`);
         } else {
           logger.error(`Could not ingest year started event: ${err.cause.toString()}`);
         }

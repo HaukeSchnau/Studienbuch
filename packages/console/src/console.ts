@@ -3,15 +3,14 @@ import { ingest, SYSTEM_USER } from "@stu/api";
 import { alias, and, eq, ne } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
-import { Schools } from "@stu/db/schema";
 import { upsertCourses } from "@stu/legacy-import";
 import { defaultSchools, SCHOOL_IDS } from "@stu/lib";
 import { Exit } from "effect";
 import { z } from "zod";
 import { extractCourses } from "./extract-courses";
-import { importTimetable } from "./import-timetable";
 import { importClasses } from "./kadmos/import-classes";
 import { importTeachers } from "./kadmos/import-teachers";
+import { importTimetable } from "./kadmos/import-timetable";
 import { getCurrentSchoolYearId, setupAuth } from "./kadmos/kadmos-utils";
 import { logger } from "./logger";
 import { addSemesters } from "./seed/add-semesters";
@@ -26,52 +25,6 @@ process.on("SIGTERM", () => {
 });
 
 program.name("console").description("Studienbuch Console").showSuggestionAfterError();
-
-// program
-//   .command("seed")
-//   .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
-//   .option("--dry-run", "Only print the data that would be ingested")
-//   .action(async (school, { dryRun = false }) => {
-//     const defaultSchoolValue = defaultSchools[school];
-
-//     logger.info(`Seeding school "${school}"...`);
-//     if (!dryRun) {
-//       const err = await ingest(
-//         {
-//           type: "org.school.founded",
-//           data: {
-//             id: school,
-//             name: defaultSchoolValue.name,
-//             state: defaultSchoolValue.stateCode,
-//           },
-//           id: crypto.randomUUID(),
-//           timestamp: defaultSchoolValue.founded,
-//         },
-//         SYSTEM_USER,
-//       );
-//       if (Exit.isFailure(err)) {
-//         if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
-//           logger.debug(`School "${school}" already founded!`);
-//         } else {
-//           logger.error(`Could not ingest school founded event: ${err.cause.toString()}`);
-//         }
-//       } else {
-//         logger.info(`School "${school}" founded!`);
-//       }
-//     } else {
-//       logger.info(`School: ${JSON.stringify(defaultSchoolValue, null, 2)}`);
-//     }
-
-//
-//     await importTeachers(dryRun);
-
-//     await addSemesters(defaultSchoolValue.stateCode, dryRun);
-//     await importClasses({ school, dryRun });
-//     await importTimetable({ school, date: new Date(), monthOffsetRange: [-2, 2], dryRun });
-
-//     logger.info("Seeding complete!");
-//     process.exit(0);
-//   });
 
 program
   .command("pull")
@@ -96,7 +49,7 @@ program
       );
       if (Exit.isFailure(err)) {
         if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
-          logger.debug(`School "${school}" already founded!`);
+          logger.info(`School "${school}" already founded!`);
         } else {
           logger.error(`Could not ingest school founded event: ${err.cause.toString()}`);
         }
@@ -114,11 +67,16 @@ program
     await importTeachers({ school, schoolYearId, dryRun }, authContext);
     await addSemesters(defaultSchoolValue.stateCode, dryRun);
     await importClasses({ school, schoolYearId, dryRun }, authContext);
-    // await importTimetable({
-    //   school,
-    //   date: new Date(),
-    //   monthOffsetRange: [-2, 2],
-    // });
+    await importTimetable(
+      {
+        school,
+        date: new Date(),
+        monthOffsetRange: [-2, 2],
+        schoolYearId,
+        dryRun,
+      },
+      authContext,
+    );
     process.exit(0);
   });
 
