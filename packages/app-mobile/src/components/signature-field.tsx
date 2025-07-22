@@ -19,7 +19,7 @@ const SignatureFrame = ({ children, label }: { children: ReactNode; label: strin
       }}
     >
       {children}
-      <View className="absolute bottom-0 left-0 right-0 flex-row items-center justify-between p-4">
+      <View className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between p-4">
         <Cross width={35} height={35} color={"rgba(0, 0, 0, 0.25)"} />
         <Text className="text-lg opacity-60">{label}</Text>
       </View>

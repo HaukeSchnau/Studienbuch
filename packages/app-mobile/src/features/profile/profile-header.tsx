@@ -32,7 +32,7 @@ export const Header = () => {
   return (
     <View className="rounded-b-3xl bg-primary">
       <SafeAreaView edges={["top"]}>
-        <View className="flex-col items-center py-10 relative">
+        <View className="relative flex-col items-center py-10">
           <Avatar />
           <View className="h-6" />
           <Text weight="bold" className="text-3xl text-white">
@@ -40,10 +40,10 @@ export const Header = () => {
           </Text>
           <View className="h-2" />
           <View className="items-center">
-            <Text className="text-xl text-white">
+            <Text className="text-white text-xl">
               Jahrgang {year.data.year.name} ({getCurrentYearNum(year.data.year)}. Klasse)
             </Text>
-            <Text className="text-xl text-white">{year.data.school.name}</Text>
+            <Text className="text-white text-xl">{year.data.school.name}</Text>
           </View>
 
           <View className="absolute top-4 right-4">

@@ -1,4 +1,4 @@
-import fs, { writeFile, mkdir } from "node:fs/promises";
+import fs, { mkdir, writeFile } from "node:fs/promises";
 import type { ZodType } from "zod";
 import { z } from "zod";
 import { env } from "../../env";

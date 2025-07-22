@@ -40,7 +40,7 @@ const TeacherSelectField = ({
 
   return (
     <select
-      className="p-4 bg-primary text-white rounded-md h-fit"
+      className="h-fit rounded-md bg-primary p-4 text-white"
       value={selectedTeacherId}
       onChange={(e) => setSelectedTeacherId(e.target.value)}
     >
@@ -124,7 +124,7 @@ const Timetable = ({ teacherId }: { teacherId: string }) => {
       return (
         <div
           key={minutes}
-          className={cn("absolute top-0 left-0 w-full h-full opacity-30")}
+          className={cn("absolute top-0 left-0 h-full w-full opacity-30")}
           style={{
             left: `${leftPercent * 100}%`,
           }}
@@ -171,7 +171,7 @@ const Timetable = ({ teacherId }: { teacherId: string }) => {
                     <div
                       key={`${entry.timetable_entries.start.getTime()}-${entry.courses.id}`}
                       className={cn(
-                        "relative top-0 left-0 text-white rounded-md",
+                        "relative top-0 left-0 rounded-md text-white",
                         entry.substitutions ? "bg-yellow-300" : "bg-primary",
                       )}
                       style={{
@@ -195,14 +195,14 @@ function Home() {
   const [selectedTeacherId, setSelectedTeacherId] = useState<string | undefined>(undefined);
 
   return (
-    <div className="p-4 flex flex-row gap-4">
+    <div className="flex flex-row gap-4 p-4">
       <TeacherSelectField selectedTeacherId={selectedTeacherId} setSelectedTeacherId={setSelectedTeacherId} />
 
       <div className="flex-1">
         {selectedTeacherId ? (
           <Timetable teacherId={selectedTeacherId} />
         ) : (
-          <div className="grid place-items-center h-full">Bitte wählen Sie einen Lehrer</div>
+          <div className="grid h-full place-items-center">Bitte wählen Sie einen Lehrer</div>
         )}
       </div>
     </div>

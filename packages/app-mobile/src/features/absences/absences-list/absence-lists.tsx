@@ -49,7 +49,7 @@ export const UnexcusedAbsences = () => {
   const heading = (
     <View className="flex-row gap-2">
       <Icon name="warning" size={24} color={colors.danger.DEFAULT} />
-      <Text className="text-lg text-danger">unentschuldigte Fehlzeiten</Text>
+      <Text className="text-danger text-lg">unentschuldigte Fehlzeiten</Text>
     </View>
   );
 
