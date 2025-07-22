@@ -1,0 +1,10 @@
+procs:
+  drizzle-studio:
+    cwd: ./packages/db
+    cmd: ["bun", "drizzle-kit", "studio"]
+  api:
+    cwd: ./packages/api
+    cmd: ["bun", "run", "dev"]
+  app-mobile:
+    cwd: ./packages/app-mobile
+    cmd: ["bun", "run", "dev"]
