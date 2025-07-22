@@ -64,3 +64,5 @@ __snapshots__
 expo-env.d.ts
 
 workspace-deps.png
+
+*.log

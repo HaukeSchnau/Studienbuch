@@ -1,7 +1,6 @@
 import { CanonicalStorage as DrizzleCanonicalStorage } from "@groundswell/adapter-drizzle-postgres";
 import { ApplicatorError } from "@groundswell/core";
-import type { CanonicalStorage } from "@groundswell/core-server";
-import { BroadcastError, ServerValidationError } from "@groundswell/core-server";
+import { ServerValidationError } from "@groundswell/core-server";
 import {
   AuthRepository,
   applicators,
@@ -19,8 +18,10 @@ import {
   YearRepository,
 } from "@stu/db";
 import { DomainEvent } from "@stu/lib";
-import { Duration, Effect, Layer, ManagedRuntime, PubSub, pipe, Schedule, Stream } from "effect";
-import { DomainBroadcast, DomainCanonicalStorage, DomainServerApplicator, ingestEngine } from "./boilerplate";
+import { Duration, Effect, Layer, ManagedRuntime, pipe, Schedule } from "effect";
+import { DomainCanonicalStorage, DomainServerApplicator, ingestEngine } from "./boilerplate";
+import { memoryBroadcastLive } from "./broadcast";
+import { RabbitMQClient } from "./rabbitmq";
 import { getUserTopics } from "./router/events/send-missing-events";
 
 const repositories = Layer.mergeAll(
@@ -72,48 +73,10 @@ const serverApplicatorLive = Layer.effect(
   }),
 );
 
-const initializeEventStream = (userId: string, canonicalStorage: CanonicalStorage<DomainEvent>) => {
-  return Effect.gen(function* () {
-    const events = yield* canonicalStorage.getEventsSentToUser(userId);
-    return events;
-  });
-};
-
-export const memoryBroadcastLive = Layer.effect(
-  DomainBroadcast,
-  Effect.gen(function* () {
-    const pubsub = yield* PubSub.unbounded<DomainEvent>();
-    const canonicalStorage = yield* DomainCanonicalStorage;
-
-    return DomainBroadcast.of({
-      publishToTopics: (topics, event) => {
-        console.log("publishing to topics", topics, event);
-        return pubsub.publish(event);
-      }, // Simple broadcast, ignores topics
-      publishToUser: (userId, event) => {
-        console.log("publishing to user", userId, event);
-        return pubsub.publishAll(event);
-      }, // Simple broadcast, ignores topics
-      subscribe: (userId) => {
-        const initStream = Stream.fromIterableEffect(
-          initializeEventStream(userId, canonicalStorage).pipe(
-            Effect.catchTag("CanonicalStorageError", (error) => {
-              return Effect.fail(new BroadcastError({ cause: error }));
-            }),
-          ),
-        );
-        return pipe(Stream.concat(initStream, Stream.fromPubSub(pubsub)));
-      },
-    });
-  }),
-);
-
 export const canonicalStorageLive = DrizzleCanonicalStorage.createDrizzleCanonicalStorageLayer(DomainCanonicalStorage, {
   db: Database,
   eventSchema: DomainEvent,
 });
-
-export const appServerLayer = Layer.provide(ingestEngine, serverApplicatorLive);
 
 const databaseRetrySchedule: Schedule.Schedule<number, DatabaseError, never> = Schedule.exponential("1 second", 2).pipe(
   Schedule.modifyDelay(Duration.min("8 seconds")),
@@ -127,9 +90,11 @@ const databaseRetrySchedule: Schedule.Schedule<number, DatabaseError, never> = S
   ),
 );
 
-const appServerLayerLive = appServerLayer.pipe(
+export const AppLayerLive = pipe(
+  Layer.provide(ingestEngine, serverApplicatorLive),
   Layer.provideMerge(memoryBroadcastLive),
-  Layer.provideMerge(canonicalStorageLive),
-  Layer.provideMerge(DatabaseLive.pipe(Layer.retry(databaseRetrySchedule), Layer.orDie)),
+  Layer.provide(canonicalStorageLive),
+  Layer.provide(DatabaseLive.pipe(Layer.retry(databaseRetrySchedule), Layer.orDie)),
+  Layer.provide(RabbitMQClient.Default),
 );
-export const runtime = ManagedRuntime.make(appServerLayerLive);
+export const runtime = ManagedRuntime.make(AppLayerLive);

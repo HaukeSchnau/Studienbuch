@@ -1,11 +1,10 @@
 import { DevTools } from "@effect/experimental";
 import { NodeRuntime, NodeSocket } from "@effect/platform-node";
 import { serve } from "@hono/node-server";
-import { DatabaseLive } from "@stu/db";
 import { Effect, Layer } from "effect";
 import { env } from "../env";
 import { createBase } from "../src/base";
-import { appServerLayer, canonicalStorageLive, memoryBroadcastLive } from "../src/groundswell";
+import { AppLayerLive } from "../src/groundswell";
 
 const server = Effect.gen(function* () {
   const port = env.API_PORT;
@@ -32,11 +31,5 @@ const server = Effect.gen(function* () {
 });
 
 const DevToolsLive = DevTools.layerWebSocket().pipe(Layer.provide(NodeSocket.layerWebSocketConstructor));
-const serverLive = server.pipe(
-  Effect.provide(appServerLayer),
-  Effect.provide(memoryBroadcastLive),
-  Effect.provide(canonicalStorageLive),
-  Effect.provide(DatabaseLive),
-  Effect.provide(DevToolsLive),
-);
+const serverLive = server.pipe(Effect.provide(AppLayerLive), Effect.provide(DevToolsLive));
 NodeRuntime.runMain(serverLive);
