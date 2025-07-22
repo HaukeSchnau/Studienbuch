@@ -1,6 +1,6 @@
 import type { SchoolId } from "@stu/lib";
 import { and, eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { Effect, Logger } from "effect";
 import { Database } from "../database";
 import * as tables from "../schema";
 

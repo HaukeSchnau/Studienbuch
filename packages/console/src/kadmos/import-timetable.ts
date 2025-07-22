@@ -5,16 +5,16 @@ import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
 import { Semesters } from "@stu/db/schema";
 import { type AuthContext, getClassesV2, getTimetableV2 } from "@stu/external-api";
-import type { SchoolId, SimpleDate } from "@stu/lib";
+import type { SchoolId } from "@stu/lib";
 import { BetterMap, isArraySingleElement } from "@stu/lib";
 import { endOfWeek, startOfWeek } from "date-fns";
 import { Exit } from "effect";
 import { z } from "zod";
-import { ConsoleIservClient } from "./get-or-create-teacher";
+import { ConsoleIservClient } from "../get-or-create-teacher";
+import { logger } from "../logger";
+import type { ProtoTimetableEntry } from "../map-kadmos-class";
+import { mapKadmosClassV2, mapKadmosTimetableEntry } from "../map-kadmos-class";
 import { ingestTimetableEntry } from "./ingest-timetable-entry";
-import { logger } from "./logger";
-import type { ProtoTimetableEntry } from "./map-kadmos-class";
-import { mapKadmosClassV2, mapKadmosTimetableEntry } from "./map-kadmos-class";
 
 interface Options {
   school: SchoolId;
@@ -55,12 +55,8 @@ const findSemesterFromDate = async (date: Date, school: SchoolId) => {
   return semesters[0];
 };
 
-const getTimetable = async (options: Options, authContext: AuthContext) => {
-  
-}
-
-export const importTimetable = async (
-  options: Options,
+const getTimetable = async (
+  { date, monthOffsetRange: [offsetStart, offsetEnd], school, schoolYearId }: Options,
   authContext: AuthContext,
 ) => {
   const startDate = startOfWeek(date, { weekStartsOn: 1 });
@@ -84,12 +80,18 @@ export const importTimetable = async (
     classes.classes.map(mapKadmosClassV2),
   );
 
-  const iservClient = new ConsoleIservClient();
-
   // First, we collect all entries for the week over all classes
   const entriesToInsert: ProtoTimetableEntry[] = [];
   for (const cls of kadmosClasses) {
-    const timetable = await getTimetableV2(start, end, cls.kadmosId, authContext);
+    const timetable = await getTimetableV2(
+      {
+        start,
+        end,
+        kadmosClassId: cls.kadmosId,
+        schoolYearId,
+      },
+      authContext,
+    );
 
     entriesToInsert.push(
       ...timetable.days
@@ -165,8 +167,19 @@ export const importTimetable = async (
     });
   }
 
+  return {
+    courses: courses.entries(),
+    start,
+    end,
+  };
+};
+
+export const importTimetable = async (options: Options, authContext: AuthContext) => {
+  const { courses, start, end } = await getTimetable(options, authContext);
+  const { school } = options;
+
   // // Insert all courses into the database
-  for (const [uuid, course] of courses.entries()) {
+  for (const [uuid, course] of courses) {
     // We need to make sure all course.classes are unique. They might be duplicated because of kadmos weirdness.
     // TODO: Handle classes.change === "REMOVED"
     course.classes = course.classes.filter(
@@ -194,6 +207,11 @@ export const importTimetable = async (
         (entry) => entry.start.getTime() === existingTimetableEntry.start.getTime(),
       );
       if (!existingEntry) {
+        if (options.dryRun) {
+          logger.info(`Timetable entry discarded: ${JSON.stringify(existingTimetableEntry)}`);
+          continue;
+        }
+
         const res = await ingest(
           {
             type: "org.timetable.discarded",
@@ -221,8 +239,14 @@ export const importTimetable = async (
       }
     }
 
+    const iservClient = new ConsoleIservClient();
     for (const entry of course.entries) {
       const semester = await findSemesterFromDate(entry.start, school);
+
+      if (options.dryRun) {
+        logger.info(`Timetable entry: ${JSON.stringify(entry)}`);
+        continue;
+      }
 
       await ingestTimetableEntry(
         {

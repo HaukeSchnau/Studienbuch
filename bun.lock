@@ -107,7 +107,7 @@
         "@react-native-community/datetimepicker": "^8.3.0",
         "@react-native-picker/picker": "^2.9.0",
         "@react-native-segmented-control/segmented-control": "2.5.7",
-        "@schnau/effect-drizzle": "0.5.6",
+        "@schnau/effect-drizzle": "0.5.7",
         "@stu/expo-native": "workspace:*",
         "@stu/lib": "workspace:*",
         "@stu/student": "workspace:^",
@@ -206,7 +206,7 @@
       "dependencies": {
         "@groundswell/adapter-drizzle-postgres": "^0.0.14",
         "@groundswell/core": "^0.0.14",
-        "@schnau/effect-drizzle": "0.5.6",
+        "@schnau/effect-drizzle": "0.5.7",
         "@stu/lib": "workspace:*",
         "@t3-oss/env-core": "^0.12.0",
         "dayjs": "^1.11.13",
@@ -413,7 +413,7 @@
         "@effect/vitest": "^0.24.1",
         "@groundswell/adapter-drizzle-sqlite": "^0.0.14",
         "@groundswell/core": "^0.0.14",
-        "@schnau/effect-drizzle": "0.5.6",
+        "@schnau/effect-drizzle": "0.5.7",
         "@stu/lib": "workspace:*",
         "@t3-oss/env-core": "^0.12.0",
         "dayjs": "^1.11.13",
@@ -1300,7 +1300,7 @@
 
     "@rtsao/scc": ["@rtsao/scc@1.1.0", "", {}, "sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g=="],
 
-    "@schnau/effect-drizzle": ["@schnau/effect-drizzle@0.5.6", "https://npm.schnau.dev/@schnau/effect-drizzle/-/effect-drizzle-0.5.6.tgz", { "peerDependencies": { "drizzle-orm": "^0.44", "effect": "^3", "typescript": "^5" } }, "sha512-kCOSozObiCyrNasgT2nxiVzenQopmrxQE/J6aUZLkVjKOl8EQYQVya0vPLtrFJrOcmJUM75RQHbyBwIhGAA9QQ=="],
+    "@schnau/effect-drizzle": ["@schnau/effect-drizzle@0.5.7", "https://npm.schnau.dev/@schnau/effect-drizzle/-/effect-drizzle-0.5.7.tgz", { "peerDependencies": { "drizzle-orm": "^0.44", "effect": "^3", "typescript": "^5" } }, "sha512-LDeE3tTSHqt1u9x+4lnTJ9dBFgqAG9Qq7hSw5G4WbHbtx/O507mzn6xEZM67y5VDmV0TabTF9U++WO++woULIA=="],
 
     "@segment/ajv-human-errors": ["@segment/ajv-human-errors@2.15.0", "", { "peerDependencies": { "ajv": "^8.0.0" } }, "sha512-tgeMMuYYJt3Aar5IIk3kyfL9zMvGsv5d7KsVT/2auri+hEH/L2M1i8X67ne4JjMWZqENYIGY1WuI4oPEL1H/xA=="],
 

@@ -4,7 +4,7 @@ import type { DatabaseError } from "@schnau/effect-drizzle/postgres";
 import type { DomainEvent } from "@stu/lib";
 import { defaultSchools, studentsOfCourse, studentsOfSchool, studentsOfState, studentsOfYear } from "@stu/lib";
 import { Effect } from "effect";
-import type { Database } from "../database";
+import { Database } from "../database";
 import { ClassRepository } from "../repositories/class.repo";
 import { CourseRepository } from "../repositories/course.repo";
 import { HolidayRepository } from "../repositories/holiday.repo";
@@ -150,7 +150,7 @@ export const orgApplicators: NamespaceServerApplicatorMap<
           })),
         ),
       );
-    }),
+    }, Database.asTransaction),
     getEventTopics: (event) => Effect.succeed([studentsOfState(event.data.state)]),
   },
   "year.started": {
@@ -163,27 +163,26 @@ export const orgApplicators: NamespaceServerApplicatorMap<
         return yield* Effect.fail(new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }));
       }
     }),
-    apply: (event) =>
-      Effect.gen(function* () {
-        const yearRepo = yield* YearRepository;
-        const classRepo = yield* ClassRepository;
+    apply: Effect.fn(function* (event) {
+      const yearRepo = yield* YearRepository;
+      const classRepo = yield* ClassRepository;
 
-        yield* yearRepo.createYear({
-          name: event.data.name,
+      yield* yearRepo.createYear({
+        name: event.data.name,
+        startYear: event.data.startYear,
+        graduationYear: event.data.graduationYear,
+        school: event.data.school,
+      });
+
+      for (const cls of event.data.classes) {
+        yield* classRepo.createClass({
+          identifierInYear: cls.identifierInYear,
           startYear: event.data.startYear,
-          graduationYear: event.data.graduationYear,
           school: event.data.school,
+          teachers: cls.teachers,
         });
-
-        for (const cls of event.data.classes) {
-          yield* classRepo.createClass({
-            identifierInYear: cls.identifierInYear,
-            startYear: event.data.startYear,
-            school: event.data.school,
-            teachers: cls.teachers,
-          });
-        }
-      }),
+      }
+    }, Database.asTransaction),
     getEventTopics: (event) =>
       Effect.succeed([
         studentsOfYear({
@@ -204,13 +203,12 @@ export const orgApplicators: NamespaceServerApplicatorMap<
       }
 
       for (const cls of event.data.classes) {
-        if (
-          yield* classRepo.getClass({
-            identifierInYear: cls.identifierInYear,
-            startYear: cls.startYear,
-            school: event.data.school,
-          })
-        ) {
+        const existingClass = yield* classRepo.getClass({
+          identifierInYear: cls.identifierInYear,
+          startYear: cls.startYear,
+          school: event.data.school,
+        });
+        if (!existingClass) {
           return yield* Effect.fail(new ValidationError({ cause: "CLASS_NOT_FOUND", reason: "NOT_FOUND" }));
         }
       }
@@ -238,7 +236,8 @@ export const orgApplicators: NamespaceServerApplicatorMap<
         return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
       }
       const courseRepo = yield* CourseRepository;
-      if (yield* courseRepo.getCourse({ id: event.data.course })) {
+      const existingCourse = yield* courseRepo.getCourse({ id: event.data.course });
+      if (!existingCourse) {
         return yield* Effect.fail(new ValidationError({ cause: "COURSE_NOT_FOUND", reason: "NOT_FOUND" }));
       }
     }),

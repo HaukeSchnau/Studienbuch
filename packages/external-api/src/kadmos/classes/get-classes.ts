@@ -63,8 +63,6 @@ export const getClassesV2 = async (
   );
   params.append("end", `${end.year}-${end.month.toString().padStart(2, "0")}-${end.day.toString().padStart(2, "0")}`);
 
-  console.log(`https://kadmos.webuntis.com/WebUntis/api/rest/view/v1/timetable/filter?${params.toString()}`);
-
   const response = await fetchWithCookieJar(
     `https://kadmos.webuntis.com/WebUntis/api/rest/view/v1/timetable/filter?${params.toString()}`,
     {

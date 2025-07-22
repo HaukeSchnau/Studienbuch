@@ -11,34 +11,35 @@ export const addSemesters = async (state: State, dryRun: boolean) => {
 
   const holidays = await getHolidays(state);
   for (const holiday of holidays) {
-    if (!dryRun) {
-      const err = await ingest(
-        {
-          type: "org.holiday.created",
-          id: randomUUID(),
-          timestamp: new Date(),
-          data: {
-            name: holiday.name,
-            start: dayjs(holiday.start).toDate(),
-            end: dayjs(holiday.end).toDate(),
-            state: holiday.stateCode,
-            year: holiday.year,
-          },
-        },
-        SYSTEM_USER,
-      );
+    if (dryRun) {
+      logger.info(`Holiday: ${JSON.stringify(holiday, null, 2)}`);
+      continue;
+    }
 
-      if (Exit.isFailure(err)) {
-        if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
-          logger.debug(`Holiday ${holiday.name} already created!`);
-        } else {
-          logger.error(`Could not ingest holiday created event: ${err.cause.toString()}`);
-        }
+    const err = await ingest(
+      {
+        type: "org.holiday.created",
+        id: randomUUID(),
+        timestamp: new Date(),
+        data: {
+          name: holiday.name,
+          start: dayjs(holiday.start).toDate(),
+          end: dayjs(holiday.end).toDate(),
+          state: holiday.stateCode,
+          year: holiday.year,
+        },
+      },
+      SYSTEM_USER,
+    );
+
+    if (Exit.isFailure(err)) {
+      if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
+        logger.info(`Holiday ${holiday.name} already created!`);
       } else {
-        logger.info(`Holiday ${holiday.name} created!`);
+        logger.error(`Could not ingest holiday created event: ${err.cause.toString()}`);
       }
     } else {
-      logger.info(`Holiday: ${JSON.stringify(holiday, null, 2)}`);
+      logger.info(`Holiday ${holiday.name} created!`);
     }
   }
 };

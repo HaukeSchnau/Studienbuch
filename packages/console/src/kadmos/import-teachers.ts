@@ -650,7 +650,7 @@ export const importTeachers = async (options: Options, authContext: AuthContext)
 
       if (Exit.isFailure(err)) {
         if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
-          logger.debug(`Teacher ${abbrv} already joined!`);
+          logger.info(`Teacher ${abbrv} already joined!`);
         } else {
           logger.error(`Could not ingest teacher joined event for ${abbrv}: ${err.cause.toString()}`);
         }

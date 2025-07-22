@@ -1,5 +1,4 @@
 import { parseSimpleDate } from "@stu/lib";
-import type { CookieJar } from "tough-cookie";
 import z from "zod";
 import { fetchWithCookieJar } from "../../fetch-with-cookies";
 import type { AuthContext } from "../auth/login";

@@ -25,27 +25,33 @@ export const setupAuth = async (school: SchoolId): Promise<AuthContext> => {
 };
 
 export const getCurrentSchoolYearId = async (authContext: AuthContext): Promise<number> => {
-  const schoolYears = await getSchoolYears(authContext);
+  const schoolYears = await getSchoolYears(authContext).then((years) =>
+    years.map((year) => ({
+      ...year,
+      start: simpleDateToDate(year.dateRange.start),
+      end: simpleDateToDate(year.dateRange.end),
+    })),
+  );
 
   const today = new Date();
-  const currentSchoolYear = schoolYears.find((year) => {
-    const start = simpleDateToDate(year.dateRange.start);
-    const end = simpleDateToDate(year.dateRange.end);
-    return today >= start && today <= end;
-  });
-
-  if (!currentSchoolYear) {
-    console.warn(
-      `No current school year found. Available school years: ${schoolYears.map((year) => year.name).join(", ")}. Using last available year.`,
-    );
-    const lastSchoolYear = schoolYears[schoolYears.length - 1];
-    if (!lastSchoolYear) {
-      throw new Error("No school years found");
+  let smallestDifference = Number.POSITIVE_INFINITY;
+  let closestSchoolYear = null;
+  for (const year of schoolYears) {
+    const isCurrentSchoolYear = today >= year.start && today <= year.end;
+    if (isCurrentSchoolYear) {
+      return year.id;
     }
-    return lastSchoolYear.id;
-  }
 
-  return currentSchoolYear.id;
+    const difference = Math.abs(year.start.getTime() - today.getTime());
+    if (difference < smallestDifference) {
+      smallestDifference = difference;
+      closestSchoolYear = year;
+    }
+  }
+  if (!closestSchoolYear) {
+    throw new Error("No school years found");
+  }
+  return closestSchoolYear.id;
 };
 
 export const getBroadRange = () => {
