@@ -26,7 +26,7 @@ interface Props {
 export const CoreLayout = ({ children }: Props) => {
   return (
     <View>
-      <View className="absolute left-0 top-0 h-full w-full">
+      <View className="absolute top-0 left-0 h-full w-full">
         <View className="h-1/2 bg-primary" />
         <View className="h-1/2 bg-white" />
       </View>

@@ -33,7 +33,7 @@ const ScheduleView = ({ calendarWeek }: { calendarWeek: { week: number; year: nu
       {TICKS.map((tick) => (
         <View
           key={tick}
-          className="absolute left-0 right-0 bg-[#00000020]"
+          className="absolute right-0 left-0 bg-[#00000020]"
           style={{
             top: `${((tick - DAY_START) / DAY_DURATION) * 100}%`,
             height: 1,

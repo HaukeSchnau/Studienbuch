@@ -39,7 +39,17 @@
     "rules": {
       "recommended": true,
       "correctness": {
-        "noChildrenProp": "off"
+        "noChildrenProp": "off",
+        "noUnusedImports": {
+          "level": "warn",
+          "fix": "safe"
+        }
+      },
+      "nursery": {
+        "useSortedClasses": {
+          "level": "warn",
+          "fix": "safe"
+        }
       },
       "style": {
         "noParameterAssign": "error",

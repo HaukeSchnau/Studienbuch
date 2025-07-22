@@ -63,10 +63,10 @@ const LegalText = () => {
   return (
     <View className="gap-4 self-center">
       <TouchableOpacity onPress={() => openBrowserAsync("https://studienbuch.app/impressum")}>
-        <Text className="text-md text-center text-[#6A6A6A]">Impressum</Text>
+        <Text className="text-center text-[#6A6A6A] text-md">Impressum</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => openBrowserAsync("https://studienbuch.app/datenschutz")}>
-        <Text className="text-md text-center text-[#6A6A6A]">Datenschutz</Text>
+        <Text className="text-center text-[#6A6A6A] text-md">Datenschutz</Text>
       </TouchableOpacity>
     </View>
   );
@@ -83,9 +83,9 @@ const Logo = () => {
 const Backdrop = () => {
   return (
     <>
-      <View className="absolute -left-36 top-36 h-72 w-72 rounded-full bg-[#9DBFEC]" />
-      <View className="absolute -right-28 top-96 h-56 w-56 rounded-full bg-[#92C78E]" />
-      <View className="absolute -left-24 top-[600px] h-48 w-48 rounded-full bg-[#CA9093]" />
+      <View className="-left-36 absolute top-36 h-72 w-72 rounded-full bg-[#9DBFEC]" />
+      <View className="-right-28 absolute top-96 h-56 w-56 rounded-full bg-[#92C78E]" />
+      <View className="-left-24 absolute top-[600px] h-48 w-48 rounded-full bg-[#CA9093]" />
     </>
   );
 };
