@@ -44,7 +44,7 @@ export class RabbitMQClient extends Effect.Service<RabbitMQClient>()("RabbitMQCl
     const streamSizeRetention = 5 * 1e9;
     const createStream = (stream: string) =>
       Effect.tryPromise({
-        try: () => client.createStream({ stream, arguments: { "max-length-bytes": streamSizeRetention,  } }),
+        try: () => client.createStream({ stream, arguments: { "max-length-bytes": streamSizeRetention } }),
         catch: (error) => new RabbitMqError({ cause: error, reason: "DECLARE_STREAM_FAILED" }),
       });
 
