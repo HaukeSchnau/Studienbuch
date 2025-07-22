@@ -44,7 +44,8 @@ export const generateLicenses = async (numberOfLicenses: number, school: SchoolI
         if (res.cause._tag === "Fail" && res.cause.error.reason === "DUPLICATE") {
           logger.info(`License key ${licenseKey} already generated!`);
         } else {
-          logger.error(`Could not ingest license generated event: ${res.cause.toString()}`);
+          console.log(res.cause.toJSON());
+          logger.error(`Could not ingest license generated event: ${res.cause}`);
         }
       }
     }

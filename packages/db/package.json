@@ -24,7 +24,6 @@
     "generate": "drizzle-kit generate",
     "eslint": "eslint",
     "push": "drizzle-kit push",
-    "studio": "drizzle-kit studio",
     "typecheck": "tsgo --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {

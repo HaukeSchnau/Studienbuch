@@ -96,7 +96,7 @@ services:
         target: /var/spool/cron/crontabs/root
 
   migrations:
-    profiles: [live]
+    # profiles: [live]
     build:
       context: .
       dockerfile: Dockerfile
