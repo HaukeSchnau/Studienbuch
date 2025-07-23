@@ -14,3 +14,7 @@ export * from "./substitutions";
 export * from "./theme";
 export * from "./users";
 export * from "./years";
+
+import { Effect } from "effect";
+
+export const debugLog = (tag: string) => Effect.tap((value) => Effect.log(tag, value));

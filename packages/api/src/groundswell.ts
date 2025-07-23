@@ -18,7 +18,7 @@ import {
   YearRepository,
 } from "@stu/db";
 import { DomainEvent } from "@stu/lib";
-import { Duration, Effect, Layer, ManagedRuntime, pipe, Schedule } from "effect";
+import { Duration, Effect, Layer, Logger, ManagedRuntime, pipe, Schedule } from "effect";
 import { DomainCanonicalStorage, DomainServerApplicator, ingestEngine } from "./boilerplate";
 import { memoryBroadcastLive } from "./broadcast";
 import { RabbitMQClient } from "./rabbitmq";
@@ -94,7 +94,7 @@ export const AppLayerLive = pipe(
   Layer.provide(ingestEngine, serverApplicatorLive),
   Layer.provideMerge(memoryBroadcastLive),
   Layer.provide(canonicalStorageLive),
-  Layer.provide(DatabaseLive.pipe(Layer.retry(databaseRetrySchedule), Layer.orDie)),
+  Layer.provideMerge(DatabaseLive.pipe(Layer.retry(databaseRetrySchedule), Layer.orDie)),
   Layer.provide(RabbitMQClient.Default),
 );
-export const runtime = ManagedRuntime.make(AppLayerLive);
+export const runtime = ManagedRuntime.make(Layer.mergeAll(AppLayerLive, repositories, Logger.pretty));
