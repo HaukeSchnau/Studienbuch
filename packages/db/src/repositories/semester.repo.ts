@@ -1,8 +1,9 @@
 import type { SchoolId } from "@stu/lib";
-import { sql } from "drizzle-orm";
-import { Effect } from "effect";
+import { and, desc, gte, lte, sql } from "drizzle-orm";
+import { DateTime, Effect } from "effect";
 import { Database } from "../database";
 import * as tables from "../schema";
+import { Semesters } from "../schema";
 
 export class SemesterRepository extends Effect.Service<SemesterRepository>()("db/SemesterRepository", {
   effect: Effect.gen(function* () {
@@ -27,6 +28,25 @@ export class SemesterRepository extends Effect.Service<SemesterRepository>()("db
           }),
       );
     });
-    return { createSemesters };
+
+    const getCurrentSemester = Effect.gen(function* () {
+      const { execute } = yield* Database;
+      const today = yield* DateTime.now.pipe(Effect.andThen(DateTime.toDate));
+      const semester = yield* execute((db) =>
+        db.query.Semesters.findFirst({
+          where: and(lte(Semesters.start, today), gte(Semesters.end, today)),
+        }),
+      );
+      if (semester) return semester;
+
+      // No current semester! Return the latest semester.
+      return yield* execute((db) =>
+        db.query.Semesters.findFirst({
+          orderBy: [desc(Semesters.start)],
+        }),
+      );
+    });
+
+    return { createSemesters, getCurrentSemester };
   }),
 }) {}
