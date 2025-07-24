@@ -1,6 +1,5 @@
 import { CanonicalStorage as DrizzleCanonicalStorage } from "@groundswell/adapter-drizzle-postgres";
-import { ApplicatorError } from "@groundswell/core";
-import { ServerValidationError } from "@groundswell/core-server";
+import { ApplicatorError, ValidationError } from "@groundswell/core";
 import {
   AuthRepository,
   applicators,
@@ -48,8 +47,7 @@ const serverApplicatorLive = Layer.effect(
           Effect.provide(repositories),
           Effect.provideService(Database, db),
           Effect.catchTags({
-            DatabaseError: (error) => Effect.fail(new ServerValidationError({ cause: error, reason: "UNKNOWN" })),
-            ValidationError: (error) => Effect.fail(new ServerValidationError({ cause: error, reason: error.reason })),
+            DatabaseError: (error) => Effect.fail(new ValidationError({ cause: error, reason: "UNKNOWN" })),
           }),
         ),
       apply: (event, meta) =>

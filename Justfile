@@ -6,3 +6,7 @@ dev:
 
 seed: 
     bin/console pull igs-lil
+
+[working-directory: 'packages/app-mobile']
+ios:
+    bun run expo run:ios

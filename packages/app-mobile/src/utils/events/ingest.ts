@@ -18,8 +18,14 @@ export const useIngest = <TEvent extends DomainEvent>(
         type,
         data,
       });
-      if (Exit.isFailure(result) && result.cause._tag === "Fail") {
-        throw result.cause.error;
+      if (Exit.isFailure(result)) {
+        if (result.cause._tag === "Fail") {
+          throw result.cause.error;
+        }
+
+        if (result.cause._tag === "Die") {
+          throw result.cause.defect;
+        }
       }
     },
   });

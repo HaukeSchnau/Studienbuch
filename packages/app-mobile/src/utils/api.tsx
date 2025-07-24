@@ -40,6 +40,11 @@ export function TRPCProvider(props: { children: React.ReactNode }) {
           queries: {
             retry: true,
           },
+          mutations: {
+            onError: (error) => {
+              console.error(error);
+            },
+          },
         },
       }),
   );

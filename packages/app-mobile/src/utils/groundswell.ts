@@ -1,9 +1,9 @@
 import { ClientStorage } from "@groundswell/adapter-drizzle-sqlite";
-import { createSseTransportLayer } from "@groundswell/adapter-sse-client";
 import { ReactNativeEventSourceServiceLive } from "@groundswell/adapter-sse-client/react-native";
 import {
   type Applicator,
   ApplicatorError,
+  RandomUUID,
   type Storage,
   type SyncEngine,
   syncEngineLive,
@@ -27,8 +27,10 @@ import {
   YearRepository,
 } from "@stu/student";
 import { Context, Data, Effect, Layer } from "effect";
+import * as Crypto from "expo-crypto";
 import { getBaseUrl } from "./base-url";
 import { getStorage } from "./storage";
+import { createSseTransportLayer } from "./transport";
 
 export class DomainApplicator extends Context.Tag("Applicator")<DomainApplicator, Applicator<DomainEvent>>() {}
 
@@ -72,7 +74,17 @@ const clientApplicatorsLive = Layer.effect(
         function* (event: DomainEvent) {
           const session = yield* currentSession;
 
-          return yield* applicators.verify(event, {
+          const thing = applicators.verify(event, {
+            initiatorId: session.user,
+          });
+          console.log("thing", thing);
+          console.log(
+            "applicators",
+            applicators.verify(event, {
+              initiatorId: session.user,
+            }),
+          );
+          yield* applicators.verify(event, {
             initiatorId: session.user,
           });
         },
@@ -113,8 +125,13 @@ const TransportLive = createSseTransportLayer(DomainTransport, {
   eventSchema: DomainEvent,
 }).pipe(Layer.provide(ReactNativeEventSourceServiceLive));
 
+const RandomUUIDLive = Layer.succeed(RandomUUID, {
+  next: Effect.sync(() => Crypto.randomUUID()),
+});
+
 export const SyncEngineLive = syncEngineLive(DomainSyncEngine, DomainApplicator, DomainStorage, DomainTransport).pipe(
   Layer.provide(clientApplicatorsLive),
   Layer.provide(StorageLive),
   Layer.provide(TransportLive),
+  Layer.merge(RandomUUIDLive),
 );

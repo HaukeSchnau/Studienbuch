@@ -22,9 +22,9 @@
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
     "@types/react": "~19.0.10",
-    "expo": "53.0.9",
+    "expo": "53.0.20",
     "expo-modules-core": "^2.3.12",
-    "react-native": "0.79.2",
+    "react-native": "0.79.5",
     "typescript": "5.9.0-beta"
   }
 }

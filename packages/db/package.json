@@ -27,8 +27,8 @@
     "typecheck": "tsgo --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@groundswell/adapter-drizzle-postgres": "^0.0.14",
-    "@groundswell/core": "^0.0.14",
+    "@groundswell/adapter-drizzle-postgres": "^0.0.16",
+    "@groundswell/core": "^0.0.16",
     "@schnau/effect-drizzle": "0.5.7",
     "@stu/lib": "workspace:*",
     "@t3-oss/env-core": "^0.12.0",

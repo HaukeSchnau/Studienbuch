@@ -13,15 +13,10 @@ export const memoryBroadcastLive = Layer.effect(
     const canonicalStorage = yield* DomainCanonicalStorage;
 
     return DomainBroadcast.of({
-      // TODO: I don't think this is needed or used
-      publishToTopics: (topics, event) => {
-        console.log("publishing to topics", topics, event);
-        return pubsub.publish(event);
-      }, // Simple broadcast, ignores topics
       publishToUser: (userId, event) => {
         console.log("publishing to user", userId, event);
         return pubsub.publishAll(event);
-      }, // Simple broadcast, ignores topics
+      },
       subscribe: (userId) => {
         const initStream = Stream.fromIterableEffect(
           canonicalStorage.getEventsSentToUser(userId).pipe(
@@ -42,8 +37,6 @@ export const rabbitmqBroadcastLive = Layer.effect(
     const client = yield* RabbitMQClient;
 
     return DomainBroadcast.of({
-      // TODO: I don't think this is needed or used
-      publishToTopics: () => Effect.void, // noop
       publishToUser: Effect.fn(
         function* (userId, events) {
           for (const event of events) {
