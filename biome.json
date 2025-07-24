@@ -43,6 +43,9 @@
         "noUnusedImports": {
           "level": "warn",
           "fix": "safe"
+        },
+        "useYield": {
+          "level": "warn"
         }
       },
       "nursery": {

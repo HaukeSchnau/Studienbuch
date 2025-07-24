@@ -8,7 +8,7 @@ import { colors } from "@stu/tailwind-config/native";
 import { setDefaultOptions } from "date-fns";
 import { de } from "date-fns/locale";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
-import { Layer, ManagedRuntime } from "effect";
+import { Layer, Logger, ManagedRuntime } from "effect";
 import * as SplashScreen from "expo-splash-screen";
 import { lazy, useEffect } from "react";
 import { UIManager } from "react-native";
@@ -33,7 +33,7 @@ if (UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const runtime = ManagedRuntime.make(SyncEngineLive.pipe(Layer.provideMerge(DatabaseLive)));
+const runtime = ManagedRuntime.make(SyncEngineLive.pipe(Layer.provideMerge(DatabaseLive), Layer.merge(Logger.pretty)));
 
 setDefaultOptions({ locale: de });
 
