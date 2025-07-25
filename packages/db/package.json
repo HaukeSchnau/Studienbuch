@@ -19,12 +19,12 @@
   "license": "MIT",
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "dev:internal": "tsgo --watch",
+    "dev:internal": "tsc --watch",
     "lint": "biome check",
     "generate": "drizzle-kit generate",
     "eslint": "eslint",
     "push": "drizzle-kit push",
-    "typecheck": "tsgo --noEmit --emitDeclarationOnly false"
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
     "@groundswell/adapter-drizzle-postgres": "^0.0.16",

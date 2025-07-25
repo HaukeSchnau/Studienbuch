@@ -7,20 +7,14 @@
   "editor.defaultFormatter": "biomejs.biome",
   "editor.formatOnSave": true,
   "eslint.runtime": "node",
-  "eslint.workingDirectories": [
-    { "pattern": "packages/*/" },
-    { "pattern": "tooling/*/" }
-  ],
+  "eslint.workingDirectories": [{ "pattern": "packages/*/" }, { "pattern": "tooling/*/" }],
   "tailwindCSS.experimental.classRegex": [
     ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
     ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
   ],
   "tailwindCSS.experimental.configFile": "./tooling/tailwind/web.ts",
   "typescript.enablePromptUseWorkspaceTsdk": true,
-  "typescript.preferences.autoImportFileExcludePatterns": [
-    "next/router.d.ts",
-    "next/dist/client/router.d.ts"
-  ],
+  "typescript.preferences.autoImportFileExcludePatterns": ["next/router.d.ts", "next/dist/client/router.d.ts"],
   "typescript.referencesCodeLens.enabled": true,
   "typescript.tsdk": "node_modules/typescript/lib",
   "files.exclude": {
@@ -73,5 +67,5 @@
   "[swift]": {
     "editor.defaultFormatter": "vknabel.vscode-apple-swift-format"
   },
-  "typescript.experimental.useTsgo": true
+  "typescript.experimental.useTsgo": false
 }

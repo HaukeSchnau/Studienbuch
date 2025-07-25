@@ -3,13 +3,12 @@ import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/g
 import type { DomainEvent } from "@stu/lib";
 import { AbsenceRepository, StudentRepository } from "@stu/lib";
 import { Effect } from "effect";
-import type { Database } from "../database";
 
 export const absenceApplicators: NamespaceApplicatorMap<
   DomainEvent,
   "absence",
   DatabaseError<GenericSqliteError> | ApplicatorError,
-  Database | StudentRepository | AbsenceRepository
+  StudentRepository | AbsenceRepository
 > = {
   recorded: {
     verify: () => Effect.void,

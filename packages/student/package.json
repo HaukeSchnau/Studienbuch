@@ -16,10 +16,10 @@
   "license": "MIT",
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "dev:internal": "tsgo --watch",
+    "dev:internal": "tsc --watch",
     "lint": "biome check",
     "eslint": "eslint",
-    "typecheck": "tsgo --noEmit --emitDeclarationOnly false"
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
     "@effect/vitest": "^0.24.1",

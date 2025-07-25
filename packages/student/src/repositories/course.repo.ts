@@ -10,14 +10,29 @@ export const CourseRepositoryLive = Layer.effect(
   Effect.gen(function* () {
     const databaseContext = yield* RepositoryDatabase;
 
+    const getCourse = Effect.fn(function* (payload: { id: string }) {
+      const { execute } = yield* databaseContext;
+      const course = yield* execute((db) =>
+        db.query.courses.findFirst({
+          where: eq(tables.courses.id, payload.id),
+        }),
+      );
+      if (!course) {
+        return undefined;
+      }
+
+      const { semesterType, semesterYear, ...rest } = course;
+      return {
+        ...rest,
+        semester: { type: semesterType, year: semesterYear },
+      };
+    });
+
     return {
+      getCourse,
+
       doesCourseExist: Effect.fn(function* (payload) {
-        const { execute } = yield* databaseContext;
-        const course = yield* execute((db) =>
-          db.query.courses.findFirst({
-            where: eq(tables.courses.id, payload.id),
-          }),
-        );
+        const course = yield* getCourse(payload);
         return course !== undefined;
       }),
 

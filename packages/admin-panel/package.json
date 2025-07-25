@@ -11,7 +11,7 @@
     "lint": "biome check",
     "eslint": "eslint",
     "start": "vinxi start",
-    "typecheck": "tsgo"
+    "typecheck": "tsc"
   },
   "dependencies": {
     "@stu/api": "workspace:*",

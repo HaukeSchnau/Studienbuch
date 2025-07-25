@@ -3,13 +3,12 @@ import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/g
 import type { DomainEvent } from "@stu/lib";
 import { GradeRepository, StudentRepository } from "@stu/lib";
 import { Effect } from "effect";
-import type { Database } from "../database";
 
 export const gradeApplicators: NamespaceApplicatorMap<
   DomainEvent,
   "grades",
   DatabaseError<GenericSqliteError> | ApplicatorError,
-  Database | StudentRepository | GradeRepository
+  StudentRepository | GradeRepository
 > = {
   currentGradeSet: {
     verify: () => Effect.void,

@@ -1,16 +1,21 @@
 import type { NamespaceServerApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
-import type { DatabaseError } from "@schnau/effect-drizzle/postgres";
-import type { DomainEvent } from "@stu/lib";
-import { defaultSchools, studentsOfCourse, studentsOfSchool, studentsOfState, studentsOfYear } from "@stu/lib";
+import type { DomainEvent, UnknownDatabaseError } from "@stu/lib";
+import {
+  ClassRepository,
+  CourseRepository,
+  defaultSchools,
+  HolidayRepository,
+  SemesterRepository,
+  studentsOfCourse,
+  studentsOfSchool,
+  studentsOfState,
+  studentsOfYear,
+} from "@stu/lib";
 import { Effect } from "effect";
 import { Database } from "../database";
-import { ClassRepository } from "../repositories/class.repo";
-import { CourseRepository } from "../repositories/course.repo";
-import { HolidayRepository } from "../repositories/holiday.repo";
 import { PersonRepository } from "../repositories/person.repo";
 import { SchoolRepository } from "../repositories/school.repo";
-import { SemesterRepository } from "../repositories/semester.repo";
 import { TimetableRepository } from "../repositories/timetable.repo";
 import { YearRepository } from "../repositories/year.repo";
 
@@ -19,7 +24,7 @@ const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
 export const orgApplicators: NamespaceServerApplicatorMap<
   DomainEvent,
   "org",
-  DatabaseError,
+  UnknownDatabaseError,
   | Database
   | SchoolRepository
   | PersonRepository
@@ -176,7 +181,7 @@ export const orgApplicators: NamespaceServerApplicatorMap<
 
       for (const cls of event.data.classes) {
         yield* classRepo.createClass({
-          identifierInYear: cls.identifierInYear,
+          identifier: cls.identifierInYear,
           startYear: event.data.startYear,
           school: event.data.school,
           teachers: cls.teachers,
@@ -204,7 +209,7 @@ export const orgApplicators: NamespaceServerApplicatorMap<
 
       for (const cls of event.data.classes) {
         const existingClass = yield* classRepo.getClass({
-          identifierInYear: cls.identifierInYear,
+          identifier: cls.identifierInYear,
           startYear: cls.startYear,
           school: event.data.school,
         });

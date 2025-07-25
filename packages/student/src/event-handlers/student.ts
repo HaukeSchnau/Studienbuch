@@ -4,7 +4,6 @@ import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/g
 import type { DomainEvent } from "@stu/lib";
 import { ClassRepository, CourseRepository, StudentRepository } from "@stu/lib";
 import { Effect } from "effect";
-import type { Database } from "../database";
 
 const failIfFalse = (message: string, reason: "DUPLICATE" | "INVALID" | "NOT_ALLOWED" | "NOT_FOUND" | "UNKNOWN") =>
   Effect.flatMap((bool) => (bool ? Effect.void : Effect.fail(new ValidationError({ cause: message, reason }))));
@@ -13,7 +12,7 @@ export const studentApplicators: NamespaceApplicatorMap<
   DomainEvent,
   "student",
   DatabaseError<GenericSqliteError>,
-  Database | StudentRepository | ClassRepository | CourseRepository
+  StudentRepository | ClassRepository | CourseRepository
 > = {
   joined: {
     verify: Effect.fn(function* (event, { initiatorId }) {

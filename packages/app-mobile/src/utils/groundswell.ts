@@ -13,18 +13,19 @@ import {
 import { syncEngineFactory } from "@groundswell/react";
 import { DomainEvent } from "@stu/lib";
 import {
-  AbsenceRepository,
+  AbsenceRepositoryLive,
   applicators,
-  CourseRepository,
+  ClassRepositoryLive,
+  CourseRepositoryLive,
   Database,
-  GradeRepository,
-  HolidayRepository,
-  PersonRepository,
-  SchoolRepository,
-  SemesterRepository,
-  StudentRepository,
-  TimetableRepository,
-  YearRepository,
+  GradeRepositoryLive,
+  HolidayRepositoryLive,
+  PersonRepositoryLive,
+  SchoolRepositoryLive,
+  SemesterRepositoryLive,
+  StudentRepositoryLive,
+  TimetableRepositoryLive,
+  YearRepositoryLive,
 } from "@stu/student";
 import { Context, Data, Effect, Layer } from "effect";
 import * as Crypto from "expo-crypto";
@@ -53,16 +54,17 @@ const currentSession = Effect.gen(function* () {
 });
 
 const repositories = Layer.mergeAll(
-  AbsenceRepository.Default,
-  GradeRepository.Default,
-  SchoolRepository.Default,
-  PersonRepository.Default,
-  YearRepository.Default,
-  CourseRepository.Default,
-  TimetableRepository.Default,
-  HolidayRepository.Default,
-  SemesterRepository.Default,
-  StudentRepository.Default,
+  AbsenceRepositoryLive,
+  GradeRepositoryLive,
+  SchoolRepositoryLive,
+  PersonRepositoryLive,
+  YearRepositoryLive,
+  CourseRepositoryLive,
+  TimetableRepositoryLive,
+  HolidayRepositoryLive,
+  SemesterRepositoryLive,
+  StudentRepositoryLive,
+  ClassRepositoryLive,
 );
 
 const clientApplicatorsLive = Layer.effect(
