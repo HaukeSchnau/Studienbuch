@@ -13,16 +13,17 @@ export const authApplicators: NamespaceServerApplicatorMap<
   Database | AuthRepository
 > = {
   licenseGenerated: {
-    verify: Effect.fn(function* (event, { initiatorId }) {
-      if (initiatorId !== SYSTEM_USER) {
-        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
-      }
+    verify: (event, { initiatorId }) =>
+      Effect.gen(function* () {
+        if (initiatorId !== SYSTEM_USER) {
+          return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
+        }
 
-      const repo = yield* AuthRepository;
-      if (yield* repo.doesLicenseKeyExist({ key: event.data.licenseKey })) {
-        return yield* Effect.fail(new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }));
-      }
-    }),
+        const repo = yield* AuthRepository;
+        if (yield* repo.doesLicenseKeyExist({ key: event.data.licenseKey })) {
+          return yield* Effect.fail(new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }));
+        }
+      }),
     apply: (event) =>
       Effect.andThen(AuthRepository, (repo) =>
         repo.createLicenseKey({
@@ -36,35 +37,37 @@ export const authApplicators: NamespaceServerApplicatorMap<
   },
 
   licenseActivated: {
-    verify: Effect.fn(function* (event, { initiatorId }) {
-      if (initiatorId !== SYSTEM_USER && initiatorId !== event.data.userId) {
-        return yield* Effect.fail(new ValidationError({ cause: "UNEXPECTED", reason: "NOT_ALLOWED" }));
-      }
+    verify: (event, { initiatorId }) =>
+      Effect.gen(function* () {
+        if (initiatorId !== SYSTEM_USER && initiatorId !== event.data.userId) {
+          return yield* Effect.fail(new ValidationError({ cause: "UNEXPECTED", reason: "NOT_ALLOWED" }));
+        }
 
-      const repo = yield* AuthRepository;
-      const key = yield* repo.getLicenseKey({ key: event.data.licenseKey });
+        const repo = yield* AuthRepository;
+        const key = yield* repo.getLicenseKey({ key: event.data.licenseKey });
 
-      if (key === undefined) {
-        return yield* Effect.fail(new ValidationError({ cause: "INVALID_LICENSE_KEY", reason: "INVALID" }));
-      }
+        if (key === undefined) {
+          return yield* Effect.fail(new ValidationError({ cause: "INVALID_LICENSE_KEY", reason: "INVALID" }));
+        }
 
-      if (key.isSuperKey) {
-        return yield* Effect.succeed(void 0);
-      }
+        if (key.isSuperKey) {
+          return yield* Effect.succeed(void 0);
+        }
 
-      if (key.expiresAt && key.expiresAt < new Date()) {
-        return yield* Effect.fail(new ValidationError({ cause: "EXPIRED", reason: "INVALID" }));
-      }
+        if (key.expiresAt && key.expiresAt < new Date()) {
+          return yield* Effect.fail(new ValidationError({ cause: "EXPIRED", reason: "INVALID" }));
+        }
 
-      if (key.activatedBy) {
-        return yield* Effect.fail(new ValidationError({ cause: "ALREADY_ACTIVATED", reason: "INVALID" }));
-      }
-    }),
-    apply: Effect.fn(function* (event) {
-      const repo = yield* AuthRepository;
-      yield* repo.createUser({ userId: event.data.userId });
-      yield* repo.activateLicenseKey({ key: event.data.licenseKey, userId: event.data.userId });
-    }, Database.asTransaction),
+        if (key.activatedBy) {
+          return yield* Effect.fail(new ValidationError({ cause: "ALREADY_ACTIVATED", reason: "INVALID" }));
+        }
+      }),
+    apply: (event) =>
+      Effect.gen(function* () {
+        const repo = yield* AuthRepository;
+        yield* repo.createUser({ userId: event.data.userId });
+        yield* repo.activateLicenseKey({ key: event.data.licenseKey, userId: event.data.userId });
+      }).pipe(Database.asTransaction),
     getEventTopics: () => Effect.succeed([]),
   },
 };

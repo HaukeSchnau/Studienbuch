@@ -1,10 +1,11 @@
-import { and, eq, gte, lte } from "@stu/db";
+import { and, eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Classes, Courses, CoursesToClasses, CoursesToTeachers, Persons, Semesters } from "@stu/db/schema";
 import type { Course, WithTeachers } from "@stu/lib";
-import { SCHOOL_IDS } from "@stu/lib";
+import { SCHOOL_IDS, SemesterRepository } from "@stu/lib";
+import { Effect } from "effect";
 import { z } from "zod";
-
+import { runtime } from "../../../groundswell";
 import { publicProcedure } from "../../../procedures";
 
 export const listChoices = publicProcedure
@@ -28,21 +29,10 @@ export const listChoices = publicProcedure
       class: { identifierInYear, startYear, school },
     } = input;
 
-    const semester = await (async () => {
-      if (input.semester) {
-        return input.semester;
-      }
-
-      const today = new Date();
-      const semester = await db.query.Semesters.findFirst({
-        where: and(lte(Semesters.start, today), gte(Semesters.end, today)),
-      });
-      if (!semester) {
-        throw new Error("No current semester found");
-      }
-
-      return semester;
-    })();
+    const semester = await runtime.runPromise(Effect.andThen(SemesterRepository, (repo) => repo.getCurrentSemester()));
+    if (!semester) {
+      throw new Error("No current semester found");
+    }
 
     const rows = await db
       .select()

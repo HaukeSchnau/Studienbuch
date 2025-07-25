@@ -15,22 +15,23 @@ export const studentApplicators: NamespaceApplicatorMap<
   StudentRepository | ClassRepository | CourseRepository
 > = {
   joined: {
-    verify: Effect.fn(function* (event, { initiatorId }) {
-      if (initiatorId !== event.data.studentId) {
-        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
-      }
+    verify: (event, { initiatorId }) =>
+      Effect.gen(function* () {
+        if (initiatorId !== event.data.studentId) {
+          return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
+        }
 
-      const repo = yield* ClassRepository;
-      const classExists = yield* repo.doesClassExist({
-        identifier: event.data.class.identifier,
-        startYear: event.data.class.startYear,
-        school: event.data.school,
-      });
+        const repo = yield* ClassRepository;
+        const classExists = yield* repo.doesClassExist({
+          identifier: event.data.class.identifier,
+          startYear: event.data.class.startYear,
+          school: event.data.school,
+        });
 
-      if (!classExists) {
-        return yield* Effect.fail(new ValidationError({ cause: "INVALID_CLASS", reason: "NOT_FOUND" }));
-      }
-    }),
+        if (!classExists) {
+          return yield* Effect.fail(new ValidationError({ cause: "INVALID_CLASS", reason: "NOT_FOUND" }));
+        }
+      }),
     apply: (event) =>
       Effect.andThen(StudentRepository, (repo) =>
         repo.createStudent({
