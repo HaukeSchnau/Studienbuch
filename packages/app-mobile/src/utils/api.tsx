@@ -14,10 +14,15 @@ import { getStorage } from "./storage";
 export const api = createTRPCReact<AppRouter>();
 export type { RouterInputs, RouterOutputs } from "@stu/api";
 
-const getHeaders = () => {
+export const getHeaders = () => {
   const session = getStorage("auth.session");
 
   return buildHeaders(session?.token);
+};
+
+export const getHeadersObject = () => {
+  const headsMap = getHeaders();
+  return Object.fromEntries(headsMap);
 };
 
 const buildHeaders = (sessionToken?: string) => {
