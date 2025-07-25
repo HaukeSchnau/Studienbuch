@@ -60,10 +60,10 @@
         "@effect/experimental": "^0.52.0",
         "@effect/platform-bun": "^0.73.0",
         "@effect/platform-node": "^0.90.0",
-        "@groundswell/adapter-drizzle-postgres": "^0.0.16",
-        "@groundswell/adapter-hono-server": "^0.0.16",
-        "@groundswell/core": "^0.0.16",
-        "@groundswell/core-server": "^0.0.16",
+        "@groundswell/adapter-drizzle-postgres": "^0.0.17",
+        "@groundswell/adapter-hono-server": "^0.0.17",
+        "@groundswell/core": "^0.0.17",
+        "@groundswell/core-server": "^0.0.17",
         "@hono/node-server": "^1.14.1",
         "@hono/trpc-server": "^0.3.4",
         "@stu/db": "workspace:*",
@@ -100,12 +100,13 @@
       "name": "@stu/app-mobile",
       "version": "1.0.0",
       "dependencies": {
+        "@dev-plugins/react-navigation": "^0.3.1",
         "@expo-google-fonts/nunito": "^0.2.3",
         "@expo/vector-icons": "^14.0.2",
-        "@groundswell/adapter-drizzle-sqlite": "^0.0.16",
-        "@groundswell/adapter-sse-client": "^0.0.16",
-        "@groundswell/core": "^0.0.16",
-        "@groundswell/react": "^0.0.16",
+        "@groundswell/adapter-drizzle-sqlite": "^0.0.17",
+        "@groundswell/adapter-sse-client": "^0.0.17",
+        "@groundswell/core": "^0.0.17",
+        "@groundswell/react": "^0.0.17",
         "@react-native-community/datetimepicker": "8.4.1",
         "@react-native-picker/picker": "^2.9.0",
         "@react-native-segmented-control/segmented-control": "2.5.7",
@@ -206,8 +207,8 @@
       "name": "@stu/db",
       "version": "0.1.0",
       "dependencies": {
-        "@groundswell/adapter-drizzle-postgres": "^0.0.16",
-        "@groundswell/core": "^0.0.16",
+        "@groundswell/adapter-drizzle-postgres": "^0.0.17",
+        "@groundswell/core": "^0.0.17",
         "@schnau/effect-drizzle": "0.5.7",
         "@stu/lib": "workspace:*",
         "@t3-oss/env-core": "^0.12.0",
@@ -325,7 +326,7 @@
       "name": "@stu/lib",
       "version": "0.1.0",
       "dependencies": {
-        "@groundswell/zod-helpers": "^0.0.16",
+        "@groundswell/zod-helpers": "^0.0.17",
         "date-fns": "^4.1.0",
         "dayjs": "^1.11.13",
         "effect": "^3.16.13",
@@ -413,8 +414,8 @@
       "version": "0.1.0",
       "dependencies": {
         "@effect/vitest": "^0.24.1",
-        "@groundswell/adapter-drizzle-sqlite": "^0.0.16",
-        "@groundswell/core": "^0.0.16",
+        "@groundswell/adapter-drizzle-sqlite": "^0.0.17",
+        "@groundswell/core": "^0.0.17",
         "@schnau/effect-drizzle": "0.5.7",
         "@stu/lib": "workspace:*",
         "@t3-oss/env-core": "^0.12.0",
@@ -732,6 +733,8 @@
 
     "@dependents/detective-less": ["@dependents/detective-less@5.0.1", "", { "dependencies": { "gonzales-pe": "^4.3.0", "node-source-walk": "^7.0.1" } }, "sha512-Y6+WUMsTFWE5jb20IFP4YGa5IrGY/+a/FbOSjDF/wz9gepU2hwCYSXRHP/vPwBvwcY3SVMASt4yXxbXNXigmZQ=="],
 
+    "@dev-plugins/react-navigation": ["@dev-plugins/react-navigation@0.3.1", "", { "dependencies": { "@react-navigation/devtools": "^7.0.1", "nanoid": "^5.0.8" }, "peerDependencies": { "@react-navigation/core": "*", "expo": "^53.0.5" } }, "sha512-M8b1lzzlC1TjYqe9QvjnzNuUyd0GPL/ZxB8GJjJtTv9eQRYqnq/E4mt5xdllHZJSl5ExvZ528sPZKozir1MlRQ=="],
+
     "@discoveryjs/json-ext": ["@discoveryjs/json-ext@0.5.7", "", {}, "sha512-dBVuXR082gk3jsFp7Rd/JI4kytwGHecnCoTtXFb7DB6CNHp4rg5k1bhg0nWdLGLnOV71lmDzGQaLMy8iPLY0pw=="],
 
     "@drizzle-team/brocli": ["@drizzle-team/brocli@0.10.2", "", {}, "sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w=="],
@@ -920,21 +923,21 @@
 
     "@graphql-typed-document-node/core": ["@graphql-typed-document-node/core@3.2.0", "", { "peerDependencies": { "graphql": "^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0" } }, "sha512-mB9oAsNCm9aM3/SOv4YtBMqZbYj10R7dkq8byBqxGY/ncFwhf2oQzMV+LCRlWoDSEBJ3COiR1yeDvMtsoOsuFQ=="],
 
-    "@groundswell/adapter-drizzle-postgres": ["@groundswell/adapter-drizzle-postgres@0.0.16", "https://npm.schnau.dev/@groundswell/adapter-drizzle-postgres/-/adapter-drizzle-postgres-0.0.16.tgz", { "peerDependencies": { "@groundswell/core": "*", "@groundswell/core-server": "*", "@groundswell/zod-helpers": "*", "@schnau/effect-drizzle": "^0.5.1", "@types/pg": "^8.15.4", "drizzle-orm": "^0.44", "effect": "^3", "pg": "^8.16.3", "superjson": "^2", "zod": "^3" } }, "sha512-HFHt4oogOjxwM8ruL55j8bKRJtN8v+ANCVtVc3hRwzjpbN3HYcZ+uAgDaZHVoOmllivaEIFxdFaNfgbe2aNa5w=="],
+    "@groundswell/adapter-drizzle-postgres": ["@groundswell/adapter-drizzle-postgres@0.0.17", "https://npm.schnau.dev/@groundswell/adapter-drizzle-postgres/-/adapter-drizzle-postgres-0.0.17.tgz", { "peerDependencies": { "@groundswell/core": "*", "@groundswell/core-server": "*", "@groundswell/zod-helpers": "*", "@schnau/effect-drizzle": "^0.5.1", "@types/pg": "^8.15.4", "drizzle-orm": "^0.44", "effect": "^3", "pg": "^8.16.3", "superjson": "^2", "zod": "^3" } }, "sha512-QwXYzhXVzXkhcaFhdK4672/XHKX7Kc7dNkAGeo2yTbb4Vn34zWpYDUB5o2MQrGNdXyF8PKMC5D/Y+VDKdrBXJg=="],
 
-    "@groundswell/adapter-drizzle-sqlite": ["@groundswell/adapter-drizzle-sqlite@0.0.16", "https://npm.schnau.dev/@groundswell/adapter-drizzle-sqlite/-/adapter-drizzle-sqlite-0.0.16.tgz", { "peerDependencies": { "@groundswell/core": "*", "@groundswell/core-server": "*", "@groundswell/zod-helpers": "*", "@schnau/effect-drizzle": "^0.5.1", "drizzle-orm": "^0.44", "effect": "^3", "superjson": "^2", "zod": "^3" } }, "sha512-znSjeAawSt4sOK8qs0ZrELeJvpV7fGsN6v0Vt3IQFsSvMPlikopmNkCBZ3RWfAhF0EHepnSAfQJZxB5x03TcCw=="],
+    "@groundswell/adapter-drizzle-sqlite": ["@groundswell/adapter-drizzle-sqlite@0.0.17", "https://npm.schnau.dev/@groundswell/adapter-drizzle-sqlite/-/adapter-drizzle-sqlite-0.0.17.tgz", { "peerDependencies": { "@groundswell/core": "*", "@groundswell/core-server": "*", "@groundswell/zod-helpers": "*", "@schnau/effect-drizzle": "^0.5.1", "drizzle-orm": "^0.44", "effect": "^3", "superjson": "^2", "zod": "^3" } }, "sha512-tA6xPkg5ziwcirqM2RpGQDhRyWhwoW+hQlilvEyBP4WAMGNJFJussV42Oq52mo2YNgDb9TTXPkgZugL5eBDRJQ=="],
 
-    "@groundswell/adapter-hono-server": ["@groundswell/adapter-hono-server@0.0.16", "https://npm.schnau.dev/@groundswell/adapter-hono-server/-/adapter-hono-server-0.0.16.tgz", { "peerDependencies": { "@groundswell/core-server": "*", "effect": "^3", "hono": "^4", "superjson": "^2", "zod": "^3" } }, "sha512-sVIzeKZzmBdAgfa9q9SDxG3fScKDhZ1+lxVE78LcJlhi9qrm+sL8/i6VjMQvvRGBy9XBM/jJOmy9forQ3a0u2Q=="],
+    "@groundswell/adapter-hono-server": ["@groundswell/adapter-hono-server@0.0.17", "https://npm.schnau.dev/@groundswell/adapter-hono-server/-/adapter-hono-server-0.0.17.tgz", { "peerDependencies": { "@groundswell/core-server": "*", "effect": "^3", "hono": "^4", "superjson": "^2", "zod": "^3" } }, "sha512-D5zzHA9Ds2pGQoofahfqjpbVEIpZjdmIORKPC3UQ7pMz2qkhFlSTATyq8Gx6HmVAeKC6yrE3xp6PBfvNuV1woA=="],
 
-    "@groundswell/adapter-sse-client": ["@groundswell/adapter-sse-client@0.0.16", "https://npm.schnau.dev/@groundswell/adapter-sse-client/-/adapter-sse-client-0.0.16.tgz", { "peerDependencies": { "@groundswell/core": "*", "effect": "^3", "eventsource": "^4", "react-native-sse": "^1", "superjson": "^2", "zod": "^3" }, "optionalPeers": ["eventsource", "react-native-sse"] }, "sha512-oHuC7RdIL1w3JEGNfXCCMQS42fuwpQHelGu/7M7s6I5kP6VpmsXh+74tJPJ09ClhNfjuVdmxD868bgZ72HtwUw=="],
+    "@groundswell/adapter-sse-client": ["@groundswell/adapter-sse-client@0.0.17", "https://npm.schnau.dev/@groundswell/adapter-sse-client/-/adapter-sse-client-0.0.17.tgz", { "peerDependencies": { "@groundswell/core": "*", "effect": "^3", "eventsource": "^4", "react-native-sse": "^1", "superjson": "^2", "zod": "^3" }, "optionalPeers": ["eventsource", "react-native-sse"] }, "sha512-ovauf9cSSpwZrBRCoEwbLgE3J6o39CGBPwI80qazsuO0U5Ox9uFiqeW3q1mS24mEal8Yi8XIyc4mu+iwv9mvgw=="],
 
-    "@groundswell/core": ["@groundswell/core@0.0.16", "https://npm.schnau.dev/@groundswell/core/-/core-0.0.16.tgz", { "peerDependencies": { "effect": "^3" } }, "sha512-YEbud/xWSetjgtl0bLT8IGUERhP7zQau+ooimQNPAGUVsiR/McKMKkudv5fozPIMBo87J8JpFOl/FnuWmWnRgg=="],
+    "@groundswell/core": ["@groundswell/core@0.0.17", "https://npm.schnau.dev/@groundswell/core/-/core-0.0.17.tgz", { "peerDependencies": { "effect": "^3" } }, "sha512-9PGOrsISpGIC8LEK1TsdDE7inJTTffPxXLWiNoOoAyyfrTaZnLhc2Fqv8S4uovBM3OYstlcK1EjFW1csBPSreQ=="],
 
-    "@groundswell/core-server": ["@groundswell/core-server@0.0.16", "https://npm.schnau.dev/@groundswell/core-server/-/core-server-0.0.16.tgz", { "peerDependencies": { "@groundswell/core": "*", "effect": "^3" } }, "sha512-9d8pNFJK+ghnJ8JXF8lIRFmrp47pBunZvUDeFBEw06CSPa+uYc/CselKz3ZZPE3DzaTqipSDCMyHocL5IMknCw=="],
+    "@groundswell/core-server": ["@groundswell/core-server@0.0.17", "https://npm.schnau.dev/@groundswell/core-server/-/core-server-0.0.17.tgz", { "peerDependencies": { "@groundswell/core": "*", "effect": "^3" } }, "sha512-KMYzqPnvqtLaqwV36FDWMb4tgKFQMdISO5oMtjxHIDroQfFNfBToVc9/JgECkTh7YaJCEZ8me7YwjXn1fyFT9w=="],
 
-    "@groundswell/react": ["@groundswell/react@0.0.16", "https://npm.schnau.dev/@groundswell/react/-/react-0.0.16.tgz", { "peerDependencies": { "@groundswell/core": "*", "react": "*" } }, "sha512-jRDkCzXBWTI5kqkSVh5Cqn4y5tnlSVBnKPmvuRrxQ/GEE+04e5wlmPMBhWdb+m1EXQqhuo8Cft0A1A3elRXzxg=="],
+    "@groundswell/react": ["@groundswell/react@0.0.17", "https://npm.schnau.dev/@groundswell/react/-/react-0.0.17.tgz", { "peerDependencies": { "@groundswell/core": "*", "react": "*" } }, "sha512-QgJFTTnXvKyjQcivETtgQ6P9PV3Fnd71kLk0ZUqXgqTlVNJTFRbumLjRUmYoncpJwstlvyk9InwVAkgpJRtlEw=="],
 
-    "@groundswell/zod-helpers": ["@groundswell/zod-helpers@0.0.16", "https://npm.schnau.dev/@groundswell/zod-helpers/-/zod-helpers-0.0.16.tgz", { "dependencies": { "zod": "^3.25.67" } }, "sha512-Jaqa9ejcZZ9IPajB499nDbo8u5HY3vXbFvLfgL+UBIjrJFCq/e5qHRk9hdsClkrDGxksaq6vA2Gr7bamneidSg=="],
+    "@groundswell/zod-helpers": ["@groundswell/zod-helpers@0.0.17", "https://npm.schnau.dev/@groundswell/zod-helpers/-/zod-helpers-0.0.17.tgz", { "dependencies": { "zod": "^3.25.67" } }, "sha512-CGC/8jnP9j1E0lM/voKwcHPoEa3D+OmTn783izqFdOkwNRHS5OBtsBU8vAbs+bu7Fu+ToQLQ4VXxK532j7NMYw=="],
 
     "@grpc/grpc-js": ["@grpc/grpc-js@1.13.4", "", { "dependencies": { "@grpc/proto-loader": "^0.7.13", "@js-sdsl/ordered-map": "^4.4.2" } }, "sha512-GsFaMXCkMqkKIvwCQjCrwH+GHbPKBjhwo/8ZuUkWHqbI73Kky9I+pQltrlT0+MWpedCoosda53lgjYfyEPgxBg=="],
 
@@ -1233,6 +1236,8 @@
     "@react-navigation/bottom-tabs": ["@react-navigation/bottom-tabs@7.4.2", "", { "dependencies": { "@react-navigation/elements": "^2.5.2", "color": "^4.2.3" }, "peerDependencies": { "@react-navigation/native": "^7.1.14", "react": ">= 18.2.0", "react-native": "*", "react-native-safe-area-context": ">= 4.0.0", "react-native-screens": ">= 4.0.0" } }, "sha512-jyBux5l3qqEucY5M/ZWxVvfA8TQu7DVl2gK+xB6iKqRUfLf7dSumyVxc7HemDwGFoz3Ug8dVZFvSMEs+mfrieQ=="],
 
     "@react-navigation/core": ["@react-navigation/core@7.12.1", "", { "dependencies": { "@react-navigation/routers": "^7.4.1", "escape-string-regexp": "^4.0.0", "nanoid": "^3.3.11", "query-string": "^7.1.3", "react-is": "^19.1.0", "use-latest-callback": "^0.2.4", "use-sync-external-store": "^1.5.0" }, "peerDependencies": { "react": ">= 18.2.0" } }, "sha512-ir6s25CDkReufi0vQhSIAe+AAHHJN9zTgGlS6iDS1yqbwgl2MiBAZzpaOL1T5llYujie2jF/bODeLz2j4k80zw=="],
+
+    "@react-navigation/devtools": ["@react-navigation/devtools@7.0.34", "", { "dependencies": { "fast-deep-equal": "^3.1.3", "nanoid": "^3.3.11", "stacktrace-parser": "^0.1.11" }, "peerDependencies": { "react": ">= 18.2.0" } }, "sha512-c56qZAS2SROjRADtAqoqCSCtJgP9vH/yQRfk8xtCCgCHH02Bb3h+oCf8KB6z/rBc0OxG1QsuWGuJztW0YJDA3w=="],
 
     "@react-navigation/elements": ["@react-navigation/elements@2.5.2", "", { "dependencies": { "color": "^4.2.3", "use-latest-callback": "^0.2.4", "use-sync-external-store": "^1.5.0" }, "peerDependencies": { "@react-native-masked-view/masked-view": ">= 0.2.0", "@react-navigation/native": "^7.1.14", "react": ">= 18.2.0", "react-native": "*", "react-native-safe-area-context": ">= 4.0.0" }, "optionalPeers": ["@react-native-masked-view/masked-view"] }, "sha512-aGC3ukF5+lXuiF5bK7bJyRuWCE+Tk4MZ3GoQpAb7u7+m0KmsquliDhj4UCWEUU5kUoCeoRAUvv+1lKcYKf+WTQ=="],
 
@@ -2540,7 +2545,7 @@
 
     "fill-range": ["fill-range@7.1.1", "", { "dependencies": { "to-regex-range": "^5.0.1" } }, "sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg=="],
 
-    "filter-obj": ["filter-obj@6.1.0", "", {}, "sha512-xdMtCAODmPloU9qtmPcdBV9Kd27NtMse+4ayThxqIHUES5Z2S6bGpap5PpdmNM56ub7y3i1eyr+vJJIIgWGKmA=="],
+    "filter-obj": ["filter-obj@1.1.0", "", {}, "sha512-8rXg1ZnX7xzy2NGDVkBVaAy+lSlPNwad13BtgSlLuxfIslyt5Vg64U7tFcCt4WS1R0hvtnQybT/IyCkGZ3DpXQ=="],
 
     "finalhandler": ["finalhandler@1.1.2", "", { "dependencies": { "debug": "2.6.9", "encodeurl": "~1.0.2", "escape-html": "~1.0.3", "on-finished": "~2.3.0", "parseurl": "~1.3.3", "statuses": "~1.5.0", "unpipe": "~1.0.0" } }, "sha512-aAWcW57uxVNrQZqFXjITpW3sIUQmHGG3qSb9mUah9MgMC4NeWhNOlNjXEYq3HjRAvL6arUviZGGJsBg6z0zsWA=="],
 
@@ -3576,7 +3581,7 @@
 
     "react-freeze": ["react-freeze@1.0.4", "", { "peerDependencies": { "react": ">=17.0.0" } }, "sha512-r4F0Sec0BLxWicc7HEyo2x3/2icUTrRmDjaaRyzzn+7aDyFZliszMDOgLVwSnQnYENOlL1o569Ze2HZefk8clA=="],
 
-    "react-is": ["react-is@18.3.1", "", {}, "sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg=="],
+    "react-is": ["react-is@19.1.0", "", {}, "sha512-Oe56aUPnkHyyDxxkvqtd7KkdQP5uIUfHxd5XTb3wE9d/kRnZLmKbDB0GWk919tdQ+mxxPtG6EAs6RMT6i1qtHg=="],
 
     "react-loading-indicators": ["react-loading-indicators@1.0.1", "", { "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-tmGHdzw4arI83y8VYirck1n7suvdh1LAkeLk2v2pYMAWhPesQWcexqWKh9x6jDz/XAaIX/wFKS9MdDV8sSdoVw=="],
 
@@ -4316,6 +4321,8 @@
 
     "@deno/shim-deno/which": ["which@4.0.0", "", { "dependencies": { "isexe": "^3.1.1" }, "bin": { "node-which": "bin/which.js" } }, "sha512-GlaYyEb07DPxYCKhKzplCWBJtvxZcZMrL+4UkrTSJHHPyZU4mYYTv3qaOe77H7EODLSSopAUFAc6W8U4yqvscg=="],
 
+    "@dev-plugins/react-navigation/nanoid": ["nanoid@5.1.5", "", { "bin": { "nanoid": "bin/nanoid.js" } }, "sha512-Ir/+ZpE9fDsNH0hQ3C68uyThDXzYcim2EqcZ8zn8Chtt1iylPT9xXJB0kPCnqzgcEGikO9RxSrh63MsmVCU7Fw=="],
+
     "@emnapi/runtime/tslib": ["tslib@2.8.1", "", {}, "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="],
 
     "@esbuild-kit/core-utils/esbuild": ["esbuild@0.18.20", "", { "optionalDependencies": { "@esbuild/android-arm": "0.18.20", "@esbuild/android-arm64": "0.18.20", "@esbuild/android-x64": "0.18.20", "@esbuild/darwin-arm64": "0.18.20", "@esbuild/darwin-x64": "0.18.20", "@esbuild/freebsd-arm64": "0.18.20", "@esbuild/freebsd-x64": "0.18.20", "@esbuild/linux-arm": "0.18.20", "@esbuild/linux-arm64": "0.18.20", "@esbuild/linux-ia32": "0.18.20", "@esbuild/linux-loong64": "0.18.20", "@esbuild/linux-mips64el": "0.18.20", "@esbuild/linux-ppc64": "0.18.20", "@esbuild/linux-riscv64": "0.18.20", "@esbuild/linux-s390x": "0.18.20", "@esbuild/linux-x64": "0.18.20", "@esbuild/netbsd-x64": "0.18.20", "@esbuild/openbsd-x64": "0.18.20", "@esbuild/sunos-x64": "0.18.20", "@esbuild/win32-arm64": "0.18.20", "@esbuild/win32-ia32": "0.18.20", "@esbuild/win32-x64": "0.18.20" }, "bin": { "esbuild": "bin/esbuild" } }, "sha512-ceqxoedUrcayh7Y7ZX6NdbbDzGROiyVBgC4PriJThBKSVPWnnFHZAkfI1lJT8QFkOwH4qOS2SJkS4wvpGl8BpA=="],
@@ -4526,6 +4533,8 @@
 
     "@netlify/zip-it-and-ship-it/execa": ["execa@8.0.1", "", { "dependencies": { "cross-spawn": "^7.0.3", "get-stream": "^8.0.1", "human-signals": "^5.0.0", "is-stream": "^3.0.0", "merge-stream": "^2.0.0", "npm-run-path": "^5.1.0", "onetime": "^6.0.0", "signal-exit": "^4.1.0", "strip-final-newline": "^3.0.0" } }, "sha512-VyhnebXciFV2DESc+p6B+y0LjSm0krU4OgJN44qFAhBY0TJ+1V61tYD2+wHusZ6F9n5K+vl8k0sTy7PEfV4qpg=="],
 
+    "@netlify/zip-it-and-ship-it/filter-obj": ["filter-obj@6.1.0", "", {}, "sha512-xdMtCAODmPloU9qtmPcdBV9Kd27NtMse+4ayThxqIHUES5Z2S6bGpap5PpdmNM56ub7y3i1eyr+vJJIIgWGKmA=="],
+
     "@netlify/zip-it-and-ship-it/find-up": ["find-up@7.0.0", "", { "dependencies": { "locate-path": "^7.2.0", "path-exists": "^5.0.0", "unicorn-magic": "^0.1.0" } }, "sha512-YyZM99iHrqLKjmt4LJDj58KI+fYyufRLBSYcqycxf//KpBk9FoewoGX0450m9nB44qrZnovzC2oeP5hUibxc/g=="],
 
     "@netlify/zip-it-and-ship-it/is-path-inside": ["is-path-inside@4.0.0", "", {}, "sha512-lJJV/5dYS+RcL8uQdBDW9c9uWFLLBNRyFhnAKXw5tVqLlKZ4RMGZKv+YQ/IA3OhD+RpbJa1LLFM1FQPGyIXvOA=="],
@@ -4577,8 +4586,6 @@
     "@react-native/dev-middleware/open": ["open@7.4.2", "", { "dependencies": { "is-docker": "^2.0.0", "is-wsl": "^2.1.1" } }, "sha512-MVHddDVweXZF3awtlAS+6pgKLlm/JgxZ90+/NBurBoQctVOOB/zDdVjcyPzQ+0laDGbsWgrRkflI65sQeOgT9Q=="],
 
     "@react-native/dev-middleware/ws": ["ws@6.2.3", "", { "dependencies": { "async-limiter": "~1.0.0" } }, "sha512-jmTjYU0j60B+vHey6TfR3Z7RD61z/hmxBS3VMSGIrroOWXQEneK1zNuotOUrGyBHQj0yrpsLHPWtigEFd13ndA=="],
-
-    "@react-navigation/core/react-is": ["react-is@19.1.0", "", {}, "sha512-Oe56aUPnkHyyDxxkvqtd7KkdQP5uIUfHxd5XTb3wE9d/kRnZLmKbDB0GWk919tdQ+mxxPtG6EAs6RMT6i1qtHg=="],
 
     "@rollup/plugin-commonjs/estree-walker": ["estree-walker@2.0.2", "", {}, "sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w=="],
 
@@ -5074,13 +5081,13 @@
 
     "pretty-format/ansi-styles": ["ansi-styles@5.2.0", "", {}, "sha512-Cxwpt2SfTzTtXcfOlzGEee8O+c+MmUgGrNiBcXnuWxuFJHe6a5Hz7qwhwe5OgaSYI0IJvkLqWX1ASG+cJOkEiA=="],
 
+    "pretty-format/react-is": ["react-is@18.3.1", "", {}, "sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg=="],
+
     "prop-types/react-is": ["react-is@16.13.1", "", {}, "sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ=="],
 
     "properties-reader/mkdirp": ["mkdirp@1.0.4", "", { "bin": { "mkdirp": "bin/cmd.js" } }, "sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw=="],
 
     "proxy-agent/https-proxy-agent": ["https-proxy-agent@7.0.6", "", { "dependencies": { "agent-base": "^7.1.2", "debug": "4" } }, "sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw=="],
-
-    "query-string/filter-obj": ["filter-obj@1.1.0", "", {}, "sha512-8rXg1ZnX7xzy2NGDVkBVaAy+lSlPNwad13BtgSlLuxfIslyt5Vg64U7tFcCt4WS1R0hvtnQybT/IyCkGZ3DpXQ=="],
 
     "rc/strip-json-comments": ["strip-json-comments@2.0.1", "", {}, "sha512-4gB8na07fecVVkOI6Rs4e7T6NOTki5EmL7TUduTs6bu3EdnSycntVJ4re8kgZA+wx9IueI2Y11bfbgwtzuE0KQ=="],
 

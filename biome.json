@@ -13,6 +13,8 @@
       "!**/node_modules",
       "!**/dist",
       "!**/build",
+      "!**/turbo",
+      "!**/.cache",
       "!**/expo-native-example/android",
       "!**/expo-native-example/ios",
       "!**/app-mobile/android",
