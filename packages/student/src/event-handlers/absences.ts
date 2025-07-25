@@ -12,22 +12,23 @@ export const absenceApplicators: NamespaceApplicatorMap<
 > = {
   recorded: {
     verify: () => Effect.void,
-    apply: Effect.fn(function* (event, { initiatorId }) {
-      const studentRepo = yield* StudentRepository;
-      const student = yield* studentRepo.getStudent({ studentId: initiatorId });
+    apply: (event, { initiatorId }) =>
+      Effect.gen(function* () {
+        const studentRepo = yield* StudentRepository;
+        const student = yield* studentRepo.getStudent({ studentId: initiatorId });
 
-      if (!student) {
-        return yield* Effect.fail(new ApplicatorError({ cause: `Student ${initiatorId} not found` }));
-      }
+        if (!student) {
+          return yield* Effect.fail(new ApplicatorError({ cause: `Student ${initiatorId} not found` }));
+        }
 
-      const absenceRepo = yield* AbsenceRepository;
-      yield* absenceRepo.addAbsence({
-        date: event.data.date,
-        reason: event.data.reason,
-        courseIds: event.data.courseIds,
-        isSignatureRequired: !student.isOfAge,
-      });
-    }),
+        const absenceRepo = yield* AbsenceRepository;
+        yield* absenceRepo.addAbsence({
+          date: event.data.date,
+          reason: event.data.reason,
+          courseIds: event.data.courseIds,
+          isSignatureRequired: !student.isOfAge,
+        });
+      }),
   },
 
   parentApproved: {

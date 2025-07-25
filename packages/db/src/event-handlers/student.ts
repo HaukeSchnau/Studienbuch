@@ -13,29 +13,30 @@ export const studentApplicators: NamespaceServerApplicatorMap<
   Database | StudentRepository
 > = {
   joined: {
-    verify: Effect.fn(function* (event, { initiatorId }) {
-      if (initiatorId !== event.data.studentId) {
-        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
-      }
+    verify: (event, { initiatorId }) =>
+      Effect.gen(function* () {
+        if (initiatorId !== event.data.studentId) {
+          return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
+        }
 
-      const repo = yield* StudentRepository;
-      const school = yield* repo.getSchoolOfUser({
-        studentId: event.data.studentId,
-      });
-      if (!school || school !== event.data.school) {
-        return yield* Effect.fail(new ValidationError({ cause: "INVALID_SCHOOL", reason: "NOT_FOUND" }));
-      }
+        const repo = yield* StudentRepository;
+        const school = yield* repo.getSchoolOfUser({
+          studentId: event.data.studentId,
+        });
+        if (!school || school !== event.data.school) {
+          return yield* Effect.fail(new ValidationError({ cause: "INVALID_SCHOOL", reason: "NOT_FOUND" }));
+        }
 
-      const classExists = yield* repo.doesClassExist({
-        identifier: event.data.class.identifier,
-        startYear: event.data.class.startYear,
-        school: event.data.school,
-      });
+        const classExists = yield* repo.doesClassExist({
+          identifier: event.data.class.identifier,
+          startYear: event.data.class.startYear,
+          school: event.data.school,
+        });
 
-      if (!classExists) {
-        return yield* Effect.fail(new ValidationError({ cause: "INVALID_CLASS", reason: "NOT_FOUND" }));
-      }
-    }),
+        if (!classExists) {
+          return yield* Effect.fail(new ValidationError({ cause: "INVALID_CLASS", reason: "NOT_FOUND" }));
+        }
+      }),
     apply: (event) =>
       StudentRepository.use((repo) => {
         const firstName = event.data.name.split(" ")[0] ?? "";
@@ -54,21 +55,22 @@ export const studentApplicators: NamespaceServerApplicatorMap<
   },
 
   courseAssigned: {
-    verify: Effect.fn(function* (event, { initiatorId }) {
-      if (initiatorId !== event.data.studentId) {
-        return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
-      }
+    verify: (event, { initiatorId }) =>
+      Effect.gen(function* () {
+        if (initiatorId !== event.data.studentId) {
+          return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
+        }
 
-      const repo = yield* StudentRepository;
-      const isAssigned = yield* repo.isAssignedToCourse({
-        studentId: event.data.studentId,
-        courseId: event.data.courseId,
-      });
+        const repo = yield* StudentRepository;
+        const isAssigned = yield* repo.isAssignedToCourse({
+          studentId: event.data.studentId,
+          courseId: event.data.courseId,
+        });
 
-      if (isAssigned) {
-        return yield* Effect.fail(new ValidationError({ cause: "ALREADY_ASSIGNED", reason: "DUPLICATE" }));
-      }
-    }),
+        if (isAssigned) {
+          return yield* Effect.fail(new ValidationError({ cause: "ALREADY_ASSIGNED", reason: "DUPLICATE" }));
+        }
+      }),
     apply: (event) =>
       StudentRepository.use((repo) =>
         repo.assignCourse({

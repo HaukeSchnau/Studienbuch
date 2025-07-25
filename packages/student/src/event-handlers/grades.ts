@@ -12,48 +12,50 @@ export const gradeApplicators: NamespaceApplicatorMap<
 > = {
   currentGradeSet: {
     verify: () => Effect.void,
-    apply: Effect.fn(function* (event, { initiatorId }) {
-      const studentRepo = yield* StudentRepository;
-      const student = yield* studentRepo.getStudent({ studentId: initiatorId });
-      if (!student) {
-        return yield* Effect.fail(new ApplicatorError({ cause: `Student ${initiatorId} not found` }));
-      }
+    apply: (event, { initiatorId }) =>
+      Effect.gen(function* () {
+        const studentRepo = yield* StudentRepository;
+        const student = yield* studentRepo.getStudent({ studentId: initiatorId });
+        if (!student) {
+          return yield* Effect.fail(new ApplicatorError({ cause: `Student ${initiatorId} not found` }));
+        }
 
-      const gradeRepo = yield* GradeRepository;
-      yield* gradeRepo
-        .setCurrentGrade({
-          courseId: event.data.courseId,
-          date: event.data.date,
-          result: event.data.result,
-          type: event.data.type,
-          isSignatureRequired: !student.isOfAge,
-        })
-        .pipe(
-          Effect.catchTag("GradeTooOldError", (error) => {
-            return Effect.fail(new ApplicatorError({ cause: error.message }));
-          }),
-        );
-    }),
+        const gradeRepo = yield* GradeRepository;
+        yield* gradeRepo
+          .setCurrentGrade({
+            courseId: event.data.courseId,
+            date: event.data.date,
+            result: event.data.result,
+            type: event.data.type,
+            isSignatureRequired: !student.isOfAge,
+          })
+          .pipe(
+            Effect.catchTag("GradeTooOldError", (error) => {
+              return Effect.fail(new ApplicatorError({ cause: error.message }));
+            }),
+          );
+      }),
   },
 
   writtenGradeRecorded: {
     verify: () => Effect.void,
-    apply: Effect.fn(function* (event, { initiatorId }) {
-      const studentRepo = yield* StudentRepository;
-      const student = yield* studentRepo.getStudent({ studentId: initiatorId });
-      if (!student) {
-        return yield* Effect.fail(new ApplicatorError({ cause: `Student ${initiatorId} not found` }));
-      }
+    apply: (event, { initiatorId }) =>
+      Effect.gen(function* () {
+        const studentRepo = yield* StudentRepository;
+        const student = yield* studentRepo.getStudent({ studentId: initiatorId });
+        if (!student) {
+          return yield* Effect.fail(new ApplicatorError({ cause: `Student ${initiatorId} not found` }));
+        }
 
-      const repo = yield* GradeRepository;
+        const repo = yield* GradeRepository;
 
-      yield* repo.recordWrittenGrade({
-        courseId: event.data.courseId,
-        date: event.data.date,
-        result: event.data.result,
-        isSignatureRequired: !student.isOfAge,
-      });
-    }),
+        yield* repo.recordWrittenGrade({
+          courseId: event.data.courseId,
+          date: event.data.date,
+          result: event.data.result,
+          isSignatureRequired: !student.isOfAge,
+        });
+      }),
   },
 
   teacherApproved: {
