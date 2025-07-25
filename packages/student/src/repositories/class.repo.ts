@@ -12,15 +12,21 @@ export const ClassRepositoryLive = Layer.effect(
 
     const getClass = Effect.fn(function* (payload: { identifier: string; startYear: number; school: SchoolId }) {
       const { execute } = yield* databaseContext;
-      return yield* execute((db) =>
-        db.query.Classes.findFirst({
-          where: and(
-            eq(tables.Classes.school, payload.school),
-            eq(tables.Classes.identifierInYear, payload.identifier),
-            eq(tables.Classes.startYear, payload.startYear),
+
+      const cls = yield* execute((db) =>
+        db
+          .select()
+          .from(tables.classes)
+          .where(
+            and(
+              eq(tables.classes.identifierInYear, payload.identifier),
+              eq(tables.classes.startYear, payload.startYear),
+              eq(tables.classes.school, payload.school),
+            ),
           ),
-        }),
       );
+
+      return cls[0];
     });
 
     return {
@@ -31,23 +37,20 @@ export const ClassRepositoryLive = Layer.effect(
         return clazz !== undefined;
       }),
 
-      createClass: Effect.fn(function* (payload: {
-        identifier: string;
-        startYear: number;
-        school: SchoolId;
-        teachers: string[];
-      }) {
+      createClass: Effect.fn(function* (payload) {
         const { execute } = yield* databaseContext;
+
         yield* execute((db) =>
-          db.insert(tables.Classes).values({
+          db.insert(tables.classes).values({
             identifierInYear: payload.identifier,
             startYear: payload.startYear,
             school: payload.school,
           }),
         );
+
         for (const teacher of payload.teachers) {
           yield* execute((db) =>
-            db.insert(tables.TeachersToClasses).values({
+            db.insert(tables.teachersToClasses).values({
               teacher,
               classIdentifier: payload.identifier,
               classStartYear: payload.startYear,

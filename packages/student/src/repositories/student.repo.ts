@@ -1,123 +1,83 @@
-import type { SchoolId } from "@stu/lib";
-import { and, eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { StudentRepository } from "@stu/lib";
+import { eq } from "drizzle-orm";
+import { Effect, Layer } from "effect";
 import { Database } from "../database";
 import * as tables from "../schema";
+import { RepositoryDatabase } from "./util";
 
-export class StudentRepository extends Effect.Service<StudentRepository>()("student/StudentRepository", {
-  effect: Effect.gen(function* () {
-    const doesClassExist = Effect.fn(function* (payload: { identifier: string; startYear: number; school: SchoolId }) {
-      const { execute } = yield* Database;
+export const StudentRepositoryLive = Layer.effect(
+  StudentRepository,
+  Effect.gen(function* () {
+    const databaseContext = yield* RepositoryDatabase;
 
-      const cls = yield* execute((db) =>
-        db
-          .select()
-          .from(tables.classes)
-          .where(
-            and(
-              eq(tables.classes.identifierInYear, payload.identifier),
-              eq(tables.classes.startYear, payload.startYear),
-              eq(tables.classes.school, payload.school),
-            ),
-          ),
-      );
+    return {
+      createStudent: Effect.fn(function* (payload) {
+        const { execute } = yield* databaseContext;
 
-      return cls.length > 0;
-    });
+        const firstName = payload.name.split(" ")[0] ?? "";
+        const lastName = payload.name.split(" ").slice(1).join(" ");
 
-    const createStudent = Effect.fn(function* (payload: {
-      studentId: string;
-      name: string;
-      school: SchoolId;
-      class: {
-        identifier: string;
-        startYear: number;
-      };
-      isOfAge: boolean;
-    }) {
-      const { execute } = yield* Database;
-
-      const firstName = payload.name.split(" ")[0] ?? "";
-      const lastName = payload.name.split(" ").slice(1).join(" ");
-
-      yield* execute((db) =>
-        db
-          .insert(tables.persons)
-          .values({
-            id: payload.studentId,
-            firstName,
-            lastName,
-          })
-          .onConflictDoUpdate({
-            target: [tables.persons.id],
-            set: {
+        yield* execute((db) =>
+          db
+            .insert(tables.persons)
+            .values({
+              id: payload.studentId,
               firstName,
               lastName,
-            },
-          }),
-      );
+            })
+            .onConflictDoUpdate({
+              target: [tables.persons.id],
+              set: {
+                firstName,
+                lastName,
+              },
+            }),
+        );
 
-      yield* execute((db) =>
-        db
-          .insert(tables.students)
-          .values({
-            person: payload.studentId,
-            school: payload.school,
-            startYear: payload.class.startYear,
-            classIdentifier: payload.class.identifier,
-            isOfAge: payload.isOfAge,
-          })
-          .onConflictDoUpdate({
-            target: [tables.students.person],
-            set: {
+        yield* execute((db) =>
+          db
+            .insert(tables.students)
+            .values({
+              person: payload.studentId,
               school: payload.school,
               startYear: payload.class.startYear,
               classIdentifier: payload.class.identifier,
               isOfAge: payload.isOfAge,
-            },
+            })
+            .onConflictDoUpdate({
+              target: [tables.students.person],
+              set: {
+                school: payload.school,
+                startYear: payload.class.startYear,
+                classIdentifier: payload.class.identifier,
+                isOfAge: payload.isOfAge,
+              },
+            }),
+        );
+      }, Database.asTransactionCustom(databaseContext)),
+
+      assignCourse: Effect.fn(function* (payload) {
+        const { execute } = yield* databaseContext;
+
+        yield* execute((db) =>
+          db
+            .update(tables.courses)
+            .set({
+              isMember: true,
+            })
+            .where(eq(tables.courses.id, payload.courseId)),
+        );
+      }),
+
+      getStudent: Effect.fn(function* (payload) {
+        const { execute } = yield* databaseContext;
+
+        return yield* execute((db) =>
+          db.query.students.findFirst({
+            where: eq(tables.students.person, payload.studentId),
           }),
-      );
-    }, Database.asTransaction);
-
-    const doesCourseExist = Effect.fn(function* (payload: { courseId: string }) {
-      const { execute } = yield* Database;
-
-      const course = yield* execute((db) =>
-        db.select().from(tables.courses).where(eq(tables.courses.id, payload.courseId)),
-      );
-
-      return course.length > 0;
-    });
-
-    const assignCourse = Effect.fn(function* (payload: { courseId: string }) {
-      const { execute } = yield* Database;
-
-      yield* execute((db) =>
-        db
-          .update(tables.courses)
-          .set({
-            isMember: true,
-          })
-          .where(eq(tables.courses.id, payload.courseId)),
-      );
-    });
-
-    const getStudent = Effect.fn(function* (payload: { studentId: string }) {
-      const { execute } = yield* Database;
-
-      return yield* execute((db) =>
-        db.query.students.findFirst({
-          where: eq(tables.students.person, payload.studentId),
-        }),
-      );
-    });
-
-    return {
-      doesClassExist,
-      doesCourseExist,
-      createStudent,
-      assignCourse,
-      getStudent,
+        );
+      }),
     };
   }),
-}) {}
+);

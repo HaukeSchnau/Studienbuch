@@ -1,15 +1,17 @@
 import { type NamespaceApplicatorMap, ValidationError } from "@groundswell/core";
 import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { DomainEvent } from "@stu/lib";
+import {
+  CourseRepository,
+  HolidayRepository,
+  PersonRepository,
+  SchoolRepository,
+  SemesterRepository,
+  TimetableRepository,
+  YearRepository,
+} from "@stu/lib";
 import { Effect } from "effect";
 import type { Database } from "../database";
-import { CourseRepository } from "../repositories/course.repo";
-import { HolidayRepository } from "../repositories/holiday.repo";
-import { PersonRepository } from "../repositories/person.repo";
-import { SchoolRepository } from "../repositories/school.repo";
-import { SemesterRepository } from "../repositories/semester.repo";
-import { TimetableRepository } from "../repositories/timetable.repo";
-import { YearRepository } from "../repositories/year.repo";
 
 const failIfTrue = (message: string, reason: "DUPLICATE" | "NOT_FOUND" | "NOT_ALLOWED" | "INVALID" | "UNKNOWN") =>
   Effect.flatMap((bool) => (bool ? Effect.fail(new ValidationError({ cause: message, reason })) : Effect.void));
@@ -29,13 +31,13 @@ export const orgApplicators: NamespaceApplicatorMap<
 > = {
   "school.founded": {
     verify: (event) =>
-      SchoolRepository.use((repo) =>
+      Effect.andThen(SchoolRepository, (repo) =>
         repo.doesSchoolExist({
           id: event.data.id,
         }),
       ).pipe(failIfTrue("School already exists", "DUPLICATE")),
     apply: (event) =>
-      SchoolRepository.use((repo) =>
+      Effect.andThen(SchoolRepository, (repo) =>
         repo.createSchool({
           id: event.data.id,
           name: event.data.name,
@@ -45,13 +47,13 @@ export const orgApplicators: NamespaceApplicatorMap<
   },
   "teacher.joined": {
     verify: (event) =>
-      PersonRepository.use((repo) =>
+      Effect.andThen(PersonRepository, (repo) =>
         repo.doesTeacherExist({
           id: event.data.personId,
         }),
       ).pipe(failIfTrue("Teacher already exists", "DUPLICATE")),
     apply: (event) =>
-      PersonRepository.use((repo) =>
+      Effect.andThen(PersonRepository, (repo) =>
         repo.createTeacher({
           personId: event.data.personId,
           firstName: event.data.firstName,
@@ -63,7 +65,7 @@ export const orgApplicators: NamespaceApplicatorMap<
   },
   "holiday.created": {
     verify: (event) =>
-      HolidayRepository.use((repo) =>
+      Effect.andThen(HolidayRepository, (repo) =>
         repo.doesHolidayExist({
           name: event.data.name,
           start: event.data.start,
@@ -138,7 +140,7 @@ export const orgApplicators: NamespaceApplicatorMap<
   },
   "year.started": {
     verify: (event) =>
-      YearRepository.use((repo) =>
+      Effect.andThen(YearRepository, (repo) =>
         repo.doesYearExist({
           name: event.data.name,
           startYear: event.data.startYear,
@@ -147,7 +149,7 @@ export const orgApplicators: NamespaceApplicatorMap<
         }),
       ).pipe(failIfTrue("Year already exists", "DUPLICATE")),
     apply: (event) =>
-      YearRepository.use((repo) =>
+      Effect.andThen(YearRepository, (repo) =>
         repo.createYear({
           name: event.data.name,
           startYear: event.data.startYear,
@@ -159,13 +161,13 @@ export const orgApplicators: NamespaceApplicatorMap<
   },
   "courses.created": {
     verify: (event) =>
-      CourseRepository.use((repo) =>
+      Effect.andThen(CourseRepository, (repo) =>
         repo.doesCourseExist({
           id: event.data.id,
         }),
       ).pipe(failIfTrue("Course already exists", "DUPLICATE")),
     apply: (event) =>
-      CourseRepository.use((repo) =>
+      Effect.andThen(CourseRepository, (repo) =>
         repo.createCourse({
           id: event.data.id,
           name: event.data.name,
@@ -180,14 +182,14 @@ export const orgApplicators: NamespaceApplicatorMap<
   },
   "timetable.entryCreated": {
     verify: (event) =>
-      TimetableRepository.use((repo) =>
+      Effect.andThen(TimetableRepository, (repo) =>
         repo.doesTimetableEntryExist({
           start: event.data.start,
           course: event.data.course,
         }),
       ).pipe(failIfTrue("Timetable entry already exists", "DUPLICATE")),
     apply: (event) =>
-      TimetableRepository.use((repo) =>
+      Effect.andThen(TimetableRepository, (repo) =>
         repo.createTimetableEntry({
           start: event.data.start,
           duration: event.data.duration,
@@ -199,7 +201,7 @@ export const orgApplicators: NamespaceApplicatorMap<
   "timetable.substituted": {
     verify: () => Effect.void,
     apply: (event) =>
-      TimetableRepository.use((repo) =>
+      Effect.andThen(TimetableRepository, (repo) =>
         repo.createSubstitution({
           start: event.data.start,
           course: event.data.course,
@@ -212,7 +214,7 @@ export const orgApplicators: NamespaceApplicatorMap<
   "timetable.canceled": {
     verify: () => Effect.void,
     apply: (event) =>
-      TimetableRepository.use((repo) =>
+      Effect.andThen(TimetableRepository, (repo) =>
         repo.createSubstitution({
           start: event.data.start,
           course: event.data.course,
@@ -225,7 +227,7 @@ export const orgApplicators: NamespaceApplicatorMap<
   "timetable.discarded": {
     verify: () => Effect.void,
     apply: (event) =>
-      TimetableRepository.use((repo) =>
+      Effect.andThen(TimetableRepository, (repo) =>
         repo.deleteTimetableEntry({
           start: event.data.start,
           course: event.data.course,

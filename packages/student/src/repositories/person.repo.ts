@@ -1,43 +1,37 @@
-import type { Salutation } from "@stu/lib";
+import { PersonRepository } from "@stu/lib";
 import { eq } from "drizzle-orm";
-import { Effect } from "effect";
-import { Database } from "../database";
+import { Effect, Layer } from "effect";
 import * as tables from "../schema";
+import { RepositoryDatabase } from "./util";
 
-export class PersonRepository extends Effect.Service<PersonRepository>()("student/PersonRepository", {
-  effect: Effect.gen(function* () {
-    const doesTeacherExist = Effect.fn(function* (payload: { id: string }) {
-      const { execute } = yield* Database;
-      const teacher = yield* execute((db) =>
-        db.query.persons.findFirst({
-          where: eq(tables.persons.id, payload.id),
-        }),
-      );
-      return teacher !== undefined;
-    });
-
-    const createTeacher = Effect.fn(function* (payload: {
-      personId: string;
-      firstName?: string;
-      lastName?: string;
-      salutation?: Salutation;
-      abbrv: string;
-    }) {
-      const { execute } = yield* Database;
-      yield* execute((db) =>
-        db.insert(tables.persons).values({
-          id: payload.personId,
-          firstName: payload.firstName ?? "",
-          lastName: payload.lastName ?? "",
-          salutation: payload.salutation,
-          abbrv: payload.abbrv,
-        }),
-      );
-    });
+export const PersonRepositoryLive = Layer.effect(
+  PersonRepository,
+  Effect.gen(function* () {
+    const databaseContext = yield* RepositoryDatabase;
 
     return {
-      doesTeacherExist,
-      createTeacher,
+      doesTeacherExist: Effect.fn(function* (payload) {
+        const { execute } = yield* databaseContext;
+        const teacher = yield* execute((db) =>
+          db.query.persons.findFirst({
+            where: eq(tables.persons.id, payload.id),
+          }),
+        );
+        return teacher !== undefined;
+      }),
+
+      createTeacher: Effect.fn(function* (payload) {
+        const { execute } = yield* databaseContext;
+        yield* execute((db) =>
+          db.insert(tables.persons).values({
+            id: payload.personId,
+            firstName: payload.firstName ?? "",
+            lastName: payload.lastName ?? "",
+            salutation: payload.salutation,
+            abbrv: payload.abbrv,
+          }),
+        );
+      }),
     };
   }),
-}) {}
+);

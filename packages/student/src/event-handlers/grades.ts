@@ -1,9 +1,9 @@
 import { ApplicatorError, type NamespaceApplicatorMap } from "@groundswell/core";
 import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { DomainEvent } from "@stu/lib";
+import { GradeRepository, StudentRepository } from "@stu/lib";
 import { Effect } from "effect";
 import type { Database } from "../database";
-import { GradeRepository, StudentRepository } from "../repositories";
 
 export const gradeApplicators: NamespaceApplicatorMap<
   DomainEvent,
@@ -14,27 +14,34 @@ export const gradeApplicators: NamespaceApplicatorMap<
   currentGradeSet: {
     verify: () => Effect.void,
     apply: Effect.fn(function* (event, { initiatorId }) {
-      const student = yield* StudentRepository.use((repo) => repo.getStudent({ studentId: initiatorId }));
+      const studentRepo = yield* StudentRepository;
+      const student = yield* studentRepo.getStudent({ studentId: initiatorId });
       if (!student) {
         return yield* Effect.fail(new ApplicatorError({ cause: `Student ${initiatorId} not found` }));
       }
 
-      const repo = yield* GradeRepository;
-
-      yield* repo.setCurrentGrade({
-        courseId: event.data.courseId,
-        date: event.data.date,
-        result: event.data.result,
-        type: event.data.type,
-        isSignatureRequired: !student.isOfAge,
-      });
+      const gradeRepo = yield* GradeRepository;
+      yield* gradeRepo
+        .setCurrentGrade({
+          courseId: event.data.courseId,
+          date: event.data.date,
+          result: event.data.result,
+          type: event.data.type,
+          isSignatureRequired: !student.isOfAge,
+        })
+        .pipe(
+          Effect.catchTag("GradeTooOldError", (error) => {
+            return Effect.fail(new ApplicatorError({ cause: error.message }));
+          }),
+        );
     }),
   },
 
   writtenGradeRecorded: {
     verify: () => Effect.void,
     apply: Effect.fn(function* (event, { initiatorId }) {
-      const student = yield* StudentRepository.use((repo) => repo.getStudent({ studentId: initiatorId }));
+      const studentRepo = yield* StudentRepository;
+      const student = yield* studentRepo.getStudent({ studentId: initiatorId });
       if (!student) {
         return yield* Effect.fail(new ApplicatorError({ cause: `Student ${initiatorId} not found` }));
       }
@@ -53,7 +60,7 @@ export const gradeApplicators: NamespaceApplicatorMap<
   teacherApproved: {
     verify: () => Effect.void,
     apply: (event) =>
-      GradeRepository.use((repo) =>
+      Effect.andThen(GradeRepository, (repo) =>
         repo.setTeacherSignature({
           course: event.data.course,
           date: event.data.date,
@@ -66,7 +73,7 @@ export const gradeApplicators: NamespaceApplicatorMap<
   parentApproved: {
     verify: () => Effect.void,
     apply: (event) =>
-      GradeRepository.use((repo) =>
+      Effect.andThen(GradeRepository, (repo) =>
         repo.setParentSignature({
           course: event.data.course,
           date: event.data.date,
@@ -79,7 +86,7 @@ export const gradeApplicators: NamespaceApplicatorMap<
   latestRestored: {
     verify: () => Effect.void,
     apply: (event) =>
-      GradeRepository.use((repo) =>
+      Effect.andThen(GradeRepository, (repo) =>
         repo.restoreLatest({
           course: event.data.course,
           type: event.data.type,
@@ -90,7 +97,7 @@ export const gradeApplicators: NamespaceApplicatorMap<
   discarded: {
     verify: () => Effect.void,
     apply: (event) =>
-      GradeRepository.use((repo) =>
+      Effect.andThen(GradeRepository, (repo) =>
         repo.discardGrade({
           course: event.data.course,
           date: event.data.date,

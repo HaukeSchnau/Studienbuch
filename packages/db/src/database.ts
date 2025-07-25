@@ -6,6 +6,11 @@ import * as Schema from "./schema";
 export class Database extends Effect.Tag("db/Database")<Database, DatabaseService<typeof Schema>>() {
   static readonly asTransaction = <E, R>(prev: Effect.Effect<void, DatabaseError | E, Database | R>) =>
     Database.use((db) => db.transaction(prev));
+
+  static readonly asTransactionCustom =
+    (dbEffect: Effect.Effect<DatabaseService<typeof Schema>>) =>
+    <E, R>(prev: Effect.Effect<void, DatabaseError | E, R>) =>
+      dbEffect.pipe(Effect.andThen((db) => db.transaction(prev)));
 }
 
 export const DatabaseLive = Layer.scoped(
