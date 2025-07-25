@@ -4,6 +4,7 @@
   "main": "index.ts",
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules ios android",
+    "dev": "expo start",
     "lint": "biome check",
     "start": "expo start --ios",
     "android": "expo run:android",
@@ -16,6 +17,7 @@
     "expo": "53.0.20",
     "expo-constants": "~17.1.6",
     "expo-dev-client": "~5.2.4",
+    "expo-modules-core": "~2.5.0",
     "react": "19.0.0",
     "react-native": "0.79.5"
   },
