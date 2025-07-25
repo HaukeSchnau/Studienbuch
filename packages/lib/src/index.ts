@@ -6,6 +6,7 @@ export * from "./dates";
 export * from "./events";
 export * from "./grades";
 export * from "./infrastructure";
+export * from "./repositories";
 export * from "./result";
 export * from "./schedule";
 export * from "./schools";

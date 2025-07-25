@@ -1,10 +1,9 @@
 import { ApplicatorError, type NamespaceApplicatorMap } from "@groundswell/core";
 import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { DomainEvent } from "@stu/lib";
+import { AbsenceRepository, StudentRepository } from "@stu/lib";
 import { Effect } from "effect";
 import type { Database } from "../database";
-import { AbsenceRepository } from "../repositories/absences.repo";
-import { StudentRepository } from "../repositories/student.repo";
 
 export const absenceApplicators: NamespaceApplicatorMap<
   DomainEvent,
@@ -15,15 +14,15 @@ export const absenceApplicators: NamespaceApplicatorMap<
   recorded: {
     verify: () => Effect.void,
     apply: Effect.fn(function* (event, { initiatorId }) {
-      const student = yield* StudentRepository.use((repo) => repo.getStudent({ studentId: initiatorId }));
+      const studentRepo = yield* StudentRepository;
+      const student = yield* studentRepo.getStudent({ studentId: initiatorId });
 
       if (!student) {
         return yield* Effect.fail(new ApplicatorError({ cause: `Student ${initiatorId} not found` }));
       }
 
-      const repo = yield* AbsenceRepository;
-
-      repo.addAbsence({
+      const absenceRepo = yield* AbsenceRepository;
+      yield* absenceRepo.addAbsence({
         date: event.data.date,
         reason: event.data.reason,
         courseIds: event.data.courseIds,
@@ -35,7 +34,7 @@ export const absenceApplicators: NamespaceApplicatorMap<
   parentApproved: {
     verify: () => Effect.void,
     apply: (event) =>
-      AbsenceRepository.use((repo) =>
+      Effect.andThen(AbsenceRepository, (repo) =>
         repo.setParentSignature({
           date: event.data.date,
           signature: event.data.signature,
@@ -46,7 +45,7 @@ export const absenceApplicators: NamespaceApplicatorMap<
   teacherApproved: {
     verify: () => Effect.void,
     apply: (event) =>
-      AbsenceRepository.use((repo) =>
+      Effect.andThen(AbsenceRepository, (repo) =>
         repo.setTeacherSignature({
           date: event.data.date,
           courseId: event.data.courseId,
@@ -58,7 +57,7 @@ export const absenceApplicators: NamespaceApplicatorMap<
   discarded: {
     verify: () => Effect.void,
     apply: (event) =>
-      AbsenceRepository.use((repo) =>
+      Effect.andThen(AbsenceRepository, (repo) =>
         repo.deleteAbsence({
           date: event.data.date,
           courseIds: event.data.courseIds,

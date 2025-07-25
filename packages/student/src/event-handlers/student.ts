@@ -2,9 +2,9 @@ import type { NamespaceApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
 import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { DomainEvent } from "@stu/lib";
+import { ClassRepository, CourseRepository, StudentRepository } from "@stu/lib";
 import { Effect } from "effect";
 import type { Database } from "../database";
-import { StudentRepository as StudentRepo } from "../repositories/student.repo";
 
 const failIfFalse = (message: string, reason: "DUPLICATE" | "INVALID" | "NOT_ALLOWED" | "NOT_FOUND" | "UNKNOWN") =>
   Effect.flatMap((bool) => (bool ? Effect.void : Effect.fail(new ValidationError({ cause: message, reason }))));
@@ -13,7 +13,7 @@ export const studentApplicators: NamespaceApplicatorMap<
   DomainEvent,
   "student",
   DatabaseError<GenericSqliteError>,
-  Database | StudentRepo
+  Database | StudentRepository | ClassRepository | CourseRepository
 > = {
   joined: {
     verify: Effect.fn(function* (event, { initiatorId }) {
@@ -21,7 +21,7 @@ export const studentApplicators: NamespaceApplicatorMap<
         return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
       }
 
-      const repo = yield* StudentRepo;
+      const repo = yield* ClassRepository;
       const classExists = yield* repo.doesClassExist({
         identifier: event.data.class.identifier,
         startYear: event.data.class.startYear,
@@ -33,7 +33,7 @@ export const studentApplicators: NamespaceApplicatorMap<
       }
     }),
     apply: (event) =>
-      StudentRepo.use((repo) =>
+      Effect.andThen(StudentRepository, (repo) =>
         repo.createStudent({
           studentId: event.data.studentId,
           name: event.data.name,
@@ -46,13 +46,13 @@ export const studentApplicators: NamespaceApplicatorMap<
 
   courseAssigned: {
     verify: (event) =>
-      StudentRepo.use((repo) =>
+      Effect.andThen(CourseRepository, (repo) =>
         repo.doesCourseExist({
-          courseId: event.data.courseId,
+          id: event.data.courseId,
         }),
       ).pipe(failIfFalse("INVALID_COURSE", "NOT_FOUND")),
     apply: (event) =>
-      StudentRepo.use((repo) =>
+      Effect.andThen(StudentRepository, (repo) =>
         repo.assignCourse({
           courseId: event.data.courseId,
         }),

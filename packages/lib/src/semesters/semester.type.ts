@@ -7,3 +7,8 @@ export interface Semester {
   type: SemesterType;
   year: number;
 }
+
+export interface SemesterId {
+  type: SemesterType;
+  year: number;
+}

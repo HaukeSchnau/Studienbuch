@@ -1,14 +1,17 @@
-import type { StateCode } from "@stu/lib";
+import { HolidayRepository, type StateCode } from "@stu/lib";
 import { and, eq } from "drizzle-orm";
-import { Effect } from "effect";
-import { Database } from "../database";
+import { Effect, Layer } from "effect";
 import * as tables from "../schema";
+import { RepositoryDatabase } from "./util";
 
-export class HolidayRepository extends Effect.Service<HolidayRepository>()("db/HolidayRepository", {
-  effect: Effect.gen(function* () {
+export const HolidayRepositoryLive = Layer.effect(
+  HolidayRepository,
+  Effect.gen(function* () {
+    const databaseContext = yield* RepositoryDatabase;
+
     const getHoliday = Effect.fn(function* (payload: { name: string; state: StateCode; year: number }) {
-      const { execute } = yield* Database;
-      return yield* execute((db) =>
+      const { execute } = yield* databaseContext;
+      const holiday = yield* execute((db) =>
         db.query.holidays.findFirst({
           where: and(
             eq(tables.holidays.name, payload.name),
@@ -17,36 +20,34 @@ export class HolidayRepository extends Effect.Service<HolidayRepository>()("db/H
           ),
         }),
       );
-    });
-
-    const createHoliday = Effect.fn(function* (payload: {
-      name: string;
-      start: Date;
-      end: Date;
-      state: StateCode;
-      year: number;
-    }) {
-      const { execute } = yield* Database;
-      yield* execute((db) =>
-        db.insert(tables.holidays).values({
-          name: payload.name,
-          start: payload.start,
-          end: payload.end,
-          state: payload.state,
-          year: payload.year,
-        }),
-      );
-    });
-
-    const getAllHolidays = Effect.fn(function* () {
-      const { execute } = yield* Database;
-      return yield* execute((db) => db.query.holidays.findMany());
+      return holiday;
     });
 
     return {
       getHoliday,
-      createHoliday,
-      getAllHolidays,
+
+      doesHolidayExist: Effect.fn(function* (payload) {
+        const holiday = yield* getHoliday(payload);
+        return holiday !== undefined;
+      }),
+
+      createHoliday: Effect.fn(function* (payload) {
+        const { execute } = yield* databaseContext;
+        yield* execute((db) =>
+          db.insert(tables.holidays).values({
+            name: payload.name,
+            start: payload.start,
+            end: payload.end,
+            state: payload.state,
+            year: payload.year,
+          }),
+        );
+      }),
+
+      getAllHolidays: Effect.fn(function* () {
+        const { execute } = yield* databaseContext;
+        return yield* execute((db) => db.query.holidays.findMany());
+      }),
     };
   }),
-}) {}
+);
