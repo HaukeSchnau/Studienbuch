@@ -11,7 +11,6 @@ import {
   YearRepository,
 } from "@stu/lib";
 import { Effect } from "effect";
-import type { Database } from "../database";
 
 const failIfTrue = (message: string, reason: "DUPLICATE" | "NOT_FOUND" | "NOT_ALLOWED" | "INVALID" | "UNKNOWN") =>
   Effect.flatMap((bool) => (bool ? Effect.fail(new ValidationError({ cause: message, reason })) : Effect.void));
@@ -20,7 +19,6 @@ export const orgApplicators: NamespaceApplicatorMap<
   DomainEvent,
   "org",
   DatabaseError<GenericSqliteError>,
-  | Database
   | SchoolRepository
   | PersonRepository
   | YearRepository
@@ -68,8 +66,6 @@ export const orgApplicators: NamespaceApplicatorMap<
       Effect.andThen(HolidayRepository, (repo) =>
         repo.doesHolidayExist({
           name: event.data.name,
-          start: event.data.start,
-          end: event.data.end,
           state: event.data.state,
           year: event.data.year,
         }),

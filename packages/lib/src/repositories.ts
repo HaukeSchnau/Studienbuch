@@ -5,7 +5,7 @@ import type { GradeType } from "./grades";
 import type { SchoolId, StateCode } from "./schools";
 import type { SemesterId, SemesterType } from "./semesters";
 
-type UnknownDatabaseError = DatabaseError<{ message: string }>;
+export type UnknownDatabaseError = DatabaseError<{ message: string }>;
 
 export class AbsenceRepository extends Context.Tag("AbsenceRepository")<
   AbsenceRepository,

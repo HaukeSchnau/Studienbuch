@@ -1,4 +1,5 @@
 export * from "./absences.repo";
+export * from "./class.repo";
 export * from "./course.repo";
 export * from "./grades.repo";
 export * from "./holiday.repo";

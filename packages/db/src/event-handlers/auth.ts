@@ -1,17 +1,15 @@
 import type { NamespaceServerApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
-import type { DatabaseError } from "@schnau/effect-drizzle/postgres";
-import type { DomainEvent } from "@stu/lib";
+import { AuthRepository, type DomainEvent, type UnknownDatabaseError } from "@stu/lib";
 import { Effect } from "effect";
 import { Database } from "../database";
-import { AuthRepository } from "../repositories/auth.repo";
 
 const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
 
 export const authApplicators: NamespaceServerApplicatorMap<
   DomainEvent,
   "auth",
-  DatabaseError,
+  UnknownDatabaseError,
   Database | AuthRepository
 > = {
   licenseGenerated: {
@@ -26,7 +24,7 @@ export const authApplicators: NamespaceServerApplicatorMap<
       }
     }),
     apply: (event) =>
-      AuthRepository.use((repo) =>
+      Effect.andThen(AuthRepository, (repo) =>
         repo.createLicenseKey({
           key: event.data.licenseKey,
           school: event.data.school,
