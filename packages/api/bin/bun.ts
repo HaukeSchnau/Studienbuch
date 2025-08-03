@@ -16,6 +16,7 @@ const server = Effect.gen(function* () {
   });
 
   yield* Effect.log(`Server is running at http://localhost:${port}`);
+  return yield* Effect.never; // Prevent from closing scope too early. need to find better solution. Probably need to integrate better into Effect.
 });
 
 const DevToolsLive = DevTools.layerWebSocket().pipe(Layer.provide(BunSocket.layerWebSocketConstructor));
