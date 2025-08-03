@@ -21,7 +21,8 @@ export const getUserTopics = async (userId: string) => {
   });
 
   if (!student) {
-    throw new Error(`Student not found: ${userId}`);
+    console.warn(`User is not a student: ${userId}`);
+    return [];
   }
 
   return [
