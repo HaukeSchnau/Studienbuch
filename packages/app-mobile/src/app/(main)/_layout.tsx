@@ -5,6 +5,7 @@ import { Stack, Tabs } from "expo-router";
 import { useEffect } from "react";
 import { Text } from "~/components/text";
 import { api } from "~/utils/api";
+import { useSyncStatus } from "~/utils/events/ingest";
 import { registerForPushNotificationsAsync } from "~/utils/notifications";
 
 Notifications.setNotificationHandler({
@@ -53,6 +54,8 @@ export default function TabLayout() {
       responseListener.remove();
     };
   }, [registerNotificationToken]);
+
+  const syncStatus = useSyncStatus(); // required because the layer is lazily loaded
 
   return (
     <>

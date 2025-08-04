@@ -1,6 +1,5 @@
 import { ClientStorage } from "@groundswell/adapter-drizzle-sqlite";
 import { createSseTransportLayer } from "@groundswell/adapter-sse-client";
-import { ReactNativeEventSourceServiceLive } from "@groundswell/adapter-sse-client/react-native";
 import {
   type Applicator,
   ApplicatorError,
@@ -32,6 +31,7 @@ import { Context, Data, Effect, Layer } from "effect";
 import * as Crypto from "expo-crypto";
 import { getHeadersObject } from "./api";
 import { getBaseUrl } from "./base-url";
+import { ReactNativeEventSourceServiceLive } from "./sse";
 import { getStorage } from "./storage";
 
 export class DomainApplicator extends Context.Tag("Applicator")<DomainApplicator, Applicator<DomainEvent>>() {}
@@ -119,6 +119,7 @@ const TransportLive = createSseTransportLayer(DomainTransport, {
   headers: getHeadersObject,
 }).pipe(Layer.provide(ReactNativeEventSourceServiceLive));
 
+// Cannot use the default layer because it uses crypto.randomUUID() which is not available in the Expo environment.
 const RandomUUIDLive = Layer.succeed(RandomUUID, {
   next: Effect.sync(() => Crypto.randomUUID()),
 });

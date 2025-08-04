@@ -88,9 +88,9 @@ const databaseRetrySchedule: Schedule.Schedule<number, DatabaseError, never> = S
 );
 
 const SyncLayerLive = pipe(
-  Layer.provide(ingestEngine, serverApplicatorLive),
+  Layer.provideMerge(ingestEngine, serverApplicatorLive),
   Layer.provideMerge(memoryBroadcastLive),
-  Layer.provide(canonicalStorageLive),
+  Layer.provideMerge(canonicalStorageLive),
 );
 
 export const AppLayerLive = pipe(
