@@ -318,5 +318,7 @@ export class AuthRepository extends Context.Tag("AuthRepository")<
     createUser: (payload: { userId: string }) => Effect.Effect<void, UnknownDatabaseError>;
 
     activateLicenseKey: (payload: { key: string; userId: string }) => Effect.Effect<void, UnknownDatabaseError>;
+
+    getAllUsers: () => Effect.Effect<{ id: string }[], UnknownDatabaseError>;
   }
 >() {}

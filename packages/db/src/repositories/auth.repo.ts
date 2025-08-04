@@ -68,6 +68,11 @@ export const AuthRepositoryLive = Layer.effect(
             .where(eq(tables.LicenseKeys.key, payload.key)),
         );
       }),
+
+      getAllUsers: Effect.fn(function* () {
+        const { execute } = yield* databaseContext;
+        return yield* execute((db) => db.select().from(tables.Users));
+      }),
     };
   }),
 );

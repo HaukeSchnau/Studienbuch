@@ -3,7 +3,8 @@ import type { DomainEvent } from "@stu/lib";
 import { Effect, Layer, PubSub, Stream } from "effect";
 import { Offset } from "rabbitmq-stream-js-client";
 import superjson from "superjson";
-import { DomainBroadcast, DomainCanonicalStorage } from "./boilerplate";
+import { DomainBroadcast, DomainCanonicalStorage, DomainServerApplicator } from "./boilerplate";
+import { runtime } from "./groundswell";
 import { RabbitMQClient } from "./rabbitmq";
 
 export const memoryBroadcastLive = Layer.effect(
@@ -13,11 +14,35 @@ export const memoryBroadcastLive = Layer.effect(
     const canonicalStorage = yield* DomainCanonicalStorage;
 
     return DomainBroadcast.of({
-      publishToUser: (userId, event) => {
-        console.log("publishing to user", userId, event);
-        return pubsub.publishAll(event);
-      },
+      publishToUser: Effect.fn(function* (userId, events) {
+        console.log("publishing to user", userId, events);
+        yield* Effect.all(
+          events.map((event) => canonicalStorage.markEventAsSentToUser(event.id, userId)),
+          {
+            concurrency: "unbounded",
+          },
+        ).pipe(
+          Effect.catchTags({
+            CanonicalStorageError: (error) => Effect.fail(new BroadcastError({ cause: error })),
+          }),
+        );
+        yield* pubsub.publishAll(events);
+      }),
       subscribe: (userId) => {
+        console.log("subscribing to user", userId);
+        runtime.runPromise(
+          Effect.gen(function* () {
+            const serverApplicator = yield* DomainServerApplicator;
+            const topics = yield* serverApplicator.getUserTopics(userId);
+            yield* Effect.log(topics);
+            const missingEvents = yield* canonicalStorage.getMissingEventsForUser(userId, topics).pipe(
+              Effect.catchTag("CanonicalStorageError", (error) => {
+                return Effect.fail(new BroadcastError({ cause: error }));
+              }),
+            );
+            yield* Effect.log(missingEvents);
+          }),
+        );
         const initStream = Stream.fromIterableEffect(
           canonicalStorage.getEventsSentToUser(userId).pipe(
             Effect.catchTag("CanonicalStorageError", (error) => {
@@ -25,7 +50,13 @@ export const memoryBroadcastLive = Layer.effect(
             }),
           ),
         );
-        return Stream.concat(initStream, Stream.fromPubSub(pubsub));
+        const stream = Stream.concat(initStream, Stream.fromPubSub(pubsub)).pipe(
+          Stream.tap((event) => {
+            console.log("broadcasting event", event);
+            return Effect.log(event);
+          }),
+        );
+        return stream;
       },
     });
   }),

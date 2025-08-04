@@ -1,5 +1,5 @@
 import { program } from "@commander-js/extra-typings";
-import { ingest, SYSTEM_USER } from "@stu/api";
+import { bootstrapBroadcastAsync, ingest, SYSTEM_USER } from "@stu/api";
 import { alias, and, eq, ne } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
@@ -160,6 +160,11 @@ program.command("prune-conflicts").action(async () => {
     .where(and(eq(te1.start, te2.start), ne(course1.id, course2.id)));
 
   console.log(conflicts);
+  process.exit(0);
+});
+
+program.command("bootstrap-broadcast").action(async () => {
+  await bootstrapBroadcastAsync();
   process.exit(0);
 });
 
