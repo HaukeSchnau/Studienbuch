@@ -60,10 +60,10 @@
         "@effect/experimental": "^0.52.0",
         "@effect/platform-bun": "^0.73.0",
         "@effect/platform-node": "^0.90.0",
-        "@groundswell/adapter-drizzle-postgres": "^0.0.17",
-        "@groundswell/adapter-hono-server": "^0.0.17",
-        "@groundswell/core": "^0.0.17",
-        "@groundswell/core-server": "^0.0.17",
+        "@groundswell/adapter-drizzle-postgres": "^0.0.18",
+        "@groundswell/adapter-hono-server": "^0.0.18",
+        "@groundswell/core": "^0.0.18",
+        "@groundswell/core-server": "^0.0.18",
         "@hono/node-server": "^1.14.1",
         "@hono/trpc-server": "^0.3.4",
         "@stu/db": "workspace:*",
@@ -103,10 +103,10 @@
         "@dev-plugins/react-navigation": "^0.3.1",
         "@expo-google-fonts/nunito": "^0.2.3",
         "@expo/vector-icons": "^14.0.2",
-        "@groundswell/adapter-drizzle-sqlite": "^0.0.17",
-        "@groundswell/adapter-sse-client": "^0.0.17",
-        "@groundswell/core": "^0.0.17",
-        "@groundswell/react": "^0.0.17",
+        "@groundswell/adapter-drizzle-sqlite": "^0.0.18",
+        "@groundswell/adapter-sse-client": "^0.0.18",
+        "@groundswell/core": "^0.0.18",
+        "@groundswell/react": "^0.0.18",
         "@react-native-community/datetimepicker": "8.4.1",
         "@react-native-picker/picker": "^2.9.0",
         "@react-native-segmented-control/segmented-control": "2.5.7",
@@ -207,8 +207,8 @@
       "name": "@stu/db",
       "version": "0.1.0",
       "dependencies": {
-        "@groundswell/adapter-drizzle-postgres": "^0.0.17",
-        "@groundswell/core": "^0.0.17",
+        "@groundswell/adapter-drizzle-postgres": "^0.0.18",
+        "@groundswell/core": "^0.0.18",
         "@schnau/effect-drizzle": "0.5.7",
         "@stu/lib": "workspace:*",
         "@t3-oss/env-core": "^0.12.0",
@@ -327,7 +327,7 @@
       "name": "@stu/lib",
       "version": "0.1.0",
       "dependencies": {
-        "@groundswell/zod-helpers": "^0.0.17",
+        "@groundswell/zod-helpers": "^0.0.18",
         "date-fns": "^4.1.0",
         "dayjs": "^1.11.13",
         "effect": "^3.16.13",
@@ -415,8 +415,8 @@
       "version": "0.1.0",
       "dependencies": {
         "@effect/vitest": "^0.24.1",
-        "@groundswell/adapter-drizzle-sqlite": "^0.0.17",
-        "@groundswell/core": "^0.0.17",
+        "@groundswell/adapter-drizzle-sqlite": "^0.0.18",
+        "@groundswell/core": "^0.0.18",
         "@schnau/effect-drizzle": "0.5.7",
         "@stu/lib": "workspace:*",
         "@t3-oss/env-core": "^0.12.0",
@@ -924,21 +924,21 @@
 
     "@graphql-typed-document-node/core": ["@graphql-typed-document-node/core@3.2.0", "", { "peerDependencies": { "graphql": "^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0" } }, "sha512-mB9oAsNCm9aM3/SOv4YtBMqZbYj10R7dkq8byBqxGY/ncFwhf2oQzMV+LCRlWoDSEBJ3COiR1yeDvMtsoOsuFQ=="],
 
-    "@groundswell/adapter-drizzle-postgres": ["@groundswell/adapter-drizzle-postgres@0.0.17", "https://npm.schnau.dev/@groundswell/adapter-drizzle-postgres/-/adapter-drizzle-postgres-0.0.17.tgz", { "peerDependencies": { "@groundswell/core": "*", "@groundswell/core-server": "*", "@groundswell/zod-helpers": "*", "@schnau/effect-drizzle": "^0.5.1", "@types/pg": "^8.15.4", "drizzle-orm": "^0.44", "effect": "^3", "pg": "^8.16.3", "superjson": "^2", "zod": "^3" } }, "sha512-QwXYzhXVzXkhcaFhdK4672/XHKX7Kc7dNkAGeo2yTbb4Vn34zWpYDUB5o2MQrGNdXyF8PKMC5D/Y+VDKdrBXJg=="],
+    "@groundswell/adapter-drizzle-postgres": ["@groundswell/adapter-drizzle-postgres@0.0.18", "https://npm.schnau.dev/@groundswell/adapter-drizzle-postgres/-/adapter-drizzle-postgres-0.0.18.tgz", { "peerDependencies": { "@groundswell/core": "*", "@groundswell/core-server": "*", "@groundswell/zod-helpers": "*", "@schnau/effect-drizzle": "^0.5.1", "@types/pg": "^8.15.4", "drizzle-orm": "^0.44", "effect": "^3", "pg": "^8.16.3", "superjson": "^2", "zod": "^3" } }, "sha512-X+JWICggEx9V7fO0hP7c7rEuTVT+CYE1HHrSt1N/Xf9iPD4d7v1oAkJV5xOEyHxVYXqtI3Anf+ucrzxiVEVbdQ=="],
 
-    "@groundswell/adapter-drizzle-sqlite": ["@groundswell/adapter-drizzle-sqlite@0.0.17", "https://npm.schnau.dev/@groundswell/adapter-drizzle-sqlite/-/adapter-drizzle-sqlite-0.0.17.tgz", { "peerDependencies": { "@groundswell/core": "*", "@groundswell/core-server": "*", "@groundswell/zod-helpers": "*", "@schnau/effect-drizzle": "^0.5.1", "drizzle-orm": "^0.44", "effect": "^3", "superjson": "^2", "zod": "^3" } }, "sha512-tA6xPkg5ziwcirqM2RpGQDhRyWhwoW+hQlilvEyBP4WAMGNJFJussV42Oq52mo2YNgDb9TTXPkgZugL5eBDRJQ=="],
+    "@groundswell/adapter-drizzle-sqlite": ["@groundswell/adapter-drizzle-sqlite@0.0.18", "https://npm.schnau.dev/@groundswell/adapter-drizzle-sqlite/-/adapter-drizzle-sqlite-0.0.18.tgz", { "peerDependencies": { "@groundswell/core": "*", "@groundswell/core-server": "*", "@groundswell/zod-helpers": "*", "@schnau/effect-drizzle": "^0.5.1", "drizzle-orm": "^0.44", "effect": "^3", "superjson": "^2", "zod": "^3" } }, "sha512-3AfFxacn8VqCrHqdJsEx0UecO8TVCvPv/D1XPY2w1ctiep09qmG3RColpBhvx53OHsEto0yzasE0Kv+Xnt8FaA=="],
 
-    "@groundswell/adapter-hono-server": ["@groundswell/adapter-hono-server@0.0.17", "https://npm.schnau.dev/@groundswell/adapter-hono-server/-/adapter-hono-server-0.0.17.tgz", { "peerDependencies": { "@groundswell/core-server": "*", "effect": "^3", "hono": "^4", "superjson": "^2", "zod": "^3" } }, "sha512-D5zzHA9Ds2pGQoofahfqjpbVEIpZjdmIORKPC3UQ7pMz2qkhFlSTATyq8Gx6HmVAeKC6yrE3xp6PBfvNuV1woA=="],
+    "@groundswell/adapter-hono-server": ["@groundswell/adapter-hono-server@0.0.18", "https://npm.schnau.dev/@groundswell/adapter-hono-server/-/adapter-hono-server-0.0.18.tgz", { "peerDependencies": { "@groundswell/core-server": "*", "effect": "^3", "hono": "^4", "superjson": "^2", "zod": "^3" } }, "sha512-00CldxhZnQb4AgQm9qVRagHfUe7U12IhwwKdKHWFVyhcj+peSFypOhQ0o2kaxiyjdx3JDKlfHEQ6DdlCGFloDQ=="],
 
-    "@groundswell/adapter-sse-client": ["@groundswell/adapter-sse-client@0.0.17", "https://npm.schnau.dev/@groundswell/adapter-sse-client/-/adapter-sse-client-0.0.17.tgz", { "peerDependencies": { "@groundswell/core": "*", "effect": "^3", "eventsource": "^4", "react-native-sse": "^1", "superjson": "^2", "zod": "^3" }, "optionalPeers": ["eventsource", "react-native-sse"] }, "sha512-ovauf9cSSpwZrBRCoEwbLgE3J6o39CGBPwI80qazsuO0U5Ox9uFiqeW3q1mS24mEal8Yi8XIyc4mu+iwv9mvgw=="],
+    "@groundswell/adapter-sse-client": ["@groundswell/adapter-sse-client@0.0.18", "https://npm.schnau.dev/@groundswell/adapter-sse-client/-/adapter-sse-client-0.0.18.tgz", { "peerDependencies": { "@groundswell/core": "*", "effect": "^3", "eventsource": "^4", "react-native-sse": "^1", "superjson": "^2", "zod": "^3" }, "optionalPeers": ["eventsource", "react-native-sse"] }, "sha512-G/rtJW+XVtOebiJksBesf4a83W9fgjT8bTNlKeb6I63pohsZ4sGD4wWxf2CJxctTm/kYO23S8b4fDkwgLI9PZQ=="],
 
-    "@groundswell/core": ["@groundswell/core@0.0.17", "https://npm.schnau.dev/@groundswell/core/-/core-0.0.17.tgz", { "peerDependencies": { "effect": "^3" } }, "sha512-9PGOrsISpGIC8LEK1TsdDE7inJTTffPxXLWiNoOoAyyfrTaZnLhc2Fqv8S4uovBM3OYstlcK1EjFW1csBPSreQ=="],
+    "@groundswell/core": ["@groundswell/core@0.0.18", "https://npm.schnau.dev/@groundswell/core/-/core-0.0.18.tgz", { "peerDependencies": { "effect": "^3" } }, "sha512-mhqFIbH4mf0jUxxpIU78g6P8dgfnuaJPR/b8cx3/Sg6b6+P/T6GLlDVVc+lFY76C7VcdRD/nOUXU/cVvkxJGbA=="],
 
-    "@groundswell/core-server": ["@groundswell/core-server@0.0.17", "https://npm.schnau.dev/@groundswell/core-server/-/core-server-0.0.17.tgz", { "peerDependencies": { "@groundswell/core": "*", "effect": "^3" } }, "sha512-KMYzqPnvqtLaqwV36FDWMb4tgKFQMdISO5oMtjxHIDroQfFNfBToVc9/JgECkTh7YaJCEZ8me7YwjXn1fyFT9w=="],
+    "@groundswell/core-server": ["@groundswell/core-server@0.0.18", "https://npm.schnau.dev/@groundswell/core-server/-/core-server-0.0.18.tgz", { "peerDependencies": { "@groundswell/core": "*", "effect": "^3" } }, "sha512-45B313lnZQrwt/zsAjkK4aVXEqzb0DddmpeBd9PI0e+kY0LyN6URaVZdEV9AogRcoCAiz2ha3C3Q0dQ4qLmCVg=="],
 
-    "@groundswell/react": ["@groundswell/react@0.0.17", "https://npm.schnau.dev/@groundswell/react/-/react-0.0.17.tgz", { "peerDependencies": { "@groundswell/core": "*", "react": "*" } }, "sha512-QgJFTTnXvKyjQcivETtgQ6P9PV3Fnd71kLk0ZUqXgqTlVNJTFRbumLjRUmYoncpJwstlvyk9InwVAkgpJRtlEw=="],
+    "@groundswell/react": ["@groundswell/react@0.0.18", "https://npm.schnau.dev/@groundswell/react/-/react-0.0.18.tgz", { "peerDependencies": { "@groundswell/core": "*", "react": "*" } }, "sha512-MzWV+Adj4E54bul5As6pU9EBjCF6R+d5Ch4ioT3F5+CoAigAOc9Wg1u9gEETL53eyZxWQOT1ZvIxJBOzUzld7Q=="],
 
-    "@groundswell/zod-helpers": ["@groundswell/zod-helpers@0.0.17", "https://npm.schnau.dev/@groundswell/zod-helpers/-/zod-helpers-0.0.17.tgz", { "dependencies": { "zod": "^3.25.67" } }, "sha512-CGC/8jnP9j1E0lM/voKwcHPoEa3D+OmTn783izqFdOkwNRHS5OBtsBU8vAbs+bu7Fu+ToQLQ4VXxK532j7NMYw=="],
+    "@groundswell/zod-helpers": ["@groundswell/zod-helpers@0.0.18", "https://npm.schnau.dev/@groundswell/zod-helpers/-/zod-helpers-0.0.18.tgz", { "dependencies": { "zod": "^3.25.67" } }, "sha512-dwH/0qprbrJOSOPlVx0B31ytQ7tvBhuQp3fJ8Hujq6XICGOELT7WBSUdJ2b8sA7GODYbDaP4URVXiqrQAIVCnw=="],
 
     "@grpc/grpc-js": ["@grpc/grpc-js@1.13.4", "", { "dependencies": { "@grpc/proto-loader": "^0.7.13", "@js-sdsl/ordered-map": "^4.4.2" } }, "sha512-GsFaMXCkMqkKIvwCQjCrwH+GHbPKBjhwo/8ZuUkWHqbI73Kky9I+pQltrlT0+MWpedCoosda53lgjYfyEPgxBg=="],
 

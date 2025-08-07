@@ -160,7 +160,7 @@ export const orgApplicators: NamespaceServerApplicatorMap<
             })),
           ),
         );
-      }, Database.asTransaction),
+      }).pipe(Database.asTransaction),
     getEventTopics: (event) => Effect.succeed([studentsOfState(event.data.state)]),
   },
   "year.started": {
@@ -194,7 +194,7 @@ export const orgApplicators: NamespaceServerApplicatorMap<
             teachers: cls.teachers,
           });
         }
-      }, Database.asTransaction),
+      }).pipe(Database.asTransaction),
     getEventTopics: (event) =>
       Effect.succeed([
         studentsOfYear({
