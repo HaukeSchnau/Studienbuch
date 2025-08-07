@@ -1,5 +1,6 @@
 import { ClientStorage } from "@groundswell/adapter-drizzle-sqlite";
 import { createSseTransportLayer } from "@groundswell/adapter-sse-client";
+import { ReactNativeEventSourceServiceLive } from "@groundswell/adapter-sse-client/react-native";
 import {
   type Applicator,
   ApplicatorError,
@@ -31,7 +32,6 @@ import { Context, Data, Effect, Layer } from "effect";
 import * as Crypto from "expo-crypto";
 import { getHeadersObject } from "./api";
 import { getBaseUrl } from "./base-url";
-import { ReactNativeEventSourceServiceLive } from "./sse";
 import { getStorage } from "./storage";
 
 export class DomainApplicator extends Context.Tag("Applicator")<DomainApplicator, Applicator<DomainEvent>>() {}

@@ -12,6 +12,7 @@ export interface YearIdentifier {
   startYear: number;
 }
 
+// TODO: This logic needs to be more sophisticated instead of just checking the month. Actual semesters from DB should be taken into account.
 export const getMaxActiveGraduationYear = () => {
   const today = new Date();
   return today.getMonth() >= 7 ? today.getFullYear() + 1 : today.getFullYear();

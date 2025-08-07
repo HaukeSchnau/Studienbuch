@@ -17,7 +17,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@groundswell/zod-helpers": "^0.0.17",
+    "@groundswell/zod-helpers": "^0.0.18",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "effect": "^3.16.13",
