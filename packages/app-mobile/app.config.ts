@@ -1,4 +1,4 @@
-import type { ConfigContext, ExpoConfig } from "@expo/config";
+import type { ConfigContext, ExpoConfig } from "expo/config";
 
 const IS_DEV = process.env.APP_VARIANT === "development";
 
@@ -34,6 +34,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: "#6DB769",
     },
     googleServicesFile: "./google-services.json",
+    edgeToEdgeEnabled: true,
   },
   extra: {
     eas: {
