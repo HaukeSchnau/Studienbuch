@@ -3,7 +3,6 @@ import type { SubjectId } from "@stu/lib";
 import { isArraySingleElement, subjectNameMap } from "@stu/lib";
 import { colors } from "@stu/tailwind-config/native";
 import { Pressable, StyleSheet, View } from "react-native";
-
 import { SubjectIcon } from "./subject-icon";
 import { Text } from "./text";
 
@@ -80,14 +79,18 @@ export const SelectCourse = <TOption,>({ getOptionLabel, subject, value, onChang
       onSelectItem={(event) => {
         onChange(options[event.nativeEvent.index]);
       }}
-      style={[
-        styles.container,
-        {
-          backgroundColor: value ? colors.primary.DEFAULT : colors.neutral.sec,
-        },
-      ]}
     >
-      {content}
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: value ? colors.primary.DEFAULT : colors.neutral.sec,
+            pointerEvents: "none",
+          },
+        ]}
+      >
+        {content}
+      </View>
     </SelectView>
   );
 };
