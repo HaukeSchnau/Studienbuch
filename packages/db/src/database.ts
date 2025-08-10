@@ -1,7 +1,11 @@
-import { type DatabaseError, type DatabaseService, makeService } from "@schnau/effect-drizzle/postgres";
+import type { DatabaseError as BaseDatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
+import { type DatabaseService, makeService } from "@schnau/effect-drizzle/postgres";
 import { Effect, Layer, Redacted } from "effect";
+import type pg from "pg";
 import { env } from "../env";
 import * as Schema from "./schema";
+
+export type DatabaseError = BaseDatabaseError<pg.DatabaseError>;
 
 export class Database extends Effect.Tag("db/Database")<Database, DatabaseService<typeof Schema>>() {
   static readonly asTransaction = <E, R>(prev: Effect.Effect<void, DatabaseError | E, Database | R>) =>
@@ -24,5 +28,3 @@ export const DatabaseLive = Layer.scoped(
     Database,
   ),
 );
-
-export type { DatabaseError } from "@schnau/effect-drizzle/postgres";

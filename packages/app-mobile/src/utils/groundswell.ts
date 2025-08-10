@@ -124,9 +124,10 @@ const RandomUUIDLive = Layer.succeed(RandomUUID, {
   next: Effect.sync(() => Crypto.randomUUID()),
 });
 
-export const SyncEngineLive = syncEngineLive(DomainSyncEngine, DomainApplicator, DomainStorage, DomainTransport).pipe(
-  Layer.provide(clientApplicatorsLive),
-  Layer.provide(StorageLive),
-  Layer.provide(TransportLive),
-  Layer.merge(RandomUUIDLive),
-);
+export const makeSyncEngineLive = (offset: number) =>
+  syncEngineLive(DomainSyncEngine, DomainApplicator, DomainStorage, DomainTransport, { offset }).pipe(
+    Layer.provide(clientApplicatorsLive),
+    Layer.provide(StorageLive),
+    Layer.provide(TransportLive),
+    Layer.merge(RandomUUIDLive),
+  );

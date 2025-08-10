@@ -10,15 +10,16 @@ import { de } from "date-fns/locale";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
 import { Layer, Logger, ManagedRuntime } from "effect";
 import * as SplashScreen from "expo-splash-screen";
-import { lazy, useEffect } from "react";
+import { lazy, useEffect, useMemo } from "react";
 import { UIManager } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PortalRenderer } from "~/components/portal";
 import { DatabaseLive, db } from "~/db/client";
 import { useSessionWatcher } from "~/utils/auth";
 import { SyncEngineProvider } from "~/utils/events/ingest";
-import { SyncEngineLive } from "~/utils/groundswell";
+import { makeSyncEngineLive } from "~/utils/groundswell";
 import { MissingInfoGuard } from "~/utils/missing-info-guard";
+import { getStorage } from "~/utils/storage";
 import migrations from "../../drizzle/migrations";
 
 const DevTools = lazy(() =>
@@ -33,8 +34,6 @@ if (UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const runtime = ManagedRuntime.make(SyncEngineLive.pipe(Layer.provideMerge(DatabaseLive), Layer.merge(Logger.pretty)));
-
 setDefaultOptions({ locale: de });
 
 function RootLayout() {
@@ -48,6 +47,15 @@ function RootLayout() {
     if (isLoaded) {
       SplashScreen.hide();
     }
+  }, [isLoaded]);
+
+  const runtime = useMemo(() => {
+    if (!isLoaded) return null;
+
+    const offset = getStorage("sync.offset") ?? 0;
+    return ManagedRuntime.make(
+      makeSyncEngineLive(offset).pipe(Layer.provideMerge(DatabaseLive), Layer.merge(Logger.pretty)),
+    );
   }, [isLoaded]);
 
   if (!isLoaded) {
