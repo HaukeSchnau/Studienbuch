@@ -12,6 +12,7 @@ const schemas = {
     })
     .nullable(),
   "auth.licenseKey": z.string(),
+  "sync.offset": z.number(),
 } as const satisfies Record<string, ZodSchema>;
 
 type Keys = keyof typeof schemas;
