@@ -1,17 +1,20 @@
 import { and, asc, Database, DatabaseLive, eq, isNotNull, or, PersonRepository, tables } from "@stu/db";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
 import { format, parse } from "date-fns";
 import { de } from "date-fns/locale";
 import { Effect, Layer, ManagedRuntime } from "effect";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect } from "react";
 import { z } from "zod";
 
 const cn = (...args: unknown[]) => args.filter(Boolean).join(" ");
 
 export const Route = createFileRoute("/")({
   component: Home,
+  validateSearch: z.object({
+    teacherId: z.string().optional(),
+  }),
 });
 
 const runtime = ManagedRuntime.make(Layer.merge(DatabaseLive, PersonRepository.Default));
@@ -53,50 +56,52 @@ const TeacherSelectField = ({
   );
 };
 
-const getTimetableEntriesFn = Effect.fn(function* (teacherId: string) {
-  const db = yield* Database;
-
-  const timetableEntries = yield* db.execute((db) =>
-    db
-      .select()
-      .from(tables.TimetableEntries)
-      .innerJoin(tables.Courses, eq(tables.TimetableEntries.course, tables.Courses.id))
-      .innerJoin(tables.CoursesToTeachers, eq(tables.CoursesToTeachers.course, tables.Courses.id))
-      .leftJoin(
-        tables.Substitutions,
-        and(
-          eq(tables.Substitutions.course, tables.TimetableEntries.course),
-          eq(tables.Substitutions.start, tables.TimetableEntries.start),
-        ),
-      )
-      .where(
-        or(
-          eq(tables.CoursesToTeachers.teacher, teacherId),
-          and(isNotNull(tables.Substitutions.substitute), eq(tables.Substitutions.substitute, teacherId)),
-        ),
-      )
-      .orderBy(asc(tables.TimetableEntries.start)),
-  );
-
-  const groupedByDay = new Map<string, typeof timetableEntries>();
-  for (const entry of timetableEntries) {
-    const day = format(entry.timetable_entries.start, "yyyy-MM-dd");
-    if (!groupedByDay.has(day)) {
-      groupedByDay.set(day, []);
-    }
-    groupedByDay.get(day)?.push(entry);
-  }
-
-  return [...groupedByDay.entries()];
-});
-
 const getTimetableEntries = createServerFn()
   .validator(
     z.object({
       teacherId: z.string(),
     }),
   )
-  .handler(async ({ data: { teacherId } }) => runtime.runPromise(getTimetableEntriesFn(teacherId)));
+  .handler(async ({ data: { teacherId } }) =>
+    runtime.runPromise(
+      Effect.gen(function* () {
+        const db = yield* Database;
+
+        const timetableEntries = yield* db.execute((db) =>
+          db
+            .select()
+            .from(tables.TimetableEntries)
+            .innerJoin(tables.Courses, eq(tables.TimetableEntries.course, tables.Courses.id))
+            .innerJoin(tables.CoursesToTeachers, eq(tables.CoursesToTeachers.course, tables.Courses.id))
+            .leftJoin(
+              tables.Substitutions,
+              and(
+                eq(tables.Substitutions.course, tables.TimetableEntries.course),
+                eq(tables.Substitutions.start, tables.TimetableEntries.start),
+              ),
+            )
+            .where(
+              or(
+                eq(tables.CoursesToTeachers.teacher, teacherId),
+                and(isNotNull(tables.Substitutions.substitute), eq(tables.Substitutions.substitute, teacherId)),
+              ),
+            )
+            .orderBy(asc(tables.TimetableEntries.start)),
+        );
+
+        const groupedByDay = new Map<string, typeof timetableEntries>();
+        for (const entry of timetableEntries) {
+          const day = format(entry.timetable_entries.start, "yyyy-MM-dd");
+          if (!groupedByDay.has(day)) {
+            groupedByDay.set(day, []);
+          }
+          groupedByDay.get(day)?.push(entry);
+        }
+
+        return [...groupedByDay.entries()];
+      }),
+    ),
+  );
 
 const Timetable = ({ teacherId }: { teacherId: string }) => {
   const getTimetableEntriesFn = useServerFn(getTimetableEntries);
@@ -192,15 +197,22 @@ const Timetable = ({ teacherId }: { teacherId: string }) => {
 };
 
 function Home() {
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string | undefined>(undefined);
+  const { teacherId } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+
+  const setSelectedTeacherId = (teacherId: string | undefined) => {
+    navigate({
+      search: { teacherId },
+    });
+  };
 
   return (
     <div className="flex flex-row gap-4 p-4">
-      <TeacherSelectField selectedTeacherId={selectedTeacherId} setSelectedTeacherId={setSelectedTeacherId} />
+      <TeacherSelectField selectedTeacherId={teacherId} setSelectedTeacherId={setSelectedTeacherId} />
 
       <div className="flex-1">
-        {selectedTeacherId ? (
-          <Timetable teacherId={selectedTeacherId} />
+        {teacherId ? (
+          <Timetable teacherId={teacherId} />
         ) : (
           <div className="grid h-full place-items-center">Bitte wählen Sie einen Lehrer</div>
         )}

@@ -1,13 +1,12 @@
+@import "tailwindcss";
 @import url("https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap");
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@config "../../../tooling/tailwind/web.ts";
 
-@font-face {
-  font-family: "Material Symbols Rounded";
-  font-style: normal;
-  src: url("/assets/MaterialSymbolsRounded.woff") format("woff");
+body {
+  font-family: "Nunito", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .shake-horizontal {
@@ -48,22 +47,6 @@
   90% {
     transform: translateX(-8px);
   }
-}
-
-i {
-  font-family: var(--font-material-icons);
-  font-weight: 300;
-  font-style: normal;
-  display: inline-block;
-  line-height: 1;
-  text-transform: none;
-  letter-spacing: normal;
-  word-wrap: normal;
-  white-space: nowrap;
-  direction: ltr;
-  -webkit-font-feature-settings: "liga";
-  -webkit-font-smoothing: antialiased;
-  user-select: none;
 }
 
 input[type="color"] {
