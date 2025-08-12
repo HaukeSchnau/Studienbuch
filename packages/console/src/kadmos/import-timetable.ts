@@ -5,9 +5,8 @@ import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
 import { Semesters } from "@stu/db/schema";
 import { type AuthContext, getClassesV2, getTimetableV2 } from "@stu/external-api";
-import type { SchoolId } from "@stu/lib";
+import type { SchoolId, SimpleDate } from "@stu/lib";
 import { BetterMap, isArraySingleElement } from "@stu/lib";
-import { endOfWeek, startOfWeek } from "date-fns";
 import { Exit } from "effect";
 import { z } from "zod";
 import { ConsoleIservClient } from "../get-or-create-teacher";
@@ -18,8 +17,8 @@ import { ingestTimetableEntry } from "./ingest-timetable-entry";
 
 interface Options {
   school: SchoolId;
-  date: Date;
-  monthOffsetRange: [number, number];
+  start: SimpleDate;
+  end: SimpleDate;
   dryRun: boolean;
   schoolYearId: number;
 }
@@ -55,23 +54,7 @@ const findSemesterFromDate = async (date: Date, school: SchoolId) => {
   return semesters[0];
 };
 
-const getTimetable = async (
-  { date, monthOffsetRange: [offsetStart, offsetEnd], school, schoolYearId }: Options,
-  authContext: AuthContext,
-) => {
-  const startDate = startOfWeek(date, { weekStartsOn: 1 });
-  const endDate = endOfWeek(date, { weekStartsOn: 1 });
-  const start = {
-    year: startDate.getFullYear(),
-    month: startDate.getMonth() + 1 + offsetStart,
-    day: startDate.getDate(),
-  };
-  const end = {
-    year: endDate.getFullYear(),
-    month: endDate.getMonth() + 1 + offsetEnd,
-    day: endDate.getDate(),
-  };
-
+const getTimetable = async ({ start, end, school, schoolYearId }: Options, authContext: AuthContext) => {
   logger.info(
     `Downloading timetable for ${start.year}-${start.month}-${start.day} to ${end.year}-${end.month}-${end.day}...`,
   );

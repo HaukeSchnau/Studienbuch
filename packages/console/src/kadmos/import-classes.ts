@@ -1,23 +1,27 @@
 import { ingest, SYSTEM_USER } from "@stu/api";
 import { type AuthContext, getClassesV2 } from "@stu/external-api";
-import type { SchoolId } from "@stu/lib";
+import type { SchoolId, SimpleDate } from "@stu/lib";
 import { BetterMap, startYearToNameMap } from "@stu/lib";
 import { Exit } from "effect";
 import { ConsoleIservClient } from "../get-or-create-teacher";
 import { logger } from "../logger";
 import { mapKadmosClassV2 } from "../map-kadmos-class";
-import { getBroadRange } from "./kadmos-utils";
 
 interface Options {
   school: SchoolId;
   schoolYearId: number;
   dryRun: boolean;
+  start: SimpleDate;
+  end: SimpleDate;
+  minStartYear: number;
 }
 
-export const importClasses = async ({ school, schoolYearId, dryRun }: Options, authContext: AuthContext) => {
+export const importClasses = async (
+  { school, schoolYearId, dryRun, start, end, minStartYear }: Options,
+  authContext: AuthContext,
+) => {
   logger.info(`Importing classes for school year "${schoolYearId}"...`);
 
-  const { start, end } = getBroadRange();
   const classes = await getClassesV2(start, end, schoolYearId, authContext).then((classes) =>
     classes.classes.map(mapKadmosClassV2),
   );
@@ -33,6 +37,10 @@ export const importClasses = async ({ school, schoolYearId, dryRun }: Options, a
   const iservClient = new ConsoleIservClient();
 
   for (const year of years) {
+    if (year.startYear < minStartYear) {
+      continue;
+    }
+
     const classesInYear = classes.filter((cls) => cls.startYear === year.startYear);
 
     // make sure that classes are unique by identifierInYear

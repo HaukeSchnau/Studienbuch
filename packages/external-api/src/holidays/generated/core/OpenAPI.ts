@@ -1,5 +1,6 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
+/* tslint:disable */
 /* eslint-disable */
 import type { ApiRequestOptions } from "./ApiRequestOptions";
 
@@ -19,8 +20,8 @@ export type OpenAPIConfig = {
 };
 
 export const OpenAPI: OpenAPIConfig = {
-  BASE: "http://ferien-api.de",
-  VERSION: "1.0",
+  BASE: "",
+  VERSION: "1",
   WITH_CREDENTIALS: false,
   CREDENTIALS: "include",
   TOKEN: undefined,

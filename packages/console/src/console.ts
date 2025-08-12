@@ -4,7 +4,7 @@ import { alias, and, eq, ne } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
 import { upsertCourses } from "@stu/legacy-import";
-import { defaultSchools, SCHOOL_IDS } from "@stu/lib";
+import { defaultSchools, parseSimpleDate, SCHOOL_IDS } from "@stu/lib";
 import { Exit } from "effect";
 import { z } from "zod";
 import { extractCourses } from "./extract-courses";
@@ -26,11 +26,22 @@ process.on("SIGTERM", () => {
 
 program.name("console").description("Studienbuch Console").showSuggestionAfterError();
 
+const parseIntSafe = (val: string) => {
+  const parsed = Number.parseInt(val);
+  if (Number.isNaN(parsed)) {
+    return undefined;
+  }
+  return parsed;
+};
+
 program
   .command("pull")
   .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
+  .argument("<start>", "Start date", (val) => z.string().transform(parseSimpleDate).parse(val))
+  .argument("<end>", "End date", (val) => z.string().transform(parseSimpleDate).parse(val))
+  .option("--min-start-year <number>", "Minimum start year", parseIntSafe)
   .option("--dry-run", "Only print the data that would be ingested")
-  .action(async (school, { dryRun = false }) => {
+  .action(async (school, start, end, { dryRun = false, minStartYear = 0 }) => {
     const defaultSchoolValue = defaultSchools[school];
     logger.info("Pulling data...");
     if (!dryRun) {
@@ -64,14 +75,15 @@ program
 
     const authContext = await setupAuth(school);
     const schoolYearId = await getCurrentSchoolYearId(authContext);
-    await importTeachers({ school, schoolYearId, dryRun }, authContext);
+    logger.info(`School year ID: ${schoolYearId}`);
+    await importTeachers({ school, schoolYearId, dryRun, start, end }, authContext);
     await addSemesters(defaultSchoolValue.stateCode, dryRun);
-    await importClasses({ school, schoolYearId, dryRun }, authContext);
+    await importClasses({ school, schoolYearId, dryRun, start, end, minStartYear }, authContext);
     await importTimetable(
       {
         school,
-        date: new Date(),
-        monthOffsetRange: [-2, 2],
+        start,
+        end,
         schoolYearId,
         dryRun,
       },

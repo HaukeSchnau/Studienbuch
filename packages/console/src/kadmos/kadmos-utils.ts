@@ -53,18 +53,3 @@ export const getCurrentSchoolYearId = async (authContext: AuthContext): Promise<
   }
   return closestSchoolYear.id;
 };
-
-export const getBroadRange = () => {
-  const today = new Date();
-  const start = {
-    year: today.getFullYear(),
-    month: today.getMonth() + 1,
-    day: today.getDate(),
-  };
-  const end = {
-    year: today.getFullYear() + 1,
-    month: today.getMonth() + 1,
-    day: today.getDate(),
-  };
-  return { start, end };
-};

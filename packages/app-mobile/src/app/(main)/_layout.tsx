@@ -55,7 +55,7 @@ export default function TabLayout() {
     };
   }, [registerNotificationToken]);
 
-  const syncStatus = useSyncStatus(); // required because the layer is lazily loaded
+  useSyncStatus(); // required because the layer is lazily loaded
 
   return (
     <>

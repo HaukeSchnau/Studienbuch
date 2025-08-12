@@ -1,9 +1,9 @@
 import { ingest, SYSTEM_USER } from "@stu/api";
-import { getTeachersV2, login } from "@stu/external-api";
-import type { Salutation, SchoolId, SimpleDate } from "@stu/lib";
+import { getTeachersV2 } from "@stu/external-api";
+import type { SchoolId, SimpleDate } from "@stu/lib";
 import { Exit } from "effect";
 import { logger } from "../logger";
-import { type AuthContext, getBroadRange } from "./kadmos-utils";
+import type { AuthContext } from "./kadmos-utils";
 
 const TEACHER_MAP = [
   {
@@ -614,6 +614,8 @@ const TEACHER_MAP = [
 ] as const;
 
 interface Options {
+  start: SimpleDate;
+  end: SimpleDate;
   schoolYearId: number;
   dryRun: boolean;
   school: SchoolId;
@@ -622,8 +624,7 @@ interface Options {
 export const importTeachers = async (options: Options, authContext: AuthContext) => {
   logger.info("Importing teachers...");
 
-  const { start, end } = getBroadRange();
-  const { teachers } = await getTeachersV2(start, end, options.schoolYearId, authContext);
+  const { teachers } = await getTeachersV2(options.start, options.end, options.schoolYearId, authContext);
   for (const { teacher } of teachers) {
     const lastName = teacher.longName;
     const abbrv = teacher.displayName;

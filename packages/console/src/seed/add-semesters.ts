@@ -2,14 +2,19 @@ import { randomUUID } from "node:crypto";
 import { ingest, SYSTEM_USER } from "@stu/api";
 import type { State } from "@stu/external-api";
 import { getHolidays } from "@stu/external-api";
-import dayjs from "dayjs";
+import type { SimpleDate } from "@stu/lib";
 import { Exit } from "effect";
 import { logger } from "../logger";
+
+const simpleDateToDate = (date: SimpleDate) => {
+  return new Date(date.year, date.month - 1, date.day);
+};
 
 export const addSemesters = async (state: State, dryRun: boolean) => {
   logger.info(`Importing holidays for ${state}...`);
 
-  const holidays = await getHolidays(state);
+  const currentYear = new Date().getFullYear();
+  const holidays = await getHolidays(state, currentYear);
   for (const holiday of holidays) {
     if (dryRun) {
       logger.info(`Holiday: ${JSON.stringify(holiday, null, 2)}`);
@@ -23,10 +28,10 @@ export const addSemesters = async (state: State, dryRun: boolean) => {
         timestamp: new Date(),
         data: {
           name: holiday.name,
-          start: dayjs(holiday.start).toDate(),
-          end: dayjs(holiday.end).toDate(),
-          state: holiday.stateCode,
-          year: holiday.year,
+          start: simpleDateToDate(holiday.start),
+          end: simpleDateToDate(holiday.end),
+          state: holiday.state,
+          year: holiday.start.year,
         },
       },
       SYSTEM_USER,
