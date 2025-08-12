@@ -180,7 +180,6 @@ export default function ClassAndCourses() {
         semester: semester.data,
         courses,
       });
-      console.log("bootstrapped");
       await Promise.all(
         courses.map((course) =>
           courseAssigned.mutateAsync({

@@ -15,7 +15,6 @@ export const memoryBroadcastLive = Layer.effect(
 
     return DomainBroadcast.of({
       publishToUser: Effect.fn(function* (userId, events) {
-        console.log("publishing to user", userId, events);
         yield* Effect.all(
           events.map((event) => canonicalStorage.markEventAsSentToUser(event.id, userId)),
           {
@@ -29,7 +28,6 @@ export const memoryBroadcastLive = Layer.effect(
         yield* pubsub.publishAll(events);
       }),
       subscribe: (userId) => {
-        console.log("subscribing to user", userId);
         runtime.runPromise(
           Effect.gen(function* () {
             const serverApplicator = yield* DomainServerApplicator;
@@ -51,10 +49,7 @@ export const memoryBroadcastLive = Layer.effect(
           ),
         );
         const stream = Stream.concat(initStream, Stream.fromPubSub(pubsub)).pipe(
-          Stream.tap((event) => {
-            console.log("broadcasting event", event);
-            return Effect.log(event);
-          }),
+          Stream.tap((event) => Effect.log(event)),
         );
         return stream;
       },

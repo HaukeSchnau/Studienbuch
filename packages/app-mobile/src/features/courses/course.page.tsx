@@ -15,8 +15,6 @@ import { getCourse } from "./queries/get-course";
 export const CoursePage = ({ courseId }: { courseId: string }) => {
   const courseQuery = useQuery(getCourse({ courseId }));
 
-  console.log(courseQuery.status);
-
   if (!courseQuery.data) {
     return (
       <Stack.Screen
