@@ -1,6 +1,7 @@
 import { createEventUnion, createDomainEvent as event } from "@groundswell/zod-helpers";
 import { array, boolean, date, number, object, string, z } from "zod";
 import { SUBJECT_IDS } from "./courses";
+import { simpleDateSchema } from "./dates";
 import { GRADE_TYPES } from "./grades";
 import type { SchoolId, StateCode } from "./schools";
 import { SCHOOL_IDS, SEMESTER_TYPES, STATE_CODES } from "./schools";
@@ -84,8 +85,8 @@ export const DomainEvent = createEventUnion([
   }),
   event("org.holiday.created", {
     name: string(),
-    start: date(),
-    end: date(),
+    start: simpleDateSchema,
+    end: simpleDateSchema,
     state: z.enum(STATE_CODES),
     year: number(),
   }),

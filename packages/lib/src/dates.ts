@@ -1,8 +1,17 @@
+import { addMinutes } from "date-fns";
+import z from "zod";
+
 export interface SimpleDate {
   year: number;
   month: number;
   day: number;
 }
+
+export const simpleDateSchema = z.object({
+  year: z.number().int().min(2000).max(2100),
+  month: z.number().int().min(1).max(12),
+  day: z.number().int().min(1).max(31),
+});
 
 /**
  * Takes a string in the format YYYY-MM-DD and returns a SimpleDate object
@@ -37,6 +46,15 @@ export const parseSimpleTimeOfDay = (time: string) => {
   return hours * 60 + minutes;
 };
 
-export const simpleDateToDate = (date: SimpleDate) => {
+export const simpleDateToDate = (date: SimpleDate): Date => {
   return new Date(date.year, date.month - 1, date.day);
+};
+
+export const dateToSimpleDate = (date: Date): SimpleDate => {
+  const utcDate = addMinutes(date, -date.getTimezoneOffset());
+  return {
+    year: utcDate.getFullYear(),
+    month: utcDate.getMonth() + 1,
+    day: utcDate.getDate(),
+  };
 };

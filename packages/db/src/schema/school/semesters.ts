@@ -1,6 +1,6 @@
 import { SEMESTER_TYPES } from "@stu/lib";
 import { relations } from "drizzle-orm";
-import { date, integer, pgEnum, pgTable, primaryKey, smallint, text, timestamp } from "drizzle-orm/pg-core";
+import { date, integer, pgEnum, pgTable, primaryKey, smallint, text } from "drizzle-orm/pg-core";
 
 import { SchoolId } from "./school-id";
 import { Schools, StateCode } from "./schools";
@@ -42,8 +42,8 @@ export const holidays = pgTable(
   "holidays",
   {
     name: text("name").notNull(),
-    start: timestamp("start").notNull(),
-    end: timestamp("end").notNull(),
+    start: date("start", { mode: "date" }).notNull(),
+    end: date("end", { mode: "date" }).notNull(),
     state: StateCode("state").notNull(),
     year: integer("year").notNull(),
   },

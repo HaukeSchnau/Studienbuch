@@ -1,5 +1,5 @@
 {
-  "id": "250c5b7e-74e9-4bcb-bd25-3bbcd5d8bd11",
+  "id": "1eef31dc-88bd-45f9-b628-d858b864d52c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -829,13 +829,13 @@
         },
         "start": {
           "name": "start",
-          "type": "timestamp",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "end": {
           "name": "end",
-          "type": "timestamp",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
@@ -1849,7 +1849,6 @@
         "ek",
         "nw",
         "gsl",
-        "theo",
         "awt",
         "sw",
         "swb",

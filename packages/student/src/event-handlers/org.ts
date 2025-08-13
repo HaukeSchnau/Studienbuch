@@ -3,14 +3,18 @@ import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/g
 import type { DomainEvent } from "@stu/lib";
 import {
   CourseRepository,
+  dateToSimpleDate,
   HolidayRepository,
   PersonRepository,
   SchoolRepository,
   SemesterRepository,
+  type SimpleDate,
+  simpleDateToDate,
   TimetableRepository,
   YearRepository,
 } from "@stu/lib";
-import { Effect } from "effect";
+import { addDays } from "date-fns/fp";
+import { Effect, pipe } from "effect";
 
 const failIfTrue = (message: string, reason: "DUPLICATE" | "NOT_FOUND" | "NOT_ALLOWED" | "INVALID" | "UNKNOWN") =>
   Effect.flatMap((bool) => (bool ? Effect.fail(new ValidationError({ cause: message, reason })) : Effect.void));
@@ -95,8 +99,8 @@ export const orgApplicators: NamespaceApplicatorMap<
         }
 
         const semesters: {
-          start: Date;
-          end: Date;
+          start: SimpleDate;
+          end: SimpleDate;
           name: string;
           type: "WINTER" | "SUMMER";
           year: number;
@@ -115,8 +119,8 @@ export const orgApplicators: NamespaceApplicatorMap<
           const name = `${formattedType} ${formattedYearRange}`;
 
           semesters.push({
-            start: start.end,
-            end: end.start,
+            start: pipe(start.end, simpleDateToDate, addDays(1), dateToSimpleDate),
+            end: pipe(end.start, simpleDateToDate, addDays(-1), dateToSimpleDate),
             name,
             type,
             year: start.year,

@@ -1,6 +1,7 @@
 import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
 import { Context, Data, type Effect } from "effect";
 import type { SubjectId } from "./courses";
+import type { SimpleDate } from "./dates";
 import type { GradeType } from "./grades";
 import type { SchoolId, StateCode } from "./schools";
 import type { SemesterId, SemesterType } from "./semesters";
@@ -120,7 +121,7 @@ export class HolidayRepository extends Context.Tag("HolidayRepository")<
       state: StateCode;
       year: number;
     }) => Effect.Effect<
-      { name: string; year: number; start: Date; end: Date; state: StateCode } | undefined,
+      { name: string; year: number; start: SimpleDate; end: SimpleDate; state: StateCode } | undefined,
       UnknownDatabaseError
     >;
 
@@ -132,14 +133,14 @@ export class HolidayRepository extends Context.Tag("HolidayRepository")<
 
     createHoliday: (payload: {
       name: string;
-      start: Date;
-      end: Date;
+      start: SimpleDate;
+      end: SimpleDate;
       state: StateCode;
       year: number;
     }) => Effect.Effect<void, UnknownDatabaseError>;
 
     getAllHolidays: () => Effect.Effect<
-      { name: string; year: number; start: Date; end: Date; state: StateCode }[],
+      { name: string; year: number; start: SimpleDate; end: SimpleDate; state: StateCode }[],
       UnknownDatabaseError
     >;
   }
@@ -181,11 +182,19 @@ export class SemesterRepository extends Context.Tag("SemesterRepository")<
   SemesterRepository,
   {
     createSemesters: (
-      payload: { name: string; start: Date; end: Date; type: SemesterType; year: number; school: SchoolId }[],
+      payload: {
+        name: string;
+        start: SimpleDate;
+        end: SimpleDate;
+        type: SemesterType;
+        year: number;
+        school: SchoolId;
+      }[],
     ) => Effect.Effect<void, UnknownDatabaseError>;
 
     getCurrentSemester: () => Effect.Effect<
-      { name: string; start: Date; end: Date; type: SemesterType; year: number; school: SchoolId } | undefined,
+      | { name: string; start: SimpleDate; end: SimpleDate; type: SemesterType; year: number; school: SchoolId }
+      | undefined,
       UnknownDatabaseError
     >;
   }

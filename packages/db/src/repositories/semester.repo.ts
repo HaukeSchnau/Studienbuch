@@ -1,8 +1,18 @@
-import { SemesterRepository } from "@stu/lib";
+import { dateToSimpleDate, SemesterRepository, simpleDateToDate } from "@stu/lib";
 import { and, desc, gte, lte, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer } from "effect";
 import * as tables from "../schema";
 import { RepositoryDatabase } from "./util";
+
+const mapDbSemester = (semester: typeof tables.Semesters.$inferSelect) => ({
+  ...semester,
+  start: dateToSimpleDate(semester.start),
+  end: dateToSimpleDate(semester.end),
+});
+
+const toUtc = (date: Date) => {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+};
 
 export const SemesterRepositoryLive = Layer.effect(
   SemesterRepository,
@@ -15,7 +25,13 @@ export const SemesterRepositoryLive = Layer.effect(
         yield* execute((db) =>
           db
             .insert(tables.Semesters)
-            .values(payload)
+            .values(
+              payload.map((semester) => ({
+                ...semester,
+                start: toUtc(simpleDateToDate(semester.start)),
+                end: toUtc(simpleDateToDate(semester.end)),
+              })),
+            )
             .onConflictDoUpdate({
               target: [tables.Semesters.school, tables.Semesters.type, tables.Semesters.year],
               set: {
@@ -38,14 +54,14 @@ export const SemesterRepositoryLive = Layer.effect(
             where: and(lte(tables.Semesters.start, today), gte(tables.Semesters.end, today)),
           }),
         );
-        if (semester) return semester;
+        if (semester) return mapDbSemester(semester);
 
         // No current semester! Return the latest semester.
         return yield* execute((db) =>
           db.query.Semesters.findFirst({
             orderBy: [desc(tables.Semesters.start)],
           }),
-        );
+        ).pipe(Effect.map((semester) => semester && mapDbSemester(semester)));
       }),
     };
   }),
