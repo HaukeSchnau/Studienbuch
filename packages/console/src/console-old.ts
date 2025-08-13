@@ -3,8 +3,6 @@ import { bootstrapBroadcastAsync } from "@stu/api";
 import { alias, and, eq, ne } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
-import { upsertCourses } from "@stu/legacy-import";
-import { extractCourses } from "./extract-courses";
 
 process.on("SIGINT", () => {
   process.exit(0);
@@ -68,13 +66,6 @@ program.name("console").description("Studienbuch Console").showSuggestionAfterEr
 
 //     process.exit(0);
 //   });
-
-program.command("extract-courses").action(async () => {
-  const courses = await extractCourses();
-  await upsertCourses(courses);
-
-  process.exit(0);
-});
 
 program.command("prune-conflicts").action(async () => {
   const te1 = alias(tables.TimetableEntries, "te1");

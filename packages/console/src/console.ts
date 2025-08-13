@@ -1,6 +1,7 @@
 import { Command, Options } from "@effect/cli";
 import { BunContext, BunRuntime } from "@effect/platform-bun";
 import { recurringCourses } from "@stu/db";
+import { upsertCourses } from "@stu/legacy-import";
 import { defaultSchools, SCHOOL_IDS, SemesterRepository } from "@stu/lib";
 import { Effect } from "effect";
 import { AppLayerLive } from "../../api/src/groundswell";
@@ -22,8 +23,6 @@ const pull = Command.make(
   ({ school }) =>
     Effect.gen(function* () {
       yield* addSchool(school);
-      yield* generateLicenses(10, school);
-
       yield* addSemesters(defaultSchools[school].stateCode);
 
       const authContext = yield* Effect.tryPromise(() => setupAuth(school));
@@ -49,14 +48,28 @@ const pull = Command.make(
 const legacyImport = Command.make("legacy-import", {}, () =>
   Effect.gen(function* () {
     const courses = yield* recurringCourses;
-    yield* Effect.log(JSON.stringify(courses, null, 2));
+    yield* Effect.tryPromise(() => upsertCourses(courses));
 
-    // yield* Effect.tryPromise(() => upsertCourses(courses));
     process.exit(0);
   }),
 );
 
-const console = Command.make("console").pipe(Command.withSubcommands([pull, legacyImport]));
+const count = Options.integer("count").pipe(Options.withDefault(10));
+const generateLicensesCommand = Command.make(
+  "generate-licenses",
+  {
+    count,
+    school,
+  },
+  ({ count, school }) =>
+    Effect.gen(function* () {
+      const keys = yield* generateLicenses(count, school);
+      yield* Effect.log(keys);
+      process.exit(0);
+    }),
+);
+
+const console = Command.make("console").pipe(Command.withSubcommands([pull, legacyImport, generateLicensesCommand]));
 
 const cli = Command.run(console, {
   name: "Studienbuch Console",
