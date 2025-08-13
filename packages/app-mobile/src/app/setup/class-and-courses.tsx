@@ -1,5 +1,13 @@
-import type { Course as BaseCourse, SchoolId, SemesterType, StateCode, SubjectId, WithTeachers } from "@stu/lib";
-import { BetterMap, formalNameShort } from "@stu/lib";
+import type {
+  Course as BaseCourse,
+  SchoolId,
+  SemesterType,
+  SimpleDate,
+  StateCode,
+  SubjectId,
+  WithTeachers,
+} from "@stu/lib";
+import { BetterMap, formalNameShort, simpleDateToDate } from "@stu/lib";
 import { pk } from "@stu/student";
 import * as t from "@stu/student/schema";
 import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -32,8 +40,8 @@ const bootstrap = async ({
     name: string;
     type: SemesterType;
     year: number;
-    start: Date;
-    end: Date;
+    start: SimpleDate;
+    end: SimpleDate;
   };
   courses: (Course & WithTeachers)[];
 }) => {
@@ -43,16 +51,16 @@ const bootstrap = async ({
       name: semester.name,
       year: semester.year,
       type: semester.type,
-      start: semester.start,
-      end: semester.end,
+      start: simpleDateToDate(semester.start),
+      end: simpleDateToDate(semester.end),
       school: school.id,
     })
     .onConflictDoUpdate({
       target: pk(t.semesters),
       set: {
         name: semester.name,
-        start: semester.start,
-        end: semester.end,
+        start: simpleDateToDate(semester.start),
+        end: simpleDateToDate(semester.end),
       },
     });
 
