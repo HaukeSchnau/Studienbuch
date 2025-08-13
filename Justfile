@@ -9,6 +9,10 @@ dev:
 seed: 
     bin/console pull igs-lil
 
+check:
+    bun run typecheck
+    bun run lint:fix
+
 [working-directory: 'packages/app-mobile']
 ios:
     bun run expo run:ios

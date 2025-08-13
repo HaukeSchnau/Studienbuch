@@ -23,6 +23,6 @@
     "@stu/eslint-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "eslint": "^9.24.0",
-    "typescript": "5.9.0-beta"
+    "typescript": "^5.9.2"
   }
 }
