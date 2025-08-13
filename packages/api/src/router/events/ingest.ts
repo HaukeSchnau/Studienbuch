@@ -1,12 +1,20 @@
 import type { DomainEvent } from "@stu/lib";
 import { Effect } from "effect";
 import { DomainIngestEngine } from "../../boilerplate";
+import { SYSTEM_USER } from "../../constants";
 import { runtime } from "../../groundswell";
 
+type InputEvent = Omit<DomainEvent, "id" | "timestamp"> & {
+  id?: string;
+  timestamp?: Date;
+};
+
 export const ingestEffect = Effect.fn(
-  function* (event: DomainEvent, initiatorId: string) {
+  function* (event: InputEvent, initiatorId?: string) {
     const ingestEngine = yield* DomainIngestEngine;
-    return yield* ingestEngine.ingest(event, { initiatorId });
+    event.id ??= crypto.randomUUID();
+    event.timestamp ??= new Date();
+    return yield* ingestEngine.ingest(event as DomainEvent, { initiatorId: initiatorId ?? SYSTEM_USER });
   },
   Effect.catchTags({
     // TODO: handle these errors maybe?

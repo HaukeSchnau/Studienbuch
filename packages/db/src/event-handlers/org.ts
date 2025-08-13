@@ -1,18 +1,21 @@
 import type { NamespaceServerApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
-import type { DomainEvent, UnknownDatabaseError } from "@stu/lib";
+import type { DomainEvent, SimpleDate, UnknownDatabaseError } from "@stu/lib";
 import {
   ClassRepository,
   CourseRepository,
+  dateToSimpleDate,
   defaultSchools,
   HolidayRepository,
   SemesterRepository,
+  simpleDateToDate,
   studentsOfCourse,
   studentsOfSchool,
   studentsOfState,
   studentsOfYear,
 } from "@stu/lib";
-import { Effect } from "effect";
+import { addDays } from "date-fns/fp";
+import { Effect, pipe } from "effect";
 import { Database } from "../database";
 import { PersonRepository } from "../repositories/person.repo";
 import { SchoolRepository } from "../repositories/school.repo";
@@ -114,7 +117,9 @@ export const orgApplicators: NamespaceServerApplicatorMap<
 
         const semesterDelimitingHolidays = allHolidays.filter(
           (holiday) =>
-            holiday.name.toLowerCase().includes("sommerferien") || holiday.name.toLowerCase().includes("winterferien"),
+            holiday.name.toLowerCase().includes("sommerferien") ||
+            holiday.name.toLowerCase().includes("winterferien") ||
+            holiday.name.toLowerCase().includes("halbjahresferien"),
         );
 
         if (semesterDelimitingHolidays.length < 2) {
@@ -122,8 +127,8 @@ export const orgApplicators: NamespaceServerApplicatorMap<
         }
 
         const semesters: {
-          start: Date;
-          end: Date;
+          start: SimpleDate;
+          end: SimpleDate;
           name: string;
           type: "WINTER" | "SUMMER";
           year: number;
@@ -142,8 +147,8 @@ export const orgApplicators: NamespaceServerApplicatorMap<
           const name = `${formattedType} ${formattedYearRange}`;
 
           semesters.push({
-            start: start.end,
-            end: end.start,
+            start: pipe(start.end, simpleDateToDate, addDays(1), dateToSimpleDate),
+            end: pipe(end.start, simpleDateToDate, addDays(-1), dateToSimpleDate),
             name,
             type,
             year: start.year,
@@ -151,6 +156,9 @@ export const orgApplicators: NamespaceServerApplicatorMap<
         }
 
         const affectedSchools = yield* schoolRepo.getSchoolsByState({ state: event.data.state });
+
+        console.log(semesters);
+        yield* Effect.log(semesters);
 
         yield* semesterRepo.createSemesters(
           affectedSchools.flatMap((school) =>

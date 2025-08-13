@@ -1,10 +1,7 @@
 import { TZDate } from "@date-fns/tz";
-import type {
-  KadmosClassV2Response,
-  KadmosTimetableV2Response,
-} from "@stu/external-api";
-import { convertCurrentYearToStartYear, guessSubject } from "@stu/lib";
+import type { KadmosClassV2Response, KadmosTimetableV2Response } from "@stu/external-api";
 import type { SubjectId } from "@stu/lib";
+import { convertCurrentYearToStartYear, guessSubject } from "@stu/lib";
 import { differenceInMinutes } from "date-fns";
 import { logger } from "./logger";
 
@@ -34,7 +31,7 @@ const mapKadmosClassTeacher = (
   };
 };
 
-interface ClassV2 {
+export interface ClassV2 {
   kadmosId: number;
   startYear: number;
   yearName: string | null;
@@ -55,10 +52,7 @@ export const mapKadmosClassV2 = ({
   startYear: convertCurrentYearToStartYear(extractYearNum(shortName)),
   yearName: isTeachersAbbrvString(longName) ? null : longName,
   identifierInYear: shortName.split(".")[1] ?? "",
-  teachers: [
-    mapKadmosClassTeacher(classTeacher1),
-    mapKadmosClassTeacher(classTeacher2),
-  ].filter((x) => x !== null),
+  teachers: [mapKadmosClassTeacher(classTeacher1), mapKadmosClassTeacher(classTeacher2)].filter((x) => x !== null),
 });
 
 export interface ProtoTimetableEntry {
@@ -103,14 +97,16 @@ export interface ProtoTimetableEntry {
   duration: number;
 }
 
+const normalizeCourseName = (name: string) => {
+  return name.replaceAll("- ", "-");
+};
+
 export const mapKadmosTimetableEntry = (
   entry: KadmosTimetableV2Response["days"][number]["gridEntries"][number],
   baseClass: ClassV2,
 ): ProtoTimetableEntry | null => {
   if (entry.type !== "NORMAL_TEACHING_PERIOD") {
-    logger.warn(
-      `Skipping non-normal teaching period: ${JSON.stringify(entry)}`,
-    );
+    logger.warn(`Skipping non-normal teaching period: ${JSON.stringify(entry)}`);
     return null;
   }
 
@@ -132,13 +128,7 @@ export const mapKadmosTimetableEntry = (
   );
   const duration = differenceInMinutes(endDate, startDate);
 
-  const positions = [
-    entry.position1,
-    entry.position2,
-    entry.position3,
-    entry.position4,
-    entry.position5,
-  ]
+  const positions = [entry.position1, entry.position2, entry.position3, entry.position4, entry.position5]
     .filter((x) => x !== null)
     .flat();
 
@@ -146,8 +136,7 @@ export const mapKadmosTimetableEntry = (
     .map((pos) => {
       if (pos.current?.type !== "SUBJECT") return null;
 
-      if (pos.removed)
-        throw new Error(`Subject cannot be removed: ${JSON.stringify(pos)}`);
+      if (pos.removed) throw new Error(`Subject cannot be removed: ${JSON.stringify(pos)}`);
 
       return {
         shortName: pos.current.shortName,
@@ -156,9 +145,7 @@ export const mapKadmosTimetableEntry = (
     })
     .filter((x) => x !== null);
   if (courseArr.length > 1) {
-    throw new Error(
-      `Multiple subjects: ${JSON.stringify(courseArr)} ${JSON.stringify(baseClass)}`,
-    );
+    throw new Error(`Multiple subjects: ${JSON.stringify(courseArr)} ${JSON.stringify(baseClass)}`);
   }
   const [course] = courseArr;
   if (!course) {
@@ -166,18 +153,18 @@ export const mapKadmosTimetableEntry = (
     return null;
   }
 
-  const subject = guessSubject(course.shortName);
+  const normalizedCourseName = normalizeCourseName(course.shortName);
+
+  const subject = guessSubject(normalizedCourseName);
   if (!subject) {
-    logger.warn(
-      `Unknown subject: "${course.shortName}". Skipping this course.`,
-    );
+    logger.warn(`Unknown subject: "${course.shortName}". Skipping this course.`);
     return null;
   }
 
   const ret: ProtoTimetableEntry = {
     course: {
       subject,
-      name: course.shortName,
+      name: normalizedCourseName,
     },
     classes: [
       {
@@ -186,8 +173,7 @@ export const mapKadmosTimetableEntry = (
       },
       ...positions
         .map((pos): ProtoTimetableEntry["classes"][number] | null => {
-          if (pos.current?.type !== "CLASS" && pos.removed?.type !== "CLASS")
-            return null;
+          if (pos.current?.type !== "CLASS" && pos.removed?.type !== "CLASS") return null;
 
           if ((pos.current && pos.removed) || (!pos.current && !pos.removed))
             throw new Error(
@@ -198,9 +184,7 @@ export const mapKadmosTimetableEntry = (
           if (!val) throw new Error("logic error: shouldnt happen");
 
           return {
-            startYear: convertCurrentYearToStartYear(
-              extractYearNum(val.shortName),
-            ),
+            startYear: convertCurrentYearToStartYear(extractYearNum(val.shortName)),
             identifierInYear: val.shortName.split(".")[1] ?? "",
             change: pos.removed ? "REMOVED" : null,
           };
@@ -211,8 +195,7 @@ export const mapKadmosTimetableEntry = (
     duration: duration,
     roomNumbers: positions
       .map((pos) => {
-        if (pos.current?.type !== "ROOM" && pos.removed?.type !== "ROOM")
-          return null;
+        if (pos.current?.type !== "ROOM" && pos.removed?.type !== "ROOM") return null;
         if (pos.removed) {
           if (!pos.current) {
             return {
@@ -246,8 +229,7 @@ export const mapKadmosTimetableEntry = (
       .filter((x) => x !== null),
     teachers: positions
       .map((pos) => {
-        if (pos.current?.type !== "TEACHER" && pos.removed?.type !== "TEACHER")
-          return null;
+        if (pos.current?.type !== "TEACHER" && pos.removed?.type !== "TEACHER") return null;
 
         if (pos.removed) {
           if (!pos.current) {

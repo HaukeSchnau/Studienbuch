@@ -1,7 +1,7 @@
-import { ingest, SYSTEM_USER } from "@stu/api";
-import { getTeachersV2 } from "@stu/external-api";
+import { ingestEffect, SYSTEM_USER } from "@stu/api";
+import { getTeachers } from "@stu/external-api";
 import type { SchoolId, SimpleDate } from "@stu/lib";
-import { Exit } from "effect";
+import { Effect } from "effect";
 import { logger } from "../logger";
 import type { AuthContext } from "./kadmos-utils";
 
@@ -617,49 +617,40 @@ interface Options {
   start: SimpleDate;
   end: SimpleDate;
   schoolYearId: number;
-  dryRun: boolean;
   school: SchoolId;
 }
 
-export const importTeachers = async (options: Options, authContext: AuthContext) => {
+export const importTeachers = Effect.fn(function* (options: Options, authContext: AuthContext) {
   logger.info("Importing teachers...");
 
-  const { teachers } = await getTeachersV2(options.start, options.end, options.schoolYearId, authContext);
+  const { teachers } = yield* getTeachers(options.start, options.end, options.schoolYearId, authContext);
   for (const { teacher } of teachers) {
     const lastName = teacher.longName;
     const abbrv = teacher.displayName;
 
     const knownTeacher = TEACHER_MAP.find((t) => t.lastName === lastName);
 
-    if (!options.dryRun) {
-      const err = await ingest(
-        {
-          type: "org.teacher.joined",
-          data: {
-            personId: crypto.randomUUID(),
-            firstName: knownTeacher?.firstName ?? "",
-            lastName,
-            abbrv,
-            salutation: knownTeacher?.salutation,
-            school: options.school,
-          },
-          id: crypto.randomUUID(),
-          timestamp: new Date(),
+    yield* ingestEffect(
+      {
+        type: "org.teacher.joined",
+        data: {
+          personId: crypto.randomUUID(),
+          firstName: knownTeacher?.firstName ?? "",
+          lastName,
+          abbrv,
+          salutation: knownTeacher?.salutation,
+          school: options.school,
         },
-        SYSTEM_USER,
-      );
-
-      if (Exit.isFailure(err)) {
-        if (err.cause._tag === "Fail" && err.cause.error.reason === "DUPLICATE") {
-          logger.info(`Teacher ${abbrv} already joined!`);
-        } else {
-          logger.error(`Could not ingest teacher joined event for ${abbrv}: ${err.cause.toString()}`);
-        }
-      } else {
-        logger.info(`Teacher ${abbrv} joined!`);
-      }
-    } else {
-      logger.info(`Teacher: ${JSON.stringify({ lastName, abbrv, knownTeacher }, null, 2)}`);
-    }
+        id: crypto.randomUUID(),
+        timestamp: new Date(),
+      },
+      SYSTEM_USER,
+    ).pipe(
+      Effect.tap(() => Effect.logInfo(`Teacher ${abbrv} joined!`)),
+      Effect.catchIf(
+        (error) => error.reason === "DUPLICATE",
+        () => Effect.logInfo(`Teacher ${abbrv} already joined!`),
+      ),
+    );
   }
-};
+});

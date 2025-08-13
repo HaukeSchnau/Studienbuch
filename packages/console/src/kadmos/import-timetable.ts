@@ -19,7 +19,6 @@ interface Options {
   school: SchoolId;
   start: SimpleDate;
   end: SimpleDate;
-  dryRun: boolean;
   schoolYearId: number;
 }
 
@@ -190,11 +189,6 @@ export const importTimetable = async (options: Options, authContext: AuthContext
         (entry) => entry.start.getTime() === existingTimetableEntry.start.getTime(),
       );
       if (!existingEntry) {
-        if (options.dryRun) {
-          logger.info(`Timetable entry discarded: ${JSON.stringify(existingTimetableEntry)}`);
-          continue;
-        }
-
         const res = await ingest(
           {
             type: "org.timetable.discarded",
@@ -225,11 +219,6 @@ export const importTimetable = async (options: Options, authContext: AuthContext
     const iservClient = new ConsoleIservClient();
     for (const entry of course.entries) {
       const semester = await findSemesterFromDate(entry.start, school);
-
-      if (options.dryRun) {
-        logger.info(`Timetable entry: ${JSON.stringify(entry)}`);
-        continue;
-      }
 
       await ingestTimetableEntry(
         {

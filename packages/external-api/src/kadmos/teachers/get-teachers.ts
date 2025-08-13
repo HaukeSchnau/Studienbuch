@@ -1,4 +1,5 @@
 import type { SimpleDate } from "@stu/lib";
+import { Effect } from "effect";
 import { z } from "zod";
 import { fetchWithCookieJar } from "../../fetch-with-cookies";
 import type { AuthContext } from "../auth/login";
@@ -38,6 +39,9 @@ const schema = z.object({
 
 export type KadmosTeacherV2Response = z.infer<typeof schema>;
 
+/**
+ * @deprecated gotta use effect instead
+ */
 export const getTeachersV2 = async (
   start: SimpleDate,
   end: SimpleDate,
@@ -66,3 +70,6 @@ export const getTeachersV2 = async (
 
   return schema.parse(await response.json());
 };
+
+export const getTeachers = (start: SimpleDate, end: SimpleDate, schoolYearId: number, authContext: AuthContext) =>
+  Effect.tryPromise(() => getTeachersV2(start, end, schoolYearId, authContext));

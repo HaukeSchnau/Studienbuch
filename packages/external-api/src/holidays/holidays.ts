@@ -1,4 +1,5 @@
 import { parseSimpleDate, type SimpleDate } from "@stu/lib";
+import { Effect } from "effect";
 import z, { type ZodType } from "zod";
 import { HolidaysService, OpenAPI } from "./generated";
 
@@ -57,28 +58,7 @@ const getHolidaysInternal = async (state: State, startYear: number) => {
   return HolidaysService.getSchoolHolidays("DE", startDate, endDate, "DE", `DE-${state}`);
 };
 
-export const getHolidays = async (state: State, startYear: number): Promise<Holiday[]> => {
-  // let response: HolidayResponse[];
-  // const snapshotFile = `${env.CACHE_DIR}/holidays-${state}-${startYear}.json`;
-  // try {
-  //   response = await getHolidaysInternal(state, startYear);
-  // } catch (e) {
-  //   console.error(e);
-
-  //   try {
-  //     response = JSON.parse(await fs.readFile(snapshotFile, "utf-8"));
-  //   } catch (e) {
-  //     console.error(e);
-
-  //     return [];
-  //   }
-  // }
-
-  // await mkdir(env.CACHE_DIR, { recursive: true });
-  // await writeFile(snapshotFile, JSON.stringify(response, null, 2));
-
-  // return response;
-
+const getHolidaysPromise = async (state: State, startYear: number): Promise<Holiday[]> => {
   const response = await getHolidaysInternal(state, startYear);
   return holidaySchema.array().parse(
     response.map((holiday) => {
@@ -94,3 +74,6 @@ export const getHolidays = async (state: State, startYear: number): Promise<Holi
     }),
   );
 };
+
+export const getHolidays = (state: State, startYear: number) =>
+  Effect.tryPromise(() => getHolidaysPromise(state, startYear));
