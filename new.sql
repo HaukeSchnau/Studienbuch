@@ -1,0 +1,2459 @@
+--
+-- PostgreSQL database dump
+--
+
+-- Dumped from database version 17.5
+-- Dumped by pg_dump version 17.5
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+--
+-- Name: CourseTimeWeeks; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public."CourseTimeWeeks" AS ENUM (
+    'EVEN',
+    'ODD',
+    'BOTH'
+);
+
+
+ALTER TYPE public."CourseTimeWeeks" OWNER TO postgres;
+
+--
+-- Name: Permission; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public."Permission" AS ENUM (
+    'EDIT_INFO_PAGES',
+    'EDIT_USERS',
+    'EDIT_COURSES',
+    'EDIT_YEARS',
+    'EDIT_CLASSES',
+    'EDIT_SCHOOLS',
+    'VIEW_LOGS'
+);
+
+
+ALTER TYPE public."Permission" OWNER TO postgres;
+
+--
+-- Name: SubstitutionType; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public."SubstitutionType" AS ENUM (
+    'FREISETZUNG',
+    'VERTRETUNG',
+    'BETREUUNG',
+    'ENTFALL',
+    'TROTZ_ABSENZ'
+);
+
+
+ALTER TYPE public."SubstitutionType" OWNER TO postgres;
+
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: Class; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."Class" (
+    id integer NOT NULL,
+    "identifierInYear" text NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "yearId" integer NOT NULL,
+    "updatedAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."Class" OWNER TO postgres;
+
+--
+-- Name: Class_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public."Class_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public."Class_id_seq" OWNER TO postgres;
+
+--
+-- Name: Class_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public."Class_id_seq" OWNED BY public."Class".id;
+
+
+--
+-- Name: Course; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."Course" (
+    id integer NOT NULL,
+    "courseId" text NOT NULL,
+    name text NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    room text,
+    "isChoosable" boolean DEFAULT false NOT NULL,
+    "teacherId" integer NOT NULL,
+    "classId" integer NOT NULL,
+    "yearId" integer NOT NULL,
+    "updatedAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."Course" OWNER TO postgres;
+
+--
+-- Name: CourseSubscription; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."CourseSubscription" (
+    id integer NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "courseId" integer NOT NULL,
+    "messagingToken" text NOT NULL
+);
+
+
+ALTER TABLE public."CourseSubscription" OWNER TO postgres;
+
+--
+-- Name: CourseSubscription_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public."CourseSubscription_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public."CourseSubscription_id_seq" OWNER TO postgres;
+
+--
+-- Name: CourseSubscription_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public."CourseSubscription_id_seq" OWNED BY public."CourseSubscription".id;
+
+
+--
+-- Name: CourseTime; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."CourseTime" (
+    id integer NOT NULL,
+    weekday integer NOT NULL,
+    start integer NOT NULL,
+    duration integer NOT NULL,
+    weeks public."CourseTimeWeeks" DEFAULT 'BOTH'::public."CourseTimeWeeks" NOT NULL,
+    "courseId" integer,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."CourseTime" OWNER TO postgres;
+
+--
+-- Name: CourseTime_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public."CourseTime_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public."CourseTime_id_seq" OWNER TO postgres;
+
+--
+-- Name: CourseTime_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public."CourseTime_id_seq" OWNED BY public."CourseTime".id;
+
+
+--
+-- Name: Course_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public."Course_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public."Course_id_seq" OWNER TO postgres;
+
+--
+-- Name: Course_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public."Course_id_seq" OWNED BY public."Course".id;
+
+
+--
+-- Name: LicenseKey; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."LicenseKey" (
+    id integer NOT NULL,
+    key text NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "activatedAt" timestamp(3) without time zone,
+    "expiresAt" timestamp(3) without time zone,
+    "isSuperKey" boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE public."LicenseKey" OWNER TO postgres;
+
+--
+-- Name: LicenseKey_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public."LicenseKey_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public."LicenseKey_id_seq" OWNER TO postgres;
+
+--
+-- Name: LicenseKey_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public."LicenseKey_id_seq" OWNED BY public."LicenseKey".id;
+
+
+--
+-- Name: PermissionOnRole; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."PermissionOnRole" (
+    permission public."Permission" NOT NULL,
+    "roleId" integer NOT NULL,
+    scope jsonb
+);
+
+
+ALTER TABLE public."PermissionOnRole" OWNER TO postgres;
+
+--
+-- Name: PermissionOnUser; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."PermissionOnUser" (
+    permission public."Permission" NOT NULL,
+    "userId" integer NOT NULL,
+    scope jsonb
+);
+
+
+ALTER TABLE public."PermissionOnUser" OWNER TO postgres;
+
+--
+-- Name: Role; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."Role" (
+    id integer NOT NULL,
+    name text NOT NULL,
+    "defaultScope" jsonb
+);
+
+
+ALTER TABLE public."Role" OWNER TO postgres;
+
+--
+-- Name: Role_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public."Role_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public."Role_id_seq" OWNER TO postgres;
+
+--
+-- Name: Role_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public."Role_id_seq" OWNED BY public."Role".id;
+
+
+--
+-- Name: School; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."School" (
+    id integer NOT NULL,
+    name text NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."School" OWNER TO postgres;
+
+--
+-- Name: School_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public."School_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public."School_id_seq" OWNER TO postgres;
+
+--
+-- Name: School_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public."School_id_seq" OWNED BY public."School".id;
+
+
+--
+-- Name: Session; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."Session" (
+    "userId" integer,
+    expires timestamp(3) without time zone NOT NULL,
+    token text NOT NULL
+);
+
+
+ALTER TABLE public."Session" OWNER TO postgres;
+
+--
+-- Name: Substitution; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."Substitution" (
+    id integer NOT NULL,
+    date timestamp(3) without time zone NOT NULL,
+    "lessonStart" integer NOT NULL,
+    "lessonEnd" integer NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL,
+    "courseId" integer NOT NULL,
+    room text,
+    type public."SubstitutionType",
+    "substituteId" integer
+);
+
+
+ALTER TABLE public."Substitution" OWNER TO postgres;
+
+--
+-- Name: Substitution_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public."Substitution_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public."Substitution_id_seq" OWNER TO postgres;
+
+--
+-- Name: Substitution_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public."Substitution_id_seq" OWNED BY public."Substitution".id;
+
+
+--
+-- Name: User; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."User" (
+    id integer NOT NULL,
+    email text,
+    name text NOT NULL,
+    title text,
+    abbrv text,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL,
+    "emailVerified" timestamp(3) without time zone,
+    image text,
+    "passwordHash" text,
+    "isSuperUser" boolean DEFAULT false NOT NULL,
+    role text DEFAULT 'TEACHER'::text NOT NULL
+);
+
+
+ALTER TABLE public."User" OWNER TO postgres;
+
+--
+-- Name: User_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public."User_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public."User_id_seq" OWNER TO postgres;
+
+--
+-- Name: User_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public."User_id_seq" OWNED BY public."User".id;
+
+
+--
+-- Name: Year; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."Year" (
+    id integer NOT NULL,
+    "startYear" integer NOT NULL,
+    "graduationYear" integer NOT NULL,
+    name text NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "schoolId" integer NOT NULL
+);
+
+
+ALTER TABLE public."Year" OWNER TO postgres;
+
+--
+-- Name: Year_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public."Year_id_seq"
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public."Year_id_seq" OWNER TO postgres;
+
+--
+-- Name: Year_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public."Year_id_seq" OWNED BY public."Year".id;
+
+
+--
+-- Name: _RoleToUser; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."_RoleToUser" (
+    "A" integer NOT NULL,
+    "B" integer NOT NULL
+);
+
+
+ALTER TABLE public."_RoleToUser" OWNER TO postgres;
+
+--
+-- Name: _prisma_migrations; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public._prisma_migrations (
+    id character varying(36) NOT NULL,
+    checksum character varying(64) NOT NULL,
+    finished_at timestamp with time zone,
+    migration_name character varying(255) NOT NULL,
+    logs text,
+    rolled_back_at timestamp with time zone,
+    started_at timestamp with time zone DEFAULT now() NOT NULL,
+    applied_steps_count integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public._prisma_migrations OWNER TO postgres;
+
+--
+-- Name: Class id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Class" ALTER COLUMN id SET DEFAULT nextval('public."Class_id_seq"'::regclass);
+
+
+--
+-- Name: Course id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Course" ALTER COLUMN id SET DEFAULT nextval('public."Course_id_seq"'::regclass);
+
+
+--
+-- Name: CourseSubscription id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."CourseSubscription" ALTER COLUMN id SET DEFAULT nextval('public."CourseSubscription_id_seq"'::regclass);
+
+
+--
+-- Name: CourseTime id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."CourseTime" ALTER COLUMN id SET DEFAULT nextval('public."CourseTime_id_seq"'::regclass);
+
+
+--
+-- Name: LicenseKey id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."LicenseKey" ALTER COLUMN id SET DEFAULT nextval('public."LicenseKey_id_seq"'::regclass);
+
+
+--
+-- Name: Role id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Role" ALTER COLUMN id SET DEFAULT nextval('public."Role_id_seq"'::regclass);
+
+
+--
+-- Name: School id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."School" ALTER COLUMN id SET DEFAULT nextval('public."School_id_seq"'::regclass);
+
+
+--
+-- Name: Substitution id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Substitution" ALTER COLUMN id SET DEFAULT nextval('public."Substitution_id_seq"'::regclass);
+
+
+--
+-- Name: User id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."User" ALTER COLUMN id SET DEFAULT nextval('public."User_id_seq"'::regclass);
+
+
+--
+-- Name: Year id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Year" ALTER COLUMN id SET DEFAULT nextval('public."Year_id_seq"'::regclass);
+
+
+--
+-- Data for Name: Class; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."Class" (id, "identifierInYear", "createdAt", "yearId", "updatedAt") FROM stdin;
+1		2023-05-17 14:21:59.207	1	2023-08-16 08:35:12.096
+4		2023-05-17 14:22:00.439	3	2023-08-16 08:35:12.096
+5		2023-08-16 06:38:56.065	2	2023-08-16 06:38:56.065
+2	3	2023-05-17 14:21:59.905	3	2023-08-16 08:35:12.096
+3	4	2023-05-17 14:22:00.189	3	2023-08-16 08:35:12.096
+8	1	2024-08-05 13:15:28.762	5	2024-08-05 13:15:28.762
+9	2	2024-08-05 13:15:46.463	5	2024-08-05 13:15:46.463
+10	3	2024-08-05 13:15:55.325	5	2024-08-05 13:15:55.325
+6		2023-08-16 06:38:56.434	4	2023-08-16 06:38:56.434
+7	alte 12.2	2023-08-16 06:38:56.647	3	2023-08-16 06:38:56.647
+11	1	2025-08-13 21:30:37.12	6	2025-08-13 21:30:37.12
+12	2	2025-08-13 21:35:48.198	6	2025-08-13 21:35:48.198
+13	3	2025-08-13 21:35:48.381	6	2025-08-13 21:35:48.381
+14		2025-08-13 21:35:48.559	5	2025-08-13 21:35:48.559
+\.
+
+
+--
+-- Data for Name: Course; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."Course" (id, "courseId", name, "createdAt", room, "isChoosable", "teacherId", "classId", "yearId", "updatedAt") FROM stdin;
+724	tutorium	Tutorium	2025-08-13 21:50:10.418	\N	t	4	11	6	2025-08-13 21:50:10.418
+728	wn1	Werte und Normen	2025-08-13 21:50:10.448	\N	t	75	11	6	2025-08-13 21:50:10.448
+750	tutorium	Tutorium	2025-08-13 21:50:10.645	\N	t	4	12	6	2025-08-13 21:50:10.645
+754	wn1	Werte und Normen	2025-08-13 21:50:10.674	\N	t	75	12	6	2025-08-13 21:50:10.674
+774	tutorium	Tutorium	2025-08-13 21:50:10.844	\N	t	4	13	6	2025-08-13 21:50:10.844
+768	MA	Mathe	2025-08-13 21:50:10.79	\N	t	73	13	6	2025-08-13 21:50:10.79
+714	MA	Mathe	2025-08-13 21:50:10.312	\N	t	4	11	6	2025-08-13 21:50:10.312
+715	DE	Deutsch	2025-08-13 21:50:10.329	\N	t	63	11	6	2025-08-13 21:50:10.329
+716	EK	Erdkunde	2025-08-13 21:50:10.345	\N	t	31	11	6	2025-08-13 21:50:10.345
+717	EN	Englisch	2025-08-13 21:50:10.354	\N	t	20	11	6	2025-08-13 21:50:10.354
+718	ch	Chemie	2025-08-13 21:50:10.368	\N	t	4	11	6	2025-08-13 21:50:10.368
+719	ph	Physik	2025-08-13 21:50:10.377	\N	t	4	11	6	2025-08-13 21:50:10.377
+720	ge	Geschichte	2025-08-13 21:50:10.385	\N	t	91	11	6	2025-08-13 21:50:10.385
+721	SP	Sport	2025-08-13 21:50:10.393	\N	t	31	11	6	2025-08-13 21:50:10.393
+722	bi	Biologie	2025-08-13 21:50:10.401	\N	t	87	11	6	2025-08-13 21:50:10.401
+723	WPK O	Wahlpflichtkurs	2025-08-13 21:50:10.408	\N	t	1	11	6	2025-08-13 21:50:10.408
+729	REL	Religion	2025-08-13 21:50:10.458	\N	t	90	11	6	2025-08-13 21:50:10.458
+730	wn2	Werte und Normen	2025-08-13 21:50:10.466	\N	t	40	11	6	2025-08-13 21:50:10.466
+731	ds	Darstellendes Spiel	2025-08-13 21:50:10.474	\N	t	50	11	6	2025-08-13 21:50:10.474
+732	KU	Kunst	2025-08-13 21:50:10.48	\N	t	92	11	6	2025-08-13 21:50:10.48
+733	MU	Musik	2025-08-13 21:50:10.487	\N	t	62	11	6	2025-08-13 21:50:10.487
+734	if	Informatik	2025-08-13 21:50:10.496	\N	t	73	11	6	2025-08-13 21:50:10.496
+735	Spanisch-A	Sport	2025-08-13 21:50:10.502	\N	t	27	11	6	2025-08-13 21:50:10.502
+736	fr	Französisch	2025-08-13 21:50:10.514	\N	t	16	11	6	2025-08-13 21:50:10.514
+737	la	Latein	2025-08-13 21:50:10.525	\N	t	41	11	6	2025-08-13 21:50:10.525
+738	Spanisch-F	Sport	2025-08-13 21:50:10.537	\N	t	26	11	6	2025-08-13 21:50:10.537
+739	EN	Englisch	2025-08-13 21:50:10.552	\N	t	61	12	6	2025-08-13 21:50:10.552
+740	bi	Biologie	2025-08-13 21:50:10.563	\N	t	14	12	6	2025-08-13 21:50:10.563
+741	ph	Physik	2025-08-13 21:50:10.572	\N	t	4	12	6	2025-08-13 21:50:10.572
+743	DE	Deutsch	2025-08-13 21:50:10.585	\N	t	21	12	6	2025-08-13 21:50:10.585
+744	MA	Mathe	2025-08-13 21:50:10.595	\N	t	13	12	6	2025-08-13 21:50:10.595
+745	pw	Politik-Wirtschaft	2025-08-13 21:50:10.604	\N	t	18	12	6	2025-08-13 21:50:10.604
+746	EK	Erdkunde	2025-08-13 21:50:10.611	\N	t	7	12	6	2025-08-13 21:50:10.611
+747	ge	Geschichte	2025-08-13 21:50:10.618	\N	t	21	12	6	2025-08-13 21:50:10.618
+748	ch	Chemie	2025-08-13 21:50:10.627	\N	t	4	12	6	2025-08-13 21:50:10.627
+749	WPK O	Wahlpflichtkurs	2025-08-13 21:50:10.635	\N	t	1	12	6	2025-08-13 21:50:10.635
+755	REL	Religion	2025-08-13 21:50:10.683	\N	t	90	12	6	2025-08-13 21:50:10.683
+756	wn2	Werte und Normen	2025-08-13 21:50:10.691	\N	t	40	12	6	2025-08-13 21:50:10.691
+757	ds	Darstellendes Spiel	2025-08-13 21:50:10.7	\N	t	50	12	6	2025-08-13 21:50:10.7
+758	KU	Kunst	2025-08-13 21:50:10.711	\N	t	92	12	6	2025-08-13 21:50:10.711
+759	MU	Musik	2025-08-13 21:50:10.72	\N	t	62	12	6	2025-08-13 21:50:10.72
+760	if	Informatik	2025-08-13 21:50:10.727	\N	t	73	12	6	2025-08-13 21:50:10.727
+761	Spanisch-A	Sport	2025-08-13 21:50:10.733	\N	t	27	12	6	2025-08-13 21:50:10.733
+762	fr	Französisch	2025-08-13 21:50:10.744	\N	t	16	12	6	2025-08-13 21:50:10.744
+763	la	Latein	2025-08-13 21:50:10.752	\N	t	41	12	6	2025-08-13 21:50:10.752
+764	Spanisch-F	Sport	2025-08-13 21:50:10.762	\N	t	26	12	6	2025-08-13 21:50:10.762
+765	SP	Sport	2025-08-13 21:50:10.771	\N	t	31	13	6	2025-08-13 21:50:10.771
+766	ph	Physik	2025-08-13 21:50:10.778	\N	t	17	13	6	2025-08-13 21:50:10.778
+769	bi	Biologie	2025-08-13 21:50:10.799	\N	t	23	13	6	2025-08-13 21:50:10.799
+770	EK	Erdkunde	2025-08-13 21:50:10.806	\N	t	31	13	6	2025-08-13 21:50:10.806
+771	DE	Deutsch	2025-08-13 21:50:10.812	\N	t	38	13	6	2025-08-13 21:50:10.812
+772	ge	Geschichte	2025-08-13 21:50:10.828	\N	t	94	13	6	2025-08-13 21:50:10.828
+773	EN	Englisch	2025-08-13 21:50:10.835	\N	t	23	13	6	2025-08-13 21:50:10.835
+776	ch	Chemie	2025-08-13 21:50:10.861	\N	t	95	13	6	2025-08-13 21:50:10.861
+777	pw	Politik-Wirtschaft	2025-08-13 21:50:10.868	\N	t	89	13	6	2025-08-13 21:50:10.868
+780	wn1	Werte und Normen	2025-08-13 21:50:10.888	\N	t	75	13	6	2025-08-13 21:50:10.888
+781	REL	Religion	2025-08-13 21:50:10.896	\N	t	90	13	6	2025-08-13 21:50:10.896
+782	wn2	Werte und Normen	2025-08-13 21:50:10.904	\N	t	40	13	6	2025-08-13 21:50:10.904
+783	ds	Darstellendes Spiel	2025-08-13 21:50:10.912	\N	t	50	13	6	2025-08-13 21:50:10.912
+784	KU	Kunst	2025-08-13 21:50:10.919	\N	t	92	13	6	2025-08-13 21:50:10.919
+785	MU	Musik	2025-08-13 21:50:10.925	\N	t	62	13	6	2025-08-13 21:50:10.925
+786	if	Informatik	2025-08-13 21:50:10.933	\N	t	73	13	6	2025-08-13 21:50:10.933
+787	Spanisch-A	Sport	2025-08-13 21:50:10.939	\N	t	27	13	6	2025-08-13 21:50:10.939
+788	fr	Französisch	2025-08-13 21:50:10.95	\N	t	16	13	6	2025-08-13 21:50:10.95
+789	la	Latein	2025-08-13 21:50:10.96	\N	t	41	13	6	2025-08-13 21:50:10.96
+790	Spanisch-F	Sport	2025-08-13 21:50:10.971	\N	t	26	13	6	2025-08-13 21:50:10.971
+791	DE1	Deutsch	2025-08-13 21:50:10.98	\N	t	25	14	5	2025-08-13 21:50:10.98
+792	EK1	Erdkunde	2025-08-13 21:50:10.995	\N	t	7	14	5	2025-08-13 21:50:10.995
+793	PW1	Politik-Wirtschaft	2025-08-13 21:50:11.013	\N	t	28	14	5	2025-08-13 21:50:11.013
+794	BI1	Biologie	2025-08-13 21:50:11.035	\N	t	1	14	5	2025-08-13 21:50:11.035
+795	EN1	Englisch	2025-08-13 21:50:11.193	\N	t	46	14	5	2025-08-13 21:50:11.193
+797	PH1	Physik	2025-08-13 21:50:11.25	\N	t	13	14	5	2025-08-13 21:50:11.25
+798	ge3	Geschichte	2025-08-13 21:50:11.266	\N	t	67	14	5	2025-08-13 21:50:11.266
+799	bi2	Biologie	2025-08-13 21:50:11.279	\N	t	60	14	5	2025-08-13 21:50:11.279
+800	la1	Latein	2025-08-13 21:50:11.295	\N	t	37	14	5	2025-08-13 21:50:11.295
+801	ma3	Mathe	2025-08-13 21:50:11.31	\N	t	13	14	5	2025-08-13 21:50:11.31
+802	sn1	Spanisch	2025-08-13 21:50:11.324	\N	t	26	14	5	2025-08-13 21:50:11.324
+803	st1	Sport-Theorie	2025-08-13 21:50:11.336	\N	t	31	14	5	2025-08-13 21:50:11.336
+804	ma2	Mathe	2025-08-13 21:50:11.349	\N	t	9	14	5	2025-08-13 21:50:11.349
+805	ph2	Physik	2025-08-13 21:50:11.36	\N	t	17	14	5	2025-08-13 21:50:11.36
+806	pw2	Politik-Wirtschaft	2025-08-13 21:50:11.372	\N	t	30	14	5	2025-08-13 21:50:11.372
+807	ds1	Darstellendes Spiel	2025-08-13 21:50:11.381	\N	t	7	14	5	2025-08-13 21:50:11.381
+808	ku1	Kunst	2025-08-13 21:50:11.393	\N	t	10	14	5	2025-08-13 21:50:11.393
+713	pw	Politik-Wirtschaft	2025-08-13 21:50:10.293	\N	t	76	11	6	2025-08-13 21:50:10.293
+742	SP	Sport	2025-08-13 21:50:10.578	\N	t	93	12	6	2025-08-13 21:50:10.578
+828	CH23	Chemie	2025-08-13 21:50:11.573	\N	t	47	14	5	2025-08-13 21:50:11.573
+767	WPK O	Wahlpflichtkurs	2025-08-13 21:50:10.784	\N	t	1	13	6	2025-08-13 21:50:10.784
+796	GE2	Geschichte	2025-08-13 21:50:11.232	\N	t	52	14	5	2025-08-13 21:50:11.232
+809	mu1	Musik	2025-08-13 21:50:11.402	\N	t	96	14	5	2025-08-13 21:50:11.402
+810	bi3	Biologie	2025-08-13 21:50:11.417	\N	t	14	14	5	2025-08-13 21:50:11.417
+811	de3	Deutsch	2025-08-13 21:50:11.427	\N	t	71	14	5	2025-08-13 21:50:11.427
+812	en4	Englisch	2025-08-13 21:50:11.438	\N	t	61	14	5	2025-08-13 21:50:11.438
+813	DE2	Deutsch	2025-08-13 21:50:11.45	\N	t	2	14	5	2025-08-13 21:50:11.45
+814	EN2	Englisch	2025-08-13 21:50:11.462	\N	t	23	14	5	2025-08-13 21:50:11.462
+815	GE1	Geschichte	2025-08-13 21:50:11.474	\N	t	48	14	5	2025-08-13 21:50:11.474
+816	fr1	Französisch	2025-08-13 21:50:11.485	\N	t	58	14	5	2025-08-13 21:50:11.485
+817	ma1	Mathe	2025-08-13 21:50:11.494	\N	t	74	14	5	2025-08-13 21:50:11.494
+818	en3	Englisch	2025-08-13 21:50:11.5	\N	t	55	14	5	2025-08-13 21:50:11.5
+819	sf1	Seminarfach	2025-08-13 21:50:11.507	\N	t	48	14	5	2025-08-13 21:50:11.507
+820	sf2	Seminarfach	2025-08-13 21:50:11.512	\N	t	52	14	5	2025-08-13 21:50:11.512
+821	sf3	Seminarfach	2025-08-13 21:50:11.516	\N	t	16	14	5	2025-08-13 21:50:11.516
+822	sf4	Seminarfach	2025-08-13 21:50:11.522	\N	t	60	14	5	2025-08-13 21:50:11.522
+823	sp1	Sport	2025-08-13 21:50:11.527	\N	t	33	14	5	2025-08-13 21:50:11.527
+824	sp2	Sport	2025-08-13 21:50:11.533	\N	t	71	14	5	2025-08-13 21:50:11.533
+825	sp3	Sport	2025-08-13 21:50:11.538	\N	t	57	14	5	2025-08-13 21:50:11.538
+826	de4	Deutsch	2025-08-13 21:50:11.547	\N	t	68	14	5	2025-08-13 21:50:11.547
+827	MA23	Mathe	2025-08-13 21:50:11.561	\N	t	84	14	5	2025-08-13 21:50:11.561
+829	ch23	Chemie	2025-08-13 21:50:11.588	\N	t	75	14	5	2025-08-13 21:50:11.588
+830	wn23	Werte und Normen	2025-08-13 21:50:11.599	\N	t	58	14	5	2025-08-13 21:50:11.599
+831	PW23	Politik-Wirtschaft	2025-08-13 21:50:11.612	\N	t	18	14	5	2025-08-13 21:50:11.612
+832	if23	Informatik	2025-08-13 21:50:11.627	\N	t	84	14	5	2025-08-13 21:50:11.627
+833	DE1	Deutsch	2025-08-13 21:50:11.64	\N	t	22	6	4	2025-08-13 21:50:11.64
+834	GE1	Geschichte	2025-08-13 21:50:11.657	\N	t	16	6	4	2025-08-13 21:50:11.657
+835	PH1	Physik	2025-08-13 21:50:11.675	\N	t	4	6	4	2025-08-13 21:50:11.675
+836	EK1	Erdkunde	2025-08-13 21:50:11.693	\N	t	15	6	4	2025-08-13 21:50:11.693
+837	EN2	Englisch	2025-08-13 21:50:11.716	\N	t	20	6	4	2025-08-13 21:50:11.716
+838	de3	Deutsch	2025-08-13 21:50:11.737	\N	t	2	6	4	2025-08-13 21:50:11.737
+839	pw2	Politik-Wirtschaft	2025-08-13 21:50:11.752	\N	t	59	6	4	2025-08-13 21:50:11.752
+840	re1	Religion	2025-08-13 21:50:11.766	\N	t	62	6	4	2025-08-13 21:50:11.766
+841	sn1	Spanisch	2025-08-13 21:50:11.78	\N	t	27	6	4	2025-08-13 21:50:11.78
+842	la1	Latein	2025-08-13 21:50:11.797	\N	t	25	6	4	2025-08-13 21:50:11.797
+843	ma2	Mathe	2025-08-13 21:50:11.814	\N	t	32	6	4	2025-08-13 21:50:11.814
+844	de2	Deutsch	2025-08-13 21:50:11.828	\N	t	63	6	4	2025-08-13 21:50:11.828
+845	bi2	Biologie	2025-08-13 21:50:11.842	\N	t	81	6	4	2025-08-13 21:50:11.842
+846	wn1	Werte und Normen	2025-08-13 21:50:11.855	\N	t	18	6	4	2025-08-13 21:50:11.855
+847	ma1	Mathe	2025-08-13 21:50:11.87	\N	t	9	6	4	2025-08-13 21:50:11.87
+848	bi3	Biologie	2025-08-13 21:50:11.885	\N	t	87	6	4	2025-08-13 21:50:11.885
+849	en3	Englisch	2025-08-13 21:50:11.897	\N	t	30	6	4	2025-08-13 21:50:11.897
+850	ge3	Geschichte	2025-08-13 21:50:11.911	\N	t	3	6	4	2025-08-13 21:50:11.911
+851	BI1	Biologie	2025-08-13 21:50:11.926	\N	t	60	6	4	2025-08-13 21:50:11.926
+852	EN1	Englisch	2025-08-13 21:50:11.954	\N	t	78	6	4	2025-08-13 21:50:11.954
+853	GE2	Geschichte	2025-08-13 21:50:11.98	\N	t	5	6	4	2025-08-13 21:50:11.98
+854	ds1	Darstellendes Spiel	2025-08-13 21:50:12.027	\N	t	50	6	4	2025-08-13 21:50:12.027
+855	ku1	Kunst	2025-08-13 21:50:12.068	\N	t	10	6	4	2025-08-13 21:50:12.068
+856	sp1	Sport	2025-08-13 21:50:12.092	\N	t	33	6	4	2025-08-13 21:50:12.092
+857	sp2	Sport	2025-08-13 21:50:12.111	\N	t	57	6	4	2025-08-13 21:50:12.111
+858	sf2	Seminarfach	2025-08-13 21:50:12.129	\N	t	58	6	4	2025-08-13 21:50:12.129
+859	sf3	Seminarfach	2025-08-13 21:50:12.154	\N	t	59	6	4	2025-08-13 21:50:12.154
+860	MA23	Mathe	2025-08-13 21:50:12.168	\N	t	84	6	4	2025-08-13 21:50:12.168
+861	CH23	Chemie	2025-08-13 21:50:12.197	\N	t	47	6	4	2025-08-13 21:50:12.197
+862	ch23	Chemie	2025-08-13 21:50:12.231	\N	t	75	6	4	2025-08-13 21:50:12.231
+863	wn23	Werte und Normen	2025-08-13 21:50:12.263	\N	t	58	6	4	2025-08-13 21:50:12.263
+864	PW23	Politik-Wirtschaft	2025-08-13 21:50:12.295	\N	t	18	6	4	2025-08-13 21:50:12.295
+865	if23	Informatik	2025-08-13 21:50:12.35	\N	t	84	6	4	2025-08-13 21:50:12.35
+\.
+
+
+--
+-- Data for Name: CourseSubscription; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."CourseSubscription" (id, "createdAt", "courseId", "messagingToken") FROM stdin;
+\.
+
+
+--
+-- Data for Name: CourseTime; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."CourseTime" (id, weekday, start, duration, weeks, "courseId", "createdAt", "updatedAt") FROM stdin;
+2917	4	480	80	BOTH	713	2025-08-13 21:50:17.994	2025-08-13 21:50:17.994
+2918	4	585	80	BOTH	714	2025-08-13 21:50:18.007	2025-08-13 21:50:18.007
+2919	1	690	80	ODD	714	2025-08-13 21:50:18.011	2025-08-13 21:50:18.011
+2920	5	480	80	BOTH	715	2025-08-13 21:50:18.021	2025-08-13 21:50:18.021
+2921	2	585	80	EVEN	715	2025-08-13 21:50:18.025	2025-08-13 21:50:18.025
+2922	5	585	80	BOTH	716	2025-08-13 21:50:18.035	2025-08-13 21:50:18.035
+2923	5	690	80	BOTH	717	2025-08-13 21:50:18.045	2025-08-13 21:50:18.045
+2924	2	585	80	ODD	717	2025-08-13 21:50:18.049	2025-08-13 21:50:18.049
+2925	2	480	80	BOTH	718	2025-08-13 21:50:18.06	2025-08-13 21:50:18.06
+2926	2	690	80	BOTH	719	2025-08-13 21:50:18.073	2025-08-13 21:50:18.073
+2927	2	830	80	BOTH	720	2025-08-13 21:50:18.084	2025-08-13 21:50:18.084
+2928	3	585	80	BOTH	721	2025-08-13 21:50:18.093	2025-08-13 21:50:18.093
+2929	3	690	80	BOTH	722	2025-08-13 21:50:18.104	2025-08-13 21:50:18.104
+2930	4	690	110	BOTH	723	2025-08-13 21:50:18.114	2025-08-13 21:50:18.114
+2931	3	480	80	BOTH	724	2025-08-13 21:50:18.128	2025-08-13 21:50:18.128
+2932	1	830	80	BOTH	724	2025-08-13 21:50:18.131	2025-08-13 21:50:18.131
+2933	1	480	80	BOTH	728	2025-08-13 21:50:18.163	2025-08-13 21:50:18.163
+2934	1	480	80	BOTH	729	2025-08-13 21:50:18.174	2025-08-13 21:50:18.174
+2935	1	480	80	BOTH	730	2025-08-13 21:50:18.183	2025-08-13 21:50:18.183
+2936	1	585	80	BOTH	731	2025-08-13 21:50:18.192	2025-08-13 21:50:18.192
+2937	1	585	80	BOTH	732	2025-08-13 21:50:18.2	2025-08-13 21:50:18.2
+2938	1	585	80	BOTH	733	2025-08-13 21:50:18.209	2025-08-13 21:50:18.209
+2939	3	830	80	BOTH	734	2025-08-13 21:50:18.218	2025-08-13 21:50:18.218
+2940	4	690	80	BOTH	735	2025-08-13 21:50:18.227	2025-08-13 21:50:18.227
+2941	1	830	80	BOTH	735	2025-08-13 21:50:18.231	2025-08-13 21:50:18.231
+2942	4	690	80	BOTH	736	2025-08-13 21:50:18.239	2025-08-13 21:50:18.239
+2943	1	830	80	EVEN	736	2025-08-13 21:50:18.243	2025-08-13 21:50:18.243
+2944	4	690	80	BOTH	737	2025-08-13 21:50:18.253	2025-08-13 21:50:18.253
+2945	1	830	80	BOTH	737	2025-08-13 21:50:18.257	2025-08-13 21:50:18.257
+2946	4	690	80	BOTH	738	2025-08-13 21:50:18.267	2025-08-13 21:50:18.267
+2947	1	830	80	EVEN	738	2025-08-13 21:50:18.27	2025-08-13 21:50:18.27
+2948	4	480	80	ODD	739	2025-08-13 21:50:18.279	2025-08-13 21:50:18.279
+2949	2	585	80	BOTH	739	2025-08-13 21:50:18.282	2025-08-13 21:50:18.282
+2950	4	585	80	BOTH	740	2025-08-13 21:50:18.29	2025-08-13 21:50:18.29
+2951	4	830	80	BOTH	741	2025-08-13 21:50:18.298	2025-08-13 21:50:18.298
+2952	5	480	80	BOTH	742	2025-08-13 21:50:18.306	2025-08-13 21:50:18.306
+2953	5	585	80	BOTH	743	2025-08-13 21:50:18.312	2025-08-13 21:50:18.312
+2954	2	690	80	ODD	743	2025-08-13 21:50:18.314	2025-08-13 21:50:18.314
+2955	5	690	80	BOTH	744	2025-08-13 21:50:18.319	2025-08-13 21:50:18.319
+2956	2	690	80	EVEN	744	2025-08-13 21:50:18.322	2025-08-13 21:50:18.322
+2957	1	690	80	BOTH	745	2025-08-13 21:50:18.331	2025-08-13 21:50:18.331
+2958	2	480	80	BOTH	746	2025-08-13 21:50:18.342	2025-08-13 21:50:18.342
+2959	3	585	80	BOTH	747	2025-08-13 21:50:18.349	2025-08-13 21:50:18.349
+2960	3	690	80	BOTH	748	2025-08-13 21:50:18.358	2025-08-13 21:50:18.358
+2961	4	690	110	BOTH	749	2025-08-13 21:50:18.365	2025-08-13 21:50:18.365
+2962	3	480	80	BOTH	750	2025-08-13 21:50:18.374	2025-08-13 21:50:18.374
+2963	1	830	80	BOTH	750	2025-08-13 21:50:18.376	2025-08-13 21:50:18.376
+2964	1	480	80	BOTH	754	2025-08-13 21:50:18.4	2025-08-13 21:50:18.4
+2965	1	480	80	BOTH	755	2025-08-13 21:50:18.406	2025-08-13 21:50:18.406
+2966	1	480	80	BOTH	756	2025-08-13 21:50:18.412	2025-08-13 21:50:18.412
+2967	1	585	80	BOTH	757	2025-08-13 21:50:18.419	2025-08-13 21:50:18.419
+2968	1	585	80	BOTH	758	2025-08-13 21:50:18.424	2025-08-13 21:50:18.424
+2969	1	585	80	BOTH	759	2025-08-13 21:50:18.428	2025-08-13 21:50:18.428
+2970	3	830	80	BOTH	760	2025-08-13 21:50:18.436	2025-08-13 21:50:18.436
+2971	4	690	80	BOTH	761	2025-08-13 21:50:18.441	2025-08-13 21:50:18.441
+2972	1	830	80	BOTH	761	2025-08-13 21:50:18.443	2025-08-13 21:50:18.443
+2973	4	690	80	BOTH	762	2025-08-13 21:50:18.449	2025-08-13 21:50:18.449
+2974	1	830	80	EVEN	762	2025-08-13 21:50:18.451	2025-08-13 21:50:18.451
+2975	4	690	80	BOTH	763	2025-08-13 21:50:18.457	2025-08-13 21:50:18.457
+2976	1	830	80	BOTH	763	2025-08-13 21:50:18.459	2025-08-13 21:50:18.459
+2977	4	690	80	BOTH	764	2025-08-13 21:50:18.469	2025-08-13 21:50:18.469
+2978	1	830	80	EVEN	764	2025-08-13 21:50:18.472	2025-08-13 21:50:18.472
+2979	4	480	80	BOTH	765	2025-08-13 21:50:18.478	2025-08-13 21:50:18.478
+2980	4	585	80	BOTH	766	2025-08-13 21:50:18.488	2025-08-13 21:50:18.488
+2981	4	690	110	BOTH	767	2025-08-13 21:50:18.495	2025-08-13 21:50:18.495
+2982	5	480	80	ODD	768	2025-08-13 21:50:18.504	2025-08-13 21:50:18.504
+2983	2	690	80	BOTH	768	2025-08-13 21:50:18.507	2025-08-13 21:50:18.507
+2984	5	585	80	BOTH	769	2025-08-13 21:50:18.513	2025-08-13 21:50:18.513
+2985	5	690	80	BOTH	770	2025-08-13 21:50:18.519	2025-08-13 21:50:18.519
+2986	1	690	80	BOTH	771	2025-08-13 21:50:18.525	2025-08-13 21:50:18.525
+2987	4	830	80	EVEN	771	2025-08-13 21:50:18.528	2025-08-13 21:50:18.528
+2988	2	480	80	BOTH	772	2025-08-13 21:50:18.536	2025-08-13 21:50:18.536
+2989	2	585	80	BOTH	773	2025-08-13 21:50:18.544	2025-08-13 21:50:18.544
+2990	5	480	80	EVEN	773	2025-08-13 21:50:18.55	2025-08-13 21:50:18.55
+2991	3	480	80	BOTH	774	2025-08-13 21:50:18.563	2025-08-13 21:50:18.563
+2992	1	830	80	BOTH	774	2025-08-13 21:50:18.567	2025-08-13 21:50:18.567
+2993	3	585	80	BOTH	776	2025-08-13 21:50:18.58	2025-08-13 21:50:18.58
+2994	3	690	80	BOTH	777	2025-08-13 21:50:18.587	2025-08-13 21:50:18.587
+2995	1	480	80	BOTH	780	2025-08-13 21:50:18.602	2025-08-13 21:50:18.602
+2996	1	480	80	BOTH	781	2025-08-13 21:50:18.609	2025-08-13 21:50:18.609
+2997	1	480	80	BOTH	782	2025-08-13 21:50:18.618	2025-08-13 21:50:18.618
+2998	1	585	80	BOTH	783	2025-08-13 21:50:18.626	2025-08-13 21:50:18.626
+2999	1	585	80	BOTH	784	2025-08-13 21:50:18.633	2025-08-13 21:50:18.633
+3000	1	585	80	BOTH	785	2025-08-13 21:50:18.64	2025-08-13 21:50:18.64
+3001	3	830	80	BOTH	786	2025-08-13 21:50:18.646	2025-08-13 21:50:18.646
+3002	4	690	80	BOTH	787	2025-08-13 21:50:18.651	2025-08-13 21:50:18.651
+3003	1	830	80	BOTH	787	2025-08-13 21:50:18.654	2025-08-13 21:50:18.654
+3004	4	690	80	BOTH	788	2025-08-13 21:50:18.661	2025-08-13 21:50:18.661
+3005	1	830	80	EVEN	788	2025-08-13 21:50:18.663	2025-08-13 21:50:18.663
+3006	4	690	80	BOTH	789	2025-08-13 21:50:18.668	2025-08-13 21:50:18.668
+3007	1	830	80	BOTH	789	2025-08-13 21:50:18.67	2025-08-13 21:50:18.67
+3008	4	690	80	BOTH	790	2025-08-13 21:50:18.678	2025-08-13 21:50:18.678
+3009	1	830	80	EVEN	790	2025-08-13 21:50:18.68	2025-08-13 21:50:18.68
+3010	4	480	80	BOTH	791	2025-08-13 21:50:18.686	2025-08-13 21:50:18.686
+3011	2	585	80	BOTH	791	2025-08-13 21:50:18.688	2025-08-13 21:50:18.688
+3012	3	585	80	BOTH	791	2025-08-13 21:50:18.691	2025-08-13 21:50:18.691
+3013	4	480	80	BOTH	792	2025-08-13 21:50:18.696	2025-08-13 21:50:18.696
+3014	2	585	80	BOTH	792	2025-08-13 21:50:18.698	2025-08-13 21:50:18.698
+3015	3	585	80	BOTH	792	2025-08-13 21:50:18.701	2025-08-13 21:50:18.701
+3016	4	480	80	BOTH	793	2025-08-13 21:50:18.709	2025-08-13 21:50:18.709
+3017	2	585	80	BOTH	793	2025-08-13 21:50:18.711	2025-08-13 21:50:18.711
+3018	3	585	80	BOTH	793	2025-08-13 21:50:18.713	2025-08-13 21:50:18.713
+3019	4	585	80	BOTH	794	2025-08-13 21:50:18.72	2025-08-13 21:50:18.72
+3020	5	585	80	BOTH	794	2025-08-13 21:50:18.724	2025-08-13 21:50:18.724
+3021	1	585	80	BOTH	794	2025-08-13 21:50:18.726	2025-08-13 21:50:18.726
+3022	4	585	80	BOTH	795	2025-08-13 21:50:18.732	2025-08-13 21:50:18.732
+3023	5	585	80	BOTH	795	2025-08-13 21:50:18.735	2025-08-13 21:50:18.735
+3024	1	585	80	BOTH	795	2025-08-13 21:50:18.737	2025-08-13 21:50:18.737
+3025	4	585	80	BOTH	796	2025-08-13 21:50:18.742	2025-08-13 21:50:18.742
+3026	5	585	80	BOTH	796	2025-08-13 21:50:18.744	2025-08-13 21:50:18.744
+3027	1	585	80	BOTH	796	2025-08-13 21:50:18.746	2025-08-13 21:50:18.746
+3028	4	585	80	BOTH	797	2025-08-13 21:50:18.751	2025-08-13 21:50:18.751
+3029	5	585	80	BOTH	797	2025-08-13 21:50:18.753	2025-08-13 21:50:18.753
+3030	1	585	80	BOTH	797	2025-08-13 21:50:18.755	2025-08-13 21:50:18.755
+3031	4	690	80	BOTH	798	2025-08-13 21:50:18.761	2025-08-13 21:50:18.761
+3032	1	830	80	ODD	798	2025-08-13 21:50:18.764	2025-08-13 21:50:18.764
+3033	4	830	80	ODD	799	2025-08-13 21:50:18.774	2025-08-13 21:50:18.774
+3034	3	480	80	BOTH	799	2025-08-13 21:50:18.779	2025-08-13 21:50:18.779
+3035	4	830	80	ODD	800	2025-08-13 21:50:18.786	2025-08-13 21:50:18.786
+3036	3	480	80	BOTH	800	2025-08-13 21:50:18.789	2025-08-13 21:50:18.789
+3037	4	830	80	ODD	801	2025-08-13 21:50:18.796	2025-08-13 21:50:18.796
+3038	3	480	80	BOTH	801	2025-08-13 21:50:18.8	2025-08-13 21:50:18.8
+3039	4	830	80	ODD	802	2025-08-13 21:50:18.807	2025-08-13 21:50:18.807
+3040	3	480	80	BOTH	802	2025-08-13 21:50:18.809	2025-08-13 21:50:18.809
+3041	5	480	80	BOTH	803	2025-08-13 21:50:18.816	2025-08-13 21:50:18.816
+3042	2	830	80	EVEN	803	2025-08-13 21:50:18.818	2025-08-13 21:50:18.818
+3043	5	480	80	BOTH	804	2025-08-13 21:50:18.823	2025-08-13 21:50:18.823
+3044	2	830	80	EVEN	804	2025-08-13 21:50:18.825	2025-08-13 21:50:18.825
+3045	5	480	80	BOTH	805	2025-08-13 21:50:18.83	2025-08-13 21:50:18.83
+3046	2	830	80	EVEN	805	2025-08-13 21:50:18.833	2025-08-13 21:50:18.833
+3047	5	480	80	BOTH	806	2025-08-13 21:50:18.838	2025-08-13 21:50:18.838
+3048	2	830	80	EVEN	806	2025-08-13 21:50:18.84	2025-08-13 21:50:18.84
+3049	5	690	80	BOTH	807	2025-08-13 21:50:18.845	2025-08-13 21:50:18.845
+3050	4	830	80	EVEN	807	2025-08-13 21:50:18.848	2025-08-13 21:50:18.848
+3051	5	690	80	BOTH	808	2025-08-13 21:50:18.854	2025-08-13 21:50:18.854
+3052	4	830	80	EVEN	808	2025-08-13 21:50:18.856	2025-08-13 21:50:18.856
+3053	5	690	80	BOTH	809	2025-08-13 21:50:18.862	2025-08-13 21:50:18.862
+3054	4	830	80	EVEN	809	2025-08-13 21:50:18.866	2025-08-13 21:50:18.866
+3055	1	480	80	BOTH	810	2025-08-13 21:50:18.871	2025-08-13 21:50:18.871
+3056	2	830	80	ODD	810	2025-08-13 21:50:18.874	2025-08-13 21:50:18.874
+3057	2	830	80	ODD	811	2025-08-13 21:50:18.88	2025-08-13 21:50:18.88
+3058	1	480	80	BOTH	811	2025-08-13 21:50:18.883	2025-08-13 21:50:18.883
+3059	1	480	80	BOTH	812	2025-08-13 21:50:18.889	2025-08-13 21:50:18.889
+3060	2	830	80	ODD	812	2025-08-13 21:50:18.892	2025-08-13 21:50:18.892
+3061	1	690	80	BOTH	813	2025-08-13 21:50:18.899	2025-08-13 21:50:18.899
+3062	2	690	80	BOTH	813	2025-08-13 21:50:18.901	2025-08-13 21:50:18.901
+3063	3	690	80	BOTH	813	2025-08-13 21:50:18.903	2025-08-13 21:50:18.903
+3064	1	690	80	BOTH	814	2025-08-13 21:50:18.908	2025-08-13 21:50:18.908
+3065	2	690	80	BOTH	814	2025-08-13 21:50:18.91	2025-08-13 21:50:18.91
+3066	3	690	80	BOTH	814	2025-08-13 21:50:18.912	2025-08-13 21:50:18.912
+3067	1	690	80	BOTH	815	2025-08-13 21:50:18.92	2025-08-13 21:50:18.92
+3068	2	690	80	BOTH	815	2025-08-13 21:50:18.922	2025-08-13 21:50:18.922
+3069	3	690	80	BOTH	815	2025-08-13 21:50:18.924	2025-08-13 21:50:18.924
+3070	2	480	80	BOTH	816	2025-08-13 21:50:18.929	2025-08-13 21:50:18.929
+3071	1	830	80	EVEN	816	2025-08-13 21:50:18.932	2025-08-13 21:50:18.932
+3072	1	830	80	EVEN	817	2025-08-13 21:50:18.938	2025-08-13 21:50:18.938
+3073	2	480	80	BOTH	817	2025-08-13 21:50:18.941	2025-08-13 21:50:18.941
+3074	2	480	80	BOTH	818	2025-08-13 21:50:18.946	2025-08-13 21:50:18.946
+3075	1	830	80	EVEN	818	2025-08-13 21:50:18.949	2025-08-13 21:50:18.949
+3076	3	830	80	BOTH	819	2025-08-13 21:50:18.955	2025-08-13 21:50:18.955
+3077	3	830	80	BOTH	820	2025-08-13 21:50:18.96	2025-08-13 21:50:18.96
+3078	3	830	80	BOTH	821	2025-08-13 21:50:18.966	2025-08-13 21:50:18.966
+3079	3	830	80	BOTH	822	2025-08-13 21:50:18.97	2025-08-13 21:50:18.97
+3080	3	915	75	BOTH	823	2025-08-13 21:50:18.976	2025-08-13 21:50:18.976
+3081	3	915	75	BOTH	824	2025-08-13 21:50:18.982	2025-08-13 21:50:18.982
+3082	3	915	75	BOTH	825	2025-08-13 21:50:18.993	2025-08-13 21:50:18.993
+3083	4	690	80	BOTH	826	2025-08-13 21:50:19	2025-08-13 21:50:19
+3084	1	830	80	ODD	826	2025-08-13 21:50:19.002	2025-08-13 21:50:19.002
+3085	1	690	80	BOTH	827	2025-08-13 21:50:19.011	2025-08-13 21:50:19.011
+3086	2	690	80	BOTH	827	2025-08-13 21:50:19.013	2025-08-13 21:50:19.013
+3087	3	690	80	BOTH	827	2025-08-13 21:50:19.016	2025-08-13 21:50:19.016
+3088	4	480	80	BOTH	828	2025-08-13 21:50:19.021	2025-08-13 21:50:19.021
+3089	2	585	80	BOTH	828	2025-08-13 21:50:19.023	2025-08-13 21:50:19.023
+3090	3	585	80	BOTH	828	2025-08-13 21:50:19.026	2025-08-13 21:50:19.026
+3091	1	830	80	ODD	829	2025-08-13 21:50:19.032	2025-08-13 21:50:19.032
+3092	4	690	80	BOTH	829	2025-08-13 21:50:19.034	2025-08-13 21:50:19.034
+3093	4	690	80	BOTH	830	2025-08-13 21:50:19.039	2025-08-13 21:50:19.039
+3094	1	830	80	ODD	830	2025-08-13 21:50:19.042	2025-08-13 21:50:19.042
+3095	4	585	80	BOTH	831	2025-08-13 21:50:19.047	2025-08-13 21:50:19.047
+3096	5	585	80	BOTH	831	2025-08-13 21:50:19.049	2025-08-13 21:50:19.049
+3097	1	585	80	BOTH	831	2025-08-13 21:50:19.051	2025-08-13 21:50:19.051
+3098	5	690	80	BOTH	832	2025-08-13 21:50:19.056	2025-08-13 21:50:19.056
+3099	4	830	80	EVEN	832	2025-08-13 21:50:19.059	2025-08-13 21:50:19.059
+3100	4	480	80	BOTH	833	2025-08-13 21:50:19.065	2025-08-13 21:50:19.065
+3101	2	585	80	BOTH	833	2025-08-13 21:50:19.067	2025-08-13 21:50:19.067
+3102	3	585	80	BOTH	833	2025-08-13 21:50:19.069	2025-08-13 21:50:19.069
+3103	4	480	80	BOTH	834	2025-08-13 21:50:19.075	2025-08-13 21:50:19.075
+3104	2	585	80	BOTH	834	2025-08-13 21:50:19.078	2025-08-13 21:50:19.078
+3105	3	585	80	BOTH	834	2025-08-13 21:50:19.08	2025-08-13 21:50:19.08
+3106	4	480	80	BOTH	835	2025-08-13 21:50:19.086	2025-08-13 21:50:19.086
+3107	2	585	80	BOTH	835	2025-08-13 21:50:19.089	2025-08-13 21:50:19.089
+3108	3	585	80	BOTH	835	2025-08-13 21:50:19.091	2025-08-13 21:50:19.091
+3109	4	585	80	BOTH	836	2025-08-13 21:50:19.096	2025-08-13 21:50:19.096
+3110	5	585	80	BOTH	836	2025-08-13 21:50:19.098	2025-08-13 21:50:19.098
+3111	1	585	80	BOTH	836	2025-08-13 21:50:19.1	2025-08-13 21:50:19.1
+3112	4	585	80	BOTH	837	2025-08-13 21:50:19.108	2025-08-13 21:50:19.108
+3113	5	585	80	BOTH	837	2025-08-13 21:50:19.11	2025-08-13 21:50:19.11
+3114	1	585	80	BOTH	837	2025-08-13 21:50:19.112	2025-08-13 21:50:19.112
+3115	4	690	80	BOTH	838	2025-08-13 21:50:19.118	2025-08-13 21:50:19.118
+3116	1	830	80	ODD	838	2025-08-13 21:50:19.121	2025-08-13 21:50:19.121
+3117	4	690	80	BOTH	839	2025-08-13 21:50:19.128	2025-08-13 21:50:19.128
+3118	1	830	80	ODD	839	2025-08-13 21:50:19.13	2025-08-13 21:50:19.13
+3119	4	690	80	BOTH	840	2025-08-13 21:50:19.137	2025-08-13 21:50:19.137
+3120	1	830	80	ODD	840	2025-08-13 21:50:19.141	2025-08-13 21:50:19.141
+3121	4	770	30	BOTH	841	2025-08-13 21:50:19.147	2025-08-13 21:50:19.147
+3122	4	830	80	ODD	841	2025-08-13 21:50:19.15	2025-08-13 21:50:19.15
+3123	2	480	80	BOTH	841	2025-08-13 21:50:19.152	2025-08-13 21:50:19.152
+3124	4	800	30	BOTH	842	2025-08-13 21:50:19.16	2025-08-13 21:50:19.16
+3125	5	690	80	BOTH	842	2025-08-13 21:50:19.162	2025-08-13 21:50:19.162
+3126	4	830	80	EVEN	842	2025-08-13 21:50:19.165	2025-08-13 21:50:19.165
+3127	4	830	80	ODD	843	2025-08-13 21:50:19.171	2025-08-13 21:50:19.171
+3128	2	480	80	BOTH	843	2025-08-13 21:50:19.175	2025-08-13 21:50:19.175
+3129	4	830	80	ODD	844	2025-08-13 21:50:19.181	2025-08-13 21:50:19.181
+3130	2	480	80	BOTH	844	2025-08-13 21:50:19.184	2025-08-13 21:50:19.184
+3131	5	480	80	BOTH	845	2025-08-13 21:50:19.192	2025-08-13 21:50:19.192
+3132	2	830	80	EVEN	845	2025-08-13 21:50:19.194	2025-08-13 21:50:19.194
+3133	5	480	80	BOTH	846	2025-08-13 21:50:19.199	2025-08-13 21:50:19.199
+3134	2	830	80	EVEN	846	2025-08-13 21:50:19.201	2025-08-13 21:50:19.201
+3135	5	690	80	BOTH	847	2025-08-13 21:50:19.207	2025-08-13 21:50:19.207
+3136	4	830	80	EVEN	847	2025-08-13 21:50:19.209	2025-08-13 21:50:19.209
+3137	1	480	80	BOTH	848	2025-08-13 21:50:19.214	2025-08-13 21:50:19.214
+3138	2	830	80	ODD	848	2025-08-13 21:50:19.216	2025-08-13 21:50:19.216
+3139	1	480	80	BOTH	849	2025-08-13 21:50:19.221	2025-08-13 21:50:19.221
+3140	2	830	80	ODD	849	2025-08-13 21:50:19.224	2025-08-13 21:50:19.224
+3141	1	480	80	BOTH	850	2025-08-13 21:50:19.229	2025-08-13 21:50:19.229
+3142	2	830	80	ODD	850	2025-08-13 21:50:19.231	2025-08-13 21:50:19.231
+3143	1	690	80	BOTH	851	2025-08-13 21:50:19.236	2025-08-13 21:50:19.236
+3144	2	690	80	BOTH	851	2025-08-13 21:50:19.238	2025-08-13 21:50:19.238
+3145	3	690	80	BOTH	851	2025-08-13 21:50:19.241	2025-08-13 21:50:19.241
+3146	1	690	80	BOTH	852	2025-08-13 21:50:19.247	2025-08-13 21:50:19.247
+3147	2	690	80	BOTH	852	2025-08-13 21:50:19.25	2025-08-13 21:50:19.25
+3148	3	690	80	BOTH	852	2025-08-13 21:50:19.251	2025-08-13 21:50:19.251
+3149	1	690	80	BOTH	853	2025-08-13 21:50:19.258	2025-08-13 21:50:19.258
+3150	2	690	80	BOTH	853	2025-08-13 21:50:19.26	2025-08-13 21:50:19.26
+3151	3	690	80	BOTH	853	2025-08-13 21:50:19.262	2025-08-13 21:50:19.262
+3152	1	830	80	EVEN	854	2025-08-13 21:50:19.268	2025-08-13 21:50:19.268
+3153	3	480	80	BOTH	854	2025-08-13 21:50:19.27	2025-08-13 21:50:19.27
+3154	3	480	80	BOTH	855	2025-08-13 21:50:19.278	2025-08-13 21:50:19.278
+3155	1	830	80	EVEN	855	2025-08-13 21:50:19.279	2025-08-13 21:50:19.279
+3156	3	830	80	BOTH	856	2025-08-13 21:50:19.285	2025-08-13 21:50:19.285
+3157	3	830	80	BOTH	857	2025-08-13 21:50:19.291	2025-08-13 21:50:19.291
+3158	3	915	75	BOTH	858	2025-08-13 21:50:19.297	2025-08-13 21:50:19.297
+3159	3	915	75	BOTH	859	2025-08-13 21:50:19.301	2025-08-13 21:50:19.301
+3160	1	690	80	BOTH	860	2025-08-13 21:50:19.307	2025-08-13 21:50:19.307
+3161	2	690	80	BOTH	860	2025-08-13 21:50:19.309	2025-08-13 21:50:19.309
+3162	3	690	80	BOTH	860	2025-08-13 21:50:19.311	2025-08-13 21:50:19.311
+3163	4	480	80	BOTH	861	2025-08-13 21:50:19.316	2025-08-13 21:50:19.316
+3164	2	585	80	BOTH	861	2025-08-13 21:50:19.318	2025-08-13 21:50:19.318
+3165	3	585	80	BOTH	861	2025-08-13 21:50:19.32	2025-08-13 21:50:19.32
+3166	1	830	80	ODD	862	2025-08-13 21:50:19.327	2025-08-13 21:50:19.327
+3167	4	690	80	BOTH	862	2025-08-13 21:50:19.329	2025-08-13 21:50:19.329
+3168	4	690	80	BOTH	863	2025-08-13 21:50:19.335	2025-08-13 21:50:19.335
+3169	1	830	80	ODD	863	2025-08-13 21:50:19.337	2025-08-13 21:50:19.337
+3170	4	585	80	BOTH	864	2025-08-13 21:50:19.344	2025-08-13 21:50:19.344
+3171	5	585	80	BOTH	864	2025-08-13 21:50:19.346	2025-08-13 21:50:19.346
+3172	1	585	80	BOTH	864	2025-08-13 21:50:19.348	2025-08-13 21:50:19.348
+3173	5	690	80	BOTH	865	2025-08-13 21:50:19.354	2025-08-13 21:50:19.354
+3174	4	830	80	EVEN	865	2025-08-13 21:50:19.357	2025-08-13 21:50:19.357
+\.
+
+
+--
+-- Data for Name: LicenseKey; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."LicenseKey" (id, key, "createdAt", "activatedAt", "expiresAt", "isSuperKey") FROM stdin;
+44	1143-5DF1-6787-0246	2023-05-17 14:21:58.853	\N	2024-05-17 14:21:58.851	f
+45	FB02-827D-F4B5-0A34	2023-05-17 14:21:58.855	\N	2024-05-17 14:21:58.854	f
+72	115A-F17B-4781-03D1	2023-05-17 14:21:58.938	\N	2024-05-17 14:21:58.937	f
+90	21BE-5AD8-88DB-8932	2023-05-17 14:21:59.137	\N	2024-05-17 14:21:59.136	f
+98	827E-F13F-4266-98D9	2023-05-17 14:21:59.158	\N	2024-05-17 14:21:59.157	f
+99	E6B6-251C-5786-3604	2023-05-17 14:21:59.161	\N	2024-05-17 14:21:59.16	f
+100	CA8A-1D69-A333-2B2C	2023-05-17 14:21:59.163	\N	2024-05-17 14:21:59.162	f
+59	BC59-115D-F4E7-EC6A	2023-05-17 14:21:58.907	2023-09-05 17:41:02.106	2024-05-17 14:21:58.906	f
+102	F165-2254-6DC3-81E6	2023-08-16 06:38:55.526	\N	2024-08-16 06:38:55.524	f
+103	05A1-5016-5FEA-B42E	2023-08-16 06:38:55.528	\N	2024-08-16 06:38:55.527	f
+104	6B67-655A-2592-B5A0	2023-08-16 06:38:55.529	\N	2024-08-16 06:38:55.528	f
+106	9128-9F27-6A5F-DCA8	2023-08-16 06:38:55.532	\N	2024-08-16 06:38:55.531	f
+107	1702-10EC-2345-1331	2023-08-16 06:38:55.535	\N	2024-08-16 06:38:55.534	f
+9	5F8E-54A1-CC3A-2A0F	2023-05-17 14:21:58.699	2023-08-17 06:40:03.428	2024-05-17 14:21:58.698	f
+60	B6D6-1573-2138-E143	2023-05-17 14:21:58.909	2023-08-31 05:12:49.04	2024-05-17 14:21:58.908	f
+8	6BB2-80C7-C301-68D6	2023-05-17 14:21:58.697	2023-08-17 06:40:36.603	2024-05-17 14:21:58.696	f
+11	3D08-1AA8-D2EC-E3C1	2023-05-17 14:21:58.703	2023-08-17 06:44:50.512	2024-05-17 14:21:58.702	f
+96	BB1E-6A9E-6FE4-2891	2023-05-17 14:21:59.152	2023-09-12 09:53:54.156	2024-05-17 14:21:59.151	f
+3	DA55-E3E3-9F34-FC2C	2023-05-17 14:21:58.685	2023-08-17 07:18:14.211	2024-05-17 14:21:58.683	f
+4	C443-4207-1C25-D482	2023-05-17 14:21:58.688	2023-08-17 07:20:24.061	2024-05-17 14:21:58.686	f
+61	CAC4-69DC-08D8-4E67	2023-05-17 14:21:58.912	2023-08-22 07:45:24.41	2024-05-17 14:21:58.911	f
+7	156C-8D45-A9C4-6EAA	2023-05-17 14:21:58.695	2023-08-17 07:41:45.079	2024-05-17 14:21:58.694	f
+14	55BA-4CB2-A0C9-E993	2023-05-17 14:21:58.709	2023-08-17 09:21:36.897	2024-05-17 14:21:58.708	f
+82	D4FB-037B-609F-D53E	2023-05-17 14:21:59.119	2023-08-28 09:24:27.883	2024-05-17 14:21:59.118	f
+70	1D67-5CA3-287A-ACF8	2023-05-17 14:21:58.933	2023-08-27 19:17:31.105	2024-05-17 14:21:58.932	f
+32	AC62-EAEC-FE2D-2353	2023-05-17 14:21:58.823	2023-08-17 09:28:44.751	2024-05-17 14:21:58.822	f
+10	9AB0-B5A0-1367-F9CD	2023-05-17 14:21:58.701	2023-09-03 17:31:24.518	2024-05-17 14:21:58.7	f
+94	960C-C8B9-35E8-E131	2023-05-17 14:21:59.147	2023-09-07 16:51:39.7	2024-05-17 14:21:59.146	f
+33	CFF4-9D5B-2082-C5F5	2023-05-17 14:21:58.826	2023-08-17 18:38:54.28	2024-05-17 14:21:58.825	f
+35	661A-91F8-84BA-B1AC	2023-05-17 14:21:58.832	2023-08-18 05:55:59.391	2024-05-17 14:21:58.83	f
+40	4DFE-372C-8338-6FEA	2023-05-17 14:21:58.843	2023-08-18 05:59:23.626	2024-05-17 14:21:58.842	f
+37	FF66-B8DC-44C7-0234	2023-05-17 14:21:58.836	2023-08-18 06:01:53.008	2024-05-17 14:21:58.835	f
+39	57DB-193A-CF53-2AA8	2023-05-17 14:21:58.841	2023-08-18 06:06:09.663	2024-05-17 14:21:58.84	f
+34	7AA9-009A-F638-CED1	2023-05-17 14:21:58.829	2023-08-18 06:42:09.796	2024-05-17 14:21:58.828	f
+43	870B-85C2-C2A8-A061	2023-05-17 14:21:58.85	2023-08-18 07:36:23.308	2024-05-17 14:21:58.849	f
+41	6B7D-299A-F889-23B3	2023-05-17 14:21:58.845	2023-08-18 07:44:11.816	2024-05-17 14:21:58.844	f
+46	DE3C-0618-DE8E-5F59	2023-05-17 14:21:58.874	2023-08-18 09:11:00.201	2024-05-17 14:21:58.873	f
+47	BA55-749D-9994-23EB	2023-05-17 14:21:58.877	2023-08-18 09:11:27.568	2024-05-17 14:21:58.876	f
+38	E1DA-37FD-3AA4-4FF7	2023-05-17 14:21:58.838	2023-08-18 10:05:15.817	2024-05-17 14:21:58.837	f
+48	3EFA-8316-9ED1-EA62	2023-05-17 14:21:58.88	2023-08-18 10:32:38.428	2024-05-17 14:21:58.879	f
+49	1DAF-D653-7833-3A7C	2023-05-17 14:21:58.883	2023-08-21 06:05:29.859	2024-05-17 14:21:58.882	f
+54	FF3C-023E-6190-1CF4	2023-05-17 14:21:58.894	2023-08-21 09:29:26.446	2024-05-17 14:21:58.893	f
+52	EAEE-000F-3D4B-AA6B	2023-05-17 14:21:58.889	2023-08-21 09:36:29.419	2024-05-17 14:21:58.888	f
+56	4239-1F9C-24E6-6EC3	2023-05-17 14:21:58.9	2023-08-21 09:41:23.338	2024-05-17 14:21:58.899	f
+55	9088-F363-3CF0-C4C6	2023-05-17 14:21:58.897	2023-08-21 09:41:57.834	2024-05-17 14:21:58.896	f
+57	AAD0-2ACE-40A7-0C38	2023-05-17 14:21:58.902	2023-08-21 09:42:02.999	2024-05-17 14:21:58.901	f
+17	891E-F294-3EF7-60FF	2023-05-17 14:21:58.777	2023-10-13 09:50:51.784	2024-05-17 14:21:58.776	f
+53	E1BE-4BFE-D4B3-1CC9	2023-05-17 14:21:58.892	2023-08-21 12:30:33.365	2024-05-17 14:21:58.891	f
+5	91CE-1B81-C132-BB61	2023-05-17 14:21:58.69	2023-08-21 17:27:45.462	2024-05-17 14:21:58.689	f
+91	1429-C26F-34CF-B716	2023-05-17 14:21:59.14	2023-08-29 08:48:00.602	2024-05-17 14:21:59.139	f
+68	D9B3-A070-A578-334A	2023-05-17 14:21:58.928	2023-08-22 09:17:07.091	2024-05-17 14:21:58.927	f
+66	8896-9071-F8A1-5E7A	2023-05-17 14:21:58.924	2023-08-22 09:17:31.09	2024-05-17 14:21:58.922	f
+67	CC44-7DB5-61DA-18D6	2023-05-17 14:21:58.926	2023-08-22 09:19:17.216	2024-05-17 14:21:58.925	f
+63	42FF-071C-BE25-06F8	2023-05-17 14:21:58.917	2023-08-22 09:46:01.53	2024-05-17 14:21:58.916	f
+69	3DE9-85ED-2C88-BEFF	2023-05-17 14:21:58.931	2023-08-23 07:34:48.749	2024-05-17 14:21:58.93	f
+93	74ED-3494-DF20-ECE3	2023-05-17 14:21:59.145	2023-09-05 09:26:16.688	2024-05-17 14:21:59.144	f
+26	A1C4-F4E4-D97F-4A40	2023-05-17 14:21:58.801	2023-08-24 07:24:40.719	2024-05-17 14:21:58.8	f
+21	F9A6-3FF6-05C6-9341	2023-05-17 14:21:58.788	2023-08-23 09:18:42.728	2024-05-17 14:21:58.787	f
+20	57FB-AD16-D65C-82C7	2023-05-17 14:21:58.786	2023-08-23 09:18:48.608	2024-05-17 14:21:58.785	f
+29	29F5-8BC7-FCD4-620B	2023-05-17 14:21:58.816	2023-11-20 10:44:38.929	2024-05-17 14:21:58.814	f
+18	2C12-CF31-B7DC-320A	2023-05-17 14:21:58.78	2023-08-23 09:20:03.05	2024-05-17 14:21:58.779	f
+23	9A58-919A-E165-2D55	2023-05-17 14:21:58.793	2023-11-14 12:19:37.323	2024-05-17 14:21:58.792	f
+78	A119-8396-ACD8-DBD4	2023-05-17 14:21:59.05	2023-08-25 09:39:30.794	2024-05-17 14:21:59.049	f
+22	9114-B72B-712E-7620	2023-05-17 14:21:58.791	2023-08-23 09:33:55.118	2024-05-17 14:21:58.79	f
+71	F274-C625-A48E-C78F	2023-05-17 14:21:58.936	2023-08-24 04:54:53.268	2024-05-17 14:21:58.935	f
+31	6386-23B5-4CF8-5034	2023-05-17 14:21:58.821	2023-08-24 06:41:17.276	2024-05-17 14:21:58.819	f
+27	7436-815E-5BD8-20FF	2023-05-17 14:21:58.804	2023-08-24 07:25:06.598	2024-05-17 14:21:58.803	f
+28	BFAA-FD03-6361-B749	2023-05-17 14:21:58.812	2023-08-24 07:29:47.784	2024-05-17 14:21:58.811	f
+74	D116-0F48-85D8-2535	2023-05-17 14:21:58.946	2023-08-24 09:11:37.172	2024-05-17 14:21:58.944	f
+84	8489-C3A5-1DB8-368C	2023-05-17 14:21:59.123	2023-09-04 08:46:08.859	2024-05-17 14:21:59.122	f
+77	F47B-B7A6-5A97-6E85	2023-05-17 14:21:59.047	2023-08-25 07:33:50.25	2024-05-17 14:21:59.045	f
+30	61A4-9CC4-B40F-5A05	2023-05-17 14:21:58.818	2023-08-24 09:34:43.993	2024-05-17 14:21:58.817	f
+76	851E-8782-0D66-85AE	2023-05-17 14:21:59.018	2023-08-24 09:20:14.153	2024-05-17 14:21:59.016	f
+51	5654-8CB5-0201-5362	2023-05-17 14:21:58.888	2023-08-25 07:44:46.538	2024-05-17 14:21:58.887	f
+25	D98A-328B-828B-8542	2023-05-17 14:21:58.799	2023-08-25 08:32:15.118	2024-05-17 14:21:58.797	f
+79	FCFA-6BEE-B7F6-26DC	2023-05-17 14:21:59.054	2023-08-25 09:41:14.29	2024-05-17 14:21:59.052	f
+16	8E3C-DF6B-F399-2D44	2023-05-17 14:21:58.713	2023-08-28 08:44:42.999	2024-05-17 14:21:58.712	f
+81	EBC1-5F9B-D6B3-C21E	2023-05-17 14:21:59.116	2023-08-28 09:41:46.921	2024-05-17 14:21:59.115	f
+85	34CE-1E16-5F81-8CD5	2023-05-17 14:21:59.126	2023-08-28 10:42:30.702	2024-05-17 14:21:59.125	f
+92	C90D-FB60-092D-BF6C	2023-05-17 14:21:59.143	2023-09-04 10:28:11.962	2024-05-17 14:21:59.142	f
+86	5361-35DC-E5D8-5754	2023-05-17 14:21:59.129	2023-08-29 06:28:22.038	2024-05-17 14:21:59.127	f
+64	8A18-FD9F-0B69-738B	2023-05-17 14:21:58.919	2024-02-16 09:01:40.385	2024-05-17 14:21:58.918	f
+89	156C-6F20-3881-463C	2023-05-17 14:21:59.135	2023-08-29 07:50:31.48	2024-05-17 14:21:59.134	f
+75	DC12-DE51-5B30-9B47	2023-05-17 14:21:58.989	2023-09-01 07:56:39.814	2024-05-17 14:21:58.988	f
+87	FB85-EEB4-99B0-CDCA	2023-05-17 14:21:59.131	2023-09-06 05:56:59.279	2024-05-17 14:21:59.13	f
+83	DE52-2684-21B2-B6B8	2023-05-17 14:21:59.121	2023-09-01 08:13:55.204	2024-05-17 14:21:59.12	f
+12	114E-C708-AC84-C3AF	2023-05-17 14:21:58.705	2023-09-03 09:51:34.043	2024-05-17 14:21:58.704	f
+95	7F99-0ADA-E341-DEF9	2023-05-17 14:21:59.149	2023-09-06 08:46:05.941	2024-05-17 14:21:59.148	f
+13	43E3-40F4-6FD7-9670	2023-05-17 14:21:58.707	2023-09-07 19:48:59.885	2024-05-17 14:21:58.706	f
+97	2E70-4F16-0919-1CC1	2023-05-17 14:21:59.155	2023-09-25 10:36:41.557	2024-05-17 14:21:59.154	f
+2	4B76-1EA4-E9F4-CD44	2023-05-17 14:21:58.681	2023-10-08 19:29:32.576	2024-05-17 14:21:58.679	f
+108	231E-D9B5-EA0C-352B	2023-08-16 06:38:55.536	\N	2024-08-16 06:38:55.535	f
+109	EFB5-2EDF-9FD0-3860	2023-08-16 06:38:55.538	\N	2024-08-16 06:38:55.537	f
+110	3478-1272-35A1-942F	2023-08-16 06:38:55.539	\N	2024-08-16 06:38:55.538	f
+111	E83D-3261-1932-8096	2023-08-16 06:38:55.54	\N	2024-08-16 06:38:55.539	f
+112	2C09-537A-58C8-B03F	2023-08-16 06:38:55.541	\N	2024-08-16 06:38:55.54	f
+113	F7FF-F061-57E3-F9CD	2023-08-16 06:38:55.543	\N	2024-08-16 06:38:55.542	f
+1	KJ27-MP16-LS14-JM22	2023-05-17 14:21:58.655	\N	\N	t
+114	ED06-BD8C-E5A2-426E	2023-08-16 06:38:55.544	\N	2024-08-16 06:38:55.543	f
+115	8B96-54FB-A5CF-8A85	2023-08-16 06:38:55.545	\N	2024-08-16 06:38:55.544	f
+116	FEE4-EDBC-2C75-585B	2023-08-16 06:38:55.545	\N	2024-08-16 06:38:55.545	f
+117	E143-1A70-82B5-E80C	2023-08-16 06:38:55.546	\N	2024-08-16 06:38:55.545	f
+118	A484-6080-CC54-3365	2023-08-16 06:38:55.547	\N	2024-08-16 06:38:55.546	f
+119	4D7A-F1E8-2AEF-79F0	2023-08-16 06:38:55.548	\N	2024-08-16 06:38:55.547	f
+120	C2F4-EFBD-0D86-31AD	2023-08-16 06:38:55.549	\N	2024-08-16 06:38:55.548	f
+121	0F6D-0D22-2895-5E75	2023-08-16 06:38:55.55	\N	2024-08-16 06:38:55.549	f
+122	209D-6761-579E-4C62	2023-08-16 06:38:55.55	\N	2024-08-16 06:38:55.55	f
+124	4F5E-59DB-BE2D-54E3	2023-08-16 06:38:55.552	\N	2024-08-16 06:38:55.552	f
+125	80F2-A7FB-15B2-E32F	2023-08-16 06:38:55.553	\N	2024-08-16 06:38:55.552	f
+126	C47E-FF7E-102A-2515	2023-08-16 06:38:55.554	\N	2024-08-16 06:38:55.553	f
+127	1BC4-4EFB-A447-E7D8	2023-08-16 06:38:55.555	\N	2024-08-16 06:38:55.554	f
+128	DED5-7D99-EFA8-EF5D	2023-08-16 06:38:55.556	\N	2024-08-16 06:38:55.555	f
+129	A384-42F7-0E1F-6C5B	2023-08-16 06:38:55.556	\N	2024-08-16 06:38:55.556	f
+130	FA1C-72A3-9B2A-1ACC	2023-08-16 06:38:55.557	\N	2024-08-16 06:38:55.556	f
+131	B15F-1ACA-C491-ADD9	2023-08-16 06:38:55.558	\N	2024-08-16 06:38:55.557	f
+132	15CB-FB98-271B-C6A2	2023-08-16 06:38:55.559	\N	2024-08-16 06:38:55.558	f
+133	E78F-2868-4D5F-2BBE	2023-08-16 06:38:55.56	\N	2024-08-16 06:38:55.559	f
+134	BB2F-0C96-62E0-91E4	2023-08-16 06:38:55.561	\N	2024-08-16 06:38:55.56	f
+135	18CE-30D5-6397-AC72	2023-08-16 06:38:55.562	\N	2024-08-16 06:38:55.561	f
+136	09CF-8990-987D-7EE4	2023-08-16 06:38:55.563	\N	2024-08-16 06:38:55.562	f
+137	8143-A742-8B50-2B12	2023-08-16 06:38:55.564	\N	2024-08-16 06:38:55.563	f
+138	A2DA-C0F2-BFDC-B6B5	2023-08-16 06:38:55.564	\N	2024-08-16 06:38:55.564	f
+140	8260-9F1C-4F61-4B41	2023-08-16 06:38:55.566	\N	2024-08-16 06:38:55.565	f
+141	C86B-A192-EF24-D99B	2023-08-16 06:38:55.567	\N	2024-08-16 06:38:55.566	f
+142	57F0-F52F-F8B4-B6E0	2023-08-16 06:38:55.568	\N	2024-08-16 06:38:55.567	f
+143	CD80-F5D0-FEE8-272B	2023-08-16 06:38:55.569	\N	2024-08-16 06:38:55.568	f
+144	E2D5-E540-B168-E51D	2023-08-16 06:38:55.57	\N	2024-08-16 06:38:55.569	f
+145	470C-BA42-36FC-005A	2023-08-16 06:38:55.571	\N	2024-08-16 06:38:55.57	f
+146	299F-D7B9-4020-F415	2023-08-16 06:38:55.572	\N	2024-08-16 06:38:55.571	f
+147	AC14-B7A8-91CE-0094	2023-08-16 06:38:55.573	\N	2024-08-16 06:38:55.572	f
+148	C25D-0047-1694-245C	2023-08-16 06:38:55.574	\N	2024-08-16 06:38:55.573	f
+149	EE81-9886-839C-BACC	2023-08-16 06:38:55.575	\N	2024-08-16 06:38:55.574	f
+150	4FD4-7D87-563A-D731	2023-08-16 06:38:55.576	\N	2024-08-16 06:38:55.575	f
+151	1610-569D-B08F-172E	2023-08-16 06:38:55.577	\N	2024-08-16 06:38:55.576	f
+152	6C17-530A-CD8B-D023	2023-08-16 06:38:55.578	\N	2024-08-16 06:38:55.577	f
+153	6A77-7D88-AC76-72EB	2023-08-16 06:38:55.579	\N	2024-08-16 06:38:55.578	f
+154	02EB-4976-36EE-6222	2023-08-16 06:38:55.58	\N	2024-08-16 06:38:55.579	f
+155	6BBA-A0C5-11A2-C15E	2023-08-16 06:38:55.581	\N	2024-08-16 06:38:55.58	f
+156	6050-AD40-E27F-9DA3	2023-08-16 06:38:55.582	\N	2024-08-16 06:38:55.581	f
+157	7B42-2E5C-151E-41F5	2023-08-16 06:38:55.583	\N	2024-08-16 06:38:55.582	f
+158	D43E-8215-AFCC-1F39	2023-08-16 06:38:55.584	\N	2024-08-16 06:38:55.583	f
+159	251F-DA13-1492-A99C	2023-08-16 06:38:55.585	\N	2024-08-16 06:38:55.584	f
+160	AD29-395F-D4B3-DEFC	2023-08-16 06:38:55.586	\N	2024-08-16 06:38:55.585	f
+161	2E20-9BEC-1B32-AB10	2023-08-16 06:38:55.587	\N	2024-08-16 06:38:55.586	f
+162	EF82-5E14-5869-F200	2023-08-16 06:38:55.588	\N	2024-08-16 06:38:55.587	f
+163	6568-498A-0E25-8068	2023-08-16 06:38:55.589	\N	2024-08-16 06:38:55.588	f
+164	0FED-8CE1-93D8-69F1	2023-08-16 06:38:55.59	\N	2024-08-16 06:38:55.589	f
+165	42E4-A12D-9A50-157D	2023-08-16 06:38:55.591	\N	2024-08-16 06:38:55.59	f
+166	4FBE-C704-FD23-7B78	2023-08-16 06:38:55.592	\N	2024-08-16 06:38:55.591	f
+167	A451-3622-46B4-9D01	2023-08-16 06:38:55.593	\N	2024-08-16 06:38:55.592	f
+168	7B68-EBE7-E6E2-A1B7	2023-08-16 06:38:55.594	\N	2024-08-16 06:38:55.593	f
+169	184F-97D3-F5FF-2CB7	2023-08-16 06:38:55.595	\N	2024-08-16 06:38:55.594	f
+170	3BDA-E14A-D03D-521D	2023-08-16 06:38:55.596	\N	2024-08-16 06:38:55.595	f
+171	086C-7176-10EB-B466	2023-08-16 06:38:55.597	\N	2024-08-16 06:38:55.596	f
+172	4EE3-CCBD-8A5A-336E	2023-08-16 06:38:55.598	\N	2024-08-16 06:38:55.597	f
+173	CD58-EAC4-C63A-AACC	2023-08-16 06:38:55.599	\N	2024-08-16 06:38:55.598	f
+174	875F-0C96-9B09-C0FD	2023-08-16 06:38:55.6	\N	2024-08-16 06:38:55.599	f
+175	2AD8-AABD-9471-E5BD	2023-08-16 06:38:55.601	\N	2024-08-16 06:38:55.6	f
+176	B6C0-0EAA-4C03-38CE	2023-08-16 06:38:55.602	\N	2024-08-16 06:38:55.601	f
+177	DCD6-B1E0-33B4-E37F	2023-08-16 06:38:55.603	\N	2024-08-16 06:38:55.602	f
+178	2E44-07F2-449E-A415	2023-08-16 06:38:55.604	\N	2024-08-16 06:38:55.603	f
+179	06D9-14AC-143F-FC38	2023-08-16 06:38:55.605	\N	2024-08-16 06:38:55.604	f
+180	E4E8-B501-63C4-6563	2023-08-16 06:38:55.606	\N	2024-08-16 06:38:55.605	f
+181	C668-B1B5-32FF-8836	2023-08-16 06:38:55.607	\N	2024-08-16 06:38:55.606	f
+182	3B66-CE66-25A5-DC0D	2023-08-16 06:38:55.608	\N	2024-08-16 06:38:55.607	f
+183	8BA7-2CD2-12AF-C557	2023-08-16 06:38:55.609	\N	2024-08-16 06:38:55.608	f
+184	1586-D362-A305-D319	2023-08-16 06:38:55.61	\N	2024-08-16 06:38:55.609	f
+185	9EBC-92C9-3DF0-AA14	2023-08-16 06:38:55.611	\N	2024-08-16 06:38:55.61	f
+186	A9DA-49F2-E10F-A853	2023-08-16 06:38:55.612	\N	2024-08-16 06:38:55.611	f
+187	B667-7002-4E24-5D1E	2023-08-16 06:38:55.613	\N	2024-08-16 06:38:55.613	f
+188	CE2A-D2EC-17CD-2F92	2023-08-16 06:38:55.614	\N	2024-08-16 06:38:55.614	f
+189	B43B-FDBE-D162-CE86	2023-08-16 06:38:55.616	\N	2024-08-16 06:38:55.615	f
+190	AA79-4530-DED6-8610	2023-08-16 06:38:55.617	\N	2024-08-16 06:38:55.616	f
+191	35CC-E07F-EC12-AA55	2023-08-16 06:38:55.618	\N	2024-08-16 06:38:55.617	f
+192	CAA5-CBE6-21EA-7A5B	2023-08-16 06:38:55.619	\N	2024-08-16 06:38:55.618	f
+193	E0A2-64B1-F0D0-CF74	2023-08-16 06:38:55.62	\N	2024-08-16 06:38:55.619	f
+194	09DF-8C6C-D446-E285	2023-08-16 06:38:55.621	\N	2024-08-16 06:38:55.62	f
+195	653E-7A18-AC95-E00D	2023-08-16 06:38:55.622	\N	2024-08-16 06:38:55.621	f
+196	D934-914D-86B4-D747	2023-08-16 06:38:55.623	\N	2024-08-16 06:38:55.622	f
+197	6BD2-B031-E7AA-B39B	2023-08-16 06:38:55.624	\N	2024-08-16 06:38:55.623	f
+198	4D7A-455A-A05B-103D	2023-08-16 06:38:55.625	\N	2024-08-16 06:38:55.624	f
+199	623E-46C3-FCDC-FC6C	2023-08-16 06:38:55.626	\N	2024-08-16 06:38:55.625	f
+200	DED1-9256-D7E1-A052	2023-08-16 06:38:55.627	\N	2024-08-16 06:38:55.626	f
+15	A992-0776-E26C-73DE	2023-05-17 14:21:58.711	2023-08-17 09:25:02.139	2024-05-17 14:21:58.71	f
+42	EFD2-F778-7375-AD7D	2023-05-17 14:21:58.847	2023-08-18 07:39:17.85	2024-05-17 14:21:58.846	f
+50	385E-20DA-6E38-E51E	2023-05-17 14:21:58.885	2023-08-21 08:08:44.759	2024-05-17 14:21:58.884	f
+36	79E2-52C7-1162-D78B	2023-05-17 14:21:58.834	2023-08-21 18:00:20.61	2024-05-17 14:21:58.833	f
+65	24F1-5CE4-FDC4-7AEE	2023-05-17 14:21:58.921	2023-08-22 09:28:09.302	2024-05-17 14:21:58.92	f
+19	4772-3929-0B67-049D	2023-05-17 14:21:58.783	2023-09-03 22:35:49.552	2024-05-17 14:21:58.782	f
+58	696C-E97F-83FE-8BDB	2023-05-17 14:21:58.905	2023-08-24 13:45:52.535	2024-05-17 14:21:58.904	f
+202	FB42-3BDC-2F5B-825F	2023-08-28 17:13:59.543	\N	2024-08-28 17:13:59.538	f
+203	5E54-55A8-BFEE-C9FA	2023-08-28 17:13:59.688	\N	2024-08-28 17:13:59.686	f
+73	6B32-8113-E906-E2A5	2023-05-17 14:21:58.942	2023-08-31 21:31:50.308	2024-05-17 14:21:58.941	f
+80	2CB9-4115-0FB7-745E	2023-05-17 14:21:59.112	2023-09-06 07:09:55.021	2024-05-17 14:21:59.11	f
+24	360E-F62E-6B28-B860	2023-05-17 14:21:58.796	2023-09-04 10:37:07.356	2024-05-17 14:21:58.795	f
+204	7B31-7F5E-4BF2-9F18	2023-08-28 17:13:59.69	\N	2024-08-28 17:13:59.689	f
+205	4103-DB5D-74E4-4BCE	2023-08-28 17:13:59.728	\N	2024-08-28 17:13:59.726	f
+206	4348-7F8B-A18D-27AE	2023-08-28 17:13:59.733	\N	2024-08-28 17:13:59.729	f
+207	B29B-7618-937D-5388	2023-08-28 17:13:59.736	\N	2024-08-28 17:13:59.735	f
+208	8DD1-9C40-9A91-5C6A	2023-08-28 17:13:59.738	\N	2024-08-28 17:13:59.737	f
+209	50DC-3F5C-1D59-E2B1	2023-08-28 17:13:59.74	\N	2024-08-28 17:13:59.739	f
+210	632C-36DF-9ED3-026A	2023-08-28 17:13:59.742	\N	2024-08-28 17:13:59.74	f
+211	0652-AA4C-463D-2CC7	2023-08-28 17:13:59.743	\N	2024-08-28 17:13:59.742	f
+212	3A92-BE1B-C478-7CA4	2023-08-28 17:13:59.745	\N	2024-08-28 17:13:59.744	f
+213	15AA-12CD-48D3-10BC	2023-08-28 17:13:59.747	\N	2024-08-28 17:13:59.746	f
+214	C42C-14F5-2EBE-8BBC	2023-08-28 17:13:59.748	\N	2024-08-28 17:13:59.747	f
+215	E2AA-FFD8-B467-713F	2023-08-28 17:13:59.751	\N	2024-08-28 17:13:59.75	f
+216	58B5-1D9F-CD06-8727	2023-08-28 17:13:59.755	\N	2024-08-28 17:13:59.754	f
+217	0267-A5E5-4ED0-9C32	2023-08-28 17:13:59.759	\N	2024-08-28 17:13:59.757	f
+218	2D11-F236-E80C-4E6F	2023-08-28 17:13:59.762	\N	2024-08-28 17:13:59.76	f
+219	80BB-321B-2064-277B	2023-08-28 17:13:59.786	\N	2024-08-28 17:13:59.785	f
+220	7C04-2A0B-25C0-E801	2023-08-28 17:13:59.792	\N	2024-08-28 17:13:59.787	f
+221	A2A0-1DD8-EC2D-1D0F	2023-08-28 17:13:59.796	\N	2024-08-28 17:13:59.795	f
+222	483A-92F1-EFDF-8C86	2023-08-28 17:13:59.798	\N	2024-08-28 17:13:59.797	f
+223	77D2-2141-4C43-A80D	2023-08-28 17:13:59.799	\N	2024-08-28 17:13:59.799	f
+224	134B-1716-537F-1EC0	2023-08-28 17:13:59.801	\N	2024-08-28 17:13:59.8	f
+225	9C9A-080A-D72A-164D	2023-08-28 17:13:59.802	\N	2024-08-28 17:13:59.802	f
+226	3756-5A65-D2D9-C0E0	2023-08-28 17:13:59.804	\N	2024-08-28 17:13:59.803	f
+227	12D7-D9D2-EBEA-56F0	2023-08-28 17:13:59.805	\N	2024-08-28 17:13:59.804	f
+228	CFCE-2353-1746-8209	2023-08-28 17:13:59.81	\N	2024-08-28 17:13:59.807	f
+229	031E-C538-2C22-3863	2023-08-28 17:13:59.812	\N	2024-08-28 17:13:59.811	f
+230	B6BD-7BDB-912A-6600	2023-08-28 17:13:59.814	\N	2024-08-28 17:13:59.813	f
+231	B6B6-6207-C73A-2FB0	2023-08-28 17:13:59.817	\N	2024-08-28 17:13:59.816	f
+232	A681-5CD6-B2F7-BA55	2023-08-28 17:13:59.819	\N	2024-08-28 17:13:59.818	f
+233	688C-842F-C3DB-78EE	2023-08-28 17:13:59.821	\N	2024-08-28 17:13:59.82	f
+234	95B3-D46F-AD55-1845	2023-08-28 17:13:59.824	\N	2024-08-28 17:13:59.823	f
+235	B0BB-6873-B715-4F32	2023-08-28 17:13:59.826	\N	2024-08-28 17:13:59.825	f
+236	D881-1FEF-2ABC-A8D5	2023-08-28 17:13:59.829	\N	2024-08-28 17:13:59.828	f
+237	36F2-5CF8-D877-9744	2023-08-28 17:13:59.832	\N	2024-08-28 17:13:59.831	f
+238	FC87-6E05-7D65-3A3A	2023-08-28 17:13:59.834	\N	2024-08-28 17:13:59.833	f
+239	B88B-6815-883F-BA5C	2023-08-28 17:13:59.837	\N	2024-08-28 17:13:59.836	f
+240	F731-EA86-42F4-4EC2	2023-08-28 17:13:59.84	\N	2024-08-28 17:13:59.838	f
+241	3E9B-0ABE-F72D-F89C	2023-08-28 17:13:59.842	\N	2024-08-28 17:13:59.841	f
+242	2A74-47FC-50DD-2E91	2023-08-28 17:13:59.844	\N	2024-08-28 17:13:59.843	f
+243	C924-E5C7-1725-FD33	2023-08-28 17:13:59.846	\N	2024-08-28 17:13:59.845	f
+244	7A20-FAA1-C9FF-C27F	2023-08-28 17:13:59.89	\N	2024-08-28 17:13:59.889	f
+245	C83A-CBE3-6530-277E	2023-08-28 17:13:59.892	\N	2024-08-28 17:13:59.891	f
+246	0BC8-14AF-59FD-DE48	2023-08-28 17:13:59.894	\N	2024-08-28 17:13:59.893	f
+247	0C29-1E59-FCD0-E83F	2023-08-28 17:13:59.896	\N	2024-08-28 17:13:59.895	f
+248	D5CA-F909-9496-F168	2023-08-28 17:13:59.897	\N	2024-08-28 17:13:59.896	f
+249	E69C-F3A8-AAD5-4A99	2023-08-28 17:13:59.899	\N	2024-08-28 17:13:59.898	f
+250	6C4D-27D2-83F5-25F4	2023-08-28 17:13:59.901	\N	2024-08-28 17:13:59.9	f
+251	8FA1-8616-DEDD-F361	2023-08-28 17:13:59.903	\N	2024-08-28 17:13:59.902	f
+252	EE61-A155-DB49-58EA	2023-08-28 17:13:59.905	\N	2024-08-28 17:13:59.904	f
+254	B852-6532-C8B6-DC19	2023-08-28 17:13:59.91	\N	2024-08-28 17:13:59.909	f
+255	B2CE-C71F-2627-572F	2023-08-28 17:13:59.912	\N	2024-08-28 17:13:59.911	f
+256	7AFB-ED61-85EB-97C5	2023-08-28 17:13:59.914	\N	2024-08-28 17:13:59.913	f
+257	E1F1-A19A-BC98-E2E4	2023-08-28 17:13:59.923	\N	2024-08-28 17:13:59.922	f
+258	9F4A-1CDA-CF26-DE0D	2023-08-28 17:13:59.925	\N	2024-08-28 17:13:59.924	f
+259	EA00-7FCA-695E-E29A	2023-08-28 17:13:59.927	\N	2024-08-28 17:13:59.926	f
+260	4564-41C3-5B35-7190	2023-08-28 17:13:59.929	\N	2024-08-28 17:13:59.928	f
+261	EC8D-9D69-FB7A-7541	2023-08-28 17:13:59.932	\N	2024-08-28 17:13:59.931	f
+262	4505-E79B-0257-B2E0	2023-08-28 17:13:59.934	\N	2024-08-28 17:13:59.933	f
+263	5967-9267-3462-0467	2023-08-28 17:13:59.936	\N	2024-08-28 17:13:59.935	f
+264	6037-BD65-3A59-16DC	2023-08-28 17:13:59.939	\N	2024-08-28 17:13:59.938	f
+265	E859-9E57-9CBE-E696	2023-08-28 17:13:59.941	\N	2024-08-28 17:13:59.94	f
+266	DA2B-AD99-9859-E081	2023-08-28 17:13:59.943	\N	2024-08-28 17:13:59.942	f
+267	D82C-2F1F-7241-F9EF	2023-08-28 17:13:59.944	\N	2024-08-28 17:13:59.943	f
+268	A0B2-CBB7-64A3-8DB8	2023-08-28 17:13:59.946	\N	2024-08-28 17:13:59.945	f
+269	F459-8C23-0629-8395	2023-08-28 17:13:59.952	\N	2024-08-28 17:13:59.95	f
+270	136B-0984-F929-682B	2023-08-28 17:13:59.956	\N	2024-08-28 17:13:59.955	f
+271	A3DB-3473-60DD-E3F1	2023-08-28 17:13:59.958	\N	2024-08-28 17:13:59.957	f
+272	4760-31C0-925B-7984	2023-08-28 17:13:59.961	\N	2024-08-28 17:13:59.96	f
+273	C130-A9DE-89FA-5FC3	2023-08-28 17:13:59.963	\N	2024-08-28 17:13:59.962	f
+274	4F35-45AA-72EC-D100	2023-08-28 17:13:59.965	\N	2024-08-28 17:13:59.964	f
+275	C31D-3588-0C91-82DE	2023-08-28 17:13:59.967	\N	2024-08-28 17:13:59.966	f
+276	C0DF-F870-155A-03A4	2023-08-28 17:13:59.969	\N	2024-08-28 17:13:59.968	f
+277	0C05-12F6-3572-5560	2023-08-28 17:13:59.971	\N	2024-08-28 17:13:59.97	f
+278	3BF3-B1C0-E01D-08AE	2023-08-28 17:13:59.974	\N	2024-08-28 17:13:59.972	f
+279	99E0-4EC2-2002-28B7	2023-08-28 17:13:59.976	\N	2024-08-28 17:13:59.975	f
+280	424C-00C1-46EF-6F1B	2023-08-28 17:13:59.978	\N	2024-08-28 17:13:59.977	f
+281	23DD-8E2E-1008-0DC7	2023-08-28 17:13:59.98	\N	2024-08-28 17:13:59.979	f
+282	4FA1-0A71-5026-E3F3	2023-08-28 17:14:00.037	\N	2024-08-28 17:14:00.036	f
+283	4741-7A88-A244-9245	2023-08-28 17:14:00.039	\N	2024-08-28 17:14:00.038	f
+284	FBCC-227F-76A7-D890	2023-08-28 17:14:00.042	\N	2024-08-28 17:14:00.041	f
+285	A256-32BD-4215-433B	2023-08-28 17:14:00.044	\N	2024-08-28 17:14:00.043	f
+286	AC84-DD48-5D44-3839	2023-08-28 17:14:00.046	\N	2024-08-28 17:14:00.045	f
+287	BFFF-2D40-6F56-A93E	2023-08-28 17:14:00.049	\N	2024-08-28 17:14:00.048	f
+288	E8B9-C083-4BC1-27D0	2023-08-28 17:14:00.052	\N	2024-08-28 17:14:00.051	f
+289	C523-8C16-4F2E-3C7C	2023-08-28 17:14:00.055	\N	2024-08-28 17:14:00.054	f
+290	E51D-1EC4-F59A-1D87	2023-08-28 17:14:00.057	\N	2024-08-28 17:14:00.056	f
+291	6548-7BE3-1E80-2FB9	2023-08-28 17:14:00.06	\N	2024-08-28 17:14:00.058	f
+292	E5B6-387E-C906-EA73	2023-08-28 17:14:00.062	\N	2024-08-28 17:14:00.061	f
+293	0A98-8076-F764-87F4	2023-08-28 17:14:00.065	\N	2024-08-28 17:14:00.064	f
+294	3301-2272-73A6-5E4D	2023-08-28 17:14:00.067	\N	2024-08-28 17:14:00.066	f
+295	B2E7-EE40-8218-DEAE	2023-08-28 17:14:00.069	\N	2024-08-28 17:14:00.068	f
+296	4349-395F-092A-661C	2023-08-28 17:14:00.072	\N	2024-08-28 17:14:00.071	f
+297	38DC-7AAB-CE38-1AB7	2023-08-28 17:14:00.074	\N	2024-08-28 17:14:00.073	f
+298	A890-8193-CFD9-0FB1	2023-08-28 17:14:00.077	\N	2024-08-28 17:14:00.075	f
+299	8121-8693-2F43-ADAD	2023-08-28 17:14:00.08	\N	2024-08-28 17:14:00.079	f
+300	A46C-DF6C-F2C6-D928	2023-08-28 17:14:00.083	\N	2024-08-28 17:14:00.082	f
+302	6E93-10C7-0164-E65A	2023-08-28 17:22:49.374	\N	2024-08-28 17:22:49.372	f
+303	E56E-336D-D570-DD87	2023-08-28 17:22:49.448	\N	2024-08-28 17:22:49.447	f
+304	EE19-DB1A-AB49-4900	2023-08-28 17:22:49.506	\N	2024-08-28 17:22:49.504	f
+305	852C-089B-86EC-85D9	2023-08-28 17:22:49.509	\N	2024-08-28 17:22:49.507	f
+306	66B1-B5E6-841B-CBEA	2023-08-28 17:22:49.513	\N	2024-08-28 17:22:49.511	f
+307	09B3-862A-DA9E-6EDE	2023-08-28 17:22:49.522	\N	2024-08-28 17:22:49.514	f
+308	3C22-7F00-4CE3-B234	2023-08-28 17:22:49.525	\N	2024-08-28 17:22:49.524	f
+309	E159-2F3E-B9AB-958E	2023-08-28 17:22:49.527	\N	2024-08-28 17:22:49.526	f
+310	A672-B744-B757-8CB9	2023-08-28 17:22:49.53	\N	2024-08-28 17:22:49.528	f
+312	8758-7318-C716-A12D	2023-08-28 17:22:49.535	\N	2024-08-28 17:22:49.534	f
+313	37DA-D62D-169C-EF0D	2023-08-28 17:22:49.538	\N	2024-08-28 17:22:49.537	f
+314	5DBC-40F2-3054-5C37	2023-08-28 17:22:49.541	\N	2024-08-28 17:22:49.54	f
+315	3BDC-171E-30FB-01DF	2023-08-28 17:22:49.545	\N	2024-08-28 17:22:49.543	f
+316	E254-ECA3-123A-B66E	2023-08-28 17:22:49.547	\N	2024-08-28 17:22:49.546	f
+317	A73C-97C0-9220-4E04	2023-08-28 17:22:49.562	\N	2024-08-28 17:22:49.561	f
+318	9D5E-1E56-BD41-3FA0	2023-08-28 17:22:49.578	\N	2024-08-28 17:22:49.577	f
+319	125C-0CC0-7AA9-20D4	2023-08-28 17:22:49.58	\N	2024-08-28 17:22:49.579	f
+320	6E6B-50A3-EDCA-E04C	2023-08-28 17:22:49.581	\N	2024-08-28 17:22:49.58	f
+321	865D-BB43-ADC8-B364	2023-08-28 17:22:49.582	\N	2024-08-28 17:22:49.581	f
+253	AD02-7532-B9E4-1126	2023-08-28 17:13:59.907	2025-02-17 12:31:41.565	2024-08-28 17:13:59.906	f
+322	1CBB-E91C-C417-1524	2023-08-28 17:22:49.583	\N	2024-08-28 17:22:49.582	f
+323	FC62-03EA-AEDA-36FD	2023-08-28 17:22:49.584	\N	2024-08-28 17:22:49.583	f
+324	EFB9-FDE3-31D2-13AA	2023-08-28 17:22:49.585	\N	2024-08-28 17:22:49.584	f
+325	3EA7-CBC3-2F46-51B7	2023-08-28 17:22:49.586	\N	2024-08-28 17:22:49.585	f
+326	3D64-0461-8004-AB95	2023-08-28 17:22:49.587	\N	2024-08-28 17:22:49.586	f
+327	2810-AF16-239D-2E19	2023-08-28 17:22:49.588	\N	2024-08-28 17:22:49.587	f
+328	67AF-3E45-C3CD-2FAE	2023-08-28 17:22:49.589	\N	2024-08-28 17:22:49.588	f
+329	CECB-BA49-9F88-C8E0	2023-08-28 17:22:49.59	\N	2024-08-28 17:22:49.589	f
+330	8802-4221-E63F-DDA9	2023-08-28 17:22:49.591	\N	2024-08-28 17:22:49.59	f
+331	FE9C-7DFF-5352-9C75	2023-08-28 17:22:49.592	\N	2024-08-28 17:22:49.591	f
+332	080D-17ED-0E27-3EF6	2023-08-28 17:22:49.593	\N	2024-08-28 17:22:49.592	f
+333	8B74-7C52-D174-9B73	2023-08-28 17:22:49.594	\N	2024-08-28 17:22:49.593	f
+334	7F61-B5E0-A622-B194	2023-08-28 17:22:49.595	\N	2024-08-28 17:22:49.594	f
+335	E457-4934-1071-B152	2023-08-28 17:22:49.596	\N	2024-08-28 17:22:49.595	f
+336	DA9E-CC56-D578-34CB	2023-08-28 17:22:49.597	\N	2024-08-28 17:22:49.596	f
+337	DC56-FE62-772A-F8C3	2023-08-28 17:22:49.598	\N	2024-08-28 17:22:49.598	f
+338	1D46-A5D0-B2C3-98A9	2023-08-28 17:22:49.599	\N	2024-08-28 17:22:49.598	f
+339	798C-6A48-EC83-3694	2023-08-28 17:22:49.6	\N	2024-08-28 17:22:49.599	f
+340	A76E-2A10-906B-8B3D	2023-08-28 17:22:49.601	\N	2024-08-28 17:22:49.6	f
+341	8469-7197-1BC2-2AA4	2023-08-28 17:22:49.602	\N	2024-08-28 17:22:49.601	f
+342	1096-A141-4863-A20F	2023-08-28 17:22:49.603	\N	2024-08-28 17:22:49.602	f
+343	E49F-2409-ACFD-FECE	2023-08-28 17:22:49.631	\N	2024-08-28 17:22:49.63	f
+344	02D2-B983-A212-8458	2023-08-28 17:22:49.632	\N	2024-08-28 17:22:49.631	f
+345	2BE0-017D-ECD6-B499	2023-08-28 17:22:49.633	\N	2024-08-28 17:22:49.632	f
+346	B5C4-B6F5-4018-AE09	2023-08-28 17:22:49.635	\N	2024-08-28 17:22:49.634	f
+347	39AA-D6D7-9BA6-B5F8	2023-08-28 17:22:49.636	\N	2024-08-28 17:22:49.635	f
+348	C290-3D37-F085-7247	2023-08-28 17:22:49.638	\N	2024-08-28 17:22:49.637	f
+349	BB43-BDDE-4ACC-62B5	2023-08-28 17:22:49.64	\N	2024-08-28 17:22:49.639	f
+350	2F31-F8E1-C810-C90F	2023-08-28 17:22:49.641	\N	2024-08-28 17:22:49.64	f
+351	25D1-28F0-00E1-A5F3	2023-08-28 17:22:49.644	\N	2024-08-28 17:22:49.643	f
+352	3430-188F-5831-33FD	2023-08-28 17:22:49.645	\N	2024-08-28 17:22:49.644	f
+353	8CD2-D651-F9BD-E184	2023-08-28 17:22:49.647	\N	2024-08-28 17:22:49.646	f
+354	2A2C-BC64-DBFC-FAA2	2023-08-28 17:22:49.648	\N	2024-08-28 17:22:49.647	f
+355	9B39-42D0-9320-E8B2	2023-08-28 17:22:49.649	\N	2024-08-28 17:22:49.648	f
+356	196B-B41A-937F-99D4	2023-08-28 17:22:49.65	\N	2024-08-28 17:22:49.649	f
+357	60B9-6417-9B56-6316	2023-08-28 17:22:49.651	\N	2024-08-28 17:22:49.65	f
+358	6BFD-8840-338A-D4F8	2023-08-28 17:22:49.653	\N	2024-08-28 17:22:49.652	f
+359	4296-0E86-5457-C46F	2023-08-28 17:22:49.654	\N	2024-08-28 17:22:49.653	f
+360	AC9A-48B7-D56A-A4C2	2023-08-28 17:22:49.655	\N	2024-08-28 17:22:49.654	f
+361	BF61-A708-2A4A-0C06	2023-08-28 17:22:49.674	\N	2024-08-28 17:22:49.673	f
+362	44BE-C6D8-FB19-6A44	2023-08-28 17:22:49.676	\N	2024-08-28 17:22:49.675	f
+363	3DBF-110F-BF0E-6D20	2023-08-28 17:22:49.677	\N	2024-08-28 17:22:49.676	f
+364	619A-162F-3C58-3E6E	2023-08-28 17:22:49.678	\N	2024-08-28 17:22:49.677	f
+365	6E98-5F9F-9D1D-DF92	2023-08-28 17:22:49.679	\N	2024-08-28 17:22:49.678	f
+366	50B0-07DA-5103-EC9F	2023-08-28 17:22:49.68	\N	2024-08-28 17:22:49.679	f
+367	3401-FD1D-955D-FA36	2023-08-28 17:22:49.682	\N	2024-08-28 17:22:49.681	f
+368	0B6A-FE2D-47E8-D147	2023-08-28 17:22:49.705	\N	2024-08-28 17:22:49.704	f
+369	262E-7CF8-D5A4-A002	2023-08-28 17:22:49.707	\N	2024-08-28 17:22:49.706	f
+370	CC84-CCC4-00BA-0F66	2023-08-28 17:22:49.709	\N	2024-08-28 17:22:49.708	f
+371	126A-4ADF-6243-6E8A	2023-08-28 17:22:49.711	\N	2024-08-28 17:22:49.71	f
+372	83AA-447D-A97A-AF63	2023-08-28 17:22:49.712	\N	2024-08-28 17:22:49.711	f
+373	7A4E-B192-FE71-6FEC	2023-08-28 17:22:49.714	\N	2024-08-28 17:22:49.713	f
+374	8941-5ABA-F744-568D	2023-08-28 17:22:49.715	\N	2024-08-28 17:22:49.714	f
+375	A32C-AC90-8771-9ED0	2023-08-28 17:22:49.716	\N	2024-08-28 17:22:49.716	f
+376	BC60-43EB-A751-96FD	2023-08-28 17:22:49.718	\N	2024-08-28 17:22:49.717	f
+377	02AE-BF76-0215-CC84	2023-08-28 17:22:49.719	\N	2024-08-28 17:22:49.718	f
+378	677A-D52D-01A5-6266	2023-08-28 17:22:49.72	\N	2024-08-28 17:22:49.719	f
+379	5F90-09DF-00BF-1E23	2023-08-28 17:22:49.721	\N	2024-08-28 17:22:49.721	f
+380	FB71-987A-6686-7E8B	2023-08-28 17:22:49.723	\N	2024-08-28 17:22:49.722	f
+381	EAF4-EB5E-05C5-F076	2023-08-28 17:22:49.725	\N	2024-08-28 17:22:49.724	f
+382	663F-10C8-B6FF-6D33	2023-08-28 17:22:49.726	\N	2024-08-28 17:22:49.725	f
+383	76C8-9FB3-AF6B-F5DE	2023-08-28 17:22:49.727	\N	2024-08-28 17:22:49.726	f
+384	C6F0-52C0-1944-AD91	2023-08-28 17:22:49.728	\N	2024-08-28 17:22:49.727	f
+385	C356-EC01-4F4F-5813	2023-08-28 17:22:49.73	\N	2024-08-28 17:22:49.729	f
+386	FE63-8F06-CF52-2E17	2023-08-28 17:22:49.732	\N	2024-08-28 17:22:49.731	f
+387	4263-446A-7489-243F	2023-08-28 17:22:49.733	\N	2024-08-28 17:22:49.732	f
+388	6A51-1C11-425E-636D	2023-08-28 17:22:49.734	\N	2024-08-28 17:22:49.733	f
+389	331A-8FDD-E64B-029D	2023-08-28 17:22:49.736	\N	2024-08-28 17:22:49.735	f
+390	FC33-8964-1D7D-5CDB	2023-08-28 17:22:49.737	\N	2024-08-28 17:22:49.736	f
+391	DB35-3EEF-C4CE-64EC	2023-08-28 17:22:49.739	\N	2024-08-28 17:22:49.738	f
+392	7064-DE39-58AD-5A15	2023-08-28 17:22:49.76	\N	2024-08-28 17:22:49.759	f
+393	B92A-BEEC-D617-EE26	2023-08-28 17:22:49.763	\N	2024-08-28 17:22:49.762	f
+394	3607-5F7C-6AC6-0455	2023-08-28 17:22:49.764	\N	2024-08-28 17:22:49.763	f
+395	1188-BE59-7AC2-C7E3	2023-08-28 17:22:49.765	\N	2024-08-28 17:22:49.765	f
+396	514B-2E4D-6B64-86CB	2023-08-28 17:22:49.767	\N	2024-08-28 17:22:49.766	f
+397	74E6-A485-24D2-60DC	2023-08-28 17:22:49.768	\N	2024-08-28 17:22:49.767	f
+398	9104-DD98-D08E-547A	2023-08-28 17:22:49.769	\N	2024-08-28 17:22:49.768	f
+399	9185-AA4E-6825-8BDE	2023-08-28 17:22:49.77	\N	2024-08-28 17:22:49.77	f
+400	E996-7C78-92A5-C193	2023-08-28 17:22:49.771	\N	2024-08-28 17:22:49.771	f
+402	649D-88B1-5F26-A5DE	2023-08-28 17:34:45.556	\N	2024-08-28 17:34:45.555	f
+403	B2CD-8689-D565-9C50	2023-08-28 17:34:45.573	\N	2024-08-28 17:34:45.572	f
+404	80F9-33F8-8AD2-EA39	2023-08-28 17:34:45.58	\N	2024-08-28 17:34:45.579	f
+405	0487-8A35-FFEC-75BA	2023-08-28 17:34:45.582	\N	2024-08-28 17:34:45.581	f
+406	35C3-8F05-EC9A-0849	2023-08-28 17:34:45.584	\N	2024-08-28 17:34:45.582	f
+407	2B07-74C6-E150-D7D9	2023-08-28 17:34:45.585	\N	2024-08-28 17:34:45.584	f
+408	D3FF-514E-671F-DE5D	2023-08-28 17:34:45.586	\N	2024-08-28 17:34:45.585	f
+409	208C-20CD-8E91-3475	2023-08-28 17:34:45.588	\N	2024-08-28 17:34:45.587	f
+410	F23F-A62C-1091-36D3	2023-08-28 17:34:45.59	\N	2024-08-28 17:34:45.589	f
+411	487E-03CF-5B99-6946	2023-08-28 17:34:45.591	\N	2024-08-28 17:34:45.59	f
+412	0B2E-F04E-1DF5-396D	2023-08-28 17:34:45.601	\N	2024-08-28 17:34:45.6	f
+413	A2FD-28F2-B09C-E89F	2023-08-28 17:34:45.603	\N	2024-08-28 17:34:45.602	f
+414	7E80-BAA3-B4AC-E564	2023-08-28 17:34:45.604	\N	2024-08-28 17:34:45.604	f
+415	FE18-70E0-59F6-018A	2023-08-28 17:34:45.606	\N	2024-08-28 17:34:45.605	f
+416	41BF-16DE-252D-3317	2023-08-28 17:34:45.607	\N	2024-08-28 17:34:45.606	f
+417	B0D3-96A5-A322-6677	2023-08-28 17:34:45.609	\N	2024-08-28 17:34:45.608	f
+418	348E-07D7-A644-E300	2023-08-28 17:34:45.61	\N	2024-08-28 17:34:45.609	f
+419	38CB-2687-9125-0F88	2023-08-28 17:34:45.611	\N	2024-08-28 17:34:45.61	f
+420	1D48-EDFE-7186-0312	2023-08-28 17:34:45.612	\N	2024-08-28 17:34:45.611	f
+421	D422-80D0-C745-43FA	2023-08-28 17:34:45.613	\N	2024-08-28 17:34:45.612	f
+422	8762-107F-EC7C-C42B	2023-08-28 17:34:45.614	\N	2024-08-28 17:34:45.613	f
+423	CB7A-EF9C-D42D-152F	2023-08-28 17:34:45.615	\N	2024-08-28 17:34:45.614	f
+424	7C6D-7461-6D9D-B7F7	2023-08-28 17:34:45.616	\N	2024-08-28 17:34:45.615	f
+425	A0D1-E599-E9EF-A5F9	2023-08-28 17:34:45.617	\N	2024-08-28 17:34:45.616	f
+426	017B-9FD3-40BD-F08F	2023-08-28 17:34:45.618	\N	2024-08-28 17:34:45.617	f
+427	2B76-EA75-9BB7-DDD8	2023-08-28 17:34:45.619	\N	2024-08-28 17:34:45.618	f
+428	528F-2E25-9318-8FC3	2023-08-28 17:34:45.62	\N	2024-08-28 17:34:45.619	f
+429	8D9C-0013-21EF-1C54	2023-08-28 17:34:45.621	\N	2024-08-28 17:34:45.62	f
+430	99BA-570E-E21D-C01A	2023-08-28 17:34:45.622	\N	2024-08-28 17:34:45.621	f
+431	1900-82B2-574A-564A	2023-08-28 17:34:45.623	\N	2024-08-28 17:34:45.622	f
+432	1C5F-76A0-A986-DBB6	2023-08-28 17:34:45.624	\N	2024-08-28 17:34:45.623	f
+433	5389-BAD5-AF78-62A2	2023-08-28 17:34:45.624	\N	2024-08-28 17:34:45.624	f
+434	FD84-6B3C-9F76-D6F5	2023-08-28 17:34:45.625	\N	2024-08-28 17:34:45.625	f
+435	A837-EC27-A720-014F	2023-08-28 17:34:45.626	\N	2024-08-28 17:34:45.626	f
+436	CA25-D764-7578-46B9	2023-08-28 17:34:45.633	\N	2024-08-28 17:34:45.632	f
+437	86DA-4C21-6627-D0BD	2023-08-28 17:34:45.634	\N	2024-08-28 17:34:45.633	f
+438	BAFF-2A8A-AF51-6DCB	2023-08-28 17:34:45.635	\N	2024-08-28 17:34:45.634	f
+440	86F6-DDBC-294C-7241	2023-08-28 17:34:45.638	\N	2024-08-28 17:34:45.637	f
+441	C90E-4B86-D5E3-71EC	2023-08-28 17:34:45.639	\N	2024-08-28 17:34:45.639	f
+442	A9B7-3B71-DC08-C660	2023-08-28 17:34:45.641	\N	2024-08-28 17:34:45.64	f
+443	4362-DBC0-C39A-0F4C	2023-08-28 17:34:45.642	\N	2024-08-28 17:34:45.641	f
+444	1543-ACEE-826D-DDD4	2023-08-28 17:34:45.643	\N	2024-08-28 17:34:45.642	f
+445	ABB7-19A3-13D3-157A	2023-08-28 17:34:45.644	\N	2024-08-28 17:34:45.643	f
+446	E99A-172E-D5CA-3A47	2023-08-28 17:34:45.645	\N	2024-08-28 17:34:45.644	f
+447	5831-FA5C-D30E-9F8D	2023-08-28 17:34:45.646	\N	2024-08-28 17:34:45.645	f
+448	83B9-D026-CB16-64DE	2023-08-28 17:34:45.646	\N	2024-08-28 17:34:45.646	f
+449	2F8E-ABEB-2008-4AB8	2023-08-28 17:34:45.647	\N	2024-08-28 17:34:45.646	f
+450	DB12-6B0F-8769-AB4C	2023-08-28 17:34:45.648	\N	2024-08-28 17:34:45.647	f
+451	73BA-C286-F09E-3867	2023-08-28 17:34:45.649	\N	2024-08-28 17:34:45.648	f
+452	63C2-6FDE-F878-A9E7	2023-08-28 17:34:45.65	\N	2024-08-28 17:34:45.649	f
+453	0273-F0C7-B073-B436	2023-08-28 17:34:45.65	\N	2024-08-28 17:34:45.65	f
+454	6F0B-3985-AA12-EA43	2023-08-28 17:34:45.651	\N	2024-08-28 17:34:45.65	f
+455	EDD5-DC6A-6EAE-6A69	2023-08-28 17:34:45.652	\N	2024-08-28 17:34:45.651	f
+456	2F4B-628A-D462-BE22	2023-08-28 17:34:45.653	\N	2024-08-28 17:34:45.652	f
+457	7027-F729-E70A-DAF7	2023-08-28 17:34:45.653	\N	2024-08-28 17:34:45.653	f
+458	0E7B-B414-8D70-EB87	2023-08-28 17:34:45.654	\N	2024-08-28 17:34:45.654	f
+459	FBA6-A4F7-D039-8673	2023-08-28 17:34:45.655	\N	2024-08-28 17:34:45.654	f
+460	7A4A-6457-1142-3E79	2023-08-28 17:34:45.656	\N	2024-08-28 17:34:45.655	f
+461	DDC4-40F3-9028-E78C	2023-08-28 17:34:45.664	\N	2024-08-28 17:34:45.663	f
+462	8A10-187B-8C48-119B	2023-08-28 17:34:45.665	\N	2024-08-28 17:34:45.664	f
+463	3150-A94B-A826-BF41	2023-08-28 17:34:45.667	\N	2024-08-28 17:34:45.666	f
+464	3E61-2355-ED91-4480	2023-08-28 17:34:45.667	\N	2024-08-28 17:34:45.667	f
+465	288A-718E-11E1-1575	2023-08-28 17:34:45.668	\N	2024-08-28 17:34:45.668	f
+466	6F21-3504-461A-1E11	2023-08-28 17:34:45.669	\N	2024-08-28 17:34:45.669	f
+467	7E6E-7BCF-0E1C-9D2D	2023-08-28 17:34:45.67	\N	2024-08-28 17:34:45.669	f
+468	09AF-C8BD-9A65-07CD	2023-08-28 17:34:45.671	\N	2024-08-28 17:34:45.67	f
+469	C8E5-0966-F3AA-5C53	2023-08-28 17:34:45.672	\N	2024-08-28 17:34:45.671	f
+470	238C-70FF-0626-E856	2023-08-28 17:34:45.673	\N	2024-08-28 17:34:45.672	f
+471	D5A1-7F35-8114-9A45	2023-08-28 17:34:45.674	\N	2024-08-28 17:34:45.673	f
+472	9F7D-DE25-AC8B-EE84	2023-08-28 17:34:45.674	\N	2024-08-28 17:34:45.674	f
+473	8E12-A2EE-BA0C-8522	2023-08-28 17:34:45.675	\N	2024-08-28 17:34:45.674	f
+474	83EF-0D34-099A-4909	2023-08-28 17:34:45.676	\N	2024-08-28 17:34:45.675	f
+475	5AA5-0877-8326-3A30	2023-08-28 17:34:45.677	\N	2024-08-28 17:34:45.676	f
+476	3069-BDC3-BF4E-DA5E	2023-08-28 17:34:45.678	\N	2024-08-28 17:34:45.677	f
+477	E7B1-6D29-B2DE-B57D	2023-08-28 17:34:45.679	\N	2024-08-28 17:34:45.678	f
+478	5089-5218-8938-3644	2023-08-28 17:34:45.679	\N	2024-08-28 17:34:45.679	f
+479	D5CD-1C5F-80C0-64E5	2023-08-28 17:34:45.68	\N	2024-08-28 17:34:45.679	f
+480	95A4-861E-2A27-A147	2023-08-28 17:34:45.681	\N	2024-08-28 17:34:45.68	f
+481	B00E-4CA2-6397-1D3D	2023-08-28 17:34:45.682	\N	2024-08-28 17:34:45.681	f
+482	0051-9ED6-A967-812F	2023-08-28 17:34:45.683	\N	2024-08-28 17:34:45.682	f
+483	682C-C10E-4E1C-9333	2023-08-28 17:34:45.684	\N	2024-08-28 17:34:45.683	f
+484	BADA-0998-142F-B8D2	2023-08-28 17:34:45.685	\N	2024-08-28 17:34:45.684	f
+485	C7AF-86A7-C96C-69AC	2023-08-28 17:34:45.685	\N	2024-08-28 17:34:45.685	f
+486	4F04-FCF0-0C0F-163F	2023-08-28 17:34:45.698	\N	2024-08-28 17:34:45.697	f
+487	BAC0-F55C-7C10-FEE8	2023-08-28 17:34:45.699	\N	2024-08-28 17:34:45.698	f
+488	C362-0628-7B37-ED3B	2023-08-28 17:34:45.7	\N	2024-08-28 17:34:45.699	f
+489	80E7-7A3F-9EDF-1B96	2023-08-28 17:34:45.701	\N	2024-08-28 17:34:45.7	f
+490	3B4A-83C9-8E05-277C	2023-08-28 17:34:45.702	\N	2024-08-28 17:34:45.701	f
+491	1EEF-C5D4-971A-47F7	2023-08-28 17:34:45.72	\N	2024-08-28 17:34:45.719	f
+492	A1B7-CFC4-1F5F-1E11	2023-08-28 17:34:45.732	\N	2024-08-28 17:34:45.731	f
+493	411E-387C-20EF-0AC1	2023-08-28 17:34:45.733	\N	2024-08-28 17:34:45.732	f
+494	758A-6309-0889-FC8C	2023-08-28 17:34:45.735	\N	2024-08-28 17:34:45.734	f
+495	89F6-47FB-083D-20CA	2023-08-28 17:34:45.736	\N	2024-08-28 17:34:45.735	f
+496	C3FD-23E8-4021-F7A2	2023-08-28 17:34:45.737	\N	2024-08-28 17:34:45.736	f
+497	87AD-ADD6-9B2C-17A0	2023-08-28 17:34:45.738	\N	2024-08-28 17:34:45.737	f
+498	D10E-D67E-3882-C1D7	2023-08-28 17:34:45.738	\N	2024-08-28 17:34:45.738	f
+499	847F-7D9C-C2DC-BC5A	2023-08-28 17:34:45.739	\N	2024-08-28 17:34:45.739	f
+500	2439-D3AF-2972-8BC0	2023-08-28 17:34:45.74	\N	2024-08-28 17:34:45.739	f
+502	8F91-2E4B-942C-A7DD	2023-08-28 17:43:16.173	\N	2024-08-28 17:43:16.171	f
+503	CDE6-53C7-1AF4-F15E	2023-08-28 17:43:16.187	\N	2024-08-28 17:43:16.185	f
+504	1C9F-C476-5CB6-502F	2023-08-28 17:43:16.189	\N	2024-08-28 17:43:16.188	f
+505	A05C-7830-7825-917C	2023-08-28 17:43:16.203	\N	2024-08-28 17:43:16.202	f
+506	B84A-1C6E-FB6F-8F7B	2023-08-28 17:43:16.204	\N	2024-08-28 17:43:16.203	f
+507	FB74-CFEB-53AD-8570	2023-08-28 17:43:16.206	\N	2024-08-28 17:43:16.205	f
+508	4279-2BA2-7206-A98E	2023-08-28 17:43:16.207	\N	2024-08-28 17:43:16.206	f
+509	EF30-227D-9AFC-91B1	2023-08-28 17:43:16.221	\N	2024-08-28 17:43:16.22	f
+510	18D6-EB9E-21AC-180D	2023-08-28 17:43:16.223	\N	2024-08-28 17:43:16.222	f
+511	23C2-6A9F-D3E0-D040	2023-08-28 17:43:16.224	\N	2024-08-28 17:43:16.223	f
+513	F408-C6DC-2F5B-EC96	2023-08-28 17:43:16.226	\N	2024-08-28 17:43:16.225	f
+514	FDC8-916F-29CB-3315	2023-08-28 17:43:16.227	\N	2024-08-28 17:43:16.226	f
+515	8CEA-C7DB-3BE1-AE94	2023-08-28 17:43:16.228	\N	2024-08-28 17:43:16.227	f
+516	8D9C-9721-CF26-FCBD	2023-08-28 17:43:16.229	\N	2024-08-28 17:43:16.228	f
+517	F586-426D-CF7A-19C9	2023-08-28 17:43:16.23	\N	2024-08-28 17:43:16.229	f
+518	74C6-B3ED-FDD5-4D3C	2023-08-28 17:43:16.231	\N	2024-08-28 17:43:16.23	f
+519	A233-24C6-E3E6-8EC2	2023-08-28 17:43:16.232	\N	2024-08-28 17:43:16.231	f
+520	CEC8-FC55-C365-D57C	2023-08-28 17:43:16.233	\N	2024-08-28 17:43:16.232	f
+521	84D5-C4C3-F8CD-B60B	2023-08-28 17:43:16.233	\N	2024-08-28 17:43:16.233	f
+522	1E70-E686-553A-608C	2023-08-28 17:43:16.235	\N	2024-08-28 17:43:16.233	f
+523	9CA0-2B71-1D60-8B5E	2023-08-28 17:43:16.236	\N	2024-08-28 17:43:16.235	f
+524	4529-0898-E6AC-C7AC	2023-08-28 17:43:16.237	\N	2024-08-28 17:43:16.236	f
+525	7BA3-3906-B4DE-CCEE	2023-08-28 17:43:16.238	\N	2024-08-28 17:43:16.237	f
+526	5D8E-4A7F-3D1F-23F5	2023-08-28 17:43:16.238	\N	2024-08-28 17:43:16.238	f
+527	BFFC-1845-2AF4-2A2E	2023-08-28 17:43:16.239	\N	2024-08-28 17:43:16.239	f
+528	A6B0-A223-DCA1-A282	2023-08-28 17:43:16.24	\N	2024-08-28 17:43:16.239	f
+529	11B9-0399-603D-7F43	2023-08-28 17:43:16.241	\N	2024-08-28 17:43:16.24	f
+530	4C3E-FE82-6C12-11F1	2023-08-28 17:43:16.256	\N	2024-08-28 17:43:16.255	f
+531	2246-1250-05B8-4C15	2023-08-28 17:43:16.258	\N	2024-08-28 17:43:16.257	f
+532	759F-F637-6B70-C263	2023-08-28 17:43:16.26	\N	2024-08-28 17:43:16.259	f
+533	C60F-8B76-4A1D-1B61	2023-08-28 17:43:16.261	\N	2024-08-28 17:43:16.26	f
+534	1561-4D57-FEFF-3311	2023-08-28 17:43:16.261	\N	2024-08-28 17:43:16.261	f
+535	4F66-7469-5064-03F3	2023-08-28 17:43:16.262	\N	2024-08-28 17:43:16.262	f
+536	66CE-CC2E-1AFC-A901	2023-08-28 17:43:16.263	\N	2024-08-28 17:43:16.262	f
+537	5D94-AFBF-C71A-ECA2	2023-08-28 17:43:16.264	\N	2024-08-28 17:43:16.263	f
+439	84CF-B201-AFC3-0620	2023-08-28 17:34:45.637	2025-01-13 08:41:26.525	2024-08-28 17:34:45.635	f
+538	5B71-5A3B-182C-E7D7	2023-08-28 17:43:16.265	\N	2024-08-28 17:43:16.264	f
+539	D4CF-7338-4CA9-C03E	2023-08-28 17:43:16.266	\N	2024-08-28 17:43:16.265	f
+540	0D1F-834E-77B5-C3E3	2023-08-28 17:43:16.267	\N	2024-08-28 17:43:16.266	f
+541	3317-0587-7B34-4D6E	2023-08-28 17:43:16.267	\N	2024-08-28 17:43:16.267	f
+542	338C-6229-C0E4-37B9	2023-08-28 17:43:16.269	\N	2024-08-28 17:43:16.267	f
+543	18E0-08DD-BC55-CE5A	2023-08-28 17:43:16.27	\N	2024-08-28 17:43:16.269	f
+544	D5A0-E9EA-9E1C-B325	2023-08-28 17:43:16.271	\N	2024-08-28 17:43:16.27	f
+547	8439-FAB6-C480-54C7	2023-08-28 17:43:16.274	\N	2024-08-28 17:43:16.273	f
+548	A096-C5E9-EC9F-42D3	2023-08-28 17:43:16.274	\N	2024-08-28 17:43:16.274	f
+549	A7E9-2B71-2734-9207	2023-08-28 17:43:16.275	\N	2024-08-28 17:43:16.274	f
+550	2253-3F74-8D5E-1339	2023-08-28 17:43:16.276	\N	2024-08-28 17:43:16.275	f
+551	0D44-F010-8F3D-8166	2023-08-28 17:43:16.277	\N	2024-08-28 17:43:16.276	f
+552	CC24-B4B5-D74F-B8D6	2023-08-28 17:43:16.278	\N	2024-08-28 17:43:16.277	f
+553	5B57-3F10-2FD3-AF70	2023-08-28 17:43:16.278	\N	2024-08-28 17:43:16.278	f
+554	FEE2-9834-8233-4285	2023-08-28 17:43:16.279	\N	2024-08-28 17:43:16.278	f
+555	178B-8650-DA54-1030	2023-08-28 17:43:16.289	\N	2024-08-28 17:43:16.288	f
+556	49E0-9212-32FE-628F	2023-08-28 17:43:16.29	\N	2024-08-28 17:43:16.289	f
+557	7D55-6F36-5E89-CF62	2023-08-28 17:43:16.291	\N	2024-08-28 17:43:16.29	f
+558	B344-5BD7-2C30-9AC1	2023-08-28 17:43:16.293	\N	2024-08-28 17:43:16.292	f
+559	F284-CE0C-5D59-932E	2023-08-28 17:43:16.294	\N	2024-08-28 17:43:16.293	f
+560	0061-E765-F8FA-18F2	2023-08-28 17:43:16.295	\N	2024-08-28 17:43:16.294	f
+561	CD81-4B91-2789-E069	2023-08-28 17:43:16.295	\N	2024-08-28 17:43:16.295	f
+562	E34B-F015-BEDD-62E5	2023-08-28 17:43:16.296	\N	2024-08-28 17:43:16.295	f
+563	EA05-D6DE-1BE9-B6DF	2023-08-28 17:43:16.298	\N	2024-08-28 17:43:16.297	f
+564	841A-22D0-5001-3E40	2023-08-28 17:43:16.299	\N	2024-08-28 17:43:16.298	f
+565	0406-48BE-3BF2-02CE	2023-08-28 17:43:16.3	\N	2024-08-28 17:43:16.299	f
+566	B66D-19AE-6C40-A350	2023-08-28 17:43:16.301	\N	2024-08-28 17:43:16.3	f
+568	2798-FAF1-76E8-9082	2023-08-28 17:43:16.303	\N	2024-08-28 17:43:16.302	f
+569	AC00-0992-0260-527D	2023-08-28 17:43:16.304	\N	2024-08-28 17:43:16.303	f
+570	5FDA-5A00-23CA-7647	2023-08-28 17:43:16.305	\N	2024-08-28 17:43:16.304	f
+571	7662-A198-75FB-5678	2023-08-28 17:43:16.306	\N	2024-08-28 17:43:16.305	f
+572	D5C1-822C-8DB3-12B7	2023-08-28 17:43:16.307	\N	2024-08-28 17:43:16.306	f
+573	616B-0CBE-D2B8-7371	2023-08-28 17:43:16.308	\N	2024-08-28 17:43:16.307	f
+574	4B8B-3A37-6B4C-69AB	2023-08-28 17:43:16.309	\N	2024-08-28 17:43:16.308	f
+575	4775-3200-6EA0-D1FD	2023-08-28 17:43:16.31	\N	2024-08-28 17:43:16.309	f
+576	A7B8-AAFC-EB27-616E	2023-08-28 17:43:16.31	\N	2024-08-28 17:43:16.31	f
+577	4C86-ECB1-F3AF-82AC	2023-08-28 17:43:16.311	\N	2024-08-28 17:43:16.311	f
+578	3B85-4F85-7A61-6E22	2023-08-28 17:43:16.312	\N	2024-08-28 17:43:16.311	f
+579	0613-77E8-CD05-2639	2023-08-28 17:43:16.316	\N	2024-08-28 17:43:16.314	f
+580	34CE-D51A-8EEF-E6F9	2023-08-28 17:43:16.317	\N	2024-08-28 17:43:16.316	f
+581	F7D3-1369-CCE2-CABF	2023-08-28 17:43:16.319	\N	2024-08-28 17:43:16.318	f
+582	6A85-DF52-5C2A-D35C	2023-08-28 17:43:16.32	\N	2024-08-28 17:43:16.319	f
+583	AF4C-D364-B158-7928	2023-08-28 17:43:16.32	\N	2024-08-28 17:43:16.32	f
+584	C6D3-0287-E761-CDAB	2023-08-28 17:43:16.321	\N	2024-08-28 17:43:16.321	f
+585	DA11-ECE7-4A43-3ECF	2023-08-28 17:43:16.322	\N	2024-08-28 17:43:16.322	f
+586	6F35-4A81-C8B5-D987	2023-08-28 17:43:16.324	\N	2024-08-28 17:43:16.323	f
+587	B02A-0EA8-AE0D-29A1	2023-08-28 17:43:16.324	\N	2024-08-28 17:43:16.324	f
+588	564E-EEF4-05AE-E7DE	2023-08-28 17:43:16.325	\N	2024-08-28 17:43:16.325	f
+589	F6C6-F189-2D09-C34D	2023-08-28 17:43:16.326	\N	2024-08-28 17:43:16.326	f
+590	9FB5-BA8F-40DF-CE17	2023-08-28 17:43:16.327	\N	2024-08-28 17:43:16.327	f
+591	C57B-5A83-2A3D-49F7	2023-08-28 17:43:16.329	\N	2024-08-28 17:43:16.328	f
+592	EE76-1322-A8BF-AFFE	2023-08-28 17:43:16.329	\N	2024-08-28 17:43:16.329	f
+593	EBE1-7D75-7D1C-3E7E	2023-08-28 17:43:16.33	\N	2024-08-28 17:43:16.329	f
+594	1F5C-2F52-59F2-8ABC	2023-08-28 17:43:16.331	\N	2024-08-28 17:43:16.33	f
+596	9C35-6199-EADE-9101	2023-08-28 17:43:16.332	\N	2024-08-28 17:43:16.332	f
+88	D0FC-A036-F848-9F35	2023-05-17 14:21:59.133	2023-08-29 07:26:24.874	2024-05-17 14:21:59.132	f
+6	FC2C-2B19-DD59-C316	2023-05-17 14:21:58.693	2023-09-06 10:22:54.669	2024-05-17 14:21:58.691	f
+599	4AE5-3EFF-6FFF-1CA5	2023-08-28 17:43:16.335	2023-08-31 05:58:59.545	2024-08-28 17:43:16.334	f
+600	B7B3-59FA-6CCE-40D4	2023-08-28 17:43:16.336	2023-08-31 07:33:33.402	2024-08-28 17:43:16.335	f
+598	2A8C-9E36-90F9-D0FB	2023-08-28 17:43:16.334	2023-09-01 10:30:19.853	2024-08-28 17:43:16.333	f
+597	842B-7956-2AC2-DA0C	2023-08-28 17:43:16.333	2023-09-01 13:18:07.468	2024-08-28 17:43:16.332	f
+595	1E15-C443-DF37-82A6	2023-08-28 17:43:16.332	2023-09-02 16:26:52.338	2024-08-28 17:43:16.331	f
+139	9C54-928E-880F-C4FA	2023-08-16 06:38:55.565	2023-09-03 16:33:37.83	2024-08-16 06:38:55.565	f
+62	2BD0-15BB-E24F-738B	2023-05-17 14:21:58.915	2023-09-05 07:49:22.191	2024-05-17 14:21:58.914	f
+602	4590-2247-EF02-B279	2023-09-05 16:36:31.086	\N	2024-09-05 16:36:31.084	f
+603	6437-1392-974C-6970	2023-09-05 16:36:31.153	\N	2024-09-05 16:36:31.152	f
+604	3845-44BB-3939-C6D3	2023-09-05 16:36:31.156	\N	2024-09-05 16:36:31.155	f
+605	E9EB-2492-4DC1-8EA5	2023-09-05 16:36:31.19	\N	2024-09-05 16:36:31.188	f
+606	0A98-EDCE-9A72-EED9	2023-09-05 16:36:31.204	\N	2024-09-05 16:36:31.202	f
+607	1E00-7D1C-15D6-D3CC	2023-09-05 16:36:31.206	\N	2024-09-05 16:36:31.205	f
+608	B682-32B6-541D-B2C9	2023-09-05 16:36:31.208	\N	2024-09-05 16:36:31.207	f
+609	0081-5BA2-1DCC-ADA6	2023-09-05 16:36:31.209	\N	2024-09-05 16:36:31.208	f
+610	6CFD-1E13-A6F9-C6AF	2023-09-05 16:36:31.212	\N	2024-09-05 16:36:31.211	f
+611	6E9F-AE40-E533-CEE3	2023-09-05 16:36:31.214	\N	2024-09-05 16:36:31.213	f
+612	FB43-76BE-E814-5EE1	2023-09-05 16:36:31.215	\N	2024-09-05 16:36:31.214	f
+613	0C54-5853-DEC7-F4A7	2023-09-05 16:36:31.22	\N	2024-09-05 16:36:31.219	f
+615	5489-B70F-6DE2-CFF5	2023-09-05 16:36:31.224	\N	2024-09-05 16:36:31.223	f
+616	8ABF-C3E4-1228-9643	2023-09-05 16:36:31.226	\N	2024-09-05 16:36:31.225	f
+617	F1D1-577C-91D7-C036	2023-09-05 16:36:31.238	\N	2024-09-05 16:36:31.237	f
+618	F41A-64BC-DD87-4B60	2023-09-05 16:36:31.24	\N	2024-09-05 16:36:31.239	f
+619	7CC6-90A5-BED0-64C4	2023-09-05 16:36:31.241	\N	2024-09-05 16:36:31.24	f
+620	59BD-8710-B533-9D7E	2023-09-05 16:36:31.242	\N	2024-09-05 16:36:31.241	f
+621	65FE-5C02-0DA0-F0CF	2023-09-05 16:36:31.243	\N	2024-09-05 16:36:31.242	f
+622	DC03-EE3A-D87F-AFE7	2023-09-05 16:36:31.244	\N	2024-09-05 16:36:31.243	f
+623	62AD-9062-8846-DAE0	2023-09-05 16:36:31.244	\N	2024-09-05 16:36:31.244	f
+624	9D12-DC9F-F3BB-A58E	2023-09-05 16:36:31.245	\N	2024-09-05 16:36:31.245	f
+625	807B-6FF9-19B4-08CB	2023-09-05 16:36:31.257	\N	2024-09-05 16:36:31.256	f
+626	3264-2994-E874-F174	2023-09-05 16:36:31.258	\N	2024-09-05 16:36:31.257	f
+627	044F-E995-CFD6-38D1	2023-09-05 16:36:31.26	\N	2024-09-05 16:36:31.259	f
+628	AB2B-B825-1EB0-CFB9	2023-09-05 16:36:31.262	\N	2024-09-05 16:36:31.261	f
+630	A5D1-1B24-281D-E02C	2023-09-05 16:36:31.264	\N	2024-09-05 16:36:31.264	f
+631	A6FC-2172-3328-8CF1	2023-09-05 16:36:31.266	\N	2024-09-05 16:36:31.265	f
+632	7E46-86EC-6C37-71BD	2023-09-05 16:36:31.267	\N	2024-09-05 16:36:31.266	f
+633	F3A9-FB8C-CA06-33A9	2023-09-05 16:36:31.269	\N	2024-09-05 16:36:31.268	f
+634	4AF5-F5C1-CA9A-BE17	2023-09-05 16:36:31.27	\N	2024-09-05 16:36:31.269	f
+635	C676-2C56-8E6A-3CFC	2023-09-05 16:36:31.272	\N	2024-09-05 16:36:31.271	f
+636	BDA7-4C12-28E8-3B99	2023-09-05 16:36:31.273	\N	2024-09-05 16:36:31.272	f
+637	2FC1-2F85-544F-8CF0	2023-09-05 16:36:31.287	\N	2024-09-05 16:36:31.286	f
+638	149E-721E-98B8-D9B3	2023-09-05 16:36:31.289	\N	2024-09-05 16:36:31.288	f
+629	14F6-85F4-6FD1-1B84	2023-09-05 16:36:31.263	2024-04-29 08:03:40.869	2024-09-05 16:36:31.262	f
+639	7FA0-9FFA-5844-920F	2023-09-05 16:36:31.291	\N	2024-09-05 16:36:31.29	f
+640	8593-4E36-2FC9-870B	2023-09-05 16:36:31.292	\N	2024-09-05 16:36:31.291	f
+641	715A-7F21-D76D-160C	2023-09-05 16:36:31.294	\N	2024-09-05 16:36:31.293	f
+546	D613-DF91-2750-6225	2023-08-28 17:43:16.273	2024-11-04 07:05:56.275	2024-08-28 17:43:16.272	f
+567	3FE1-0024-BABD-9606	2023-08-28 17:43:16.302	2024-11-28 09:09:25.518	2024-08-28 17:43:16.301	f
+642	F950-6037-190B-79F0	2023-09-05 16:36:31.295	\N	2024-09-05 16:36:31.294	f
+643	E2F2-199B-FF16-8EEF	2023-09-05 16:36:31.296	\N	2024-09-05 16:36:31.295	f
+644	4C13-0BBC-A085-0C34	2023-09-05 16:36:31.298	\N	2024-09-05 16:36:31.297	f
+645	6207-9708-50D8-444B	2023-09-05 16:36:31.3	\N	2024-09-05 16:36:31.299	f
+646	14E6-3F0C-A979-8EEC	2023-09-05 16:36:31.301	\N	2024-09-05 16:36:31.3	f
+647	1E9F-6799-EB16-3B11	2023-09-05 16:36:31.303	\N	2024-09-05 16:36:31.302	f
+648	6AE3-C3BB-59EC-FB56	2023-09-05 16:36:31.305	\N	2024-09-05 16:36:31.304	f
+649	D603-180B-B7E5-E62C	2023-09-05 16:36:31.306	\N	2024-09-05 16:36:31.305	f
+650	2981-2F72-D46A-1860	2023-09-05 16:36:31.307	\N	2024-09-05 16:36:31.306	f
+651	DD39-66E4-517F-B5FB	2023-09-05 16:36:31.308	\N	2024-09-05 16:36:31.308	f
+652	9543-5B91-7CED-C024	2023-09-05 16:36:31.31	\N	2024-09-05 16:36:31.309	f
+653	4929-F73D-D934-2737	2023-09-05 16:36:31.311	\N	2024-09-05 16:36:31.31	f
+654	4316-D43A-2BA4-C53D	2023-09-05 16:36:31.312	\N	2024-09-05 16:36:31.311	f
+655	C731-AB9A-F947-A041	2023-09-05 16:36:31.313	\N	2024-09-05 16:36:31.312	f
+656	98F9-FF8D-A8B4-92A7	2023-09-05 16:36:31.314	\N	2024-09-05 16:36:31.313	f
+657	3752-F4A1-506D-4FAC	2023-09-05 16:36:31.315	\N	2024-09-05 16:36:31.314	f
+658	5FE0-7296-0193-AE3E	2023-09-05 16:36:31.316	\N	2024-09-05 16:36:31.315	f
+659	0C9B-06B2-82E1-40CD	2023-09-05 16:36:31.317	\N	2024-09-05 16:36:31.317	f
+660	0309-F438-66AA-8A68	2023-09-05 16:36:31.318	\N	2024-09-05 16:36:31.318	f
+661	F758-3CE8-0964-C71C	2023-09-05 16:36:31.32	\N	2024-09-05 16:36:31.319	f
+662	33C6-313E-B87A-B0F3	2023-09-05 16:36:31.346	\N	2024-09-05 16:36:31.345	f
+663	CD79-AF7D-EE3E-0D53	2023-09-05 16:36:31.348	\N	2024-09-05 16:36:31.347	f
+664	E0A4-07A6-04D9-8E7A	2023-09-05 16:36:31.35	\N	2024-09-05 16:36:31.349	f
+666	6875-6B66-073B-63D0	2023-09-05 16:36:31.354	\N	2024-09-05 16:36:31.353	f
+667	F14E-078B-E16B-02B2	2023-09-05 16:36:31.356	\N	2024-09-05 16:36:31.355	f
+668	851E-261C-4828-65A5	2023-09-05 16:36:31.357	\N	2024-09-05 16:36:31.356	f
+669	7946-73CC-8DC9-7977	2023-09-05 16:36:31.36	\N	2024-09-05 16:36:31.359	f
+670	EBBC-29C1-E3DF-CDA0	2023-09-05 16:36:31.362	\N	2024-09-05 16:36:31.36	f
+671	ED33-C37F-77D2-C8EC	2023-09-05 16:36:31.364	\N	2024-09-05 16:36:31.363	f
+672	0C84-0BA5-8228-A773	2023-09-05 16:36:31.366	\N	2024-09-05 16:36:31.365	f
+673	770C-5917-606D-0375	2023-09-05 16:36:31.368	\N	2024-09-05 16:36:31.367	f
+674	0290-C8AE-1587-26AF	2023-09-05 16:36:31.37	\N	2024-09-05 16:36:31.369	f
+675	D477-3A45-067A-8ABD	2023-09-05 16:36:31.372	\N	2024-09-05 16:36:31.371	f
+676	0C3E-46F1-3F37-1814	2023-09-05 16:36:31.374	\N	2024-09-05 16:36:31.373	f
+678	3C39-2FBC-849F-BF4B	2023-09-05 16:36:31.378	\N	2024-09-05 16:36:31.377	f
+679	52BA-0141-3AE4-7C4C	2023-09-05 16:36:31.379	\N	2024-09-05 16:36:31.378	f
+680	9D35-1E32-CAA1-2537	2023-09-05 16:36:31.381	\N	2024-09-05 16:36:31.38	f
+681	3590-A8EA-79CA-F757	2023-09-05 16:36:31.383	\N	2024-09-05 16:36:31.382	f
+683	1997-27C9-B2AD-9D88	2023-09-05 16:36:31.386	\N	2024-09-05 16:36:31.385	f
+684	4EDD-BD8B-9C26-7525	2023-09-05 16:36:31.388	\N	2024-09-05 16:36:31.387	f
+685	FC31-2B47-312F-0C93	2023-09-05 16:36:31.39	\N	2024-09-05 16:36:31.389	f
+686	6A27-74AE-D89F-A6C7	2023-09-05 16:36:31.392	\N	2024-09-05 16:36:31.391	f
+687	F707-CB0C-7794-E73C	2023-09-05 16:36:31.4	\N	2024-09-05 16:36:31.398	f
+688	5D96-5A89-83A5-B784	2023-09-05 16:36:31.402	\N	2024-09-05 16:36:31.401	f
+689	F31B-16FE-4C36-BB5E	2023-09-05 16:36:31.404	\N	2024-09-05 16:36:31.403	f
+691	DB70-8CC1-010D-C1FF	2023-09-05 16:36:31.408	\N	2024-09-05 16:36:31.406	f
+692	2BB5-C080-F927-40C4	2023-09-05 16:36:31.409	\N	2024-09-05 16:36:31.408	f
+693	EAEA-D44F-0ECA-A5C0	2023-09-05 16:36:31.411	\N	2024-09-05 16:36:31.41	f
+694	9F44-3627-6905-4189	2023-09-05 16:36:31.413	\N	2024-09-05 16:36:31.412	f
+696	04F8-7EF9-9D95-C57D	2023-09-05 16:36:31.416	\N	2024-09-05 16:36:31.415	f
+697	BB25-5EF6-D518-1F1F	2023-09-05 16:36:31.418	\N	2024-09-05 16:36:31.417	f
+699	01F8-D079-D9C4-588F	2023-09-05 16:36:31.422	2023-09-08 11:56:38.738	2024-09-05 16:36:31.421	f
+700	0BE9-F900-54FF-8C37	2023-09-05 16:36:31.424	2023-09-08 22:23:33.182	2024-09-05 16:36:31.423	f
+690	B724-FFE9-425D-1D98	2023-09-05 16:36:31.406	2023-10-16 21:30:03.817	2024-09-05 16:36:31.404	f
+695	7D48-CACA-BC3A-347B	2023-09-05 16:36:31.415	2023-11-01 18:42:22.577	2024-09-05 16:36:31.414	f
+698	5A9E-0191-CB69-783D	2023-09-05 16:36:31.42	2023-11-03 10:53:36.645	2024-09-05 16:36:31.419	f
+682	B2C5-C00A-37EF-80EB	2023-09-05 16:36:31.384	2023-11-14 15:08:06.659	2024-09-05 16:36:31.383	f
+677	875F-5E04-C0A4-7ABC	2023-09-05 16:36:31.376	2023-11-30 08:56:29.53	2024-09-05 16:36:31.375	f
+614	D4CE-69A0-BEF5-7EC4	2023-09-05 16:36:31.222	2024-04-11 05:02:12.739	2024-09-05 16:36:31.221	f
+665	D381-5DAC-D552-46A2	2023-09-05 16:36:31.352	2024-04-17 10:02:14.919	2024-09-05 16:36:31.351	f
+123	AE1D-454A-6F58-2866	2023-08-16 06:38:55.551	2024-05-22 13:59:16.403	2024-08-16 06:38:55.551	f
+105	C669-1F94-137F-146B	2023-08-16 06:38:55.531	2024-06-17 08:39:04.569	2024-08-16 06:38:55.53	f
+716	767C-14C9-ADCB-E875	2024-08-01 10:52:38.499	\N	2025-08-01 10:52:38.499	f
+718	EE55-D905-6F79-7F29	2024-08-01 10:52:38.5	\N	2025-08-01 10:52:38.5	f
+719	708B-0D6F-79F2-425E	2024-08-01 10:52:38.501	\N	2025-08-01 10:52:38.5	f
+720	CB77-06DC-52C9-819E	2024-08-01 10:52:38.502	\N	2025-08-01 10:52:38.501	f
+721	649A-A82B-B9A2-9D24	2024-08-01 10:52:38.502	\N	2025-08-01 10:52:38.502	f
+722	99BA-FA0F-4334-E69B	2024-08-01 10:52:38.503	\N	2025-08-01 10:52:38.502	f
+723	489E-20FB-215A-3919	2024-08-01 10:52:38.503	\N	2025-08-01 10:52:38.503	f
+724	24C4-1E0B-8A56-832A	2024-08-01 10:52:38.504	\N	2025-08-01 10:52:38.503	f
+725	9E76-62AA-09D2-C111	2024-08-01 10:52:38.504	\N	2025-08-01 10:52:38.504	f
+726	3229-4690-D9B5-5C54	2024-08-01 10:52:38.505	\N	2025-08-01 10:52:38.504	f
+734	8EB1-8E45-2A39-4DED	2024-08-01 10:52:38.509	\N	2025-08-01 10:52:38.508	f
+735	37E7-0D8D-A859-A4B7	2024-08-01 10:52:38.509	\N	2025-08-01 10:52:38.509	f
+741	0BAB-5699-C564-FA68	2024-08-01 10:52:38.513	\N	2025-08-01 10:52:38.512	f
+742	71A7-309C-4032-57AC	2024-08-01 10:52:38.513	\N	2025-08-01 10:52:38.512	f
+743	140A-798C-8A41-9AD0	2024-08-01 10:52:38.514	\N	2025-08-01 10:52:38.513	f
+744	0412-BD9B-17C6-AD7A	2024-08-01 10:52:38.514	\N	2025-08-01 10:52:38.514	f
+745	D041-909B-8110-41AB	2024-08-01 10:52:38.515	\N	2025-08-01 10:52:38.515	f
+711	F122-1F78-8CC9-4B58	2024-08-01 10:52:38.497	2024-08-12 09:41:22.26	2025-08-01 10:52:38.496	f
+706	6CF0-DACC-4484-893E	2024-08-01 10:52:38.492	2024-08-12 09:42:22.275	2025-08-01 10:52:38.491	f
+740	6E68-734F-BF16-417D	2024-08-01 10:52:38.512	2024-08-12 09:42:33.727	2025-08-01 10:52:38.511	f
+704	E1C2-5A24-5C45-046B	2024-08-01 10:52:38.49	2024-08-12 09:42:45.445	2025-08-01 10:52:38.489	f
+705	748C-DF54-E2B7-84F4	2024-08-01 10:52:38.491	2024-08-12 09:42:54.451	2025-08-01 10:52:38.49	f
+707	C278-61D3-7999-1967	2024-08-01 10:52:38.493	2024-08-12 09:43:27.87	2025-08-01 10:52:38.492	f
+708	20F4-3D23-1BAC-67AF	2024-08-01 10:52:38.494	2024-08-12 09:43:37.114	2025-08-01 10:52:38.493	f
+709	8366-5C1C-E503-EBD6	2024-08-01 10:52:38.495	2024-08-12 09:46:37.89	2025-08-01 10:52:38.494	f
+712	02AF-7F91-8BE5-5691	2024-08-01 10:52:38.497	2024-08-12 13:53:30.467	2025-08-01 10:52:38.497	f
+746	043D-EE52-D7D3-D998	2024-08-01 10:52:38.516	\N	2025-08-01 10:52:38.515	f
+747	D34A-0B52-16A5-A4F7	2024-08-01 10:52:38.516	\N	2025-08-01 10:52:38.516	f
+703	506A-F14C-CC54-A488	2024-08-01 10:52:38.401	2024-08-13 07:21:36.734	2025-08-01 10:52:38.4	f
+738	D786-FADF-5F05-CA36	2024-08-01 10:52:38.511	2024-08-15 09:14:12.582	2025-08-01 10:52:38.51	f
+736	B9B4-8BEC-ECF8-A9EE	2024-08-01 10:52:38.51	2024-08-19 07:40:07.067	2025-08-01 10:52:38.509	f
+730	7C09-F885-134F-69FC	2024-08-01 10:52:38.507	2024-10-24 09:00:23.526	2025-08-01 10:52:38.506	f
+733	4AFB-33B1-3F83-C27E	2024-08-01 10:52:38.508	2024-08-20 06:06:26.336	2025-08-01 10:52:38.508	f
+731	3520-7820-D84F-4A66	2024-08-01 10:52:38.507	2024-08-22 08:52:38.964	2025-08-01 10:52:38.507	f
+737	D339-B39E-3C99-C4B8	2024-08-01 10:52:38.51	2024-08-30 06:12:17.334	2025-08-01 10:52:38.51	f
+729	7845-8DC8-B2AD-7A77	2024-08-01 10:52:38.506	2024-08-30 07:27:07.213	2025-08-01 10:52:38.506	f
+739	10B1-16D3-C687-0A72	2024-08-01 10:52:38.512	2024-09-05 06:03:41.027	2025-08-01 10:52:38.511	f
+727	9403-E549-9807-FFC3	2024-08-01 10:52:38.505	2024-09-05 09:08:15.835	2025-08-01 10:52:38.505	f
+732	905C-873B-3D8E-9A7F	2024-08-01 10:52:38.508	2024-10-22 12:18:51.344	2025-08-01 10:52:38.507	f
+717	701E-C19D-F823-BCF1	2024-08-01 10:52:38.5	2025-02-27 08:40:00.133	2025-08-01 10:52:38.499	f
+748	0C71-50BD-2A08-FCC5	2024-08-01 10:52:38.517	\N	2025-08-01 10:52:38.516	f
+749	05EC-9B2F-024B-DC43	2024-08-01 10:52:38.517	\N	2025-08-01 10:52:38.517	f
+750	5FD8-2680-458B-931E	2024-08-01 10:52:38.518	\N	2025-08-01 10:52:38.517	f
+751	4AA7-1498-D6F8-246F	2024-08-01 10:52:38.518	\N	2025-08-01 10:52:38.518	f
+752	0F07-98AD-E4A6-BBEF	2024-08-01 10:52:38.519	\N	2025-08-01 10:52:38.518	f
+753	6D03-73D1-1787-5D17	2024-08-01 10:52:38.519	\N	2025-08-01 10:52:38.519	f
+754	BE0F-12A1-5C22-8757	2024-08-01 10:52:38.52	\N	2025-08-01 10:52:38.519	f
+755	1E01-286F-3DEF-5653	2024-08-01 10:52:38.52	\N	2025-08-01 10:52:38.52	f
+756	CC98-826A-802B-7EAE	2024-08-01 10:52:38.521	\N	2025-08-01 10:52:38.52	f
+757	3DB7-2783-7E3E-C7DD	2024-08-01 10:52:38.521	\N	2025-08-01 10:52:38.521	f
+758	B64C-2F3B-6FDF-9C63	2024-08-01 10:52:38.522	\N	2025-08-01 10:52:38.521	f
+759	5807-DA80-4900-502F	2024-08-01 10:52:38.522	\N	2025-08-01 10:52:38.522	f
+760	303F-989C-E0AE-C5BF	2024-08-01 10:52:38.523	\N	2025-08-01 10:52:38.522	f
+761	9561-6803-5D11-539C	2024-08-01 10:52:38.523	\N	2025-08-01 10:52:38.523	f
+762	E4BB-98F5-B8C1-F9D8	2024-08-01 10:52:38.524	\N	2025-08-01 10:52:38.523	f
+763	FEB1-A799-1412-B18E	2024-08-01 10:52:38.524	\N	2025-08-01 10:52:38.524	f
+764	F1AB-E0B6-553D-1F7E	2024-08-01 10:52:38.525	\N	2025-08-01 10:52:38.524	f
+765	CFC4-0921-D2DB-70FA	2024-08-01 10:52:38.525	\N	2025-08-01 10:52:38.525	f
+766	CE5E-5FAF-BF76-CADB	2024-08-01 10:52:38.526	\N	2025-08-01 10:52:38.526	f
+788	FF2F-A61A-3035-093F	2024-08-01 10:52:38.544	\N	2025-08-01 10:52:38.544	f
+820	CBEF-1D16-C193-DAB3	2024-08-01 10:52:38.563	\N	2025-08-01 10:52:38.562	f
+821	66FA-4D38-6F83-8F03	2024-08-01 10:52:38.563	\N	2025-08-01 10:52:38.563	f
+825	9413-6D23-77C9-AC26	2024-08-01 10:52:38.565	\N	2025-08-01 10:52:38.565	f
+835	2DBF-BD6E-2152-D051	2024-08-01 10:52:38.574	\N	2025-08-01 10:52:38.574	f
+837	B3B9-B45B-C7FB-ED1B	2024-08-01 10:52:38.576	\N	2025-08-01 10:52:38.576	f
+839	963E-F114-2A8B-AE5A	2024-08-01 10:52:38.578	\N	2025-08-01 10:52:38.577	f
+840	3AFA-E4DD-13C3-2224	2024-08-01 10:52:38.578	\N	2025-08-01 10:52:38.578	f
+834	8ED5-0847-62DD-FF3D	2024-08-01 10:52:38.574	2024-08-06 09:19:49.973	2025-08-01 10:52:38.573	f
+827	EFAD-7AB4-4951-D1F0	2024-08-01 10:52:38.567	2024-08-06 09:23:39.072	2025-08-01 10:52:38.566	f
+832	3F2B-7878-1046-00A8	2024-08-01 10:52:38.569	2024-08-06 09:23:48.862	2025-08-01 10:52:38.569	f
+830	F780-E661-1CE2-26B9	2024-08-01 10:52:38.568	2024-08-06 09:24:20.107	2025-08-01 10:52:38.568	f
+829	8ADC-1B11-9AE8-BAF0	2024-08-01 10:52:38.568	2024-08-06 09:25:01.486	2025-08-01 10:52:38.567	f
+828	BB87-4C64-0E71-63C3	2024-08-01 10:52:38.567	2024-08-06 10:12:12.125	2025-08-01 10:52:38.567	f
+838	4242-D25D-8103-64FD	2024-08-01 10:52:38.577	2024-08-07 06:49:38.829	2025-08-01 10:52:38.577	f
+831	A38A-3C22-789E-88F6	2024-08-01 10:52:38.569	2024-08-06 13:46:03.042	2025-08-01 10:52:38.568	f
+823	72D2-F4C1-0879-BD97	2024-08-01 10:52:38.564	2024-08-07 07:38:34.663	2025-08-01 10:52:38.564	f
+822	F626-B50D-0186-6420	2024-08-01 10:52:38.564	2024-08-07 07:41:02.353	2025-08-01 10:52:38.563	f
+826	D4A6-3078-6FC8-0C43	2024-08-01 10:52:38.566	2024-08-07 07:44:40.43	2025-08-01 10:52:38.565	f
+814	7E1F-FAB7-C453-F22B	2024-08-01 10:52:38.559	2024-08-07 11:56:14.295	2025-08-01 10:52:38.559	f
+815	AB8A-2FE6-DBEF-20F5	2024-08-01 10:52:38.56	2024-08-07 11:56:20.498	2025-08-01 10:52:38.559	f
+813	70D2-6D33-7EFD-6B92	2024-08-01 10:52:38.559	2024-08-07 11:56:26.976	2025-08-01 10:52:38.558	f
+809	1C87-E05C-C6F3-EF96	2024-08-01 10:52:38.557	2024-08-07 11:56:32.814	2025-08-01 10:52:38.556	f
+808	32EE-27B6-642B-9FE6	2024-08-01 10:52:38.556	2024-08-07 11:56:44.381	2025-08-01 10:52:38.556	f
+811	9532-BA9B-16A3-AB09	2024-08-01 10:52:38.558	2024-08-07 11:56:44.981	2025-08-01 10:52:38.557	f
+804	7310-78A8-CC3A-2514	2024-08-01 10:52:38.554	2024-08-07 11:56:59.705	2025-08-01 10:52:38.553	f
+807	76D9-8D0A-2B2B-090F	2024-08-01 10:52:38.556	2024-08-07 11:57:03.368	2025-08-01 10:52:38.555	f
+772	229D-74E8-2F9C-E900	2024-08-01 10:52:38.53	2024-08-09 09:29:24.644	2025-08-01 10:52:38.53	f
+805	1E83-010D-EC96-58B0	2024-08-01 10:52:38.554	2024-08-07 11:57:42.298	2025-08-01 10:52:38.553	f
+796	D540-806E-7439-9C9A	2024-08-01 10:52:38.549	2024-08-07 11:59:05.292	2025-08-01 10:52:38.548	f
+802	610A-1A14-ADD4-6EB6	2024-08-01 10:52:38.552	2024-08-07 11:59:09.196	2025-08-01 10:52:38.552	f
+803	5BC2-5A7D-4567-42D6	2024-08-01 10:52:38.553	2024-08-07 11:59:12.91	2025-08-01 10:52:38.552	f
+801	E235-D135-B38F-6418	2024-08-01 10:52:38.552	2024-08-07 11:59:26.858	2025-08-01 10:52:38.551	f
+817	EAC8-C252-FD8B-C2A9	2024-08-01 10:52:38.561	2024-08-08 08:16:04.688	2025-08-01 10:52:38.56	f
+799	B999-D5F5-C051-060F	2024-08-01 10:52:38.551	2024-08-07 12:00:55.239	2025-08-01 10:52:38.55	f
+797	4710-7134-3A8F-BC47	2024-08-01 10:52:38.55	2024-08-07 12:01:32.166	2025-08-01 10:52:38.549	f
+800	3232-434A-4C87-4733	2024-08-01 10:52:38.551	2024-08-07 17:14:37.416	2025-08-01 10:52:38.551	f
+819	473B-1FF9-BC5F-272C	2024-08-01 10:52:38.562	2024-08-08 08:16:20.242	2025-08-01 10:52:38.562	f
+818	1B11-87D8-2CB1-6BC9	2024-08-01 10:52:38.562	2024-08-08 08:17:14.117	2025-08-01 10:52:38.561	f
+770	0E24-9B58-8B04-5CC8	2024-08-01 10:52:38.529	2024-08-12 07:29:15.068	2025-08-01 10:52:38.529	f
+789	78F1-8B93-6EB4-7133	2024-08-01 10:52:38.545	2024-08-08 10:57:03.989	2025-08-01 10:52:38.544	f
+790	C48F-CE49-591F-7375	2024-08-01 10:52:38.546	2024-08-08 10:58:07.623	2025-08-01 10:52:38.545	f
+777	0D94-14E0-FC99-CF8A	2024-08-01 10:52:38.534	2024-08-12 09:39:42.501	2025-08-01 10:52:38.534	f
+780	3180-4E96-6B75-1131	2024-08-01 10:52:38.536	2024-08-12 09:40:20.112	2025-08-01 10:52:38.536	f
+778	D248-F573-E91E-D849	2024-08-01 10:52:38.535	2024-08-12 09:40:24.394	2025-08-01 10:52:38.534	f
+781	971A-2976-A99E-709D	2024-08-01 10:52:38.54	2024-08-12 09:40:40.93	2025-08-01 10:52:38.539	f
+785	80FF-B8B8-CA07-D22C	2024-08-01 10:52:38.543	2024-08-12 09:41:01.444	2025-08-01 10:52:38.542	f
+773	BF5D-5235-2278-B183	2024-08-01 10:52:38.531	2024-08-12 09:41:06.72	2025-08-01 10:52:38.53	f
+784	AE72-E38A-0D27-34EF	2024-08-01 10:52:38.542	2024-08-12 09:41:08.593	2025-08-01 10:52:38.542	f
+710	D582-92DE-2724-3015	2024-08-01 10:52:38.496	2024-08-12 09:41:20.427	2025-08-01 10:52:38.495	f
+771	735C-2A28-FA43-8F0E	2024-08-01 10:52:38.53	2024-08-12 09:41:31.703	2025-08-01 10:52:38.529	f
+783	2AED-E26F-05AB-59DE	2024-08-01 10:52:38.542	2024-08-12 09:41:58.994	2025-08-01 10:52:38.541	f
+767	CF75-3688-4FDF-73A0	2024-08-01 10:52:38.527	2024-08-12 09:42:02.537	2025-08-01 10:52:38.527	f
+714	D170-46D1-E028-38D1	2024-08-01 10:52:38.498	2024-08-12 09:42:20.197	2025-08-01 10:52:38.498	f
+786	084F-2C08-FBF0-9249	2024-08-01 10:52:38.543	2024-08-12 09:42:26.827	2025-08-01 10:52:38.543	f
+769	8A57-8B17-809A-A01A	2024-08-01 10:52:38.528	2024-08-12 09:43:50.115	2025-08-01 10:52:38.528	f
+782	B91E-764B-ED5B-1A5A	2024-08-01 10:52:38.541	2024-08-12 09:45:12.937	2025-08-01 10:52:38.541	f
+787	941C-C1F4-C891-BDAB	2024-08-01 10:52:38.544	2024-08-12 09:45:26.492	2025-08-01 10:52:38.543	f
+824	83DF-4415-3C0B-C0B9	2024-08-01 10:52:38.565	2024-12-10 11:13:36.199	2025-08-01 10:52:38.564	f
+816	2A06-E60C-82D0-13ED	2024-08-01 10:52:38.561	2024-08-13 08:48:51.586	2025-08-01 10:52:38.56	f
+793	C72E-9DC3-6D9D-EA30	2024-08-01 10:52:38.547	2024-08-13 09:28:42.678	2025-08-01 10:52:38.547	f
+779	17A7-B2FF-8B40-5156	2024-08-01 10:52:38.536	2024-08-19 07:57:44.335	2025-08-01 10:52:38.535	f
+792	FD75-40E5-AE05-5788	2024-08-01 10:52:38.547	2024-08-14 07:39:22.008	2025-08-01 10:52:38.546	f
+713	04EC-A709-C6FF-8981	2024-08-01 10:52:38.498	2024-08-14 11:23:49.957	2025-08-01 10:52:38.497	f
+812	4493-2959-BC42-D4BD	2024-08-01 10:52:38.558	2024-08-14 11:36:11.483	2025-08-01 10:52:38.558	f
+795	C019-7ABD-95BB-D2A5	2024-08-01 10:52:38.548	2024-08-14 18:39:22.802	2025-08-01 10:52:38.548	f
+794	FDBE-DC11-0ABF-A09F	2024-08-01 10:52:38.548	2024-08-15 06:44:13.49	2025-08-01 10:52:38.547	f
+775	7F7F-1D2F-0579-5DD3	2024-08-01 10:52:38.532	2024-08-17 18:22:18.651	2025-08-01 10:52:38.532	f
+791	EFA1-9DCB-8A5B-5ECA	2024-08-01 10:52:38.546	2024-08-19 07:39:10.245	2025-08-01 10:52:38.546	f
+798	209B-319A-9AC6-3D69	2024-08-01 10:52:38.55	2024-08-20 05:11:25.782	2025-08-01 10:52:38.55	f
+715	2E6F-F97F-E801-B33C	2024-08-01 10:52:38.499	2024-08-20 08:25:30.654	2025-08-01 10:52:38.498	f
+836	51E2-C459-ED0C-0920	2024-08-01 10:52:38.576	2024-08-29 07:48:30.793	2025-08-01 10:52:38.575	f
+776	CEE1-9D3C-14F4-1D1D	2024-08-01 10:52:38.533	2024-09-02 10:40:34.852	2025-08-01 10:52:38.532	f
+806	AA97-C569-08E1-85DD	2024-08-01 10:52:38.555	2024-09-04 16:25:01.194	2025-08-01 10:52:38.555	f
+774	6FF5-0914-E769-797D	2024-08-01 10:52:38.532	2024-09-21 09:55:36.765	2025-08-01 10:52:38.531	f
+768	E917-E653-C347-B7E4	2024-08-01 10:52:38.528	2024-10-28 09:11:31.519	2025-08-01 10:52:38.527	f
+810	5E26-343D-AF39-FC21	2024-08-01 10:52:38.557	2025-01-05 12:52:12.294	2025-08-01 10:52:38.557	f
+833	46DA-F7A5-3D9E-796F	2024-08-01 10:52:38.57	2025-03-07 22:01:58.024	2025-08-01 10:52:38.569	f
+728	1F20-F15E-4538-7762	2024-08-01 10:52:38.506	2024-09-02 09:59:55.927	2025-08-01 10:52:38.505	f
+512	964F-92C7-A51B-96F1	2023-08-28 17:43:16.225	2024-10-27 20:07:27.102	2024-08-28 17:43:16.224	f
+545	B89E-04D5-3D8E-A42B	2023-08-28 17:43:16.272	2024-11-03 22:30:42.819	2024-08-28 17:43:16.271	f
+702	A490-07BB-3584-0FD9	2024-08-01 10:52:38.352	2025-02-05 18:44:44.006	2025-08-01 10:52:38.348	f
+311	25E7-6FE0-5A79-A689	2023-08-28 17:22:49.532	2025-05-20 19:12:19.176	2024-08-28 17:22:49.531	f
+\.
+
+
+--
+-- Data for Name: PermissionOnRole; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."PermissionOnRole" (permission, "roleId", scope) FROM stdin;
+\.
+
+
+--
+-- Data for Name: PermissionOnUser; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."PermissionOnUser" (permission, "userId", scope) FROM stdin;
+\.
+
+
+--
+-- Data for Name: Role; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."Role" (id, name, "defaultScope") FROM stdin;
+\.
+
+
+--
+-- Data for Name: School; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."School" (id, name, "createdAt", "updatedAt") FROM stdin;
+1	IGS Lilienthal	2024-03-09 14:37:36.11	2024-03-09 14:37:36.11
+\.
+
+
+--
+-- Data for Name: Session; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."Session" ("userId", expires, token) FROM stdin;
+69	2024-04-18 19:11:53.829	ba37beba-9fbb-4309-829e-8767960bf583
+69	2024-04-18 19:59:18.528	2245eb6e-b7e1-4234-b27a-f17175cec184
+69	2024-04-18 20:03:27.712	03b1a77f-b2aa-4eac-a6c5-c915032a7523
+69	2024-04-18 20:45:22.492	94ba5586-b6c2-42ae-927a-9a337c161421
+69	2024-04-19 14:01:06.368	30bf12b8-150a-4107-a0b0-3badb2b30761
+69	2024-04-24 14:39:23.617	f3f66130-a6ae-4fcd-88a3-d2cbfc39ceaa
+69	2024-05-03 12:06:14.924	bdcd0bab-faf0-4a06-9c46-8731af6c871f
+69	2024-05-07 09:33:05.929	821b62ee-63e3-48ab-812a-a72a91ac5e6e
+69	2024-05-07 13:36:23.651	53bb22cd-eac7-4bfe-80fb-695f71d2a8c5
+69	2024-09-04 13:28:26.788	00f07141-b9e1-4e28-8f49-d32843c9ebed
+69	2024-09-04 13:28:29.155	bf72b9f8-5be1-4506-b076-005d6758d719
+69	2024-10-10 12:54:37.406	cc60e743-01b4-4a23-9d8f-e0f00e4d7e43
+\.
+
+
+--
+-- Data for Name: Substitution; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."Substitution" (id, date, "lessonStart", "lessonEnd", "createdAt", "updatedAt", "courseId", room, type, "substituteId") FROM stdin;
+\.
+
+
+--
+-- Data for Name: User; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."User" (id, email, name, title, abbrv, "createdAt", "updatedAt", "emailVerified", image, "passwordHash", "isSuperUser", role) FROM stdin;
+1	\N	Grütjen	Herr	GRJ	2023-05-17 14:21:59.22	2023-05-17 14:21:59.22	\N	\N	\N	f	TEACHER
+6	\N	Heiber-Rehm	Frau	HEI	2023-05-17 14:21:59.255	2023-05-17 14:21:59.255	\N	\N	\N	f	TEACHER
+12	\N	Krause	Herr	KRD	2023-05-17 14:21:59.313	2023-05-17 14:21:59.313	\N	\N	\N	f	TEACHER
+13	\N	Schröder	Herr	SRÖ	2023-05-17 14:21:59.317	2023-05-17 14:21:59.317	\N	\N	\N	f	TEACHER
+16	\N	LÜT	\N	LÜT	2023-05-17 14:21:59.499	2023-05-17 14:21:59.499	\N	\N	\N	f	TEACHER
+28	\N	Erichsen	Herr	ERI	2023-05-17 14:21:59.753	2023-05-17 14:21:59.753	\N	\N	\N	f	TEACHER
+29	\N	TEM	\N	TEM	2023-05-17 14:21:59.758	2023-05-17 14:21:59.758	\N	\N	\N	f	TEACHER
+34	\N	THS	\N	THS	2023-05-17 14:21:59.913	2023-05-17 14:21:59.913	\N	\N	\N	f	TEACHER
+35	\N	HIB	\N	HIB	2023-05-17 14:21:59.932	2023-05-17 14:21:59.932	\N	\N	\N	f	TEACHER
+36	\N	BAK	\N	BAK	2023-05-17 14:21:59.936	2023-05-17 14:21:59.936	\N	\N	\N	f	TEACHER
+39	\N	REK	\N	REK	2023-05-17 14:22:00.053	2023-05-17 14:22:00.053	\N	\N	\N	f	TEACHER
+41	\N	Fidan	Frau	FID	2023-05-17 14:22:00.063	2023-05-17 14:22:00.063	\N	\N	\N	f	TEACHER
+44	\N	ECK	\N	ECK	2023-05-17 14:22:00.234	2023-05-17 14:22:00.234	\N	\N	\N	f	TEACHER
+49	\N	KÖG	\N	KÖG	2023-05-17 14:22:00.474	2023-05-17 14:22:00.474	\N	\N	\N	f	TEACHER
+51	\N	FRK	\N	FRK	2023-05-17 14:22:00.603	2023-05-17 14:22:00.603	\N	\N	\N	f	TEACHER
+59	\N	SRR	\N	SRR	2023-08-16 06:38:56.097	2023-08-16 06:38:56.097	\N	\N	\N	f	TEACHER
+64	\N	COK	\N	COK	2023-08-16 06:38:56.444	2023-08-16 06:38:56.444	\N	\N	\N	f	TEACHER
+65	\N	O	\N	O	2023-08-16 06:38:56.534	2023-08-16 06:38:56.534	\N	\N	\N	f	TEACHER
+66	\N	HAD	\N	HAD	2023-08-16 06:38:56.649	2023-08-16 06:38:56.649	\N	\N	\N	f	TEACHER
+67	\N	NIL	\N	NIL	2023-08-16 06:38:56.665	2023-08-16 06:38:56.665	\N	\N	\N	f	TEACHER
+68	\N	SCW	\N	SCW	2023-08-16 06:38:56.668	2023-08-16 06:38:56.668	\N	\N	\N	f	TEACHER
+69	hauke@schnau.dev	Hauke Schnau	\N	\N	2024-03-16 16:36:20.106	2024-03-17 15:15:23.429	\N	\N	$2b$10$CiP8f/3qHeBK3UaXL1vWMOifBL0S40pLL97j7vfGwQ3/yX7As1W/e	t	TEACHER
+60	jennifer.aufderheide@igslilienthal.de	Jennifer Aufderheide	Frau	AUF	2023-08-16 06:38:56.117	2024-04-03 22:01:06.539	\N	\N	\N	f	TEACHER
+50	irma.bouwer@igslilienthal.de	Irma Bouwer	Frau	BOU	2023-05-17 14:22:00.569	2024-04-03 22:01:08.943	\N	\N	\N	f	TEACHER
+70	\N	CKA	\N	CKA	2024-04-03 18:02:03.209	2024-04-03 18:02:03.209	\N	\N	\N	f	TEACHER
+32	alexander.kellermann@igslilienthal.de	Alexander Kellermann	Herr	KEL	2023-05-17 14:21:59.854	2024-04-03 22:02:11.907	\N	\N	\N	f	TEACHER
+2	michelle.kaempf@igslilienthal.de	Michelle Kämpf	Frau	KÄM	2023-05-17 14:21:59.232	2024-04-03 22:00:06.957	\N	\N	\N	f	TEACHER
+23	julia.elena.thiel@igslilienthal.de	Julia Elena Thiel	Frau	THI	2023-05-17 14:21:59.604	2024-04-03 22:02:12.012	\N	\N	\N	f	TEACHER
+53	daus.kohlhas@igslilienthal.de	Dorothee Daus	Frau	DAU	2023-05-17 14:22:00.645	2024-04-04 11:59:53.546	\N	\N	\N	f	TEACHER
+5	anne.olbertz@igslilienthal.de	Anne Olbertz	Frau	OLB	2023-05-17 14:21:59.25	2024-04-03 22:00:09.794	\N	\N	\N	f	TEACHER
+7	linda.timm@igslilienthal.de	Linda Timm	Frau	TIM	2023-05-17 14:21:59.261	2024-04-03 22:00:11.433	\N	\N	\N	f	TEACHER
+58	roman.jenderny@igslilienthal.de	Roman Jenderny	Herr	JEN	2023-08-16 06:38:55.755	2024-04-03 22:02:12.001	\N	\N	\N	f	TEACHER
+9	eva.hilken@igslilienthal.de	Eva Hilken	Frau	HIL	2023-05-17 14:21:59.286	2024-04-03 22:00:13.001	\N	\N	\N	f	TEACHER
+52	leif.walczak@igslilienthal.de	Leif Walczak	Herr	WAL	2023-05-17 14:22:00.623	2024-04-03 22:02:11.947	\N	\N	\N	f	TEACHER
+4	bernd.mueller@igslilienthal.de	Bernd Müller	Herr	MUE	2023-05-17 14:21:59.244	2024-04-04 11:59:53.546	\N	\N	\N	f	TEACHER
+14	thomas.buse@igslilienthal.de	Thomas Buse	Herr	BUS	2023-05-17 14:21:59.322	2024-04-03 22:00:16.842	\N	\N	\N	f	TEACHER
+15	s.drachenberg@igslilienthal.de	Sebastian Drachenberg	Herr	DRA	2023-05-17 14:21:59.495	2024-04-03 22:00:17.613	\N	\N	\N	f	TEACHER
+19	natalia.huesing@igslilienthal.de	Natalia Hüsing	Frau	HUE	2023-05-17 14:21:59.513	2024-04-03 22:00:20.139	\N	\N	\N	f	TEACHER
+31	nicolas.hussain@igslilienthal.de	Nicolas Hussain	Herr	HUS	2023-05-17 14:21:59.847	2024-04-03 22:02:11.946	\N	\N	\N	f	TEACHER
+21	mario.segelhorst@igslilienthal.de	Mario Segelhorst	Herr	SEG	2023-05-17 14:21:59.523	2024-04-03 22:00:21.684	\N	\N	\N	f	TEACHER
+22	katrin.bembenek@igslilienthal.de	Katrin Bembenek	Frau	BEM	2023-05-17 14:21:59.598	2024-04-03 22:00:23.757	\N	\N	\N	f	TEACHER
+33	susanne.reese@igslilienthal.de	Susanne Reese	Frau	REE	2023-05-17 14:21:59.859	2024-04-03 22:02:12.02	\N	\N	\N	f	TEACHER
+10	melinda.dantz@igslilienthal.de	Melinda Dantz	Frau	DAN	2023-05-17 14:21:59.291	2024-04-03 22:02:11.943	\N	\N	\N	f	TEACHER
+56	hagen.mann@igslilienthal.de	Hagen Mann	Herr	MAN	2023-05-17 14:22:00.814	2024-04-03 22:02:12.008	\N	\N	\N	f	TEACHER
+46	david.hagel@igslilienthal.de	David Hagel	Herr	HAG	2023-05-17 14:22:00.253	2024-04-03 22:02:11.908	\N	\N	\N	f	TEACHER
+61	ivonne.rasche@igslilienthal.de	Ivonne Rasche	Frau	RAS	2023-08-16 06:38:56.134	2024-04-03 22:02:11.908	\N	\N	\N	f	TEACHER
+62	paurnima.buente@igslilienthal.de	Paurnima Bünte	Frau	BÜN	2023-08-16 06:38:56.292	2024-04-03 22:02:11.954	\N	\N	\N	f	TEACHER
+25	alexander.klaehr@igslilienthal.de	Alexander Klähr	Herr	KLÄ	2023-05-17 14:21:59.724	2024-04-03 22:02:11.907	\N	\N	\N	f	TEACHER
+11	tobias.rump@igslilienthal.de	Tobias Rump	Herr	RUM	2023-05-17 14:21:59.307	2024-04-03 22:02:12.027	\N	\N	\N	f	TEACHER
+40	lukas.spangenberg@igslilienthal.de	Lukas Spangenberg	Herr	SPA	2023-05-17 14:22:00.057	2024-04-03 22:02:11.93	\N	\N	\N	f	TEACHER
+20	dominik.rudolph@igslilienthal.de	Dominik Rudolph	Herr	RUD	2023-05-17 14:21:59.518	2024-04-03 22:02:11.973	\N	\N	\N	f	TEACHER
+42	sang-ah.lee@igslilienthal.de	Sang-Ah Lee	\N	LEE	2023-05-17 14:22:00.128	2024-04-03 22:00:38.793	\N	\N	\N	f	TEACHER
+54	fiona.karaman@igslilienthal.de	Fiona Karaman	Frau	KAR	2023-05-17 14:22:00.726	2024-04-03 22:02:12.007	\N	\N	\N	f	TEACHER
+3	katrin.wenzel@igslilienthal.de	Katrin Wenzel	Frau	WEN	2023-05-17 14:21:59.238	2024-04-03 22:02:11.916	\N	\N	\N	f	TEACHER
+47	derek.meissner@igslilienthal.de	Derek Meißner	Herr	MEI	2023-05-17 14:22:00.261	2024-04-09 18:02:16.58	\N	\N	\N	f	TEACHER
+18	david.niemann@igslilienthal.de	David Niemann	Herr	NIM	2023-05-17 14:21:59.509	2024-04-09 18:04:57.386	\N	\N	\N	f	TEACHER
+55	corinna.hoeppe@igslilienthal.de	Corinna Höppe	Frau	HÖP	2023-05-17 14:22:00.733	2024-04-03 22:00:46.853	\N	\N	\N	f	TEACHER
+8	lisa.winkelmann@igslilienthal.de	Lisa Winkelmann	Frau	WIN	2023-05-17 14:21:59.266	2024-04-03 22:02:11.984	\N	\N	\N	f	TEACHER
+63	yingrui.bi@igslilienthal.de	Yingrui BI	\N	BIY	2023-08-16 06:38:56.398	2024-04-03 22:00:53.337	\N	\N	\N	f	TEACHER
+37	frederik.tamcke@igslilienthal.de	Frederik Tamcke	Herr	TAM	2023-05-17 14:21:59.943	2024-04-03 22:00:59.767	\N	\N	\N	f	TEACHER
+24	michael.gesen@igslilienthal.de	Michael Gesen	Herr	GES	2023-05-17 14:21:59.608	2024-04-03 22:01:00.961	\N	\N	\N	f	TEACHER
+57	julian.below@igslilienthal.de	Julian Below	Herr	BEL	2023-05-17 14:22:00.946	2024-04-03 22:01:02.013	\N	\N	\N	f	TEACHER
+48	eren.dueduekcue@igslilienthal.de	Eren Düdükcü	Herr	DÜD	2023-05-17 14:22:00.45	2024-04-03 22:01:03.193	\N	\N	\N	f	TEACHER
+43	simon.engelbertz@igslilienthal.de	Simon Engelbertz	Herr	ENG	2023-05-17 14:22:00.173	2024-04-03 22:01:03.882	\N	\N	\N	f	TEACHER
+17	viktor.turkaljuk@igslilienthal.de	Viktor Turkaljuk	Herr	TUR	2023-05-17 14:21:59.504	2024-04-03 22:01:04.83	\N	\N	\N	f	TEACHER
+45	thomas.seifert@igslilienthal.de	Thomas Seifert	Herr	SEI	2023-05-17 14:22:00.249	2024-04-03 22:01:05.581	\N	\N	\N	f	TEACHER
+30	jasper.thoms@igslilienthal.de	Jasper Thoms	Herr	THO	2023-05-17 14:21:59.778	2024-04-03 22:02:11.976	\N	\N	\N	f	TEACHER
+38	markus.maschke@igslilienthal.de	Markus Maschke	Herr	MAS	2023-05-17 14:21:59.96	2024-04-03 22:02:11.972	\N	\N	\N	f	TEACHER
+27	carmen.perez@igslilienthal.de	Carmen Perez	Frau	PER	2023-05-17 14:21:59.739	2024-04-03 22:02:11.908	\N	\N	\N	f	TEACHER
+26	bernd.meyer@igslilienthal.de	Bernd Meyer	Herr	MEY	2023-05-17 14:21:59.734	2024-04-03 22:02:35.839	\N	\N	\N	f	TEACHER
+71	\N	MAT	\N	MAT	2024-08-05 14:02:17.902	2024-08-05 14:02:17.902	\N	\N	\N	f	TEACHER
+72	\N	FED	\N	FED	2024-08-05 14:02:18.322	2024-08-05 14:02:18.322	\N	\N	\N	f	TEACHER
+73	marcus.claus@igslilienthal.de	Marcus Claus	\N	CLA	2024-08-05 14:02:21.394	2024-08-05 14:02:21.394	\N	\N	\N	f	TEACHER
+74	\N	KRE	\N	KRE	2024-08-05 14:02:36.727	2024-08-05 14:02:36.727	\N	\N	\N	f	TEACHER
+75	tom.lichtwer@igslilienthal.de	Tom Lichtwer	\N	LIC	2024-08-05 14:02:36.914	2024-08-05 14:02:36.914	\N	\N	\N	f	TEACHER
+76	wiebke.koestermann@igslilienthal.de	Wiebke Köstermann	\N	KÖS	2024-08-05 14:02:37.084	2024-08-05 14:02:37.084	\N	\N	\N	f	TEACHER
+77	\N	SCL	\N	SCL	2024-08-05 14:02:37.282	2024-08-05 14:02:37.282	\N	\N	\N	f	TEACHER
+78	\N	BOL	\N	BOL	2024-08-05 14:02:37.712	2024-08-05 14:02:37.712	\N	\N	\N	f	TEACHER
+79	\N	KLM	\N	KLM	2024-08-05 14:04:38.364	2024-08-05 14:04:38.364	\N	\N	\N	f	TEACHER
+80	\N	LRZ	\N	LRZ	2024-08-05 14:11:53.162	2024-08-05 14:11:53.162	\N	\N	\N	f	TEACHER
+81	\N	MIT	\N	MIT	2024-08-18 13:27:09.625	2024-08-18 13:27:09.625	\N	\N	\N	f	TEACHER
+82	\N	KLZ	\N	KLZ	2024-08-18 13:54:28.428	2024-08-18 13:54:28.428	\N	\N	\N	f	TEACHER
+83	\N	SAF	\N	SAF	2024-08-22 22:00:10.066	2024-08-22 22:00:10.066	\N	\N	\N	f	TEACHER
+84	domenik.buesing@igslilienthal.de	Domenik Büsing	\N	BÜS	2024-11-25 10:43:06.556	2024-11-25 10:43:06.556	\N	\N	\N	f	TEACHER
+85	katharina.streil@igslilienthal.de	Katharina Streil	\N	STR	2025-03-03 17:32:08.112	2025-03-03 17:32:08.112	\N	\N	\N	f	TEACHER
+86	\N	SNE	\N	SNE	2025-04-23 05:12:03.814	2025-04-23 05:12:03.814	\N	\N	\N	f	TEACHER
+87	michelle.kahrs@igslilienthal.de	Michelle Kahrs	\N	KAH	2025-05-06 16:59:05.989	2025-05-06 16:59:05.989	\N	\N	\N	f	TEACHER
+88	\N	HAN	\N	HAN	2025-05-12 05:20:05.295	2025-05-12 05:20:05.295	\N	\N	\N	f	TEACHER
+89	\N	Richard Ott	\N	OTT	2025-05-16 11:25:20.984	2025-05-16 11:25:20.983	\N	\N	\N	f	TEACHER
+90	\N	Kirsten Frank	\N	FRA	2025-05-16 11:25:21.019	2025-05-16 11:25:21.018	\N	\N	\N	f	TEACHER
+91	\N	Katrin Lorenz	\N	LOR	2025-05-16 11:25:21.783	2025-05-16 11:25:21.782	\N	\N	\N	f	TEACHER
+92	\N	 Gunschera	\N	GUN	2025-08-13 21:35:48.146	2025-08-13 21:35:48.145	\N	\N	\N	f	TEACHER
+93	\N	 Lukas Bonk	\N	BON	2025-08-13 21:35:48.228	2025-08-13 21:35:48.227	\N	\N	\N	f	TEACHER
+94	\N	 Niclas Goretzky	\N	GOR	2025-08-13 21:35:48.428	2025-08-13 21:35:48.428	\N	\N	\N	f	TEACHER
+95	\N	 Kolodziej	\N	KOL	2025-08-13 21:35:48.453	2025-08-13 21:35:48.452	\N	\N	\N	f	TEACHER
+96	\N	Arvid Heubner	\N	HEU	2025-08-13 21:35:48.685	2025-08-13 21:35:48.684	\N	\N	\N	f	TEACHER
+\.
+
+
+--
+-- Data for Name: Year; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."Year" (id, "startYear", "graduationYear", name, "createdAt", "updatedAt", "schoolId") FROM stdin;
+1	2015	2024	Clara	2023-05-17 14:21:59.202	2023-08-16 08:35:12.096	1
+2	2016	2025	Hans	2023-05-17 14:21:59.902	2023-08-16 08:35:12.096	1
+4	2017	2026	Lisel	2023-08-16 06:38:56.431	2023-08-16 06:38:56.431	1
+3	2014	2023	Otto	2023-05-17 14:22:00.436	2024-04-01 14:33:17.345	1
+5	2018	2027	Udo	2024-08-05 13:11:21.372	2024-08-05 13:11:21.372	1
+6	2019	2028	Hermine	2025-08-13 21:30:37.114	2025-08-13 21:30:37.114	1
+\.
+
+
+--
+-- Data for Name: _RoleToUser; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."_RoleToUser" ("A", "B") FROM stdin;
+\.
+
+
+--
+-- Data for Name: _prisma_migrations; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public._prisma_migrations (id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count) FROM stdin;
+6aaac601-646b-4c04-b2b1-aabec234a5db	3cda2523441fdb2ae615540b3fd54a96055928f37a78fd09e65b7929b688b970	2024-03-19 19:10:11.022061+00	0_init		\N	2024-03-19 19:10:11.022061+00	0
+b36b1a26-eb24-449a-8216-428037eb9393	6d37578cc45cb696fdb445043c2d779e58cd090788cddb7a29dcc842cc1da5ec	2024-03-19 21:35:52.141451+00	20240319205540_remove_session_id	\N	\N	2024-03-19 21:35:52.134699+00	1
+d6be89e0-675e-46c0-8bf0-710994a1d596	a52efa100fcce060a18084f64662ce57415cb75912dd2af8dd263c712b88ccbe	2024-04-01 20:58:14.49435+00	20240401205705_add_temp_role_field	\N	\N	2024-04-01 20:58:14.481937+00	1
+b9e3e0a8-b9a1-4682-9989-c1c933b2b253	92b572c17ad1f8fece5b4458605837c835a02a98dc7778aa27243bf53f229f59	2024-04-02 21:09:03.227444+00	20240402134046_add_substitute_field_to_substitutions	\N	\N	2024-04-02 21:09:03.216807+00	1
+\.
+
+
+--
+-- Name: Class_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public."Class_id_seq"', 14, true);
+
+
+--
+-- Name: CourseSubscription_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public."CourseSubscription_id_seq"', 606927, true);
+
+
+--
+-- Name: CourseTime_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public."CourseTime_id_seq"', 3174, true);
+
+
+--
+-- Name: Course_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public."Course_id_seq"', 1018, true);
+
+
+--
+-- Name: LicenseKey_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public."LicenseKey_id_seq"', 840, true);
+
+
+--
+-- Name: Role_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public."Role_id_seq"', 1, false);
+
+
+--
+-- Name: School_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public."School_id_seq"', 1, false);
+
+
+--
+-- Name: Substitution_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public."Substitution_id_seq"', 3390, true);
+
+
+--
+-- Name: User_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public."User_id_seq"', 96, true);
+
+
+--
+-- Name: Year_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public."Year_id_seq"', 6, true);
+
+
+--
+-- Name: Class Class_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Class"
+    ADD CONSTRAINT "Class_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: CourseSubscription CourseSubscription_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."CourseSubscription"
+    ADD CONSTRAINT "CourseSubscription_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: CourseTime CourseTime_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."CourseTime"
+    ADD CONSTRAINT "CourseTime_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Course Course_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Course"
+    ADD CONSTRAINT "Course_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: LicenseKey LicenseKey_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."LicenseKey"
+    ADD CONSTRAINT "LicenseKey_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: PermissionOnRole PermissionOnRole_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."PermissionOnRole"
+    ADD CONSTRAINT "PermissionOnRole_pkey" PRIMARY KEY (permission, "roleId");
+
+
+--
+-- Name: PermissionOnUser PermissionOnUser_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."PermissionOnUser"
+    ADD CONSTRAINT "PermissionOnUser_pkey" PRIMARY KEY (permission, "userId");
+
+
+--
+-- Name: Role Role_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Role"
+    ADD CONSTRAINT "Role_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: School School_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."School"
+    ADD CONSTRAINT "School_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Session Session_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Session"
+    ADD CONSTRAINT "Session_pkey" PRIMARY KEY (token);
+
+
+--
+-- Name: Substitution Substitution_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Substitution"
+    ADD CONSTRAINT "Substitution_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: User User_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."User"
+    ADD CONSTRAINT "User_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Year Year_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Year"
+    ADD CONSTRAINT "Year_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: _prisma_migrations _prisma_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public._prisma_migrations
+    ADD CONSTRAINT _prisma_migrations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: Class_identifierInYear_yearId_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "Class_identifierInYear_yearId_key" ON public."Class" USING btree ("identifierInYear", "yearId");
+
+
+--
+-- Name: CourseSubscription_courseId_messagingToken_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "CourseSubscription_courseId_messagingToken_key" ON public."CourseSubscription" USING btree ("courseId", "messagingToken");
+
+
+--
+-- Name: Course_courseId_classId_yearId_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "Course_courseId_classId_yearId_key" ON public."Course" USING btree ("courseId", "classId", "yearId");
+
+
+--
+-- Name: LicenseKey_key_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "LicenseKey_key_key" ON public."LicenseKey" USING btree (key);
+
+
+--
+-- Name: Role_name_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "Role_name_key" ON public."Role" USING btree (name);
+
+
+--
+-- Name: School_name_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "School_name_key" ON public."School" USING btree (name);
+
+
+--
+-- Name: Substitution_date_lessonStart_courseId_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "Substitution_date_lessonStart_courseId_key" ON public."Substitution" USING btree (date, "lessonStart", "courseId");
+
+
+--
+-- Name: User_abbrv_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "User_abbrv_key" ON public."User" USING btree (abbrv);
+
+
+--
+-- Name: Year_startYear_schoolId_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "Year_startYear_schoolId_key" ON public."Year" USING btree ("startYear", "schoolId");
+
+
+--
+-- Name: _RoleToUser_AB_unique; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "_RoleToUser_AB_unique" ON public."_RoleToUser" USING btree ("A", "B");
+
+
+--
+-- Name: _RoleToUser_B_index; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "_RoleToUser_B_index" ON public."_RoleToUser" USING btree ("B");
+
+
+--
+-- Name: Class Class_yearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Class"
+    ADD CONSTRAINT "Class_yearId_fkey" FOREIGN KEY ("yearId") REFERENCES public."Year"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: CourseSubscription CourseSubscription_courseId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."CourseSubscription"
+    ADD CONSTRAINT "CourseSubscription_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES public."Course"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: CourseTime CourseTime_courseId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."CourseTime"
+    ADD CONSTRAINT "CourseTime_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES public."Course"(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: Course Course_classId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Course"
+    ADD CONSTRAINT "Course_classId_fkey" FOREIGN KEY ("classId") REFERENCES public."Class"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: Course Course_teacherId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Course"
+    ADD CONSTRAINT "Course_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES public."User"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: Course Course_yearId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Course"
+    ADD CONSTRAINT "Course_yearId_fkey" FOREIGN KEY ("yearId") REFERENCES public."Year"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: PermissionOnRole PermissionOnRole_roleId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."PermissionOnRole"
+    ADD CONSTRAINT "PermissionOnRole_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES public."Role"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: PermissionOnUser PermissionOnUser_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."PermissionOnUser"
+    ADD CONSTRAINT "PermissionOnUser_userId_fkey" FOREIGN KEY ("userId") REFERENCES public."User"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: Session Session_userId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Session"
+    ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES public."User"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: Substitution Substitution_courseId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Substitution"
+    ADD CONSTRAINT "Substitution_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES public."Course"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: Substitution Substitution_substituteId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Substitution"
+    ADD CONSTRAINT "Substitution_substituteId_fkey" FOREIGN KEY ("substituteId") REFERENCES public."User"(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: Year Year_schoolId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Year"
+    ADD CONSTRAINT "Year_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES public."School"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+
+
+--
+-- Name: _RoleToUser _RoleToUser_A_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."_RoleToUser"
+    ADD CONSTRAINT "_RoleToUser_A_fkey" FOREIGN KEY ("A") REFERENCES public."Role"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: _RoleToUser _RoleToUser_B_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."_RoleToUser"
+    ADD CONSTRAINT "_RoleToUser_B_fkey" FOREIGN KEY ("B") REFERENCES public."User"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
