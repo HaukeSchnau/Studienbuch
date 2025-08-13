@@ -93,6 +93,7 @@ const ClassSelectField = ({
 
 type Timetable = {
   courseName: string;
+  courseId: string;
   weeks: Record<"ODD" | "EVEN", number>;
 }[][][]; // [day][time][course]
 
@@ -128,6 +129,7 @@ const Timetable = ({ clazz }: { clazz: { startYear: number; identifierInYear: st
           timetable[courseTime.weekday - 1][startTimesToIndex.get(courseTime.start) ?? 0] ??= [];
           timetable[courseTime.weekday - 1][startTimesToIndex.get(courseTime.start) ?? 0].push({
             courseName: course.name,
+            courseId: course.courseId,
             weeks: courseTime.weeks,
           });
         }
@@ -161,7 +163,7 @@ const Timetable = ({ clazz }: { clazz: { startYear: number; identifierInYear: st
             {time.map((course, courseIndex) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: dont care
               <div key={courseIndex} className="flex flex-col">
-                {course.courseName} {course.weeks.ODD} {course.weeks.EVEN}
+                {course.courseId} {course.weeks.ODD} {course.weeks.EVEN}
               </div>
             ))}
           </div>
