@@ -58,7 +58,7 @@ const addYear = Effect.fn(function* (
     Effect.tap(() => Effect.logInfo(`Year ${name} started!`)),
     Effect.catchIf(
       (error) => error.reason === "DUPLICATE",
-      () => Effect.logInfo(`Year ${name} already started!`),
+      () => Effect.logDebug(`Year ${name} already started!`),
     ),
   );
 });

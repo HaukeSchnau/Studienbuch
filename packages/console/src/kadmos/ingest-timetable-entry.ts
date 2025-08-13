@@ -70,11 +70,8 @@ export const ingestTimetableEntry = async (
   );
   if (Exit.isFailure(courseCreatedErr)) {
     if (courseCreatedErr.cause._tag === "Fail" && courseCreatedErr.cause.error.reason === "DUPLICATE") {
-      logger.info(`Course ${course.name} already created!`);
+      logger.debug(`Course ${course.name} already created!`);
     } else {
-      logger.info(JSON.stringify(classes));
-      logger.error(courseCreatedErr.cause.toJSON());
-
       logger.error(`Could not ingest course created event for ${course.name}: ${courseCreatedErr.cause.toString()}`);
     }
   } else {
@@ -188,7 +185,7 @@ export const ingestTimetableEntry = async (
 
       if (Exit.isFailure(substitutedErr)) {
         if (substitutedErr.cause._tag === "Fail" && substitutedErr.cause.error.reason === "DUPLICATE") {
-          logger.info(`Timetable substituted event for ${course.name} already exists!`);
+          logger.debug(`Timetable substituted event for ${course.name} already exists!`);
         } else {
           logger.error(
             `Could not ingest timetable substituted event for ${course.name}: ${substitutedErr.cause.toString()}`,
@@ -220,7 +217,7 @@ export const ingestTimetableEntry = async (
 
       if (Exit.isFailure(canceledErr)) {
         if (canceledErr.cause._tag === "Fail" && canceledErr.cause.error.reason === "DUPLICATE") {
-          logger.info(`Timetable canceled event for ${course.name} already exists!`);
+          logger.debug(`Timetable canceled event for ${course.name} already exists!`);
         } else {
           logger.error(`Could not ingest timetable canceled event for ${course.name}: ${canceledErr.cause.toString()}`);
         }

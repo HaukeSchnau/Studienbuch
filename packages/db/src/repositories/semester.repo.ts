@@ -1,5 +1,5 @@
 import { dateToSimpleDate, SemesterRepository, simpleDateToDate } from "@stu/lib";
-import { and, desc, gte, lte, sql } from "drizzle-orm";
+import { and, asc, desc, gte, lte, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer } from "effect";
 import * as tables from "../schema";
 import { RepositoryDatabase } from "./util";
@@ -49,6 +49,7 @@ export const SemesterRepositoryLive = Layer.effect(
       getCurrentSemester: Effect.fn(function* () {
         const { execute } = yield* databaseContext;
         const today = yield* DateTime.now.pipe(Effect.andThen(DateTime.toDate));
+
         const semester = yield* execute((db) =>
           db.query.Semesters.findFirst({
             where: and(lte(tables.Semesters.start, today), gte(tables.Semesters.end, today)),
@@ -56,12 +57,19 @@ export const SemesterRepositoryLive = Layer.effect(
         );
         if (semester) return mapDbSemester(semester);
 
-        // No current semester! Return the latest semester.
-        return yield* execute((db) =>
+        // No current semester! Return the next semester.
+        const nextSemester = yield* execute((db) =>
           db.query.Semesters.findFirst({
-            orderBy: [desc(tables.Semesters.start)],
+            where: gte(tables.Semesters.start, today),
+            orderBy: [asc(tables.Semesters.start)],
           }),
         ).pipe(Effect.map((semester) => semester && mapDbSemester(semester)));
+        if (nextSemester) return nextSemester;
+
+        // No semester found! Return the latest semester.
+        return yield* execute((db) => db.query.Semesters.findFirst({ orderBy: [desc(tables.Semesters.start)] })).pipe(
+          Effect.map((semester) => semester && mapDbSemester(semester)),
+        );
       }),
     };
   }),

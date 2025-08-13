@@ -649,7 +649,7 @@ export const importTeachers = Effect.fn(function* (options: Options, authContext
       Effect.tap(() => Effect.logInfo(`Teacher ${abbrv} joined!`)),
       Effect.catchIf(
         (error) => error.reason === "DUPLICATE",
-        () => Effect.logInfo(`Teacher ${abbrv} already joined!`),
+        () => Effect.logDebug(`Teacher ${abbrv} already joined!`),
       ),
     );
   }
