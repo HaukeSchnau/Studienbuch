@@ -1,133 +1,20 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "./client";
-import type { courseTime } from "./schema";
 
 export * from "./client";
 export * from "./relations";
 export * from "./schema";
 
-import type { SubjectId } from "@stu/lib";
-import { isArrayNonEmpty, subjectNameMap } from "@stu/lib";
+import type { DiscoveredCourse, DiscoveredTeacher } from "@stu/db";
+import { type CourseTimeWeeks, startYearToNameMap, subjectNameMap } from "@stu/lib";
 import * as tables from "./schema";
 
-export type CourseTime = Omit<typeof courseTime.$inferSelect, "id" | "courseId" | "createdAt" | "updatedAt">;
-
-const findExistingCourseWeak = async (discoveredCourse: Course) => {
-  const subjectLongName = subjectNameMap[discoveredCourse.name];
-
-  const coursePlus = db
-    .select({
-      id: tables.course.id,
-      courseId: tables.course.courseId,
-      courseName: tables.course.name,
-      classId: tables.course.classId,
-      teacherAbbrv: tables.user.abbrv,
-    })
-    .from(tables.course)
-    .innerJoin(tables.courseTime, eq(tables.course.id, tables.courseTime.courseId))
-    .innerJoin(tables.user, eq(tables.course.teacherId, tables.user.id))
-    .where(
-      and(
-        eq(sql`lower(${tables.course.name})`, subjectLongName.toLowerCase()),
-        inArray(
-          sql`lower(${tables.user.abbrv})`,
-          discoveredCourse.teachers.map((t) => t.abbrv?.toLowerCase()).filter((x) => x !== undefined),
-        ),
-      ),
-    )
-    .as("course_plus");
-
-  const existingCourses = await db
-    .select()
-    .from(tables.year)
-    .innerJoin(tables.clazz, eq(tables.clazz.yearId, tables.year.id))
-    .leftJoin(coursePlus, eq(coursePlus.classId, tables.clazz.id))
-    .where(
-      and(
-        eq(tables.clazz.identifierInYear, discoveredCourse.class.identifierInYear),
-        eq(tables.year.startYear, discoveredCourse.class.startYear),
-      ),
-    );
-
-  if (!isArrayNonEmpty(existingCourses)) {
-    throw new Error(
-      `Invalid state: Zero or multiple courses found for ${discoveredCourse.courseId} in ${discoveredCourse.class.identifierInYear} ${discoveredCourse.class.startYear}: ${JSON.stringify(existingCourses)}`,
-    );
-  }
-
-  const [{ Year: year, Class: clazz, course_plus: existingCourse }] = existingCourses;
-
-  return { year, clazz, existingCourse };
-};
-
-// Policy for finding existing courses:
-// - Class HAS to match exactly
-// - At least one of two conditions has to be met:
-//    - the "course ID" (e.g. if23) matches case-insensetively
-//    - subject name and teacher abbrv match
-const findExistingCourse = async (discoveredCourse: Course) => {
-  const fixedCourseId = discoveredCourse.courseId === "WPK O" ? "wpk" : discoveredCourse.courseId.toLowerCase();
-
-  const coursePlus = db
-    .select({
-      id: tables.course.id,
-      courseId: tables.course.courseId,
-      courseName: tables.course.name,
-      classId: tables.course.classId,
-      teacherAbbrv: tables.user.abbrv,
-    })
-    .from(tables.course)
-    .innerJoin(tables.courseTime, eq(tables.course.id, tables.courseTime.courseId))
-    .innerJoin(tables.user, eq(tables.course.teacherId, tables.user.id))
-    .where(eq(sql`lower(${tables.course.courseId})`, fixedCourseId))
-    .as("course_plus");
-
-  const existingCourses = await db
-    .select()
-    .from(tables.year)
-    .innerJoin(tables.clazz, eq(tables.clazz.yearId, tables.year.id))
-    .leftJoin(coursePlus, eq(coursePlus.classId, tables.clazz.id))
-    .where(
-      and(
-        eq(tables.clazz.identifierInYear, discoveredCourse.class.identifierInYear),
-        eq(tables.year.startYear, discoveredCourse.class.startYear),
-      ),
-    );
-
-  if (!isArrayNonEmpty(existingCourses)) {
-    throw new Error(
-      `Invalid state: Zero or multiple courses found for ${discoveredCourse.courseId} in ${discoveredCourse.class.identifierInYear} ${discoveredCourse.class.startYear}: ${JSON.stringify(existingCourses)}`,
-    );
-  }
-
-  const [{ Year: year, Class: clazz, course_plus: existingCourse }] = existingCourses;
-
-  return { year, clazz, existingCourse };
-};
-
-export interface Course {
-  name: SubjectId; // human readable name, aka subject
-  courseId: string; // short id (2 letters and number). cannot be sure this matches between old and new database
-  courseTimes: Iterable<CourseTime>;
-  teachers: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    salutation: "Herr" | "Frau" | null;
-    abbrv: string | null;
-    email: string | null;
-  }[];
-  class: {
-    identifierInYear: string;
-    startYear: number;
-  };
-}
-
-const insert = async (discoveredCourse: Course, yearId: number, classId: number) => {
-  const fixedCourseId = discoveredCourse.courseId === "WPK O" ? "wpk" : discoveredCourse.courseId.toLowerCase();
+const insert = async (discoveredCourse: DiscoveredCourse, yearId: number, classId: number) => {
   const teacherInput = discoveredCourse.teachers[0];
   if (!teacherInput) {
-    throw new Error(`Invalid state: No teacher found for ${discoveredCourse.name}`);
+    // throw new Error(`Invalid state: No teacher found for ${discoveredCourse.name}`);
+    console.warn(`No teacher found for ${discoveredCourse.name}`);
+    return;
   }
   const teacher = await getOrCreateTeacher(teacherInput);
   const [course] = await db
@@ -135,28 +22,55 @@ const insert = async (discoveredCourse: Course, yearId: number, classId: number)
     .values({
       classId,
       name: subjectNameMap[discoveredCourse.name],
-      courseId: fixedCourseId,
+      courseId: discoveredCourse.courseId,
       teacherId: teacher,
       yearId,
       isChoosable: true,
+    })
+    .onConflictDoUpdate({
+      target: [tables.course.classId, tables.course.courseId, tables.course.yearId],
+      set: {
+        name: subjectNameMap[discoveredCourse.name],
+        teacherId: teacher,
+        isChoosable: true,
+      },
     })
     .returning();
   if (!course) {
     throw new Error("Invalid state: Inserting course failed");
   }
-  await db.insert(tables.courseTime).values(
-    Array.from(discoveredCourse.courseTimes).map((ct) => ({
+  for (const ct of discoveredCourse.courseTimes) {
+    let weeks: CourseTimeWeeks = "BOTH";
+    if (ct.weeks.EVEN === 0) {
+      weeks = "ODD";
+    }
+    if (ct.weeks.ODD === 0) {
+      weeks = "EVEN";
+    }
+
+    const existingCourseTime = await db.query.courseTime.findFirst({
+      where: and(
+        eq(tables.courseTime.courseId, course.id),
+        eq(tables.courseTime.weekday, ct.weekday),
+        eq(tables.courseTime.start, ct.start),
+        eq(tables.courseTime.weeks, weeks),
+      ),
+    });
+    if (existingCourseTime) {
+      continue;
+    }
+
+    await db.insert(tables.courseTime).values({
       courseId: course.id,
       duration: ct.duration,
       start: ct.start,
       weekday: ct.weekday,
-    })),
-  );
+      weeks,
+    });
+  }
 };
 
-type Ret = Awaited<ReturnType<typeof findExistingCourse>>;
-
-const getOrCreateTeacher = async (teacherInput: Course["teachers"][number]) => {
+const getOrCreateTeacher = async (teacherInput: DiscoveredTeacher) => {
   if (!teacherInput.abbrv) {
     throw new Error(
       `Invalid state: No teacher abbreviation found for ${teacherInput.firstName} ${teacherInput.lastName}`,
@@ -183,125 +97,58 @@ const getOrCreateTeacher = async (teacherInput: Course["teachers"][number]) => {
   return teacher.id;
 };
 
-const update = async (
-  existingCourse: {
-    clazz: Ret["clazz"];
-    existingCourse: NonNullable<Ret["existingCourse"]>;
-    year: Ret["year"];
-  },
-  discoveredCourse: Course,
-) => {
-  const fixedCourseId = discoveredCourse.courseId === "WPK O" ? "wpk" : discoveredCourse.courseId.toLowerCase();
-  const teacherInput = discoveredCourse.teachers[0];
-  if (!teacherInput) {
-    throw new Error(`Invalid state: No teacher found for ${discoveredCourse.name}`);
+const SCHOOL_ID = 1;
+
+const upsertYear = async (startYear: number) => {
+  const existingYear = await db.query.year.findFirst({
+    where: eq(tables.year.startYear, startYear),
+  });
+
+  if (existingYear) {
+    return existingYear.id;
   }
-  const newTeacherId = await getOrCreateTeacher(teacherInput);
-  await db
-    .update(tables.course)
-    .set({
-      name: subjectNameMap[discoveredCourse.name],
-      courseId: fixedCourseId,
-      teacherId: newTeacherId,
+
+  const [newYear] = await db
+    .insert(tables.year)
+    .values({
+      startYear,
+      schoolId: SCHOOL_ID,
+      graduationYear: startYear + 9,
+      name: startYearToNameMap.get(startYear) ?? startYear.toString(),
     })
-    .where(eq(tables.course.id, existingCourse.existingCourse.id));
-  for (const courseTime of discoveredCourse.courseTimes) {
-    const existingCourseTime = await db.query.courseTime.findFirst({
-      where: and(
-        eq(tables.courseTime.courseId, existingCourse.existingCourse.id),
-        eq(tables.courseTime.weekday, courseTime.weekday),
-        eq(tables.courseTime.start, courseTime.start),
-        eq(tables.courseTime.weeks, courseTime.weeks),
-      ),
-    });
-    if (existingCourseTime) {
-      continue;
-    }
-    await db.insert(tables.courseTime).values({
-      courseId: existingCourse.existingCourse.id,
-      duration: courseTime.duration,
-      start: courseTime.start,
-      weekday: courseTime.weekday,
-      weeks: courseTime.weeks,
-    });
+    .returning();
+  if (!newYear) {
+    throw new Error(`Failed to create year ${startYear}`);
   }
+
+  return newYear.id;
 };
 
-export const upsertCourses = async (courses: Course[]) => {
-  let unknownCount = 0;
-
-  for (const discoveredCourse of courses) {
-    const { clazz, existingCourse, year } = await findExistingCourse(discoveredCourse);
-
-    if (existingCourse) {
-      await update(
-        {
-          clazz,
-          existingCourse,
-          year,
-        },
-        discoveredCourse,
-      );
-    } else {
-      const { existingCourse: existingCourseWeak } = await findExistingCourseWeak(discoveredCourse);
-
-      if (!existingCourseWeak) {
-        console.log(`Not found: ${JSON.stringify(discoveredCourse)}`);
-        unknownCount++;
-        await insert(discoveredCourse, year.id, clazz.id);
-      } else {
-        await update(
-          {
-            clazz,
-            existingCourse: existingCourseWeak,
-            year,
-          },
-          discoveredCourse,
-        );
-      }
-    }
-    if (existingCourse) {
-      // // todo: update course
-      // const existingCourseTimes = await db
-      //   .select()
-      //   .from(tables.courseTime)
-      //   .where(eq(tables.courseTime.courseId, existingCourse.courseId));
-      // for (const courseTime of discoveredCourse.courseTimes) {
-      //   if (
-      //     existingCourseTimes.find(
-      //       (ct) =>
-      //         ct.weekday === courseTime.weekday &&
-      //         ct.start === courseTime.start &&
-      //         ct.weeks === courseTime.weeks,
-      //     )
-      //   ) {
-      //     continue;
-      //   }
-      //   console.log(existingCourseTimes);
-      //   console.log(
-      //     year.id,
-      //     clazz.id,
-      //     "->",
-      //     year.name,
-      //     year.graduationYear,
-      //     clazz.identifierInYear,
-      //     discoveredCourse,
-      //   );
-      //   console.log("ADDING", courseTime);
-      // }
-    } else {
-      // todo: insert course
-      // console.log(
-      //   year.id,
-      //   clazz.id,
-      //   "->",
-      //   year.name,
-      //   year.graduationYear,
-      //   clazz.identifierInYear,
-      //   discoveredCourse,
-      // );
-      // unknownCount++;
-    }
+const upsertClass = async (identifierInYear: string, yearId: number) => {
+  const existingClass = await db.query.clazz.findFirst({
+    where: and(eq(tables.clazz.identifierInYear, identifierInYear), eq(tables.clazz.yearId, yearId)),
+  });
+  if (existingClass) {
+    return existingClass.id;
   }
-  console.log(`Unknown courses: ${unknownCount}`);
+  const [newClass] = await db
+    .insert(tables.clazz)
+    .values({
+      identifierInYear,
+      yearId,
+    })
+    .returning();
+  if (!newClass) {
+    throw new Error(`Failed to create class ${identifierInYear}`);
+  }
+  return newClass.id;
+};
+
+export const upsertCourses = async (courses: DiscoveredCourse[]) => {
+  for (const discoveredCourse of courses) {
+    const yearId = await upsertYear(discoveredCourse.class.startYear);
+    const classId = await upsertClass(discoveredCourse.class.identifierInYear, yearId);
+
+    await insert(discoveredCourse, yearId, classId);
+  }
 };

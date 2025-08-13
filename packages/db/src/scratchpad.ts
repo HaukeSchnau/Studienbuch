@@ -12,7 +12,7 @@ interface DiscoveredCourseTime {
   weeks: Record<"EVEN" | "ODD", number>;
 }
 
-interface DiscoveredTeacher {
+export interface DiscoveredTeacher {
   id: string;
   salutation: "Herr" | "Frau" | null;
   firstName: string;
@@ -21,7 +21,7 @@ interface DiscoveredTeacher {
   email: string | null;
 }
 
-interface DiscoveredCourse {
+export interface DiscoveredCourse {
   name: SubjectId;
   courseId: string;
   courseTimes: DiscoveredCourseTime[];
