@@ -114,7 +114,7 @@ const getTimetable = async ({ start, end, school, schoolYearId }: Options, authC
 
       if (course.course.name === entry.course.name && matchesTeacherAndTime(entry)) {
         // We need to copy the entries because we will modify the map
-        const joinedClasses: ProtoTimetableEntry["classes"] = [];
+        const joinedClasses: ProtoTimetableEntry["classes"] = [...course.classes];
         for (const cls of entry.classes) {
           if (
             !joinedClasses.some(
