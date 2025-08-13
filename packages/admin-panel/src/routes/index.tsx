@@ -1,12 +1,13 @@
-import { and, asc, Database, DatabaseLive, eq, isNotNull, or, PersonRepository, tables } from "@stu/db";
+import { and, asc, Database, eq, isNotNull, or, PersonRepository, tables } from "@stu/db";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
 import { format, parse } from "date-fns";
 import { de } from "date-fns/locale";
-import { Effect, Layer, ManagedRuntime } from "effect";
+import { Effect } from "effect";
 import { Fragment, useEffect } from "react";
 import { z } from "zod";
+import { runtime } from "@/runtime";
 
 const cn = (...args: unknown[]) => args.filter(Boolean).join(" ");
 
@@ -16,8 +17,6 @@ export const Route = createFileRoute("/")({
     teacherId: z.string().optional(),
   }),
 });
-
-const runtime = ManagedRuntime.make(Layer.merge(DatabaseLive, PersonRepository.Default));
 
 const allTeachers = PersonRepository.use((repo) => repo.getAllPersons());
 const getTeachers = createServerFn().handler(() => runtime.runPromise(allTeachers));

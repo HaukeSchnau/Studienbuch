@@ -160,7 +160,7 @@ export const importTimetable = async (options: Options, authContext: AuthContext
   const { courses, start, end } = await getTimetable(options, authContext);
   const { school } = options;
 
-  // // Insert all courses into the database
+  // Insert all courses into the database
   for (const [uuid, course] of courses) {
     // We need to make sure all course.classes are unique. They might be duplicated because of kadmos weirdness.
     // TODO: Handle classes.change === "REMOVED"

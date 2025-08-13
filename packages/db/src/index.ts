@@ -48,3 +48,4 @@ export * from "./database";
 export * from "./repositories";
 export * as schema from "./schema";
 export * as tables from "./schema";
+export * from "./scratchpad";

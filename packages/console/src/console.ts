@@ -1,5 +1,6 @@
 import { Command, Options } from "@effect/cli";
 import { BunContext, BunRuntime } from "@effect/platform-bun";
+import { recurringCourses } from "@stu/db";
 import { defaultSchools, SCHOOL_IDS, SemesterRepository } from "@stu/lib";
 import { Effect } from "effect";
 import { AppLayerLive } from "../../api/src/groundswell";
@@ -45,7 +46,17 @@ const pull = Command.make(
     }),
 );
 
-const console = Command.make("console").pipe(Command.withSubcommands([pull]));
+const legacyImport = Command.make("legacy-import", {}, () =>
+  Effect.gen(function* () {
+    const courses = yield* recurringCourses;
+    yield* Effect.log(JSON.stringify(courses, null, 2));
+
+    // yield* Effect.tryPromise(() => upsertCourses(courses));
+    process.exit(0);
+  }),
+);
+
+const console = Command.make("console").pipe(Command.withSubcommands([pull, legacyImport]));
 
 const cli = Command.run(console, {
   name: "Studienbuch Console",
