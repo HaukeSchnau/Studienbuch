@@ -1,5 +1,5 @@
 CREATE TYPE "public"."salutation" AS ENUM('Herr', 'Frau');--> statement-breakpoint
-CREATE TYPE "public"."subject" AS ENUM('de', 'en', 'ma', 'ph', 'ch', 'bi', 'if', 'ge', 'pw', 'mu', 'sp', 'ku', 're', 'wn', 'fr', 'la', 'sn', 'sport-theorie', 'sf', 'tutorium', 'ds', 'ek', 'nw', 'gsl', 'awt', 'sw', 'swb', 'lp', 'kr', 'wpk', 'wal', 'bläser_k', 'nachhaltigkeit');--> statement-breakpoint
+CREATE TYPE "public"."subject" AS ENUM('de', 'en', 'ma', 'ph', 'ch', 'bi', 'if', 'ge', 'pw', 'mu', 'sp', 'ku', 're', 'wn', 'fr', 'la', 'sn', 'sport-theorie', 'st', 'sf', 'tutorium', 'ds', 'ek', 'nw', 'gsl', 'awt', 'sw', 'swb', 'lp', 'kr', 'wpk', 'wal', 'bläser_k', 'nachhaltigkeit', 'woodworking');--> statement-breakpoint
 CREATE TYPE "public"."school_id" AS ENUM('igs-lil');--> statement-breakpoint
 CREATE TYPE "public"."state_code" AS ENUM('BB', 'BE', 'BW', 'BY', 'HB', 'HE', 'HH', 'MV', 'NI', 'NW', 'RP', 'SH', 'SL', 'SN', 'ST', 'TH');--> statement-breakpoint
 CREATE TYPE "public"."semester_type" AS ENUM('SUMMER', 'WINTER');--> statement-breakpoint

@@ -1,5 +1,5 @@
 {
-  "id": "1eef31dc-88bd-45f9-b628-d858b864d52c",
+  "id": "d9d5c9fa-131f-4490-9095-88825311d5a7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1843,6 +1843,7 @@
         "la",
         "sn",
         "sport-theorie",
+        "st",
         "sf",
         "tutorium",
         "ds",
@@ -1857,7 +1858,8 @@
         "wpk",
         "wal",
         "bläser_k",
-        "nachhaltigkeit"
+        "nachhaltigkeit",
+        "woodworking"
       ]
     },
     "public.school_id": {

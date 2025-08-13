@@ -19,6 +19,7 @@ export const SUBJECT_IDS = [
   "la",
   "sn",
   "sport-theorie",
+  "st",
   "sf",
   "tutorium",
   "ds",
@@ -38,6 +39,7 @@ export const SUBJECT_IDS = [
   // "präsenz",
   "bläser_k",
   "nachhaltigkeit",
+  "woodworking",
 ] as const;
 export type SubjectId = (typeof SUBJECT_IDS)[number];
 
@@ -71,6 +73,7 @@ export const subjectNameMap: Record<SubjectId, string> = {
   la: "Latein",
   sn: "Spanisch",
   "sport-theorie": "Sport-Theorie",
+  st: "Sport-Theorie",
   sf: "Seminarfach",
   tutorium: "Tutorium",
   ds: "Darstellendes Spiel",
@@ -90,6 +93,7 @@ export const subjectNameMap: Record<SubjectId, string> = {
   bläser_k: "Bläserklasse",
   nachhaltigkeit: "Nachhaltigkeit",
   wal: "WAL",
+  woodworking: "Woodworking",
 };
 
 export const guessSubject = (name: string): SubjectId | null => {

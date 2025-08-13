@@ -101,6 +101,8 @@ const normalizeCourseName = (name: string) => {
   return name.replaceAll("- ", "-");
 };
 
+const unknownSubjects = new Set<string>();
+
 export const mapKadmosTimetableEntry = (
   entry: KadmosTimetableV2Response["days"][number]["gridEntries"][number],
   baseClass: ClassV2,
@@ -157,7 +159,10 @@ export const mapKadmosTimetableEntry = (
 
   const subject = guessSubject(normalizedCourseName);
   if (!subject) {
-    logger.warn(`Unknown subject: "${course.shortName}". Skipping this course.`);
+    unknownSubjects.add(course.shortName);
+    logger.warn(
+      `Unknown subject: "${course.shortName}". Skipping this course. All unknown subjects: ${Array.from(unknownSubjects).join(", ")}`,
+    );
     return null;
   }
 
