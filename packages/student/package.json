@@ -38,7 +38,6 @@
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
-    "@testcontainers/postgresql": "^10.24.0",
     "@types/pg": "^8.15.5",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9.33.0",
