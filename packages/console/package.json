@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@axiomhq/pino": "^1.3.1",
-    "@commander-js/extra-typings": "^13.1.0",
+    "@commander-js/extra-typings": "^14.0.0",
     "@date-fns/tz": "^1.2.0",
     "@effect/cli": "^0.69.0",
     "@stu/api": "workspace:*",
@@ -18,7 +18,7 @@
     "@stu/external-api": "workspace:*",
     "@stu/legacy-import": "workspace:*",
     "@stu/lib": "workspace:*",
-    "commander": "^13.1.0",
+    "commander": "^14.0.0",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "effect": "^3.16.13",

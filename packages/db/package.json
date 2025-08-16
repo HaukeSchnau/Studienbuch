@@ -31,7 +31,7 @@
     "@groundswell/core": "^0.0.21",
     "@schnau/effect-drizzle": "0.5.9",
     "@stu/lib": "workspace:*",
-    "@t3-oss/env-core": "^0.12.0",
+    "@t3-oss/env-core": "^0.13.8",
     "dayjs": "^1.11.13",
     "drizzle-orm": "^0.44.4",
     "drizzle-zod": "^0.7.1",
