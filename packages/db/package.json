@@ -33,7 +33,7 @@
     "@stu/lib": "workspace:*",
     "@t3-oss/env-core": "^0.12.0",
     "dayjs": "^1.11.13",
-    "drizzle-orm": "^0.44.2",
+    "drizzle-orm": "^0.44.4",
     "drizzle-zod": "^0.7.1",
     "effect": "^3.16.13",
     "pg": "^8.14.1",
@@ -43,8 +43,8 @@
     "@stu/eslint-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@testcontainers/postgresql": "^10.24.0",
-    "@types/pg": "^8.11.11",
-    "drizzle-kit": "^0.30.6",
+    "@types/pg": "^8.15.5",
+    "drizzle-kit": "^0.31.4",
     "eslint": "^9.33.0",
     "vitest": "^3.1.1"
   }

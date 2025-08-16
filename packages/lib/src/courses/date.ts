@@ -15,8 +15,8 @@ export const parseTime = (time: string) => {
 
   const split = time.split(":");
   if (!split[0] || !split[1]) throw new Error(`Invalid time given: ${time}`);
-  const hours = Number.parseInt(split[0]);
-  const minutes = Number.parseInt(split[1]);
+  const hours = Number.parseInt(split[0], 10);
+  const minutes = Number.parseInt(split[1], 10);
 
   if (Number.isNaN(hours) || Number.isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59)
     throw new Error(`Invalid time given: ${time}`);
