@@ -13,7 +13,7 @@ export default function GradePageEntry() {
     date: string;
     type: GradeType;
   }>();
-  const date = new Date(Number.parseInt(dateStr));
+  const date = new Date(Number.parseInt(dateStr, 10));
 
   return <GradePage date={date} courseId={course} type={type} />;
 }

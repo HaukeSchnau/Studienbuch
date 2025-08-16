@@ -91,9 +91,9 @@ const convertNumberToDate = (number: number | null) => {
   const date = number.toString();
   return new Date(
     Date.UTC(
-      Number.parseInt(date.substring(0, 4)),
-      Number.parseInt(date.substring(4, 6)) - 1,
-      Number.parseInt(date.substring(6, 8)),
+      Number.parseInt(date.substring(0, 4), 10),
+      Number.parseInt(date.substring(4, 6), 10) - 1,
+      Number.parseInt(date.substring(6, 8), 10),
     ),
   );
 };

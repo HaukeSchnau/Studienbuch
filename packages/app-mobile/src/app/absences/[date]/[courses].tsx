@@ -7,7 +7,7 @@ export default function ExcuseAbsencePage() {
     date: string;
     courses: string;
   }>();
-  const date = new Date(Number.parseInt(dateStr));
+  const date = new Date(Number.parseInt(dateStr, 10));
   const courses = coursesStr.split(";");
 
   return <ExcusePage date={date} courseIds={courses} />;

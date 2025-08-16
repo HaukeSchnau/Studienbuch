@@ -56,6 +56,9 @@
           "fix": "safe"
         }
       },
+      "suspicious": {
+        "noUnknownAtRules": "off"
+      },
       "style": {
         "noParameterAssign": "error",
         "useAsConstAssertion": "error",

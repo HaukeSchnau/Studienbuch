@@ -32,6 +32,7 @@ export const parseScheduleCsv = async (
     .map((row) => {
       const parsed = rowSchema.safeParse(row);
       if (parsed.success) return parsed.data;
+      return null;
     })
     .filter((x) => !!x)
     .map(mapRow);

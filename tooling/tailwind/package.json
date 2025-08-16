@@ -22,7 +22,7 @@
   "devDependencies": {
     "@stu/eslint-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
-    "eslint": "^9.24.0",
+    "eslint": "^9.33.0",
     "typescript": "^5.9.2"
   }
 }
