@@ -40,7 +40,7 @@ export const createBase = Effect.fn(function* (basePath: string) {
 
   app.use(trimTrailingSlash());
   app.use(prettyJSON());
-  app.use(logger((str, ...rest) => appLogger.info(str, ...rest)));
+  app.use(logger((str, ...rest) => appLogger.info([str, ...rest].join(" "))));
 
   app.use(
     "/trpc/*",

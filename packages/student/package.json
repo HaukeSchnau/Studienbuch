@@ -22,7 +22,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@effect/vitest": "^0.24.1",
+    "@effect/vitest": "^0.25.1",
     "@groundswell/adapter-drizzle-sqlite": "^0.0.21",
     "@groundswell/core": "^0.0.21",
     "@schnau/effect-drizzle": "0.5.9",
