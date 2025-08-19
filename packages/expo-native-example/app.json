@@ -13,7 +13,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "dev.schnau.studienbuch.nativeui"
+      "bundleIdentifier": "dev.schnau.studienbuch.nativeui",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -25,6 +28,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "78bb1f4a-48a3-4f7f-903a-9ed4ccf0f0b3"
+      }
     }
   }
 }
