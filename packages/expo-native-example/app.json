@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "expo-native-example",
-    "slug": "expo-native-example",
+    "name": "Studienbuch Native UI",
+    "slug": "studienbuch-native-ui",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,14 +13,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.urbsdotone.expo-native-example"
+      "bundleIdentifier": "dev.schnau.studienbuch.nativeui"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.urbsdotone.exponativeexample",
+      "package": "dev.schnau.studienbuch.nativeui",
       "edgeToEdgeEnabled": true
     },
     "web": {
