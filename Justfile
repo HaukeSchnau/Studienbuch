@@ -16,3 +16,10 @@ check:
 [working-directory: 'packages/app-mobile']
 ios:
     bun run expo run:ios
+
+install:
+    bun install
+
+install-clean:
+    find . -name "node_modules" -type d -exec rm -rf {} +
+    bun install
