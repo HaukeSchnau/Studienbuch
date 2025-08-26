@@ -1,3 +1,3 @@
 export * from "./agenda-entry";
-export * from "./import/ProtoCourse.type";
+export * from "./substitution";
 export * from "./timetable";

@@ -14,22 +14,19 @@ export const StudentRepositoryLive = Layer.effect(
       createStudent: Effect.fn(function* (payload) {
         const { execute } = yield* databaseContext;
 
-        const firstName = payload.name.split(" ")[0] ?? "";
-        const lastName = payload.name.split(" ").slice(1).join(" ");
-
         yield* execute((db) =>
           db
             .insert(tables.persons)
             .values({
-              id: payload.studentId,
-              firstName,
-              lastName,
+              id: payload.id,
+              firstName: payload.firstName,
+              lastName: payload.lastName,
             })
             .onConflictDoUpdate({
               target: [tables.persons.id],
               set: {
-                firstName,
-                lastName,
+                firstName: payload.firstName,
+                lastName: payload.lastName,
               },
             }),
         );
@@ -38,7 +35,7 @@ export const StudentRepositoryLive = Layer.effect(
           db
             .insert(tables.students)
             .values({
-              person: payload.studentId,
+              person: payload.id,
               school: payload.school,
               startYear: payload.class.startYear,
               classIdentifier: payload.class.identifier,
@@ -72,11 +69,30 @@ export const StudentRepositoryLive = Layer.effect(
       getStudent: Effect.fn(function* (payload) {
         const { execute } = yield* databaseContext;
 
-        return yield* execute((db) =>
+        const student = yield* execute((db) =>
           db.query.students.findFirst({
             where: eq(tables.students.person, payload.studentId),
+            with: {
+              person: true,
+            },
           }),
         );
+
+        if (!student) {
+          return undefined;
+        }
+
+        return {
+          id: student.person.id,
+          firstName: student.person.firstName,
+          lastName: student.person.lastName,
+          school: student.school,
+          class: {
+            identifier: student.classIdentifier,
+            startYear: student.startYear,
+          },
+          isOfAge: student.isOfAge ?? false,
+        };
       }),
     };
   }),

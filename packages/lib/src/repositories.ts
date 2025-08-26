@@ -1,11 +1,10 @@
 import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
 import { Context, Data, type Effect } from "effect";
 import type { SubjectId } from "./courses";
-import type { SimpleDate } from "./dates";
 import type { GradeType } from "./grades";
-import type { SchoolId, StateCode } from "./schools";
+import type { SimpleDate } from "./infrastructure/dates";
+import type { SchoolId, StateCode } from "./school";
 import type { Semester } from "./semesters";
-import type { Year } from "./years";
 
 export type UnknownDatabaseError = DatabaseError<{ message: string }>;
 
@@ -179,33 +178,6 @@ export class SchoolRepository extends Context.Tag("SchoolRepository")<
   }
 >() {}
 
-export class SemesterRepository extends Context.Tag("SemesterRepository")<
-  SemesterRepository,
-  {
-    createSemesters: (
-      payload: {
-        name: string;
-        start: SimpleDate;
-        end: SimpleDate;
-        type: Semester.Type;
-        year: number;
-        school: SchoolId;
-      }[],
-    ) => Effect.Effect<void, UnknownDatabaseError>;
-
-    getSemesterOnDate: (date: Date, school: SchoolId) => Effect.Effect<Semester | undefined, UnknownDatabaseError>;
-
-    getNextSemesterAfterDate: (
-      date: Date,
-      school: SchoolId,
-    ) => Effect.Effect<Semester | undefined, UnknownDatabaseError>;
-
-    getLatestSemester: (school: SchoolId) => Effect.Effect<Semester | undefined, UnknownDatabaseError>;
-
-    semestersInYear: (year: Year) => Effect.Effect<Semester[], UnknownDatabaseError>;
-  }
->() {}
-
 export class ClassRepository extends Context.Tag("ClassRepository")<
   ClassRepository,
   {
@@ -233,29 +205,6 @@ export class ClassRepository extends Context.Tag("ClassRepository")<
   }
 >() {}
 
-export class StudentRepository extends Context.Tag("StudentRepository")<
-  StudentRepository,
-  {
-    createStudent: (payload: {
-      studentId: string;
-      name: string;
-      school: SchoolId;
-      class: { identifier: string; startYear: number };
-      isOfAge: boolean;
-    }) => Effect.Effect<void, UnknownDatabaseError>;
-
-    assignCourse: (payload: { courseId: string }) => Effect.Effect<void, UnknownDatabaseError>;
-
-    getStudent: (payload: {
-      studentId: string;
-    }) => Effect.Effect<
-      | { startYear: number; school: SchoolId; person: string; isOfAge: boolean | null; classIdentifier: string }
-      | undefined,
-      UnknownDatabaseError
-    >;
-  }
->() {}
-
 export class TimetableRepository extends Context.Tag("TimetableRepository")<
   TimetableRepository,
   {
@@ -276,25 +225,6 @@ export class TimetableRepository extends Context.Tag("TimetableRepository")<
       substitute: string | null;
       type: "VERTRETUNG" | "ENTFALL";
     }) => Effect.Effect<void, UnknownDatabaseError>;
-  }
->() {}
-
-export class YearRepository extends Context.Tag("YearRepository")<
-  YearRepository,
-  {
-    yearsInSemester: (semester: Semester) => Effect.Effect<Year[], UnknownDatabaseError>;
-
-    doesYearExist: (payload: Year.Id) => Effect.Effect<boolean, UnknownDatabaseError>;
-
-    getYear: (payload: Year.Id) => Effect.Effect<Year | undefined, UnknownDatabaseError>;
-
-    getAllYears: (payload: { school?: SchoolId }) => Effect.Effect<Year[], UnknownDatabaseError>;
-
-    createYear: (
-      payload: Year & {
-        classes: { identifierInYear: string; teachers: string[] }[];
-      },
-    ) => Effect.Effect<void, UnknownDatabaseError>;
   }
 >() {}
 

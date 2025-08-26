@@ -1,6 +1,6 @@
 import type { SubjectId } from "../courses";
-import type { SubstitutionType } from "../substitutions";
-import type { Salutation } from "../users";
+import type { Salutation } from "../teacher";
+import type { SubstitutionType } from "./substitution";
 
 export interface AgendaEntry {
   start: Date;

@@ -33,15 +33,19 @@ export const studentApplicators: NamespaceApplicatorMap<
         }
       }),
     apply: (event) =>
-      Effect.andThen(StudentRepository, (repo) =>
-        repo.createStudent({
-          studentId: event.data.studentId,
-          name: event.data.name,
+      Effect.andThen(StudentRepository, (repo) => {
+        const firstName = event.data.name.split(" ")[0] ?? "";
+        const lastName = event.data.name.split(" ").slice(1).join(" ");
+
+        return repo.createStudent({
+          id: event.data.studentId,
+          firstName,
+          lastName,
           school: event.data.school,
           class: event.data.class,
           isOfAge: event.data.isOfAge,
-        }),
-      ),
+        });
+      }),
   },
 
   courseAssigned: {

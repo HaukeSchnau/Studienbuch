@@ -6,7 +6,7 @@ export * from "./relations";
 export * from "./schema";
 
 import type { DiscoveredCourse, DiscoveredTeacher } from "@stu/db";
-import { type CourseTimeWeeks, startYearToNameMap, subjectNameMap } from "@stu/lib";
+import { type CourseTimeWeeks, subjectNameMap, Year } from "@stu/lib";
 import * as tables from "./schema";
 
 const insert = async (discoveredCourse: DiscoveredCourse, yearId: number, classId: number) => {
@@ -114,7 +114,7 @@ const upsertYear = async (startYear: number) => {
       startYear,
       schoolId: SCHOOL_ID,
       graduationYear: startYear + 9,
-      name: startYearToNameMap.get(startYear) ?? startYear.toString(),
+      name: Year.getYearName({ startYear }) ?? startYear.toString(),
     })
     .returning();
   if (!newYear) {

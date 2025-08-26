@@ -7,7 +7,7 @@ import type {
   SubjectId,
   WithTeachers,
 } from "@stu/lib";
-import { BetterMap, formalNameShort, simpleDateToDate } from "@stu/lib";
+import { BetterMap, simpleDateToDate, Teacher } from "@stu/lib";
 import { pk } from "@stu/student";
 import * as t from "@stu/student/schema";
 import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -248,7 +248,7 @@ export default function ClassAndCourses() {
                   subject={subject}
                   getOptionLabel={(item) =>
                     item
-                      ? `${item.name.toLowerCase()} (${item.teachers.map(formalNameShort).join(", ")})`
+                      ? `${item.name.toLowerCase()} (${item.teachers.map(Teacher.formalNameShort).join(", ")})`
                       : "nicht belegt"
                   }
                   onChange={(val) => field.setValue(val)}

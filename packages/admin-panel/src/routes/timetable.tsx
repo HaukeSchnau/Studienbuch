@@ -1,4 +1,5 @@
 import { Database, recurringCourses } from "@stu/db";
+import { getCurrentYearNum } from "@stu/lib";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
@@ -6,7 +7,6 @@ import { Effect } from "effect";
 import type { CSSProperties } from "react";
 import { z } from "zod";
 import { runtime } from "@/runtime";
-import { getCurrentYearNum } from "../../../lib/src/years";
 
 export const Route = createFileRoute("/timetable")({
   component: RouteComponent,

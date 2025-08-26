@@ -1,5 +1,12 @@
-import type { Class, SchoolId, StateCode, Year } from "@stu/lib";
-import { formatClassName, formatYear, isArraySingleElement } from "@stu/lib";
+import {
+  type Class,
+  formatClassName,
+  formatYear,
+  isArraySingleElement,
+  type SchoolId,
+  type StateCode,
+  type Year,
+} from "@stu/lib";
 import { pk } from "@stu/student";
 import * as t from "@stu/student/schema";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

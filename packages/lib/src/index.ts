@@ -2,20 +2,15 @@ export * from "./absences";
 export * from "./auth";
 export * from "./classes";
 export * from "./courses";
-export * from "./dates";
 export * from "./events";
 export * from "./grades";
 export * from "./infrastructure";
 export * from "./repositories";
-export * from "./result";
 export * from "./schedule";
-export * from "./schools";
+export * from "./school";
 export * from "./semesters";
-export * from "./substitutions";
+export * from "./student";
+export * from "./teacher";
 export * from "./theme";
-export * from "./users";
-export * from "./years";
-
-import { Effect } from "effect";
-
-export const debugLog = (tag: string) => Effect.tap((value) => Effect.log(tag, value));
+export * from "./user";
+export * from "./year";

@@ -1,11 +1,11 @@
 import { createEventUnion, createDomainEvent as event } from "@groundswell/zod-helpers";
 import { array, boolean, date, number, object, string, z } from "zod";
 import { SUBJECT_IDS } from "./courses";
-import { simpleDateSchema } from "./dates";
 import { GRADE_TYPES } from "./grades";
-import type { SchoolId, StateCode } from "./schools";
-import { SCHOOL_IDS, SEMESTER_TYPES, STATE_CODES } from "./schools";
-import { SALUTATIONS } from "./users";
+import { simpleDateSchema } from "./infrastructure/dates";
+import type { SchoolId, StateCode } from "./school";
+import { SCHOOL_IDS, SEMESTER_TYPES, STATE_CODES } from "./school";
+import { SALUTATIONS } from "./teacher";
 
 export const DomainEvent = createEventUnion([
   event("absence.recorded", {

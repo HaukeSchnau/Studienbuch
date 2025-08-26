@@ -11,7 +11,7 @@ const semestersOfStudent = Effect.fn(function* ({ userId }: { userId: string }) 
 
   if (!student) return yield* Effect.fail(new RequiredDataMissingError({ kind: "student", id: userId }));
   const yearId = {
-    startYear: student.startYear,
+    startYear: student.class.startYear,
     school: student.school,
   };
 

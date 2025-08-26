@@ -1,5 +1,5 @@
 import type { AbsenceDayWithTeachers } from "@stu/lib";
-import { formalName, isArraySingleElement } from "@stu/lib";
+import { isArraySingleElement, Teacher } from "@stu/lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { Stack, useRouter } from "expo-router";
 
@@ -53,9 +53,9 @@ export const ExcuseTeacher = ({ absence }: { absence: AbsenceDayWithTeachers }) 
         major={reason}
         confirmLabel="Entschuldigen"
         onConfirm={handleConfirm}
-        signatureLabel={`Unterschrift von ${formalName(teacher)}`}
+        signatureLabel={`Unterschrift von ${Teacher.formalName(teacher)}`}
       >
-        Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in <Text weight="bold">{user.name}</Text> am{" "}
+        Ich, {Teacher.formalName(teacher)} bestätige, dass der/die Schüler:in <Text weight="bold">{user.name}</Text> am{" "}
         <Text weight="bold">{date.toLocaleDateString()}</Text> mit folgender Begründung nicht am Unterricht teilnehmen
         konnte:
       </ConfirmPageContent>

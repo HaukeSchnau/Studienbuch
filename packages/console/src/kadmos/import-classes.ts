@@ -2,7 +2,7 @@ import { ingestEffect } from "@stu/api";
 import { PersonRepository } from "@stu/db";
 import { type AuthContext, getClasses } from "@stu/external-api";
 import type { SchoolId, SimpleDate } from "@stu/lib";
-import { BetterMap, startYearToNameMap } from "@stu/lib";
+import { BetterMap, Year } from "@stu/lib";
 import { Effect } from "effect";
 import { type ClassV2, mapKadmosClassV2 } from "../map-kadmos-class";
 
@@ -21,7 +21,7 @@ const addYear = Effect.fn(function* (
   school: SchoolId,
   classes: ClassV2[],
 ) {
-  const name = startYearToNameMap.get(year.startYear) ?? year.name ?? year.startYear.toString();
+  const name = Year.getYearName(year) ?? year.name ?? year.startYear.toString();
   const teachersRepo = yield* PersonRepository;
 
   yield* ingestEffect({

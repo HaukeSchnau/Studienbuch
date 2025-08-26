@@ -1,5 +1,5 @@
 import type { AgendaEntry } from "@stu/lib";
-import { formalName, subjectNameMap } from "@stu/lib";
+import { subjectNameMap, Teacher } from "@stu/lib";
 import { useQuery } from "@tanstack/react-query";
 import { add, format, getISOWeek, getISOWeekYear, isAfter, isSameDay, isTomorrow, isWithinInterval } from "date-fns";
 import { de as localeDE } from "date-fns/locale/de";
@@ -175,7 +175,7 @@ const AgendaEntryView = ({ entry }: { entry: AgendaEntry }) => {
       <View>
         <Text className="text-sm opacity-80">{format(entry.start, "HH:mm")}</Text>
         <Text className="text-lg text-primary-text">{subjectNameMap[entry.course.subject]}</Text>
-        <Text className="text-md opacity-80">{entry.course.teachers.map(formalName).join(", ")}</Text>
+        <Text className="text-md opacity-80">{entry.course.teachers.map(Teacher.formalName).join(", ")}</Text>
       </View>
     </View>
   );

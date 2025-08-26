@@ -1,4 +1,4 @@
-import { formalName, formatGrade, subjectNameMap } from "@stu/lib";
+import { formatGrade, subjectNameMap, Teacher } from "@stu/lib";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDate } from "date-fns";
 import { Stack, useRouter } from "expo-router";
@@ -52,9 +52,9 @@ export const ConfirmWrittenGradeTeacher = ({ grade }: { grade: Grade }) => {
         heading="Bitte lasse deinen Lehrer hier unterschreiben"
         onConfirm={handleConfirm}
         confirmLabel="Bestätigen"
-        signatureLabel={`Unterschrift von ${formalName(teacher)}`}
+        signatureLabel={`Unterschrift von ${Teacher.formalName(teacher)}`}
       >
-        Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in <Text weight="bold">{user.name}</Text> am{" "}
+        Ich, {Teacher.formalName(teacher)} bestätige, dass der/die Schüler:in <Text weight="bold">{user.name}</Text> am{" "}
         <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur in{" "}
         <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der Note{" "}
         <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.
@@ -75,10 +75,10 @@ export const WrittenGradeTeacherConfirmationView = ({ grade }: { grade: Confirme
 
   return (
     <ViewConfirmPageContent
-      signatureLabel={`Unterschrift von ${formalName(teacher)}`}
+      signatureLabel={`Unterschrift von ${Teacher.formalName(teacher)}`}
       signatureSvg={grade.teacherSignature}
     >
-      Ich, {formalName(teacher)} bestätige, dass der/die Schüler:in <Text weight="bold">{user.name}</Text> am{" "}
+      Ich, {Teacher.formalName(teacher)} bestätige, dass der/die Schüler:in <Text weight="bold">{user.name}</Text> am{" "}
       <Text weight="bold">{formatDate(date, "dd.MM.yyyy")}</Text> die Klausur in{" "}
       <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> mit der Note{" "}
       <Text weight="bold">{formatGrade(result)}</Text> geschrieben hat.

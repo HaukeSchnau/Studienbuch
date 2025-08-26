@@ -1,4 +1,4 @@
-import { formalName, subjectNameMap } from "@stu/lib";
+import { subjectNameMap, Teacher } from "@stu/lib";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { de } from "date-fns/locale/de";
@@ -50,7 +50,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
             <Text weight="bold" className="text-4xl text-white">
               {subjectNameMap[course.subject]}
             </Text>
-            <Text className="text-2xl text-white">{course.teachers.map(formalName).join(", ")}</Text>
+            <Text className="text-2xl text-white">{course.teachers.map(Teacher.formalName).join(", ")}</Text>
             <View className="h-2" />
             <Text italic className="text-lg text-white">
               {course.semester.name}

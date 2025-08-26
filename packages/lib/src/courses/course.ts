@@ -1,5 +1,4 @@
-import type { Class } from "../classes";
-import type { Salutation } from "../users";
+import type { Salutation } from "../teacher";
 import type { SubjectId } from "./subject";
 
 export interface Course {
@@ -7,10 +6,6 @@ export interface Course {
   name: string;
   subject: SubjectId;
   isMandatory: boolean;
-}
-
-export interface WithClasses {
-  classes: Class[];
 }
 
 export interface WithTeachers {
@@ -23,9 +18,7 @@ export interface WithTeachers {
   }[];
 }
 
-export type CourseWithoutTimes = Omit<Course, "times">;
-
-export interface CourseTime {
+export interface RecurringCourseTime {
   duration: number;
   start: number;
   weekday: number;

@@ -1,7 +1,8 @@
-import { DateTime, Effect } from "effect";
-import type { SimpleDate } from "./dates";
-import { SemesterRepository } from "./repositories";
-import type { SchoolId } from "./schools";
+import { Context, DateTime, Effect } from "effect";
+import type { SimpleDate } from "./infrastructure/dates";
+import type { UnknownDatabaseError } from "./repositories";
+import type { SchoolId } from "./school";
+import type { Year } from "./year";
 
 export interface Semester {
   name: string;
@@ -34,3 +35,30 @@ export namespace Semester {
     year: number;
   }
 }
+
+export class SemesterRepository extends Context.Tag("SemesterRepository")<
+  SemesterRepository,
+  {
+    createSemesters: (
+      payload: {
+        name: string;
+        start: SimpleDate;
+        end: SimpleDate;
+        type: Semester.Type;
+        year: number;
+        school: SchoolId;
+      }[],
+    ) => Effect.Effect<void, UnknownDatabaseError>;
+
+    getSemesterOnDate: (date: Date, school: SchoolId) => Effect.Effect<Semester | undefined, UnknownDatabaseError>;
+
+    getNextSemesterAfterDate: (
+      date: Date,
+      school: SchoolId,
+    ) => Effect.Effect<Semester | undefined, UnknownDatabaseError>;
+
+    getLatestSemester: (school: SchoolId) => Effect.Effect<Semester | undefined, UnknownDatabaseError>;
+
+    semestersInYear: (year: Year) => Effect.Effect<Semester[], UnknownDatabaseError>;
+  }
+>() {}

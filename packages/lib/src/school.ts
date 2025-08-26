@@ -1,5 +1,5 @@
-import type { Theme } from "../theme";
-import { defaultTheme } from "../theme";
+import type { Theme } from "./theme";
+import { defaultTheme } from "./theme";
 
 export interface School {
   id: SchoolId;

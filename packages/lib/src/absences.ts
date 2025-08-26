@@ -1,5 +1,5 @@
-import type { SubjectId } from "../courses";
-import type { Teacher } from "../users";
+import type { SubjectId } from "./courses";
+import type { Teacher } from "./teacher";
 
 export interface AbsenceDay {
   date: Date;
