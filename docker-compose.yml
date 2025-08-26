@@ -128,8 +128,8 @@ services:
 configs:
   crontab:
     content: |
-      */10 * * * * console pull igs-lil
-      @reboot console pull igs-lil
+      */10 * * * * console pull --school=igs-lil
+      @reboot console pull --school=igs-lil
 
   enabled_plugins:
     content: |
