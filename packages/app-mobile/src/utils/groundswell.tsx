@@ -28,8 +28,10 @@ import {
   TimetableRepositoryLive,
   YearRepositoryLive,
 } from "@stu/student";
-import { Context, Data, Effect, Layer } from "effect";
+import { Context, Data, Effect, Layer, Logger, ManagedRuntime } from "effect";
 import * as Crypto from "expo-crypto";
+import React, { useContext } from "react";
+import { DatabaseLive } from "~/db/client";
 import { getHeadersObject } from "./api";
 import { getBaseUrl } from "./base-url";
 import { getStorage } from "./storage";
@@ -54,7 +56,7 @@ const currentSession = Effect.gen(function* () {
   return yield* Effect.succeed(session);
 });
 
-const repositories = Layer.mergeAll(
+export const repositories = Layer.mergeAll(
   AbsenceRepositoryLive,
   GradeRepositoryLive,
   SchoolRepositoryLive,
@@ -131,3 +133,21 @@ export const makeSyncEngineLive = (offset: number) =>
     Layer.provide(TransportLive),
     Layer.merge(RandomUUIDLive),
   );
+
+export const makeRuntime = (offset: number) =>
+  ManagedRuntime.make(
+    Layer.mergeAll(makeSyncEngineLive(offset), repositories).pipe(
+      Layer.provideMerge(DatabaseLive),
+      Layer.merge(Logger.pretty),
+    ),
+  );
+
+export type AppRuntime = Awaited<ReturnType<typeof makeRuntime>>;
+export const RuntimeContext = React.createContext<AppRuntime | null>(null);
+export const useRuntime = () => {
+  const runtime = useContext(RuntimeContext);
+  if (!runtime) {
+    throw new Error("useRuntime has to be used within a RuntimeContext");
+  }
+  return runtime;
+};

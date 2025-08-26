@@ -8,16 +8,15 @@ import { colors } from "@stu/tailwind-config/native";
 import { setDefaultOptions } from "date-fns";
 import { de } from "date-fns/locale";
 import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
-import { Layer, Logger, ManagedRuntime } from "effect";
 import * as SplashScreen from "expo-splash-screen";
 import { lazy, useEffect, useMemo } from "react";
 import { UIManager } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PortalRenderer } from "~/components/portal";
-import { DatabaseLive, db } from "~/db/client";
+import { db } from "~/db/client";
 import { useSessionWatcher } from "~/utils/auth";
 import { SyncEngineProvider } from "~/utils/events/ingest";
-import { makeSyncEngineLive } from "~/utils/groundswell";
+import { makeRuntime, RuntimeContext } from "~/utils/groundswell";
 import { MissingInfoGuard } from "~/utils/missing-info-guard";
 import { getStorage } from "~/utils/storage";
 import migrations from "../../drizzle/migrations";
@@ -53,9 +52,7 @@ function RootLayout() {
     if (!isLoaded) return null;
 
     const offset = getStorage("sync.offset") ?? 0;
-    return ManagedRuntime.make(
-      makeSyncEngineLive(offset).pipe(Layer.provideMerge(DatabaseLive), Layer.merge(Logger.pretty)),
-    );
+    return makeRuntime(offset);
   }, [isLoaded]);
 
   if (!isLoaded) {
@@ -63,30 +60,32 @@ function RootLayout() {
   }
 
   return (
-    <SyncEngineProvider value={runtime}>
-      <GestureHandlerRootView>
-        <Stack
-          layout={({ children }) => <MissingInfoGuard>{children}</MissingInfoGuard>}
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: colors.primary.DEFAULT,
-            },
-            headerTintColor: colors.on.primary,
-            headerTitleStyle: {
-              color: colors.on.primary,
-              fontFamily: "Nunito_700Bold",
-            },
-            contentStyle: {
-              backgroundColor: "#FFFFFF",
-            },
-          }}
-        />
+    <RuntimeContext.Provider value={runtime}>
+      <SyncEngineProvider value={runtime}>
+        <GestureHandlerRootView>
+          <Stack
+            layout={({ children }) => <MissingInfoGuard>{children}</MissingInfoGuard>}
+            screenOptions={{
+              headerStyle: {
+                backgroundColor: colors.primary.DEFAULT,
+              },
+              headerTintColor: colors.on.primary,
+              headerTitleStyle: {
+                color: colors.on.primary,
+                fontFamily: "Nunito_700Bold",
+              },
+              contentStyle: {
+                backgroundColor: "#FFFFFF",
+              },
+            }}
+          />
 
-        {__DEV__ && <DevTools />}
+          {__DEV__ && <DevTools />}
 
-        <PortalRenderer />
-      </GestureHandlerRootView>
-    </SyncEngineProvider>
+          <PortalRenderer />
+        </GestureHandlerRootView>
+      </SyncEngineProvider>
+    </RuntimeContext.Provider>
   );
 }
 

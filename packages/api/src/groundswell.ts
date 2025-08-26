@@ -14,7 +14,7 @@ import {
   SemesterRepositoryLive,
   StudentRepository,
   TimetableRepository,
-  YearRepository,
+  YearRepositoryLive,
 } from "@stu/db";
 import { DomainEvent } from "@stu/lib";
 import { Duration, Effect, Layer, Logger, ManagedRuntime, pipe, Schedule } from "effect";
@@ -26,7 +26,7 @@ const Repositories = Layer.mergeAll(
   AuthRepositoryLive,
   SchoolRepository.Default,
   PersonRepository.Default,
-  YearRepository.Default,
+  YearRepositoryLive,
   ClassRepositoryLive,
   CourseRepositoryLive,
   HolidayRepositoryLive,

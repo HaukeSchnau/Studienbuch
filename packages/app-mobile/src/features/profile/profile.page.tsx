@@ -8,6 +8,7 @@ import { ActivityIndicator, ScrollView, View } from "react-native";
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { useRuntime } from "~/utils/groundswell";
 import { CourseList } from "./course-list";
 import { Header } from "./profile-header";
 import { getMySemesters } from "./queries/get-my-semesters";
@@ -27,7 +28,8 @@ const Content = ({ semesters }: { semesters: NonEmptyArray<Semester> }) => {
 
 export const ProfilePage = () => {
   const { userId } = useRequiredAuthenticatedSession();
-  const semesters = useQuery(getMySemesters({ userId }));
+  const runtime = useRuntime();
+  const semesters = useQuery(getMySemesters(runtime, { userId }));
 
   if (semesters.isPending) {
     return <ActivityIndicator />;

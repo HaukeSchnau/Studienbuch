@@ -1,41 +1,32 @@
-import * as t from "@stu/student/schema";
+import { SemesterRepository, StudentRepository, YearRepository } from "@stu/lib";
 import { queryOptions } from "@tanstack/react-query";
-import { desc, eq } from "drizzle-orm";
+import { Data, Effect } from "effect";
+import type { AppRuntime } from "~/utils/groundswell";
 
-import { db } from "~/db/client";
+class RequiredDataMissingError extends Data.TaggedError("RequiredDataMissingError")<{ kind: string; id: unknown }> {}
 
-export const getMySemesters = ({ userId }: { userId: string }) =>
+const semestersOfStudent = Effect.fn(function* ({ userId }: { userId: string }) {
+  const studentRepo = yield* StudentRepository;
+  const student = yield* studentRepo.getStudent({ studentId: userId });
+
+  if (!student) return yield* Effect.fail(new RequiredDataMissingError({ kind: "student", id: userId }));
+  const yearId = {
+    startYear: student.startYear,
+    school: student.school,
+  };
+
+  const yearRepo = yield* YearRepository;
+  const year = yield* yearRepo.getYear(yearId);
+  if (!year) return yield* Effect.fail(new RequiredDataMissingError({ kind: "year", id: yearId }));
+
+  const semesterRepo = yield* SemesterRepository;
+  const semesters = yield* semesterRepo.semestersInYear(year);
+  return semesters.sort();
+});
+
+// TODO: gotta solve this using the semester repo and based on the user's year
+export const getMySemesters = (runtime: AppRuntime, { userId }: { userId: string }) =>
   queryOptions({
     queryKey: ["my-semesters", userId],
-    queryFn: () =>
-      db
-        .selectDistinct({
-          name: t.semesters.name,
-          start: t.semesters.start,
-          end: t.semesters.end,
-          type: t.semesters.type,
-          year: t.semesters.year,
-        })
-        .from(t.semesters)
-        .innerJoin(t.schools, eq(t.schools.id, t.semesters.school))
-        .innerJoin(t.students, eq(t.students.school, t.schools.id))
-        // .innerJoin(
-        //   Courses,
-        //   and(
-        //     eq(Courses.school, Semesters.school),
-        //     eq(Courses.semesterType, Semesters.type),
-        //     eq(Courses.semesterYear, Semesters.year),
-        //   ),
-        // )
-        // .innerJoin(
-        //   CourseMemberships,
-        //   and(
-        //     eq(CourseMemberships.course, Courses.id),
-        //     eq(CourseMemberships.student, Students.person),
-        //   ),
-        // )
-        .where(eq(t.students.person, userId))
-        .orderBy(desc(t.semesters.start))
-        .limit(6)
-        .then((semesters) => semesters.reverse()),
+    queryFn: () => runtime.runPromise(semestersOfStudent({ userId })),
   });

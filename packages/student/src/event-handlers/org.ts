@@ -143,9 +143,7 @@ export const orgApplicators: NamespaceApplicatorMap<
     verify: (event) =>
       Effect.andThen(YearRepository, (repo) =>
         repo.doesYearExist({
-          name: event.data.name,
           startYear: event.data.startYear,
-          graduationYear: event.data.graduationYear,
           school: event.data.school,
         }),
       ).pipe(failIfTrue("Year already exists", "DUPLICATE")),

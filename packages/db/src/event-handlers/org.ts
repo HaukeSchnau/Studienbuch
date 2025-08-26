@@ -13,6 +13,7 @@ import {
   studentsOfSchool,
   studentsOfState,
   studentsOfYear,
+  YearRepository,
 } from "@stu/lib";
 import { addDays } from "date-fns/fp";
 import { Effect, pipe } from "effect";
@@ -20,7 +21,6 @@ import { Database } from "../database";
 import { PersonRepository } from "../repositories/person.repo";
 import { SchoolRepository } from "../repositories/school.repo";
 import { TimetableRepository } from "../repositories/timetable.repo";
-import { YearRepository } from "../repositories/year.repo";
 
 const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
 
@@ -185,23 +185,13 @@ export const orgApplicators: NamespaceServerApplicatorMap<
     apply: (event) =>
       Effect.gen(function* () {
         const yearRepo = yield* YearRepository;
-        const classRepo = yield* ClassRepository;
-
         yield* yearRepo.createYear({
           name: event.data.name,
           startYear: event.data.startYear,
           graduationYear: event.data.graduationYear,
           school: event.data.school,
+          classes: event.data.classes,
         });
-
-        for (const cls of event.data.classes) {
-          yield* classRepo.createClass({
-            identifier: cls.identifierInYear,
-            startYear: event.data.startYear,
-            school: event.data.school,
-            teachers: cls.teachers,
-          });
-        }
       }).pipe(Database.asTransaction),
     getEventTopics: (event) =>
       Effect.succeed([

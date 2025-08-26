@@ -8,6 +8,7 @@ import type {
   HolidayRepository,
   SemesterRepository,
   UnknownDatabaseError,
+  YearRepository,
 } from "@stu/lib";
 import type { Database } from "./database";
 import { authApplicators } from "./event-handlers/auth";
@@ -17,7 +18,6 @@ import type { PersonRepository } from "./repositories/person.repo";
 import type { SchoolRepository } from "./repositories/school.repo";
 import type { StudentRepository } from "./repositories/student.repo";
 import type { TimetableRepository } from "./repositories/timetable.repo";
-import type { YearRepository } from "./repositories/year.repo";
 
 const applicatorTree: Partial<
   NamespaceServerApplicatorTree<

@@ -2,8 +2,7 @@ import { and, eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Classes, Courses, CoursesToClasses, CoursesToTeachers, Persons, Semesters } from "@stu/db/schema";
 import type { Course, WithTeachers } from "@stu/lib";
-import { SCHOOL_IDS, SemesterRepository } from "@stu/lib";
-import { Effect } from "effect";
+import { SCHOOL_IDS, Semester } from "@stu/lib";
 import { z } from "zod";
 import { runtime } from "../../../groundswell";
 import { publicProcedure } from "../../../procedures";
@@ -29,7 +28,7 @@ export const listChoices = publicProcedure
       class: { identifierInYear, startYear, school },
     } = input;
 
-    const semester = await runtime.runPromise(Effect.andThen(SemesterRepository, (repo) => repo.getCurrentSemester()));
+    const semester = await runtime.runPromise(Semester.current);
     if (!semester) {
       throw new Error("No current semester found");
     }

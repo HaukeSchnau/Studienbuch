@@ -1,4 +1,4 @@
-import type { SemesterType } from "@stu/lib";
+import type { Semester } from "@stu/lib";
 import * as t from "@stu/student/schema";
 import { queryOptions, skipToken } from "@tanstack/react-query";
 import { and, eq } from "drizzle-orm";
@@ -8,7 +8,7 @@ import { db } from "~/db/client";
 export const getMyCoursesForSemester = (
   semester:
     | {
-        type: SemesterType;
+        type: Semester.Type;
         year: number;
       }
     | undefined,

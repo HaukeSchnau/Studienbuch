@@ -4,7 +4,8 @@ import type { SubjectId } from "./courses";
 import type { SimpleDate } from "./dates";
 import type { GradeType } from "./grades";
 import type { SchoolId, StateCode } from "./schools";
-import type { SemesterId, SemesterType } from "./semesters";
+import type { Semester } from "./semesters";
+import type { Year } from "./years";
 
 export type UnknownDatabaseError = DatabaseError<{ message: string }>;
 
@@ -41,7 +42,7 @@ export class CourseRepository extends Context.Tag("CourseRepository")<
           name: string;
           subject: SubjectId;
           school: SchoolId;
-          semester: SemesterId;
+          semester: Semester.Id;
           isMandatory: boolean;
         }
       | undefined,
@@ -53,7 +54,7 @@ export class CourseRepository extends Context.Tag("CourseRepository")<
       name: string;
       subject: SubjectId;
       school: SchoolId;
-      semester: SemesterId;
+      semester: Semester.Id;
       isMandatory: boolean;
       teachers: string[];
       classes: { identifierInYear: string; startYear: number }[];
@@ -186,17 +187,22 @@ export class SemesterRepository extends Context.Tag("SemesterRepository")<
         name: string;
         start: SimpleDate;
         end: SimpleDate;
-        type: SemesterType;
+        type: Semester.Type;
         year: number;
         school: SchoolId;
       }[],
     ) => Effect.Effect<void, UnknownDatabaseError>;
 
-    getCurrentSemester: () => Effect.Effect<
-      | { name: string; start: SimpleDate; end: SimpleDate; type: SemesterType; year: number; school: SchoolId }
-      | undefined,
-      UnknownDatabaseError
-    >;
+    getSemesterOnDate: (date: Date, school: SchoolId) => Effect.Effect<Semester | undefined, UnknownDatabaseError>;
+
+    getNextSemesterAfterDate: (
+      date: Date,
+      school: SchoolId,
+    ) => Effect.Effect<Semester | undefined, UnknownDatabaseError>;
+
+    getLatestSemester: (school: SchoolId) => Effect.Effect<Semester | undefined, UnknownDatabaseError>;
+
+    semestersInYear: (year: Year) => Effect.Effect<Semester[], UnknownDatabaseError>;
   }
 >() {}
 
@@ -276,20 +282,19 @@ export class TimetableRepository extends Context.Tag("TimetableRepository")<
 export class YearRepository extends Context.Tag("YearRepository")<
   YearRepository,
   {
-    doesYearExist: (payload: {
-      name: string;
-      startYear: number;
-      graduationYear: number;
-      school: SchoolId;
-    }) => Effect.Effect<boolean, UnknownDatabaseError>;
+    yearsInSemester: (semester: Semester) => Effect.Effect<Year[], UnknownDatabaseError>;
 
-    createYear: (payload: {
-      name: string;
-      startYear: number;
-      graduationYear: number;
-      school: SchoolId;
-      classes: { identifierInYear: string; teachers: string[] }[];
-    }) => Effect.Effect<void, UnknownDatabaseError>;
+    doesYearExist: (payload: Year.Id) => Effect.Effect<boolean, UnknownDatabaseError>;
+
+    getYear: (payload: Year.Id) => Effect.Effect<Year | undefined, UnknownDatabaseError>;
+
+    getAllYears: (payload: { school?: SchoolId }) => Effect.Effect<Year[], UnknownDatabaseError>;
+
+    createYear: (
+      payload: Year & {
+        classes: { identifierInYear: string; teachers: string[] }[];
+      },
+    ) => Effect.Effect<void, UnknownDatabaseError>;
   }
 >() {}
 

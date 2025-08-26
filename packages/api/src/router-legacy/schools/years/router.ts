@@ -1,11 +1,12 @@
-import { and, desc, eq, gte } from "@stu/db";
+import { and, eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Years } from "@stu/db/schema";
-import { getMaxActiveGraduationYear, SCHOOL_IDS } from "@stu/lib";
+import { SCHOOL_IDS, Year, YearRepository } from "@stu/lib";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
+import { Effect } from "effect";
 import { z } from "zod";
-
+import { runtime } from "../../../groundswell";
 import { publicProcedure } from "../../../procedures";
 
 export const years = {
@@ -16,25 +17,11 @@ export const years = {
         activeOnly: z.boolean().optional(),
       }),
     )
-    .query(async ({ input: { school, activeOnly } }) => {
-      return db.query.Years.findMany({
-        where: and(
-          school !== undefined ? eq(Years.school, school) : undefined,
-          activeOnly ? gte(Years.graduationYear, getMaxActiveGraduationYear()) : undefined,
-        ),
-        orderBy: desc(Years.startYear),
-      });
-    }),
-
-  listGroupedBySchool: publicProcedure.query(() => {
-    return db.query.Schools.findMany({
-      with: {
-        years: {
-          where: gte(Years.graduationYear, getMaxActiveGraduationYear()),
-        },
-      },
-    });
-  }),
+    .query(async ({ input: { school, activeOnly } }) =>
+      runtime.runPromise(
+        activeOnly ? Year.activeYears : YearRepository.pipe(Effect.andThen((repo) => repo.getAllYears({ school }))),
+      ),
+    ),
 
   getOne: publicProcedure
     .input(

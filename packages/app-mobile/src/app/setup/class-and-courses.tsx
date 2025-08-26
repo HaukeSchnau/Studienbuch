@@ -1,7 +1,7 @@
 import type {
   Course as BaseCourse,
   SchoolId,
-  SemesterType,
+  Semester,
   SimpleDate,
   StateCode,
   SubjectId,
@@ -11,7 +11,7 @@ import { BetterMap, formalNameShort, simpleDateToDate } from "@stu/lib";
 import { pk } from "@stu/student";
 import * as t from "@stu/student/schema";
 import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
-import { and, eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { router } from "expo-router";
 import { useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
@@ -38,7 +38,7 @@ const bootstrap = async ({
   classIdentifier: string;
   semester: {
     name: string;
-    type: SemesterType;
+    type: Semester.Type;
     year: number;
     start: SimpleDate;
     end: SimpleDate;
@@ -63,20 +63,6 @@ const bootstrap = async ({
         end: simpleDateToDate(semester.end),
       },
     });
-
-  await db
-    .delete(t.yearSemesters)
-    .where(and(eq(t.yearSemesters.school, school.id), eq(t.yearSemesters.startYear, year.startYear)))
-    .execute();
-  await db
-    .insert(t.yearSemesters)
-    .values({
-      school: school.id,
-      startYear: year.startYear,
-      semesterYear: semester.year,
-      semesterType: semester.type,
-    })
-    .execute();
 
   await db
     .insert(t.courses)

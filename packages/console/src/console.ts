@@ -2,7 +2,7 @@ import { Command, Options } from "@effect/cli";
 import { BunContext, BunRuntime } from "@effect/platform-bun";
 import { recurringCourses } from "@stu/db";
 import { upsertCourses } from "@stu/legacy-import";
-import { defaultSchools, SCHOOL_IDS, SemesterRepository } from "@stu/lib";
+import { defaultSchools, SCHOOL_IDS, Semester } from "@stu/lib";
 import { Effect } from "effect";
 import { AppLayerLive } from "../../api/src/groundswell";
 import { importClasses } from "./kadmos/import-classes";
@@ -28,8 +28,7 @@ const pull = Command.make(
       const authContext = yield* Effect.tryPromise(() => setupAuth(school));
       const schoolYearId = yield* Effect.tryPromise(() => getCurrentSchoolYearId(authContext));
 
-      const semesterRepo = yield* SemesterRepository;
-      const currentSemester = yield* semesterRepo.getCurrentSemester();
+      const currentSemester = yield* Semester.current;
       if (!currentSemester) {
         return yield* Effect.fail("No current semester found"); // TODO: Tagged error
       }
