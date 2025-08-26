@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "eslint": "eslint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -27,12 +26,10 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@stu/eslint-config": "workspace:*",
     "@stu/testing": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@types/bun": "^1.2.10",
     "bun-plugin-pino": "^1.4.0",
-    "eslint": "^9.33.0",
     "vitest": "^3.1.1"
   }
 }

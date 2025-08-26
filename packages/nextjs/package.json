@@ -8,7 +8,6 @@
     "clean": "git clean -xdf .cache .next .turbo node_modules",
     "dev": "next dev",
     "lint": "biome format # TODO: biome check",
-    "eslint": "echo 'TODO: eslint'",
     "start": "next start",
     "typecheck": "echo 'TODO: tsc --noEmit'"
   },
@@ -41,14 +40,12 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.4.6",
-    "@stu/eslint-config": "workspace:*",
     "@stu/tailwind-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@tanstack/react-query-devtools": "^5.85.3",
     "@types/bun": "^1.2.10",
     "@types/react": "~19.1.10",
     "@types/react-dom": "^19.1.7",
-    "eslint": "^9.33.0",
     "jiti": "^2.5.1",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.9.2"

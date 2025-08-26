@@ -11,7 +11,6 @@
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "lint": "biome check",
-    "eslint": "eslint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -25,11 +24,9 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@stu/eslint-config": "workspace:*",
     "@stu/testing": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@types/papaparse": "^5.3.14",
-    "eslint": "^9.33.0",
     "vitest": "^3.1.1"
   }
 }

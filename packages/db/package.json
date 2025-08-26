@@ -22,7 +22,6 @@
     "dev:internal": "tsc --watch",
     "lint": "biome check",
     "generate": "drizzle-kit generate",
-    "eslint": "eslint",
     "push": "drizzle-kit push",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
@@ -40,11 +39,9 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@stu/eslint-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@types/pg": "^8.15.5",
     "drizzle-kit": "^0.31.4",
-    "eslint": "^9.33.0",
     "vitest": "^3.1.1"
   }
 }

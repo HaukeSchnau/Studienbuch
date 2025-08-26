@@ -21,8 +21,6 @@
     "dev:expo": "turbo watch dev dev:internal -F @stu/app-mobile... --ui=tui",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --write",
-    "eslint": "turbo run eslint -- --cache --cache-location .cache/.eslintcache",
-    "eslint:fix": "turbo run eslint -- --fix --cache --cache-location .cache/.eslintcache",
     "lint:ws": "sherif",
     "postinstall": "bun lint:ws",
     "test": "vitest run",

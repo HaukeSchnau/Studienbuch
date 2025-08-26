@@ -20,10 +20,6 @@
     "lint": {
       "outputLogs": "new-only"
     },
-    "eslint": {
-      "dependsOn": ["^topo", "^build"],
-      "outputs": [".cache/.eslintcache"]
-    },
     "test": {
       "dependsOn": ["^build"]
     },

@@ -1,13 +1,10 @@
 {
   "window.title": "${activeEditorShort}${separator}Studienbuch${separator}${profileName}",
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit",
     "source.fixAll.biome": "explicit"
   },
   "editor.defaultFormatter": "biomejs.biome",
   "editor.formatOnSave": true,
-  "eslint.runtime": "node",
-  "eslint.workingDirectories": [{ "pattern": "packages/*/" }, { "pattern": "tooling/*/" }],
   "tailwindCSS.experimental.classRegex": [
     ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
     ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]

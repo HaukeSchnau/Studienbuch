@@ -9,7 +9,6 @@
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "lint": "biome check",
-    "eslint": "eslint",
     "push": "drizzle-kit push",
     "studio": "drizzle-kit studio",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
@@ -25,11 +24,9 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@stu/eslint-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@types/pg": "^8.15.5",
     "drizzle-kit": "^0.31.4",
-    "eslint": "^9.33.0",
     "typescript": "^5.9.2"
   }
 }

@@ -14,7 +14,6 @@
     "dev:internal": "tsc --watch",
     "lint": "biome check",
     "generate": "openapi --input https://openholidaysapi.org/swagger/v1/swagger.json --output ./src/holidays/generated",
-    "eslint": "eslint",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
@@ -29,10 +28,8 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@stu/eslint-config": "workspace:*",
     "@stu/tsconfig": "workspace:*",
     "@types/tough-cookie": "^4.0.5",
-    "eslint": "^9.33.0",
     "openapi-typescript-codegen": "^0.29.0",
     "vitest": "^3.1.1"
   }

@@ -6,7 +6,6 @@
   "scripts": {
     "clean": "git clean -xdf .cache .turbo node_modules",
     "lint": "biome check",
-    "eslint": "eslint",
     "open:ios": "xed ios",
     "open:android": "open -a \"Android Studio\" android",
     "typecheck": "tsc --noEmit"
@@ -20,7 +19,6 @@
     "react-native": "*"
   },
   "devDependencies": {
-    "@stu/eslint-config": "workspace:*",
     "@types/react": "~19.1.10",
     "expo": "53.0.20",
     "expo-modules-core": "~2.5.0",

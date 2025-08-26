@@ -1,6 +1,5 @@
 {
   "recommendations": [
-    "dbaeumer.vscode-eslint",
     "expo.vscode-expo-tools",
     "biomejs.biome",
     "yoavbls.pretty-ts-errors",
