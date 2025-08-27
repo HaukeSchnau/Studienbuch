@@ -49,8 +49,6 @@ services:
     environment:
       MANAGEMENT_DATABASE_URL: postgresql://stu:stu@database:5432/stu
       PULSAR_URL: pulsar://event-stream:6650
-      ISERV_USERNAME: $ISERV_USERNAME
-      ISERV_PASSWORD: $ISERV_PASSWORD
       LINEAR_API_KEY: $LINEAR_API_KEY # TODO: remove
       NEXT_PUBLIC_AXIOM_DATASET: $AXIOM_DATASET
       NEXT_PUBLIC_AXIOM_TOKEN: $AXIOM_TOKEN
@@ -79,8 +77,6 @@ services:
     tty: true
     environment:
       LINEAR_API_KEY: $LINEAR_API_KEY # TODO: remove
-      ISERV_USERNAME: $ISERV_USERNAME
-      ISERV_PASSWORD: $ISERV_PASSWORD
       NEXT_PUBLIC_AXIOM_DATASET: $AXIOM_DATASET
       NEXT_PUBLIC_AXIOM_TOKEN: $AXIOM_TOKEN
       PULSAR_URL: pulsar://event-stream:6650

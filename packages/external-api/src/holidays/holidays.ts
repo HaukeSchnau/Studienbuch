@@ -1,7 +1,7 @@
-import { parseSimpleDate, type SimpleDate } from "@stu/lib";
-import { Effect } from "effect";
-import z, { type ZodType } from "zod";
-import { HolidaysService, OpenAPI } from "./generated";
+import { SimpleDate, SimpleDateSchema } from "@stu/lib";
+import { Effect, Schema } from "effect";
+import { ExternalApiError } from "../errors";
+import { type HolidayResponse, HolidaysService, OpenAPI } from "./generated";
 
 const states = [
   "BB",
@@ -24,20 +24,12 @@ const states = [
 
 export type State = (typeof states)[number];
 
-const holidaySchema: ZodType<Holiday> = z.object({
-  name: z.string(),
-  start: z.object({
-    year: z.number(),
-    month: z.number(),
-    day: z.number(),
-  }),
-  end: z.object({
-    year: z.number(),
-    month: z.number(),
-    day: z.number(),
-  }),
-  state: z.enum(states),
-  year: z.number(),
+const HolidaySchema = Schema.Struct({
+  name: Schema.String,
+  start: SimpleDateSchema,
+  end: SimpleDateSchema,
+  state: Schema.Literal(...states),
+  year: Schema.Int.pipe(Schema.between(1900, 2100)),
 });
 
 export interface Holiday {
@@ -47,33 +39,32 @@ export interface Holiday {
   state: State;
 }
 
-// const parseHolidayResponse = (result: HolidayType[]) => z.array(holidaySchema).parse(result);
-
 const getHolidaysInternal = async (state: State, startYear: number) => {
   OpenAPI.BASE = "https://openholidaysapi.org";
 
   const startDate = `${startYear}-01-01`;
-  const endDate = `${startYear + 2}-10-31`; // maximum is 3 years (3 * 365 days). we take a little less than that.
+  const endDate = `${startYear + 2}-10-31`; // maximum is 3 years (3 * 365 days). we take a little less than that to be safe.
 
   return HolidaysService.getSchoolHolidays("DE", startDate, endDate, "DE", `DE-${state}`);
 };
 
-const getHolidaysPromise = async (state: State, startYear: number): Promise<Holiday[]> => {
-  const response = await getHolidaysInternal(state, startYear);
-  return holidaySchema.array().parse(
-    response.map((holiday) => {
-      const start = parseSimpleDate(holiday.startDate);
-      const end = parseSimpleDate(holiday.endDate);
-      return {
-        name: holiday.name[0]?.text,
-        start,
-        end,
-        state: holiday.subdivisions[0]?.shortName,
-        year: start.year,
-      };
-    }),
-  );
-};
+const mapHoliday = Effect.fnUntraced(function* (holiday: HolidayResponse) {
+  const start = yield* SimpleDate.parse(holiday.startDate);
+  const end = yield* SimpleDate.parse(holiday.endDate);
+  return {
+    name: holiday.name[0]?.text,
+    start,
+    end,
+    state: holiday.subdivisions[0]?.shortName,
+    year: start.year,
+  };
+});
 
 export const getHolidays = (state: State, startYear: number) =>
-  Effect.tryPromise(() => getHolidaysPromise(state, startYear));
+  Effect.tryPromise({
+    try: () => getHolidaysInternal(state, startYear),
+    catch: (error) => new ExternalApiError({ cause: error }),
+  }).pipe(
+    Effect.flatMap((holidays) => Effect.all(holidays.map(mapHoliday))),
+    Effect.flatMap(Schema.decodeUnknown(HolidaySchema.pipe(Schema.Array))),
+  );

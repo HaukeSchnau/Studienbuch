@@ -7,7 +7,6 @@ import { subjectNameMap } from "@stu/lib";
 import { sendNotifications } from "@stu/lib-server";
 import { format } from "date-fns";
 import { Exit } from "effect";
-import type { ConsoleIservClient } from "../get-or-create-teacher";
 import { logger } from "../logger";
 
 interface Entry {
@@ -43,10 +42,26 @@ interface Entry {
   )[];
 }
 
-export const ingestTimetableEntry = async (
-  { uuid, course, semester, classes, teacherNames, school, start, duration, roomNumbers, substitutions }: Entry,
-  iservClient: ConsoleIservClient,
-) => {
+const getTeacherId = async (abbrv: string) => {
+  const id = await db.query.Persons.findFirst({
+    where: eq(tables.Persons.abbrv, abbrv),
+  }).then((person) => person?.id);
+  if (!id) throw new Error(`Teacher ${abbrv} not found`);
+  return id;
+};
+
+export const ingestTimetableEntry = async ({
+  uuid,
+  course,
+  semester,
+  classes,
+  teacherNames,
+  school,
+  start,
+  duration,
+  roomNumbers,
+  substitutions,
+}: Entry) => {
   const courseCreatedErr = await ingest(
     {
       type: "org.courses.created",
@@ -61,7 +76,7 @@ export const ingestTimetableEntry = async (
           identifierInYear: cls.identifierInYear,
           startYear: cls.startYear,
         })),
-        teachers: await Promise.all(teacherNames.map((teacherName) => iservClient.getOrCreateTeacher(teacherName))),
+        teachers: await Promise.all(teacherNames.map(getTeacherId)),
       },
       id: crypto.randomUUID(),
       timestamp: new Date(),
@@ -174,8 +189,8 @@ export const ingestTimetableEntry = async (
           data: {
             course: uuid,
             start,
-            originalTeacher: await iservClient.getOrCreateTeacher(substitution.originalTeacherName),
-            substitute: await iservClient.getOrCreateTeacher(substitution.substituteName),
+            originalTeacher: await getTeacherId(substitution.originalTeacherName),
+            substitute: await getTeacherId(substitution.substituteName),
           },
           id: crypto.randomUUID(),
           timestamp: new Date(),
@@ -207,7 +222,7 @@ export const ingestTimetableEntry = async (
           data: {
             course: uuid,
             start,
-            originalTeacher: await iservClient.getOrCreateTeacher(substitution.originalTeacherName),
+            originalTeacher: await getTeacherId(substitution.originalTeacherName),
           },
           id: crypto.randomUUID(),
           timestamp: new Date(),

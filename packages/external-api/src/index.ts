@@ -1,4 +1,3 @@
-export * from "./holidays";
-export * from "./iserv";
+export * from "./holidays/holidays";
 export * from "./kadmos";
 export * from "./linear";

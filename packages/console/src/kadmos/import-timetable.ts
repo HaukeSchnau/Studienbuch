@@ -9,7 +9,6 @@ import type { SchoolId, SimpleDate } from "@stu/lib";
 import { BetterMap, isArraySingleElement } from "@stu/lib";
 import { Exit } from "effect";
 import { z } from "zod";
-import { ConsoleIservClient } from "../get-or-create-teacher";
 import { logger } from "../logger";
 import type { ProtoTimetableEntry } from "../map-kadmos-class";
 import { mapKadmosClassV2, mapKadmosTimetableEntry } from "../map-kadmos-class";
@@ -216,46 +215,40 @@ export const importTimetable = async (options: Options, authContext: AuthContext
       }
     }
 
-    const iservClient = new ConsoleIservClient();
     for (const entry of course.entries) {
       const semester = await findSemesterFromDate(entry.start, school);
 
-      await ingestTimetableEntry(
-        {
-          uuid,
-          school,
-          semester,
+      await ingestTimetableEntry({
+        uuid,
+        school,
+        semester,
 
-          start: entry.start,
-          duration: entry.duration,
-          substitutions: entry.teachers
-            .map((teacher) =>
-              teacher.change === null
-                ? null
-                : teacher.change.type === "REPLACED"
-                  ? {
-                      type: "SUBSTITUTION" as const,
-                      originalTeacherName: teacher.abbrv,
-                      substituteName: teacher.change.abbrv,
-                    }
-                  : {
-                      type: "ABSENT" as const,
-                      originalTeacherName: teacher.abbrv,
-                    },
-            )
-            .filter((x) => x !== null),
-          teacherNames: entry.teachers.map((teacher) => teacher.abbrv),
-          roomNumbers: entry.roomNumbers
-            .map((room) =>
-              room.change === null ? room.name : room.change.type === "REPLACED" ? room.change.name : null,
-            )
-            .filter((x) => x !== null),
+        start: entry.start,
+        duration: entry.duration,
+        substitutions: entry.teachers
+          .map((teacher) =>
+            teacher.change === null
+              ? null
+              : teacher.change.type === "REPLACED"
+                ? {
+                    type: "SUBSTITUTION" as const,
+                    originalTeacherName: teacher.abbrv,
+                    substituteName: teacher.change.abbrv,
+                  }
+                : {
+                    type: "ABSENT" as const,
+                    originalTeacherName: teacher.abbrv,
+                  },
+          )
+          .filter((x) => x !== null),
+        teacherNames: entry.teachers.map((teacher) => teacher.abbrv),
+        roomNumbers: entry.roomNumbers
+          .map((room) => (room.change === null ? room.name : room.change.type === "REPLACED" ? room.change.name : null))
+          .filter((x) => x !== null),
 
-          classes: course.classes,
-          course: course.course,
-        },
-        iservClient,
-      );
+        classes: course.classes,
+        course: course.course,
+      });
     }
   }
 };

@@ -28,6 +28,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@effect/vitest": "^0.25.1",
     "@stu/tsconfig": "workspace:*",
     "@types/tough-cookie": "^4.0.5",
     "openapi-typescript-codegen": "^0.29.0",

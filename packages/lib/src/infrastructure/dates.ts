@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import z from "zod";
 import "dayjs/locale/de";
+import { Data, Effect, Schema } from "effect";
 
 dayjs.locale("de");
 dayjs.extend(relativeTime);
@@ -13,10 +14,38 @@ export interface SimpleDate {
   day: number;
 }
 
+/**
+ * @deprecated use SimpleDateSchema instead
+ */
 export const simpleDateSchema = z.object({
   year: z.number().int().min(2000).max(2100),
   month: z.number().int().min(1).max(12),
   day: z.number().int().min(1).max(31),
+});
+
+export namespace SimpleDate {
+  export class InvalidDateError extends Data.TaggedError("InvalidDateError")<{ value: string }> {}
+
+  export const parse = Effect.fn(function* (dateStr: string) {
+    const [year, month, day] = dateStr.split("-").map(Number);
+    if (
+      year === undefined ||
+      month === undefined ||
+      day === undefined ||
+      Number.isNaN(year) ||
+      Number.isNaN(month) ||
+      Number.isNaN(day)
+    ) {
+      return yield* Effect.fail(new InvalidDateError({ value: dateStr }));
+    }
+    return { year, month, day };
+  });
+}
+
+export const SimpleDateSchema = Schema.Struct({
+  year: Schema.Int.pipe(Schema.between(1900, 2100)),
+  month: Schema.Int.pipe(Schema.between(1, 12)),
+  day: Schema.Int.pipe(Schema.between(1, 31)),
 });
 
 /**
