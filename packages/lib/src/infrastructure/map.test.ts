@@ -204,7 +204,7 @@ describe("BetterMap", () => {
       map.set("second", 2);
       map.set("third", 3);
 
-      const result = Array.from(map.map((value, key) => key));
+      const result = Array.from(map.map((_, key) => key));
       expect(result).toEqual(["first", "second", "third"]);
     });
   });

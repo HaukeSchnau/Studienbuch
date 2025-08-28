@@ -1,15 +1,12 @@
 import crypto from "node:crypto";
-import { ingest, SYSTEM_USER } from "@stu/api";
-import { and, between, eq, gte, lte } from "@stu/db";
-import { db } from "@stu/db/client";
+import { ingestEffect, SYSTEM_USER } from "@stu/api";
+import { and, between, Database, eq } from "@stu/db";
 import * as tables from "@stu/db/schema";
-import { Semesters } from "@stu/db/schema";
-import { type AuthContext, getClassesV2, getTimetableV2 } from "@stu/external-api";
+import { UntisClasses, UntisTimetable } from "@stu/external-api";
 import type { SchoolId, SimpleDate } from "@stu/lib";
-import { BetterMap, isArraySingleElement } from "@stu/lib";
-import { Exit } from "effect";
+import { BetterMap, ensureEntityDefined, SemesterRepository } from "@stu/lib";
+import { Effect } from "effect";
 import { z } from "zod";
-import { logger } from "../logger";
 import type { ProtoTimetableEntry } from "../map-kadmos-class";
 import { mapKadmosClassV2, mapKadmosTimetableEntry } from "../map-kadmos-class";
 import { ingestTimetableEntry } from "./ingest-timetable-entry";
@@ -40,39 +37,23 @@ const generateCourseUuid = (school: SchoolId, entry: Pick<ProtoTimetableEntry, "
   return z.string().uuid().parse(formattedUuid);
 };
 
-const findSemesterFromDate = async (date: Date, school: SchoolId) => {
-  const semesters = await db.query.Semesters.findMany({
-    where: and(eq(Semesters.school, school), lte(Semesters.start, date), gte(Semesters.end, date)),
-  });
-
-  if (!isArraySingleElement(semesters)) {
-    throw new Error(`Invalid number of semesters found: ${semesters.length}`);
-  }
-
-  return semesters[0];
-};
-
-const getTimetable = async ({ start, end, school, schoolYearId }: Options, authContext: AuthContext) => {
-  logger.info(
+const getTimetable = Effect.fn(function* (options: Options) {
+  const { start, end, school } = options;
+  yield* Effect.logInfo(
     `Downloading timetable for ${start.year}-${start.month}-${start.day} to ${end.year}-${end.month}-${end.day}...`,
   );
 
-  const kadmosClasses = await getClassesV2(start, end, schoolYearId, authContext).then((classes) =>
-    classes.classes.map(mapKadmosClassV2),
+  const untisClasses = yield* UntisClasses.list(options).pipe(
+    Effect.map((classes) => classes.classes.map(mapKadmosClassV2)),
   );
 
   // First, we collect all entries for the week over all classes
   const entriesToInsert: ProtoTimetableEntry[] = [];
-  for (const cls of kadmosClasses) {
-    const timetable = await getTimetableV2(
-      {
-        start,
-        end,
-        kadmosClassId: cls.kadmosId,
-        schoolYearId,
-      },
-      authContext,
-    );
+  for (const cls of untisClasses) {
+    const timetable = yield* UntisTimetable.get({
+      ...options,
+      kadmosClassId: cls.kadmosId,
+    });
 
     entriesToInsert.push(
       ...timetable.days
@@ -153,11 +134,12 @@ const getTimetable = async ({ start, end, school, schoolYearId }: Options, authC
     start,
     end,
   };
-};
+});
 
-export const importTimetable = async (options: Options, authContext: AuthContext) => {
-  const { courses, start, end } = await getTimetable(options, authContext);
+export const importTimetable = Effect.fn(function* (options: Options) {
+  const { courses, start, end } = yield* getTimetable(options);
   const { school } = options;
+  const db = yield* Database;
 
   // Insert all courses into the database
   for (const [uuid, course] of courses) {
@@ -171,16 +153,18 @@ export const importTimetable = async (options: Options, authContext: AuthContext
         ),
     );
 
-    const existingTimetableEntries = await db.query.TimetableEntries.findMany({
-      where: and(
-        eq(tables.TimetableEntries.course, uuid),
-        between(
-          tables.TimetableEntries.start,
-          new Date(start.year, start.month - 1, start.day),
-          new Date(end.year, end.month - 1, end.day),
+    const existingTimetableEntries = yield* db.execute((db) =>
+      db.query.TimetableEntries.findMany({
+        where: and(
+          eq(tables.TimetableEntries.course, uuid),
+          between(
+            tables.TimetableEntries.start,
+            new Date(start.year, start.month - 1, start.day),
+            new Date(end.year, end.month - 1, end.day),
+          ),
         ),
-      ),
-    });
+      }),
+    );
 
     // Check if any existing timetable entries are not in the current kadmos timetable
     for (const existingTimetableEntry of existingTimetableEntries) {
@@ -188,37 +172,38 @@ export const importTimetable = async (options: Options, authContext: AuthContext
         (entry) => entry.start.getTime() === existingTimetableEntry.start.getTime(),
       );
       if (!existingEntry) {
-        const res = await ingest(
+        yield* ingestEffect(
           {
             type: "org.timetable.discarded",
             data: {
               course: uuid,
               start: existingTimetableEntry.start,
             },
-            id: crypto.randomUUID(),
-            timestamp: new Date(),
           },
           SYSTEM_USER,
+        ).pipe(
+          Effect.tap(() => Effect.logInfo(`Timetable entry discarded: ${JSON.stringify(existingTimetableEntry)}`)),
+          Effect.catchIf(
+            (error) => error.reason === "NOT_FOUND",
+            () =>
+              Effect.logError(
+                `Timetable entry does not exist. Could not discard: ${JSON.stringify(existingTimetableEntry)}`,
+              ),
+          ),
+          Effect.catchAll((err) =>
+            Effect.logError(`Could not ingest timetable discarded event for ${uuid}: ${err.toString()}`),
+          ),
         );
-
-        if (Exit.isFailure(res)) {
-          if (res.cause._tag === "Fail" && res.cause.error.reason === "NOT_FOUND") {
-            logger.error(
-              `Timetable entry does not exist. Could not discard: ${JSON.stringify(existingTimetableEntry)}`,
-            );
-          } else {
-            logger.error(`Could not ingest timetable discarded event for ${uuid}: ${res.cause.toString()}`);
-          }
-        } else {
-          logger.info(`Timetable entry discarded: ${JSON.stringify(existingTimetableEntry)}`);
-        }
       }
     }
 
+    const semesterRepository = yield* SemesterRepository;
     for (const entry of course.entries) {
-      const semester = await findSemesterFromDate(entry.start, school);
+      const semester = yield* semesterRepository
+        .getSemesterOnDate(entry.start, school)
+        .pipe(Effect.flatMap(ensureEntityDefined("semester on date", { start: entry.start, school })));
 
-      await ingestTimetableEntry({
+      yield* ingestTimetableEntry({
         uuid,
         school,
         semester,
@@ -251,4 +236,4 @@ export const importTimetable = async (options: Options, authContext: AuthContext
       });
     }
   }
-};
+});

@@ -1,0 +1,1072 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Get teachers from Kadmos > should get teachers 1`] = `
+{
+  "assignmentGroups": [],
+  "buildings": [],
+  "classes": [],
+  "departments": [
+    {
+      "id": 6,
+      "shortName": "Gra",
+    },
+    {
+      "id": 2,
+      "shortName": "LI",
+    },
+    {
+      "id": 7,
+      "shortName": "Lil-Sek I",
+    },
+    {
+      "id": 10,
+      "shortName": "Lil-SekII",
+    },
+  ],
+  "preSelected": null,
+  "resourceType": "TEACHER",
+  "resourceTypes": [],
+  "resources": [],
+  "roomGroups": [],
+  "rooms": [],
+  "students": [],
+  "subjects": [],
+  "teachers": [
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "AHL",
+        "id": 2,
+        "longName": "Ahlrichs",
+        "shortName": "AHL",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "AUF",
+        "id": 403,
+        "longName": "Aufderheide",
+        "shortName": "AUF",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "BAU",
+        "id": 14,
+        "longName": "Bauer",
+        "shortName": "BAU",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "BEL",
+        "id": 18,
+        "longName": "Below",
+        "shortName": "BEL",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "BEM",
+        "id": 22,
+        "longName": "Bembenek",
+        "shortName": "BEM",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "BIY",
+        "id": 406,
+        "longName": "Bi",
+        "shortName": "BIY",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "BOE",
+        "id": 26,
+        "longName": "Boeger",
+        "shortName": "BOE",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "BOL",
+        "id": 465,
+        "longName": "Bolte",
+        "shortName": "BOL",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "BOU",
+        "id": 30,
+        "longName": "Bouwer",
+        "shortName": "BOU",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "BÜN",
+        "id": 409,
+        "longName": "Bünte",
+        "shortName": "BÜN",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "BUS",
+        "id": 34,
+        "longName": "Buse",
+        "shortName": "BUS",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "BÜS",
+        "id": 226,
+        "longName": "Büsing",
+        "shortName": "BÜS",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "CLA",
+        "id": 42,
+        "longName": "Claus",
+        "shortName": "CLA",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "CLR",
+        "id": 46,
+        "longName": "Cloer",
+        "shortName": "CLR",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "COR",
+        "id": 50,
+        "longName": "Cordes",
+        "shortName": "COR",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "DAH",
+        "id": 54,
+        "longName": "Dahl",
+        "shortName": "DAH",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "DAN",
+        "id": 58,
+        "longName": "Dantz",
+        "shortName": "DAN",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "DAU",
+        "id": 62,
+        "longName": "Daus-Kohlhas",
+        "shortName": "DAU",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "DIR",
+        "id": 66,
+        "longName": "Direnga",
+        "shortName": "DIR",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "DIT",
+        "id": 70,
+        "longName": "Ditschke",
+        "shortName": "DIT",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KRA",
+        "id": 218,
+        "longName": "Dorn-Kraatz",
+        "shortName": "KRA",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "DRA",
+        "id": 74,
+        "longName": "Drachenberg",
+        "shortName": "DRA",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "DÜD",
+        "id": 78,
+        "longName": "Düdükcü",
+        "shortName": "DÜD",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "END",
+        "id": 86,
+        "longName": "Endemann",
+        "shortName": "END",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "ENG",
+        "id": 90,
+        "longName": "Engelbertz",
+        "shortName": "ENG",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "ENN",
+        "id": 94,
+        "longName": "Enneking",
+        "shortName": "ENN",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "ERI",
+        "id": 98,
+        "longName": "Erichsen",
+        "shortName": "ERI",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "FED",
+        "id": 468,
+        "longName": "Fedder",
+        "shortName": "FED",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "FID",
+        "id": 102,
+        "longName": "Fidan",
+        "shortName": "FID",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "FRK",
+        "id": 110,
+        "longName": "Franck",
+        "shortName": "FRK",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "FRA",
+        "id": 106,
+        "longName": "Frank",
+        "shortName": "FRA",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "GIL",
+        "id": 418,
+        "longName": "Gill",
+        "shortName": "GIL",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "GRA",
+        "id": 122,
+        "longName": "Graue-Marks",
+        "shortName": "GRA",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "GRJ",
+        "id": 126,
+        "longName": "Grütjen",
+        "shortName": "GRJ",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "GUN",
+        "id": 523,
+        "longName": "Gunschera",
+        "shortName": "GUN",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "HAG",
+        "id": 421,
+        "longName": "Hagedorn",
+        "shortName": "HAG",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "HAN",
+        "id": 134,
+        "longName": "Hanisch",
+        "shortName": "HAN",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "HEI",
+        "id": 142,
+        "longName": "Heiber-Rehm",
+        "shortName": "HEI",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "HEU",
+        "id": 146,
+        "longName": "Heubner",
+        "shortName": "HEU",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "HIL",
+        "id": 154,
+        "longName": "Hilken",
+        "shortName": "HIL",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "HIR",
+        "id": 158,
+        "longName": "Hirsch",
+        "shortName": "HIR",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "HÖP",
+        "id": 162,
+        "longName": "Höppe",
+        "shortName": "HÖP",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "HOR",
+        "id": 166,
+        "longName": "Hornung",
+        "shortName": "HOR",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "HUS",
+        "id": 174,
+        "longName": "Hussain",
+        "shortName": "HUS",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "JEN",
+        "id": 182,
+        "longName": "Jenderny",
+        "shortName": "JEN",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KAH",
+        "id": 500,
+        "longName": "Kahrs",
+        "shortName": "KAH",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KÄM",
+        "id": 186,
+        "longName": "Kämpf",
+        "shortName": "KÄM",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KAR",
+        "id": 190,
+        "longName": "Karaman",
+        "shortName": "KAR",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KAT",
+        "id": 471,
+        "longName": "Katterwe",
+        "shortName": "KAT",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KEL",
+        "id": 194,
+        "longName": "Kellermann",
+        "shortName": "KEL",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KLÄ",
+        "id": 198,
+        "longName": "Klähr",
+        "shortName": "KLÄ",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KLE",
+        "id": 202,
+        "longName": "Klee",
+        "shortName": "KLE",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KLM",
+        "id": 464,
+        "longName": "Klemm",
+        "shortName": "KLM",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KLZ",
+        "id": 206,
+        "longName": "Klotzek",
+        "shortName": "KLZ",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KOL",
+        "id": 509,
+        "longName": "Kolodziej",
+        "shortName": "KOL",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KOO",
+        "id": 515,
+        "longName": "KOOP",
+        "shortName": "KOO",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KÖP",
+        "id": 214,
+        "longName": "Köpke",
+        "shortName": "KÖP",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KÖS",
+        "id": 459,
+        "longName": "Köstermann",
+        "shortName": "KÖS",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KRC",
+        "id": 222,
+        "longName": "Krause",
+        "shortName": "KRC",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "KRE",
+        "id": 474,
+        "longName": "Krein",
+        "shortName": "KRE",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "LAN",
+        "id": 477,
+        "longName": "Langhorst",
+        "shortName": "LAN",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "LIC",
+        "id": 480,
+        "longName": "Lichtwer",
+        "shortName": "LIC",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "LOR",
+        "id": 483,
+        "longName": "Lorenz",
+        "shortName": "LOR",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "BON",
+        "id": 517,
+        "longName": "Lukas Bonk",
+        "shortName": "BON",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "LÜT",
+        "id": 234,
+        "longName": "Lütjen",
+        "shortName": "LÜT",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "MAN",
+        "id": 238,
+        "longName": "Mann",
+        "shortName": "MAN",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "MAR",
+        "id": 242,
+        "longName": "Markowsky",
+        "shortName": "MAR",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "MAT",
+        "id": 462,
+        "longName": "Martens",
+        "shortName": "MAT",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "MAS",
+        "id": 246,
+        "longName": "Maschke",
+        "shortName": "MAS",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "MEI",
+        "id": 250,
+        "longName": "Meißner",
+        "shortName": "MEI",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "MEY",
+        "id": 254,
+        "longName": "Meyer",
+        "shortName": "MEY",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "MIT",
+        "id": 486,
+        "longName": "Mittwollen",
+        "shortName": "MIT",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "MUE",
+        "id": 258,
+        "longName": "Müller",
+        "shortName": "MUE",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "GOR",
+        "id": 520,
+        "longName": "Niclas Goretzky",
+        "shortName": "GOR",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "NIL",
+        "id": 266,
+        "longName": "Nielsen",
+        "shortName": "NIL",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "NIM",
+        "id": 270,
+        "longName": "Niemann",
+        "shortName": "NIM",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "NIE",
+        "id": 262,
+        "longName": "Niemeyer",
+        "shortName": "NIE",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "OLB",
+        "id": 274,
+        "longName": "Olbertz",
+        "shortName": "OLB",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "VFB OL",
+        "id": 495,
+        "longName": "Oldenburg",
+        "shortName": "VFB OL",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "OTT",
+        "id": 506,
+        "longName": "Ott",
+        "shortName": "OTT",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "PER",
+        "id": 278,
+        "longName": "Perez",
+        "shortName": "PER",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "POS",
+        "id": 452,
+        "longName": "Post",
+        "shortName": "POS",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "RAS",
+        "id": 282,
+        "longName": "Rasche",
+        "shortName": "RAS",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "REE",
+        "id": 286,
+        "longName": "Reese",
+        "shortName": "REE",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "RUD",
+        "id": 298,
+        "longName": "Rudolph",
+        "shortName": "RUD",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "RUM",
+        "id": 302,
+        "longName": "RUM",
+        "shortName": "RUM",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SAP",
+        "id": 310,
+        "longName": "Sap",
+        "shortName": "SAP",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SAF",
+        "id": 306,
+        "longName": "Schäfer",
+        "shortName": "SAF",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SCH",
+        "id": 314,
+        "longName": "Schaper",
+        "shortName": "SCH",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SLL",
+        "id": 498,
+        "longName": "Schill",
+        "shortName": "SLL",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SCL",
+        "id": 318,
+        "longName": "Schilling",
+        "shortName": "SCL",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SWK",
+        "id": 492,
+        "longName": "Schiwek",
+        "shortName": "SWK",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SNE",
+        "id": 445,
+        "longName": "Schnepel",
+        "shortName": "SNE",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SNI",
+        "id": 489,
+        "longName": "Schnibbe",
+        "shortName": "SNI",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SRÖ",
+        "id": 338,
+        "longName": "Schröder",
+        "shortName": "SRÖ",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SRR",
+        "id": 448,
+        "longName": "Schröer",
+        "shortName": "SRR",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SUB",
+        "id": 342,
+        "longName": "Schulenberg",
+        "shortName": "SUB",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SCW",
+        "id": 322,
+        "longName": "Schwabe",
+        "shortName": "SCW",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SEG",
+        "id": 326,
+        "longName": "Segelhorst",
+        "shortName": "SEG",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SEI",
+        "id": 330,
+        "longName": "Seifert",
+        "shortName": "SEI",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "SPA",
+        "id": 334,
+        "longName": "Spangenberg",
+        "shortName": "SPA",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "STL",
+        "id": 512,
+        "longName": "Stelljes",
+        "shortName": "STL",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "STR",
+        "id": 503,
+        "longName": "Streil",
+        "shortName": "STR",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "TAM",
+        "id": 346,
+        "longName": "Tamcke",
+        "shortName": "TAM",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "THI",
+        "id": 358,
+        "longName": "Thiel",
+        "shortName": "THI",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "THG",
+        "id": 354,
+        "longName": "Thiele",
+        "shortName": "THG",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "THO",
+        "id": 362,
+        "longName": "Thoms",
+        "shortName": "THO",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "TIM",
+        "id": 370,
+        "longName": "Timm",
+        "shortName": "TIM",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "TUR",
+        "id": 374,
+        "longName": "Turkaljuk",
+        "shortName": "TUR",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "VAH",
+        "id": 378,
+        "longName": "Vahlenkamp",
+        "shortName": "VAH",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "WAL",
+        "id": 382,
+        "longName": "Walczak",
+        "shortName": "WAL",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "WEN",
+        "id": 386,
+        "longName": "Wenzel",
+        "shortName": "WEN",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "WIL",
+        "id": 390,
+        "longName": "Wilkening",
+        "shortName": "WIL",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "WIN",
+        "id": 394,
+        "longName": "Winkelmann",
+        "shortName": "WIN",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "ZOL",
+        "id": 402,
+        "longName": "Zoll",
+        "shortName": "ZOL",
+      },
+    },
+  ],
+}
+`;

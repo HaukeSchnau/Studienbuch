@@ -1,4 +1,4 @@
-import { SimpleDate, SimpleDateSchema } from "@stu/lib";
+import { SimpleDate } from "@stu/lib";
 import { Effect, Schema } from "effect";
 import { ExternalApiError } from "../errors";
 import { type HolidayResponse, HolidaysService, OpenAPI } from "./generated";
@@ -26,8 +26,8 @@ export type State = (typeof states)[number];
 
 const HolidaySchema = Schema.Struct({
   name: Schema.String,
-  start: SimpleDateSchema,
-  end: SimpleDateSchema,
+  start: SimpleDate.BasicSimpleDateSchema,
+  end: SimpleDate.BasicSimpleDateSchema,
   state: Schema.Literal(...states),
   year: Schema.Int.pipe(Schema.between(1900, 2100)),
 });
@@ -49,8 +49,8 @@ const getHolidaysInternal = async (state: State, startYear: number) => {
 };
 
 const mapHoliday = Effect.fnUntraced(function* (holiday: HolidayResponse) {
-  const start = yield* SimpleDate.parse(holiday.startDate);
-  const end = yield* SimpleDate.parse(holiday.endDate);
+  const start = yield* SimpleDate.decode(holiday.startDate);
+  const end = yield* SimpleDate.decode(holiday.endDate);
   return {
     name: holiday.name[0]?.text,
     start,

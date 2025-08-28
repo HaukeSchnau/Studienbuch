@@ -1,0 +1,54 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Get school years from Kadmos > should get school years 1`] = `
+[
+  {
+    "dateRange": {
+      "end": {
+        "day": 1,
+        "month": 7,
+        "year": 2026,
+      },
+      "start": {
+        "day": 14,
+        "month": 8,
+        "year": 2025,
+      },
+    },
+    "id": 7,
+    "name": "2025/2026",
+  },
+  {
+    "dateRange": {
+      "end": {
+        "day": 2,
+        "month": 7,
+        "year": 2025,
+      },
+      "start": {
+        "day": 5,
+        "month": 8,
+        "year": 2024,
+      },
+    },
+    "id": 6,
+    "name": "2024/2025",
+  },
+  {
+    "dateRange": {
+      "end": {
+        "day": 3,
+        "month": 7,
+        "year": 2024,
+      },
+      "start": {
+        "day": 17,
+        "month": 8,
+        "year": 2023,
+      },
+    },
+    "id": 4,
+    "name": "2023/2024",
+  },
+]
+`;

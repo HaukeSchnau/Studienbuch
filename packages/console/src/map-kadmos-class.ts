@@ -1,5 +1,5 @@
 import { TZDate } from "@date-fns/tz";
-import type { KadmosClassV2Response, KadmosTimetableV2Response } from "@stu/external-api";
+import type { UntisClasses, UntisTimetable } from "@stu/external-api";
 import type { SubjectId } from "@stu/lib";
 import { convertCurrentYearToStartYear, guessSubject } from "@stu/lib";
 import { differenceInMinutes } from "date-fns";
@@ -14,15 +14,10 @@ const extractYearNum = (name: string) => {
   const yearStr = name.split(".")[0];
   if (!yearStr) throw new Error(`couldnt extract year num from ${name}`);
 
-  return Number.parseInt(yearStr);
+  return Number.parseInt(yearStr, 10);
 };
 
-const mapKadmosClassTeacher = (
-  teacher:
-    | KadmosClassV2Response["classes"][number]["classTeacher1"]
-    | KadmosClassV2Response["classes"][number]["classTeacher2"]
-    | null,
-) => {
+const mapKadmosClassTeacher = (teacher: UntisClasses.ClassTeacher | null) => {
   if (!teacher) return null;
   return {
     kadmosId: teacher.id,
@@ -47,7 +42,7 @@ export const mapKadmosClassV2 = ({
   class: { id, shortName, longName },
   classTeacher1,
   classTeacher2,
-}: KadmosClassV2Response["classes"][number]): ClassV2 => ({
+}: UntisClasses.Class): ClassV2 => ({
   kadmosId: id,
   startYear: convertCurrentYearToStartYear(extractYearNum(shortName)),
   yearName: isTeachersAbbrvString(longName) ? null : longName,
@@ -104,7 +99,7 @@ const normalizeCourseName = (name: string) => {
 const unknownSubjects = new Set<string>();
 
 export const mapKadmosTimetableEntry = (
-  entry: KadmosTimetableV2Response["days"][number]["gridEntries"][number],
+  entry: UntisTimetable.TimetableEntry,
   baseClass: ClassV2,
 ): ProtoTimetableEntry | null => {
   if (entry.type !== "NORMAL_TEACHING_PERIOD") {

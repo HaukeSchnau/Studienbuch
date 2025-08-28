@@ -1,3 +1,5 @@
+import { Data, Effect } from "effect";
+
 export * from "./absences";
 export * from "./auth";
 export * from "./classes";
@@ -14,3 +16,22 @@ export * from "./teacher";
 export * from "./theme";
 export * from "./user";
 export * from "./year";
+
+export class RequiredEntityNotFoundError extends Data.TaggedError("RequiredEntityNotFoundError")<{
+  kind?: string;
+  id?: unknown;
+}> {
+  get message() {
+    return `Required entity ${this.kind}: ${this.id} not found`;
+  }
+}
+
+export const ensureEntityDefined =
+  (kind?: string, id?: unknown) =>
+  <A>(value: A): Effect.Effect<NonNullable<A>, RequiredEntityNotFoundError> => {
+    if (value !== null && value !== undefined) {
+      return Effect.succeed(value);
+    }
+
+    return Effect.fail(new RequiredEntityNotFoundError({ kind, id }));
+  };

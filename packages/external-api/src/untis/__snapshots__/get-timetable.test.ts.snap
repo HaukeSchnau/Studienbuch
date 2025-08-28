@@ -1,0 +1,4834 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Get timetable from Kadmos > should get timetable 1`] = `
+{
+  "days": [
+    {
+      "date": {
+        "day": 24,
+        "month": 8,
+        "year": 2025,
+      },
+      "dayEntries": [],
+      "gridEntries": [],
+      "resource": {
+        "displayName": "",
+        "id": 503,
+        "longName": "Jahrgang Udo",
+        "shortName": "12",
+      },
+      "resourceType": "CLASS",
+      "status": "NO_DATA",
+    },
+    {
+      "date": {
+        "day": 25,
+        "month": 8,
+        "year": 2025,
+      },
+      "dayEntries": [],
+      "gridEntries": [
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1550970,
+            1550973,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "BUS",
+                "longName": "Buse",
+                "shortName": "BUS",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "bi3",
+                "longName": "Biologie",
+                "shortName": "bi3",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-14",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-14",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1507554,
+            1507557,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "MAT",
+                "longName": "Martens",
+                "shortName": "MAT",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "de3",
+                "longName": "Deutsch",
+                "shortName": "de3",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-11",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-11",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1482222,
+            1482225,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "RAS",
+                "longName": "Rasche",
+                "shortName": "RAS",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "en4",
+                "longName": "Englisch",
+                "shortName": "en4",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1552800,
+            1552803,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "GRJ",
+                "longName": "Grütjen",
+                "shortName": "GRJ",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "BI1",
+                "longName": "Biologie",
+                "shortName": "BI1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1484574,
+            1484577,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "HAG",
+                "longName": "Hagedorn",
+                "shortName": "HAG",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "EN1",
+                "longName": "Englisch",
+                "shortName": "EN1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-14",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-14",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1390023,
+            1390026,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "SRÖ",
+                "longName": "Schröder",
+                "shortName": "SRÖ",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "PH1",
+                "longName": "Physik",
+                "shortName": "PH1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "E007",
+                "longName": "NW2 (PHY)",
+                "shortName": "E007",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1384689,
+            1384692,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "NIM",
+                "longName": "Niemann",
+                "shortName": "NIM",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "PW23",
+                "longName": "Politik-Wirtschaft",
+                "shortName": "PW23",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": null,
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1508244,
+            1508247,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "KÄM",
+                "longName": "Kämpf",
+                "shortName": "KÄM",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "DE2",
+                "longName": "Deutsch",
+                "shortName": "DE2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-11",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-11",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1483884,
+            1483887,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "THI",
+                "longName": "Thiel",
+                "shortName": "THI",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "EN2",
+                "longName": "Englisch",
+                "shortName": "EN2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1475196,
+            1475199,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "DÜD",
+                "longName": "Düdükcü",
+                "shortName": "DÜD",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "GE1",
+                "longName": "Geschichte",
+                "shortName": "GE1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-14",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-14",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1409817,
+            1409820,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "BÜS",
+                "longName": "Büsing",
+                "shortName": "BÜS",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "MA23",
+                "longName": "Mathematik",
+                "shortName": "MA23",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1566024,
+            1566027,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "LIC",
+                "longName": "Lichtwer",
+                "shortName": "LIC",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "ch23",
+                "longName": "Chemie",
+                "shortName": "ch23",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": null,
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1507212,
+            1507215,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "SCW",
+                "longName": "Schwabe",
+                "shortName": "SCW",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "de4",
+                "longName": "Deutsch",
+                "shortName": "de4",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1567392,
+            1567395,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "JEN",
+                "longName": "Jenderny",
+                "shortName": "JEN",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "wn23",
+                "longName": "WN",
+                "shortName": "wn23",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": null,
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+      ],
+      "resource": {
+        "displayName": "",
+        "id": 503,
+        "longName": "Jahrgang Udo",
+        "shortName": "12",
+      },
+      "resourceType": "CLASS",
+      "status": "REGULAR",
+    },
+    {
+      "date": {
+        "day": 26,
+        "month": 8,
+        "year": 2025,
+      },
+      "dayEntries": [],
+      "gridEntries": [
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1479564,
+            1479567,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "JEN",
+                "longName": "Jenderny",
+                "shortName": "JEN",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "fr1",
+                "longName": "Französisch",
+                "shortName": "fr1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1412163,
+            1412166,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "KRE",
+                "longName": "Krein",
+                "shortName": "KRE",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "ma1",
+                "longName": "Mathematik",
+                "shortName": "ma1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-11",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-11",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1547994,
+            1547997,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "MEI",
+                "longName": "Meißner",
+                "shortName": "MEI",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "CH23",
+                "longName": "Chemie",
+                "shortName": "CH23",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-15",
+                "longName": "Lilienthal OS NW-Raum",
+                "shortName": "KH-15",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1509270,
+            1509273,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "KLÄ",
+                "longName": "Klähr",
+                "shortName": "KLÄ",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "DE1",
+                "longName": "Deutsch",
+                "shortName": "DE1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-11",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-11",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1559208,
+            1559211,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "TIM",
+                "longName": "Timm",
+                "shortName": "TIM",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "EK1",
+                "longName": "Erdkunde",
+                "shortName": "EK1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1386021,
+            1386024,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "ERI",
+                "longName": "Erichsen",
+                "shortName": "ERI",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "PW1",
+                "longName": "Politik Wirtschaft",
+                "shortName": "PW1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1508250,
+            1508253,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "KÄM",
+                "longName": "Kämpf",
+                "shortName": "KÄM",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "DE2",
+                "longName": "Deutsch",
+                "shortName": "DE2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-11",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-11",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1483890,
+            1483893,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "THI",
+                "longName": "Thiel",
+                "shortName": "THI",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "EN2",
+                "longName": "Englisch",
+                "shortName": "EN2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1475202,
+            1475205,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "DÜD",
+                "longName": "Düdükcü",
+                "shortName": "DÜD",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "GE1",
+                "longName": "Geschichte",
+                "shortName": "GE1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-14",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-14",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1409823,
+            1409826,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "BÜS",
+                "longName": "Büsing",
+                "shortName": "BÜS",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "MA23",
+                "longName": "Mathematik",
+                "shortName": "MA23",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1550976,
+            1550979,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "BUS",
+                "longName": "Buse",
+                "shortName": "BUS",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "bi3",
+                "longName": "Biologie",
+                "shortName": "bi3",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-14",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-14",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1507560,
+            1507563,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "MAT",
+                "longName": "Martens",
+                "shortName": "MAT",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "de3",
+                "longName": "Deutsch",
+                "shortName": "de3",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-11",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-11",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1482228,
+            1482231,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "RAS",
+                "longName": "Rasche",
+                "shortName": "RAS",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "en4",
+                "longName": "Englisch",
+                "shortName": "en4",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+      ],
+      "resource": {
+        "displayName": "",
+        "id": 503,
+        "longName": "Jahrgang Udo",
+        "shortName": "12",
+      },
+      "resourceType": "CLASS",
+      "status": "REGULAR",
+    },
+    {
+      "date": {
+        "day": 27,
+        "month": 8,
+        "year": 2025,
+      },
+      "dayEntries": [],
+      "gridEntries": [
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1551420,
+            1551423,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "AUF",
+                "longName": "Aufderheide",
+                "shortName": "AUF",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "bi2",
+                "longName": "Biologie",
+                "shortName": "bi2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-11",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-11",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1437615,
+            1437618,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "TAM",
+                "longName": "Tamcke",
+                "shortName": "TAM",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "la1",
+                "longName": "Latein",
+                "shortName": "la1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1409451,
+            1409454,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "SRÖ",
+                "longName": "Schröder",
+                "shortName": "SRÖ",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "ma3",
+                "longName": "Mathematik",
+                "shortName": "ma3",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1548000,
+            1548003,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "MEI",
+                "longName": "Meißner",
+                "shortName": "MEI",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "CH23",
+                "longName": "Chemie",
+                "shortName": "CH23",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-15",
+                "longName": "Lilienthal OS NW-Raum",
+                "shortName": "KH-15",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1509276,
+            1509279,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "KLÄ",
+                "longName": "Klähr",
+                "shortName": "KLÄ",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "DE1",
+                "longName": "Deutsch",
+                "shortName": "DE1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-11",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-11",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1559214,
+            1559217,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "TIM",
+                "longName": "Timm",
+                "shortName": "TIM",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "EK1",
+                "longName": "Erdkunde",
+                "shortName": "EK1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1386027,
+            1386030,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "ERI",
+                "longName": "Erichsen",
+                "shortName": "ERI",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "PW1",
+                "longName": "Politik Wirtschaft",
+                "shortName": "PW1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1508256,
+            1508259,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "KÄM",
+                "longName": "Kämpf",
+                "shortName": "KÄM",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "DE2",
+                "longName": "Deutsch",
+                "shortName": "DE2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-11",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-11",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1483896,
+            1483899,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "THI",
+                "longName": "Thiel",
+                "shortName": "THI",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "EN2",
+                "longName": "Englisch",
+                "shortName": "EN2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1475208,
+            1475211,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "DÜD",
+                "longName": "Düdükcü",
+                "shortName": "DÜD",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "GE1",
+                "longName": "Geschichte",
+                "shortName": "GE1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-14",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-14",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1409829,
+            1409832,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "BÜS",
+                "longName": "Büsing",
+                "shortName": "BÜS",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "MA23",
+                "longName": "Mathematik",
+                "shortName": "MA23",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1380237,
+            1380240,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "DÜD",
+                "longName": "Düdükcü",
+                "shortName": "DÜD",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "sf1",
+                "longName": "sf1",
+                "shortName": "sf1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-11",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-11",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1379517,
+            1379520,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "LÜT",
+                "longName": "Lütjen",
+                "shortName": "LÜT",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "sf3",
+                "longName": "sf3",
+                "shortName": "sf3",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1379037,
+            1379040,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "AUF",
+                "longName": "Aufderheide",
+                "shortName": "AUF",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "sf4",
+                "longName": "sf4",
+                "shortName": "sf4",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-14",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-14",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 990,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 915,
+            },
+          },
+          "ids": [
+            1367400,
+            1367403,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "REE",
+                "longName": "Reese",
+                "shortName": "REE",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "sp1",
+                "longName": "Sport",
+                "shortName": "sp1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "HF1",
+                "longName": "Halle Falkenberg 1",
+                "shortName": "HF1",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 990,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 915,
+            },
+          },
+          "ids": [
+            1366920,
+            1366923,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "MAT",
+                "longName": "Martens",
+                "shortName": "MAT",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "sp2",
+                "longName": "Sport",
+                "shortName": "sp2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "HF3",
+                "longName": "Halle Falkenberg 3",
+                "shortName": "HF3",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 990,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 915,
+            },
+          },
+          "ids": [
+            1366680,
+            1366683,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "BEL",
+                "longName": "Below",
+                "shortName": "BEL",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "sp3",
+                "longName": "Sport",
+                "shortName": "sp3",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "HF3",
+                "longName": "Halle Falkenberg 3",
+                "shortName": "HF3",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+      ],
+      "resource": {
+        "displayName": "",
+        "id": 503,
+        "longName": "Jahrgang Udo",
+        "shortName": "12",
+      },
+      "resourceType": "CLASS",
+      "status": "REGULAR",
+    },
+    {
+      "date": {
+        "day": 28,
+        "month": 8,
+        "year": 2025,
+      },
+      "dayEntries": [],
+      "gridEntries": [
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1548006,
+            1548009,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "MEI",
+                "longName": "Meißner",
+                "shortName": "MEI",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "CH23",
+                "longName": "Chemie",
+                "shortName": "CH23",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-15",
+                "longName": "Lilienthal OS NW-Raum",
+                "shortName": "KH-15",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1509282,
+            1509285,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "KLÄ",
+                "longName": "Klähr",
+                "shortName": "KLÄ",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "DE1",
+                "longName": "Deutsch",
+                "shortName": "DE1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-11",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-11",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1559220,
+            1559223,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "TIM",
+                "longName": "Timm",
+                "shortName": "TIM",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "EK1",
+                "longName": "Erdkunde",
+                "shortName": "EK1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1386033,
+            1386036,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "ERI",
+                "longName": "Erichsen",
+                "shortName": "ERI",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "PW1",
+                "longName": "Politik Wirtschaft",
+                "shortName": "PW1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1552806,
+            1552809,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "GRJ",
+                "longName": "Grütjen",
+                "shortName": "GRJ",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "BI1",
+                "longName": "Biologie",
+                "shortName": "BI1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1484580,
+            1484583,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "HAG",
+                "longName": "Hagedorn",
+                "shortName": "HAG",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "EN1",
+                "longName": "Englisch",
+                "shortName": "EN1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-14",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-14",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1473870,
+            1473873,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "WAL",
+                "longName": "Walczak",
+                "shortName": "WAL",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "GE2",
+                "longName": "Geschichte",
+                "shortName": "GE2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1390029,
+            1390032,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "SRÖ",
+                "longName": "Schröder",
+                "shortName": "SRÖ",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "PH1",
+                "longName": "Physik",
+                "shortName": "PH1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "E007",
+                "longName": "NW2 (PHY)",
+                "shortName": "E007",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1384695,
+            1384698,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "NIM",
+                "longName": "Niemann",
+                "shortName": "NIM",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "PW23",
+                "longName": "Politik-Wirtschaft",
+                "shortName": "PW23",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": null,
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1473174,
+            1473177,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "OLB",
+                "longName": "Olbertz",
+                "shortName": "OLB",
+                "status": "ADDED",
+                "type": "TEACHER",
+              },
+              "removed": {
+                "displayName": "NIL",
+                "longName": "Nielsen",
+                "shortName": "NIL",
+                "status": "REMOVED",
+                "type": "TEACHER",
+              },
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "ge3",
+                "longName": "Geschichte",
+                "shortName": "ge3",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "CHANGED",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1566030,
+            1566033,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "LIC",
+                "longName": "Lichtwer",
+                "shortName": "LIC",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "ch23",
+                "longName": "Chemie",
+                "shortName": "ch23",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-15",
+                "longName": "Lilienthal OS NW-Raum",
+                "shortName": "KH-15",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1567398,
+            1567401,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "JEN",
+                "longName": "Jenderny",
+                "shortName": "JEN",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "wn23",
+                "longName": "WN",
+                "shortName": "wn23",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-14",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-14",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 800,
+            },
+          },
+          "ids": [
+            1635808,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "TAM",
+                "longName": "Tamcke",
+                "shortName": "TAM",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "la1",
+                "longName": "Latein",
+                "shortName": "la1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1551426,
+            1551429,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "AUF",
+                "longName": "Aufderheide",
+                "shortName": "AUF",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "bi2",
+                "longName": "Biologie",
+                "shortName": "bi2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-11",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-11",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1437621,
+            1437624,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "TAM",
+                "longName": "Tamcke",
+                "shortName": "TAM",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "la1",
+                "longName": "Latein",
+                "shortName": "la1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1409457,
+            1409460,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "SRÖ",
+                "longName": "Schröder",
+                "shortName": "SRÖ",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "ma3",
+                "longName": "Mathematik",
+                "shortName": "ma3",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+      ],
+      "resource": {
+        "displayName": "",
+        "id": 503,
+        "longName": "Jahrgang Udo",
+        "shortName": "12",
+      },
+      "resourceType": "CLASS",
+      "status": "REGULAR",
+    },
+    {
+      "date": {
+        "day": 29,
+        "month": 8,
+        "year": 2025,
+      },
+      "dayEntries": [],
+      "gridEntries": [
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1385343,
+            1385346,
+          ],
+          "position1": [
+            {
+              "current": null,
+              "removed": {
+                "displayName": "THO",
+                "longName": "Thoms",
+                "shortName": "THO",
+                "status": "REMOVED",
+                "type": "TEACHER",
+              },
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "pw2",
+                "longName": "Politik-Wirtschaft",
+                "shortName": "pw2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-11",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-11",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "CHANGED",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1411293,
+            1411296,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "HIL",
+                "longName": "Hilken",
+                "shortName": "HIL",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "ma2",
+                "longName": "Mathematik",
+                "shortName": "ma2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-14",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-14",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1389687,
+            1389690,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "TUR",
+                "longName": "Turkaljuk",
+                "shortName": "TUR",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "ph2",
+                "longName": "Physik",
+                "shortName": "ph2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "E007",
+                "longName": "NW2 (PHY)",
+                "shortName": "E007",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1566726,
+            1566729,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "HUS",
+                "longName": "Hussain",
+                "shortName": "HUS",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "st1",
+                "longName": "Sporttheorie",
+                "shortName": "st1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1552812,
+            1552815,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "GRJ",
+                "longName": "Grütjen",
+                "shortName": "GRJ",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "BI1",
+                "longName": "Biologie",
+                "shortName": "BI1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1484586,
+            1484589,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "HAG",
+                "longName": "Hagedorn",
+                "shortName": "HAG",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "EN1",
+                "longName": "Englisch",
+                "shortName": "EN1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-14",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-14",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1473876,
+            1473879,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "WAL",
+                "longName": "Walczak",
+                "shortName": "WAL",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "GE2",
+                "longName": "Geschichte",
+                "shortName": "GE2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1390035,
+            1390038,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "SRÖ",
+                "longName": "Schröder",
+                "shortName": "SRÖ",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "PH1",
+                "longName": "Physik",
+                "shortName": "PH1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "E007",
+                "longName": "NW2 (PHY)",
+                "shortName": "E007",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1384701,
+            1384704,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "NIM",
+                "longName": "Niemann",
+                "shortName": "NIM",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "PW23",
+                "longName": "Politik-Wirtschaft",
+                "shortName": "PW23",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": null,
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1506546,
+            1506549,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "TIM",
+                "longName": "Timm",
+                "shortName": "TIM",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "ds1",
+                "longName": "Darstellendes Spiel",
+                "shortName": "ds1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "OH-7",
+                "longName": "Lilienthal OS DS-Raum",
+                "shortName": "OH-7",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1467354,
+            1467357,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "BÜS",
+                "longName": "Büsing",
+                "shortName": "BÜS",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "if23",
+                "longName": "Informatik",
+                "shortName": "if23",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": null,
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1438428,
+            1438431,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "DAN",
+                "longName": "Dantz",
+                "shortName": "DAN",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "ku1",
+                "longName": "Kunst",
+                "shortName": "ku1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "B013",
+                "longName": "Lilienthal Kunst",
+                "shortName": "B013",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1404873,
+            1404876,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "HEU",
+                "longName": "Heubner",
+                "shortName": "HEU",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "mu1",
+                "longName": "mu1",
+                "shortName": "mu1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "B001",
+                "longName": "Lilienthal Musikraum",
+                "shortName": "B001",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+      ],
+      "resource": {
+        "displayName": "",
+        "id": 503,
+        "longName": "Jahrgang Udo",
+        "shortName": "12",
+      },
+      "resourceType": "CLASS",
+      "status": "REGULAR",
+    },
+    {
+      "date": {
+        "day": 30,
+        "month": 8,
+        "year": 2025,
+      },
+      "dayEntries": [],
+      "gridEntries": [],
+      "resource": {
+        "displayName": "",
+        "id": 503,
+        "longName": "Jahrgang Udo",
+        "shortName": "12",
+      },
+      "resourceType": "CLASS",
+      "status": "NO_DATA",
+    },
+    {
+      "date": {
+        "day": 31,
+        "month": 8,
+        "year": 2025,
+      },
+      "dayEntries": [],
+      "gridEntries": [],
+      "resource": {
+        "displayName": "",
+        "id": 503,
+        "longName": "Jahrgang Udo",
+        "shortName": "12",
+      },
+      "resourceType": "CLASS",
+      "status": "NO_DATA",
+    },
+  ],
+  "errors": [],
+}
+`;

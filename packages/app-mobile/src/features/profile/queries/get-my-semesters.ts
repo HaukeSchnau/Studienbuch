@@ -1,15 +1,13 @@
-import { SemesterRepository, StudentRepository, YearRepository } from "@stu/lib";
+import { RequiredEntityNotFoundError, SemesterRepository, StudentRepository, YearRepository } from "@stu/lib";
 import { queryOptions } from "@tanstack/react-query";
-import { Data, Effect } from "effect";
+import { Effect } from "effect";
 import type { AppRuntime } from "~/utils/groundswell";
-
-class RequiredDataMissingError extends Data.TaggedError("RequiredDataMissingError")<{ kind: string; id: unknown }> {}
 
 const semestersOfStudent = Effect.fn(function* ({ userId }: { userId: string }) {
   const studentRepo = yield* StudentRepository;
   const student = yield* studentRepo.getStudent({ studentId: userId });
 
-  if (!student) return yield* Effect.fail(new RequiredDataMissingError({ kind: "student", id: userId }));
+  if (!student) return yield* Effect.fail(new RequiredEntityNotFoundError({ kind: "student", id: userId }));
   const yearId = {
     startYear: student.class.startYear,
     school: student.school,
@@ -17,7 +15,7 @@ const semestersOfStudent = Effect.fn(function* ({ userId }: { userId: string }) 
 
   const yearRepo = yield* YearRepository;
   const year = yield* yearRepo.getYear(yearId);
-  if (!year) return yield* Effect.fail(new RequiredDataMissingError({ kind: "year", id: yearId }));
+  if (!year) return yield* Effect.fail(new RequiredEntityNotFoundError({ kind: "year", id: yearId }));
 
   const semesterRepo = yield* SemesterRepository;
   const semesters = yield* semesterRepo.semestersInYear(year);

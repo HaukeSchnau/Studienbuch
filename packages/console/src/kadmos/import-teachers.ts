@@ -1,9 +1,7 @@
 import { ingestEffect, SYSTEM_USER } from "@stu/api";
-import { getTeachers } from "@stu/external-api";
+import { UntisTeachers } from "@stu/external-api";
 import type { SchoolId, SimpleDate } from "@stu/lib";
 import { Effect } from "effect";
-import { logger } from "../logger";
-import type { AuthContext } from "./kadmos-utils";
 
 const TEACHER_MAP = [
   {
@@ -620,10 +618,10 @@ interface Options {
   school: SchoolId;
 }
 
-export const importTeachers = Effect.fn(function* (options: Options, authContext: AuthContext) {
-  logger.info("Importing teachers...");
+export const importTeachers = Effect.fn(function* (options: Options) {
+  yield* Effect.logInfo("Importing teachers...");
 
-  const { teachers } = yield* getTeachers(options.start, options.end, options.schoolYearId, authContext);
+  const { teachers } = yield* UntisTeachers.list(options);
   for (const { teacher } of teachers) {
     const lastName = teacher.longName;
     const abbrv = teacher.displayName;

@@ -55,8 +55,6 @@ dist/
 /cache
 /cache_old
 
-__snapshots__
-
 .eslintrc.js
 
 .env.secrets

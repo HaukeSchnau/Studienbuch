@@ -1,9 +1,9 @@
 import { ingestEffect } from "@stu/api";
-import { PersonRepository } from "@stu/db";
-import { type AuthContext, getClasses } from "@stu/external-api";
+import { UntisClasses } from "@stu/external-api";
 import type { SchoolId, SimpleDate } from "@stu/lib";
 import { BetterMap, Year } from "@stu/lib";
 import { Effect } from "effect";
+import { getTeacherIdByAbbrv } from "~/util";
 import { type ClassV2, mapKadmosClassV2 } from "../map-kadmos-class";
 
 interface Options {
@@ -22,7 +22,6 @@ const addYear = Effect.fn(function* (
   classes: ClassV2[],
 ) {
   const name = Year.getYearName(year) ?? year.name ?? year.startYear.toString();
-  const teachersRepo = yield* PersonRepository;
 
   yield* ingestEffect({
     type: "org.year.started",
@@ -34,17 +33,7 @@ const addYear = Effect.fn(function* (
       classes: yield* Effect.all(
         classes.map((cls) =>
           Effect.gen(function* () {
-            const teachers = yield* Effect.all(
-              cls.teachers.map((teacher) =>
-                teachersRepo.getPersonByAbbrv({ abbrv: teacher.abbrv }).pipe(
-                  Effect.map((teacher) => teacher?.id),
-                  Effect.filterOrFail(
-                    (teacher) => teacher !== undefined,
-                    () => new Error(`Teacher ${teacher.abbrv} not found`),
-                  ),
-                ),
-              ),
-            );
+            const teachers = yield* Effect.all(cls.teachers.map((teacher) => getTeacherIdByAbbrv(teacher.abbrv)));
 
             return {
               identifierInYear: cls.identifierInYear,
@@ -63,13 +52,10 @@ const addYear = Effect.fn(function* (
   );
 });
 
-export const importClasses = Effect.fn(function* (
-  { school, schoolYearId, start, end }: Options,
-  authContext: AuthContext,
-) {
-  yield* Effect.logInfo(`Importing classes for school year "${schoolYearId}"...`);
+export const importClasses = Effect.fn(function* (options: Options) {
+  yield* Effect.logInfo(`Importing classes for school year "${options.schoolYearId}"...`);
 
-  const classes = yield* getClasses(start, end, schoolYearId, authContext).pipe(
+  const classes = yield* UntisClasses.list(options).pipe(
     Effect.map((classes) => classes.classes.map(mapKadmosClassV2)),
   );
 
@@ -89,6 +75,6 @@ export const importClasses = Effect.fn(function* (
       (cls, index, self) => index === self.findIndex((otherCls) => otherCls.identifierInYear === cls.identifierInYear),
     );
 
-    yield* addYear(year, school, classesInYearUnique);
+    yield* addYear(year, options.school, classesInYearUnique);
   }
 });

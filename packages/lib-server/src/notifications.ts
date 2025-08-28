@@ -1,3 +1,4 @@
+import { Data, Effect } from "effect";
 import type { ExpoPushMessage } from "expo-server-sdk";
 import { Expo } from "expo-server-sdk";
 
@@ -5,7 +6,9 @@ import { Expo } from "expo-server-sdk";
 // optionally providing an access token if you have enabled push security
 const expo = new Expo();
 
-export const sendNotifications = async (pushTokens: string[], title: string, message: string) => {
+class PushNotificationError extends Data.TaggedError("PushNotificationError")<{ cause: unknown }> {}
+
+export const sendNotifications = Effect.fn(function* (pushTokens: string[], title: string, message: string) {
   // Create the messages that you want to send to clients
   const messages: ExpoPushMessage[] = [];
   for (const pushToken of pushTokens) {
@@ -39,7 +42,10 @@ export const sendNotifications = async (pushTokens: string[], title: string, mes
   // time, which nicely spreads the load out over time:
   for (const chunk of chunks) {
     try {
-      const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+      const ticketChunk = yield* Effect.tryPromise({
+        try: () => expo.sendPushNotificationsAsync(chunk),
+        catch: (error) => new PushNotificationError({ cause: error }),
+      });
       console.log(ticketChunk);
       tickets.push(...ticketChunk);
       // NOTE: If a ticket contains an error code in ticket.details.error, you
@@ -52,4 +58,4 @@ export const sendNotifications = async (pushTokens: string[], title: string, mes
   }
 
   return tickets;
-};
+});

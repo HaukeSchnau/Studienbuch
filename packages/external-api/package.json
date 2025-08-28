@@ -17,12 +17,14 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@effect/platform": "^0.90.6",
     "@linear/sdk": "^38.0.0",
     "@stu/lib": "workspace:*",
     "@t3-oss/env-nextjs": "^0.13.8",
     "@total-typescript/shoehorn": "^0.1.2",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
+    "effect": "^3.16.13",
     "node-html-parser": "^7.0.1",
     "tough-cookie": "^6.0.0",
     "zod": "^3.24.2"

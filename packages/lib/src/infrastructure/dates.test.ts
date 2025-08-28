@@ -1,14 +1,15 @@
-import { describe, expect, test } from "vitest";
-
+import { describe, expect, test } from "@effect/vitest";
+import { Effect, Schema } from "effect";
 import {
   dateToSimpleDate,
   formatSimpleDate,
   formatSimpleTimeOfDay,
   parseSimpleDate,
   parseSimpleTimeOfDay,
-  type SimpleDate,
+  SimpleDate,
   simpleDateSchema,
   simpleDateToDate,
+  TimeOfDay,
 } from "./dates";
 
 describe("parseSimpleDate", () => {
@@ -30,16 +31,75 @@ describe("parseSimpleDate", () => {
     });
   });
 
-  test("throws error for invalid date format", () => {
-    expect(() => parseSimpleDate("invalid")).toThrow("Invalid date: invalid");
-    expect(() => parseSimpleDate("2023-01")).toThrow("Invalid date: 2023-01");
-  });
+  describe("SimpleDateSchema", () => {
+    test("validates valid dates", () =>
+      Effect.gen(function* () {
+        const result = yield* Schema.decode(SimpleDate.SimpleDateSchema)("2023-01-15");
+        expect(result).toEqual({
+          year: 2023,
+          month: 1,
+          day: 15,
+        });
+      }));
 
-  test("throws error for non-numeric values", () => {
-    expect(() => parseSimpleDate("2023-abc-15")).toThrow("Invalid date: 2023-abc-15");
-    expect(() => parseSimpleDate("abc-01-15")).toThrow("Invalid date: abc-01-15");
-    expect(() => parseSimpleDate("2023-01-abc")).toThrow("Invalid date: 2023-01-abc");
+    test("throws error for invalid date format", () =>
+      Effect.gen(function* () {
+        const result = yield* Schema.decode(SimpleDate.SimpleDateSchema)("invalid").pipe(Effect.flip);
+        expect(result._tag).toBe("ParseError");
+      }));
+
+    test("throws error for invalid date format", () =>
+      Effect.gen(function* () {
+        const result = yield* Schema.decode(SimpleDate.SimpleDateSchema)("2023-01").pipe(Effect.flip);
+        expect(result._tag).toBe("ParseError");
+      }));
+
+    test("throws error for invalid date format", () =>
+      Effect.gen(function* () {
+        const result = yield* Schema.decode(SimpleDate.SimpleDateSchema)("2023-01-01").pipe(Effect.flip);
+        expect(result._tag).toBe("ParseError");
+      }));
+
+    test("round-trips", () =>
+      Effect.gen(function* () {
+        const result = yield* Schema.decode(SimpleDate.SimpleDateSchema)("2023-01-01");
+        const encoded = yield* Schema.encode(SimpleDate.SimpleDateSchema)(result);
+        expect(encoded).toEqual("2023-01-01");
+      }));
   });
+});
+
+describe("TimeOfDaySchema", () => {
+  test("validates valid time strings", () =>
+    Effect.gen(function* () {
+      const result = yield* Schema.decode(TimeOfDay.TimeOfDaySchema)("00:00");
+      expect(result).toEqual(0);
+    }));
+
+  test("throws error for invalid time format", () =>
+    Effect.gen(function* () {
+      const result = yield* Schema.decode(TimeOfDay.TimeOfDaySchema)("invalid").pipe(Effect.flip);
+      expect(result._tag).toBe("ParseError");
+    }));
+
+  test("throws error for invalid time format", () =>
+    Effect.gen(function* () {
+      const result = yield* Schema.decode(TimeOfDay.TimeOfDaySchema)("12").pipe(Effect.flip);
+      expect(result._tag).toBe("ParseError");
+    }));
+
+  test("throws error for invalid time format", () =>
+    Effect.gen(function* () {
+      const result = yield* Schema.decode(TimeOfDay.TimeOfDaySchema)("12:30").pipe(Effect.flip);
+      expect(result._tag).toBe("ParseError");
+    }));
+
+  test("round-trips", () =>
+    Effect.gen(function* () {
+      const result = yield* Schema.decode(TimeOfDay.TimeOfDaySchema)("12:30");
+      const encoded = yield* Schema.encode(TimeOfDay.TimeOfDaySchema)(result);
+      expect(encoded).toEqual("12:30");
+    }));
 });
 
 describe("formatSimpleDate", () => {

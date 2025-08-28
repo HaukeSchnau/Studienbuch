@@ -1,55 +1,46 @@
-import { eq } from "@stu/db";
-import { db } from "@stu/db/client";
+import { HttpClient } from "@effect/platform";
+import { Database, eq } from "@stu/db";
 import { Schools } from "@stu/db/schema";
-import { getBearerToken, getSchoolYears, login } from "@stu/external-api";
-import { type SchoolId, simpleDateToDate } from "@stu/lib";
-import type { CookieJar } from "tough-cookie";
+import { UntisAuth, UntisSchoolYears } from "@stu/external-api";
+import { ensureEntityDefined, type SchoolId, simpleDateToDate } from "@stu/lib";
+import { Effect, pipe } from "effect";
 
-export interface AuthContext {
-  jar: CookieJar;
-  bearerToken: string;
-}
+const login = Effect.fn(function* (school: SchoolId) {
+  const db = yield* Database;
+  const schoolEntity = yield* db
+    .execute((db) => db.query.Schools.findFirst({ where: eq(Schools.id, school) }))
+    .pipe(Effect.flatMap(ensureEntityDefined("school", school)));
 
-export const setupAuth = async (school: SchoolId): Promise<AuthContext> => {
-  const schoolEntity = await db.query.Schools.findFirst({
-    where: eq(Schools.id, school),
-  });
-  if (!schoolEntity) throw new Error(`School ${school} not found`);
+  return yield* UntisAuth.login(schoolEntity);
+});
 
-  const { kadmosName, kadmosUsername, kadmosPassword } = schoolEntity;
+export const provideUntisAuth = (school: SchoolId) => Effect.provideServiceEffect(HttpClient.HttpClient, login(school));
 
-  const jar = await login(kadmosName, kadmosUsername, kadmosPassword);
-  const bearerToken = await getBearerToken(jar);
-
-  return { jar, bearerToken };
-};
-
-export const getCurrentSchoolYearId = async (authContext: AuthContext): Promise<number> => {
-  const schoolYears = await getSchoolYears(authContext).then((years) =>
-    years.map((year) => ({
-      ...year,
-      start: simpleDateToDate(year.dateRange.start),
-      end: simpleDateToDate(year.dateRange.end),
-    })),
-  );
+export const currentSchoolYearId = Effect.gen(function* () {
+  const schoolYears = yield* UntisSchoolYears.list;
 
   const today = new Date();
   let smallestDifference = Number.POSITIVE_INFINITY;
   let closestSchoolYear = null;
   for (const year of schoolYears) {
-    const isCurrentSchoolYear = today >= year.start && today <= year.end;
+    const start = simpleDateToDate(year.dateRange.start);
+    const end = simpleDateToDate(year.dateRange.end);
+
+    const isCurrentSchoolYear = today >= start && today <= end;
     if (isCurrentSchoolYear) {
       return year.id;
     }
 
-    const difference = Math.abs(year.start.getTime() - today.getTime());
+    const difference = Math.abs(start.getTime() - today.getTime());
     if (difference < smallestDifference) {
       smallestDifference = difference;
       closestSchoolYear = year;
     }
   }
-  if (!closestSchoolYear) {
-    throw new Error("No school years found");
-  }
-  return closestSchoolYear.id;
-};
+
+  return yield* pipe(
+    closestSchoolYear,
+    ensureEntityDefined(),
+    Effect.map((y) => y.id),
+  );
+});
