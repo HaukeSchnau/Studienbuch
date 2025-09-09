@@ -190,9 +190,6 @@ export const importTimetable = Effect.fn(function* (options: Options) {
                 `Timetable entry does not exist. Could not discard: ${JSON.stringify(existingTimetableEntry)}`,
               ),
           ),
-          Effect.catchAll((err) =>
-            Effect.logError(`Could not ingest timetable discarded event for ${uuid}: ${err.toString()}`),
-          ),
         );
       }
     }

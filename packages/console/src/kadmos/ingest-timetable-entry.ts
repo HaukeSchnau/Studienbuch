@@ -7,7 +7,6 @@ import { sendNotifications } from "@stu/lib-server";
 import { format } from "date-fns";
 import { Effect } from "effect";
 import { getTeacherIdByAbbrv } from "~/util";
-import { logger } from "../logger";
 
 interface Entry {
   uuid: string;
@@ -78,9 +77,6 @@ export const ingestTimetableEntry = Effect.fn(function* ({
       (error) => error.reason === "DUPLICATE",
       () => Effect.logDebug(`Course ${course.name} already created!`),
     ),
-    Effect.catchAll((err) =>
-      Effect.logError(`Could not ingest course created event for ${course.name}: ${err.toString()}`),
-    ),
   );
 
   const db = yield* Database;
@@ -107,14 +103,10 @@ export const ingestTimetableEntry = Effect.fn(function* ({
         },
       },
       SYSTEM_USER,
-    ).pipe(
-      Effect.tapError((err) =>
-        Effect.logError(`Could not ingest timetable entry created event for ${course.name}: ${err.toString()}`),
-      ),
     );
 
     if (existingTimetableEntry) {
-      logger.info(
+      yield* Effect.logInfo(
         `Timetable entry updated for ${course.name}!\n${JSON.stringify(existingTimetableEntry, null, 2)}\n${JSON.stringify(
           {
             course: uuid,
@@ -127,7 +119,7 @@ export const ingestTimetableEntry = Effect.fn(function* ({
         )}`,
       );
     } else {
-      logger.info(`Timetable entry created for ${course.name} on ${start.toISOString()}!`);
+      yield* Effect.logInfo(`Timetable entry created for ${course.name} on ${start.toISOString()}!`);
     }
   }
 
@@ -202,10 +194,6 @@ export const ingestTimetableEntry = Effect.fn(function* ({
           (error) => error._tag === "ValidationError" && error.reason === "DUPLICATE",
           () => Effect.logDebug(`Timetable substituted event for ${course.name} already exists!`),
         ),
-
-        Effect.catchTag("ValidationError", (error) =>
-          Effect.logError(`Could not ingest timetable substituted event for ${course.name}: ${error.toString()}`),
-        ),
       );
     } else {
       yield* ingestEffect(
@@ -232,9 +220,6 @@ export const ingestTimetableEntry = Effect.fn(function* ({
         Effect.catchIf(
           (error) => error._tag === "ValidationError" && error.reason === "DUPLICATE",
           () => Effect.logDebug(`Timetable canceled event for ${course.name} already exists!`),
-        ),
-        Effect.catchTag("ValidationError", (error) =>
-          Effect.logError(`Could not ingest timetable canceled event for ${course.name}: ${error.toString()}`),
         ),
       );
     }

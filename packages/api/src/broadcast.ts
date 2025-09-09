@@ -15,17 +15,12 @@ export const memoryBroadcastLive = Layer.effect(
 
     return DomainBroadcast.of({
       publishToUser: Effect.fn(function* (userId, events) {
-        yield* Effect.all(
-          events.map((event) => canonicalStorage.markEventAsSentToUser(event.id, userId)),
-          {
-            concurrency: "unbounded",
-          },
-        ).pipe(
-          Effect.catchTags({
-            CanonicalStorageError: (error) => Effect.fail(new BroadcastError({ cause: error })),
-          }),
-        );
-        yield* pubsub.publishAll(events);
+        // yield* Effect.all(events.map((event) => canonicalStorage.markEventAsSentToUser(event.id, userId))).pipe(
+        //   Effect.catchTags({
+        //     CanonicalStorageError: (error) => Effect.fail(new BroadcastError({ cause: error })),
+        //   }),
+        // );
+        // yield* pubsub.publishAll(events);
       }),
       subscribe: (userId) => {
         runtime.runPromise(
