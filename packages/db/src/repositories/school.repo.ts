@@ -1,59 +1,54 @@
-import type { SchoolId, StateCode } from "@stu/lib";
+import { defaultSchools, type SchoolId, SchoolRepository } from "@stu/lib";
 import { eq } from "drizzle-orm";
-import { Effect } from "effect";
-import { Database } from "../database";
+import { Effect, Layer } from "effect";
 import * as tables from "../schema";
+import { RepositoryDatabase } from "./util";
 
-export class SchoolRepository extends Effect.Service<SchoolRepository>()("db/SchoolRepository", {
-  effect: Effect.gen(function* () {
+export const SchoolRepositoryLive = Layer.effect(
+  SchoolRepository,
+  Effect.gen(function* () {
+    const databaseContext = yield* RepositoryDatabase;
+
     const getSchool = Effect.fn(function* (payload: { id: SchoolId }) {
-      const { execute } = yield* Database;
-      const rows = yield* execute((db) => db.select().from(tables.Schools).where(eq(tables.Schools.id, payload.id)));
-      return rows[0];
-    });
-
-    const doesSchoolExist = Effect.fn(function* (payload: { id: SchoolId }) {
-      const school = yield* getSchool({ id: payload.id });
-      return school !== undefined;
-    });
-
-    const createSchool = Effect.fn(function* (payload: {
-      id: SchoolId;
-      name: string;
-      stateCode: StateCode;
-      image: string;
-      theme: Record<string, unknown>;
-      kadmosName: string;
-      kadmosUsername: string;
-      kadmosPassword: string;
-    }) {
-      const { execute } = yield* Database;
-      yield* execute((db) =>
-        db.insert(tables.Schools).values({
-          id: payload.id,
-          name: payload.name,
-          stateCode: payload.stateCode,
-          image: payload.image,
-          theme: payload.theme,
-          kadmosName: payload.kadmosName,
-          kadmosUsername: payload.kadmosUsername,
-          kadmosPassword: payload.kadmosPassword,
-        }),
-      );
-    });
-
-    const getSchoolsByState = Effect.fn(function* (payload: { state: StateCode }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* databaseContext;
       return yield* execute((db) =>
-        db.select().from(tables.Schools).where(eq(tables.Schools.stateCode, payload.state)),
+        db.query.Schools.findFirst({
+          where: eq(tables.Schools.id, payload.id),
+        }),
       );
     });
 
     return {
       getSchool,
-      doesSchoolExist,
-      createSchool,
-      getSchoolsByState,
+
+      doesSchoolExist: Effect.fn(function* (payload) {
+        const school = yield* getSchool({ id: payload.id });
+        return school !== undefined;
+      }),
+
+      createSchool: Effect.fn(function* (payload) {
+        const { execute } = yield* databaseContext;
+        const defaultSchool = defaultSchools[payload.id];
+        yield* execute((db) =>
+          db.insert(tables.Schools).values({
+            id: payload.id,
+            name: payload.name,
+            stateCode: payload.state,
+            image: defaultSchool.image,
+            kadmosName: defaultSchool.kadmosName,
+            kadmosPassword: defaultSchool.kadmosPassword,
+            kadmosUsername: defaultSchool.kadmosUsername,
+            theme: defaultSchool.theme,
+          }),
+        );
+      }),
+
+      getSchoolsByState: Effect.fn(function* (payload) {
+        const { execute } = yield* databaseContext;
+        return yield* execute((db) =>
+          db.select().from(tables.Schools).where(eq(tables.Schools.stateCode, payload.state)),
+        );
+      }),
     };
   }),
-}) {}
+);

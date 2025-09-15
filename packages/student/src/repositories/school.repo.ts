@@ -1,4 +1,4 @@
-import { SchoolRepository } from "@stu/lib";
+import { type SchoolId, SchoolRepository } from "@stu/lib";
 import { eq } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import * as tables from "../schema";
@@ -9,14 +9,20 @@ export const SchoolRepositoryLive = Layer.effect(
   Effect.gen(function* () {
     const databaseContext = yield* RepositoryDatabase;
 
+    const getSchool = Effect.fn(function* (payload: { id: SchoolId }) {
+      const { execute } = yield* databaseContext;
+      return yield* execute((db) =>
+        db.query.schools.findFirst({
+          where: eq(tables.schools.id, payload.id),
+        }),
+      );
+    });
+
     return {
+      getSchool,
+
       doesSchoolExist: Effect.fn(function* (payload) {
-        const { execute } = yield* databaseContext;
-        const school = yield* execute((db) =>
-          db.query.schools.findFirst({
-            where: eq(tables.schools.id, payload.id),
-          }),
-        );
+        const school = yield* getSchool({ id: payload.id });
         return school !== undefined;
       }),
 

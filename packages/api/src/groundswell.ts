@@ -10,7 +10,7 @@ import {
   DatabaseLive,
   HolidayRepositoryLive,
   PersonRepository,
-  SchoolRepository,
+  SchoolRepositoryLive,
   SemesterRepositoryLive,
   StudentRepository,
   TimetableRepository,
@@ -24,7 +24,7 @@ import { getUserTopics } from "./router/events/send-missing-events";
 
 const Repositories = Layer.mergeAll(
   AuthRepositoryLive,
-  SchoolRepository.Default,
+  SchoolRepositoryLive,
   PersonRepository.Default,
   YearRepositoryLive,
   ClassRepositoryLive,

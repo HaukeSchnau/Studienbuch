@@ -3,18 +3,15 @@ import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/g
 import type { DomainEvent } from "@stu/lib";
 import {
   CourseRepository,
-  dateToSimpleDate,
   HolidayRepository,
   PersonRepository,
   SchoolRepository,
-  SemesterRepository,
-  type SimpleDate,
-  simpleDateToDate,
+  Semester,
+  type SemesterRepository,
   TimetableRepository,
   YearRepository,
 } from "@stu/lib";
-import { addDays } from "date-fns/fp";
-import { Effect, pipe } from "effect";
+import { Effect } from "effect";
 
 const failIfTrue = (message: string, reason: "DUPLICATE" | "NOT_FOUND" | "NOT_ALLOWED" | "INVALID" | "UNKNOWN") =>
   Effect.flatMap((bool) => (bool ? Effect.fail(new ValidationError({ cause: message, reason })) : Effect.void));
@@ -77,8 +74,6 @@ export const orgApplicators: NamespaceApplicatorMap<
     apply: (event) =>
       Effect.gen(function* () {
         const holidayRepo = yield* HolidayRepository;
-        const semesterRepo = yield* SemesterRepository;
-        const schoolRepo = yield* SchoolRepository;
         yield* holidayRepo.createHoliday({
           name: event.data.name,
           start: event.data.start,
@@ -87,56 +82,7 @@ export const orgApplicators: NamespaceApplicatorMap<
           year: event.data.year,
         });
 
-        const allHolidays = yield* holidayRepo.getAllHolidays();
-
-        const semesterDelimitingHolidays = allHolidays.filter(
-          (holiday) =>
-            holiday.name.toLowerCase().includes("sommerferien") || holiday.name.toLowerCase().includes("winterferien"),
-        );
-
-        if (semesterDelimitingHolidays.length < 2) {
-          return;
-        }
-
-        const semesters: {
-          start: SimpleDate;
-          end: SimpleDate;
-          name: string;
-          type: "WINTER" | "SUMMER";
-          year: number;
-        }[] = [];
-
-        for (let i = 0; i < semesterDelimitingHolidays.length - 1; i++) {
-          const start = semesterDelimitingHolidays[i];
-          const end = semesterDelimitingHolidays[i + 1];
-
-          if (!start || !end) throw new Error("Start or end holidays are undfined"); // TODO: Effect.fail
-
-          const type = start.name.toLowerCase().includes("sommerferien") ? "WINTER" : "SUMMER";
-
-          const formattedYearRange = start.year === end.year ? start.year : `${start.year}/${end.year}`;
-          const formattedType = type === "WINTER" ? "Winter" : "Sommer";
-          const name = `${formattedType} ${formattedYearRange}`;
-
-          semesters.push({
-            start: pipe(start.end, simpleDateToDate, addDays(1), dateToSimpleDate),
-            end: pipe(end.start, simpleDateToDate, addDays(-1), dateToSimpleDate),
-            name,
-            type,
-            year: start.year,
-          });
-        }
-
-        const affectedSchools = yield* schoolRepo.getSchoolsByState({ state: event.data.state });
-
-        yield* semesterRepo.createSemesters(
-          affectedSchools.flatMap((school) =>
-            semesters.map((semester) => ({
-              ...semester,
-              school: school.id,
-            })),
-          ),
-        );
+        yield* Semester.inferSemesters(event.data.state);
       }),
   },
   "year.started": {

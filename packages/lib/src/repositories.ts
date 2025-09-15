@@ -166,6 +166,16 @@ export class SchoolRepository extends Context.Tag("SchoolRepository")<
   {
     doesSchoolExist: (payload: { id: SchoolId }) => Effect.Effect<boolean, UnknownDatabaseError>;
 
+    getSchool: (payload: { id: SchoolId }) => Effect.Effect<
+      | {
+          id: SchoolId;
+          name: string;
+          stateCode: StateCode;
+        }
+      | undefined,
+      UnknownDatabaseError
+    >;
+
     createSchool: (payload: {
       id: SchoolId;
       name: string;

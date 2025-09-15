@@ -1,25 +1,23 @@
 import type { NamespaceServerApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
-import type { DomainEvent, SimpleDate, UnknownDatabaseError } from "@stu/lib";
 import {
   ClassRepository,
   CourseRepository,
-  dateToSimpleDate,
-  defaultSchools,
+  type DomainEvent,
   HolidayRepository,
-  SemesterRepository,
-  simpleDateToDate,
+  SchoolRepository,
+  Semester,
+  type SemesterRepository,
   studentsOfCourse,
   studentsOfSchool,
   studentsOfState,
   studentsOfYear,
+  type UnknownDatabaseError,
   YearRepository,
 } from "@stu/lib";
-import { addDays } from "date-fns/fp";
-import { Effect, pipe } from "effect";
+import { Effect } from "effect";
 import { Database } from "../database";
 import { PersonRepository } from "../repositories/person.repo";
-import { SchoolRepository } from "../repositories/school.repo";
 import { TimetableRepository } from "../repositories/timetable.repo";
 
 const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
@@ -52,16 +50,10 @@ export const orgApplicators: NamespaceServerApplicatorMap<
     apply: (event) =>
       Effect.gen(function* () {
         const repo = yield* SchoolRepository;
-        const defaultSchoolValue = defaultSchools[event.data.id];
         yield* repo.createSchool({
           id: event.data.id,
           name: event.data.name,
-          stateCode: event.data.state,
-          image: defaultSchoolValue.image,
-          theme: defaultSchoolValue.theme,
-          kadmosName: defaultSchoolValue.kadmosName,
-          kadmosUsername: defaultSchoolValue.kadmosUsername,
-          kadmosPassword: defaultSchoolValue.kadmosPassword,
+          state: event.data.state,
         });
       }),
     getEventTopics: (event) => Effect.succeed([studentsOfSchool(event.data.id)]),
@@ -103,8 +95,6 @@ export const orgApplicators: NamespaceServerApplicatorMap<
     apply: (event) =>
       Effect.gen(function* () {
         const holidayRepo = yield* HolidayRepository;
-        const semesterRepo = yield* SemesterRepository;
-        const schoolRepo = yield* SchoolRepository;
         yield* holidayRepo.createHoliday({
           name: event.data.name,
           start: event.data.start,
@@ -113,61 +103,7 @@ export const orgApplicators: NamespaceServerApplicatorMap<
           year: event.data.year,
         });
 
-        const allHolidays = yield* holidayRepo.getAllHolidays();
-
-        const semesterDelimitingHolidays = allHolidays.filter(
-          (holiday) =>
-            holiday.name.toLowerCase().includes("sommerferien") ||
-            holiday.name.toLowerCase().includes("winterferien") ||
-            holiday.name.toLowerCase().includes("halbjahresferien"),
-        );
-
-        if (semesterDelimitingHolidays.length < 2) {
-          return;
-        }
-
-        const semesters: {
-          start: SimpleDate;
-          end: SimpleDate;
-          name: string;
-          type: "WINTER" | "SUMMER";
-          year: number;
-        }[] = [];
-
-        for (let i = 0; i < semesterDelimitingHolidays.length - 1; i++) {
-          const start = semesterDelimitingHolidays[i];
-          const end = semesterDelimitingHolidays[i + 1];
-
-          if (!start || !end) throw new Error("Start or end holidays are undfined"); // TODO: Effect.fail
-
-          const type = start.name.toLowerCase().includes("sommerferien") ? "WINTER" : "SUMMER";
-
-          const formattedYearRange = start.year === end.year ? start.year : `${start.year}/${end.year}`;
-          const formattedType = type === "WINTER" ? "Winter" : "Sommer";
-          const name = `${formattedType} ${formattedYearRange}`;
-
-          semesters.push({
-            start: pipe(start.end, simpleDateToDate, addDays(1), dateToSimpleDate),
-            end: pipe(end.start, simpleDateToDate, addDays(-1), dateToSimpleDate),
-            name,
-            type,
-            year: start.year,
-          });
-        }
-
-        const affectedSchools = yield* schoolRepo.getSchoolsByState({ state: event.data.state });
-
-        console.log(semesters);
-        yield* Effect.log(semesters);
-
-        yield* semesterRepo.createSemesters(
-          affectedSchools.flatMap((school) =>
-            semesters.map((semester) => ({
-              ...semester,
-              school: school.id,
-            })),
-          ),
-        );
+        yield* Semester.inferSemesters(event.data.state);
       }).pipe(Database.asTransaction),
     getEventTopics: (event) => Effect.succeed([studentsOfState(event.data.state)]),
   },

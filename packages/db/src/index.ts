@@ -6,6 +6,7 @@ import type {
   CourseRepository,
   DomainEvent,
   HolidayRepository,
+  SchoolRepository,
   SemesterRepository,
   UnknownDatabaseError,
   YearRepository,
@@ -15,7 +16,6 @@ import { authApplicators } from "./event-handlers/auth";
 import { orgApplicators } from "./event-handlers/org";
 import { studentApplicators } from "./event-handlers/student";
 import type { PersonRepository } from "./repositories/person.repo";
-import type { SchoolRepository } from "./repositories/school.repo";
 import type { StudentRepository } from "./repositories/student.repo";
 import type { TimetableRepository } from "./repositories/timetable.repo";
 
@@ -47,5 +47,4 @@ export { alias } from "drizzle-orm/pg-core";
 export * from "./database";
 export * from "./repositories";
 export * as schema from "./schema";
-export * as tables from "./schema";
 export * from "./scratchpad";
