@@ -14,59 +14,6 @@ process.on("SIGTERM", () => {
 
 program.name("console").description("Studienbuch Console").showSuggestionAfterError();
 
-// program.command("import-teachers").action(async () => {
-//   logger.info("Importing teachers...");
-//   await importTeachers();
-//   process.exit(0);
-// });
-
-// program.command("import-classes").action(async () => {
-//   logger.info("Copying classes...");
-//   await importClasses({ school: "igs-lil" });
-
-//   process.exit(0);
-// });
-
-// program.command("import-semesters").action(async () => {
-//   const states = await db.selectDistinct({ stateCode: Schools.stateCode }).from(Schools);
-
-//   for (const state of states) {
-//     await addSemesters(state.stateCode);
-//   }
-
-//   logger.info(await db.query.Semesters.findMany());
-
-//   process.exit(0);
-// });
-
-// program
-//   .command("import-timetable")
-//   .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
-//   .action(async (school) => {
-//     logger.info(`Importing timetables for school "${school}"...`);
-//     await importTimetable({
-//       school,
-//       date: new Date(),
-//       monthOffsetRange: [-4, 4],
-//     });
-
-//     process.exit(0);
-//   });
-
-// program
-//   .command("generate-licenses")
-//   .argument("<number>", "Number of licenses to generate", Number.parseInt)
-//   .argument("<school>", "School ID", (val) => z.enum(SCHOOL_IDS).parse(val))
-//   .action(async (number, school) => {
-//     if (Number.isNaN(number)) program.error("Number must be a number");
-//     if (number < 1) program.error("Number must be greater than 0");
-
-//     logger.info(`Generating ${number} licenses...`);
-//     await generateLicenses(number, school, false);
-
-//     process.exit(0);
-//   });
-
 program.command("prune-conflicts").action(async () => {
   const te1 = alias(tables.TimetableEntries, "te1");
   const te2 = alias(tables.TimetableEntries, "te2");

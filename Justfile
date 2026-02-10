@@ -23,3 +23,7 @@ install:
 install-clean:
     find . -name "node_modules" -type d -exec rm -rf {} +
     bun install
+
+stats:
+  nix-shell -p cloc --run "git ls-files . | xargs cloc"
+
