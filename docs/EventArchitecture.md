@@ -2,15 +2,22 @@
 
 - App should work offline in most cases (exceptions e.g. login, setup, assign course, etc.)
 - Whenever user is online, app should sync data with server
+- Absence and grade data must sync across devices for the same user
 
 # Architecture
 
-- Every action taken by user is written to local event log
-- Event is applied locally immediately (if possible)
-- Events are sent to server whenever user is online
-- Server stores events in database
-- Server verifies and applies events to "cloud" database aswell as Sqlite database PER USER
-- Server puts all events for specific user into a stream that can be requested by each client of a user
+- Every action taken by the mobile client is written to a local event log.
+- The event is verified and applied locally immediately (optimistic local-first UX).
+- The sync engine sends unsynced events to the standalone API whenever online.
+- The API verifies, applies, and stores canonical events.
+- The API publishes relevant events to user/topic streams so other clients can catch up.
+- Clients reconnect using an offset and receive missing events before live events.
+
+## Source Of Truth
+
+- Canonical state: server-side Postgres read model + canonical event storage.
+- Local state: device SQLite read model + local event log.
+- Transport: SSE (`GET /api/events`) and ingest (`POST /api/events`) via standalone API.
 
 ## What if an event can't be applied locally?
 
@@ -27,3 +34,10 @@ From this point on, whenever an event occurs that is related to that entity, the
 
 If a user is assigned to a course, the user requires the course, in its entirety. That includes all the teachers, the room, the class, the timetable entries, etc.
 
+## Sync Invariants
+
+- Idempotent ingest: duplicate event IDs are rejected.
+- Ordered replay per user stream.
+- Offset-driven reconnect for resumable sync.
+- No silent drops: every mobile-emitted event namespace must have a server applicator.
+- Sensitive events (absence/grades) are scoped to user-private topics.
