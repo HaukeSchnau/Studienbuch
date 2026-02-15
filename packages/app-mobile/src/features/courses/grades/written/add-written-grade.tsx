@@ -7,9 +7,11 @@ import { Button } from "~/components/button";
 import { DateField } from "~/components/date-field";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
+import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { useIngest } from "~/utils/events/ingest";
 
 export const AddWrittenGrade = ({ courseId, onClose }: { courseId: string; onClose: () => void }) => {
+  const { userId } = useRequiredAuthenticatedSession();
   const queryClient = useQueryClient();
   const addMutation = useIngest("grades.writtenGradeRecorded", {
     onSuccess: async () => {
@@ -49,6 +51,7 @@ export const AddWrittenGrade = ({ courseId, onClose }: { courseId: string; onClo
         label="Speichern"
         onPress={() => {
           addMutation.mutate({
+            studentId: userId,
             courseId,
             date,
             result: gradeNum,

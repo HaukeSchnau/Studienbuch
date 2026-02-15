@@ -1,8 +1,9 @@
 # Effect + Local-First Migration Plan (Execution Plan)
 
 Status: Active plan  
-Last updated: 2026-02-11  
+Last updated: 2026-02-15  
 Architecture decisions: `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/docs/adr/0001-standalone-api-mobile-priority.md`
+Progress tracker: `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/docs/MigrationProgress.md`
 
 ## 1. Goal
 
@@ -97,6 +98,14 @@ Eliminate silent no-op behavior by providing complete server support for all cli
   - `students.user.<studentId>`
 - Enforce authorization rules for student-private actions.
 - Fix known verify/apply logic bugs and contradictory validations.
+
+### Implementation status (2026-02-15)
+
+- done: event contract now carries `studentId` for all `absence.*` and `grades.*` events.
+- done: server applicators for `absence.*` and `grades.*` exist and are registered in `@stu/db`.
+- done: API runtime wiring includes absence/grade repositories and user-private topic routing.
+- done: mobile emitters now include `studentId`, enabling deterministic verify/topic mapping.
+- next: integration tests for cross-device replay/broadcast and offline reconnect behavior.
 
 ### Acceptance tests
 
@@ -258,5 +267,14 @@ Prevent regression while migration is underway.
 - mobile runtime/setup: mobile team
 - Untis ingestion jobs: data/backend team
 - CI/test infrastructure: platform/shared team
+
+## 11. Progress Tracking Policy
+
+- Keep `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/docs/MigrationProgress.md` updated in every migration PR.
+- Record:
+  - what changed,
+  - which checks were run and their result,
+  - remaining blockers/risks and the immediate next step.
+- Do not merge migration work without updating both this plan and progress tracker.
 
 Each workstream must have one directly accountable owner and explicit handoff notes at milestone boundaries.

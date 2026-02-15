@@ -11,7 +11,7 @@ import { useIngest } from "~/utils/events/ingest";
 import type { ConfirmedGrade, Grade } from "../grade.type";
 
 export const ConfirmWrittenGradeParent = ({ grade }: { grade: Grade }) => {
-  const { user } = useRequiredAuthenticatedSession();
+  const { userId, user } = useRequiredAuthenticatedSession();
   const queryClient = useQueryClient();
   const router = useRouter();
   const confirmMutation = useIngest("grades.parentApproved", {
@@ -25,6 +25,7 @@ export const ConfirmWrittenGradeParent = ({ grade }: { grade: Grade }) => {
 
   const handleConfirm = (signature: string) =>
     confirmMutation.mutate({
+      studentId: userId,
       course: grade.course.id,
       date: grade.date,
       signature,

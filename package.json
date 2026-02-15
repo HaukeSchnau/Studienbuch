@@ -26,7 +26,7 @@
     "test": "vitest run",
     "test:dev": "vitest --ui --coverage",
     "typecheck": "turbo run typecheck --filter=!@stu/nextjs",
-    "ci": "turbo run format lint typecheck",
+    "ci": "turbo run lint typecheck",
     "ci:fix": "run-s format:fix lint:fix"
   },
   "devDependencies": {

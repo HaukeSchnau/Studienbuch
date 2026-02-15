@@ -18,7 +18,7 @@ interface AbsenceViewProps {
 
 export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
   const isExcused = absenceGroup.isExcusedByTeacher && absenceGroup.isExcusedByParent;
-  const { user } = useRequiredAuthenticatedSession();
+  const { userId, user } = useRequiredAuthenticatedSession();
   const queryClient = useQueryClient();
   const deleteMutation = useIngest("absence.discarded", {
     onSuccess: async () => {
@@ -48,6 +48,7 @@ export const AbsenceItem = ({ absenceGroup }: AbsenceViewProps) => {
           isPreferred: true,
           onPress: () => {
             deleteMutation.mutate({
+              studentId: userId,
               date: absenceGroup.date,
               courseIds: absenceGroup.courses.map((course) => course.id),
             });

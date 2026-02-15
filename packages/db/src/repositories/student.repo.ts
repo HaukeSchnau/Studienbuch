@@ -129,6 +129,35 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       );
     });
 
+    const getStudent = Effect.fn(function* (payload: { studentId: string }) {
+      const { execute } = yield* Database;
+
+      const student = yield* execute((db) =>
+        db.query.Students.findFirst({
+          where: eq(tables.Students.person, payload.studentId),
+          with: {
+            person: true,
+          },
+        }),
+      );
+
+      if (!student) {
+        return undefined;
+      }
+
+      return {
+        id: student.person.id,
+        firstName: student.person.firstName,
+        lastName: student.person.lastName,
+        school: student.school,
+        class: {
+          identifier: student.classIdentifier,
+          startYear: student.startYear,
+        },
+        isOfAge: student.isOfAge ?? false,
+      };
+    });
+
     return {
       doesClassExist,
       getSchoolOfUser,
@@ -136,6 +165,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       isAssignedToCourse,
       createStudent,
       assignCourse,
+      getStudent,
     };
   }),
 }) {}

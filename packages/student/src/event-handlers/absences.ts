@@ -11,14 +11,19 @@ export const absenceApplicators: NamespaceApplicatorMap<
   StudentRepository | AbsenceRepository
 > = {
   recorded: {
-    verify: () => Effect.void,
-    apply: (event, { initiatorId }) =>
+    verify: (event, { initiatorId }) =>
+      Effect.gen(function* () {
+        if (initiatorId !== event.data.studentId) {
+          return yield* Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" }));
+        }
+      }),
+    apply: (event) =>
       Effect.gen(function* () {
         const studentRepo = yield* StudentRepository;
-        const student = yield* studentRepo.getStudent({ studentId: initiatorId });
+        const student = yield* studentRepo.getStudent({ studentId: event.data.studentId });
 
         if (!student) {
-          return yield* Effect.fail(new ApplicatorError({ cause: `Student ${initiatorId} not found` }));
+          return yield* Effect.fail(new ApplicatorError({ cause: `Student ${event.data.studentId} not found` }));
         }
 
         const absenceRepo = yield* AbsenceRepository;
@@ -32,7 +37,12 @@ export const absenceApplicators: NamespaceApplicatorMap<
   },
 
   parentApproved: {
-    verify: () => Effect.void,
+    verify: (event, { initiatorId }) =>
+      Effect.gen(function* () {
+        if (initiatorId !== event.data.studentId) {
+          return yield* Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" }));
+        }
+      }),
     apply: (event) =>
       Effect.andThen(AbsenceRepository, (repo) =>
         repo.setParentSignature({
@@ -43,7 +53,12 @@ export const absenceApplicators: NamespaceApplicatorMap<
   },
 
   teacherApproved: {
-    verify: () => Effect.void,
+    verify: (event, { initiatorId }) =>
+      Effect.gen(function* () {
+        if (initiatorId !== event.data.studentId) {
+          return yield* Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" }));
+        }
+      }),
     apply: (event) =>
       Effect.andThen(AbsenceRepository, (repo) =>
         repo.setTeacherSignature({
@@ -55,7 +70,12 @@ export const absenceApplicators: NamespaceApplicatorMap<
   },
 
   discarded: {
-    verify: () => Effect.void,
+    verify: (event, { initiatorId }) =>
+      Effect.gen(function* () {
+        if (initiatorId !== event.data.studentId) {
+          return yield* Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" }));
+        }
+      }),
     apply: (event) =>
       Effect.andThen(AbsenceRepository, (repo) =>
         repo.deleteAbsence({

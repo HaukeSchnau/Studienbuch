@@ -1,6 +1,6 @@
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
-import { studentsOfCourse, studentsOfSchool, studentsOfState, studentsOfYear } from "@stu/lib";
+import { studentsOfCourse, studentsOfSchool, studentsOfState, studentsOfUser, studentsOfYear } from "@stu/lib";
 import { eq } from "drizzle-orm";
 
 const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
@@ -26,6 +26,7 @@ export const getUserTopics = async (userId: string) => {
   }
 
   return [
+    studentsOfUser(student.person),
     studentsOfYear({
       school: student.school.id,
       startYear: student.year.startYear,

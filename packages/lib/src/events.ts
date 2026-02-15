@@ -9,52 +9,62 @@ import { SALUTATIONS } from "./teacher";
 
 export const DomainEvent = createEventUnion([
   event("absence.recorded", {
+    studentId: string().uuid(),
     date: date(),
     reason: string(),
     courseIds: array(string().uuid()).min(1),
   }),
   event("absence.parentApproved", {
+    studentId: string().uuid(),
     date: date(),
     signature: string(),
   }),
   event("absence.teacherApproved", {
+    studentId: string().uuid(),
     date: date(),
     courseId: string().uuid(),
     signature: string(),
   }),
   event("absence.discarded", {
+    studentId: string().uuid(),
     date: date(),
     courseIds: array(string().uuid()),
   }),
   event("grades.currentGradeSet", {
+    studentId: string().uuid(),
     courseId: string().uuid(),
     date: date(),
     result: number(),
-    type: z.enum(GRADE_TYPES),
+    type: z.enum(["ORAL", "MASTER"]),
   }),
   event("grades.writtenGradeRecorded", {
+    studentId: string().uuid(),
     courseId: string(),
     date: date(),
     result: number(),
   }),
   event("grades.teacherApproved", {
+    studentId: string().uuid(),
     date: date(),
     course: string(),
     type: z.enum(GRADE_TYPES),
     signature: string(),
   }),
   event("grades.parentApproved", {
+    studentId: string().uuid(),
     date: date(),
     course: string().uuid(),
     type: z.enum(GRADE_TYPES),
     signature: string(),
   }),
   event("grades.discarded", {
+    studentId: string().uuid(),
     course: string().uuid(),
     type: z.enum(GRADE_TYPES),
     date: date(),
   }),
   event("grades.latestRestored", {
+    studentId: string().uuid(),
     course: string().uuid(),
     type: z.enum(GRADE_TYPES),
   }),
@@ -165,3 +175,4 @@ export const studentsOfYear = (options: { school: SchoolId; startYear: number })
 export const studentsOfSchool = (school: SchoolId) => `students.schools.${school}`;
 
 export const studentsOfState = (stateCode: StateCode) => `students.states.${stateCode}`;
+export const studentsOfUser = (studentId: string) => `students.user.${studentId}`;

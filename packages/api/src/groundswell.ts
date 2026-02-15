@@ -1,6 +1,7 @@
 import { CanonicalStorage as DrizzleCanonicalStorage } from "@groundswell/adapter-drizzle-postgres";
 import { ApplicatorError, ValidationError } from "@groundswell/core";
 import {
+  AbsenceRepositoryDb,
   AuthRepositoryLive,
   applicators,
   ClassRepositoryLive,
@@ -8,6 +9,7 @@ import {
   Database,
   type DatabaseError,
   DatabaseLive,
+  GradeRepositoryDb,
   HolidayRepositoryLive,
   PersonRepository,
   SchoolRepositoryLive,
@@ -30,6 +32,8 @@ const Repositories = Layer.mergeAll(
   ClassRepositoryLive,
   CourseRepositoryLive,
   HolidayRepositoryLive,
+  AbsenceRepositoryDb.Default,
+  GradeRepositoryDb.Default,
   TimetableRepository.Default,
   SemesterRepositoryLive,
   StudentRepository.Default,

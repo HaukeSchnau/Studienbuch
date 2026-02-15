@@ -10,6 +10,7 @@ import { CheckboxRow } from "~/components/checkbox-row";
 import { DateField } from "~/components/date-field";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
+import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { useIngest } from "~/utils/events/ingest";
 import { getTimetableWeek } from "../agenda/queries/week";
 import { listUnexcused } from "./queries";
@@ -42,6 +43,7 @@ interface Props {
 }
 
 export const AddAbsence = ({ onClose }: Props) => {
+  const { userId } = useRequiredAuthenticatedSession();
   const queryClient = useQueryClient();
   const mutation = useIngest("absence.recorded", {
     onSettled: () => {
@@ -56,6 +58,7 @@ export const AddAbsence = ({ onClose }: Props) => {
     ...formOpts,
     onSubmit: ({ value }) => {
       mutation.mutate({
+        studentId: userId,
         date: value.date,
         courseIds: value.courses,
         reason: value.reason,

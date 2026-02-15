@@ -49,3 +49,13 @@ This creates unclear ownership and slows stabilization of offline-first mobile b
 - Absence/grades updates performed on device A are visible on device B for the same user.
 - Untis jobs keep school structure/timetables current without duplicates or destructive regressions.
 - No production-critical path depends on framework-embedded API runtime.
+
+## Implementation Status
+
+### 2026-02-15
+
+- implemented: user-private topic naming `students.user.<studentId>` is wired for sensitive sync.
+- implemented: event payload contract for all `absence.*` and `grades.*` events includes `studentId`.
+- implemented: server-side applicators for `absence.*` and `grades.*` are present in `@stu/db`.
+- implemented: mobile emission paths include `studentId` and align with standalone API verification.
+- pending: end-to-end integration tests proving replay/offset/cross-device convergence for these event types.

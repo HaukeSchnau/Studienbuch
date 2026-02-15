@@ -9,7 +9,7 @@ import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { useIngest } from "~/utils/events/ingest";
 
 export const ExcuseTeacher = ({ absence }: { absence: AbsenceDayWithTeachers }) => {
-  const { user } = useRequiredAuthenticatedSession();
+  const { userId, user } = useRequiredAuthenticatedSession();
   const router = useRouter();
   const { date, reason } = absence;
 
@@ -30,6 +30,7 @@ export const ExcuseTeacher = ({ absence }: { absence: AbsenceDayWithTeachers }) 
 
   const handleConfirm = (signature: string) =>
     excuseMutation.mutate({
+      studentId: userId,
       date: date,
       courseId: absenceCourse.course.id,
       signature,

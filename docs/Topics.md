@@ -30,6 +30,8 @@
 - create one topic per student/user for sensitive personal data.
 - naming convention:
   - `students.user.<studentId>`
+- event payload requirement:
+  - every `absence.*` and `grades.*` event includes `studentId`
 - events:
   - absence.recorded
   - absence.parentApproved

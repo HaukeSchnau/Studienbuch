@@ -7,6 +7,7 @@ import { Button } from "~/components/button";
 import { Divider } from "~/components/divider";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
+import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { useIngest } from "~/utils/events/ingest";
 import { GradeCard } from "../grade-card";
 
@@ -19,6 +20,7 @@ export const EditMasterGrade = ({
   onClose: () => void;
   mostRecentConfirmedMasterGrade: Grade | null;
 }) => {
+  const { userId } = useRequiredAuthenticatedSession();
   const queryClient = useQueryClient();
   const upsertMutation = useIngest("grades.currentGradeSet", {
     onSuccess: async () => {
@@ -67,6 +69,7 @@ export const EditMasterGrade = ({
               label: "Wiederherstellen",
               onClick: () =>
                 restoreMutation.mutate({
+                  studentId: userId,
                   course: courseId,
                   type: "MASTER",
                 }),
@@ -83,6 +86,7 @@ export const EditMasterGrade = ({
         onPress={() => {
           const date = new Date();
           upsertMutation.mutate({
+            studentId: userId,
             courseId,
             date,
             result: gradeNum,

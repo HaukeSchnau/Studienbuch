@@ -41,3 +41,4 @@ If a user is assigned to a course, the user requires the course, in its entirety
 - Offset-driven reconnect for resumable sync.
 - No silent drops: every mobile-emitted event namespace must have a server applicator.
 - Sensitive events (absence/grades) are scoped to user-private topics.
+- Sensitive events (absence/grades) must carry `studentId` in the payload for deterministic auth/topic mapping.
