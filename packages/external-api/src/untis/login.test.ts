@@ -2,6 +2,7 @@ import { FetchHttpClient } from "@effect/platform";
 import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { UntisAuth } from "./login";
+import { getUntisTestCredentials, untisLiveTestsEnabled } from "./test-credentials";
 
 describe("UntisAuth.selectSchool", () => {
   const schools: Array<UntisAuth.SchoolLookup> = [
@@ -42,14 +43,9 @@ describe("UntisAuth.selectSchool", () => {
 });
 
 describe("Kadmos Login", () => {
-  const isLiveTestEnabled = process.env.UNTIS_LIVE_TESTS === "1";
-  const liveTest = isLiveTestEnabled ? it.effect : it.effect.skip;
+  const liveTest = untisLiveTestsEnabled ? it.effect : it.effect.skip;
 
   liveTest("should login", () =>
-    UntisAuth.login({
-      kadmosName: "IGS Lilienthal",
-      kadmosUsername: "hauke.studienbuch",
-      kadmosPassword: "App#Hauke2024",
-    }).pipe(Effect.provide(FetchHttpClient.layer)),
+    UntisAuth.login(getUntisTestCredentials()).pipe(Effect.provide(FetchHttpClient.layer)),
   );
 });

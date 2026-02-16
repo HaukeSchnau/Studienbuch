@@ -4,6 +4,12 @@ import { Effect, Layer } from "effect";
 import * as tables from "../schema";
 import { RepositoryDatabase } from "./util";
 
+const getRequiredUntisCredential = (key: "UNTIS_KADMOS_NAME" | "UNTIS_KADMOS_USERNAME" | "UNTIS_KADMOS_PASSWORD") => {
+  const value = process.env[key];
+  if (!value) throw new Error(`Missing required environment variable: ${key}`);
+  return value;
+};
+
 export const SchoolRepositoryLive = Layer.effect(
   SchoolRepository,
   Effect.gen(function* () {
@@ -29,15 +35,19 @@ export const SchoolRepositoryLive = Layer.effect(
       createSchool: Effect.fn(function* (payload) {
         const { execute } = yield* databaseContext;
         const defaultSchool = defaultSchools[payload.id];
+        const kadmosName = yield* Effect.sync(() => getRequiredUntisCredential("UNTIS_KADMOS_NAME"));
+        const kadmosUsername = yield* Effect.sync(() => getRequiredUntisCredential("UNTIS_KADMOS_USERNAME"));
+        const kadmosPassword = yield* Effect.sync(() => getRequiredUntisCredential("UNTIS_KADMOS_PASSWORD"));
+
         yield* execute((db) =>
           db.insert(tables.Schools).values({
             id: payload.id,
             name: payload.name,
             stateCode: payload.state,
             image: defaultSchool.image,
-            kadmosName: defaultSchool.kadmosName,
-            kadmosPassword: defaultSchool.kadmosPassword,
-            kadmosUsername: defaultSchool.kadmosUsername,
+            kadmosName,
+            kadmosPassword,
+            kadmosUsername,
             theme: defaultSchool.theme,
           }),
         );

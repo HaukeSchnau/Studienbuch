@@ -38,9 +38,6 @@ export const defaultSchools: Record<
     image: string;
     founded: Date;
     theme: Theme;
-    kadmosName: string;
-    kadmosUsername: string;
-    kadmosPassword: string;
     stateCode: StateCode;
   }
 > = {
@@ -49,9 +46,6 @@ export const defaultSchools: Record<
     image: "",
     founded: new Date("2012-09-01"),
     theme: defaultTheme,
-    kadmosName: "IGS Lilienthal",
-    kadmosUsername: "hauke.studienbuch",
-    kadmosPassword: "App#Hauke2024",
     stateCode: "NI",
   },
 };

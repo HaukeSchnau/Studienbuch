@@ -3,9 +3,12 @@ import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { UntisTimetable } from "./get-timetable";
 import { UntisAuth } from "./login";
+import { getUntisTestCredentials, untisLiveTestsEnabled } from "./test-credentials";
 
 describe("Get timetable from Kadmos", () => {
-  it.effect("should get timetable", () =>
+  const liveTest = untisLiveTestsEnabled ? it.effect : it.effect.skip;
+
+  liveTest("should get timetable", () =>
     Effect.gen(function* () {
       const timetable = yield* UntisTimetable.get({
         schoolYearId: 7,
@@ -44,13 +47,6 @@ describe("Get timetable from Kadmos", () => {
           status: expect.stringMatching(/^(REGULAR|CHANGED|ADDITIONAL|CANCELLED)$/),
         }),
       );
-    }).pipe(
-      UntisAuth.provide({
-        kadmosName: "IGS Lilienthal",
-        kadmosUsername: "hauke.studienbuch",
-        kadmosPassword: "App#Hauke2024",
-      }),
-      Effect.provide(FetchHttpClient.layer),
-    ),
+    }).pipe(UntisAuth.provide(getUntisTestCredentials()), Effect.provide(FetchHttpClient.layer)),
   );
 });

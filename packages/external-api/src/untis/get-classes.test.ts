@@ -3,9 +3,12 @@ import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { UntisClasses } from "./get-classes";
 import { UntisAuth } from "./login";
+import { getUntisTestCredentials, untisLiveTestsEnabled } from "./test-credentials";
 
 describe("Get teachers from Kadmos", () => {
-  it.effect("should get teachers", () =>
+  const liveTest = untisLiveTestsEnabled ? it.effect : it.effect.skip;
+
+  liveTest("should get teachers", () =>
     Effect.gen(function* () {
       const classes = yield* UntisClasses.list({
         schoolYearId: 7,
@@ -38,13 +41,6 @@ describe("Get teachers from Kadmos", () => {
           }),
         }),
       );
-    }).pipe(
-      UntisAuth.provide({
-        kadmosName: "IGS Lilienthal",
-        kadmosUsername: "hauke.studienbuch",
-        kadmosPassword: "App#Hauke2024",
-      }),
-      Effect.provide(FetchHttpClient.layer),
-    ),
+    }).pipe(UntisAuth.provide(getUntisTestCredentials()), Effect.provide(FetchHttpClient.layer)),
   );
 });
