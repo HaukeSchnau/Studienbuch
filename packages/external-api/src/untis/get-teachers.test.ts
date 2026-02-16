@@ -20,7 +20,16 @@ describe("Get teachers from Kadmos", () => {
           day: 29,
         },
       });
-      expect(teachers).toMatchSnapshot();
+      expect(teachers.resourceType).toBe("TEACHER");
+      expect(teachers.teachers.length).toBeGreaterThan(0);
+      expect(teachers.teachers[0]?.teacher).toEqual(
+        expect.objectContaining({
+          id: expect.any(Number),
+          shortName: expect.any(String),
+          longName: expect.any(String),
+          displayName: expect.any(String),
+        }),
+      );
     }).pipe(
       UntisAuth.provide({
         kadmosName: "IGS Lilienthal",

@@ -323,6 +323,15 @@ exports[`Get teachers from Kadmos > should get teachers 1`] = `
     {
       "departments": [],
       "teacher": {
+        "displayName": "GOU",
+        "id": 528,
+        "longName": "GOU",
+        "shortName": "GOU",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
         "displayName": "GRA",
         "id": 122,
         "longName": "Graue-Marks",
@@ -431,6 +440,15 @@ exports[`Get teachers from Kadmos > should get teachers 1`] = `
     {
       "departments": [],
       "teacher": {
+        "displayName": "JDY",
+        "id": 533,
+        "longName": "Jenderny",
+        "shortName": "JDY",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
         "displayName": "JEN",
         "id": 182,
         "longName": "Jenderny",
@@ -458,15 +476,6 @@ exports[`Get teachers from Kadmos > should get teachers 1`] = `
     {
       "departments": [],
       "teacher": {
-        "displayName": "KAR",
-        "id": 190,
-        "longName": "Karaman",
-        "shortName": "KAR",
-      },
-    },
-    {
-      "departments": [],
-      "teacher": {
         "displayName": "KAT",
         "id": 471,
         "longName": "Katterwe",
@@ -485,6 +494,15 @@ exports[`Get teachers from Kadmos > should get teachers 1`] = `
     {
       "departments": [],
       "teacher": {
+        "displayName": "KIP",
+        "id": 530,
+        "longName": "Kipp",
+        "shortName": "KIP",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
         "displayName": "KLÄ",
         "id": 198,
         "longName": "Klähr",
@@ -498,15 +516,6 @@ exports[`Get teachers from Kadmos > should get teachers 1`] = `
         "id": 202,
         "longName": "Klee",
         "shortName": "KLE",
-      },
-    },
-    {
-      "departments": [],
-      "teacher": {
-        "displayName": "KLM",
-        "id": 464,
-        "longName": "Klemm",
-        "shortName": "KLM",
       },
     },
     {
@@ -750,6 +759,15 @@ exports[`Get teachers from Kadmos > should get teachers 1`] = `
         "id": 506,
         "longName": "Ott",
         "shortName": "OTT",
+      },
+    },
+    {
+      "departments": [],
+      "teacher": {
+        "displayName": "PAU",
+        "id": 525,
+        "longName": "PAU",
+        "shortName": "PAU",
       },
     },
     {

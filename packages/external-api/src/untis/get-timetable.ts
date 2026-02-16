@@ -92,7 +92,7 @@ const ResponseSchema = Schema.Struct({
           ids: Schema.Array(Schema.Number),
           duration: DurationSchema,
           type: Schema.Literal("NORMAL_TEACHING_PERIOD", "EVENT", "EXAM"),
-          status: Schema.Literal("REGULAR", "CHANGED", "ADDITIONAL"),
+          status: Schema.Literal("REGULAR", "CHANGED", "ADDITIONAL", "CANCELLED"),
           statusDetail: Schema.Literal("SUBSTITUTED").pipe(Schema.NullOr),
           position1: PositionValueSchema,
           position2: PositionValueSchema,

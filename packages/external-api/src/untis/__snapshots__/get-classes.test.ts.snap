@@ -617,7 +617,7 @@ exports[`Get teachers from Kadmos > should get teachers 1`] = `
       "class": {
         "displayName": "7.2",
         "id": 413,
-        "longName": "DRA/FED",
+        "longName": "DRA/GOU",
         "shortName": "7.2",
       },
       "classTeacher1": {

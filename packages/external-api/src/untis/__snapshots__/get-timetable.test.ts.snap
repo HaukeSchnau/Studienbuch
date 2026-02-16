@@ -480,6 +480,71 @@ exports[`Get timetable from Kadmos > should get timetable 1`] = `
                 "month": 8,
                 "year": 2025,
               },
+              "time": 665,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 585,
+            },
+          },
+          "ids": [
+            1473864,
+            1473867,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "WAL",
+                "longName": "Walczak",
+                "shortName": "WAL",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "GE2",
+                "longName": "Geschichte",
+                "shortName": "GE2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "CANCELLED",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
               "time": 770,
             },
             "start": {
@@ -905,6 +970,71 @@ exports[`Get timetable from Kadmos > should get timetable 1`] = `
           "statusDetail": null,
           "type": "NORMAL_TEACHING_PERIOD",
         },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 25,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1473168,
+            1473171,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "NIL",
+                "longName": "Nielsen",
+                "shortName": "NIL",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "ge3",
+                "longName": "Geschichte",
+                "shortName": "ge3",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "CANCELLED",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
       ],
       "resource": {
         "displayName": "",
@@ -1050,6 +1180,71 @@ exports[`Get timetable from Kadmos > should get timetable 1`] = `
           "position4": null,
           "position5": null,
           "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 26,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1482558,
+            1482561,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "HÖP",
+                "longName": "Höppe",
+                "shortName": "HÖP",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "en3",
+                "longName": "Englisch",
+                "shortName": "en3",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "CANCELLED",
           "statusDetail": null,
           "type": "NORMAL_TEACHING_PERIOD",
         },
@@ -1989,6 +2184,71 @@ exports[`Get timetable from Kadmos > should get timetable 1`] = `
                 "month": 8,
                 "year": 2025,
               },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1375992,
+            1375995,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "MEY",
+                "longName": "Meyer",
+                "shortName": "MEY",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "sn1",
+                "longName": "Spanisch",
+                "shortName": "sn1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-14",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-14",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "CANCELLED",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
               "time": 665,
             },
             "start": {
@@ -2704,6 +2964,71 @@ exports[`Get timetable from Kadmos > should get timetable 1`] = `
                 "month": 8,
                 "year": 2025,
               },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1379997,
+            1380000,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "WAL",
+                "longName": "Walczak",
+                "shortName": "WAL",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "sf2",
+                "longName": "sf2",
+                "shortName": "sf2",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "CANCELLED",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 27,
+                "month": 8,
+                "year": 2025,
+              },
               "time": 990,
             },
             "start": {
@@ -2994,71 +3319,6 @@ exports[`Get timetable from Kadmos > should get timetable 1`] = `
             },
           },
           "ids": [
-            1509282,
-            1509285,
-          ],
-          "position1": [
-            {
-              "current": {
-                "displayName": "KLÄ",
-                "longName": "Klähr",
-                "shortName": "KLÄ",
-                "status": "REGULAR",
-                "type": "TEACHER",
-              },
-              "removed": null,
-            },
-          ],
-          "position2": [
-            {
-              "current": {
-                "displayName": "DE1",
-                "longName": "Deutsch",
-                "shortName": "DE1",
-                "status": "REGULAR",
-                "type": "SUBJECT",
-              },
-              "removed": null,
-            },
-          ],
-          "position3": [
-            {
-              "current": {
-                "displayName": "KH-11",
-                "longName": "Lilienthal OS Kursraum",
-                "shortName": "KH-11",
-                "status": "REGULAR",
-                "type": "ROOM",
-              },
-              "removed": null,
-            },
-          ],
-          "position4": null,
-          "position5": null,
-          "status": "REGULAR",
-          "statusDetail": null,
-          "type": "NORMAL_TEACHING_PERIOD",
-        },
-        {
-          "duration": {
-            "end": {
-              "date": {
-                "day": 28,
-                "month": 8,
-                "year": 2025,
-              },
-              "time": 560,
-            },
-            "start": {
-              "date": {
-                "day": 28,
-                "month": 8,
-                "year": 2025,
-              },
-              "time": 480,
-            },
-          },
-          "ids": [
             1559220,
             1559223,
           ],
@@ -3166,6 +3426,71 @@ exports[`Get timetable from Kadmos > should get timetable 1`] = `
           "position4": null,
           "position5": null,
           "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 560,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 480,
+            },
+          },
+          "ids": [
+            1509282,
+            1509285,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "KLÄ",
+                "longName": "Klähr",
+                "shortName": "KLÄ",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "DE1",
+                "longName": "Deutsch",
+                "shortName": "DE1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-11",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-11",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "CANCELLED",
           "statusDetail": null,
           "type": "NORMAL_TEACHING_PERIOD",
         },
@@ -3639,6 +3964,71 @@ exports[`Get timetable from Kadmos > should get timetable 1`] = `
             },
           },
           "ids": [
+            1507218,
+            1507221,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "SCW",
+                "longName": "Schwabe",
+                "shortName": "SCW",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "de4",
+                "longName": "Deutsch",
+                "shortName": "de4",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-12",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-12",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "CANCELLED",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
             1567398,
             1567401,
           ],
@@ -3680,7 +4070,7 @@ exports[`Get timetable from Kadmos > should get timetable 1`] = `
           ],
           "position4": null,
           "position5": null,
-          "status": "REGULAR",
+          "status": "CANCELLED",
           "statusDetail": null,
           "type": "NORMAL_TEACHING_PERIOD",
         },
@@ -3745,6 +4135,70 @@ exports[`Get timetable from Kadmos > should get timetable 1`] = `
           "position4": null,
           "position5": null,
           "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 800,
+            },
+          },
+          "ids": [
+            1635751,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "MEY",
+                "longName": "Meyer",
+                "shortName": "MEY",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "sn1",
+                "longName": "Spanisch",
+                "shortName": "sn1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-13",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-13",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "CANCELLED",
           "statusDetail": null,
           "type": "NORMAL_TEACHING_PERIOD",
         },
@@ -3943,6 +4397,71 @@ exports[`Get timetable from Kadmos > should get timetable 1`] = `
           "statusDetail": null,
           "type": "NORMAL_TEACHING_PERIOD",
         },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 910,
+            },
+            "start": {
+              "date": {
+                "day": 28,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 830,
+            },
+          },
+          "ids": [
+            1375998,
+            1376001,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "MEY",
+                "longName": "Meyer",
+                "shortName": "MEY",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "sn1",
+                "longName": "Spanisch",
+                "shortName": "sn1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "KH-14",
+                "longName": "Lilienthal OS Kursraum",
+                "shortName": "KH-14",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "CANCELLED",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
       ],
       "resource": {
         "displayName": "",
@@ -3986,7 +4505,13 @@ exports[`Get timetable from Kadmos > should get timetable 1`] = `
           ],
           "position1": [
             {
-              "current": null,
+              "current": {
+                "displayName": "OTT",
+                "longName": "Ott",
+                "shortName": "OTT",
+                "status": "ADDED",
+                "type": "TEACHER",
+              },
               "removed": {
                 "displayName": "THO",
                 "longName": "Thoms",
@@ -4674,71 +5199,6 @@ exports[`Get timetable from Kadmos > should get timetable 1`] = `
             },
           },
           "ids": [
-            1438428,
-            1438431,
-          ],
-          "position1": [
-            {
-              "current": {
-                "displayName": "DAN",
-                "longName": "Dantz",
-                "shortName": "DAN",
-                "status": "REGULAR",
-                "type": "TEACHER",
-              },
-              "removed": null,
-            },
-          ],
-          "position2": [
-            {
-              "current": {
-                "displayName": "ku1",
-                "longName": "Kunst",
-                "shortName": "ku1",
-                "status": "REGULAR",
-                "type": "SUBJECT",
-              },
-              "removed": null,
-            },
-          ],
-          "position3": [
-            {
-              "current": {
-                "displayName": "B013",
-                "longName": "Lilienthal Kunst",
-                "shortName": "B013",
-                "status": "REGULAR",
-                "type": "ROOM",
-              },
-              "removed": null,
-            },
-          ],
-          "position4": null,
-          "position5": null,
-          "status": "REGULAR",
-          "statusDetail": null,
-          "type": "NORMAL_TEACHING_PERIOD",
-        },
-        {
-          "duration": {
-            "end": {
-              "date": {
-                "day": 29,
-                "month": 8,
-                "year": 2025,
-              },
-              "time": 770,
-            },
-            "start": {
-              "date": {
-                "day": 29,
-                "month": 8,
-                "year": 2025,
-              },
-              "time": 690,
-            },
-          },
-          "ids": [
             1404873,
             1404876,
           ],
@@ -4781,6 +5241,71 @@ exports[`Get timetable from Kadmos > should get timetable 1`] = `
           "position4": null,
           "position5": null,
           "status": "REGULAR",
+          "statusDetail": null,
+          "type": "NORMAL_TEACHING_PERIOD",
+        },
+        {
+          "duration": {
+            "end": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 770,
+            },
+            "start": {
+              "date": {
+                "day": 29,
+                "month": 8,
+                "year": 2025,
+              },
+              "time": 690,
+            },
+          },
+          "ids": [
+            1438428,
+            1438431,
+          ],
+          "position1": [
+            {
+              "current": {
+                "displayName": "DAN",
+                "longName": "Dantz",
+                "shortName": "DAN",
+                "status": "REGULAR",
+                "type": "TEACHER",
+              },
+              "removed": null,
+            },
+          ],
+          "position2": [
+            {
+              "current": {
+                "displayName": "ku1",
+                "longName": "Kunst",
+                "shortName": "ku1",
+                "status": "REGULAR",
+                "type": "SUBJECT",
+              },
+              "removed": null,
+            },
+          ],
+          "position3": [
+            {
+              "current": {
+                "displayName": "B013",
+                "longName": "Lilienthal Kunst",
+                "shortName": "B013",
+                "status": "REGULAR",
+                "type": "ROOM",
+              },
+              "removed": null,
+            },
+          ],
+          "position4": null,
+          "position5": null,
+          "status": "CANCELLED",
           "statusDetail": null,
           "type": "NORMAL_TEACHING_PERIOD",
         },
