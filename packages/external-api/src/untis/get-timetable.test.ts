@@ -24,29 +24,7 @@ describe("Get timetable from Kadmos", () => {
         },
         kadmosClassId: 503,
       });
-      expect(timetable.errors).toEqual([]);
-      expect(timetable.days.length).toBeGreaterThan(0);
-      expect(timetable.days[0]).toEqual(
-        expect.objectContaining({
-          resourceType: "CLASS",
-          status: expect.stringMatching(/^(REGULAR|NO_DATA)$/),
-          resource: expect.objectContaining({
-            id: expect.any(Number),
-            shortName: expect.any(String),
-            longName: expect.any(String),
-            displayName: expect.any(String),
-          }),
-        }),
-      );
-
-      const gridEntries = timetable.days.flatMap((day) => day.gridEntries);
-      expect(gridEntries.length).toBeGreaterThan(0);
-      expect(gridEntries[0]).toEqual(
-        expect.objectContaining({
-          ids: expect.any(Array),
-          status: expect.stringMatching(/^(REGULAR|CHANGED|ADDITIONAL|CANCELLED)$/),
-        }),
-      );
+      expect(timetable).toMatchSnapshot();
     }).pipe(UntisAuth.provide(getUntisTestCredentials()), Effect.provide(FetchHttpClient.layer)),
   );
 });

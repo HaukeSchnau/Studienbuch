@@ -23,24 +23,7 @@ describe("Get teachers from Kadmos", () => {
           day: 29,
         },
       });
-      expect(classes.classes.length).toBeGreaterThan(0);
-      expect(classes.departments.length).toBeGreaterThan(0);
-      expect(classes.classes[0]).toEqual(
-        expect.objectContaining({
-          class: expect.objectContaining({
-            id: expect.any(Number),
-            shortName: expect.any(String),
-            longName: expect.any(String),
-            displayName: expect.any(String),
-          }),
-          department: expect.objectContaining({
-            id: expect.any(Number),
-            shortName: expect.any(String),
-            longName: expect.any(String),
-            displayName: expect.any(String),
-          }),
-        }),
-      );
+      expect(classes).toMatchSnapshot();
     }).pipe(UntisAuth.provide(getUntisTestCredentials()), Effect.provide(FetchHttpClient.layer)),
   );
 });
