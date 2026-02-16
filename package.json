@@ -24,6 +24,7 @@
     "lint:ws": "sherif",
     "postinstall": "bun lint:ws",
     "test": "vitest run",
+    "test:maestro:mobile": "bun --filter @stu/app-mobile maestro:test",
     "test:dev": "vitest --ui --coverage",
     "typecheck": "turbo run typecheck --filter=!@stu/nextjs",
     "ci": "turbo run lint typecheck",

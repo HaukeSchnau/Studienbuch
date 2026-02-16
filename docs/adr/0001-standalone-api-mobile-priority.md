@@ -70,4 +70,5 @@ This creates unclear ownership and slows stabilization of offline-first mobile b
 - implemented: Expo lifecycle transition controller and tests cover resume/reconnect runtime refresh behavior in `@stu/app-mobile`.
 - implemented: lifecycle replay test coverage now includes simulated offline/background -> reconnect missed-event replay.
 - implemented: sensitive grades convergence matrix now includes `teacherApproved`, `parentApproved`, and `latestRestored`.
-- pending: device-level lifecycle E2E verification (real AppState/network transitions with offline queue replay).
+- in progress: Maestro-based lifecycle E2E harness is implemented (`@stu/app-mobile`), with resume and relaunch replay flows.
+- pending: execute flows on attached devices and extend with real network toggle automation (offline -> online replay verification).

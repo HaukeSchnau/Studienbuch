@@ -15,6 +15,7 @@
           just
           mprocs
           cocoapods
+          maestro
         ];
       };
     });

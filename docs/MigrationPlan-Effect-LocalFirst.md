@@ -87,7 +87,8 @@ Make the standalone API sync path operational and deterministic.
 - done: client sync-runtime integration tests validate reconnect from persisted offset and same-user convergence for `absence.recorded` and `grades.currentGradeSet`.
 - done: Expo lifecycle transition coverage is implemented in `@stu/app-mobile` for background/inactive -> active and offline -> online runtime refresh decisions.
 - done: lifecycle replay scenario coverage now verifies missed-event replay after simulated offline/background -> reconnect transitions.
-- next: add true device-level lifecycle E2E scenarios (queued offline writes + reconnect replay verification) on top of current integration harness.
+- done: Maestro lifecycle harness is now implemented in `@stu/app-mobile` (`/e2e/sync-lifecycle` route + resume/relaunch replay flows).
+- next: execute Maestro lifecycle suite on connected devices and add real network toggle automation for offline -> online replay verification.
 
 ### Acceptance tests
 
@@ -163,6 +164,15 @@ Ship a robust mobile experience on top of the sync architecture.
 - Convert setup flow failures to user-visible actionable states.
 - Reduce transitional tRPC dependencies in mobile setup where snapshots/events can replace them.
 - Validate background sync behavior across app lifecycle transitions.
+
+### Implementation status (2026-02-16)
+
+- done: lifecycle transition controller is integrated in app runtime (`background/inactive -> active`, `offline -> online`).
+- done: unit coverage exists for lifecycle refresh decisions and controller behavior.
+- done: Maestro E2E route + lifecycle flows exist for:
+  - foreground/background resume refresh signaling,
+  - relaunch replay verification for queued state.
+- next: run Maestro lifecycle suite in a device-available environment and extend flows with real network toggles.
 
 ### Acceptance tests
 

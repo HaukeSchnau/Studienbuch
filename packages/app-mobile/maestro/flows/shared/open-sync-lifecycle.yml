@@ -1,0 +1,11 @@
+appId: ${MAESTRO_APP_ID}
+---
+- stopApp: ${MAESTRO_APP_ID}
+- openLink:
+    link: ${MAESTRO_APP_LINK}
+- assertVisible:
+    id: e2e-ready
+    text: ready
+- assertVisible:
+    id: e2e-mode
+    text: mode:enabled

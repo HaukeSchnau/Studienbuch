@@ -13,6 +13,12 @@ const schemas = {
     .nullable(),
   "auth.licenseKey": z.string(),
   "sync.offset": z.number(),
+  "e2e.lifecycle.queued": z.number(),
+  "e2e.lifecycle.applied": z.number(),
+  "e2e.lifecycle.replayCount": z.number(),
+  "e2e.lifecycle.resumeRefreshes": z.number(),
+  "e2e.lifecycle.networkRefreshes": z.number(),
+  "e2e.lifecycle.launches": z.number(),
 } as const satisfies Record<string, ZodSchema>;
 
 type Keys = keyof typeof schemas;
@@ -68,7 +74,7 @@ export const useStorage = <TKey extends Keys>(
 };
 
 export const setStorage = async <TKey extends Keys>(key: TKey, newValue: StorageValue<TKey>): Promise<void> => {
-  store.setState(() => ({ [key]: newValue }));
+  store.setState((state) => ({ ...state, [key]: newValue }));
 
   const strValue = JSON.stringify(newValue);
   await SecureStore.setItemAsync(key, strValue);

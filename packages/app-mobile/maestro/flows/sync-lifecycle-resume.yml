@@ -1,0 +1,19 @@
+appId: ${MAESTRO_APP_ID}
+name: Sync lifecycle resume refresh
+---
+- runFlow:
+    file: shared/open-sync-lifecycle.yml
+- tapOn:
+    id: e2e-reset
+- assertVisible:
+    id: e2e-resume-refreshes
+    text: resume-refreshes:0
+- pressKey: home
+- launchApp:
+    stopApp: false
+- assertVisible:
+    id: e2e-ready
+    text: ready
+- assertVisible:
+    id: e2e-resume-refreshes
+    text: resume-refreshes:1

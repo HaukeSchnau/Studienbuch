@@ -7,11 +7,14 @@
     "clean": "git clean -xdf .cache .expo .turbo android ios node_modules",
     "dev": "APP_VARIANT=development expo start --ios",
     "dev:android": "APP_VARIANT=development expo start --android",
+    "dev:e2e": "EXPO_PUBLIC_E2E_MODE=1 APP_VARIANT=development expo start --dev-client",
     "dev:ios": "APP_VARIANT=development expo start --ios",
     "android": "APP_VARIANT=production expo run:android",
     "ios": "APP_VARIANT=development expo run:ios",
     "lint": "biome check",
-    "typecheck": "expo customize tsconfig.json && tsc --noEmit"
+    "typecheck": "expo customize tsconfig.json && tsc --noEmit",
+    "maestro:test": "maestro test --config ./maestro/config.yaml ./maestro/flows",
+    "maestro:test:lifecycle": "maestro test --config ./maestro/config.yaml ./maestro/flows/sync-lifecycle-resume.yml ./maestro/flows/sync-lifecycle-replay.yml"
   },
   "dependencies": {
     "@dev-plugins/react-navigation": "^0.3.1",
