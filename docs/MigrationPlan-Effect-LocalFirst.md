@@ -86,7 +86,8 @@ Make the standalone API sync path operational and deterministic.
 - done: ingest-to-broadcast integration tests validate multi-device same-user convergence and reconnect-by-offset behavior.
 - done: client sync-runtime integration tests validate reconnect from persisted offset and same-user convergence for `absence.recorded` and `grades.currentGradeSet`.
 - done: Expo lifecycle transition coverage is implemented in `@stu/app-mobile` for background/inactive -> active and offline -> online runtime refresh decisions.
-- next: add device-level lifecycle E2E scenarios (queued offline writes + reconnect replay verification) on top of current controller tests.
+- done: lifecycle replay scenario coverage now verifies missed-event replay after simulated offline/background -> reconnect transitions.
+- next: add true device-level lifecycle E2E scenarios (queued offline writes + reconnect replay verification) on top of current integration harness.
 
 ### Acceptance tests
 
@@ -119,7 +120,8 @@ Eliminate silent no-op behavior by providing complete server support for all cli
 - done: mobile emitters now include `studentId`, enabling deterministic verify/topic mapping.
 - done: API-level replay/broadcast integration tests are in place.
 - done: initial client-runtime convergence coverage now includes `absence.recorded` and `grades.currentGradeSet`.
-- next: expand coverage for remaining sensitive `grades.*` flows (`teacherApproved`, `parentApproved`, `latestRestored`) and auth edge cases.
+- done: sensitive grade convergence coverage now includes `teacherApproved`, `parentApproved`, and `latestRestored`.
+- next: add reconnect-while-offline replay scenarios for sensitive grades + auth edge cases.
 
 ### Acceptance tests
 

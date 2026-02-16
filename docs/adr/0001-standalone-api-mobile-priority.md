@@ -68,4 +68,6 @@ This creates unclear ownership and slows stabilization of offline-first mobile b
 - implemented: ingest-to-broadcast multi-device convergence tests are in place.
 - implemented: client sync-runtime reconnect tests now cover persisted-offset resume and same-user convergence for absences and grades.
 - implemented: Expo lifecycle transition controller and tests cover resume/reconnect runtime refresh behavior in `@stu/app-mobile`.
+- implemented: lifecycle replay test coverage now includes simulated offline/background -> reconnect missed-event replay.
+- implemented: sensitive grades convergence matrix now includes `teacherApproved`, `parentApproved`, and `latestRestored`.
 - pending: device-level lifecycle E2E verification (real AppState/network transitions with offline queue replay).

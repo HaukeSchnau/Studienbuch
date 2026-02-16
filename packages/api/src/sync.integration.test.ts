@@ -695,4 +695,221 @@ describe("sync ingest integration", () => {
     await runtimeA.dispose();
     await runtimeB.dispose();
   });
+
+  it("two live client runtimes converge for grades.teacherApproved", async () => {
+    const harness = createHarness();
+    const { ingest, broadcast } = await harness.getServerServices();
+
+    const runtimeAState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+    const runtimeBState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+
+    const runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+    const runtimeB = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeBState.localStore,
+      appliedEventIds: runtimeBState.appliedEventIds,
+      persistedOffset: runtimeBState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "grades.teacherApproved",
+          data: {
+            studentId: STUDENT_A,
+            date: new Date(50),
+            course: COURSE_A,
+            type: "WRITTEN",
+            signature: "teacher-signature",
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeBState.persistedOffset.value === 1);
+
+    expect(runtimeAState.appliedEventIds.length).toBe(1);
+    expect(runtimeBState.appliedEventIds.length).toBe(1);
+    expect(runtimeAState.persistedOffset.value).toBe(1);
+    expect(runtimeBState.persistedOffset.value).toBe(1);
+    expect(runtimeAState.appliedEventIds[0]).toBe(runtimeBState.appliedEventIds[0]);
+
+    await runtimeA.dispose();
+    await runtimeB.dispose();
+  });
+
+  it("two live client runtimes converge for grades.parentApproved", async () => {
+    const harness = createHarness();
+    const { ingest, broadcast } = await harness.getServerServices();
+
+    const runtimeAState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+    const runtimeBState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+
+    const runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+    const runtimeB = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeBState.localStore,
+      appliedEventIds: runtimeBState.appliedEventIds,
+      persistedOffset: runtimeBState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "grades.parentApproved",
+          data: {
+            studentId: STUDENT_A,
+            date: new Date(51),
+            course: COURSE_A,
+            type: "WRITTEN",
+            signature: "parent-signature",
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeBState.persistedOffset.value === 1);
+
+    expect(runtimeAState.appliedEventIds.length).toBe(1);
+    expect(runtimeBState.appliedEventIds.length).toBe(1);
+    expect(runtimeAState.persistedOffset.value).toBe(1);
+    expect(runtimeBState.persistedOffset.value).toBe(1);
+    expect(runtimeAState.appliedEventIds[0]).toBe(runtimeBState.appliedEventIds[0]);
+
+    await runtimeA.dispose();
+    await runtimeB.dispose();
+  });
+
+  it("two live client runtimes converge for grades.latestRestored", async () => {
+    const harness = createHarness();
+    const { ingest, broadcast } = await harness.getServerServices();
+
+    const runtimeAState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+    const runtimeBState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+
+    const runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+    const runtimeB = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeBState.localStore,
+      appliedEventIds: runtimeBState.appliedEventIds,
+      persistedOffset: runtimeBState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "grades.latestRestored",
+          data: {
+            studentId: STUDENT_A,
+            course: COURSE_A,
+            type: "MASTER",
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeBState.persistedOffset.value === 1);
+
+    expect(runtimeAState.appliedEventIds.length).toBe(1);
+    expect(runtimeBState.appliedEventIds.length).toBe(1);
+    expect(runtimeAState.persistedOffset.value).toBe(1);
+    expect(runtimeBState.persistedOffset.value).toBe(1);
+    expect(runtimeAState.appliedEventIds[0]).toBe(runtimeBState.appliedEventIds[0]);
+
+    await runtimeA.dispose();
+    await runtimeB.dispose();
+  });
 });
