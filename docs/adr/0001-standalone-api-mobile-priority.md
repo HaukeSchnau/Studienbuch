@@ -65,4 +65,5 @@ This creates unclear ownership and slows stabilization of offline-first mobile b
 - implemented: offset-based replay behavior is wired in broadcast subscribe path.
 - implemented: mobile transport persists `sync.offset` while consuming server events.
 - implemented: API integration tests now cover replay ordering, offset skip behavior, duplicate marker handling, and user stream isolation.
-- pending: full ingest-to-multi-device convergence tests (end-to-end).
+- implemented: ingest-to-broadcast multi-device convergence tests are in place.
+- pending: full mobile runtime reconnect tests (app lifecycle + storage + transport).

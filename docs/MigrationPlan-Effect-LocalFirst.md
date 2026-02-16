@@ -83,7 +83,8 @@ Make the standalone API sync path operational and deterministic.
 - done: server subscription supports replay from `offset` and live stream continuation.
 - done: mobile transport now persists `sync.offset` while consuming server events.
 - done: API tests cover replay ordering, offset behavior, duplicate marker handling, and user stream isolation.
-- next: add true end-to-end multi-device scenario tests on top of ingest + transport runtime.
+- done: ingest-to-broadcast integration tests now validate multi-device same-user convergence and reconnect-by-offset behavior.
+- next: add full mobile runtime reconnect scenarios (client lifecycle + storage + transport).
 
 ### Acceptance tests
 
