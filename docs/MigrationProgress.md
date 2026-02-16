@@ -18,15 +18,17 @@ Last updated: 2026-02-16
 - New integration coverage now verifies:
   - one ingested event reaches multiple live subscribers for the same user (cross-device),
   - reconnect replay from `offset` returns only missing events (no duplicate re-delivery),
-  - user-stream isolation (no leakage to other users).
+  - user-stream isolation (no leakage to other users),
+  - client sync-runtime reconnect behavior with persisted offset state,
+  - client convergence for `absence.recorded` and `grades.currentGradeSet` across two live runtimes.
 - Existing broadcast and offset persistence implementation remains active:
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/broadcast.ts`
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/utils/groundswell.tsx`
 
 ## Current Workstream Status
 
-- WS-A Sync transport and broadcast reliability: in progress (core implementation + ingest integration tests done)
-- WS-B Server applicator parity: in progress (core implementation + integration tests done)
+- WS-A Sync transport and broadcast reliability: in progress (core implementation + server and client-runtime integration coverage done)
+- WS-B Server applicator parity: in progress (`absence.*` + `grades.*` server coverage done; expanding scenario matrix)
 - WS-C Snapshot and bootstrap strategy: not started
 - WS-D Mobile app stabilization: in progress
 - WS-E Untis background jobs: not started in code
@@ -43,13 +45,13 @@ All current project checks pass in this iteration.
 
 ## Known Risks / Gaps
 
-- Full mobile runtime reconnect scenarios are not yet tested end-to-end (client storage + transport + UI lifecycle).
+- Full Expo app lifecycle integration coverage is still missing (foreground/background transitions and reconnect timing).
 - Snapshot-based unknown-entity recovery remains unimplemented.
 - Untis job idempotency and observability hardening is still pending.
 
 ## Next Steps
 
-1. Extend tests from API ingest/broadcast integration to full mobile sync runtime reconnect scenarios.
-2. Add absence/grades-specific end-to-end scenarios on top of current sync integration harness.
+1. Add mobile app lifecycle integration tests for offline/online/background transitions in `@stu/app-mobile`.
+2. Extend sync scenario matrix for remaining high-risk `grades.*` flows (`teacherApproved`, `parentApproved`, `latestRestored`).
 3. Start WS-C snapshot API + client resolver implementation.
 4. Start WS-E instrumentation + idempotency hardening for Untis background jobs.

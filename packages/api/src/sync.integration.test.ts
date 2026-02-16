@@ -1,4 +1,16 @@
-import { ApplicatorError, ValidationError } from "@groundswell/core";
+import {
+  ApplicatorError,
+  DuplicateEventError,
+  type LocalEvent,
+  type LocalEventStatus,
+  type Storage,
+  StorageError,
+  type SyncEngine,
+  syncEngineLive,
+  type Transport,
+  TransportError,
+  ValidationError,
+} from "@groundswell/core";
 import {
   type CanonicalStorage,
   CanonicalStorageError,
@@ -7,7 +19,7 @@ import {
 } from "@groundswell/core-server";
 import type { DomainEvent } from "@stu/lib";
 import { studentsOfUser } from "@stu/lib";
-import { Effect, Fiber, Layer, Option, Stream } from "effect";
+import { Context, Effect, Fiber, Layer, ManagedRuntime, Option, Stream } from "effect";
 import { describe, expect, it } from "vitest";
 import {
   DomainBroadcast,
@@ -45,6 +57,20 @@ const uniqueViolation = (message: string) =>
       message,
     },
   });
+
+class ClientApplicator extends Context.Tag("test/ClientApplicator")<
+  ClientApplicator,
+  {
+    verify: (event: DomainEvent) => Effect.Effect<void, ValidationError>;
+    apply: (event: DomainEvent) => Effect.Effect<void, ApplicatorError>;
+  }
+>() {}
+
+class ClientStorage extends Context.Tag("test/ClientStorage")<ClientStorage, Storage<DomainEvent>>() {}
+
+class ClientTransport extends Context.Tag("test/ClientTransport")<ClientTransport, Transport<DomainEvent>>() {}
+
+class ClientSyncEngine extends Context.Tag("test/ClientSyncEngine")<ClientSyncEngine, SyncEngine<DomainEvent>>() {}
 
 const createHarness = () => {
   const storedEvents: Array<{ event: DomainEvent; topics: string[] }> = [];
@@ -138,11 +164,122 @@ const createHarness = () => {
   const run = <A>(effect: Effect.Effect<A, unknown, DomainBroadcast | DomainIngestEngine>) =>
     Effect.runPromise(effect.pipe(Effect.provide(layer)));
 
+  const getServerServices = () =>
+    run(
+      Effect.gen(function* () {
+        return {
+          ingest: yield* DomainIngestEngine,
+          broadcast: yield* DomainBroadcast,
+        };
+      }),
+    );
+
   return {
     run,
+    getServerServices,
     appliedEventIds,
     sentIdsByUser,
   };
+};
+
+const waitUntil = async (predicate: () => boolean, timeoutMs = 2000, intervalMs = 20): Promise<void> => {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (predicate()) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  throw new Error("Timed out waiting for condition");
+};
+
+const createClientRuntime = (options: {
+  userId: string;
+  offset: number;
+  appliedEventIds: string[];
+  persistedOffset: { value: number };
+  localStore: Map<string, LocalEvent<DomainEvent>>;
+  ingest: {
+    ingest: (event: DomainEvent, meta: { initiatorId: string }) => Effect.Effect<void, unknown>;
+  };
+  broadcast: {
+    subscribe: (userId: string, options?: { offset?: number }) => Stream.Stream<DomainEvent, unknown>;
+  };
+}) => {
+  const storageService: Storage<DomainEvent> = {
+    getPendingEvents: Stream.fromIterable(
+      [...options.localStore.values()].filter(
+        (entry) => entry.status.local === "pending" || entry.status.remote === "pending",
+      ),
+    ),
+    saveEvent: (event, status) =>
+      Effect.gen(function* () {
+        if (options.localStore.has(event.id)) {
+          return yield* Effect.fail(new DuplicateEventError({ eventId: event.id }));
+        }
+        options.localStore.set(event.id, { event, status });
+      }),
+    updateEventStatus: (eventId, patch) =>
+      Effect.gen(function* () {
+        const existing = options.localStore.get(eventId);
+        if (!existing) {
+          return yield* Effect.fail(new StorageError({ cause: `Unknown event ${eventId}` }));
+        }
+        const nextStatus: LocalEventStatus = {
+          ...existing.status,
+          ...patch,
+        };
+        options.localStore.set(eventId, {
+          ...existing,
+          status: nextStatus,
+        });
+      }),
+  };
+
+  const transportService: Transport<DomainEvent> = {
+    publish: (event) =>
+      options.ingest
+        .ingest(event, { initiatorId: options.userId })
+        .pipe(
+          Effect.mapError((error) =>
+            typeof error === "object" && error !== null && "_tag" in error && error._tag === "DuplicateEventError"
+              ? (error as DuplicateEventError)
+              : new TransportError({ cause: error, isRetryable: false }),
+          ),
+        ),
+    listen: (listenOptions) =>
+      Effect.succeed(
+        options.broadcast.subscribe(options.userId, listenOptions).pipe(
+          Stream.tap(() =>
+            Effect.sync(() => {
+              options.persistedOffset.value += 1;
+            }),
+          ),
+          Stream.mapError((error) => new TransportError({ cause: error, isRetryable: false })),
+        ),
+      ),
+  };
+
+  const applicatorService = {
+    verify: (event: DomainEvent) =>
+      isStudentScopedEvent(event) && event.data.studentId === options.userId
+        ? Effect.void
+        : Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" })),
+    apply: (event: DomainEvent) =>
+      Effect.sync(() => {
+        options.appliedEventIds.push(event.id);
+      }),
+  };
+
+  const engineLayer = syncEngineLive(ClientSyncEngine, ClientApplicator, ClientStorage, ClientTransport, {
+    offset: options.offset,
+  }).pipe(
+    Layer.provideMerge(Layer.succeed(ClientApplicator, applicatorService)),
+    Layer.provideMerge(Layer.succeed(ClientStorage, storageService)),
+    Layer.provideMerge(Layer.succeed(ClientTransport, transportService)),
+  );
+
+  return ManagedRuntime.make(engineLayer);
 };
 
 describe("sync ingest integration", () => {
@@ -234,5 +371,220 @@ describe("sync ingest integration", () => {
     expect(result.userBResult).toBe("timeout");
     expect(result.userAReplay).toEqual(Option.some(event));
     expect(harness.sentIdsByUser.get(STUDENT_B)).toBeUndefined();
+  });
+
+  it("client runtime reconnects from persisted offset without duplicate replay", async () => {
+    const harness = createHarness();
+    const { ingest, broadcast } = await harness.getServerServices();
+
+    const localStore = new Map<string, LocalEvent<DomainEvent>>();
+    const appliedEventIds: string[] = [];
+    const persistedOffset = { value: 0 };
+
+    const runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: persistedOffset.value,
+      localStore,
+      appliedEventIds,
+      persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "absence.recorded",
+          data: {
+            studentId: STUDENT_A,
+            date: new Date(10),
+            reason: "Krank",
+            courseIds: [COURSE_A],
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => persistedOffset.value === 1);
+    expect(appliedEventIds.length).toBe(1);
+    await runtimeA.dispose();
+
+    const runtimeB = createClientRuntime({
+      userId: STUDENT_A,
+      offset: persistedOffset.value,
+      localStore,
+      appliedEventIds,
+      persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(appliedEventIds.length).toBe(1);
+    expect(persistedOffset.value).toBe(1);
+
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "absence.recorded",
+          data: {
+            studentId: STUDENT_A,
+            date: new Date(11),
+            reason: "Arzt",
+            courseIds: [COURSE_B],
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => persistedOffset.value === 2);
+    expect(appliedEventIds.length).toBe(2);
+    await runtimeB.dispose();
+  });
+
+  it("two live client runtimes converge for the same user", async () => {
+    const harness = createHarness();
+    const { ingest, broadcast } = await harness.getServerServices();
+
+    const runtimeAState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+    const runtimeBState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+
+    const runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+    const runtimeB = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeBState.localStore,
+      appliedEventIds: runtimeBState.appliedEventIds,
+      persistedOffset: runtimeBState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "absence.recorded",
+          data: {
+            studentId: STUDENT_A,
+            date: new Date(20),
+            reason: "Krank",
+            courseIds: [COURSE_A],
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeBState.persistedOffset.value === 1);
+
+    expect(runtimeAState.appliedEventIds.length).toBe(1);
+    expect(runtimeBState.appliedEventIds.length).toBe(1);
+    expect(runtimeAState.persistedOffset.value).toBe(1);
+    expect(runtimeBState.persistedOffset.value).toBe(1);
+
+    await runtimeA.dispose();
+    await runtimeB.dispose();
+  });
+
+  it("two live client runtimes converge for grades.currentGradeSet", async () => {
+    const harness = createHarness();
+    const { ingest, broadcast } = await harness.getServerServices();
+
+    const runtimeAState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+    const runtimeBState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+
+    const runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+    const runtimeB = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeBState.localStore,
+      appliedEventIds: runtimeBState.appliedEventIds,
+      persistedOffset: runtimeBState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "grades.currentGradeSet",
+          data: {
+            studentId: STUDENT_A,
+            courseId: COURSE_A,
+            date: new Date(30),
+            result: 2.3,
+            type: "MASTER",
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeBState.persistedOffset.value === 1);
+
+    expect(runtimeAState.appliedEventIds.length).toBe(1);
+    expect(runtimeBState.appliedEventIds.length).toBe(1);
+    expect(runtimeAState.persistedOffset.value).toBe(1);
+    expect(runtimeBState.persistedOffset.value).toBe(1);
+    expect(runtimeAState.appliedEventIds[0]).toBe(runtimeBState.appliedEventIds[0]);
+
+    await runtimeA.dispose();
+    await runtimeB.dispose();
   });
 });

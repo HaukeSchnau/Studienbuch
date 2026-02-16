@@ -83,8 +83,9 @@ Make the standalone API sync path operational and deterministic.
 - done: server subscription supports replay from `offset` and live stream continuation.
 - done: mobile transport now persists `sync.offset` while consuming server events.
 - done: API tests cover replay ordering, offset behavior, duplicate marker handling, and user stream isolation.
-- done: ingest-to-broadcast integration tests now validate multi-device same-user convergence and reconnect-by-offset behavior.
-- next: add full mobile runtime reconnect scenarios (client lifecycle + storage + transport).
+- done: ingest-to-broadcast integration tests validate multi-device same-user convergence and reconnect-by-offset behavior.
+- done: client sync-runtime integration tests validate reconnect from persisted offset and same-user convergence for `absence.recorded` and `grades.currentGradeSet`.
+- next: add full Expo app lifecycle scenarios (background/foreground/offline transitions) on top of current client-runtime harness.
 
 ### Acceptance tests
 
@@ -116,7 +117,8 @@ Eliminate silent no-op behavior by providing complete server support for all cli
 - done: API runtime wiring includes absence/grade repositories and user-private topic routing.
 - done: mobile emitters now include `studentId`, enabling deterministic verify/topic mapping.
 - done: API-level replay/broadcast integration tests are in place.
-- next: full ingest-to-mobile reconnect scenario coverage.
+- done: initial client-runtime convergence coverage now includes `absence.recorded` and `grades.currentGradeSet`.
+- next: expand coverage for remaining sensitive `grades.*` flows (`teacherApproved`, `parentApproved`, `latestRestored`) and auth edge cases.
 
 ### Acceptance tests
 
