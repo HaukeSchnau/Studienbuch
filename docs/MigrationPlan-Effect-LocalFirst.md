@@ -1,7 +1,7 @@
 # Effect + Local-First Migration Plan (Execution Plan)
 
 Status: Active plan  
-Last updated: 2026-02-15  
+Last updated: 2026-02-16  
 Architecture decisions: `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/docs/adr/0001-standalone-api-mobile-priority.md`
 Progress tracker: `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/docs/MigrationProgress.md`
 
@@ -76,6 +76,15 @@ Make the standalone API sync path operational and deterministic.
   - server replays from offset,
   - client persists latest consumed offset.
 
+### Implementation status (2026-02-16)
+
+- done: `publishToUser` is implemented in memory and RabbitMQ broadcast layers.
+- done: sent markers are persisted during publish and duplicate marker writes are handled safely.
+- done: server subscription supports replay from `offset` and live stream continuation.
+- done: mobile transport now persists `sync.offset` while consuming server events.
+- done: API tests cover replay ordering, offset behavior, duplicate marker handling, and user stream isolation.
+- next: add true end-to-end multi-device scenario tests on top of ingest + transport runtime.
+
 ### Acceptance tests
 
 - Client A emits event while offline, reconnects, server ingests once.
@@ -105,7 +114,8 @@ Eliminate silent no-op behavior by providing complete server support for all cli
 - done: server applicators for `absence.*` and `grades.*` exist and are registered in `@stu/db`.
 - done: API runtime wiring includes absence/grade repositories and user-private topic routing.
 - done: mobile emitters now include `studentId`, enabling deterministic verify/topic mapping.
-- next: integration tests for cross-device replay/broadcast and offline reconnect behavior.
+- done: API-level replay/broadcast integration tests are in place.
+- next: full ingest-to-mobile reconnect scenario coverage.
 
 ### Acceptance tests
 

@@ -58,4 +58,11 @@ This creates unclear ownership and slows stabilization of offline-first mobile b
 - implemented: event payload contract for all `absence.*` and `grades.*` events includes `studentId`.
 - implemented: server-side applicators for `absence.*` and `grades.*` are present in `@stu/db`.
 - implemented: mobile emission paths include `studentId` and align with standalone API verification.
-- pending: end-to-end integration tests proving replay/offset/cross-device convergence for these event types.
+
+### 2026-02-16
+
+- implemented: standalone API broadcast layer now persists sent markers and streams replay + live events by user.
+- implemented: offset-based replay behavior is wired in broadcast subscribe path.
+- implemented: mobile transport persists `sync.offset` while consuming server events.
+- implemented: API integration tests now cover replay ordering, offset skip behavior, duplicate marker handling, and user stream isolation.
+- pending: full ingest-to-multi-device convergence tests (end-to-end).

@@ -39,6 +39,7 @@ If a user is assigned to a course, the user requires the course, in its entirety
 - Idempotent ingest: duplicate event IDs are rejected.
 - Ordered replay per user stream.
 - Offset-driven reconnect for resumable sync.
+- Client persists offset while consuming server event stream (`sync.offset`).
 - No silent drops: every mobile-emitted event namespace must have a server applicator.
 - Sensitive events (absence/grades) are scoped to user-private topics.
 - Sensitive events (absence/grades) must carry `studentId` in the payload for deterministic auth/topic mapping.

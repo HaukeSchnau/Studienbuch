@@ -28,13 +28,13 @@ import {
   TimetableRepositoryLive,
   YearRepositoryLive,
 } from "@stu/student";
-import { Context, Data, Effect, Layer, Logger, ManagedRuntime } from "effect";
+import { Context, Data, Effect, Layer, Logger, ManagedRuntime, Stream } from "effect";
 import * as Crypto from "expo-crypto";
 import React, { useContext } from "react";
 import { DatabaseLive } from "~/db/client";
 import { getHeadersObject } from "./api";
 import { getBaseUrl } from "./base-url";
-import { getStorage } from "./storage";
+import { getStorage, setStorage } from "./storage";
 
 export class DomainApplicator extends Context.Tag("Applicator")<DomainApplicator, Applicator<DomainEvent>>() {}
 
@@ -121,6 +121,30 @@ const TransportLive = createSseTransportLayer(DomainTransport, {
   headers: getHeadersObject,
 }).pipe(Layer.provide(ReactNativeEventSourceServiceLive));
 
+const TransportWithOffsetPersistenceLive = Layer.effect(
+  DomainTransport,
+  Effect.gen(function* () {
+    const transport = yield* DomainTransport;
+
+    return DomainTransport.of({
+      publish: transport.publish,
+      listen: (options) =>
+        Effect.gen(function* () {
+          let offset = options?.offset ?? 0;
+          const stream = yield* transport.listen(options);
+          return stream.pipe(
+            Stream.tap(() =>
+              Effect.promise(async () => {
+                offset += 1;
+                await setStorage("sync.offset", offset);
+              }),
+            ),
+          );
+        }),
+    });
+  }),
+).pipe(Layer.provide(TransportLive));
+
 // Cannot use the default layer because it uses crypto.randomUUID() which is not available in the Expo environment.
 const RandomUUIDLive = Layer.succeed(RandomUUID, {
   next: Effect.sync(() => Crypto.randomUUID()),
@@ -130,7 +154,7 @@ export const makeSyncEngineLive = (offset: number) =>
   syncEngineLive(DomainSyncEngine, DomainApplicator, DomainStorage, DomainTransport, { offset }).pipe(
     Layer.provide(clientApplicatorsLive),
     Layer.provide(StorageLive),
-    Layer.provide(TransportLive),
+    Layer.provide(TransportWithOffsetPersistenceLive),
     Layer.merge(RandomUUIDLive),
   );
 

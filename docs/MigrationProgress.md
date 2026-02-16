@@ -1,7 +1,7 @@
 # Effect + Local-First Migration Progress
 
 Status: Active  
-Last updated: 2026-02-15
+Last updated: 2026-02-16
 
 ## Scope Lock
 
@@ -13,26 +13,23 @@ Last updated: 2026-02-15
 
 ## Completed In This Iteration
 
-- Added `studentId` to all sensitive domain events:
-  - `absence.*`
-  - `grades.*`
-- Implemented server applicators in `@stu/db` for:
-  - `absence.*`
-  - `grades.*`
-- Added database repositories for server-side absence/grade application:
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/db/src/repositories/absence.repo.ts`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/db/src/repositories/grade.repo.ts`
-- Registered applicators and repositories in runtime wiring:
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/db/src/index.ts`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/groundswell.ts`
-- Added private user topic routing for sensitive sync:
-  - `students.user.<studentId>`
-- Updated all mobile absence/grade emitters to include `studentId`.
+- Implemented server broadcast behavior in `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/broadcast.ts`:
+  - `publishToUser` marks canonical sent state and publishes live events.
+  - duplicate `markEventAsSentToUser` writes are handled and do not re-publish.
+  - memory and RabbitMQ broadcast paths now align on sent-marker behavior.
+- Added replay-by-offset support in server subscription stream:
+  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/broadcast.ts`
+- Added broadcast integration tests:
+  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/broadcast.test.ts`
+  - verifies replay ordering, offset skip, duplicate marker behavior, and user stream isolation.
+- Implemented mobile offset persistence while consuming SSE events:
+  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/utils/groundswell.tsx`
+- Previous WS-B parity work (event contract + applicators + private topics) remains in place.
 
 ## Current Workstream Status
 
-- WS-A Sync transport and broadcast reliability: in progress
-- WS-B Server applicator parity: in progress (core implementation done, integration tests pending)
+- WS-A Sync transport and broadcast reliability: in progress (core publish/replay/offset implementation done)
+- WS-B Server applicator parity: in progress (core implementation + API integration tests done)
 - WS-C Snapshot and bootstrap strategy: not started
 - WS-D Mobile app stabilization: in progress
 - WS-E Untis background jobs: not started in code
@@ -42,23 +39,20 @@ Last updated: 2026-02-15
 
 - `bun run lint`: PASS
 - `bun run typecheck`: PASS
-- `bun run ci`: PASS (fixed root `ci` script to remove missing `format` task)
-- `bun run test`: FAIL (pre-existing external dependency/test-suite issues)
-  - `@stu/external-api` Untis tests fail with `NO_MANDANT`
-  - `@stu/api` contains an empty `events.test.ts` suite
+- `bun run test`: PASS
+- `bun run ci`: PASS (root `ci` uses lint + typecheck)
 
-No new failures attributable to this migration slice were observed in lint/typecheck gates.
+All current project checks pass in this iteration.
 
 ## Known Risks / Gaps
 
-- Cross-device integration behavior for absences/grades is not yet covered by dedicated tests.
-- Broadcast + replay + offset path still needs end-to-end verification against private topics.
+- End-to-end multi-device scenarios (full ingest + reconnect + second client convergence) still need dedicated tests.
 - Snapshot-based unknown-entity recovery remains unimplemented.
 - Untis job idempotency and observability hardening is still pending.
 
 ## Next Steps
 
 1. Add integration tests for absence/grades replay + cross-device propagation.
-2. Complete WS-A replay/broadcast offset validation using private user topics.
-3. Stabilize test gates by isolating Untis-dependent tests and fixing/removing empty API suite placeholders.
-4. Start WS-C snapshot API + client resolver implementation.
+2. Extend tests from API broadcast layer to full mobile sync runtime reconnect scenarios.
+3. Start WS-C snapshot API + client resolver implementation.
+4. Start WS-E instrumentation + idempotency hardening for Untis background jobs.
