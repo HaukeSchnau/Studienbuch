@@ -1,5 +1,29 @@
 appId: ${MAESTRO_APP_ID}
 ---
+- runFlow:
+    when:
+      visible: Add Controls
+    commands:
+      - swipe:
+          start: 50%, 80%
+          end: 50%, 2%
+- runFlow:
+    when:
+      visible: Add a Control
+    commands:
+      - swipe:
+          start: 50%, 80%
+          end: 50%, 2%
+- runFlow:
+    when:
+      visible: Search Controls
+    commands:
+      - tapOn:
+          point: 85%,14%
+          optional: true
+      - swipe:
+          start: 50%, 80%
+          end: 50%, 2%
 - stopApp: ${MAESTRO_APP_ID}
 - openLink:
     link: ${MAESTRO_APP_LINK}

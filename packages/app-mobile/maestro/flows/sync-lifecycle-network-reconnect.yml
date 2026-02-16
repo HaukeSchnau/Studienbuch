@@ -1,0 +1,40 @@
+appId: ${MAESTRO_APP_ID}
+name: Sync lifecycle network reconnect replay
+---
+- runFlow:
+    file: shared/open-sync-lifecycle.yml
+- tapOn: Reset State
+- assertVisible: network-online:true
+- runFlow:
+    file: shared/attempt-control-center-connectivity-toggle.yml
+- runFlow:
+    when:
+      visible: network-online:true
+    commands:
+      - tapOn: Simulate Offline
+- assertVisible: network-online:false
+- tapOn: Queue Replay Event
+- assertVisible:
+    text: queued:1
+- assertVisible:
+    text: applied:0
+- assertVisible:
+    text: replay-count:0
+- runFlow:
+    file: shared/attempt-control-center-connectivity-toggle.yml
+- runFlow:
+    when:
+      visible: network-online:false
+    commands:
+      - tapOn: Simulate Online
+- assertVisible: network-online:true
+- assertVisible: network-refreshes:1
+- stopApp: ${MAESTRO_APP_ID}
+- runFlow:
+    file: shared/open-sync-lifecycle.yml
+- assertVisible:
+    text: queued:1
+- assertVisible:
+    text: applied:1
+- assertVisible:
+    text: replay-count:1

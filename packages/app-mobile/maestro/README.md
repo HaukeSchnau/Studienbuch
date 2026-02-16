@@ -43,6 +43,8 @@ MAESTRO_APP_ID=com.example.app MAESTRO_APP_LINK=studienbuch://e2e/sync-lifecycle
   - Verifies a real background -> foreground transition triggers one lifecycle refresh signal.
 - `sync-lifecycle-replay.yml`
   - Verifies queued replay state is applied after process relaunch.
+- `sync-lifecycle-network-reconnect.yml`
+  - Verifies offline -> online transition handling and replay convergence after reconnect.
 
 ## Notes
 
@@ -51,3 +53,4 @@ MAESTRO_APP_ID=com.example.app MAESTRO_APP_LINK=studienbuch://e2e/sync-lifecycle
   - Expo launcher app selection (`Studienbuch (Dev)`),
   - Expo developer menu overlay dismissal before assertions.
 - Lifecycle flows use text-based assertions/actions for reliability on the current RN/Expo accessibility tree.
+- Network reconnect flow attempts a real Control Center toggle first, then uses E2E fallback controls (`Simulate Offline` / `Simulate Online`) if connectivity controls are unavailable in the simulator profile.

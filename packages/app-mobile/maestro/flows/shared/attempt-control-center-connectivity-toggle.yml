@@ -1,0 +1,17 @@
+appId: ${MAESTRO_APP_ID}
+---
+- swipe:
+    start: 95%, 0%
+    end: 95%, 95%
+- tapOn:
+    text: Airplane Mode
+    optional: true
+- tapOn:
+    text: Cellular Data
+    optional: true
+- tapOn:
+    text: Wi-Fi
+    optional: true
+- swipe:
+    start: 50%, 80%
+    end: 50%, 2%

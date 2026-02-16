@@ -124,6 +124,19 @@ export default function SyncLifecycleE2EScreen() {
     void incrementCounter("e2e.lifecycle.queued");
   };
 
+  const simulateOffline = () => {
+    controllerRef.current.setNetworkOnline(false);
+    setNetworkOnline(false);
+  };
+
+  const simulateOnline = () => {
+    if (controllerRef.current.onNetworkChange(true)) {
+      void incrementCounter("e2e.lifecycle.networkRefreshes");
+    }
+
+    setNetworkOnline(true);
+  };
+
   if (!e2eEnabled) {
     return (
       <View style={styles.container}>
@@ -153,6 +166,8 @@ export default function SyncLifecycleE2EScreen() {
       <View style={styles.buttons}>
         <ActionButton testID="e2e-reset" label="Reset State" onPress={reset} />
         <ActionButton testID="e2e-queue-replay" label="Queue Replay Event" onPress={queueReplay} />
+        <ActionButton testID="e2e-simulate-offline" label="Simulate Offline" onPress={simulateOffline} />
+        <ActionButton testID="e2e-simulate-online" label="Simulate Online" onPress={simulateOnline} />
       </View>
     </View>
   );
@@ -178,6 +193,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     marginTop: 20,
+    flexWrap: "wrap",
   },
   button: {
     backgroundColor: "#6DB769",

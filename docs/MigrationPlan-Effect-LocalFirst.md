@@ -89,7 +89,8 @@ Make the standalone API sync path operational and deterministic.
 - done: lifecycle replay scenario coverage now verifies missed-event replay after simulated offline/background -> reconnect transitions.
 - done: Maestro lifecycle harness is now implemented in `@stu/app-mobile` (`/e2e/sync-lifecycle` route + resume/relaunch replay flows).
 - done: Maestro lifecycle suite has been executed on iOS Simulator with passing resume + relaunch replay flows.
-- next: add real network toggle automation for offline -> online replay verification.
+- done: Maestro lifecycle suite now includes offline -> online reconnect replay verification (`sync-lifecycle-network-reconnect.yml`) with real-toggle attempt plus deterministic fallback.
+- next: run the same network-reconnect flow on simulator/device profiles with available connectivity controls and remove fallback dependence.
 
 ### Acceptance tests
 
@@ -173,8 +174,9 @@ Ship a robust mobile experience on top of the sync architecture.
 - done: Maestro E2E route + lifecycle flows exist for:
   - foreground/background resume refresh signaling,
   - relaunch replay verification for queued state.
+- done: offline -> online reconnect replay verification flow is in place, with Control Center real-toggle attempt and simulator fallback controls.
 - done: Maestro lifecycle suite is passing in a device-available iOS Simulator environment.
-- next: extend flows with real network toggles.
+- next: validate and harden pure real-toggle execution on connectivity-capable simulator/device profiles.
 
 ### Acceptance tests
 
