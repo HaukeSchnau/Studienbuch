@@ -887,6 +887,405 @@ describe("sync ingest integration", () => {
     await runtimeB.dispose();
   });
 
+  it("does not replay unauthorized grades.teacherApproved events after one device reconnects", async () => {
+    const harness = createHarness();
+    const { ingest, broadcast } = await harness.getServerServices();
+
+    const runtimeAState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+    const runtimeBState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+
+    let runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+    const runtimeB = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeBState.localStore,
+      appliedEventIds: runtimeBState.appliedEventIds,
+      persistedOffset: runtimeBState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "grades.teacherApproved",
+          data: {
+            studentId: STUDENT_A,
+            date: new Date(70),
+            course: COURSE_A,
+            type: "WRITTEN",
+            signature: "teacher-signature-1",
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeBState.persistedOffset.value === 1);
+    expect(runtimeAState.persistedOffset.value).toBe(1);
+
+    await runtimeA.dispose();
+
+    await expect(
+      Effect.runPromise(
+        ingest.ingest(
+          {
+            id: "77777777-7777-4777-8777-777777777777",
+            timestamp: new Date(71),
+            type: "grades.teacherApproved",
+            data: {
+              studentId: STUDENT_A,
+              date: new Date(71),
+              course: COURSE_B,
+              type: "WRITTEN",
+              signature: "teacher-signature-unauthorized",
+            },
+          },
+          {
+            initiatorId: STUDENT_B,
+          },
+        ),
+      ),
+    ).rejects.toThrow("ValidationError: NOT_ALLOWED");
+
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "grades.teacherApproved",
+          data: {
+            studentId: STUDENT_A,
+            date: new Date(72),
+            course: COURSE_B,
+            type: "WRITTEN",
+            signature: "teacher-signature-2",
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeBState.persistedOffset.value === 2);
+    expect(runtimeAState.persistedOffset.value).toBe(1);
+
+    runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: runtimeAState.persistedOffset.value,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await waitUntil(() => runtimeAState.persistedOffset.value === 2);
+
+    expect(runtimeAState.appliedEventIds.length).toBe(2);
+    expect(runtimeBState.appliedEventIds.length).toBe(2);
+    expect(new Set(runtimeAState.appliedEventIds).size).toBe(2);
+    expect(new Set(runtimeBState.appliedEventIds).size).toBe(2);
+    expect(runtimeAState.appliedEventIds).toEqual(runtimeBState.appliedEventIds);
+
+    await runtimeA.dispose();
+    await runtimeB.dispose();
+  });
+
+  it("does not replay unauthorized grades.parentApproved events after one device reconnects", async () => {
+    const harness = createHarness();
+    const { ingest, broadcast } = await harness.getServerServices();
+
+    const runtimeAState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+    const runtimeBState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+
+    let runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+    const runtimeB = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeBState.localStore,
+      appliedEventIds: runtimeBState.appliedEventIds,
+      persistedOffset: runtimeBState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "grades.parentApproved",
+          data: {
+            studentId: STUDENT_A,
+            date: new Date(73),
+            course: COURSE_A,
+            type: "WRITTEN",
+            signature: "parent-signature-1",
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeBState.persistedOffset.value === 1);
+    expect(runtimeAState.persistedOffset.value).toBe(1);
+
+    await runtimeA.dispose();
+
+    await expect(
+      Effect.runPromise(
+        ingest.ingest(
+          {
+            id: "88888888-8888-4888-8888-888888888888",
+            timestamp: new Date(74),
+            type: "grades.parentApproved",
+            data: {
+              studentId: STUDENT_A,
+              date: new Date(74),
+              course: COURSE_B,
+              type: "WRITTEN",
+              signature: "parent-signature-unauthorized",
+            },
+          },
+          {
+            initiatorId: STUDENT_B,
+          },
+        ),
+      ),
+    ).rejects.toThrow("ValidationError: NOT_ALLOWED");
+
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "grades.parentApproved",
+          data: {
+            studentId: STUDENT_A,
+            date: new Date(75),
+            course: COURSE_B,
+            type: "WRITTEN",
+            signature: "parent-signature-2",
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeBState.persistedOffset.value === 2);
+    expect(runtimeAState.persistedOffset.value).toBe(1);
+
+    runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: runtimeAState.persistedOffset.value,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await waitUntil(() => runtimeAState.persistedOffset.value === 2);
+
+    expect(runtimeAState.appliedEventIds.length).toBe(2);
+    expect(runtimeBState.appliedEventIds.length).toBe(2);
+    expect(new Set(runtimeAState.appliedEventIds).size).toBe(2);
+    expect(new Set(runtimeBState.appliedEventIds).size).toBe(2);
+    expect(runtimeAState.appliedEventIds).toEqual(runtimeBState.appliedEventIds);
+
+    await runtimeA.dispose();
+    await runtimeB.dispose();
+  });
+
+  it("does not replay unauthorized grades.latestRestored events after one device reconnects", async () => {
+    const harness = createHarness();
+    const { ingest, broadcast } = await harness.getServerServices();
+
+    const runtimeAState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+    const runtimeBState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+
+    let runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+    const runtimeB = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeBState.localStore,
+      appliedEventIds: runtimeBState.appliedEventIds,
+      persistedOffset: runtimeBState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "grades.latestRestored",
+          data: {
+            studentId: STUDENT_A,
+            course: COURSE_A,
+            type: "MASTER",
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeBState.persistedOffset.value === 1);
+    expect(runtimeAState.persistedOffset.value).toBe(1);
+
+    await runtimeA.dispose();
+
+    await expect(
+      Effect.runPromise(
+        ingest.ingest(
+          {
+            id: "99999999-9999-4999-8999-999999999999",
+            timestamp: new Date(76),
+            type: "grades.latestRestored",
+            data: {
+              studentId: STUDENT_A,
+              course: COURSE_B,
+              type: "MASTER",
+            },
+          },
+          {
+            initiatorId: STUDENT_B,
+          },
+        ),
+      ),
+    ).rejects.toThrow("ValidationError: NOT_ALLOWED");
+
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "grades.latestRestored",
+          data: {
+            studentId: STUDENT_A,
+            course: COURSE_B,
+            type: "MASTER",
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeBState.persistedOffset.value === 2);
+    expect(runtimeAState.persistedOffset.value).toBe(1);
+
+    runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: runtimeAState.persistedOffset.value,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await waitUntil(() => runtimeAState.persistedOffset.value === 2);
+
+    expect(runtimeAState.appliedEventIds.length).toBe(2);
+    expect(runtimeBState.appliedEventIds.length).toBe(2);
+    expect(new Set(runtimeAState.appliedEventIds).size).toBe(2);
+    expect(new Set(runtimeBState.appliedEventIds).size).toBe(2);
+    expect(runtimeAState.appliedEventIds).toEqual(runtimeBState.appliedEventIds);
+
+    await runtimeA.dispose();
+    await runtimeB.dispose();
+  });
+
   it("two live client runtimes converge for the same user", async () => {
     const harness = createHarness();
     const { ingest, broadcast } = await harness.getServerServices();

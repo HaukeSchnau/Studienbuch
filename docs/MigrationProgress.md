@@ -47,6 +47,10 @@ Last updated: 2026-02-16
     - `grades.teacherApproved`,
     - `grades.parentApproved`,
     - `grades.latestRestored`.
+  - unauthorized sensitive-grade events are rejected and not replayed after one-device-offline reconnect for:
+    - `grades.teacherApproved`,
+    - `grades.parentApproved`,
+    - `grades.latestRestored`.
 - Existing broadcast and offset persistence implementation remains active:
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/broadcast.ts`
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/utils/groundswell.tsx`
@@ -54,7 +58,7 @@ Last updated: 2026-02-16
 ## Current Workstream Status
 
 - WS-A Sync transport and broadcast reliability: in progress (core implementation + server and client-runtime integration coverage done)
-- WS-B Server applicator parity: in progress (`absence.*` + `grades.*` server coverage done; sensitive grades convergence matrix expanded)
+- WS-B Server applicator parity: in progress (`absence.*` + `grades.*` server coverage done; sensitive grades convergence + unauthorized replay guards covered)
 - WS-C Snapshot and bootstrap strategy: not started
 - WS-D Mobile app stabilization: in progress (lifecycle controller + unit tests + Maestro device-harness flows added)
 - WS-E Untis background jobs: not started in code
@@ -76,10 +80,11 @@ All targeted checks for this slice pass in this iteration.
 - Current iOS Simulator profile has no usable connectivity controls in Control Center, so the network-reconnect flow uses app-level fallback toggles when a real device toggle is unavailable.
 - Snapshot-based unknown-entity recovery remains unimplemented.
 - Untis job idempotency and observability hardening is still pending.
+- Sensitive-grade authorization replay protections are validated at API integration level, but not yet through full mobile lifecycle E2E transitions.
 
 ## Next Steps
 
 1. Run lifecycle network-reconnect flow on a simulator/device profile that exposes real connectivity controls and remove fallback dependence.
-2. Add reconnect replay scenarios for remaining sensitive-grade auth/edge cases while one device is offline.
+2. Extend lifecycle-style reconnect assertions to include sensitive-grade auth rejection paths from mobile runtime flows.
 3. Start WS-C snapshot API + client resolver implementation.
 4. Start WS-E instrumentation + idempotency hardening for Untis background jobs.

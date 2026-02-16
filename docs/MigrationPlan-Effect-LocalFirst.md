@@ -115,7 +115,7 @@ Eliminate silent no-op behavior by providing complete server support for all cli
 - Enforce authorization rules for student-private actions.
 - Fix known verify/apply logic bugs and contradictory validations.
 
-### Implementation status (2026-02-15)
+### Implementation status (2026-02-16)
 
 - done: event contract now carries `studentId` for all `absence.*` and `grades.*` events.
 - done: server applicators for `absence.*` and `grades.*` exist and are registered in `@stu/db`.
@@ -125,7 +125,8 @@ Eliminate silent no-op behavior by providing complete server support for all cli
 - done: initial client-runtime convergence coverage now includes `absence.recorded` and `grades.currentGradeSet`.
 - done: sensitive grade convergence coverage now includes `teacherApproved`, `parentApproved`, and `latestRestored`.
 - done: reconnect-while-offline replay scenarios are now covered for `grades.teacherApproved`, `grades.parentApproved`, and `grades.latestRestored`.
-- next: add sensitive-grades auth edge-case replay scenarios.
+- done: unauthorized sensitive-grade ingest attempts are rejected and excluded from replay convergence after one-device-offline reconnect (`teacherApproved`, `parentApproved`, `latestRestored`).
+- next: add lifecycle-level coverage that combines runtime offline/online transitions with sensitive-grade authorization edge cases.
 
 ### Acceptance tests
 
