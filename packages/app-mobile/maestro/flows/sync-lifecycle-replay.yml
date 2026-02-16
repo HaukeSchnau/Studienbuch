@@ -3,31 +3,20 @@ name: Sync lifecycle replay after relaunch
 ---
 - runFlow:
     file: shared/open-sync-lifecycle.yml
-- tapOn:
-    id: e2e-reset
-- tapOn:
-    id: e2e-queue-replay
+- tapOn: Reset State
+- tapOn: Queue Replay Event
 - assertVisible:
-    id: e2e-queued
     text: queued:1
 - assertVisible:
-    id: e2e-applied
     text: applied:0
 - assertVisible:
-    id: e2e-replay-count
     text: replay-count:0
 - stopApp: ${MAESTRO_APP_ID}
-- openLink:
-    link: ${MAESTRO_APP_LINK}
+- runFlow:
+    file: shared/open-sync-lifecycle.yml
 - assertVisible:
-    id: e2e-ready
-    text: ready
-- assertVisible:
-    id: e2e-queued
     text: queued:1
 - assertVisible:
-    id: e2e-applied
     text: applied:1
 - assertVisible:
-    id: e2e-replay-count
     text: replay-count:1

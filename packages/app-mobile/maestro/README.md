@@ -34,7 +34,7 @@ bun --filter @stu/app-mobile maestro:test:lifecycle
 Override app config (optional):
 
 ```bash
-bun --filter @stu/app-mobile maestro:test -- -e MAESTRO_APP_ID=com.example.app -e MAESTRO_APP_LINK=studienbuch://e2e/sync-lifecycle
+MAESTRO_APP_ID=com.example.app MAESTRO_APP_LINK=studienbuch://e2e/sync-lifecycle bun --filter @stu/app-mobile maestro:test
 ```
 
 ## Coverage
@@ -43,3 +43,11 @@ bun --filter @stu/app-mobile maestro:test -- -e MAESTRO_APP_ID=com.example.app -
   - Verifies a real background -> foreground transition triggers one lifecycle refresh signal.
 - `sync-lifecycle-replay.yml`
   - Verifies queued replay state is applied after process relaunch.
+
+## Notes
+
+- Shared flow `shared/open-sync-lifecycle.yml` handles iOS deep-link edge cases for dev-client runs:
+  - optional iOS `Open` confirmation dialog,
+  - Expo launcher app selection (`Studienbuch (Dev)`),
+  - Expo developer menu overlay dismissal before assertions.
+- Lifecycle flows use text-based assertions/actions for reliability on the current RN/Expo accessibility tree.

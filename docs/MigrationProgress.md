@@ -23,8 +23,10 @@ Last updated: 2026-02-16
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/app/e2e/sync-lifecycle.tsx`
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/sync-lifecycle-resume.yml`
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/sync-lifecycle-replay.yml`
+  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/shared/open-sync-lifecycle.yml` (iOS prompt/Expo launcher resilient open path)
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/README.md`
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/flake.nix` (adds direct `maestro` in dev shell)
+- Executed Maestro lifecycle suite on iOS Simulator (`iPhone 17 Pro`, iOS 26.2) with passing resume/replay flows.
 - New integration coverage now verifies:
   - one ingested event reaches multiple live subscribers for the same user (cross-device),
   - reconnect replay from `offset` returns only missing events (no duplicate re-delivery),
@@ -58,21 +60,20 @@ Last updated: 2026-02-16
 - `bun run typecheck`: PASS
 - `bun run test`: PASS
 - `bun run ci`: PASS (root `ci` uses lint + typecheck)
-- `bun run test:maestro:mobile`: BLOCKED in this environment (`0` simulator/emulator devices connected)
+- `bun run test:maestro:mobile`: PASS (with booted iOS Simulator + running `dev:e2e` Metro)
 
-All non-device checks pass in this iteration.
+All targeted checks for this slice pass in this iteration.
 
 ## Known Risks / Gaps
 
-- Maestro lifecycle E2E flows are implemented, but execution still requires an attached simulator/emulator + installed dev app.
+- Maestro lifecycle E2E flows pass on simulator, but still require attached simulator/emulator + installed dev app + E2E Metro (not yet CI-automated).
 - Real network transition toggling is not yet automated in Maestro flows (AppState and relaunch replay are covered).
 - Snapshot-based unknown-entity recovery remains unimplemented.
 - Untis job idempotency and observability hardening is still pending.
 
 ## Next Steps
 
-1. Execute `@stu/app-mobile` Maestro lifecycle suite on a connected simulator/emulator with `EXPO_PUBLIC_E2E_MODE=1` Metro runtime.
-2. Extend Maestro lifecycle suite with real network toggling (offline -> online) and replay assertions.
-3. Add reconnect replay scenarios for sensitive grade flows while one device is offline.
-4. Start WS-C snapshot API + client resolver implementation.
-5. Start WS-E instrumentation + idempotency hardening for Untis background jobs.
+1. Extend Maestro lifecycle suite with real network toggling (offline -> online) and replay assertions.
+2. Add reconnect replay scenarios for sensitive grade flows while one device is offline.
+3. Start WS-C snapshot API + client resolver implementation.
+4. Start WS-E instrumentation + idempotency hardening for Untis background jobs.

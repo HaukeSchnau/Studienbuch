@@ -3,9 +3,21 @@ appId: ${MAESTRO_APP_ID}
 - stopApp: ${MAESTRO_APP_ID}
 - openLink:
     link: ${MAESTRO_APP_LINK}
+- tapOn:
+    text: Open
+    optional: true
+- tapOn:
+    text: Studienbuch \(Dev\)
+    optional: true
+- tapOn:
+    text: Continue
+    optional: true
+- runFlow:
+    when:
+      visible: "Runtime version: exposdk:53.0.0"
+    commands:
+      - tapOn:
+          point: 90%,43%
 - assertVisible:
-    id: e2e-ready
     text: ready
-- assertVisible:
-    id: e2e-mode
-    text: mode:enabled
+- assertVisible: mode:enabled
