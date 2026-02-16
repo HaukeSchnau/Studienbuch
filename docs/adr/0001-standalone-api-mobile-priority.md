@@ -70,6 +70,7 @@ This creates unclear ownership and slows stabilization of offline-first mobile b
 - implemented: Expo lifecycle transition controller and tests cover resume/reconnect runtime refresh behavior in `@stu/app-mobile`.
 - implemented: lifecycle replay test coverage now includes simulated offline/background -> reconnect missed-event replay.
 - implemented: sensitive grades convergence matrix now includes `teacherApproved`, `parentApproved`, and `latestRestored`.
+- implemented: one-device-offline replay convergence coverage now includes sensitive grade flows (`teacherApproved`, `parentApproved`, `latestRestored`).
 - implemented: Maestro-based lifecycle E2E harness is in place (`@stu/app-mobile`) and passing on iOS Simulator for resume and relaunch replay flows.
 - implemented: Maestro lifecycle suite now includes offline -> online reconnect replay verification (`sync-lifecycle-network-reconnect.yml`).
 - pending: validate pure real connectivity toggling on simulator/device profiles that expose network controls; current simulator profile falls back to E2E offline/online controls when real toggles are unavailable.

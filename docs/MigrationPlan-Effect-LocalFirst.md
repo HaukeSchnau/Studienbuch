@@ -124,7 +124,8 @@ Eliminate silent no-op behavior by providing complete server support for all cli
 - done: API-level replay/broadcast integration tests are in place.
 - done: initial client-runtime convergence coverage now includes `absence.recorded` and `grades.currentGradeSet`.
 - done: sensitive grade convergence coverage now includes `teacherApproved`, `parentApproved`, and `latestRestored`.
-- next: add reconnect-while-offline replay scenarios for sensitive grades + auth edge cases.
+- done: reconnect-while-offline replay scenarios are now covered for `grades.teacherApproved`, `grades.parentApproved`, and `grades.latestRestored`.
+- next: add sensitive-grades auth edge-case replay scenarios.
 
 ### Acceptance tests
 

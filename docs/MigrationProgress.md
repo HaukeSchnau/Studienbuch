@@ -42,6 +42,10 @@ Last updated: 2026-02-16
   - sensitive grades cross-device convergence for:
     - `grades.teacherApproved`,
     - `grades.parentApproved`,
+    - `grades.latestRestored`,
+  - sensitive grades replay convergence after one-device-offline transitions for:
+    - `grades.teacherApproved`,
+    - `grades.parentApproved`,
     - `grades.latestRestored`.
 - Existing broadcast and offset persistence implementation remains active:
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/broadcast.ts`
@@ -76,6 +80,6 @@ All targeted checks for this slice pass in this iteration.
 ## Next Steps
 
 1. Run lifecycle network-reconnect flow on a simulator/device profile that exposes real connectivity controls and remove fallback dependence.
-2. Add reconnect replay scenarios for sensitive grade flows while one device is offline.
+2. Add reconnect replay scenarios for remaining sensitive-grade auth/edge cases while one device is offline.
 3. Start WS-C snapshot API + client resolver implementation.
 4. Start WS-E instrumentation + idempotency hardening for Untis background jobs.
