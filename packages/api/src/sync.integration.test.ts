@@ -444,6 +444,114 @@ describe("sync ingest integration", () => {
     await runtimeB.dispose();
   });
 
+  it("replays missed events after simulated background/offline lifecycle transition", async () => {
+    const harness = createHarness();
+    const { ingest, broadcast } = await harness.getServerServices();
+
+    const runtimeAState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+    const runtimeBState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+
+    let runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+    const runtimeB = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeBState.localStore,
+      appliedEventIds: runtimeBState.appliedEventIds,
+      persistedOffset: runtimeBState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "absence.recorded",
+          data: {
+            studentId: STUDENT_A,
+            date: new Date(40),
+            reason: "Krank",
+            courseIds: [COURSE_A],
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeBState.persistedOffset.value === 1);
+    expect(runtimeAState.persistedOffset.value).toBe(1);
+
+    await runtimeA.dispose();
+
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "absence.recorded",
+          data: {
+            studentId: STUDENT_A,
+            date: new Date(41),
+            reason: "Arzt",
+            courseIds: [COURSE_B],
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeBState.persistedOffset.value === 2);
+    expect(runtimeAState.persistedOffset.value).toBe(1);
+
+    runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: runtimeAState.persistedOffset.value,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await waitUntil(() => runtimeAState.persistedOffset.value === 2);
+
+    expect(runtimeAState.appliedEventIds.length).toBe(2);
+    expect(new Set(runtimeAState.appliedEventIds).size).toBe(2);
+
+    await runtimeA.dispose();
+    await runtimeB.dispose();
+  });
+
   it("two live client runtimes converge for the same user", async () => {
     const harness = createHarness();
     const { ingest, broadcast } = await harness.getServerServices();
