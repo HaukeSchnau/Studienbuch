@@ -67,4 +67,5 @@ This creates unclear ownership and slows stabilization of offline-first mobile b
 - implemented: API integration tests now cover replay ordering, offset skip behavior, duplicate marker handling, and user stream isolation.
 - implemented: ingest-to-broadcast multi-device convergence tests are in place.
 - implemented: client sync-runtime reconnect tests now cover persisted-offset resume and same-user convergence for absences and grades.
-- pending: full Expo app lifecycle integration scenarios (foreground/background/offline transitions).
+- implemented: Expo lifecycle transition controller and tests cover resume/reconnect runtime refresh behavior in `@stu/app-mobile`.
+- pending: device-level lifecycle E2E verification (real AppState/network transitions with offline queue replay).

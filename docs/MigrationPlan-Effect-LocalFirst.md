@@ -85,7 +85,8 @@ Make the standalone API sync path operational and deterministic.
 - done: API tests cover replay ordering, offset behavior, duplicate marker handling, and user stream isolation.
 - done: ingest-to-broadcast integration tests validate multi-device same-user convergence and reconnect-by-offset behavior.
 - done: client sync-runtime integration tests validate reconnect from persisted offset and same-user convergence for `absence.recorded` and `grades.currentGradeSet`.
-- next: add full Expo app lifecycle scenarios (background/foreground/offline transitions) on top of current client-runtime harness.
+- done: Expo lifecycle transition coverage is implemented in `@stu/app-mobile` for background/inactive -> active and offline -> online runtime refresh decisions.
+- next: add device-level lifecycle E2E scenarios (queued offline writes + reconnect replay verification) on top of current controller tests.
 
 ### Acceptance tests
 
@@ -166,6 +167,7 @@ Ship a robust mobile experience on top of the sync architecture.
 - Setup flows complete without hidden fallback data.
 - App remains usable across offline/online transitions.
 - Sync status and failures are observable in app diagnostics/dev tools.
+- Lifecycle transition tests cover runtime refresh on resume/reconnect (`@stu/app-mobile`).
 
 ## WS-E: Untis Background Jobs (P0)
 
