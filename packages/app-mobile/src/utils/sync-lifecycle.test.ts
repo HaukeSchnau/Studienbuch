@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  applySensitiveGradeReplay,
+  createSensitiveGradeReplayState,
   createSyncLifecycleRefreshController,
+  recordSensitiveGradeEvent,
   resolveNetworkOnline,
   shouldRefreshOnAppStateChange,
   shouldRefreshOnNetworkChange,
+  sumSensitiveGradeCounts,
 } from "./sync-lifecycle";
 
 describe("sync lifecycle transitions", () => {
@@ -45,5 +49,68 @@ describe("createSyncLifecycleRefreshController", () => {
     expect(controller.onNetworkChange(false)).toBe(false);
     expect(controller.onNetworkChange(true)).toBe(true);
     expect(controller.onNetworkChange(true)).toBe(false);
+  });
+});
+
+describe("sensitive grade lifecycle replay", () => {
+  it("queues authorized events, rejects unauthorized events, and applies only authorized replay", () => {
+    let state = createSensitiveGradeReplayState();
+
+    state = recordSensitiveGradeEvent(state, {
+      kind: "teacherApproved",
+      authorized: true,
+    });
+    state = recordSensitiveGradeEvent(state, {
+      kind: "parentApproved",
+      authorized: true,
+    });
+    state = recordSensitiveGradeEvent(state, {
+      kind: "latestRestored",
+      authorized: true,
+    });
+
+    state = recordSensitiveGradeEvent(state, {
+      kind: "teacherApproved",
+      authorized: false,
+    });
+    state = recordSensitiveGradeEvent(state, {
+      kind: "parentApproved",
+      authorized: false,
+    });
+    state = recordSensitiveGradeEvent(state, {
+      kind: "latestRestored",
+      authorized: false,
+    });
+
+    expect(sumSensitiveGradeCounts(state.queued)).toBe(3);
+    expect(sumSensitiveGradeCounts(state.applied)).toBe(0);
+    expect(sumSensitiveGradeCounts(state.rejected)).toBe(3);
+    expect(state.replayCount).toBe(0);
+
+    state = applySensitiveGradeReplay(state);
+
+    expect(sumSensitiveGradeCounts(state.queued)).toBe(3);
+    expect(sumSensitiveGradeCounts(state.applied)).toBe(3);
+    expect(sumSensitiveGradeCounts(state.rejected)).toBe(3);
+    expect(state.replayCount).toBe(1);
+    expect(state.applied.teacherApproved).toBe(1);
+    expect(state.applied.parentApproved).toBe(1);
+    expect(state.applied.latestRestored).toBe(1);
+  });
+
+  it("does not duplicate replay application when nothing new is queued", () => {
+    let state = createSensitiveGradeReplayState();
+
+    state = recordSensitiveGradeEvent(state, {
+      kind: "teacherApproved",
+      authorized: true,
+    });
+
+    const replayedOnce = applySensitiveGradeReplay(state);
+    const replayedTwice = applySensitiveGradeReplay(replayedOnce);
+
+    expect(replayedOnce.applied.teacherApproved).toBe(1);
+    expect(replayedOnce.replayCount).toBe(1);
+    expect(replayedTwice).toEqual(replayedOnce);
   });
 });

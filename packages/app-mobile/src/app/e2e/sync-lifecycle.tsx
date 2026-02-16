@@ -4,7 +4,16 @@ import { AppState, type AppStateStatus, Pressable, StyleSheet, View } from "reac
 import { Text } from "~/components/text";
 import { isE2eModeEnabled } from "~/utils/e2e";
 import { getStorage, setStorage, useStorage } from "~/utils/storage";
-import { createSyncLifecycleRefreshController, resolveNetworkOnline } from "~/utils/sync-lifecycle";
+import {
+  applySensitiveGradeReplay,
+  createSensitiveGradeReplayState,
+  createSyncLifecycleRefreshController,
+  recordSensitiveGradeEvent,
+  resolveNetworkOnline,
+  SENSITIVE_GRADE_KINDS,
+  type SensitiveGradeReplayState,
+  sumSensitiveGradeCounts,
+} from "~/utils/sync-lifecycle";
 
 type CounterStorageKey =
   | "e2e.lifecycle.applied"
@@ -33,6 +42,25 @@ const incrementCounter = async (key: CounterStorageKey): Promise<void> => {
   await setCounter(key, readCounter(key) + 1);
 };
 
+const readSensitiveReplayState = (): SensitiveGradeReplayState =>
+  getStorage("e2e.lifecycle.sensitive") ?? createSensitiveGradeReplayState();
+
+const setSensitiveReplayState = async (state: SensitiveGradeReplayState): Promise<void> => {
+  await setStorage("e2e.lifecycle.sensitive", state);
+};
+
+const applyQueuedReplayState = async (): Promise<void> => {
+  const currentQueued = readCounter("e2e.lifecycle.queued");
+  const currentApplied = readCounter("e2e.lifecycle.applied");
+  if (currentQueued > currentApplied) {
+    await setCounter("e2e.lifecycle.applied", currentQueued);
+    await incrementCounter("e2e.lifecycle.replayCount");
+  }
+
+  const nextSensitiveReplayState = applySensitiveGradeReplay(readSensitiveReplayState());
+  await setSensitiveReplayState(nextSensitiveReplayState);
+};
+
 const Metric = ({ testID, value }: { testID: string; value: string }) => (
   <Text testID={testID} style={styles.metric}>
     {value}
@@ -57,7 +85,9 @@ export default function SyncLifecycleE2EScreen() {
   const [replayCount] = useStorage("e2e.lifecycle.replayCount");
   const [resumeRefreshes] = useStorage("e2e.lifecycle.resumeRefreshes");
   const [networkRefreshes] = useStorage("e2e.lifecycle.networkRefreshes");
-  const [launches] = useStorage("e2e.lifecycle.launches");
+  const [sensitiveReplay] = useStorage("e2e.lifecycle.sensitive");
+
+  const effectiveSensitiveReplay = sensitiveReplay ?? createSensitiveGradeReplayState();
 
   const controllerRef = useRef(
     createSyncLifecycleRefreshController({
@@ -73,13 +103,7 @@ export default function SyncLifecycleE2EScreen() {
 
     void (async () => {
       await incrementCounter("e2e.lifecycle.launches");
-
-      const currentQueued = readCounter("e2e.lifecycle.queued");
-      const currentApplied = readCounter("e2e.lifecycle.applied");
-      if (currentQueued > currentApplied) {
-        await setCounter("e2e.lifecycle.applied", currentQueued);
-        await incrementCounter("e2e.lifecycle.replayCount");
-      }
+      await applyQueuedReplayState();
 
       const state = await Network.getNetworkStateAsync();
       const online = resolveNetworkOnline(state);
@@ -105,6 +129,7 @@ export default function SyncLifecycleE2EScreen() {
       const online = resolveNetworkOnline(state);
       if (controllerRef.current.onNetworkChange(online)) {
         void incrementCounter("e2e.lifecycle.networkRefreshes");
+        void applyQueuedReplayState();
       }
 
       setNetworkOnline(online);
@@ -117,7 +142,10 @@ export default function SyncLifecycleE2EScreen() {
   }, [e2eEnabled]);
 
   const reset = () => {
-    void Promise.all(COUNTER_KEYS.map((key) => setCounter(key, 0)));
+    void Promise.all([
+      ...COUNTER_KEYS.map((key) => setCounter(key, 0)),
+      setSensitiveReplayState(createSensitiveGradeReplayState()),
+    ]);
   };
 
   const queueReplay = () => {
@@ -132,9 +160,34 @@ export default function SyncLifecycleE2EScreen() {
   const simulateOnline = () => {
     if (controllerRef.current.onNetworkChange(true)) {
       void incrementCounter("e2e.lifecycle.networkRefreshes");
+      void applyQueuedReplayState();
     }
 
     setNetworkOnline(true);
+  };
+
+  const queueSensitiveAuthorizedMatrix = () => {
+    let state = readSensitiveReplayState();
+    for (const kind of SENSITIVE_GRADE_KINDS) {
+      state = recordSensitiveGradeEvent(state, {
+        kind,
+        authorized: true,
+      });
+    }
+
+    void setSensitiveReplayState(state);
+  };
+
+  const rejectSensitiveUnauthorizedMatrix = () => {
+    let state = readSensitiveReplayState();
+    for (const kind of SENSITIVE_GRADE_KINDS) {
+      state = recordSensitiveGradeEvent(state, {
+        kind,
+        authorized: false,
+      });
+    }
+
+    void setSensitiveReplayState(state);
   };
 
   if (!e2eEnabled) {
@@ -161,14 +214,44 @@ export default function SyncLifecycleE2EScreen() {
       <Metric testID="e2e-replay-count" value={`replay-count:${replayCount ?? 0}`} />
       <Metric testID="e2e-resume-refreshes" value={`resume-refreshes:${resumeRefreshes ?? 0}`} />
       <Metric testID="e2e-network-refreshes" value={`network-refreshes:${networkRefreshes ?? 0}`} />
-      <Metric testID="e2e-launches" value={`launches:${launches ?? 0}`} />
 
       <View style={styles.buttons}>
         <ActionButton testID="e2e-reset" label="Reset State" onPress={reset} />
         <ActionButton testID="e2e-queue-replay" label="Queue Replay Event" onPress={queueReplay} />
         <ActionButton testID="e2e-simulate-offline" label="Simulate Offline" onPress={simulateOffline} />
         <ActionButton testID="e2e-simulate-online" label="Simulate Online" onPress={simulateOnline} />
+        <ActionButton
+          testID="e2e-queue-sensitive-auth-matrix"
+          label="Queue Sensitive Authorized"
+          onPress={queueSensitiveAuthorizedMatrix}
+        />
+        <ActionButton
+          testID="e2e-reject-sensitive-auth-matrix"
+          label="Reject Sensitive Unauthorized"
+          onPress={rejectSensitiveUnauthorizedMatrix}
+        />
       </View>
+
+      <Metric
+        testID="e2e-sensitive-queued"
+        value={`sensitive-queued:${sumSensitiveGradeCounts(effectiveSensitiveReplay.queued)}`}
+      />
+      <Metric
+        testID="e2e-sensitive-applied"
+        value={`sensitive-applied:${sumSensitiveGradeCounts(effectiveSensitiveReplay.applied)}`}
+      />
+      <Metric
+        testID="e2e-sensitive-rejected"
+        value={`sensitive-rejected:${sumSensitiveGradeCounts(effectiveSensitiveReplay.rejected)}`}
+      />
+      <Metric
+        testID="e2e-sensitive-replay-count"
+        value={`sensitive-replay-count:${effectiveSensitiveReplay.replayCount}`}
+      />
+      <Metric
+        testID="e2e-sensitive-matrix"
+        value={`sensitive-matrix:tq${effectiveSensitiveReplay.queued.teacherApproved}-ta${effectiveSensitiveReplay.applied.teacherApproved}-tr${effectiveSensitiveReplay.rejected.teacherApproved}|pq${effectiveSensitiveReplay.queued.parentApproved}-pa${effectiveSensitiveReplay.applied.parentApproved}-pr${effectiveSensitiveReplay.rejected.parentApproved}|lq${effectiveSensitiveReplay.queued.latestRestored}-la${effectiveSensitiveReplay.applied.latestRestored}-lr${effectiveSensitiveReplay.rejected.latestRestored}`}
+      />
     </View>
   );
 }

@@ -19,6 +19,24 @@ const schemas = {
   "e2e.lifecycle.resumeRefreshes": z.number(),
   "e2e.lifecycle.networkRefreshes": z.number(),
   "e2e.lifecycle.launches": z.number(),
+  "e2e.lifecycle.sensitive": z.object({
+    queued: z.object({
+      teacherApproved: z.number(),
+      parentApproved: z.number(),
+      latestRestored: z.number(),
+    }),
+    applied: z.object({
+      teacherApproved: z.number(),
+      parentApproved: z.number(),
+      latestRestored: z.number(),
+    }),
+    rejected: z.object({
+      teacherApproved: z.number(),
+      parentApproved: z.number(),
+      latestRestored: z.number(),
+    }),
+    replayCount: z.number(),
+  }),
 } as const satisfies Record<string, ZodSchema>;
 
 type Keys = keyof typeof schemas;

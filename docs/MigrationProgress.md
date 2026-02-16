@@ -24,11 +24,12 @@ Last updated: 2026-02-16
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/sync-lifecycle-resume.yml`
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/sync-lifecycle-replay.yml`
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/sync-lifecycle-network-reconnect.yml`
+  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/sync-lifecycle-sensitive-auth-reconnect.yml`
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/shared/open-sync-lifecycle.yml` (iOS prompt/Expo launcher resilient open path)
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/shared/attempt-control-center-connectivity-toggle.yml`
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/README.md`
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/flake.nix` (adds direct `maestro` in dev shell)
-- Executed Maestro lifecycle suite on iOS Simulator (`iPhone 17 Pro`, iOS 26.2) with passing resume/replay/network-reconnect flows.
+- Executed Maestro lifecycle suite on iOS Simulator (`iPhone 17 Pro`, iOS 26.2) with passing resume/replay/network-reconnect/sensitive-auth-reconnect flows.
 - New integration coverage now verifies:
   - one ingested event reaches multiple live subscribers for the same user (cross-device),
   - reconnect replay from `offset` returns only missing events (no duplicate re-delivery),
@@ -51,6 +52,9 @@ Last updated: 2026-02-16
     - `grades.teacherApproved`,
     - `grades.parentApproved`,
     - `grades.latestRestored`.
+  - lifecycle-level reconnect behavior for sensitive grades now verifies both:
+    - runtime auth rejection counters,
+    - replay convergence that applies only authorized queued sensitive events after reconnect.
 - Existing broadcast and offset persistence implementation remains active:
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/broadcast.ts`
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/utils/groundswell.tsx`
@@ -80,11 +84,10 @@ All targeted checks for this slice pass in this iteration.
 - Current iOS Simulator profile has no usable connectivity controls in Control Center, so the network-reconnect flow uses app-level fallback toggles when a real device toggle is unavailable.
 - Snapshot-based unknown-entity recovery remains unimplemented.
 - Untis job idempotency and observability hardening is still pending.
-- Sensitive-grade authorization replay protections are validated at API integration level, but not yet through full mobile lifecycle E2E transitions.
 
 ## Next Steps
 
 1. Run lifecycle network-reconnect flow on a simulator/device profile that exposes real connectivity controls and remove fallback dependence.
-2. Extend lifecycle-style reconnect assertions to include sensitive-grade auth rejection paths from mobile runtime flows.
+2. Add a dedicated Maestro flow variant that validates sensitive-grade reconnect behavior with pure real connectivity toggles (no fallback path).
 3. Start WS-C snapshot API + client resolver implementation.
 4. Start WS-E instrumentation + idempotency hardening for Untis background jobs.

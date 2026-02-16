@@ -126,7 +126,8 @@ Eliminate silent no-op behavior by providing complete server support for all cli
 - done: sensitive grade convergence coverage now includes `teacherApproved`, `parentApproved`, and `latestRestored`.
 - done: reconnect-while-offline replay scenarios are now covered for `grades.teacherApproved`, `grades.parentApproved`, and `grades.latestRestored`.
 - done: unauthorized sensitive-grade ingest attempts are rejected and excluded from replay convergence after one-device-offline reconnect (`teacherApproved`, `parentApproved`, `latestRestored`).
-- next: add lifecycle-level coverage that combines runtime offline/online transitions with sensitive-grade authorization edge cases.
+- done: lifecycle-level reconnect coverage now combines runtime offline/online transitions with sensitive-grade authorization edge cases in mobile E2E.
+- next: add a pure real-connectivity lifecycle variant for sensitive-grade auth/replay assertions (no simulator fallback toggles).
 
 ### Acceptance tests
 
@@ -177,6 +178,7 @@ Ship a robust mobile experience on top of the sync architecture.
   - foreground/background resume refresh signaling,
   - relaunch replay verification for queued state.
 - done: offline -> online reconnect replay verification flow is in place, with Control Center real-toggle attempt and simulator fallback controls.
+- done: sensitive-grade auth rejection and replay convergence reconnect flow is in place (`sync-lifecycle-sensitive-auth-reconnect.yml`) with runtime + replay assertions.
 - done: Maestro lifecycle suite is passing in a device-available iOS Simulator environment.
 - next: validate and harden pure real-toggle execution on connectivity-capable simulator/device profiles.
 

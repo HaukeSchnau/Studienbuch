@@ -45,6 +45,8 @@ MAESTRO_APP_ID=com.example.app MAESTRO_APP_LINK=studienbuch://e2e/sync-lifecycle
   - Verifies queued replay state is applied after process relaunch.
 - `sync-lifecycle-network-reconnect.yml`
   - Verifies offline -> online transition handling and replay convergence after reconnect.
+- `sync-lifecycle-sensitive-auth-reconnect.yml`
+  - Verifies sensitive-grade unauthorized actions are rejected at runtime and never replayed while authorized sensitive events converge after reconnect.
 
 ## Notes
 
