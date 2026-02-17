@@ -1,7 +1,7 @@
 # Effect + Local-First Migration Plan (Execution Plan)
 
 Status: Active plan  
-Last updated: 2026-02-16  
+Last updated: 2026-02-17  
 Architecture decisions: `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/docs/adr/0001-standalone-api-mobile-priority.md`
 Progress tracker: `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/docs/MigrationProgress.md`
 
@@ -151,6 +151,19 @@ Implement the documented snapshot model so unknown entity references are resolva
 - Ensure transitive dependency snapshots are fetched or batched.
 - Integrate snapshot resolution into client sync flow.
 - Remove ad hoc setup-time local writes once snapshot path is reliable.
+
+### Implementation status (2026-02-17)
+
+- done (slice 1): shared snapshot request/response contracts were added for `student` and `course` entities.
+- done (slice 1): standalone API now exposes `POST /api/snapshot` and resolves student/course snapshots scoped to the authenticated student.
+- done (slice 1): mobile sync apply path now retries once on missing-reference failures by:
+  - requesting required `student`/`course` snapshots,
+  - applying snapshots to local SQLite read-model tables,
+  - replaying the original event apply.
+- done (slice 1): unit coverage now validates:
+  - snapshot resolver deduped request fan-out behavior,
+  - mobile recovery behavior for foreign-key and missing-student failures.
+- next (slice 2): extend snapshot projections to absence/grade state and replace setup bootstrap writes with snapshot/event bootstrap flow.
 
 ### Acceptance tests
 

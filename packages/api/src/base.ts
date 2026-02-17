@@ -1,7 +1,7 @@
 import { attachSyncServer } from "@groundswell/adapter-hono-server";
 import { trpcServer } from "@hono/trpc-server";
 import { appRouter, createTRPCContext, getSession } from "@stu/api";
-import { DomainEvent } from "@stu/lib";
+import { DomainEvent, SnapshotRequestSchema } from "@stu/lib";
 import { getSessionTokenFromHeaders } from "@stu/lib-server";
 import { Effect } from "effect";
 import { type Context, Hono } from "hono";
@@ -11,6 +11,7 @@ import { trimTrailingSlash } from "hono/trailing-slash";
 import pino from "pino";
 import { env } from "../env";
 import { DomainBroadcast, DomainIngestEngine } from "./boilerplate";
+import { resolveSnapshotForUser } from "./snapshot";
 
 const appLogger = pino({
   transport: {
@@ -64,6 +65,26 @@ export const createBase = Effect.fn(function* (basePath: string) {
 
     return session.user.id;
   };
+
+  app.post("/api/snapshot", async (c) => {
+    const userId = await getUserId(c);
+    if (!userId) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
+
+    const body = await c.req.json().catch(() => null);
+    const request = SnapshotRequestSchema.safeParse(body);
+    if (!request.success) {
+      return c.json({ error: "Invalid snapshot request" }, 400);
+    }
+
+    const snapshot = await resolveSnapshotForUser({
+      userId,
+      request: request.data,
+    });
+
+    return c.json(snapshot, 200);
+  });
 
   attachSyncServer(app.basePath("/api"), {
     ingestEngine,

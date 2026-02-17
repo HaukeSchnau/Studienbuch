@@ -34,6 +34,12 @@ import React, { useContext } from "react";
 import { DatabaseLive } from "~/db/client";
 import { getHeadersObject } from "./api";
 import { getBaseUrl } from "./base-url";
+import {
+  applyEventWithSnapshotRecovery,
+  applySnapshotToLocalDatabase,
+  fetchSnapshotFromApi,
+  type SnapshotRecoveryError,
+} from "./snapshot-recovery";
 import { getStorage, setStorage } from "./storage";
 
 export class DomainApplicator extends Context.Tag("Applicator")<DomainApplicator, Applicator<DomainEvent>>() {}
@@ -95,14 +101,26 @@ const clientApplicatorsLive = Layer.effect(
         function* (event: DomainEvent) {
           const session = yield* currentSession;
 
-          return yield* applicators.apply(event, {
-            initiatorId: session.user,
+          return yield* applyEventWithSnapshotRecovery({
+            event,
+            applyEvent: (candidate) =>
+              applicators.apply(candidate, {
+                initiatorId: session.user,
+              }),
+            fetchSnapshot: (request) =>
+              fetchSnapshotFromApi({
+                baseUrl: getBaseUrl(),
+                headers: getHeadersObject(),
+                request,
+              }),
+            applySnapshot: applySnapshotToLocalDatabase,
           });
         },
         Effect.provide(repositories),
         Effect.provideService(Database, db),
         Effect.catchTags({
           DatabaseError: (error) => Effect.fail(new ApplicatorError({ cause: error })),
+          SnapshotRecoveryError: (error: SnapshotRecoveryError) => Effect.fail(new ApplicatorError({ cause: error })),
           NoSessionError: () => Effect.fail(new ApplicatorError({ cause: "No session" })),
         }),
       ),

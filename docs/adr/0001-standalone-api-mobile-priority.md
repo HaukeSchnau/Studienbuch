@@ -76,3 +76,11 @@ This creates unclear ownership and slows stabilization of offline-first mobile b
 - implemented: Maestro lifecycle suite now includes offline -> online reconnect replay verification (`sync-lifecycle-network-reconnect.yml`).
 - implemented: Maestro lifecycle suite now includes sensitive-grade auth rejection on reconnect with runtime + replay assertions (`sync-lifecycle-sensitive-auth-reconnect.yml`).
 - pending: validate pure real connectivity toggling on simulator/device profiles that expose network controls; current simulator profile falls back to E2E offline/online controls when real toggles are unavailable.
+
+### 2026-02-17
+
+- implemented: WS-C slice 1 snapshot contract is now shared in `@stu/lib` for `student` and `course` entities.
+- implemented: standalone API now serves authenticated snapshot pulls via `POST /api/snapshot`.
+- implemented: mobile sync apply runtime now performs missing-reference recovery by snapshot fetch + local apply + retry.
+- implemented: unit tests cover resolver dedupe behavior and runtime recovery retry behavior.
+- pending: expand snapshot contracts to absence/grade projections and remove setup-time bootstrap writes.

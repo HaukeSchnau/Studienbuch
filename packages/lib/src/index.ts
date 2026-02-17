@@ -11,6 +11,7 @@ export * from "./repositories";
 export * from "./schedule";
 export * from "./school";
 export * from "./semesters";
+export * from "./snapshot";
 export * from "./student";
 export * from "./teacher";
 export * from "./theme";
