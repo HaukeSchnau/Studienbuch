@@ -74,6 +74,13 @@ export const snapshotEntitiesForEvent = (event: DomainEvent): SnapshotRequest["e
           id: event.data.courseId,
         },
       ];
+    case "student.joined":
+      return [
+        {
+          kind: "student",
+          id: event.data.studentId,
+        },
+      ];
     case "grades.teacherApproved":
     case "grades.parentApproved":
     case "grades.discarded":
@@ -291,6 +298,93 @@ export const applySnapshotToLocalDatabase = Effect.fn(function* (snapshot: Snaps
           },
         }),
     );
+
+    for (const courseClass of course.classes) {
+      yield* db.execute((client) =>
+        client
+          .insert(tables.coursesToClasses)
+          .values({
+            course: course.id,
+            school: courseClass.school,
+            classIdentifier: courseClass.identifierInYear,
+            classStartYear: courseClass.startYear,
+          })
+          .onConflictDoNothing(),
+      );
+    }
+
+    for (const teacher of course.teachers) {
+      yield* db.execute((client) =>
+        client
+          .insert(tables.coursesToTeachers)
+          .values({
+            course: course.id,
+            teacher: teacher.id,
+          })
+          .onConflictDoNothing(),
+      );
+    }
+  }
+
+  for (const absence of snapshot.absences) {
+    const date = new Date(absence.date);
+    yield* db.execute((client) =>
+      client
+        .insert(tables.absenceDays)
+        .values({
+          date,
+          reason: absence.reason,
+          parentSignature: absence.parentSignature,
+        })
+        .onConflictDoUpdate({
+          target: [tables.absenceDays.date],
+          set: {
+            reason: absence.reason,
+            parentSignature: absence.parentSignature,
+          },
+        }),
+    );
+
+    for (const courseAbsence of absence.courses) {
+      yield* db.execute((client) =>
+        client
+          .insert(tables.courseAbsences)
+          .values({
+            date,
+            course: courseAbsence.courseId,
+            teacherSignature: courseAbsence.teacherSignature,
+          })
+          .onConflictDoUpdate({
+            target: [tables.courseAbsences.date, tables.courseAbsences.course],
+            set: {
+              teacherSignature: courseAbsence.teacherSignature,
+            },
+          }),
+      );
+    }
+  }
+
+  for (const grade of snapshot.grades) {
+    yield* db.execute((client) =>
+      client
+        .insert(tables.grades)
+        .values({
+          date: new Date(grade.date),
+          result: grade.result,
+          type: grade.type,
+          course: grade.course,
+          teacherSignature: grade.teacherSignature,
+          parentSignature: grade.parentSignature,
+        })
+        .onConflictDoUpdate({
+          target: [tables.grades.date, tables.grades.course, tables.grades.type],
+          set: {
+            result: grade.result,
+            teacherSignature: grade.teacherSignature,
+            parentSignature: grade.parentSignature,
+          },
+        }),
+    );
   }
 });
 
@@ -366,3 +460,14 @@ export const applyEventWithSnapshotRecovery = <RApply, RFetch, RApplySnapshot>(o
 
     return yield* options.applyEvent(options.event);
   });
+
+export const hydrateSnapshotFromApi = Effect.fn(function* (options: {
+  baseUrl: string;
+  headers: Record<string, string>;
+  request: SnapshotRequest;
+  fetchFn?: typeof fetch;
+}) {
+  const snapshot = yield* fetchSnapshotFromApi(options);
+  yield* applySnapshotToLocalDatabase(snapshot);
+  return snapshot;
+});

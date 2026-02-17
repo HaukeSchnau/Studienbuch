@@ -4,6 +4,8 @@ import { type SnapshotRequest, SnapshotResponseSchema } from "@stu/lib";
 export interface SnapshotResolverDependencies {
   loadStudents: (userId: string, ids: string[]) => Promise<StudentSnapshot[]>;
   loadCourses: (userId: string, ids: string[]) => Promise<SnapshotResponse["courses"]>;
+  loadAbsences: (userId: string) => Promise<SnapshotResponse["absences"]>;
+  loadGrades: (userId: string) => Promise<SnapshotResponse["grades"]>;
 }
 
 export const createSnapshotResolver = (deps: SnapshotResolverDependencies) => {
@@ -19,10 +21,16 @@ export const createSnapshotResolver = (deps: SnapshotResolverDependencies) => {
       deps.loadStudents(userId, studentIds),
       deps.loadCourses(userId, courseIds),
     ]);
+    const shouldIncludeStateProjections = studentIds.includes(userId);
+    const [absences, grades] = shouldIncludeStateProjections
+      ? await Promise.all([deps.loadAbsences(userId), deps.loadGrades(userId)])
+      : [[], []];
 
     return SnapshotResponseSchema.parse({
       students,
       courses,
+      absences,
+      grades,
     });
   };
 };

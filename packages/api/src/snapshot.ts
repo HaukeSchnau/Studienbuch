@@ -45,8 +45,20 @@ const loadStudents = async (userId: string, ids: string[]): Promise<StudentSnaps
     }));
 };
 
+const loadUserSchoolId = async (userId: string) => {
+  const activatedLicense = await db.query.LicenseKeys.findFirst({
+    where: eq(tables.LicenseKeys.activatedBy, userId),
+  });
+
+  return activatedLicense?.school ?? null;
+};
+
 const loadCourses = async (userId: string, ids: string[]): Promise<SnapshotResponse["courses"]> => {
   if (ids.length === 0) {
+    return [];
+  }
+  const schoolId = await loadUserSchoolId(userId);
+  if (!schoolId) {
     return [];
   }
 
@@ -66,10 +78,6 @@ const loadCourses = async (userId: string, ids: string[]): Promise<SnapshotRespo
       semesterYear: tables.Semesters.year,
     })
     .from(tables.Courses)
-    .innerJoin(
-      tables.CourseMemberships,
-      and(eq(tables.CourseMemberships.course, tables.Courses.id), eq(tables.CourseMemberships.student, userId)),
-    )
     .innerJoin(tables.Schools, eq(tables.Schools.id, tables.Courses.school))
     .innerJoin(
       tables.Semesters,
@@ -79,7 +87,7 @@ const loadCourses = async (userId: string, ids: string[]): Promise<SnapshotRespo
         eq(tables.Semesters.year, tables.Courses.semesterYear),
       ),
     )
-    .where(inArray(tables.Courses.id, ids));
+    .where(and(inArray(tables.Courses.id, ids), eq(tables.Courses.school, schoolId)));
 
   const resolvedCourseIds = [...new Set(courseRows.map((row) => row.id))];
   if (resolvedCourseIds.length === 0) {
@@ -156,7 +164,43 @@ const loadCourses = async (userId: string, ids: string[]): Promise<SnapshotRespo
   }));
 };
 
+const loadAbsences = async (userId: string): Promise<SnapshotResponse["absences"]> => {
+  const absenceRows = await db.query.AbsenceDays.findMany({
+    where: eq(tables.AbsenceDays.student, userId),
+    with: {
+      absenceCourses: true,
+    },
+  });
+
+  return absenceRows.map((absence) => ({
+    date: absence.date.toISOString(),
+    reason: absence.reason,
+    parentSignature: absence.parentSignature,
+    courses: absence.absenceCourses.map((courseAbsence) => ({
+      courseId: courseAbsence.course,
+      teacherSignature: courseAbsence.teacherSignature,
+    })),
+  }));
+};
+
+const loadGrades = async (userId: string): Promise<SnapshotResponse["grades"]> => {
+  const gradeRows = await db.query.Grades.findMany({
+    where: eq(tables.Grades.student, userId),
+  });
+
+  return gradeRows.map((grade) => ({
+    date: grade.date.toISOString(),
+    result: grade.result,
+    type: grade.type,
+    course: grade.course,
+    teacherSignature: grade.teacherSignature,
+    parentSignature: grade.parentSignature,
+  }));
+};
+
 export const resolveSnapshotForUser = createSnapshotResolver({
   loadStudents,
   loadCourses,
+  loadAbsences,
+  loadGrades,
 });

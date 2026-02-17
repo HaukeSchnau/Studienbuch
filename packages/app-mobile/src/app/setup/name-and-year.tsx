@@ -1,14 +1,4 @@
-import {
-  type Class,
-  formatClassName,
-  formatYear,
-  isArraySingleElement,
-  type SchoolId,
-  type StateCode,
-  type Year,
-} from "@stu/lib";
-import { pk } from "@stu/student";
-import * as t from "@stu/student/schema";
+import { type Class, formatClassName, formatYear, isArraySingleElement, type Year } from "@stu/lib";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useEffect } from "react";
@@ -20,72 +10,21 @@ import { SelectField } from "~/components/select-field";
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
-import { db } from "~/db/client";
 import { currentStudent } from "~/db/queries/user";
 import { useAppForm } from "~/features/setup/form";
-import { api } from "~/utils/api";
+import { api, getHeadersObject } from "~/utils/api";
 import { useSession } from "~/utils/auth";
-import { useIngest } from "~/utils/events/ingest";
-
-const bootstrap = async ({
-  school,
-  year,
-  classIdentifier,
-}: {
-  school: { id: SchoolId; name: string; stateCode: StateCode };
-  year: { name: string; graduationYear: number; startYear: number };
-  classIdentifier: string;
-}) => {
-  await db
-    .insert(t.schools)
-    .values({
-      id: school.id,
-      name: school.name,
-      stateCode: school.stateCode,
-    })
-    .onConflictDoUpdate({
-      target: pk(t.schools),
-      set: {
-        name: school.name,
-        stateCode: school.stateCode,
-      },
-    });
-  await db
-    .insert(t.years)
-    .values({
-      name: year.name,
-      graduationYear: year.graduationYear,
-      startYear: year.startYear,
-      school: school.id,
-    })
-    .onConflictDoUpdate({
-      target: pk(t.years),
-      set: {
-        name: year.name,
-        graduationYear: year.graduationYear,
-      },
-    });
-  await db
-    .insert(t.classes)
-    .values({
-      identifierInYear: classIdentifier,
-      startYear: year.startYear,
-      school: school.id,
-    })
-    .onConflictDoNothing();
-};
+import { getBaseUrl } from "~/utils/base-url";
+import { useIngest, useRuntime } from "~/utils/events/ingest";
+import { hydrateSnapshotFromApi } from "~/utils/snapshot-recovery";
 
 export default function NameAndYear() {
   const years = api.schools.years.list.useQuery({ activeOnly: true });
   const currentUser = useQuery(currentStudent());
   const session = useSession();
+  const runtime = useRuntime();
   const queryClient = useQueryClient();
-  const studentJoined = useIngest("student.joined", {
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      router.push("/setup/class-and-courses");
-    },
-  });
+  const studentJoined = useIngest("student.joined");
 
   const form = useAppForm({
     defaultValues: {
@@ -104,17 +43,7 @@ export default function NameAndYear() {
         throw new Error("No session in name and year form");
       }
 
-      await bootstrap({
-        school: {
-          id: value.year.school,
-          name: "IGS Lilienthal",
-          stateCode: "NI",
-        },
-        year: value.year,
-        classIdentifier: value.class.identifierInYear,
-      });
-
-      studentJoined.mutate({
+      await studentJoined.mutateAsync({
         class: {
           identifier: value.class.identifierInYear,
           startYear: value.class.startYear,
@@ -124,6 +53,30 @@ export default function NameAndYear() {
         school: "igs-lil",
         studentId: session.userId,
       });
+
+      await runtime.runPromise(
+        hydrateSnapshotFromApi({
+          baseUrl: getBaseUrl(),
+          headers: getHeadersObject(),
+          request: {
+            entities: [{ kind: "student", id: session.userId }],
+          },
+        }),
+      );
+
+      let student = await queryClient.fetchQuery(currentStudent());
+      for (let attempt = 0; !student && attempt < 20; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        student = await queryClient.fetchQuery(currentStudent());
+      }
+
+      if (!student) {
+        console.error("Student setup did not converge locally after join event");
+        return;
+      }
+
+      await queryClient.invalidateQueries();
+      router.push("/setup/class-and-courses");
     },
   });
 

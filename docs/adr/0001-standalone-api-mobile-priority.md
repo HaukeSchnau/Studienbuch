@@ -83,4 +83,6 @@ This creates unclear ownership and slows stabilization of offline-first mobile b
 - implemented: standalone API now serves authenticated snapshot pulls via `POST /api/snapshot`.
 - implemented: mobile sync apply runtime now performs missing-reference recovery by snapshot fetch + local apply + retry.
 - implemented: unit tests cover resolver dedupe behavior and runtime recovery retry behavior.
-- pending: expand snapshot contracts to absence/grade projections and remove setup-time bootstrap writes.
+- implemented: WS-C slice 2 expands snapshot projections to absence/grade state for authenticated students.
+- implemented: setup-time direct local DB bootstrap writes were removed in favor of event + snapshot hydration flow.
+- pending: extend snapshot projections to timetable/task state and reduce remaining setup-time tRPC dependencies.

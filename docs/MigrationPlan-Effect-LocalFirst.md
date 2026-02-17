@@ -163,7 +163,10 @@ Implement the documented snapshot model so unknown entity references are resolva
 - done (slice 1): unit coverage now validates:
   - snapshot resolver deduped request fan-out behavior,
   - mobile recovery behavior for foreign-key and missing-student failures.
-- next (slice 2): extend snapshot projections to absence/grade state and replace setup bootstrap writes with snapshot/event bootstrap flow.
+- done (slice 2): snapshot response now includes absence + grade state projections scoped to the authenticated student.
+- done (slice 2): setup flows (`name-and-year`, `class-and-courses`) no longer write directly to local setup tables; they now use event ingest + snapshot hydration.
+- done (slice 2): client setup flow hardening now tolerates local setup dependency gaps (`student.joined`, `student.courseAssigned`) while server verification remains authoritative.
+- next (slice 3): extend snapshot projections to timetable/task state and reduce remaining setup-time tRPC dependencies where snapshots/events can replace them.
 
 ### Acceptance tests
 

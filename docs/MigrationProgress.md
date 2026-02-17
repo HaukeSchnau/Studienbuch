@@ -70,12 +70,22 @@ Last updated: 2026-02-17
 - Added WS-C slice 1 unit coverage in:
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/snapshot.test.ts`
   - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/utils/snapshot-recovery.test.ts`
+- Extended WS-C snapshot contracts + resolver for absence/grade projections in:
+  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/lib/src/snapshot.ts`
+  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/snapshot-resolver.ts`
+  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/snapshot.ts`
+- Removed remaining setup-time local DB bootstrap writes and switched setup to snapshot/event bootstrap in:
+  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/app/setup/name-and-year.tsx`
+  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/app/setup/class-and-courses.tsx`
+- Added setup-related runtime hardening:
+  - local verify bypass for setup dependency misses (`student.joined`, `student.courseAssigned`) with server-side verification still authoritative,
+  - setup snapshot hydration + convergence wait before navigation.
 
 ## Current Workstream Status
 
 - WS-A Sync transport and broadcast reliability: in progress (core implementation + server and client-runtime integration coverage done)
 - WS-B Server applicator parity: in progress (`absence.*` + `grades.*` server coverage done; sensitive grades convergence + unauthorized replay guards covered)
-- WS-C Snapshot and bootstrap strategy: in progress (slice 1 complete: student/course snapshot endpoint + mobile replay recovery retry)
+- WS-C Snapshot and bootstrap strategy: in progress (slice 2 complete: absence/grade projections + setup bootstrap writes removed)
 - WS-D Mobile app stabilization: in progress (lifecycle controller + unit tests + Maestro device-harness flows added)
 - WS-E Untis background jobs: not started in code
 - WS-F Quality gates and CI: in progress
@@ -94,12 +104,13 @@ All targeted checks for this slice pass in this iteration.
 
 - Maestro lifecycle E2E flows pass on simulator, but still require attached simulator/emulator + installed dev app + E2E Metro (not yet CI-automated).
 - Current iOS Simulator profile has no usable connectivity controls in Control Center, so the network-reconnect flow uses app-level fallback toggles when a real device toggle is unavailable.
-- Snapshot recovery is currently implemented for missing `student` / `course` references only; absence/grade state projection snapshots are still pending.
+- Snapshot recovery/re-hydration now includes student/course + absence/grade projections, but timetable/task projection snapshots are still pending.
+- Setup still depends on tRPC choice endpoints for year/class/course selection; only local DB bootstrap writes were removed in this slice.
 - Untis job idempotency and observability hardening is still pending.
 
 ## Next Steps
 
-1. Extend WS-C snapshot API/contracts to include absence + grade projection snapshots and wire recovery for those entities.
-2. Replace setup bootstrap DB writes with snapshot/event bootstrap once WS-C slice 2 contracts are in place.
+1. Add WS-C slice 3 snapshot projections for timetable/tasks and wire them into mobile re-hydration.
+2. Reduce remaining setup-time tRPC dependencies where event/snapshot flow can replace them safely.
 3. Run lifecycle network-reconnect flow on a simulator/device profile that exposes real connectivity controls and remove fallback dependence.
 4. Start WS-E instrumentation + idempotency hardening for Untis background jobs.

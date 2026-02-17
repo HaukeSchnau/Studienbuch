@@ -54,6 +54,22 @@ export const clientSyncEngine = syncEngineFactory(DomainSyncEngine, Database);
 
 export class NoSessionError extends Data.TaggedError("NoSessionError") {}
 
+const shouldBypassLocalMissingDependencyVerification = (event: DomainEvent, error: ValidationError) => {
+  if (error.reason !== "NOT_FOUND") {
+    return false;
+  }
+
+  if (event.type === "student.joined") {
+    return error.cause === "INVALID_CLASS";
+  }
+
+  if (event.type === "student.courseAssigned") {
+    return error.cause === "INVALID_COURSE";
+  }
+
+  return false;
+};
+
 const currentSession = Effect.gen(function* () {
   const session = getStorage("auth.session");
   if (!session) {
@@ -85,9 +101,15 @@ const clientApplicatorsLive = Layer.effect(
         function* (event: DomainEvent) {
           const session = yield* currentSession;
 
-          yield* applicators.verify(event, {
-            initiatorId: session.user,
-          });
+          yield* applicators
+            .verify(event, {
+              initiatorId: session.user,
+            })
+            .pipe(
+              Effect.catchTag("ValidationError", (error) =>
+                shouldBypassLocalMissingDependencyVerification(event, error) ? Effect.void : Effect.fail(error),
+              ),
+            );
         },
         Effect.provide(repositories),
         Effect.provideService(Database, db),

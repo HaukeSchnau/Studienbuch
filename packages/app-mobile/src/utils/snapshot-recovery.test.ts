@@ -54,6 +54,8 @@ const validSnapshot = {
       classes: [],
     },
   ],
+  absences: [],
+  grades: [],
 };
 
 describe("snapshotEntitiesForEvent", () => {
@@ -74,6 +76,26 @@ describe("snapshotEntitiesForEvent", () => {
       { kind: "student", id: studentId },
       { kind: "course", id: courseId },
     ]);
+  });
+
+  it("returns only student ref for student.joined", () => {
+    const refs = snapshotEntitiesForEvent({
+      id: "99999999-9999-4999-8999-999999999999",
+      timestamp: new Date("2026-01-01T00:00:00.000Z"),
+      type: "student.joined",
+      data: {
+        studentId,
+        name: "Ada Student",
+        school: "igs-lil",
+        isOfAge: false,
+        class: {
+          identifier: "11a",
+          startYear: 2024,
+        },
+      },
+    });
+
+    expect(refs).toEqual([{ kind: "student", id: studentId }]);
   });
 });
 

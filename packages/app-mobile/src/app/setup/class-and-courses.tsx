@@ -1,17 +1,6 @@
-import type {
-  Course as BaseCourse,
-  SchoolId,
-  Semester,
-  SimpleDate,
-  StateCode,
-  SubjectId,
-  WithTeachers,
-} from "@stu/lib";
-import { BetterMap, simpleDateToDate, Teacher } from "@stu/lib";
-import { pk } from "@stu/student";
-import * as t from "@stu/student/schema";
+import type { Course as BaseCourse, SubjectId, WithTeachers } from "@stu/lib";
+import { BetterMap, Teacher } from "@stu/lib";
 import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
-import { sql } from "drizzle-orm";
 import { router } from "expo-router";
 import { useMemo } from "react";
 import { ActivityIndicator, View } from "react-native";
@@ -19,118 +8,13 @@ import { Button } from "~/components/button";
 import { SelectCourse } from "~/components/select-course";
 import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
-import { db } from "~/db/client";
 import { currentStudent } from "~/db/queries/user";
 import { getMyCoursesForSemester } from "~/features/profile/queries/get-my-courses";
-import { api } from "~/utils/api";
-import { useIngest } from "~/utils/events/ingest";
+import { api, getHeadersObject } from "~/utils/api";
+import { getBaseUrl } from "~/utils/base-url";
+import { useIngest, useRuntime } from "~/utils/events/ingest";
 import { useAppForm } from "~/utils/form";
-
-const bootstrap = async ({
-  school,
-  year,
-  classIdentifier,
-  semester,
-  courses,
-}: {
-  school: { id: SchoolId; name: string; stateCode: StateCode };
-  year: { name: string; graduationYear: number; startYear: number };
-  classIdentifier: string;
-  semester: {
-    name: string;
-    type: Semester.Type;
-    year: number;
-    start: SimpleDate;
-    end: SimpleDate;
-  };
-  courses: (Course & WithTeachers)[];
-}) => {
-  await db
-    .insert(t.semesters)
-    .values({
-      name: semester.name,
-      year: semester.year,
-      type: semester.type,
-      start: simpleDateToDate(semester.start),
-      end: simpleDateToDate(semester.end),
-      school: school.id,
-    })
-    .onConflictDoUpdate({
-      target: pk(t.semesters),
-      set: {
-        name: semester.name,
-        start: simpleDateToDate(semester.start),
-        end: simpleDateToDate(semester.end),
-      },
-    });
-
-  await db
-    .insert(t.courses)
-    .values(
-      courses.map((course) => ({
-        id: course.id,
-        name: course.name,
-        subject: course.subject,
-        isMandatory: course.isMandatory,
-        school: school.id,
-        semesterType: semester.type,
-        semesterYear: semester.year,
-      })),
-    )
-    .onConflictDoUpdate({
-      target: pk(t.courses),
-      set: {
-        name: sql.raw(`excluded.${t.courses.name.name}`),
-        subject: sql.raw(`excluded.${t.courses.subject.name}`),
-        isMandatory: sql.raw(`excluded.${t.courses.isMandatory.name}`),
-        semesterType: sql.raw(`excluded.${t.courses.semesterType.name}`),
-        semesterYear: sql.raw(`excluded.${t.courses.semesterYear.name}`),
-        school: sql.raw(`excluded.${t.courses.school.name}`),
-        isMember: sql.raw(`excluded.${t.courses.isMember.name}`),
-      },
-    });
-
-  for (const course of courses) {
-    await db
-      .insert(t.coursesToClasses)
-      .values({
-        course: course.id,
-        school: school.id,
-        classIdentifier: classIdentifier,
-        classStartYear: year.startYear,
-      })
-      .onConflictDoNothing();
-
-    for (const teacher of course.teachers) {
-      await db
-        .insert(t.persons)
-        .values({
-          id: teacher.id,
-          firstName: teacher.firstName,
-          lastName: teacher.lastName,
-          abbrv: teacher.abbrv,
-          salutation: teacher.salutation,
-        })
-        .onConflictDoUpdate({
-          target: pk(t.persons),
-          set: {
-            firstName: teacher.firstName,
-            lastName: teacher.lastName,
-            abbrv: teacher.abbrv,
-            salutation: teacher.salutation,
-          },
-        });
-
-      await db
-        .insert(t.coursesToTeachers)
-        .values({
-          course: course.id,
-          teacher: teacher.id,
-        })
-        .onConflictDoNothing();
-    }
-  }
-};
+import { hydrateSnapshotFromApi } from "~/utils/snapshot-recovery";
 
 type Course = BaseCourse & WithTeachers;
 
@@ -138,6 +22,7 @@ export default function ClassAndCourses() {
   const studentQuery = useQuery(currentStudent());
   const semester = api.schools.semesters.getCurrent.useQuery();
   const currentCourses = useQuery(getMyCoursesForSemester(semester.data));
+  const runtime = useRuntime();
   const queryClient = useQueryClient();
   const courseAssigned = useIngest("student.courseAssigned");
   const form = useAppForm({
@@ -163,17 +48,21 @@ export default function ClassAndCourses() {
       }
       const courses = Object.values(value.chosenCourses).filter(Boolean);
 
-      await bootstrap({
-        school: {
-          id: student.year.school,
-          name: "IGS Lilienthal",
-          stateCode: "NI",
-        },
-        year: student.year,
-        classIdentifier: student.class.identifierInYear,
-        semester: semester.data,
-        courses,
-      });
+      await runtime.runPromise(
+        hydrateSnapshotFromApi({
+          baseUrl: getBaseUrl(),
+          headers: getHeadersObject(),
+          request: {
+            entities: [
+              { kind: "student", id: student.person.id },
+              ...courses.map((course) => ({
+                kind: "course" as const,
+                id: course.id,
+              })),
+            ],
+          },
+        }),
+      );
       await Promise.all(
         courses.map((course) =>
           courseAssigned.mutateAsync({

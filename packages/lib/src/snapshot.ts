@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SUBJECT_IDS } from "./courses";
+import { GRADE_TYPES } from "./grades";
 import { SCHOOL_IDS, SEMESTER_TYPES, STATE_CODES } from "./school";
 import { SALUTATIONS } from "./teacher";
 
@@ -86,8 +87,33 @@ export const CourseSnapshotSchema = z.object({
 });
 export type CourseSnapshot = z.infer<typeof CourseSnapshotSchema>;
 
+export const AbsenceProjectionSnapshotSchema = z.object({
+  date: z.string().datetime(),
+  reason: z.string(),
+  parentSignature: z.string().nullable(),
+  courses: z.array(
+    z.object({
+      courseId: z.string().uuid(),
+      teacherSignature: z.string().nullable(),
+    }),
+  ),
+});
+export type AbsenceProjectionSnapshot = z.infer<typeof AbsenceProjectionSnapshotSchema>;
+
+export const GradeProjectionSnapshotSchema = z.object({
+  date: z.string().datetime(),
+  result: z.number(),
+  type: z.enum(GRADE_TYPES),
+  course: z.string().uuid(),
+  teacherSignature: z.string().nullable(),
+  parentSignature: z.string().nullable(),
+});
+export type GradeProjectionSnapshot = z.infer<typeof GradeProjectionSnapshotSchema>;
+
 export const SnapshotResponseSchema = z.object({
   students: z.array(StudentSnapshotSchema),
   courses: z.array(CourseSnapshotSchema),
+  absences: z.array(AbsenceProjectionSnapshotSchema),
+  grades: z.array(GradeProjectionSnapshotSchema),
 });
 export type SnapshotResponse = z.infer<typeof SnapshotResponseSchema>;
