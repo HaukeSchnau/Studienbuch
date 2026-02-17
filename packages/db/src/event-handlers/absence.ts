@@ -1,5 +1,12 @@
 import { type NamespaceServerApplicatorMap, ValidationError } from "@groundswell/core";
-import { type DomainEvent, studentsOfUser, type UnknownDatabaseError } from "@stu/lib";
+import {
+  type DomainEvent,
+  requireStudent,
+  requireStudentOrDie,
+  studentsOfUser,
+  type UnknownDatabaseError,
+  verifyStudentInitiator,
+} from "@stu/lib";
 import { Effect } from "effect";
 import type { Database } from "../database";
 import { AbsenceRepositoryDb } from "../repositories/absence.repo";
@@ -14,28 +21,27 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
   recorded: {
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
-        }
+        yield* verifyStudentInitiator({
+          initiatorId,
+          studentId: event.data.studentId,
+          onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
+        });
 
         const studentRepo = yield* StudentRepository;
-        const student = yield* studentRepo.getStudent({ studentId: event.data.studentId });
-        if (!student) {
-          return yield* Effect.fail(new ValidationError({ cause: "STUDENT_NOT_FOUND", reason: "NOT_FOUND" }));
-        }
+        yield* requireStudent({
+          studentId: event.data.studentId,
+          load: studentRepo.getStudent({ studentId: event.data.studentId }),
+          onMissing: () => new ValidationError({ cause: "STUDENT_NOT_FOUND", reason: "NOT_FOUND" }),
+        });
       }),
     apply: (event) =>
       Effect.gen(function* () {
         const studentRepo = yield* StudentRepository;
-        const student = yield* studentRepo
-          .getStudent({ studentId: event.data.studentId })
-          .pipe(
-            Effect.flatMap((value) =>
-              value
-                ? Effect.succeed(value)
-                : Effect.die(new Error(`Student ${event.data.studentId} not found after verify`)),
-            ),
-          );
+        const student = yield* requireStudentOrDie({
+          studentId: event.data.studentId,
+          load: studentRepo.getStudent({ studentId: event.data.studentId }),
+          onMissing: (studentId) => new Error(`Student ${studentId} not found after verify`),
+        });
 
         const absenceRepo = yield* AbsenceRepositoryDb;
         yield* absenceRepo.addAbsence({
@@ -51,9 +57,11 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
 
   parentApproved: {
     verify: (event, { initiatorId }) =>
-      initiatorId !== event.data.studentId
-        ? Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }))
-        : Effect.void,
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
+      }),
     apply: (event) =>
       Effect.andThen(AbsenceRepositoryDb, (repo) =>
         repo.setParentSignature({
@@ -67,9 +75,11 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
 
   teacherApproved: {
     verify: (event, { initiatorId }) =>
-      initiatorId !== event.data.studentId
-        ? Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }))
-        : Effect.void,
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
+      }),
     apply: (event) =>
       Effect.andThen(AbsenceRepositoryDb, (repo) =>
         repo.setTeacherSignature({
@@ -84,9 +94,11 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
 
   discarded: {
     verify: (event, { initiatorId }) =>
-      initiatorId !== event.data.studentId
-        ? Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }))
-        : Effect.void,
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
+      }),
     apply: (event) =>
       Effect.andThen(AbsenceRepositoryDb, (repo) =>
         repo.deleteAbsence({

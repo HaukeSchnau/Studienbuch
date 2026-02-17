@@ -1,7 +1,7 @@
 import { ApplicatorError, type NamespaceApplicatorMap } from "@groundswell/core";
 import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { DomainEvent } from "@stu/lib";
-import { AbsenceRepository, StudentRepository } from "@stu/lib";
+import { AbsenceRepository, requireStudent, StudentRepository, verifyStudentInitiator } from "@stu/lib";
 import { Effect } from "effect";
 
 export const absenceApplicators: NamespaceApplicatorMap<
@@ -12,19 +12,19 @@ export const absenceApplicators: NamespaceApplicatorMap<
 > = {
   recorded: {
     verify: (event, { initiatorId }) =>
-      Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" }));
-        }
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ApplicatorError({ cause: "NOT_ALLOWED" }),
       }),
     apply: (event) =>
       Effect.gen(function* () {
         const studentRepo = yield* StudentRepository;
-        const student = yield* studentRepo.getStudent({ studentId: event.data.studentId });
-
-        if (!student) {
-          return yield* Effect.fail(new ApplicatorError({ cause: `Student ${event.data.studentId} not found` }));
-        }
+        const student = yield* requireStudent({
+          studentId: event.data.studentId,
+          load: studentRepo.getStudent({ studentId: event.data.studentId }),
+          onMissing: (studentId) => new ApplicatorError({ cause: `Student ${studentId} not found` }),
+        });
 
         const absenceRepo = yield* AbsenceRepository;
         yield* absenceRepo.addAbsence({
@@ -38,10 +38,10 @@ export const absenceApplicators: NamespaceApplicatorMap<
 
   parentApproved: {
     verify: (event, { initiatorId }) =>
-      Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" }));
-        }
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ApplicatorError({ cause: "NOT_ALLOWED" }),
       }),
     apply: (event) =>
       Effect.andThen(AbsenceRepository, (repo) =>
@@ -54,10 +54,10 @@ export const absenceApplicators: NamespaceApplicatorMap<
 
   teacherApproved: {
     verify: (event, { initiatorId }) =>
-      Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" }));
-        }
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ApplicatorError({ cause: "NOT_ALLOWED" }),
       }),
     apply: (event) =>
       Effect.andThen(AbsenceRepository, (repo) =>
@@ -71,10 +71,10 @@ export const absenceApplicators: NamespaceApplicatorMap<
 
   discarded: {
     verify: (event, { initiatorId }) =>
-      Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" }));
-        }
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ApplicatorError({ cause: "NOT_ALLOWED" }),
       }),
     apply: (event) =>
       Effect.andThen(AbsenceRepository, (repo) =>

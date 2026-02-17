@@ -1,6 +1,6 @@
 import type { NamespaceServerApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
-import type { DomainEvent } from "@stu/lib";
+import { type DomainEvent, splitStudentName, verifyStudentInitiator } from "@stu/lib";
 import { Effect } from "effect";
 import type { Database, DatabaseError } from "../database";
 import { StudentRepository } from "../repositories/student.repo";
@@ -14,9 +14,11 @@ export const studentApplicators: NamespaceServerApplicatorMap<
   joined: {
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
-        }
+        yield* verifyStudentInitiator({
+          initiatorId,
+          studentId: event.data.studentId,
+          onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
+        });
 
         const repo = yield* StudentRepository;
         const school = yield* repo.getSchoolOfUser({
@@ -38,8 +40,7 @@ export const studentApplicators: NamespaceServerApplicatorMap<
       }),
     apply: (event) =>
       StudentRepository.use((repo) => {
-        const firstName = event.data.name.split(" ")[0] ?? "";
-        const lastName = event.data.name.split(" ").slice(1).join(" ");
+        const { firstName, lastName } = splitStudentName(event.data.name);
 
         return repo.createStudent({
           studentId: event.data.studentId,
@@ -56,9 +57,11 @@ export const studentApplicators: NamespaceServerApplicatorMap<
   courseAssigned: {
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
-        }
+        yield* verifyStudentInitiator({
+          initiatorId,
+          studentId: event.data.studentId,
+          onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
+        });
 
         const repo = yield* StudentRepository;
         const isAssigned = yield* repo.isAssignedToCourse({

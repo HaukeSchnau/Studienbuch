@@ -2,7 +2,13 @@ import type { NamespaceApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
 import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { DomainEvent } from "@stu/lib";
-import { ClassRepository, CourseRepository, StudentRepository } from "@stu/lib";
+import {
+  ClassRepository,
+  CourseRepository,
+  StudentRepository,
+  splitStudentName,
+  verifyStudentInitiator,
+} from "@stu/lib";
 import { Effect } from "effect";
 
 const failIfFalse = (message: string, reason: "DUPLICATE" | "INVALID" | "NOT_ALLOWED" | "NOT_FOUND" | "UNKNOWN") =>
@@ -17,9 +23,11 @@ export const studentApplicators: NamespaceApplicatorMap<
   joined: {
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
-        }
+        yield* verifyStudentInitiator({
+          initiatorId,
+          studentId: event.data.studentId,
+          onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
+        });
 
         const repo = yield* ClassRepository;
         const classExists = yield* repo.doesClassExist({
@@ -34,8 +42,7 @@ export const studentApplicators: NamespaceApplicatorMap<
       }),
     apply: (event) =>
       Effect.andThen(StudentRepository, (repo) => {
-        const firstName = event.data.name.split(" ")[0] ?? "";
-        const lastName = event.data.name.split(" ").slice(1).join(" ");
+        const { firstName, lastName } = splitStudentName(event.data.name);
 
         return repo.createStudent({
           id: event.data.studentId,

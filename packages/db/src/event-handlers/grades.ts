@@ -1,5 +1,12 @@
 import { type NamespaceServerApplicatorMap, ValidationError } from "@groundswell/core";
-import { type DomainEvent, studentsOfUser, type UnknownDatabaseError } from "@stu/lib";
+import {
+  type DomainEvent,
+  requireStudent,
+  requireStudentOrDie,
+  studentsOfUser,
+  type UnknownDatabaseError,
+  verifyStudentInitiator,
+} from "@stu/lib";
 import { Effect } from "effect";
 import type { Database } from "../database";
 import { GradeRepositoryDb } from "../repositories/grade.repo";
@@ -14,15 +21,18 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
   currentGradeSet: {
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
-        }
+        yield* verifyStudentInitiator({
+          initiatorId,
+          studentId: event.data.studentId,
+          onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
+        });
 
         const studentRepo = yield* StudentRepository;
-        const student = yield* studentRepo.getStudent({ studentId: event.data.studentId });
-        if (!student) {
-          return yield* Effect.fail(new ValidationError({ cause: "STUDENT_NOT_FOUND", reason: "NOT_FOUND" }));
-        }
+        yield* requireStudent({
+          studentId: event.data.studentId,
+          load: studentRepo.getStudent({ studentId: event.data.studentId }),
+          onMissing: () => new ValidationError({ cause: "STUDENT_NOT_FOUND", reason: "NOT_FOUND" }),
+        });
 
         const gradeRepo = yield* GradeRepositoryDb;
         const latestGradeDate = yield* gradeRepo.getLatestGradeDate({
@@ -37,15 +47,11 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
     apply: (event) =>
       Effect.gen(function* () {
         const studentRepo = yield* StudentRepository;
-        const student = yield* studentRepo
-          .getStudent({ studentId: event.data.studentId })
-          .pipe(
-            Effect.flatMap((value) =>
-              value
-                ? Effect.succeed(value)
-                : Effect.die(new Error(`Student ${event.data.studentId} not found after verify`)),
-            ),
-          );
+        const student = yield* requireStudentOrDie({
+          studentId: event.data.studentId,
+          load: studentRepo.getStudent({ studentId: event.data.studentId }),
+          onMissing: (studentId) => new Error(`Student ${studentId} not found after verify`),
+        });
 
         const gradeRepo = yield* GradeRepositoryDb;
         yield* gradeRepo.setCurrentGrade({
@@ -63,28 +69,27 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
   writtenGradeRecorded: {
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
-        }
+        yield* verifyStudentInitiator({
+          initiatorId,
+          studentId: event.data.studentId,
+          onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
+        });
 
         const studentRepo = yield* StudentRepository;
-        const student = yield* studentRepo.getStudent({ studentId: event.data.studentId });
-        if (!student) {
-          return yield* Effect.fail(new ValidationError({ cause: "STUDENT_NOT_FOUND", reason: "NOT_FOUND" }));
-        }
+        yield* requireStudent({
+          studentId: event.data.studentId,
+          load: studentRepo.getStudent({ studentId: event.data.studentId }),
+          onMissing: () => new ValidationError({ cause: "STUDENT_NOT_FOUND", reason: "NOT_FOUND" }),
+        });
       }),
     apply: (event) =>
       Effect.gen(function* () {
         const studentRepo = yield* StudentRepository;
-        const student = yield* studentRepo
-          .getStudent({ studentId: event.data.studentId })
-          .pipe(
-            Effect.flatMap((value) =>
-              value
-                ? Effect.succeed(value)
-                : Effect.die(new Error(`Student ${event.data.studentId} not found after verify`)),
-            ),
-          );
+        const student = yield* requireStudentOrDie({
+          studentId: event.data.studentId,
+          load: studentRepo.getStudent({ studentId: event.data.studentId }),
+          onMissing: (studentId) => new Error(`Student ${studentId} not found after verify`),
+        });
 
         const gradeRepo = yield* GradeRepositoryDb;
         yield* gradeRepo.recordWrittenGrade({
@@ -100,9 +105,11 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
 
   teacherApproved: {
     verify: (event, { initiatorId }) =>
-      initiatorId !== event.data.studentId
-        ? Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }))
-        : Effect.void,
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
+      }),
     apply: (event) =>
       Effect.andThen(GradeRepositoryDb, (repo) =>
         repo.setTeacherSignature({
@@ -118,9 +125,11 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
 
   parentApproved: {
     verify: (event, { initiatorId }) =>
-      initiatorId !== event.data.studentId
-        ? Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }))
-        : Effect.void,
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
+      }),
     apply: (event) =>
       Effect.andThen(GradeRepositoryDb, (repo) =>
         repo.setParentSignature({
@@ -136,9 +145,11 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
 
   latestRestored: {
     verify: (event, { initiatorId }) =>
-      initiatorId !== event.data.studentId
-        ? Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }))
-        : Effect.void,
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
+      }),
     apply: (event) =>
       Effect.andThen(GradeRepositoryDb, (repo) =>
         repo.restoreLatest({
@@ -152,9 +163,11 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
 
   discarded: {
     verify: (event, { initiatorId }) =>
-      initiatorId !== event.data.studentId
-        ? Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }))
-        : Effect.void,
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
+      }),
     apply: (event) =>
       Effect.andThen(GradeRepositoryDb, (repo) =>
         repo.discardGrade({

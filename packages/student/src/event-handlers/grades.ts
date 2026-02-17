@@ -1,7 +1,7 @@
 import { ApplicatorError, type NamespaceApplicatorMap } from "@groundswell/core";
 import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { DomainEvent } from "@stu/lib";
-import { GradeRepository, StudentRepository } from "@stu/lib";
+import { GradeRepository, requireStudent, StudentRepository, verifyStudentInitiator } from "@stu/lib";
 import { Effect } from "effect";
 
 export const gradeApplicators: NamespaceApplicatorMap<
@@ -12,18 +12,19 @@ export const gradeApplicators: NamespaceApplicatorMap<
 > = {
   currentGradeSet: {
     verify: (event, { initiatorId }) =>
-      Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" }));
-        }
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ApplicatorError({ cause: "NOT_ALLOWED" }),
       }),
     apply: (event) =>
       Effect.gen(function* () {
         const studentRepo = yield* StudentRepository;
-        const student = yield* studentRepo.getStudent({ studentId: event.data.studentId });
-        if (!student) {
-          return yield* Effect.fail(new ApplicatorError({ cause: `Student ${event.data.studentId} not found` }));
-        }
+        const student = yield* requireStudent({
+          studentId: event.data.studentId,
+          load: studentRepo.getStudent({ studentId: event.data.studentId }),
+          onMissing: (studentId) => new ApplicatorError({ cause: `Student ${studentId} not found` }),
+        });
 
         const gradeRepo = yield* GradeRepository;
         yield* gradeRepo
@@ -44,18 +45,19 @@ export const gradeApplicators: NamespaceApplicatorMap<
 
   writtenGradeRecorded: {
     verify: (event, { initiatorId }) =>
-      Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" }));
-        }
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ApplicatorError({ cause: "NOT_ALLOWED" }),
       }),
     apply: (event) =>
       Effect.gen(function* () {
         const studentRepo = yield* StudentRepository;
-        const student = yield* studentRepo.getStudent({ studentId: event.data.studentId });
-        if (!student) {
-          return yield* Effect.fail(new ApplicatorError({ cause: `Student ${event.data.studentId} not found` }));
-        }
+        const student = yield* requireStudent({
+          studentId: event.data.studentId,
+          load: studentRepo.getStudent({ studentId: event.data.studentId }),
+          onMissing: (studentId) => new ApplicatorError({ cause: `Student ${studentId} not found` }),
+        });
 
         const repo = yield* GradeRepository;
 
@@ -70,10 +72,10 @@ export const gradeApplicators: NamespaceApplicatorMap<
 
   teacherApproved: {
     verify: (event, { initiatorId }) =>
-      Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" }));
-        }
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ApplicatorError({ cause: "NOT_ALLOWED" }),
       }),
     apply: (event) =>
       Effect.andThen(GradeRepository, (repo) =>
@@ -88,10 +90,10 @@ export const gradeApplicators: NamespaceApplicatorMap<
 
   parentApproved: {
     verify: (event, { initiatorId }) =>
-      Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" }));
-        }
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ApplicatorError({ cause: "NOT_ALLOWED" }),
       }),
     apply: (event) =>
       Effect.andThen(GradeRepository, (repo) =>
@@ -106,10 +108,10 @@ export const gradeApplicators: NamespaceApplicatorMap<
 
   latestRestored: {
     verify: (event, { initiatorId }) =>
-      Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" }));
-        }
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ApplicatorError({ cause: "NOT_ALLOWED" }),
       }),
     apply: (event) =>
       Effect.andThen(GradeRepository, (repo) =>
@@ -122,10 +124,10 @@ export const gradeApplicators: NamespaceApplicatorMap<
 
   discarded: {
     verify: (event, { initiatorId }) =>
-      Effect.gen(function* () {
-        if (initiatorId !== event.data.studentId) {
-          return yield* Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" }));
-        }
+      verifyStudentInitiator({
+        initiatorId,
+        studentId: event.data.studentId,
+        onForbidden: () => new ApplicatorError({ cause: "NOT_ALLOWED" }),
       }),
     apply: (event) =>
       Effect.andThen(GradeRepository, (repo) =>
