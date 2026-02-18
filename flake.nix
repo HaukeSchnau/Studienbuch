@@ -1,22 +1,20 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    systems.url = "github:nix-systems/default";
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = import nixpkgs { inherit system; };
-    in {
-      devShells.default = pkgs.mkShellNoCC {
-        packages = with pkgs; [
-          bun
-          nodejs
-          just
-          mprocs
-          cocoapods
-          maestro
-        ];
-      };
-    });
+  outputs = inputs @ {
+    flake-parts,
+    systems,
+    ...
+  }:
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      systems = import systems;
+      imports = [
+        ./nix/flake-parts/studienbuch.nix
+        ./nix/flake-parts/devshell.nix
+      ];
+    };
 }

@@ -25,5 +25,60 @@ install-clean:
     bun install
 
 stats:
-  nix-shell -p cloc --run "git ls-files . | xargs cloc"
+    nix develop -c cloc $(git ls-files .)
 
+nix-build-api:
+    nix run .#build-api
+
+nix-build-console:
+    nix run .#build-console
+
+nix-dev:
+    nix develop
+
+nix-build-all:
+    nix run .#build-all
+
+nix-start-api:
+    nix run .#start-api
+
+nix-start-console *ARGS:
+    nix run .#start-console -- {{ARGS}}
+
+nix-migrate *ARGS:
+    nix run .#migrations -- {{ARGS}}
+
+nix-smoke:
+    log=$$(mktemp); \
+    ( \
+      SKIP_ENV_VALIDATION=1 \
+      NODE_ENV=development \
+      MANAGEMENT_DATABASE_URL=postgresql://stu:stu@localhost:5432/stu \
+      PULSAR_URL=pulsar://localhost:6650 \
+      API_PORT=3001 \
+      NEXT_PUBLIC_AXIOM_DATASET=local \
+      NEXT_PUBLIC_AXIOM_TOKEN=local \
+      nix run .#start-api >"$$log" 2>&1 & \
+      pid=$$!; \
+      sleep 12; \
+      if kill -0 "$$pid" 2>/dev/null; then kill "$$pid"; fi; \
+      wait "$$pid" 2>/dev/null || true \
+    ); \
+    sed -n '1,120p' "$$log"; \
+    rm -f "$$log"
+    clog=$$(mktemp); \
+    ( \
+      SKIP_ENV_VALIDATION=1 \
+      NODE_ENV=development \
+      MANAGEMENT_DATABASE_URL=postgresql://stu:stu@localhost:5432/stu \
+      LEGACY_DATABASE_URL=postgresql://stu:stu@localhost:5433/postgres \
+      NEXT_PUBLIC_AXIOM_DATASET=local \
+      NEXT_PUBLIC_AXIOM_TOKEN=local \
+      nix run .#start-console -- --help >"$$clog" 2>&1 & \
+      pid=$$!; \
+      sleep 8; \
+      if kill -0 "$$pid" 2>/dev/null; then kill "$$pid"; fi; \
+      wait "$$pid" 2>/dev/null || true \
+    ); \
+    sed -n '1,120p' "$$clog"; \
+    rm -f "$$clog"
