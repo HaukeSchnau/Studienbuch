@@ -2,4 +2,6 @@
 
 cd $(dirname "$0")/..
 
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build --remove-orphans 
+nix run .#oci-build-archives
+nix run .#oci-load-archives
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans

@@ -32,12 +32,8 @@ services:
 
   api:
     profiles: [live]
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: api
-      secrets:
-        - npm_token
+    image: studienbuch-api:nix
+    pull_policy: never
     restart: unless-stopped
     depends_on:
       database:
@@ -58,12 +54,8 @@ services:
 
   console-cron:
     profiles: [live]
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: console-cron
-      secrets:
-        - npm_token
+    image: studienbuch-console-cron:nix
+    pull_policy: never
     depends_on:
       database:
         condition: service_healthy
@@ -93,12 +85,8 @@ services:
 
   migrations:
     # profiles: [live]
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: migrations
-      secrets:
-        - npm_token
+    image: studienbuch-migrations:nix
+    pull_policy: never
     environment:
       MANAGEMENT_DATABASE_URL: postgresql://stu:stu@database:5432/stu
     depends_on:
@@ -136,7 +124,3 @@ volumes:
   cache:
   rabbitmq_data:
   postgres_legacy_data:
-
-secrets:
-  npm_token:
-    environment: npm_token

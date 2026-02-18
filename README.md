@@ -3,13 +3,14 @@
 ## Development Setup (with `direnv`)
 ```bash
 direnv allow
-up # This will run the bin/up script and start all the services
+just dev # Builds/loads OCI images and starts local services
 ```
 
 ## Available Scripts
 ```bash
-up # Starts the entire stack
-up-reset # Starts and resets the entire stack
+just dev # OCI-first local development flow
+bin/up # Starts local services with OCI image preload
+bin/up-reset # Resets volumes, rebuilds OCI images, and starts services
 console # Allows to execute predefined commands
 visualize-deps # Visualizes the dependencies between the JS packages
 ```

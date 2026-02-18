@@ -1,5 +1,7 @@
 dev:
-    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+    nix run .#oci-build-archives
+    nix run .#oci-load-archives
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans
     open http://localhost:8081/_expo/plugins/expo-drizzle-studio-plugin
     open https://local.drizzle.studio/
     mprocs # See: mprocs.yaml, https://github.com/mirage-js/mprocs  
@@ -57,19 +59,23 @@ oci-export *ARGS:
 oci-load:
     nix run .#oci-load-archives
 
-oci-up:
+live-up:
+    nix run .#oci-build-archives
+    nix run .#oci-load-archives
     AXIOM_DATASET=$${AXIOM_DATASET:-local} AXIOM_TOKEN=$${AXIOM_TOKEN:-local} LINEAR_API_KEY=$${LINEAR_API_KEY:-local} \
-    docker compose --profile live -f docker-compose.yml -f docker-compose.oci.yml up -d --no-build
+    docker compose --profile live -f docker-compose.yml up -d --no-build --remove-orphans
 
-oci-up-dev:
+live-up-dev:
+    nix run .#oci-build-archives
+    nix run .#oci-load-archives
     AXIOM_DATASET=$${AXIOM_DATASET:-local} AXIOM_TOKEN=$${AXIOM_TOKEN:-local} LINEAR_API_KEY=$${LINEAR_API_KEY:-local} \
-    docker compose --profile live -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.oci.yml up -d --no-build
+    docker compose --profile live -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans
 
-oci-down:
-    docker compose --profile live -f docker-compose.yml -f docker-compose.oci.yml down -v
+live-down:
+    docker compose --profile live -f docker-compose.yml down -v
 
-oci-logs *ARGS:
-    docker compose --profile live -f docker-compose.yml -f docker-compose.oci.yml logs {{ARGS}}
+live-logs *ARGS:
+    docker compose --profile live -f docker-compose.yml logs {{ARGS}}
 
 nix-smoke:
     log=$$(mktemp); \
