@@ -24,18 +24,15 @@
       fi
     '';
 
-    ensureWorkspaceDeps = ''
-      if [ ! -d node_modules ]; then
-        echo "node_modules is missing. Installing dependencies with bun..."
-        bun install --frozen-lockfile
-      fi
+    installWorkspaceDeps = ''
+      bun install --frozen-lockfile --ignore-scripts
     '';
 
     buildApi = mkWorkspaceScript {
       name = "stu-build-api";
       text = ''
         ${repoPrelude}
-        ${ensureWorkspaceDeps}
+        ${installWorkspaceDeps}
 
         cd packages/api
         NODE_ENV=production bun ./build/build-node.ts
@@ -46,7 +43,7 @@
       name = "stu-build-console";
       text = ''
         ${repoPrelude}
-        ${ensureWorkspaceDeps}
+        ${installWorkspaceDeps}
 
         cd packages/console
         NODE_ENV=production bun ./build/build-node.ts
@@ -68,7 +65,7 @@
       name = "stu-migrate";
       text = ''
         ${repoPrelude}
-        ${ensureWorkspaceDeps}
+        ${installWorkspaceDeps}
 
         cd packages/db
         bunx drizzle-kit migrate --config drizzle.config.ts "$@"
