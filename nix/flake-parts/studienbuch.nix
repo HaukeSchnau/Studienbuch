@@ -117,26 +117,32 @@
       "build-api" = {
         type = "app";
         program = "${buildApi}/bin/stu-build-api";
+        meta.description = "Build the @stu/api Node bundle with Bun.";
       };
       "build-console" = {
         type = "app";
         program = "${buildConsole}/bin/stu-build-console";
+        meta.description = "Build the @stu/console Node bundle with Bun.";
       };
       "build-all" = {
         type = "app";
         program = "${buildAll}/bin/stu-build-all";
+        meta.description = "Build both API and console bundles.";
       };
       migrations = {
         type = "app";
         program = "${migrate}/bin/stu-migrate";
+        meta.description = "Run Drizzle migrations for @stu/db.";
       };
       "start-api" = {
         type = "app";
         program = "${startApi}/bin/stu-start-api";
+        meta.description = "Start the built API server.";
       };
       "start-console" = {
         type = "app";
         program = "${startConsole}/bin/stu-start-console";
+        meta.description = "Start the built console CLI.";
       };
     };
   };
