@@ -21,6 +21,7 @@
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev:internal": "tsc --watch",
     "lint": "biome check",
+    "test:live": "vitest run --config vitest.live.config.ts",
     "generate": "drizzle-kit generate",
     "push": "drizzle-kit push",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"

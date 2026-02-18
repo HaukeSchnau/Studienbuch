@@ -1,35 +1,35 @@
-// import crypto from "node:crypto";
-// import pg from "pg";
-// import { beforeAll, inject, vi } from "vitest";
+import pg from "pg";
+import { afterAll, beforeAll, beforeEach, inject } from "vitest";
 
-// // import * as exports from "@stu/db/client";
+const database = inject("database");
+process.env.MANAGEMENT_DATABASE_URL = database.connectionUri;
 
-// import { createClient } from "./client";
+let adminClient: pg.Client | undefined;
 
-// beforeAll(async ({ id }) => {
-//   // const database = inject("database");
+beforeAll(async () => {
+  adminClient = new pg.Client(database.connectionUri);
+  await adminClient.connect();
+});
 
-//   // const client = new pg.Client({
-//   //   host: database.host,
-//   //   port: database.port,
-//   //   user: database.username,
-//   //   password: database.password,
-//   // });
+beforeEach(async () => {
+  if (!adminClient) {
+    throw new Error("Test database client is not initialized");
+  }
 
-//   // const idHash = crypto.createHash("md5").update(id).digest("hex");
-//   // const testDbName = `test_${idHash}`;
+  const rows = await adminClient.query<{ tablename: string }>(
+    `SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename`,
+  );
 
-//   // await client.connect();
-//   // await client.query(`CREATE DATABASE ${testDbName} WITH TEMPLATE ${database.database};`);
+  if (rows.rows.length === 0) {
+    return;
+  }
 
-//   // const { db } = await createClient({
-//   //   host: database.host,
-//   //   port: database.port,
-//   //   user: database.username,
-//   //   password: database.password,
-//   //   database: testDbName,
-//   // });
+  const tableList = rows.rows.map(({ tablename }) => `"public"."${tablename}"`).join(", ");
+  await adminClient.query(`TRUNCATE TABLE ${tableList} RESTART IDENTITY CASCADE;`);
+});
 
-//   // vi.mock(import("@stu/db/client"), () => ({ db: null! }));
-//   // vi.spyOn(exports, "db", "get").mockReturnValue(db);
-// });
+afterAll(async () => {
+  if (adminClient) {
+    await adminClient.end();
+  }
+});
