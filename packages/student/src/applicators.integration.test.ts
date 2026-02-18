@@ -1,4 +1,11 @@
-import { ClassRepository, GradeRepository, type Student, StudentRepository } from "@stu/lib";
+import {
+  AbsenceRepository,
+  ClassRepository,
+  CourseRepository,
+  GradeRepository,
+  type Student,
+  StudentRepository,
+} from "@stu/lib";
 import { Cause, Effect, Exit } from "effect";
 import { describe, expect, test, vi } from "vitest";
 import { applicators } from "./index";
@@ -78,6 +85,36 @@ describe("student applicator tree integration", () => {
     }
   });
 
+  test("verify surfaces student.courseAssigned missing course through tree", async () => {
+    const courseRepo = {
+      doesCourseExist: () => Effect.succeed(false),
+      getCourse: () => Effect.succeed(undefined),
+      createCourse: () => Effect.void,
+    };
+
+    const exit = await Effect.runPromiseExit(
+      unsafe(
+        applicators
+          .verify(
+            {
+              type: "student.courseAssigned",
+              data: {
+                studentId,
+                courseId,
+              },
+            } as never,
+            meta(studentId),
+          )
+          .pipe(Effect.provideService(CourseRepository, courseRepo as never)),
+      ),
+    );
+
+    expect(Exit.isFailure(exit)).toBe(true);
+    if (Exit.isFailure(exit)) {
+      expect(Cause.pretty(exit.cause)).toContain("INVALID_COURSE");
+    }
+  });
+
   test("apply forwards grades.currentGradeSet to grade repository through tree", async () => {
     const setCurrentGrade = vi.fn(() => Effect.void);
     const studentRepo = {
@@ -125,6 +162,79 @@ describe("student applicator tree integration", () => {
     );
   });
 
+  test("apply routes grades.teacherApproved to grade repository through tree", async () => {
+    const setTeacherSignature = vi.fn(() => Effect.void);
+    const gradeRepo = {
+      setCurrentGrade: () => Effect.void,
+      recordWrittenGrade: () => Effect.void,
+      setTeacherSignature: setTeacherSignature,
+      setParentSignature: () => Effect.void,
+      restoreLatest: () => Effect.void,
+      discardGrade: () => Effect.void,
+    };
+
+    await Effect.runPromise(
+      unsafe(
+        applicators
+          .apply(
+            {
+              type: "grades.teacherApproved",
+              data: {
+                studentId,
+                course: courseId,
+                date: new Date("2026-01-03T00:00:00.000Z"),
+                type: "WRITTEN",
+                signature: "teacher-signature",
+              },
+            } as never,
+            meta(studentId),
+          )
+          .pipe(Effect.provideService(GradeRepository, gradeRepo as never)),
+      ),
+    );
+
+    expect(setTeacherSignature).toHaveBeenCalledWith(
+      expect.objectContaining({
+        course: courseId,
+        type: "WRITTEN",
+      }),
+    );
+  });
+
+  test("apply routes absence.discarded to absence repository through tree", async () => {
+    const deleteAbsence = vi.fn(() => Effect.void);
+    const absenceRepo = {
+      addAbsence: () => Effect.void,
+      setParentSignature: () => Effect.void,
+      setTeacherSignature: () => Effect.void,
+      deleteAbsence: deleteAbsence,
+    };
+
+    await Effect.runPromise(
+      unsafe(
+        applicators
+          .apply(
+            {
+              type: "absence.discarded",
+              data: {
+                studentId,
+                date: new Date("2026-01-03T00:00:00.000Z"),
+                courseIds: [courseId],
+              },
+            } as never,
+            meta(studentId),
+          )
+          .pipe(Effect.provideService(AbsenceRepository, absenceRepo as never)),
+      ),
+    );
+
+    expect(deleteAbsence).toHaveBeenCalledWith(
+      expect.objectContaining({
+        courseIds: [courseId],
+      }),
+    );
+  });
+
   test("apply splits student names through tree in student.joined", async () => {
     const createStudent = vi.fn(() => Effect.void);
     const studentRepo = {
@@ -157,6 +267,38 @@ describe("student applicator tree integration", () => {
       expect.objectContaining({
         firstName: "Ada",
         lastName: "Lovelace Byron",
+      }),
+    );
+  });
+
+  test("apply routes student.courseAssigned through tree", async () => {
+    const assignCourse = vi.fn(() => Effect.void);
+    const studentRepo = {
+      createStudent: () => Effect.void,
+      assignCourse: assignCourse,
+      getStudent: () => Effect.succeed(student),
+    };
+
+    await Effect.runPromise(
+      unsafe(
+        applicators
+          .apply(
+            {
+              type: "student.courseAssigned",
+              data: {
+                studentId,
+                courseId,
+              },
+            } as never,
+            meta(studentId),
+          )
+          .pipe(Effect.provideService(StudentRepository, studentRepo as never)),
+      ),
+    );
+
+    expect(assignCourse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        courseId,
       }),
     );
   });
