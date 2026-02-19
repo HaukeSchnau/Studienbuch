@@ -1,6 +1,6 @@
 [private]
 _oci-preload:
-    nix --builders '' run .#oci-load-archives
+    nix run .#oci-load-archives
 
 dev:
     just _oci-preload
@@ -60,6 +60,10 @@ nix-build-console:
 nix-dev:
     nix develop
 
+nix-builder-health:
+    nix store ping --store ssh-ng://haukeschnau@netcup-vps:2222
+    nix build -L --no-link --impure --expr 'let flake = builtins.getFlake "nixpkgs"; pkgs = import flake.outPath { system = "aarch64-linux"; }; in pkgs.runCommand "studienbuch-remote-builder-health" {} "echo ok > $out"' --extra-experimental-features 'nix-command flakes'
+
 nix-build-all:
     nix run .#build-all
 
@@ -79,7 +83,7 @@ oci-export *ARGS:
     nix run .#oci-export-archives -- {{ARGS}}
 
 oci-load *ARGS:
-    nix --builders '' run .#oci-load-archives -- {{ARGS}}
+    nix run .#oci-load-archives -- {{ARGS}}
 
 live-up:
     just _oci-preload
