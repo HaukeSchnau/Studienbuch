@@ -48,10 +48,6 @@ ios:
 install:
     bun install
 
-install-clean:
-    find . -name "node_modules" -type d -exec rm -rf {} +
-    bun install
-
 stats:
     nix develop -c cloc $(git ls-files .)
 

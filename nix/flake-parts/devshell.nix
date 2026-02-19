@@ -13,7 +13,6 @@
         pkgs.cloc
         pkgs.cocoapods
         pkgs.deadnix
-        pkgs.docker-compose
         pkgs.fd
         pkgs.git
         pkgs.jq

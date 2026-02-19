@@ -47,6 +47,7 @@ dist/
 
 # turbo
 .turbo
+.direnv
 
 .venv
 *.pyc
