@@ -77,10 +77,10 @@ nix-migrate *ARGS:
     nix run .#migrations -- {{ARGS}}
 
 oci-build:
-    nix --builders '' build .#oci-archives
+    nix build .#oci-archives
 
 oci-export *ARGS:
-    nix --builders '' run .#oci-export-archives -- {{ARGS}}
+    nix run .#oci-export-archives -- {{ARGS}}
 
 oci-load *ARGS:
     nix --builders '' run .#oci-load-archives -- {{ARGS}}
