@@ -45,8 +45,10 @@ services:
     environment:
       MANAGEMENT_DATABASE_URL: postgresql://stu:stu@database:5432/stu
       PULSAR_URL: pulsar://event-stream:6650
-      NEXT_PUBLIC_AXIOM_DATASET: $NEXT_PUBLIC_AXIOM_DATASET
-      NEXT_PUBLIC_AXIOM_TOKEN: $NEXT_PUBLIC_AXIOM_TOKEN
+      API_PORT: 80
+      LINEAR_API_KEY: ${LINEAR_API_KEY:?LINEAR_API_KEY is required}
+      NEXT_PUBLIC_AXIOM_DATASET: ${NEXT_PUBLIC_AXIOM_DATASET:?NEXT_PUBLIC_AXIOM_DATASET is required}
+      NEXT_PUBLIC_AXIOM_TOKEN: ${NEXT_PUBLIC_AXIOM_TOKEN:?NEXT_PUBLIC_AXIOM_TOKEN is required}
       CACHE_DIR: /cache
     volumes:
       - cache:/cache
@@ -67,11 +69,16 @@ services:
     init: true
     tty: true
     environment:
-      NEXT_PUBLIC_AXIOM_DATASET: $NEXT_PUBLIC_AXIOM_DATASET
-      NEXT_PUBLIC_AXIOM_TOKEN: $NEXT_PUBLIC_AXIOM_TOKEN
+      API_PORT: 80
+      LINEAR_API_KEY: ${LINEAR_API_KEY:?LINEAR_API_KEY is required}
+      NEXT_PUBLIC_AXIOM_DATASET: ${NEXT_PUBLIC_AXIOM_DATASET:?NEXT_PUBLIC_AXIOM_DATASET is required}
+      NEXT_PUBLIC_AXIOM_TOKEN: ${NEXT_PUBLIC_AXIOM_TOKEN:?NEXT_PUBLIC_AXIOM_TOKEN is required}
       PULSAR_URL: pulsar://event-stream:6650
       MANAGEMENT_DATABASE_URL: postgresql://stu:stu@database:5432/stu
       LEGACY_DATABASE_URL: postgresql://postgres:postgres@legacy-database:5432/postgres
+      UNTIS_KADMOS_NAME: ${UNTIS_KADMOS_NAME:?UNTIS_KADMOS_NAME is required}
+      UNTIS_KADMOS_USERNAME: ${UNTIS_KADMOS_USERNAME:?UNTIS_KADMOS_USERNAME is required}
+      UNTIS_KADMOS_PASSWORD: ${UNTIS_KADMOS_PASSWORD:?UNTIS_KADMOS_PASSWORD is required}
       CACHE_DIR: /cache
     volumes:
       - cache:/cache

@@ -81,12 +81,10 @@ oci-load:
 
 live-up:
     just _oci-preload
-    NEXT_PUBLIC_AXIOM_DATASET=$${NEXT_PUBLIC_AXIOM_DATASET:-local} NEXT_PUBLIC_AXIOM_TOKEN=$${NEXT_PUBLIC_AXIOM_TOKEN:-local} \
     docker compose --profile live -f docker-compose.yml up -d --no-build --remove-orphans
 
 live-up-dev:
     just _oci-preload
-    NEXT_PUBLIC_AXIOM_DATASET=$${NEXT_PUBLIC_AXIOM_DATASET:-local} NEXT_PUBLIC_AXIOM_TOKEN=$${NEXT_PUBLIC_AXIOM_TOKEN:-local} \
     docker compose --profile live -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans
 
 live-down:

@@ -22,10 +22,18 @@ const makeAbsenceRecordedEvent = (id: string, studentId: string, courseId: strin
   },
 });
 
-const makeCanonicalStorageMock = (events: DomainEvent[]) => {
+const makeCanonicalStorageMock = (
+  events: DomainEvent[],
+  options?: {
+    foreignKeyFailuresByEventId?: Record<string, number>;
+  },
+) => {
   const eventById = new Map(events.map((event) => [event.id, event] as const));
   const sentIdsByUser = new Map<string, string[]>();
   const sentIdSetByUser = new Map<string, Set<string>>();
+  const remainingForeignKeyFailuresByEventId = new Map(
+    Object.entries(options?.foreignKeyFailuresByEventId ?? {}),
+  );
 
   const service: CanonicalStorage<DomainEvent> = {
     isEventUnique: () => Effect.succeed(true),
@@ -41,6 +49,19 @@ const makeCanonicalStorageMock = (events: DomainEvent[]) => {
       }),
     markEventAsSentToUser: (eventId, userId) =>
       Effect.gen(function* () {
+        const remainingForeignKeyFailures = remainingForeignKeyFailuresByEventId.get(eventId) ?? 0;
+        if (remainingForeignKeyFailures > 0) {
+          remainingForeignKeyFailuresByEventId.set(eventId, remainingForeignKeyFailures - 1);
+          return yield* Effect.fail(
+            new CanonicalStorageError({
+              cause: {
+                type: "foreign_key_violation",
+                message: `event ${eventId} not persisted yet`,
+              },
+            }),
+          );
+        }
+
         const userSet = sentIdSetByUser.get(userId) ?? new Set<string>();
         const userIds = sentIdsByUser.get(userId) ?? [];
         if (userSet.has(eventId)) {
@@ -100,6 +121,25 @@ describe("memoryBroadcastLive", () => {
       Effect.gen(function* () {
         const broadcast = yield* DomainBroadcast;
         yield* broadcast.publishToUser(STUDENT_A, [event]);
+        yield* broadcast.publishToUser(STUDENT_A, [event]);
+      }),
+      storage.service,
+    );
+
+    expect(storage.sentIdsByUser.get(STUDENT_A)).toEqual([event.id]);
+  });
+
+  it("retries transient canonical foreign key errors and eventually publishes", async () => {
+    const event = makeAbsenceRecordedEvent("66666666-6666-4666-8666-666666666666", STUDENT_A, COURSE_A, new Date(6));
+    const storage = makeCanonicalStorageMock([event], {
+      foreignKeyFailuresByEventId: {
+        [event.id]: 2,
+      },
+    });
+
+    await runBroadcastProgram(
+      Effect.gen(function* () {
+        const broadcast = yield* DomainBroadcast;
         yield* broadcast.publishToUser(STUDENT_A, [event]);
       }),
       storage.service,

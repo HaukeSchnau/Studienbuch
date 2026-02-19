@@ -1,4 +1,5 @@
 import { BroadcastError } from "@groundswell/core-server";
+import type { CanonicalStorage } from "@groundswell/core-server";
 import type { DomainEvent } from "@stu/lib";
 import { Effect, Layer, PubSub, Stream } from "effect";
 import { Offset } from "rabbitmq-stream-js-client";
@@ -6,28 +7,46 @@ import superjson from "superjson";
 import { DomainBroadcast, DomainCanonicalStorage } from "./boilerplate";
 import { RabbitMQClient } from "./rabbitmq";
 
+const isCanonicalStorageCauseType = (error: { cause: unknown }, expectedType: string) =>
+  typeof error.cause === "object" &&
+  error.cause !== null &&
+  "type" in error.cause &&
+  error.cause.type === expectedType;
+
+const createMarkEventAsSentToUser =
+  (
+    canonicalStorage: CanonicalStorage<DomainEvent>,
+    layerName: "memory" | "rabbitmq",
+  ) =>
+  (eventId: string, userId: string, attempt = 0): Effect.Effect<boolean, BroadcastError> =>
+    canonicalStorage.markEventAsSentToUser(eventId, userId).pipe(
+      Effect.as(true),
+      Effect.catchTag("CanonicalStorageError", (error) => {
+        if (isCanonicalStorageCauseType(error, "unique_violation")) {
+          // Event was already marked as sent for this user. We skip re-publishing.
+          return Effect.succeed(false);
+        }
+        if (isCanonicalStorageCauseType(error, "foreign_key_violation")) {
+          if (attempt < 5) {
+            return Effect.sleep("100 millis").pipe(
+              Effect.flatMap(() => createMarkEventAsSentToUser(canonicalStorage, layerName)(eventId, userId, attempt + 1)),
+            );
+          }
+          return Effect.logWarning(
+            `[${layerName} broadcast] Skipping publish for event ${eventId} and user ${userId}: canonical event row not available after retries`,
+          ).pipe(Effect.as(false));
+        }
+        return Effect.fail(new BroadcastError({ cause: error }));
+      }),
+    );
+
 export const memoryBroadcastLive = Layer.effect(
   DomainBroadcast,
   Effect.gen(function* () {
     const pubsub = yield* PubSub.unbounded<{ userId: string; event: DomainEvent }>();
     const canonicalStorage = yield* DomainCanonicalStorage;
 
-    const markEventAsSentToUser = (eventId: string, userId: string) =>
-      canonicalStorage.markEventAsSentToUser(eventId, userId).pipe(
-        Effect.as(true),
-        Effect.catchTag("CanonicalStorageError", (error) => {
-          if (
-            typeof error.cause === "object" &&
-            error.cause !== null &&
-            "type" in error.cause &&
-            error.cause.type === "unique_violation"
-          ) {
-            // Event was already marked as sent for this user. We skip re-publishing.
-            return Effect.succeed(false);
-          }
-          return Effect.fail(new BroadcastError({ cause: error }));
-        }),
-      );
+    const markEventAsSentToUser = createMarkEventAsSentToUser(canonicalStorage, "memory");
 
     return DomainBroadcast.of({
       publishToUser: Effect.fn(function* (userId, events) {
@@ -70,21 +89,7 @@ export const rabbitmqBroadcastLive = Layer.effect(
     const client = yield* RabbitMQClient;
     const canonicalStorage = yield* DomainCanonicalStorage;
 
-    const markEventAsSentToUser = (eventId: string, userId: string) =>
-      canonicalStorage.markEventAsSentToUser(eventId, userId).pipe(
-        Effect.as(true),
-        Effect.catchTag("CanonicalStorageError", (error) => {
-          if (
-            typeof error.cause === "object" &&
-            error.cause !== null &&
-            "type" in error.cause &&
-            error.cause.type === "unique_violation"
-          ) {
-            return Effect.succeed(false);
-          }
-          return Effect.fail(new BroadcastError({ cause: error }));
-        }),
-      );
+    const markEventAsSentToUser = createMarkEventAsSentToUser(canonicalStorage, "rabbitmq");
 
     return DomainBroadcast.of({
       publishToUser: Effect.fn(
