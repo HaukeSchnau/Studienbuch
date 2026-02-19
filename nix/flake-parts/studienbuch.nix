@@ -29,6 +29,9 @@
     '';
 
     installWorkspaceDeps = ''
+      export NPM_CONFIG_REGISTRY="https://npm.schnau.dev/"
+      export BUN_CONFIG_REGISTRY="https://npm.schnau.dev/"
+
       attempts=0
       until bun install --frozen-lockfile --ignore-scripts; do
         attempts=$((attempts + 1))
@@ -114,24 +117,17 @@
       '';
     };
 
-    nodeBaseImageDigest = "sha256:e4bf2a82ad0a4037d28035ae71529873c069b13eb0455466ae0bc13363826e34";
-    nodeBaseImageArch =
-      if pkgs.stdenv.hostPlatform.isAarch64
-      then "arm64"
-      else "amd64";
-    nodeBaseImageHash =
-      if pkgs.stdenv.hostPlatform.isAarch64
-      then "sha256-DhT9Z7Lq3K9ATe3AbPCUGSnFBUSVtIV3oELcb3RZ5eo="
-      else "sha256-EsXJmc+L0jaJqJWnvcv2ZLIMbw5DWHrn6q1NzU2l6Is=";
-    nodeBaseImage = pkgs.dockerTools.pullImage {
-      imageName = "node";
-      imageDigest = nodeBaseImageDigest;
-      hash = nodeBaseImageHash;
-      finalImageName = "node";
-      finalImageTag = "22-alpine";
-      os = "linux";
-      arch = nodeBaseImageArch;
-    };
+    linuxPkgs = import pkgs.path {system = "aarch64-linux";};
+    buildHostSystem =
+      if builtins ? currentSystem
+      then builtins.currentSystem
+      else "aarch64-darwin";
+    buildHostPkgs = import pkgs.path {system = buildHostSystem;};
+    nodeBin = "${linuxPkgs.nodejs_22}/bin/node";
+    runtimeEnv = [
+      "NODE_ENV=production"
+      "SSL_CERT_FILE=${linuxPkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+    ];
 
     ociPackages = let
       repoRoot = ../..;
@@ -148,16 +144,16 @@
         ];
       };
 
-      workspaceArtifacts = pkgs.stdenvNoCC.mkDerivation {
+      workspaceArtifacts = buildHostPkgs.stdenvNoCC.mkDerivation {
         pname = "studienbuch-live-artifacts";
         version = "0.1.0";
         src = workspaceSrc;
         nativeBuildInputs = [
-          pkgs.bun
-          pkgs.coreutils
-          pkgs.findutils
-          pkgs.nodejs_22
-          pkgs.rsync
+          buildHostPkgs.bun
+          buildHostPkgs.coreutils
+          buildHostPkgs.findutils
+          buildHostPkgs.nodejs_22
+          buildHostPkgs.rsync
         ];
 
         dontConfigure = true;
@@ -233,6 +229,12 @@
         '';
       };
 
+      runtimeRootfs = pkgs.runCommand "studienbuch-runtime-rootfs" {} ''
+        mkdir -p "$out/bin" "$out/tmp" "$out/var/spool/cron/crontabs"
+        ln -s ${linuxPkgs.runtimeShell} "$out/bin/sh"
+        chmod 1777 "$out/tmp"
+      '';
+
       apiRootfs = pkgs.runCommand "studienbuch-api-rootfs" {} ''
         mkdir -p "$out/app"
         cp -R ${workspaceArtifacts}/api/dist/. "$out/app/"
@@ -242,9 +244,9 @@
         mkdir -p "$out/app" "$out/bin"
         cp -R ${workspaceArtifacts}/console/dist/. "$out/app/"
         cat > "$out/bin/console" <<'SCRIPT'
-        #!/bin/sh
+        #!${linuxPkgs.runtimeShell}
         cd /app
-        exec /usr/local/bin/node console.js "$@"
+        exec ${nodeBin} console.js "$@"
         SCRIPT
         chmod +x "$out/bin/console"
       '';
@@ -339,17 +341,22 @@
         cp -R ${workspaceArtifacts}/admin-panel/public "$out/app/packages/admin-panel/public"
       '';
 
-      baseImageEnv = ["NODE_ENV=production"];
-
       mkImage = {
         name,
         contents,
         config,
+        extraContents ? [],
       }:
-        pkgs.dockerTools.buildLayeredImage {
+        linuxPkgs.dockerTools.buildLayeredImage {
           inherit name config;
-          inherit contents;
-          fromImage = nodeBaseImage;
+          contents =
+            [
+              runtimeRootfs
+              linuxPkgs.cacert
+              linuxPkgs.nodejs_22
+            ]
+            ++ extraContents
+            ++ contents;
           tag = "nix";
           created = "1970-01-01T00:00:01Z";
         };
@@ -359,23 +366,31 @@
         contents = [apiRootfs];
         config = {
           Env =
-            baseImageEnv
+            runtimeEnv
             ++ [
               "PORT=80"
               "API_PORT=80"
             ];
           WorkingDir = "/app";
-          Entrypoint = ["/usr/local/bin/node" "node.js"];
+          Entrypoint = [nodeBin "node.js"];
         };
       };
 
       consoleCronImage = mkImage {
         name = "studienbuch-console-cron";
         contents = [consoleRootfs];
+        extraContents = [linuxPkgs.busybox];
         config = {
-          Env = baseImageEnv;
+          Env = runtimeEnv;
           WorkingDir = "/app";
-          Entrypoint = ["crond" "-f" "-l" "0"];
+          Entrypoint = [
+            "${linuxPkgs.busybox}/bin/crond"
+            "-f"
+            "-l"
+            "0"
+            "-c"
+            "/var/spool/cron/crontabs"
+          ];
         };
       };
 
@@ -383,9 +398,9 @@
         name = "studienbuch-migrations";
         contents = [migrationsRootfs];
         config = {
-          Env = baseImageEnv;
+          Env = runtimeEnv;
           WorkingDir = "/app";
-          Entrypoint = ["/usr/local/bin/node" "/app/migrate.js"];
+          Entrypoint = [nodeBin "/app/migrate.js"];
         };
       };
 
@@ -394,12 +409,12 @@
         contents = [nextjsRootfs];
         config = {
           Env =
-            baseImageEnv
+            runtimeEnv
             ++ [
               "PORT=80"
             ];
           WorkingDir = "/app/packages/nextjs";
-          Entrypoint = ["/usr/local/bin/node" "server.js"];
+          Entrypoint = [nodeBin "server.js"];
         };
       };
 
@@ -408,12 +423,12 @@
         contents = [adminPanelRootfs];
         config = {
           Env =
-            baseImageEnv
+            runtimeEnv
             ++ [
               "PORT=80"
             ];
           WorkingDir = "/app/packages/admin-panel";
-          Entrypoint = ["/usr/local/bin/node" ".output/server/index.mjs"];
+          Entrypoint = [nodeBin ".output/server/index.mjs"];
         };
       };
 
