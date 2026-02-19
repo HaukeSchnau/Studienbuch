@@ -12,8 +12,11 @@ dev:
     # Clean up after dev
     docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 
+console *ARGS:
+    bun packages/console/src/console.ts {{ARGS}}
+
 seed: 
-    bin/console pull igs-lil
+    just console pull igs-lil
 
 check:
     bun run typecheck

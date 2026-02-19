@@ -14,4 +14,5 @@ just live-up-dev # Start live-profile stack with dev port bindings
 just live-down # Stop and remove live-profile stack
 just oci-export # Export OCI archives to .artifacts/oci
 just oci-load # Load OCI archives into local Docker daemon
+just console -- --help # Run console CLI commands
 ```
