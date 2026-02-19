@@ -1,5 +1,9 @@
 {...}: {
-  perSystem = {pkgs, ...}: let
+  perSystem = {
+    pkgs,
+    lib,
+    ...
+  }: let
     mkWorkspaceScript = {
       name,
       text,
@@ -61,105 +65,6 @@
       '';
     };
 
-    buildOciArchives = mkWorkspaceScript {
-      name = "stu-build-oci-archives";
-      runtimeInputs = [buildAll pkgs.findutils];
-      text = ''
-        ${repoPrelude}
-
-        platform=''${STU_OCI_PLATFORM:-linux/arm64}
-        out_dir=''${1:-./.artifacts/oci}
-        tmp_dir="$(mktemp -d)"
-        trap 'rm -rf "$tmp_dir"' EXIT
-
-        stu-build-all
-        mkdir -p "$out_dir"
-
-        mkdir -p "$tmp_dir/api/app"
-        cp -R packages/api/dist/. "$tmp_dir/api/app/"
-        cat > "$tmp_dir/api/Dockerfile" <<'EOF'
-        FROM node:22-alpine
-        WORKDIR /app
-        COPY app/ /app/
-        ENV NODE_ENV=production
-        ENV PORT=80
-        ENV API_PORT=80
-        ENTRYPOINT ["node", "node.js"]
-        EOF
-        docker buildx build \
-          --platform "$platform" \
-          --output "type=oci,dest=$out_dir/studienbuch-api-nix.oci.tar" \
-          --file "$tmp_dir/api/Dockerfile" \
-          "$tmp_dir/api"
-
-        mkdir -p "$tmp_dir/console/app"
-        cp -R packages/console/dist/. "$tmp_dir/console/app/"
-        cat > "$tmp_dir/console/Dockerfile" <<'EOF'
-        FROM node:22-alpine
-        WORKDIR /app
-        COPY app/ /app/
-        RUN echo 'cd /app && node console.js "$@"' > /bin/console && chmod +x /bin/console
-        ENV NODE_ENV=production
-        ENTRYPOINT ["crond", "-f", "-l", "0"]
-        EOF
-        docker buildx build \
-          --platform "$platform" \
-          --output "type=oci,dest=$out_dir/studienbuch-console-cron-nix.oci.tar" \
-          --file "$tmp_dir/console/Dockerfile" \
-          "$tmp_dir/console"
-
-        mkdir -p "$tmp_dir/migrations/app/packages/db"
-        cp -R packages/db/drizzle "$tmp_dir/migrations/app/packages/db/drizzle"
-        cp packages/db/drizzle.config.ts "$tmp_dir/migrations/app/packages/db/drizzle.config.ts"
-        cat > "$tmp_dir/migrations/Dockerfile" <<'EOF'
-        FROM oven/bun:1-alpine
-        WORKDIR /app/packages/db
-        RUN bun install -g drizzle-kit@0.31.4 drizzle-orm@0.44.4 pg@8.14.1
-        COPY app/packages/db/drizzle.config.ts /app/packages/db/drizzle.config.ts
-        COPY app/packages/db/drizzle /app/packages/db/drizzle
-        ENV NODE_ENV=production
-        ENTRYPOINT ["drizzle-kit", "migrate", "--config", "/app/packages/db/drizzle.config.ts"]
-        EOF
-        docker buildx build \
-          --platform "$platform" \
-          --output "type=oci,dest=$out_dir/studienbuch-migrations-nix.oci.tar" \
-          --file "$tmp_dir/migrations/Dockerfile" \
-          "$tmp_dir/migrations"
-      '';
-    };
-
-    exportOciArchives = mkWorkspaceScript {
-      name = "stu-export-oci-archives";
-      runtimeInputs = [buildOciArchives];
-      text = ''
-        ${repoPrelude}
-        out_dir=''${1:-./.artifacts/oci}
-        stu-build-oci-archives "$out_dir"
-      '';
-    };
-
-    loadOciArchives = mkWorkspaceScript {
-      name = "stu-load-oci-archives";
-      runtimeInputs = [pkgs.skopeo];
-      text = ''
-        ${repoPrelude}
-
-        archive_dir=''${1:-./.artifacts/oci}
-        api_archive="$archive_dir/studienbuch-api-nix.oci.tar"
-        console_archive="$archive_dir/studienbuch-console-cron-nix.oci.tar"
-        migrations_archive="$archive_dir/studienbuch-migrations-nix.oci.tar"
-
-        if [ ! -f "$api_archive" ] || [ ! -f "$console_archive" ] || [ ! -f "$migrations_archive" ]; then
-          echo "Missing OCI archives under $archive_dir. Run: nix run .#oci-build-archives"
-          exit 1
-        fi
-
-        skopeo --insecure-policy copy "oci-archive:$api_archive" docker-daemon:studienbuch-api:nix
-        skopeo --insecure-policy copy "oci-archive:$console_archive" docker-daemon:studienbuch-console-cron:nix
-        skopeo --insecure-policy copy "oci-archive:$migrations_archive" docker-daemon:studienbuch-migrations:nix
-      '';
-    };
-
     migrate = mkWorkspaceScript {
       name = "stu-migrate";
       text = ''
@@ -198,8 +103,357 @@
         exec node packages/console/dist/console.js "$@"
       '';
     };
-  in {
-    packages = {
+
+    defaultOciSystem = pkgs.stdenv.hostPlatform.system;
+
+    nodeBaseImageDigest = "sha256:e4bf2a82ad0a4037d28035ae71529873c069b13eb0455466ae0bc13363826e34";
+    nodeBaseImageArch =
+      if pkgs.stdenv.hostPlatform.isAarch64
+      then "arm64"
+      else "amd64";
+    nodeBaseImageHash =
+      if pkgs.stdenv.hostPlatform.isAarch64
+      then "sha256-DhT9Z7Lq3K9ATe3AbPCUGSnFBUSVtIV3oELcb3RZ5eo="
+      else "sha256-EsXJmc+L0jaJqJWnvcv2ZLIMbw5DWHrn6q1NzU2l6Is=";
+    nodeBaseImage = pkgs.dockerTools.pullImage {
+      imageName = "node";
+      imageDigest = nodeBaseImageDigest;
+      hash = nodeBaseImageHash;
+      finalImageName = "node";
+      finalImageTag = "22-alpine";
+      os = "linux";
+      arch = nodeBaseImageArch;
+    };
+
+    ociPackages = let
+      repoRoot = ../..;
+      workspaceSrc = lib.fileset.toSource {
+        root = repoRoot;
+        fileset = lib.fileset.unions [
+          (repoRoot + /package.json)
+          (repoRoot + /bun.lock)
+          (repoRoot + /bunfig.toml)
+          (repoRoot + /turbo.json)
+          (repoRoot + /patches)
+          (repoRoot + /packages)
+          (repoRoot + /tooling)
+        ];
+      };
+
+      workspaceArtifacts = pkgs.stdenvNoCC.mkDerivation {
+        pname = "studienbuch-live-artifacts";
+        version = "0.1.0";
+        src = workspaceSrc;
+        nativeBuildInputs = [
+          pkgs.bun
+          pkgs.coreutils
+          pkgs.findutils
+          pkgs.nodejs_22
+          pkgs.rsync
+        ];
+
+        dontConfigure = true;
+
+        buildPhase = ''
+          runHook preBuild
+
+          cp -R "$src"/. .
+          chmod -R +w .
+
+          export HOME="$TMPDIR/home"
+          export XDG_CACHE_HOME="$TMPDIR/xdg-cache"
+          mkdir -p "$HOME" "$XDG_CACHE_HOME" "$TMPDIR/stu-cache"
+
+          bun install --frozen-lockfile --ignore-scripts
+
+          (
+            cd packages/api
+            NODE_ENV=production bun ./build/build-node.ts
+          )
+
+          (
+            cd packages/console
+            NODE_ENV=production bun ./build/build-node.ts
+          )
+
+          (
+            cd packages/nextjs
+            NODE_ENV=production \
+            BASE_URL=http://localhost:3000 \
+            PORT=3000 \
+            NEXT_PUBLIC_DEPLOYMENT_ENV=dev \
+            MANAGEMENT_DATABASE_URL=postgresql://stu:stu@localhost:5432/stu \
+            PULSAR_URL=rabbitmq-stream://localhost:5552 \
+            API_PORT=3001 \
+              LINEAR_API_KEY=local \
+              CACHE_DIR="$TMPDIR/stu-cache" \
+              NEXT_PUBLIC_AXIOM_DATASET=local \
+              NEXT_PUBLIC_AXIOM_TOKEN=local \
+                bun x next build --experimental-build-mode=compile
+            )
+
+          (
+            cd packages/admin-panel
+            NODE_ENV=production \
+            MANAGEMENT_DATABASE_URL=postgresql://stu:stu@localhost:5432/stu \
+              bun run build
+          )
+
+          runHook postBuild
+        '';
+
+        installPhase = ''
+            runHook preInstall
+
+            mkdir -p "$out/api" "$out/console" "$out/migrations" "$out/nextjs" "$out/admin-panel"
+
+            cp -R packages/api/dist "$out/api/dist"
+            cp -R packages/console/dist "$out/console/dist"
+
+            cp packages/db/drizzle.config.ts "$out/migrations/drizzle.config.ts"
+            cp -R packages/db/drizzle "$out/migrations/drizzle"
+            cp -R node_modules "$out/migrations/node_modules"
+            find "$out/migrations/node_modules" -xtype l -delete
+
+            cp -R packages/nextjs/.next/standalone "$out/nextjs/standalone"
+            cp -R packages/nextjs/.next/static "$out/nextjs/static"
+
+          cp -R packages/admin-panel/.output "$out/admin-panel/.output"
+          cp -R packages/admin-panel/public "$out/admin-panel/public"
+
+          runHook postInstall
+        '';
+      };
+
+      apiRootfs = pkgs.runCommand "studienbuch-api-rootfs" {} ''
+        mkdir -p "$out/app"
+        cp -R ${workspaceArtifacts}/api/dist/. "$out/app/"
+      '';
+
+      consoleRootfs = pkgs.runCommand "studienbuch-console-rootfs" {} ''
+        mkdir -p "$out/app" "$out/bin"
+        cp -R ${workspaceArtifacts}/console/dist/. "$out/app/"
+        cat > "$out/bin/console" <<'SCRIPT'
+        #!/bin/sh
+        cd /app
+        exec /usr/local/bin/node console.js "$@"
+        SCRIPT
+        chmod +x "$out/bin/console"
+      '';
+
+      migrationsRootfs = pkgs.runCommand "studienbuch-migrations-rootfs" {} ''
+        mkdir -p "$out/app/packages/db" "$out/app"
+        cp ${workspaceArtifacts}/migrations/drizzle.config.ts "$out/app/packages/db/drizzle.config.ts"
+        cp -R ${workspaceArtifacts}/migrations/drizzle "$out/app/packages/db/drizzle"
+        cp -R ${workspaceArtifacts}/migrations/node_modules "$out/app/node_modules"
+      '';
+
+      nextjsRootfs = pkgs.runCommand "studienbuch-nextjs-rootfs" {} ''
+        mkdir -p "$out/app/packages/nextjs/.next"
+        cp -R ${workspaceArtifacts}/nextjs/standalone/. "$out/app/"
+        cp -R ${workspaceArtifacts}/nextjs/static "$out/app/packages/nextjs/.next/static"
+      '';
+
+      adminPanelRootfs = pkgs.runCommand "studienbuch-admin-panel-rootfs" {} ''
+        mkdir -p "$out/app/packages/admin-panel"
+        cp -R ${workspaceArtifacts}/admin-panel/.output "$out/app/packages/admin-panel/.output"
+        cp -R ${workspaceArtifacts}/admin-panel/public "$out/app/packages/admin-panel/public"
+      '';
+
+      mkImage = {
+        name,
+        contents,
+        config,
+      }:
+        pkgs.dockerTools.buildLayeredImage {
+          inherit name contents config;
+          fromImage = nodeBaseImage;
+          tag = "nix";
+          created = "1970-01-01T00:00:01Z";
+        };
+
+      apiImage = mkImage {
+        name = "studienbuch-api";
+        contents = [apiRootfs];
+        config = {
+          Env = [
+            "NODE_ENV=production"
+            "PORT=80"
+            "API_PORT=80"
+          ];
+          WorkingDir = "/app";
+          Entrypoint = ["/usr/local/bin/node" "node.js"];
+        };
+      };
+
+      consoleCronImage = mkImage {
+        name = "studienbuch-console-cron";
+        contents = [consoleRootfs];
+        config = {
+          Env = ["NODE_ENV=production"];
+          WorkingDir = "/app";
+          Entrypoint = ["crond" "-f" "-l" "0"];
+        };
+      };
+
+      migrationsImage = mkImage {
+        name = "studienbuch-migrations";
+        contents = [migrationsRootfs];
+        config = {
+          Env = ["NODE_ENV=production"];
+          WorkingDir = "/app/packages/db";
+          Entrypoint = ["/usr/local/bin/node" "/app/node_modules/drizzle-kit/bin.cjs" "migrate" "--config" "/app/packages/db/drizzle.config.ts"];
+        };
+      };
+
+      nextjsImage = mkImage {
+        name = "studienbuch-nextjs";
+        contents = [nextjsRootfs];
+        config = {
+          Env = [
+            "NODE_ENV=production"
+            "PORT=80"
+          ];
+          WorkingDir = "/app/packages/nextjs";
+          Entrypoint = ["/usr/local/bin/node" "server.js"];
+        };
+      };
+
+      adminPanelImage = mkImage {
+        name = "studienbuch-admin-panel";
+        contents = [adminPanelRootfs];
+        config = {
+          Env = [
+            "NODE_ENV=production"
+            "PORT=80"
+          ];
+          WorkingDir = "/app/packages/admin-panel";
+          Entrypoint = ["/usr/local/bin/node" ".output/server/index.mjs"];
+        };
+      };
+
+      mkOciArchive = {
+        image,
+        imageName,
+        archiveName,
+      }:
+        pkgs.runCommand archiveName {
+          nativeBuildInputs = [pkgs.skopeo];
+        } ''
+          skopeo --insecure-policy copy \
+            "docker-archive:${image}" \
+            "oci-archive:$out:${imageName}:nix"
+        '';
+
+      apiOciArchive = mkOciArchive {
+        image = apiImage;
+        imageName = "studienbuch-api";
+        archiveName = "studienbuch-api-nix.oci.tar";
+      };
+
+      consoleOciArchive = mkOciArchive {
+        image = consoleCronImage;
+        imageName = "studienbuch-console-cron";
+        archiveName = "studienbuch-console-cron-nix.oci.tar";
+      };
+
+      migrationsOciArchive = mkOciArchive {
+        image = migrationsImage;
+        imageName = "studienbuch-migrations";
+        archiveName = "studienbuch-migrations-nix.oci.tar";
+      };
+
+      nextjsOciArchive = mkOciArchive {
+        image = nextjsImage;
+        imageName = "studienbuch-nextjs";
+        archiveName = "studienbuch-nextjs-nix.oci.tar";
+      };
+
+      adminPanelOciArchive = mkOciArchive {
+        image = adminPanelImage;
+        imageName = "studienbuch-admin-panel";
+        archiveName = "studienbuch-admin-panel-nix.oci.tar";
+      };
+
+      ociArchives = pkgs.runCommand "studienbuch-oci-archives" {} ''
+        mkdir -p "$out"
+        cp ${apiOciArchive} "$out/studienbuch-api-nix.oci.tar"
+        cp ${consoleOciArchive} "$out/studienbuch-console-cron-nix.oci.tar"
+        cp ${migrationsOciArchive} "$out/studienbuch-migrations-nix.oci.tar"
+        cp ${nextjsOciArchive} "$out/studienbuch-nextjs-nix.oci.tar"
+        cp ${adminPanelOciArchive} "$out/studienbuch-admin-panel-nix.oci.tar"
+      '';
+    in {
+      "image-api" = apiImage;
+      "image-console-cron" = consoleCronImage;
+      "image-migrations" = migrationsImage;
+      "image-nextjs" = nextjsImage;
+      "image-admin-panel" = adminPanelImage;
+
+      "oci-api-archive" = apiOciArchive;
+      "oci-console-cron-archive" = consoleOciArchive;
+      "oci-migrations-archive" = migrationsOciArchive;
+      "oci-nextjs-archive" = nextjsOciArchive;
+      "oci-admin-panel-archive" = adminPanelOciArchive;
+
+      "oci-archives" = ociArchives;
+    };
+
+    buildOciArchives = mkWorkspaceScript {
+      name = "stu-build-oci-archives";
+      runtimeInputs = [pkgs.nix pkgs.findutils];
+      text = ''
+        ${repoPrelude}
+
+        target_system=''${STU_OCI_SYSTEM:-${defaultOciSystem}}
+        out_dir=''${1:-./.artifacts/oci}
+        out_link="$(mktemp -u ./result-oci-XXXXXX)"
+        trap 'rm -f "$out_link"' EXIT
+
+        nix build --builders "" ".#packages.$target_system.oci-archives" --out-link "$out_link"
+
+        mkdir -p "$out_dir"
+        find "$out_link" -maxdepth 1 -type f -name '*.oci.tar' -exec cp {} "$out_dir" \;
+      '';
+    };
+
+    exportOciArchives = mkWorkspaceScript {
+      name = "stu-export-oci-archives";
+      runtimeInputs = [buildOciArchives];
+      text = ''
+        ${repoPrelude}
+        out_dir=''${1:-./.artifacts/oci}
+        stu-build-oci-archives "$out_dir"
+      '';
+    };
+
+    loadOciArchives = mkWorkspaceScript {
+      name = "stu-load-oci-archives";
+      runtimeInputs = [pkgs.skopeo];
+      text = ''
+        ${repoPrelude}
+
+        archive_dir=''${1:-./.artifacts/oci}
+        api_archive="$archive_dir/studienbuch-api-nix.oci.tar"
+        console_archive="$archive_dir/studienbuch-console-cron-nix.oci.tar"
+        migrations_archive="$archive_dir/studienbuch-migrations-nix.oci.tar"
+        nextjs_archive="$archive_dir/studienbuch-nextjs-nix.oci.tar"
+        admin_panel_archive="$archive_dir/studienbuch-admin-panel-nix.oci.tar"
+
+        if [ ! -f "$api_archive" ] || [ ! -f "$console_archive" ] || [ ! -f "$migrations_archive" ] || [ ! -f "$nextjs_archive" ] || [ ! -f "$admin_panel_archive" ]; then
+          echo "Missing OCI archives under $archive_dir. Run: nix run .#oci-build-archives"
+          exit 1
+        fi
+
+        skopeo --insecure-policy copy "oci-archive:$api_archive" docker-daemon:studienbuch-api:nix
+        skopeo --insecure-policy copy "oci-archive:$console_archive" docker-daemon:studienbuch-console-cron:nix
+        skopeo --insecure-policy copy "oci-archive:$migrations_archive" docker-daemon:studienbuch-migrations:nix
+        skopeo --insecure-policy copy "oci-archive:$nextjs_archive" docker-daemon:studienbuch-nextjs:nix
+        skopeo --insecure-policy copy "oci-archive:$admin_panel_archive" docker-daemon:studienbuch-admin-panel:nix
+      '';
+    };
+
+    basePackages = {
       "build-api" = buildApi;
       "build-console" = buildConsole;
       "build-all" = buildAll;
@@ -211,6 +465,8 @@
       "start-console" = startConsole;
       default = buildAll;
     };
+  in {
+    packages = basePackages // ociPackages;
 
     apps = {
       "build-api" = {
@@ -231,7 +487,7 @@
       "oci-build-archives" = {
         type = "app";
         program = "${buildOciArchives}/bin/stu-build-oci-archives";
-        meta.description = "Build local OCI archives for API, console-cron, and migrations.";
+        meta.description = "Build local OCI archives for API, console-cron, migrations, Next.js, and TanStack Start entirely through Nix dockerTools outputs.";
       };
       "oci-export-archives" = {
         type = "app";
@@ -241,7 +497,7 @@
       "oci-load-archives" = {
         type = "app";
         program = "${loadOciArchives}/bin/stu-load-oci-archives";
-        meta.description = "Load OCI archives into the local Docker daemon.";
+        meta.description = "Load OCI archives (API, console-cron, migrations, Next.js, TanStack Start) into the local Docker daemon.";
       };
       migrations = {
         type = "app";

@@ -1,13 +1,17 @@
-import { createBase } from "@stu/api";
-import { handle } from "hono/vercel";
+export const dynamic = "force-dynamic";
 
-const api = createBase("/api");
-const handler = handle(api);
+const disabled = () =>
+  new Response(JSON.stringify({ error: "Legacy API route disabled. Use /api/trpc." }), {
+    status: 410,
+    headers: {
+      "content-type": "application/json",
+    },
+  });
 
-export const GET = handler;
-export const POST = handler;
-export const PUT = handler;
-export const PATCH = handler;
-export const DELETE = handler;
-export const HEAD = handler;
-export const OPTIONS = handler;
+export const GET = disabled;
+export const POST = disabled;
+export const PUT = disabled;
+export const PATCH = disabled;
+export const DELETE = disabled;
+export const HEAD = disabled;
+export const OPTIONS = disabled;

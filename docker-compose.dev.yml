@@ -2,3 +2,11 @@ services:
   api:
     ports:
       - ${STU_API_PORT:-3001}:80
+
+  nextjs:
+    ports:
+      - ${STU_NEXTJS_PORT:-3000}:80
+
+  admin-panel:
+    ports:
+      - ${STU_ADMIN_PANEL_PORT:-3002}:80

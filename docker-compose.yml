@@ -64,6 +64,73 @@ services:
     volumes:
       - cache:/cache
 
+  nextjs:
+    profiles: [live]
+    image: studienbuch-nextjs:nix
+    pull_policy: never
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+      event-stream:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 80
+      BASE_URL: ${NEXTJS_BASE_URL:-http://localhost:3000}
+      NEXT_PUBLIC_DEPLOYMENT_ENV: ${NEXT_PUBLIC_DEPLOYMENT_ENV:-dev}
+      MANAGEMENT_DATABASE_URL: postgresql://stu:stu@database:5432/stu
+      PULSAR_URL: rabbitmq-stream://event-stream:5552
+      API_PORT: 80
+      LINEAR_API_KEY: ${LINEAR_API_KEY:?LINEAR_API_KEY is required}
+      NEXT_PUBLIC_AXIOM_DATASET: ${NEXT_PUBLIC_AXIOM_DATASET:?NEXT_PUBLIC_AXIOM_DATASET is required}
+      NEXT_PUBLIC_AXIOM_TOKEN: ${NEXT_PUBLIC_AXIOM_TOKEN:?NEXT_PUBLIC_AXIOM_TOKEN is required}
+      CACHE_DIR: /cache
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1/').then((r)=>process.exit(r.status < 400 ? 0 : 1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - cache:/cache
+
+  admin-panel:
+    profiles: [live]
+    image: studienbuch-admin-panel:nix
+    pull_policy: never
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      PORT: 80
+      MANAGEMENT_DATABASE_URL: postgresql://stu:stu@database:5432/stu
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost/').then((r)=>process.exit(r.status < 400 ? 0 : 1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
   console-cron:
     profiles: [live]
     image: studienbuch-console-cron:nix

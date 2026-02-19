@@ -31,7 +31,7 @@ just install
 just live-up-dev
 ```
 
-This default keeps host port exposure minimal (API only).
+This default exposes only the app-facing ports (API + Next.js + TanStack Start).
 Use debug host bindings only when needed:
 ```bash
 just live-up-dev-debug
@@ -39,6 +39,8 @@ just live-up-dev-debug
 
 Useful follow-up commands:
 - `just live-health`
+- `just live-health-web`
+- `just live-health-all`
 - `just live-logs api`
 - `just live-logs console-cron`
 
@@ -62,8 +64,10 @@ just live-down
 ```
 
 ## Port Overrides (optional)
-When default host ports are occupied, override this env var before `live-up-dev`:
+When default host ports are occupied, override these env vars before `live-up-dev`:
 - `STU_API_PORT`
+- `STU_NEXTJS_PORT`
+- `STU_ADMIN_PANEL_PORT`
 
 When using `live-up-dev-debug`, you can additionally override:
 - `STU_DATABASE_PORT`

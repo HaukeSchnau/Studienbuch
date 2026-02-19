@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito } from "next/font/google";
 import localFont from "next/font/local";
 
 import "./globals.css";
@@ -10,11 +9,6 @@ import type { ReactNode } from "react";
 import { Theme } from "~/components/Theme";
 import { env } from "~/env";
 import { TRPCReactProvider } from "~/infrastructure/trpc/react";
-
-const fontSans = Nunito({
-  subsets: ["latin"],
-  variable: "--font-nunito",
-});
 
 const materialIcons = localFont({
   src: "./MaterialSymbolsRounded.woff2",
@@ -76,7 +70,7 @@ export default function Layout(props: { children: ReactNode }) {
     <html lang="de">
       <AxiomWebVitals />
 
-      <body className={["font-sans", fontSans.variable, materialIcons.variable].join(" ")}>
+      <body className={["font-sans", materialIcons.variable].join(" ")}>
         <TRPCReactProvider>
           <Theme />
           {props.children}

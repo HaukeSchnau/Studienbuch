@@ -128,6 +128,8 @@ fi
 
 echo "\n== Port Availability =="
 check_port_free STU_API_PORT "${STU_API_PORT:-3001}"
+check_port_free STU_NEXTJS_PORT "${STU_NEXTJS_PORT:-3000}"
+check_port_free STU_ADMIN_PANEL_PORT "${STU_ADMIN_PANEL_PORT:-3002}"
 
 echo "\n== External Reachability =="
 check_http_reachable "Linear API" "https://api.linear.app/graphql" "200,400,401,405"

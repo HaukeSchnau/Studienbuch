@@ -11,6 +11,8 @@ interface Props {
   children: ReactNode;
 }
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminLayout({ children }: Props) {
   if (!(await isLoggedIn())) {
     return redirect("/login");

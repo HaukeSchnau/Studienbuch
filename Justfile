@@ -104,6 +104,14 @@ live-logs *ARGS:
 live-health:
     curl -fsS "http://localhost:{{ env_var_or_default('STU_API_PORT', '3001') }}/healthz"
 
+live-health-web:
+    curl -fsS "http://localhost:{{ env_var_or_default('STU_NEXTJS_PORT', '3000') }}/" >/dev/null
+    curl -fsS "http://localhost:{{ env_var_or_default('STU_ADMIN_PANEL_PORT', '3002') }}/" >/dev/null
+
+live-health-all:
+    just live-health
+    just live-health-web
+
 nix-smoke:
     log=$$(mktemp); \
     ( \
