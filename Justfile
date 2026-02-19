@@ -5,19 +5,20 @@ _oci-preload:
 
 dev:
     just _oci-preload
-    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans
+    ./tooling/with-env.sh docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans
     open http://localhost:8081/_expo/plugins/expo-drizzle-studio-plugin
     open https://local.drizzle.studio/
     mprocs # See: mprocs.yaml, https://github.com/mirage-js/mprocs  
     # Clean up after dev
-    docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+    ./tooling/with-env.sh docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 
 console *ARGS:
-    bun packages/console/src/console.ts {{ARGS}}
+    ./tooling/with-env.sh bun packages/console/src/console.ts {{ARGS}}
 
 clone-prod-db:
     set -eu; \
     if [ -f ./.env ]; then set -a; . ./.env; set +a; fi; \
+    if [ -f ./.env.secrets ]; then set -a; . ./.env.secrets; set +a; fi; \
     node_env="$${NODE_ENV:-development}"; \
     host="$$(hostname)"; \
     if echo "$$host" | grep -q "server" || [ "$$node_env" = "production" ]; then \
@@ -37,6 +38,9 @@ seed:
 check:
     bun run typecheck
     bun run lint:fix
+
+doctor:
+    ./tooling/doctor.sh
 
 [working-directory: 'packages/app-mobile']
 ios:
@@ -81,28 +85,33 @@ oci-load:
 
 live-up:
     just _oci-preload
-    docker compose --profile live -f docker-compose.yml up -d --no-build --remove-orphans
+    ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml up -d --no-build --remove-orphans
 
 live-up-dev:
     just _oci-preload
-    docker compose --profile live -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans
+    ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans
 
 live-down:
-    docker compose --profile live -f docker-compose.yml down -v
+    ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml down -v
 
 live-logs *ARGS:
-    docker compose --profile live -f docker-compose.yml logs {{ARGS}}
+    ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml logs {{ARGS}}
+
+live-health:
+    curl -fsS "http://localhost:{{ env_var_or_default('STU_API_PORT', '3001') }}/healthz"
 
 nix-smoke:
     log=$$(mktemp); \
     ( \
+      if [ -f ./.env ]; then set -a; . ./.env; set +a; fi; \
+      if [ -f ./.env.secrets ]; then set -a; . ./.env.secrets; set +a; fi; \
       SKIP_ENV_VALIDATION=1 \
       NODE_ENV=development \
       MANAGEMENT_DATABASE_URL=postgresql://stu:stu@localhost:5432/stu \
-      PULSAR_URL=pulsar://localhost:6650 \
+      PULSAR_URL=rabbitmq-stream://localhost:5552 \
       API_PORT=3001 \
-      NEXT_PUBLIC_AXIOM_DATASET=local \
-      NEXT_PUBLIC_AXIOM_TOKEN=local \
+      NEXT_PUBLIC_AXIOM_DATASET="$${NEXT_PUBLIC_AXIOM_DATASET:?NEXT_PUBLIC_AXIOM_DATASET is required}" \
+      NEXT_PUBLIC_AXIOM_TOKEN="$${NEXT_PUBLIC_AXIOM_TOKEN:?NEXT_PUBLIC_AXIOM_TOKEN is required}" \
       nix run .#start-api >"$$log" 2>&1 & \
       pid=$$!; \
       sleep 12; \
@@ -113,12 +122,14 @@ nix-smoke:
     rm -f "$$log"
     clog=$$(mktemp); \
     ( \
+      if [ -f ./.env ]; then set -a; . ./.env; set +a; fi; \
+      if [ -f ./.env.secrets ]; then set -a; . ./.env.secrets; set +a; fi; \
       SKIP_ENV_VALIDATION=1 \
       NODE_ENV=development \
       MANAGEMENT_DATABASE_URL=postgresql://stu:stu@localhost:5432/stu \
       LEGACY_DATABASE_URL=postgresql://stu:stu@localhost:5433/postgres \
-      NEXT_PUBLIC_AXIOM_DATASET=local \
-      NEXT_PUBLIC_AXIOM_TOKEN=local \
+      NEXT_PUBLIC_AXIOM_DATASET="$${NEXT_PUBLIC_AXIOM_DATASET:?NEXT_PUBLIC_AXIOM_DATASET is required}" \
+      NEXT_PUBLIC_AXIOM_TOKEN="$${NEXT_PUBLIC_AXIOM_TOKEN:?NEXT_PUBLIC_AXIOM_TOKEN is required}" \
       nix run .#start-console -- --help >"$$clog" 2>&1 & \
       pid=$$!; \
       sleep 8; \

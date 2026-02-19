@@ -31,9 +31,7 @@ const makeCanonicalStorageMock = (
   const eventById = new Map(events.map((event) => [event.id, event] as const));
   const sentIdsByUser = new Map<string, string[]>();
   const sentIdSetByUser = new Map<string, Set<string>>();
-  const remainingForeignKeyFailuresByEventId = new Map(
-    Object.entries(options?.foreignKeyFailuresByEventId ?? {}),
-  );
+  const remainingForeignKeyFailuresByEventId = new Map(Object.entries(options?.foreignKeyFailuresByEventId ?? {}));
 
   const service: CanonicalStorage<DomainEvent> = {
     isEventUnique: () => Effect.succeed(true),

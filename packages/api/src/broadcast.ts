@@ -1,5 +1,5 @@
-import { BroadcastError } from "@groundswell/core-server";
 import type { CanonicalStorage } from "@groundswell/core-server";
+import { BroadcastError } from "@groundswell/core-server";
 import type { DomainEvent } from "@stu/lib";
 import { Effect, Layer, PubSub, Stream } from "effect";
 import { Offset } from "rabbitmq-stream-js-client";
@@ -8,16 +8,10 @@ import { DomainBroadcast, DomainCanonicalStorage } from "./boilerplate";
 import { RabbitMQClient } from "./rabbitmq";
 
 const isCanonicalStorageCauseType = (error: { cause: unknown }, expectedType: string) =>
-  typeof error.cause === "object" &&
-  error.cause !== null &&
-  "type" in error.cause &&
-  error.cause.type === expectedType;
+  typeof error.cause === "object" && error.cause !== null && "type" in error.cause && error.cause.type === expectedType;
 
 const createMarkEventAsSentToUser =
-  (
-    canonicalStorage: CanonicalStorage<DomainEvent>,
-    layerName: "memory" | "rabbitmq",
-  ) =>
+  (canonicalStorage: CanonicalStorage<DomainEvent>, layerName: "memory" | "rabbitmq") =>
   (eventId: string, userId: string, attempt = 0): Effect.Effect<boolean, BroadcastError> =>
     canonicalStorage.markEventAsSentToUser(eventId, userId).pipe(
       Effect.as(true),
@@ -29,7 +23,9 @@ const createMarkEventAsSentToUser =
         if (isCanonicalStorageCauseType(error, "foreign_key_violation")) {
           if (attempt < 5) {
             return Effect.sleep("100 millis").pipe(
-              Effect.flatMap(() => createMarkEventAsSentToUser(canonicalStorage, layerName)(eventId, userId, attempt + 1)),
+              Effect.flatMap(() =>
+                createMarkEventAsSentToUser(canonicalStorage, layerName)(eventId, userId, attempt + 1),
+              ),
             );
           }
           return Effect.logWarning(

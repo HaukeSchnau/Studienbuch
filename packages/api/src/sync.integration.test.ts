@@ -19,7 +19,7 @@ import {
 } from "@groundswell/core-server";
 import type { DomainEvent } from "@stu/lib";
 import { studentsOfUser } from "@stu/lib";
-import { Context, Effect, Fiber, Layer, ManagedRuntime, Option, Stream } from "effect";
+import { Context, Effect, Exit, Fiber, Layer, ManagedRuntime, Option, Stream } from "effect";
 import { describe, expect, it } from "vitest";
 import {
   DomainBroadcast,
@@ -339,6 +339,41 @@ describe("sync ingest integration", () => {
     expect(result.replay).toEqual([second]);
     expect(result.duplicateCheck).toBe("timeout");
     expect(harness.sentIdsByUser.get(STUDENT_A)).toEqual([first.id, second.id]);
+  });
+
+  it("rejects duplicate ingest reruns without duplicating apply or replay state", async () => {
+    const harness = createHarness();
+    const event = makeAbsenceRecordedEvent("77777777-7777-4777-8777-777777777777", STUDENT_A, COURSE_A, new Date(7));
+
+    const result = await harness.run(
+      Effect.gen(function* () {
+        const ingest = yield* DomainIngestEngine;
+        const broadcast = yield* DomainBroadcast;
+
+        const firstIngest = yield* Effect.exit(ingest.ingest(event, { initiatorId: STUDENT_A }));
+        const secondIngest = yield* Effect.exit(ingest.ingest(event, { initiatorId: STUDENT_A }));
+
+        const replay = yield* Stream.runCollect(broadcast.subscribe(STUDENT_A, { offset: 0 }).pipe(Stream.take(1)));
+        const duplicateReplayCheck = yield* Effect.race(
+          Stream.runHead(broadcast.subscribe(STUDENT_A, { offset: 1 })).pipe(Effect.as("event" as const)),
+          Effect.sleep("100 millis").pipe(Effect.as("timeout" as const)),
+        );
+
+        return {
+          firstIngest,
+          secondIngest,
+          replay: Array.from(replay),
+          duplicateReplayCheck,
+        };
+      }),
+    );
+
+    expect(Exit.isSuccess(result.firstIngest)).toBe(true);
+    expect(Exit.isFailure(result.secondIngest)).toBe(true);
+    expect(result.replay).toEqual([event]);
+    expect(result.duplicateReplayCheck).toBe("timeout");
+    expect(harness.appliedEventIds).toEqual([event.id]);
+    expect(harness.sentIdsByUser.get(STUDENT_A)).toEqual([event.id]);
   });
 
   it("keeps events isolated by user stream", async () => {

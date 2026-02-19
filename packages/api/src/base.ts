@@ -1,6 +1,9 @@
+import net from "node:net";
 import { attachSyncServer } from "@groundswell/adapter-hono-server";
 import { trpcServer } from "@hono/trpc-server";
 import { appRouter, createTRPCContext, getSession } from "@stu/api";
+import { sql } from "@stu/db";
+import { db } from "@stu/db/client";
 import { DomainEvent, SnapshotRequestSchema } from "@stu/lib";
 import { getSessionTokenFromHeaders } from "@stu/lib-server";
 import { Effect } from "effect";
@@ -32,6 +35,67 @@ const appLogger = pino({
     ],
   },
 });
+
+const checkDatabaseReadiness = async () => {
+  await db.execute(sql`select 1`);
+};
+
+const parseEventStreamEndpoint = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    const port = Number(parsed.port);
+    if (!parsed.hostname || !Number.isFinite(port) || port <= 0) {
+      return null;
+    }
+    return {
+      host: parsed.hostname,
+      port,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const checkEventStreamReadiness = async () => {
+  const endpoint = parseEventStreamEndpoint(env.PULSAR_URL);
+  if (!endpoint) {
+    throw new Error(`Invalid PULSAR_URL: ${env.PULSAR_URL}`);
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const socket = net.createConnection(endpoint);
+    let settled = false;
+
+    const settle = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      socket.removeAllListeners();
+      fn();
+    };
+
+    socket.setTimeout(1500);
+    socket.once("connect", () => {
+      settle(() => {
+        socket.end();
+        resolve();
+      });
+    });
+    socket.once("timeout", () => {
+      settle(() => {
+        socket.destroy();
+        reject(new Error(`Timed out connecting to ${endpoint.host}:${endpoint.port}`));
+      });
+    });
+    socket.once("error", (error) => {
+      settle(() => {
+        socket.destroy();
+        reject(error);
+      });
+    });
+  });
+};
+
+const errorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 export const createBase = Effect.fn(function* (basePath: string) {
   const ingestEngine = yield* DomainIngestEngine;
@@ -65,6 +129,33 @@ export const createBase = Effect.fn(function* (basePath: string) {
 
     return session.user.id;
   };
+
+  app.get("/livez", (c) => c.json({ status: "ok" }, 200));
+
+  app.get("/healthz", async (c) => {
+    const checks = {
+      database: { ok: true as boolean, error: null as null | string },
+      eventStream: { ok: true as boolean, error: null as null | string },
+    };
+
+    await checkDatabaseReadiness().catch((error) => {
+      checks.database.ok = false;
+      checks.database.error = errorMessage(error);
+    });
+    await checkEventStreamReadiness().catch((error) => {
+      checks.eventStream.ok = false;
+      checks.eventStream.error = errorMessage(error);
+    });
+
+    const healthy = checks.database.ok && checks.eventStream.ok;
+    return c.json(
+      {
+        status: healthy ? "ok" : "degraded",
+        checks,
+      },
+      healthy ? 200 : 503,
+    );
+  });
 
   app.post("/api/snapshot", async (c) => {
     const userId = await getUserId(c);
