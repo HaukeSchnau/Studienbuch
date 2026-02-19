@@ -1,6 +1,10 @@
-dev:
-    nix run .#oci-build-archives
+[private]
+_oci-preload:
+    nix run .#oci-export-archives
     nix run .#oci-load-archives
+
+dev:
+    just _oci-preload
     docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans
     open http://localhost:8081/_expo/plugins/expo-drizzle-studio-plugin
     open https://local.drizzle.studio/
@@ -50,9 +54,6 @@ nix-start-console *ARGS:
 nix-migrate *ARGS:
     nix run .#migrations -- {{ARGS}}
 
-oci-build:
-    nix run .#oci-build-archives
-
 oci-export *ARGS:
     nix run .#oci-export-archives -- {{ARGS}}
 
@@ -60,14 +61,12 @@ oci-load:
     nix run .#oci-load-archives
 
 live-up:
-    nix run .#oci-build-archives
-    nix run .#oci-load-archives
+    just _oci-preload
     AXIOM_DATASET=$${AXIOM_DATASET:-local} AXIOM_TOKEN=$${AXIOM_TOKEN:-local} LINEAR_API_KEY=$${LINEAR_API_KEY:-local} \
     docker compose --profile live -f docker-compose.yml up -d --no-build --remove-orphans
 
 live-up-dev:
-    nix run .#oci-build-archives
-    nix run .#oci-load-archives
+    just _oci-preload
     AXIOM_DATASET=$${AXIOM_DATASET:-local} AXIOM_TOKEN=$${AXIOM_TOKEN:-local} LINEAR_API_KEY=$${LINEAR_API_KEY:-local} \
     docker compose --profile live -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans
 

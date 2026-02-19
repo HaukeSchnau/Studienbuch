@@ -1,8 +1,0 @@
-#!/bin/bash
-
-cd $(dirname "$0")/..
-
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
-nix run .#oci-build-archives
-nix run .#oci-load-archives
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans

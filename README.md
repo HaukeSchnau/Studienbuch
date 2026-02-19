@@ -6,11 +6,12 @@ direnv allow
 just dev # Builds/loads OCI images and starts local services
 ```
 
-## Available Scripts
+## Primary Commands
 ```bash
 just dev # OCI-first local development flow
-bin/up # Starts local services with OCI image preload
-bin/up-reset # Resets volumes, rebuilds OCI images, and starts services
-console # Allows to execute predefined commands
-visualize-deps # Visualizes the dependencies between the JS packages
+just live-up # Start live-profile stack (no host port bindings)
+just live-up-dev # Start live-profile stack with dev port bindings
+just live-down # Stop and remove live-profile stack
+just oci-export # Export OCI archives to .artifacts/oci
+just oci-load # Load OCI archives into local Docker daemon
 ```
