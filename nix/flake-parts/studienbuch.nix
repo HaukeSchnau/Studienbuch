@@ -29,7 +29,17 @@
     '';
 
     installWorkspaceDeps = ''
-      bun install --frozen-lockfile --ignore-scripts
+      attempts=0
+      until bun install --frozen-lockfile --ignore-scripts; do
+        attempts=$((attempts + 1))
+        if [ "$attempts" -ge 3 ]; then
+          echo "bun install failed after $attempts attempts" >&2
+          exit 1
+        fi
+
+        echo "bun install failed (attempt $attempts), retrying..." >&2
+        sleep 2
+      done
     '';
 
     buildApi = mkWorkspaceScript {
@@ -104,8 +114,6 @@
       '';
     };
 
-    defaultOciSystem = pkgs.stdenv.hostPlatform.system;
-
     nodeBaseImageDigest = "sha256:e4bf2a82ad0a4037d28035ae71529873c069b13eb0455466ae0bc13363826e34";
     nodeBaseImageArch =
       if pkgs.stdenv.hostPlatform.isAarch64
@@ -153,6 +161,7 @@
         ];
 
         dontConfigure = true;
+        dontFixup = true;
 
         buildPhase = ''
           runHook preBuild
@@ -164,7 +173,7 @@
           export XDG_CACHE_HOME="$TMPDIR/xdg-cache"
           mkdir -p "$HOME" "$XDG_CACHE_HOME" "$TMPDIR/stu-cache"
 
-          bun install --frozen-lockfile --ignore-scripts
+          ${installWorkspaceDeps}
 
           (
             cd packages/api
@@ -210,7 +219,6 @@
             cp -R packages/api/dist "$out/api/dist"
             cp -R packages/console/dist "$out/console/dist"
 
-            cp packages/db/drizzle.config.ts "$out/migrations/drizzle.config.ts"
             cp -R packages/db/drizzle "$out/migrations/drizzle"
             cp -R node_modules "$out/migrations/node_modules"
             find "$out/migrations/node_modules" -xtype l -delete
@@ -243,9 +251,80 @@
 
       migrationsRootfs = pkgs.runCommand "studienbuch-migrations-rootfs" {} ''
         mkdir -p "$out/app/packages/db" "$out/app"
-        cp ${workspaceArtifacts}/migrations/drizzle.config.ts "$out/app/packages/db/drizzle.config.ts"
         cp -R ${workspaceArtifacts}/migrations/drizzle "$out/app/packages/db/drizzle"
         cp -R ${workspaceArtifacts}/migrations/node_modules "$out/app/node_modules"
+        cat > "$out/app/migrate.js" <<'SCRIPT'
+        const fs = require("node:fs");
+        const path = require("node:path");
+        const { Client } = require("pg");
+
+        const dbUrl = process.env.MANAGEMENT_DATABASE_URL;
+        if (!dbUrl) {
+          console.error("MANAGEMENT_DATABASE_URL is not set");
+          process.exit(1);
+        }
+
+        const journalPath = "/app/packages/db/drizzle/meta/_journal.json";
+        if (!fs.existsSync(journalPath)) {
+          console.error(`Missing drizzle journal at ''${journalPath}`);
+          process.exit(1);
+        }
+
+        const journal = JSON.parse(fs.readFileSync(journalPath, "utf8"));
+        const entries = (journal.entries || []).slice().sort((a, b) => a.idx - b.idx);
+
+        async function run() {
+          const client = new Client({ connectionString: dbUrl });
+          await client.connect();
+
+          await client.query("CREATE SCHEMA IF NOT EXISTS stu_internal");
+          await client.query(`
+            CREATE TABLE IF NOT EXISTS stu_internal.migrations (
+              tag text PRIMARY KEY,
+              applied_at timestamptz NOT NULL DEFAULT now()
+            )
+          `);
+
+          for (const entry of entries) {
+            const sqlPath = path.join("/app/packages/db/drizzle", `''${entry.tag}.sql`);
+            if (!fs.existsSync(sqlPath)) {
+              throw new Error(`Missing migration SQL file: ''${sqlPath}`);
+            }
+
+            const alreadyApplied = await client.query(
+              "SELECT 1 FROM stu_internal.migrations WHERE tag = $1",
+              [entry.tag],
+            );
+            if (alreadyApplied.rowCount > 0) {
+              console.log(`Skipping already applied migration: ''${entry.tag}`);
+              continue;
+            }
+
+            const sql = fs.readFileSync(sqlPath, "utf8");
+            console.log(`Applying migration: ''${entry.tag}`);
+            await client.query("BEGIN");
+            try {
+              await client.query(sql);
+              await client.query(
+                "INSERT INTO stu_internal.migrations(tag) VALUES ($1)",
+                [entry.tag],
+              );
+              await client.query("COMMIT");
+            } catch (error) {
+              await client.query("ROLLBACK");
+              throw error;
+            }
+          }
+
+          await client.end();
+          console.log("Migrations completed.");
+        }
+
+        run().catch((error) => {
+          console.error(error);
+          process.exit(1);
+        });
+        SCRIPT
       '';
 
       nextjsRootfs = pkgs.runCommand "studienbuch-nextjs-rootfs" {} ''
@@ -260,13 +339,16 @@
         cp -R ${workspaceArtifacts}/admin-panel/public "$out/app/packages/admin-panel/public"
       '';
 
+      baseImageEnv = ["NODE_ENV=production"];
+
       mkImage = {
         name,
         contents,
         config,
       }:
         pkgs.dockerTools.buildLayeredImage {
-          inherit name contents config;
+          inherit name config;
+          inherit contents;
           fromImage = nodeBaseImage;
           tag = "nix";
           created = "1970-01-01T00:00:01Z";
@@ -276,11 +358,12 @@
         name = "studienbuch-api";
         contents = [apiRootfs];
         config = {
-          Env = [
-            "NODE_ENV=production"
-            "PORT=80"
-            "API_PORT=80"
-          ];
+          Env =
+            baseImageEnv
+            ++ [
+              "PORT=80"
+              "API_PORT=80"
+            ];
           WorkingDir = "/app";
           Entrypoint = ["/usr/local/bin/node" "node.js"];
         };
@@ -290,7 +373,7 @@
         name = "studienbuch-console-cron";
         contents = [consoleRootfs];
         config = {
-          Env = ["NODE_ENV=production"];
+          Env = baseImageEnv;
           WorkingDir = "/app";
           Entrypoint = ["crond" "-f" "-l" "0"];
         };
@@ -300,9 +383,9 @@
         name = "studienbuch-migrations";
         contents = [migrationsRootfs];
         config = {
-          Env = ["NODE_ENV=production"];
-          WorkingDir = "/app/packages/db";
-          Entrypoint = ["/usr/local/bin/node" "/app/node_modules/drizzle-kit/bin.cjs" "migrate" "--config" "/app/packages/db/drizzle.config.ts"];
+          Env = baseImageEnv;
+          WorkingDir = "/app";
+          Entrypoint = ["/usr/local/bin/node" "/app/migrate.js"];
         };
       };
 
@@ -310,10 +393,11 @@
         name = "studienbuch-nextjs";
         contents = [nextjsRootfs];
         config = {
-          Env = [
-            "NODE_ENV=production"
-            "PORT=80"
-          ];
+          Env =
+            baseImageEnv
+            ++ [
+              "PORT=80"
+            ];
           WorkingDir = "/app/packages/nextjs";
           Entrypoint = ["/usr/local/bin/node" "server.js"];
         };
@@ -323,10 +407,11 @@
         name = "studienbuch-admin-panel";
         contents = [adminPanelRootfs];
         config = {
-          Env = [
-            "NODE_ENV=production"
-            "PORT=80"
-          ];
+          Env =
+            baseImageEnv
+            ++ [
+              "PORT=80"
+            ];
           WorkingDir = "/app/packages/admin-panel";
           Entrypoint = ["/usr/local/bin/node" ".output/server/index.mjs"];
         };
@@ -399,31 +484,14 @@
       "oci-archives" = ociArchives;
     };
 
-    buildOciArchives = mkWorkspaceScript {
-      name = "stu-build-oci-archives";
-      runtimeInputs = [pkgs.nix pkgs.findutils];
-      text = ''
-        ${repoPrelude}
-
-        target_system=''${STU_OCI_SYSTEM:-${defaultOciSystem}}
-        out_dir=''${1:-./.artifacts/oci}
-        out_link="$(mktemp -u ./result-oci-XXXXXX)"
-        trap 'rm -f "$out_link"' EXIT
-
-        nix build --builders "" ".#packages.$target_system.oci-archives" --out-link "$out_link"
-
-        mkdir -p "$out_dir"
-        find "$out_link" -maxdepth 1 -type f -name '*.oci.tar' -exec cp {} "$out_dir" \;
-      '';
-    };
-
     exportOciArchives = mkWorkspaceScript {
       name = "stu-export-oci-archives";
-      runtimeInputs = [buildOciArchives];
       text = ''
         ${repoPrelude}
+
         out_dir=''${1:-./.artifacts/oci}
-        stu-build-oci-archives "$out_dir"
+        mkdir -p "$out_dir"
+        cp ${ociPackages."oci-archives"}/*.oci.tar "$out_dir"/
       '';
     };
 
@@ -433,7 +501,7 @@
       text = ''
         ${repoPrelude}
 
-        archive_dir=''${1:-./.artifacts/oci}
+        archive_dir=''${1:-${ociPackages."oci-archives"}}
         api_archive="$archive_dir/studienbuch-api-nix.oci.tar"
         console_archive="$archive_dir/studienbuch-console-cron-nix.oci.tar"
         migrations_archive="$archive_dir/studienbuch-migrations-nix.oci.tar"
@@ -441,7 +509,7 @@
         admin_panel_archive="$archive_dir/studienbuch-admin-panel-nix.oci.tar"
 
         if [ ! -f "$api_archive" ] || [ ! -f "$console_archive" ] || [ ! -f "$migrations_archive" ] || [ ! -f "$nextjs_archive" ] || [ ! -f "$admin_panel_archive" ]; then
-          echo "Missing OCI archives under $archive_dir. Run: nix run .#oci-build-archives"
+          echo "Missing OCI archives under $archive_dir. Run: nix build .#oci-archives"
           exit 1
         fi
 
@@ -457,7 +525,6 @@
       "build-api" = buildApi;
       "build-console" = buildConsole;
       "build-all" = buildAll;
-      "oci-build-archives" = buildOciArchives;
       "oci-export-archives" = exportOciArchives;
       "oci-load-archives" = loadOciArchives;
       migrations = migrate;
@@ -483,11 +550,6 @@
         type = "app";
         program = "${buildAll}/bin/stu-build-all";
         meta.description = "Build both API and console bundles.";
-      };
-      "oci-build-archives" = {
-        type = "app";
-        program = "${buildOciArchives}/bin/stu-build-oci-archives";
-        meta.description = "Build local OCI archives for API, console-cron, migrations, Next.js, and TanStack Start entirely through Nix dockerTools outputs.";
       };
       "oci-export-archives" = {
         type = "app";

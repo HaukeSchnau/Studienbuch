@@ -1,7 +1,6 @@
 [private]
 _oci-preload:
-    nix run .#oci-export-archives
-    nix run .#oci-load-archives
+    nix --builders '' run .#oci-load-archives
 
 dev:
     just _oci-preload
@@ -77,11 +76,14 @@ nix-start-console *ARGS:
 nix-migrate *ARGS:
     nix run .#migrations -- {{ARGS}}
 
-oci-export *ARGS:
-    nix run .#oci-export-archives -- {{ARGS}}
+oci-build:
+    nix --builders '' build .#oci-archives
 
-oci-load:
-    nix run .#oci-load-archives
+oci-export *ARGS:
+    nix --builders '' run .#oci-export-archives -- {{ARGS}}
+
+oci-load *ARGS:
+    nix --builders '' run .#oci-load-archives -- {{ARGS}}
 
 live-up:
     just _oci-preload

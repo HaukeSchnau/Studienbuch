@@ -29,7 +29,6 @@
         self'.packages."build-api"
         self'.packages."build-console"
         self'.packages."build-all"
-        self'.packages."oci-build-archives"
         self'.packages."oci-export-archives"
         self'.packages."oci-load-archives"
         self'.packages.migrations

@@ -18,8 +18,9 @@ just live-health # Check API readiness (DB + event stream)
 just live-health-web # Check Next.js + TanStack Start HTTP readiness
 just live-health-all # Run all health checks
 just live-down # Stop and remove live-profile stack
+just oci-build # Build OCI archives into the Nix store
 just oci-export # Export OCI archives to .artifacts/oci
-just oci-load # Load OCI archives into local Docker daemon
+just oci-load # Load OCI archives into local Docker daemon (defaults to Nix store archives)
 just console -- --help # Run console CLI commands
 just clone-prod-db # Clone production DB into local postgres
 just visualize-deps # Regenerate workspace dependency graph image
