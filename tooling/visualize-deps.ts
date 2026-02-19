@@ -1,5 +1,3 @@
-#!/usr/bin/env bun
-
 import { Glob, $ } from "bun";
 import p from "path";
 
@@ -13,7 +11,6 @@ const projectRoot = p.resolve(import.meta.dir, "..");
 const glob = new Glob("packages/*/package.json");
 const packages: Map<string, Set<string>> = new Map();
 
-// Collect all workspace packages and their dependencies
 for await (const file of glob.scan(projectRoot)) {
   const pkg = (await Bun.file(file).json()) as PackageJson;
   const deps = new Set<string>();
@@ -22,11 +19,7 @@ for await (const file of glob.scan(projectRoot)) {
     ...Object.entries(pkg.dependencies ?? {}),
     ...Object.entries(pkg.devDependencies ?? {}),
   ]) {
-    if (
-      version.startsWith("workspace:") &&
-      !dep.endsWith("config") &&
-      !dep.endsWith("testing")
-    ) {
+    if (version.startsWith("workspace:") && !dep.endsWith("config") && !dep.endsWith("testing")) {
       deps.add(dep);
     }
   }
@@ -34,17 +27,14 @@ for await (const file of glob.scan(projectRoot)) {
   packages.set(pkg.name, deps);
 }
 
-// Generate DOT file
 let dot = "digraph workspace {\n";
 
-// Add nodes
 for (const pkgName of packages.keys()) {
   dot += `  "${pkgName}";\n`;
 }
 
 dot += "\n";
 
-// Add edges
 for (const [pkgName, deps] of packages.entries()) {
   for (const dep of deps) {
     dot += `  "${pkgName}" -> "${dep}";\n`;
@@ -53,7 +43,6 @@ for (const [pkgName, deps] of packages.entries()) {
 
 dot += "}\n";
 
-// Write to file
 await Bun.write("workspace-deps.dot", dot);
 console.log("Generated workspace-deps.dot");
 await $`dot -Tpng workspace-deps.dot -o workspace-deps.png`;

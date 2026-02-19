@@ -52,6 +52,7 @@ dist/
 *.pyc
 
 .cache
+.artifacts/
 /cache
 /cache_old
 

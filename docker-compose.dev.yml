@@ -1,18 +1,18 @@
 services:
   database:
     ports:
-      - 5432:5432
+      - ${STU_DATABASE_PORT:-5432}:5432
 
   legacy-database:
     ports:
-      - 5433:5432
+      - ${STU_LEGACY_DATABASE_PORT:-5433}:5432
 
   event-stream:
     ports:
-      - 5552:5552
-      - 5672:5672
-      - 15672:15672
+      - ${STU_EVENT_STREAM_PORT:-5552}:5552
+      - ${STU_AMQP_PORT:-5672}:5672
+      - ${STU_EVENT_STREAM_UI_PORT:-15672}:15672
 
   api:
     ports:
-      - 3001:80
+      - ${STU_API_PORT:-3001}:80

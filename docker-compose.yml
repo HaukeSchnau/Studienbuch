@@ -45,9 +45,8 @@ services:
     environment:
       MANAGEMENT_DATABASE_URL: postgresql://stu:stu@database:5432/stu
       PULSAR_URL: pulsar://event-stream:6650
-      LINEAR_API_KEY: $LINEAR_API_KEY # TODO: remove
-      NEXT_PUBLIC_AXIOM_DATASET: $AXIOM_DATASET
-      NEXT_PUBLIC_AXIOM_TOKEN: $AXIOM_TOKEN
+      NEXT_PUBLIC_AXIOM_DATASET: $NEXT_PUBLIC_AXIOM_DATASET
+      NEXT_PUBLIC_AXIOM_TOKEN: $NEXT_PUBLIC_AXIOM_TOKEN
       CACHE_DIR: /cache
     volumes:
       - cache:/cache
@@ -68,11 +67,9 @@ services:
     init: true
     tty: true
     environment:
-      LINEAR_API_KEY: $LINEAR_API_KEY # TODO: remove
-      NEXT_PUBLIC_AXIOM_DATASET: $AXIOM_DATASET
-      NEXT_PUBLIC_AXIOM_TOKEN: $AXIOM_TOKEN
+      NEXT_PUBLIC_AXIOM_DATASET: $NEXT_PUBLIC_AXIOM_DATASET
+      NEXT_PUBLIC_AXIOM_TOKEN: $NEXT_PUBLIC_AXIOM_TOKEN
       PULSAR_URL: pulsar://event-stream:6650
-      API_PORT: 3001 # TODO: remove
       MANAGEMENT_DATABASE_URL: postgresql://stu:stu@database:5432/stu
       LEGACY_DATABASE_URL: postgresql://postgres:postgres@legacy-database:5432/postgres
       CACHE_DIR: /cache

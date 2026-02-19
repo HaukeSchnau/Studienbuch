@@ -15,6 +15,22 @@ dev:
 console *ARGS:
     bun packages/console/src/console.ts {{ARGS}}
 
+clone-prod-db:
+    set -eu; \
+    if [ -f ./.env ]; then set -a; . ./.env; set +a; fi; \
+    node_env="$${NODE_ENV:-development}"; \
+    host="$$(hostname)"; \
+    if echo "$$host" | grep -q "server" || [ "$$node_env" = "production" ]; then \
+      echo "This command is not intended to run on production hosts."; \
+      exit 1; \
+    fi; \
+    dropdb studienbuch; \
+    createdb studienbuch; \
+    ssh studienbuch@schnau.dev "pg_dump" | psql studienbuch
+
+visualize-deps:
+    bun tooling/visualize-deps.ts
+
 seed: 
     just console pull igs-lil
 
@@ -65,12 +81,12 @@ oci-load:
 
 live-up:
     just _oci-preload
-    AXIOM_DATASET=$${AXIOM_DATASET:-local} AXIOM_TOKEN=$${AXIOM_TOKEN:-local} LINEAR_API_KEY=$${LINEAR_API_KEY:-local} \
+    NEXT_PUBLIC_AXIOM_DATASET=$${NEXT_PUBLIC_AXIOM_DATASET:-local} NEXT_PUBLIC_AXIOM_TOKEN=$${NEXT_PUBLIC_AXIOM_TOKEN:-local} \
     docker compose --profile live -f docker-compose.yml up -d --no-build --remove-orphans
 
 live-up-dev:
     just _oci-preload
-    AXIOM_DATASET=$${AXIOM_DATASET:-local} AXIOM_TOKEN=$${AXIOM_TOKEN:-local} LINEAR_API_KEY=$${LINEAR_API_KEY:-local} \
+    NEXT_PUBLIC_AXIOM_DATASET=$${NEXT_PUBLIC_AXIOM_DATASET:-local} NEXT_PUBLIC_AXIOM_TOKEN=$${NEXT_PUBLIC_AXIOM_TOKEN:-local} \
     docker compose --profile live -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans
 
 live-down:

@@ -114,7 +114,7 @@
         cat > "$tmp_dir/migrations/Dockerfile" <<'EOF'
         FROM oven/bun:1-alpine
         WORKDIR /app/packages/db
-        RUN bun install -g drizzle-kit drizzle-orm pg
+        RUN bun install -g drizzle-kit@0.31.4 drizzle-orm@0.44.4 pg@8.14.1
         COPY app/packages/db/drizzle.config.ts /app/packages/db/drizzle.config.ts
         COPY app/packages/db/drizzle /app/packages/db/drizzle
         ENV NODE_ENV=production
