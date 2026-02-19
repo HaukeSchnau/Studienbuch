@@ -31,6 +31,12 @@ just install
 just live-up-dev
 ```
 
+This default keeps host port exposure minimal (API only).
+Use debug host bindings only when needed:
+```bash
+just live-up-dev-debug
+```
+
 Useful follow-up commands:
 - `just live-health`
 - `just live-logs api`
@@ -56,10 +62,12 @@ just live-down
 ```
 
 ## Port Overrides (optional)
-When default host ports are occupied, override these env vars before `live-up-dev`:
+When default host ports are occupied, override this env var before `live-up-dev`:
+- `STU_API_PORT`
+
+When using `live-up-dev-debug`, you can additionally override:
 - `STU_DATABASE_PORT`
 - `STU_LEGACY_DATABASE_PORT`
 - `STU_EVENT_STREAM_PORT`
 - `STU_AMQP_PORT`
 - `STU_EVENT_STREAM_UI_PORT`
-- `STU_API_PORT`

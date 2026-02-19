@@ -91,6 +91,10 @@ live-up-dev:
     just _oci-preload
     ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans
 
+live-up-dev-debug:
+    just _oci-preload
+    ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.debug-ports.yml up -d --no-build --remove-orphans
+
 live-down:
     ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml down -v
 

@@ -120,12 +120,13 @@ else
   fail "docker-compose.dev.yml has unresolved or invalid configuration"
 fi
 
+if ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.debug-ports.yml config >/dev/null 2>&1; then
+  ok "docker-compose.debug-ports.yml resolves with current env"
+else
+  fail "docker-compose.debug-ports.yml has unresolved or invalid configuration"
+fi
+
 echo "\n== Port Availability =="
-check_port_free STU_DATABASE_PORT "${STU_DATABASE_PORT:-5432}"
-check_port_free STU_LEGACY_DATABASE_PORT "${STU_LEGACY_DATABASE_PORT:-5433}"
-check_port_free STU_EVENT_STREAM_PORT "${STU_EVENT_STREAM_PORT:-5552}"
-check_port_free STU_AMQP_PORT "${STU_AMQP_PORT:-5672}"
-check_port_free STU_EVENT_STREAM_UI_PORT "${STU_EVENT_STREAM_UI_PORT:-15672}"
 check_port_free STU_API_PORT "${STU_API_PORT:-3001}"
 
 echo "\n== External Reachability =="
