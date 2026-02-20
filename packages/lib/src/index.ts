@@ -5,6 +5,7 @@ export * from "./auth";
 export * from "./classes";
 export * from "./courses";
 export * from "./events";
+export * from "./formalName";
 export * from "./grades";
 export * from "./infrastructure";
 export * from "./repositories";

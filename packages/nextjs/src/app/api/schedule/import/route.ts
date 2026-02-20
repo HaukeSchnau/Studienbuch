@@ -1,4 +1,3 @@
-import type { ProtoCourseWithTimes } from "@stu/lib";
 import { isArraySingleElement } from "@stu/lib";
 import { convertPdf, ensureParentDir, getFileHash, parseScheduleCsv, writeFile } from "@stu/lib-server";
 import fs from "fs";
@@ -59,4 +58,4 @@ export async function POST(request: Request) {
   return new Response(JSON.stringify(ret), { status: 200 });
 }
 
-export type PostReturn = ProtoCourseWithTimes[];
+export type PostReturn = Awaited<ReturnType<typeof parseScheduleCsv>>;

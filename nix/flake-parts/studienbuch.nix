@@ -34,16 +34,18 @@
       installWorkspaceDeps = ''
         export NPM_CONFIG_REGISTRY="https://npm.schnau.dev/"
         export BUN_CONFIG_REGISTRY="https://npm.schnau.dev/"
+        cache_dir="''${BUN_CACHE_DIR:-$TMPDIR/bun-cache}"
+        mkdir -p "$cache_dir"
 
-          attempts=0
-          until bun install --frozen-lockfile --ignore-scripts; do
-            attempts=$((attempts + 1))
-            if [ "$attempts" -ge 3 ]; then
-              echo "bun install failed after $attempts attempts" >&2
-              exit 1
-            fi
+        attempts=0
+        until bun install --frozen-lockfile --ignore-scripts --cache-dir "$cache_dir"; do
+          attempts=$((attempts + 1))
+          if [ "$attempts" -ge 3 ]; then
+            echo "bun install failed after $attempts attempts" >&2
+            exit 1
+          fi
 
-            echo "bun install failed (attempt $attempts), retrying..." >&2
+          echo "bun install failed (attempt $attempts), retrying..." >&2
           sleep 2
         done
       '';
@@ -145,11 +147,79 @@
               (repoRoot + /tooling)
             ];
           };
+          workspaceDepsSrc = builtins.path {
+            path = repoRoot;
+            name = "studienbuch-workspace-deps";
+            filter =
+              path: type:
+              let
+                rootPath = toString repoRoot;
+                fullPath = toString path;
+                relPath =
+                  if fullPath == rootPath then ""
+                  else lib.removePrefix "${rootPath}/" fullPath;
+                isRootFile = builtins.elem relPath [
+                  "package.json"
+                  "bun.lock"
+                  "bunfig.toml"
+                  "turbo.json"
+                ];
+                isWorkspaceManifest =
+                  (lib.hasPrefix "packages/" relPath || lib.hasPrefix "tooling/" relPath)
+                  && lib.hasSuffix "/package.json" relPath;
+                isPatch = lib.hasPrefix "patches/" relPath;
+                keepDir =
+                  relPath == ""
+                  || relPath == "packages"
+                  || relPath == "tooling"
+                  || relPath == "patches"
+                  || lib.hasPrefix "packages/" relPath
+                  || lib.hasPrefix "tooling/" relPath
+                  || lib.hasPrefix "patches/" relPath;
+              in
+              if type == "directory" then keepDir else isRootFile || isWorkspaceManifest || isPatch;
+          };
           migrationsSrc = lib.fileset.toSource {
             root = repoRoot;
             fileset = lib.fileset.unions [
               (repoRoot + /packages/db/drizzle)
             ];
+          };
+          workspaceInstallCache = pkgs.stdenvNoCC.mkDerivation {
+            pname = "studienbuch-workspace-install-cache";
+            version = "0.1.0";
+            src = workspaceDepsSrc;
+            nativeBuildInputs = [
+              pkgs.bun
+              pkgs.coreutils
+              pkgs.findutils
+            ];
+
+            dontConfigure = true;
+            dontFixup = true;
+
+            buildPhase = ''
+              runHook preBuild
+
+              cp -R "$src"/. .
+              chmod -R +w .
+
+              export HOME="$TMPDIR/home"
+              export XDG_CACHE_HOME="$TMPDIR/xdg-cache"
+              export BUN_CACHE_DIR="$TMPDIR/bun-cache"
+              mkdir -p "$HOME" "$XDG_CACHE_HOME"
+
+              ${installWorkspaceDeps}
+
+              runHook postBuild
+            '';
+
+            installPhase = ''
+              runHook preInstall
+              mkdir -p "$out"
+              cp -R "$TMPDIR/bun-cache"/. "$out/"
+              runHook postInstall
+            '';
           };
 
           mkWorkspaceArtifacts =
@@ -182,6 +252,15 @@
                 export HOME="$TMPDIR/home"
                 export XDG_CACHE_HOME="$TMPDIR/xdg-cache"
                 mkdir -p "$HOME" "$XDG_CACHE_HOME" "$TMPDIR/stu-cache"
+                seed_cache="${workspaceInstallCache}"
+                cache_dir="$TMPDIR/bun-cache"
+                mkdir -p "$cache_dir"
+
+                # Seed Bun's cache from a shared lockfile-derived cache to avoid
+                # repeating full registry fetches in every app derivation.
+                cp -al "$seed_cache"/. "$cache_dir"/ 2>/dev/null || cp -R "$seed_cache"/. "$cache_dir"/
+                chmod -R +w "$cache_dir" || true
+                export BUN_CACHE_DIR="$cache_dir"
 
                 ${installWorkspaceDeps}
 
@@ -387,7 +466,7 @@
               config,
               extraContents ? [ ],
               includeNode ? true,
-              maxLayers ? 20,
+              maxLayers ? 14,
             }:
             linuxPkgs.dockerTools.buildLayeredImage {
               inherit name config maxLayers;
