@@ -492,7 +492,11 @@
 
         out_dir=''${1:-./.artifacts/oci}
         mkdir -p "$out_dir"
-        cp ${ociPackages."oci-archives"}/*.oci.tar "$out_dir"/
+        cp "$(nix path-info .#packages.aarch64-linux.oci-api-archive)" "$out_dir/studienbuch-api-nix.oci.tar"
+        cp "$(nix path-info .#packages.aarch64-linux.oci-console-cron-archive)" "$out_dir/studienbuch-console-cron-nix.oci.tar"
+        cp "$(nix path-info .#packages.aarch64-linux.oci-migrations-archive)" "$out_dir/studienbuch-migrations-nix.oci.tar"
+        cp "$(nix path-info .#packages.aarch64-linux.oci-nextjs-archive)" "$out_dir/studienbuch-nextjs-nix.oci.tar"
+        cp "$(nix path-info .#packages.aarch64-linux.oci-admin-panel-archive)" "$out_dir/studienbuch-admin-panel-nix.oci.tar"
       '';
     };
 
@@ -502,16 +506,24 @@
       text = ''
         ${repoPrelude}
 
-        archive_dir=''${1:-${ociPackages."oci-archives"}}
-        api_archive="$archive_dir/studienbuch-api-nix.oci.tar"
-        console_archive="$archive_dir/studienbuch-console-cron-nix.oci.tar"
-        migrations_archive="$archive_dir/studienbuch-migrations-nix.oci.tar"
-        nextjs_archive="$archive_dir/studienbuch-nextjs-nix.oci.tar"
-        admin_panel_archive="$archive_dir/studienbuch-admin-panel-nix.oci.tar"
+        archive_dir=''${1:-}
+        if [ -n "$archive_dir" ]; then
+          api_archive="$archive_dir/studienbuch-api-nix.oci.tar"
+          console_archive="$archive_dir/studienbuch-console-cron-nix.oci.tar"
+          migrations_archive="$archive_dir/studienbuch-migrations-nix.oci.tar"
+          nextjs_archive="$archive_dir/studienbuch-nextjs-nix.oci.tar"
+          admin_panel_archive="$archive_dir/studienbuch-admin-panel-nix.oci.tar"
 
-        if [ ! -f "$api_archive" ] || [ ! -f "$console_archive" ] || [ ! -f "$migrations_archive" ] || [ ! -f "$nextjs_archive" ] || [ ! -f "$admin_panel_archive" ]; then
-          echo "Missing OCI archives under $archive_dir. Run: nix build .#oci-archives"
-          exit 1
+          if [ ! -f "$api_archive" ] || [ ! -f "$console_archive" ] || [ ! -f "$migrations_archive" ] || [ ! -f "$nextjs_archive" ] || [ ! -f "$admin_panel_archive" ]; then
+            echo "Missing OCI archives under $archive_dir."
+            exit 1
+          fi
+        else
+          api_archive="$(nix path-info .#packages.aarch64-linux.oci-api-archive)"
+          console_archive="$(nix path-info .#packages.aarch64-linux.oci-console-cron-archive)"
+          migrations_archive="$(nix path-info .#packages.aarch64-linux.oci-migrations-archive)"
+          nextjs_archive="$(nix path-info .#packages.aarch64-linux.oci-nextjs-archive)"
+          admin_panel_archive="$(nix path-info .#packages.aarch64-linux.oci-admin-panel-archive)"
         fi
 
         skopeo --insecure-policy copy "oci-archive:$api_archive" docker-daemon:studienbuch-api:nix
