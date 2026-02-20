@@ -77,28 +77,37 @@ nix-migrate *ARGS:
     nix run .#migrations -- {{ARGS}}
 
 oci-build:
-    nix build --no-link \
+    set -eu; \
+    for attr in \
       .#packages.aarch64-linux.oci-api-archive \
       .#packages.aarch64-linux.oci-console-cron-archive \
       .#packages.aarch64-linux.oci-migrations-archive \
       .#packages.aarch64-linux.oci-nextjs-archive \
-      .#packages.aarch64-linux.oci-admin-panel-archive
+      .#packages.aarch64-linux.oci-admin-panel-archive; do \
+      echo "Building $attr"; \
+      nix build --no-link "$attr"; \
+    done
 
-oci-export out_dir='.artifacts/oci':
-    set -eu; \
-    mkdir -p "{{out_dir}}"; \
-    cp "$(nix path-info .#packages.aarch64-linux.oci-api-archive)" "{{out_dir}}/studienbuch-api-nix.oci.tar"; \
-    cp "$(nix path-info .#packages.aarch64-linux.oci-console-cron-archive)" "{{out_dir}}/studienbuch-console-cron-nix.oci.tar"; \
-    cp "$(nix path-info .#packages.aarch64-linux.oci-migrations-archive)" "{{out_dir}}/studienbuch-migrations-nix.oci.tar"; \
-    cp "$(nix path-info .#packages.aarch64-linux.oci-nextjs-archive)" "{{out_dir}}/studienbuch-nextjs-nix.oci.tar"; \
-    cp "$(nix path-info .#packages.aarch64-linux.oci-admin-panel-archive)" "{{out_dir}}/studienbuch-admin-panel-nix.oci.tar"
+oci-inspect:
+    nix shell nixpkgs#skopeo nixpkgs#jq -c sh -c '\
+      set -eu; \
+      api=$(nix path-info .#packages.aarch64-linux.oci-api-archive); \
+      console=$(nix path-info .#packages.aarch64-linux.oci-console-cron-archive); \
+      migrations=$(nix path-info .#packages.aarch64-linux.oci-migrations-archive); \
+      nextjs=$(nix path-info .#packages.aarch64-linux.oci-nextjs-archive); \
+      admin=$(nix path-info .#packages.aarch64-linux.oci-admin-panel-archive); \
+      for p in "$api" "$console" "$migrations" "$nextjs" "$admin"; do \
+        name=$(basename "$p"); \
+        layers=$(skopeo inspect "oci-archive:$p" | jq -r ".Layers | length"); \
+        digest=$(skopeo inspect "oci-archive:$p" | jq -r ".Digest"); \
+        echo "$name layers=$layers digest=$digest"; \
+      done'
 
-oci-load:
-    nix shell nixpkgs#skopeo -c skopeo --insecure-policy copy "oci-archive:$(nix path-info .#packages.aarch64-linux.oci-api-archive)" docker-daemon:studienbuch-api:nix
-    nix shell nixpkgs#skopeo -c skopeo --insecure-policy copy "oci-archive:$(nix path-info .#packages.aarch64-linux.oci-console-cron-archive)" docker-daemon:studienbuch-console-cron:nix
-    nix shell nixpkgs#skopeo -c skopeo --insecure-policy copy "oci-archive:$(nix path-info .#packages.aarch64-linux.oci-migrations-archive)" docker-daemon:studienbuch-migrations:nix
-    nix shell nixpkgs#skopeo -c skopeo --insecure-policy copy "oci-archive:$(nix path-info .#packages.aarch64-linux.oci-nextjs-archive)" docker-daemon:studienbuch-nextjs:nix
-    nix shell nixpkgs#skopeo -c skopeo --insecure-policy copy "oci-archive:$(nix path-info .#packages.aarch64-linux.oci-admin-panel-archive)" docker-daemon:studienbuch-admin-panel:nix
+oci-export *ARGS:
+    nix run .#oci-export-archives {{ARGS}}
+
+oci-load *ARGS:
+    nix run .#oci-load-archives {{ARGS}}
 
 live-up:
     just _oci-preload
