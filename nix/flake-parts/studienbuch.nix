@@ -118,11 +118,6 @@
     };
 
     linuxPkgs = import pkgs.path {system = "aarch64-linux";};
-    buildHostSystem =
-      if builtins ? currentSystem
-      then builtins.currentSystem
-      else "aarch64-darwin";
-    buildHostPkgs = import pkgs.path {system = buildHostSystem;};
     nodeBin = "${linuxPkgs.nodejs_22}/bin/node";
     runtimeEnv = [
       "NODE_ENV=production"
@@ -144,16 +139,16 @@
         ];
       };
 
-      workspaceArtifacts = buildHostPkgs.stdenvNoCC.mkDerivation {
+      workspaceArtifacts = pkgs.stdenvNoCC.mkDerivation {
         pname = "studienbuch-live-artifacts";
         version = "0.1.0";
         src = workspaceSrc;
         nativeBuildInputs = [
-          buildHostPkgs.bun
-          buildHostPkgs.coreutils
-          buildHostPkgs.findutils
-          buildHostPkgs.nodejs_22
-          buildHostPkgs.rsync
+          pkgs.bun
+          pkgs.coreutils
+          pkgs.findutils
+          pkgs.nodejs_22
+          pkgs.rsync
         ];
 
         dontConfigure = true;
