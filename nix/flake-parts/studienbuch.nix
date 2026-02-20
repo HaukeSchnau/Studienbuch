@@ -230,9 +230,15 @@
       };
 
       runtimeRootfs = pkgs.runCommand "studienbuch-runtime-rootfs" {} ''
-        mkdir -p "$out/bin" "$out/tmp" "$out/var/spool/cron/crontabs"
+        mkdir -p "$out/bin" "$out/tmp" "$out/var/spool/cron/crontabs" "$out/etc" "$out/root"
         ln -s ${linuxPkgs.runtimeShell} "$out/bin/sh"
         chmod 1777 "$out/tmp"
+        cat > "$out/etc/passwd" <<'EOF'
+        root:x:0:0:root:/root:${linuxPkgs.runtimeShell}
+        EOF
+        cat > "$out/etc/group" <<'EOF'
+        root:x:0:
+        EOF
       '';
 
       apiRootfs = pkgs.runCommand "studienbuch-api-rootfs" {} ''
