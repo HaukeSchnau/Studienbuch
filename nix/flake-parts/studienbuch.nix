@@ -34,11 +34,38 @@
       installWorkspaceDeps = ''
         export NPM_CONFIG_REGISTRY="https://npm.schnau.dev/"
         export BUN_CONFIG_REGISTRY="https://npm.schnau.dev/"
-        cache_dir="''${BUN_CACHE_DIR:-$TMPDIR/bun-cache}"
-        mkdir -p "$cache_dir"
+        lock_hash="no-lock"
+        if [ -f bun.lock ]; then
+          lock_hash="$(sha256sum bun.lock | awk '{print $1}')"
+        fi
+        shared_cache_base="''${STUDIENBUCH_BUN_SHARED_CACHE_BASE:-/tmp/studienbuch-bun-cache}"
+        shared_tmp_base="''${STUDIENBUCH_BUN_SHARED_TMP_BASE:-/var/tmp/studienbuch-bun-tmp}"
+        shared_install_base="''${STUDIENBUCH_BUN_SHARED_INSTALL_BASE:-/var/tmp/studienbuch-bun-install}"
+
+        choose_writable_dir() {
+          candidate="$1"
+          fallback="$2"
+          if mkdir -p "$candidate" 2>/dev/null && [ -w "$candidate" ]; then
+            printf '%s' "$candidate"
+          else
+            mkdir -p "$fallback"
+            printf '%s' "$fallback"
+          fi
+        }
+
+        cache_dir="$(choose_writable_dir "$shared_cache_base/$lock_hash" "$TMPDIR/bun-cache")"
+        bun_tmp_dir="$(choose_writable_dir "$shared_tmp_base/$lock_hash" "$TMPDIR/bun-tmp")"
+        bun_install_dir="$(choose_writable_dir "$shared_install_base/$lock_hash" "$TMPDIR/bun-install")"
+        xdg_runtime_dir="$(choose_writable_dir "$TMPDIR/xdg-runtime" "$TMPDIR/xdg-runtime")"
+
+        export BUN_CACHE_DIR="''${BUN_CACHE_DIR:-$cache_dir}"
+        export BUN_TMPDIR="''${BUN_TMPDIR:-$bun_tmp_dir}"
+        export BUN_INSTALL="''${BUN_INSTALL:-$bun_install_dir}"
+        export XDG_RUNTIME_DIR="''${XDG_RUNTIME_DIR:-$xdg_runtime_dir}"
+        chmod 700 "$XDG_RUNTIME_DIR" 2>/dev/null || true
 
         attempts=0
-        until bun install --frozen-lockfile --ignore-scripts --cache-dir "$cache_dir"; do
+        until TMPDIR="$BUN_TMPDIR" bun install --frozen-lockfile --ignore-scripts --cache-dir "$BUN_CACHE_DIR"; do
           attempts=$((attempts + 1))
           if [ "$attempts" -ge 3 ]; then
             echo "bun install failed after $attempts attempts" >&2
@@ -147,79 +174,11 @@
               (repoRoot + /tooling)
             ];
           };
-          workspaceDepsSrc = builtins.path {
-            path = repoRoot;
-            name = "studienbuch-workspace-deps";
-            filter =
-              path: type:
-              let
-                rootPath = toString repoRoot;
-                fullPath = toString path;
-                relPath =
-                  if fullPath == rootPath then ""
-                  else lib.removePrefix "${rootPath}/" fullPath;
-                isRootFile = builtins.elem relPath [
-                  "package.json"
-                  "bun.lock"
-                  "bunfig.toml"
-                  "turbo.json"
-                ];
-                isWorkspaceManifest =
-                  (lib.hasPrefix "packages/" relPath || lib.hasPrefix "tooling/" relPath)
-                  && lib.hasSuffix "/package.json" relPath;
-                isPatch = lib.hasPrefix "patches/" relPath;
-                keepDir =
-                  relPath == ""
-                  || relPath == "packages"
-                  || relPath == "tooling"
-                  || relPath == "patches"
-                  || lib.hasPrefix "packages/" relPath
-                  || lib.hasPrefix "tooling/" relPath
-                  || lib.hasPrefix "patches/" relPath;
-              in
-              if type == "directory" then keepDir else isRootFile || isWorkspaceManifest || isPatch;
-          };
           migrationsSrc = lib.fileset.toSource {
             root = repoRoot;
             fileset = lib.fileset.unions [
               (repoRoot + /packages/db/drizzle)
             ];
-          };
-          workspaceInstallCache = pkgs.stdenvNoCC.mkDerivation {
-            pname = "studienbuch-workspace-install-cache";
-            version = "0.1.0";
-            src = workspaceDepsSrc;
-            nativeBuildInputs = [
-              pkgs.bun
-              pkgs.coreutils
-              pkgs.findutils
-            ];
-
-            dontConfigure = true;
-            dontFixup = true;
-
-            buildPhase = ''
-              runHook preBuild
-
-              cp -R "$src"/. .
-              chmod -R +w .
-
-              export HOME="$TMPDIR/home"
-              export XDG_CACHE_HOME="$TMPDIR/xdg-cache"
-              export BUN_CACHE_DIR="$TMPDIR/bun-cache"
-              mkdir -p "$HOME" "$XDG_CACHE_HOME"
-
-              ${installWorkspaceDeps}
-
-              runHook postBuild
-            '';
-
-            installPhase = ''
-              runHook preInstall
-              mkdir -p "$out"
-              cp -R "$TMPDIR/bun-cache"/. "$out/"
-              runHook postInstall
-            '';
           };
 
           mkWorkspaceArtifacts =
@@ -252,15 +211,6 @@
                 export HOME="$TMPDIR/home"
                 export XDG_CACHE_HOME="$TMPDIR/xdg-cache"
                 mkdir -p "$HOME" "$XDG_CACHE_HOME" "$TMPDIR/stu-cache"
-                seed_cache="${workspaceInstallCache}"
-                cache_dir="$TMPDIR/bun-cache"
-                mkdir -p "$cache_dir"
-
-                # Seed Bun's cache from a shared lockfile-derived cache to avoid
-                # repeating full registry fetches in every app derivation.
-                cp -al "$seed_cache"/. "$cache_dir"/ 2>/dev/null || cp -R "$seed_cache"/. "$cache_dir"/
-                chmod -R +w "$cache_dir" || true
-                export BUN_CACHE_DIR="$cache_dir"
 
                 ${installWorkspaceDeps}
 
