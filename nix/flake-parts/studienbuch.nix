@@ -138,6 +138,12 @@
           (repoRoot + /tooling)
         ];
       };
+      migrationsSrc = lib.fileset.toSource {
+        root = repoRoot;
+        fileset = lib.fileset.unions [
+          (repoRoot + /packages/db/drizzle)
+        ];
+      };
 
       workspaceArtifacts = pkgs.stdenvNoCC.mkDerivation {
         pname = "studienbuch-live-artifacts";
@@ -211,8 +217,6 @@
             cp -R packages/console/dist "$out/console/dist"
 
             cp -R packages/db/drizzle "$out/migrations/drizzle"
-            cp -R node_modules "$out/migrations/node_modules"
-            find "$out/migrations/node_modules" -xtype l -delete
 
             cp -R packages/nextjs/.next/standalone "$out/nextjs/standalone"
             cp -R packages/nextjs/.next/static "$out/nextjs/static"
@@ -253,81 +257,60 @@
       '';
 
       migrationsRootfs = pkgs.runCommand "studienbuch-migrations-rootfs" {} ''
-        mkdir -p "$out/app/packages/db" "$out/app"
-        cp -R ${workspaceArtifacts}/migrations/drizzle "$out/app/packages/db/drizzle"
-        cp -R ${workspaceArtifacts}/migrations/node_modules "$out/app/node_modules"
-        cat > "$out/app/migrate.js" <<'SCRIPT'
-        const fs = require("node:fs");
-        const path = require("node:path");
-        const { Client } = require("pg");
+        mkdir -p "$out/app/packages/db" "$out/bin"
+        cp -R ${migrationsSrc}/packages/db/drizzle "$out/app/packages/db/drizzle"
+        cat > "$out/bin/migrate" <<'SCRIPT'
+        #!${linuxPkgs.runtimeShell}
+        set -eu
 
-        const dbUrl = process.env.MANAGEMENT_DATABASE_URL;
-        if (!dbUrl) {
-          console.error("MANAGEMENT_DATABASE_URL is not set");
-          process.exit(1);
-        }
+        if [ -z "''${MANAGEMENT_DATABASE_URL:-}" ]; then
+          echo "MANAGEMENT_DATABASE_URL is not set" >&2
+          exit 1
+        fi
 
-        const journalPath = "/app/packages/db/drizzle/meta/_journal.json";
-        if (!fs.existsSync(journalPath)) {
-          console.error(`Missing drizzle journal at ''${journalPath}`);
-          process.exit(1);
-        }
+        journal_path="/app/packages/db/drizzle/meta/_journal.json"
+        if [ ! -f "$journal_path" ]; then
+          echo "Missing drizzle journal at $journal_path" >&2
+          exit 1
+        fi
 
-        const journal = JSON.parse(fs.readFileSync(journalPath, "utf8"));
-        const entries = (journal.entries || []).slice().sort((a, b) => a.idx - b.idx);
+        psql_bin=${linuxPkgs.postgresql}/bin/psql
+        jq_bin=${linuxPkgs.jq}/bin/jq
 
-        async function run() {
-          const client = new Client({ connectionString: dbUrl });
-          await client.connect();
+        "$psql_bin" "$MANAGEMENT_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+        CREATE SCHEMA IF NOT EXISTS stu_internal;
+        CREATE TABLE IF NOT EXISTS stu_internal.migrations (
+          tag text PRIMARY KEY,
+          applied_at timestamptz NOT NULL DEFAULT now()
+        );
+        SQL
 
-          await client.query("CREATE SCHEMA IF NOT EXISTS stu_internal");
-          await client.query(`
-            CREATE TABLE IF NOT EXISTS stu_internal.migrations (
-              tag text PRIMARY KEY,
-              applied_at timestamptz NOT NULL DEFAULT now()
-            )
-          `);
+        "$jq_bin" -r '.entries | sort_by(.idx) | .[].tag' "$journal_path" | while IFS= read -r tag; do
+          sql_path="/app/packages/db/drizzle/$tag.sql"
+          if [ ! -f "$sql_path" ]; then
+            echo "Missing migration SQL file: $sql_path" >&2
+            exit 1
+          fi
 
-          for (const entry of entries) {
-            const sqlPath = path.join("/app/packages/db/drizzle", `''${entry.tag}.sql`);
-            if (!fs.existsSync(sqlPath)) {
-              throw new Error(`Missing migration SQL file: ''${sqlPath}`);
-            }
+          already_applied=$("$psql_bin" "$MANAGEMENT_DATABASE_URL" -tA -v ON_ERROR_STOP=1 \
+            -c "SELECT 1 FROM stu_internal.migrations WHERE tag = '$tag' LIMIT 1;")
+          if [ "$already_applied" = "1" ]; then
+            echo "Skipping already applied migration: $tag"
+            continue
+          fi
 
-            const alreadyApplied = await client.query(
-              "SELECT 1 FROM stu_internal.migrations WHERE tag = $1",
-              [entry.tag],
-            );
-            if (alreadyApplied.rowCount > 0) {
-              console.log(`Skipping already applied migration: ''${entry.tag}`);
-              continue;
-            }
+          echo "Applying migration: $tag"
+          "$psql_bin" "$MANAGEMENT_DATABASE_URL" -v ON_ERROR_STOP=1 <<SQL
+        BEGIN;
+        \i $sql_path
+        INSERT INTO stu_internal.migrations(tag) VALUES ('$tag');
+        COMMIT;
+        SQL
+        done
 
-            const sql = fs.readFileSync(sqlPath, "utf8");
-            console.log(`Applying migration: ''${entry.tag}`);
-            await client.query("BEGIN");
-            try {
-              await client.query(sql);
-              await client.query(
-                "INSERT INTO stu_internal.migrations(tag) VALUES ($1)",
-                [entry.tag],
-              );
-              await client.query("COMMIT");
-            } catch (error) {
-              await client.query("ROLLBACK");
-              throw error;
-            }
-          }
-
-          await client.end();
-          console.log("Migrations completed.");
-        }
-
-        run().catch((error) => {
-          console.error(error);
-          process.exit(1);
-        });
+        echo "Migrations completed."
         SCRIPT
+        chmod +x "$out/bin/migrate"
       '';
 
       nextjsRootfs = pkgs.runCommand "studienbuch-nextjs-rootfs" {} ''
@@ -347,15 +330,12 @@
         contents,
         config,
         extraContents ? [],
+        includeNode ? true,
       }:
         linuxPkgs.dockerTools.buildLayeredImage {
           inherit name config;
-          contents =
-            [
-              runtimeRootfs
-              linuxPkgs.cacert
-              linuxPkgs.nodejs_22
-            ]
+          contents = [runtimeRootfs linuxPkgs.cacert]
+            ++ lib.optional includeNode linuxPkgs.nodejs_22
             ++ extraContents
             ++ contents;
           tag = "nix";
@@ -398,10 +378,15 @@
       migrationsImage = mkImage {
         name = "studienbuch-migrations";
         contents = [migrationsRootfs];
+        includeNode = false;
+        extraContents = [
+          linuxPkgs.jq
+          linuxPkgs.postgresql
+        ];
         config = {
           Env = runtimeEnv;
           WorkingDir = "/app";
-          Entrypoint = [nodeBin "/app/migrate.js"];
+          Entrypoint = ["/bin/migrate"];
         };
       };
 

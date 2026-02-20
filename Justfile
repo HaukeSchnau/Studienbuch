@@ -1,6 +1,6 @@
 [private]
 _oci-preload:
-    nix run .#oci-load-archives
+    just oci-load
 
 dev:
     just _oci-preload
@@ -77,13 +77,28 @@ nix-migrate *ARGS:
     nix run .#migrations -- {{ARGS}}
 
 oci-build:
-    nix build .#oci-archives
+    nix build --no-link \
+      .#packages.aarch64-linux.oci-api-archive \
+      .#packages.aarch64-linux.oci-console-cron-archive \
+      .#packages.aarch64-linux.oci-migrations-archive \
+      .#packages.aarch64-linux.oci-nextjs-archive \
+      .#packages.aarch64-linux.oci-admin-panel-archive
 
-oci-export *ARGS:
-    nix run .#oci-export-archives -- {{ARGS}}
+oci-export out_dir='.artifacts/oci':
+    set -eu; \
+    mkdir -p "{{out_dir}}"; \
+    cp "$(nix path-info .#packages.aarch64-linux.oci-api-archive)" "{{out_dir}}/studienbuch-api-nix.oci.tar"; \
+    cp "$(nix path-info .#packages.aarch64-linux.oci-console-cron-archive)" "{{out_dir}}/studienbuch-console-cron-nix.oci.tar"; \
+    cp "$(nix path-info .#packages.aarch64-linux.oci-migrations-archive)" "{{out_dir}}/studienbuch-migrations-nix.oci.tar"; \
+    cp "$(nix path-info .#packages.aarch64-linux.oci-nextjs-archive)" "{{out_dir}}/studienbuch-nextjs-nix.oci.tar"; \
+    cp "$(nix path-info .#packages.aarch64-linux.oci-admin-panel-archive)" "{{out_dir}}/studienbuch-admin-panel-nix.oci.tar"
 
-oci-load *ARGS:
-    nix run .#oci-load-archives -- {{ARGS}}
+oci-load:
+    nix shell nixpkgs#skopeo -c skopeo --insecure-policy copy "oci-archive:$(nix path-info .#packages.aarch64-linux.oci-api-archive)" docker-daemon:studienbuch-api:nix
+    nix shell nixpkgs#skopeo -c skopeo --insecure-policy copy "oci-archive:$(nix path-info .#packages.aarch64-linux.oci-console-cron-archive)" docker-daemon:studienbuch-console-cron:nix
+    nix shell nixpkgs#skopeo -c skopeo --insecure-policy copy "oci-archive:$(nix path-info .#packages.aarch64-linux.oci-migrations-archive)" docker-daemon:studienbuch-migrations:nix
+    nix shell nixpkgs#skopeo -c skopeo --insecure-policy copy "oci-archive:$(nix path-info .#packages.aarch64-linux.oci-nextjs-archive)" docker-daemon:studienbuch-nextjs:nix
+    nix shell nixpkgs#skopeo -c skopeo --insecure-policy copy "oci-archive:$(nix path-info .#packages.aarch64-linux.oci-admin-panel-archive)" docker-daemon:studienbuch-admin-panel:nix
 
 live-up:
     just _oci-preload
@@ -104,11 +119,11 @@ live-logs *ARGS:
     ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml logs {{ARGS}}
 
 live-health:
-    curl -fsS "http://localhost:{{ env_var_or_default('STU_API_PORT', '3001') }}/healthz"
+    ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml exec -T console-cron sh -lc 'wget -qO- http://api:80/healthz'
 
 live-health-web:
-    curl -fsS "http://localhost:{{ env_var_or_default('STU_NEXTJS_PORT', '3000') }}/" >/dev/null
-    curl -fsS "http://localhost:{{ env_var_or_default('STU_ADMIN_PANEL_PORT', '3002') }}/" >/dev/null
+    ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml exec -T console-cron sh -lc 'wget -qO- http://nextjs:80/ >/dev/null'
+    ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml exec -T console-cron sh -lc 'wget -qO- http://admin-panel:80/ >/dev/null'
 
 live-health-all:
     just live-health
