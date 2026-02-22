@@ -1,3 +1,4 @@
+import { snapshotEntitiesForEvent } from "@stu/lib";
 import { describe, expect, it, vi } from "vitest";
 import { createSnapshotResolver } from "./snapshot-resolver";
 
@@ -59,16 +60,23 @@ describe("createSnapshotResolver", () => {
       loadAbsences,
       loadGrades,
     });
+    const eventEntities = snapshotEntitiesForEvent({
+      id: "11111111-1111-4111-8111-111111111111",
+      timestamp: new Date("2026-01-01T00:00:00.000Z"),
+      type: "grades.currentGradeSet",
+      data: {
+        studentId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        courseId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        date: new Date("2026-01-01T00:00:00.000Z"),
+        result: 2,
+        type: "ORAL",
+      },
+    });
 
     const response = await resolve({
       userId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       request: {
-        entities: [
-          { kind: "student", id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" },
-          { kind: "student", id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" },
-          { kind: "course", id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc" },
-          { kind: "course", id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc" },
-        ],
+        entities: [...eventEntities, ...eventEntities],
       },
     });
 
