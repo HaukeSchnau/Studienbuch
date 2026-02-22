@@ -1,7 +1,7 @@
 import { ApplicatorError, type NamespaceApplicatorMap } from "@groundswell/core";
 import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { DomainEvent } from "@stu/lib";
-import { GradeRepository, requireStudent, StudentRepository, verifyStudentInitiator } from "@stu/lib";
+import { GradeRepository, requireStudentSignatureRequirement, StudentRepository, verifyStudentInitiator } from "@stu/lib";
 import { Effect } from "effect";
 
 export const gradeApplicators: NamespaceApplicatorMap<
@@ -20,7 +20,7 @@ export const gradeApplicators: NamespaceApplicatorMap<
     apply: (event) =>
       Effect.gen(function* () {
         const studentRepo = yield* StudentRepository;
-        const student = yield* requireStudent({
+        const isSignatureRequired = yield* requireStudentSignatureRequirement({
           studentId: event.data.studentId,
           load: studentRepo.getStudent({ studentId: event.data.studentId }),
           onMissing: (studentId) => new ApplicatorError({ cause: `Student ${studentId} not found` }),
@@ -33,7 +33,7 @@ export const gradeApplicators: NamespaceApplicatorMap<
             date: event.data.date,
             result: event.data.result,
             type: event.data.type,
-            isSignatureRequired: !student.isOfAge,
+            isSignatureRequired,
           })
           .pipe(
             Effect.catchTag("GradeTooOldError", (error) => {
@@ -53,7 +53,7 @@ export const gradeApplicators: NamespaceApplicatorMap<
     apply: (event) =>
       Effect.gen(function* () {
         const studentRepo = yield* StudentRepository;
-        const student = yield* requireStudent({
+        const isSignatureRequired = yield* requireStudentSignatureRequirement({
           studentId: event.data.studentId,
           load: studentRepo.getStudent({ studentId: event.data.studentId }),
           onMissing: (studentId) => new ApplicatorError({ cause: `Student ${studentId} not found` }),
@@ -65,7 +65,7 @@ export const gradeApplicators: NamespaceApplicatorMap<
           courseId: event.data.courseId,
           date: event.data.date,
           result: event.data.result,
-          isSignatureRequired: !student.isOfAge,
+          isSignatureRequired,
         });
       }),
   },

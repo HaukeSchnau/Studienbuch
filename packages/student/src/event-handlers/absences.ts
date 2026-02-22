@@ -1,7 +1,7 @@
 import { ApplicatorError, type NamespaceApplicatorMap } from "@groundswell/core";
 import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { DomainEvent } from "@stu/lib";
-import { AbsenceRepository, requireStudent, StudentRepository, verifyStudentInitiator } from "@stu/lib";
+import { AbsenceRepository, requireStudentSignatureRequirement, StudentRepository, verifyStudentInitiator } from "@stu/lib";
 import { Effect } from "effect";
 
 export const absenceApplicators: NamespaceApplicatorMap<
@@ -20,7 +20,7 @@ export const absenceApplicators: NamespaceApplicatorMap<
     apply: (event) =>
       Effect.gen(function* () {
         const studentRepo = yield* StudentRepository;
-        const student = yield* requireStudent({
+        const isSignatureRequired = yield* requireStudentSignatureRequirement({
           studentId: event.data.studentId,
           load: studentRepo.getStudent({ studentId: event.data.studentId }),
           onMissing: (studentId) => new ApplicatorError({ cause: `Student ${studentId} not found` }),
@@ -31,7 +31,7 @@ export const absenceApplicators: NamespaceApplicatorMap<
           date: event.data.date,
           reason: event.data.reason,
           courseIds: event.data.courseIds,
-          isSignatureRequired: !student.isOfAge,
+          isSignatureRequired,
         });
       }),
   },

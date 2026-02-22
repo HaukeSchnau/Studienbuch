@@ -1,7 +1,15 @@
 import { Cause, Effect, Exit } from "effect";
 import { describe, expect, test } from "vitest";
 import type { Student } from "./student";
-import { requireStudent, requireStudentOrDie, splitStudentName, verifyStudentInitiator } from "./student-event-logic";
+import {
+  requireStudent,
+  requireStudentOrDie,
+  requireStudentSignatureRequirement,
+  requireStudentSignatureRequirementOrDie,
+  splitStudentName,
+  verifyStudentAccess,
+  verifyStudentInitiator,
+} from "./student-event-logic";
 
 const studentFixture: Student = {
   id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
@@ -74,6 +82,73 @@ describe("student-event-logic", () => {
   test("requireStudentOrDie defects when student is missing", async () => {
     const exit = await Effect.runPromiseExit(
       requireStudentOrDie({
+        studentId: studentFixture.id,
+        load: Effect.succeed(undefined),
+        onMissing: () => new Error("missing after verify"),
+      }),
+    );
+
+    expect(Exit.isFailure(exit)).toBe(true);
+    if (Exit.isFailure(exit)) {
+      expect(Cause.pretty(exit.cause)).toContain("missing after verify");
+    }
+  });
+
+  test("verifyStudentAccess fails when initiator does not match student", async () => {
+    const result = await Effect.runPromise(
+      Effect.either(
+        verifyStudentAccess({
+          initiatorId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          studentId: studentFixture.id,
+          load: Effect.succeed(studentFixture),
+          onForbidden: () => new Error("forbidden"),
+          onMissing: () => new Error("missing"),
+        }),
+      ),
+    );
+
+    expect(result._tag).toBe("Left");
+    if (result._tag === "Left") {
+      expect(result.left).toBeInstanceOf(Error);
+      expect(result.left.message).toBe("forbidden");
+    }
+  });
+
+  test("verifyStudentAccess fails when student is missing", async () => {
+    const result = await Effect.runPromise(
+      Effect.either(
+        verifyStudentAccess({
+          initiatorId: studentFixture.id,
+          studentId: studentFixture.id,
+          load: Effect.succeed(undefined),
+          onForbidden: () => new Error("forbidden"),
+          onMissing: () => new Error("missing"),
+        }),
+      ),
+    );
+
+    expect(result._tag).toBe("Left");
+    if (result._tag === "Left") {
+      expect(result.left).toBeInstanceOf(Error);
+      expect(result.left.message).toBe("missing");
+    }
+  });
+
+  test("requireStudentSignatureRequirement returns true when student is under age", async () => {
+    const isSignatureRequired = await Effect.runPromise(
+      requireStudentSignatureRequirement({
+        studentId: studentFixture.id,
+        load: Effect.succeed(studentFixture),
+        onMissing: () => new Error("missing"),
+      }),
+    );
+
+    expect(isSignatureRequired).toBe(true);
+  });
+
+  test("requireStudentSignatureRequirementOrDie defects when student is missing", async () => {
+    const exit = await Effect.runPromiseExit(
+      requireStudentSignatureRequirementOrDie({
         studentId: studentFixture.id,
         load: Effect.succeed(undefined),
         onMissing: () => new Error("missing after verify"),

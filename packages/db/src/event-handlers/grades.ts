@@ -1,10 +1,10 @@
 import { type NamespaceServerApplicatorMap, ValidationError } from "@groundswell/core";
 import {
   type DomainEvent,
-  requireStudent,
-  requireStudentOrDie,
+  requireStudentSignatureRequirementOrDie,
   studentsOfUser,
   type UnknownDatabaseError,
+  verifyStudentAccess,
   verifyStudentInitiator,
 } from "@stu/lib";
 import { Effect } from "effect";
@@ -21,16 +21,12 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
   currentGradeSet: {
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
-        yield* verifyStudentInitiator({
+        const studentRepo = yield* StudentRepository;
+        yield* verifyStudentAccess({
           initiatorId,
           studentId: event.data.studentId,
-          onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
-        });
-
-        const studentRepo = yield* StudentRepository;
-        yield* requireStudent({
-          studentId: event.data.studentId,
           load: studentRepo.getStudent({ studentId: event.data.studentId }),
+          onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
           onMissing: () => new ValidationError({ cause: "STUDENT_NOT_FOUND", reason: "NOT_FOUND" }),
         });
 
@@ -47,7 +43,7 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
     apply: (event) =>
       Effect.gen(function* () {
         const studentRepo = yield* StudentRepository;
-        const student = yield* requireStudentOrDie({
+        const isSignatureRequired = yield* requireStudentSignatureRequirementOrDie({
           studentId: event.data.studentId,
           load: studentRepo.getStudent({ studentId: event.data.studentId }),
           onMissing: (studentId) => new Error(`Student ${studentId} not found after verify`),
@@ -60,7 +56,7 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
           date: event.data.date,
           result: event.data.result,
           type: event.data.type,
-          isSignatureRequired: !student.isOfAge,
+          isSignatureRequired,
         });
       }),
     getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId)]),
@@ -69,23 +65,19 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
   writtenGradeRecorded: {
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
-        yield* verifyStudentInitiator({
+        const studentRepo = yield* StudentRepository;
+        yield* verifyStudentAccess({
           initiatorId,
           studentId: event.data.studentId,
-          onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
-        });
-
-        const studentRepo = yield* StudentRepository;
-        yield* requireStudent({
-          studentId: event.data.studentId,
           load: studentRepo.getStudent({ studentId: event.data.studentId }),
+          onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
           onMissing: () => new ValidationError({ cause: "STUDENT_NOT_FOUND", reason: "NOT_FOUND" }),
         });
       }),
     apply: (event) =>
       Effect.gen(function* () {
         const studentRepo = yield* StudentRepository;
-        const student = yield* requireStudentOrDie({
+        const isSignatureRequired = yield* requireStudentSignatureRequirementOrDie({
           studentId: event.data.studentId,
           load: studentRepo.getStudent({ studentId: event.data.studentId }),
           onMissing: (studentId) => new Error(`Student ${studentId} not found after verify`),
@@ -97,7 +89,7 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
           courseId: event.data.courseId,
           date: event.data.date,
           result: event.data.result,
-          isSignatureRequired: !student.isOfAge,
+          isSignatureRequired,
         });
       }),
     getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId)]),
