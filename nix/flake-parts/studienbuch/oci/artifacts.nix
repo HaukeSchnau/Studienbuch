@@ -163,6 +163,15 @@ let
     '';
   };
 
+  migrationsEntrypoint = pkgs.writeShellApplication {
+    name = "migrate";
+    runtimeInputs = [
+      linuxPkgs.jq
+      linuxPkgs.postgresql
+    ];
+    text = builtins.readFile ./scripts/migrate.sh;
+  };
+
   runtimeRootfs = pkgs.runCommand "studienbuch-runtime-rootfs" { } ''
     mkdir -p "$out/bin" "$out/tmp" "$out/var/spool/cron/crontabs" "$out/etc" "$out/root"
     ln -s ${linuxPkgs.runtimeShell} "$out/bin/sh"
@@ -192,60 +201,8 @@ let
   '';
 
   migrationsRootfs = pkgs.runCommand "studienbuch-migrations-rootfs" { } ''
-    mkdir -p "$out/app/packages/db" "$out/bin"
+    mkdir -p "$out/app/packages/db"
     cp -R ${migrationsArtifacts}/packages/db/drizzle "$out/app/packages/db/drizzle"
-    cat > "$out/bin/migrate" <<'SCRIPT'
-    #!${linuxPkgs.runtimeShell}
-    set -eu
-
-    if [ -z "''${MANAGEMENT_DATABASE_URL:-}" ]; then
-      echo "MANAGEMENT_DATABASE_URL is not set" >&2
-      exit 1
-    fi
-
-    journal_path="/app/packages/db/drizzle/meta/_journal.json"
-    if [ ! -f "$journal_path" ]; then
-      echo "Missing drizzle journal at $journal_path" >&2
-      exit 1
-    fi
-
-    psql_bin=${linuxPkgs.postgresql}/bin/psql
-    jq_bin=${linuxPkgs.jq}/bin/jq
-
-    "$psql_bin" "$MANAGEMENT_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
-    CREATE SCHEMA IF NOT EXISTS stu_internal;
-    CREATE TABLE IF NOT EXISTS stu_internal.migrations (
-      tag text PRIMARY KEY,
-      applied_at timestamptz NOT NULL DEFAULT now()
-    );
-    SQL
-
-    "$jq_bin" -r '.entries | sort_by(.idx) | .[].tag' "$journal_path" | while IFS= read -r tag; do
-      sql_path="/app/packages/db/drizzle/$tag.sql"
-      if [ ! -f "$sql_path" ]; then
-        echo "Missing migration SQL file: $sql_path" >&2
-        exit 1
-      fi
-
-      already_applied=$("$psql_bin" "$MANAGEMENT_DATABASE_URL" -tA -v ON_ERROR_STOP=1 \
-        -c "SELECT 1 FROM stu_internal.migrations WHERE tag = '$tag' LIMIT 1;")
-      if [ "$already_applied" = "1" ]; then
-        echo "Skipping already applied migration: $tag"
-        continue
-      fi
-
-      echo "Applying migration: $tag"
-      "$psql_bin" "$MANAGEMENT_DATABASE_URL" -v ON_ERROR_STOP=1 <<SQL
-    BEGIN;
-    \i $sql_path
-    INSERT INTO stu_internal.migrations(tag) VALUES ('$tag');
-    COMMIT;
-    SQL
-    done
-
-    echo "Migrations completed."
-    SCRIPT
-    chmod +x "$out/bin/migrate"
   '';
 
   nextjsRootfs = pkgs.runCommand "studienbuch-nextjs-rootfs" { } ''
@@ -262,5 +219,12 @@ let
 in
 {
   inherit linuxPkgs nodeBin runtimeEnv runtimeRootfs;
-  inherit apiRootfs consoleRootfs migrationsRootfs nextjsRootfs adminPanelRootfs;
+  inherit
+    apiRootfs
+    consoleRootfs
+    migrationsRootfs
+    migrationsEntrypoint
+    nextjsRootfs
+    adminPanelRootfs
+    ;
 }

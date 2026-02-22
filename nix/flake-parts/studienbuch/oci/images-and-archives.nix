@@ -12,6 +12,7 @@ let
     apiRootfs
     consoleRootfs
     migrationsRootfs
+    migrationsEntrypoint
     nextjsRootfs
     adminPanelRootfs
     ;
@@ -70,12 +71,11 @@ let
 
     migrations = mkImage {
       name = "studienbuch-migrations";
-      contents = [ migrationsRootfs ];
-      includeNode = false;
-      extraContents = [
-        linuxPkgs.jq
-        linuxPkgs.postgresql
+      contents = [
+        migrationsRootfs
+        migrationsEntrypoint
       ];
+      includeNode = false;
       config = {
         Env = runtimeEnv;
         WorkingDir = "/app";
