@@ -2,14 +2,21 @@ import { type NamespaceApplicatorMap, ValidationError } from "@groundswell/core"
 import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { DomainEvent } from "@stu/lib";
 import {
-  CourseRepository,
-  HolidayRepository,
+  applyOrgCoursesCreated,
+  applyOrgHolidayCreated,
+  applyOrgSchoolFounded,
+  applyOrgYearStarted,
+  type CourseRepository,
+  type HolidayRepository,
   PersonRepository,
-  SchoolRepository,
-  Semester,
+  type SchoolRepository,
   type SemesterRepository,
   TimetableRepository,
-  YearRepository,
+  verifyOrgCoursesCreated,
+  verifyOrgHolidayCreated,
+  verifyOrgSchoolFounded,
+  verifyOrgYearStarted,
+  type YearRepository,
 } from "@stu/lib";
 import { Effect } from "effect";
 
@@ -30,19 +37,14 @@ export const orgApplicators: NamespaceApplicatorMap<
 > = {
   "school.founded": {
     verify: (event) =>
-      Effect.andThen(SchoolRepository, (repo) =>
-        repo.doesSchoolExist({
-          id: event.data.id,
-        }),
-      ).pipe(failIfTrue("School already exists", "DUPLICATE")),
+      verifyOrgSchoolFounded({
+        data: event.data,
+        onDuplicate: () => new ValidationError({ cause: "School already exists", reason: "DUPLICATE" }),
+      }),
     apply: (event) =>
-      Effect.andThen(SchoolRepository, (repo) =>
-        repo.createSchool({
-          id: event.data.id,
-          name: event.data.name,
-          state: event.data.state,
-        }),
-      ),
+      applyOrgSchoolFounded({
+        data: event.data,
+      }),
   },
   "teacher.joined": {
     verify: (event) =>
@@ -64,66 +66,36 @@ export const orgApplicators: NamespaceApplicatorMap<
   },
   "holiday.created": {
     verify: (event) =>
-      Effect.andThen(HolidayRepository, (repo) =>
-        repo.doesHolidayExist({
-          name: event.data.name,
-          state: event.data.state,
-          year: event.data.year,
-        }),
-      ).pipe(failIfTrue("Holiday already exists", "DUPLICATE")),
+      verifyOrgHolidayCreated({
+        data: event.data,
+        onDuplicate: () => new ValidationError({ cause: "Holiday already exists", reason: "DUPLICATE" }),
+      }),
     apply: (event) =>
-      Effect.gen(function* () {
-        const holidayRepo = yield* HolidayRepository;
-        yield* holidayRepo.createHoliday({
-          name: event.data.name,
-          start: event.data.start,
-          end: event.data.end,
-          state: event.data.state,
-          year: event.data.year,
-        });
-
-        yield* Semester.inferSemesters(event.data.state);
+      applyOrgHolidayCreated({
+        data: event.data,
       }),
   },
   "year.started": {
     verify: (event) =>
-      Effect.andThen(YearRepository, (repo) =>
-        repo.doesYearExist({
-          startYear: event.data.startYear,
-          school: event.data.school,
-        }),
-      ).pipe(failIfTrue("Year already exists", "DUPLICATE")),
+      verifyOrgYearStarted({
+        data: event.data,
+        onDuplicate: () => new ValidationError({ cause: "Year already exists", reason: "DUPLICATE" }),
+      }),
     apply: (event) =>
-      Effect.andThen(YearRepository, (repo) =>
-        repo.createYear({
-          name: event.data.name,
-          startYear: event.data.startYear,
-          graduationYear: event.data.graduationYear,
-          school: event.data.school,
-          classes: event.data.classes,
-        }),
-      ),
+      applyOrgYearStarted({
+        data: event.data,
+      }),
   },
   "courses.created": {
     verify: (event) =>
-      Effect.andThen(CourseRepository, (repo) =>
-        repo.doesCourseExist({
-          id: event.data.id,
-        }),
-      ).pipe(failIfTrue("Course already exists", "DUPLICATE")),
+      verifyOrgCoursesCreated({
+        data: event.data,
+        onDuplicate: () => new ValidationError({ cause: "Course already exists", reason: "DUPLICATE" }),
+      }),
     apply: (event) =>
-      Effect.andThen(CourseRepository, (repo) =>
-        repo.createCourse({
-          id: event.data.id,
-          name: event.data.name,
-          subject: event.data.subject,
-          school: event.data.school,
-          semester: event.data.semester,
-          isMandatory: event.data.isMandatory,
-          teachers: event.data.teachers,
-          classes: event.data.classes,
-        }),
-      ),
+      applyOrgCoursesCreated({
+        data: event.data,
+      }),
   },
   "timetable.entryCreated": {
     verify: (event) =>

@@ -1,19 +1,26 @@
 import type { NamespaceServerApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
 import {
+  applyOrgCoursesCreated,
+  applyOrgHolidayCreated,
+  applyOrgSchoolFounded,
+  applyOrgYearStarted,
   ClassRepository,
   CourseRepository,
   type DomainEvent,
-  HolidayRepository,
-  SchoolRepository,
-  Semester,
+  type HolidayRepository,
+  type SchoolRepository,
   type SemesterRepository,
   studentsOfCourse,
   studentsOfSchool,
   studentsOfState,
   studentsOfYear,
   type UnknownDatabaseError,
-  YearRepository,
+  verifyOrgCoursesCreated,
+  verifyOrgHolidayCreated,
+  verifyOrgSchoolFounded,
+  verifyOrgYearStarted,
+  type YearRepository,
 } from "@stu/lib";
 import { Effect } from "effect";
 import { Database } from "../database";
@@ -42,19 +49,14 @@ export const orgApplicators: NamespaceServerApplicatorMap<
         if (initiatorId !== SYSTEM_USER) {
           return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
         }
-        const repo = yield* SchoolRepository;
-        if (yield* repo.doesSchoolExist({ id: event.data.id })) {
-          return yield* Effect.fail(new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }));
-        }
+        yield* verifyOrgSchoolFounded({
+          data: event.data,
+          onDuplicate: () => new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }),
+        });
       }),
     apply: (event) =>
-      Effect.gen(function* () {
-        const repo = yield* SchoolRepository;
-        yield* repo.createSchool({
-          id: event.data.id,
-          name: event.data.name,
-          state: event.data.state,
-        });
+      applyOrgSchoolFounded({
+        data: event.data,
       }),
     getEventTopics: (event) => Effect.succeed([studentsOfSchool(event.data.id)]),
   },
@@ -87,23 +89,14 @@ export const orgApplicators: NamespaceServerApplicatorMap<
         if (initiatorId !== SYSTEM_USER) {
           return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
         }
-        const repo = yield* HolidayRepository;
-        if (yield* repo.getHoliday({ name: event.data.name, state: event.data.state, year: event.data.year })) {
-          return yield* Effect.fail(new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }));
-        }
+        yield* verifyOrgHolidayCreated({
+          data: event.data,
+          onDuplicate: () => new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }),
+        });
       }),
     apply: (event) =>
-      Effect.gen(function* () {
-        const holidayRepo = yield* HolidayRepository;
-        yield* holidayRepo.createHoliday({
-          name: event.data.name,
-          start: event.data.start,
-          end: event.data.end,
-          state: event.data.state,
-          year: event.data.year,
-        });
-
-        yield* Semester.inferSemesters(event.data.state);
+      applyOrgHolidayCreated({
+        data: event.data,
       }).pipe(Database.asTransaction),
     getEventTopics: (event) => Effect.succeed([studentsOfState(event.data.state)]),
   },
@@ -113,21 +106,14 @@ export const orgApplicators: NamespaceServerApplicatorMap<
         if (initiatorId !== SYSTEM_USER) {
           return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
         }
-        const repo = yield* YearRepository;
-        if (yield* repo.getYear({ school: event.data.school, startYear: event.data.startYear })) {
-          return yield* Effect.fail(new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }));
-        }
+        yield* verifyOrgYearStarted({
+          data: event.data,
+          onDuplicate: () => new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }),
+        });
       }),
     apply: (event) =>
-      Effect.gen(function* () {
-        const yearRepo = yield* YearRepository;
-        yield* yearRepo.createYear({
-          name: event.data.name,
-          startYear: event.data.startYear,
-          graduationYear: event.data.graduationYear,
-          school: event.data.school,
-          classes: event.data.classes,
-        });
+      applyOrgYearStarted({
+        data: event.data,
       }).pipe(Database.asTransaction),
     getEventTopics: (event) =>
       Effect.succeed([
@@ -143,11 +129,12 @@ export const orgApplicators: NamespaceServerApplicatorMap<
         if (initiatorId !== SYSTEM_USER) {
           return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
         }
-        const courseRepo = yield* CourseRepository;
+        yield* verifyOrgCoursesCreated({
+          data: event.data,
+          onDuplicate: () => new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }),
+        });
+
         const classRepo = yield* ClassRepository;
-        if (yield* courseRepo.getCourse({ id: event.data.id })) {
-          return yield* Effect.fail(new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }));
-        }
 
         for (const cls of event.data.classes) {
           const existingClass = yield* classRepo.getClass({
@@ -161,19 +148,8 @@ export const orgApplicators: NamespaceServerApplicatorMap<
         }
       }),
     apply: (event) =>
-      Effect.gen(function* () {
-        const courseRepo = yield* CourseRepository;
-
-        yield* courseRepo.createCourse({
-          id: event.data.id,
-          name: event.data.name,
-          subject: event.data.subject,
-          school: event.data.school,
-          semester: event.data.semester,
-          isMandatory: event.data.isMandatory,
-          teachers: event.data.teachers,
-          classes: event.data.classes,
-        });
+      applyOrgCoursesCreated({
+        data: event.data,
       }),
     getEventTopics: (event) => Effect.succeed([studentsOfCourse(event.data.id)]),
   },

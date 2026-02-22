@@ -8,6 +8,7 @@ export * from "./events";
 export * from "./formalName";
 export * from "./grades";
 export * from "./infrastructure";
+export * from "./org-event-logic";
 export * from "./repositories";
 export * from "./schedule";
 export * from "./school";
