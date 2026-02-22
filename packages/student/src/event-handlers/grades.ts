@@ -1,7 +1,12 @@
 import { ApplicatorError, type NamespaceApplicatorMap } from "@groundswell/core";
 import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import type { DomainEvent } from "@stu/lib";
-import { GradeRepository, requireStudentSignatureRequirement, StudentRepository, verifyStudentInitiator } from "@stu/lib";
+import {
+  GradeRepository,
+  requireStudentSignatureRequirement,
+  StudentRepository,
+  verifyStudentInitiator,
+} from "@stu/lib";
 import { Effect } from "effect";
 
 export const gradeApplicators: NamespaceApplicatorMap<

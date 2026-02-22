@@ -21,11 +21,10 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
   currentGradeSet: {
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
-        const studentRepo = yield* StudentRepository;
         yield* verifyStudentAccess({
           initiatorId,
           studentId: event.data.studentId,
-          load: studentRepo.getStudent({ studentId: event.data.studentId }),
+          load: Effect.andThen(StudentRepository, (repo) => repo.getStudent({ studentId: event.data.studentId })),
           onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
           onMissing: () => new ValidationError({ cause: "STUDENT_NOT_FOUND", reason: "NOT_FOUND" }),
         });
@@ -65,11 +64,10 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
   writtenGradeRecorded: {
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
-        const studentRepo = yield* StudentRepository;
         yield* verifyStudentAccess({
           initiatorId,
           studentId: event.data.studentId,
-          load: studentRepo.getStudent({ studentId: event.data.studentId }),
+          load: Effect.andThen(StudentRepository, (repo) => repo.getStudent({ studentId: event.data.studentId })),
           onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
           onMissing: () => new ValidationError({ cause: "STUDENT_NOT_FOUND", reason: "NOT_FOUND" }),
         });
