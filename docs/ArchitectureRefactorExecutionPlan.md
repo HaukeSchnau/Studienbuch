@@ -89,9 +89,18 @@
     - `bun test packages/lib/src/snapshot.test.ts` (pass)
     - `bun test packages/api/src/snapshot.test.ts` (pass)
     - `bun run test:sync` (pass)
+- `PR-07: Repository Dedup Track A (Org/Core Repos)` (slice 1; class repository dedup)
+  - Changes landed in:
+    - `refactor(repo): extract shared class repository logic` (`yv`)
+  - Verification run:
+    - `bun --filter @stu/lib typecheck` (pass)
+    - `bun --filter @stu/db typecheck` (pass)
+    - `bun --filter @stu/student typecheck` (pass)
+    - `bun test packages/db/src/applicators.integration.test.ts` (pass)
+    - `bun test packages/student/src/applicators.integration.test.ts` (pass)
 - Next queued:
 - `PR-05`: finish remaining API/mobile snapshot mapper routing and remove transitional cleanup/shims
-- `PR-07`: start Track A repository dedup for org/core repos now that parity harness coverage and allowlist typing are in place
+- `PR-07`: next slice is year/course repository dedup using the same shared helper pattern
 
 ## Phase Plan And Parallel Tracks
 
