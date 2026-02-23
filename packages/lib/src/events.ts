@@ -5,6 +5,7 @@ import { GRADE_TYPES } from "./grades";
 import { simpleDateSchema } from "./infrastructure/dates";
 import type { SchoolId, StateCode } from "./school";
 import { SCHOOL_IDS, SEMESTER_TYPES, STATE_CODES } from "./school";
+import type { StudentId } from "./student-id";
 import { SALUTATIONS } from "./teacher";
 
 export const DomainEvent = createEventUnion([
@@ -175,4 +176,4 @@ export const studentsOfYear = (options: { school: SchoolId; startYear: number })
 export const studentsOfSchool = (school: SchoolId) => `students.schools.${school}`;
 
 export const studentsOfState = (stateCode: StateCode) => `students.states.${stateCode}`;
-export const studentsOfUser = (studentId: string) => `students.user.${studentId}`;
+export const studentsOfUser = (studentId: StudentId) => `students.user.${studentId}`;

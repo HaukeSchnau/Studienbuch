@@ -1,37 +1,38 @@
 import { Effect, type Types } from "effect";
 import type { Student } from "./student";
+import type { StudentId } from "./student-id";
 
 export const verifyStudentInitiator = <E>(options: {
-  initiatorId: string;
-  studentId: string;
+  initiatorId: StudentId;
+  studentId: StudentId;
   onForbidden: () => E;
 }): Effect.Effect<void, E> =>
   options.initiatorId !== options.studentId ? Effect.fail(options.onForbidden()) : Effect.void;
 
 export const requireStudent = <R, E, E2>(options: {
-  studentId: string;
+  studentId: StudentId;
   load: Effect.Effect<Student | undefined, E, R>;
-  onMissing: (studentId: string) => E2;
+  onMissing: (studentId: StudentId) => E2;
 }): Effect.Effect<Student, E | E2, R> =>
   Effect.flatMap(options.load, (student) =>
     student ? Effect.succeed(student) : Effect.fail(options.onMissing(options.studentId)),
   );
 
 export const requireStudentOrDie = <R, E>(options: {
-  studentId: string;
+  studentId: StudentId;
   load: Effect.Effect<Student | undefined, E, R>;
-  onMissing: (studentId: string) => Types.NoInfer<unknown>;
+  onMissing: (studentId: StudentId) => Types.NoInfer<unknown>;
 }): Effect.Effect<Student, E, R> =>
   Effect.flatMap(options.load, (student) =>
     student ? Effect.succeed(student) : Effect.die(options.onMissing(options.studentId)),
   );
 
 export const verifyStudentAccess = <R, EForbidden, ELoad, EMissing>(options: {
-  initiatorId: string;
-  studentId: string;
+  initiatorId: StudentId;
+  studentId: StudentId;
   load: Effect.Effect<Student | undefined, ELoad, R>;
   onForbidden: () => EForbidden;
-  onMissing: (studentId: string) => EMissing;
+  onMissing: (studentId: StudentId) => EMissing;
 }): Effect.Effect<void, EForbidden | ELoad | EMissing, R> =>
   Effect.gen(function* () {
     yield* verifyStudentInitiator({
@@ -47,9 +48,9 @@ export const verifyStudentAccess = <R, EForbidden, ELoad, EMissing>(options: {
   });
 
 export const requireStudentSignatureRequirement = <R, E, E2>(options: {
-  studentId: string;
+  studentId: StudentId;
   load: Effect.Effect<Student | undefined, E, R>;
-  onMissing: (studentId: string) => E2;
+  onMissing: (studentId: StudentId) => E2;
 }): Effect.Effect<boolean, E | E2, R> =>
   Effect.map(
     requireStudent({
@@ -61,9 +62,9 @@ export const requireStudentSignatureRequirement = <R, E, E2>(options: {
   );
 
 export const requireStudentSignatureRequirementOrDie = <R, E>(options: {
-  studentId: string;
+  studentId: StudentId;
   load: Effect.Effect<Student | undefined, E, R>;
-  onMissing: (studentId: string) => Types.NoInfer<unknown>;
+  onMissing: (studentId: StudentId) => Types.NoInfer<unknown>;
 }): Effect.Effect<boolean, E, R> =>
   Effect.map(
     requireStudentOrDie({
@@ -75,9 +76,9 @@ export const requireStudentSignatureRequirementOrDie = <R, E>(options: {
   );
 
 export const withStudentSignatureRequirement = <RLoad, RRun, ELoad, ERun, EMissing>(options: {
-  studentId: string;
+  studentId: StudentId;
   load: Effect.Effect<Student | undefined, ELoad, RLoad>;
-  onMissing: (studentId: string) => EMissing;
+  onMissing: (studentId: StudentId) => EMissing;
   run: (isSignatureRequired: boolean) => Effect.Effect<void, ERun, RRun>;
 }): Effect.Effect<void, ELoad | ERun | EMissing, RLoad | RRun> =>
   Effect.gen(function* () {
@@ -91,9 +92,9 @@ export const withStudentSignatureRequirement = <RLoad, RRun, ELoad, ERun, EMissi
   });
 
 export const withStudentSignatureRequirementOrDie = <RLoad, RRun, ELoad, ERun>(options: {
-  studentId: string;
+  studentId: StudentId;
   load: Effect.Effect<Student | undefined, ELoad, RLoad>;
-  onMissing: (studentId: string) => Types.NoInfer<unknown>;
+  onMissing: (studentId: StudentId) => Types.NoInfer<unknown>;
   run: (isSignatureRequired: boolean) => Effect.Effect<void, ERun, RRun>;
 }): Effect.Effect<void, ELoad | ERun, RLoad | RRun> =>
   Effect.gen(function* () {

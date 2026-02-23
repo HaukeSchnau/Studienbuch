@@ -1,9 +1,10 @@
 import { Context, type Effect } from "effect";
 import type { UnknownDatabaseError } from "./repositories";
 import type { SchoolId } from "./school";
+import type { StudentId } from "./student-id";
 
 export interface Student {
-  id: string;
+  id: StudentId;
   firstName: string;
   lastName: string;
   school: SchoolId;
@@ -18,6 +19,6 @@ export class StudentRepository extends Context.Tag("StudentRepository")<
 
     assignCourse: (payload: { courseId: string }) => Effect.Effect<void, UnknownDatabaseError>;
 
-    getStudent: (payload: { studentId: string }) => Effect.Effect<Student | undefined, UnknownDatabaseError>;
+    getStudent: (payload: { studentId: StudentId }) => Effect.Effect<Student | undefined, UnknownDatabaseError>;
   }
 >() {}

@@ -1,4 +1,4 @@
-import { StudentRepository } from "@stu/lib";
+import { StudentRepository, type StudentId } from "@stu/lib";
 import { eq } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import { Database } from "../database";
@@ -66,7 +66,7 @@ export const StudentRepositoryLive = Layer.effect(
         );
       }),
 
-      getStudent: Effect.fn(function* (payload) {
+      getStudent: Effect.fn(function* (payload: { studentId: StudentId }) {
         const { execute } = yield* databaseContext;
 
         const student = yield* execute((db) =>

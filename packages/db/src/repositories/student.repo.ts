@@ -1,4 +1,4 @@
-import type { SchoolId } from "@stu/lib";
+import type { SchoolId, StudentId } from "@stu/lib";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { Database } from "../database";
@@ -25,7 +25,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       return cls.length > 0;
     });
 
-    const getSchoolOfUser = Effect.fn(function* (payload: { studentId: string }) {
+    const getSchoolOfUser = Effect.fn(function* (payload: { studentId: StudentId }) {
       const { execute } = yield* Database;
 
       const rows = yield* execute((db) =>
@@ -42,7 +42,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
     });
 
     const createStudent = Effect.fn(function* (payload: {
-      studentId: string;
+      studentId: StudentId;
       firstName: string;
       lastName: string;
       school: SchoolId;
@@ -103,7 +103,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       return course.length > 0;
     });
 
-    const isAssignedToCourse = Effect.fn(function* (payload: { studentId: string; courseId: string }) {
+    const isAssignedToCourse = Effect.fn(function* (payload: { studentId: StudentId; courseId: string }) {
       const { execute } = yield* Database;
 
       const assignment = yield* execute((db) =>
@@ -118,7 +118,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       return !!assignment;
     });
 
-    const assignCourse = Effect.fn(function* (payload: { studentId: string; courseId: string }) {
+    const assignCourse = Effect.fn(function* (payload: { studentId: StudentId; courseId: string }) {
       const { execute } = yield* Database;
 
       yield* execute((db) =>
@@ -129,7 +129,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       );
     });
 
-    const getStudent = Effect.fn(function* (payload: { studentId: string }) {
+    const getStudent = Effect.fn(function* (payload: { studentId: StudentId }) {
       const { execute } = yield* Database;
 
       const student = yield* execute((db) =>

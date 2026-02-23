@@ -16,6 +16,7 @@ export * from "./semesters";
 export * from "./snapshot";
 export * from "./student";
 export * from "./student-event-logic";
+export * from "./student-id";
 export * from "./teacher";
 export * from "./theme";
 export * from "./user";
