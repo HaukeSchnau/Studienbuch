@@ -197,15 +197,5 @@ export const INTENTIONALLY_DIVERGENT_SCHEMA_TABLE_ALLOWLIST = {
 
 export type SchemaParityAllowlistTableName = keyof typeof INTENTIONALLY_DIVERGENT_SCHEMA_TABLE_ALLOWLIST;
 
-const allowlistEntries = Object.entries(INTENTIONALLY_DIVERGENT_SCHEMA_TABLE_ALLOWLIST) as Array<[
-  SchemaParityAllowlistTableName,
-  SchemaParityAllowlistInfo,
-]>;
-
-const filterByEnvironment = (environment: SchemaParityEnvironment) =>
-  allowlistEntries
-    .filter(([, info]) => info.environments.includes(environment))
-    .map(([tableName]) => tableName) as readonly SchemaParityAllowlistTableName[];
-
-export const POSTGRES_INTENTIONALLY_DIVERGENT_TABLES = filterByEnvironment("postgres");
-export const SQLITE_INTENTIONALLY_DIVERGENT_TABLES = filterByEnvironment("sqlite");
+export const POSTGRES_INTENTIONALLY_DIVERGENT_TABLES = ["rooms", "course_memberships"] as const;
+export const SQLITE_INTENTIONALLY_DIVERGENT_TABLES = ["timetable_entry_rooms"] as const;

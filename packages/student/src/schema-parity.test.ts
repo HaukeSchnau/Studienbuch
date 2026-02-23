@@ -5,7 +5,6 @@ import {
   SQLITE_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS,
   evaluateSchemaParity,
   type SchemaParityActualTable,
-  type SchemaParityAllowlistTableName,
 } from "@stu/lib";
 import { describe, expect, test } from "bun:test";
 import { getTableConfig } from "drizzle-orm/sqlite-core";
@@ -111,9 +110,11 @@ describe("schema parity (student)", () => {
 
     expect(allowlistNames.every((tableName) => tableName in sqliteAllowlistTableMetadata)).toBe(true);
     expect(
-      (Object.keys(sqliteAllowlistTableMetadata) as SchemaParityAllowlistTableName[]).every((tableName) =>
-        allowlistNames.includes(tableName),
-      ),
+      (
+        Object.keys(sqliteAllowlistTableMetadata) as Array<
+          (typeof SQLITE_INTENTIONALLY_DIVERGENT_TABLES)[number]
+        >
+      ).every((tableName) => allowlistNames.includes(tableName)),
     ).toBe(true);
   });
 });

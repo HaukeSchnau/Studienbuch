@@ -5,7 +5,6 @@ import {
   SHARED_CORE_TABLE_PARITY_CONTRACTS,
   evaluateSchemaParity,
   type SchemaParityActualTable,
-  type SchemaParityAllowlistTableName,
 } from "@stu/lib";
 import { describe, expect, test } from "bun:test";
 import { getTableConfig } from "drizzle-orm/pg-core";
@@ -113,9 +112,11 @@ describe("schema parity (db)", () => {
 
     expect(allowlistNames.every((tableName) => tableName in postgresAllowlistTableMetadata)).toBe(true);
     expect(
-      (Object.keys(postgresAllowlistTableMetadata) as SchemaParityAllowlistTableName[]).every((tableName) =>
-        allowlistNames.includes(tableName),
-      ),
+      (
+        Object.keys(postgresAllowlistTableMetadata) as Array<
+          (typeof POSTGRES_INTENTIONALLY_DIVERGENT_TABLES)[number]
+        >
+      ).every((tableName) => allowlistNames.includes(tableName)),
     ).toBe(true);
   });
 });
