@@ -58,34 +58,36 @@
     - `bun test packages/api/src/sync.integration.test.ts` (pass)
     - `bun run test:sync` (pass)
 - In progress:
-- `PR-05: Snapshot Mapping Deduplication` (slice 5)
+- `PR-05: Snapshot Mapping Deduplication` (slice 8)
   - Changes landed in:
     - `refactor(student): share snapshot apply helper with app-mobile` (`klu`)
     - `refactor(snapshot): extract shared dedupe helpers` (`sps`)
     - `test(snapshot): share fixtures across api/mobile/lib` (`oo`)
     - `refactor(lib): extract snapshot entity resolver module` (`pw`)
     - `refactor(snapshot): extract shared mapper collectors` (`lmv`)
+    - `refactor(snapshot): share absence and grade projection mappers` (`sn`)
+    - `refactor(snapshot): share student and course row mappers` (`oz`)
+    - `test(snapshot): add shared mapper unit coverage` (`rl`)
   - Verification run:
     - `bun --filter @stu/lib typecheck` (pass)
     - `bun --filter @stu/api typecheck` (pass)
     - `bun --filter @stu/student typecheck` (pass)
-    - `bun --filter @stu/app-mobile typecheck` (pass)
     - `bun test packages/lib/src/snapshot.test.ts` (pass)
     - `bun test packages/api/src/snapshot.test.ts` (pass)
-    - `bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts` (pass)
     - `bun run test:sync` (pass)
-- `PR-06: PG/SQLite Data-Model Parity Harness` (slice 1)
+- `PR-06: PG/SQLite Data-Model Parity Harness` (slice 3)
   - Changes landed in:
     - `test(schema): add shared pg/sqlite parity harness slice 1` (`ryv`)
+    - `test(schema): extend parity contracts to shared timetable and tasks` (`mx`)
+    - `test: expand student-domain schema parity contracts` (`ut`)
   - Verification run:
-    - `bun --filter @stu/lib typecheck` (pass)
     - `bun --filter @stu/db typecheck` (pass)
     - `bun --filter @stu/student typecheck` (pass)
     - `bun test packages/db/src/schema-parity.test.ts` (pass)
     - `bun test packages/student/src/schema-parity.test.ts` (pass)
 - Next queued:
-- `PR-05`: route remaining API/mobile snapshot mapping and projection access through shared mappers/entities
-- `PR-06`: extend parity contracts to timetable/student-domain tables and reduce allowlist
+- `PR-05`: finish remaining API/mobile snapshot mapper routing and remove transitional cleanup/shims
+- `PR-06`: narrow parity allowlist and add coverage for remaining shared/student-domain tables
 
 ## Phase Plan And Parallel Tracks
 
