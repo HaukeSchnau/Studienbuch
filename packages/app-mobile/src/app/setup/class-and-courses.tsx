@@ -10,11 +10,10 @@ import { TempError } from "~/components/temp-error";
 import { Text } from "~/components/text";
 import { currentStudent } from "~/db/queries/user";
 import { getMyCoursesForSemester } from "~/features/profile/queries/get-my-courses";
-import { api, getHeadersObject } from "~/utils/api";
-import { getBaseUrl } from "~/utils/base-url";
+import { api } from "~/utils/api";
 import { useIngest, useRuntime } from "~/utils/events/ingest";
 import { useAppForm } from "~/utils/form";
-import { hydrateSnapshotFromApi } from "~/utils/snapshot-recovery";
+import { hydrateSnapshotFromDefaultApi } from "~/utils/snapshot-recovery";
 
 type Course = BaseCourse & WithTeachers;
 
@@ -49,9 +48,7 @@ export default function ClassAndCourses() {
       const courses = Object.values(value.chosenCourses).filter(Boolean);
 
       await runtime.runPromise(
-        hydrateSnapshotFromApi({
-          baseUrl: getBaseUrl(),
-          headers: getHeadersObject(),
+        hydrateSnapshotFromDefaultApi({
           request: {
             entities: [
               { kind: "student", id: student.person.id },

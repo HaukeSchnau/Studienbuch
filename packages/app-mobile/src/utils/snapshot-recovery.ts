@@ -9,6 +9,8 @@ import {
 } from "@stu/lib";
 import { applySnapshotToLocalDatabase as applySnapshotToLocalDatabaseFromStudent } from "@stu/student";
 import { Data, Effect, Either } from "effect";
+import { getHeadersObject } from "./api";
+import { getBaseUrl } from "./base-url";
 
 export class SnapshotRecoveryError extends Data.TaggedError("SnapshotRecoveryError")<{
   cause: unknown;
@@ -75,6 +77,18 @@ export const fetchSnapshotFromApi = Effect.fn(function* (options: {
   return snapshot.data;
 });
 
+export const fetchSnapshotFromDefaultApi = Effect.fn(function* (options: {
+  request: SnapshotRequest;
+  fetchFn?: typeof fetch;
+}) {
+  return yield* fetchSnapshotFromApi({
+    baseUrl: getBaseUrl(),
+    headers: getHeadersObject(),
+    request: options.request,
+    fetchFn: options.fetchFn,
+  });
+});
+
 export const applyEventWithSnapshotRecovery = <RApply, RFetch, RApplySnapshot>(options: {
   event: DomainEvent;
   applyEvent: (event: DomainEvent) => Effect.Effect<void, UnknownDatabaseError | ApplicatorError, RApply>;
@@ -115,4 +129,16 @@ export const hydrateSnapshotFromApi = Effect.fn(function* (options: {
   const snapshot = yield* fetchSnapshotFromApi(options);
   yield* applySnapshotToLocalDatabase(snapshot);
   return snapshot;
+});
+
+export const hydrateSnapshotFromDefaultApi = Effect.fn(function* (options: {
+  request: SnapshotRequest;
+  fetchFn?: typeof fetch;
+}) {
+  return yield* hydrateSnapshotFromApi({
+    baseUrl: getBaseUrl(),
+    headers: getHeadersObject(),
+    request: options.request,
+    fetchFn: options.fetchFn,
+  });
 });

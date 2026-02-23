@@ -37,7 +37,7 @@ import { getBaseUrl } from "./base-url";
 import {
   applyEventWithSnapshotRecovery,
   applySnapshotToLocalDatabase,
-  fetchSnapshotFromApi,
+  fetchSnapshotFromDefaultApi,
   type SnapshotRecoveryError,
 } from "./snapshot-recovery";
 import { getStorage, setStorage } from "./storage";
@@ -129,12 +129,7 @@ const clientApplicatorsLive = Layer.effect(
               applicators.apply(candidate, {
                 initiatorId: session.user,
               }),
-            fetchSnapshot: (request) =>
-              fetchSnapshotFromApi({
-                baseUrl: getBaseUrl(),
-                headers: getHeadersObject(),
-                request,
-              }),
+            fetchSnapshot: (request) => fetchSnapshotFromDefaultApi({ request }),
             applySnapshot: applySnapshotToLocalDatabase,
           });
         },

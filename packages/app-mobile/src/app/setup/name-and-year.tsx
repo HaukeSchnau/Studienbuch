@@ -12,11 +12,10 @@ import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
 import { currentStudent } from "~/db/queries/user";
 import { useAppForm } from "~/features/setup/form";
-import { api, getHeadersObject } from "~/utils/api";
+import { api } from "~/utils/api";
 import { useSession } from "~/utils/auth";
-import { getBaseUrl } from "~/utils/base-url";
 import { useIngest, useRuntime } from "~/utils/events/ingest";
-import { hydrateSnapshotFromApi } from "~/utils/snapshot-recovery";
+import { hydrateSnapshotFromDefaultApi } from "~/utils/snapshot-recovery";
 
 export default function NameAndYear() {
   const years = api.schools.years.list.useQuery({ activeOnly: true });
@@ -55,9 +54,7 @@ export default function NameAndYear() {
       });
 
       await runtime.runPromise(
-        hydrateSnapshotFromApi({
-          baseUrl: getBaseUrl(),
-          headers: getHeadersObject(),
+        hydrateSnapshotFromDefaultApi({
           request: {
             entities: [{ kind: "student", id: session.userId }],
           },
