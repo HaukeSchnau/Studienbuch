@@ -8,6 +8,23 @@
 - Assumption: no package rename is required; refactor happens within existing workspaces under `packages/*`.
 - Assumption: standalone API (`@stu/api`) remains the runtime boundary for sync and snapshot endpoints.
 
+## Execution Status (2026-02-23)
+
+- Completed:
+- `PR-01: Backend Service Boundary Extraction`
+  - Changes landed in:
+    - `refactor(api): extract ingest sync service` (`rkk`)
+    - `refactor(api): extract topic lookup service` (`wt`)
+    - `refactor(api): extract snapshot service` (`xp`)
+  - Verification run:
+    - `bun --filter @stu/api typecheck` (pass)
+    - `bun test packages/api/src/snapshot.test.ts` (pass)
+    - `bun run test:sync` (pass)
+- In progress:
+- None
+- Next queued:
+- `PR-02: Router Boundary Cleanup (Legacy vs Domain)`
+
 ## Phase Plan And Parallel Tracks
 
 1. Phase 1 (Foundation): PR-01 to PR-06 in sequence.
