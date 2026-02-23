@@ -30,6 +30,52 @@ const personFromTeacher = (teacher: SnapshotResponse["courses"][number]["teacher
 
 export type SnapshotPerson = ReturnType<typeof personFromTeacher>;
 
+type AbsenceCourseProjectionRow = {
+  course: SnapshotResponse["absences"][number]["courses"][number]["courseId"];
+  teacherSignature: SnapshotResponse["absences"][number]["courses"][number]["teacherSignature"];
+};
+
+type AbsenceProjectionRow = {
+  date: Date;
+  reason: SnapshotResponse["absences"][number]["reason"];
+  parentSignature: SnapshotResponse["absences"][number]["parentSignature"];
+  absenceCourses: readonly AbsenceCourseProjectionRow[];
+};
+
+type GradeProjectionRow = {
+  date: Date;
+  result: SnapshotResponse["grades"][number]["result"];
+  type: SnapshotResponse["grades"][number]["type"];
+  course: SnapshotResponse["grades"][number]["course"];
+  teacherSignature: SnapshotResponse["grades"][number]["teacherSignature"];
+  parentSignature: SnapshotResponse["grades"][number]["parentSignature"];
+};
+
+export const mapAbsenceRowsToSnapshotProjections = (
+  rows: readonly AbsenceProjectionRow[],
+): SnapshotResponse["absences"] =>
+  rows.map((absence) => ({
+    date: absence.date.toISOString(),
+    reason: absence.reason,
+    parentSignature: absence.parentSignature,
+    courses: absence.absenceCourses.map((courseAbsence) => ({
+      courseId: courseAbsence.course,
+      teacherSignature: courseAbsence.teacherSignature,
+    })),
+  }));
+
+export const mapGradeRowsToSnapshotProjections = (
+  rows: readonly GradeProjectionRow[],
+): SnapshotResponse["grades"] =>
+  rows.map((grade) => ({
+    date: grade.date.toISOString(),
+    result: grade.result,
+    type: grade.type,
+    course: grade.course,
+    teacherSignature: grade.teacherSignature,
+    parentSignature: grade.parentSignature,
+  }));
+
 export const collectSnapshotSchools = (snapshot: SnapshotResponse): SchoolSnapshot[] =>
   uniqueBy(
     [...snapshot.students.map(schoolFromStudent), ...snapshot.courses.map(schoolFromCourse)],

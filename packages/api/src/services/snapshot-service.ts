@@ -1,7 +1,12 @@
 import { and, eq, inArray } from "@stu/db";
 import { db } from "@stu/db/client";
 import * as tables from "@stu/db/schema";
-import type { SnapshotResponse, StudentSnapshot } from "@stu/lib";
+import {
+  mapAbsenceRowsToSnapshotProjections,
+  mapGradeRowsToSnapshotProjections,
+  type SnapshotResponse,
+  type StudentSnapshot,
+} from "@stu/lib";
 import { createSnapshotResolver } from "../snapshot-resolver";
 
 const loadStudents = async (userId: string, ids: string[]): Promise<StudentSnapshot[]> => {
@@ -172,15 +177,7 @@ const loadAbsences = async (userId: string): Promise<SnapshotResponse["absences"
     },
   });
 
-  return absenceRows.map((absence) => ({
-    date: absence.date.toISOString(),
-    reason: absence.reason,
-    parentSignature: absence.parentSignature,
-    courses: absence.absenceCourses.map((courseAbsence) => ({
-      courseId: courseAbsence.course,
-      teacherSignature: courseAbsence.teacherSignature,
-    })),
-  }));
+  return mapAbsenceRowsToSnapshotProjections(absenceRows);
 };
 
 const loadGrades = async (userId: string): Promise<SnapshotResponse["grades"]> => {
@@ -188,14 +185,7 @@ const loadGrades = async (userId: string): Promise<SnapshotResponse["grades"]> =
     where: eq(tables.Grades.student, userId),
   });
 
-  return gradeRows.map((grade) => ({
-    date: grade.date.toISOString(),
-    result: grade.result,
-    type: grade.type,
-    course: grade.course,
-    teacherSignature: grade.teacherSignature,
-    parentSignature: grade.parentSignature,
-  }));
+  return mapGradeRowsToSnapshotProjections(gradeRows);
 };
 
 export const resolveSnapshotForUser = createSnapshotResolver({
