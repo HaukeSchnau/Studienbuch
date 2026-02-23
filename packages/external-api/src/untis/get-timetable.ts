@@ -1,6 +1,8 @@
 import { HttpClient, HttpClientResponse } from "@effect/platform";
 import { SimpleDate, TimeOfDay } from "@stu/lib";
 import { Data, Effect, ParseResult, Schema } from "effect";
+import { withUntisHttpResilience } from "./http";
+import { untisLegacyApiUrl } from "./urls";
 
 class InvalidDurationError extends Data.TaggedError("InvalidDurationError")<{ value: string }> {}
 
@@ -123,7 +125,7 @@ export namespace UntisTimetable {
 
     return yield* HttpClient.HttpClient.pipe(
       Effect.flatMap((client) =>
-        client.get("https://kadmos.webuntis.com/WebUntis/api/rest/view/v1/timetable/entries", {
+        client.get(untisLegacyApiUrl("/timetable/entries"), {
           headers: {
             "x-webuntis-api-school-year-id": options.schoolYearId.toString(),
           },
@@ -139,6 +141,7 @@ export namespace UntisTimetable {
         }),
       ),
       Effect.flatMap(HttpClientResponse.schemaBodyJson(ResponseSchema)),
+      withUntisHttpResilience("timetable.get"),
     );
   });
 }

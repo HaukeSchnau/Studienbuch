@@ -24,10 +24,11 @@
     "lint:ws": "sherif",
     "postinstall": "bun lint:ws",
     "test": "vitest run",
+    "test:sync": "bun test packages/api/src/sync.integration.test.ts",
     "test:maestro:mobile": "bun --filter @stu/app-mobile maestro:test",
     "test:dev": "vitest --ui --coverage",
     "typecheck": "turbo run typecheck --filter=!@stu/nextjs",
-    "ci": "turbo run lint typecheck",
+    "ci": "run-s lint typecheck test:sync",
     "ci:fix": "run-s format:fix lint:fix"
   },
   "devDependencies": {

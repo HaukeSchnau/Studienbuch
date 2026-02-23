@@ -1,6 +1,8 @@
 import { HttpClient, HttpClientResponse } from "@effect/platform";
 import { SimpleDate } from "@stu/lib";
 import { Effect, Schema } from "effect";
+import { withUntisHttpResilience } from "./http";
+import { untisLegacyApiUrl } from "./urls";
 
 export namespace UntisClasses {
   const GetClassesResponseSchema = Schema.Struct({
@@ -60,7 +62,7 @@ export namespace UntisClasses {
 
     return yield* HttpClient.HttpClient.pipe(
       Effect.flatMap((client) =>
-        client.get("https://kadmos.webuntis.com/WebUntis/api/rest/view/v1/timetable/filter", {
+        client.get(untisLegacyApiUrl("/timetable/filter"), {
           headers: {
             "x-webuntis-api-school-year-id": schoolYearId.toString(),
           },
@@ -73,6 +75,7 @@ export namespace UntisClasses {
         }),
       ),
       Effect.flatMap(HttpClientResponse.schemaBodyJson(GetClassesResponseSchema)),
+      withUntisHttpResilience("classes.list"),
     );
   });
 }

@@ -1,8 +1,7 @@
 import { Cookies, HttpBody, HttpClient, HttpClientRequest, HttpClientResponse } from "@effect/platform";
 import { Data, Effect, pipe, Ref, Schema } from "effect";
-
-const LegacyKadmosBaseUrl = "https://kadmos.webuntis.com";
-const SchoolSearchUrl = "https://schoolsearch.webuntis.com/schoolquery2";
+import { withUntisHttpResilience } from "./http";
+import { untisLegacyBaseUrl, untisSchoolBaseUrl, untisSchoolSearchUrl } from "./urls";
 
 const SchoolSchema = Schema.Struct({
   displayName: Schema.String,
@@ -47,7 +46,7 @@ const queryAliases = (kadmosName: string): ReadonlySet<string> => {
   return aliases;
 };
 
-const schoolBaseUrl = (school: School) => `https://${school.server}`;
+const schoolBaseUrl = (school: School) => untisSchoolBaseUrl(school.server);
 
 export class LoginError extends Data.TaggedError("LoginError")<{
   cause: unknown;
@@ -85,7 +84,7 @@ export namespace UntisAuth {
     client: HttpClient.HttpClient;
   }) {
     const schoolLookupResponse = yield* client
-      .post(SchoolSearchUrl, {
+      .post(untisSchoolSearchUrl, {
         headers: {
           accept: "application/json",
           "content-type": "application/json",
@@ -97,7 +96,10 @@ export namespace UntisAuth {
           jsonrpc: "2.0",
         }),
       })
-      .pipe(Effect.flatMap(HttpClientResponse.schemaBodyJson(SchoolSearchResponseSchema)));
+      .pipe(
+        Effect.flatMap(HttpClientResponse.schemaBodyJson(SchoolSearchResponseSchema)),
+        withUntisHttpResilience("schoolLookup"),
+      );
 
     const selectedSchool = selectSchool({
       kadmosName,
@@ -127,11 +129,13 @@ export namespace UntisAuth {
     const baseUrl = schoolBaseUrl(school);
 
     // First request to get the initial cookies
-    yield* client.get(`${baseUrl}/WebUntis/`, {
-      urlParams: {
-        school: school.loginName,
-      },
-    });
+    yield* client
+      .get(`${baseUrl}/WebUntis/`, {
+        urlParams: {
+          school: school.loginName,
+        },
+      })
+      .pipe(withUntisHttpResilience("loginBootstrap"));
 
     const schema = Schema.Struct({
       state: Schema.Literal("SUCCESS"),
@@ -148,14 +152,17 @@ export namespace UntisAuth {
           ["token", ""],
         ]),
       })
-      .pipe(Effect.flatMap(HttpClientResponse.schemaBodyJson(schema)));
+      .pipe(Effect.flatMap(HttpClientResponse.schemaBodyJson(schema)), withUntisHttpResilience("login"));
   });
 
   const getBearerToken = ({ client, school }: { client: HttpClient.HttpClient; school: School }) =>
-    client.get(`${schoolBaseUrl(school)}/WebUntis/api/token/new`).pipe(Effect.flatMap((response) => response.text));
+    client.get(`${schoolBaseUrl(school)}/WebUntis/api/token/new`).pipe(
+      Effect.flatMap((response) => response.text),
+      withUntisHttpResilience("bearerToken"),
+    );
 
   const rewriteLegacyKadmosHost = (school: School) =>
-    HttpClientRequest.updateUrl((url) => url.replace(LegacyKadmosBaseUrl, schoolBaseUrl(school)));
+    HttpClientRequest.updateUrl((url) => url.replace(untisLegacyBaseUrl, schoolBaseUrl(school)));
 
   export const login = Effect.fn(function* ({
     kadmosName,

@@ -2,7 +2,16 @@
 _oci-preload:
     just oci-load
 
+[private]
+_preflight-doctor:
+    if [ "${SKIP_DOCTOR:-0}" = "1" ]; then \
+      echo "Skipping doctor preflight (SKIP_DOCTOR=1)."; \
+    else \
+      just doctor; \
+    fi
+
 dev:
+    just _preflight-doctor
     just _oci-preload
     ./tooling/with-env.sh docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans
     open http://localhost:8081/_expo/plugins/expo-drizzle-studio-plugin
@@ -110,14 +119,17 @@ oci-load *ARGS:
     nix run .#oci-load-archives {{ARGS}}
 
 live-up:
+    just _preflight-doctor
     just _oci-preload
     ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml up -d --no-build --remove-orphans
 
 live-up-dev:
+    just _preflight-doctor
     just _oci-preload
     ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml -f docker-compose.dev.yml up -d --no-build --remove-orphans
 
 live-up-dev-debug:
+    just _preflight-doctor
     just _oci-preload
     ./tooling/with-env.sh docker compose --profile live -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.debug-ports.yml up -d --no-build --remove-orphans
 
