@@ -20,10 +20,23 @@
     - `bun --filter @stu/api typecheck` (pass)
     - `bun test packages/api/src/snapshot.test.ts` (pass)
     - `bun run test:sync` (pass)
-- In progress:
-- None
-- Next queued:
 - `PR-02: Router Boundary Cleanup (Legacy vs Domain)`
+  - Changes landed in:
+    - `refactor(api): route root through domain router modules` (`ow`)
+  - Verification run:
+    - `bun --filter @stu/api typecheck` (pass)
+    - `bun run test:sync` (pass)
+- In progress:
+- `PR-03: studentId Contract Alignment` (slice 1)
+  - Changes landed in:
+    - `refactor(lib): introduce shared StudentId alias` (`tsk`)
+  - Verification run:
+    - `bun --filter @stu/lib typecheck` (pass)
+    - `bun --filter @stu/api typecheck` (pass)
+    - `bun --filter @stu/student typecheck` (pass)
+    - `bun run test:sync` (pass)
+- Next queued:
+- `PR-03`: continue alias propagation across event/applicator and repository payload types
 
 ## Phase Plan And Parallel Tracks
 
