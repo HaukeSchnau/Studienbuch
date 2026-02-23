@@ -4,6 +4,8 @@ export * from "./absences";
 export * from "./auth";
 export * from "./classes";
 export * from "./courses";
+export * from "./data-model/contracts";
+export * from "./data-model/parity";
 export * from "./events";
 export * from "./formalName";
 export * from "./grades";
