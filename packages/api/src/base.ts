@@ -4,7 +4,7 @@ import { trpcServer } from "@hono/trpc-server";
 import { appRouter, createTRPCContext } from "@stu/api";
 import { sql } from "@stu/db";
 import { db } from "@stu/db/client";
-import { DomainEvent, SnapshotRequestSchema } from "@stu/lib";
+import { DomainEvent } from "@stu/lib";
 import { getSession, getSessionTokenFromHeaders } from "@stu/lib-server";
 import { Effect } from "effect";
 import { type Context, Hono } from "hono";
@@ -14,7 +14,7 @@ import { trimTrailingSlash } from "hono/trailing-slash";
 import pino from "pino";
 import { env } from "../env";
 import { DomainBroadcast, DomainIngestEngine } from "./boilerplate";
-import { resolveSnapshotForUser } from "./services/snapshot-service";
+import { resolveSnapshotRequest } from "./services/snapshot-request-service";
 
 const appLogger = pino({
   transport: {
@@ -158,23 +158,20 @@ export const createBase = Effect.fn(function* (basePath: string) {
   });
 
   app.post("/api/snapshot", async (c) => {
-    const userId = await getUserId(c);
-    if (!userId) {
+    const result = await resolveSnapshotRequest({
+      headers: new Headers(c.req.header()),
+      getBody: () => c.req.json(),
+    });
+
+    if (result.status === "unauthorized") {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const body = await c.req.json().catch(() => null);
-    const request = SnapshotRequestSchema.safeParse(body);
-    if (!request.success) {
+    if (result.status === "invalid-request") {
       return c.json({ error: "Invalid snapshot request" }, 400);
     }
 
-    const snapshot = await resolveSnapshotForUser({
-      userId,
-      request: request.data,
-    });
-
-    return c.json(snapshot, 200);
+    return c.json(result.snapshot, 200);
   });
 
   attachSyncServer(app.basePath("/api"), {
