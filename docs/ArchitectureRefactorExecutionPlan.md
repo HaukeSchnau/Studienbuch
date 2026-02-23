@@ -57,6 +57,20 @@
     - `bun test packages/api/src/base.snapshot.test.ts` (pass)
     - `bun test packages/api/src/sync.integration.test.ts` (pass)
     - `bun run test:sync` (pass)
+- `PR-06: PG/SQLite Data-Model Parity Harness` (completed; parity harness foundation)
+  - Changes landed in:
+    - `test(schema): add shared pg/sqlite parity harness slice 1` (`ryv`)
+    - `test(schema): extend parity contracts to shared timetable and tasks` (`mx`)
+    - `test: expand student-domain schema parity contracts` (`ut`)
+    - `test(schema): include holidays in shared parity contracts` (`vx`)
+    - `test(schema): add dedicated substitutions parity contracts` (`lz`)
+    - `test(schema): cover parity allowlist tables` (`tw`)
+    - `fix(schema): narrow parity allowlist table typing` (`os`)
+  - Verification run:
+    - `bun --filter @stu/db typecheck` (pass)
+    - `bun --filter @stu/student typecheck` (pass)
+    - `bun test packages/db/src/schema-parity.test.ts` (pass)
+    - `bun test packages/student/src/schema-parity.test.ts` (pass)
 - In progress:
 - `PR-05: Snapshot Mapping Deduplication` (slice 8)
   - Changes landed in:
@@ -75,21 +89,9 @@
     - `bun test packages/lib/src/snapshot.test.ts` (pass)
     - `bun test packages/api/src/snapshot.test.ts` (pass)
     - `bun run test:sync` (pass)
-- `PR-06: PG/SQLite Data-Model Parity Harness` (slice 5)
-  - Changes landed in:
-    - `test(schema): add shared pg/sqlite parity harness slice 1` (`ryv`)
-    - `test(schema): extend parity contracts to shared timetable and tasks` (`mx`)
-    - `test: expand student-domain schema parity contracts` (`ut`)
-    - `test(schema): include holidays in shared parity contracts` (`vx`)
-    - `test(schema): add dedicated substitutions parity contracts` (`lz`)
-  - Verification run:
-    - `bun --filter @stu/db typecheck` (pass)
-    - `bun --filter @stu/student typecheck` (pass)
-    - `bun test packages/db/src/schema-parity.test.ts` (pass)
-    - `bun test packages/student/src/schema-parity.test.ts` (pass)
 - Next queued:
 - `PR-05`: finish remaining API/mobile snapshot mapper routing and remove transitional cleanup/shims
-- `PR-06`: resolve decision path for one-sided allowlist tables and close remaining coverage gaps (`rooms`, `course_memberships`, `timetable_entry_rooms`)
+- `PR-07`: start Track A repository dedup for org/core repos now that parity harness coverage and allowlist typing are in place
 
 ## Phase Plan And Parallel Tracks
 
