@@ -50,6 +50,12 @@ export class DomainTransport extends Context.Tag("Transport")<DomainTransport, T
 
 export class DomainSyncEngine extends Context.Tag("SyncEngine")<DomainSyncEngine, SyncEngine<DomainEvent>>() {}
 
+interface SessionService {
+  readonly current: Effect.Effect<{ user: string; token: string }, NoSessionError>;
+}
+
+export class DomainSession extends Context.Tag("Session")<DomainSession, SessionService>() {}
+
 export const clientSyncEngine = syncEngineFactory(DomainSyncEngine, Database);
 
 export class NoSessionError extends Data.TaggedError("NoSessionError") {}
@@ -70,13 +76,18 @@ const shouldBypassLocalMissingDependencyVerification = (event: DomainEvent, erro
   return false;
 };
 
-const currentSession = Effect.gen(function* () {
-  const session = getStorage("auth.session");
-  if (!session) {
-    return yield* Effect.fail(new NoSessionError());
-  }
-  return yield* Effect.succeed(session);
-});
+const SessionLive = Layer.succeed(
+  DomainSession,
+  DomainSession.of({
+    current: Effect.gen(function* () {
+      const session = getStorage("auth.session");
+      if (!session) {
+        return yield* Effect.fail(new NoSessionError());
+      }
+      return session;
+    }),
+  }),
+);
 
 export const repositories = Layer.mergeAll(
   AbsenceRepositoryLive,
@@ -96,10 +107,11 @@ const clientApplicatorsLive = Layer.effect(
   DomainApplicator,
   Effect.gen(function* () {
     const db = yield* Database;
+    const sessionService = yield* DomainSession;
     return DomainApplicator.of({
       verify: Effect.fn(
         function* (event: DomainEvent) {
-          const session = yield* currentSession;
+          const session = yield* sessionService.current;
 
           yield* applicators
             .verify(event, {
@@ -121,7 +133,7 @@ const clientApplicatorsLive = Layer.effect(
       ),
       apply: Effect.fn(
         function* (event: DomainEvent) {
-          const session = yield* currentSession;
+          const session = yield* sessionService.current;
 
           return yield* applyEventWithSnapshotRecovery({
             event,
@@ -188,6 +200,7 @@ const RandomUUIDLive = Layer.succeed(RandomUUID, {
 export const makeSyncEngineLive = (offset: number) =>
   syncEngineLive(DomainSyncEngine, DomainApplicator, DomainStorage, DomainTransport, { offset }).pipe(
     Layer.provide(clientApplicatorsLive),
+    Layer.provide(SessionLive),
     Layer.provide(StorageLive),
     Layer.provide(TransportWithOffsetPersistenceLive),
     Layer.merge(RandomUUIDLive),
