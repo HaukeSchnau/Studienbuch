@@ -44,6 +44,7 @@
     - `refactor(api): extract snapshot request orchestration service` (`ky`)
     - `refactor(api): centralize session user resolution` (`vwy`)
     - `test(api): cover snapshot request service branches` (`vv`)
+    - `test(api): add snapshot route transport wiring coverage` (`pr`)
     - `refactor(app-mobile): centralize default snapshot transport wiring` (`ss`)
     - `refactor(app-mobile): extract request header helpers` (`mz`)
     - `refactor(app-mobile): wire sync session context service` (`sr`)
@@ -53,11 +54,13 @@
     - `bun test packages/api/src/snapshot.test.ts` (pass)
     - `bun --filter @stu/app-mobile typecheck` (pass)
     - `bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts` (pass)
+    - `bun test packages/api/src/base.snapshot.test.ts` (pass)
     - `bun run test:sync` (pass)
-- `PR-05: Snapshot Mapping Deduplication` (slice 2)
+- `PR-05: Snapshot Mapping Deduplication` (slice 3)
   - Changes landed in:
     - `refactor(student): share snapshot apply helper with app-mobile` (`klu`)
     - `refactor(snapshot): extract shared dedupe helpers` (`sps`)
+    - `test(snapshot): share fixtures across api/mobile/lib` (`oo`)
   - Verification run:
     - `bun --filter @stu/lib typecheck` (pass)
     - `bun --filter @stu/api typecheck` (pass)
@@ -68,8 +71,8 @@
     - `bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts` (pass)
     - `bun run test:sync` (pass)
 - Next queued:
-- `PR-04`: add API transport-level `/api/snapshot` endpoint wiring test
-- `PR-05`: extract shared snapshot test fixtures for API/mobile/lib snapshot tests
+- `PR-04`: add reconnect/snapshot fallback integration scenario to `packages/api/src/sync.integration.test.ts`
+- `PR-06`: add PG/SQLite schema parity harness tests
 
 ## Phase Plan And Parallel Tracks
 
