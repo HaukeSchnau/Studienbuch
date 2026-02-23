@@ -1,4 +1,4 @@
-import { ClassRepository, type SchoolId } from "@stu/lib";
+import { classRepositoryLogic, ClassRepository, type SchoolId } from "@stu/lib";
 import { and, eq } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import { Database } from "../database";
@@ -10,33 +10,21 @@ export const ClassRepositoryLive = Layer.effect(
   Effect.gen(function* () {
     const databaseContext = yield* RepositoryDatabase;
 
-    const getClass = Effect.fn(function* (payload: { identifier: string; startYear: number; school: SchoolId }) {
-      const { execute } = yield* databaseContext;
-      return yield* execute((db) =>
-        db.query.Classes.findFirst({
-          where: and(
-            eq(tables.Classes.school, payload.school),
-            eq(tables.Classes.identifierInYear, payload.identifier),
-            eq(tables.Classes.startYear, payload.startYear),
-          ),
-        }),
-      );
-    });
-
-    return {
-      getClass,
-
-      doesClassExist: Effect.fn(function* (payload) {
-        const clazz = yield* getClass(payload);
-        return clazz !== undefined;
+    const classRepository = classRepositoryLogic({
+      getClass: Effect.fn(function* (payload: { identifier: string; startYear: number; school: SchoolId }) {
+        const { execute } = yield* databaseContext;
+        return yield* execute((db) =>
+          db.query.Classes.findFirst({
+            where: and(
+              eq(tables.Classes.school, payload.school),
+              eq(tables.Classes.identifierInYear, payload.identifier),
+              eq(tables.Classes.startYear, payload.startYear),
+            ),
+          }),
+        );
       }),
 
-      createClass: Effect.fn(function* (payload: {
-        identifier: string;
-        startYear: number;
-        school: SchoolId;
-        teachers: string[];
-      }) {
+      insertClass: Effect.fn(function* (payload: { identifier: string; startYear: number; school: SchoolId }) {
         const { execute } = yield* databaseContext;
         yield* execute((db) =>
           db.insert(tables.Classes).values({
@@ -45,16 +33,33 @@ export const ClassRepositoryLive = Layer.effect(
             school: payload.school,
           }),
         );
-        for (const teacher of payload.teachers) {
-          yield* execute((db) =>
-            db.insert(tables.TeachersToClasses).values({
-              teacher,
-              classIdentifier: payload.identifier,
-              classStartYear: payload.startYear,
-              school: payload.school,
-            }),
-          );
-        }
+      }),
+
+      insertTeacherLink: Effect.fn(function* (payload: {
+        identifier: string;
+        startYear: number;
+        school: SchoolId;
+        teacher: string;
+      }) {
+        const { execute } = yield* databaseContext;
+        yield* execute((db) =>
+          db.insert(tables.TeachersToClasses).values({
+            teacher: payload.teacher,
+            classIdentifier: payload.identifier,
+            classStartYear: payload.startYear,
+            school: payload.school,
+          }),
+        );
+      }),
+    });
+
+    const { createClassCore, ...repository } = classRepository;
+
+    return {
+      ...repository,
+
+      createClass: Effect.fn(function* (payload) {
+        yield* createClassCore(payload);
       }, Database.asTransactionCustom(databaseContext)),
     };
   }),
