@@ -1,5 +1,4 @@
 import { type ApplicatorError, applicatorTreeFactory, type NamespaceApplicatorTree } from "@groundswell/core";
-import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import type {
   AbsenceRepository,
   ClassRepository,
@@ -12,6 +11,7 @@ import type {
   SemesterRepository,
   StudentRepository,
   TimetableRepository,
+  UnknownDatabaseError,
   YearRepository,
 } from "@stu/lib";
 import { absenceApplicators } from "./event-handlers/absences";
@@ -22,7 +22,7 @@ import { studentApplicators } from "./event-handlers/student";
 const applicatorTree: Partial<
   NamespaceApplicatorTree<
     DomainEvent,
-    DatabaseError<GenericSqliteError> | ApplicatorError,
+    UnknownDatabaseError | ApplicatorError,
     | StudentRepository
     | AbsenceRepository
     | GradeRepository

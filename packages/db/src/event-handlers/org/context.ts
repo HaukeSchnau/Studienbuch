@@ -7,4 +7,3 @@ export const verifySystemInitiator = (initiatorId: string) =>
   initiatorId === SYSTEM_USER
     ? Effect.void
     : Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
-

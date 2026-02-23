@@ -30,4 +30,3 @@ export type OrgApplicatorMap = NamespaceServerApplicatorMap<
   UnknownDatabaseError,
   OrgApplicatorDependencies
 >;
-

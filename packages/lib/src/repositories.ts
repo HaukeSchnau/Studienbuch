@@ -5,7 +5,15 @@ import type { SimpleDate } from "./infrastructure/dates";
 import type { SchoolId, StateCode } from "./school";
 import type { Semester } from "./semesters";
 
-export type UnknownDatabaseError = unknown;
+export interface UnknownDatabaseError {
+  readonly _tag: "DatabaseError";
+  readonly type: "unique_violation" | "foreign_key_violation" | "connection_error" | "unknown";
+  readonly cause: {
+    readonly message: string;
+  };
+  readonly drizzleError: unknown;
+  readonly message: string;
+}
 
 export class AbsenceRepository extends Context.Tag("AbsenceRepository")<
   AbsenceRepository,

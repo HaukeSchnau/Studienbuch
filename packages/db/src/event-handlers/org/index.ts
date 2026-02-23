@@ -1,8 +1,8 @@
-import type { OrgApplicatorMap } from "./types";
 import { calendarApplicators } from "./calendar";
 import { courseApplicators } from "./courses";
 import { schoolApplicators } from "./school";
 import { timetableApplicators } from "./timetable";
+import type { OrgApplicatorMap } from "./types";
 
 export const orgApplicators: OrgApplicatorMap = {
   ...schoolApplicators,
@@ -10,4 +10,3 @@ export const orgApplicators: OrgApplicatorMap = {
   ...courseApplicators,
   ...timetableApplicators,
 };
-

@@ -1,7 +1,6 @@
 import type { NamespaceApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
-import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
-import type { DomainEvent } from "@stu/lib";
+import type { DomainEvent, UnknownDatabaseError } from "@stu/lib";
 import {
   ClassRepository,
   CourseRepository,
@@ -17,7 +16,7 @@ const failIfFalse = (message: string, reason: "DUPLICATE" | "INVALID" | "NOT_ALL
 export const studentApplicators: NamespaceApplicatorMap<
   DomainEvent,
   "student",
-  DatabaseError<GenericSqliteError>,
+  UnknownDatabaseError,
   StudentRepository | ClassRepository | CourseRepository
 > = {
   joined: {

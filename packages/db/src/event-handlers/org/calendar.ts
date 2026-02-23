@@ -50,4 +50,3 @@ export const calendarApplicators: Pick<OrgApplicatorMap, "holiday.created" | "ye
       ]),
   },
 };
-

@@ -323,10 +323,7 @@ describe("live postgres applicator integration", () => {
       .select()
       .from(schema.TimetableEntries)
       .where(
-        and(
-          eq(schema.TimetableEntries.course, courseId),
-          eq(schema.TimetableEntries.start, entryCreated.data.start),
-        ),
+        and(eq(schema.TimetableEntries.course, courseId), eq(schema.TimetableEntries.start, entryCreated.data.start)),
       );
 
     expect(courses).toHaveLength(1);
@@ -342,10 +339,7 @@ describe("live postgres applicator integration", () => {
       .select()
       .from(schema.TimetableEntries)
       .where(
-        and(
-          eq(schema.TimetableEntries.course, courseId),
-          eq(schema.TimetableEntries.start, entryCreated.data.start),
-        ),
+        and(eq(schema.TimetableEntries.course, courseId), eq(schema.TimetableEntries.start, entryCreated.data.start)),
       );
 
     expect(timetableEntriesAfterDiscard).toHaveLength(0);

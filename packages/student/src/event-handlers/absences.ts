@@ -1,6 +1,5 @@
 import { ApplicatorError, type NamespaceApplicatorMap } from "@groundswell/core";
-import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
-import type { DomainEvent } from "@stu/lib";
+import type { DomainEvent, UnknownDatabaseError } from "@stu/lib";
 import {
   AbsenceRepository,
   StudentRepository,
@@ -12,7 +11,7 @@ import { Effect } from "effect";
 export const absenceApplicators: NamespaceApplicatorMap<
   DomainEvent,
   "absence",
-  DatabaseError<GenericSqliteError> | ApplicatorError,
+  UnknownDatabaseError | ApplicatorError,
   StudentRepository | AbsenceRepository
 > = {
   recorded: {

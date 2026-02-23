@@ -1,11 +1,11 @@
 import type { ApplicatorError } from "@groundswell/core";
-import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/generic-sqlite";
 import {
   type DomainEvent,
   type SnapshotRequest,
   type SnapshotResponse,
   SnapshotResponseSchema,
   snapshotEntitiesForEvent,
+  type UnknownDatabaseError,
 } from "@stu/lib";
 import { Database } from "@stu/student";
 import * as tables from "@stu/student/schema";
@@ -26,10 +26,7 @@ const uniqueBy = <T>(items: readonly T[], key: (item: T) => string): T[] => {
 const schoolFromStudent = (student: SnapshotResponse["students"][number]) => student.school;
 const schoolFromCourse = (course: SnapshotResponse["courses"][number]) => course.school;
 
-const isMissingReferenceError = (
-  event: DomainEvent,
-  error: DatabaseError<GenericSqliteError> | ApplicatorError,
-): boolean => {
+const isMissingReferenceError = (event: DomainEvent, error: UnknownDatabaseError | ApplicatorError): boolean => {
   if (error._tag === "DatabaseError") {
     return error.type === "foreign_key_violation";
   }
@@ -358,9 +355,9 @@ export const fetchSnapshotFromApi = Effect.fn(function* (options: {
 
 export const applyEventWithSnapshotRecovery = <RApply, RFetch, RApplySnapshot>(options: {
   event: DomainEvent;
-  applyEvent: (event: DomainEvent) => Effect.Effect<void, DatabaseError<GenericSqliteError> | ApplicatorError, RApply>;
+  applyEvent: (event: DomainEvent) => Effect.Effect<void, UnknownDatabaseError | ApplicatorError, RApply>;
   fetchSnapshot: (request: SnapshotRequest) => Effect.Effect<SnapshotResponse, SnapshotRecoveryError, RFetch>;
-  applySnapshot: (snapshot: SnapshotResponse) => Effect.Effect<void, DatabaseError<GenericSqliteError>, RApplySnapshot>;
+  applySnapshot: (snapshot: SnapshotResponse) => Effect.Effect<void, UnknownDatabaseError, RApplySnapshot>;
 }) =>
   Effect.gen(function* () {
     const initialResult = yield* options.applyEvent(options.event).pipe(Effect.either);

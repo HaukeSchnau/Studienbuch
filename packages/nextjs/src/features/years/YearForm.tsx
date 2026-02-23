@@ -44,29 +44,19 @@ type ZodValidator = ReturnType<typeof zodValidator>;
 
 interface Props {
   defaultYear?: Year;
-  onSubmit: (props: {
-    value: YearOutput;
-    formApi: FormApi<YearFormValues, ZodValidator>;
-  }) => void;
+  onSubmit: (props: { value: YearOutput; formApi: FormApi<YearFormValues, ZodValidator> }) => void;
   error?: string;
   isPending?: boolean;
 }
 
-export const YearForm = ({
-  onSubmit,
-  defaultYear,
-  error,
-  isPending,
-}: Props) => {
+export const YearForm = ({ onSubmit, defaultYear, error, isPending }: Props) => {
   const { Field, handleSubmit } = useForm<YearFormValues, ZodValidator>({
     validatorAdapter: zodValidator(),
     defaultValues: {
       name: defaultYear?.name ?? "",
       school: defaultYear?.school,
       startYear: defaultYear?.startYear,
-      numberOfYears: defaultYear
-        ? defaultYear.graduationYear - defaultYear.startYear
-        : 9,
+      numberOfYears: defaultYear ? defaultYear.graduationYear - defaultYear.startYear : 9,
     },
     onSubmit: ({ value, formApi }) => {
       const parsed = yearSchema.parse(value);
@@ -77,10 +67,7 @@ export const YearForm = ({
   const schools = api.schools.list.useQuery();
 
   return (
-    <form
-      onSubmit={submitHandler(handleSubmit)}
-      className="flex flex-col gap-4"
-    >
+    <form onSubmit={submitHandler(handleSubmit)} className="flex flex-col gap-4">
       <Field
         name="name"
         validators={{

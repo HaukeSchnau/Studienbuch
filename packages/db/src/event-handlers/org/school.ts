@@ -1,9 +1,5 @@
 import { ValidationError } from "@groundswell/core";
-import {
-  applyOrgSchoolFounded,
-  studentsOfSchool,
-  verifyOrgSchoolFounded,
-} from "@stu/lib";
+import { applyOrgSchoolFounded, studentsOfSchool, verifyOrgSchoolFounded } from "@stu/lib";
 import { Effect } from "effect";
 import { PersonRepository } from "../../repositories/person.repo";
 import { verifySystemInitiator } from "./context";
@@ -47,4 +43,3 @@ export const schoolApplicators: Pick<OrgApplicatorMap, "school.founded" | "teach
     getEventTopics: (event) => Effect.succeed([studentsOfSchool(event.data.school)]),
   },
 };
-
