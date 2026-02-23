@@ -6,7 +6,7 @@ import { SYSTEM_USER } from "./constants";
 import { runtime } from "./groundswell";
 import type { AppRouter } from "./root";
 import { appRouter } from "./root";
-import { ingest, ingestEffect } from "./router/events/ingest";
+import { ingest, ingestEffect } from "./services/sync-service";
 import { createCallerFactory, createTRPCContext } from "./trpc";
 
 const createCaller = createCallerFactory(appRouter);
