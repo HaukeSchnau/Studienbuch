@@ -45,4 +45,5 @@ const applicatorTree: Partial<
 export * from "./database";
 export const applicators = applicatorTreeFactory(applicatorTree);
 export * from "./repositories";
+export * from "./snapshot/apply-snapshot";
 export * from "./schema/utils";
