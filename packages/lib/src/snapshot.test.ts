@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { courseId, studentId } from "./snapshot-test-fixtures";
 import { snapshotEntitiesForEvent } from "./snapshot";
-
-const studentId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
-const courseId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 
 describe("snapshotEntitiesForEvent", () => {
   it("returns student + deduplicated course refs for absence.recorded", () => {

@@ -1,62 +1,8 @@
 import { ApplicatorError } from "@groundswell/core";
+import { courseId, sampleSnapshotResponse, studentId } from "@stu/lib";
 import { Effect } from "effect";
 import { describe, expect, it, vi } from "vitest";
 import { applyEventWithSnapshotRecovery } from "./snapshot-recovery";
-
-const studentId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
-const courseId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
-
-const validSnapshot = {
-  students: [
-    {
-      id: studentId,
-      firstName: "Ada",
-      lastName: "Student",
-      isOfAge: false,
-      school: {
-        id: "igs-lil" as const,
-        name: "IGS Lilienthal",
-        stateCode: "NI" as const,
-      },
-      year: {
-        name: "11",
-        startYear: 2024,
-        graduationYear: 2027,
-        school: "igs-lil" as const,
-      },
-      class: {
-        identifierInYear: "11a",
-        startYear: 2024,
-        school: "igs-lil" as const,
-      },
-    },
-  ],
-  courses: [
-    {
-      id: courseId,
-      name: "Mathe LK",
-      subject: "ma" as const,
-      isMandatory: false,
-      school: {
-        id: "igs-lil" as const,
-        name: "IGS Lilienthal",
-        stateCode: "NI" as const,
-      },
-      semester: {
-        name: "Winter 2025/2026",
-        start: "2025-08-01T00:00:00.000Z",
-        end: "2026-01-31T23:59:59.000Z",
-        school: "igs-lil" as const,
-        type: "WINTER" as const,
-        year: 2025,
-      },
-      teachers: [],
-      classes: [],
-    },
-  ],
-  absences: [],
-  grades: [],
-};
 
 describe("applyEventWithSnapshotRecovery", () => {
   it("fetches and applies snapshot once after foreign key failure, then retries apply", async () => {
@@ -71,7 +17,7 @@ describe("applyEventWithSnapshotRecovery", () => {
         }),
       )
       .mockImplementationOnce(() => Effect.void);
-    const fetchSnapshot = vi.fn(() => Effect.succeed(validSnapshot));
+    const fetchSnapshot = vi.fn(() => Effect.succeed(sampleSnapshotResponse));
     const applySnapshot = vi.fn(() => Effect.void);
 
     await Effect.runPromise(
@@ -106,7 +52,7 @@ describe("applyEventWithSnapshotRecovery", () => {
 
   it("does not snapshot-recover for non-missing-reference applicator errors", async () => {
     const applyEvent = vi.fn(() => Effect.fail(new ApplicatorError({ cause: "NOT_ALLOWED" })));
-    const fetchSnapshot = vi.fn(() => Effect.succeed(validSnapshot));
+    const fetchSnapshot = vi.fn(() => Effect.succeed(sampleSnapshotResponse));
 
     await expect(
       Effect.runPromise(
@@ -138,7 +84,7 @@ describe("applyEventWithSnapshotRecovery", () => {
       .fn()
       .mockImplementationOnce(() => Effect.fail(new ApplicatorError({ cause: `Student ${studentId} not found` })))
       .mockImplementationOnce(() => Effect.void);
-    const fetchSnapshot = vi.fn(() => Effect.succeed(validSnapshot));
+    const fetchSnapshot = vi.fn(() => Effect.succeed(sampleSnapshotResponse));
     const applySnapshot = vi.fn(() => Effect.void);
 
     await Effect.runPromise(

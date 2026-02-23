@@ -15,6 +15,7 @@ export * from "./school";
 export * from "./semesters";
 export * from "./snapshot";
 export * from "./snapshot-helpers";
+export * from "./snapshot-test-fixtures";
 export * from "./student";
 export * from "./student-event-logic";
 export * from "./student-id";
