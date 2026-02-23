@@ -12,28 +12,44 @@ type ResolveSnapshotRequestInput = {
   getBody: () => Promise<unknown>;
 };
 
-export const resolveSnapshotRequest = async ({
-  headers,
-  getBody,
-}: ResolveSnapshotRequestInput): Promise<SnapshotRequestResult> => {
-  const userId = await resolveUserIdFromHeaders(headers);
-  if (!userId) {
-    return { status: "unauthorized" };
-  }
+export type SnapshotRequestDependencies = {
+  resolveUserIdFromHeaders: typeof resolveUserIdFromHeaders;
+  resolveSnapshotForUser: typeof resolveSnapshotForUser;
+};
 
-  const body = await getBody().catch(() => null);
-  const request = SnapshotRequestSchema.safeParse(body);
-  if (!request.success) {
-    return { status: "invalid-request" };
-  }
+const defaultDependencies: SnapshotRequestDependencies = {
+  resolveUserIdFromHeaders,
+  resolveSnapshotForUser,
+};
 
-  const snapshot = await resolveSnapshotForUser({
-    userId,
-    request: request.data,
-  });
+export const createResolveSnapshotRequest = (
+  dependencies: SnapshotRequestDependencies = defaultDependencies,
+) => {
+  return async ({
+    headers,
+    getBody,
+  }: ResolveSnapshotRequestInput): Promise<SnapshotRequestResult> => {
+    const userId = await dependencies.resolveUserIdFromHeaders(headers);
+    if (!userId) {
+      return { status: "unauthorized" };
+    }
 
-  return {
-    status: "ok",
-    snapshot,
+    const body = await getBody().catch(() => null);
+    const request = SnapshotRequestSchema.safeParse(body);
+    if (!request.success) {
+      return { status: "invalid-request" };
+    }
+
+    const snapshot = await dependencies.resolveSnapshotForUser({
+      userId,
+      request: request.data,
+    });
+
+    return {
+      status: "ok",
+      snapshot,
+    };
   };
 };
+
+export const resolveSnapshotRequest = createResolveSnapshotRequest();
