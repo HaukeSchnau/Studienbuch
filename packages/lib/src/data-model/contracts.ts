@@ -7,7 +7,11 @@ export type CoreSchemaParityTableName =
   | "students"
   | "courses"
   | "courses_to_teachers"
-  | "courses_to_classes";
+  | "courses_to_classes"
+  | "tasks"
+  | "timetable_entries"
+  | "recurring_timetable_entries"
+  | "room_changes";
 
 export interface SchemaParityContract {
   tableName: CoreSchemaParityTableName;
@@ -69,19 +73,35 @@ export const SHARED_CORE_TABLE_PARITY_CONTRACTS = [
     requiredColumns: ["course", "school", "class_identifier", "class_start_year"],
     primaryKeyColumns: ["course", "class_identifier", "class_start_year", "school"],
   },
+  {
+    tableName: "tasks",
+    requiredColumns: ["id", "title", "description", "due_date", "course", "assignee", "images", "done"],
+    primaryKeyColumns: ["id"],
+  },
+  {
+    tableName: "timetable_entries",
+    requiredColumns: ["date", "duration", "course"],
+    primaryKeyColumns: ["date", "course"],
+  },
+  {
+    tableName: "recurring_timetable_entries",
+    requiredColumns: ["weekday", "start", "duration", "weeks", "room", "course"],
+    primaryKeyColumns: ["weekday", "start", "course"],
+  },
+  {
+    tableName: "room_changes",
+    requiredColumns: ["date", "course", "room", "createdAt", "updatedAt"],
+    primaryKeyColumns: [],
+  },
 ] as const satisfies readonly SchemaParityContract[];
 
 export const INTENTIONALLY_DIVERGENT_SCHEMA_TABLE_ALLOWLIST = {
   grades: "Student-side uses profile-local modeling and omits shared student scoping.",
   absence_days: "Absence table shape diverges between server and local profile storage.",
   course_absences: "Absence table shape diverges between server and local profile storage.",
-  tasks: "Task lifecycle/state is intentionally package-specific for now.",
   holidays: "Primary key shape intentionally differs between PG and SQLite implementations.",
   rooms: "Present only in server DB schema.",
   course_memberships: "Present only in server DB schema; student uses course membership flags.",
-  timetable_entries: "Timetable core shape is tracked in a separate parity slice.",
-  recurring_timetable_entries: "Timetable core shape is tracked in a separate parity slice.",
   substitutions: "Timetable substitutions are tracked in a separate parity slice.",
-  room_changes: "Timetable room changes are tracked in a separate parity slice.",
   timetable_entry_rooms: "Present only in student SQLite schema.",
 } as const;

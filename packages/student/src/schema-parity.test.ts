@@ -2,7 +2,21 @@ import { evaluateSchemaParity, SHARED_CORE_TABLE_PARITY_CONTRACTS, type SchemaPa
 import { describe, expect, test } from "bun:test";
 import { getTableConfig } from "drizzle-orm/sqlite-core";
 
-import { classes, courses, coursesToClasses, coursesToTeachers, persons, schools, semesters, students, years } from "./schema";
+import {
+  classes,
+  courses,
+  coursesToClasses,
+  coursesToTeachers,
+  persons,
+  recurringTimetableEntries,
+  roomChanges,
+  schools,
+  semesters,
+  students,
+  tasks,
+  timetableEntries,
+  years,
+} from "./schema";
 
 const extractPrimaryKeyColumns = (tableConfig: {
   primaryKeys: Array<{ columns: Array<{ name: string }> }>;
@@ -35,6 +49,10 @@ const coreTableMetadata = {
   courses: extractTableMetadata(courses),
   courses_to_teachers: extractTableMetadata(coursesToTeachers),
   courses_to_classes: extractTableMetadata(coursesToClasses),
+  tasks: extractTableMetadata(tasks),
+  timetable_entries: extractTableMetadata(timetableEntries),
+  recurring_timetable_entries: extractTableMetadata(recurringTimetableEntries),
+  room_changes: extractTableMetadata(roomChanges),
 } satisfies Record<(typeof SHARED_CORE_TABLE_PARITY_CONTRACTS)[number]["tableName"], SchemaParityActualTable>;
 
 describe("schema parity (student)", () => {

@@ -2,7 +2,21 @@ import { evaluateSchemaParity, SHARED_CORE_TABLE_PARITY_CONTRACTS, type SchemaPa
 import { describe, expect, test } from "bun:test";
 import { getTableConfig } from "drizzle-orm/pg-core";
 
-import { Classes, Courses, CoursesToClasses, CoursesToTeachers, Persons, Schools, Semesters, Students, Years } from "./schema";
+import {
+  Classes,
+  Courses,
+  CoursesToClasses,
+  CoursesToTeachers,
+  Persons,
+  RecurringTimetableEntries,
+  RoomChanges,
+  Schools,
+  Semesters,
+  Students,
+  Tasks,
+  TimetableEntries,
+  Years,
+} from "./schema";
 
 const extractPrimaryKeyColumns = (tableConfig: {
   primaryKeys: Array<{ columns: Array<{ name: string }> }>;
@@ -35,6 +49,10 @@ const coreTableMetadata = {
   courses: extractTableMetadata(Courses),
   courses_to_teachers: extractTableMetadata(CoursesToTeachers),
   courses_to_classes: extractTableMetadata(CoursesToClasses),
+  tasks: extractTableMetadata(Tasks),
+  timetable_entries: extractTableMetadata(TimetableEntries),
+  recurring_timetable_entries: extractTableMetadata(RecurringTimetableEntries),
+  room_changes: extractTableMetadata(RoomChanges),
 } satisfies Record<(typeof SHARED_CORE_TABLE_PARITY_CONTRACTS)[number]["tableName"], SchemaParityActualTable>;
 
 describe("schema parity (db)", () => {
