@@ -1,4 +1,9 @@
-import { evaluateSchemaParity, SHARED_CORE_TABLE_PARITY_CONTRACTS, type SchemaParityActualTable } from "@stu/lib";
+import {
+  POSTGRES_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS,
+  SHARED_CORE_TABLE_PARITY_CONTRACTS,
+  evaluateSchemaParity,
+  type SchemaParityActualTable,
+} from "@stu/lib";
 import { describe, expect, test } from "bun:test";
 import { getTableConfig } from "drizzle-orm/pg-core";
 
@@ -7,11 +12,14 @@ import {
   Courses,
   CoursesToClasses,
   CoursesToTeachers,
+  CourseAbsences,
+  Grades,
   Persons,
   RecurringTimetableEntries,
   RoomChanges,
   Schools,
   Semesters,
+  AbsenceDays,
   Students,
   Tasks,
   TimetableEntries,
@@ -55,9 +63,22 @@ const coreTableMetadata = {
   room_changes: extractTableMetadata(RoomChanges),
 } satisfies Record<(typeof SHARED_CORE_TABLE_PARITY_CONTRACTS)[number]["tableName"], SchemaParityActualTable>;
 
+const studentDomainTableMetadata = {
+  grades: extractTableMetadata(Grades),
+  absence_days: extractTableMetadata(AbsenceDays),
+  course_absences: extractTableMetadata(CourseAbsences),
+} satisfies Record<(typeof POSTGRES_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS)[number]["tableName"], SchemaParityActualTable>;
+
 describe("schema parity (db)", () => {
   test("shared core schema contracts pass for postgres tables", () => {
     const parity = evaluateSchemaParity(SHARED_CORE_TABLE_PARITY_CONTRACTS, coreTableMetadata);
+
+    expect(parity.tables.filter((table) => !table.passed)).toEqual([]);
+    expect(parity.passed).toBe(true);
+  });
+
+  test("student-domain schema contracts pass for postgres tables", () => {
+    const parity = evaluateSchemaParity(POSTGRES_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS, studentDomainTableMetadata);
 
     expect(parity.tables.filter((table) => !table.passed)).toEqual([]);
     expect(parity.passed).toBe(true);
