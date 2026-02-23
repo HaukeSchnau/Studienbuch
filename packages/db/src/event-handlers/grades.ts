@@ -13,8 +13,6 @@ import type { Database } from "../database";
 import { GradeRepositoryDb } from "../repositories/grade.repo";
 import { StudentRepository } from "../repositories/student.repo";
 
-const asStudentId = (studentId: string): StudentId => studentId as StudentId;
-
 export const gradeApplicators: NamespaceServerApplicatorMap<
   DomainEvent,
   "grades",
@@ -24,7 +22,7 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
   currentGradeSet: {
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
-        const studentId = asStudentId(event.data.studentId);
+        const studentId = event.data.studentId as StudentId;
 
         yield* verifyStudentAccess({
           initiatorId,
@@ -45,7 +43,7 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
         }
       }),
     apply: (event) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return withStudentSignatureRequirementOrDie({
         studentId,
@@ -64,13 +62,13 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
           ),
       });
     },
-    getEventTopics: (event) => Effect.succeed([studentsOfUser(asStudentId(event.data.studentId))]),
+    getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId as StudentId)]),
   },
 
   writtenGradeRecorded: {
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
-        const studentId = asStudentId(event.data.studentId);
+        const studentId = event.data.studentId as StudentId;
 
         yield* verifyStudentAccess({
           initiatorId,
@@ -81,7 +79,7 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
         });
       }),
     apply: (event) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return withStudentSignatureRequirementOrDie({
         studentId,
@@ -99,12 +97,12 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
           ),
       });
     },
-    getEventTopics: (event) => Effect.succeed([studentsOfUser(asStudentId(event.data.studentId))]),
+    getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId as StudentId)]),
   },
 
   teacherApproved: {
     verify: (event, { initiatorId }) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return verifyStudentInitiator({
         initiatorId,
@@ -113,7 +111,7 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
       });
     },
     apply: (event) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return Effect.andThen(GradeRepositoryDb, (repo) =>
         repo.setTeacherSignature({
@@ -125,12 +123,12 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
         }),
       );
     },
-    getEventTopics: (event) => Effect.succeed([studentsOfUser(asStudentId(event.data.studentId))]),
+    getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId as StudentId)]),
   },
 
   parentApproved: {
     verify: (event, { initiatorId }) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return verifyStudentInitiator({
         initiatorId,
@@ -139,7 +137,7 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
       });
     },
     apply: (event) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return Effect.andThen(GradeRepositoryDb, (repo) =>
         repo.setParentSignature({
@@ -151,12 +149,12 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
         }),
       );
     },
-    getEventTopics: (event) => Effect.succeed([studentsOfUser(asStudentId(event.data.studentId))]),
+    getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId as StudentId)]),
   },
 
   latestRestored: {
     verify: (event, { initiatorId }) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return verifyStudentInitiator({
         initiatorId,
@@ -165,7 +163,7 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
       });
     },
     apply: (event) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return Effect.andThen(GradeRepositoryDb, (repo) =>
         repo.restoreLatest({
@@ -175,12 +173,12 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
         }),
       );
     },
-    getEventTopics: (event) => Effect.succeed([studentsOfUser(asStudentId(event.data.studentId))]),
+    getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId as StudentId)]),
   },
 
   discarded: {
     verify: (event, { initiatorId }) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return verifyStudentInitiator({
         initiatorId,
@@ -189,7 +187,7 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
       });
     },
     apply: (event) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return Effect.andThen(GradeRepositoryDb, (repo) =>
         repo.discardGrade({
@@ -200,6 +198,6 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
         }),
       );
     },
-    getEventTopics: (event) => Effect.succeed([studentsOfUser(asStudentId(event.data.studentId))]),
+    getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId as StudentId)]),
   },
 };

@@ -13,8 +13,6 @@ import type { Database } from "../database";
 import { AbsenceRepositoryDb } from "../repositories/absence.repo";
 import { StudentRepository } from "../repositories/student.repo";
 
-const asStudentId = (studentId: string): StudentId => studentId as StudentId;
-
 export const absenceApplicators: NamespaceServerApplicatorMap<
   DomainEvent,
   "absence",
@@ -24,7 +22,7 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
   recorded: {
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
-        const studentId = asStudentId(event.data.studentId);
+        const studentId = event.data.studentId as StudentId;
 
         yield* verifyStudentAccess({
           initiatorId,
@@ -35,7 +33,7 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
         });
       }),
     apply: (event) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return withStudentSignatureRequirementOrDie({
         studentId,
@@ -53,12 +51,12 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
           ),
       });
     },
-    getEventTopics: (event) => Effect.succeed([studentsOfUser(asStudentId(event.data.studentId))]),
+    getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId as StudentId)]),
   },
 
   parentApproved: {
     verify: (event, { initiatorId }) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return verifyStudentInitiator({
         initiatorId,
@@ -67,7 +65,7 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
       });
     },
     apply: (event) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return Effect.andThen(AbsenceRepositoryDb, (repo) =>
         repo.setParentSignature({
@@ -77,12 +75,12 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
         }),
       );
     },
-    getEventTopics: (event) => Effect.succeed([studentsOfUser(asStudentId(event.data.studentId))]),
+    getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId as StudentId)]),
   },
 
   teacherApproved: {
     verify: (event, { initiatorId }) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return verifyStudentInitiator({
         initiatorId,
@@ -91,7 +89,7 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
       });
     },
     apply: (event) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return Effect.andThen(AbsenceRepositoryDb, (repo) =>
         repo.setTeacherSignature({
@@ -102,12 +100,12 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
         }),
       );
     },
-    getEventTopics: (event) => Effect.succeed([studentsOfUser(asStudentId(event.data.studentId))]),
+    getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId as StudentId)]),
   },
 
   discarded: {
     verify: (event, { initiatorId }) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return verifyStudentInitiator({
         initiatorId,
@@ -116,7 +114,7 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
       });
     },
     apply: (event) => {
-      const studentId = asStudentId(event.data.studentId);
+      const studentId = event.data.studentId as StudentId;
 
       return Effect.andThen(AbsenceRepositoryDb, (repo) =>
         repo.deleteAbsence({
@@ -126,6 +124,6 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
         }),
       );
     },
-    getEventTopics: (event) => Effect.succeed([studentsOfUser(asStudentId(event.data.studentId))]),
+    getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId as StudentId)]),
   },
 };
