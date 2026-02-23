@@ -1,40 +1,23 @@
-import { type SnapshotResponse, uniqueBy } from "@stu/lib";
+import {
+  collectSnapshotClasses,
+  collectSnapshotPersons,
+  collectSnapshotSchools,
+  collectSnapshotSemesters,
+  collectSnapshotYears,
+  type SnapshotResponse,
+} from "@stu/lib";
 import { Effect } from "effect";
 import { Database } from "../database";
 import * as tables from "../schema";
 
-const schoolFromStudent = (student: SnapshotResponse["students"][number]) => student.school;
-const schoolFromCourse = (course: SnapshotResponse["courses"][number]) => course.school;
-
 export const applySnapshotToLocalDatabase = Effect.fn(function* (snapshot: SnapshotResponse) {
   const db = yield* Database;
 
-  const schools = uniqueBy(
-    [...snapshot.students.map(schoolFromStudent), ...snapshot.courses.map(schoolFromCourse)],
-    (school) => school.id,
-  );
-  const years = uniqueBy(
-    snapshot.students.map((student) => student.year),
-    (year) => `${year.school}:${year.startYear}`,
-  );
-  const classes = uniqueBy(
-    snapshot.students.map((student) => student.class),
-    (cls) => `${cls.school}:${cls.startYear}:${cls.identifierInYear}`,
-  );
-  const semesters = uniqueBy(
-    snapshot.courses.map((course) => course.semester),
-    (semester) => `${semester.school}:${semester.type}:${semester.year}`,
-  );
-  const persons = uniqueBy(
-    [...snapshot.students, ...snapshot.courses.flatMap((course) => course.teachers)].map((person) => ({
-      id: person.id,
-      firstName: person.firstName,
-      lastName: person.lastName,
-      salutation: "salutation" in person ? person.salutation : null,
-      abbrv: "abbrv" in person ? person.abbrv : null,
-    })),
-    (person) => person.id,
-  );
+  const schools = collectSnapshotSchools(snapshot);
+  const years = collectSnapshotYears(snapshot);
+  const classes = collectSnapshotClasses(snapshot);
+  const semesters = collectSnapshotSemesters(snapshot);
+  const persons = collectSnapshotPersons(snapshot);
 
   for (const school of schools) {
     yield* db.execute((client) =>

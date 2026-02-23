@@ -16,6 +16,7 @@ export * from "./schedule";
 export * from "./school";
 export * from "./semesters";
 export * from "./snapshot";
+export * from "./snapshot/mappers";
 export * from "./snapshot-helpers";
 export * from "./snapshot-test-fixtures";
 export * from "./student";
