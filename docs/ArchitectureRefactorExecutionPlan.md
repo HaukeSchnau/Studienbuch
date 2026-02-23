@@ -26,17 +26,40 @@
   - Verification run:
     - `bun --filter @stu/api typecheck` (pass)
     - `bun run test:sync` (pass)
-- In progress:
-- `PR-03: studentId Contract Alignment` (slice 1)
+- `PR-03: studentId Contract Alignment`
   - Changes landed in:
     - `refactor(lib): introduce shared StudentId alias` (`tsk`)
+    - `refactor(student): align student-scoped repository payloads` (`po`)
+    - `refactor(db): type student-scoped payloads with StudentId` (`ot`)
+    - `refactor(db): simplify studentId handler wiring` (`tlq`)
   - Verification run:
     - `bun --filter @stu/lib typecheck` (pass)
+    - `bun --filter @stu/db typecheck` (pass)
     - `bun --filter @stu/api typecheck` (pass)
     - `bun --filter @stu/student typecheck` (pass)
     - `bun run test:sync` (pass)
+- In progress:
+- `PR-04: Sync/Snapshot Layering Cleanup`
+  - Changes landed in:
+    - `refactor(api): extract snapshot request orchestration service` (`ky`)
+    - `refactor(api): centralize session user resolution` (`vwy`)
+    - `test(api): cover snapshot request service branches` (`vv`)
+  - Verification run:
+    - `bun --filter @stu/api typecheck` (pass)
+    - `bun test packages/api/src/services/snapshot-request-service.test.ts` (pass)
+    - `bun test packages/api/src/snapshot.test.ts` (pass)
+    - `bun run test:sync` (pass)
+- `PR-05: Snapshot Mapping Deduplication` (slice 1)
+  - Changes landed in:
+    - `refactor(student): share snapshot apply helper with app-mobile` (`klu`)
+  - Verification run:
+    - `bun --filter @stu/student typecheck` (pass)
+    - `bun --filter @stu/app-mobile typecheck` (pass)
+    - `bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts` (pass)
+    - `bun run test:sync` (pass)
 - Next queued:
-- `PR-03`: continue alias propagation across event/applicator and repository payload types
+- `PR-04`: continue mobile sync/snapshot orchestration cleanup
+- `PR-05`: continue shared snapshot mapping extraction beyond apply helper move
 
 ## Phase Plan And Parallel Tracks
 
