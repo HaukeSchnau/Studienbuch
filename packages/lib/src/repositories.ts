@@ -4,6 +4,7 @@ import type { GradeType } from "./grades";
 import type { SimpleDate } from "./infrastructure/dates";
 import type { SchoolId, StateCode } from "./school";
 import type { Semester } from "./semesters";
+import type { StudentId } from "./student-id";
 
 export interface UnknownDatabaseError {
   readonly _tag: "DatabaseError";
@@ -19,21 +20,31 @@ export class AbsenceRepository extends Context.Tag("AbsenceRepository")<
   AbsenceRepository,
   {
     addAbsence: (payload: {
+      studentId: StudentId;
       date: Date;
       reason: string;
       courseIds: string[];
       isSignatureRequired: boolean;
     }) => Effect.Effect<void, UnknownDatabaseError>;
 
-    setParentSignature: (payload: { date: Date; signature: string }) => Effect.Effect<void, UnknownDatabaseError>;
+    setParentSignature: (payload: {
+      studentId: StudentId;
+      date: Date;
+      signature: string;
+    }) => Effect.Effect<void, UnknownDatabaseError>;
 
     setTeacherSignature: (payload: {
+      studentId: StudentId;
       date: Date;
       courseId: string;
       signature: string;
     }) => Effect.Effect<void, UnknownDatabaseError>;
 
-    deleteAbsence: (payload: { date: Date; courseIds: string[] }) => Effect.Effect<void, UnknownDatabaseError>;
+    deleteAbsence: (payload: {
+      studentId: StudentId;
+      date: Date;
+      courseIds: string[];
+    }) => Effect.Effect<void, UnknownDatabaseError>;
   }
 >() {}
 
@@ -82,6 +93,7 @@ export class GradeRepository extends Context.Tag("GradeRepository")<
   GradeRepository,
   {
     setCurrentGrade: (payload: {
+      studentId: StudentId;
       courseId: string;
       date: Date;
       result: number;
@@ -90,6 +102,7 @@ export class GradeRepository extends Context.Tag("GradeRepository")<
     }) => Effect.Effect<void, UnknownDatabaseError | GradeTooOldError>;
 
     recordWrittenGrade: (payload: {
+      studentId: StudentId;
       courseId: string;
       date: Date;
       result: number;
@@ -97,6 +110,7 @@ export class GradeRepository extends Context.Tag("GradeRepository")<
     }) => Effect.Effect<void, UnknownDatabaseError>;
 
     setTeacherSignature: (payload: {
+      studentId: StudentId;
       course: string;
       date: Date;
       type: GradeType;
@@ -104,15 +118,21 @@ export class GradeRepository extends Context.Tag("GradeRepository")<
     }) => Effect.Effect<void, UnknownDatabaseError>;
 
     setParentSignature: (payload: {
+      studentId: StudentId;
       course: string;
       date: Date;
       type: GradeType;
       signature: string;
     }) => Effect.Effect<void, UnknownDatabaseError>;
 
-    restoreLatest: (payload: { course: string; type: GradeType }) => Effect.Effect<void, UnknownDatabaseError>;
+    restoreLatest: (payload: {
+      studentId: StudentId;
+      course: string;
+      type: GradeType;
+    }) => Effect.Effect<void, UnknownDatabaseError>;
 
     discardGrade: (payload: {
+      studentId: StudentId;
       course: string;
       date: Date;
       type: GradeType;

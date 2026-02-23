@@ -11,6 +11,7 @@ export const GradeRepositoryLive = Layer.effect(
     const databaseContext = yield* RepositoryDatabase;
 
     return {
+      // Student storage is single-profile scoped; studentId is carried for cross-package contract parity.
       setCurrentGrade: Effect.fn(function* (payload) {
         const { execute } = yield* databaseContext;
 

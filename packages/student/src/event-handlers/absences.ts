@@ -29,6 +29,7 @@ export const absenceApplicators: NamespaceApplicatorMap<
         run: (isSignatureRequired) =>
           Effect.andThen(AbsenceRepository, (absenceRepo) =>
             absenceRepo.addAbsence({
+              studentId: event.data.studentId,
               date: event.data.date,
               reason: event.data.reason,
               courseIds: event.data.courseIds,
@@ -48,6 +49,7 @@ export const absenceApplicators: NamespaceApplicatorMap<
     apply: (event) =>
       Effect.andThen(AbsenceRepository, (repo) =>
         repo.setParentSignature({
+          studentId: event.data.studentId,
           date: event.data.date,
           signature: event.data.signature,
         }),
@@ -64,6 +66,7 @@ export const absenceApplicators: NamespaceApplicatorMap<
     apply: (event) =>
       Effect.andThen(AbsenceRepository, (repo) =>
         repo.setTeacherSignature({
+          studentId: event.data.studentId,
           date: event.data.date,
           courseId: event.data.courseId,
           signature: event.data.signature,
@@ -81,6 +84,7 @@ export const absenceApplicators: NamespaceApplicatorMap<
     apply: (event) =>
       Effect.andThen(AbsenceRepository, (repo) =>
         repo.deleteAbsence({
+          studentId: event.data.studentId,
           date: event.data.date,
           courseIds: event.data.courseIds,
         }),

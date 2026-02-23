@@ -156,6 +156,7 @@ describe("student applicator tree integration", () => {
 
     expect(setCurrentGrade).toHaveBeenCalledWith(
       expect.objectContaining({
+        studentId,
         courseId,
         isSignatureRequired: true,
       }),
@@ -195,6 +196,7 @@ describe("student applicator tree integration", () => {
 
     expect(setTeacherSignature).toHaveBeenCalledWith(
       expect.objectContaining({
+        studentId,
         course: courseId,
         type: "WRITTEN",
       }),
@@ -230,6 +232,7 @@ describe("student applicator tree integration", () => {
 
     expect(deleteAbsence).toHaveBeenCalledWith(
       expect.objectContaining({
+        studentId,
         courseIds: [courseId],
       }),
     );

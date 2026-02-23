@@ -92,6 +92,7 @@ describe("student scoped applicators (student package)", () => {
 
     expect(setCurrentGrade).toHaveBeenCalledWith(
       expect.objectContaining({
+        studentId,
         courseId,
         isSignatureRequired: true,
       }),
@@ -174,6 +175,7 @@ describe("student scoped applicators (student package)", () => {
 
     expect(addAbsence).toHaveBeenCalledWith(
       expect.objectContaining({
+        studentId,
         isSignatureRequired: true,
       }),
     );

@@ -25,6 +25,7 @@ export const gradeApplicators: NamespaceApplicatorMap<
           Effect.andThen(GradeRepository, (gradeRepo) =>
             gradeRepo
               .setCurrentGrade({
+                studentId: event.data.studentId,
                 courseId: event.data.courseId,
                 date: event.data.date,
                 result: event.data.result,
@@ -55,6 +56,7 @@ export const gradeApplicators: NamespaceApplicatorMap<
         run: (isSignatureRequired) =>
           Effect.andThen(GradeRepository, (repo) =>
             repo.recordWrittenGrade({
+              studentId: event.data.studentId,
               courseId: event.data.courseId,
               date: event.data.date,
               result: event.data.result,
@@ -74,6 +76,7 @@ export const gradeApplicators: NamespaceApplicatorMap<
     apply: (event) =>
       Effect.andThen(GradeRepository, (repo) =>
         repo.setTeacherSignature({
+          studentId: event.data.studentId,
           course: event.data.course,
           date: event.data.date,
           type: event.data.type,
@@ -92,6 +95,7 @@ export const gradeApplicators: NamespaceApplicatorMap<
     apply: (event) =>
       Effect.andThen(GradeRepository, (repo) =>
         repo.setParentSignature({
+          studentId: event.data.studentId,
           course: event.data.course,
           date: event.data.date,
           type: event.data.type,
@@ -110,6 +114,7 @@ export const gradeApplicators: NamespaceApplicatorMap<
     apply: (event) =>
       Effect.andThen(GradeRepository, (repo) =>
         repo.restoreLatest({
+          studentId: event.data.studentId,
           course: event.data.course,
           type: event.data.type,
         }),
@@ -126,6 +131,7 @@ export const gradeApplicators: NamespaceApplicatorMap<
     apply: (event) =>
       Effect.andThen(GradeRepository, (repo) =>
         repo.discardGrade({
+          studentId: event.data.studentId,
           course: event.data.course,
           date: event.data.date,
           type: event.data.type,
