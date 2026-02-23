@@ -58,11 +58,12 @@
     - `bun test packages/api/src/sync.integration.test.ts` (pass)
     - `bun run test:sync` (pass)
 - In progress:
-- `PR-05: Snapshot Mapping Deduplication` (slice 3)
+- `PR-05: Snapshot Mapping Deduplication` (slice 4)
   - Changes landed in:
     - `refactor(student): share snapshot apply helper with app-mobile` (`klu`)
     - `refactor(snapshot): extract shared dedupe helpers` (`sps`)
     - `test(snapshot): share fixtures across api/mobile/lib` (`oo`)
+    - `refactor(lib): extract snapshot entity resolver module` (`pw`)
   - Verification run:
     - `bun --filter @stu/lib typecheck` (pass)
     - `bun --filter @stu/api typecheck` (pass)
@@ -82,7 +83,7 @@
     - `bun test packages/db/src/schema-parity.test.ts` (pass)
     - `bun test packages/student/src/schema-parity.test.ts` (pass)
 - Next queued:
-- `PR-05`: extract shared snapshot entities/mappers module and route API/mobile usage through it
+- `PR-05`: extract shared snapshot mappers module and route API/mobile usage through it
 - `PR-06`: extend parity contracts to timetable/student-domain tables and reduce allowlist
 
 ## Phase Plan And Parallel Tracks
