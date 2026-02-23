@@ -5,7 +5,7 @@ import { appRouter, createTRPCContext } from "@stu/api";
 import { sql } from "@stu/db";
 import { db } from "@stu/db/client";
 import { DomainEvent } from "@stu/lib";
-import { getSession, getSessionTokenFromHeaders } from "@stu/lib-server";
+import { getSessionTokenFromHeaders } from "@stu/lib-server";
 import { Effect } from "effect";
 import { type Context, Hono } from "hono";
 import { logger } from "hono/logger";
@@ -14,6 +14,7 @@ import { trimTrailingSlash } from "hono/trailing-slash";
 import pino from "pino";
 import { env } from "../env";
 import { DomainBroadcast, DomainIngestEngine } from "./boilerplate";
+import { resolveUserIdFromHeaders } from "./services/session-service";
 import { resolveSnapshotRequest } from "./services/snapshot-request-service";
 
 const appLogger = pino({
@@ -120,15 +121,7 @@ export const createBase = Effect.fn(function* (basePath: string) {
     }),
   );
 
-  const getUserId = async (c: Context) => {
-    const sessionToken = getSessionTokenFromHeaders(new Headers(c.req.header()));
-    if (!sessionToken) return null;
-
-    const session = await getSession(sessionToken);
-    if (!session) return null;
-
-    return session.user.id;
-  };
+  const getUserId = async (c: Context) => resolveUserIdFromHeaders(new Headers(c.req.header()));
 
   app.get("/livez", (c) => c.json({ status: "ok" }, 200));
 

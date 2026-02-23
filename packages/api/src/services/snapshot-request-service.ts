@@ -1,5 +1,5 @@
 import { SnapshotRequestSchema, type SnapshotResponse } from "@stu/lib";
-import { getSession, getSessionTokenFromHeaders } from "@stu/lib-server";
+import { resolveUserIdFromHeaders } from "./session-service";
 import { resolveSnapshotForUser } from "./snapshot-service";
 
 export type SnapshotRequestResult =
@@ -10,20 +10,6 @@ export type SnapshotRequestResult =
 type ResolveSnapshotRequestInput = {
   headers: Headers;
   getBody: () => Promise<unknown>;
-};
-
-const resolveUserIdFromHeaders = async (headers: Headers): Promise<string | null> => {
-  const sessionToken = getSessionTokenFromHeaders(headers);
-  if (!sessionToken) {
-    return null;
-  }
-
-  const session = await getSession(sessionToken);
-  if (!session) {
-    return null;
-  }
-
-  return session.user.id;
 };
 
 export const resolveSnapshotRequest = async ({
