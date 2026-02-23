@@ -1,4 +1,5 @@
 import {
+  POSTGRES_SUBSTITUTIONS_TABLE_PARITY_CONTRACTS,
   POSTGRES_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS,
   SHARED_CORE_TABLE_PARITY_CONTRACTS,
   evaluateSchemaParity,
@@ -21,6 +22,7 @@ import {
   Schools,
   Semesters,
   AbsenceDays,
+  Substitutions,
   Students,
   Tasks,
   TimetableEntries,
@@ -71,6 +73,10 @@ const studentDomainTableMetadata = {
   course_absences: extractTableMetadata(CourseAbsences),
 } satisfies Record<(typeof POSTGRES_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS)[number]["tableName"], SchemaParityActualTable>;
 
+const substitutionsTableMetadata = {
+  substitutions: extractTableMetadata(Substitutions),
+} satisfies Record<(typeof POSTGRES_SUBSTITUTIONS_TABLE_PARITY_CONTRACTS)[number]["tableName"], SchemaParityActualTable>;
+
 describe("schema parity (db)", () => {
   test("shared core schema contracts pass for postgres tables", () => {
     const parity = evaluateSchemaParity(SHARED_CORE_TABLE_PARITY_CONTRACTS, coreTableMetadata);
@@ -81,6 +87,13 @@ describe("schema parity (db)", () => {
 
   test("student-domain schema contracts pass for postgres tables", () => {
     const parity = evaluateSchemaParity(POSTGRES_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS, studentDomainTableMetadata);
+
+    expect(parity.tables.filter((table) => !table.passed)).toEqual([]);
+    expect(parity.passed).toBe(true);
+  });
+
+  test("substitutions schema contracts pass for postgres tables", () => {
+    const parity = evaluateSchemaParity(POSTGRES_SUBSTITUTIONS_TABLE_PARITY_CONTRACTS, substitutionsTableMetadata);
 
     expect(parity.tables.filter((table) => !table.passed)).toEqual([]);
     expect(parity.passed).toBe(true);

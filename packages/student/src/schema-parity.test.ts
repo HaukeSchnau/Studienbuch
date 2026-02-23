@@ -1,5 +1,6 @@
 import {
   SHARED_CORE_TABLE_PARITY_CONTRACTS,
+  SQLITE_SUBSTITUTIONS_TABLE_PARITY_CONTRACTS,
   SQLITE_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS,
   evaluateSchemaParity,
   type SchemaParityActualTable,
@@ -21,6 +22,7 @@ import {
   schools,
   semesters,
   absenceDays,
+  substitutions,
   students,
   tasks,
   timetableEntries,
@@ -71,6 +73,10 @@ const studentDomainTableMetadata = {
   course_absences: extractTableMetadata(courseAbsences),
 } satisfies Record<(typeof SQLITE_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS)[number]["tableName"], SchemaParityActualTable>;
 
+const substitutionsTableMetadata = {
+  substitutions: extractTableMetadata(substitutions),
+} satisfies Record<(typeof SQLITE_SUBSTITUTIONS_TABLE_PARITY_CONTRACTS)[number]["tableName"], SchemaParityActualTable>;
+
 describe("schema parity (student)", () => {
   test("shared core schema contracts pass for sqlite tables", () => {
     const parity = evaluateSchemaParity(SHARED_CORE_TABLE_PARITY_CONTRACTS, coreTableMetadata);
@@ -81,6 +87,13 @@ describe("schema parity (student)", () => {
 
   test("student-domain schema contracts pass for sqlite tables", () => {
     const parity = evaluateSchemaParity(SQLITE_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS, studentDomainTableMetadata);
+
+    expect(parity.tables.filter((table) => !table.passed)).toEqual([]);
+    expect(parity.passed).toBe(true);
+  });
+
+  test("substitutions schema contracts pass for sqlite tables", () => {
+    const parity = evaluateSchemaParity(SQLITE_SUBSTITUTIONS_TABLE_PARITY_CONTRACTS, substitutionsTableMetadata);
 
     expect(parity.tables.filter((table) => !table.passed)).toEqual([]);
     expect(parity.passed).toBe(true);

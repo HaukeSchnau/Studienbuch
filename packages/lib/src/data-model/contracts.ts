@@ -12,7 +12,8 @@ export type CoreSchemaParityTableName =
   | "tasks"
   | "timetable_entries"
   | "recurring_timetable_entries"
-  | "room_changes";
+  | "room_changes"
+  | "substitutions";
 
 export type StudentDomainSchemaParityTableName = "grades" | "absence_days" | "course_absences";
 
@@ -147,6 +148,22 @@ export const SQLITE_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS = [
   },
 ] as const satisfies readonly SchemaParityContract[];
 
+export const POSTGRES_SUBSTITUTIONS_TABLE_PARITY_CONTRACTS = [
+  {
+    tableName: "substitutions",
+    requiredColumns: ["date", "course", "type", "originalTeacher", "substitute", "createdAt", "updatedAt"],
+    primaryKeyColumns: ["date", "course", "originalTeacher"],
+  },
+] as const satisfies readonly SchemaParityContract[];
+
+export const SQLITE_SUBSTITUTIONS_TABLE_PARITY_CONTRACTS = [
+  {
+    tableName: "substitutions",
+    requiredColumns: ["date", "course", "type", "substitute"],
+    primaryKeyColumns: ["date", "course"],
+  },
+] as const satisfies readonly SchemaParityContract[];
+
 export const INTENTIONALLY_DIVERGENT_STUDENT_DOMAIN_TABLES = {
   grades: "SQLite omits student scoping because data is single-profile local state.",
   absence_days: "SQLite omits student scoping because data is single-profile local state.",
@@ -156,6 +173,5 @@ export const INTENTIONALLY_DIVERGENT_STUDENT_DOMAIN_TABLES = {
 export const INTENTIONALLY_DIVERGENT_SCHEMA_TABLE_ALLOWLIST = {
   rooms: "Present only in server DB schema.",
   course_memberships: "Present only in server DB schema; student uses course membership flags.",
-  substitutions: "Timetable substitutions are tracked in a separate parity slice.",
   timetable_entry_rooms: "Present only in student SQLite schema.",
 } as const;
