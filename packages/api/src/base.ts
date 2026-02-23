@@ -1,11 +1,11 @@
 import net from "node:net";
 import { attachSyncServer } from "@groundswell/adapter-hono-server";
 import { trpcServer } from "@hono/trpc-server";
-import { appRouter, createTRPCContext, getSession } from "@stu/api";
+import { appRouter, createTRPCContext } from "@stu/api";
 import { sql } from "@stu/db";
 import { db } from "@stu/db/client";
 import { DomainEvent, SnapshotRequestSchema } from "@stu/lib";
-import { getSessionTokenFromHeaders } from "@stu/lib-server";
+import { getSession, getSessionTokenFromHeaders } from "@stu/lib-server";
 import { Effect } from "effect";
 import { type Context, Hono } from "hono";
 import { logger } from "hono/logger";

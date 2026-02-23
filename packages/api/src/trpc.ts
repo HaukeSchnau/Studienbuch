@@ -7,41 +7,13 @@
  * The pieces you will need to use are documented accordingly near the end
  */
 
-import { eq } from "@stu/db";
-import { db } from "@stu/db/client";
-import * as tables from "@stu/db/schema";
+import { getSession, type Session } from "@stu/lib-server";
 import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 import { env } from "../env";
 import { SYSTEM_USER } from ".";
 import type { Logger } from "./interfaces/logger";
-import type { Session } from "./interfaces/session";
-
-export const getSession = async (sessionToken: string): Promise<Session | null> => {
-  const session = await db.query.Sessions.findFirst({
-    where: eq(tables.Sessions.token, sessionToken),
-    with: {
-      user: true,
-    },
-  });
-
-  if (!session) {
-    return null;
-  }
-
-  if (session.expires < new Date() || !session.user) {
-    await db.delete(tables.Sessions).where(eq(tables.Sessions.token, sessionToken));
-    return null;
-  }
-
-  return {
-    token: session.token,
-    user: {
-      id: session.user.id,
-    },
-  };
-};
 
 const getSystemSession = (): Session => {
   return {

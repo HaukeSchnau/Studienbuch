@@ -7,14 +7,14 @@ import { runtime } from "./groundswell";
 import type { AppRouter } from "./root";
 import { appRouter } from "./root";
 import { ingest, ingestEffect } from "./router/events/ingest";
-import { createCallerFactory, createTRPCContext, getSession } from "./trpc";
+import { createCallerFactory, createTRPCContext } from "./trpc";
 
 const createCaller = createCallerFactory(appRouter);
 
 type RouterInputs = inferRouterInputs<AppRouter>;
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 
-export { createTRPCContext, appRouter, createCaller, ingest, ingestEffect, SYSTEM_USER, getSession };
+export { createTRPCContext, appRouter, createCaller, ingest, ingestEffect, SYSTEM_USER };
 export type { AppRouter, RouterInputs, RouterOutputs };
 export { createBase } from "./base";
 
