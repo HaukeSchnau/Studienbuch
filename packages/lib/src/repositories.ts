@@ -1,4 +1,3 @@
-import type { DatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
 import { Context, Data, type Effect } from "effect";
 import type { SubjectId } from "./courses";
 import type { GradeType } from "./grades";
@@ -6,7 +5,7 @@ import type { SimpleDate } from "./infrastructure/dates";
 import type { SchoolId, StateCode } from "./school";
 import type { Semester } from "./semesters";
 
-export type UnknownDatabaseError = DatabaseError<{ message: string }>;
+export type UnknownDatabaseError = unknown;
 
 export class AbsenceRepository extends Context.Tag("AbsenceRepository")<
   AbsenceRepository,

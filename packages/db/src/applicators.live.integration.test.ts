@@ -15,6 +15,9 @@ const studentId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const courseId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const missingCourseId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const joinedStudentId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const teacherId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+const missingTimetableCourseId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+const orgInitiatorId = "00000000-0000-0000-0000-000000000000";
 
 const loadDbModules = async () => {
   const modules = await import("./index");
@@ -237,5 +240,133 @@ describe("live postgres applicator integration", () => {
 
     expect(persons).toHaveLength(0);
     expect(students).toHaveLength(0);
+  });
+
+  test("org course + timetable lifecycle persists and discards entries", async () => {
+    await seedSchoolGraph();
+
+    const teacherJoined: Extract<DomainEvent, { type: "org.teacher.joined" }> = {
+      id: randomUUID(),
+      timestamp: new Date("2026-01-12T08:00:00.000Z"),
+      type: "org.teacher.joined",
+      data: {
+        personId: teacherId,
+        firstName: "Marie",
+        lastName: "Curie",
+        abbrv: "MC",
+        salutation: "Frau",
+        school,
+      },
+    };
+
+    const courseCreated: Extract<DomainEvent, { type: "org.courses.created" }> = {
+      id: randomUUID(),
+      timestamp: new Date("2026-01-12T08:05:00.000Z"),
+      type: "org.courses.created",
+      data: {
+        id: courseId,
+        name: "Mathematik",
+        subject: "ma",
+        isMandatory: true,
+        school,
+        semester: {
+          type: "WINTER",
+          year: semesterYear,
+        },
+        classes: [
+          {
+            identifierInYear: classIdentifier,
+            startYear,
+          },
+        ],
+        teachers: [teacherId],
+      },
+    };
+
+    const entryCreated: Extract<DomainEvent, { type: "org.timetable.entryCreated" }> = {
+      id: randomUUID(),
+      timestamp: new Date("2026-01-12T08:10:00.000Z"),
+      type: "org.timetable.entryCreated",
+      data: {
+        course: courseId,
+        start: new Date("2026-01-12T10:00:00.000Z"),
+        duration: 45,
+        rooms: ["A101"],
+      },
+    };
+
+    const entryDiscarded: Extract<DomainEvent, { type: "org.timetable.discarded" }> = {
+      id: randomUUID(),
+      timestamp: new Date("2026-01-12T08:20:00.000Z"),
+      type: "org.timetable.discarded",
+      data: {
+        course: courseId,
+        start: entryCreated.data.start,
+      },
+    };
+
+    const meta = { initiatorId: orgInitiatorId } as never;
+
+    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.verify(teacherJoined, meta)));
+    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.apply(teacherJoined, meta)));
+    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.verify(courseCreated, meta)));
+    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.apply(courseCreated, meta)));
+    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.verify(entryCreated, meta)));
+    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.apply(entryCreated, meta)));
+
+    const courses = await db.select().from(schema.Courses).where(eq(schema.Courses.id, courseId));
+    const courseTeachers = await db
+      .select()
+      .from(schema.CoursesToTeachers)
+      .where(and(eq(schema.CoursesToTeachers.course, courseId), eq(schema.CoursesToTeachers.teacher, teacherId)));
+    const timetableEntriesAfterCreate = await db
+      .select()
+      .from(schema.TimetableEntries)
+      .where(
+        and(
+          eq(schema.TimetableEntries.course, courseId),
+          eq(schema.TimetableEntries.start, entryCreated.data.start),
+        ),
+      );
+
+    expect(courses).toHaveLength(1);
+    expect(courseTeachers).toHaveLength(1);
+    expect(timetableEntriesAfterCreate).toHaveLength(1);
+    expect(timetableEntriesAfterCreate[0]?.duration).toBe(45);
+    expect(timetableEntriesAfterCreate[0]?.rooms).toEqual(["A101"]);
+
+    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.verify(entryDiscarded, meta)));
+    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.apply(entryDiscarded, meta)));
+
+    const timetableEntriesAfterDiscard = await db
+      .select()
+      .from(schema.TimetableEntries)
+      .where(
+        and(
+          eq(schema.TimetableEntries.course, courseId),
+          eq(schema.TimetableEntries.start, entryCreated.data.start),
+        ),
+      );
+
+    expect(timetableEntriesAfterDiscard).toHaveLength(0);
+  });
+
+  test("org.timetable.discarded verify rejects missing timetable entries", async () => {
+    const event: Extract<DomainEvent, { type: "org.timetable.discarded" }> = {
+      id: randomUUID(),
+      timestamp: new Date("2026-01-13T10:00:00.000Z"),
+      type: "org.timetable.discarded",
+      data: {
+        course: missingTimetableCourseId,
+        start: new Date("2026-01-13T10:00:00.000Z"),
+      },
+    };
+    const meta = { initiatorId: orgInitiatorId } as never;
+
+    const result = await Effect.runPromise(
+      Effect.either(dbModules.provideLiveDb(dbModules.applicators.verify(event, meta))),
+    );
+
+    expect(result._tag).toBe("Left");
   });
 });

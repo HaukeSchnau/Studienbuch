@@ -27,8 +27,9 @@ describe("org-event-logic", () => {
 
     expect(result._tag).toBe("Left");
     if (result._tag === "Left") {
-      expect(result.left).toBeInstanceOf(Error);
-      expect(result.left.message).toBe("duplicate school");
+      const left = result.left as Error;
+      expect(left).toBeInstanceOf(Error);
+      expect(left.message).toBe("duplicate school");
     }
   });
 

@@ -46,8 +46,9 @@ describe("student-event-logic", () => {
 
     expect(result._tag).toBe("Left");
     if (result._tag === "Left") {
-      expect(result.left).toBeInstanceOf(Error);
-      expect(result.left.message).toBe("forbidden");
+      const left = result.left as Error;
+      expect(left).toBeInstanceOf(Error);
+      expect(left.message).toBe("forbidden");
     }
   });
 
@@ -76,8 +77,9 @@ describe("student-event-logic", () => {
 
     expect(result._tag).toBe("Left");
     if (result._tag === "Left") {
-      expect(result.left).toBeInstanceOf(Error);
-      expect(result.left.message).toContain(studentFixture.id);
+      const left = result.left as Error;
+      expect(left).toBeInstanceOf(Error);
+      expect(left.message).toContain(studentFixture.id);
     }
   });
 
@@ -111,8 +113,9 @@ describe("student-event-logic", () => {
 
     expect(result._tag).toBe("Left");
     if (result._tag === "Left") {
-      expect(result.left).toBeInstanceOf(Error);
-      expect(result.left.message).toBe("forbidden");
+      const left = result.left as Error;
+      expect(left).toBeInstanceOf(Error);
+      expect(left.message).toBe("forbidden");
     }
   });
 
@@ -131,8 +134,9 @@ describe("student-event-logic", () => {
 
     expect(result._tag).toBe("Left");
     if (result._tag === "Left") {
-      expect(result.left).toBeInstanceOf(Error);
-      expect(result.left.message).toBe("missing");
+      const left = result.left as Error;
+      expect(left).toBeInstanceOf(Error);
+      expect(left.message).toBe("missing");
     }
   });
 
