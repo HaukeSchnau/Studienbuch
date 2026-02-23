@@ -72,9 +72,18 @@
     - `bun test packages/api/src/snapshot.test.ts` (pass)
     - `bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts` (pass)
     - `bun run test:sync` (pass)
+- `PR-06: PG/SQLite Data-Model Parity Harness` (slice 1)
+  - Changes landed in:
+    - `test(schema): add shared pg/sqlite parity harness slice 1` (`ryv`)
+  - Verification run:
+    - `bun --filter @stu/lib typecheck` (pass)
+    - `bun --filter @stu/db typecheck` (pass)
+    - `bun --filter @stu/student typecheck` (pass)
+    - `bun test packages/db/src/schema-parity.test.ts` (pass)
+    - `bun test packages/student/src/schema-parity.test.ts` (pass)
 - Next queued:
 - `PR-05`: extract shared snapshot entities/mappers module and route API/mobile usage through it
-- `PR-06`: add PG/SQLite schema parity harness tests
+- `PR-06`: extend parity contracts to timetable/student-domain tables and reduce allowlist
 
 ## Phase Plan And Parallel Tracks
 
