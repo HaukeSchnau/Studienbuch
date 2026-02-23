@@ -74,6 +74,38 @@ export const requireStudentSignatureRequirementOrDie = <R, E>(options: {
     (student) => !student.isOfAge,
   );
 
+export const withStudentSignatureRequirement = <RLoad, RRun, ELoad, ERun, EMissing>(options: {
+  studentId: string;
+  load: Effect.Effect<Student | undefined, ELoad, RLoad>;
+  onMissing: (studentId: string) => EMissing;
+  run: (isSignatureRequired: boolean) => Effect.Effect<void, ERun, RRun>;
+}): Effect.Effect<void, ELoad | ERun | EMissing, RLoad | RRun> =>
+  Effect.gen(function* () {
+    const isSignatureRequired = yield* requireStudentSignatureRequirement({
+      studentId: options.studentId,
+      load: options.load,
+      onMissing: options.onMissing,
+    });
+
+    yield* options.run(isSignatureRequired);
+  });
+
+export const withStudentSignatureRequirementOrDie = <RLoad, RRun, ELoad, ERun>(options: {
+  studentId: string;
+  load: Effect.Effect<Student | undefined, ELoad, RLoad>;
+  onMissing: (studentId: string) => Types.NoInfer<unknown>;
+  run: (isSignatureRequired: boolean) => Effect.Effect<void, ERun, RRun>;
+}): Effect.Effect<void, ELoad | ERun, RLoad | RRun> =>
+  Effect.gen(function* () {
+    const isSignatureRequired = yield* requireStudentSignatureRequirementOrDie({
+      studentId: options.studentId,
+      load: options.load,
+      onMissing: options.onMissing,
+    });
+
+    yield* options.run(isSignatureRequired);
+  });
+
 export const splitStudentName = (name: string) => ({
   firstName: name.split(" ")[0] ?? "",
   lastName: name.split(" ").slice(1).join(" "),

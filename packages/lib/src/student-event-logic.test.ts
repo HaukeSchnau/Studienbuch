@@ -9,6 +9,8 @@ import {
   splitStudentName,
   verifyStudentAccess,
   verifyStudentInitiator,
+  withStudentSignatureRequirement,
+  withStudentSignatureRequirementOrDie,
 } from "./student-event-logic";
 
 const studentFixture: Student = {
@@ -152,6 +154,40 @@ describe("student-event-logic", () => {
         studentId: studentFixture.id,
         load: Effect.succeed(undefined),
         onMissing: () => new Error("missing after verify"),
+      }),
+    );
+
+    expect(Exit.isFailure(exit)).toBe(true);
+    if (Exit.isFailure(exit)) {
+      expect(Cause.pretty(exit.cause)).toContain("missing after verify");
+    }
+  });
+
+  test("withStudentSignatureRequirement forwards computed signature requirement", async () => {
+    const calls: boolean[] = [];
+
+    await Effect.runPromise(
+      withStudentSignatureRequirement({
+        studentId: studentFixture.id,
+        load: Effect.succeed(studentFixture),
+        onMissing: () => new Error("missing"),
+        run: (isSignatureRequired) =>
+          Effect.sync(() => {
+            calls.push(isSignatureRequired);
+          }),
+      }),
+    );
+
+    expect(calls).toEqual([true]);
+  });
+
+  test("withStudentSignatureRequirementOrDie defects when student is missing", async () => {
+    const exit = await Effect.runPromiseExit(
+      withStudentSignatureRequirementOrDie({
+        studentId: studentFixture.id,
+        load: Effect.succeed(undefined),
+        onMissing: () => new Error("missing after verify"),
+        run: () => Effect.void,
       }),
     );
 

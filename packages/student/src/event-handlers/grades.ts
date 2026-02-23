@@ -3,9 +3,9 @@ import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/g
 import type { DomainEvent } from "@stu/lib";
 import {
   GradeRepository,
-  requireStudentSignatureRequirement,
   StudentRepository,
   verifyStudentInitiator,
+  withStudentSignatureRequirement,
 } from "@stu/lib";
 import { Effect } from "effect";
 
@@ -23,28 +23,26 @@ export const gradeApplicators: NamespaceApplicatorMap<
         onForbidden: () => new ApplicatorError({ cause: "NOT_ALLOWED" }),
       }),
     apply: (event) =>
-      Effect.gen(function* () {
-        const studentRepo = yield* StudentRepository;
-        const isSignatureRequired = yield* requireStudentSignatureRequirement({
-          studentId: event.data.studentId,
-          load: studentRepo.getStudent({ studentId: event.data.studentId }),
-          onMissing: (studentId) => new ApplicatorError({ cause: `Student ${studentId} not found` }),
-        });
-
-        const gradeRepo = yield* GradeRepository;
-        yield* gradeRepo
-          .setCurrentGrade({
-            courseId: event.data.courseId,
-            date: event.data.date,
-            result: event.data.result,
-            type: event.data.type,
-            isSignatureRequired,
-          })
-          .pipe(
-            Effect.catchTag("GradeTooOldError", (error) => {
-              return Effect.fail(new ApplicatorError({ cause: error.message }));
-            }),
-          );
+      withStudentSignatureRequirement({
+        studentId: event.data.studentId,
+        load: Effect.andThen(StudentRepository, (repo) => repo.getStudent({ studentId: event.data.studentId })),
+        onMissing: (studentId) => new ApplicatorError({ cause: `Student ${studentId} not found` }),
+        run: (isSignatureRequired) =>
+          Effect.andThen(GradeRepository, (gradeRepo) =>
+            gradeRepo
+              .setCurrentGrade({
+                courseId: event.data.courseId,
+                date: event.data.date,
+                result: event.data.result,
+                type: event.data.type,
+                isSignatureRequired,
+              })
+              .pipe(
+                Effect.catchTag("GradeTooOldError", (error) => {
+                  return Effect.fail(new ApplicatorError({ cause: error.message }));
+                }),
+              ),
+          ),
       }),
   },
 
@@ -56,22 +54,19 @@ export const gradeApplicators: NamespaceApplicatorMap<
         onForbidden: () => new ApplicatorError({ cause: "NOT_ALLOWED" }),
       }),
     apply: (event) =>
-      Effect.gen(function* () {
-        const studentRepo = yield* StudentRepository;
-        const isSignatureRequired = yield* requireStudentSignatureRequirement({
-          studentId: event.data.studentId,
-          load: studentRepo.getStudent({ studentId: event.data.studentId }),
-          onMissing: (studentId) => new ApplicatorError({ cause: `Student ${studentId} not found` }),
-        });
-
-        const repo = yield* GradeRepository;
-
-        yield* repo.recordWrittenGrade({
-          courseId: event.data.courseId,
-          date: event.data.date,
-          result: event.data.result,
-          isSignatureRequired,
-        });
+      withStudentSignatureRequirement({
+        studentId: event.data.studentId,
+        load: Effect.andThen(StudentRepository, (repo) => repo.getStudent({ studentId: event.data.studentId })),
+        onMissing: (studentId) => new ApplicatorError({ cause: `Student ${studentId} not found` }),
+        run: (isSignatureRequired) =>
+          Effect.andThen(GradeRepository, (repo) =>
+            repo.recordWrittenGrade({
+              courseId: event.data.courseId,
+              date: event.data.date,
+              result: event.data.result,
+              isSignatureRequired,
+            }),
+          ),
       }),
   },
 

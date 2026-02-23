@@ -1,11 +1,11 @@
 import { type NamespaceServerApplicatorMap, ValidationError } from "@groundswell/core";
 import {
   type DomainEvent,
-  requireStudentSignatureRequirementOrDie,
   studentsOfUser,
   type UnknownDatabaseError,
   verifyStudentAccess,
   verifyStudentInitiator,
+  withStudentSignatureRequirementOrDie,
 } from "@stu/lib";
 import { Effect } from "effect";
 import type { Database } from "../database";
@@ -30,22 +30,20 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
         });
       }),
     apply: (event) =>
-      Effect.gen(function* () {
-        const studentRepo = yield* StudentRepository;
-        const isSignatureRequired = yield* requireStudentSignatureRequirementOrDie({
-          studentId: event.data.studentId,
-          load: studentRepo.getStudent({ studentId: event.data.studentId }),
-          onMissing: (studentId) => new Error(`Student ${studentId} not found after verify`),
-        });
-
-        const absenceRepo = yield* AbsenceRepositoryDb;
-        yield* absenceRepo.addAbsence({
-          studentId: event.data.studentId,
-          date: event.data.date,
-          reason: event.data.reason,
-          courseIds: event.data.courseIds,
-          isSignatureRequired,
-        });
+      withStudentSignatureRequirementOrDie({
+        studentId: event.data.studentId,
+        load: Effect.andThen(StudentRepository, (repo) => repo.getStudent({ studentId: event.data.studentId })),
+        onMissing: (studentId) => new Error(`Student ${studentId} not found after verify`),
+        run: (isSignatureRequired) =>
+          Effect.andThen(AbsenceRepositoryDb, (absenceRepo) =>
+            absenceRepo.addAbsence({
+              studentId: event.data.studentId,
+              date: event.data.date,
+              reason: event.data.reason,
+              courseIds: event.data.courseIds,
+              isSignatureRequired,
+            }),
+          ),
       }),
     getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId)]),
   },

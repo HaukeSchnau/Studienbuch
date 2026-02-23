@@ -1,11 +1,11 @@
 import { type NamespaceServerApplicatorMap, ValidationError } from "@groundswell/core";
 import {
   type DomainEvent,
-  requireStudentSignatureRequirementOrDie,
   studentsOfUser,
   type UnknownDatabaseError,
   verifyStudentAccess,
   verifyStudentInitiator,
+  withStudentSignatureRequirementOrDie,
 } from "@stu/lib";
 import { Effect } from "effect";
 import type { Database } from "../database";
@@ -40,23 +40,21 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
         }
       }),
     apply: (event) =>
-      Effect.gen(function* () {
-        const studentRepo = yield* StudentRepository;
-        const isSignatureRequired = yield* requireStudentSignatureRequirementOrDie({
-          studentId: event.data.studentId,
-          load: studentRepo.getStudent({ studentId: event.data.studentId }),
-          onMissing: (studentId) => new Error(`Student ${studentId} not found after verify`),
-        });
-
-        const gradeRepo = yield* GradeRepositoryDb;
-        yield* gradeRepo.setCurrentGrade({
-          studentId: event.data.studentId,
-          courseId: event.data.courseId,
-          date: event.data.date,
-          result: event.data.result,
-          type: event.data.type,
-          isSignatureRequired,
-        });
+      withStudentSignatureRequirementOrDie({
+        studentId: event.data.studentId,
+        load: Effect.andThen(StudentRepository, (repo) => repo.getStudent({ studentId: event.data.studentId })),
+        onMissing: (studentId) => new Error(`Student ${studentId} not found after verify`),
+        run: (isSignatureRequired) =>
+          Effect.andThen(GradeRepositoryDb, (gradeRepo) =>
+            gradeRepo.setCurrentGrade({
+              studentId: event.data.studentId,
+              courseId: event.data.courseId,
+              date: event.data.date,
+              result: event.data.result,
+              type: event.data.type,
+              isSignatureRequired,
+            }),
+          ),
       }),
     getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId)]),
   },
@@ -73,22 +71,20 @@ export const gradeApplicators: NamespaceServerApplicatorMap<
         });
       }),
     apply: (event) =>
-      Effect.gen(function* () {
-        const studentRepo = yield* StudentRepository;
-        const isSignatureRequired = yield* requireStudentSignatureRequirementOrDie({
-          studentId: event.data.studentId,
-          load: studentRepo.getStudent({ studentId: event.data.studentId }),
-          onMissing: (studentId) => new Error(`Student ${studentId} not found after verify`),
-        });
-
-        const gradeRepo = yield* GradeRepositoryDb;
-        yield* gradeRepo.recordWrittenGrade({
-          studentId: event.data.studentId,
-          courseId: event.data.courseId,
-          date: event.data.date,
-          result: event.data.result,
-          isSignatureRequired,
-        });
+      withStudentSignatureRequirementOrDie({
+        studentId: event.data.studentId,
+        load: Effect.andThen(StudentRepository, (repo) => repo.getStudent({ studentId: event.data.studentId })),
+        onMissing: (studentId) => new Error(`Student ${studentId} not found after verify`),
+        run: (isSignatureRequired) =>
+          Effect.andThen(GradeRepositoryDb, (gradeRepo) =>
+            gradeRepo.recordWrittenGrade({
+              studentId: event.data.studentId,
+              courseId: event.data.courseId,
+              date: event.data.date,
+              result: event.data.result,
+              isSignatureRequired,
+            }),
+          ),
       }),
     getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId)]),
   },

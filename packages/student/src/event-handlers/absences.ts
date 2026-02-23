@@ -3,9 +3,9 @@ import type { DatabaseError, GenericSqliteError } from "@schnau/effect-drizzle/g
 import type { DomainEvent } from "@stu/lib";
 import {
   AbsenceRepository,
-  requireStudentSignatureRequirement,
   StudentRepository,
   verifyStudentInitiator,
+  withStudentSignatureRequirement,
 } from "@stu/lib";
 import { Effect } from "effect";
 
@@ -23,21 +23,19 @@ export const absenceApplicators: NamespaceApplicatorMap<
         onForbidden: () => new ApplicatorError({ cause: "NOT_ALLOWED" }),
       }),
     apply: (event) =>
-      Effect.gen(function* () {
-        const studentRepo = yield* StudentRepository;
-        const isSignatureRequired = yield* requireStudentSignatureRequirement({
-          studentId: event.data.studentId,
-          load: studentRepo.getStudent({ studentId: event.data.studentId }),
-          onMissing: (studentId) => new ApplicatorError({ cause: `Student ${studentId} not found` }),
-        });
-
-        const absenceRepo = yield* AbsenceRepository;
-        yield* absenceRepo.addAbsence({
-          date: event.data.date,
-          reason: event.data.reason,
-          courseIds: event.data.courseIds,
-          isSignatureRequired,
-        });
+      withStudentSignatureRequirement({
+        studentId: event.data.studentId,
+        load: Effect.andThen(StudentRepository, (repo) => repo.getStudent({ studentId: event.data.studentId })),
+        onMissing: (studentId) => new ApplicatorError({ cause: `Student ${studentId} not found` }),
+        run: (isSignatureRequired) =>
+          Effect.andThen(AbsenceRepository, (absenceRepo) =>
+            absenceRepo.addAbsence({
+              date: event.data.date,
+              reason: event.data.reason,
+              courseIds: event.data.courseIds,
+              isSignatureRequired,
+            }),
+          ),
       }),
   },
 
