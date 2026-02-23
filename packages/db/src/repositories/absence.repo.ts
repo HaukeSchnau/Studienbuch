@@ -1,3 +1,4 @@
+import type { StudentId } from "@stu/lib";
 import { and, eq, inArray } from "drizzle-orm";
 import { Effect } from "effect";
 import { Database } from "../database";
@@ -6,7 +7,7 @@ import * as tables from "../schema";
 export class AbsenceRepositoryDb extends Effect.Service<AbsenceRepositoryDb>()("db/AbsenceRepositoryDb", {
   effect: Effect.gen(function* () {
     const addAbsence = Effect.fn(function* (payload: {
-      studentId: string;
+      studentId: StudentId;
       date: Date;
       reason: string;
       courseIds: string[];
@@ -43,7 +44,7 @@ export class AbsenceRepositoryDb extends Effect.Service<AbsenceRepositoryDb>()("
       );
     }, Database.asTransaction);
 
-    const setParentSignature = Effect.fn(function* (payload: { studentId: string; date: Date; signature: string }) {
+    const setParentSignature = Effect.fn(function* (payload: { studentId: StudentId; date: Date; signature: string }) {
       const { execute } = yield* Database;
 
       yield* execute((db) =>
@@ -55,7 +56,7 @@ export class AbsenceRepositoryDb extends Effect.Service<AbsenceRepositoryDb>()("
     });
 
     const setTeacherSignature = Effect.fn(function* (payload: {
-      studentId: string;
+      studentId: StudentId;
       date: Date;
       courseId: string;
       signature: string;
@@ -76,7 +77,7 @@ export class AbsenceRepositoryDb extends Effect.Service<AbsenceRepositoryDb>()("
       );
     });
 
-    const deleteAbsence = Effect.fn(function* (payload: { studentId: string; date: Date; courseIds: string[] }) {
+    const deleteAbsence = Effect.fn(function* (payload: { studentId: StudentId; date: Date; courseIds: string[] }) {
       const { execute } = yield* Database;
 
       yield* execute((db) =>

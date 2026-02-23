@@ -1,3 +1,4 @@
+import type { StudentId } from "@stu/lib";
 import { and, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
 import { Effect } from "effect";
 import { Database } from "../database";
@@ -6,7 +7,7 @@ import * as tables from "../schema";
 export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/GradeRepositoryDb", {
   effect: Effect.gen(function* () {
     const setCurrentGrade = Effect.fn(function* (payload: {
-      studentId: string;
+      studentId: StudentId;
       courseId: string;
       date: Date;
       result: number;
@@ -41,7 +42,7 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
     }, Database.asTransaction);
 
     const getLatestGradeDate = Effect.fn(function* (payload: {
-      studentId: string;
+      studentId: StudentId;
       courseId: string;
       type: "ORAL" | "MASTER";
     }) {
@@ -62,7 +63,7 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
     });
 
     const recordWrittenGrade = Effect.fn(function* (payload: {
-      studentId: string;
+      studentId: StudentId;
       courseId: string;
       date: Date;
       result: number;
@@ -83,7 +84,7 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
     });
 
     const setTeacherSignature = Effect.fn(function* (payload: {
-      studentId: string;
+      studentId: StudentId;
       course: string;
       date: Date;
       type: "WRITTEN" | "ORAL" | "MASTER";
@@ -109,7 +110,7 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
     });
 
     const setParentSignature = Effect.fn(function* (payload: {
-      studentId: string;
+      studentId: StudentId;
       course: string;
       date: Date;
       type: "WRITTEN" | "ORAL" | "MASTER";
@@ -135,7 +136,7 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
     });
 
     const restoreLatest = Effect.fn(function* (payload: {
-      studentId: string;
+      studentId: StudentId;
       course: string;
       type: "ORAL" | "MASTER" | "WRITTEN";
     }) {
@@ -173,7 +174,7 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
     }, Database.asTransaction);
 
     const discardGrade = Effect.fn(function* (payload: {
-      studentId: string;
+      studentId: StudentId;
       course: string;
       date: Date;
       type: "WRITTEN" | "ORAL" | "MASTER";

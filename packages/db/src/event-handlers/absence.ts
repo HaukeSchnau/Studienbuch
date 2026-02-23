@@ -1,6 +1,7 @@
 import { type NamespaceServerApplicatorMap, ValidationError } from "@groundswell/core";
 import {
   type DomainEvent,
+  type StudentId,
   studentsOfUser,
   type UnknownDatabaseError,
   verifyStudentAccess,
@@ -12,6 +13,8 @@ import type { Database } from "../database";
 import { AbsenceRepositoryDb } from "../repositories/absence.repo";
 import { StudentRepository } from "../repositories/student.repo";
 
+const asStudentId = (studentId: string): StudentId => studentId as StudentId;
+
 export const absenceApplicators: NamespaceServerApplicatorMap<
   DomainEvent,
   "absence",
@@ -21,85 +24,108 @@ export const absenceApplicators: NamespaceServerApplicatorMap<
   recorded: {
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
+        const studentId = asStudentId(event.data.studentId);
+
         yield* verifyStudentAccess({
           initiatorId,
-          studentId: event.data.studentId,
-          load: Effect.andThen(StudentRepository, (repo) => repo.getStudent({ studentId: event.data.studentId })),
+          studentId,
+          load: Effect.andThen(StudentRepository, (repo) => repo.getStudent({ studentId })),
           onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
           onMissing: () => new ValidationError({ cause: "STUDENT_NOT_FOUND", reason: "NOT_FOUND" }),
         });
       }),
-    apply: (event) =>
-      withStudentSignatureRequirementOrDie({
-        studentId: event.data.studentId,
-        load: Effect.andThen(StudentRepository, (repo) => repo.getStudent({ studentId: event.data.studentId })),
+    apply: (event) => {
+      const studentId = asStudentId(event.data.studentId);
+
+      return withStudentSignatureRequirementOrDie({
+        studentId,
+        load: Effect.andThen(StudentRepository, (repo) => repo.getStudent({ studentId })),
         onMissing: (studentId) => new Error(`Student ${studentId} not found after verify`),
         run: (isSignatureRequired) =>
           Effect.andThen(AbsenceRepositoryDb, (absenceRepo) =>
             absenceRepo.addAbsence({
-              studentId: event.data.studentId,
+              studentId,
               date: event.data.date,
               reason: event.data.reason,
               courseIds: event.data.courseIds,
               isSignatureRequired,
             }),
           ),
-      }),
-    getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId)]),
+      });
+    },
+    getEventTopics: (event) => Effect.succeed([studentsOfUser(asStudentId(event.data.studentId))]),
   },
 
   parentApproved: {
-    verify: (event, { initiatorId }) =>
-      verifyStudentInitiator({
+    verify: (event, { initiatorId }) => {
+      const studentId = asStudentId(event.data.studentId);
+
+      return verifyStudentInitiator({
         initiatorId,
-        studentId: event.data.studentId,
+        studentId,
         onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
-      }),
-    apply: (event) =>
-      Effect.andThen(AbsenceRepositoryDb, (repo) =>
+      });
+    },
+    apply: (event) => {
+      const studentId = asStudentId(event.data.studentId);
+
+      return Effect.andThen(AbsenceRepositoryDb, (repo) =>
         repo.setParentSignature({
-          studentId: event.data.studentId,
+          studentId,
           date: event.data.date,
           signature: event.data.signature,
         }),
-      ),
-    getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId)]),
+      );
+    },
+    getEventTopics: (event) => Effect.succeed([studentsOfUser(asStudentId(event.data.studentId))]),
   },
 
   teacherApproved: {
-    verify: (event, { initiatorId }) =>
-      verifyStudentInitiator({
+    verify: (event, { initiatorId }) => {
+      const studentId = asStudentId(event.data.studentId);
+
+      return verifyStudentInitiator({
         initiatorId,
-        studentId: event.data.studentId,
+        studentId,
         onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
-      }),
-    apply: (event) =>
-      Effect.andThen(AbsenceRepositoryDb, (repo) =>
+      });
+    },
+    apply: (event) => {
+      const studentId = asStudentId(event.data.studentId);
+
+      return Effect.andThen(AbsenceRepositoryDb, (repo) =>
         repo.setTeacherSignature({
-          studentId: event.data.studentId,
+          studentId,
           date: event.data.date,
           courseId: event.data.courseId,
           signature: event.data.signature,
         }),
-      ),
-    getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId)]),
+      );
+    },
+    getEventTopics: (event) => Effect.succeed([studentsOfUser(asStudentId(event.data.studentId))]),
   },
 
   discarded: {
-    verify: (event, { initiatorId }) =>
-      verifyStudentInitiator({
+    verify: (event, { initiatorId }) => {
+      const studentId = asStudentId(event.data.studentId);
+
+      return verifyStudentInitiator({
         initiatorId,
-        studentId: event.data.studentId,
+        studentId,
         onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
-      }),
-    apply: (event) =>
-      Effect.andThen(AbsenceRepositoryDb, (repo) =>
+      });
+    },
+    apply: (event) => {
+      const studentId = asStudentId(event.data.studentId);
+
+      return Effect.andThen(AbsenceRepositoryDb, (repo) =>
         repo.deleteAbsence({
-          studentId: event.data.studentId,
+          studentId,
           date: event.data.date,
           courseIds: event.data.courseIds,
         }),
-      ),
-    getEventTopics: (event) => Effect.succeed([studentsOfUser(event.data.studentId)]),
+      );
+    },
+    getEventTopics: (event) => Effect.succeed([studentsOfUser(asStudentId(event.data.studentId))]),
   },
 };
