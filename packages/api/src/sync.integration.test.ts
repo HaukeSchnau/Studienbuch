@@ -205,6 +205,10 @@ const createClientRuntime = (options: {
   broadcast: {
     subscribe: (userId: string, options?: { offset?: number }) => Stream.Stream<DomainEvent, unknown>;
   };
+  applicator?: Partial<{
+    verify: (event: DomainEvent) => Effect.Effect<void, ValidationError>;
+    apply: (event: DomainEvent) => Effect.Effect<void, ApplicatorError>;
+  }>;
 }) => {
   const storageService: Storage<DomainEvent> = {
     getPendingEvents: Stream.fromIterable(
@@ -260,7 +264,7 @@ const createClientRuntime = (options: {
       ),
   };
 
-  const applicatorService = {
+  const defaultApplicatorService = {
     verify: (event: DomainEvent) =>
       isStudentScopedEvent(event) && event.data.studentId === options.userId
         ? Effect.void
@@ -269,6 +273,10 @@ const createClientRuntime = (options: {
       Effect.sync(() => {
         options.appliedEventIds.push(event.id);
       }),
+  };
+  const applicatorService = {
+    verify: options.applicator?.verify ?? defaultApplicatorService.verify,
+    apply: options.applicator?.apply ?? defaultApplicatorService.apply,
   };
 
   const engineLayer = syncEngineLive(ClientSyncEngine, ClientApplicator, ClientStorage, ClientTransport, {
@@ -582,6 +590,179 @@ describe("sync ingest integration", () => {
 
     expect(runtimeAState.appliedEventIds.length).toBe(2);
     expect(new Set(runtimeAState.appliedEventIds).size).toBe(2);
+
+    await runtimeA.dispose();
+    await runtimeB.dispose();
+  });
+
+  it("reconnect replay recovers via local snapshot fallback after missing dependency applicator error", async () => {
+    const harness = createHarness();
+    const { ingest, broadcast } = await harness.getServerServices();
+
+    const runtimeAState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+    const runtimeBState = {
+      localStore: new Map<string, LocalEvent<DomainEvent>>(),
+      appliedEventIds: [] as string[],
+      persistedOffset: { value: 0 },
+    };
+
+    let runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+    const runtimeB = createClientRuntime({
+      userId: STUDENT_A,
+      offset: 0,
+      localStore: runtimeBState.localStore,
+      appliedEventIds: runtimeBState.appliedEventIds,
+      persistedOffset: runtimeBState.persistedOffset,
+      ingest,
+      broadcast,
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "absence.recorded",
+          data: {
+            studentId: STUDENT_A,
+            date: new Date(50),
+            reason: "Krank",
+            courseIds: [COURSE_A],
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeAState.persistedOffset.value === 1 && runtimeBState.persistedOffset.value === 1);
+    await runtimeA.dispose();
+
+    await runtimeB.runPromise(
+      Effect.gen(function* () {
+        const engine = yield* ClientSyncEngine;
+        yield* engine.ingest({
+          type: "absence.recorded",
+          data: {
+            studentId: STUDENT_A,
+            date: new Date(51),
+            reason: "Arzt",
+            courseIds: [COURSE_B],
+          },
+        });
+      }),
+    );
+
+    await waitUntil(() => runtimeBState.persistedOffset.value === 2);
+    expect(runtimeAState.persistedOffset.value).toBe(1);
+
+    const sentBeforeReconnect = harness.sentIdsByUser.get(STUDENT_A) ?? [];
+    expect(sentBeforeReconnect).toHaveLength(2);
+    const [firstEventId, replayedEventId] = sentBeforeReconnect;
+    if (!firstEventId || !replayedEventId) {
+      throw new Error("Expected sent event ids before reconnect");
+    }
+
+    const fallbackTriggerCount = { value: 0 };
+    const replayApplyAttempts = { value: 0 };
+    const dependencyResolved = { value: false };
+
+    runtimeA = createClientRuntime({
+      userId: STUDENT_A,
+      offset: runtimeAState.persistedOffset.value,
+      localStore: runtimeAState.localStore,
+      appliedEventIds: runtimeAState.appliedEventIds,
+      persistedOffset: runtimeAState.persistedOffset,
+      ingest,
+      broadcast,
+      applicator: {
+        apply: (event: DomainEvent) => {
+          if (event.id !== replayedEventId) {
+            return Effect.sync(() => {
+              runtimeAState.appliedEventIds.push(event.id);
+            });
+          }
+
+          const applyWithDependency = () =>
+            Effect.gen(function* () {
+              replayApplyAttempts.value += 1;
+              if (!dependencyResolved.value) {
+                return yield* Effect.fail(
+                  new ApplicatorError({
+                    cause: {
+                      type: "MISSING_DEPENDENCY",
+                      dependency: "student",
+                      studentId: STUDENT_A,
+                    },
+                  }),
+                );
+              }
+
+              runtimeAState.appliedEventIds.push(event.id);
+            });
+
+          return applyWithDependency().pipe(
+            Effect.catchTag("ApplicatorError", (error) => {
+              const isMissingDependencyError =
+                typeof error.cause === "object" &&
+                error.cause !== null &&
+                "type" in error.cause &&
+                error.cause.type === "MISSING_DEPENDENCY";
+
+              if (!isMissingDependencyError) {
+                return Effect.fail(error);
+              }
+
+              return Effect.gen(function* () {
+                fallbackTriggerCount.value += 1;
+                dependencyResolved.value = true;
+                yield* applyWithDependency();
+              });
+            }),
+          );
+        },
+      },
+    });
+
+    await runtimeA.runPromise(
+      Effect.gen(function* () {
+        yield* ClientSyncEngine;
+      }),
+    );
+
+    await waitUntil(
+      () =>
+        runtimeAState.persistedOffset.value === 2 &&
+        runtimeAState.appliedEventIds.filter((eventId) => eventId === replayedEventId).length === 1,
+    );
+
+    expect(fallbackTriggerCount.value).toBe(1);
+    expect(replayApplyAttempts.value).toBe(2);
+    expect(runtimeAState.persistedOffset.value).toBe(2);
+    expect(runtimeAState.appliedEventIds).toEqual([firstEventId, replayedEventId]);
+    expect(new Set(runtimeAState.appliedEventIds).size).toBe(runtimeAState.appliedEventIds.length);
+    expect(sentBeforeReconnect).toEqual([firstEventId, replayedEventId]);
+    expect(new Set(sentBeforeReconnect).size).toBe(sentBeforeReconnect.length);
 
     await runtimeA.dispose();
     await runtimeB.dispose();
