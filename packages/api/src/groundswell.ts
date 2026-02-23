@@ -22,7 +22,7 @@ import { DomainEvent } from "@stu/lib";
 import { Duration, Effect, Layer, Logger, ManagedRuntime, pipe, Schedule } from "effect";
 import { DomainCanonicalStorage, DomainServerApplicator, ingestEngine } from "./boilerplate";
 import { memoryBroadcastLive } from "./broadcast";
-import { getUserTopics } from "./router/events/send-missing-events";
+import { getUserTopics } from "./services/topic-service";
 
 const Repositories = Layer.mergeAll(
   AuthRepositoryLive,
