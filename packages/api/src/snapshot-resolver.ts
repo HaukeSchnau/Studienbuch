@@ -1,5 +1,10 @@
-import type { SnapshotResponse, StudentSnapshot } from "@stu/lib";
-import { type SnapshotRequest, SnapshotResponseSchema } from "@stu/lib";
+import {
+  entityRefsByKind,
+  type SnapshotRequest,
+  type SnapshotResponse,
+  SnapshotResponseSchema,
+  type StudentSnapshot,
+} from "@stu/lib";
 
 export interface SnapshotResolverDependencies {
   loadStudents: (userId: string, ids: string[]) => Promise<StudentSnapshot[]>;
@@ -10,12 +15,8 @@ export interface SnapshotResolverDependencies {
 
 export const createSnapshotResolver = (deps: SnapshotResolverDependencies) => {
   return async ({ userId, request }: { userId: string; request: SnapshotRequest }): Promise<SnapshotResponse> => {
-    const studentIds = [
-      ...new Set(request.entities.filter((entity) => entity.kind === "student").map((entity) => entity.id)),
-    ];
-    const courseIds = [
-      ...new Set(request.entities.filter((entity) => entity.kind === "course").map((entity) => entity.id)),
-    ];
+    const studentIds = entityRefsByKind(request.entities, "student");
+    const courseIds = entityRefsByKind(request.entities, "course");
 
     const [students, courses] = await Promise.all([
       deps.loadStudents(userId, studentIds),

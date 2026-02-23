@@ -3,6 +3,7 @@ import { SUBJECT_IDS } from "./courses";
 import type { DomainEvent } from "./events";
 import { GRADE_TYPES } from "./grades";
 import { SCHOOL_IDS, SEMESTER_TYPES, STATE_CODES } from "./school";
+import { uniqueBy } from "./snapshot-helpers";
 import { SALUTATIONS } from "./teacher";
 
 export const SnapshotEntityKindSchema = z.enum(["student", "course"]);
@@ -18,14 +19,6 @@ export const SnapshotRequestSchema = z.object({
   entities: z.array(SnapshotEntityRefSchema).min(1).max(32),
 });
 export type SnapshotRequest = z.infer<typeof SnapshotRequestSchema>;
-
-const uniqueBy = <T>(items: readonly T[], key: (item: T) => string): T[] => {
-  const deduped = new Map<string, T>();
-  for (const item of items) {
-    deduped.set(key(item), item);
-  }
-  return [...deduped.values()];
-};
 
 export const snapshotEntitiesForEvent = (event: DomainEvent): SnapshotRequest["entities"] => {
   switch (event.type) {

@@ -1,15 +1,7 @@
-import type { SnapshotResponse } from "@stu/lib";
+import { type SnapshotResponse, uniqueBy } from "@stu/lib";
 import { Effect } from "effect";
 import { Database } from "../database";
 import * as tables from "../schema";
-
-const uniqueBy = <T>(items: readonly T[], key: (item: T) => string): T[] => {
-  const deduped = new Map<string, T>();
-  for (const item of items) {
-    deduped.set(key(item), item);
-  }
-  return [...deduped.values()];
-};
 
 const schoolFromStudent = (student: SnapshotResponse["students"][number]) => student.school;
 const schoolFromCourse = (course: SnapshotResponse["courses"][number]) => course.school;
