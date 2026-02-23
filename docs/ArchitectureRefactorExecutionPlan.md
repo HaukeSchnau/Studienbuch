@@ -75,11 +75,13 @@
     - `bun test packages/lib/src/snapshot.test.ts` (pass)
     - `bun test packages/api/src/snapshot.test.ts` (pass)
     - `bun run test:sync` (pass)
-- `PR-06: PG/SQLite Data-Model Parity Harness` (slice 3)
+- `PR-06: PG/SQLite Data-Model Parity Harness` (slice 5)
   - Changes landed in:
     - `test(schema): add shared pg/sqlite parity harness slice 1` (`ryv`)
     - `test(schema): extend parity contracts to shared timetable and tasks` (`mx`)
     - `test: expand student-domain schema parity contracts` (`ut`)
+    - `test(schema): include holidays in shared parity contracts` (`vx`)
+    - `test(schema): add dedicated substitutions parity contracts` (`lz`)
   - Verification run:
     - `bun --filter @stu/db typecheck` (pass)
     - `bun --filter @stu/student typecheck` (pass)
@@ -87,7 +89,7 @@
     - `bun test packages/student/src/schema-parity.test.ts` (pass)
 - Next queued:
 - `PR-05`: finish remaining API/mobile snapshot mapper routing and remove transitional cleanup/shims
-- `PR-06`: narrow parity allowlist and add coverage for remaining shared/student-domain tables
+- `PR-06`: resolve decision path for one-sided allowlist tables and close remaining coverage gaps (`rooms`, `course_memberships`, `timetable_entry_rooms`)
 
 ## Phase Plan And Parallel Tracks
 
