@@ -170,8 +170,42 @@ export const INTENTIONALLY_DIVERGENT_STUDENT_DOMAIN_TABLES = {
   course_absences: "SQLite omits student scoping because data is single-profile local state.",
 } as const;
 
+export type SchemaParityEnvironment = "postgres" | "sqlite";
+
+export interface SchemaParityAllowlistInfo {
+  description: string;
+  environments: readonly SchemaParityEnvironment[];
+}
+
 export const INTENTIONALLY_DIVERGENT_SCHEMA_TABLE_ALLOWLIST = {
-  rooms: "Present only in server DB schema.",
-  course_memberships: "Present only in server DB schema; student uses course membership flags.",
-  timetable_entry_rooms: "Present only in student SQLite schema.",
-} as const;
+  rooms: {
+    description: "Present only in server DB schema.",
+    environments: ["postgres"] as const,
+  },
+  course_memberships: {
+    description: "Present only in server DB schema; student uses course membership flags.",
+    environments: ["postgres"] as const,
+  },
+  timetable_entry_rooms: {
+    description: "Present only in student SQLite schema.",
+    environments: ["sqlite"] as const,
+  },
+} as const satisfies Record<
+  "rooms" | "course_memberships" | "timetable_entry_rooms",
+  SchemaParityAllowlistInfo
+>;
+
+export type SchemaParityAllowlistTableName = keyof typeof INTENTIONALLY_DIVERGENT_SCHEMA_TABLE_ALLOWLIST;
+
+const allowlistEntries = Object.entries(INTENTIONALLY_DIVERGENT_SCHEMA_TABLE_ALLOWLIST) as Array<[
+  SchemaParityAllowlistTableName,
+  SchemaParityAllowlistInfo,
+]>;
+
+const filterByEnvironment = (environment: SchemaParityEnvironment) =>
+  allowlistEntries
+    .filter(([, info]) => info.environments.includes(environment))
+    .map(([tableName]) => tableName) as readonly SchemaParityAllowlistTableName[];
+
+export const POSTGRES_INTENTIONALLY_DIVERGENT_TABLES = filterByEnvironment("postgres");
+export const SQLITE_INTENTIONALLY_DIVERGENT_TABLES = filterByEnvironment("sqlite");

@@ -1,9 +1,11 @@
 import {
+  POSTGRES_INTENTIONALLY_DIVERGENT_TABLES,
   POSTGRES_SUBSTITUTIONS_TABLE_PARITY_CONTRACTS,
   POSTGRES_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS,
   SHARED_CORE_TABLE_PARITY_CONTRACTS,
   evaluateSchemaParity,
   type SchemaParityActualTable,
+  type SchemaParityAllowlistTableName,
 } from "@stu/lib";
 import { describe, expect, test } from "bun:test";
 import { getTableConfig } from "drizzle-orm/pg-core";
@@ -27,6 +29,8 @@ import {
   Tasks,
   TimetableEntries,
   Years,
+  CourseMemberships,
+  Rooms,
 } from "./schema";
 
 const extractPrimaryKeyColumns = (tableConfig: {
@@ -77,6 +81,11 @@ const substitutionsTableMetadata = {
   substitutions: extractTableMetadata(Substitutions),
 } satisfies Record<(typeof POSTGRES_SUBSTITUTIONS_TABLE_PARITY_CONTRACTS)[number]["tableName"], SchemaParityActualTable>;
 
+const postgresAllowlistTableMetadata = {
+  rooms: extractTableMetadata(Rooms),
+  course_memberships: extractTableMetadata(CourseMemberships),
+} satisfies Record<(typeof POSTGRES_INTENTIONALLY_DIVERGENT_TABLES)[number], SchemaParityActualTable>;
+
 describe("schema parity (db)", () => {
   test("shared core schema contracts pass for postgres tables", () => {
     const parity = evaluateSchemaParity(SHARED_CORE_TABLE_PARITY_CONTRACTS, coreTableMetadata);
@@ -97,5 +106,16 @@ describe("schema parity (db)", () => {
 
     expect(parity.tables.filter((table) => !table.passed)).toEqual([]);
     expect(parity.passed).toBe(true);
+  });
+
+  test("one-sided allowlist tables stay covered for postgres", () => {
+    const allowlistNames = [...POSTGRES_INTENTIONALLY_DIVERGENT_TABLES];
+
+    expect(allowlistNames.every((tableName) => tableName in postgresAllowlistTableMetadata)).toBe(true);
+    expect(
+      (Object.keys(postgresAllowlistTableMetadata) as SchemaParityAllowlistTableName[]).every((tableName) =>
+        allowlistNames.includes(tableName),
+      ),
+    ).toBe(true);
   });
 });

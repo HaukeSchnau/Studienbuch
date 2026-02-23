@@ -1,9 +1,11 @@
 import {
+  SQLITE_INTENTIONALLY_DIVERGENT_TABLES,
   SHARED_CORE_TABLE_PARITY_CONTRACTS,
   SQLITE_SUBSTITUTIONS_TABLE_PARITY_CONTRACTS,
   SQLITE_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS,
   evaluateSchemaParity,
   type SchemaParityActualTable,
+  type SchemaParityAllowlistTableName,
 } from "@stu/lib";
 import { describe, expect, test } from "bun:test";
 import { getTableConfig } from "drizzle-orm/sqlite-core";
@@ -27,6 +29,7 @@ import {
   tasks,
   timetableEntries,
   years,
+  timetableEntryRooms,
 } from "./schema";
 
 const extractPrimaryKeyColumns = (tableConfig: {
@@ -77,6 +80,10 @@ const substitutionsTableMetadata = {
   substitutions: extractTableMetadata(substitutions),
 } satisfies Record<(typeof SQLITE_SUBSTITUTIONS_TABLE_PARITY_CONTRACTS)[number]["tableName"], SchemaParityActualTable>;
 
+const sqliteAllowlistTableMetadata = {
+  timetable_entry_rooms: extractTableMetadata(timetableEntryRooms),
+} satisfies Record<(typeof SQLITE_INTENTIONALLY_DIVERGENT_TABLES)[number], SchemaParityActualTable>;
+
 describe("schema parity (student)", () => {
   test("shared core schema contracts pass for sqlite tables", () => {
     const parity = evaluateSchemaParity(SHARED_CORE_TABLE_PARITY_CONTRACTS, coreTableMetadata);
@@ -97,5 +104,16 @@ describe("schema parity (student)", () => {
 
     expect(parity.tables.filter((table) => !table.passed)).toEqual([]);
     expect(parity.passed).toBe(true);
+  });
+
+  test("one-sided allowlist tables stay covered for sqlite", () => {
+    const allowlistNames = [...SQLITE_INTENTIONALLY_DIVERGENT_TABLES];
+
+    expect(allowlistNames.every((tableName) => tableName in sqliteAllowlistTableMetadata)).toBe(true);
+    expect(
+      (Object.keys(sqliteAllowlistTableMetadata) as SchemaParityAllowlistTableName[]).every((tableName) =>
+        allowlistNames.includes(tableName),
+      ),
+    ).toBe(true);
   });
 });
