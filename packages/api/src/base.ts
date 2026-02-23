@@ -14,7 +14,7 @@ import { trimTrailingSlash } from "hono/trailing-slash";
 import pino from "pino";
 import { env } from "../env";
 import { DomainBroadcast, DomainIngestEngine } from "./boilerplate";
-import { resolveSnapshotForUser } from "./snapshot";
+import { resolveSnapshotForUser } from "./services/snapshot-service";
 
 const appLogger = pino({
   transport: {
