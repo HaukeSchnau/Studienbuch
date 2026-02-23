@@ -6,7 +6,7 @@ import { useState } from "react";
 import superjson from "superjson";
 
 import { getBaseUrl } from "./base-url";
-import { getStorage } from "./storage";
+import { buildHeaders, getHeaders, getHeadersObject } from "./request-headers";
 
 /**
  * A set of typesafe hooks for consuming your API.
@@ -14,24 +14,7 @@ import { getStorage } from "./storage";
 export const api = createTRPCReact<AppRouter>();
 export type { RouterInputs, RouterOutputs } from "@stu/api";
 
-export const getHeaders = () => {
-  const session = getStorage("auth.session");
-
-  return buildHeaders(session?.token);
-};
-
-export const getHeadersObject = () => {
-  const headsMap = getHeaders();
-  return Object.fromEntries(headsMap);
-};
-
-const buildHeaders = (sessionToken?: string) => {
-  const headers = new Map<string, string>();
-  headers.set("x-trpc-source", "expo-react");
-  if (sessionToken) headers.set("x-session", sessionToken);
-
-  return headers;
-};
+export { buildHeaders, getHeaders, getHeadersObject };
 
 /**
  * A wrapper for your app that provides the TRPC context.

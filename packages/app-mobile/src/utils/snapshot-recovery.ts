@@ -9,8 +9,13 @@ import {
 } from "@stu/lib";
 import { applySnapshotToLocalDatabase as applySnapshotToLocalDatabaseFromStudent } from "@stu/student";
 import { Data, Effect, Either } from "effect";
-import { getHeadersObject } from "./api";
-import { getBaseUrl } from "./base-url";
+import { getHeadersObject } from "./request-headers";
+
+type BaseUrlModule = typeof import("./base-url");
+
+declare const require: (path: string) => unknown;
+
+const getBaseUrl = () => (require("./base-url") as BaseUrlModule).getBaseUrl();
 
 export class SnapshotRecoveryError extends Data.TaggedError("SnapshotRecoveryError")<{
   cause: unknown;
