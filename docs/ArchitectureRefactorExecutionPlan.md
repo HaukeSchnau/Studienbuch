@@ -10,7 +10,7 @@
 
 ## Phase Plan And Parallel Tracks
 
-1. Phase 1 (Foundation): PR-01 to PR-05 in sequence.
+1. Phase 1 (Foundation): PR-01 to PR-06 in sequence.
 2. Phase 2 (Parallel Refactors): after PR-06, run three tracks in parallel:
 - Track A (data model dedup): PR-07 -> PR-08.
 - Track B (frontend/mobile convergence): PR-09 -> PR-10.
@@ -19,7 +19,7 @@
 
 Dependency graph:
 - `PR-01 -> PR-02 -> PR-03 -> PR-04 -> PR-05`
-- `PR-03 -> PR-06`
+- `PR-05 -> PR-06`
 - `PR-06 -> PR-07 -> PR-08`
 - `PR-04 -> PR-09 -> PR-10`
 - `PR-01 -> PR-11 -> PR-12`
@@ -381,7 +381,7 @@ bun --filter @stu/db typecheck
 - Verification commands:
 ```bash
 bun run lint:ws
-bun tooling/visualize-deps.ts
+nix run nixpkgs#graphviz --command bun tooling/visualize-deps.ts
 bun run lint
 ```
 
