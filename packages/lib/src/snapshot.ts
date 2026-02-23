@@ -1,9 +1,7 @@
 import { z } from "zod";
 import { SUBJECT_IDS } from "./courses";
-import type { DomainEvent } from "./events";
 import { GRADE_TYPES } from "./grades";
 import { SCHOOL_IDS, SEMESTER_TYPES, STATE_CODES } from "./school";
-import { uniqueBy } from "./snapshot-helpers";
 import { SALUTATIONS } from "./teacher";
 
 export const SnapshotEntityKindSchema = z.enum(["student", "course"]);
@@ -20,85 +18,7 @@ export const SnapshotRequestSchema = z.object({
 });
 export type SnapshotRequest = z.infer<typeof SnapshotRequestSchema>;
 
-export const snapshotEntitiesForEvent = (event: DomainEvent): SnapshotRequest["entities"] => {
-  switch (event.type) {
-    case "absence.recorded":
-      return uniqueBy(
-        [
-          {
-            kind: "student",
-            id: event.data.studentId,
-          },
-          ...event.data.courseIds.map((courseId) => ({
-            kind: "course" as const,
-            id: courseId,
-          })),
-        ],
-        (entity) => `${entity.kind}:${entity.id}`,
-      );
-    case "absence.teacherApproved":
-      return [
-        {
-          kind: "student",
-          id: event.data.studentId,
-        },
-        {
-          kind: "course",
-          id: event.data.courseId,
-        },
-      ];
-    case "absence.discarded":
-      return uniqueBy(
-        [
-          {
-            kind: "student",
-            id: event.data.studentId,
-          },
-          ...event.data.courseIds.map((courseId) => ({
-            kind: "course" as const,
-            id: courseId,
-          })),
-        ],
-        (entity) => `${entity.kind}:${entity.id}`,
-      );
-    case "grades.currentGradeSet":
-    case "grades.writtenGradeRecorded":
-    case "student.courseAssigned":
-      return [
-        {
-          kind: "student",
-          id: event.data.studentId,
-        },
-        {
-          kind: "course",
-          id: event.data.courseId,
-        },
-      ];
-    case "student.joined":
-      return [
-        {
-          kind: "student",
-          id: event.data.studentId,
-        },
-      ];
-    case "grades.teacherApproved":
-    case "grades.parentApproved":
-    case "grades.discarded":
-    case "grades.latestRestored":
-      return [
-        {
-          kind: "student",
-          id: event.data.studentId,
-        },
-        {
-          kind: "course",
-          id: event.data.course,
-        },
-      ];
-    default:
-      return [];
-  }
-};
+export { snapshotEntitiesForEvent } from "./snapshot/entities";
 
 export const SchoolSnapshotSchema = z.object({
   id: z.enum(SCHOOL_IDS),
