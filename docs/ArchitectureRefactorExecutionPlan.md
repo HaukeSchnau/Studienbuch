@@ -44,22 +44,32 @@
     - `refactor(api): extract snapshot request orchestration service` (`ky`)
     - `refactor(api): centralize session user resolution` (`vwy`)
     - `test(api): cover snapshot request service branches` (`vv`)
+    - `refactor(app-mobile): centralize default snapshot transport wiring` (`ss`)
+    - `refactor(app-mobile): extract request header helpers` (`mz`)
+    - `refactor(app-mobile): wire sync session context service` (`sr`)
   - Verification run:
     - `bun --filter @stu/api typecheck` (pass)
     - `bun test packages/api/src/services/snapshot-request-service.test.ts` (pass)
     - `bun test packages/api/src/snapshot.test.ts` (pass)
-    - `bun run test:sync` (pass)
-- `PR-05: Snapshot Mapping Deduplication` (slice 1)
-  - Changes landed in:
-    - `refactor(student): share snapshot apply helper with app-mobile` (`klu`)
-  - Verification run:
-    - `bun --filter @stu/student typecheck` (pass)
     - `bun --filter @stu/app-mobile typecheck` (pass)
     - `bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts` (pass)
     - `bun run test:sync` (pass)
+- `PR-05: Snapshot Mapping Deduplication` (slice 2)
+  - Changes landed in:
+    - `refactor(student): share snapshot apply helper with app-mobile` (`klu`)
+    - `refactor(snapshot): extract shared dedupe helpers` (`sps`)
+  - Verification run:
+    - `bun --filter @stu/lib typecheck` (pass)
+    - `bun --filter @stu/api typecheck` (pass)
+    - `bun --filter @stu/student typecheck` (pass)
+    - `bun --filter @stu/app-mobile typecheck` (pass)
+    - `bun test packages/lib/src/snapshot.test.ts` (pass)
+    - `bun test packages/api/src/snapshot.test.ts` (pass)
+    - `bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts` (pass)
+    - `bun run test:sync` (pass)
 - Next queued:
-- `PR-04`: continue mobile sync/snapshot orchestration cleanup
-- `PR-05`: continue shared snapshot mapping extraction beyond apply helper move
+- `PR-04`: add API transport-level `/api/snapshot` endpoint wiring test
+- `PR-05`: extract shared snapshot test fixtures for API/mobile/lib snapshot tests
 
 ## Phase Plan And Parallel Tracks
 
