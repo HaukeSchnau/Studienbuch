@@ -44,7 +44,7 @@ export const holidays = sqliteTable(
   (table) => {
     return {
       pk: primaryKey({
-        columns: [table.name, table.start, table.end, table.state, table.year],
+        columns: [table.name, table.state, table.year],
       }),
     };
   },

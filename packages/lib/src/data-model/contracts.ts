@@ -3,6 +3,7 @@ export type CoreSchemaParityTableName =
   | "years"
   | "classes"
   | "semesters"
+  | "holidays"
   | "persons"
   | "students"
   | "courses"
@@ -41,6 +42,11 @@ export const SHARED_CORE_TABLE_PARITY_CONTRACTS = [
     tableName: "semesters",
     requiredColumns: ["name", "start", "end", "school", "type", "year"],
     primaryKeyColumns: ["school", "type", "year"],
+  },
+  {
+    tableName: "holidays",
+    requiredColumns: ["name", "start", "end", "state", "year"],
+    primaryKeyColumns: ["name", "state", "year"],
   },
   {
     tableName: "persons",
@@ -148,7 +154,6 @@ export const INTENTIONALLY_DIVERGENT_STUDENT_DOMAIN_TABLES = {
 } as const;
 
 export const INTENTIONALLY_DIVERGENT_SCHEMA_TABLE_ALLOWLIST = {
-  holidays: "Primary key shape intentionally differs between PG and SQLite implementations.",
   rooms: "Present only in server DB schema.",
   course_memberships: "Present only in server DB schema; student uses course membership flags.",
   substitutions: "Timetable substitutions are tracked in a separate parity slice.",
