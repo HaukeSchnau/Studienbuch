@@ -7,10 +7,10 @@ import { Button } from "~/components/form/Button";
 import { TextField } from "~/components/form/TextField";
 import { submitHandler } from "~/infrastructure/forms/submitHandler";
 import { api } from "~/infrastructure/trpc/react";
-import { setSessionToken } from "./serverActions/setSessionToken";
 
 export const LoginForm = () => {
   const loginMutation = api.auth.login.useMutation();
+  const utils = api.useUtils();
 
   const form = useForm({
     defaultValues: {
@@ -42,8 +42,8 @@ export const LoginForm = () => {
         return;
       }
 
-      const newSessionToken = response.session.token;
-      await setSessionToken(newSessionToken);
+      await utils.auth.getSession.invalidate();
+      window.location.href = "/admin";
     },
   });
 

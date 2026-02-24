@@ -1,4 +1,4 @@
-import { useMemo, useSyncExternalStore } from "react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 
 type QueryParamValue = string | string[];
 type Query = Record<string, QueryParamValue>;
@@ -18,23 +18,6 @@ export interface NextRouterCompat {
   query: Query;
   replace: (url: UrlInput) => Promise<boolean>;
 }
-
-const subscribe = (onStoreChange: () => void) => {
-  if (typeof window === "undefined") {
-    return () => {};
-  }
-
-  window.addEventListener("popstate", onStoreChange);
-  window.addEventListener("hashchange", onStoreChange);
-
-  return () => {
-    window.removeEventListener("popstate", onStoreChange);
-    window.removeEventListener("hashchange", onStoreChange);
-  };
-};
-
-const getSnapshot = () => (typeof window === "undefined" ? "http://localhost/" : window.location.href);
-const getServerSnapshot = () => "http://localhost/";
 
 const parseQuery = (searchParams: URLSearchParams): Query => {
   const query: Query = {};
@@ -58,7 +41,7 @@ const toHref = (input: UrlInput): string => {
   }
 
   if (input instanceof URL) {
-    return input.toString();
+    return `${input.pathname}${input.search}${input.hash}`;
   }
 
   const pathname = input.pathname ?? "/";
@@ -85,38 +68,21 @@ const toHref = (input: UrlInput): string => {
   return `${pathname}${search ? `?${search}` : ""}${hash}`;
 };
 
-const navigateTo = (input: UrlInput, replace: boolean) => {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  const url = new URL(toHref(input), window.location.origin);
-  if (replace) {
-    window.history.replaceState(null, "", url);
-  } else {
-    window.history.pushState(null, "", url);
-  }
-  window.dispatchEvent(new PopStateEvent("popstate"));
-};
-
 export const useRouter = (): NextRouterCompat => {
-  const href = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const navigate = useNavigate({ from: "__root__" });
+  const location = useRouterState({ select: (state) => state.location });
 
-  return useMemo(() => {
-    const url = new URL(href);
-
-    return {
-      asPath: `${url.pathname}${url.search}${url.hash}`,
-      pathname: url.pathname,
-      push: async (input: UrlInput) => {
-        navigateTo(input, false);
-        return true;
-      },
-      query: parseQuery(url.searchParams),
-      replace: async (input: UrlInput) => {
-        navigateTo(input, true);
-        return true;
-      },
-    };
-  }, [href]);
+  return {
+    asPath: `${location.pathname}${location.search.str}${location.hash}`,
+    pathname: location.pathname,
+    push: async (input: UrlInput) => {
+      await navigate({ to: toHref(input) as never });
+      return true;
+    },
+    query: parseQuery(new URLSearchParams(location.search.str)),
+    replace: async (input: UrlInput) => {
+      await navigate({ to: toHref(input) as never, replace: true });
+      return true;
+    },
+  };
 };

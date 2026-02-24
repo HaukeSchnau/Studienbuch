@@ -6,7 +6,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./client": "./src/client.ts"
+    "./client": "./src/client.ts",
+    "./web-services": "./src/web-services.ts"
   },
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",

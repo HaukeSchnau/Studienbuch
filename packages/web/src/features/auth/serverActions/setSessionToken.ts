@@ -1,9 +1,7 @@
-"use server";
-
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+"use client";
 
 export const setSessionToken = async (sessionToken: string) => {
-  (await cookies()).set("session", sessionToken);
-  redirect("/admin");
+  if (sessionToken) {
+    window.location.href = "/admin";
+  }
 };

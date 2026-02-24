@@ -1,0 +1,19 @@
+.main {
+  display: grid;
+  grid-template-areas:
+    "headline headline"
+    "showcase showcase"
+    "download download"
+    "footer footer";
+}
+
+@media (min-width: 768px) {
+  .main {
+    grid-template-areas:
+      "headline showcase"
+      "download showcase"
+      "footer footer";
+    column-gap: 2vw;
+    row-gap: 4vw;
+  }
+}

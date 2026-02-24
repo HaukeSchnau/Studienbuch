@@ -1,6 +1,6 @@
-import { isLoggedInFromHeaders } from "@stu/lib-server";
-import { headers } from "next/headers";
+import { getSessionFn } from "~/server/functions";
 
 export const isLoggedIn = async () => {
-  return isLoggedInFromHeaders(await headers());
+  const session = await getSessionFn();
+  return !!session?.user;
 };

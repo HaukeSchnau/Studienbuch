@@ -1,0 +1,31 @@
+.stateColumns {
+  --num-states: 5;
+  display: grid;
+  overflow-x: auto;
+  grid-template-columns: repeat(var(--num-states), minmax(200px, 1fr));
+}
+
+.descriptionExpander {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows 0.5s ease;
+}
+.description {
+  min-height: 0;
+  transition: visibility 1s;
+  visibility: hidden;
+}
+.issueCard:focus-within .descriptionExpander {
+  grid-template-rows: 1fr;
+}
+.issueCard:focus-within .description {
+  visibility: visible;
+}
+.moreTextIndicator {
+  transition-duration: 0.25s;
+}
+.issueCard:focus-within .moreTextIndicator {
+  opacity: 0;
+  height: 0;
+}
