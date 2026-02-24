@@ -1,16 +1,29 @@
 "use client";
 
-import type { Permission } from "@stu/lib";
+import type {
+  Class,
+  Permission,
+  PermissionOnUser,
+  Salutation,
+  School,
+  SchoolId,
+  ScopeOption,
+  Theme,
+  Year,
+} from "@stu/lib";
+import { defaultTheme } from "@stu/lib";
 import {
+  skipToken,
   useMutation,
   useQuery,
   useQueryClient,
   type UseMutationOptions,
-  skipToken,
+  type UseQueryResult,
 } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import type { ReactNode } from "react";
 
+import type { LoginInput, LoginResult, WebSessionUser } from "~/server/auth";
 import {
   addPersonFn,
   addUserFn,
@@ -41,6 +54,79 @@ type MutationOptions<TData, TVariables> = Omit<
   "mutationFn"
 >;
 
+type SessionData = { user: WebSessionUser } | null;
+type YearsInput = { school?: SchoolId; activeOnly?: boolean };
+type YearIdInput = { school: SchoolId; startYear: number };
+type ClassesByYearInput = YearIdInput;
+type SchoolThemeData = { theme: Theme; image?: string };
+
+type ListedUser = {
+  id: string;
+  email: string | null;
+  hasPassword: boolean;
+  roles: Array<{ id: string; name: string }>;
+  isSuperUser: boolean;
+  permissions: PermissionOnUser[];
+  person: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    abbrv: string | null;
+    salutation: Salutation | null;
+  };
+};
+
+type AddUserInput = {
+  firstName: string;
+  lastName: string;
+  email?: string;
+  password?: string;
+  salutation?: Salutation;
+  abbrv?: string;
+};
+
+type ListedPerson = {
+  id: string;
+  name: string;
+  email: string | null;
+  abbrv: string | null;
+  salutation: Salutation | null;
+};
+
+type AddPersonInput =
+  | {
+      name: string;
+      email?: string;
+      salutation?: Salutation;
+      abbrv?: string;
+    }
+  | {
+      firstName: string;
+      lastName: string;
+      email?: string;
+      salutation?: Salutation;
+      abbrv?: string;
+    };
+
+type UpdateManyPersonsInput = Array<{ id: string } & Partial<Omit<ListedPerson, "id">>>;
+
+type SetUserPermissionsInput = {
+  userId: string;
+  isSuperUser: boolean;
+  permissions: PermissionOnUser[];
+};
+
+type UserScopeOptionResult = Array<{ name: string } & Record<string, unknown>>;
+
+type SetSchoolThemeInput = {
+  school: SchoolId;
+  image?: string;
+  theme: Theme;
+};
+
+type AddYearInput = Year;
+type UpdateYearInput = Partial<Year> & Pick<Year, "school" | "startYear">;
+
 const queryKeys = {
   auth: {
     session: ["auth", "session"] as const,
@@ -48,16 +134,15 @@ const queryKeys = {
   },
   schools: {
     list: ["schools", "list"] as const,
-    theme: (school: string) => ["schools", "theme", school] as const,
-    years: (input: unknown) => ["schools", "years", input] as const,
-    year: (input: { school: string; startYear: number }) => ["schools", "year", input.school, input.startYear] as const,
-    classes: (input: { school: string; startYear: number }) =>
-      ["schools", "classes", input.school, input.startYear] as const,
+    theme: (school: SchoolId) => ["schools", "theme", school] as const,
+    years: (input: YearsInput) => ["schools", "years", input] as const,
+    year: (input: YearIdInput) => ["schools", "year", input.school, input.startYear] as const,
+    classes: (input: ClassesByYearInput) => ["schools", "classes", input.school, input.startYear] as const,
   },
   management: {
     users: ["management", "users"] as const,
     persons: ["management", "persons"] as const,
-    userScopeOptions: (option: string) => ["management", "users", "scope-options", option] as const,
+    userScopeOptions: (option: ScopeOption) => ["management", "users", "scope-options", option] as const,
   },
 };
 
@@ -65,27 +150,17 @@ const useQueryWithOptionalInput = <TInput, TData>(
   input: TInput | typeof skipToken,
   keyFor: (input: TInput) => readonly unknown[],
   queryFn: (input: TInput) => Promise<TData>,
-) => {
+): UseQueryResult<TData, Error> => {
   if (input === skipToken) {
-    return useQuery<TData>({
+    return useQuery<TData, Error>({
       queryKey: ["skip-token"],
       queryFn: skipToken,
     });
   }
 
-  return useQuery<TData>({
+  return useQuery<TData, Error>({
     queryKey: keyFor(input),
     queryFn: () => queryFn(input),
-  });
-};
-
-const useMutationWithServerFn = <TInput, TData>(
-  fn: (input: TInput) => Promise<TData>,
-  options?: MutationOptions<TData, TInput>,
-) => {
-  return useMutation<TData, Error, TInput>({
-    mutationFn: fn,
-    ...options,
   });
 };
 
@@ -94,22 +169,28 @@ export const api = {
     getSession: {
       useQuery: () => {
         const getSession = useServerFn(getSessionFn);
-        return useQuery({
+        return useQuery<SessionData>({
           queryKey: queryKeys.auth.session,
-          queryFn: () => getSession(),
+          queryFn: async () => (await getSession()) as SessionData,
         });
       },
     },
     login: {
-      useMutation: (options?: MutationOptions<Awaited<ReturnType<ReturnType<typeof useServerFn<typeof loginFn>>>, { email: string; password: string }>) => {
+      useMutation: (options?: MutationOptions<LoginResult, LoginInput>) => {
         const login = useServerFn(loginFn);
-        return useMutationWithServerFn((input: { email: string; password: string }) => login({ data: input }), options as any);
+        return useMutation({
+          mutationFn: async (input: LoginInput) => (await login({ data: input })) as LoginResult,
+          ...options,
+        });
       },
     },
     logout: {
-      useMutation: (options?: MutationOptions<Awaited<ReturnType<ReturnType<typeof useServerFn<typeof logoutFn>>>, void>) => {
+      useMutation: (options?: MutationOptions<{ ok: true }, void>) => {
         const logout = useServerFn(logoutFn);
-        return useMutationWithServerFn(() => logout(), options as any);
+        return useMutation({
+          mutationFn: async () => (await logout()) as { ok: true },
+          ...options,
+        });
       },
     },
     hasPermission: {
@@ -117,8 +198,8 @@ export const api = {
         const hasPermission = useServerFn(hasPermissionFn);
         return useQueryWithOptionalInput(
           permission,
-          (p) => queryKeys.auth.permission(p),
-          (p) => hasPermission({ data: { permission: p } }),
+          (value) => queryKeys.auth.permission(value),
+          async (value) => (await hasPermission({ data: { permission: value } })) as boolean,
         );
       },
     },
@@ -127,51 +208,67 @@ export const api = {
     list: {
       useQuery: () => {
         const listSchools = useServerFn(listSchoolsFn);
-        return useQuery({
+        return useQuery<School[]>({
           queryKey: queryKeys.schools.list,
-          queryFn: () => listSchools(),
+          queryFn: async () => (await listSchools()) as School[],
         });
       },
     },
     getTheme: {
-      useQuery: (school: string | typeof skipToken) => {
+      useQuery: (school: SchoolId | typeof skipToken) => {
         const getTheme = useServerFn(getSchoolThemeFn);
         return useQueryWithOptionalInput(
           school,
           (value) => queryKeys.schools.theme(value),
-          (value) => getTheme({ data: value }),
+          async (value) => {
+            const result = (await getTheme({ data: value })) as
+              | {
+                  theme: Theme;
+                  image?: string | null;
+                }
+              | null;
+
+            if (!result) {
+              return { theme: defaultTheme };
+            }
+
+            return {
+              theme: result.theme,
+              image: result.image ?? undefined,
+            };
+          },
         );
       },
     },
     years: {
       list: {
-        useQuery: (input: { school?: string; activeOnly?: boolean }) => {
+        useQuery: (input: YearsInput) => {
           const listYears = useServerFn(listYearsFn);
-          return useQuery({
+          return useQuery<Year[]>({
             queryKey: queryKeys.schools.years(input),
-            queryFn: () => listYears({ data: input }),
+            queryFn: async () => (await listYears({ data: input })) as Year[],
           });
         },
       },
       getOne: {
-        useQuery: (input: { school: string; startYear: number } | typeof skipToken) => {
+        useQuery: (input: YearIdInput | typeof skipToken) => {
           const getOneYear = useServerFn(getOneYearFn);
           return useQueryWithOptionalInput(
             input,
             (value) => queryKeys.schools.year(value),
-            (value) => getOneYear({ data: value }),
+            async (value) => (await getOneYear({ data: value })) as Year,
           );
         },
       },
     },
     classes: {
       list: {
-        useQuery: (input: { school: string; startYear: number } | undefined) => {
+        useQuery: (input: ClassesByYearInput | undefined) => {
           const listClasses = useServerFn(listClassesByYearFn);
           return useQueryWithOptionalInput(
-            input ? input : skipToken,
+            input ?? skipToken,
             (value) => queryKeys.schools.classes(value),
-            (value) => listClasses({ data: value }),
+            async (value) => (await listClasses({ data: value })) as Class[],
           );
         },
       },
@@ -182,43 +279,61 @@ export const api = {
       list: {
         useQuery: () => {
           const listUsers = useServerFn(listUsersFn);
-          return useQuery({
+          return useQuery<ListedUser[]>({
             queryKey: queryKeys.management.users,
-            queryFn: () => listUsers(),
+            queryFn: async () => (await listUsers()) as ListedUser[],
           });
         },
       },
       add: {
-        useMutation: (options?: MutationOptions<any, any>) => {
+        useMutation: (options?: MutationOptions<unknown, AddUserInput>) => {
           const addUser = useServerFn(addUserFn);
-          return useMutationWithServerFn((input: any) => addUser({ data: input }), options);
+          return useMutation({
+            mutationFn: async (input: AddUserInput) => addUser({ data: input }),
+            ...options,
+          });
         },
       },
       delete: {
-        useMutation: (options?: MutationOptions<any, string>) => {
+        useMutation: (options?: MutationOptions<void, string>) => {
           const deleteUser = useServerFn(deleteUserFn);
-          return useMutationWithServerFn((input: string) => deleteUser({ data: input }), options);
+          return useMutation({
+            mutationFn: async (input: string) => {
+              await deleteUser({ data: input });
+            },
+            ...options,
+          });
         },
       },
       updatePassword: {
-        useMutation: (options?: MutationOptions<any, { id: string; password: string }>) => {
+        useMutation: (options?: MutationOptions<void, { id: string; password: string }>) => {
           const updatePassword = useServerFn(updateUserPasswordFn);
-          return useMutationWithServerFn((input) => updatePassword({ data: input }), options);
+          return useMutation({
+            mutationFn: async (input: { id: string; password: string }) => {
+              await updatePassword({ data: input });
+            },
+            ...options,
+          });
         },
       },
       setPermissions: {
-        useMutation: (options?: MutationOptions<any, any>) => {
+        useMutation: (options?: MutationOptions<void, SetUserPermissionsInput>) => {
           const setPermissions = useServerFn(setUserPermissionsFn);
-          return useMutationWithServerFn((input: any) => setPermissions({ data: input }), options);
+          return useMutation({
+            mutationFn: async (input: SetUserPermissionsInput) => {
+              await setPermissions({ data: input });
+            },
+            ...options,
+          });
         },
       },
       listScopeOptions: {
-        useQuery: (option: string | typeof skipToken) => {
+        useQuery: (option: ScopeOption | typeof skipToken) => {
           const listScopeOptions = useServerFn(listUserScopeOptionsFn);
           return useQueryWithOptionalInput(
             option,
             (value) => queryKeys.management.userScopeOptions(value),
-            (value) => listScopeOptions({ data: value as any }),
+            async (value) => (await listScopeOptions({ data: value })) as UserScopeOptionResult,
           );
         },
       },
@@ -227,56 +342,79 @@ export const api = {
       list: {
         useQuery: () => {
           const listPersons = useServerFn(listPersonsFn);
-          return useQuery({
+          return useQuery<ListedPerson[]>({
             queryKey: queryKeys.management.persons,
-            queryFn: () => listPersons(),
+            queryFn: async () => (await listPersons()) as ListedPerson[],
           });
         },
       },
       add: {
-        useMutation: (options?: MutationOptions<any, any>) => {
+        useMutation: (options?: MutationOptions<unknown, AddPersonInput>) => {
           const addPerson = useServerFn(addPersonFn);
-          return useMutationWithServerFn((input: any) => addPerson({ data: input }), options);
+          return useMutation({
+            mutationFn: async (input: AddPersonInput) => addPerson({ data: input }),
+            ...options,
+          });
         },
       },
       delete: {
-        useMutation: (options?: MutationOptions<any, string>) => {
+        useMutation: (options?: MutationOptions<void, string>) => {
           const deletePerson = useServerFn(deletePersonFn);
-          return useMutationWithServerFn((input: string) => deletePerson({ data: input }), options);
+          return useMutation({
+            mutationFn: async (input: string) => {
+              await deletePerson({ data: input });
+            },
+            ...options,
+          });
         },
       },
       updateMany: {
-        useMutation: (options?: MutationOptions<any, any[]>) => {
+        useMutation: (options?: MutationOptions<void, UpdateManyPersonsInput>) => {
           const updateManyPersons = useServerFn(updateManyPersonsFn);
-          return useMutationWithServerFn((input: any[]) => updateManyPersons({ data: input }), options);
+          return useMutation({
+            mutationFn: async (input: UpdateManyPersonsInput) => {
+              await updateManyPersons({ data: input });
+            },
+            ...options,
+          });
         },
       },
     },
     schools: {
       setTheme: {
-        useMutation: (options?: MutationOptions<any, any>) => {
+        useMutation: (options?: MutationOptions<unknown, SetSchoolThemeInput>) => {
           const setTheme = useServerFn(setSchoolThemeFn);
-          return useMutationWithServerFn((input: any) => setTheme({ data: input }), options);
+          return useMutation({
+            mutationFn: async (input: SetSchoolThemeInput) => setTheme({ data: input }),
+            ...options,
+          });
         },
       },
     },
     years: {
       add: {
-        useMutation: (options?: MutationOptions<any, any>) => {
+        useMutation: (options?: MutationOptions<unknown, AddYearInput>) => {
           const addYear = useServerFn(addYearFn);
-          return useMutationWithServerFn((input: any) => addYear({ data: input }), options);
+          return useMutation({
+            mutationFn: async (input: AddYearInput) => addYear({ data: input }),
+            ...options,
+          });
         },
       },
       update: {
-        useMutation: (options?: MutationOptions<any, any>) => {
+        useMutation: (options?: MutationOptions<unknown, UpdateYearInput>) => {
           const updateYear = useServerFn(updateYearFn);
-          return useMutationWithServerFn((input: any) => updateYear({ data: input }), options);
+          return useMutation({
+            mutationFn: async (input: UpdateYearInput) => updateYear({ data: input }),
+            ...options,
+          });
         },
       },
     },
   },
   useUtils: () => {
     const queryClient = useQueryClient();
+
     return {
       schools: {
         list: {
