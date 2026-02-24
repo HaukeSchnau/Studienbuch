@@ -116,20 +116,22 @@
     - `bun test packages/lib/src/org-event-logic.test.ts` (pass)
     - `bun test packages/lib/src/repository-logic/org.test.ts` (pass)
     - `bun --filter @stu/db test:live -- src/applicators.live.integration.test.ts` (pass)
-- `PR-08: Repository Dedup Track B (Student/Sensitive Repos)` (slice 2; holiday and student mapping dedup)
+- `PR-08: Repository Dedup Track B (Student/Sensitive Repos)` (slice 3; holiday/student mapping dedup plus absence delete-guard helper dedup)
   - Changes landed in:
     - `refactor: dedupe holiday date mapping across db and student adapters` (`snt`)
     - `refactor: dedupe getStudent row-to-domain mapping` (`wn`)
+    - `refactor: extract absence-day deletion guard helper` (`owv`)
   - Verification run:
     - `bun --filter @stu/lib typecheck` (pass)
     - `bun --filter @stu/db typecheck` (pass)
     - `bun --filter @stu/student typecheck` (pass)
     - `bun test packages/lib/src/repository-logic/holiday.test.ts` (pass)
     - `bun test packages/lib/src/repository-logic/student.test.ts` (pass)
+    - `bun test packages/lib/src/repository-logic/absence.test.ts` (pass)
     - `bun test packages/db/src/applicators.integration.test.ts` (pass)
     - `bun test packages/student/src/applicators.integration.test.ts` (pass)
 - Next queued:
-- `PR-08`: continue low-risk serializer/helper dedup for student-sensitive repos (person/holiday/timetable read-shape helpers first)
+- `PR-08`: continue low-risk serializer/helper dedup for student-sensitive repos (next: grade/absence shared predicate helpers before larger write-path merges)
 - `PR-07`: school-create helper extraction is blocked pending DB defaults/env credential decoupling into an explicit configuration boundary
 
 ## Phase Plan And Parallel Tracks
