@@ -114,7 +114,7 @@
     - `bun test packages/lib/src/repository-logic/org.test.ts` (pass)
     - `bun --filter @stu/db test:live -- src/applicators.live.integration.test.ts` (pass)
 - Next queued:
-- `PR-05`: verify and remove any remaining transitional snapshot mapper shims; add/extend end-to-end snapshot task projection flow coverage
+- `PR-05`: add explicit optional `tasks` contract coverage and extend end-to-end snapshot task projection flow coverage
 - `PR-07`: evaluate and extract any safe remaining school-create helper without coupling db-only defaults/env wiring
 
 ## Phase Plan And Parallel Tracks
