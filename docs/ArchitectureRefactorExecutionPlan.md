@@ -72,7 +72,7 @@
     - `bun test packages/db/src/schema-parity.test.ts` (pass)
     - `bun test packages/student/src/schema-parity.test.ts` (pass)
 - In progress:
-- `PR-05: Snapshot Mapping Deduplication` (slice 12)
+- `PR-05: Snapshot Mapping Deduplication` (slice 13)
   - Changes landed in:
     - `refactor(student): share snapshot apply helper with app-mobile` (`klu`)
     - `refactor(snapshot): extract shared dedupe helpers` (`sps`)
@@ -86,12 +86,14 @@
     - `feat(snapshot): include task projections in resolver output` (`loq`)
     - `feat: upsert snapshot tasks in student apply path` (`mzv`)
     - `test: cover task projections in snapshot fixtures` (`on`)
+    - `fix: omit tasks when snapshot request has no student context` (`rn`)
   - Verification run:
     - `bun --filter @stu/lib typecheck` (pass)
     - `bun --filter @stu/api typecheck` (pass)
     - `bun --filter @stu/student typecheck` (pass)
     - `bun test packages/lib/src/snapshot.test.ts` (pass)
     - `bun test packages/api/src/snapshot.test.ts` (pass)
+    - `bun test packages/api/src/base.snapshot.test.ts` (pass)
     - `bun test packages/student/src/snapshot/apply-snapshot.test.ts` (pass)
     - `bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts` (pass)
     - `bun run test:sync` (pass)
@@ -114,7 +116,7 @@
     - `bun test packages/lib/src/repository-logic/org.test.ts` (pass)
     - `bun --filter @stu/db test:live -- src/applicators.live.integration.test.ts` (pass)
 - Next queued:
-- `PR-05`: add explicit optional `tasks` contract coverage and extend end-to-end snapshot task projection flow coverage
+- `PR-05`: extend end-to-end snapshot task projection flow coverage through sync/recovery paths
 - `PR-07`: evaluate and extract any safe remaining school-create helper without coupling db-only defaults/env wiring
 
 ## Phase Plan And Parallel Tracks
