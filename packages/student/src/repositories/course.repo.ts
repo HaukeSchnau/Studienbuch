@@ -1,4 +1,4 @@
-import { CourseRepository } from "@stu/lib";
+import { courseRepositoryLogic, CourseRepository } from "@stu/lib";
 import { eq } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import { Database } from "../database";
@@ -10,33 +10,17 @@ export const CourseRepositoryLive = Layer.effect(
   Effect.gen(function* () {
     const databaseContext = yield* RepositoryDatabase;
 
-    const getCourse = Effect.fn(function* (payload: { id: string }) {
-      const { execute } = yield* databaseContext;
-      const course = yield* execute((db) =>
-        db.query.courses.findFirst({
-          where: eq(tables.courses.id, payload.id),
-        }),
-      );
-      if (!course) {
-        return undefined;
-      }
-
-      const { semesterType, semesterYear, ...rest } = course;
-      return {
-        ...rest,
-        semester: { type: semesterType, year: semesterYear },
-      };
-    });
-
-    return {
-      getCourse,
-
-      doesCourseExist: Effect.fn(function* (payload) {
-        const course = yield* getCourse(payload);
-        return course !== undefined;
+    const courseRepository = courseRepositoryLogic({
+      getCourse: Effect.fn(function* (payload: { id: string }) {
+        const { execute } = yield* databaseContext;
+        return yield* execute((db) =>
+          db.query.courses.findFirst({
+            where: eq(tables.courses.id, payload.id),
+          }),
+        );
       }),
 
-      createCourse: Effect.fn(function* (payload) {
+      insertCourse: Effect.fn(function* (payload) {
         const { execute } = yield* databaseContext;
         yield* execute((db) =>
           db.insert(tables.courses).values({
@@ -44,30 +28,43 @@ export const CourseRepositoryLive = Layer.effect(
             name: payload.name,
             subject: payload.subject,
             school: payload.school,
-            semesterType: payload.semester.type,
-            semesterYear: payload.semester.year,
+            semesterType: payload.semesterType,
+            semesterYear: payload.semesterYear,
             isMandatory: payload.isMandatory,
             isMember: false,
           }),
         );
-        for (const teacher of payload.teachers) {
-          yield* execute((db) =>
-            db.insert(tables.coursesToTeachers).values({
-              course: payload.id,
-              teacher,
-            }),
-          );
-        }
-        for (const cls of payload.classes) {
-          yield* execute((db) =>
-            db.insert(tables.coursesToClasses).values({
-              course: payload.id,
-              classIdentifier: cls.identifierInYear,
-              classStartYear: cls.startYear,
-              school: payload.school,
-            }),
-          );
-        }
+      }),
+
+      insertTeacherLink: Effect.fn(function* (payload) {
+        const { execute } = yield* databaseContext;
+        yield* execute((db) =>
+          db.insert(tables.coursesToTeachers).values({
+            course: payload.course,
+            teacher: payload.teacher,
+          }),
+        );
+      }),
+
+      insertClassLink: Effect.fn(function* (payload) {
+        const { execute } = yield* databaseContext;
+        yield* execute((db) =>
+          db.insert(tables.coursesToClasses).values({
+            course: payload.course,
+            classIdentifier: payload.classIdentifier,
+            classStartYear: payload.classStartYear,
+            school: payload.school,
+          }),
+        );
+      }),
+    });
+
+    const { createCourseCore, ...repository } = courseRepository;
+
+    return {
+      ...repository,
+      createCourse: Effect.fn(function* (payload) {
+        yield* createCourseCore(payload);
       }, Database.asTransactionCustom(databaseContext)),
     };
   }),
