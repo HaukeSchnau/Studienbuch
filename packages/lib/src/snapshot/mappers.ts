@@ -5,6 +5,7 @@ import type {
   SemesterSnapshot,
   SnapshotResponse,
   StudentSnapshot,
+  TaskProjectionSnapshot,
   YearSnapshot,
 } from "../snapshot";
 import { uniqueBy } from "../snapshot-helpers";
@@ -115,6 +116,10 @@ type GradeProjectionRow = {
   course: SnapshotResponse["grades"][number]["course"];
   teacherSignature: SnapshotResponse["grades"][number]["teacherSignature"];
   parentSignature: SnapshotResponse["grades"][number]["parentSignature"];
+};
+
+type TaskProjectionRow = Omit<TaskProjectionSnapshot, "dueDate"> & {
+  dueDate: Date;
 };
 
 const hasRequiredStudentRelations = (
@@ -231,6 +236,14 @@ export const mapGradeRowsToSnapshotProjections = (
     course: grade.course,
     teacherSignature: grade.teacherSignature,
     parentSignature: grade.parentSignature,
+  }));
+
+export const mapTaskRowsToSnapshotTasks = (
+  rows: readonly TaskProjectionRow[],
+): TaskProjectionSnapshot[] =>
+  rows.map((task) => ({
+    ...task,
+    dueDate: task.dueDate.toISOString(),
   }));
 
 export const collectSnapshotSchools = (snapshot: SnapshotResponse): SchoolSnapshot[] =>

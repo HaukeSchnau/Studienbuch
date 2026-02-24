@@ -10,6 +10,7 @@ import {
   mapCourseRowsToSnapshotCourses,
   mapGradeRowsToSnapshotProjections,
   mapStudentRowsToSnapshotStudents,
+  mapTaskRowsToSnapshotTasks,
 } from "./mappers";
 
 describe("mapStudentRowsToSnapshotStudents", () => {
@@ -277,6 +278,36 @@ describe("mapGradeRowsToSnapshotProjections", () => {
         course: "11111111-1111-4111-8111-111111111111",
         teacherSignature: "teacher-ok",
         parentSignature: null,
+      },
+    ]);
+  });
+});
+
+describe("mapTaskRowsToSnapshotTasks", () => {
+  it("maps dueDate to ISO string and passes through task fields", () => {
+    const rows: Parameters<typeof mapTaskRowsToSnapshotTasks>[0] = [
+      {
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        title: "Arbeitsblatt 5",
+        description: "Rechne Aufgaben 1-4",
+        dueDate: new Date("2026-01-20T10:30:00.000Z"),
+        course: "11111111-1111-4111-8111-111111111111",
+        assignee: "22222222-2222-4222-8222-222222222222",
+        images: ["a.png", "b.png"],
+        done: false,
+      },
+    ];
+
+    expect(mapTaskRowsToSnapshotTasks(rows)).toEqual([
+      {
+        id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        title: "Arbeitsblatt 5",
+        description: "Rechne Aufgaben 1-4",
+        dueDate: "2026-01-20T10:30:00.000Z",
+        course: "11111111-1111-4111-8111-111111111111",
+        assignee: "22222222-2222-4222-8222-222222222222",
+        images: ["a.png", "b.png"],
+        done: false,
       },
     ]);
   });

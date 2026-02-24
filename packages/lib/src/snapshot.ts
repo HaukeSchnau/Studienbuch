@@ -112,10 +112,23 @@ export const GradeProjectionSnapshotSchema = z.object({
 });
 export type GradeProjectionSnapshot = z.infer<typeof GradeProjectionSnapshotSchema>;
 
+export const TaskProjectionSnapshotSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  description: z.string(),
+  dueDate: z.string().datetime(),
+  course: z.string().uuid(),
+  assignee: z.string().uuid(),
+  images: z.array(z.string()),
+  done: z.boolean(),
+});
+export type TaskProjectionSnapshot = z.infer<typeof TaskProjectionSnapshotSchema>;
+
 export const SnapshotResponseSchema = z.object({
   students: z.array(StudentSnapshotSchema),
   courses: z.array(CourseSnapshotSchema),
   absences: z.array(AbsenceProjectionSnapshotSchema),
   grades: z.array(GradeProjectionSnapshotSchema),
+  tasks: z.array(TaskProjectionSnapshotSchema).optional(),
 });
 export type SnapshotResponse = z.infer<typeof SnapshotResponseSchema>;
