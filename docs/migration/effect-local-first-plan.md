@@ -2,8 +2,8 @@
 
 Status: Active plan  
 Last updated: 2026-02-17  
-Architecture decisions: `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/docs/adr/0001-standalone-api-mobile-priority.md`
-Progress tracker: `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/docs/MigrationProgress.md`
+Architecture decisions: `docs/adr/0001-standalone-api-mobile-priority.md`
+Progress tracker: `docs/migration/effect-local-first-progress.md`
 
 ## 1. Goal
 
@@ -321,7 +321,7 @@ Prevent regression while migration is underway.
 
 ## 11. Progress Tracking Policy
 
-- Keep `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/docs/MigrationProgress.md` updated in every migration PR.
+- Keep `docs/migration/effect-local-first-progress.md` updated in every migration PR.
 - Record:
   - what changed,
   - which checks were run and their result,

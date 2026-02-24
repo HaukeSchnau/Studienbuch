@@ -525,7 +525,7 @@ bun run lint
 - `packages/app-mobile/maestro/flows/sync-lifecycle-replay.yml`
 - `packages/app-mobile/maestro/flows/sync-lifecycle-network-reconnect.yml`
 - `packages/app-mobile/maestro/flows/sync-lifecycle-sensitive-auth-reconnect.yml`
-- `docs/MigrationProgress.md`
+- `docs/migration/effect-local-first-progress.md`
 - Dependencies: PR-05, PR-08, PR-10, PR-12.
 - Acceptance criteria:
 - Cutover checklist executed with canary -> broad rollout -> cleanup.

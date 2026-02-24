@@ -8,7 +8,7 @@
 nix develop
 ```
 
-`maestro` is provided by `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/flake.nix`, so project scripts can call it directly.
+`maestro` is provided by `flake.nix`, so project scripts can call it directly.
 
 2. Ensure a simulator/emulator is running and the development app (`dev.schnau.studienbuch.dev`) is installed.
 3. Start Metro in E2E mode so the `/e2e/*` routes are available:

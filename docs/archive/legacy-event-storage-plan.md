@@ -1,3 +1,18 @@
+# Legacy Event Storage Plan (Archived)
+
+Status: archived historical note.
+
+Source: previously stored at `packages/api/src/router/events/New-Plan.md`.
+
+This document described an early concept based on MongoDB + Neo4j for event storage/relationships. The current architecture does **not** use that model.
+
+Current canonical architecture references:
+- `docs/architecture/runtime-topology.md`
+- `docs/architecture/sync-and-events.md`
+- `docs/adr/0001-standalone-api-mobile-priority.md`
+
+## Historical Note
+
 # New Plan for storing events and their relationships
 
 ## Storage
@@ -7,7 +22,6 @@
   - We store users, events and entities/aggregates as nodes
   - We store relationships between nodes as edges: All information that can be statically inferred from the event data
     - User <-> Event: Store whether a user has received an event (i.e. if it has been laid on their event stream)
-    <!-- - Event <-> Entity: Option 1: A relation exists -> The event data contains an identifier for the entity. The relation may store the information of who may have access to the entity. (in its simplest form: user role) -->
     - Event <-> Entity: Option 2: A relation exists -> The event data contains an identifier for the entity. There exist relations between entities and users that specify who may have access.
 
 ## Querying the events

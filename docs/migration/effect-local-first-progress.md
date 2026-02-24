@@ -14,21 +14,21 @@ Last updated: 2026-02-17
 ## Completed In This Iteration
 
 - Added ingest-to-broadcast integration tests in:
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/sync.integration.test.ts`
+  - `packages/api/src/sync.integration.test.ts`
 - Added Expo lifecycle sync coverage and runtime refresh behavior in:
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/utils/sync-lifecycle.ts`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/utils/sync-lifecycle.test.ts`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/app/_layout.tsx`
+  - `packages/app-mobile/src/utils/sync-lifecycle.ts`
+  - `packages/app-mobile/src/utils/sync-lifecycle.test.ts`
+  - `packages/app-mobile/src/app/_layout.tsx`
 - Added Maestro E2E harness and lifecycle flows in:
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/app/e2e/sync-lifecycle.tsx`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/sync-lifecycle-resume.yml`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/sync-lifecycle-replay.yml`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/sync-lifecycle-network-reconnect.yml`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/sync-lifecycle-sensitive-auth-reconnect.yml`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/shared/open-sync-lifecycle.yml` (iOS prompt/Expo launcher resilient open path)
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/flows/shared/attempt-control-center-connectivity-toggle.yml`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/maestro/README.md`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/flake.nix` (adds direct `maestro` in dev shell)
+  - `packages/app-mobile/src/app/e2e/sync-lifecycle.tsx`
+  - `packages/app-mobile/maestro/flows/sync-lifecycle-resume.yml`
+  - `packages/app-mobile/maestro/flows/sync-lifecycle-replay.yml`
+  - `packages/app-mobile/maestro/flows/sync-lifecycle-network-reconnect.yml`
+  - `packages/app-mobile/maestro/flows/sync-lifecycle-sensitive-auth-reconnect.yml`
+  - `packages/app-mobile/maestro/flows/shared/open-sync-lifecycle.yml` (iOS prompt/Expo launcher resilient open path)
+  - `packages/app-mobile/maestro/flows/shared/attempt-control-center-connectivity-toggle.yml`
+  - `packages/app-mobile/maestro/README.md`
+  - `flake.nix` (adds direct `maestro` in dev shell)
 - Executed Maestro lifecycle suite on iOS Simulator (`iPhone 17 Pro`, iOS 26.2) with passing resume/replay/network-reconnect/sensitive-auth-reconnect flows.
 - New integration coverage now verifies:
   - one ingested event reaches multiple live subscribers for the same user (cross-device),
@@ -56,27 +56,27 @@ Last updated: 2026-02-17
     - runtime auth rejection counters,
     - replay convergence that applies only authorized queued sensitive events after reconnect.
 - Existing broadcast and offset persistence implementation remains active:
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/broadcast.ts`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/utils/groundswell.tsx`
+  - `packages/api/src/broadcast.ts`
+  - `packages/app-mobile/src/utils/groundswell.tsx`
 - Added WS-C slice 1 shared snapshot contracts in:
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/lib/src/snapshot.ts`
+  - `packages/lib/src/snapshot.ts`
 - Added WS-C slice 1 snapshot API resolver + endpoint in:
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/snapshot-resolver.ts`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/snapshot.ts`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/base.ts`
+  - `packages/api/src/snapshot-resolver.ts`
+  - `packages/api/src/snapshot.ts`
+  - `packages/api/src/base.ts`
 - Added mobile apply-time unknown-entity snapshot recovery in:
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/utils/snapshot-recovery.ts`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/utils/groundswell.tsx`
+  - `packages/app-mobile/src/utils/snapshot-recovery.ts`
+  - `packages/app-mobile/src/utils/groundswell.tsx`
 - Added WS-C slice 1 unit coverage in:
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/snapshot.test.ts`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/utils/snapshot-recovery.test.ts`
+  - `packages/api/src/snapshot.test.ts`
+  - `packages/app-mobile/src/utils/snapshot-recovery.test.ts`
 - Extended WS-C snapshot contracts + resolver for absence/grade projections in:
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/lib/src/snapshot.ts`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/snapshot-resolver.ts`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/api/src/snapshot.ts`
+  - `packages/lib/src/snapshot.ts`
+  - `packages/api/src/snapshot-resolver.ts`
+  - `packages/api/src/snapshot.ts`
 - Removed remaining setup-time local DB bootstrap writes and switched setup to snapshot/event bootstrap in:
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/app/setup/name-and-year.tsx`
-  - `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch/packages/app-mobile/src/app/setup/class-and-courses.tsx`
+  - `packages/app-mobile/src/app/setup/name-and-year.tsx`
+  - `packages/app-mobile/src/app/setup/class-and-courses.tsx`
 - Added setup-related runtime hardening:
   - local verify bypass for setup dependency misses (`student.joined`, `student.courseAssigned`) with server-side verification still authoritative,
   - setup snapshot hydration + convergence wait before navigation.

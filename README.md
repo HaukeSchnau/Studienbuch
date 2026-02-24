@@ -1,37 +1,90 @@
 # Studienbuch Monorepo
 
-## Development Setup (with `direnv`)
+Studienbuch is a Bun + TypeScript monorepo for a local-first school platform.
+
+Core product surfaces:
+- `@stu/app-mobile`: Expo mobile app (primary product priority)
+- `@stu/api`: standalone backend runtime for sync + business APIs
+- `@stu/nextjs`: existing web/admin surface
+- `@stu/admin-panel`: TanStack Start admin surface (incremental)
+- `@stu/console`: CLI/background jobs
+
+## Documentation
+
+- Documentation index: `docs/README.md`
+- Architecture: `docs/architecture/`
+- Operations: `docs/operations/`
+- Workspace package catalog: `docs/packages/README.md`
+- Migration tracking: `docs/migration/`
+- ADRs: `docs/adr/`
+
+## Quick Start
+
+### 1. Enter the environment
+
 ```bash
 direnv allow
 just doctor
-just dev # Builds/loads OCI images and starts local services
 ```
 
-## Primary Commands
+### 2. Install dependencies
+
 ```bash
-just doctor # Preflight checks (env, ports, compose resolution, tooling)
-just dev # OCI-first local development flow
-just live-up # Start live-profile stack (no host port bindings)
-just live-up-dev # Start live-profile stack with API + web app host port bindings
-just live-up-dev-debug # Start live-profile stack with additional DB/RabbitMQ host port bindings
-just live-health # Check API readiness (DB + event stream)
-just live-health-web # Check Next.js + TanStack Start HTTP readiness
-just live-health-all # Run all health checks
-just live-down # Stop and remove live-profile stack
-just oci-build # Build OCI archives into the Nix store
-just oci-export # Export OCI archives to .artifacts/oci
-just oci-load # Load OCI archives into local Docker daemon (defaults to Nix store archives)
-just console -- --help # Run console CLI commands
-just clone-prod-db # Clone production DB into local postgres
-just visualize-deps # Regenerate workspace dependency graph image
+just install
 ```
 
-## Daily Workflow
-See [docs/DailyWorkflow.md](docs/DailyWorkflow.md).
+### 3. Start local development
 
-## Dev Port Overrides
-`live-up-dev` maps:
-`STU_API_PORT`, `STU_NEXTJS_PORT`, `STU_ADMIN_PANEL_PORT`.
+```bash
+just dev
+```
 
-`live-up-dev-debug` additionally maps:
-`STU_DATABASE_PORT`, `STU_LEGACY_DATABASE_PORT`, `STU_EVENT_STREAM_PORT`, `STU_AMQP_PORT`, `STU_EVENT_STREAM_UI_PORT`.
+This performs preflight checks, preloads OCI images, starts Docker services, and opens relevant local UIs.
+
+## Common Commands
+
+```bash
+# Environment and stack
+just doctor
+just dev
+just live-up
+just live-up-dev
+just live-up-dev-debug
+just live-down
+just live-health-all
+
+# Workspace quality gates
+bun run lint
+bun run typecheck
+bun run test
+bun run ci
+
+# Console jobs
+just console -- --help
+just console pull --school=igs-lil
+just console bootstrap-broadcast
+
+# DB and artifacts
+just clone-prod-db
+just oci-build
+just oci-export
+just oci-load
+```
+
+## Runtime Topology
+
+- **API runtime boundary:** `@stu/api` is the backend runtime used for sync/event ingestion (`POST /api/events`), stream replay/live consumption (`GET /api/events`), snapshots (`POST /api/snapshot`), and tRPC.
+- **Server persistence:** Postgres (canonical state + event storage).
+- **Client persistence:** SQLite on mobile (local read model + local event log).
+- **Streaming:** RabbitMQ Streams for durable event fanout (with in-memory/dev modes where applicable).
+
+See `docs/architecture/runtime-topology.md` and `docs/architecture/sync-and-events.md`.
+
+## Monorepo Structure
+
+- `packages/`: product and domain packages
+- `tooling/`: shared workspace tooling packages
+- `docs/`: long-form project documentation
+- `nix/`: flake parts for dev shell, build, and OCI artifacts
+
+Package-level documentation lives in `packages/*/README.md` and `tooling/*/README.md`.
