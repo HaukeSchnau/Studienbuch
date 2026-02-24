@@ -109,7 +109,7 @@ let
     pname = "studienbuch-nextjs-artifacts";
     buildSnippet = ''
       (
-        cd packages/nextjs
+        cd packages/web
         NODE_ENV=production \
         BASE_URL=http://localhost:3000 \
         PORT=3000 \
@@ -126,8 +126,8 @@ let
     '';
     installSnippet = ''
       mkdir -p "$out/standalone" "$out/static"
-      cp -R packages/nextjs/.next/standalone/. "$out/standalone/"
-      cp -R packages/nextjs/.next/static/. "$out/static/"
+      cp -R packages/web/.next/standalone/. "$out/standalone/"
+      cp -R packages/web/.next/static/. "$out/static/"
     '';
   };
 
@@ -206,9 +206,9 @@ let
   '';
 
   nextjsRootfs = pkgs.runCommand "studienbuch-nextjs-rootfs" { } ''
-    mkdir -p "$out/app/packages/nextjs/.next"
+    mkdir -p "$out/app/packages/web/.next"
     cp -R ${nextjsArtifacts}/standalone/. "$out/app/"
-    cp -R ${nextjsArtifacts}/static "$out/app/packages/nextjs/.next/static"
+    cp -R ${nextjsArtifacts}/static "$out/app/packages/web/.next/static"
   '';
 
   adminPanelRootfs = pkgs.runCommand "studienbuch-admin-panel-rootfs" { } ''

@@ -6,7 +6,7 @@ Core product surfaces:
 
 - `@stu/app-mobile`: Expo mobile app (primary product priority)
 - `@stu/api`: standalone backend runtime for sync + business APIs
-- `@stu/nextjs`: existing web/admin surface
+- `@stu/web`: web surface
 - `@stu/admin-panel`: TanStack Start admin surface (incremental)
 - `@stu/console`: CLI/background jobs
 

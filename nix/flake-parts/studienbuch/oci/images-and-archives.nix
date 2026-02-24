@@ -88,7 +88,7 @@ let
       contents = [ nextjsRootfs ];
       config = {
         Env = runtimeEnv ++ [ "PORT=80" ];
-        WorkingDir = "/app/packages/nextjs";
+        WorkingDir = "/app/packages/web";
         Entrypoint = [ nodeBin "server.js" ];
       };
     };

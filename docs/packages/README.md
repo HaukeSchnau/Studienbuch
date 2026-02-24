@@ -4,7 +4,7 @@
 
 - `@stu/api` (`packages/api`): standalone backend runtime and sync/snapshot transport.
 - `@stu/app-mobile` (`packages/app-mobile`): Expo mobile app with local-first sync runtime.
-- `@stu/nextjs` (`packages/nextjs`): Next.js web/admin surface.
+- `@stu/web` (`packages/web`): web surface.
 - `@stu/admin-panel` (`packages/admin-panel`): TanStack Start admin panel.
 - `@stu/console` (`packages/console`): operational CLI/background command surface.
 

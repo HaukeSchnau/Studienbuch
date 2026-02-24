@@ -18,7 +18,7 @@ Studienbuch is designed around:
 - `@stu/lib-server`: server-side utility layer (auth/session, notifications, schedule/PDF helpers).
 - `@stu/external-api`: typed integrations for Untis, holidays, Linear, and shared HTTP resilience.
 - `@stu/app-mobile`: Expo client with local DB + ingest/snapshot sync runtime.
-- `@stu/nextjs`: existing web/admin surface.
+- `@stu/web`: web surface.
 - `@stu/admin-panel`: TanStack Start admin application.
 - `@stu/console`: operational CLI/background tasks.
 - `@stu/legacy-import`: legacy data migration/import helpers.

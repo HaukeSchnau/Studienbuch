@@ -17,7 +17,7 @@ From `docker-compose.yml`:
 - `database`: Postgres 17 (canonical state)
 - `event-stream`: RabbitMQ Streams (fanout/replay transport)
 - `api`: standalone backend
-- `nextjs`: web app
+- `nextjs`: web app (`@stu/web`, service slot name retained)
 - `admin-panel`: TanStack Start admin app
 - `console-cron`: scheduled console jobs
 - `migrations`: one-shot schema migrations
