@@ -6,6 +6,7 @@ import {
   mapCourseRowsToSnapshotCourses,
   mapGradeRowsToSnapshotProjections,
   mapStudentRowsToSnapshotStudents,
+  mapTaskRowsToSnapshotTasks,
   type SnapshotResponse,
   type StudentSnapshot,
 } from "@stu/lib";
@@ -127,9 +128,18 @@ const loadGrades = async (userId: string): Promise<SnapshotResponse["grades"]> =
   return mapGradeRowsToSnapshotProjections(gradeRows);
 };
 
+const loadTasks = async (userId: string): Promise<NonNullable<SnapshotResponse["tasks"]>> => {
+  const taskRows = await db.query.Tasks.findMany({
+    where: eq(tables.Tasks.assignee, userId),
+  });
+
+  return mapTaskRowsToSnapshotTasks(taskRows);
+};
+
 export const resolveSnapshotForUser = createSnapshotResolver({
   loadStudents,
   loadCourses,
   loadAbsences,
   loadGrades,
+  loadTasks,
 });

@@ -14,12 +14,14 @@ describe("createSnapshotResolver", () => {
     const loadCourses = vi.fn(async () => [sampleCourseSnapshot]);
     const loadAbsences = vi.fn(async () => []);
     const loadGrades = vi.fn(async () => []);
+    const loadTasks = vi.fn(async () => []);
 
     const resolve = createSnapshotResolver({
       loadStudents,
       loadCourses,
       loadAbsences,
       loadGrades,
+      loadTasks,
     });
     const eventEntities = snapshotEntitiesForEvent({
       id: "11111111-1111-4111-8111-111111111111",
@@ -45,10 +47,12 @@ describe("createSnapshotResolver", () => {
     expect(loadCourses).toHaveBeenCalledWith(studentId, [courseId]);
     expect(loadAbsences).toHaveBeenCalledWith(studentId);
     expect(loadGrades).toHaveBeenCalledWith(studentId);
+    expect(loadTasks).toHaveBeenCalledWith(studentId);
     expect(response.students).toHaveLength(1);
     expect(response.courses).toHaveLength(1);
     expect(response.absences).toEqual([]);
     expect(response.grades).toEqual([]);
+    expect(response.tasks).toEqual([]);
   });
 
   it("returns empty arrays when no entities of a kind are requested", async () => {
@@ -56,12 +60,14 @@ describe("createSnapshotResolver", () => {
     const loadCourses = vi.fn(async () => []);
     const loadAbsences = vi.fn(async () => []);
     const loadGrades = vi.fn(async () => []);
+    const loadTasks = vi.fn(async () => []);
 
     const resolve = createSnapshotResolver({
       loadStudents,
       loadCourses,
       loadAbsences,
       loadGrades,
+      loadTasks,
     });
 
     const response = await resolve({
@@ -75,9 +81,11 @@ describe("createSnapshotResolver", () => {
     expect(loadCourses).toHaveBeenCalledWith(studentId, []);
     expect(loadAbsences).toHaveBeenCalledWith(studentId);
     expect(loadGrades).toHaveBeenCalledWith(studentId);
+    expect(loadTasks).toHaveBeenCalledWith(studentId);
     expect(response.courses).toEqual([]);
     expect(response.absences).toEqual([]);
     expect(response.grades).toEqual([]);
+    expect(response.tasks).toEqual([]);
   });
 
   it("does not load state projections when request has no student context", async () => {
@@ -85,12 +93,14 @@ describe("createSnapshotResolver", () => {
     const loadCourses = vi.fn(async () => []);
     const loadAbsences = vi.fn(async () => []);
     const loadGrades = vi.fn(async () => []);
+    const loadTasks = vi.fn(async () => []);
 
     const resolve = createSnapshotResolver({
       loadStudents,
       loadCourses,
       loadAbsences,
       loadGrades,
+      loadTasks,
     });
 
     const response = await resolve({
@@ -102,7 +112,9 @@ describe("createSnapshotResolver", () => {
 
     expect(loadAbsences).not.toHaveBeenCalled();
     expect(loadGrades).not.toHaveBeenCalled();
+    expect(loadTasks).not.toHaveBeenCalled();
     expect(response.absences).toEqual([]);
     expect(response.grades).toEqual([]);
+    expect(response.tasks).toEqual([]);
   });
 });
