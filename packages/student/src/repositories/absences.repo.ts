@@ -1,4 +1,4 @@
-import { AbsenceRepository } from "@stu/lib";
+import { AbsenceRepository, shouldDeleteAbsenceDayAfterRemovingCourseAbsences } from "@stu/lib";
 import { and, eq, inArray } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import { Database } from "../database";
@@ -75,7 +75,7 @@ export const AbsenceRepositoryLive = Layer.effect(
           db.query.courseAbsences.findMany({ where: eq(tables.courseAbsences.date, payload.date) }),
         );
 
-        if (courseAbsences.length === 0) {
+        if (shouldDeleteAbsenceDayAfterRemovingCourseAbsences(courseAbsences)) {
           yield* execute((db) => db.delete(tables.absenceDays).where(eq(tables.absenceDays.date, payload.date)));
         }
       }),

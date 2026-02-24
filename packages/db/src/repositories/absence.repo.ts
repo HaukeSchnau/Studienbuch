@@ -1,4 +1,4 @@
-import type { StudentId } from "@stu/lib";
+import { shouldDeleteAbsenceDayAfterRemovingCourseAbsences, type StudentId } from "@stu/lib";
 import { and, eq, inArray } from "drizzle-orm";
 import { Effect } from "effect";
 import { Database } from "../database";
@@ -101,7 +101,7 @@ export class AbsenceRepositoryDb extends Effect.Service<AbsenceRepositoryDb>()("
         }),
       );
 
-      if (remainingCourseAbsences.length === 0) {
+      if (shouldDeleteAbsenceDayAfterRemovingCourseAbsences(remainingCourseAbsences)) {
         yield* execute((db) =>
           db
             .delete(tables.AbsenceDays)
