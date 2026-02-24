@@ -24,16 +24,27 @@ export const createSnapshotResolver = (deps: SnapshotResolverDependencies) => {
       deps.loadCourses(userId, courseIds),
     ]);
     const shouldIncludeStateProjections = studentIds.includes(userId);
-    const [absences, grades, tasks] = shouldIncludeStateProjections
-      ? await Promise.all([deps.loadAbsences(userId), deps.loadGrades(userId), deps.loadTasks(userId)])
-      : [[], [], []];
+    if (shouldIncludeStateProjections) {
+      const [absences, grades, tasks] = await Promise.all([
+        deps.loadAbsences(userId),
+        deps.loadGrades(userId),
+        deps.loadTasks(userId),
+      ]);
+
+      return SnapshotResponseSchema.parse({
+        students,
+        courses,
+        absences,
+        grades,
+        tasks,
+      });
+    }
 
     return SnapshotResponseSchema.parse({
       students,
       courses,
-      absences,
-      grades,
-      tasks,
+      absences: [],
+      grades: [],
     });
   };
 };

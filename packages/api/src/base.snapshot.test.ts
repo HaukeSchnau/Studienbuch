@@ -16,6 +16,7 @@ type SnapshotRouteResult =
         courses: unknown[];
         absences: unknown[];
         grades: unknown[];
+        tasks?: unknown[];
       };
     };
 
@@ -157,6 +158,8 @@ describe("/api/snapshot route wiring", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual(snapshot);
+    const body = await response.json();
+    expect(body).toEqual(snapshot);
+    expect(Object.prototype.hasOwnProperty.call(body, "tasks")).toBe(false);
   });
 });

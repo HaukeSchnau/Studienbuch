@@ -116,6 +116,6 @@ describe("createSnapshotResolver", () => {
     expect(loadTasks).not.toHaveBeenCalled();
     expect(response.absences).toEqual([]);
     expect(response.grades).toEqual([]);
-    expect(response.tasks).toEqual([]);
+    expect(Object.prototype.hasOwnProperty.call(response, "tasks")).toBe(false);
   });
 });
