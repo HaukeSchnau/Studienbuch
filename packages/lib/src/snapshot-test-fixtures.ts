@@ -1,4 +1,9 @@
-import type { CourseSnapshot, SnapshotResponse, StudentSnapshot } from "./snapshot";
+import type {
+  CourseSnapshot,
+  SnapshotResponse,
+  StudentSnapshot,
+  TaskProjectionSnapshot,
+} from "./snapshot";
 
 export const studentId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 export const courseId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
@@ -48,9 +53,21 @@ export const sampleCourseSnapshot: CourseSnapshot = {
   classes: [],
 };
 
+export const sampleTaskProjectionSnapshot: TaskProjectionSnapshot = {
+  id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  title: "Arbeitsblatt 5",
+  description: "Quadratische Funktionen bearbeiten",
+  dueDate: "2026-01-12T08:00:00.000Z",
+  course: courseId,
+  assignee: studentId,
+  images: [],
+  done: false,
+};
+
 export const sampleSnapshotResponse: SnapshotResponse = {
   students: [sampleStudentSnapshot],
   courses: [sampleCourseSnapshot],
   absences: [],
   grades: [],
+  tasks: [sampleTaskProjectionSnapshot],
 };

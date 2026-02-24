@@ -2,6 +2,7 @@ import {
   courseId,
   sampleCourseSnapshot,
   sampleStudentSnapshot,
+  sampleTaskProjectionSnapshot,
   snapshotEntitiesForEvent,
   studentId,
 } from "@stu/lib";
@@ -14,7 +15,7 @@ describe("createSnapshotResolver", () => {
     const loadCourses = vi.fn(async () => [sampleCourseSnapshot]);
     const loadAbsences = vi.fn(async () => []);
     const loadGrades = vi.fn(async () => []);
-    const loadTasks = vi.fn(async () => []);
+    const loadTasks = vi.fn(async () => [sampleTaskProjectionSnapshot]);
 
     const resolve = createSnapshotResolver({
       loadStudents,
@@ -52,7 +53,7 @@ describe("createSnapshotResolver", () => {
     expect(response.courses).toHaveLength(1);
     expect(response.absences).toEqual([]);
     expect(response.grades).toEqual([]);
-    expect(response.tasks).toEqual([]);
+    expect(response.tasks).toEqual([sampleTaskProjectionSnapshot]);
   });
 
   it("returns empty arrays when no entities of a kind are requested", async () => {
@@ -60,7 +61,7 @@ describe("createSnapshotResolver", () => {
     const loadCourses = vi.fn(async () => []);
     const loadAbsences = vi.fn(async () => []);
     const loadGrades = vi.fn(async () => []);
-    const loadTasks = vi.fn(async () => []);
+    const loadTasks = vi.fn(async () => [sampleTaskProjectionSnapshot]);
 
     const resolve = createSnapshotResolver({
       loadStudents,
@@ -85,7 +86,7 @@ describe("createSnapshotResolver", () => {
     expect(response.courses).toEqual([]);
     expect(response.absences).toEqual([]);
     expect(response.grades).toEqual([]);
-    expect(response.tasks).toEqual([]);
+    expect(response.tasks).toEqual([sampleTaskProjectionSnapshot]);
   });
 
   it("does not load state projections when request has no student context", async () => {

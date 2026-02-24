@@ -1,4 +1,4 @@
-import type { SnapshotResponse } from "@stu/lib";
+import { sampleSnapshotResponse, type SnapshotResponse } from "@stu/lib";
 import { describe, expect, it, vi } from "vitest";
 import {
   createResolveSnapshotRequest,
@@ -68,12 +68,7 @@ describe("createResolveSnapshotRequest", () => {
     const { dependencies, resolveUserIdFromHeaders, resolveSnapshotForUser } = createDependencies();
     resolveUserIdFromHeaders.mockResolvedValue(USER_ID);
 
-    const snapshot: SnapshotResponse = {
-      students: [],
-      courses: [],
-      absences: [],
-      grades: [],
-    };
+    const snapshot: SnapshotResponse = sampleSnapshotResponse;
     resolveSnapshotForUser.mockResolvedValue(snapshot);
 
     const resolve = createResolveSnapshotRequest(dependencies);
