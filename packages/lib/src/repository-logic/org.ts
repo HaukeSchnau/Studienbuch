@@ -1,8 +1,11 @@
 import { Effect } from "effect";
-import type { SubjectId } from "../courses";
+import type { SimpleDate } from "../infrastructure/dates";
+import { dateToSimpleDate } from "../infrastructure/dates";
 import type { UnknownDatabaseError } from "../repositories";
 import type { SchoolId } from "../school";
 import type { Semester } from "../semesters";
+import type { SubjectId } from "../courses";
+import type { Year } from "../year";
 
 export type ClassLookupPayload = {
   identifier: string;
@@ -189,5 +192,62 @@ export const courseRepositoryLogic = <TCourse extends CourseSemesterColumns>(ada
     getCourse,
     doesCourseExist,
     createCourseCore: createCourseCoreLogic,
+  };
+};
+
+type SemesterDateColumns = {
+  start: Date;
+  end: Date;
+};
+
+type SemesterWithSimpleDate<TSemester extends SemesterDateColumns> = Omit<TSemester, "start" | "end"> & {
+  start: SimpleDate;
+  end: SimpleDate;
+};
+
+type SemesterRepositoryAdapter<TSemester extends SemesterDateColumns> = {
+  getSemesterOnDate: (date: Date, school: SchoolId) => Effect.Effect<TSemester | undefined, UnknownDatabaseError>;
+  getNextSemesterAfterDate: (date: Date, school: SchoolId) => Effect.Effect<TSemester | undefined, UnknownDatabaseError>;
+  getLatestSemester: (school: SchoolId) => Effect.Effect<TSemester | undefined, UnknownDatabaseError>;
+  semestersInYear: (year: Year) => Effect.Effect<TSemester[], UnknownDatabaseError>;
+};
+
+const toSemesterWithSimpleDate = <TSemester extends SemesterDateColumns>(
+  semester: TSemester,
+): SemesterWithSimpleDate<TSemester> => ({
+  ...semester,
+  start: dateToSimpleDate(semester.start),
+  end: dateToSimpleDate(semester.end),
+});
+
+export const semesterRepositoryLogic = <TSemester extends SemesterDateColumns>(adapter: SemesterRepositoryAdapter<TSemester>) => {
+  const getSemesterOnDate = Effect.fn(function* (date: Date, school: SchoolId) {
+    const semester = yield* adapter.getSemesterOnDate(date, school);
+    if (!semester) return undefined;
+    return toSemesterWithSimpleDate(semester);
+  });
+
+  const getNextSemesterAfterDate = Effect.fn(function* (date: Date, school: SchoolId) {
+    const semester = yield* adapter.getNextSemesterAfterDate(date, school);
+    if (!semester) return undefined;
+    return toSemesterWithSimpleDate(semester);
+  });
+
+  const getLatestSemester = Effect.fn(function* (school: SchoolId) {
+    const semester = yield* adapter.getLatestSemester(school);
+    if (!semester) return undefined;
+    return toSemesterWithSimpleDate(semester);
+  });
+
+  const semestersInYear = Effect.fn(function* (year: Year) {
+    const semesters = yield* adapter.semestersInYear(year);
+    return semesters.map(toSemesterWithSimpleDate);
+  });
+
+  return {
+    getSemesterOnDate,
+    getNextSemesterAfterDate,
+    getLatestSemester,
+    semestersInYear,
   };
 };

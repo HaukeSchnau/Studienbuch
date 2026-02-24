@@ -1,76 +1,68 @@
-import { dateToSimpleDate, type SchoolId, SemesterRepository, simpleDateToDate, type Year } from "@stu/lib";
+import { semesterRepositoryLogic, SemesterRepository, simpleDateToDate } from "@stu/lib";
 import { and, asc, desc, eq, gt, gte, lt, lte, or, sql } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import * as tables from "../schema";
 import { RepositoryDatabase } from "./util";
-
-const mapDbSemester = (semester: typeof tables.semesters.$inferSelect) => ({
-  ...semester,
-  start: dateToSimpleDate(semester.start),
-  end: dateToSimpleDate(semester.end),
-});
 
 export const SemesterRepositoryLive = Layer.effect(
   SemesterRepository,
   Effect.gen(function* () {
     const databaseContext = yield* RepositoryDatabase;
 
-    const getSemesterOnDate = Effect.fn(function* (date: Date, school: SchoolId) {
-      const { execute } = yield* databaseContext;
-      const semester = yield* execute((db) =>
-        db.query.semesters.findFirst({
-          where: and(
-            lte(tables.semesters.start, date),
-            gte(tables.semesters.end, date),
-            eq(tables.semesters.school, school),
-          ),
-        }),
-      );
-      return semester && mapDbSemester(semester);
-    });
+    const semesterRepository = semesterRepositoryLogic({
+      getSemesterOnDate: Effect.fn(function* (date, school) {
+        const { execute } = yield* databaseContext;
+        return yield* execute((db) =>
+          db.query.semesters.findFirst({
+            where: and(
+              lte(tables.semesters.start, date),
+              gte(tables.semesters.end, date),
+              eq(tables.semesters.school, school),
+            ),
+          }),
+        );
+      }),
 
-    const getNextSemesterAfterDate = Effect.fn(function* (date: Date, school: SchoolId) {
-      const { execute } = yield* databaseContext;
-      const semester = yield* execute((db) =>
-        db.query.semesters.findFirst({
-          where: and(gte(tables.semesters.start, date), eq(tables.semesters.school, school)),
-          orderBy: [asc(tables.semesters.start)],
-        }),
-      );
-      return semester && mapDbSemester(semester);
-    });
+      getNextSemesterAfterDate: Effect.fn(function* (date, school) {
+        const { execute } = yield* databaseContext;
+        return yield* execute((db) =>
+          db.query.semesters.findFirst({
+            where: and(gte(tables.semesters.start, date), eq(tables.semesters.school, school)),
+            orderBy: [asc(tables.semesters.start)],
+          }),
+        );
+      }),
 
-    const getLatestSemester = Effect.fn(function* (school: SchoolId) {
-      const { execute } = yield* databaseContext;
-      const semester = yield* execute((db) =>
-        db.query.semesters.findFirst({
-          where: eq(tables.semesters.school, school),
-          orderBy: [desc(tables.semesters.start)],
-        }),
-      );
-      return semester && mapDbSemester(semester);
-    });
+      getLatestSemester: Effect.fn(function* (school) {
+        const { execute } = yield* databaseContext;
+        return yield* execute((db) =>
+          db.query.semesters.findFirst({
+            where: eq(tables.semesters.school, school),
+            orderBy: [desc(tables.semesters.start)],
+          }),
+        );
+      }),
 
-    const semestersInYear = Effect.fn(function* (year: Year) {
-      const { execute } = yield* databaseContext;
+      semestersInYear: Effect.fn(function* (year) {
+        const { execute } = yield* databaseContext;
 
-      const summerSemesterIsInRange = and(
-        eq(tables.semesters.type, "SUMMER"),
-        gt(tables.semesters.year, year.startYear),
-        lte(tables.semesters.year, year.graduationYear),
-      );
-      const winterSemesterIsInRange = and(
-        eq(tables.semesters.type, "WINTER"),
-        gte(tables.semesters.year, year.startYear),
-        lt(tables.semesters.year, year.graduationYear),
-      );
+        const summerSemesterIsInRange = and(
+          eq(tables.semesters.type, "SUMMER"),
+          gt(tables.semesters.year, year.startYear),
+          lte(tables.semesters.year, year.graduationYear),
+        );
+        const winterSemesterIsInRange = and(
+          eq(tables.semesters.type, "WINTER"),
+          gte(tables.semesters.year, year.startYear),
+          lt(tables.semesters.year, year.graduationYear),
+        );
 
-      const semesters = yield* execute((db) =>
-        db.query.semesters.findMany({
-          where: and(eq(tables.semesters.school, year.school), or(summerSemesterIsInRange, winterSemesterIsInRange)),
-        }),
-      );
-      return semesters.map(mapDbSemester);
+        return yield* execute((db) =>
+          db.query.semesters.findMany({
+            where: and(eq(tables.semesters.school, year.school), or(summerSemesterIsInRange, winterSemesterIsInRange)),
+          }),
+        );
+      }),
     });
 
     return {
@@ -100,10 +92,7 @@ export const SemesterRepositoryLive = Layer.effect(
         );
       }),
 
-      getSemesterOnDate,
-      getNextSemesterAfterDate,
-      getLatestSemester,
-      semestersInYear,
+      ...semesterRepository,
     };
   }),
 );
