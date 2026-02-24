@@ -250,10 +250,30 @@ type SemesterDateColumns = {
   end: Date;
 };
 
+type SemesterSimpleDateColumns = {
+  start: SimpleDate;
+  end: SimpleDate;
+};
+
 type SemesterWithSimpleDate<TSemester extends SemesterDateColumns> = Omit<TSemester, "start" | "end"> & {
   start: SimpleDate;
   end: SimpleDate;
 };
+
+export type SemesterInsertPayload<TSemester extends SemesterSimpleDateColumns = SemesterSimpleDateColumns> = TSemester;
+
+export type SemesterInsertRow<TSemester extends SemesterSimpleDateColumns> = Omit<TSemester, "start" | "end"> &
+  SemesterDateColumns;
+
+export const mapSemestersForInsert = <TSemester extends SemesterSimpleDateColumns>(
+  payload: TSemester[],
+  convertDate: (date: SimpleDate) => Date,
+): SemesterInsertRow<TSemester>[] =>
+  payload.map((semester) => ({
+    ...semester,
+    start: convertDate(semester.start),
+    end: convertDate(semester.end),
+  }));
 
 type SemesterRepositoryAdapter<TSemester extends SemesterDateColumns> = {
   getSemesterOnDate: (date: Date, school: SchoolId) => Effect.Effect<TSemester | undefined, UnknownDatabaseError>;

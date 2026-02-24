@@ -1,4 +1,4 @@
-import { semesterRepositoryLogic, SemesterRepository, simpleDateToDate } from "@stu/lib";
+import { mapSemestersForInsert, semesterRepositoryLogic, SemesterRepository, simpleDateToDate } from "@stu/lib";
 import { and, asc, desc, eq, gt, gte, lt, lte, or, sql } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import * as tables from "../schema";
@@ -71,13 +71,7 @@ export const SemesterRepositoryLive = Layer.effect(
         yield* execute((db) =>
           db
             .insert(tables.semesters)
-            .values(
-              payload.map((semester) => ({
-                ...semester,
-                start: simpleDateToDate(semester.start),
-                end: simpleDateToDate(semester.end),
-              })),
-            )
+            .values(mapSemestersForInsert(payload, simpleDateToDate))
             .onConflictDoUpdate({
               target: [tables.semesters.school, tables.semesters.type, tables.semesters.year],
               set: {
