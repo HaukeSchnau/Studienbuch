@@ -1,11 +1,61 @@
 import { Effect } from "effect";
+import type { SubjectId } from "../courses";
 import type { SimpleDate } from "../infrastructure/dates";
 import { dateToSimpleDate } from "../infrastructure/dates";
 import type { UnknownDatabaseError } from "../repositories";
-import type { SchoolId } from "../school";
+import type { SchoolId, StateCode } from "../school";
 import type { Semester } from "../semesters";
-import type { SubjectId } from "../courses";
 import type { Year } from "../year";
+
+export type SchoolLookupPayload = {
+  id: SchoolId;
+};
+
+export type SchoolCreatePayload = {
+  id: SchoolId;
+  name: string;
+  state: StateCode;
+};
+
+export type SchoolsByStateLookupPayload = {
+  state: StateCode;
+};
+
+type SchoolRepositoryAdapter<TSchool, TSchoolByState extends { id: SchoolId; name: string }> = {
+  getSchool: (payload: SchoolLookupPayload) => Effect.Effect<TSchool | undefined, UnknownDatabaseError>;
+  insertSchool: (payload: SchoolCreatePayload) => Effect.Effect<void, UnknownDatabaseError>;
+  getSchoolsByState: (
+    payload: SchoolsByStateLookupPayload,
+  ) => Effect.Effect<TSchoolByState[], UnknownDatabaseError>;
+};
+
+type SchoolRepositoryWriteAdapter = Pick<
+  SchoolRepositoryAdapter<never, { id: SchoolId; name: string }>,
+  "insertSchool"
+>;
+
+const createSchoolCore = (adapter: SchoolRepositoryWriteAdapter) =>
+  Effect.fn(function* (payload: SchoolCreatePayload) {
+    yield* adapter.insertSchool(payload);
+  });
+
+export const schoolRepositoryLogic = <TSchool, TSchoolByState extends { id: SchoolId; name: string }>(
+  adapter: SchoolRepositoryAdapter<TSchool, TSchoolByState>,
+) => {
+  const doesSchoolExist = Effect.fn(function* (payload: SchoolLookupPayload) {
+    const school = yield* adapter.getSchool(payload);
+    return school !== undefined;
+  });
+
+  const createSchoolCoreLogic = createSchoolCore(adapter);
+
+  return {
+    getSchool: adapter.getSchool,
+    doesSchoolExist,
+    createSchoolCore: createSchoolCoreLogic,
+    getSchoolsByState: adapter.getSchoolsByState,
+  };
+};
 
 export type ClassLookupPayload = {
   identifier: string;

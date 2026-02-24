@@ -1,4 +1,4 @@
-import { defaultSchools, type SchoolId, SchoolRepository } from "@stu/lib";
+import { defaultSchools, type SchoolId, SchoolRepository, schoolRepositoryLogic } from "@stu/lib";
 import { eq } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import * as tables from "../schema";
@@ -15,24 +15,17 @@ export const SchoolRepositoryLive = Layer.effect(
   Effect.gen(function* () {
     const databaseContext = yield* RepositoryDatabase;
 
-    const getSchool = Effect.fn(function* (payload: { id: SchoolId }) {
-      const { execute } = yield* databaseContext;
-      return yield* execute((db) =>
-        db.query.Schools.findFirst({
-          where: eq(tables.Schools.id, payload.id),
-        }),
-      );
-    });
-
-    return {
-      getSchool,
-
-      doesSchoolExist: Effect.fn(function* (payload) {
-        const school = yield* getSchool({ id: payload.id });
-        return school !== undefined;
+    const schoolRepository = schoolRepositoryLogic({
+      getSchool: Effect.fn(function* (payload: { id: SchoolId }) {
+        const { execute } = yield* databaseContext;
+        return yield* execute((db) =>
+          db.query.Schools.findFirst({
+            where: eq(tables.Schools.id, payload.id),
+          }),
+        );
       }),
 
-      createSchool: Effect.fn(function* (payload) {
+      insertSchool: Effect.fn(function* (payload) {
         const { execute } = yield* databaseContext;
         const defaultSchool = defaultSchools[payload.id];
         const kadmosName = yield* Effect.sync(() => getRequiredUntisCredential("UNTIS_KADMOS_NAME"));
@@ -59,6 +52,13 @@ export const SchoolRepositoryLive = Layer.effect(
           db.select().from(tables.Schools).where(eq(tables.Schools.stateCode, payload.state)),
         );
       }),
+    });
+
+    const { createSchoolCore, ...repository } = schoolRepository;
+
+    return {
+      ...repository,
+      createSchool: createSchoolCore,
     };
   }),
 );
