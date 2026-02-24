@@ -8,7 +8,7 @@
 - Assumption: no package rename is required; refactor happens within existing workspaces under `packages/*`.
 - Assumption: standalone API (`@stu/api`) remains the runtime boundary for sync and snapshot endpoints.
 
-## Execution Status (2026-02-23)
+## Execution Status (2026-02-24)
 
 - Completed:
 - `PR-01: Backend Service Boundary Extraction`
@@ -72,7 +72,7 @@
     - `bun test packages/db/src/schema-parity.test.ts` (pass)
     - `bun test packages/student/src/schema-parity.test.ts` (pass)
 - In progress:
-- `PR-05: Snapshot Mapping Deduplication` (slice 8)
+- `PR-05: Snapshot Mapping Deduplication` (slice 11)
   - Changes landed in:
     - `refactor(student): share snapshot apply helper with app-mobile` (`klu`)
     - `refactor(snapshot): extract shared dedupe helpers` (`sps`)
@@ -82,12 +82,17 @@
     - `refactor(snapshot): share absence and grade projection mappers` (`sn`)
     - `refactor(snapshot): share student and course row mappers` (`oz`)
     - `test(snapshot): add shared mapper unit coverage` (`rl`)
+    - `feat(snapshot): add shared task snapshot contract and mapper` (`twm`)
+    - `feat(snapshot): include task projections in resolver output` (`loq`)
+    - `feat: upsert snapshot tasks in student apply path` (`mzv`)
   - Verification run:
     - `bun --filter @stu/lib typecheck` (pass)
     - `bun --filter @stu/api typecheck` (pass)
     - `bun --filter @stu/student typecheck` (pass)
     - `bun test packages/lib/src/snapshot.test.ts` (pass)
     - `bun test packages/api/src/snapshot.test.ts` (pass)
+    - `bun test packages/student/src/snapshot/apply-snapshot.test.ts` (pass)
+    - `bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts` (pass)
     - `bun run test:sync` (pass)
 - `PR-07: Repository Dedup Track A (Org/Core Repos)` (slice 5; class/year/course repository dedup plus semester/school read-path dedup)
   - Changes landed in:
@@ -96,6 +101,7 @@
     - `refactor(repo): extract shared course repository logic` (`tu`)
     - `refactor(repo): extract shared semester repository read logic` (`vo`)
     - `refactor(repo): extract shared school repository read logic` (`wov`)
+    - `refactor(repo): share semester insert mapping helper` (`qx`)
   - Verification run:
     - `bun --filter @stu/lib typecheck` (pass)
     - `bun --filter @stu/db typecheck` (pass)
@@ -106,7 +112,7 @@
     - `bun test packages/lib/src/repository-logic/org.test.ts` (pass)
     - `bun --filter @stu/db test:live -- src/applicators.live.integration.test.ts` (pass)
 - Next queued:
-- `PR-05`: finish remaining API/mobile snapshot mapper routing and remove transitional cleanup/shims
+- `PR-05`: verify and remove any remaining transitional snapshot mapper shims; add/extend end-to-end snapshot task projection flow coverage
 - `PR-07`: next slice is remaining org/core cleanup after read-path dedup (semester create path/shared upsert abstraction; evaluate whether any safe school-create helper extraction remains)
 
 ## Phase Plan And Parallel Tracks
