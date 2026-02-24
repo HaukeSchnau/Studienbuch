@@ -89,7 +89,7 @@ let
       config = {
         Env = runtimeEnv ++ [ "PORT=80" ];
         WorkingDir = "/app/packages/web";
-        Entrypoint = [ nodeBin "server.js" ];
+        Entrypoint = [ nodeBin ".output/server/index.mjs" ];
       };
     };
 

@@ -413,12 +413,12 @@ bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts
 
 - Objective: converge Next.js and mobile client wiring around shared TRPC headers/base config and shared session contract.
 - Exact scope/files:
-- `packages/nextjs/src/infrastructure/trpc/react.tsx`
-- `packages/nextjs/src/infrastructure/trpc/server.ts`
-- `packages/nextjs/src/infrastructure/trpc/query-client.ts`
-- `packages/nextjs/src/features/auth/isLoggedIn.ts`
-- `packages/nextjs/src/features/auth/serverActions/setSessionToken.ts`
-- `packages/nextjs/src/features/auth/serverActions/logout.ts`
+- `packages/web/src/infrastructure/trpc/react.tsx`
+- `packages/web/src/infrastructure/trpc/server.ts`
+- `packages/web/src/infrastructure/trpc/query-client.ts`
+- `packages/web/src/features/auth/isLoggedIn.ts`
+- `packages/web/src/features/auth/serverActions/setSessionToken.ts`
+- `packages/web/src/features/auth/serverActions/logout.ts`
 - `packages/app-mobile/src/utils/api.tsx`
 - `packages/app-mobile/src/utils/auth.ts`
 - `packages/lib-server/src/auth/index.ts`
@@ -437,7 +437,7 @@ bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts
 ```bash
 bun run lint
 bun run typecheck
-bun x tsc --noEmit -p packages/nextjs/tsconfig.json
+bun x tsc --noEmit -p packages/web/tsconfig.json
 bun --filter @stu/app-mobile typecheck
 ```
 
@@ -447,8 +447,8 @@ bun --filter @stu/app-mobile typecheck
 - Exact scope/files:
 - `packages/lib/src/schedule/timetable.ts`
 - New: `packages/lib/src/schedule/timetable-projection.ts`
-- `packages/nextjs/src/features/timetable/TimetableManager.tsx`
-- `packages/nextjs/src/features/timetable/TimetableView.tsx`
+- `packages/web/src/features/timetable/TimetableManager.tsx`
+- `packages/web/src/features/timetable/TimetableView.tsx`
 - `packages/app-mobile/src/features/agenda/queries/week.ts`
 - `packages/app-mobile/src/features/schedule/schedule.page.tsx`
 - `packages/admin-panel/src/routes/timetable.tsx`
@@ -465,7 +465,7 @@ bun --filter @stu/app-mobile typecheck
 bun run lint
 bun run typecheck
 bun --filter @stu/app-mobile typecheck
-bun x tsc --noEmit -p packages/nextjs/tsconfig.json
+bun x tsc --noEmit -p packages/web/tsconfig.json
 ```
 
 ### PR-11: Env Schema Centralization
@@ -475,7 +475,7 @@ bun x tsc --noEmit -p packages/nextjs/tsconfig.json
 - `packages/api/env.ts`
 - `packages/db/env.ts`
 - `packages/console/src/env.ts`
-- `packages/nextjs/src/env.ts`
+- `packages/web/src/env.ts`
 - `packages/external-api/env.ts`
 - `packages/legacy-import/env.ts`
 - New: `packages/lib-server/src/env/schema.ts`
@@ -494,7 +494,7 @@ bun x tsc --noEmit -p packages/nextjs/tsconfig.json
 ```bash
 bun run lint
 bun run typecheck
-bun x tsc --noEmit -p packages/nextjs/tsconfig.json
+bun x tsc --noEmit -p packages/web/tsconfig.json
 bun --filter @stu/api typecheck
 bun --filter @stu/db typecheck
 ```
@@ -510,7 +510,7 @@ bun --filter @stu/db typecheck
 - `packages/db/package.json`
 - `packages/student/package.json`
 - `packages/app-mobile/package.json`
-- `packages/nextjs/package.json`
+- `packages/web/package.json`
 - `packages/admin-panel/package.json`
 - `packages/console/package.json`
 - Dependencies: PR-11.

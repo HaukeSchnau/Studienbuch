@@ -121,13 +121,12 @@ let
           CACHE_DIR="$TMPDIR/stu-cache" \
           NEXT_PUBLIC_AXIOM_DATASET=local \
           NEXT_PUBLIC_AXIOM_TOKEN=local \
-          bun x next build --experimental-build-mode=compile
+          bun run build
       )
     '';
     installSnippet = ''
-      mkdir -p "$out/standalone" "$out/static"
-      cp -R packages/web/.next/standalone/. "$out/standalone/"
-      cp -R packages/web/.next/static/. "$out/static/"
+      mkdir -p "$out/.output"
+      cp -R packages/web/.output/. "$out/.output/"
     '';
   };
 
@@ -206,9 +205,8 @@ let
   '';
 
   nextjsRootfs = pkgs.runCommand "studienbuch-nextjs-rootfs" { } ''
-    mkdir -p "$out/app/packages/web/.next"
-    cp -R ${nextjsArtifacts}/standalone/. "$out/app/"
-    cp -R ${nextjsArtifacts}/static "$out/app/packages/web/.next/static"
+    mkdir -p "$out/app/packages/web"
+    cp -R ${nextjsArtifacts}/.output "$out/app/packages/web/.output"
   '';
 
   adminPanelRootfs = pkgs.runCommand "studienbuch-admin-panel-rootfs" { } ''

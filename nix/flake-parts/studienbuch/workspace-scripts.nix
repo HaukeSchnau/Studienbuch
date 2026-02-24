@@ -263,7 +263,7 @@ let
     "oci-load-archives" = {
       type = "app";
       program = "${loadOciArchives}/bin/stu-load-oci-archives";
-      meta.description = "Load OCI archives (API, console-cron, migrations, Next.js, TanStack Start) into the local Docker daemon.";
+      meta.description = "Load OCI archives (API, console-cron, migrations, web, admin-panel) into the local Docker daemon.";
     };
     migrations = {
       type = "app";
