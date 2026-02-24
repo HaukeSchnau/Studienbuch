@@ -14,29 +14,28 @@
   },
   "dependencies": {
     "@stu/expo-native": "workspace:*",
-    "expo": "53.0.20",
-    "expo-constants": "~17.1.6",
-    "expo-dev-client": "~5.2.4",
-    "expo-modules-core": "~2.5.0",
-    "react": "19.0.0",
-    "react-native": "0.79.5"
+    "expo": "^54.0.0",
+    "expo-constants": "~18.0.13",
+    "expo-dev-client": "~6.0.20",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   },
   "devDependencies": {
     "@babel/core": "^7.26.10",
     "@gorhom/bottom-sheet": "^5.1.4",
-    "@react-native-async-storage/async-storage": "^2.1.2",
-    "@react-native-community/datetimepicker": "8.4.1",
-    "@react-native-community/slider": "^4.5.6",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/datetimepicker": "8.4.4",
+    "@react-native-community/slider": "5.0.1",
     "@storybook/addon-ondevice-actions": "^9.0.0-beta.10",
     "@storybook/addon-ondevice-controls": "^9.0.0-beta.10",
     "@storybook/react-native": "^9.0.0-beta.10",
     "@types/react": "~19.1.10",
     "babel-loader": "^8.4.1",
-    "react-dom": "19.0.0",
-    "react-native-gesture-handler": "~2.24.0",
-    "react-native-reanimated": "3.17.4",
-    "react-native-safe-area-context": "5.4.0",
-    "react-native-svg": "15.11.2",
+    "react-dom": "19.1.0",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-reanimated": "~4.1.1",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-svg": "15.12.1",
     "typescript": "^5.9.2"
   }
 }

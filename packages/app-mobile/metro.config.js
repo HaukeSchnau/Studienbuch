@@ -45,7 +45,7 @@ function withMonorepoPaths(config) {
   const workspaceRoot = path.resolve(projectRoot, "../..");
 
   // #1 - Watch all files in the monorepo
-  config.watchFolders = [workspaceRoot];
+  config.watchFolders = Array.from(new Set([...(config.watchFolders ?? []), workspaceRoot]));
 
   // #2 - Resolve modules within the project's `node_modules` first, then all monorepo modules
   config.resolver.nodeModulesPaths = [
