@@ -15,6 +15,7 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as PublicIndexRouteImport } from './routes/_public.index'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminSchoolsRouteImport } from './routes/admin.schools'
 import { Route as AdminPeopleRouteImport } from './routes/admin.people'
 import { Route as PublicRoadmapRouteImport } from './routes/_public.roadmap'
 import { Route as PublicImpressumRouteImport } from './routes/_public.impressum'
@@ -22,7 +23,18 @@ import { Route as PublicDatenschutzRouteImport } from './routes/_public.datensch
 import { Route as AdminUsersIndexRouteImport } from './routes/admin.users.index'
 import { Route as AdminPeopleIndexRouteImport } from './routes/admin.people.index'
 import { Route as AdminUsersNewRouteImport } from './routes/admin.users.new'
+import { Route as AdminSchoolsSchoolRouteImport } from './routes/admin.schools.$school'
 import { Route as AdminPeopleNewRouteImport } from './routes/admin.people.new'
+import { Route as AdminSchoolsSchoolYearsRouteImport } from './routes/admin.schools.$school.years'
+import { Route as AdminSchoolsSchoolThemeRouteImport } from './routes/admin.schools.$school.theme'
+import { Route as AdminSchoolsSchoolSubstitutionsRouteImport } from './routes/admin.schools.$school.substitutions'
+import { Route as AdminSchoolsSchoolYearsIndexRouteImport } from './routes/admin.schools.$school.years.index'
+import { Route as AdminSchoolsSchoolYearsNewRouteImport } from './routes/admin.schools.$school.years.new'
+import { Route as AdminSchoolsSchoolYearsStartYearRouteImport } from './routes/admin.schools.$school.years.$startYear'
+import { Route as AdminSchoolsSchoolYearsStartYearIndexRouteImport } from './routes/admin.schools.$school.years.$startYear.index'
+import { Route as AdminSchoolsSchoolYearsStartYearSchedulesRouteImport } from './routes/admin.schools.$school.years.$startYear.schedules'
+import { Route as AdminSchoolsSchoolYearsStartYearCoursesRouteImport } from './routes/admin.schools.$school.years.$startYear.courses'
+import { Route as AdminSchoolsSchoolYearsStartYearClassesRouteImport } from './routes/admin.schools.$school.years.$startYear.classes'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -51,6 +63,11 @@ const PublicIndexRoute = PublicIndexRouteImport.update({
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSchoolsRoute = AdminSchoolsRouteImport.update({
+  id: '/schools',
+  path: '/schools',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminPeopleRoute = AdminPeopleRouteImport.update({
@@ -88,11 +105,74 @@ const AdminUsersNewRoute = AdminUsersNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AdminUsersRoute,
 } as any)
+const AdminSchoolsSchoolRoute = AdminSchoolsSchoolRouteImport.update({
+  id: '/$school',
+  path: '/$school',
+  getParentRoute: () => AdminSchoolsRoute,
+} as any)
 const AdminPeopleNewRoute = AdminPeopleNewRouteImport.update({
   id: '/new',
   path: '/new',
   getParentRoute: () => AdminPeopleRoute,
 } as any)
+const AdminSchoolsSchoolYearsRoute = AdminSchoolsSchoolYearsRouteImport.update({
+  id: '/years',
+  path: '/years',
+  getParentRoute: () => AdminSchoolsSchoolRoute,
+} as any)
+const AdminSchoolsSchoolThemeRoute = AdminSchoolsSchoolThemeRouteImport.update({
+  id: '/theme',
+  path: '/theme',
+  getParentRoute: () => AdminSchoolsSchoolRoute,
+} as any)
+const AdminSchoolsSchoolSubstitutionsRoute =
+  AdminSchoolsSchoolSubstitutionsRouteImport.update({
+    id: '/substitutions',
+    path: '/substitutions',
+    getParentRoute: () => AdminSchoolsSchoolRoute,
+  } as any)
+const AdminSchoolsSchoolYearsIndexRoute =
+  AdminSchoolsSchoolYearsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminSchoolsSchoolYearsRoute,
+  } as any)
+const AdminSchoolsSchoolYearsNewRoute =
+  AdminSchoolsSchoolYearsNewRouteImport.update({
+    id: '/new',
+    path: '/new',
+    getParentRoute: () => AdminSchoolsSchoolYearsRoute,
+  } as any)
+const AdminSchoolsSchoolYearsStartYearRoute =
+  AdminSchoolsSchoolYearsStartYearRouteImport.update({
+    id: '/$startYear',
+    path: '/$startYear',
+    getParentRoute: () => AdminSchoolsSchoolYearsRoute,
+  } as any)
+const AdminSchoolsSchoolYearsStartYearIndexRoute =
+  AdminSchoolsSchoolYearsStartYearIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminSchoolsSchoolYearsStartYearRoute,
+  } as any)
+const AdminSchoolsSchoolYearsStartYearSchedulesRoute =
+  AdminSchoolsSchoolYearsStartYearSchedulesRouteImport.update({
+    id: '/schedules',
+    path: '/schedules',
+    getParentRoute: () => AdminSchoolsSchoolYearsStartYearRoute,
+  } as any)
+const AdminSchoolsSchoolYearsStartYearCoursesRoute =
+  AdminSchoolsSchoolYearsStartYearCoursesRouteImport.update({
+    id: '/courses',
+    path: '/courses',
+    getParentRoute: () => AdminSchoolsSchoolYearsStartYearRoute,
+  } as any)
+const AdminSchoolsSchoolYearsStartYearClassesRoute =
+  AdminSchoolsSchoolYearsStartYearClassesRouteImport.update({
+    id: '/classes',
+    path: '/classes',
+    getParentRoute: () => AdminSchoolsSchoolYearsStartYearRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
@@ -101,25 +181,47 @@ export interface FileRoutesByFullPath {
   '/impressum': typeof PublicImpressumRoute
   '/roadmap': typeof PublicRoadmapRoute
   '/admin/people': typeof AdminPeopleRouteWithChildren
+  '/admin/schools': typeof AdminSchoolsRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/': typeof PublicIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/people/new': typeof AdminPeopleNewRoute
+  '/admin/schools/$school': typeof AdminSchoolsSchoolRouteWithChildren
   '/admin/users/new': typeof AdminUsersNewRoute
   '/admin/people/': typeof AdminPeopleIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
+  '/admin/schools/$school/substitutions': typeof AdminSchoolsSchoolSubstitutionsRoute
+  '/admin/schools/$school/theme': typeof AdminSchoolsSchoolThemeRoute
+  '/admin/schools/$school/years': typeof AdminSchoolsSchoolYearsRouteWithChildren
+  '/admin/schools/$school/years/$startYear': typeof AdminSchoolsSchoolYearsStartYearRouteWithChildren
+  '/admin/schools/$school/years/new': typeof AdminSchoolsSchoolYearsNewRoute
+  '/admin/schools/$school/years/': typeof AdminSchoolsSchoolYearsIndexRoute
+  '/admin/schools/$school/years/$startYear/classes': typeof AdminSchoolsSchoolYearsStartYearClassesRoute
+  '/admin/schools/$school/years/$startYear/courses': typeof AdminSchoolsSchoolYearsStartYearCoursesRoute
+  '/admin/schools/$school/years/$startYear/schedules': typeof AdminSchoolsSchoolYearsStartYearSchedulesRoute
+  '/admin/schools/$school/years/$startYear/': typeof AdminSchoolsSchoolYearsStartYearIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/datenschutz': typeof PublicDatenschutzRoute
   '/impressum': typeof PublicImpressumRoute
   '/roadmap': typeof PublicRoadmapRoute
+  '/admin/schools': typeof AdminSchoolsRouteWithChildren
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminIndexRoute
   '/admin/people/new': typeof AdminPeopleNewRoute
+  '/admin/schools/$school': typeof AdminSchoolsSchoolRouteWithChildren
   '/admin/users/new': typeof AdminUsersNewRoute
   '/admin/people': typeof AdminPeopleIndexRoute
   '/admin/users': typeof AdminUsersIndexRoute
+  '/admin/schools/$school/substitutions': typeof AdminSchoolsSchoolSubstitutionsRoute
+  '/admin/schools/$school/theme': typeof AdminSchoolsSchoolThemeRoute
+  '/admin/schools/$school/years/new': typeof AdminSchoolsSchoolYearsNewRoute
+  '/admin/schools/$school/years': typeof AdminSchoolsSchoolYearsIndexRoute
+  '/admin/schools/$school/years/$startYear/classes': typeof AdminSchoolsSchoolYearsStartYearClassesRoute
+  '/admin/schools/$school/years/$startYear/courses': typeof AdminSchoolsSchoolYearsStartYearCoursesRoute
+  '/admin/schools/$school/years/$startYear/schedules': typeof AdminSchoolsSchoolYearsStartYearSchedulesRoute
+  '/admin/schools/$school/years/$startYear': typeof AdminSchoolsSchoolYearsStartYearIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -130,13 +232,25 @@ export interface FileRoutesById {
   '/_public/impressum': typeof PublicImpressumRoute
   '/_public/roadmap': typeof PublicRoadmapRoute
   '/admin/people': typeof AdminPeopleRouteWithChildren
+  '/admin/schools': typeof AdminSchoolsRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/_public/': typeof PublicIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/people/new': typeof AdminPeopleNewRoute
+  '/admin/schools/$school': typeof AdminSchoolsSchoolRouteWithChildren
   '/admin/users/new': typeof AdminUsersNewRoute
   '/admin/people/': typeof AdminPeopleIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
+  '/admin/schools/$school/substitutions': typeof AdminSchoolsSchoolSubstitutionsRoute
+  '/admin/schools/$school/theme': typeof AdminSchoolsSchoolThemeRoute
+  '/admin/schools/$school/years': typeof AdminSchoolsSchoolYearsRouteWithChildren
+  '/admin/schools/$school/years/$startYear': typeof AdminSchoolsSchoolYearsStartYearRouteWithChildren
+  '/admin/schools/$school/years/new': typeof AdminSchoolsSchoolYearsNewRoute
+  '/admin/schools/$school/years/': typeof AdminSchoolsSchoolYearsIndexRoute
+  '/admin/schools/$school/years/$startYear/classes': typeof AdminSchoolsSchoolYearsStartYearClassesRoute
+  '/admin/schools/$school/years/$startYear/courses': typeof AdminSchoolsSchoolYearsStartYearCoursesRoute
+  '/admin/schools/$school/years/$startYear/schedules': typeof AdminSchoolsSchoolYearsStartYearSchedulesRoute
+  '/admin/schools/$school/years/$startYear/': typeof AdminSchoolsSchoolYearsStartYearIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -147,25 +261,47 @@ export interface FileRouteTypes {
     | '/impressum'
     | '/roadmap'
     | '/admin/people'
+    | '/admin/schools'
     | '/admin/users'
     | '/'
     | '/admin/'
     | '/admin/people/new'
+    | '/admin/schools/$school'
     | '/admin/users/new'
     | '/admin/people/'
     | '/admin/users/'
+    | '/admin/schools/$school/substitutions'
+    | '/admin/schools/$school/theme'
+    | '/admin/schools/$school/years'
+    | '/admin/schools/$school/years/$startYear'
+    | '/admin/schools/$school/years/new'
+    | '/admin/schools/$school/years/'
+    | '/admin/schools/$school/years/$startYear/classes'
+    | '/admin/schools/$school/years/$startYear/courses'
+    | '/admin/schools/$school/years/$startYear/schedules'
+    | '/admin/schools/$school/years/$startYear/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
     | '/datenschutz'
     | '/impressum'
     | '/roadmap'
+    | '/admin/schools'
     | '/'
     | '/admin'
     | '/admin/people/new'
+    | '/admin/schools/$school'
     | '/admin/users/new'
     | '/admin/people'
     | '/admin/users'
+    | '/admin/schools/$school/substitutions'
+    | '/admin/schools/$school/theme'
+    | '/admin/schools/$school/years/new'
+    | '/admin/schools/$school/years'
+    | '/admin/schools/$school/years/$startYear/classes'
+    | '/admin/schools/$school/years/$startYear/courses'
+    | '/admin/schools/$school/years/$startYear/schedules'
+    | '/admin/schools/$school/years/$startYear'
   id:
     | '__root__'
     | '/_public'
@@ -175,13 +311,25 @@ export interface FileRouteTypes {
     | '/_public/impressum'
     | '/_public/roadmap'
     | '/admin/people'
+    | '/admin/schools'
     | '/admin/users'
     | '/_public/'
     | '/admin/'
     | '/admin/people/new'
+    | '/admin/schools/$school'
     | '/admin/users/new'
     | '/admin/people/'
     | '/admin/users/'
+    | '/admin/schools/$school/substitutions'
+    | '/admin/schools/$school/theme'
+    | '/admin/schools/$school/years'
+    | '/admin/schools/$school/years/$startYear'
+    | '/admin/schools/$school/years/new'
+    | '/admin/schools/$school/years/'
+    | '/admin/schools/$school/years/$startYear/classes'
+    | '/admin/schools/$school/years/$startYear/courses'
+    | '/admin/schools/$school/years/$startYear/schedules'
+    | '/admin/schools/$school/years/$startYear/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -234,6 +382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/schools': {
+      id: '/admin/schools'
+      path: '/schools'
+      fullPath: '/admin/schools'
+      preLoaderRoute: typeof AdminSchoolsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/people': {
       id: '/admin/people'
       path: '/people'
@@ -283,12 +438,89 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersNewRouteImport
       parentRoute: typeof AdminUsersRoute
     }
+    '/admin/schools/$school': {
+      id: '/admin/schools/$school'
+      path: '/$school'
+      fullPath: '/admin/schools/$school'
+      preLoaderRoute: typeof AdminSchoolsSchoolRouteImport
+      parentRoute: typeof AdminSchoolsRoute
+    }
     '/admin/people/new': {
       id: '/admin/people/new'
       path: '/new'
       fullPath: '/admin/people/new'
       preLoaderRoute: typeof AdminPeopleNewRouteImport
       parentRoute: typeof AdminPeopleRoute
+    }
+    '/admin/schools/$school/years': {
+      id: '/admin/schools/$school/years'
+      path: '/years'
+      fullPath: '/admin/schools/$school/years'
+      preLoaderRoute: typeof AdminSchoolsSchoolYearsRouteImport
+      parentRoute: typeof AdminSchoolsSchoolRoute
+    }
+    '/admin/schools/$school/theme': {
+      id: '/admin/schools/$school/theme'
+      path: '/theme'
+      fullPath: '/admin/schools/$school/theme'
+      preLoaderRoute: typeof AdminSchoolsSchoolThemeRouteImport
+      parentRoute: typeof AdminSchoolsSchoolRoute
+    }
+    '/admin/schools/$school/substitutions': {
+      id: '/admin/schools/$school/substitutions'
+      path: '/substitutions'
+      fullPath: '/admin/schools/$school/substitutions'
+      preLoaderRoute: typeof AdminSchoolsSchoolSubstitutionsRouteImport
+      parentRoute: typeof AdminSchoolsSchoolRoute
+    }
+    '/admin/schools/$school/years/': {
+      id: '/admin/schools/$school/years/'
+      path: '/'
+      fullPath: '/admin/schools/$school/years/'
+      preLoaderRoute: typeof AdminSchoolsSchoolYearsIndexRouteImport
+      parentRoute: typeof AdminSchoolsSchoolYearsRoute
+    }
+    '/admin/schools/$school/years/new': {
+      id: '/admin/schools/$school/years/new'
+      path: '/new'
+      fullPath: '/admin/schools/$school/years/new'
+      preLoaderRoute: typeof AdminSchoolsSchoolYearsNewRouteImport
+      parentRoute: typeof AdminSchoolsSchoolYearsRoute
+    }
+    '/admin/schools/$school/years/$startYear': {
+      id: '/admin/schools/$school/years/$startYear'
+      path: '/$startYear'
+      fullPath: '/admin/schools/$school/years/$startYear'
+      preLoaderRoute: typeof AdminSchoolsSchoolYearsStartYearRouteImport
+      parentRoute: typeof AdminSchoolsSchoolYearsRoute
+    }
+    '/admin/schools/$school/years/$startYear/': {
+      id: '/admin/schools/$school/years/$startYear/'
+      path: '/'
+      fullPath: '/admin/schools/$school/years/$startYear/'
+      preLoaderRoute: typeof AdminSchoolsSchoolYearsStartYearIndexRouteImport
+      parentRoute: typeof AdminSchoolsSchoolYearsStartYearRoute
+    }
+    '/admin/schools/$school/years/$startYear/schedules': {
+      id: '/admin/schools/$school/years/$startYear/schedules'
+      path: '/schedules'
+      fullPath: '/admin/schools/$school/years/$startYear/schedules'
+      preLoaderRoute: typeof AdminSchoolsSchoolYearsStartYearSchedulesRouteImport
+      parentRoute: typeof AdminSchoolsSchoolYearsStartYearRoute
+    }
+    '/admin/schools/$school/years/$startYear/courses': {
+      id: '/admin/schools/$school/years/$startYear/courses'
+      path: '/courses'
+      fullPath: '/admin/schools/$school/years/$startYear/courses'
+      preLoaderRoute: typeof AdminSchoolsSchoolYearsStartYearCoursesRouteImport
+      parentRoute: typeof AdminSchoolsSchoolYearsStartYearRoute
+    }
+    '/admin/schools/$school/years/$startYear/classes': {
+      id: '/admin/schools/$school/years/$startYear/classes'
+      path: '/classes'
+      fullPath: '/admin/schools/$school/years/$startYear/classes'
+      preLoaderRoute: typeof AdminSchoolsSchoolYearsStartYearClassesRouteImport
+      parentRoute: typeof AdminSchoolsSchoolYearsStartYearRoute
     }
   }
 }
@@ -324,6 +556,76 @@ const AdminPeopleRouteWithChildren = AdminPeopleRoute._addFileChildren(
   AdminPeopleRouteChildren,
 )
 
+interface AdminSchoolsSchoolYearsStartYearRouteChildren {
+  AdminSchoolsSchoolYearsStartYearClassesRoute: typeof AdminSchoolsSchoolYearsStartYearClassesRoute
+  AdminSchoolsSchoolYearsStartYearCoursesRoute: typeof AdminSchoolsSchoolYearsStartYearCoursesRoute
+  AdminSchoolsSchoolYearsStartYearSchedulesRoute: typeof AdminSchoolsSchoolYearsStartYearSchedulesRoute
+  AdminSchoolsSchoolYearsStartYearIndexRoute: typeof AdminSchoolsSchoolYearsStartYearIndexRoute
+}
+
+const AdminSchoolsSchoolYearsStartYearRouteChildren: AdminSchoolsSchoolYearsStartYearRouteChildren =
+  {
+    AdminSchoolsSchoolYearsStartYearClassesRoute:
+      AdminSchoolsSchoolYearsStartYearClassesRoute,
+    AdminSchoolsSchoolYearsStartYearCoursesRoute:
+      AdminSchoolsSchoolYearsStartYearCoursesRoute,
+    AdminSchoolsSchoolYearsStartYearSchedulesRoute:
+      AdminSchoolsSchoolYearsStartYearSchedulesRoute,
+    AdminSchoolsSchoolYearsStartYearIndexRoute:
+      AdminSchoolsSchoolYearsStartYearIndexRoute,
+  }
+
+const AdminSchoolsSchoolYearsStartYearRouteWithChildren =
+  AdminSchoolsSchoolYearsStartYearRoute._addFileChildren(
+    AdminSchoolsSchoolYearsStartYearRouteChildren,
+  )
+
+interface AdminSchoolsSchoolYearsRouteChildren {
+  AdminSchoolsSchoolYearsStartYearRoute: typeof AdminSchoolsSchoolYearsStartYearRouteWithChildren
+  AdminSchoolsSchoolYearsNewRoute: typeof AdminSchoolsSchoolYearsNewRoute
+  AdminSchoolsSchoolYearsIndexRoute: typeof AdminSchoolsSchoolYearsIndexRoute
+}
+
+const AdminSchoolsSchoolYearsRouteChildren: AdminSchoolsSchoolYearsRouteChildren =
+  {
+    AdminSchoolsSchoolYearsStartYearRoute:
+      AdminSchoolsSchoolYearsStartYearRouteWithChildren,
+    AdminSchoolsSchoolYearsNewRoute: AdminSchoolsSchoolYearsNewRoute,
+    AdminSchoolsSchoolYearsIndexRoute: AdminSchoolsSchoolYearsIndexRoute,
+  }
+
+const AdminSchoolsSchoolYearsRouteWithChildren =
+  AdminSchoolsSchoolYearsRoute._addFileChildren(
+    AdminSchoolsSchoolYearsRouteChildren,
+  )
+
+interface AdminSchoolsSchoolRouteChildren {
+  AdminSchoolsSchoolSubstitutionsRoute: typeof AdminSchoolsSchoolSubstitutionsRoute
+  AdminSchoolsSchoolThemeRoute: typeof AdminSchoolsSchoolThemeRoute
+  AdminSchoolsSchoolYearsRoute: typeof AdminSchoolsSchoolYearsRouteWithChildren
+}
+
+const AdminSchoolsSchoolRouteChildren: AdminSchoolsSchoolRouteChildren = {
+  AdminSchoolsSchoolSubstitutionsRoute: AdminSchoolsSchoolSubstitutionsRoute,
+  AdminSchoolsSchoolThemeRoute: AdminSchoolsSchoolThemeRoute,
+  AdminSchoolsSchoolYearsRoute: AdminSchoolsSchoolYearsRouteWithChildren,
+}
+
+const AdminSchoolsSchoolRouteWithChildren =
+  AdminSchoolsSchoolRoute._addFileChildren(AdminSchoolsSchoolRouteChildren)
+
+interface AdminSchoolsRouteChildren {
+  AdminSchoolsSchoolRoute: typeof AdminSchoolsSchoolRouteWithChildren
+}
+
+const AdminSchoolsRouteChildren: AdminSchoolsRouteChildren = {
+  AdminSchoolsSchoolRoute: AdminSchoolsSchoolRouteWithChildren,
+}
+
+const AdminSchoolsRouteWithChildren = AdminSchoolsRoute._addFileChildren(
+  AdminSchoolsRouteChildren,
+)
+
 interface AdminUsersRouteChildren {
   AdminUsersNewRoute: typeof AdminUsersNewRoute
   AdminUsersIndexRoute: typeof AdminUsersIndexRoute
@@ -340,12 +642,14 @@ const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminPeopleRoute: typeof AdminPeopleRouteWithChildren
+  AdminSchoolsRoute: typeof AdminSchoolsRouteWithChildren
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminPeopleRoute: AdminPeopleRouteWithChildren,
+  AdminSchoolsRoute: AdminSchoolsRouteWithChildren,
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }
