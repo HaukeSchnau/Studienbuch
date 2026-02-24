@@ -6,19 +6,27 @@ import { applyEventWithSnapshotRecovery } from "./snapshot-recovery";
 
 describe("applyEventWithSnapshotRecovery", () => {
   it("fetches and applies snapshot once after foreign key failure, then retries apply", async () => {
+    const callOrder: string[] = [];
     const applyEvent = vi
       .fn()
-      .mockImplementationOnce(() =>
-        Effect.fail({
+      .mockImplementationOnce(() => {
+        callOrder.push("applyEvent:initial");
+        return Effect.fail({
           _tag: "DatabaseError",
           type: "foreign_key_violation",
           cause: { message: "FOREIGN KEY constraint failed" },
           drizzleError: null,
-        }),
-      )
-      .mockImplementationOnce(() => Effect.void);
+        });
+      })
+      .mockImplementationOnce(() => {
+        callOrder.push("applyEvent:retry");
+        return Effect.void;
+      });
     const fetchSnapshot = vi.fn(() => Effect.succeed(sampleSnapshotResponse));
-    const applySnapshot = vi.fn(() => Effect.void);
+    const applySnapshot = vi.fn((snapshot: typeof sampleSnapshotResponse) => {
+      callOrder.push("applySnapshot");
+      return Effect.void;
+    });
 
     await Effect.runPromise(
       applyEventWithSnapshotRecovery({
@@ -48,6 +56,9 @@ describe("applyEventWithSnapshotRecovery", () => {
       ],
     });
     expect(applySnapshot).toHaveBeenCalledTimes(1);
+    expect(applySnapshot).toHaveBeenCalledWith(sampleSnapshotResponse);
+    expect(applySnapshot.mock.calls[0]?.[0].tasks).toEqual(sampleSnapshotResponse.tasks);
+    expect(callOrder).toEqual(["applyEvent:initial", "applySnapshot", "applyEvent:retry"]);
   });
 
   it("does not snapshot-recover for non-missing-reference applicator errors", async () => {

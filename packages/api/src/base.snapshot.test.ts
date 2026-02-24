@@ -162,4 +162,32 @@ describe("/api/snapshot route wiring", () => {
     expect(body).toEqual(snapshot);
     expect(Object.prototype.hasOwnProperty.call(body, "tasks")).toBe(false);
   });
+
+  it("preserves tasks in HTTP 200 snapshot passthrough when present", async () => {
+    const snapshot = {
+      students: [],
+      courses: [],
+      absences: [],
+      grades: [],
+      tasks: [{ id: "task-1", title: "Task 1" }],
+    };
+    resolveSnapshotRequest.mockResolvedValue({
+      status: "ok",
+      snapshot,
+    });
+
+    const app = await buildApp();
+    const response = await app.request(SNAPSHOT_PATH, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body).toEqual(snapshot);
+    expect(body.tasks).toEqual(snapshot.tasks);
+  });
 });
