@@ -19,4 +19,4 @@ Import this package in workspace tests where shared setup or mocks are required.
 
 ## Scripts
 
-This package does not currently define package-local scripts. Use workspace-level checks (`bun run lint`, `bun run typecheck`, `bun run test`).
+This package does not currently define package-local scripts. Use workspace-level checks (`bun run lint`, `bun run test`).

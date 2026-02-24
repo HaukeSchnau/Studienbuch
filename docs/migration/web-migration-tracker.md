@@ -43,7 +43,7 @@ Note: legacy API handlers under `packages/web/src/legacy-next-app/app/api/*` are
 | Command | Result | Notes |
 | --- | --- | --- |
 | `bun --filter @stu/web build` | PASS | Web artifact build succeeds for cutover image generation |
-| `bun --filter @stu/web typecheck` | PASS | Web package type surface valid |
+| `bun --filter @stu/web lint` | PASS | Web package type surface valid |
 | `bun --filter @stu/admin-panel build` | PASS | Admin panel remains independently deployable |
 | `bun run test` | PASS | Full test suite passes, including new `@stu/web` auth/permission tests |
 | `bun run test:sync` | PASS | Sync transport contract unchanged during web cutover |
@@ -51,4 +51,4 @@ Note: legacy API handlers under `packages/web/src/legacy-next-app/app/api/*` are
 | `nix build --no-link .#packages.aarch64-linux.oci-nextjs-archive` | PASS | Next slot image artifact builds from `@stu/web` |
 | `nix build --no-link .#packages.aarch64-linux.oci-admin-panel-archive` | PASS | Admin panel image artifact builds unchanged |
 | `bun run lint` | FAIL (known unrelated blocker) | Pre-existing `@stu/app-mobile` type-aware lint errors in `packages/app-mobile/src/app/setup/name-and-year.tsx` |
-| `bun run typecheck` | FAIL (known unrelated blocker) | Pre-existing `@stu/app-mobile` TS errors in `packages/app-mobile/src/app/setup/name-and-year.tsx` |
+| `bun run checks:lint:ci` | FAIL (known unrelated blocker) | Pre-existing `@stu/app-mobile` type-aware lint errors in `packages/app-mobile/src/app/setup/name-and-year.tsx` |

@@ -17,8 +17,7 @@
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev:internal": "tsc --watch",
-    "lint": "oxlint --type-aware --type-check",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+    "lint": "oxlint --type-aware --type-check"
   },
   "dependencies": {
     "@effect/vitest": "^0.25.1",

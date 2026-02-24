@@ -9,4 +9,4 @@ TanStack Start scaffold for the Studienbuch web frontend.
 - `bun --filter @stu/web start`
 - `bun --filter @stu/web serve`
 - `bun --filter @stu/web lint`
-- `bun --filter @stu/web typecheck`
+- `bun --filter @stu/web lint`

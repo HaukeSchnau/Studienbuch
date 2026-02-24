@@ -21,7 +21,7 @@ Shared domain core for the entire monorepo.
 
 ```bash
 bun --filter @stu/lib lint
-bun --filter @stu/lib typecheck
+bun --filter @stu/lib lint
 ```
 
 ## Testing

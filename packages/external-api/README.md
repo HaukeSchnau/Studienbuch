@@ -29,7 +29,7 @@ From `src/index.ts`:
 
 ```bash
 bun --filter @stu/external-api lint
-bun --filter @stu/external-api typecheck
+bun --filter @stu/external-api lint
 bun --filter @stu/external-api generate
 ```
 

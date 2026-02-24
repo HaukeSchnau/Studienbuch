@@ -10,8 +10,7 @@
     "clean": "git clean -xdf .cache .turbo node_modules",
     "lint": "oxlint --type-aware --type-check",
     "open:ios": "xed ios",
-    "open:android": "open -a \"Android Studio\" android",
-    "typecheck": "tsc --noEmit"
+    "open:android": "open -a \"Android Studio\" android"
   },
   "devDependencies": {
     "@types/react": "~19.1.10",

@@ -27,7 +27,7 @@ Operational control-plane runbook for the completed big-bang cutover from legacy
 | Command | Expected | Result | Gate |
 | --- | --- | --- | --- |
 | `bun --filter @stu/web build` | Web build succeeds | PASS | Required |
-| `bun --filter @stu/web typecheck` | Web typecheck succeeds | PASS | Required |
+| `bun --filter @stu/web lint` | Web lint succeeds | PASS | Required |
 | `bun --filter @stu/admin-panel build` | Admin panel build succeeds | PASS | Required |
 | `bun run test` | Full workspace tests pass | PASS | Required |
 | `bun run test:sync` | Sync integration tests pass | PASS | Required |
@@ -35,10 +35,10 @@ Operational control-plane runbook for the completed big-bang cutover from legacy
 | `nix build --no-link .#packages.aarch64-linux.oci-nextjs-archive` | Next slot OCI archive builds | PASS | Required |
 | `nix build --no-link .#packages.aarch64-linux.oci-admin-panel-archive` | Admin-panel OCI archive builds | PASS | Required |
 | `bun run lint` | Workspace lint may fail on unrelated mobile issue | FAIL (known unrelated blocker) | Non-blocking |
-| `bun run typecheck` | Workspace typecheck may fail on unrelated mobile issue | FAIL (known unrelated blocker) | Non-blocking |
+| `bun run checks:lint:ci` | Workspace type-aware lint may fail on unrelated mobile issue | FAIL (known unrelated blocker) | Non-blocking |
 
 Known unrelated blockers:
-- `@stu/app-mobile` lint/typecheck failures at `packages/app-mobile/src/app/setup/name-and-year.tsx` are tracked outside this web cutover and do not block WS-00..WS-09 acceptance.
+- `@stu/app-mobile` type-aware lint failures at `packages/app-mobile/src/app/setup/name-and-year.tsx` are tracked outside this web cutover and do not block WS-00..WS-09 acceptance.
 
 ## Rollback Procedure
 
@@ -63,7 +63,7 @@ Rollback note:
 - Remove remaining `packages/web/src/legacy-next-app/app/api/*` compatibility handlers after confirming no dependency.
 - Remove any stale references to `@stu/nextjs` from docs/scripts if discovered.
 - Keep runtime docs aligned (`docs/architecture/runtime-topology.md`, `docs/packages/README.md`).
-- Track and resolve unrelated `@stu/app-mobile` lint/typecheck blockers separately.
+- Track and resolve unrelated `@stu/app-mobile` type-aware lint blockers separately.
 
 ## Ownership
 

@@ -22,7 +22,7 @@ bun --filter @stu/expo-native-example ios
 bun --filter @stu/expo-native-example android
 bun --filter @stu/expo-native-example storybook-generate
 bun --filter @stu/expo-native-example lint
-bun --filter @stu/expo-native-example typecheck
+bun --filter @stu/expo-native-example lint
 ```
 
 ## Testing

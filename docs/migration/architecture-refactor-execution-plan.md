@@ -17,14 +17,14 @@
     - `refactor(api): extract topic lookup service` (`wt`)
     - `refactor(api): extract snapshot service` (`xp`)
   - Verification run:
-    - `bun --filter @stu/api typecheck` (pass)
+    - `bun --filter @stu/api lint` (pass)
     - `bun test packages/api/src/snapshot.test.ts` (pass)
     - `bun run test:sync` (pass)
 - `PR-02: Router Boundary Cleanup (Legacy vs Domain)`
   - Changes landed in:
     - `refactor(api): route root through domain router modules` (`ow`)
   - Verification run:
-    - `bun --filter @stu/api typecheck` (pass)
+    - `bun --filter @stu/api lint` (pass)
     - `bun run test:sync` (pass)
 - `PR-03: studentId Contract Alignment`
   - Changes landed in:
@@ -33,10 +33,10 @@
     - `refactor(db): type student-scoped payloads with StudentId` (`ot`)
     - `refactor(db): simplify studentId handler wiring` (`tlq`)
   - Verification run:
-    - `bun --filter @stu/lib typecheck` (pass)
-    - `bun --filter @stu/db typecheck` (pass)
-    - `bun --filter @stu/api typecheck` (pass)
-    - `bun --filter @stu/student typecheck` (pass)
+    - `bun --filter @stu/lib lint` (pass)
+    - `bun --filter @stu/db lint` (pass)
+    - `bun --filter @stu/api lint` (pass)
+    - `bun --filter @stu/student lint` (pass)
     - `bun run test:sync` (pass)
 - `PR-04: Sync/Snapshot Layering Cleanup`
   - Changes landed in:
@@ -49,10 +49,10 @@
     - `refactor(app-mobile): extract request header helpers` (`mz`)
     - `refactor(app-mobile): wire sync session context service` (`sr`)
   - Verification run:
-    - `bun --filter @stu/api typecheck` (pass)
+    - `bun --filter @stu/api lint` (pass)
     - `bun test packages/api/src/services/snapshot-request-service.test.ts` (pass)
     - `bun test packages/api/src/snapshot.test.ts` (pass)
-    - `bun --filter @stu/app-mobile typecheck` (pass)
+    - `bun --filter @stu/app-mobile lint` (pass)
     - `bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts` (pass)
     - `bun test packages/api/src/base.snapshot.test.ts` (pass)
     - `bun test packages/api/src/sync.integration.test.ts` (pass)
@@ -67,8 +67,8 @@
     - `test(schema): cover parity allowlist tables` (`tw`)
     - `fix(schema): narrow parity allowlist table typing` (`os`)
   - Verification run:
-    - `bun --filter @stu/db typecheck` (pass)
-    - `bun --filter @stu/student typecheck` (pass)
+    - `bun --filter @stu/db lint` (pass)
+    - `bun --filter @stu/student lint` (pass)
     - `bun test packages/db/src/schema-parity.test.ts` (pass)
     - `bun test packages/student/src/schema-parity.test.ts` (pass)
 - In progress:
@@ -89,9 +89,9 @@
     - `fix: omit tasks when snapshot request has no student context` (`rn`)
     - `test: cover snapshot task projection passthrough in route recovery` (`oq`)
   - Verification run:
-    - `bun --filter @stu/lib typecheck` (pass)
-    - `bun --filter @stu/api typecheck` (pass)
-    - `bun --filter @stu/student typecheck` (pass)
+    - `bun --filter @stu/lib lint` (pass)
+    - `bun --filter @stu/api lint` (pass)
+    - `bun --filter @stu/student lint` (pass)
     - `bun test packages/lib/src/snapshot.test.ts` (pass)
     - `bun test packages/api/src/snapshot.test.ts` (pass)
     - `bun test packages/api/src/base.snapshot.test.ts` (pass)
@@ -108,9 +108,9 @@
     - `refactor(repo): share semester insert mapping helper` (`qx`)
     - `refactor: share semester create-upsert orchestration` (`vvs`)
   - Verification run:
-    - `bun --filter @stu/lib typecheck` (pass)
-    - `bun --filter @stu/db typecheck` (pass)
-    - `bun --filter @stu/student typecheck` (pass)
+    - `bun --filter @stu/lib lint` (pass)
+    - `bun --filter @stu/db lint` (pass)
+    - `bun --filter @stu/student lint` (pass)
     - `bun test packages/db/src/applicators.integration.test.ts` (pass)
     - `bun test packages/student/src/applicators.integration.test.ts` (pass)
     - `bun test packages/lib/src/org-event-logic.test.ts` (pass)
@@ -123,9 +123,9 @@
     - `refactor: extract absence-day deletion guard helper` (`owv`)
     - `refactor: share grade predicate helpers` (`swk`)
   - Verification run:
-    - `bun --filter @stu/lib typecheck` (pass)
-    - `bun --filter @stu/db typecheck` (pass)
-    - `bun --filter @stu/student typecheck` (pass)
+    - `bun --filter @stu/lib lint` (pass)
+    - `bun --filter @stu/db lint` (pass)
+    - `bun --filter @stu/student lint` (pass)
     - `bun test packages/lib/src/repository-logic/holiday.test.ts` (pass)
     - `bun test packages/lib/src/repository-logic/student.test.ts` (pass)
     - `bun test packages/lib/src/repository-logic/absence.test.ts` (pass)
@@ -183,7 +183,7 @@ Dependency graph:
 
 ```bash
 bun run lint
-bun run typecheck
+bun run lint
 bun run test:sync
 bun test packages/api/src/snapshot.test.ts
 ```
@@ -216,7 +216,7 @@ bun test packages/api/src/snapshot.test.ts
 
 ```bash
 bun run lint
-bun run typecheck
+bun run lint
 bun run test:sync
 ```
 
@@ -248,7 +248,7 @@ bun run test:sync
 
 ```bash
 bun run lint
-bun run typecheck
+bun run lint
 bun run test:sync
 bun test packages/db/src/event-handlers/student-scoped-applicators.test.ts
 bun test packages/student/src/event-handlers/student-scoped-applicators.test.ts
@@ -278,7 +278,7 @@ bun test packages/student/src/event-handlers/student-scoped-applicators.test.ts
 
 ```bash
 bun run lint
-bun run typecheck
+bun run lint
 bun run test:sync
 bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts
 bun test packages/app-mobile/src/utils/sync-lifecycle.test.ts
@@ -310,7 +310,7 @@ bun test packages/app-mobile/src/utils/sync-lifecycle.test.ts
 
 ```bash
 bun run lint
-bun run typecheck
+bun run lint
 bun test packages/lib/src/snapshot.test.ts
 bun test packages/api/src/snapshot.test.ts
 bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts
@@ -336,7 +336,7 @@ bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts
 
 ```bash
 bun run lint
-bun run typecheck
+bun run lint
 bun test packages/db/src/schema-parity.test.ts
 bun test packages/student/src/schema-parity.test.ts
 ```
@@ -368,7 +368,7 @@ bun test packages/student/src/schema-parity.test.ts
 
 ```bash
 bun run lint
-bun run typecheck
+bun run lint
 bun test packages/db/src/applicators.integration.test.ts
 bun test packages/student/src/applicators.integration.test.ts
 ```
@@ -403,7 +403,7 @@ bun test packages/student/src/applicators.integration.test.ts
 
 ```bash
 bun run lint
-bun run typecheck
+bun run lint
 bun run test:sync
 bun test packages/db/src/applicators.live.integration.test.ts
 bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts
@@ -436,9 +436,9 @@ bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts
 
 ```bash
 bun run lint
-bun run typecheck
+bun run lint
 bun x tsc --noEmit -p packages/web/tsconfig.json
-bun --filter @stu/app-mobile typecheck
+bun --filter @stu/app-mobile lint
 ```
 
 ### PR-10: Frontend/Mobile Timetable Convergence
@@ -463,8 +463,8 @@ bun --filter @stu/app-mobile typecheck
 
 ```bash
 bun run lint
-bun run typecheck
-bun --filter @stu/app-mobile typecheck
+bun run lint
+bun --filter @stu/app-mobile lint
 bun x tsc --noEmit -p packages/web/tsconfig.json
 ```
 
@@ -486,17 +486,17 @@ bun x tsc --noEmit -p packages/web/tsconfig.json
 - Acceptance criteria:
 - Shared env keys are defined once and imported by package env files.
 - `turbo.json` `globalEnv` matches centralized key list.
-- Missing/invalid required env values fail fast at startup/typecheck in each package.
+- Missing/invalid required env values fail fast at startup/lint in each package.
 - Risk: medium; startup failures if key mapping is wrong.
 - Effort: M.
 - Verification commands:
 
 ```bash
 bun run lint
-bun run typecheck
+bun run lint
 bun x tsc --noEmit -p packages/web/tsconfig.json
-bun --filter @stu/api typecheck
-bun --filter @stu/db typecheck
+bun --filter @stu/api lint
+bun --filter @stu/db lint
 ```
 
 ### PR-12: Workspace Dependency Hygiene Enforcement

@@ -23,8 +23,7 @@
     "lint": "oxlint --type-aware --type-check",
     "test:live": "vitest run --config vitest.live.config.ts",
     "generate": "drizzle-kit generate",
-    "push": "drizzle-kit push",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+    "push": "drizzle-kit push"
   },
   "dependencies": {
     "@groundswell/adapter-drizzle-postgres": "^0.0.22",

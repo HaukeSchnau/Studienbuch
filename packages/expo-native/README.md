@@ -24,7 +24,7 @@ From `src/index.ts`:
 
 ```bash
 bun --filter @stu/expo-native lint
-bun --filter @stu/expo-native typecheck
+bun --filter @stu/expo-native lint
 bun --filter @stu/expo-native open:ios
 bun --filter @stu/expo-native open:android
 ```

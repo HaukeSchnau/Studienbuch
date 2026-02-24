@@ -56,7 +56,6 @@ just live-health-all
 
 # Workspace quality gates
 bun run lint
-bun run typecheck
 bun run test
 bun run ci
 

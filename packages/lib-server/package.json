@@ -11,8 +11,7 @@
   },
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
-    "lint": "oxlint --type-aware --type-check",
-    "typecheck": "tsc --noEmit"
+    "lint": "oxlint --type-aware --type-check"
   },
   "dependencies": {
     "@stu/db": "workspace:*",

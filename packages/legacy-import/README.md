@@ -19,7 +19,7 @@ Legacy database import helpers used for migration and backfill workflows.
 
 ```bash
 bun --filter @stu/legacy-import lint
-bun --filter @stu/legacy-import typecheck
+bun --filter @stu/legacy-import lint
 bun --filter @stu/legacy-import push
 bun --filter @stu/legacy-import studio
 ```

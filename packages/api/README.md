@@ -25,7 +25,7 @@ Standalone backend runtime for Studienbuch.
 bun --filter @stu/api dev
 bun --filter @stu/api dev:internal
 bun --filter @stu/api lint
-bun --filter @stu/api typecheck
+bun --filter @stu/api lint
 ```
 
 ## Internal Dependencies

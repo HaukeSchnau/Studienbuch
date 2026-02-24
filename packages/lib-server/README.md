@@ -34,7 +34,7 @@ From `src/index.ts`:
 
 ```bash
 bun --filter @stu/lib-server lint
-bun --filter @stu/lib-server typecheck
+bun --filter @stu/lib-server lint
 ```
 
 ## Testing

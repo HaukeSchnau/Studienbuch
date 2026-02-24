@@ -36,8 +36,7 @@
     "test:sync": "bun test packages/api/src/sync.integration.test.ts",
     "test:maestro:mobile": "bun --filter @stu/app-mobile maestro:test",
     "test:dev": "vitest --ui --coverage",
-    "typecheck": "turbo run typecheck --filter=!@stu/web",
-    "ci": "run-s checks:fmt:ci checks:lint:ci typecheck test:ci",
+    "ci": "run-s checks:fmt:ci checks:lint:ci test:ci",
     "ci:fix": "run-s checks:fmt checks:lint:fix-safe"
   },
   "devDependencies": {

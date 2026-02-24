@@ -44,12 +44,9 @@ seed:
     just console pull igs-lil
 
 [parallel]
-check: check-typecheck check-fmt check-lint
+check: check-fmt check-lint
 
 qa: check test
-
-check-typecheck:
-    bun run typecheck
 
 check-fmt:
     bun run checks:fmt

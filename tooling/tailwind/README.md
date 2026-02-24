@@ -23,5 +23,5 @@ Shared Tailwind configuration package for web and native surfaces.
 
 ```bash
 bun --filter @stu/tailwind-config lint
-bun --filter @stu/tailwind-config typecheck
+bun --filter @stu/tailwind-config lint
 ```

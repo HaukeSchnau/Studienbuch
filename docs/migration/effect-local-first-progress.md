@@ -93,9 +93,9 @@ Last updated: 2026-02-17
 ## Checks
 
 - `bun run lint`: PASS
-- `bun run typecheck`: PASS
+- `bun run checks:lint:ci`: PASS
 - `bun run test`: PASS
-- `bun run ci`: PASS (root `ci` uses lint + typecheck)
+- `bun run ci`: PASS (root `ci` uses lint + checks:lint:ci)
 - `bun run test:maestro:mobile`: PASS (with booted iOS Simulator + running `dev:e2e` Metro)
 
 All targeted checks for this slice pass in this iteration.

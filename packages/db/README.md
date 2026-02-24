@@ -31,7 +31,7 @@ From `src/index.ts`:
 
 ```bash
 bun --filter @stu/db lint
-bun --filter @stu/db typecheck
+bun --filter @stu/db lint
 bun --filter @stu/db generate
 bun --filter @stu/db push
 bun --filter @stu/db test:live

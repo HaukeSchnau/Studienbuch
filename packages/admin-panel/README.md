@@ -23,7 +23,7 @@ bun --filter @stu/admin-panel build
 bun --filter @stu/admin-panel serve
 bun --filter @stu/admin-panel start
 bun --filter @stu/admin-panel lint
-bun --filter @stu/admin-panel typecheck
+bun --filter @stu/admin-panel lint
 ```
 
 ## Internal Dependencies
@@ -35,4 +35,4 @@ bun --filter @stu/admin-panel typecheck
 ## Testing
 
 No package-local automated test suite is currently defined.
-Rely on typecheck/build/manual route verification and workspace test gates.
+Rely on lint/build/manual route verification and workspace test gates.

@@ -12,7 +12,6 @@
     "android": "APP_VARIANT=production expo run:android",
     "ios": "APP_VARIANT=development expo run:ios",
     "lint": "oxlint --type-aware --type-check",
-    "typecheck": "expo customize tsconfig.json && tsc --noEmit",
     "maestro:test": "maestro test --config ./maestro/config.yaml -e MAESTRO_APP_ID=${MAESTRO_APP_ID:-dev.schnau.studienbuch.dev} -e MAESTRO_APP_LINK=${MAESTRO_APP_LINK:-studienbuch://e2e/sync-lifecycle} ./maestro/flows",
     "maestro:test:lifecycle": "maestro test --config ./maestro/config.yaml -e MAESTRO_APP_ID=${MAESTRO_APP_ID:-dev.schnau.studienbuch.dev} -e MAESTRO_APP_LINK=${MAESTRO_APP_LINK:-studienbuch://e2e/sync-lifecycle} ./maestro/flows/sync-lifecycle-resume.yml ./maestro/flows/sync-lifecycle-replay.yml ./maestro/flows/sync-lifecycle-network-reconnect.yml ./maestro/flows/sync-lifecycle-sensitive-auth-reconnect.yml"
   },

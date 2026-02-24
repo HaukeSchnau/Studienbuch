@@ -25,7 +25,7 @@ bun --filter @stu/app-mobile dev
 bun --filter @stu/app-mobile dev:ios
 bun --filter @stu/app-mobile dev:android
 bun --filter @stu/app-mobile lint
-bun --filter @stu/app-mobile typecheck
+bun --filter @stu/app-mobile lint
 bun --filter @stu/app-mobile maestro:test
 bun --filter @stu/app-mobile maestro:test:lifecycle
 ```

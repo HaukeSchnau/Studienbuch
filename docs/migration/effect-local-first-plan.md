@@ -22,7 +22,7 @@ Bring the system to a stable, production-ready state with:
 - Sync pipeline correctness (ingest, topic routing, broadcast, replay, offset).
 - Server-side event applicator parity (including `absence.*` and `grades.*`).
 - Untis import/cron reliability and data quality.
-- CI/typecheck/test gates needed to keep migration stable.
+- CI/lint/test gates needed to keep migration stable.
 
 ### In scope (P1)
 
@@ -40,7 +40,7 @@ Bring the system to a stable, production-ready state with:
 - Some server applicator coverage is missing for mobile-emitted event namespaces.
 - Snapshot strategy is documented but not implemented end-to-end.
 - Mobile setup still depends partly on tRPC/bootstrap writes instead of pure event/snapshot flow.
-- CI guardrails are incomplete (`ci` script/task mismatch, missing Next.js typecheck coverage).
+- CI guardrails are incomplete (`ci` script/task mismatch, missing Next.js lint coverage).
 - Existing tests do not yet provide strong confidence for sync invariants.
 
 ## 4. Target Stable State (Definition Of Done)
@@ -238,8 +238,8 @@ Prevent regression while migration is underway.
 
 ### Tasks
 
-- Fix root CI scripts so they execute real tasks (`ci`, `format`, `typecheck`, `test`).
-- Add/repair package-level typecheck coverage (including currently excluded/placeholder packages).
+- Fix root CI scripts so they execute real tasks (`ci`, `format`, `lint`, `test`).
+- Add/repair package-level lint coverage (including currently excluded/placeholder packages).
 - Add integration tests for:
   - ingest + apply + broadcast + replay,
   - offset persistence,
@@ -303,7 +303,7 @@ Prevent regression while migration is underway.
 ## 9. Verification Checklist (Per Release Candidate)
 
 - `bun run lint`
-- `bun run typecheck`
+- `bun run lint`
 - `bun run test`
 - sync integration suite passes (ingest/replay/offset/cross-device)
 - one full Untis import dry-run in staging-like environment

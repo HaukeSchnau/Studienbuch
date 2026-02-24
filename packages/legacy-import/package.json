@@ -10,8 +10,7 @@
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "lint": "oxlint --type-aware --type-check",
     "push": "drizzle-kit push",
-    "studio": "drizzle-kit studio",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+    "studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@stu/lib": "workspace:*",

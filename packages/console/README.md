@@ -19,7 +19,7 @@ Operational CLI and background command entrypoint.
 ## Scripts
 
 ```bash
-bun --filter @stu/console typecheck
+bun run lint
 ```
 
 CLI commands are typically invoked through root helpers:

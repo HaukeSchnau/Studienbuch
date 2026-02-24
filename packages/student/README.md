@@ -31,7 +31,7 @@ From `src/index.ts`:
 
 ```bash
 bun --filter @stu/student lint
-bun --filter @stu/student typecheck
+bun --filter @stu/student lint
 ```
 
 ## Testing

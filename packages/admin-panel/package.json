@@ -8,8 +8,7 @@
     "dev": "vite dev --port 3000",
     "lint": "oxlint --type-aware --type-check",
     "start": "node .output/server/index.mjs",
-    "serve": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "serve": "vite preview"
   },
   "dependencies": {
     "@stu/api": "workspace:*",

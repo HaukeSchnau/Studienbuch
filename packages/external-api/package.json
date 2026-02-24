@@ -13,8 +13,7 @@
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev:internal": "tsc --watch",
     "lint": "oxlint --type-aware --type-check",
-    "generate": "openapi --input https://openholidaysapi.org/swagger/v1/swagger.json --output ./src/holidays/generated",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+    "generate": "openapi --input https://openholidaysapi.org/swagger/v1/swagger.json --output ./src/holidays/generated"
   },
   "dependencies": {
     "@effect/platform": "^0.90.6",

@@ -36,7 +36,6 @@ just live-up-dev-debug
 
 ```bash
 bun run lint
-bun run typecheck
 bun run test
 ```
 

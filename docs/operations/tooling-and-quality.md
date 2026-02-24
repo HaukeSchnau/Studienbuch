@@ -18,7 +18,7 @@ Root-level:
 
 ```bash
 bun run lint
-bun run typecheck
+bun run checks:lint:ci
 bun run test
 bun run ci
 ```
@@ -26,7 +26,7 @@ bun run ci
 Package-targeted examples:
 
 ```bash
-bun --filter @stu/api typecheck
+bun --filter @stu/api lint
 bun --filter @stu/db test:live -- src/applicators.live.integration.test.ts
 bun --filter @stu/app-mobile maestro:test:lifecycle
 ```
@@ -36,7 +36,7 @@ bun --filter @stu/app-mobile maestro:test:lifecycle
 `turbo.json` defines shared task semantics:
 
 - `build`: cached outputs (`dist/**`, tsbuildinfo)
-- `typecheck`: depends on transitive `build` and `topo`
+- `lint`: workspace lint task (type-aware checks via `oxlint`)
 - `test`: depends on transitive `build`
 - `dev`/`dev:internal`: non-cached watch workflows
 
