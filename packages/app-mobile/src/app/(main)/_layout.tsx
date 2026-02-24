@@ -9,7 +9,7 @@ import { useSyncStatus } from "~/utils/events/ingest";
 import { registerForPushNotificationsAsync } from "~/utils/notifications";
 
 Notifications.setNotificationHandler({
-  // eslint-disable-next-line @typescript-eslint/require-await
+  // oxlint-disable-next-line @typescripttypescript/require-await
   handleNotification: async () => ({
     shouldPlaySound: true,
     shouldSetBadge: true,

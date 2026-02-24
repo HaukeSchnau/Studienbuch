@@ -101,7 +101,7 @@ export default function NameAndYear() {
             error={
               field.state.meta.isTouched &&
               field.state.meta.errors.length &&
-              // eslint-disable-next-line @typescript-eslint/no-base-to-string -- TODO: fix
+              // oxlint-disable-next-line @typescripttypescript/no-base-to-string -- TODO: fix
               field.state.meta.errors.join(", ")
             }
           />

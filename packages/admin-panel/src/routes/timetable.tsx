@@ -151,7 +151,7 @@ const Timetable = ({ clazz }: { clazz: { startYear: number; identifierInYear: st
         day.map((time, timeIndex) => (
           <div
             key={`${dayIndex}-${
-              // biome-ignore lint/suspicious/noArrayIndexKey: dont care
+              // oxlint-disable-next-line react/no-array-index-key -- dont care
               timeIndex
             }`}
             className="flex flex-col border"
@@ -161,7 +161,7 @@ const Timetable = ({ clazz }: { clazz: { startYear: number; identifierInYear: st
             }}
           >
             {time.map((course, courseIndex) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: dont care
+              // oxlint-disable-next-line react/no-array-index-key -- dont care
               <div key={courseIndex} className="flex flex-col">
                 {course.courseId} {course.weeks.ODD} {course.weeks.EVEN}
               </div>
@@ -189,7 +189,7 @@ function RouteComponent() {
             : undefined
         }
         setSelectedClass={(clazz) => {
-          navigate({ search: { startYear: clazz.startYear, classIdentifier: clazz.identifierInYear } });
+          void navigate({ search: { startYear: clazz.startYear, classIdentifier: clazz.identifierInYear } });
         }}
       />
       {startYear && classIdentifier !== undefined && (

@@ -2,15 +2,15 @@
   "name": "@stu/tailwind-config",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "exports": {
     "./native": "./native.ts",
     "./web": "./web.ts"
   },
-  "license": "MIT",
   "scripts": {
     "clean": "git clean -xdf .cache .turbo node_modules",
-    "lint": "biome check",
+    "lint": "oxlint --type-aware --type-check",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

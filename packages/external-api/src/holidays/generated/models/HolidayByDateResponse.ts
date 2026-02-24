@@ -1,7 +1,6 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
-/* tslint:disable */
-/* eslint-disable */
+/* oxlint-disable */
 import type { CountryReference } from "./CountryReference";
 import type { HolidayType } from "./HolidayType";
 import type { LocalizedText } from "./LocalizedText";

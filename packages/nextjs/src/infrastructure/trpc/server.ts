@@ -25,7 +25,7 @@ const createContext = async () => {
   });
 };
 
-// eslint-disable-next-line @typescript-eslint/require-await
+// oxlint-disable-next-line @typescripttypescript/require-await
 const getQueryClient = async () => {
   "use cache";
   return createQueryClient();

@@ -7,7 +7,7 @@
     "build": "next build",
     "clean": "git clean -xdf .cache .next .turbo node_modules",
     "dev": "next dev",
-    "lint": "biome format # TODO: biome check",
+    "lint": "oxlint --type-aware --type-check",
     "start": "next start",
     "typecheck": "echo 'TODO: tsc --noEmit'"
   },

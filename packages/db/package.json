@@ -2,9 +2,10 @@
   "name": "@stu/db",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "type": "module",
   "exports": {
     ".": {
       "default": "./src/index.ts"
@@ -16,11 +17,10 @@
       "default": "./src/schema/index.ts"
     }
   },
-  "license": "MIT",
   "scripts": {
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev:internal": "tsc --watch",
-    "lint": "biome check",
+    "lint": "oxlint --type-aware --type-check",
     "test:live": "vitest run --config vitest.live.config.ts",
     "generate": "drizzle-kit generate",
     "push": "drizzle-kit push",

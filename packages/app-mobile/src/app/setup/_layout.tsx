@@ -17,7 +17,7 @@ export default function SetupLayout() {
   }));
 
   const pathname = usePathname();
-  // biome-ignore lint/correctness/useExhaustiveDependencies: We want to animate the layout when the pathname changes
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- We want to animate the layout when the pathname changes
   useEffect(() => {
     LayoutAnimation.easeInEaseOut();
   }, [pathname]);

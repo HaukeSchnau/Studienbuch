@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { api } from "~/infrastructure/trpc/server";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-function -- Next doesnt like top level await in a server action and the db uses that.
+// oxlint-disable-next-line @typescripteslint/no-empty-function -- Next doesnt like top level await in a server action and the db uses that.
 export async function initAction() {}
 
 export async function logout() {

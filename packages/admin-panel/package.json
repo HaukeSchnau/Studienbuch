@@ -6,7 +6,7 @@
     "build": "vite build",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "dev": "vite dev --port 3000",
-    "lint": "biome check",
+    "lint": "oxlint --type-aware --type-check",
     "start": "node .output/server/index.mjs",
     "serve": "vite preview",
     "typecheck": "tsc --noEmit"

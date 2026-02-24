@@ -68,8 +68,28 @@ const LicenseKeyField = ({
   error?: string | Falsy;
 }) => {
   const maskedInputProps = useMaskedInputProps({
-    // biome-ignore format: No need to split the mask into multiple lines
-    mask: [/\w/, /\w/, /\w/, /\w/, '-', /\w/, /\w/, /\w/, /\w/, '-', /\w/, /\w/, /\w/, /\w/, '-', /\w/, /\w/, /\w/, /\w/],
+    // oxfmt-ignore -- No need to split the mask into multiple lines
+    mask: [
+      /\w/,
+      /\w/,
+      /\w/,
+      /\w/,
+      "-",
+      /\w/,
+      /\w/,
+      /\w/,
+      /\w/,
+      "-",
+      /\w/,
+      /\w/,
+      /\w/,
+      /\w/,
+      "-",
+      /\w/,
+      /\w/,
+      /\w/,
+      /\w/,
+    ],
     value,
     onChangeText: (text) => setValue(text.toUpperCase()),
     placeholderFillCharacter: "X",

@@ -2,21 +2,16 @@
   "name": "@stu/expo-native",
   "version": "0.1.0",
   "description": "Native modules for Studienbuch",
+  "homepage": "https://example.com#readme",
+  "license": "MIT",
+  "author": "Hauke Schnau <hauke@schnau-lilienthal.de> (HaukeSchnau)",
   "main": "./src/index.ts",
   "scripts": {
     "clean": "git clean -xdf .cache .turbo node_modules",
-    "lint": "biome check",
+    "lint": "oxlint --type-aware --type-check",
     "open:ios": "xed ios",
     "open:android": "open -a \"Android Studio\" android",
     "typecheck": "tsc --noEmit"
-  },
-  "author": "Hauke Schnau <hauke@schnau-lilienthal.de> (HaukeSchnau)",
-  "license": "MIT",
-  "homepage": "https://example.com#readme",
-  "peerDependencies": {
-    "expo": "*",
-    "react": "*",
-    "react-native": "*"
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
@@ -24,5 +19,10 @@
     "expo-modules-core": "~2.5.0",
     "react-native": "0.79.5",
     "typescript": "^5.9.2"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
   }
 }

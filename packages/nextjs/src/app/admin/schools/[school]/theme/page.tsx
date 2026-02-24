@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
+/* oxlint-disable @typescripttypescript/no-unnecessary-condition */
 "use client";
 
 import type { SchoolId } from "@stu/lib";

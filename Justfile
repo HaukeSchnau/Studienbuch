@@ -45,7 +45,8 @@ seed:
 
 check:
     bun run typecheck
-    bun run lint:fix
+    bun run checks:fmt:ci
+    bun run checks:lint
 
 doctor:
     ./tooling/doctor.sh

@@ -200,7 +200,7 @@ function Home() {
   const navigate = useNavigate({ from: Route.fullPath });
 
   const setSelectedTeacherId = (teacherId: string | undefined) => {
-    navigate({
+    void navigate({
       search: { teacherId },
     });
   };

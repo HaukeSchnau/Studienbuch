@@ -1,5 +1,5 @@
 declare module "csstype" {
-  // eslint-disable-next-line @typescript-eslint/consistent-indexed-object-style
+  // oxlint-disable-next-line @typescripttypescript/consistent-indexed-object-style
   interface Properties {
     [index: `--${string}`]: string | number;
   }

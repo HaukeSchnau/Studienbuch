@@ -23,7 +23,7 @@ describe("applyEventWithSnapshotRecovery", () => {
         return Effect.void;
       });
     const fetchSnapshot = vi.fn(() => Effect.succeed(sampleSnapshotResponse));
-    const applySnapshot = vi.fn((snapshot: typeof sampleSnapshotResponse) => {
+    const applySnapshot = vi.fn((_snapshot: typeof sampleSnapshotResponse) => {
       callOrder.push("applySnapshot");
       return Effect.void;
     });

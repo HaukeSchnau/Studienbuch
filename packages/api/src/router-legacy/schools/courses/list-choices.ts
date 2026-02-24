@@ -79,7 +79,7 @@ export const listChoices = publicProcedure
         });
       }
 
-      // biome-ignore lint/style/noNonNullAssertion: We ensure that the course is in the map above
+      // oxlint-disable-next-line typescript/no-non-null-assertion -- We ensure that the course is in the map above
       const course = result.get(row.courses.id)!;
       course.teachers.push({
         abbrv: row.persons.abbrv,

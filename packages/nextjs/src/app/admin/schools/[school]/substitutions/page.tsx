@@ -41,9 +41,9 @@ export default async function SubstitutionPage() {
   });
 
   for (let i = substitutions.length - 1; i > 0; i--) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // oxlint-disable-next-line @typescripttypescript/no-non-null-assertion
     const current = substitutions[i]!;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // oxlint-disable-next-line @typescripttypescript/no-non-null-assertion
     const previous = substitutions[i - 1]!;
     if (previous.time && current.time && current.time.data === previous.time.data) {
       previous.time.rowSpan = current.time.rowSpan + previous.time.rowSpan;

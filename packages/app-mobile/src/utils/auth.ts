@@ -121,6 +121,7 @@ export const useSessionWatcher = () => {
     login.mutate({
       licenseKey,
     });
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- mutate function identity is unstable between renders.
   }, [licenseKey, login.mutate, session]);
 
   useEffect(() => {
@@ -153,6 +154,7 @@ export const useSessionWatcher = () => {
       });
       await utils.invalidate();
     })();
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- query/mutate helpers are intentionally treated as stable.
   }, [getSessionQuery.status, getSessionQuery.data, licenseKey, setSession, login.mutate, utils.invalidate]);
 
   return loading;

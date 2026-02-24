@@ -24,42 +24,42 @@ const resolveSnapshotRequest = mock(
   async (_input: SnapshotRouteInput): Promise<SnapshotRouteResult> => ({ status: "unauthorized" }),
 );
 
-mock.module("pino", () => ({
+void mock.module("pino", () => ({
   default: mock(() => ({
     info: mock(() => undefined),
     error: mock(() => undefined),
   })),
 }));
 
-mock.module("@groundswell/adapter-hono-server", () => ({
+void mock.module("@groundswell/adapter-hono-server", () => ({
   attachSyncServer: mock(() => undefined),
 }));
 
-mock.module("@hono/trpc-server", () => ({
+void mock.module("@hono/trpc-server", () => ({
   trpcServer: mock(() => async (_c: unknown, next: () => Promise<void>) => next()),
 }));
 
-mock.module("@stu/api", () => ({
+void mock.module("@stu/api", () => ({
   appRouter: {},
   createTRPCContext: mock(async () => ({})),
 }));
 
-mock.module("@stu/db", () => ({
+void mock.module("@stu/db", () => ({
   sql: mock(() => undefined),
 }));
 
-mock.module("@stu/db/client", () => ({
+void mock.module("@stu/db/client", () => ({
   db: {
     execute: mock(async () => undefined),
   },
 }));
 
-mock.module("@stu/lib-server", () => ({
+void mock.module("@stu/lib-server", () => ({
   getSession: mock(async () => null),
   getSessionTokenFromHeaders: mock(() => null),
 }));
 
-mock.module("../env", () => ({
+void mock.module("../env", () => ({
   env: {
     AXIOM_DATASET: "test-dataset",
     AXIOM_TOKEN: "test-token",
@@ -67,7 +67,7 @@ mock.module("../env", () => ({
   },
 }));
 
-mock.module("./services/snapshot-request-service", () => ({
+void mock.module("./services/snapshot-request-service", () => ({
   resolveSnapshotRequest,
 }));
 

@@ -107,7 +107,6 @@ export function BottomSheet({ children, onClose }: Props) {
     });
   };
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: scrollTo is not stable and I haven't tested using useCallback on it yet.
   useEffect(() => {
     // Initial scroll to show the bottom sheet partially
     if (isOpen) {
@@ -115,6 +114,7 @@ export function BottomSheet({ children, onClose }: Props) {
     } else {
       scrollTo(FULLY_CLOSED);
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- scrollTo is not stable and I haven't tested using useCallback on it yet.
   }, [isOpen]);
 
   if (isClosed) {

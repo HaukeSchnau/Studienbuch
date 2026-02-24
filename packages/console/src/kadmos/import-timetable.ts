@@ -80,7 +80,7 @@ const getTimetable = Effect.fn(function* (options: Options) {
       continue;
     }
 
-    for (const [uuid, course] of [...courses.entries()]) {
+    for (const [uuid, course] of courses.entries()) {
       const matchesTeacherAndTime = (entry: ProtoTimetableEntry) => {
         const entryAtSameTime = course.entries.find(
           (otherEntry) =>

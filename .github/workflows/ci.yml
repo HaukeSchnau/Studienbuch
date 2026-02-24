@@ -35,8 +35,11 @@ jobs:
       #   shell: bash
       #   run: cp .env.example .env
 
+      - name: Format check
+        run: bun run checks:fmt:ci
+
       - name: Lint
-        run: bun lint
+        run: bun run checks:lint:ci
 
   typecheck:
     runs-on: ubuntu-latest

@@ -6,7 +6,7 @@ import { err, type Result, ResultAsync } from "neverthrow";
 import { Platform } from "react-native";
 
 Notifications.setNotificationHandler({
-  // eslint-disable-next-line @typescript-eslint/require-await
+  // oxlint-disable-next-line @typescripttypescript/require-await
   handleNotification: async () => ({
     shouldPlaySound: true,
     shouldSetBadge: true,
@@ -45,9 +45,9 @@ export async function registerForPushNotificationsAsync(): Promise<
   if (finalStatus !== Notifications.PermissionStatus.GRANTED) {
     return err("PERMISSION_NOT_GRANTED");
   }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  // oxlint-disable-next-line @typescripttypescript/no-unsafe-assignment
   const projectId: string | undefined =
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    // oxlint-disable-next-line @typescripttypescript/no-unsafe-member-access
     Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
   if (!projectId) {
     return err("PROJECT_ID_NOT_FOUND");

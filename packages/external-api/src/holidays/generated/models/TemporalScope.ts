@@ -1,7 +1,6 @@
 /* generated using openapi-typescript-codegen -- do not edit */
 /* istanbul ignore file */
-/* tslint:disable */
-/* eslint-disable */
+/* oxlint-disable */
 /**
  * Temporal scope of a holdiay
  */

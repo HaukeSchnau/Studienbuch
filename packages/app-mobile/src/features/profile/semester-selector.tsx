@@ -18,7 +18,7 @@ export const SemesterSelector = ({ choices, selectedSemester, onSelect }: Semest
       values={choices.map((semester) => semester.name)}
       selectedIndex={choices.findIndex((semester) => semester.name === selectedSemester.name)}
       onChange={(event) => {
-        // biome-ignore lint/style/noNonNullAssertion: The index is guaranteed to be in bounds because the values are mapped from the choices array.
+        // oxlint-disable-next-line typescript/no-non-null-assertion -- The index is guaranteed to be in bounds because the values are mapped from the choices array.
         onSelect(choices[event.nativeEvent.selectedSegmentIndex]!);
       }}
     />

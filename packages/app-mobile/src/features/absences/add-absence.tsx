@@ -120,7 +120,7 @@ const CoursesSelect = withForm({
   render: function Render({ form }) {
     const selectedDate = useStore(form.store, (state) => state.values.date);
 
-    // biome-ignore lint/correctness/useExhaustiveDependencies: We want to reset the courses when the date changes
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- We want to reset the courses when the date changes
     useEffect(() => {
       void form.setFieldValue("courses", [], {
         dontUpdateMeta: true,

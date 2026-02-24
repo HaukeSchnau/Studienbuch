@@ -176,7 +176,7 @@ export const createBase = Effect.fn(function* (basePath: string) {
 
   app.onError((err, c) => {
     appLogger.error(
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- TODO
+      // oxlint-disable-next-line @typescripttypescript/restrict-template-expressions -- TODO
       `Error while handling request: ${c.req.method} ${c.req.path}: ${err.message}\n${err.stack}\n${err.cause}\n${err.name}`,
     );
 
