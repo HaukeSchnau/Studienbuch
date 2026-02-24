@@ -1,4 +1,4 @@
-import { type SchoolId, type Year, YearRepository } from "@stu/lib";
+import { createYearClassesCore, type SchoolId, type Year, YearRepository } from "@stu/lib";
 import { and, eq, gt, gte, lt, lte } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import { Database } from "../database";
@@ -26,6 +26,31 @@ export const YearRepositoryLive = Layer.effect(
           where: payload.school ? eq(tables.Years.school, payload.school) : undefined,
         }),
       );
+    });
+
+    const createYearClasses = createYearClassesCore({
+      insertClass: Effect.fn(function* (payload) {
+        const { execute } = yield* databaseContext;
+        yield* execute((db) =>
+          db.insert(tables.Classes).values({
+            identifierInYear: payload.identifier,
+            startYear: payload.startYear,
+            school: payload.school,
+          }),
+        );
+      }),
+
+      insertTeacherLink: Effect.fn(function* (payload) {
+        const { execute } = yield* databaseContext;
+        yield* execute((db) =>
+          db.insert(tables.TeachersToClasses).values({
+            teacher: payload.teacher,
+            classIdentifier: payload.identifier,
+            classStartYear: payload.startYear,
+            school: payload.school,
+          }),
+        );
+      }),
     });
 
     return {
@@ -74,25 +99,7 @@ export const YearRepositoryLive = Layer.effect(
             school: payload.school,
           }),
         );
-        for (const cls of payload.classes) {
-          yield* execute((db) =>
-            db.insert(tables.Classes).values({
-              identifierInYear: cls.identifierInYear,
-              startYear: payload.startYear,
-              school: payload.school,
-            }),
-          );
-          for (const teacher of cls.teachers) {
-            yield* execute((db) =>
-              db.insert(tables.TeachersToClasses).values({
-                teacher,
-                classIdentifier: cls.identifierInYear,
-                classStartYear: payload.startYear,
-                school: payload.school,
-              }),
-            );
-          }
-        }
+        yield* createYearClasses(payload);
       }, Database.asTransactionCustom(databaseContext)),
     };
   }),
