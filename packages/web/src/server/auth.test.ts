@@ -39,9 +39,7 @@ vi.mock("@stu/db/client", () => ({
     select: vi.fn(() => ({
       from: () => ({
         leftJoin: () => ({
-          where: () => ({
-            then: (cb: (rows: typeof state.userRows) => unknown) => Promise.resolve(cb(state.userRows)),
-          }),
+          where: () => Promise.resolve(state.userRows),
         }),
       }),
     })),

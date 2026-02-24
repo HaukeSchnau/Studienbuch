@@ -1,11 +1,11 @@
+import { fileURLToPath, URL } from "node:url";
 import { defineProject } from "vitest/config";
-import viteTsConfigPaths from "vite-tsconfig-paths";
 
 export default defineProject({
-  plugins: [
-    viteTsConfigPaths({
-      projects: ["./tsconfig.json"],
-    }),
-  ],
+  resolve: {
+    alias: {
+      "~": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
   test: {},
 });

@@ -29,13 +29,16 @@ Operational control-plane runbook for the completed big-bang cutover from legacy
 | `bun --filter @stu/web build` | Web build succeeds | PASS | Required |
 | `bun --filter @stu/web typecheck` | Web typecheck succeeds | PASS | Required |
 | `bun --filter @stu/admin-panel build` | Admin panel build succeeds | PASS | Required |
+| `bun run test` | Full workspace tests pass | PASS | Required |
+| `bun run test:sync` | Sync integration tests pass | PASS | Required |
 | `just live-health-web` | `nextjs` + `admin-panel` healthy | PASS | Required |
-| `bun run test:sync` | Sync route contract unchanged | PASS | Required |
-| `bun --filter @stu/app-mobile lint` | Mobile lint may fail | FAIL (known unrelated blocker) | Non-blocking |
-| `bun --filter @stu/app-mobile typecheck` | Mobile typecheck may fail | FAIL (known unrelated blocker) | Non-blocking |
+| `nix build --no-link .#packages.aarch64-linux.oci-nextjs-archive` | Next slot OCI archive builds | PASS | Required |
+| `nix build --no-link .#packages.aarch64-linux.oci-admin-panel-archive` | Admin-panel OCI archive builds | PASS | Required |
+| `bun run lint` | Workspace lint may fail on unrelated mobile issue | FAIL (known unrelated blocker) | Non-blocking |
+| `bun run typecheck` | Workspace typecheck may fail on unrelated mobile issue | FAIL (known unrelated blocker) | Non-blocking |
 
 Known unrelated blockers:
-- `@stu/app-mobile` lint/typecheck failures are tracked outside this web cutover and do not block WS-00..WS-09 acceptance.
+- `@stu/app-mobile` lint/typecheck failures at `packages/app-mobile/src/app/setup/name-and-year.tsx` are tracked outside this web cutover and do not block WS-00..WS-09 acceptance.
 
 ## Rollback Procedure
 
@@ -71,4 +74,3 @@ Rollback note:
 | WS-07 verification execution | Release owner |
 | WS-08 rollback execution | On-call / release owner |
 | WS-09 cleanup closure | Web platform owner + tech lead |
-
