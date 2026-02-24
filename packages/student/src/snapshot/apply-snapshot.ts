@@ -255,4 +255,33 @@ export const applySnapshotToLocalDatabase = Effect.fn(function* (snapshot: Snaps
         }),
     );
   }
+
+  for (const task of snapshot.tasks ?? []) {
+    yield* db.execute((client) =>
+      client
+        .insert(tables.tasks)
+        .values({
+          id: task.id,
+          title: task.title,
+          description: task.description,
+          dueDate: new Date(task.dueDate),
+          course: task.course,
+          assignee: task.assignee,
+          images: task.images,
+          done: task.done,
+        })
+        .onConflictDoUpdate({
+          target: [tables.tasks.id],
+          set: {
+            title: task.title,
+            description: task.description,
+            dueDate: new Date(task.dueDate),
+            course: task.course,
+            assignee: task.assignee,
+            images: task.images,
+            done: task.done,
+          },
+        }),
+    );
+  }
 });
