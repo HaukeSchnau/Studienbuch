@@ -72,7 +72,7 @@
     - `bun test packages/db/src/schema-parity.test.ts` (pass)
     - `bun test packages/student/src/schema-parity.test.ts` (pass)
 - In progress:
-- `PR-05: Snapshot Mapping Deduplication` (slice 11)
+- `PR-05: Snapshot Mapping Deduplication` (slice 12)
   - Changes landed in:
     - `refactor(student): share snapshot apply helper with app-mobile` (`klu`)
     - `refactor(snapshot): extract shared dedupe helpers` (`sps`)
@@ -85,6 +85,7 @@
     - `feat(snapshot): add shared task snapshot contract and mapper` (`twm`)
     - `feat(snapshot): include task projections in resolver output` (`loq`)
     - `feat: upsert snapshot tasks in student apply path` (`mzv`)
+    - `test: cover task projections in snapshot fixtures` (`on`)
   - Verification run:
     - `bun --filter @stu/lib typecheck` (pass)
     - `bun --filter @stu/api typecheck` (pass)
@@ -94,7 +95,7 @@
     - `bun test packages/student/src/snapshot/apply-snapshot.test.ts` (pass)
     - `bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts` (pass)
     - `bun run test:sync` (pass)
-- `PR-07: Repository Dedup Track A (Org/Core Repos)` (slice 5; class/year/course repository dedup plus semester/school read-path dedup)
+- `PR-07: Repository Dedup Track A (Org/Core Repos)` (slice 6; class/year/course repository dedup plus semester/school read-path dedup and create-path orchestration dedup)
   - Changes landed in:
     - `refactor(repo): extract shared class repository logic` (`yv`)
     - `refactor(repo): share year class creation through org helper` (`xr`)
@@ -102,6 +103,7 @@
     - `refactor(repo): extract shared semester repository read logic` (`vo`)
     - `refactor(repo): extract shared school repository read logic` (`wov`)
     - `refactor(repo): share semester insert mapping helper` (`qx`)
+    - `refactor: share semester create-upsert orchestration` (`vvs`)
   - Verification run:
     - `bun --filter @stu/lib typecheck` (pass)
     - `bun --filter @stu/db typecheck` (pass)
@@ -113,7 +115,7 @@
     - `bun --filter @stu/db test:live -- src/applicators.live.integration.test.ts` (pass)
 - Next queued:
 - `PR-05`: verify and remove any remaining transitional snapshot mapper shims; add/extend end-to-end snapshot task projection flow coverage
-- `PR-07`: next slice is remaining org/core cleanup after read-path dedup (semester create path/shared upsert abstraction; evaluate whether any safe school-create helper extraction remains)
+- `PR-07`: evaluate and extract any safe remaining school-create helper without coupling db-only defaults/env wiring
 
 ## Phase Plan And Parallel Tracks
 
