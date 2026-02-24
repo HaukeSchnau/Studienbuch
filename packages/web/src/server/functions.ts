@@ -16,6 +16,7 @@ import {
   listClassesByYearInputSchema,
   listPersons,
   listSchools,
+  schoolIdInputSchema,
   listUserScopeOptions,
   listUserScopeOptionsInputSchema,
   listUsers,
@@ -47,6 +48,23 @@ import {
   requireCurrentUserPermission,
 } from "./auth";
 
+const addPersonCompatInputSchema = z.union([
+  addPersonInputSchema,
+  z.object({
+    name: z.string().min(1),
+    email: z.string().optional(),
+    salutation: z.unknown().optional(),
+    abbrv: z.string().optional(),
+  }),
+]);
+
+const splitLegacyName = (name: string) => {
+  const parts = name.trim().split(/\s+/);
+  const firstName = parts[0] ?? "";
+  const lastName = parts.slice(1).join(" ") || firstName;
+  return { firstName, lastName };
+};
+
 export const getSessionFn = createServerFn({ method: "GET" }).handler(async () => {
   const user = await getCurrentSessionUser();
   if (!user) {
@@ -71,10 +89,16 @@ export const hasPermissionFn = createServerFn({ method: "POST" })
   .validator(z.object({ permission: z.enum(PERMISSIONS) }))
   .handler(async ({ data }) => hasCurrentUserPermission(data.permission as Permission));
 
-export const listSchoolsFn = createServerFn({ method: "GET" }).handler(async () => listSchools());
+export const listSchoolsFn = createServerFn({ method: "GET" }).handler(async () => {
+  const schools = await listSchools();
+  return schools.map((school) => ({
+    ...school,
+    theme: (school.theme ?? {}) as Record<string, {}>,
+  }));
+});
 
 export const getSchoolThemeFn = createServerFn({ method: "GET" })
-  .validator(z.string())
+  .validator(schoolIdInputSchema)
   .handler(async ({ data }) => findSchoolTheme(data));
 
 export const setSchoolThemeFn = createServerFn({ method: "POST" })
@@ -152,13 +176,28 @@ export const listUserScopeOptionsFn = createServerFn({ method: "GET" })
 
 export const listPersonsFn = createServerFn({ method: "GET" }).handler(async () => {
   await requireCurrentUserPermission("EDIT_USERS");
-  return listPersons();
+  const persons = await listPersons();
+  return persons.map((person) => ({
+    ...person,
+    name: `${person.firstName} ${person.lastName}`.trim(),
+  }));
 });
 
 export const addPersonFn = createServerFn({ method: "POST" })
-  .validator(addPersonInputSchema)
+  .validator(addPersonCompatInputSchema)
   .handler(async ({ data }) => {
     await requireCurrentUserPermission("EDIT_USERS");
+    if ("name" in data) {
+      const { firstName, lastName } = splitLegacyName(data.name);
+      return addPerson({
+        firstName,
+        lastName,
+        email: data.email,
+        salutation: data.salutation as z.infer<typeof addPersonInputSchema>["salutation"],
+        abbrv: data.abbrv,
+      });
+    }
+
     return addPerson(data);
   });
 

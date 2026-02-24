@@ -5,7 +5,7 @@ import { z } from "zod";
 import { CourseList } from "~/components/course/CourseList";
 import { PageHeading } from "~/components/layout/PageHeading";
 import { api } from "~/infrastructure/trpc/react";
-import { requirePermission } from "~/routes/_guards";
+import { requirePermission } from "~/infrastructure/router/guards";
 
 export const Route = createFileRoute("/admin/schools/$school/years/$startYear/courses")({
   beforeLoad: async () => {

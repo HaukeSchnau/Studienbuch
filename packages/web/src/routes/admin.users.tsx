@@ -1,6 +1,6 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router";
 
-import { requirePermission } from "~/routes/_guards";
+import { requirePermission } from "~/infrastructure/router/guards";
 
 export const Route = createFileRoute("/admin/users")({
   beforeLoad: async () => {

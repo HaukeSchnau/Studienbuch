@@ -3,7 +3,7 @@ import { Outlet, createFileRoute } from "@tanstack/react-router";
 
 import { SchoolLogo } from "~/components/SchoolLogo";
 import { Theme } from "~/components/Theme";
-import { requireAuth } from "~/routes/_guards";
+import { requireAuth } from "~/infrastructure/router/guards";
 import { AdminNav } from "~/legacy-next-app/app/admin/nav/AdminNav";
 
 export const Route = createFileRoute("/admin")({

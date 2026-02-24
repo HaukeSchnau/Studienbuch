@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { Salutation } from "@stu/lib";
 import { SALUTATIONS } from "@stu/lib";
 import type { FormApi } from "@tanstack/react-form";

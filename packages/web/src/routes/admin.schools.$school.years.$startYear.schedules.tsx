@@ -5,7 +5,7 @@ import { z } from "zod";
 import { PageHeading } from "~/components/layout/PageHeading";
 import { TimetableManager } from "~/features/timetable/TimetableManager";
 import { api } from "~/infrastructure/trpc/react";
-import { requirePermission } from "~/routes/_guards";
+import { requirePermission } from "~/infrastructure/router/guards";
 
 export const Route = createFileRoute("/admin/schools/$school/years/$startYear/schedules")({
   beforeLoad: async () => {

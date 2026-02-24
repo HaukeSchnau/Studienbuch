@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { appRouter, createTRPCContext } from "@stu/api";
 import { getSessionTokenFromHeaders } from "@stu/lib-server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";

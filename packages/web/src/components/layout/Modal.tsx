@@ -27,6 +27,12 @@ export const Modal = ({ open, onClose, children }: Props) => {
           onClose();
         }
       }}
+      onKeyDown={(e) => {
+        if (e.target === ref.current && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onClose();
+        }
+      }}
       className="rounded-3xl p-0 backdrop:bg-black-20 backdrop:backdrop-blur-sm backdrop:backdrop-filter"
     >
       <div className="p-8">{children}</div>

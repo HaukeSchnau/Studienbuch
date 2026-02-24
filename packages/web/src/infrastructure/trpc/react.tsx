@@ -58,7 +58,6 @@ type SessionData = { user: WebSessionUser } | null;
 type YearsInput = { school?: SchoolId; activeOnly?: boolean };
 type YearIdInput = { school: SchoolId; startYear: number };
 type ClassesByYearInput = YearIdInput;
-type SchoolThemeData = { theme: Theme; image?: string };
 
 type ListedUser = {
   id: string;

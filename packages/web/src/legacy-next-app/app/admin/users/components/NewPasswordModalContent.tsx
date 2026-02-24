@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { formalName, generateRandomPassword } from "@stu/lib";
 import { useForm } from "@tanstack/react-form";
 import { zodValidator } from "@tanstack/zod-form-adapter";
