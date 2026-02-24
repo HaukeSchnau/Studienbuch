@@ -1,15 +1,46 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:base"],
+  "automerge": false,
   "packageRules": [
     {
       "matchPackagePatterns": ["^@stu/"],
       "enabled": false
+    },
+    {
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "groupName": "expo ecosystem majors",
+      "groupSlug": "expo-ecosystem-majors",
+      "matchUpdateTypes": ["major"],
+      "matchPackagePatterns": ["^expo($|[-/])", "^@expo/", "^react-native($|[-/])", "^@react-native/", "^nativewind$"]
+    },
+    {
+      "groupName": "testing and tooling majors",
+      "groupSlug": "testing-tooling-majors",
+      "matchUpdateTypes": ["major"],
+      "matchPackagePatterns": [
+        "^vitest$",
+        "^@vitest/",
+        "^vite($|[-/])",
+        "^@vitejs/",
+        "^tailwindcss$",
+        "^babel-loader$",
+        "^@storybook/",
+        "^lefthook$",
+        "^sherif$",
+        "^turbo$"
+      ]
     }
   ],
   "updateInternalDeps": true,
   "rangeStrategy": "bump",
-  "automerge": true,
   "npm": {
     "fileMatch": ["(^|/)package\\.json$", "(^|/)package\\.json\\.hbs$"]
   }
