@@ -12,20 +12,29 @@ type RouterCompat = {
 };
 
 const normalizeHref = (href: NavigationTarget) => (typeof href === "string" ? href : href.toString());
+const normalizeSearch = (search: unknown) => {
+  if (typeof search === "string") {
+    return search;
+  }
+  if (search && typeof search === "object" && "str" in search && typeof search.str === "string") {
+    return search.str;
+  }
+  return "";
+};
 
 export const usePathname = () => useRouterState({ select: (state) => state.location.pathname });
 
 export const useSearchParams = () => {
-  const search = useRouterState({ select: (state) => state.location.search.str });
+  const search = useRouterState({ select: (state) => normalizeSearch(state.location.search) });
   return new URLSearchParams(search);
 };
 
 export const useParams = <T extends Record<string, string | string[] | undefined> = Record<string, string>>() => {
-  return useRouteParams({ strict: false }) as T;
+  return useRouteParams({ strict: false } as never) as T;
 };
 
 export const useRouter = (): RouterCompat => {
-  const navigate = useNavigate({ from: "__root__" });
+  const navigate = useNavigate();
 
   return {
     back: () => {

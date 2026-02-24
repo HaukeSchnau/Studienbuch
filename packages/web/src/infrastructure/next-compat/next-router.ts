@@ -19,6 +19,16 @@ export interface NextRouterCompat {
   replace: (url: UrlInput) => Promise<boolean>;
 }
 
+const normalizeSearch = (search: unknown): string => {
+  if (typeof search === "string") {
+    return search;
+  }
+  if (search && typeof search === "object" && "str" in search && typeof search.str === "string") {
+    return search.str;
+  }
+  return "";
+};
+
 const parseQuery = (searchParams: URLSearchParams): Query => {
   const query: Query = {};
 
@@ -69,17 +79,18 @@ const toHref = (input: UrlInput): string => {
 };
 
 export const useRouter = (): NextRouterCompat => {
-  const navigate = useNavigate({ from: "__root__" });
+  const navigate = useNavigate();
   const location = useRouterState({ select: (state) => state.location });
+  const search = normalizeSearch(location.search);
 
   return {
-    asPath: `${location.pathname}${location.search.str}${location.hash}`,
+    asPath: `${location.pathname}${search}${location.hash}`,
     pathname: location.pathname,
     push: async (input: UrlInput) => {
       await navigate({ to: toHref(input) as never });
       return true;
     },
-    query: parseQuery(new URLSearchParams(location.search.str)),
+    query: parseQuery(new URLSearchParams(search)),
     replace: async (input: UrlInput) => {
       await navigate({ to: toHref(input) as never, replace: true });
       return true;

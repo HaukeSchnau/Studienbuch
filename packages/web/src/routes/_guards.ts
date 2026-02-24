@@ -8,7 +8,7 @@ export const requireAuth = async (redirectTo?: string) => {
   if (!session?.user) {
     throw redirect({
       to: "/login",
-      search: redirectTo ? { redirect: redirectTo } : undefined,
+      search: redirectTo ? ({ redirect: redirectTo } as never) : undefined,
     });
   }
   return session.user;
@@ -17,6 +17,6 @@ export const requireAuth = async (redirectTo?: string) => {
 export const requirePermission = async (permission: Permission, redirectTo = "/") => {
   const allowed = await hasPermissionFn({ data: { permission } });
   if (!allowed) {
-    throw redirect({ to: redirectTo });
+    throw redirect({ to: redirectTo as never });
   }
 };
