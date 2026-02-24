@@ -275,6 +275,18 @@ export const mapSemestersForInsert = <TSemester extends SemesterSimpleDateColumn
     end: convertDate(semester.end),
   }));
 
+type SemesterRepositoryWriteAdapter<TSemester extends SemesterSimpleDateColumns> = {
+  convertDate: (date: SimpleDate) => Date;
+  upsertSemesters: (payload: SemesterInsertRow<TSemester>[]) => Effect.Effect<void, UnknownDatabaseError>;
+};
+
+export const createSemestersCore = <TSemester extends SemesterSimpleDateColumns>(
+  adapter: SemesterRepositoryWriteAdapter<TSemester>,
+) =>
+  Effect.fn(function* (payload: TSemester[]) {
+    yield* adapter.upsertSemesters(mapSemestersForInsert(payload, adapter.convertDate));
+  });
+
 type SemesterRepositoryAdapter<TSemester extends SemesterDateColumns> = {
   getSemesterOnDate: (date: Date, school: SchoolId) => Effect.Effect<TSemester | undefined, UnknownDatabaseError>;
   getNextSemesterAfterDate: (date: Date, school: SchoolId) => Effect.Effect<TSemester | undefined, UnknownDatabaseError>;

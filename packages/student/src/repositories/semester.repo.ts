@@ -1,4 +1,4 @@
-import { mapSemestersForInsert, semesterRepositoryLogic, SemesterRepository, simpleDateToDate } from "@stu/lib";
+import { createSemestersCore, semesterRepositoryLogic, SemesterRepository, simpleDateToDate } from "@stu/lib";
 import { and, asc, desc, eq, gt, gte, lt, lte, or, sql } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import * as tables from "../schema";
@@ -66,24 +66,27 @@ export const SemesterRepositoryLive = Layer.effect(
     });
 
     return {
-      createSemesters: Effect.fn(function* (payload) {
-        const { execute } = yield* databaseContext;
-        yield* execute((db) =>
-          db
-            .insert(tables.semesters)
-            .values(mapSemestersForInsert(payload, simpleDateToDate))
-            .onConflictDoUpdate({
-              target: [tables.semesters.school, tables.semesters.type, tables.semesters.year],
-              set: {
-                name: sql`excluded.name`,
-                start: sql`excluded.start`,
-                end: sql`excluded.end`,
-                type: sql`excluded.type`,
-                year: sql`excluded.year`,
-                school: sql`excluded.school`,
-              },
-            }),
-        );
+      createSemesters: createSemestersCore({
+        convertDate: simpleDateToDate,
+        upsertSemesters: Effect.fn(function* (payload) {
+          const { execute } = yield* databaseContext;
+          yield* execute((db) =>
+            db
+              .insert(tables.semesters)
+              .values(payload)
+              .onConflictDoUpdate({
+                target: [tables.semesters.school, tables.semesters.type, tables.semesters.year],
+                set: {
+                  name: sql`excluded.name`,
+                  start: sql`excluded.start`,
+                  end: sql`excluded.end`,
+                  type: sql`excluded.type`,
+                  year: sql`excluded.year`,
+                  school: sql`excluded.school`,
+                },
+              }),
+          );
+        }),
       }),
 
       ...semesterRepository,
