@@ -1,9 +1,5 @@
 {
   "window.title": "${activeEditorShort}${separator}Studienbuch${separator}${profileName}",
-  "editor.codeActionsOnSave": {
-    "source.fixAll.biome": "explicit"
-  },
-  "editor.defaultFormatter": "biomejs.biome",
   "editor.formatOnSave": true,
   "tailwindCSS.experimental.classRegex": [
     ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
@@ -48,19 +44,7 @@
     "^drizzle-orm/mysql-core$",
     "^drizzle-orm/.+/columns(/.+)?$"
   ],
-  "[typescript]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[typescriptreact]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
   "files.autoSave": "afterDelay",
-  "[javascript]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
-  "[json]": {
-    "editor.defaultFormatter": "biomejs.biome"
-  },
   "[swift]": {
     "editor.defaultFormatter": "vknabel.vscode-apple-swift-format"
   },

@@ -1,7 +1,6 @@
 {
   "recommendations": [
     "expo.vscode-expo-tools",
-    "biomejs.biome",
     "yoavbls.pretty-ts-errors",
     "bradlc.vscode-tailwindcss",
     "vitest.explorer",

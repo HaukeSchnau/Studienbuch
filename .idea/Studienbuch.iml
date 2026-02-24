@@ -34,10 +34,6 @@
       <excludeFolder url="file://$MODULE_DIR$/packages/lib/dist" />
       <excludeFolder url="file://$MODULE_DIR$/temp" />
       <excludeFolder url="file://$MODULE_DIR$/tmp" />
-      <excludeFolder url="file://$MODULE_DIR$/tooling/eslint/.cache" />
-      <excludeFolder url="file://$MODULE_DIR$/tooling/eslint/.turbo" />
-      <excludeFolder url="file://$MODULE_DIR$/tooling/prettier/.cache" />
-      <excludeFolder url="file://$MODULE_DIR$/tooling/prettier/.turbo" />
       <excludeFolder url="file://$MODULE_DIR$/tooling/tailwind/.cache" />
       <excludeFolder url="file://$MODULE_DIR$/tooling/tailwind/.turbo" />
       <excludeFolder url="file://$MODULE_DIR$/tooling/testing/.turbo" />
