@@ -1,4 +1,4 @@
-import { dateToSimpleDate, HolidayRepository, type StateCode, simpleDateToDate } from "@stu/lib";
+import { HolidayRepository, type StateCode, simpleDateToDate, toHolidayWithSimpleDate } from "@stu/lib";
 import { and, eq } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import * as tables from "../schema";
@@ -20,13 +20,7 @@ export const HolidayRepositoryLive = Layer.effect(
           ),
         }),
       );
-      return (
-        holiday && {
-          ...holiday,
-          start: dateToSimpleDate(holiday.start),
-          end: dateToSimpleDate(holiday.end),
-        }
-      );
+      return holiday && toHolidayWithSimpleDate(holiday);
     });
 
     return {
@@ -53,13 +47,7 @@ export const HolidayRepositoryLive = Layer.effect(
       getAllHolidays: Effect.fn(function* () {
         const { execute } = yield* databaseContext;
         return yield* execute((db) => db.query.holidays.findMany()).pipe(
-          Effect.map((holidays) =>
-            holidays.map((holiday) => ({
-              ...holiday,
-              start: dateToSimpleDate(holiday.start),
-              end: dateToSimpleDate(holiday.end),
-            })),
-          ),
+          Effect.map((holidays) => holidays.map(toHolidayWithSimpleDate)),
         );
       }),
     };
