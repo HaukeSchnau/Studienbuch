@@ -18,6 +18,8 @@ const joinedStudentId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 const teacherId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const missingTimetableCourseId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 const orgInitiatorId = "00000000-0000-0000-0000-000000000000";
+const runLivePostgresTests = process.env.RUN_LIVE_DB_TESTS === "1";
+const describeLivePostgres = runLivePostgresTests ? describe : describe.skip;
 
 const loadDbModules = async () => {
   const modules = await import("./index");
@@ -58,7 +60,7 @@ const absenceRecorded = (courseIds: string[]): Extract<DomainEvent, { type: "abs
   },
 });
 
-describe("live postgres applicator integration", () => {
+describeLivePostgres("live postgres applicator integration", () => {
   let dbClient: Awaited<ReturnType<typeof createClient>>["client"];
   let db: Awaited<ReturnType<typeof createClient>>["db"];
   let dbModules: Awaited<ReturnType<typeof loadDbModules>>;
@@ -66,7 +68,7 @@ describe("live postgres applicator integration", () => {
   beforeAll(async () => {
     const databaseUrl = process.env.MANAGEMENT_DATABASE_URL;
     if (!databaseUrl) {
-      throw new Error("MANAGEMENT_DATABASE_URL is required for live database tests");
+      throw new Error("MANAGEMENT_DATABASE_URL is required when RUN_LIVE_DB_TESTS=1");
     }
 
     const liveClient = await createClient(databaseUrl);
@@ -76,7 +78,7 @@ describe("live postgres applicator integration", () => {
   });
 
   afterAll(async () => {
-    await dbClient.end();
+    await dbClient?.end();
   });
 
   const seedSchoolGraph = async () => {

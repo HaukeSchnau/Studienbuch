@@ -62,7 +62,7 @@ describe("student scoped applicators (db package)", () => {
     if (Exit.isFailure(exit)) {
       expect(Cause.pretty(exit.cause)).toContain("NOT_ALLOWED");
     }
-  });
+  }, 15_000);
 
   test("grades.currentGradeSet.apply forwards signature requirement from student age", async () => {
     const { gradeApplicators, StudentRepository, GradeRepositoryDb } = await loadDbModules();

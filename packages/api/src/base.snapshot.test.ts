@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Effect } from "effect";
 
 type SnapshotRouteInput = {
@@ -20,46 +20,50 @@ type SnapshotRouteResult =
       };
     };
 
-const resolveSnapshotRequest = mock(
-  async (_input: SnapshotRouteInput): Promise<SnapshotRouteResult> => ({ status: "unauthorized" }),
-);
+const { resolveSnapshotRequest } = vi.hoisted(() => ({
+  resolveSnapshotRequest: vi.fn(
+    async (_input: SnapshotRouteInput): Promise<SnapshotRouteResult> => ({
+      status: "unauthorized",
+    }),
+  ),
+}));
 
-void mock.module("pino", () => ({
-  default: mock(() => ({
-    info: mock(() => undefined),
-    error: mock(() => undefined),
+vi.mock("pino", () => ({
+  default: vi.fn(() => ({
+    info: vi.fn(() => undefined),
+    error: vi.fn(() => undefined),
   })),
 }));
 
-void mock.module("@groundswell/adapter-hono-server", () => ({
-  attachSyncServer: mock(() => undefined),
+vi.mock("@groundswell/adapter-hono-server", () => ({
+  attachSyncServer: vi.fn(() => undefined),
 }));
 
-void mock.module("@hono/trpc-server", () => ({
-  trpcServer: mock(() => async (_c: unknown, next: () => Promise<void>) => next()),
+vi.mock("@hono/trpc-server", () => ({
+  trpcServer: vi.fn(() => async (_c: unknown, next: () => Promise<void>) => next()),
 }));
 
-void mock.module("@stu/api", () => ({
+vi.mock("@stu/api", () => ({
   appRouter: {},
-  createTRPCContext: mock(async () => ({})),
+  createTRPCContext: vi.fn(async () => ({})),
 }));
 
-void mock.module("@stu/db", () => ({
-  sql: mock(() => undefined),
+vi.mock("@stu/db", () => ({
+  sql: vi.fn(() => undefined),
 }));
 
-void mock.module("@stu/db/client", () => ({
+vi.mock("@stu/db/client", () => ({
   db: {
-    execute: mock(async () => undefined),
+    execute: vi.fn(async () => undefined),
   },
 }));
 
-void mock.module("@stu/lib-server", () => ({
-  getSession: mock(async () => null),
-  getSessionTokenFromHeaders: mock(() => null),
+vi.mock("@stu/lib-server", () => ({
+  getSession: vi.fn(async () => null),
+  getSessionTokenFromHeaders: vi.fn(() => null),
 }));
 
-void mock.module("../env", () => ({
+vi.mock("../env", () => ({
   env: {
     AXIOM_DATASET: "test-dataset",
     AXIOM_TOKEN: "test-token",
@@ -67,7 +71,7 @@ void mock.module("../env", () => ({
   },
 }));
 
-void mock.module("./services/snapshot-request-service", () => ({
+vi.mock("./services/snapshot-request-service", () => ({
   resolveSnapshotRequest,
 }));
 

@@ -6,8 +6,8 @@ import {
   evaluateSchemaParity,
   type SchemaParityActualTable,
 } from "@stu/lib";
-import { describe, expect, test } from "bun:test";
 import { getTableConfig } from "drizzle-orm/pg-core";
+import { describe, expect, test } from "vitest";
 
 import {
   Classes,

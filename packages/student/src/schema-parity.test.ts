@@ -6,8 +6,8 @@ import {
   evaluateSchemaParity,
   type SchemaParityActualTable,
 } from "@stu/lib";
-import { describe, expect, test } from "bun:test";
 import { getTableConfig } from "drizzle-orm/sqlite-core";
+import { describe, expect, test } from "vitest";
 
 import {
   classes,
