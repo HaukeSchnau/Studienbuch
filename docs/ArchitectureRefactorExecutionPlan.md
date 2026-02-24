@@ -116,14 +116,16 @@
     - `bun test packages/lib/src/org-event-logic.test.ts` (pass)
     - `bun test packages/lib/src/repository-logic/org.test.ts` (pass)
     - `bun --filter @stu/db test:live -- src/applicators.live.integration.test.ts` (pass)
-- `PR-08: Repository Dedup Track B (Student/Sensitive Repos)` (slice 1; holiday mapping dedup)
+- `PR-08: Repository Dedup Track B (Student/Sensitive Repos)` (slice 2; holiday and student mapping dedup)
   - Changes landed in:
     - `refactor: dedupe holiday date mapping across db and student adapters` (`snt`)
+    - `refactor: dedupe getStudent row-to-domain mapping` (`wn`)
   - Verification run:
     - `bun --filter @stu/lib typecheck` (pass)
     - `bun --filter @stu/db typecheck` (pass)
     - `bun --filter @stu/student typecheck` (pass)
     - `bun test packages/lib/src/repository-logic/holiday.test.ts` (pass)
+    - `bun test packages/lib/src/repository-logic/student.test.ts` (pass)
     - `bun test packages/db/src/applicators.integration.test.ts` (pass)
     - `bun test packages/student/src/applicators.integration.test.ts` (pass)
 - Next queued:
