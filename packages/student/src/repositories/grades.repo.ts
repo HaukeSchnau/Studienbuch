@@ -1,4 +1,10 @@
-import { GradeRepository, GradeTooOldError } from "@stu/lib";
+import {
+  GradeRepository,
+  GradeTooOldError,
+  gradeCourseTypeDatePredicates,
+  gradeCourseTypePredicates,
+  gradePendingSignaturePredicate,
+} from "@stu/lib";
 import { and, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import { Database } from "../database";
@@ -15,21 +21,37 @@ export const GradeRepositoryLive = Layer.effect(
       setCurrentGrade: Effect.fn(function* (payload) {
         const { execute } = yield* databaseContext;
 
+        const [coursePredicate, typePredicate] = gradeCourseTypePredicates(
+          {
+            course: tables.grades.course,
+            type: tables.grades.type,
+          },
+          {
+            course: payload.courseId,
+            type: payload.type,
+          },
+          eq,
+        );
+
         yield* execute((db) =>
-          db
-            .delete(tables.grades)
-            .where(
-              and(
-                eq(tables.grades.course, payload.courseId),
-                eq(tables.grades.type, payload.type),
-                or(isNull(tables.grades.teacherSignature), isNull(tables.grades.parentSignature)),
+          db.delete(tables.grades).where(
+            and(
+              coursePredicate,
+              typePredicate,
+              gradePendingSignaturePredicate(
+                {
+                  teacherSignature: tables.grades.teacherSignature,
+                  parentSignature: tables.grades.parentSignature,
+                },
+                { isNull, or },
               ),
             ),
+          ),
         );
 
         const latestGrade = yield* execute((db) =>
           db.query.grades.findFirst({
-            where: and(eq(tables.grades.course, payload.courseId), eq(tables.grades.type, payload.type)),
+            where: and(coursePredicate, typePredicate),
             orderBy: desc(tables.grades.date),
           }),
         );
@@ -71,24 +93,46 @@ export const GradeRepositoryLive = Layer.effect(
       setTeacherSignature: Effect.fn(function* (payload) {
         const { execute } = yield* databaseContext;
 
+        const [coursePredicate, typePredicate, datePredicate] = gradeCourseTypeDatePredicates(
+          {
+            course: tables.grades.course,
+            type: tables.grades.type,
+            date: tables.grades.date,
+          },
+          {
+            course: payload.course,
+            type: payload.type,
+            date: payload.date,
+          },
+          eq,
+        );
+
         yield* execute((db) =>
           db
             .update(tables.grades)
             .set({
               teacherSignature: payload.signature,
             })
-            .where(
-              and(
-                eq(tables.grades.course, payload.course),
-                eq(tables.grades.date, payload.date),
-                eq(tables.grades.type, payload.type),
-              ),
-            ),
+            .where(and(coursePredicate, datePredicate, typePredicate)),
         );
       }),
 
       setParentSignature: Effect.fn(function* (payload) {
         const { execute } = yield* databaseContext;
+
+        const [coursePredicate, typePredicate, datePredicate] = gradeCourseTypeDatePredicates(
+          {
+            course: tables.grades.course,
+            type: tables.grades.type,
+            date: tables.grades.date,
+          },
+          {
+            course: payload.course,
+            type: payload.type,
+            date: payload.date,
+          },
+          eq,
+        );
 
         yield* execute((db) =>
           db
@@ -96,24 +140,30 @@ export const GradeRepositoryLive = Layer.effect(
             .set({
               parentSignature: payload.signature,
             })
-            .where(
-              and(
-                eq(tables.grades.course, payload.course),
-                eq(tables.grades.date, payload.date),
-                eq(tables.grades.type, payload.type),
-              ),
-            ),
+            .where(and(coursePredicate, datePredicate, typePredicate)),
         );
       }),
 
       restoreLatest: Effect.fn(function* (payload) {
         const { execute } = yield* databaseContext;
 
+        const [coursePredicate, typePredicate] = gradeCourseTypePredicates(
+          {
+            course: tables.grades.course,
+            type: tables.grades.type,
+          },
+          {
+            course: payload.course,
+            type: payload.type,
+          },
+          eq,
+        );
+
         const latestConfirmedGrade = yield* execute((db) =>
           db.query.grades.findFirst({
             where: and(
-              eq(tables.grades.course, payload.course),
-              eq(tables.grades.type, payload.type),
+              coursePredicate,
+              typePredicate,
               isNotNull(tables.grades.teacherSignature),
               isNotNull(tables.grades.parentSignature),
             ),
@@ -128,30 +178,42 @@ export const GradeRepositoryLive = Layer.effect(
         yield* execute((db) =>
           db
             .delete(tables.grades)
-            .where(
-              and(
-                eq(tables.grades.course, payload.course),
-                eq(tables.grades.type, payload.type),
-                gt(tables.grades.date, latestConfirmedGrade.date),
-              ),
-            ),
+            .where(and(coursePredicate, typePredicate, gt(tables.grades.date, latestConfirmedGrade.date))),
         );
       }, Database.asTransactionCustom(databaseContext)),
 
       discardGrade: Effect.fn(function* (payload) {
         const { execute } = yield* databaseContext;
 
+        const [coursePredicate, typePredicate, datePredicate] = gradeCourseTypeDatePredicates(
+          {
+            course: tables.grades.course,
+            type: tables.grades.type,
+            date: tables.grades.date,
+          },
+          {
+            course: payload.course,
+            type: payload.type,
+            date: payload.date,
+          },
+          eq,
+        );
+
         yield* execute((db) =>
-          db
-            .delete(tables.grades)
-            .where(
-              and(
-                eq(tables.grades.course, payload.course),
-                eq(tables.grades.type, payload.type),
-                eq(tables.grades.date, payload.date),
-                or(isNull(tables.grades.teacherSignature), isNull(tables.grades.parentSignature)),
+          db.delete(tables.grades).where(
+            and(
+              coursePredicate,
+              typePredicate,
+              datePredicate,
+              gradePendingSignaturePredicate(
+                {
+                  teacherSignature: tables.grades.teacherSignature,
+                  parentSignature: tables.grades.parentSignature,
+                },
+                { isNull, or },
               ),
             ),
+          ),
         );
       }),
     };

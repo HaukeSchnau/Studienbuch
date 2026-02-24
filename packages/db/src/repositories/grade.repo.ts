@@ -1,4 +1,9 @@
-import type { StudentId } from "@stu/lib";
+import {
+  gradeCourseTypeDatePredicates,
+  gradeCourseTypePredicates,
+  gradePendingSignaturePredicate,
+  type StudentId,
+} from "@stu/lib";
 import { and, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
 import { Effect } from "effect";
 import { Database } from "../database";
@@ -16,17 +21,33 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
     }) {
       const { execute } = yield* Database;
 
+      const [coursePredicate, typePredicate] = gradeCourseTypePredicates(
+        {
+          course: tables.Grades.course,
+          type: tables.Grades.type,
+        },
+        {
+          course: payload.courseId,
+          type: payload.type,
+        },
+        eq,
+      );
+
       yield* execute((db) =>
-        db
-          .delete(tables.Grades)
-          .where(
-            and(
-              eq(tables.Grades.student, payload.studentId),
-              eq(tables.Grades.course, payload.courseId),
-              eq(tables.Grades.type, payload.type),
-              or(isNull(tables.Grades.teacherSignature), isNull(tables.Grades.parentSignature)),
+        db.delete(tables.Grades).where(
+          and(
+            eq(tables.Grades.student, payload.studentId),
+            coursePredicate,
+            typePredicate,
+            gradePendingSignaturePredicate(
+              {
+                teacherSignature: tables.Grades.teacherSignature,
+                parentSignature: tables.Grades.parentSignature,
+              },
+              { isNull, or },
             ),
           ),
+        ),
       );
 
       yield* execute((db) =>
@@ -48,13 +69,21 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
     }) {
       const { execute } = yield* Database;
 
+      const [coursePredicate, typePredicate] = gradeCourseTypePredicates(
+        {
+          course: tables.Grades.course,
+          type: tables.Grades.type,
+        },
+        {
+          course: payload.courseId,
+          type: payload.type,
+        },
+        eq,
+      );
+
       const latestGrade = yield* execute((db) =>
         db.query.Grades.findFirst({
-          where: and(
-            eq(tables.Grades.student, payload.studentId),
-            eq(tables.Grades.course, payload.courseId),
-            eq(tables.Grades.type, payload.type),
-          ),
+          where: and(eq(tables.Grades.student, payload.studentId), coursePredicate, typePredicate),
           orderBy: desc(tables.Grades.date),
         }),
       );
@@ -92,20 +121,27 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
     }) {
       const { execute } = yield* Database;
 
+      const [coursePredicate, typePredicate, datePredicate] = gradeCourseTypeDatePredicates(
+        {
+          course: tables.Grades.course,
+          type: tables.Grades.type,
+          date: tables.Grades.date,
+        },
+        {
+          course: payload.course,
+          type: payload.type,
+          date: payload.date,
+        },
+        eq,
+      );
+
       yield* execute((db) =>
         db
           .update(tables.Grades)
           .set({
             teacherSignature: payload.signature,
           })
-          .where(
-            and(
-              eq(tables.Grades.student, payload.studentId),
-              eq(tables.Grades.course, payload.course),
-              eq(tables.Grades.date, payload.date),
-              eq(tables.Grades.type, payload.type),
-            ),
-          ),
+          .where(and(eq(tables.Grades.student, payload.studentId), coursePredicate, datePredicate, typePredicate)),
       );
     });
 
@@ -118,20 +154,27 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
     }) {
       const { execute } = yield* Database;
 
+      const [coursePredicate, typePredicate, datePredicate] = gradeCourseTypeDatePredicates(
+        {
+          course: tables.Grades.course,
+          type: tables.Grades.type,
+          date: tables.Grades.date,
+        },
+        {
+          course: payload.course,
+          type: payload.type,
+          date: payload.date,
+        },
+        eq,
+      );
+
       yield* execute((db) =>
         db
           .update(tables.Grades)
           .set({
             parentSignature: payload.signature,
           })
-          .where(
-            and(
-              eq(tables.Grades.student, payload.studentId),
-              eq(tables.Grades.course, payload.course),
-              eq(tables.Grades.date, payload.date),
-              eq(tables.Grades.type, payload.type),
-            ),
-          ),
+          .where(and(eq(tables.Grades.student, payload.studentId), coursePredicate, datePredicate, typePredicate)),
       );
     });
 
@@ -142,12 +185,24 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
     }) {
       const { execute } = yield* Database;
 
+      const [coursePredicate, typePredicate] = gradeCourseTypePredicates(
+        {
+          course: tables.Grades.course,
+          type: tables.Grades.type,
+        },
+        {
+          course: payload.course,
+          type: payload.type,
+        },
+        eq,
+      );
+
       const latestConfirmedGrade = yield* execute((db) =>
         db.query.Grades.findFirst({
           where: and(
             eq(tables.Grades.student, payload.studentId),
-            eq(tables.Grades.course, payload.course),
-            eq(tables.Grades.type, payload.type),
+            coursePredicate,
+            typePredicate,
             isNotNull(tables.Grades.teacherSignature),
             isNotNull(tables.Grades.parentSignature),
           ),
@@ -165,8 +220,8 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
           .where(
             and(
               eq(tables.Grades.student, payload.studentId),
-              eq(tables.Grades.course, payload.course),
-              eq(tables.Grades.type, payload.type),
+              coursePredicate,
+              typePredicate,
               gt(tables.Grades.date, latestConfirmedGrade.date),
             ),
           ),
@@ -181,18 +236,36 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
     }) {
       const { execute } = yield* Database;
 
+      const [coursePredicate, typePredicate, datePredicate] = gradeCourseTypeDatePredicates(
+        {
+          course: tables.Grades.course,
+          type: tables.Grades.type,
+          date: tables.Grades.date,
+        },
+        {
+          course: payload.course,
+          type: payload.type,
+          date: payload.date,
+        },
+        eq,
+      );
+
       yield* execute((db) =>
-        db
-          .delete(tables.Grades)
-          .where(
-            and(
-              eq(tables.Grades.student, payload.studentId),
-              eq(tables.Grades.course, payload.course),
-              eq(tables.Grades.date, payload.date),
-              eq(tables.Grades.type, payload.type),
-              or(isNull(tables.Grades.teacherSignature), isNull(tables.Grades.parentSignature)),
+        db.delete(tables.Grades).where(
+          and(
+            eq(tables.Grades.student, payload.studentId),
+            coursePredicate,
+            datePredicate,
+            typePredicate,
+            gradePendingSignaturePredicate(
+              {
+                teacherSignature: tables.Grades.teacherSignature,
+                parentSignature: tables.Grades.parentSignature,
+              },
+              { isNull, or },
             ),
           ),
+        ),
       );
     });
 
