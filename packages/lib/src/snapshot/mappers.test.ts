@@ -402,18 +402,9 @@ describe("snapshot collector helpers", () => {
     };
 
     expect(collectSnapshotSchools(snapshot)).toEqual([sampleCourseSnapshot.school]);
-    expect(collectSnapshotYears(snapshot)).toEqual([
-      duplicateStudent.year,
-      shiftedStudent.year,
-    ]);
-    expect(collectSnapshotClasses(snapshot)).toEqual([
-      sampleStudentSnapshot.class,
-      shiftedStudent.class,
-    ]);
-    expect(collectSnapshotSemesters(snapshot)).toEqual([
-      winterAlternativeCourse.semester,
-      summerCourse.semester,
-    ]);
+    expect(collectSnapshotYears(snapshot)).toEqual([duplicateStudent.year, shiftedStudent.year]);
+    expect(collectSnapshotClasses(snapshot)).toEqual([sampleStudentSnapshot.class, shiftedStudent.class]);
+    expect(collectSnapshotSemesters(snapshot)).toEqual([winterAlternativeCourse.semester, summerCourse.semester]);
     expect(collectSnapshotPersons(snapshot)).toEqual([
       {
         id: sampleStudentSnapshot.id,

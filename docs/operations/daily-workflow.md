@@ -65,11 +65,13 @@ just live-down
 ## Optional Port Overrides
 
 For `live-up-dev`:
+
 - `STU_API_PORT`
 - `STU_NEXTJS_PORT`
 - `STU_ADMIN_PANEL_PORT`
 
 For `live-up-dev-debug` additionally:
+
 - `STU_DATABASE_PORT`
 - `STU_LEGACY_DATABASE_PORT`
 - `STU_EVENT_STREAM_PORT`

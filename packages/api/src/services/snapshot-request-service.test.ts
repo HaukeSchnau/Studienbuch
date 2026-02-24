@@ -1,9 +1,6 @@
 import { sampleSnapshotResponse, type SnapshotResponse } from "@stu/lib";
 import { describe, expect, it, vi } from "vitest";
-import {
-  createResolveSnapshotRequest,
-  type SnapshotRequestDependencies,
-} from "./snapshot-request-service";
+import { createResolveSnapshotRequest, type SnapshotRequestDependencies } from "./snapshot-request-service";
 
 const USER_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const STUDENT_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -12,14 +9,12 @@ const createDependencies = () => {
   const resolveUserIdFromHeaders = vi.fn<SnapshotRequestDependencies["resolveUserIdFromHeaders"]>(
     async (_headers: Headers) => null,
   );
-  const resolveSnapshotForUser = vi.fn<SnapshotRequestDependencies["resolveSnapshotForUser"]>(
-    async (_input) => ({
-      students: [],
-      courses: [],
-      absences: [],
-      grades: [],
-    }),
-  );
+  const resolveSnapshotForUser = vi.fn<SnapshotRequestDependencies["resolveSnapshotForUser"]>(async (_input) => ({
+    students: [],
+    courses: [],
+    absences: [],
+    grades: [],
+  }));
 
   return {
     dependencies: {

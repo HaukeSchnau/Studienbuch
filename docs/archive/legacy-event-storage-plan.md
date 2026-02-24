@@ -7,6 +7,7 @@ Source: previously stored at `packages/api/src/router/events/New-Plan.md`.
 This document described an early concept based on MongoDB + Neo4j for event storage/relationships. The current architecture does **not** use that model.
 
 Current canonical architecture references:
+
 - `docs/architecture/runtime-topology.md`
 - `docs/architecture/sync-and-events.md`
 - `docs/adr/0001-standalone-api-mobile-priority.md`

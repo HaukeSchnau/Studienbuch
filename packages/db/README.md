@@ -12,6 +12,7 @@ Server-side Postgres schema, repositories, and event applicators.
 ## Public Surface
 
 From `src/index.ts`:
+
 - `applicators`
 - `Database` layer exports
 - repository exports

@@ -26,6 +26,7 @@
 ### Course Topics
 
 Used for course-scoped updates (examples):
+
 - `org.courses.created`
 - `org.timetable.entryCreated`
 - `org.timetable.substituted`
@@ -34,6 +35,7 @@ Used for course-scoped updates (examples):
 ### Year Topics
 
 Used for year/school calendar updates (examples):
+
 - `org.holiday.created`
 - `org.year.started`
 - `org.school.founded`

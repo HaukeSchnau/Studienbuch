@@ -22,13 +22,8 @@ const defaultDependencies: SnapshotRequestDependencies = {
   resolveSnapshotForUser,
 };
 
-export const createResolveSnapshotRequest = (
-  dependencies: SnapshotRequestDependencies = defaultDependencies,
-) => {
-  return async ({
-    headers,
-    getBody,
-  }: ResolveSnapshotRequestInput): Promise<SnapshotRequestResult> => {
+export const createResolveSnapshotRequest = (dependencies: SnapshotRequestDependencies = defaultDependencies) => {
+  return async ({ headers, getBody }: ResolveSnapshotRequestInput): Promise<SnapshotRequestResult> => {
     const userId = await dependencies.resolveUserIdFromHeaders(headers);
     if (!userId) {
       return { status: "unauthorized" };

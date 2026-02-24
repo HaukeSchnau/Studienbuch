@@ -111,9 +111,7 @@ describe("schema parity (student)", () => {
     expect(allowlistNames.every((tableName) => tableName in sqliteAllowlistTableMetadata)).toBe(true);
     expect(
       (
-        Object.keys(sqliteAllowlistTableMetadata) as Array<
-          (typeof SQLITE_INTENTIONALLY_DIVERGENT_TABLES)[number]
-        >
+        Object.keys(sqliteAllowlistTableMetadata) as Array<(typeof SQLITE_INTENTIONALLY_DIVERGENT_TABLES)[number]>
       ).every((tableName) => allowlistNames.includes(tableName)),
     ).toBe(true);
   });

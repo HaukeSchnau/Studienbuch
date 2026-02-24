@@ -74,11 +74,17 @@ const studentDomainTableMetadata = {
   grades: extractTableMetadata(Grades),
   absence_days: extractTableMetadata(AbsenceDays),
   course_absences: extractTableMetadata(CourseAbsences),
-} satisfies Record<(typeof POSTGRES_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS)[number]["tableName"], SchemaParityActualTable>;
+} satisfies Record<
+  (typeof POSTGRES_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS)[number]["tableName"],
+  SchemaParityActualTable
+>;
 
 const substitutionsTableMetadata = {
   substitutions: extractTableMetadata(Substitutions),
-} satisfies Record<(typeof POSTGRES_SUBSTITUTIONS_TABLE_PARITY_CONTRACTS)[number]["tableName"], SchemaParityActualTable>;
+} satisfies Record<
+  (typeof POSTGRES_SUBSTITUTIONS_TABLE_PARITY_CONTRACTS)[number]["tableName"],
+  SchemaParityActualTable
+>;
 
 const postgresAllowlistTableMetadata = {
   rooms: extractTableMetadata(Rooms),
@@ -113,9 +119,7 @@ describe("schema parity (db)", () => {
     expect(allowlistNames.every((tableName) => tableName in postgresAllowlistTableMetadata)).toBe(true);
     expect(
       (
-        Object.keys(postgresAllowlistTableMetadata) as Array<
-          (typeof POSTGRES_INTENTIONALLY_DIVERGENT_TABLES)[number]
-        >
+        Object.keys(postgresAllowlistTableMetadata) as Array<(typeof POSTGRES_INTENTIONALLY_DIVERGENT_TABLES)[number]>
       ).every((tableName) => allowlistNames.includes(tableName)),
     ).toBe(true);
   });

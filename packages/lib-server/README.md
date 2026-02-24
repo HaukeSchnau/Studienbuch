@@ -13,6 +13,7 @@ Server-side helper layer built on domain and repository packages.
 ## Public Surface
 
 From `src/index.ts`:
+
 - `auth`
 - `infrastructure`
 - `notifications`

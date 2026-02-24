@@ -1,9 +1,4 @@
-import type {
-  CourseSnapshot,
-  SnapshotResponse,
-  StudentSnapshot,
-  TaskProjectionSnapshot,
-} from "./snapshot";
+import type { CourseSnapshot, SnapshotResponse, StudentSnapshot, TaskProjectionSnapshot } from "./snapshot";
 
 export const studentId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 export const courseId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";

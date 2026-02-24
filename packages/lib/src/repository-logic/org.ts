@@ -24,9 +24,7 @@ export type SchoolsByStateLookupPayload = {
 type SchoolRepositoryAdapter<TSchool, TSchoolByState extends { id: SchoolId; name: string }> = {
   getSchool: (payload: SchoolLookupPayload) => Effect.Effect<TSchool | undefined, UnknownDatabaseError>;
   insertSchool: (payload: SchoolCreatePayload) => Effect.Effect<void, UnknownDatabaseError>;
-  getSchoolsByState: (
-    payload: SchoolsByStateLookupPayload,
-  ) => Effect.Effect<TSchoolByState[], UnknownDatabaseError>;
+  getSchoolsByState: (payload: SchoolsByStateLookupPayload) => Effect.Effect<TSchoolByState[], UnknownDatabaseError>;
 };
 
 type SchoolRepositoryWriteAdapter = Pick<
@@ -165,10 +163,7 @@ type CourseRepositoryAdapter<TCourse extends CourseSemesterColumns> = {
     semesterYear: number;
     isMandatory: boolean;
   }) => Effect.Effect<void, UnknownDatabaseError>;
-  insertTeacherLink: (payload: {
-    course: string;
-    teacher: string;
-  }) => Effect.Effect<void, UnknownDatabaseError>;
+  insertTeacherLink: (payload: { course: string; teacher: string }) => Effect.Effect<void, UnknownDatabaseError>;
   insertClassLink: (payload: {
     course: string;
     school: SchoolId;
@@ -177,7 +172,10 @@ type CourseRepositoryAdapter<TCourse extends CourseSemesterColumns> = {
   }) => Effect.Effect<void, UnknownDatabaseError>;
 };
 
-type CourseRepositoryWriteAdapter = Pick<CourseRepositoryAdapter<CourseSemesterColumns>, "insertCourse" | "insertTeacherLink" | "insertClassLink">;
+type CourseRepositoryWriteAdapter = Pick<
+  CourseRepositoryAdapter<CourseSemesterColumns>,
+  "insertCourse" | "insertTeacherLink" | "insertClassLink"
+>;
 
 type CourseWithSemester<TCourse extends CourseSemesterColumns> = Omit<TCourse, "semesterType" | "semesterYear"> & {
   semester: {
@@ -224,7 +222,9 @@ const createCourseCore = (adapter: CourseRepositoryWriteAdapter) =>
     }
   });
 
-export const courseRepositoryLogic = <TCourse extends CourseSemesterColumns>(adapter: CourseRepositoryAdapter<TCourse>) => {
+export const courseRepositoryLogic = <TCourse extends CourseSemesterColumns>(
+  adapter: CourseRepositoryAdapter<TCourse>,
+) => {
   const getCourse = Effect.fn(function* (payload: CourseLookupPayload) {
     const course = yield* adapter.getCourse(payload);
     if (!course) return undefined;
@@ -289,7 +289,10 @@ export const createSemestersCore = <TSemester extends SemesterSimpleDateColumns>
 
 type SemesterRepositoryAdapter<TSemester extends SemesterDateColumns> = {
   getSemesterOnDate: (date: Date, school: SchoolId) => Effect.Effect<TSemester | undefined, UnknownDatabaseError>;
-  getNextSemesterAfterDate: (date: Date, school: SchoolId) => Effect.Effect<TSemester | undefined, UnknownDatabaseError>;
+  getNextSemesterAfterDate: (
+    date: Date,
+    school: SchoolId,
+  ) => Effect.Effect<TSemester | undefined, UnknownDatabaseError>;
   getLatestSemester: (school: SchoolId) => Effect.Effect<TSemester | undefined, UnknownDatabaseError>;
   semestersInYear: (year: Year) => Effect.Effect<TSemester[], UnknownDatabaseError>;
 };
@@ -302,7 +305,9 @@ const toSemesterWithSimpleDate = <TSemester extends SemesterDateColumns>(
   end: dateToSimpleDate(semester.end),
 });
 
-export const semesterRepositoryLogic = <TSemester extends SemesterDateColumns>(adapter: SemesterRepositoryAdapter<TSemester>) => {
+export const semesterRepositoryLogic = <TSemester extends SemesterDateColumns>(
+  adapter: SemesterRepositoryAdapter<TSemester>,
+) => {
   const getSemesterOnDate = Effect.fn(function* (date: Date, school: SchoolId) {
     const semester = yield* adapter.getSemesterOnDate(date, school);
     if (!semester) return undefined;

@@ -8,10 +8,7 @@ export const uniqueBy = <T, K extends PropertyKey>(items: readonly T[], key: (it
   return [...deduped.values()];
 };
 
-export const entityRefsByKind = (
-  entities: readonly SnapshotEntityRef[],
-  kind: SnapshotEntityKind,
-): string[] =>
+export const entityRefsByKind = (entities: readonly SnapshotEntityRef[], kind: SnapshotEntityKind): string[] =>
   uniqueBy(
     entities.filter((entity) => entity.kind === kind),
     (entity) => entity.id,

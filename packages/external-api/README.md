@@ -12,6 +12,7 @@ Typed and resilient integrations for external services.
 ## Public Surface
 
 From `src/index.ts`:
+
 - holidays helpers
 - HTTP resilience helpers
 - Linear module

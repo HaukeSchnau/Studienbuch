@@ -140,12 +140,15 @@
 
 1. Phase 1 (Foundation): PR-01 to PR-06 in sequence.
 2. Phase 2 (Parallel Refactors): after PR-06, run three tracks in parallel:
+
 - Track A (data model dedup): PR-07 -> PR-08.
 - Track B (frontend/mobile convergence): PR-09 -> PR-10.
 - Track C (platform hygiene): PR-11 -> PR-12.
+
 3. Phase 3 (Cutover): PR-13 after PR-08, PR-10, and PR-12.
 
 Dependency graph:
+
 - `PR-01 -> PR-02 -> PR-03 -> PR-04 -> PR-05`
 - `PR-05 -> PR-06`
 - `PR-06 -> PR-07 -> PR-08`
@@ -177,6 +180,7 @@ Dependency graph:
 - Risk: medium risk of accidental runtime wiring break in Effect layers.
 - Effort: M.
 - Verification commands:
+
 ```bash
 bun run lint
 bun run typecheck
@@ -209,6 +213,7 @@ bun test packages/api/src/snapshot.test.ts
 - Risk: low to medium; mostly import path churn.
 - Effort: M.
 - Verification commands:
+
 ```bash
 bun run lint
 bun run typecheck
@@ -240,6 +245,7 @@ bun run test:sync
 - Risk: medium; cross-package type refactor.
 - Effort: M.
 - Verification commands:
+
 ```bash
 bun run lint
 bun run typecheck
@@ -269,6 +275,7 @@ bun test packages/student/src/event-handlers/student-scoped-applicators.test.ts
 - Risk: medium; flow orchestration changes.
 - Effort: M.
 - Verification commands:
+
 ```bash
 bun run lint
 bun run typecheck
@@ -300,6 +307,7 @@ bun test packages/app-mobile/src/utils/sync-lifecycle.test.ts
 - Risk: medium; regression risk in snapshot hydration.
 - Effort: M.
 - Verification commands:
+
 ```bash
 bun run lint
 bun run typecheck
@@ -325,6 +333,7 @@ bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts
 - Risk: low; additive test harness.
 - Effort: S.
 - Verification commands:
+
 ```bash
 bun run lint
 bun run typecheck
@@ -356,6 +365,7 @@ bun test packages/student/src/schema-parity.test.ts
 - Risk: medium; high file touch count.
 - Effort: L.
 - Verification commands:
+
 ```bash
 bun run lint
 bun run typecheck
@@ -390,6 +400,7 @@ bun test packages/student/src/applicators.integration.test.ts
 - Risk: high; touches core write paths.
 - Effort: L.
 - Verification commands:
+
 ```bash
 bun run lint
 bun run typecheck
@@ -422,6 +433,7 @@ bun test packages/app-mobile/src/utils/snapshot-recovery.test.ts
 - Risk: medium; authentication regression risk.
 - Effort: M.
 - Verification commands:
+
 ```bash
 bun run lint
 bun run typecheck
@@ -448,6 +460,7 @@ bun --filter @stu/app-mobile typecheck
 - Risk: medium; UI behavior changes.
 - Effort: M.
 - Verification commands:
+
 ```bash
 bun run lint
 bun run typecheck
@@ -477,6 +490,7 @@ bun x tsc --noEmit -p packages/nextjs/tsconfig.json
 - Risk: medium; startup failures if key mapping is wrong.
 - Effort: M.
 - Verification commands:
+
 ```bash
 bun run lint
 bun run typecheck
@@ -507,6 +521,7 @@ bun --filter @stu/db typecheck
 - Risk: low; mostly metadata/config churn.
 - Effort: S.
 - Verification commands:
+
 ```bash
 bun run lint:ws
 nix run nixpkgs#graphviz --command bun tooling/visualize-deps.ts
@@ -534,6 +549,7 @@ bun run lint
 - Risk: medium; production rollout coordination.
 - Effort: M.
 - Verification commands:
+
 ```bash
 bun run ci
 bun run test:sync
@@ -547,10 +563,12 @@ bun run test:maestro:mobile
 1. Pre-cutover (after PR-12): run full CI plus targeted sync/snapshot tests on current mainline data.
 2. Canary rollout: enable refactored paths for a limited internal cohort (mobile + API) while keeping compatibility adapters active.
 3. Observe for one release window:
+
 - snapshot fallback error rate,
 - sync replay consistency,
 - auth/session failure rate,
 - timetable query parity across clients.
+
 4. Broad rollout: promote refactored paths to all users.
 5. Cleanup: remove compatibility shims in PR-13 only after canary/broad windows are stable.
 

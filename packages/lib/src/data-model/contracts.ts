@@ -61,15 +61,7 @@ export const SHARED_CORE_TABLE_PARITY_CONTRACTS = [
   },
   {
     tableName: "courses",
-    requiredColumns: [
-      "id",
-      "name",
-      "subject",
-      "school",
-      "semester_type",
-      "semester_year",
-      "is_mandatory",
-    ],
+    requiredColumns: ["id", "name", "subject", "school", "semester_type", "semester_year", "is_mandatory"],
     primaryKeyColumns: ["id"],
   },
   {
@@ -107,15 +99,7 @@ export const SHARED_CORE_TABLE_PARITY_CONTRACTS = [
 export const POSTGRES_STUDENT_DOMAIN_TABLE_PARITY_CONTRACTS = [
   {
     tableName: "grades",
-    requiredColumns: [
-      "date",
-      "result",
-      "type",
-      "teacher_signature",
-      "parent_signature",
-      "course",
-      "student",
-    ],
+    requiredColumns: ["date", "result", "type", "teacher_signature", "parent_signature", "course", "student"],
     primaryKeyColumns: ["date", "course", "student", "type"],
   },
   {
@@ -190,10 +174,7 @@ export const INTENTIONALLY_DIVERGENT_SCHEMA_TABLE_ALLOWLIST = {
     description: "Present only in student SQLite schema.",
     environments: ["sqlite"] as const,
   },
-} as const satisfies Record<
-  "rooms" | "course_memberships" | "timetable_entry_rooms",
-  SchemaParityAllowlistInfo
->;
+} as const satisfies Record<"rooms" | "course_memberships" | "timetable_entry_rooms", SchemaParityAllowlistInfo>;
 
 export type SchemaParityAllowlistTableName = keyof typeof INTENTIONALLY_DIVERGENT_SCHEMA_TABLE_ALLOWLIST;
 

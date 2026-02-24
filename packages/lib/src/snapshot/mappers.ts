@@ -35,35 +35,27 @@ type SnapshotCourseRow = SnapshotResponse["courses"][number];
 
 type StudentProjectionRow = {
   isOfAge: boolean | null;
-  person:
-    | {
-        id: SnapshotStudentRow["id"];
-        firstName: SnapshotStudentRow["firstName"];
-        lastName: SnapshotStudentRow["lastName"];
-      }
-    | null;
-  school:
-    | {
-        id: SnapshotStudentRow["school"]["id"];
-        name: SnapshotStudentRow["school"]["name"];
-        stateCode: SnapshotStudentRow["school"]["stateCode"];
-      }
-    | null;
-  year:
-    | {
-        name: SnapshotStudentRow["year"]["name"];
-        startYear: SnapshotStudentRow["year"]["startYear"];
-        graduationYear: SnapshotStudentRow["year"]["graduationYear"];
-        school: SnapshotStudentRow["year"]["school"];
-      }
-    | null;
-  class:
-    | {
-        identifierInYear: SnapshotStudentRow["class"]["identifierInYear"];
-        startYear: SnapshotStudentRow["class"]["startYear"];
-        school: SnapshotStudentRow["class"]["school"];
-      }
-    | null;
+  person: {
+    id: SnapshotStudentRow["id"];
+    firstName: SnapshotStudentRow["firstName"];
+    lastName: SnapshotStudentRow["lastName"];
+  } | null;
+  school: {
+    id: SnapshotStudentRow["school"]["id"];
+    name: SnapshotStudentRow["school"]["name"];
+    stateCode: SnapshotStudentRow["school"]["stateCode"];
+  } | null;
+  year: {
+    name: SnapshotStudentRow["year"]["name"];
+    startYear: SnapshotStudentRow["year"]["startYear"];
+    graduationYear: SnapshotStudentRow["year"]["graduationYear"];
+    school: SnapshotStudentRow["year"]["school"];
+  } | null;
+  class: {
+    identifierInYear: SnapshotStudentRow["class"]["identifierInYear"];
+    startYear: SnapshotStudentRow["class"]["startYear"];
+    school: SnapshotStudentRow["class"]["school"];
+  } | null;
 };
 
 type CourseProjectionRow = {
@@ -131,9 +123,7 @@ const hasRequiredStudentRelations = (
   class: NonNullable<StudentProjectionRow["class"]>;
 } => Boolean(row.person && row.school && row.year && row.class);
 
-export const mapStudentRowsToSnapshotStudents = (
-  rows: readonly StudentProjectionRow[],
-): SnapshotResponse["students"] =>
+export const mapStudentRowsToSnapshotStudents = (rows: readonly StudentProjectionRow[]): SnapshotResponse["students"] =>
   rows.filter(hasRequiredStudentRelations).map((row) => ({
     id: row.person.id,
     firstName: row.person.firstName,
@@ -226,9 +216,7 @@ export const mapAbsenceRowsToSnapshotProjections = (
     })),
   }));
 
-export const mapGradeRowsToSnapshotProjections = (
-  rows: readonly GradeProjectionRow[],
-): SnapshotResponse["grades"] =>
+export const mapGradeRowsToSnapshotProjections = (rows: readonly GradeProjectionRow[]): SnapshotResponse["grades"] =>
   rows.map((grade) => ({
     date: grade.date.toISOString(),
     result: grade.result,
@@ -238,9 +226,7 @@ export const mapGradeRowsToSnapshotProjections = (
     parentSignature: grade.parentSignature,
   }));
 
-export const mapTaskRowsToSnapshotTasks = (
-  rows: readonly TaskProjectionRow[],
-): TaskProjectionSnapshot[] =>
+export const mapTaskRowsToSnapshotTasks = (rows: readonly TaskProjectionRow[]): TaskProjectionSnapshot[] =>
   rows.map((task) => ({
     ...task,
     dueDate: task.dueDate.toISOString(),

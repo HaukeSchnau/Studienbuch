@@ -32,10 +32,12 @@ From `docker-compose.yml`:
 ## Environment Model
 
 Environment values are loaded by `direnv` and `tooling/with-env.sh` from:
+
 - `.env`
 - `.env.secrets` (optional local secrets)
 
 Examples of required runtime values:
+
 - `MANAGEMENT_DATABASE_URL`
 - `PULSAR_URL`
 - `LINEAR_API_KEY`

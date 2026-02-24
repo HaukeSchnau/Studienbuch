@@ -34,6 +34,7 @@ bun --filter @stu/app-mobile maestro:test:lifecycle
 ## Turbo Task Model
 
 `turbo.json` defines shared task semantics:
+
 - `build`: cached outputs (`dist/**`, tsbuildinfo)
 - `typecheck`: depends on transitive `build` and `topo`
 - `test`: depends on transitive `build`

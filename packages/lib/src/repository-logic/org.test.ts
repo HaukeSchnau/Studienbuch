@@ -60,8 +60,8 @@ describe("schoolRepositoryLogic", () => {
 
 describe("createSemestersCore", () => {
   test("maps simple dates to dates and delegates to upsertSemesters", async () => {
-    const convertDate = vi.fn((date: { year: number; month: number; day: number }) =>
-      new Date(Date.UTC(date.year, date.month - 1, date.day)),
+    const convertDate = vi.fn(
+      (date: { year: number; month: number; day: number }) => new Date(Date.UTC(date.year, date.month - 1, date.day)),
     );
     const upsertSemesters = vi.fn(() => Effect.void);
 

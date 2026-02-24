@@ -27,6 +27,7 @@ bun --filter @stu/lib typecheck
 ## Testing
 
 Key suites include:
+
 - `src/student-event-logic.test.ts`
 - `src/org-event-logic.test.ts`
 - `src/snapshot.test.ts`

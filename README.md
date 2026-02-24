@@ -3,6 +3,7 @@
 Studienbuch is a Bun + TypeScript monorepo for a local-first school platform.
 
 Core product surfaces:
+
 - `@stu/app-mobile`: Expo mobile app (primary product priority)
 - `@stu/api`: standalone backend runtime for sync + business APIs
 - `@stu/nextjs`: existing web/admin surface

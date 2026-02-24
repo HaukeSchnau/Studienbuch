@@ -6,13 +6,7 @@ export default defineConfig({
       ignoreEmptyLines: true,
       include: ["**/src/**/*"],
       skipFull: true,
-      exclude: [
-        "**/__mocks__/**/*",
-        "**/generated/**/*",
-        "**/.next/**/*",
-        "**/dist/**/*",
-        "**/*.test.ts",
-      ],
+      exclude: ["**/__mocks__/**/*", "**/generated/**/*", "**/.next/**/*", "**/dist/**/*", "**/*.test.ts"],
     },
   },
 });

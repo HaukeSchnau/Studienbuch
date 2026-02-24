@@ -12,6 +12,7 @@ Student/local SQLite schema, repositories, and applicators.
 ## Public Surface
 
 From `src/index.ts`:
+
 - `applicators`
 - database exports
 - repositories

@@ -3,6 +3,7 @@
 ## Goals
 
 Studienbuch is designed around:
+
 - local-first mobile UX
 - deterministic sync and replay
 - shared domain contracts across server and clients

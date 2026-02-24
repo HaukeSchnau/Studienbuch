@@ -10,6 +10,7 @@ Custom Expo native modules used by mobile clients.
 ## Public Surface
 
 From `src/index.ts`:
+
 - `DrawingView` (+ `DrawingViewRef`)
 - `SelectView`
 

@@ -19,8 +19,5 @@ export const env = createEnv({
     AXIOM_TOKEN: process.env.NEXT_PUBLIC_AXIOM_TOKEN,
     NODE_ENV: process.env.NODE_ENV,
   },
-  skipValidation:
-    !!process.env.CI ||
-    !!process.env.SKIP_ENV_VALIDATION ||
-    process.env.npm_lifecycle_event === "lint",
+  skipValidation: !!process.env.CI || !!process.env.SKIP_ENV_VALIDATION || process.env.npm_lifecycle_event === "lint",
 });

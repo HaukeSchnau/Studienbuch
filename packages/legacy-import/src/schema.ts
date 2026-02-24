@@ -54,8 +54,12 @@ export const year = pgTable(
     startYear: integer().notNull(),
     graduationYear: integer().notNull(),
     name: text().notNull(),
-    createdAt: timestamp({ precision: 3, mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-    updatedAt: timestamp({ precision: 3, mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
     schoolId: integer().notNull(),
   },
   (table) => [
@@ -78,7 +82,9 @@ export const courseSubscription = pgTable(
   "CourseSubscription",
   {
     id: serial().primaryKey().notNull(),
-    createdAt: timestamp({ precision: 3, mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
     courseId: integer().notNull(),
     messagingToken: text().notNull(),
   },
@@ -103,8 +109,12 @@ export const school = pgTable(
   {
     id: serial().primaryKey().notNull(),
     name: text().notNull(),
-    createdAt: timestamp({ precision: 3, mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-    updatedAt: timestamp({ precision: 3, mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
   },
   (table) => [uniqueIndex("School_name_key").using("btree", table.name.asc().nullsLast().op("text_ops"))],
 );
@@ -145,13 +155,17 @@ export const course = pgTable(
     id: serial().primaryKey().notNull(),
     courseId: text().notNull(),
     name: text().notNull(),
-    createdAt: timestamp({ precision: 3, mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
     room: text(),
     isChoosable: boolean().default(false).notNull(),
     teacherId: integer().notNull(),
     classId: integer().notNull(),
     yearId: integer().notNull(),
-    updatedAt: timestamp({ precision: 3, mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
   },
   (table) => [
     uniqueIndex("Course_courseId_classId_yearId_key").using(
@@ -193,8 +207,12 @@ export const courseTime = pgTable(
     duration: integer().notNull(),
     weeks: courseTimeWeeks().default("BOTH").notNull(),
     courseId: integer(),
-    createdAt: timestamp({ precision: 3, mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-    updatedAt: timestamp({ precision: 3, mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
   },
   (table) => [
     foreignKey({
@@ -222,7 +240,9 @@ export const licenseKey = pgTable(
   {
     id: serial().primaryKey().notNull(),
     key: text().notNull(),
-    createdAt: timestamp({ precision: 3, mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
     activatedAt: timestamp({ precision: 3, mode: "string" }),
     expiresAt: timestamp({ precision: 3, mode: "string" }),
     isSuperKey: boolean().default(false).notNull(),
@@ -235,9 +255,13 @@ export const clazz = pgTable(
   {
     id: serial().primaryKey().notNull(),
     identifierInYear: text().notNull(),
-    createdAt: timestamp({ precision: 3, mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
     yearId: integer().notNull(),
-    updatedAt: timestamp({ precision: 3, mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
   },
   (table) => [
     uniqueIndex("Class_identifierInYear_yearId_key").using(
@@ -281,7 +305,9 @@ export const user = pgTable(
     name: text().notNull(),
     title: text(),
     abbrv: text(),
-    createdAt: timestamp({ precision: 3, mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
     updatedAt: timestamp({ precision: 3, mode: "string" }).notNull(),
     emailVerified: timestamp({ precision: 3, mode: "string" }),
     image: text(),
@@ -299,7 +325,9 @@ export const substitution = pgTable(
     date: timestamp({ precision: 3, mode: "string" }).notNull(),
     lessonStart: integer().notNull(),
     lessonEnd: integer().notNull(),
-    createdAt: timestamp({ precision: 3, mode: "string" }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+    createdAt: timestamp({ precision: 3, mode: "string" })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
     updatedAt: timestamp({ precision: 3, mode: "string" }).notNull(),
     courseId: integer().notNull(),
     room: text(),

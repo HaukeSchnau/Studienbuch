@@ -1,7 +1,7 @@
 {
   "name": "@stu/testing",
-  "private": true,
   "version": "0.3.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "clean": "git clean -xdf .cache .turbo node_modules"
