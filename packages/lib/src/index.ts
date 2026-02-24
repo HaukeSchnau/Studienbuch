@@ -13,6 +13,7 @@ export * from "./infrastructure";
 export * from "./org-event-logic";
 export * from "./repository-logic/holiday";
 export * from "./repository-logic/org";
+export * from "./repository-logic/student";
 export * from "./repositories";
 export * from "./schedule";
 export * from "./school";

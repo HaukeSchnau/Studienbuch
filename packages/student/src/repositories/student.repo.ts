@@ -1,4 +1,4 @@
-import { StudentRepository, type StudentId } from "@stu/lib";
+import { mapStudentWithPersonRowToStudent, StudentRepository, type StudentId } from "@stu/lib";
 import { eq } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import { Database } from "../database";
@@ -82,17 +82,7 @@ export const StudentRepositoryLive = Layer.effect(
           return undefined;
         }
 
-        return {
-          id: student.person.id,
-          firstName: student.person.firstName,
-          lastName: student.person.lastName,
-          school: student.school,
-          class: {
-            identifier: student.classIdentifier,
-            startYear: student.startYear,
-          },
-          isOfAge: student.isOfAge ?? false,
-        };
+        return mapStudentWithPersonRowToStudent(student);
       }),
     };
   }),
