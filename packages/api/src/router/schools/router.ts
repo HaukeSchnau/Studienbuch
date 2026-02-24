@@ -1,7 +1,4 @@
-import { eq } from "@stu/db";
-import { db } from "@stu/db/client";
-import { Schools } from "@stu/db/schema";
-import { defaultTheme, SCHOOL_IDS, themeSchema } from "@stu/lib";
+import { SCHOOL_IDS } from "@stu/lib";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -12,24 +9,29 @@ import { courses } from "../../router-legacy/schools/courses/router";
 import { semesters } from "../../router-legacy/schools/semesters/router";
 import { years } from "../../router-legacy/schools/years/router";
 
+const webServicesModuleUrl = new URL("../../../../lib-server/src/web-services.ts", import.meta.url).href;
+const schoolIdInputSchema = z.enum(SCHOOL_IDS);
+
+type SchoolIdInput = z.infer<typeof schoolIdInputSchema>;
+
+const loadSchoolServices = async () => {
+  return (await import(webServicesModuleUrl)) as {
+    listSchools: () => Promise<unknown>;
+    findSchoolTheme: (schoolId: SchoolIdInput) => Promise<{ theme: unknown; image?: string | null } | null>;
+  };
+};
+
 export const schools = {
   classes,
   courses,
   semesters,
   years,
 
-  list: publicProcedure.input(z.void()).query(async () => {
-    return db.query.Schools.findMany();
-  }),
+  list: publicProcedure.input(z.void()).query(async () => (await loadSchoolServices()).listSchools()),
 
-  getTheme: publicProcedure.input(z.enum(SCHOOL_IDS)).query(async ({ input }) => {
-    const school = await db.query.Schools.findFirst({
-      where: eq(Schools.id, input),
-      columns: {
-        theme: true,
-        image: true,
-      },
-    });
+  getTheme: publicProcedure.input(schoolIdInputSchema).query(async ({ input }) => {
+    const school = await (await loadSchoolServices()).findSchoolTheme(input);
+
     if (!school) {
       throw new TRPCError({
         code: "NOT_FOUND",
@@ -37,17 +39,6 @@ export const schools = {
       });
     }
 
-    const parsedTheme = themeSchema.safeParse(school.theme);
-
-    if (!parsedTheme.success) {
-      return {
-        theme: defaultTheme,
-      };
-    }
-
-    return {
-      theme: parsedTheme.data,
-      image: school.image,
-    };
+    return school;
   }),
 } satisfies TRPCRouterRecord;

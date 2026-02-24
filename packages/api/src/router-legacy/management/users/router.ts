@@ -1,192 +1,90 @@
-import { asc, eq } from "@stu/db";
-import { db } from "@stu/db/client";
-import { PERMISSIONS, PermissionsToUsers, Persons, Roles, RolesToUsers, Users } from "@stu/db/schema";
-import type { Permission, PermissionScope, Salutation } from "@stu/lib";
-import { BetterMap, SALUTATIONS } from "@stu/lib";
-import { createUser, hashPassword } from "@stu/lib-server";
+import { PERMISSIONS, Users } from "@stu/db/schema";
+import { SALUTATIONS } from "@stu/lib";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { permissionProcedure } from "../../../procedures";
 
+const editUsersProcedure = permissionProcedure("EDIT_USERS");
+const webServicesModuleUrl = new URL("../../../../../lib-server/src/web-services.ts", import.meta.url).href;
+
 const scopeOptions = ["schools", "years", "classes", "courses"] as const;
 
-const editUsersProcedure = permissionProcedure("EDIT_USERS");
+const userSchema = createInsertSchema(Users);
 
-const UserSchema = createInsertSchema(Users);
+const updateManyUsersInputSchema = z.array(userSchema.partial().required({ id: true }));
+const addUserInputSchema = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().optional(),
+  password: z.string().optional(),
+  salutation: z.enum(SALUTATIONS).optional(),
+  abbrv: z.string().optional(),
+});
+const updateUserPasswordInputSchema = z.object({
+  id: z.string(),
+  password: z.string(),
+});
+const deleteUserInputSchema = z.string();
+const listUserScopeOptionsInputSchema = z.enum(scopeOptions);
+const setUserPermissionsInputSchema = z.object({
+  userId: z.string(),
+  isSuperUser: z.boolean(),
+  permissions: z.array(
+    z.object({
+      permission: z.enum(PERMISSIONS),
+      scope: z.record(z.array(z.number())).nullable(),
+    }),
+  ),
+});
+
+type UpdateManyUsersInput = z.infer<typeof updateManyUsersInputSchema>;
+type AddUserInput = z.infer<typeof addUserInputSchema>;
+type UpdateUserPasswordInput = z.infer<typeof updateUserPasswordInputSchema>;
+type ListUserScopeOptionsInput = z.infer<typeof listUserScopeOptionsInputSchema>;
+type SetUserPermissionsInput = z.infer<typeof setUserPermissionsInputSchema>;
+
+const loadUsersServices = async () => {
+  return (await import(webServicesModuleUrl)) as {
+    listUsers: () => Promise<unknown>;
+    updateManyUsers: (input: UpdateManyUsersInput) => Promise<void>;
+    addUser: (input: AddUserInput) => Promise<unknown>;
+    updateUserPassword: (input: UpdateUserPasswordInput) => Promise<void>;
+    deleteUser: (userId: string) => Promise<void>;
+    listUserScopeOptions: (input: ListUserScopeOptionsInput) => Promise<unknown>;
+    setUserPermissions: (input: SetUserPermissionsInput) => Promise<void>;
+  };
+};
 
 export const users = {
-  list: editUsersProcedure.query(async () => {
-    const rows = await db
-      .select()
-      .from(Users)
-      .innerJoin(Persons, eq(Users.id, Persons.id))
-      .leftJoin(PermissionsToUsers, eq(Users.id, PermissionsToUsers.user))
-      .leftJoin(RolesToUsers, eq(Users.id, RolesToUsers.user))
-      .leftJoin(Roles, eq(Roles.id, RolesToUsers.role))
-      .orderBy(asc(Persons.lastName), asc(Persons.firstName));
-
-    const map = new BetterMap<
-      string,
-      {
-        id: string;
-        email: string | null;
-        person: {
-          id: string;
-          firstName: string;
-          lastName: string;
-          email: string | null;
-          salutation: Salutation | null;
-          abbrv: string | null;
-        };
-        roles: { id: string; name: string }[];
-        permissions: {
-          permission: Permission;
-          scope: PermissionScope | null;
-        }[];
-        hasPassword: boolean;
-        isSuperUser: boolean;
-      }
-    >();
-
-    for (const row of rows) {
-      if (!map.get(row.users.id)) {
-        map.set(row.users.id, {
-          id: row.users.id,
-          email: row.users.email,
-          person: {
-            id: row.persons.id,
-            firstName: row.persons.firstName,
-            lastName: row.persons.lastName,
-            email: row.persons.email,
-            salutation: row.persons.salutation,
-            abbrv: row.persons.abbrv,
-          },
-          roles: [],
-          permissions: [],
-          hasPassword: row.users.passwordHash !== null,
-          isSuperUser: row.users.isSuperUser,
-        });
-      }
-
-      const user = map.get(row.users.id);
-      if (!user) {
-        throw new Error("Logic error: Just added this user");
-      }
-
-      if (row.roles) user.roles.push(row.roles);
-      if (row.permissions_to_users)
-        user.permissions.push({
-          permission: row.permissions_to_users.permission,
-          scope: row.permissions_to_users.scope as PermissionScope | null,
-        });
-    }
-
-    return Array.from(map.values());
-  }),
+  list: editUsersProcedure.query(async () => (await loadUsersServices()).listUsers()),
 
   updateMany: editUsersProcedure
-    .input(z.array(UserSchema.partial().required({ id: true })))
+    .input(updateManyUsersInputSchema)
     .mutation(async ({ input }) => {
-      await Promise.all(
-        input.map((update) => {
-          return db.update(Users).set(update).where(eq(Users.id, update.id));
-        }),
-      );
+      await (await loadUsersServices()).updateManyUsers(input);
     }),
 
-  add: editUsersProcedure
-    .input(
-      z.object({
-        firstName: z.string(),
-        lastName: z.string(),
-        email: z.string().optional(),
-        password: z.string().optional(),
-        salutation: z.enum(SALUTATIONS).optional(),
-        abbrv: z.string().optional(),
-      }),
-    )
-    .mutation(async ({ input }) => createUser(input)),
+  add: editUsersProcedure.input(addUserInputSchema).mutation(async ({ input }) => (await loadUsersServices()).addUser(input)),
 
   updatePassword: editUsersProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        password: z.string(),
-      }),
-    )
+    .input(updateUserPasswordInputSchema)
     .mutation(async ({ input }) => {
-      const hashedPassword = await hashPassword(input.password);
-      await db.update(Users).set({ passwordHash: hashedPassword }).where(eq(Users.id, input.id));
+      await (await loadUsersServices()).updateUserPassword(input);
     }),
 
-  delete: editUsersProcedure.input(z.string()).mutation(async ({ input }) => {
-    await db.delete(Users).where(eq(Users.id, input));
+  delete: editUsersProcedure.input(deleteUserInputSchema).mutation(async ({ input }) => {
+    await (await loadUsersServices()).deleteUser(input);
   }),
 
-  listScopeOptions: editUsersProcedure.input(z.enum(scopeOptions)).query(async ({ input: option }) => {
-    switch (option) {
-      case "schools":
-        return await db.query.Schools.findMany({
-          columns: {
-            name: true,
-          },
-        });
-      case "years":
-        return db.query.Years.findMany({
-          columns: {
-            name: true,
-            startYear: true,
-            school: true,
-          },
-        });
-      case "classes":
-        return db.query.Classes.findMany({
-          columns: {
-            school: true,
-            startYear: true,
-            identifierInYear: true,
-          },
-        }).then((classes) =>
-          classes.map(({ school, startYear, identifierInYear: name }) => ({
-            school,
-            startYear,
-            name,
-          })),
-        );
-      case "courses":
-        return db.query.Courses.findMany({
-          columns: {
-            id: true,
-            name: true,
-          },
-        });
-    }
-  }),
+  listScopeOptions: editUsersProcedure
+    .input(listUserScopeOptionsInputSchema)
+    .query(async ({ input }) => (await loadUsersServices()).listUserScopeOptions(input)),
 
   setPermissions: editUsersProcedure
-    .input(
-      z.object({
-        userId: z.string(),
-        isSuperUser: z.boolean(),
-        permissions: z.array(
-          z.object({
-            permission: z.enum(PERMISSIONS),
-            scope: z.record(z.array(z.number())).nullable(),
-          }),
-        ),
-      }),
-    )
+    .input(setUserPermissionsInputSchema)
     .mutation(async ({ input }) => {
-      await db.update(Users).set({ isSuperUser: input.isSuperUser }).where(eq(Users.id, input.userId));
-      await db.delete(PermissionsToUsers).where(eq(PermissionsToUsers.user, input.userId));
-      await db.insert(PermissionsToUsers).values(
-        input.permissions.map((permission) => ({
-          user: input.userId,
-          permission: permission.permission,
-          scope: permission.scope ?? undefined,
-        })),
-      );
+      await (await loadUsersServices()).setUserPermissions(input);
     }),
 } satisfies TRPCRouterRecord;

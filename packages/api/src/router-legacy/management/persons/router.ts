@@ -9,47 +9,42 @@ import { z } from "zod";
 import { permissionProcedure } from "../../../procedures";
 
 const editUsersProcedure = permissionProcedure("EDIT_USERS");
+const webServicesModuleUrl = new URL("../../../../../lib-server/src/web-services.ts", import.meta.url).href;
+const personsSchema = createInsertSchema(Persons);
 
-const PersonsSchema = createInsertSchema(Persons);
+const updateManyPersonsInputSchema = z.array(personsSchema.partial().required({ id: true }));
+const addPersonInputSchema = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  email: z.string().optional(),
+  salutation: z.enum(SALUTATIONS).optional(),
+  abbrv: z.string().optional(),
+});
+const deletePersonInputSchema = z.string();
+
+const loadPersonsServices = async () => {
+  return (await import(webServicesModuleUrl)) as {
+    listPersons: () => Promise<unknown>;
+    updateManyPersons: (input: z.infer<typeof updateManyPersonsInputSchema>) => Promise<void>;
+    addPerson: (input: z.infer<typeof addPersonInputSchema>) => Promise<unknown>;
+    deletePerson: (personId: string) => Promise<void>;
+  };
+};
 
 export const persons = {
-  list: editUsersProcedure.query(async () => {
-    return await db.query.Persons.findMany({
-      orderBy: [asc(Persons.lastName), asc(Persons.firstName)],
-    });
-  }),
+  list: editUsersProcedure.query(async () => (await loadPersonsServices()).listPersons()),
 
   updateMany: editUsersProcedure
-    .input(z.array(PersonsSchema.partial().required({ id: true })))
+    .input(updateManyPersonsInputSchema)
     .mutation(async ({ input }) => {
-      await Promise.all(
-        input.map((update) => {
-          return db.update(Persons).set(update).where(eq(Persons.id, update.id));
-        }),
-      );
+      await (await loadPersonsServices()).updateManyPersons(input);
     }),
 
   add: editUsersProcedure
-    .input(
-      z.object({
-        firstName: z.string(),
-        lastName: z.string(),
-        email: z.string().optional(),
-        salutation: z.enum(SALUTATIONS).optional(),
-        abbrv: z.string().optional(),
-      }),
-    )
-    .mutation(async ({ input }) =>
-      db.insert(Persons).values({
-        firstName: input.firstName,
-        lastName: input.lastName,
-        email: input.email,
-        salutation: input.salutation,
-        abbrv: input.abbrv,
-      }),
-    ),
+    .input(addPersonInputSchema)
+    .mutation(async ({ input }) => (await loadPersonsServices()).addPerson(input)),
 
-  delete: editUsersProcedure.input(z.string()).mutation(async ({ input }) => {
-    await db.delete(Persons).where(eq(Persons.id, input));
+  delete: editUsersProcedure.input(deletePersonInputSchema).mutation(async ({ input }) => {
+    await (await loadPersonsServices()).deletePerson(input);
   }),
 } satisfies TRPCRouterRecord;
