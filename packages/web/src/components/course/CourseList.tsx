@@ -1,7 +1,7 @@
-import type { YearIdentifier } from "@stu/lib";
+import type { Year } from "@stu/lib";
 
 interface CourseListProps {
-  year: YearIdentifier;
+  year: Year.Id;
 }
 
 export const CourseList = (_: CourseListProps) => {

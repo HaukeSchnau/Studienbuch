@@ -1,0 +1,23 @@
+{
+  "extends": "@stu/tsconfig/base.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"],
+  "exclude": ["node_modules", "dist"],
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./src/*"],
+      "@/*": ["./src/*"],
+      "@stu/api": ["./src/infrastructure/stubs/stu-api.ts"],
+      "next": ["./src/infrastructure/next-compat/next.ts"],
+      "next/link": ["./src/infrastructure/next-compat/next-link.tsx"],
+      "next/navigation": ["./src/infrastructure/next-compat/next-navigation.ts"],
+      "next/router": ["./src/infrastructure/next-compat/next-router.ts"],
+      "next/headers": ["./src/infrastructure/next-compat/next-headers.ts"],
+      "next/font/local": ["./src/infrastructure/next-compat/next-font-local.ts"],
+      "next-axiom": ["./src/infrastructure/next-compat/next-axiom.tsx"]
+    }
+  }
+}

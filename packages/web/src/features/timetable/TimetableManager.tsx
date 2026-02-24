@@ -1,4 +1,4 @@
-import type { Course, YearIdentifier } from "@stu/lib";
+import type { Course, Year } from "@stu/lib";
 import { buildTimetable } from "@stu/lib";
 
 import { Card } from "~/components/layout/Card";
@@ -6,7 +6,7 @@ import { LoadingIndicator } from "~/components/layout/LoadingIndicator";
 import { TimetableView } from "./TimetableView";
 
 interface TimetableProps {
-  year: YearIdentifier;
+  year: Year.Id;
 }
 
 export const TimetableManager = ({ year }: TimetableProps) => {
@@ -27,7 +27,7 @@ export const TimetableManager = ({ year }: TimetableProps) => {
   );
 };
 
-export const useTimetable = (_year: YearIdentifier) => {
+export const useTimetable = (_year: Year.Id) => {
   // const courses = api.courses.listChoices.useQuery({
 
   //  });
