@@ -9,7 +9,7 @@
     "build": "turbo run build",
     "build:internal": "turbo run --filter=\"./packages/*\" build",
     "checks:lint": "oxlint --type-aware --type-check",
-    "checks:lint:ci": "oxlint --type-aware --type-check --deny-warnings",
+    "checks:lint:ci": "oxlint --type-aware --type-check --deny-warnings --format github",
     "checks:lint:fix-safe": "oxlint --type-aware --type-check --fix",
     "checks:lint:fix-all": "oxlint --type-aware --type-check --fix --fix-suggestions --fix-dangerously",
     "checks:fmt": "oxfmt",

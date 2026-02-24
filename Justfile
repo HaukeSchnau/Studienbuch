@@ -43,10 +43,22 @@ visualize-deps:
 seed: 
     just console pull igs-lil
 
-check:
+[parallel]
+check: check-typecheck check-fmt check-lint
+
+qa: check test
+
+check-typecheck:
     bun run typecheck
-    bun run checks:fmt:ci
-    bun run checks:lint
+
+check-fmt:
+    bun run checks:fmt
+
+check-lint:
+    bun run checks:lint:fix-safe
+
+test:
+    bun run test
 
 doctor:
     ./tooling/doctor.sh
