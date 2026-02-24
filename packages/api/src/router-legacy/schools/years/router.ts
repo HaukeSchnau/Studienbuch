@@ -1,4 +1,4 @@
-import { SCHOOL_IDS } from "@stu/lib";
+import { type Year, SCHOOL_IDS } from "@stu/lib";
 import type { TRPCRouterRecord } from "@trpc/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -21,8 +21,8 @@ type YearIdInput = z.infer<typeof yearIdInputSchema>;
 
 const loadYearsServices = async () => {
   return (await import(webServicesModuleUrl)) as {
-    listYears: (input: ListYearsInput) => Promise<unknown>;
-    getOneYear: (input: YearIdInput) => Promise<unknown | null>;
+    listYears: (input: ListYearsInput) => Promise<Year[]>;
+    getOneYear: (input: YearIdInput) => Promise<Year | null>;
   };
 };
 
