@@ -72,7 +72,7 @@
     - `bun test packages/db/src/schema-parity.test.ts` (pass)
     - `bun test packages/student/src/schema-parity.test.ts` (pass)
 - In progress:
-- `PR-05: Snapshot Mapping Deduplication` (slice 13)
+- `PR-05: Snapshot Mapping Deduplication` (slice 14)
   - Changes landed in:
     - `refactor(student): share snapshot apply helper with app-mobile` (`klu`)
     - `refactor(snapshot): extract shared dedupe helpers` (`sps`)
@@ -87,6 +87,7 @@
     - `feat: upsert snapshot tasks in student apply path` (`mzv`)
     - `test: cover task projections in snapshot fixtures` (`on`)
     - `fix: omit tasks when snapshot request has no student context` (`rn`)
+    - `test: cover snapshot task projection passthrough in route recovery` (`oq`)
   - Verification run:
     - `bun --filter @stu/lib typecheck` (pass)
     - `bun --filter @stu/api typecheck` (pass)
@@ -115,9 +116,19 @@
     - `bun test packages/lib/src/org-event-logic.test.ts` (pass)
     - `bun test packages/lib/src/repository-logic/org.test.ts` (pass)
     - `bun --filter @stu/db test:live -- src/applicators.live.integration.test.ts` (pass)
+- `PR-08: Repository Dedup Track B (Student/Sensitive Repos)` (slice 1; holiday mapping dedup)
+  - Changes landed in:
+    - `refactor: dedupe holiday date mapping across db and student adapters` (`snt`)
+  - Verification run:
+    - `bun --filter @stu/lib typecheck` (pass)
+    - `bun --filter @stu/db typecheck` (pass)
+    - `bun --filter @stu/student typecheck` (pass)
+    - `bun test packages/lib/src/repository-logic/holiday.test.ts` (pass)
+    - `bun test packages/db/src/applicators.integration.test.ts` (pass)
+    - `bun test packages/student/src/applicators.integration.test.ts` (pass)
 - Next queued:
-- `PR-05`: extend end-to-end snapshot task projection flow coverage through sync/recovery paths
-- `PR-07`: evaluate and extract any safe remaining school-create helper without coupling db-only defaults/env wiring
+- `PR-08`: continue low-risk serializer/helper dedup for student-sensitive repos (person/holiday/timetable read-shape helpers first)
+- `PR-07`: school-create helper extraction is blocked pending DB defaults/env credential decoupling into an explicit configuration boundary
 
 ## Phase Plan And Parallel Tracks
 
