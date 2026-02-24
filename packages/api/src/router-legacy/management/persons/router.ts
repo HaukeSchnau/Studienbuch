@@ -32,11 +32,9 @@ const loadPersonsServices = async () => {
 export const persons = {
   list: editUsersProcedure.query(async () => (await loadPersonsServices()).listPersons()),
 
-  updateMany: editUsersProcedure
-    .input(updateManyPersonsInputSchema)
-    .mutation(async ({ input }) => {
-      await (await loadPersonsServices()).updateManyPersons(input);
-    }),
+  updateMany: editUsersProcedure.input(updateManyPersonsInputSchema).mutation(async ({ input }) => {
+    await (await loadPersonsServices()).updateManyPersons(input);
+  }),
 
   add: editUsersProcedure
     .input(addPersonInputSchema)

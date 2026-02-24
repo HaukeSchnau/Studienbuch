@@ -1,4 +1,9 @@
-import { redirect as tanstackRedirect, useNavigate, useParams as useRouteParams, useRouterState } from "@tanstack/react-router";
+import {
+  redirect as tanstackRedirect,
+  useNavigate,
+  useParams as useRouteParams,
+  useRouterState,
+} from "@tanstack/react-router";
 
 type NavigationTarget = string | URL;
 

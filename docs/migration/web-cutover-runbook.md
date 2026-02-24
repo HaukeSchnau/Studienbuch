@@ -24,20 +24,21 @@ Operational control-plane runbook for the completed big-bang cutover from legacy
 
 ## Verification Matrix
 
-| Command | Expected | Result | Gate |
-| --- | --- | --- | --- |
-| `bun --filter @stu/web build` | Web build succeeds | PASS | Required |
-| `bun --filter @stu/web lint` | Web lint succeeds | PASS | Required |
-| `bun --filter @stu/admin-panel build` | Admin panel build succeeds | PASS | Required |
-| `bun run test` | Full workspace tests pass | PASS | Required |
-| `bun run test:sync` | Sync integration tests pass | PASS | Required |
-| `just live-health-web` | `nextjs` + `admin-panel` healthy | PASS | Required |
-| `nix build --no-link .#packages.aarch64-linux.oci-nextjs-archive` | Next slot OCI archive builds | PASS | Required |
-| `nix build --no-link .#packages.aarch64-linux.oci-admin-panel-archive` | Admin-panel OCI archive builds | PASS | Required |
-| `bun run lint` | Workspace lint may fail on unrelated mobile issue | FAIL (known unrelated blocker) | Non-blocking |
-| `bun run checks:lint:ci` | Workspace type-aware lint may fail on unrelated mobile issue | FAIL (known unrelated blocker) | Non-blocking |
+| Command                                                                | Expected                                                     | Result                         | Gate         |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------ | ------------ |
+| `bun --filter @stu/web build`                                          | Web build succeeds                                           | PASS                           | Required     |
+| `bun --filter @stu/web lint`                                           | Web lint succeeds                                            | PASS                           | Required     |
+| `bun --filter @stu/admin-panel build`                                  | Admin panel build succeeds                                   | PASS                           | Required     |
+| `bun run test`                                                         | Full workspace tests pass                                    | PASS                           | Required     |
+| `bun run test:sync`                                                    | Sync integration tests pass                                  | PASS                           | Required     |
+| `just live-health-web`                                                 | `nextjs` + `admin-panel` healthy                             | PASS                           | Required     |
+| `nix build --no-link .#packages.aarch64-linux.oci-nextjs-archive`      | Next slot OCI archive builds                                 | PASS                           | Required     |
+| `nix build --no-link .#packages.aarch64-linux.oci-admin-panel-archive` | Admin-panel OCI archive builds                               | PASS                           | Required     |
+| `bun run lint`                                                         | Workspace lint may fail on unrelated mobile issue            | FAIL (known unrelated blocker) | Non-blocking |
+| `bun run checks:lint:ci`                                               | Workspace type-aware lint may fail on unrelated mobile issue | FAIL (known unrelated blocker) | Non-blocking |
 
 Known unrelated blockers:
+
 - `@stu/app-mobile` type-aware lint failures at `packages/app-mobile/src/app/setup/name-and-year.tsx` are tracked outside this web cutover and do not block WS-00..WS-09 acceptance.
 
 ## Rollback Procedure
@@ -56,6 +57,7 @@ Trigger rollback when web health checks fail after deploy or critical admin/publ
 6. If still unhealthy, revert full stack to previous revision (`api` + `nextjs` + `admin-panel`) and re-run `just live-health-all`.
 
 Rollback note:
+
 - Slot name stays `nextjs`; rollback is image/revision swap, not service renaming.
 
 ## Post-Cutover Cleanup
@@ -67,10 +69,10 @@ Rollback note:
 
 ## Ownership
 
-| Area | Owner |
-| --- | --- |
-| WS-00..WS-05 (web package/route/API surface) | Web platform owner |
-| WS-06 (admin-panel separation) | Admin panel owner |
-| WS-07 verification execution | Release owner |
-| WS-08 rollback execution | On-call / release owner |
-| WS-09 cleanup closure | Web platform owner + tech lead |
+| Area                                         | Owner                          |
+| -------------------------------------------- | ------------------------------ |
+| WS-00..WS-05 (web package/route/API surface) | Web platform owner             |
+| WS-06 (admin-panel separation)               | Admin panel owner              |
+| WS-07 verification execution                 | Release owner                  |
+| WS-08 rollback execution                     | On-call / release owner        |
+| WS-09 cleanup closure                        | Web platform owner + tech lead |

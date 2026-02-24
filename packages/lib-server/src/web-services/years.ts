@@ -30,11 +30,7 @@ const findCurrentOrUpcomingSemester = async () => {
   const today = new Date();
 
   const current = await db.query.Semesters.findFirst({
-    where: and(
-      lte(Semesters.start, today),
-      gte(Semesters.end, today),
-      eq(Semesters.school, defaultSemesterSchool),
-    ),
+    where: and(lte(Semesters.start, today), gte(Semesters.end, today), eq(Semesters.school, defaultSemesterSchool)),
   });
 
   if (current) {
@@ -75,9 +71,7 @@ const listActiveYears = async () => {
       and(
         eq(Years.school, semester.school),
         semester.type === "WINTER" ? lte(Years.startYear, semester.year) : lt(Years.startYear, semester.year),
-        semester.type === "SUMMER"
-          ? gte(Years.graduationYear, semester.year)
-          : gt(Years.graduationYear, semester.year),
+        semester.type === "SUMMER" ? gte(Years.graduationYear, semester.year) : gt(Years.graduationYear, semester.year),
       ),
     );
 };

@@ -21,10 +21,20 @@ type LocalFontResult = {
 
 const buildFontFamily = (src: LocalFontSource) => {
   if (typeof src === "string") {
-    return src.split("/").at(-1)?.replace(/\.[^.]+$/, "") ?? "local-font";
+    return (
+      src
+        .split("/")
+        .at(-1)
+        ?.replace(/\.[^.]+$/, "") ?? "local-font"
+    );
   }
 
-  return src[0]?.path.split("/").at(-1)?.replace(/\.[^.]+$/, "") ?? "local-font";
+  return (
+    src[0]?.path
+      .split("/")
+      .at(-1)
+      ?.replace(/\.[^.]+$/, "") ?? "local-font"
+  );
 };
 
 export default function localFont(options: LocalFontOptions): LocalFontResult {

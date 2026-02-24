@@ -49,10 +49,7 @@ import {
   updateYearFn,
 } from "~/server/functions";
 
-type MutationOptions<TData, TVariables> = Omit<
-  UseMutationOptions<TData, Error, TVariables, unknown>,
-  "mutationFn"
->;
+type MutationOptions<TData, TVariables> = Omit<UseMutationOptions<TData, Error, TVariables, unknown>, "mutationFn">;
 
 type SessionData = { user: WebSessionUser } | null;
 type YearsInput = { school?: SchoolId; activeOnly?: boolean };
@@ -220,12 +217,10 @@ export const api = {
           school,
           (value) => queryKeys.schools.theme(value),
           async (value) => {
-            const result = (await getTheme({ data: value })) as
-              | {
-                  theme: Theme;
-                  image?: string | null;
-                }
-              | null;
+            const result = (await getTheme({ data: value })) as {
+              theme: Theme;
+              image?: string | null;
+            } | null;
 
             if (!result) {
               return { theme: defaultTheme };

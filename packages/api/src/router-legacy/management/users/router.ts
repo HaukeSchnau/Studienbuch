@@ -60,19 +60,17 @@ const loadUsersServices = async () => {
 export const users = {
   list: editUsersProcedure.query(async () => (await loadUsersServices()).listUsers()),
 
-  updateMany: editUsersProcedure
-    .input(updateManyUsersInputSchema)
-    .mutation(async ({ input }) => {
-      await (await loadUsersServices()).updateManyUsers(input);
-    }),
+  updateMany: editUsersProcedure.input(updateManyUsersInputSchema).mutation(async ({ input }) => {
+    await (await loadUsersServices()).updateManyUsers(input);
+  }),
 
-  add: editUsersProcedure.input(addUserInputSchema).mutation(async ({ input }) => (await loadUsersServices()).addUser(input)),
+  add: editUsersProcedure
+    .input(addUserInputSchema)
+    .mutation(async ({ input }) => (await loadUsersServices()).addUser(input)),
 
-  updatePassword: editUsersProcedure
-    .input(updateUserPasswordInputSchema)
-    .mutation(async ({ input }) => {
-      await (await loadUsersServices()).updateUserPassword(input);
-    }),
+  updatePassword: editUsersProcedure.input(updateUserPasswordInputSchema).mutation(async ({ input }) => {
+    await (await loadUsersServices()).updateUserPassword(input);
+  }),
 
   delete: editUsersProcedure.input(deleteUserInputSchema).mutation(async ({ input }) => {
     await (await loadUsersServices()).deleteUser(input);
@@ -82,9 +80,7 @@ export const users = {
     .input(listUserScopeOptionsInputSchema)
     .query(async ({ input }) => (await loadUsersServices()).listUserScopeOptions(input)),
 
-  setPermissions: editUsersProcedure
-    .input(setUserPermissionsInputSchema)
-    .mutation(async ({ input }) => {
-      await (await loadUsersServices()).setUserPermissions(input);
-    }),
+  setPermissions: editUsersProcedure.input(setUserPermissionsInputSchema).mutation(async ({ input }) => {
+    await (await loadUsersServices()).setUserPermissions(input);
+  }),
 } satisfies TRPCRouterRecord;

@@ -31,7 +31,8 @@ const parseCookieString = (cookie: string): Map<string, string> => {
   return parsed;
 };
 
-const serializeCookie = (name: string, value: string) => `${encodeURIComponent(name)}=${encodeURIComponent(value)}; path=/`;
+const serializeCookie = (name: string, value: string) =>
+  `${encodeURIComponent(name)}=${encodeURIComponent(value)}; path=/`;
 
 const resolveCookieValue = (nameOrCookie: CookieValue, maybeValue?: string) => {
   if (typeof nameOrCookie === "string") {

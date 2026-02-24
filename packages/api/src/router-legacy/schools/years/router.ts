@@ -27,7 +27,9 @@ const loadYearsServices = async () => {
 };
 
 export const years = {
-  list: publicProcedure.input(listYearsInputSchema).query(async ({ input }) => (await loadYearsServices()).listYears(input)),
+  list: publicProcedure
+    .input(listYearsInputSchema)
+    .query(async ({ input }) => (await loadYearsServices()).listYears(input)),
 
   getOne: publicProcedure.input(yearIdInputSchema).query(async ({ input }) => {
     const year = await (await loadYearsServices()).getOneYear(input);
