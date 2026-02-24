@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "expo.vscode-expo-tools",
+    "oxc.oxc-vscode",
     "yoavbls.pretty-ts-errors",
     "bradlc.vscode-tailwindcss",
     "vitest.explorer",
