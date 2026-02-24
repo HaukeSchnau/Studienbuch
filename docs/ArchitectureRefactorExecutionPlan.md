@@ -89,11 +89,13 @@
     - `bun test packages/lib/src/snapshot.test.ts` (pass)
     - `bun test packages/api/src/snapshot.test.ts` (pass)
     - `bun run test:sync` (pass)
-- `PR-07: Repository Dedup Track A (Org/Core Repos)` (slice 3; class/year/course repository dedup)
+- `PR-07: Repository Dedup Track A (Org/Core Repos)` (slice 5; class/year/course repository dedup plus semester/school read-path dedup)
   - Changes landed in:
     - `refactor(repo): extract shared class repository logic` (`yv`)
     - `refactor(repo): share year class creation through org helper` (`xr`)
     - `refactor(repo): extract shared course repository logic` (`tu`)
+    - `refactor(repo): extract shared semester repository read logic` (`vo`)
+    - `refactor(repo): extract shared school repository read logic` (`wov`)
   - Verification run:
     - `bun --filter @stu/lib typecheck` (pass)
     - `bun --filter @stu/db typecheck` (pass)
@@ -101,10 +103,11 @@
     - `bun test packages/db/src/applicators.integration.test.ts` (pass)
     - `bun test packages/student/src/applicators.integration.test.ts` (pass)
     - `bun test packages/lib/src/org-event-logic.test.ts` (pass)
+    - `bun test packages/lib/src/repository-logic/org.test.ts` (pass)
     - `bun --filter @stu/db test:live -- src/applicators.live.integration.test.ts` (pass)
 - Next queued:
 - `PR-05`: finish remaining API/mobile snapshot mapper routing and remove transitional cleanup/shims
-- `PR-07`: next slice is school/semester repository dedup and remaining org repository helper cleanup
+- `PR-07`: next slice is remaining org/core cleanup after read-path dedup (semester create path/shared upsert abstraction; evaluate whether any safe school-create helper extraction remains)
 
 ## Phase Plan And Parallel Tracks
 
