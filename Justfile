@@ -1,6 +1,28 @@
 [private]
 _oci-preload:
-    just oci-load
+    if [ "${SKIP_OCI_PRELOAD:-0}" = "1" ]; then \
+      missing=0; \
+      for image in \
+        studienbuch-api:nix \
+        studienbuch-nextjs:nix \
+        studienbuch-admin-panel:nix \
+        studienbuch-console-cron:nix \
+        studienbuch-migrations:nix; do \
+        if docker image inspect "$image" >/dev/null 2>&1; then \
+          echo "OCI image present: $image"; \
+        else \
+          echo "Missing OCI image: $image" >&2; \
+          missing=1; \
+        fi; \
+      done; \
+      if [ "$missing" -eq 1 ]; then \
+        echo "SKIP_OCI_PRELOAD=1 requires preloaded OCI images. Run 'just oci-load' (or 'just oci-build && just oci-load') first." >&2; \
+        exit 1; \
+      fi; \
+      echo "Skipping OCI preload (SKIP_OCI_PRELOAD=1)."; \
+    else \
+      just oci-load; \
+    fi
 
 [private]
 _preflight-doctor:

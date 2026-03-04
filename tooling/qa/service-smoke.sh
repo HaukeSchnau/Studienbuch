@@ -10,7 +10,9 @@ qa_load_env_files
 
 run_dir="$(qa_ensure_run_dir)"
 report_file="$run_dir/service-smoke.tsv"
+curl_error_log="$run_dir/service-smoke-curl-errors.log"
 printf "check\turl\thttp_code\tresult\n" >"$report_file"
+: >"$curl_error_log"
 
 api_endpoint="$(qa_api_endpoint)"
 web_endpoint="$(qa_web_endpoint)"
@@ -22,8 +24,12 @@ run_http_check() {
   check_name="$1"
   url="$2"
   expected_csv="$3"
+  curl_exit=0
 
-  http_code="$(curl -sS -L -m "$timeout_seconds" -o /dev/null -w "%{http_code}" "$url" || printf "000")"
+  http_code="$(curl -sS -L -m "$timeout_seconds" -o /dev/null -w "%{http_code}" "$url" 2>>"$curl_error_log" || curl_exit=$?)"
+  if [ "$curl_exit" -ne 0 ] || [ -z "$http_code" ]; then
+    http_code="000"
+  fi
   case ",$expected_csv," in
     *",$http_code,"*)
       result="PASS"

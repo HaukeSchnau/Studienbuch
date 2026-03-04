@@ -23,6 +23,19 @@ bun run test
 bun run ci
 ```
 
+Runtime preflight overrides (for deterministic local recovery during QA):
+
+```bash
+SKIP_DOCTOR=1 just live-up-dev-debug
+SKIP_OCI_PRELOAD=1 just live-up-dev-debug
+SKIP_DOCTOR=1 SKIP_OCI_PRELOAD=1 just live-up-dev-debug
+```
+
+Notes:
+
+- `SKIP_DOCTOR=1` bypasses doctor checks when you already understand/accept local preflight issues.
+- `SKIP_OCI_PRELOAD=1` only works when local OCI images are already present (`studienbuch-*:nix`); otherwise `just live-up-dev-debug` exits with an explicit image-missing error.
+
 Package-targeted examples:
 
 ```bash

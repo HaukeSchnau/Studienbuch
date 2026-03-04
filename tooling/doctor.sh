@@ -27,6 +27,7 @@ check_cmd() {
 check_port_free() {
   local name="$1"
   local port="$2"
+  local in_use_details=""
   if [[ ! "$port" =~ ^[0-9]+$ ]]; then
     fail "$name must be numeric (got '$port')"
     return
@@ -34,6 +35,10 @@ check_port_free() {
 
   if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
     fail "$name port $port is already in use"
+    in_use_details="$(lsof -nP -iTCP:"$port" -sTCP:LISTEN | sed '1d' | head -n 2 || true)"
+    if [[ -n "$in_use_details" ]]; then
+      printf "       listener(s): %s\n" "$(printf '%s' "$in_use_details" | tr '\n' ';' | sed 's/;$//')" >&2
+    fi
   else
     ok "$name port $port is free"
   fi
@@ -137,6 +142,7 @@ check_http_reachable "Axiom API" "https://api.axiom.co" "200,301,302,307,308,401
 
 if [[ $failures -gt 0 ]]; then
   echo "\nDoctor found $failures issue(s)." >&2
+  echo "Hint: set SKIP_DOCTOR=1 to bypass preflight temporarily (not recommended for regular runs)." >&2
   exit 1
 fi
 
