@@ -19,7 +19,7 @@ import {
 } from "@groundswell/core-server";
 import { studentsOfUser } from "@stu/lib";
 import { Effect, Exit, Fiber, Layer, ManagedRuntime, Option, ServiceMap, Stream } from "effect";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { DomainEvent } from "../../db/src/domain-event";
 import {
   DomainBroadcast,
@@ -317,6 +317,33 @@ describe("sync ingest integration", () => {
     expect(result.deviceOne).toEqual(Option.some(event));
     expect(result.deviceTwo).toEqual(Option.some(event));
     expect(harness.appliedEventIds).toEqual([event.id]);
+    expect(harness.sentIdsByUser.get(STUDENT_A)).toEqual([event.id]);
+  });
+
+  it("does not emit duplicate mark-as-sent warnings during ingest", async () => {
+    const harness = createHarness();
+    const event = makeAbsenceRecordedEvent("11111111-1111-4111-8111-111111111111", STUDENT_A, COURSE_A, new Date(1));
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    let capturedLogs = "";
+    try {
+      await harness.run(
+        Effect.gen(function* () {
+          const ingest = yield* DomainIngestEngine;
+          yield* ingest.ingest(event, { initiatorId: STUDENT_A });
+        }),
+      );
+
+      capturedLogs = [...logSpy.mock.calls, ...warnSpy.mock.calls]
+        .map((args) => args.map((arg) => String(arg)).join(" "))
+        .join("\n");
+    } finally {
+      logSpy.mockRestore();
+      warnSpy.mockRestore();
+    }
+
+    expect(capturedLogs).not.toContain("Failed to mark event");
     expect(harness.sentIdsByUser.get(STUDENT_A)).toEqual([event.id]);
   });
 
