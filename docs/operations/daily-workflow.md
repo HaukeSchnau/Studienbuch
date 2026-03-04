@@ -49,6 +49,8 @@ just qa-smoke-console
 just qa-smoke-web-admin
 # optional iOS mobile smoke:
 just qa-smoke-mobile-ios
+# optional Android mobile smoke:
+just qa-smoke-mobile-android
 ```
 
 Targeted checks used frequently:

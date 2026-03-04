@@ -50,6 +50,16 @@ else
   printf "Skipping iOS mobile smoke (set QA_INCLUDE_MOBILE_IOS_SMOKE=1 to enable)\n"
 fi
 
+if [ "${QA_INCLUDE_MOBILE_ANDROID_SMOKE:-0}" = "1" ]; then
+  if QA_RUN_DIR="$run_dir" "$root_dir/tooling/qa/mobile-android-smoke.sh"; then
+    :
+  else
+    failures=$((failures + 1))
+  fi
+else
+  printf "Skipping Android mobile smoke (set QA_INCLUDE_MOBILE_ANDROID_SMOKE=1 to enable)\n"
+fi
+
 if [ "$failures" -gt 0 ]; then
   printf "QA smoke run completed with %s failing step(s). Artifacts: %s\n" "$failures" "$run_dir" >&2
   exit 1

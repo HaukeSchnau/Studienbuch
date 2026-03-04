@@ -137,3 +137,38 @@ QA_INCLUDE_MOBILE_IOS_SMOKE=1 just qa-smoke-run
 - `Studienbuch (Dev)` app installed on the simulator.
 - `maestro` available (`maestro` or `nix run nixpkgs#maestro -- ...`).
 - `agent-device` available (`agent-device`, `npx --yes agent-device`, or nix fallback).
+
+## Android Mobile Smoke
+
+Reproducible Android lifecycle + lightweight dogfood probe:
+
+- `tooling/qa/mobile-android-smoke.sh`
+
+### Run
+
+```bash
+./tooling/qa/mobile-android-smoke.sh
+# or via just:
+just qa-smoke-mobile-android
+```
+
+Include in aggregate smoke:
+
+```bash
+QA_INCLUDE_MOBILE_ANDROID_SMOKE=1 just qa-smoke-run
+```
+
+### Artifacts
+
+- `.artifacts/qa/<timestamp>/mobile-android-smoke.tsv`
+- `.artifacts/qa/<timestamp>/android-maestro-lifecycle.log`
+- `.artifacts/qa/<timestamp>/android-adb-devices.log`
+- `.artifacts/qa/<timestamp>/android-agent-device-*.log`
+
+### Preconditions
+
+- Android SDK `adb` available (or nix fallback: `nix shell nixpkgs#android-tools -c adb version`).
+- Android emulator/device detected by `adb devices`.
+- `dev.schnau.studienbuch.dev` installed on the Android target.
+- `maestro` available (`maestro` or `nix run nixpkgs#maestro -- ...`).
+- `agent-device` available (`agent-device`, `npx --yes agent-device`, or nix+android-tools fallback).

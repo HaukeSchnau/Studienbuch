@@ -88,6 +88,9 @@ qa-smoke-web-admin:
 qa-smoke-mobile-ios:
     ./tooling/qa/mobile-ios-smoke.sh
 
+qa-smoke-mobile-android:
+    ./tooling/qa/mobile-android-smoke.sh
+
 qa-smoke-run:
     ./tooling/qa/run-smoke.sh
 
