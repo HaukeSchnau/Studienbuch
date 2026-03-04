@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 set -euo pipefail
 
 # shellcheck disable=SC1091
@@ -28,6 +28,16 @@ if QA_RUN_DIR="$run_dir" "$root_dir/tooling/qa/console-smoke.sh"; then
   :
 else
   failures=$((failures + 1))
+fi
+
+if [ "${QA_INCLUDE_WEB_ADMIN_SMOKE:-0}" = "1" ]; then
+  if QA_RUN_DIR="$run_dir" ARTIFACT_DIR="$run_dir/web-admin-smoke" "$root_dir/tooling/qa/web-admin/smoke-navigation.sh"; then
+    :
+  else
+    failures=$((failures + 1))
+  fi
+else
+  printf "Skipping web/admin smoke (set QA_INCLUDE_WEB_ADMIN_SMOKE=1 to enable)\n"
 fi
 
 if [ "$failures" -gt 0 ]; then

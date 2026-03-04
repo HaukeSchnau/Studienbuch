@@ -37,6 +37,16 @@ just live-up-dev-debug
 ```bash
 bun run lint
 bun run test
+bun run typecheck
+```
+
+Targeted QA smoke checks:
+
+```bash
+just qa-smoke-services
+just qa-smoke-console
+# optional web/admin browser smoke:
+just qa-smoke-web-admin
 ```
 
 Targeted checks used frequently:

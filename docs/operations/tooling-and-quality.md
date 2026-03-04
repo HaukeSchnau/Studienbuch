@@ -51,3 +51,43 @@ nix run nixpkgs#jq -- --version
 nix run nixpkgs#graphviz -- -V
 nix shell nixpkgs#cloc -c cloc .
 ```
+
+## Web/Admin Agent-Browser Smoke
+
+Reproducible navigation smoke for public/login/admin guard checks lives in:
+
+- `tooling/qa/web-admin/smoke-navigation.sh`
+
+### Preconditions
+
+- Web stack is running and reachable (for local dev: `just live-up-dev`).
+- `agent-browser` is installed (`agent-browser --help`) or runnable via `npx`.
+- Base URL is reachable (defaults to `http://localhost:${STU_NEXTJS_PORT:-3000}`).
+
+### Run
+
+```bash
+./tooling/qa/web-admin/smoke-navigation.sh
+# or via just:
+just qa-smoke-web-admin
+```
+
+Override base URL or artifact location when needed:
+
+```bash
+WEB_BASE_URL=http://localhost:3000 ./tooling/qa/web-admin/smoke-navigation.sh
+ARTIFACT_ROOT=$PWD/.artifacts/qa/web-admin-smoke ./tooling/qa/web-admin/smoke-navigation.sh
+```
+
+### Artifacts
+
+Each run writes artifacts under (by default):
+
+- `.artifacts/qa/web-admin-smoke/<timestamp>/`
+
+Key outputs:
+
+- `run.log`: command-level execution log.
+- `summary.tsv`: per-check PASS/FAIL summary.
+- `preconditions.txt`: captured assumptions for the run.
+- `<check>/` directories (`public-home`, `login-page`, `admin-guard`) with URL/title/body/snapshot/screenshot captures.

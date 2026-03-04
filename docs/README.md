@@ -14,6 +14,12 @@ This directory contains canonical project documentation.
 
 - `docs/operations/daily-workflow.md`
 - `docs/operations/tooling-and-quality.md`
+- `docs/operations/qa-orchestrator-subagent-runbook.md`
+
+## QA
+
+- `docs/qa/campaign-tracker-template.md`
+- `docs/qa/issue-template.md`
 
 ## Workspace Packages
 

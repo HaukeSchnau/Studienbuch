@@ -60,6 +60,9 @@ qa-smoke-services:
 qa-smoke-console:
     ./tooling/qa/console-smoke.sh
 
+qa-smoke-web-admin:
+    ./tooling/qa/web-admin/smoke-navigation.sh
+
 qa-smoke-run:
     ./tooling/qa/run-smoke.sh
 
