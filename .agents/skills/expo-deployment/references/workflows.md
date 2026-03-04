@@ -168,13 +168,13 @@ on:
 
 ### Job Types
 
-| Type | Purpose |
-|------|---------|
-| `build` | Create app builds |
-| `submit` | Submit to app stores |
-| `update` | Publish OTA updates |
-| `deploy` | Deploy web apps |
-| `run` | Execute custom commands |
+| Type     | Purpose                 |
+| -------- | ----------------------- |
+| `build`  | Create app builds       |
+| `submit` | Submit to app stores    |
+| `update` | Publish OTA updates     |
+| `deploy` | Deploy web apps         |
+| `run`    | Execute custom commands |
 
 ### Job Dependencies
 
