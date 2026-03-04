@@ -35,6 +35,10 @@ Notes:
 
 - `SKIP_DOCTOR=1` bypasses doctor checks when you already understand/accept local preflight issues.
 - `SKIP_OCI_PRELOAD=1` only works when local OCI images are already present (`studienbuch-*:nix`); otherwise `just live-up-dev-debug` exits with an explicit image-missing error.
+- `just oci-load` now falls back to local exported OCI archives when Nix cache/builder resolution fails.
+  - Default fallback directory: `.artifacts/oci`
+  - Override fallback directory: `STUDIENBUCH_OCI_ARCHIVE_DIR=/path/to/oci just oci-load`
+  - Export command: `just oci-export /path/to/oci`
 
 Package-targeted examples:
 

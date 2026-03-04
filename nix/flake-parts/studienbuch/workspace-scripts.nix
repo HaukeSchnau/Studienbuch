@@ -166,6 +166,35 @@ let
       ${repoPrelude}
 
       archive_dir=''${1:-}
+      fallback_archive_dir="''${STUDIENBUCH_OCI_ARCHIVE_DIR:-$PWD/.artifacts/oci}"
+      resolve_log_dir="$(mktemp -d)"
+      trap 'rm -rf "$resolve_log_dir"' EXIT
+
+      resolve_from_nix_or_fallback() {
+        attr="$1"
+        fallback_path="$2"
+        label="$3"
+        log_file="$resolve_log_dir/$label.path-info.log"
+
+        if resolved_path="$(nix path-info "$attr" 2>"$log_file")"; then
+          printf '%s' "$resolved_path"
+          return 0
+        fi
+
+        if [ -f "$fallback_path" ]; then
+          echo "nix path-info failed for $attr; using local fallback archive $fallback_path" >&2
+          printf '%s' "$fallback_path"
+          return 0
+        fi
+
+        echo "Failed to resolve OCI archive for $attr." >&2
+        sed -n '1,8p' "$log_file" >&2 || true
+        echo "Remediation: retry when Nix cache/builder is healthy, or provide/export local archives and rerun:" >&2
+        echo "  just oci-export $fallback_archive_dir" >&2
+        echo "  just oci-load $fallback_archive_dir" >&2
+        return 1
+      }
+
       if [ -n "$archive_dir" ]; then
         api_archive="$archive_dir/studienbuch-api-nix.oci.tar"
         console_archive="$archive_dir/studienbuch-console-cron-nix.oci.tar"
@@ -174,15 +203,16 @@ let
         admin_panel_archive="$archive_dir/studienbuch-admin-panel-nix.oci.tar"
 
         if [ ! -f "$api_archive" ] || [ ! -f "$console_archive" ] || [ ! -f "$migrations_archive" ] || [ ! -f "$nextjs_archive" ] || [ ! -f "$admin_panel_archive" ]; then
-          echo "Missing OCI archives under $archive_dir."
+          echo "Missing OCI archives under $archive_dir." >&2
+          echo "Expected files: studienbuch-*-nix.oci.tar" >&2
           exit 1
         fi
       else
-        api_archive="$(nix path-info .#packages.aarch64-linux.oci-api-archive)"
-        console_archive="$(nix path-info .#packages.aarch64-linux.oci-console-cron-archive)"
-        migrations_archive="$(nix path-info .#packages.aarch64-linux.oci-migrations-archive)"
-        nextjs_archive="$(nix path-info .#packages.aarch64-linux.oci-nextjs-archive)"
-        admin_panel_archive="$(nix path-info .#packages.aarch64-linux.oci-admin-panel-archive)"
+        api_archive="$(resolve_from_nix_or_fallback ".#packages.aarch64-linux.oci-api-archive" "$fallback_archive_dir/studienbuch-api-nix.oci.tar" "api")" || exit 1
+        console_archive="$(resolve_from_nix_or_fallback ".#packages.aarch64-linux.oci-console-cron-archive" "$fallback_archive_dir/studienbuch-console-cron-nix.oci.tar" "console-cron")" || exit 1
+        migrations_archive="$(resolve_from_nix_or_fallback ".#packages.aarch64-linux.oci-migrations-archive" "$fallback_archive_dir/studienbuch-migrations-nix.oci.tar" "migrations")" || exit 1
+        nextjs_archive="$(resolve_from_nix_or_fallback ".#packages.aarch64-linux.oci-nextjs-archive" "$fallback_archive_dir/studienbuch-nextjs-nix.oci.tar" "nextjs")" || exit 1
+        admin_panel_archive="$(resolve_from_nix_or_fallback ".#packages.aarch64-linux.oci-admin-panel-archive" "$fallback_archive_dir/studienbuch-admin-panel-nix.oci.tar" "admin-panel")" || exit 1
       fi
 
       state_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/studienbuch"
