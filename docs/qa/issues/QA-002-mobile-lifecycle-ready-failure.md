@@ -1,10 +1,10 @@
-# QA-002 Mobile Lifecycle Ready Failure
+# QA-002 Mobile Lifecycle E2E Dev-Server Readiness
 
 ## Header
 
 - Issue ID: QA-002
-- Title: Mobile lifecycle Maestro flows fail at `assertVisible: "ready"` (iOS + Android)
-- Severity: `S1 High`
+- Title: Mobile lifecycle smoke blocked by missing E2E dev server / packager
+- Severity: `S2 Medium`
 - Status: `Reproduced`
 - Owner: Orchestrator
 - Reported by: iOS/Android workers
@@ -28,17 +28,18 @@
 
 ## Expected Result
 
-- Maestro lifecycle flows pass on configured platform(s).
+- E2E dev server is available and Maestro lifecycle flows run against the app runtime.
 
 ## Actual Result
 
-- All lifecycle flows fail with `Assertion is false: "ready" is visible`.
+- App remains on Expo Dev Launcher without packager; lifecycle assertions fail.
 
 ## Artifacts
 
 - Logs:
   - `.artifacts/qa/20260304T231118Z/ios-maestro-lifecycle.log`
   - `.artifacts/qa/20260304T231118Z/android-maestro-lifecycle.log`
+  - `~/.maestro/tests/2026-03-05_001422/commands-(Sync lifecycle resume refresh).json` (contains `Unable to find any packagers`)
 
 ## Verification
 
@@ -47,11 +48,13 @@
 ```bash
 just qa-smoke-mobile-ios
 just qa-smoke-mobile-android
+MOBILE_E2E_DEV_SERVER_URL=http://localhost:8081 just qa-smoke-mobile-ios
+MOBILE_E2E_DEV_SERVER_URL=http://localhost:8081 just qa-smoke-mobile-android
 ```
 
 ### Results
 
-- Command output summary: lifecycle suite fails consistently at `ready` assertion.
+- Command output summary: mobile smoke now fails fast when E2E dev server is unavailable (`http://localhost:8081`).
 - Manual retest result: `fail`
 - Verified by: Orchestrator
 - Verified at: 2026-03-04
@@ -59,5 +62,5 @@ just qa-smoke-mobile-android
 ## Notes / Product Decision
 
 - Decision needed? `no`
-- Decision summary: likely runtime/e2e harness state defect; requires focused repro-first fix loop.
-- Follow-up actions: instrument E2E entry route and add failing regression test where feasible.
+- Decision summary: environment readiness defect first; app-level lifecycle behavior remains unverified until packager is running.
+- Follow-up actions: start `bun --filter @stu/app-mobile dev:e2e` and rerun mobile smoke before opening app-logic defect loop.

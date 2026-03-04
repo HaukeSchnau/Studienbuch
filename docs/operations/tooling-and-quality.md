@@ -135,6 +135,7 @@ QA_INCLUDE_MOBILE_IOS_SMOKE=1 just qa-smoke-run
 
 - iOS simulator available and booted.
 - `Studienbuch (Dev)` app installed on the simulator.
+- E2E dev server running at `MOBILE_E2E_DEV_SERVER_URL` (default `http://localhost:8081`) via `bun --filter @stu/app-mobile dev:e2e`.
 - `maestro` available (`maestro` or `nix run nixpkgs#maestro -- ...`).
 - `agent-device` available (`agent-device`, `npx --yes agent-device`, or nix fallback).
 
@@ -170,5 +171,6 @@ QA_INCLUDE_MOBILE_ANDROID_SMOKE=1 just qa-smoke-run
 - Android SDK `adb` available (or nix fallback: `nix shell nixpkgs#android-tools -c adb version`).
 - Android emulator/device detected by `adb devices`.
 - `dev.schnau.studienbuch.dev` installed on the Android target.
+- E2E dev server running at `MOBILE_E2E_DEV_SERVER_URL` (default `http://localhost:8081`) via `bun --filter @stu/app-mobile dev:e2e`.
 - `maestro` available (`maestro` or `nix run nixpkgs#maestro -- ...`).
 - `agent-device` available (`agent-device`, `npx --yes agent-device`, or nix+android-tools fallback).

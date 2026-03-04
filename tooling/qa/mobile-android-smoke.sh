@@ -19,6 +19,8 @@ android_snapshot_log="$run_dir/android-agent-device-snapshot.log"
 android_appstate_log="$run_dir/android-agent-device-appstate.log"
 android_session="${ANDROID_SMOKE_SESSION:-qa-android-smoke-$$}"
 android_app_id="${ANDROID_SMOKE_APP_ID:-dev.schnau.studienbuch.dev}"
+e2e_dev_server_url="${MOBILE_E2E_DEV_SERVER_URL:-http://localhost:8081}"
+e2e_dev_server_timeout="${MOBILE_E2E_DEV_SERVER_TIMEOUT_SECONDS:-2}"
 
 printf "check\tresult\tdetails\n" >"$report_file"
 failures=0
@@ -86,6 +88,17 @@ cleanup_agent_device_session() {
   if [ "${#AGENT_DEVICE_CMD[@]}" -gt 0 ]; then
     "${AGENT_DEVICE_CMD[@]}" --session "$android_session" close >/dev/null 2>&1 || true
   fi
+}
+
+check_e2e_dev_server() {
+  if curl -sS -L -m "$e2e_dev_server_timeout" -o /dev/null "$e2e_dev_server_url"; then
+    record_result "e2e_dev_server" "PASS" "$e2e_dev_server_url"
+    return 0
+  fi
+
+  record_result "e2e_dev_server" "FAIL" "Start e2e dev server: bun --filter @stu/app-mobile dev:e2e (missing $e2e_dev_server_url)"
+  failures=$((failures + 1))
+  return 1
 }
 
 run_maestro_lifecycle() {
@@ -204,6 +217,7 @@ run_android_probe() {
 
 trap cleanup_agent_device_session EXIT
 
+check_e2e_dev_server
 run_maestro_lifecycle
 run_android_probe
 
