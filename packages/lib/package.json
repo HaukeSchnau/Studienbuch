@@ -15,7 +15,7 @@
     "lint": "oxlint --type-aware --type-check"
   },
   "dependencies": {
-    "@groundswell/zod-helpers": "^0.0.22",
+    "@groundswell/zod-helpers": "0.0.23",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "effect": "4.0.0-beta.26",

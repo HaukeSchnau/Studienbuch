@@ -21,9 +21,9 @@
   },
   "dependencies": {
     "@effect/vitest": "4.0.0-beta.26",
-    "@groundswell/adapter-drizzle-sqlite": "^0.0.22",
-    "@groundswell/core": "^0.0.22",
-    "@schnau/effect-drizzle": "0.5.10",
+    "@groundswell/adapter-drizzle-sqlite": "^0.0.23",
+    "@groundswell/core": "^0.0.23",
+    "@schnau/effect-drizzle": "0.5.11",
     "@stu/lib": "workspace:*",
     "@t3-oss/env-core": "^0.13.8",
     "dayjs": "^1.11.13",
