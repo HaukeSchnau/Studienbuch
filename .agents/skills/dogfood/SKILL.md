@@ -1,216 +1,183 @@
 ---
 name: dogfood
-description: Systematically explore and test a web application to find bugs, UX issues, and other problems. Use when asked to "dogfood", "QA", "exploratory test", "find issues", "bug hunt", "test this app/site/platform", or review the quality of a web application. Produces a structured report with full reproduction evidence -- step-by-step screenshots, repro videos, and detailed repro steps for every issue -- so findings can be handed directly to the responsible teams.
-allowed-tools: Bash(agent-browser:*), Bash(npx agent-browser:*)
+description: 'Systematically explore and test a mobile app on iOS/Android with agent-device to find bugs, UX issues, and other problems. Use when asked to "dogfood", "QA", "exploratory test", "find issues", "bug hunt", or "test this app" on mobile. Produces a structured report with reproducible evidence: screenshots, optional repro videos, and detailed steps for every issue.'
+allowed-tools: Bash(agent-device:*), Bash(npx agent-device:*)
 ---
 
-# Dogfood
+# Dogfood (agent-device)
 
-Systematically explore a web application, find issues, and produce a report with full reproduction evidence for every finding.
+Systematically explore a mobile app, find issues, and produce a report with full reproduction evidence for every finding.
 
 ## Setup
 
-Only the **Target URL** is required. Everything else has sensible defaults -- use them unless the user explicitly provides an override.
+Only the **Target app** is required. Everything else has sensible defaults.
 
-| Parameter            | Default                                               | Example override                      |
-| -------------------- | ----------------------------------------------------- | ------------------------------------- |
-| **Target URL**       | _(required)_                                          | `vercel.com`, `http://localhost:3000` |
-| **Session name**     | Slugified domain (e.g., `vercel.com` -> `vercel-com`) | `--session my-session`                |
-| **Output directory** | `./dogfood-output/`                                   | `Output directory: /tmp/qa`           |
-| **Scope**            | Full app                                              | `Focus on the billing page`           |
-| **Authentication**   | None                                                  | `Sign in to user@example.com`         |
+| Parameter | Default | Example override |
+|-----------|---------|-----------------|
+| **Target app** | _(required)_ | `Settings`, `com.example.app`, deep link URL |
+| **Platform** | Infer from user context; otherwise ask (`ios` or `android`) | `--platform ios` |
+| **Session name** | Slugified app/platform (for example `settings-ios`) | `--session my-session` |
+| **Output directory** | `./dogfood-output/` | `Output directory: /tmp/mobile-qa` |
+| **Scope** | Full app | `Focus on onboarding and profile` |
+| **Authentication** | None | `Sign in to user@example.com` |
 
-If the user says something like "dogfood vercel.com", start immediately with defaults. Do not ask clarifying questions unless authentication is mentioned but credentials are missing.
+If the user gives enough context to start, begin immediately with defaults. Ask follow-up only when a required detail is missing (for example platform or credentials).
 
-Always use `agent-browser` directly -- never `npx agent-browser`. The direct binary uses the fast Rust client. `npx` routes through Node.js and is significantly slower.
+Prefer direct `agent-device` binary when available.
 
 ## Workflow
 
 ```
 1. Initialize    Set up session, output dirs, report file
-2. Authenticate  Sign in if needed, save state
-3. Orient        Navigate to starting point, take initial snapshot
-4. Explore       Systematically visit pages and test features
-5. Document      Screenshot + record each issue as found
-6. Wrap up       Update summary counts, close session
+2. Launch/Auth   Open app and sign in if needed
+3. Orient        Capture initial snapshot and map navigation
+4. Explore       Systematically test flows and states
+5. Document      Record reproducible evidence per issue
+6. Wrap up       Reconcile summary, close session
 ```
 
 ### 1. Initialize
 
 ```bash
 mkdir -p {OUTPUT_DIR}/screenshots {OUTPUT_DIR}/videos
-```
-
-Copy the report template into the output directory and fill in the header fields:
-
-```bash
 cp {SKILL_DIR}/templates/dogfood-report-template.md {OUTPUT_DIR}/report.md
 ```
 
-Start a named session:
+### 2. Launch/Auth
+
+Start a named session and launch target app:
 
 ```bash
-agent-browser --session {SESSION} open {TARGET_URL}
-agent-browser --session {SESSION} wait --load networkidle
+agent-device --session {SESSION} open {TARGET_APP} --platform {PLATFORM}
+agent-device --session {SESSION} snapshot -i
 ```
 
-### 2. Authenticate
-
-If the app requires login:
+If login is required:
 
 ```bash
-agent-browser --session {SESSION} snapshot -i
-# Identify login form refs, fill credentials
-agent-browser --session {SESSION} fill @e1 "{EMAIL}"
-agent-browser --session {SESSION} fill @e2 "{PASSWORD}"
-agent-browser --session {SESSION} click @e3
-agent-browser --session {SESSION} wait --load networkidle
+agent-device --session {SESSION} snapshot -i
+agent-device --session {SESSION} fill @e1 "{EMAIL}"
+agent-device --session {SESSION} fill @e2 "{PASSWORD}"
+agent-device --session {SESSION} press @e3
+agent-device --session {SESSION} wait 1000
+agent-device --session {SESSION} snapshot -i
 ```
 
-For OTP/email codes: ask the user, wait for their response, then enter the code.
-
-After successful login, save state for potential reuse:
-
-```bash
-agent-browser --session {SESSION} state save {OUTPUT_DIR}/auth-state.json
-```
+For OTP/email codes: ask the user, wait for input, then continue.
 
 ### 3. Orient
 
-Take an initial annotated screenshot and snapshot to understand the app structure:
+Capture initial evidence and navigation anchors:
 
 ```bash
-agent-browser --session {SESSION} screenshot --annotate {OUTPUT_DIR}/screenshots/initial.png
-agent-browser --session {SESSION} snapshot -i
+agent-device --session {SESSION} screenshot {OUTPUT_DIR}/screenshots/initial.png
+agent-device --session {SESSION} snapshot -i
 ```
 
-Identify the main navigation elements and map out the sections to visit.
+Map top-level navigation, tabs, and key workflows before deep testing.
 
 ### 4. Explore
 
-Read [references/issue-taxonomy.md](references/issue-taxonomy.md) for the full list of what to look for and the exploration checklist.
+Read [references/issue-taxonomy.md](references/issue-taxonomy.md) for severity/category calibration.
 
-**Strategy -- work through the app systematically:**
+Strategy:
 
-- Start from the main navigation. Visit each top-level section.
-- Within each section, test interactive elements: click buttons, fill forms, open dropdowns/modals.
-- Check edge cases: empty states, error handling, boundary inputs.
-- Try realistic end-to-end workflows (create, edit, delete flows).
-- Check the browser console for errors periodically.
+- Move through each major app area (tabs, drawers, settings pages).
+- Test core journeys end-to-end (create, edit, delete, submit, recover).
+- Validate edge states (empty/error/loading/offline/permissions denied).
+- Use `diff snapshot -i` after UI transitions to avoid stale refs.
+- Periodically capture `logs path` and inspect the app log when behavior looks suspicious.
 
-**At each page:**
+Useful commands per screen:
 
 ```bash
-agent-browser --session {SESSION} snapshot -i
-agent-browser --session {SESSION} screenshot --annotate {OUTPUT_DIR}/screenshots/{page-name}.png
-agent-browser --session {SESSION} errors
-agent-browser --session {SESSION} console
+agent-device --session {SESSION} snapshot -i
+agent-device --session {SESSION} screenshot {OUTPUT_DIR}/screenshots/{screen-name}.png
+agent-device --session {SESSION} appstate
+agent-device --session {SESSION} logs path
 ```
-
-Use your judgment on how deep to go. Spend more time on core features and less on peripheral pages. If you find a cluster of issues in one area, investigate deeper.
 
 ### 5. Document Issues (Repro-First)
 
-Steps 4 and 5 happen together -- explore and document in a single pass. When you find an issue, stop exploring and document it immediately before moving on. Do not explore the whole app first and document later.
+Explore and document in one pass. When you find an issue, stop and fully capture evidence before continuing.
 
-Every issue must be reproducible. When you find something wrong, do not just note it -- prove it with evidence. The goal is that someone reading the report can see exactly what happened and replay it.
+#### Interactive/behavioral issues
 
-**Choose the right level of evidence for the issue:**
+Use video + step screenshots:
 
-#### Interactive / behavioral issues (functional, ux, console errors on action)
-
-These require user interaction to reproduce -- use full repro with video and step-by-step screenshots:
-
-1. **Start a repro video** _before_ reproducing:
+1. Start recording:
 
 ```bash
-agent-browser --session {SESSION} record start {OUTPUT_DIR}/videos/issue-{NNN}-repro.webm
+agent-device --session {SESSION} record start {OUTPUT_DIR}/videos/issue-{NNN}-repro.mp4
 ```
 
-2. **Walk through the steps at human pace.** Pause 1-2 seconds between actions so the video is watchable. Take a screenshot at each step:
+2. Reproduce with visible pacing. Capture each step:
 
 ```bash
-agent-browser --session {SESSION} screenshot {OUTPUT_DIR}/screenshots/issue-{NNN}-step-1.png
+agent-device --session {SESSION} screenshot {OUTPUT_DIR}/screenshots/issue-{NNN}-step-1.png
 sleep 1
-# Perform action (click, fill, etc.)
+# perform action
 sleep 1
-agent-browser --session {SESSION} screenshot {OUTPUT_DIR}/screenshots/issue-{NNN}-step-2.png
-sleep 1
-# ...continue until the issue manifests
+agent-device --session {SESSION} screenshot {OUTPUT_DIR}/screenshots/issue-{NNN}-step-2.png
 ```
 
-3. **Capture the broken state.** Pause so the viewer can see it, then take an annotated screenshot:
+3. Capture final broken state:
 
 ```bash
 sleep 2
-agent-browser --session {SESSION} screenshot --annotate {OUTPUT_DIR}/screenshots/issue-{NNN}-result.png
+agent-device --session {SESSION} screenshot {OUTPUT_DIR}/screenshots/issue-{NNN}-result.png
 ```
 
-4. **Stop the video:**
+4. Stop recording:
 
 ```bash
-agent-browser --session {SESSION} record stop
+agent-device --session {SESSION} record stop
 ```
 
-5. Write numbered repro steps in the report, each referencing its screenshot.
+5. Append issue immediately to report with numbered steps and screenshot references.
 
-#### Static / visible-on-load issues (typos, placeholder text, clipped text, misalignment, console errors on load)
+#### Static/on-load issues
 
-These are visible without interaction -- a single annotated screenshot is sufficient. No video, no multi-step repro:
+Single screenshot is sufficient; no video required:
 
 ```bash
-agent-browser --session {SESSION} screenshot --annotate {OUTPUT_DIR}/screenshots/issue-{NNN}.png
+agent-device --session {SESSION} screenshot {OUTPUT_DIR}/screenshots/issue-{NNN}.png
 ```
 
-Write a brief description and reference the screenshot in the report. Set **Repro Video** to `N/A`.
-
----
-
-**For all issues:**
-
-1. **Append to the report immediately.** Do not batch issues for later. Write each one as you find it so nothing is lost if the session is interrupted.
-
-2. **Increment the issue counter** (ISSUE-001, ISSUE-002, ...).
+Set **Repro Video** to `N/A` in the report.
 
 ### 6. Wrap Up
 
-Aim to find **5-10 well-documented issues**, then wrap up. Depth of evidence matters more than total count -- 5 issues with full repro beats 20 with vague descriptions.
+Target 5-10 well-evidenced issues, then finish:
 
-After exploring:
-
-1. Re-read the report and update the summary severity counts so they match the actual issues. Every `### ISSUE-` block must be reflected in the totals.
-2. Close the session:
+1. Reconcile summary severity counts in `report.md`.
+2. Close session:
 
 ```bash
-agent-browser --session {SESSION} close
+agent-device --session {SESSION} close
 ```
 
-3. Tell the user the report is ready and summarize findings: total issues, breakdown by severity, and the most critical items.
+3. Report total issues, severity breakdown, and highest-risk findings.
 
 ## Guidance
 
-- **Repro is everything.** Every issue needs proof -- but match the evidence to the issue. Interactive bugs need video and step-by-step screenshots. Static bugs (typos, placeholder text, visual glitches visible on load) only need a single annotated screenshot.
-- **Don't record video for static issues.** A typo or clipped text doesn't benefit from a video. Save video for issues that involve user interaction, timing, or state changes.
-- **For interactive issues, screenshot each step.** Capture the before, the action, and the after -- so someone can see the full sequence.
-- **Write repro steps that map to screenshots.** Each numbered step in the report should reference its corresponding screenshot. A reader should be able to follow the steps visually without touching a browser.
-- **Be thorough but use judgment.** You are not following a test script -- you are exploring like a real user would. If something feels off, investigate.
-- **Write findings incrementally.** Append each issue to the report as you discover it. If the session is interrupted, findings are preserved. Never batch all issues for the end.
-- **Never delete output files.** Do not `rm` screenshots, videos, or the report mid-session. Do not close the session and restart. Work forward, not backward.
-- **Never read the target app's source code.** You are testing as a user, not auditing code. Do not read HTML, JS, or config files of the app under test. All findings must come from what you observe in the browser.
-- **Check the console.** Many issues are invisible in the UI but show up as JS errors or failed requests.
-- **Test like a user, not a robot.** Try common workflows end-to-end. Click things a real user would click. Enter realistic data.
-- **Type like a human.** When filling form fields during video recording, use `type` instead of `fill` -- it types character-by-character. Use `fill` only outside of video recording when speed matters.
-- **Pace repro videos for humans.** Add `sleep 1` between actions and `sleep 2` before the final result screenshot. Videos should be watchable at 1x speed -- a human reviewing the report needs to see what happened, not a blur of instant state changes.
-- **Be efficient with commands.** Batch multiple `agent-browser` commands in a single shell call when they are independent (e.g., `agent-browser ... screenshot ... && agent-browser ... console`). Use `agent-browser --session {SESSION} scroll down 300` for scrolling -- do not use `key` or `evaluate` to scroll.
+- Repro quality matters more than issue count.
+- Use refs (`@eN`) for fast exploration, selectors for deterministic replay assertions when needed.
+- Re-snapshot after any mutation (navigation, modal, list update, form submit).
+- Use `fill` for clear-then-type semantics; use `type` for incremental typing behavior checks.
+- Keep logs optional and targeted: enable/read app logs only when useful for diagnosis.
+- Never read source code of the app under test; findings must come from observed runtime behavior.
+- Write each issue immediately to avoid losing evidence.
+- Never delete screenshots/videos/report artifacts during a session.
 
 ## References
 
-| Reference                                                    | When to Read                                                                           |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| [references/issue-taxonomy.md](references/issue-taxonomy.md) | Start of session -- calibrate what to look for, severity levels, exploration checklist |
+| Reference | When to Read |
+|-----------|--------------|
+| [references/issue-taxonomy.md](references/issue-taxonomy.md) | Start of session; severity/categories/checklist |
 
 ## Templates
 
-| Template                                                                     | Purpose                                       |
-| ---------------------------------------------------------------------------- | --------------------------------------------- |
+| Template | Purpose |
+|----------|---------|
 | [templates/dogfood-report-template.md](templates/dogfood-report-template.md) | Copy into output directory as the report file |

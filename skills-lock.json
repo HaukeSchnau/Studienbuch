@@ -6,15 +6,20 @@
       "sourceType": "github",
       "computedHash": "2f771f8eb25f9856d2169a4de4766de94e2bdbff999f42c458c8f1e2ca405c03"
     },
+    "agent-device": {
+      "source": "callstackincubator/agent-device",
+      "sourceType": "github",
+      "computedHash": "7b05696c740b8a381ad39fba0257d09e70815cb0d8a641693d4580382706698f"
+    },
     "building-native-ui": {
       "source": "expo/skills",
       "sourceType": "github",
       "computedHash": "342df93f481a0dba919f372d6c7b40d2b4bf5b51dd24363aea2e5d0bae27a6fa"
     },
     "dogfood": {
-      "source": "vercel-labs/agent-browser",
+      "source": "callstackincubator/agent-device",
       "sourceType": "github",
-      "computedHash": "17a3fc2c1a49df9debce572c7b47521caa96f793597d944c4e648b3aa90738cf"
+      "computedHash": "948c88494387268b73c3df8ec276efa568f40b3cf4373f41d38f1025ea66497b"
     },
     "expo-cicd-workflows": {
       "source": "expo/skills",

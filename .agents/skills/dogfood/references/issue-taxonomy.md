@@ -1,109 +1,83 @@
-# Issue Taxonomy
+# Issue Taxonomy (Mobile)
 
-Reference for categorizing issues found during dogfooding. Read this at the start of a dogfood session to calibrate what to look for.
-
-## Contents
-
-- [Severity Levels](#severity-levels)
-- [Categories](#categories)
-- [Exploration Checklist](#exploration-checklist)
+Reference for categorizing issues found during mobile dogfooding.
 
 ## Severity Levels
 
-| Severity     | Definition                                                    |
-| ------------ | ------------------------------------------------------------- |
-| **critical** | Blocks a core workflow, causes data loss, or crashes the app  |
-| **high**     | Major feature broken or unusable, no workaround               |
-| **medium**   | Feature works but with noticeable problems, workaround exists |
-| **low**      | Minor cosmetic or polish issue                                |
+| Severity | Definition |
+|----------|------------|
+| **critical** | Blocks a core workflow, causes data loss, or crashes/freeze loops the app |
+| **high** | Major feature broken or unusable, no practical workaround |
+| **medium** | Feature works with notable friction or partial failure; workaround exists |
+| **low** | Minor cosmetic or polish issue |
 
 ## Categories
 
 ### Visual / UI
 
-- Layout broken or misaligned elements
-- Overlapping or clipped text
-- Inconsistent spacing, padding, or margins
-- Missing or broken icons/images
-- Dark mode / light mode rendering issues
-- Responsive layout problems (viewport sizes)
-- Z-index stacking issues (elements hidden behind others)
-- Font rendering issues (wrong font, size, weight)
-- Color contrast problems
-- Animation glitches or jank
+- Layout broken, clipped, overlapped, or unreadable text
+- Safe-area/notch overlap issues
+- Incorrect dark/light appearance rendering
+- Missing assets/icons
+- Animation glitches or flicker
 
 ### Functional
 
-- Broken links (404, wrong destination)
-- Buttons or controls that do nothing on click
-- Form validation that rejects valid input or accepts invalid input
-- Incorrect redirects
-- Features that fail silently
-- State not persisted when expected (lost on refresh, navigation)
-- Race conditions (double-submit, stale data)
-- Broken search or filtering
-- Pagination issues
-- File upload/download failures
+- Buttons/controls do nothing or trigger wrong action
+- Flows fail (create/edit/delete/submit)
+- Navigation dead-ends or wrong destination
+- State loss after background/foreground transitions
+- Deep link opens wrong screen or fails
 
 ### UX
 
-- Confusing or unclear navigation
-- Missing loading indicators or feedback after actions
-- Slow or unresponsive interactions (>300ms perceived delay)
-- Unclear error messages
-- Missing confirmation for destructive actions
-- Dead ends (no way to go back or proceed)
-- Inconsistent patterns across similar features
-- Missing keyboard shortcuts or focus management
-- Unintuitive defaults
-- Missing empty states or unhelpful empty states
+- Confusing hierarchy or navigation labels
+- Missing loading/progress feedback
+- Unclear error handling or no recovery affordance
+- Excessive steps for common tasks
+- Inconsistent behavior between similar screens
 
 ### Content
 
-- Typos or grammatical errors
-- Outdated or incorrect text
-- Placeholder or lorem ipsum content left in
-- Truncated text without tooltip or expansion
-- Missing or wrong labels
-- Inconsistent terminology
+- Typos, incorrect copy, placeholder text
+- Wrong labels/help text
+- Truncated text with no affordance
+- Inconsistent terminology across screens
 
 ### Performance
 
-- Slow page loads (>3s)
-- Janky scrolling or animations
-- Large layout shifts (content jumping)
-- Excessive network requests (check via console/network)
-- Memory leaks (page slows over time)
-- Unoptimized images (large file sizes)
+- Slow startup or route transitions
+- Input lag or gesture jank
+- Scroll hitches/frame drops
+- Notable battery/thermal symptoms during basic usage
 
-### Console / Errors
+### Diagnostics / Logs
 
-- JavaScript exceptions in console
-- Failed network requests (4xx, 5xx)
-- Deprecation warnings
-- CORS errors
-- Mixed content warnings
-- Unhandled promise rejections
+- Native crashes or repeated fatal exceptions
+- Repeated warnings correlated with broken behavior
+- Unhandled runtime errors visible during repro
+
+### Permissions / Platform
+
+- Permission prompt flow broken or loops forever
+- Denied permissions not handled gracefully
+- Platform-specific regressions (iOS-only or Android-only)
+- Background/foreground lifecycle regressions
 
 ### Accessibility
 
-- Missing alt text on images
-- Unlabeled form inputs
-- Poor keyboard navigation (can't tab to elements)
-- Focus traps
-- Insufficient color contrast
-- Missing ARIA attributes on dynamic content
-- Screen reader incompatible patterns
+- Missing labels or incorrect accessibility names
+- Focus order/navigation issues for assistive tech
+- Low contrast or unreadable text scaling
+- Touch targets too small for reliable interaction
 
 ## Exploration Checklist
 
-Use this as a guide for what to test on each page/feature:
-
-1. **Visual scan** -- Take an annotated screenshot. Look for layout, alignment, and rendering issues.
-2. **Interactive elements** -- Click every button, link, and control. Do they work? Is there feedback?
-3. **Forms** -- Fill and submit. Test empty submission, invalid input, and edge cases.
-4. **Navigation** -- Follow all navigation paths. Check breadcrumbs, back button, deep links.
-5. **States** -- Check empty states, loading states, error states, and full/overflow states.
-6. **Console** -- Check for JS errors, failed requests, and warnings.
-7. **Responsiveness** -- If relevant, test at different viewport sizes.
-8. **Auth boundaries** -- Test what happens when not logged in, with different roles if applicable.
+1. Visual scan: capture screenshot; verify layout/safe areas/text/icon rendering.
+2. Interactions: press controls, open menus/modals, validate expected response.
+3. Forms/input: test valid/invalid/empty/boundary input.
+4. Navigation: traverse all top-level sections and return paths.
+5. App states: loading/empty/error/offline/permission-denied/background-resume.
+6. Logs/diagnostics: inspect app logs when behavior is suspicious.
+7. Platform parity: verify critical flows on each requested platform.
+8. Accessibility basics: labels, touch target sizes, readability/contrast.

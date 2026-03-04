@@ -1,34 +1,35 @@
 # Dogfood Report: {APP_NAME}
 
-| Field       | Value          |
-| ----------- | -------------- |
-| **Date**    | {DATE}         |
-| **App URL** | {URL}          |
+| Field | Value |
+|-------|-------|
+| **Date** | {DATE} |
+| **Platform** | {PLATFORM} |
+| **Target App** | {TARGET_APP} |
 | **Session** | {SESSION_NAME} |
-| **Scope**   | {SCOPE}        |
+| **Scope** | {SCOPE} |
 
 ## Summary
 
-| Severity  | Count |
-| --------- | ----- |
-| Critical  | 0     |
-| High      | 0     |
-| Medium    | 0     |
-| Low       | 0     |
+| Severity | Count |
+|----------|-------|
+| Critical | 0 |
+| High | 0 |
+| Medium | 0 |
+| Low | 0 |
 | **Total** | **0** |
 
 ## Issues
 
-<!-- Copy this block for each issue found. Interactive issues need video + step-by-step screenshots. Static issues (typos, visual glitches) only need a single screenshot -- set Repro Video to N/A. -->
+<!-- Copy this block for each issue found. Interactive issues need video + step screenshots. Static issues can be screenshot-only (Repro Video = N/A). -->
 
 ### ISSUE-001: {Short title}
 
-| Field           | Value                                                                      |
-| --------------- | -------------------------------------------------------------------------- |
-| **Severity**    | critical / high / medium / low                                             |
-| **Category**    | visual / functional / ux / content / performance / console / accessibility |
-| **URL**         | {page URL where issue was found}                                           |
-| **Repro Video** | {path to video, or N/A for static issues}                                  |
+| Field | Value |
+|-------|-------|
+| **Severity** | critical / high / medium / low |
+| **Category** | visual / functional / ux / content / performance / diagnostics / permissions / accessibility |
+| **Screen / Route** | {screen where issue was found} |
+| **Repro Video** | {path to video, or N/A for static issues} |
 
 **Description**
 
@@ -36,18 +37,16 @@
 
 **Repro Steps**
 
-<!-- Each step has a screenshot. A reader should be able to follow along visually. -->
-
-1. Navigate to {URL}
+1. Open {screen/entry point}
    ![Step 1](screenshots/issue-001-step-1.png)
 
-2. {Action -- e.g., click "Settings" in the sidebar}
+2. {Action}
    ![Step 2](screenshots/issue-001-step-2.png)
 
-3. {Action -- e.g., type "test" in the search field and press Enter}
+3. {Action}
    ![Step 3](screenshots/issue-001-step-3.png)
 
-4. **Observe:** {what goes wrong -- e.g., the page shows a blank white screen instead of search results}
+4. **Observe:** {broken behavior}
    ![Result](screenshots/issue-001-result.png)
 
 ---
