@@ -1,5 +1,5 @@
 import { FetchHttpClient } from "effect/unstable/http";
-import { describe, expect, it } from "@effect/vitest";
+import { describe, expect, it } from "vitest";
 import { Effect } from "effect";
 import { UntisAuth } from "./login";
 import { getUntisTestCredentials, untisLiveTestsEnabled } from "./test-credentials";
@@ -43,9 +43,10 @@ describe("UntisAuth.selectSchool", () => {
 });
 
 describe("Kadmos Login", () => {
-  const liveTest = untisLiveTestsEnabled ? it.effect : it.effect.skip;
-
-  liveTest("should login", () =>
-    UntisAuth.login(getUntisTestCredentials()).pipe(Effect.provide(FetchHttpClient.layer)),
-  );
+  it("should login", async () => {
+    if (!untisLiveTestsEnabled) {
+      return;
+    }
+    await Effect.runPromise(UntisAuth.login(getUntisTestCredentials()).pipe(Effect.provide(FetchHttpClient.layer)));
+  });
 });

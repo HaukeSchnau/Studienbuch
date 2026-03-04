@@ -1,16 +1,17 @@
 import { FetchHttpClient } from "effect/unstable/http";
-import { describe, expect, it } from "@effect/vitest";
+import { describe, expect, it } from "vitest";
 import { Effect } from "effect";
 import { UntisClasses } from "./get-classes";
 import { UntisAuth } from "./login";
 import { getUntisTestCredentials, untisLiveTestsEnabled } from "./test-credentials";
 
 describe("Get teachers from Kadmos", () => {
-  const liveTest = untisLiveTestsEnabled ? it.effect : it.effect.skip;
-
-  liveTest("should get teachers", () =>
-    Effect.gen(function* () {
-      const classes = yield* UntisClasses.list({
+  it("should get teachers", async () => {
+    if (!untisLiveTestsEnabled) {
+      return;
+    }
+    const classes = await Effect.runPromise(
+      UntisClasses.list({
         schoolYearId: 7,
         start: {
           year: 2025,
@@ -22,8 +23,8 @@ describe("Get teachers from Kadmos", () => {
           month: 8,
           day: 29,
         },
-      });
-      expect(classes).toMatchSnapshot();
-    }).pipe(UntisAuth.provide(getUntisTestCredentials()), Effect.provide(FetchHttpClient.layer)),
-  );
+      }).pipe(UntisAuth.provide(getUntisTestCredentials()), Effect.provide(FetchHttpClient.layer)),
+    );
+    expect(classes).toMatchSnapshot();
+  });
 });

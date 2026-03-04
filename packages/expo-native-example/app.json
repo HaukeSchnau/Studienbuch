@@ -23,8 +23,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "dev.schnau.studienbuch.nativeui",
-      "edgeToEdgeEnabled": true
+      "package": "dev.schnau.studienbuch.nativeui"
     },
     "web": {
       "favicon": "./assets/favicon.png"

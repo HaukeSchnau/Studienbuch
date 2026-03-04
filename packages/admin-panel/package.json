@@ -24,12 +24,12 @@
     "@tanstack/router-plugin": "^1.131.18",
     "date-fns": "^4.1.0",
     "effect": "4.0.0-beta.26",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
     "vite-tsconfig-paths": "^6.1.1"
   },
   "devDependencies": {
-    "@types/react": "~19.1.10",
+    "@types/react": "~19.2.10",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
     "autoprefixer": "^10.4.21",

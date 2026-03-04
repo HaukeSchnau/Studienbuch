@@ -32,7 +32,7 @@
     "@stu/lib": "workspace:*",
     "@t3-oss/env-core": "^0.13.8",
     "dayjs": "^1.11.13",
-    "drizzle-orm": "^0.44.4",
+    "drizzle-orm": "^0.45.1",
     "drizzle-zod": "^0.8.3",
     "effect": "4.0.0-beta.26",
     "pg": "^8.14.1",

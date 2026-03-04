@@ -1,11 +1,10 @@
-import { expect, it } from "@effect/vitest";
+import { expect, it } from "vitest";
 import { Effect } from "effect";
 import { getHolidays } from "./holidays";
 
-it.effect("getHolidays", () =>
-  Effect.gen(function* () {
-    const result = yield* getHolidays("NI", 2025);
-    expect(result).toMatchInlineSnapshot(`
+it("getHolidays", async () => {
+  const result = await Effect.runPromise(getHolidays("NI", 2025));
+  expect(result).toMatchInlineSnapshot(`
       [
         {
           "end": {
@@ -354,5 +353,4 @@ it.effect("getHolidays", () =>
         },
       ]
     `);
-  }),
-);
+});

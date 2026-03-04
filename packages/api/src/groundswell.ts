@@ -78,7 +78,8 @@ const serverApplicatorLive = Layer.effect(
 );
 
 export const canonicalStorageLive = DrizzleCanonicalStorage.createDrizzleCanonicalStorageLayer(DomainCanonicalStorage, {
-  db: Database,
+  // Transitional cast during Effect/Groundswell linked-workspace migration.
+  db: Database as never,
   eventSchema: DomainEventSchema as unknown as ZodSchema<DomainEvent>,
 });
 
@@ -93,4 +94,6 @@ export const AppLayerLive = pipe(
   Layer.provideMerge(DatabaseLive.pipe(Layer.orDie)),
   // Layer.provide(RabbitMQClient.Default),
 );
-export const runtime = ManagedRuntime.make(Layer.mergeAll(AppLayerLive, Logger.layer([Logger.consolePretty()])));
+export const runtime = ManagedRuntime.make(
+  Layer.mergeAll(AppLayerLive, Logger.layer([Logger.consolePretty()])) as never,
+);

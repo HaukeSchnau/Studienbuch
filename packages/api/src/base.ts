@@ -169,12 +169,15 @@ export const createBase = Effect.fn(function* (basePath: string) {
     return c.json(result.snapshot, 200);
   });
 
-  attachSyncServer(app.basePath("/api"), {
+  const syncApi = new Hono();
+  // Transitional cast for linked Groundswell package instance mismatch.
+  attachSyncServer(syncApi as never, {
     ingestEngine: ingestEngine as never,
     broadcast: broadcast as never,
-    getUserId,
+    getUserId: getUserId as never,
     eventSchema: DomainEventSchema as unknown as ZodSchema<DomainEvent>,
   });
+  app.route("/api", syncApi);
 
   app.onError((err, c) => {
     appLogger.error(
