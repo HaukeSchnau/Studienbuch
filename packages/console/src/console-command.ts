@@ -1,34 +1,10 @@
 import { Command, Options } from "@effect/cli";
 import { BunRuntime, BunServices } from "@effect/platform-bun";
-import { bootstrapBroadcastAsync } from "@stu/api";
-import { alias, and, eq, ne, recurringCourses } from "@stu/db";
-import { db } from "@stu/db/client";
-import * as tables from "@stu/db/schema";
-import { upsertCourses } from "@stu/legacy-import";
-import { defaultSchools, ensureEntityDefined, SCHOOL_IDS, type SchoolId, Semester } from "@stu/lib";
+import { SCHOOL_IDS } from "@stu/lib";
 import { Effect } from "effect";
 import { FetchHttpClient } from "effect/unstable/http";
-import { importClasses } from "./kadmos/import-classes";
-import { importTeachers } from "./kadmos/import-teachers";
-import { importTimetable } from "./kadmos/import-timetable";
-import { currentSchoolYearId, provideUntisAuth } from "./kadmos/kadmos-utils";
-import { addSchool } from "./seed/add-school";
-import { addSemesters } from "./seed/add-semesters";
-import { generateLicenses } from "./seed/generate-licenses";
 
 const school = Options.choice("school", SCHOOL_IDS);
-
-const untisSync = Effect.fn(function* (school: SchoolId) {
-  yield* addSemesters(defaultSchools[school].stateCode);
-
-  const schoolYearId = yield* currentSchoolYearId;
-  const { start, end } = yield* Semester.current.pipe(Effect.flatMap(ensureEntityDefined("current semester")));
-
-  yield* importTeachers({ school, schoolYearId, start, end });
-  yield* importClasses({ school, schoolYearId, start, end });
-
-  yield* importTimetable({ school, schoolYearId, start, end });
-});
 
 const pull = Command.make(
   "pull",
@@ -37,9 +13,37 @@ const pull = Command.make(
   },
   ({ school }) =>
     Effect.gen(function* () {
-      yield* addSchool(school);
+      const [
+        { addSchool },
+        { addSemesters },
+        { defaultSchools, ensureEntityDefined, Semester },
+        { currentSchoolYearId, provideUntisAuth },
+        { importTeachers },
+        { importClasses },
+        { importTimetable },
+      ] = yield* Effect.tryPromise(() =>
+        Promise.all([
+          import("./seed/add-school"),
+          import("./seed/add-semesters"),
+          import("@stu/lib"),
+          import("./kadmos/kadmos-utils"),
+          import("./kadmos/import-teachers"),
+          import("./kadmos/import-classes"),
+          import("./kadmos/import-timetable"),
+        ]),
+      );
 
-      yield* untisSync(school).pipe(provideUntisAuth(school));
+      yield* addSchool(school);
+      yield* Effect.gen(function* () {
+        yield* addSemesters(defaultSchools[school].stateCode);
+
+        const schoolYearId = yield* currentSchoolYearId;
+        const { start, end } = yield* Semester.current.pipe(Effect.flatMap(ensureEntityDefined("current semester")));
+
+        yield* importTeachers({ school, schoolYearId, start, end });
+        yield* importClasses({ school, schoolYearId, start, end });
+        yield* importTimetable({ school, schoolYearId, start, end });
+      }).pipe(provideUntisAuth(school));
 
       process.exit(0);
     }),
@@ -47,6 +51,10 @@ const pull = Command.make(
 
 const legacyImport = Command.make("legacy-import", {}, () =>
   Effect.gen(function* () {
+    const [{ recurringCourses }, { upsertCourses }] = yield* Effect.tryPromise(() =>
+      Promise.all([import("@stu/db"), import("@stu/legacy-import")]),
+    );
+
     const courses = yield* recurringCourses;
     yield* Effect.tryPromise(() => upsertCourses(courses));
 
@@ -63,7 +71,9 @@ const generateLicensesCommand = Command.make(
   },
   ({ count, school }) =>
     Effect.gen(function* () {
+      const { generateLicenses } = yield* Effect.tryPromise(() => import("./seed/generate-licenses"));
       const keys = yield* generateLicenses(count, school);
+
       yield* Effect.log(keys);
       process.exit(0);
     }),
@@ -71,6 +81,10 @@ const generateLicensesCommand = Command.make(
 
 const pruneConflictsCommand = Command.make("prune-conflicts", {}, () =>
   Effect.gen(function* () {
+    const [{ alias, and, eq, ne }, { db }, tables] = yield* Effect.tryPromise(() =>
+      Promise.all([import("@stu/db"), import("@stu/db/client"), import("@stu/db/schema")]),
+    );
+
     const te1 = alias(tables.TimetableEntries, "te1");
     const te2 = alias(tables.TimetableEntries, "te2");
     const course1 = alias(tables.Courses, "course1");
@@ -94,13 +108,16 @@ const pruneConflictsCommand = Command.make("prune-conflicts", {}, () =>
     yield* Effect.sync(() => {
       console.log(conflicts);
     });
+
     process.exit(0);
   }),
 );
 
 const bootstrapBroadcastCommand = Command.make("bootstrap-broadcast", {}, () =>
   Effect.gen(function* () {
+    const { bootstrapBroadcastAsync } = yield* Effect.tryPromise(() => import("@stu/api"));
     yield* Effect.tryPromise(() => bootstrapBroadcastAsync());
+
     process.exit(0);
   }),
 );
@@ -120,10 +137,31 @@ const cli = Command.run(consoleCommand, {
   version: "v1.0.0",
 });
 
+const normalizeArgv = (argv: readonly string[]) => {
+  const normalized = argv.slice(2);
+  if (normalized[0] === "--") {
+    normalized.shift();
+  }
+
+  return normalized;
+};
+
+const isInfoOnlyInvocation = (argv: readonly string[]) => {
+  const args = normalizeArgv(argv);
+  return args.some((arg) => arg === "--help" || arg === "-h" || arg === "--version" || arg === "-v" || arg === "-V");
+};
+
 export const runConsole = (argv: readonly string[]) => {
+  const program = cli(argv).pipe(Effect.provide([BunServices.layer, FetchHttpClient.layer]));
+
+  if (isInfoOnlyInvocation(argv)) {
+    BunRuntime.runMain(program as never);
+    return;
+  }
+
   const main = Effect.tryPromise(async () => {
     const { runtime } = await import("../../api/src/groundswell");
-    return runtime.runPromise(cli(argv).pipe(Effect.provide([BunServices.layer, FetchHttpClient.layer])));
+    return runtime.runPromise(program);
   });
 
   BunRuntime.runMain(main);
