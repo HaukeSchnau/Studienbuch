@@ -1,7 +1,6 @@
-import { PERMISSIONS, Users } from "@stu/db/schema";
+import { PERMISSIONS } from "@stu/db/schema";
 import { SALUTATIONS } from "@stu/lib";
 import type { TRPCRouterRecord } from "@trpc/server";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { permissionProcedure } from "../../../procedures";
@@ -11,9 +10,15 @@ const webServicesModuleUrl = new URL("../../../../../lib-server/src/web-services
 
 const scopeOptions = ["schools", "years", "classes", "courses"] as const;
 
-const userSchema = createInsertSchema(Users);
-
-const updateManyUsersInputSchema = z.array(userSchema.partial().required({ id: true }));
+const updateManyUsersInputSchema = z.array(
+  z.object({
+    id: z.string().uuid(),
+    email: z.string().nullable().optional(),
+    passwordHash: z.string().nullable().optional(),
+    isSuperUser: z.boolean().optional(),
+    notificationTokens: z.array(z.string()).optional(),
+  }),
+);
 const addUserInputSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),

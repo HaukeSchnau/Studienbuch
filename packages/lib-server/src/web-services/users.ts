@@ -3,15 +3,20 @@ import { db } from "@stu/db/client";
 import { PERMISSIONS, PermissionsToUsers, Persons, Roles, RolesToUsers, Users } from "@stu/db/schema";
 import type { Permission, PermissionScope, Salutation } from "@stu/lib";
 import { BetterMap, SALUTATIONS } from "@stu/lib";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { hashPassword } from "../auth";
 import { createUser } from "../users";
 
-const userSchema = createInsertSchema(Users);
+const updateUserInputSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().nullable().optional(),
+  passwordHash: z.string().nullable().optional(),
+  isSuperUser: z.boolean().optional(),
+  notificationTokens: z.array(z.string()).optional(),
+});
 
-export const updateManyUsersInputSchema = z.array(userSchema.partial().required({ id: true }));
+export const updateManyUsersInputSchema = z.array(updateUserInputSchema);
 
 export const addUserInputSchema = z.object({
   firstName: z.string(),

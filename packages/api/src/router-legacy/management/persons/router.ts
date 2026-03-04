@@ -1,16 +1,21 @@
-import { Persons } from "@stu/db/schema";
 import { SALUTATIONS } from "@stu/lib";
 import type { TRPCRouterRecord } from "@trpc/server";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { permissionProcedure } from "../../../procedures";
 
 const editUsersProcedure = permissionProcedure("EDIT_USERS");
 const webServicesModuleUrl = new URL("../../../../../lib-server/src/web-services.ts", import.meta.url).href;
-const personsSchema = createInsertSchema(Persons);
-
-const updateManyPersonsInputSchema = z.array(personsSchema.partial().required({ id: true }));
+const updateManyPersonsInputSchema = z.array(
+  z.object({
+    id: z.string().uuid(),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+    salutation: z.enum(SALUTATIONS).nullable().optional(),
+    abbrv: z.string().nullable().optional(),
+    email: z.string().nullable().optional(),
+  }),
+);
 const addPersonInputSchema = z.object({
   firstName: z.string(),
   lastName: z.string(),

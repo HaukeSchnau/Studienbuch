@@ -2,12 +2,18 @@ import { asc, eq } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Persons } from "@stu/db/schema";
 import { SALUTATIONS } from "@stu/lib";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-const personsSchema = createInsertSchema(Persons);
+const updatePersonInputSchema = z.object({
+  id: z.string().uuid(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  salutation: z.enum(SALUTATIONS).nullable().optional(),
+  abbrv: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
+});
 
-export const updateManyPersonsInputSchema = z.array(personsSchema.partial().required({ id: true }));
+export const updateManyPersonsInputSchema = z.array(updatePersonInputSchema);
 
 export const addPersonInputSchema = z.object({
   firstName: z.string(),

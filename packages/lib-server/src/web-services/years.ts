@@ -2,10 +2,8 @@ import { and, asc, desc, eq, gt, gte, lt, lte } from "@stu/db";
 import { db } from "@stu/db/client";
 import { Semesters, Years } from "@stu/db/schema";
 import { SCHOOL_IDS } from "@stu/lib";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-const yearsSchema = createInsertSchema(Years);
 const defaultSemesterSchool: (typeof SCHOOL_IDS)[number] = "igs-lil";
 
 export const listYearsInputSchema = z.object({
@@ -18,8 +16,18 @@ export const yearIdInputSchema = z.object({
   startYear: z.number(),
 });
 
-export const addYearInputSchema = yearsSchema;
-export const updateYearInputSchema = yearsSchema.partial().required({ school: true, startYear: true });
+export const addYearInputSchema = z.object({
+  name: z.string(),
+  startYear: z.number().int(),
+  graduationYear: z.number().int(),
+  school: z.enum(SCHOOL_IDS),
+});
+export const updateYearInputSchema = z.object({
+  school: z.enum(SCHOOL_IDS),
+  startYear: z.number().int(),
+  name: z.string().optional(),
+  graduationYear: z.number().int().optional(),
+});
 
 export type ListYearsInput = z.infer<typeof listYearsInputSchema>;
 export type YearIdInput = z.infer<typeof yearIdInputSchema>;

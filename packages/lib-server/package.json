@@ -21,7 +21,7 @@
     "date-fns": "^4.1.0",
     "expo-server-sdk": "^6.0.0",
     "papaparse": "^5.5.2",
-    "zod": "^3.25.76"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@stu/testing": "workspace:*",

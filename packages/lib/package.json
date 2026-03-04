@@ -20,7 +20,7 @@
     "dayjs": "^1.11.13",
     "effect": "^3.16.13",
     "superjson": "2.2.2",
-    "zod": "^3.25.76"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@stu/testing": "workspace:*",
