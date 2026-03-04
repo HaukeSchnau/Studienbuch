@@ -48,6 +48,21 @@ check: check-fmt check-lint
 
 qa: check test
 
+qa-campaign-init:
+    ./tooling/qa/init-campaign.sh
+
+qa-capture-run-metadata:
+    ./tooling/qa/capture-run-metadata.sh
+
+qa-smoke-services:
+    ./tooling/qa/service-smoke.sh
+
+qa-smoke-console:
+    ./tooling/qa/console-smoke.sh
+
+qa-smoke-run:
+    ./tooling/qa/run-smoke.sh
+
 check-fmt:
     bun run checks:fmt
 
