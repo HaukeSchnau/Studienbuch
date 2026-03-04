@@ -18,8 +18,10 @@ This directory contains canonical project documentation.
 
 ## QA
 
+- `docs/qa/campaign-tracker.md`
 - `docs/qa/campaign-tracker-template.md`
 - `docs/qa/issue-template.md`
+- `docs/qa/issues/`
 
 ## Workspace Packages
 
