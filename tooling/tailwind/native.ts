@@ -1,5 +1,3 @@
-import type { Config } from "tailwindcss";
-
 import base from "./base";
 
 export const colors = {
@@ -93,4 +91,4 @@ export default {
       },
     },
   },
-} satisfies Config;
+};

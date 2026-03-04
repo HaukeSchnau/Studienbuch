@@ -1,8 +1,6 @@
 import baseConfig from "@stu/tailwind-config/web";
 
-import type { Config } from "tailwindcss";
-
-import { fontFamily } from "tailwindcss/defaultTheme";
+import defaultTheme from "tailwindcss/defaultTheme";
 
 export default {
   content: [...baseConfig.content],
@@ -10,7 +8,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-nunito)", ...fontFamily.sans],
+        sans: ["var(--font-nunito)", ...defaultTheme.fontFamily.sans],
       },
 
       backgroundImage: {
@@ -21,4 +19,4 @@ export default {
       },
     },
   },
-} satisfies Config;
+};

@@ -1,5 +1,3 @@
-import type { Config } from "tailwindcss";
-
 export const colors = {
   primary: {
     DEFAULT: "var(--primary, #33A42B)",
@@ -94,4 +92,4 @@ export default {
       },
     },
   },
-} satisfies Config;
+};
