@@ -40,7 +40,7 @@
     "ci:fix": "run-s checks:fmt checks:lint:fix-safe"
   },
   "devDependencies": {
-    "@effect/language-service": "^0.36.0",
+    "@effect/language-service": "^0.77.0",
     "@turbo/gen": "^2.8.10",
     "@types/bun": "^1.3.9",
     "@typescript/native-preview": "^7.0.0-dev.20260224.1",
@@ -56,15 +56,15 @@
     "vitest": "^4.0.18"
   },
   "overrides": {
-    "@groundswell/adapter-drizzle-postgres": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/adapter-drizzle-postgres",
-    "@groundswell/adapter-drizzle-sqlite": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/adapter-drizzle-sqlite",
-    "@groundswell/adapter-hono-server": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/adapter-hono-server",
-    "@groundswell/adapter-sse-client": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/adapter-sse-client",
-    "@groundswell/core": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/core",
-    "@groundswell/core-server": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/core-server",
-    "@groundswell/react": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/react",
-    "@groundswell/zod-helpers": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/zod-helpers",
-    "@schnau/effect-drizzle": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/vendor/effect-drizzle-local-v0.5.10-2984f70fa932.tgz"
+    "@groundswell/adapter-drizzle-postgres": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/vendor/studienbuch-w7/groundswell-adapter-drizzle-postgres-0.0.22.tgz",
+    "@groundswell/adapter-drizzle-sqlite": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/vendor/studienbuch-w7/groundswell-adapter-drizzle-sqlite-0.0.22.tgz",
+    "@groundswell/adapter-hono-server": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/vendor/studienbuch-w7/groundswell-adapter-hono-server-0.0.22.tgz",
+    "@groundswell/adapter-sse-client": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/vendor/studienbuch-w7/groundswell-adapter-sse-client-0.0.22.tgz",
+    "@groundswell/core": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/vendor/studienbuch-w7/groundswell-core-0.0.22.tgz",
+    "@groundswell/core-server": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/vendor/studienbuch-w7/groundswell-core-server-0.0.22.tgz",
+    "@groundswell/react": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/vendor/studienbuch-w7/groundswell-react-0.0.22.tgz",
+    "@groundswell/zod-helpers": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/vendor/studienbuch-w7/groundswell-zod-helpers-0.0.22.tgz",
+    "@schnau/effect-drizzle": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/vendor/studienbuch-w7/schnau-effect-drizzle-0.5.10.tgz"
   },
   "packageManager": "bun@1.2.15",
   "patchedDependencies": {

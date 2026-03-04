@@ -16,8 +16,8 @@
     "generate": "openapi --input https://openholidaysapi.org/swagger/v1/swagger.json --output ./src/holidays/generated"
   },
   "dependencies": {
-    "@effect/platform": "^0.90.6",
-    "@linear/sdk": "^75.0.0",
+    "@effect/platform": "^0.94.5",
+    "@linear/sdk": "^76.0.0",
     "@stu/lib": "workspace:*",
     "@t3-oss/env-nextjs": "^0.13.8",
     "@total-typescript/shoehorn": "^0.1.2",
@@ -32,7 +32,7 @@
     "@effect/vitest": "4.0.0-beta.26",
     "@stu/tsconfig": "workspace:*",
     "@types/tough-cookie": "^4.0.5",
-    "openapi-typescript-codegen": "^0.29.0",
+    "openapi-typescript-codegen": "^0.30.0",
     "vitest": "^4.0.18"
   }
 }

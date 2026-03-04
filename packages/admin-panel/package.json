@@ -14,7 +14,7 @@
     "@stu/api": "workspace:*",
     "@stu/db": "workspace:*",
     "@stu/lib": "workspace:*",
-    "@tanstack/react-devtools": "^0.4.0",
+    "@tanstack/react-devtools": "^0.9.9",
     "@tanstack/react-query": "^5.85.3",
     "@tanstack/react-router": "^1.131.18",
     "@tanstack/react-router-devtools": "^1.131.18",
