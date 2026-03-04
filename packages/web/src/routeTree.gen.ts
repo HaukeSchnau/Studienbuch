@@ -175,6 +175,7 @@ const AdminSchoolsSchoolYearsStartYearClassesRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof PublicIndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/datenschutz': typeof PublicDatenschutzRoute
@@ -183,7 +184,6 @@ export interface FileRoutesByFullPath {
   '/admin/people': typeof AdminPeopleRouteWithChildren
   '/admin/schools': typeof AdminSchoolsRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
-  '/': typeof PublicIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/people/new': typeof AdminPeopleNewRoute
   '/admin/schools/$school': typeof AdminSchoolsSchoolRouteWithChildren
@@ -255,6 +255,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/admin'
     | '/login'
     | '/datenschutz'
@@ -263,7 +264,6 @@ export interface FileRouteTypes {
     | '/admin/people'
     | '/admin/schools'
     | '/admin/users'
-    | '/'
     | '/admin/'
     | '/admin/people/new'
     | '/admin/schools/$school'
@@ -357,7 +357,7 @@ declare module '@tanstack/react-router' {
     '/_public': {
       id: '/_public'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -664,3 +664,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
