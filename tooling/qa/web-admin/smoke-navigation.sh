@@ -10,12 +10,14 @@ ARTIFACT_ROOT="${ARTIFACT_ROOT:-$REPO_ROOT/.artifacts/qa/web-admin-smoke}"
 ARTIFACT_DIR="${ARTIFACT_DIR:-$ARTIFACT_ROOT/$RUN_ID}"
 SESSION_NAME="${AGENT_BROWSER_SESSION:-web-admin-smoke-${RUN_ID}-$$}"
 WAIT_FOR_LOAD="${AGENT_BROWSER_WAIT_FOR_LOAD:-domcontentloaded}"
+WEB_BASE_TIMEOUT_SECONDS="${WEB_BASE_TIMEOUT_SECONDS:-8}"
 
 LOG_FILE="$ARTIFACT_DIR/run.log"
 SUMMARY_FILE="$ARTIFACT_DIR/summary.tsv"
 PRECONDITIONS_FILE="$ARTIFACT_DIR/preconditions.txt"
 
 AGENT_BROWSER_CMD=()
+AGENT_BROWSER_SOURCE=""
 CHECK_FAILURE_REASON=""
 HAS_FAILURES=0
 
@@ -37,11 +39,20 @@ append_summary() {
 resolve_agent_browser() {
   if command -v agent-browser >/dev/null 2>&1; then
     AGENT_BROWSER_CMD=(agent-browser)
+    AGENT_BROWSER_SOURCE="agent-browser"
     return
   fi
 
   if command -v npx >/dev/null 2>&1 && npx --yes agent-browser --version >/dev/null 2>&1; then
     AGENT_BROWSER_CMD=(npx --yes agent-browser)
+    AGENT_BROWSER_SOURCE="npx --yes agent-browser"
+    return
+  fi
+
+  if command -v nix >/dev/null 2>&1 \
+    && nix shell nixpkgs#nodejs -c npx --yes agent-browser --version >/dev/null 2>&1; then
+    AGENT_BROWSER_CMD=(nix shell nixpkgs#nodejs -c npx --yes agent-browser)
+    AGENT_BROWSER_SOURCE="nix shell nixpkgs#nodejs -c npx --yes agent-browser"
     return
   fi
 
@@ -65,10 +76,20 @@ ab_to_file() {
   local output_file="$1"
   shift
   local output_dir
+  local args=("$@")
   output_dir="$(dirname "$output_file")"
   mkdir -p "$output_dir"
-  if ! ab "$@" >"$output_file" 2>&1; then
-    CHECK_FAILURE_REASON="agent-browser command failed: $* (see $output_file)"
+
+  # `agent-browser screenshot` treats leading "." as a CSS selector unless path is explicit.
+  if [[ "${args[0]:-}" == "screenshot" ]] && [[ "${#args[@]}" -ge 2 ]]; then
+    local screenshot_target="${args[1]}"
+    if [[ "$screenshot_target" != /* ]] && [[ "$screenshot_target" != ./* ]]; then
+      args[1]="./$screenshot_target"
+    fi
+  fi
+
+  if ! ab "${args[@]}" >"$output_file" 2>&1; then
+    CHECK_FAILURE_REASON="agent-browser command failed: ${args[*]} (see $output_file)"
     return 1
   fi
   return 0
@@ -78,6 +99,26 @@ cleanup() {
   if [[ ${#AGENT_BROWSER_CMD[@]} -gt 0 ]]; then
     "${AGENT_BROWSER_CMD[@]}" --session "$SESSION_NAME" close >/dev/null 2>&1 || true
   fi
+}
+
+check_web_base_reachable() {
+  local preflight_url="${WEB_BASE_URL%/}/"
+  local http_code
+
+  if ! http_code="$(curl -sS -L -m "$WEB_BASE_TIMEOUT_SECONDS" -o /dev/null -w "%{http_code}" "$preflight_url")"; then
+    CHECK_FAILURE_REASON="WEB_BASE_URL is unreachable: $preflight_url (timeout ${WEB_BASE_TIMEOUT_SECONDS}s)"
+    append_summary "preflight-web-base" "FAIL" "$CHECK_FAILURE_REASON"
+    return 1
+  fi
+
+  if [[ "$http_code" == "000" ]]; then
+    CHECK_FAILURE_REASON="WEB_BASE_URL is unreachable: $preflight_url (timeout ${WEB_BASE_TIMEOUT_SECONDS}s)"
+    append_summary "preflight-web-base" "FAIL" "$CHECK_FAILURE_REASON"
+    return 1
+  fi
+
+  append_summary "preflight-web-base" "PASS" "reachable ($preflight_url -> $http_code)"
+  return 0
 }
 
 check_public_home() {
@@ -185,6 +226,7 @@ Preconditions:
 - A local web instance is running and reachable at WEB_BASE_URL ($WEB_BASE_URL).
 - The smoke is designed for a fresh unauthenticated browser session.
 - agent-browser CLI is installed and executable.
+- WEB_BASE_URL preflight timeout: ${WEB_BASE_TIMEOUT_SECONDS}s
 
 Outputs:
 - Run log: $LOG_FILE
@@ -200,8 +242,17 @@ main() {
 
   log "Starting web/admin smoke run"
   log "WEB_BASE_URL=$WEB_BASE_URL"
+  log "AGENT_BROWSER_CMD=${AGENT_BROWSER_SOURCE}"
   log "ARTIFACT_DIR=$ARTIFACT_DIR"
   log "SESSION_NAME=$SESSION_NAME"
+  log "WEB_BASE_TIMEOUT_SECONDS=$WEB_BASE_TIMEOUT_SECONDS"
+
+  CHECK_FAILURE_REASON=""
+  if ! check_web_base_reachable; then
+    log "Preflight failed: $CHECK_FAILURE_REASON"
+    log "Hint: start stack via 'just live-up-dev' or override WEB_BASE_URL"
+    exit 1
+  fi
 
   run_check "public-home" check_public_home
   run_check "login-page" check_login_page
