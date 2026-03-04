@@ -69,7 +69,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Typecheck
-        run: bun typecheck
+        run: bun run typecheck
 
   test:
     runs-on: ubuntu-latest

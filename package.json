@@ -8,6 +8,7 @@
   "scripts": {
     "build": "turbo run build",
     "build:internal": "turbo run --filter=\"./packages/*\" build",
+    "checks:typecheck": "oxlint --type-aware --type-check --deny-warnings",
     "checks:lint": "oxlint --type-aware --type-check",
     "checks:lint:ci": "oxlint --type-aware --type-check --deny-warnings --format github",
     "checks:lint:fix-safe": "oxlint --type-aware --type-check --fix",
@@ -31,12 +32,13 @@
     "lint:workspaces": "turbo run lint --filter=!@stu/web",
     "lint:ws": "sherif",
     "postinstall": "bun lint:ws",
+    "typecheck": "bun run checks:typecheck",
     "test": "vitest run",
     "test:ci": "mkdir -p test-results && vitest run packages/api/src/sync.integration.test.ts --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml",
     "test:sync": "bun test packages/api/src/sync.integration.test.ts",
     "test:maestro:mobile": "bun --filter @stu/app-mobile maestro:test",
     "test:dev": "vitest --ui --coverage",
-    "ci": "run-s checks:fmt:ci checks:lint:ci test:ci",
+    "ci": "run-s checks:fmt:ci checks:lint:ci typecheck test:ci",
     "ci:fix": "run-s checks:fmt checks:lint:fix-safe"
   },
   "devDependencies": {
