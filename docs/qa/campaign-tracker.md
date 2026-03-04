@@ -13,8 +13,8 @@
 
 | Issue ID | Title | Severity | Status | Owner | Linked Work | Last Update | Next Action |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| QA-001 | Live stack startup blocked by OCI preload/image readiness (`live-up-dev-debug`) | S2 | Reproduced | Orchestrator | `qwzpntpqwvovqullsuvrpqnpwwqtnkmn` | 2026-03-04 | Diagnose `just oci-load` invalid nix store path and restore image preload pipeline |
-| QA-002 | Mobile lifecycle smoke blocked by missing E2E dev server / packager | S2 | Reproduced | Orchestrator | `.artifacts/qa/20260304T231118Z/*maestro-lifecycle.log`, `psy` | 2026-03-04 | Start `bun --filter @stu/app-mobile dev:e2e`, then rerun mobile smoke and confirm lifecycle assertions |
+| QA-001 | Live stack startup blocked by OCI preload/image readiness (`live-up-dev-debug`) | S2 | Closed | Orchestrator | `vrtkunxpqltwyvzvuuskoyutqmrumtwy` | 2026-03-04 | Monitor via `just oci-load` + `just qa-smoke-services` in daily smoke |
+| QA-002 | Mobile lifecycle smoke blocked by missing E2E dev server / packager | S2 | Reproduced | Orchestrator | `.artifacts/qa/20260304T233124Z/*`, `psy` | 2026-03-04 | Start `bun --filter @stu/app-mobile dev:e2e`, then rerun mobile smoke and confirm lifecycle assertions |
 | QA-003 | iOS dogfood probe blocked by agent-device simulator lock (`DEVICE_IN_USE`) | S2 | Reproduced | Orchestrator | `szlmowwuyopmlmwwmovzpkptlontkzsv` | 2026-03-04 | Add session cleanup guidance and isolate conflicting session owner for stable dogfood runs |
 | QA-004 | Android dogfood probe blocked: no ADB device/emulator detected | S2 | Reproduced | Orchestrator | `mqlxrmzxkrtwvutkyslqznvowtporqtw` | 2026-03-04 | Provision Android emulator in QA environment and rerun android smoke |
 | QA-005 | Console help path must remain Effect-managed and DB-independent | S1 | Closed | Orchestrator | `smnprnsvwomqvrrzyrslztkoqulszpkw`, `wuuzyrrqnqmrwymwlwvpxqxmouysprrs` | 2026-03-04 | Monitor via `just qa-smoke-console` in every aggregate run |
@@ -36,13 +36,13 @@
 
 ### Reproduced
 
-- [ ] QA-001: Live stack startup blocked by OCI preload/image readiness
 - [ ] QA-002: Mobile lifecycle smoke blocked by missing E2E dev server / packager
 - [ ] QA-003: iOS dogfood probe blocked by `DEVICE_IN_USE`
 - [ ] QA-004: Android dogfood probe blocked by missing device/emulator
 
 ### Closed
 
+- [x] QA-001: Live stack startup OCI readiness fixed via fallback archive loading
 - [x] QA-005: Console help path fixed (Effect-managed)
 - [x] QA-006: Web/admin smoke hardened
 - [x] QA-007: Service smoke diagnostics hardened

@@ -5,7 +5,7 @@
 - Issue ID: QA-001
 - Title: Live stack startup blocked by OCI preload/image readiness (`live-up-dev-debug`)
 - Severity: `S2 Medium`
-- Status: `Reproduced`
+- Status: `Closed`
 - Owner: Orchestrator
 - Reported by: service/runtime worker
 - Reported at: 2026-03-04
@@ -13,7 +13,7 @@
 ## Environment Stamp
 
 - App version/build: local dev
-- Git commit (app): `b1cf06ba0e3111936bb5cf086ee859a9671e7637`
+- Git commit (app): `1dae6f5226892cfb9ef1d676aa592c92eb50594a`
 - Git commit (backend, if relevant): same workspace
 - Device + OS: macOS local
 - Environment: `local`
@@ -36,7 +36,11 @@
 
 ## Artifacts
 
-- Logs: `.artifacts/qa/20260304T223410Z/service-smoke-curl-errors.log`
+- Logs:
+  - `.artifacts/qa/20260304T232737Z/QA-001/just-oci-load.log`
+  - `.artifacts/qa/20260304T232737Z/QA-001/live-up-dev-debug.log`
+  - `.artifacts/qa/20260304T232737Z/QA-001/live-health-all.log`
+  - `.artifacts/qa/20260304T232737Z/QA-001/qa-smoke-services.log`
 - Other: subagent command logs from service/runtime slice
 
 ## Verification
@@ -46,6 +50,7 @@
 ```bash
 just qa-campaign-init
 just qa-capture-run-metadata
+just oci-load
 just live-up-dev-debug
 SKIP_DOCTOR=1 just live-up-dev-debug
 SKIP_DOCTOR=1 SKIP_OCI_PRELOAD=1 just live-up-dev-debug
@@ -55,13 +60,13 @@ just qa-smoke-services
 
 ### Results
 
-- Command output summary: startup blocked before healthy runtime.
-- Manual retest result: `fail`
+- Command output summary: `oci-load`, `live-up-dev-debug`, `live-health-all`, and `qa-smoke-services` all pass after fallback fix.
+- Manual retest result: `pass`
 - Verified by: Orchestrator
 - Verified at: 2026-03-04
 
 ## Notes / Product Decision
 
 - Decision needed? `no`
-- Decision summary: environment/infrastructure readiness defect; diagnostics hardened in commit `qwzpntpqwvovqullsuvrpqnpwwqtnkmn`.
-- Follow-up actions: repair OCI preload pipeline and re-run Phase 2 gates.
+- Decision summary: fixed via resilient OCI archive resolution with local fallback when Nix cache path-info is unavailable.
+- Follow-up actions: monitor in daily smoke and keep fallback archive directory populated (`.artifacts/oci` or `STUDIENBUCH_OCI_ARCHIVE_DIR`).
