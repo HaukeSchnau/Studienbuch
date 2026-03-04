@@ -177,6 +177,7 @@
       "dependencies": {
         "@axiomhq/pino": "^1.3.1",
         "@date-fns/tz": "^1.2.0",
+        "@effect/cli": "workspace:*",
         "@stu/api": "workspace:*",
         "@stu/db": "workspace:*",
         "@stu/external-api": "workspace:*",
@@ -412,6 +413,13 @@
         "typescript": "^5.9.2",
         "vite": "^7.1.2",
         "vite-tsconfig-paths": "^6.1.1",
+      },
+    },
+    "tooling/effect-cli": {
+      "name": "@effect/cli",
+      "version": "4.0.0-beta.27",
+      "dependencies": {
+        "effect": "4.0.0-beta.26",
       },
     },
     "tooling/qa": {
@@ -654,6 +662,8 @@
     "@dev-plugins/react-navigation": ["@dev-plugins/react-navigation@0.4.0", "", { "dependencies": { "@react-navigation/devtools": "^7.0.1", "nanoid": "^5.0.8" }, "peerDependencies": { "@react-navigation/core": "*", "expo": ">=53.0.5", "react": "*" } }, "sha512-Z/QoRL1a1uU4i6wEnP/tzbplO3BiahEakQgjqIu7Uw0z9ZtsTKSHn7qTqTDpxVlItyyzmrsnBGEXeHTUYKnJ/g=="],
 
     "@drizzle-team/brocli": ["@drizzle-team/brocli@0.10.2", "", {}, "sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w=="],
+
+    "@effect/cli": ["@effect/cli@workspace:tooling/effect-cli"],
 
     "@effect/experimental": ["@effect/experimental@0.58.0", "", { "dependencies": { "uuid": "^11.0.3" }, "peerDependencies": { "@effect/platform": "^0.94.0", "effect": "^3.19.13", "ioredis": "^5", "lmdb": "^3" }, "optionalPeers": ["ioredis", "lmdb"] }, "sha512-IEP9sapjF6rFy5TkoqDPc86st/fnqUfjT7Xa3pWJrFGr1hzaMXHo+mWsYOZS9LAOVKnpHuVziDK97EP5qsCHVA=="],
 
