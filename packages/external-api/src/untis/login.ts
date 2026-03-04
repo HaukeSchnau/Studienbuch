@@ -1,4 +1,4 @@
-import { Cookies, HttpBody, HttpClient, HttpClientRequest, HttpClientResponse } from "@effect/platform";
+import { Cookies, HttpBody, HttpClient, HttpClientRequest, HttpClientResponse, UrlParams } from "effect/unstable/http";
 import { Data, Effect, pipe, Ref, Schema } from "effect";
 import { withUntisHttpResilience } from "./http";
 import { untisLegacyBaseUrl, untisSchoolBaseUrl, untisSchoolSearchUrl } from "./urls";
@@ -89,7 +89,7 @@ export namespace UntisAuth {
           accept: "application/json",
           "content-type": "application/json",
         },
-        body: HttpBody.unsafeJson({
+        body: HttpBody.jsonUnsafe({
           id: `studienbuch-${Date.now()}`,
           method: "searchSchool",
           params: [{ search: kadmosName.trim() }],
@@ -145,12 +145,14 @@ export namespace UntisAuth {
         headers: {
           accept: "application/json",
         },
-        body: HttpBody.urlParams([
-          ["school", school.loginName],
-          ["j_username", kadmosUsername],
-          ["j_password", kadmosPassword],
-          ["token", ""],
-        ]),
+        body: HttpBody.urlParams(
+          UrlParams.fromInput([
+            ["school", school.loginName],
+            ["j_username", kadmosUsername],
+            ["j_password", kadmosPassword],
+            ["token", ""],
+          ]),
+        ),
       })
       .pipe(Effect.flatMap(HttpClientResponse.schemaBodyJson(schema)), withUntisHttpResilience("login"));
   });
@@ -174,7 +176,8 @@ export namespace UntisAuth {
     kadmosPassword: string;
   }) {
     const cookies = yield* Ref.make(Cookies.empty);
-    const client = yield* HttpClient.HttpClient.pipe(Effect.andThen(HttpClient.withCookiesRef(cookies)));
+    const baseClient = yield* HttpClient.HttpClient;
+    const client = HttpClient.withCookiesRef(baseClient, cookies);
 
     const school = yield* resolveSchool({ kadmosName, client }).pipe(
       Effect.mapError((cause) => new LoginError({ cause, step: "schoolLookup" })),

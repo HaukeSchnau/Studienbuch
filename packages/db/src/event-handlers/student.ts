@@ -1,8 +1,9 @@
 import type { NamespaceServerApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
-import { type DomainEvent, splitStudentName, verifyStudentInitiator } from "@stu/lib";
+import { splitStudentName, verifyStudentInitiator } from "@stu/lib";
 import { Effect } from "effect";
 import type { Database, DatabaseError } from "../database";
+import type { DomainEvent } from "../domain-event";
 import { StudentRepository } from "../repositories/student.repo";
 
 export const studentApplicators: NamespaceServerApplicatorMap<
@@ -20,7 +21,7 @@ export const studentApplicators: NamespaceServerApplicatorMap<
           onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
         });
 
-        const repo = yield* StudentRepository;
+        const repo = yield* Effect.service(StudentRepository);
         const school = yield* repo.getSchoolOfUser({
           studentId: event.data.studentId,
         });
@@ -63,7 +64,7 @@ export const studentApplicators: NamespaceServerApplicatorMap<
           onForbidden: () => new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }),
         });
 
-        const repo = yield* StudentRepository;
+        const repo = yield* Effect.service(StudentRepository);
         const isAssigned = yield* repo.isAssignedToCourse({
           studentId: event.data.studentId,
           courseId: event.data.courseId,

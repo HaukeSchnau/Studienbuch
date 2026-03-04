@@ -11,7 +11,7 @@ export const db = drizzle(expoDb, {
   schema,
 });
 
-export const DatabaseLive = Layer.scoped(
+export const DatabaseLive = Layer.effect(
   Database,
   makeService(
     {

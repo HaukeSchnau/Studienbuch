@@ -42,7 +42,7 @@ describe("student scoped applicators (db package)", () => {
     const { gradeApplicators } = await loadDbModules();
     const exit = await Effect.runPromiseExit(
       unsafe(
-        gradeApplicators.currentGradeSet.verify(
+        gradeApplicators.currentGradeSet!.verify(
           {
             type: "grades.currentGradeSet",
             data: {
@@ -70,8 +70,8 @@ describe("student scoped applicators (db package)", () => {
 
     await Effect.runPromise(
       unsafe(
-        gradeApplicators.currentGradeSet
-          .apply(
+        gradeApplicators
+          .currentGradeSet!.apply(
             {
               type: "grades.currentGradeSet",
               data: {
@@ -130,8 +130,8 @@ describe("student scoped applicators (db package)", () => {
 
     await Effect.runPromise(
       unsafe(
-        absenceApplicators.recorded
-          .apply(
+        absenceApplicators
+          .recorded!.apply(
             {
               type: "absence.recorded",
               data: {
@@ -185,8 +185,8 @@ describe("student scoped applicators (db package)", () => {
 
     await Effect.runPromise(
       unsafe(
-        studentApplicators.joined
-          .apply(
+        studentApplicators
+          .joined!.apply(
             {
               type: "student.joined",
               data: {

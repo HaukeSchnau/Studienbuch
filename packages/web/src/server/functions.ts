@@ -77,7 +77,7 @@ export const getSessionFn = createServerFn({ method: "GET" }).handler(async () =
 });
 
 export const loginFn = createServerFn({ method: "POST" })
-  .validator(loginInputSchema)
+  .inputValidator(loginInputSchema)
   .handler(async ({ data }) => loginWithPassword(data));
 
 export const logoutFn = createServerFn({ method: "POST" }).handler(async () => {
@@ -86,7 +86,7 @@ export const logoutFn = createServerFn({ method: "POST" }).handler(async () => {
 });
 
 export const hasPermissionFn = createServerFn({ method: "POST" })
-  .validator(z.object({ permission: z.enum(PERMISSIONS) }))
+  .inputValidator(z.object({ permission: z.enum(PERMISSIONS) }))
   .handler(async ({ data }) => hasCurrentUserPermission(data.permission as Permission));
 
 export const listSchoolsFn = createServerFn({ method: "GET" }).handler(async () => {
@@ -98,40 +98,40 @@ export const listSchoolsFn = createServerFn({ method: "GET" }).handler(async () 
 });
 
 export const getSchoolThemeFn = createServerFn({ method: "GET" })
-  .validator(schoolIdInputSchema)
+  .inputValidator(schoolIdInputSchema)
   .handler(async ({ data }) => findSchoolTheme(data));
 
 export const setSchoolThemeFn = createServerFn({ method: "POST" })
-  .validator(setSchoolThemeInputSchema)
+  .inputValidator(setSchoolThemeInputSchema)
   .handler(async ({ data }) => {
     await requireCurrentSessionUser();
     return setSchoolTheme(data);
   });
 
 export const listYearsFn = createServerFn({ method: "GET" })
-  .validator(listYearsInputSchema)
+  .inputValidator(listYearsInputSchema)
   .handler(async ({ data }) => listYears(data));
 
 export const getOneYearFn = createServerFn({ method: "GET" })
-  .validator(yearIdInputSchema)
+  .inputValidator(yearIdInputSchema)
   .handler(async ({ data }) => getOneYear(data));
 
 export const addYearFn = createServerFn({ method: "POST" })
-  .validator(addYearInputSchema)
+  .inputValidator(addYearInputSchema)
   .handler(async ({ data }) => {
     await requireCurrentUserPermission("EDIT_YEARS");
     return addYear(data);
   });
 
 export const updateYearFn = createServerFn({ method: "POST" })
-  .validator(updateYearInputSchema)
+  .inputValidator(updateYearInputSchema)
   .handler(async ({ data }) => {
     await requireCurrentUserPermission("EDIT_YEARS");
     return updateYear(data);
   });
 
 export const listClassesByYearFn = createServerFn({ method: "GET" })
-  .validator(listClassesByYearInputSchema)
+  .inputValidator(listClassesByYearInputSchema)
   .handler(async ({ data }) => listClassesByYear(data));
 
 export const listUsersFn = createServerFn({ method: "GET" }).handler(async () => {
@@ -140,35 +140,35 @@ export const listUsersFn = createServerFn({ method: "GET" }).handler(async () =>
 });
 
 export const addUserFn = createServerFn({ method: "POST" })
-  .validator(addUserInputSchema)
+  .inputValidator(addUserInputSchema)
   .handler(async ({ data }) => {
     await requireCurrentUserPermission("EDIT_USERS");
     return addUser(data);
   });
 
 export const deleteUserFn = createServerFn({ method: "POST" })
-  .validator(deleteUserInputSchema)
+  .inputValidator(deleteUserInputSchema)
   .handler(async ({ data }) => {
     await requireCurrentUserPermission("EDIT_USERS");
     return deleteUser(data);
   });
 
 export const updateUserPasswordFn = createServerFn({ method: "POST" })
-  .validator(updateUserPasswordInputSchema)
+  .inputValidator(updateUserPasswordInputSchema)
   .handler(async ({ data }) => {
     await requireCurrentUserPermission("EDIT_USERS");
     return updateUserPassword(data);
   });
 
 export const setUserPermissionsFn = createServerFn({ method: "POST" })
-  .validator(setUserPermissionsInputSchema)
+  .inputValidator(setUserPermissionsInputSchema)
   .handler(async ({ data }) => {
     await requireCurrentUserPermission("EDIT_USERS");
     return setUserPermissions(data);
   });
 
 export const listUserScopeOptionsFn = createServerFn({ method: "GET" })
-  .validator(listUserScopeOptionsInputSchema)
+  .inputValidator(listUserScopeOptionsInputSchema)
   .handler(async ({ data }) => {
     await requireCurrentUserPermission("EDIT_USERS");
     return listUserScopeOptions(data);
@@ -184,7 +184,7 @@ export const listPersonsFn = createServerFn({ method: "GET" }).handler(async () 
 });
 
 export const addPersonFn = createServerFn({ method: "POST" })
-  .validator(addPersonCompatInputSchema)
+  .inputValidator(addPersonCompatInputSchema)
   .handler(async ({ data }) => {
     await requireCurrentUserPermission("EDIT_USERS");
     if ("name" in data) {
@@ -202,14 +202,14 @@ export const addPersonFn = createServerFn({ method: "POST" })
   });
 
 export const deletePersonFn = createServerFn({ method: "POST" })
-  .validator(deletePersonInputSchema)
+  .inputValidator(deletePersonInputSchema)
   .handler(async ({ data }) => {
     await requireCurrentUserPermission("EDIT_USERS");
     return deletePerson(data);
   });
 
 export const updateManyPersonsFn = createServerFn({ method: "POST" })
-  .validator(updateManyPersonsInputSchema)
+  .inputValidator(updateManyPersonsInputSchema)
   .handler(async ({ data }) => {
     await requireCurrentUserPermission("EDIT_USERS");
     return updateManyPersons(data);

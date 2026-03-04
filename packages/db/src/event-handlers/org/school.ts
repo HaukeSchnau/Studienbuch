@@ -11,13 +11,13 @@ export const schoolApplicators: Pick<OrgApplicatorMap, "school.founded" | "teach
       Effect.gen(function* () {
         yield* verifySystemInitiator(initiatorId);
         yield* verifyOrgSchoolFounded({
-          data: event.data,
+          data: event.data as never,
           onDuplicate: () => new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }),
         });
       }),
     apply: (event) =>
       applyOrgSchoolFounded({
-        data: event.data,
+        data: event.data as never,
       }),
     getEventTopics: (event) => Effect.succeed([studentsOfSchool(event.data.id)]),
   },
@@ -25,7 +25,7 @@ export const schoolApplicators: Pick<OrgApplicatorMap, "school.founded" | "teach
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
         yield* verifySystemInitiator(initiatorId);
-        const repo = yield* PersonRepository;
+        const repo = yield* Effect.service(PersonRepository);
         if (yield* repo.getPersonByAbbrv({ abbrv: event.data.abbrv })) {
           return yield* Effect.fail(new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }));
         }

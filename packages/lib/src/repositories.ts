@@ -1,4 +1,4 @@
-import { Context, Data, type Effect } from "effect";
+import { Data, ServiceMap, type Effect } from "effect";
 import type { SubjectId } from "./courses";
 import type { GradeType } from "./grades";
 import type { SimpleDate } from "./infrastructure/dates";
@@ -16,7 +16,7 @@ export interface UnknownDatabaseError {
   readonly message: string;
 }
 
-export class AbsenceRepository extends Context.Tag("AbsenceRepository")<
+export class AbsenceRepository extends ServiceMap.Service<
   AbsenceRepository,
   {
     addAbsence: (payload: {
@@ -46,9 +46,9 @@ export class AbsenceRepository extends Context.Tag("AbsenceRepository")<
       courseIds: string[];
     }) => Effect.Effect<void, UnknownDatabaseError>;
   }
->() {}
+>()("AbsenceRepository") {}
 
-export class CourseRepository extends Context.Tag("CourseRepository")<
+export class CourseRepository extends ServiceMap.Service<
   CourseRepository,
   {
     doesCourseExist: (payload: { id: string }) => Effect.Effect<boolean, UnknownDatabaseError>;
@@ -77,7 +77,7 @@ export class CourseRepository extends Context.Tag("CourseRepository")<
       classes: { identifierInYear: string; startYear: number }[];
     }) => Effect.Effect<void, UnknownDatabaseError>;
   }
->() {}
+>()("CourseRepository") {}
 
 export class GradeTooOldError extends Data.TaggedError("GradeTooOldError")<{
   date: Date;
@@ -89,7 +89,7 @@ export class GradeTooOldError extends Data.TaggedError("GradeTooOldError")<{
   }
 }
 
-export class GradeRepository extends Context.Tag("GradeRepository")<
+export class GradeRepository extends ServiceMap.Service<
   GradeRepository,
   {
     setCurrentGrade: (payload: {
@@ -138,9 +138,9 @@ export class GradeRepository extends Context.Tag("GradeRepository")<
       type: GradeType;
     }) => Effect.Effect<void, UnknownDatabaseError>;
   }
->() {}
+>()("GradeRepository") {}
 
-export class HolidayRepository extends Context.Tag("HolidayRepository")<
+export class HolidayRepository extends ServiceMap.Service<
   HolidayRepository,
   {
     getHoliday: (payload: {
@@ -171,9 +171,9 @@ export class HolidayRepository extends Context.Tag("HolidayRepository")<
       UnknownDatabaseError
     >;
   }
->() {}
+>()("HolidayRepository") {}
 
-export class PersonRepository extends Context.Tag("PersonRepository")<
+export class PersonRepository extends ServiceMap.Service<
   PersonRepository,
   {
     doesTeacherExist: (payload: { id: string }) => Effect.Effect<boolean, UnknownDatabaseError>;
@@ -186,9 +186,9 @@ export class PersonRepository extends Context.Tag("PersonRepository")<
       abbrv: string;
     }) => Effect.Effect<void, UnknownDatabaseError>;
   }
->() {}
+>()("PersonRepository") {}
 
-export class SchoolRepository extends Context.Tag("SchoolRepository")<
+export class SchoolRepository extends ServiceMap.Service<
   SchoolRepository,
   {
     doesSchoolExist: (payload: { id: SchoolId }) => Effect.Effect<boolean, UnknownDatabaseError>;
@@ -213,9 +213,9 @@ export class SchoolRepository extends Context.Tag("SchoolRepository")<
       state: StateCode;
     }) => Effect.Effect<{ id: SchoolId; name: string }[], UnknownDatabaseError>;
   }
->() {}
+>()("SchoolRepository") {}
 
-export class ClassRepository extends Context.Tag("ClassRepository")<
+export class ClassRepository extends ServiceMap.Service<
   ClassRepository,
   {
     doesClassExist: (payload: {
@@ -240,9 +240,9 @@ export class ClassRepository extends Context.Tag("ClassRepository")<
       UnknownDatabaseError
     >;
   }
->() {}
+>()("ClassRepository") {}
 
-export class TimetableRepository extends Context.Tag("TimetableRepository")<
+export class TimetableRepository extends ServiceMap.Service<
   TimetableRepository,
   {
     doesTimetableEntryExist: (payload: { start: Date; course: string }) => Effect.Effect<boolean, UnknownDatabaseError>;
@@ -263,9 +263,9 @@ export class TimetableRepository extends Context.Tag("TimetableRepository")<
       type: "VERTRETUNG" | "ENTFALL";
     }) => Effect.Effect<void, UnknownDatabaseError>;
   }
->() {}
+>()("TimetableRepository") {}
 
-export class AuthRepository extends Context.Tag("AuthRepository")<
+export class AuthRepository extends ServiceMap.Service<
   AuthRepository,
   {
     getLicenseKey: (payload: { key: string }) => Effect.Effect<
@@ -302,4 +302,4 @@ export class AuthRepository extends Context.Tag("AuthRepository")<
 
     getAllUsers: () => Effect.Effect<{ id: string }[], UnknownDatabaseError>;
   }
->() {}
+>()("AuthRepository") {}

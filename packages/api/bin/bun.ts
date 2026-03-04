@@ -21,4 +21,4 @@ const server = Effect.gen(function* () {
 
 const DevToolsLive = DevTools.layerWebSocket().pipe(Layer.provide(BunSocket.layerWebSocketConstructor));
 const serverLive = server.pipe(Effect.provide(AppLayerLive), Effect.provide(DevToolsLive));
-BunRuntime.runMain(Effect.scoped(serverLive));
+BunRuntime.runMain(Effect.scoped(serverLive) as Effect.Effect<never, never, never>);

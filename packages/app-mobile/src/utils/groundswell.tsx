@@ -12,7 +12,7 @@ import {
   ValidationError,
 } from "@groundswell/core";
 import { syncEngineFactory } from "@groundswell/react";
-import { DomainEvent } from "@stu/lib";
+import { DomainEvent as DomainEventSchema } from "@stu/lib";
 import {
   AbsenceRepositoryLive,
   applicators,
@@ -28,7 +28,7 @@ import {
   TimetableRepositoryLive,
   YearRepositoryLive,
 } from "@stu/student";
-import { Context, Data, Effect, Layer, Logger, ManagedRuntime, Stream } from "effect";
+import { Data, Effect, Layer, Logger, ManagedRuntime, ServiceMap, Stream } from "effect";
 import * as Crypto from "expo-crypto";
 import React, { useContext } from "react";
 import { DatabaseLive } from "~/db/client";
@@ -41,22 +41,24 @@ import {
   type SnapshotRecoveryError,
 } from "./snapshot-recovery";
 import { getStorage, setStorage } from "./storage";
+import type { ZodSchema } from "zod";
+import type { DomainEvent } from "../../../student/src/domain-event";
 
-export class DomainApplicator extends Context.Tag("Applicator")<DomainApplicator, Applicator<DomainEvent>>() {}
+export class DomainApplicator extends ServiceMap.Service<DomainApplicator, Applicator<DomainEvent>>()("Applicator") {}
 
-export class DomainStorage extends Context.Tag("Storage")<DomainStorage, Storage<DomainEvent>>() {}
+export class DomainStorage extends ServiceMap.Service<DomainStorage, Storage<DomainEvent>>()("Storage") {}
 
-export class DomainTransport extends Context.Tag("Transport")<DomainTransport, Transport<DomainEvent>>() {}
+export class DomainTransport extends ServiceMap.Service<DomainTransport, Transport<DomainEvent>>()("Transport") {}
 
-export class DomainSyncEngine extends Context.Tag("SyncEngine")<DomainSyncEngine, SyncEngine<DomainEvent>>() {}
+export class DomainSyncEngine extends ServiceMap.Service<DomainSyncEngine, SyncEngine<DomainEvent>>()("SyncEngine") {}
 
 interface SessionService {
   readonly current: Effect.Effect<{ user: string; token: string }, NoSessionError>;
 }
 
-export class DomainSession extends Context.Tag("Session")<DomainSession, SessionService>() {}
+export class DomainSession extends ServiceMap.Service<DomainSession, SessionService>()("Session") {}
 
-export const clientSyncEngine = syncEngineFactory(DomainSyncEngine, Database);
+export const clientSyncEngine = syncEngineFactory(DomainSyncEngine, Database as any);
 
 export class NoSessionError extends Data.TaggedError("NoSessionError") {}
 
@@ -109,8 +111,8 @@ const clientApplicatorsLive = Layer.effect(
     const db = yield* Database;
     const sessionService = yield* DomainSession;
     return DomainApplicator.of({
-      verify: Effect.fn(
-        function* (event: DomainEvent) {
+      verify: (event: DomainEvent) =>
+        Effect.gen(function* () {
           const session = yield* sessionService.current;
 
           yield* applicators
@@ -118,21 +120,23 @@ const clientApplicatorsLive = Layer.effect(
               initiatorId: session.user,
             })
             .pipe(
-              Effect.catchTag("ValidationError", (error) =>
-                shouldBypassLocalMissingDependencyVerification(event, error) ? Effect.void : Effect.fail(error),
+              Effect.catchIf(
+                (error): error is ValidationError => error instanceof ValidationError,
+                (error) =>
+                  shouldBypassLocalMissingDependencyVerification(event, error) ? Effect.void : Effect.fail(error),
               ),
             );
-        },
-        Effect.provide(repositories),
-        Effect.provideService(Database, db),
-        Effect.catchTags({
-          DatabaseError: (error) => Effect.fail(new ValidationError({ cause: error, reason: "UNKNOWN" })),
-          ApplicatorError: (error) => Effect.fail(new ValidationError({ cause: error, reason: "UNKNOWN" })),
-          NoSessionError: () => Effect.fail(new ValidationError({ cause: "No session", reason: "UNKNOWN" })),
-        }),
-      ),
-      apply: Effect.fn(
-        function* (event: DomainEvent) {
+        }).pipe(
+          Effect.provide(repositories),
+          Effect.provideService(Database, db),
+          Effect.catchTags({
+            DatabaseError: (error: unknown) => Effect.fail(new ValidationError({ cause: error, reason: "UNKNOWN" })),
+            ApplicatorError: (error: unknown) => Effect.fail(new ValidationError({ cause: error, reason: "UNKNOWN" })),
+            NoSessionError: () => Effect.fail(new ValidationError({ cause: "No session", reason: "UNKNOWN" })),
+          }),
+        ) as Effect.Effect<void, ValidationError>,
+      apply: (event: DomainEvent) =>
+        Effect.gen(function* () {
           const session = yield* sessionService.current;
 
           return yield* applyEventWithSnapshotRecovery({
@@ -140,31 +144,31 @@ const clientApplicatorsLive = Layer.effect(
             applyEvent: (candidate) =>
               applicators.apply(candidate, {
                 initiatorId: session.user,
-              }),
+              }) as Effect.Effect<void, ApplicatorError | import("@stu/lib").UnknownDatabaseError>,
             fetchSnapshot: (request) => fetchSnapshotFromDefaultApi({ request }),
             applySnapshot: applySnapshotToLocalDatabase,
           });
-        },
-        Effect.provide(repositories),
-        Effect.provideService(Database, db),
-        Effect.catchTags({
-          DatabaseError: (error) => Effect.fail(new ApplicatorError({ cause: error })),
-          SnapshotRecoveryError: (error: SnapshotRecoveryError) => Effect.fail(new ApplicatorError({ cause: error })),
-          NoSessionError: () => Effect.fail(new ApplicatorError({ cause: "No session" })),
-        }),
-      ),
+        }).pipe(
+          Effect.provide(repositories),
+          Effect.provideService(Database, db),
+          Effect.catchTags({
+            DatabaseError: (error: unknown) => Effect.fail(new ApplicatorError({ cause: error })),
+            SnapshotRecoveryError: (error: SnapshotRecoveryError) => Effect.fail(new ApplicatorError({ cause: error })),
+            NoSessionError: () => Effect.fail(new ApplicatorError({ cause: "No session" })),
+          }),
+        ) as Effect.Effect<void, ApplicatorError>,
     });
   }),
 );
 
 const StorageLive = ClientStorage.createDrizzleStorageLayer(DomainStorage, {
-  db: Database,
-  eventSchema: DomainEvent,
+  db: Database as any,
+  eventSchema: DomainEventSchema as unknown as ZodSchema<DomainEvent>,
 });
 
 const TransportLive = createSseTransportLayer(DomainTransport, {
   baseUrl: `${getBaseUrl()}/api`,
-  eventSchema: DomainEvent,
+  eventSchema: DomainEventSchema as unknown as ZodSchema<DomainEvent>,
   headers: getHeadersObject,
 }).pipe(Layer.provide(ReactNativeEventSourceServiceLive));
 
@@ -210,8 +214,8 @@ export const makeRuntime = (offset: number) =>
   ManagedRuntime.make(
     Layer.mergeAll(makeSyncEngineLive(offset), repositories).pipe(
       Layer.provideMerge(DatabaseLive),
-      Layer.merge(Logger.pretty),
-    ),
+      Layer.merge(Logger.layer([Logger.consolePretty()])),
+    ) as never,
   );
 
 export type AppRuntime = Awaited<ReturnType<typeof makeRuntime>>;

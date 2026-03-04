@@ -1,4 +1,4 @@
-import { Data, Effect, Stream } from "effect";
+import { Data, Effect, Layer, Queue, ServiceMap, Stream } from "effect";
 import rabbit, { type Offset } from "rabbitmq-stream-js-client";
 import type { Message } from "rabbitmq-stream-js-client/dist/publisher";
 
@@ -21,8 +21,16 @@ export class RabbitMqError extends Data.TaggedError("RabbitMqError")<{
   }
 }
 
-export class RabbitMQClient extends Effect.Service<RabbitMQClient>()("RabbitMQClient", {
-  scoped: Effect.gen(function* () {
+interface RabbitMQClientService {
+  readonly publish: (stream: string, message: Buffer) => Effect.Effect<void, RabbitMqError>;
+  readonly subscribe: (stream: string, offset: Offset) => Stream.Stream<Message, RabbitMqError>;
+}
+
+export class RabbitMQClient extends ServiceMap.Service<RabbitMQClient, RabbitMQClientService>()("RabbitMQClient") {}
+
+export const RabbitMQClientLive = Layer.effect(
+  RabbitMQClient,
+  Effect.gen(function* () {
     const client = yield* Effect.acquireRelease(
       Effect.tryPromise({
         try: () =>
@@ -89,11 +97,15 @@ export class RabbitMQClient extends Effect.Service<RabbitMQClient>()("RabbitMQCl
     });
 
     const subscribe = (stream: string, offset: Offset) =>
-      Stream.asyncPush<Message, RabbitMqError>((emit) => createConsumer(stream, offset, emit.single));
+      Stream.callback<Message, RabbitMqError>((queue) =>
+        createConsumer(stream, offset, (message) => {
+          Queue.offerUnsafe(queue, message);
+        }).pipe(Effect.asVoid),
+      );
 
-    return {
+    return RabbitMQClient.of({
       publish,
       subscribe,
-    };
+    });
   }),
-}) {}
+);

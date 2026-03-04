@@ -1,4 +1,4 @@
-import { HttpClient, HttpClientResponse } from "@effect/platform";
+import { HttpClient, HttpClientResponse } from "effect/unstable/http";
 import { SimpleDate } from "@stu/lib";
 import { Effect, Schema } from "effect";
 import { withUntisHttpResilience } from "./http";
@@ -59,23 +59,23 @@ export namespace UntisClasses {
   }) {
     const encodedStart = yield* SimpleDate.encode(start);
     const encodedEnd = yield* SimpleDate.encode(end);
+    const client = yield* HttpClient.HttpClient;
 
-    return yield* HttpClient.HttpClient.pipe(
-      Effect.flatMap((client) =>
-        client.get(untisLegacyApiUrl("/timetable/filter"), {
-          headers: {
-            "x-webuntis-api-school-year-id": schoolYearId.toString(),
-          },
-          urlParams: {
-            resourceType: "CLASS",
-            timetableType: "STANDARD",
-            start: encodedStart,
-            end: encodedEnd,
-          },
-        }),
-      ),
-      Effect.flatMap(HttpClientResponse.schemaBodyJson(GetClassesResponseSchema)),
-      withUntisHttpResilience("classes.list"),
-    );
+    return yield* client
+      .get(untisLegacyApiUrl("/timetable/filter"), {
+        headers: {
+          "x-webuntis-api-school-year-id": schoolYearId.toString(),
+        },
+        urlParams: {
+          resourceType: "CLASS",
+          timetableType: "STANDARD",
+          start: encodedStart,
+          end: encodedEnd,
+        },
+      })
+      .pipe(
+        Effect.flatMap(HttpClientResponse.schemaBodyJson(GetClassesResponseSchema)),
+        withUntisHttpResilience("classes.list"),
+      );
   });
 }

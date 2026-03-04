@@ -11,7 +11,7 @@ import { Database } from "../database";
 import * as tables from "../schema";
 
 export const applySnapshotToLocalDatabase = Effect.fn(function* (snapshot: SnapshotResponse) {
-  const db = yield* Database;
+  const db = yield* Effect.service(Database);
 
   const schools = collectSnapshotSchools(snapshot);
   const years = collectSnapshotYears(snapshot);

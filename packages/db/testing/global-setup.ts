@@ -2,7 +2,6 @@ import { execFile } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
-import type { GlobalSetupContext } from "vitest/node";
 import { createClient } from "./client";
 import { insertFixtures } from "./insert-fixtures";
 
@@ -34,7 +33,21 @@ const findFreePort = async (): Promise<number> => {
   });
 };
 
-export default async function setup({ provide }: GlobalSetupContext) {
+export default async function setup({
+  provide,
+}: {
+  provide: (
+    key: "database",
+    value: {
+      connectionUri: string;
+      host: string;
+      port: number;
+      username: string;
+      password: string;
+      database: string;
+    },
+  ) => void;
+}) {
   const port = await findFreePort();
   const containerName = `studienbuch-live-pg-${Date.now().toString(36)}`;
 

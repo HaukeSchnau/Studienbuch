@@ -1,4 +1,4 @@
-import { FetchHttpClient } from "@effect/platform";
+import { FetchHttpClient } from "effect/unstable/http";
 import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 import { UntisSchoolYears } from "./get-school-years";

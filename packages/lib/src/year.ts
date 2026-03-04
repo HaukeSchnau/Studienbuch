@@ -1,4 +1,4 @@
-import { Context, Effect } from "effect";
+import { Effect, ServiceMap } from "effect";
 import type { UnknownDatabaseError } from "./repositories";
 import type { SchoolId } from "./school";
 import { Semester } from "./semesters";
@@ -73,7 +73,7 @@ export namespace Year {
   export const getYearName = (year: { startYear: number }) => startYearToNameMap.get(year.startYear);
 }
 
-export class YearRepository extends Context.Tag("YearRepository")<
+export class YearRepository extends ServiceMap.Service<
   YearRepository,
   {
     yearsInSemester: (semester: Semester) => Effect.Effect<Year[], UnknownDatabaseError>;
@@ -90,7 +90,7 @@ export class YearRepository extends Context.Tag("YearRepository")<
       },
     ) => Effect.Effect<void, UnknownDatabaseError>;
   }
->() {}
+>()("YearRepository") {}
 
 /**
  * @deprecated

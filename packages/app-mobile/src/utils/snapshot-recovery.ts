@@ -1,6 +1,5 @@
 import type { ApplicatorError } from "@groundswell/core";
 import {
-  type DomainEvent,
   type SnapshotRequest,
   type SnapshotResponse,
   SnapshotResponseSchema,
@@ -8,7 +7,8 @@ import {
   type UnknownDatabaseError,
 } from "@stu/lib";
 import { applySnapshotToLocalDatabase as applySnapshotToLocalDatabaseFromStudent } from "@stu/student";
-import { Data, Effect, Either } from "effect";
+import { Data, Effect, Option } from "effect";
+import type { DomainEvent } from "../../../student/src/domain-event";
 import { getHeadersObject } from "./request-headers";
 
 type BaseUrlModule = typeof import("./base-url");
@@ -21,17 +21,23 @@ export class SnapshotRecoveryError extends Data.TaggedError("SnapshotRecoveryErr
   cause: unknown;
 }> {}
 
+type StudentScopedEvent = Extract<DomainEvent, { data: { studentId: string } }>;
+
+const isStudentScopedEvent = (event: DomainEvent): event is StudentScopedEvent =>
+  typeof event === "object" &&
+  event !== null &&
+  "data" in event &&
+  typeof event.data === "object" &&
+  event.data !== null &&
+  "studentId" in event.data &&
+  typeof event.data.studentId === "string";
+
 const isMissingReferenceError = (event: DomainEvent, error: UnknownDatabaseError | ApplicatorError): boolean => {
   if (error._tag === "DatabaseError") {
     return error.type === "foreign_key_violation";
   }
 
-  if (
-    error._tag === "ApplicatorError" &&
-    "studentId" in event.data &&
-    typeof event.data.studentId === "string" &&
-    typeof error.cause === "string"
-  ) {
+  if (error._tag === "ApplicatorError" && isStudentScopedEvent(event) && typeof error.cause === "string") {
     return error.cause === `Student ${event.data.studentId} not found`;
   }
 
@@ -101,12 +107,12 @@ export const applyEventWithSnapshotRecovery = <RApply, RFetch, RApplySnapshot>(o
   applySnapshot: (snapshot: SnapshotResponse) => Effect.Effect<void, UnknownDatabaseError, RApplySnapshot>;
 }) =>
   Effect.gen(function* () {
-    const initialResult = yield* options.applyEvent(options.event).pipe(Effect.either);
-    if (Either.isRight(initialResult)) {
+    const initialError = yield* options.applyEvent(options.event).pipe(Effect.flip, Effect.option);
+    if (Option.isNone(initialError)) {
       return;
     }
 
-    const error = initialResult.left;
+    const error = initialError.value;
     if (!isMissingReferenceError(options.event, error)) {
       return yield* Effect.fail(error);
     }

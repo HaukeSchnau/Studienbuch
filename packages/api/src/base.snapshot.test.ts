@@ -20,6 +20,8 @@ type SnapshotRouteResult =
       };
     };
 
+type SnapshotRouteOkResult = Extract<SnapshotRouteResult, { status: "ok" }>;
+
 const { resolveSnapshotRequest } = vi.hoisted(() => ({
   resolveSnapshotRequest: vi.fn(
     async (_input: SnapshotRouteInput): Promise<SnapshotRouteResult> => ({
@@ -162,7 +164,7 @@ describe("/api/snapshot route wiring", () => {
     });
 
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body = (await response.json()) as SnapshotRouteOkResult["snapshot"];
     expect(body).toEqual(snapshot);
     expect(Object.prototype.hasOwnProperty.call(body, "tasks")).toBe(false);
   });
@@ -190,7 +192,7 @@ describe("/api/snapshot route wiring", () => {
     });
 
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body = (await response.json()) as SnapshotRouteOkResult["snapshot"];
     expect(body).toEqual(snapshot);
     expect(body.tasks).toEqual(snapshot.tasks);
   });

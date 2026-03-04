@@ -1,7 +1,7 @@
 import { type CanonicalStorage, CanonicalStorageError } from "@groundswell/core-server";
-import type { DomainEvent } from "@stu/lib";
 import { Effect, Fiber, Option, Stream } from "effect";
 import { describe, expect, it } from "vitest";
+import type { DomainEvent } from "../../db/src/domain-event";
 import { DomainBroadcast, DomainCanonicalStorage } from "./boilerplate";
 import { memoryBroadcastLive } from "./broadcast";
 
@@ -28,7 +28,7 @@ const makeCanonicalStorageMock = (
     foreignKeyFailuresByEventId?: Record<string, number>;
   },
 ) => {
-  const eventById = new Map(events.map((event) => [event.id, event] as const));
+  const eventById = new Map<string, DomainEvent>(events.map((event): [string, DomainEvent] => [event.id, event]));
   const sentIdsByUser = new Map<string, string[]>();
   const sentIdSetByUser = new Map<string, Set<string>>();
   const remainingForeignKeyFailuresByEventId = new Map(Object.entries(options?.foreignKeyFailuresByEventId ?? {}));
@@ -156,7 +156,7 @@ describe("memoryBroadcastLive", () => {
         const broadcast = yield* DomainBroadcast;
 
         const firstMessageFiber = yield* Stream.runHead(broadcast.subscribe(STUDENT_A, { offset: 0 })).pipe(
-          Effect.fork,
+          Effect.forkDetach,
         );
 
         yield* broadcast.publishToUser(STUDENT_B, [eventB]);

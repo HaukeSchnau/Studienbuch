@@ -1,11 +1,13 @@
 import type { CanonicalStorage } from "@groundswell/core-server";
 import { BroadcastError } from "@groundswell/core-server";
-import type { DomainEvent } from "@stu/lib";
-import { Effect, Layer, PubSub, Stream } from "effect";
+import { Effect, Layer, PubSub, ServiceMap, Stream } from "effect";
 import { Offset } from "rabbitmq-stream-js-client";
 import superjson from "superjson";
 import { DomainBroadcast, DomainCanonicalStorage } from "./boilerplate";
 import { RabbitMQClient } from "./rabbitmq";
+
+type DomainBroadcastService = ServiceMap.Service.Shape<typeof DomainBroadcast>;
+type DomainEvent = Parameters<DomainBroadcastService["publishToUser"]>[1][number];
 
 const isCanonicalStorageCauseType = (error: { cause: unknown }, expectedType: string) =>
   typeof error.cause === "object" && error.cause !== null && "type" in error.cause && error.cause.type === expectedType;
@@ -40,7 +42,7 @@ export const memoryBroadcastLive = Layer.effect(
   DomainBroadcast,
   Effect.gen(function* () {
     const pubsub = yield* PubSub.unbounded<{ userId: string; event: DomainEvent }>();
-    const canonicalStorage = yield* DomainCanonicalStorage;
+    const canonicalStorage = yield* Effect.service(DomainCanonicalStorage);
 
     const markEventAsSentToUser = createMarkEventAsSentToUser(canonicalStorage, "memory");
 
@@ -54,7 +56,10 @@ export const memoryBroadcastLive = Layer.effect(
           }
         }
         if (publishable.length > 0) {
-          yield* pubsub.publishAll(publishable.map((event) => ({ userId, event })));
+          yield* PubSub.publishAll(
+            pubsub,
+            publishable.map((event) => ({ userId, event })),
+          );
         }
       }),
       subscribe: (userId, options) =>
@@ -82,8 +87,8 @@ export const memoryBroadcastLive = Layer.effect(
 export const rabbitmqBroadcastLive = Layer.effect(
   DomainBroadcast,
   Effect.gen(function* () {
-    const client = yield* RabbitMQClient;
-    const canonicalStorage = yield* DomainCanonicalStorage;
+    const client = yield* Effect.service(RabbitMQClient);
+    const canonicalStorage = yield* Effect.service(DomainCanonicalStorage);
 
     const markEventAsSentToUser = createMarkEventAsSentToUser(canonicalStorage, "rabbitmq");
 
@@ -108,7 +113,7 @@ export const rabbitmqBroadcastLive = Layer.effect(
         const offset = options?.offset !== undefined ? Offset.offset(BigInt(options.offset)) : Offset.first();
         return client.subscribe(userId, offset).pipe(
           Stream.map((message) => superjson.parse(message.content.toString()) as DomainEvent), // TODO: parse here?
-          Stream.catchTag("RabbitMqError", (error) => Effect.fail(new BroadcastError({ cause: error }))),
+          Stream.catchTag("RabbitMqError", (error) => Stream.fail(new BroadcastError({ cause: error }))),
         );
       },
     });

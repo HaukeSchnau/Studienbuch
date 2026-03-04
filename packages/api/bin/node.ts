@@ -32,4 +32,4 @@ const server = Effect.gen(function* () {
 
 const DevToolsLive = DevTools.layerWebSocket().pipe(Layer.provide(NodeSocket.layerWebSocketConstructor));
 const serverLive = server.pipe(Effect.provide(AppLayerLive), Effect.provide(DevToolsLive));
-NodeRuntime.runMain(serverLive);
+NodeRuntime.runMain(serverLive as Effect.Effect<never, never, never>);

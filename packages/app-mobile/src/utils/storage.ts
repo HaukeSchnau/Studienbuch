@@ -53,7 +53,7 @@ const getStorageValue = <TKey extends Keys>(key: TKey): StorageValue<TKey> | nul
   const strValue = SecureStore.getItem(key);
   if (strValue === null) return null;
 
-  const schema = schemas[key];
+  const schema = schemas[key] as unknown as ZodSchema<StorageValue<TKey>>;
 
   const parseResult = schema.safeParse(JSON.parse(strValue));
   if (!parseResult.success) {
@@ -71,7 +71,7 @@ export const useStorage = <TKey extends Keys>(
 
   const set = useCallback(
     async (newValue: StorageValue<TKey>) => {
-      const schema = schemas[key];
+      const schema = schemas[key] as unknown as ZodSchema<StorageValue<TKey>>;
       const strValue = JSON.stringify(schema.parse(newValue));
 
       await SecureStore.setItemAsync(key, strValue);

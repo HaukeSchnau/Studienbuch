@@ -10,11 +10,11 @@ export const courseApplicators: Pick<OrgApplicatorMap, "courses.created"> = {
       Effect.gen(function* () {
         yield* verifySystemInitiator(initiatorId);
         yield* verifyOrgCoursesCreated({
-          data: event.data,
+          data: event.data as never,
           onDuplicate: () => new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }),
         });
 
-        const classRepo = yield* ClassRepository;
+        const classRepo = yield* Effect.service(ClassRepository);
         for (const cls of event.data.classes) {
           const existingClass = yield* classRepo.getClass({
             identifier: cls.identifierInYear,
@@ -28,7 +28,7 @@ export const courseApplicators: Pick<OrgApplicatorMap, "courses.created"> = {
       }),
     apply: (event) =>
       applyOrgCoursesCreated({
-        data: event.data,
+        data: event.data as never,
       }),
     getEventTopics: (event) => Effect.succeed([studentsOfCourse(event.data.id)]),
   },

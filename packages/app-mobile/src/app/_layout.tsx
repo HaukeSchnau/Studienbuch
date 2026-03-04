@@ -128,7 +128,7 @@ function RootLayout() {
 
   return (
     <RuntimeContext.Provider value={runtime}>
-      <SyncEngineProvider value={runtime}>
+      <SyncEngineProvider value={runtime as Parameters<typeof SyncEngineProvider>[0]["value"]}>
         <GestureHandlerRootView>
           <Stack
             layout={({ children }) => <MissingInfoGuard>{children}</MissingInfoGuard>}

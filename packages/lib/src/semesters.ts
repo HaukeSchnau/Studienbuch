@@ -1,5 +1,5 @@
 import { addDays } from "date-fns/fp";
-import { Context, DateTime, Effect, pipe } from "effect";
+import { DateTime, Effect, ServiceMap, pipe } from "effect";
 import { dateToSimpleDate, type SimpleDate, simpleDateToDate } from "./infrastructure/dates";
 import { HolidayRepository, SchoolRepository, type UnknownDatabaseError } from "./repositories";
 import type { SchoolId, StateCode } from "./school";
@@ -18,7 +18,8 @@ export namespace Semester {
   export const current = Effect.gen(function* () {
     // TODO: Don't hardcode school id
     const school = "igs-lil";
-    const today = yield* DateTime.now.pipe(Effect.andThen(DateTime.toDate));
+    const now = yield* DateTime.now;
+    const today = DateTime.toDate(now);
     const repo = yield* SemesterRepository;
 
     const semester = yield* repo.getSemesterOnDate(today, school);
@@ -96,7 +97,7 @@ export namespace Semester {
   });
 }
 
-export class SemesterRepository extends Context.Tag("SemesterRepository")<
+export class SemesterRepository extends ServiceMap.Service<
   SemesterRepository,
   {
     createSemesters: (
@@ -121,4 +122,4 @@ export class SemesterRepository extends Context.Tag("SemesterRepository")<
 
     semestersInYear: (year: Year) => Effect.Effect<Semester[], UnknownDatabaseError>;
   }
->() {}
+>()("SemesterRepository") {}

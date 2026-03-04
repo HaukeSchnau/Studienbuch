@@ -17,10 +17,10 @@ import {
   type ServerApplicator,
   UserNotFoundError,
 } from "@groundswell/core-server";
-import type { DomainEvent } from "@stu/lib";
 import { studentsOfUser } from "@stu/lib";
-import { Context, Effect, Exit, Fiber, Layer, ManagedRuntime, Option, Stream } from "effect";
+import { Effect, Exit, Fiber, Layer, ManagedRuntime, Option, ServiceMap, Stream } from "effect";
 import { describe, expect, it } from "vitest";
+import type { DomainEvent } from "../../db/src/domain-event";
 import {
   DomainBroadcast,
   DomainCanonicalStorage,
@@ -58,19 +58,21 @@ const uniqueViolation = (message: string) =>
     },
   });
 
-class ClientApplicator extends Context.Tag("test/ClientApplicator")<
+class ClientApplicator extends ServiceMap.Service<
   ClientApplicator,
   {
     verify: (event: DomainEvent) => Effect.Effect<void, ValidationError>;
     apply: (event: DomainEvent) => Effect.Effect<void, ApplicatorError>;
   }
->() {}
+>()("test/ClientApplicator") {}
 
-class ClientStorage extends Context.Tag("test/ClientStorage")<ClientStorage, Storage<DomainEvent>>() {}
+class ClientStorage extends ServiceMap.Service<ClientStorage, Storage<DomainEvent>>()("test/ClientStorage") {}
 
-class ClientTransport extends Context.Tag("test/ClientTransport")<ClientTransport, Transport<DomainEvent>>() {}
+class ClientTransport extends ServiceMap.Service<ClientTransport, Transport<DomainEvent>>()("test/ClientTransport") {}
 
-class ClientSyncEngine extends Context.Tag("test/ClientSyncEngine")<ClientSyncEngine, SyncEngine<DomainEvent>>() {}
+class ClientSyncEngine extends ServiceMap.Service<ClientSyncEngine, SyncEngine<DomainEvent>>()(
+  "test/ClientSyncEngine",
+) {}
 
 const createHarness = () => {
   const storedEvents: Array<{ event: DomainEvent; topics: string[] }> = [];
@@ -300,8 +302,8 @@ describe("sync ingest integration", () => {
         const ingest = yield* DomainIngestEngine;
         const broadcast = yield* DomainBroadcast;
 
-        const deviceOne = yield* Stream.runHead(broadcast.subscribe(STUDENT_A, { offset: 0 })).pipe(Effect.fork);
-        const deviceTwo = yield* Stream.runHead(broadcast.subscribe(STUDENT_A, { offset: 0 })).pipe(Effect.fork);
+        const deviceOne = yield* Stream.runHead(broadcast.subscribe(STUDENT_A, { offset: 0 })).pipe(Effect.forkDetach);
+        const deviceTwo = yield* Stream.runHead(broadcast.subscribe(STUDENT_A, { offset: 0 })).pipe(Effect.forkDetach);
 
         yield* ingest.ingest(event, { initiatorId: STUDENT_A });
 
@@ -393,7 +395,9 @@ describe("sync ingest integration", () => {
         const ingest = yield* DomainIngestEngine;
         const broadcast = yield* DomainBroadcast;
 
-        const otherUserFiber = yield* Stream.runHead(broadcast.subscribe(STUDENT_B, { offset: 0 })).pipe(Effect.fork);
+        const otherUserFiber = yield* Stream.runHead(broadcast.subscribe(STUDENT_B, { offset: 0 })).pipe(
+          Effect.forkDetach,
+        );
         yield* ingest.ingest(event, { initiatorId: STUDENT_A });
 
         const userBResult = yield* Effect.race(

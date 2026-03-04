@@ -13,7 +13,7 @@ export const timetableApplicators: Pick<
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
         yield* verifySystemInitiator(initiatorId);
-        const courseRepo = yield* CourseRepository;
+        const courseRepo = yield* Effect.service(CourseRepository);
         const existingCourse = yield* courseRepo.getCourse({ id: event.data.course });
         if (!existingCourse) {
           return yield* Effect.fail(new ValidationError({ cause: "COURSE_NOT_FOUND", reason: "NOT_FOUND" }));
@@ -21,7 +21,7 @@ export const timetableApplicators: Pick<
       }),
     apply: (event) =>
       Effect.gen(function* () {
-        const timetableRepo = yield* TimetableRepository;
+        const timetableRepo = yield* Effect.service(TimetableRepository);
         yield* timetableRepo.upsertTimetableEntry({
           course: event.data.course,
           start: event.data.start,
@@ -35,7 +35,7 @@ export const timetableApplicators: Pick<
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
         yield* verifySystemInitiator(initiatorId);
-        const timetableRepo = yield* TimetableRepository;
+        const timetableRepo = yield* Effect.service(TimetableRepository);
         if (
           yield* timetableRepo.getSubstitution({
             course: event.data.course,
@@ -48,7 +48,7 @@ export const timetableApplicators: Pick<
       }),
     apply: (event) =>
       Effect.gen(function* () {
-        const timetableRepo = yield* TimetableRepository;
+        const timetableRepo = yield* Effect.service(TimetableRepository);
         yield* timetableRepo.createSubstitution({
           course: event.data.course,
           start: event.data.start,
@@ -63,7 +63,7 @@ export const timetableApplicators: Pick<
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
         yield* verifySystemInitiator(initiatorId);
-        const timetableRepo = yield* TimetableRepository;
+        const timetableRepo = yield* Effect.service(TimetableRepository);
         if (
           yield* timetableRepo.getSubstitution({
             course: event.data.course,
@@ -76,7 +76,7 @@ export const timetableApplicators: Pick<
       }),
     apply: (event) =>
       Effect.gen(function* () {
-        const timetableRepo = yield* TimetableRepository;
+        const timetableRepo = yield* Effect.service(TimetableRepository);
         yield* timetableRepo.createSubstitution({
           course: event.data.course,
           start: event.data.start,
@@ -90,7 +90,7 @@ export const timetableApplicators: Pick<
     verify: (event, { initiatorId }) =>
       Effect.gen(function* () {
         yield* verifySystemInitiator(initiatorId);
-        const timetableRepo = yield* TimetableRepository;
+        const timetableRepo = yield* Effect.service(TimetableRepository);
         if (
           !(yield* timetableRepo.getTimetableEntry({
             course: event.data.course,
@@ -102,7 +102,7 @@ export const timetableApplicators: Pick<
       }),
     apply: (event) =>
       Effect.gen(function* () {
-        const timetableRepo = yield* TimetableRepository;
+        const timetableRepo = yield* Effect.service(TimetableRepository);
         yield* timetableRepo.deleteTimetableEntry({
           course: event.data.course,
           start: event.data.start,

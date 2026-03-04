@@ -1,4 +1,4 @@
-import { Context, type Effect } from "effect";
+import { ServiceMap, type Effect } from "effect";
 import type { UnknownDatabaseError } from "./repositories";
 import type { SchoolId } from "./school";
 import type { StudentId } from "./student-id";
@@ -12,7 +12,7 @@ export interface Student {
   isOfAge: boolean;
 }
 
-export class StudentRepository extends Context.Tag("StudentRepository")<
+export class StudentRepository extends ServiceMap.Service<
   StudentRepository,
   {
     createStudent: (payload: Student) => Effect.Effect<void, UnknownDatabaseError>;
@@ -21,4 +21,4 @@ export class StudentRepository extends Context.Tag("StudentRepository")<
 
     getStudent: (payload: { studentId: StudentId }) => Effect.Effect<Student | undefined, UnknownDatabaseError>;
   }
->() {}
+>()("StudentRepository") {}

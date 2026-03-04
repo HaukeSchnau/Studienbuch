@@ -56,7 +56,7 @@ const TeacherSelectField = ({
 };
 
 const getTimetableEntries = createServerFn()
-  .validator(
+  .inputValidator(
     z.object({
       teacherId: z.string(),
     }),

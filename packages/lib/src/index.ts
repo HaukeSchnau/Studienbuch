@@ -33,8 +33,8 @@ export * from "./user";
 export * from "./year";
 
 export class RequiredEntityNotFoundError extends Data.TaggedError("RequiredEntityNotFoundError")<{
-  kind?: string;
-  id?: unknown;
+  kind: string | undefined;
+  id: unknown;
 }> {
   get message() {
     return `Required entity ${this.kind}: ${this.id} not found`;

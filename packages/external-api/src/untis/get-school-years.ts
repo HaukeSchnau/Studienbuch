@@ -1,4 +1,4 @@
-import { HttpClient, HttpClientResponse } from "@effect/platform";
+import { HttpClient, HttpClientResponse } from "effect/unstable/http";
 import { SimpleDate } from "@stu/lib";
 import { Effect, Schema } from "effect";
 import { withUntisHttpResilience } from "./http";
@@ -16,8 +16,7 @@ export namespace UntisSchoolYears {
     }),
   );
 
-  export const list = HttpClient.HttpClient.pipe(
-    Effect.andThen(HttpClient.get(untisLegacyApiUrl("/schoolyears"))),
+  export const list = HttpClient.get(untisLegacyApiUrl("/schoolyears")).pipe(
     Effect.flatMap(HttpClientResponse.schemaBodyJson(ResponseSchema)),
     withUntisHttpResilience("schoolYears.list"),
   );

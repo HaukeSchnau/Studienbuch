@@ -18,13 +18,13 @@ export const calendarApplicators: Pick<OrgApplicatorMap, "holiday.created" | "ye
       Effect.gen(function* () {
         yield* verifySystemInitiator(initiatorId);
         yield* verifyOrgHolidayCreated({
-          data: event.data,
+          data: event.data as never,
           onDuplicate: () => new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }),
         });
       }),
     apply: (event) =>
       applyOrgHolidayCreated({
-        data: event.data,
+        data: event.data as never,
       }).pipe(Database.asTransaction),
     getEventTopics: (event) => Effect.succeed([studentsOfState(event.data.state)]),
   },
@@ -33,13 +33,13 @@ export const calendarApplicators: Pick<OrgApplicatorMap, "holiday.created" | "ye
       Effect.gen(function* () {
         yield* verifySystemInitiator(initiatorId);
         yield* verifyOrgYearStarted({
-          data: event.data,
+          data: event.data as never,
           onDuplicate: () => new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }),
         });
       }),
     apply: (event) =>
       applyOrgYearStarted({
-        data: event.data,
+        data: event.data as never,
       }).pipe(Database.asTransaction),
     getEventTopics: (event) =>
       Effect.succeed([

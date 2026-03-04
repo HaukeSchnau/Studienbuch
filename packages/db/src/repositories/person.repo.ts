@@ -1,13 +1,13 @@
 import type { Salutation } from "@stu/lib";
 import { eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { Effect, Layer, ServiceMap } from "effect";
 import { Database } from "../database";
 import * as tables from "../schema";
 
-export class PersonRepository extends Effect.Service<PersonRepository>()("db/PersonRepository", {
-  effect: Effect.gen(function* () {
+export class PersonRepository extends ServiceMap.Service<PersonRepository>()("db/PersonRepository", {
+  make: Effect.gen(function* () {
     const getPersonByAbbrv = Effect.fn(function* (payload: { abbrv: string }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
       const rows = yield* execute((db) =>
         db.select().from(tables.Persons).where(eq(tables.Persons.abbrv, payload.abbrv)),
       );
@@ -21,7 +21,7 @@ export class PersonRepository extends Effect.Service<PersonRepository>()("db/Per
       salutation: Salutation | undefined;
       abbrv: string;
     }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
       yield* execute((db) =>
         db.insert(tables.Persons).values({
           id: payload.id,
@@ -34,7 +34,7 @@ export class PersonRepository extends Effect.Service<PersonRepository>()("db/Per
     });
 
     const getAllPersons = Effect.fn(function* () {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
       return yield* execute((db) => db.select().from(tables.Persons));
     });
 
@@ -44,4 +44,6 @@ export class PersonRepository extends Effect.Service<PersonRepository>()("db/Per
       getAllPersons,
     };
   }),
-}) {}
+}) {
+  static readonly Default = Layer.effect(PersonRepository, PersonRepository.make);
+}

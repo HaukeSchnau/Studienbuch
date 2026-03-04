@@ -17,7 +17,7 @@ export const Route = createFileRoute("/timetable")({
 });
 
 const getCourses = createServerFn()
-  .validator(
+  .inputValidator(
     z.object({
       startYear: z.number(),
       classIdentifier: z.string(),

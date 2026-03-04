@@ -1,13 +1,13 @@
 import { mapStudentWithPersonRowToStudent, type SchoolId, type StudentId } from "@stu/lib";
 import { and, eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { Effect, Layer, ServiceMap } from "effect";
 import { Database } from "../database";
 import * as tables from "../schema";
 
-export class StudentRepository extends Effect.Service<StudentRepository>()("student/StudentRepository", {
-  effect: Effect.gen(function* () {
+export class StudentRepository extends ServiceMap.Service<StudentRepository>()("student/StudentRepository", {
+  make: Effect.gen(function* () {
     const doesClassExist = Effect.fn(function* (payload: { identifier: string; startYear: number; school: SchoolId }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       const cls = yield* execute((db) =>
         db
@@ -26,7 +26,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
     });
 
     const getSchoolOfUser = Effect.fn(function* (payload: { studentId: StudentId }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       const rows = yield* execute((db) =>
         db
@@ -52,7 +52,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       };
       isOfAge: boolean;
     }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       yield* execute((db) =>
         db
@@ -94,7 +94,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
     }, Database.asTransaction);
 
     const doesCourseExist = Effect.fn(function* (payload: { courseId: string }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       const course = yield* execute((db) =>
         db.select().from(tables.Courses).where(eq(tables.Courses.id, payload.courseId)),
@@ -104,7 +104,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
     });
 
     const isAssignedToCourse = Effect.fn(function* (payload: { studentId: StudentId; courseId: string }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       const assignment = yield* execute((db) =>
         db.query.CourseMemberships.findFirst({
@@ -119,7 +119,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
     });
 
     const assignCourse = Effect.fn(function* (payload: { studentId: StudentId; courseId: string }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       yield* execute((db) =>
         db.insert(tables.CourseMemberships).values({
@@ -130,7 +130,7 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
     });
 
     const getStudent = Effect.fn(function* (payload: { studentId: StudentId }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       const student = yield* execute((db) =>
         db.query.Students.findFirst({
@@ -158,4 +158,6 @@ export class StudentRepository extends Effect.Service<StudentRepository>()("stud
       getStudent,
     };
   }),
-}) {}
+}) {
+  static readonly Default = Layer.effect(StudentRepository, StudentRepository.make);
+}

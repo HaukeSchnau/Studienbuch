@@ -1,8 +1,9 @@
 import type { NamespaceServerApplicatorMap } from "@groundswell/core";
 import { ValidationError } from "@groundswell/core";
-import { AuthRepository, type DomainEvent, type UnknownDatabaseError } from "@stu/lib";
+import { AuthRepository, type UnknownDatabaseError } from "@stu/lib";
 import { Effect } from "effect";
 import { Database } from "../database";
+import type { DomainEvent } from "../domain-event";
 
 const SYSTEM_USER = "00000000-0000-0000-0000-000000000000";
 
@@ -19,19 +20,21 @@ export const authApplicators: NamespaceServerApplicatorMap<
           return yield* Effect.fail(new ValidationError({ cause: "NOT_ALLOWED", reason: "NOT_ALLOWED" }));
         }
 
-        const repo = yield* AuthRepository;
+        const repo = yield* Effect.service(AuthRepository);
         if (yield* repo.doesLicenseKeyExist({ key: event.data.licenseKey })) {
           return yield* Effect.fail(new ValidationError({ cause: "EXISTS", reason: "DUPLICATE" }));
         }
       }),
     apply: (event) =>
-      Effect.andThen(AuthRepository, (repo) =>
-        repo.createLicenseKey({
-          key: event.data.licenseKey,
-          school: event.data.school,
-          expiresAt: event.data.expiryDate,
-          isSuperKey: event.data.licenseKey === "KJ27-MP16-LS14-JM22",
-        }),
+      Effect.service(AuthRepository).pipe(
+        Effect.flatMap((repo) =>
+          repo.createLicenseKey({
+            key: event.data.licenseKey,
+            school: event.data.school,
+            expiresAt: event.data.expiryDate,
+            isSuperKey: event.data.licenseKey === "KJ27-MP16-LS14-JM22",
+          }),
+        ),
       ),
     getEventTopics: () => Effect.succeed([]),
   },
@@ -43,7 +46,7 @@ export const authApplicators: NamespaceServerApplicatorMap<
           return yield* Effect.fail(new ValidationError({ cause: "UNEXPECTED", reason: "NOT_ALLOWED" }));
         }
 
-        const repo = yield* AuthRepository;
+        const repo = yield* Effect.service(AuthRepository);
         const key = yield* repo.getLicenseKey({ key: event.data.licenseKey });
 
         if (key === undefined) {
@@ -64,7 +67,7 @@ export const authApplicators: NamespaceServerApplicatorMap<
       }),
     apply: (event) =>
       Effect.gen(function* () {
-        const repo = yield* AuthRepository;
+        const repo = yield* Effect.service(AuthRepository);
         yield* repo.createUser({ userId: event.data.userId });
         yield* repo.activateLicenseKey({ key: event.data.licenseKey, userId: event.data.userId });
       }).pipe(Database.asTransaction),

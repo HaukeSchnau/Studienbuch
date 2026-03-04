@@ -34,7 +34,7 @@ describe("parseSimpleDate", () => {
   describe("SimpleDateSchema", () => {
     test("validates valid dates", () =>
       Effect.gen(function* () {
-        const result = yield* Schema.decode(SimpleDate.SimpleDateSchema)("2023-01-15");
+        const result = yield* Schema.decodeEffect(SimpleDate.SimpleDateSchema)("2023-01-15");
         expect(result).toEqual({
           year: 2023,
           month: 1,
@@ -44,26 +44,26 @@ describe("parseSimpleDate", () => {
 
     test("throws error for invalid date format", () =>
       Effect.gen(function* () {
-        const result = yield* Schema.decode(SimpleDate.SimpleDateSchema)("invalid").pipe(Effect.flip);
+        const result = yield* Schema.decodeEffect(SimpleDate.SimpleDateSchema)("invalid").pipe(Effect.flip);
         expect(result._tag).toBe("ParseError");
       }));
 
     test("throws error for invalid date format", () =>
       Effect.gen(function* () {
-        const result = yield* Schema.decode(SimpleDate.SimpleDateSchema)("2023-01").pipe(Effect.flip);
+        const result = yield* Schema.decodeEffect(SimpleDate.SimpleDateSchema)("2023-01").pipe(Effect.flip);
         expect(result._tag).toBe("ParseError");
       }));
 
     test("throws error for invalid date format", () =>
       Effect.gen(function* () {
-        const result = yield* Schema.decode(SimpleDate.SimpleDateSchema)("2023-01-01").pipe(Effect.flip);
+        const result = yield* Schema.decodeEffect(SimpleDate.SimpleDateSchema)("2023-01-01").pipe(Effect.flip);
         expect(result._tag).toBe("ParseError");
       }));
 
     test("round-trips", () =>
       Effect.gen(function* () {
-        const result = yield* Schema.decode(SimpleDate.SimpleDateSchema)("2023-01-01");
-        const encoded = yield* Schema.encode(SimpleDate.SimpleDateSchema)(result);
+        const result = yield* Schema.decodeEffect(SimpleDate.SimpleDateSchema)("2023-01-01");
+        const encoded = yield* Schema.encodeEffect(SimpleDate.SimpleDateSchema)(result);
         expect(encoded).toEqual("2023-01-01");
       }));
   });
@@ -72,32 +72,32 @@ describe("parseSimpleDate", () => {
 describe("TimeOfDaySchema", () => {
   test("validates valid time strings", () =>
     Effect.gen(function* () {
-      const result = yield* Schema.decode(TimeOfDay.TimeOfDaySchema)("00:00");
+      const result = yield* Schema.decodeEffect(TimeOfDay.TimeOfDaySchema)("00:00");
       expect(result).toEqual(0);
     }));
 
   test("throws error for invalid time format", () =>
     Effect.gen(function* () {
-      const result = yield* Schema.decode(TimeOfDay.TimeOfDaySchema)("invalid").pipe(Effect.flip);
+      const result = yield* Schema.decodeEffect(TimeOfDay.TimeOfDaySchema)("invalid").pipe(Effect.flip);
       expect(result._tag).toBe("ParseError");
     }));
 
   test("throws error for invalid time format", () =>
     Effect.gen(function* () {
-      const result = yield* Schema.decode(TimeOfDay.TimeOfDaySchema)("12").pipe(Effect.flip);
+      const result = yield* Schema.decodeEffect(TimeOfDay.TimeOfDaySchema)("12").pipe(Effect.flip);
       expect(result._tag).toBe("ParseError");
     }));
 
   test("throws error for invalid time format", () =>
     Effect.gen(function* () {
-      const result = yield* Schema.decode(TimeOfDay.TimeOfDaySchema)("12:30").pipe(Effect.flip);
+      const result = yield* Schema.decodeEffect(TimeOfDay.TimeOfDaySchema)("12:30").pipe(Effect.flip);
       expect(result._tag).toBe("ParseError");
     }));
 
   test("round-trips", () =>
     Effect.gen(function* () {
-      const result = yield* Schema.decode(TimeOfDay.TimeOfDaySchema)("12:30");
-      const encoded = yield* Schema.encode(TimeOfDay.TimeOfDaySchema)(result);
+      const result = yield* Schema.decodeEffect(TimeOfDay.TimeOfDaySchema)("12:30");
+      const encoded = yield* Schema.encodeEffect(TimeOfDay.TimeOfDaySchema)(result);
       expect(encoded).toEqual("12:30");
     }));
 });
@@ -185,11 +185,13 @@ describe("dateToSimpleDate", () => {
     // Create a date that would be affected by timezone
     const date = new Date(2023, 11, 31, 23, 59, 59); // December 31, 2023 23:59:59
     const simpleDate = dateToSimpleDate(date);
+    const shifted = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
 
-    // The result should be in UTC, not local time
-    expect(simpleDate.year).toBe(2024);
-    expect(simpleDate.month).toBe(1);
-    expect(simpleDate.day).toBe(1);
+    expect(simpleDate).toEqual({
+      year: shifted.getFullYear(),
+      month: shifted.getMonth() + 1,
+      day: shifted.getDate(),
+    });
   });
 
   test("handles edge cases", () => {

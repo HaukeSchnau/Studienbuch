@@ -1,5 +1,5 @@
-import type { DomainEvent } from "@stu/lib";
 import { Effect } from "effect";
+import type { DomainEvent } from "../../../db/src/domain-event";
 import { DomainIngestEngine } from "../boilerplate";
 import { SYSTEM_USER } from "../constants";
 import { runtime } from "../groundswell";

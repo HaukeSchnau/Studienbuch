@@ -30,8 +30,8 @@ const HolidaySchema = Schema.Struct({
   name: Schema.String,
   start: SimpleDate.BasicSimpleDateSchema,
   end: SimpleDate.BasicSimpleDateSchema,
-  state: Schema.Literal(...states),
-  year: Schema.Int.pipe(Schema.between(1900, 2100)),
+  state: Schema.Literals(states),
+  year: Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 1900, maximum: 2100 }))),
 });
 
 export interface Holiday {
@@ -73,5 +73,5 @@ export const getHolidays = (state: State, startYear: number) =>
       policy: externalApiHttpConfig.holidays,
     }),
     Effect.flatMap((holidays) => Effect.all(holidays.map(mapHoliday))),
-    Effect.flatMap(Schema.decodeUnknown(HolidaySchema.pipe(Schema.Array))),
+    Effect.flatMap(Schema.decodeUnknownEffect(Schema.Array(HolidaySchema))),
   );

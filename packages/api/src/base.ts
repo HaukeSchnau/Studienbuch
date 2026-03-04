@@ -4,7 +4,6 @@ import { trpcServer } from "@hono/trpc-server";
 import { appRouter, createTRPCContext } from "@stu/api";
 import { sql } from "@stu/db";
 import { db } from "@stu/db/client";
-import { DomainEvent } from "@stu/lib";
 import { getSessionTokenFromHeaders } from "@stu/lib-server";
 import { Effect } from "effect";
 import { type Context, Hono } from "hono";
@@ -12,6 +11,9 @@ import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import pino from "pino";
+import type { ZodSchema } from "zod";
+import { DomainEvent as DomainEventSchema } from "@stu/lib";
+import type { DomainEvent } from "../../db/src/domain-event";
 import { env } from "../env";
 import { DomainBroadcast, DomainIngestEngine } from "./boilerplate";
 import { resolveUserIdFromHeaders } from "./services/session-service";
@@ -168,10 +170,10 @@ export const createBase = Effect.fn(function* (basePath: string) {
   });
 
   attachSyncServer(app.basePath("/api"), {
-    ingestEngine,
-    broadcast,
+    ingestEngine: ingestEngine as never,
+    broadcast: broadcast as never,
     getUserId,
-    eventSchema: DomainEvent,
+    eventSchema: DomainEventSchema as unknown as ZodSchema<DomainEvent>,
   });
 
   app.onError((err, c) => {

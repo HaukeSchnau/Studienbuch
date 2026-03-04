@@ -5,12 +5,12 @@ import {
   type StudentId,
 } from "@stu/lib";
 import { and, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
-import { Effect } from "effect";
+import { Effect, Layer, ServiceMap } from "effect";
 import { Database } from "../database";
 import * as tables from "../schema";
 
-export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/GradeRepositoryDb", {
-  effect: Effect.gen(function* () {
+export class GradeRepositoryDb extends ServiceMap.Service<GradeRepositoryDb>()("db/GradeRepositoryDb", {
+  make: Effect.gen(function* () {
     const setCurrentGrade = Effect.fn(function* (payload: {
       studentId: StudentId;
       courseId: string;
@@ -19,7 +19,7 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
       type: "ORAL" | "MASTER";
       isSignatureRequired: boolean;
     }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       const [coursePredicate, typePredicate] = gradeCourseTypePredicates(
         {
@@ -67,7 +67,7 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
       courseId: string;
       type: "ORAL" | "MASTER";
     }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       const [coursePredicate, typePredicate] = gradeCourseTypePredicates(
         {
@@ -98,7 +98,7 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
       result: number;
       isSignatureRequired: boolean;
     }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       yield* execute((db) =>
         db.insert(tables.Grades).values({
@@ -119,7 +119,7 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
       type: "WRITTEN" | "ORAL" | "MASTER";
       signature: string;
     }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       const [coursePredicate, typePredicate, datePredicate] = gradeCourseTypeDatePredicates(
         {
@@ -152,7 +152,7 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
       type: "WRITTEN" | "ORAL" | "MASTER";
       signature: string;
     }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       const [coursePredicate, typePredicate, datePredicate] = gradeCourseTypeDatePredicates(
         {
@@ -183,7 +183,7 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
       course: string;
       type: "ORAL" | "MASTER" | "WRITTEN";
     }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       const [coursePredicate, typePredicate] = gradeCourseTypePredicates(
         {
@@ -234,7 +234,7 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
       date: Date;
       type: "WRITTEN" | "ORAL" | "MASTER";
     }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       const [coursePredicate, typePredicate, datePredicate] = gradeCourseTypeDatePredicates(
         {
@@ -279,4 +279,6 @@ export class GradeRepositoryDb extends Effect.Service<GradeRepositoryDb>()("db/G
       discardGrade,
     };
   }),
-}) {}
+}) {
+  static readonly Default = Layer.effect(GradeRepositoryDb, GradeRepositoryDb.make);
+}

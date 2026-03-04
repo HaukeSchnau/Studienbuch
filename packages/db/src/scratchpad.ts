@@ -33,7 +33,7 @@ export interface DiscoveredCourse {
 }
 
 export const recurringCourses = Effect.gen(function* () {
-  const db = yield* Database;
+  const db = yield* Effect.service(Database);
   const classes = yield* db
     .execute((db) =>
       db.query.Classes.findMany({

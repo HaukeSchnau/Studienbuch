@@ -3,7 +3,6 @@ import type {
   AbsenceRepository,
   ClassRepository,
   CourseRepository,
-  DomainEvent,
   GradeRepository,
   HolidayRepository,
   PersonRepository,
@@ -14,6 +13,7 @@ import type {
   UnknownDatabaseError,
   YearRepository,
 } from "@stu/lib";
+import type { DomainEvent } from "./domain-event";
 import { absenceApplicators } from "./event-handlers/absences";
 import { gradeApplicators } from "./event-handlers/grades";
 import { orgApplicators } from "./event-handlers/org";

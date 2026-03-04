@@ -20,7 +20,7 @@
     "lint": "oxlint --type-aware --type-check"
   },
   "dependencies": {
-    "@effect/vitest": "^0.25.1",
+    "@effect/vitest": "4.0.0-beta.26",
     "@groundswell/adapter-drizzle-sqlite": "^0.0.22",
     "@groundswell/core": "^0.0.22",
     "@schnau/effect-drizzle": "0.5.10",
@@ -29,7 +29,7 @@
     "dayjs": "^1.11.13",
     "drizzle-orm": "^0.44.4",
     "drizzle-zod": "^0.8.3",
-    "effect": "^3.16.13",
+    "effect": "4.0.0-beta.26",
     "pg": "^8.14.1",
     "zod": "^4.3.6"
   },

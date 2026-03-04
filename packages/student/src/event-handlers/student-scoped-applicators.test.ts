@@ -37,7 +37,7 @@ const studentRepoMock = (
 describe("student scoped applicators (student package)", () => {
   test("grades.currentGradeSet.verify rejects when initiator is not student", async () => {
     const exit = await Effect.runPromiseExit(
-      gradeApplicators.currentGradeSet.verify(
+      gradeApplicators.currentGradeSet!.verify(
         {
           type: "grades.currentGradeSet",
           data: {
@@ -63,8 +63,8 @@ describe("student scoped applicators (student package)", () => {
     const studentRepo = studentRepoMock();
 
     await Effect.runPromise(
-      gradeApplicators.currentGradeSet
-        .apply(
+      gradeApplicators
+        .currentGradeSet!.apply(
           {
             type: "grades.currentGradeSet",
             data: {
@@ -101,47 +101,43 @@ describe("student scoped applicators (student package)", () => {
 
   test("grades.currentGradeSet.apply maps GradeTooOldError to ApplicatorError", async () => {
     const studentRepo = studentRepoMock();
-    const result = await Effect.runPromise(
-      Effect.either(
-        gradeApplicators.currentGradeSet
-          .apply(
-            {
-              type: "grades.currentGradeSet",
-              data: {
-                studentId,
-                courseId,
-                date: new Date("2026-01-02T00:00:00.000Z"),
-                result: 2,
-                type: "ORAL",
-              },
-            } as never,
-            meta(studentId),
-          )
-          .pipe(
-            Effect.provideService(StudentRepository, studentRepo),
-            Effect.provideService(GradeRepository, {
-              setCurrentGrade: () =>
-                Effect.fail(
-                  new GradeTooOldError({
-                    courseId,
-                    date: new Date("2026-01-01T00:00:00.000Z"),
-                    type: "ORAL",
-                  }),
-                ),
-              recordWrittenGrade: () => Effect.void,
-              setTeacherSignature: () => Effect.void,
-              setParentSignature: () => Effect.void,
-              restoreLatest: () => Effect.void,
-              discardGrade: () => Effect.void,
-            }),
-          ),
-      ),
+    const error = await Effect.runPromise(
+      gradeApplicators
+        .currentGradeSet!.apply(
+          {
+            type: "grades.currentGradeSet",
+            data: {
+              studentId,
+              courseId,
+              date: new Date("2026-01-02T00:00:00.000Z"),
+              result: 2,
+              type: "ORAL",
+            },
+          } as never,
+          meta(studentId),
+        )
+        .pipe(
+          Effect.provideService(StudentRepository, studentRepo),
+          Effect.provideService(GradeRepository, {
+            setCurrentGrade: () =>
+              Effect.fail(
+                new GradeTooOldError({
+                  courseId,
+                  date: new Date("2026-01-01T00:00:00.000Z"),
+                  type: "ORAL",
+                }),
+              ),
+            recordWrittenGrade: () => Effect.void,
+            setTeacherSignature: () => Effect.void,
+            setParentSignature: () => Effect.void,
+            restoreLatest: () => Effect.void,
+            discardGrade: () => Effect.void,
+          }),
+          Effect.flip,
+        ),
     );
 
-    expect(result._tag).toBe("Left");
-    if (result._tag === "Left") {
-      expect(result.left).toBeInstanceOf(ApplicatorError);
-    }
+    expect(error).toBeInstanceOf(ApplicatorError);
   });
 
   test("absence.recorded.apply forwards signature requirement from student age", async () => {
@@ -149,8 +145,8 @@ describe("student scoped applicators (student package)", () => {
     const studentRepo = studentRepoMock();
 
     await Effect.runPromise(
-      absenceApplicators.recorded
-        .apply(
+      absenceApplicators
+        .recorded!.apply(
           {
             type: "absence.recorded",
             data: {
@@ -186,7 +182,7 @@ describe("student scoped applicators (student package)", () => {
 
     await Effect.runPromise(
       (
-        studentApplicators.joined.apply(
+        studentApplicators.joined!.apply(
           {
             type: "student.joined",
             data: {

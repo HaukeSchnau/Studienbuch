@@ -55,6 +55,17 @@
     "turbo": "^2.8.10",
     "vitest": "^4.0.18"
   },
+  "overrides": {
+    "@groundswell/adapter-drizzle-postgres": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/adapter-drizzle-postgres",
+    "@groundswell/adapter-drizzle-sqlite": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/adapter-drizzle-sqlite",
+    "@groundswell/adapter-hono-server": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/adapter-hono-server",
+    "@groundswell/adapter-sse-client": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/adapter-sse-client",
+    "@groundswell/core": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/core",
+    "@groundswell/core-server": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/core-server",
+    "@groundswell/react": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/react",
+    "@groundswell/zod-helpers": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/packages/zod-helpers",
+    "@schnau/effect-drizzle": "file:/Users/haukeschnau/urbs/Libraries/Groundswell/vendor/effect-drizzle-local-v0.5.10-2984f70fa932.tgz"
+  },
   "packageManager": "bun@1.2.15",
   "patchedDependencies": {
     "expo-module-scripts@4.0.5": "patches/expo-module-scripts@4.0.5.patch"

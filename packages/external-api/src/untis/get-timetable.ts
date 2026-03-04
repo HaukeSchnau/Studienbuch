@@ -1,6 +1,6 @@
-import { HttpClient, HttpClientResponse } from "@effect/platform";
+import { HttpClient, HttpClientResponse } from "effect/unstable/http";
 import { SimpleDate, TimeOfDay } from "@stu/lib";
-import { Data, Effect, ParseResult, Schema } from "effect";
+import { Data, Effect, Option, Schema, SchemaGetter, SchemaIssue } from "effect";
 import { withUntisHttpResilience } from "./http";
 import { untisLegacyApiUrl } from "./urls";
 
@@ -22,50 +22,55 @@ const parseDuration = Effect.fn(function* (duration: { start: string; end: strin
   };
 });
 
-const DurationSchema = Schema.transformOrFail(
-  Schema.Struct({
-    start: Schema.String,
-    end: Schema.String,
-  }),
-  Schema.Struct({
-    start: Schema.Struct({
-      date: Schema.Struct({
-        year: Schema.Int,
-        month: Schema.Int,
-        day: Schema.Int,
+const DurationSchema = Schema.Struct({
+  start: Schema.String,
+  end: Schema.String,
+}).pipe(
+  Schema.decodeTo(
+    Schema.Struct({
+      start: Schema.Struct({
+        date: Schema.Struct({
+          year: Schema.Int,
+          month: Schema.Int,
+          day: Schema.Int,
+        }),
+        time: Schema.Number,
       }),
-      time: Schema.Number,
-    }),
-    end: Schema.Struct({
-      date: Schema.Struct({
-        year: Schema.Int,
-        month: Schema.Int,
-        day: Schema.Int,
+      end: Schema.Struct({
+        date: Schema.Struct({
+          year: Schema.Int,
+          month: Schema.Int,
+          day: Schema.Int,
+        }),
+        time: Schema.Number,
       }),
-      time: Schema.Number,
     }),
-  }),
-  {
-    strict: true,
-    decode: (duration, _, ast) =>
-      parseDuration(duration).pipe(
-        Effect.catchAll((err) => ParseResult.fail(new ParseResult.Type(ast, duration, err.message))),
+    {
+      decode: SchemaGetter.transformOrFail((duration) =>
+        parseDuration(duration).pipe(
+          Effect.mapError(
+            (error) =>
+              new SchemaIssue.InvalidValue(Option.some(duration), {
+                message: error instanceof Error ? error.message : String(error),
+              }),
+          ),
+        ),
       ),
-    encode: (duration, _, ast) =>
-      ParseResult.fail(new ParseResult.Forbidden(ast, duration, "Encoding duration back to plain text is forbidden.")),
-  },
+      encode: SchemaGetter.forbidden(() => "Encoding duration back to plain text is forbidden."),
+    },
+  ),
 );
 
 const PositionSchema = Schema.Struct({
   current: Schema.Struct({
-    type: Schema.Literal("SUBJECT", "TEACHER", "ROOM", "CLASS", "INFO"),
-    status: Schema.Literal("REGULAR", "ADDED"),
+    type: Schema.Literals(["SUBJECT", "TEACHER", "ROOM", "CLASS", "INFO"]),
+    status: Schema.Literals(["REGULAR", "ADDED"]),
     shortName: Schema.String,
     longName: Schema.String,
     displayName: Schema.String,
   }).pipe(Schema.NullOr),
   removed: Schema.Struct({
-    type: Schema.Literal("TEACHER", "ROOM", "CLASS"),
+    type: Schema.Literals(["TEACHER", "ROOM", "CLASS"]),
     status: Schema.Literal("REMOVED"),
     shortName: Schema.String,
     longName: Schema.String,
@@ -73,10 +78,10 @@ const PositionSchema = Schema.Struct({
   }).pipe(Schema.NullOr),
 });
 
-const PositionValueSchema = Schema.Union(PositionSchema, Schema.Array(PositionSchema)).pipe(Schema.NullOr);
+const PositionValueSchema = Schema.Union([PositionSchema, Schema.Array(PositionSchema)]).pipe(Schema.NullOr);
 
 const ResponseSchema = Schema.Struct({
-  errors: Schema.Tuple(),
+  errors: Schema.Tuple([]),
   days: Schema.Array(
     Schema.Struct({
       date: SimpleDate.SimpleDateSchema,
@@ -87,14 +92,14 @@ const ResponseSchema = Schema.Struct({
         longName: Schema.String,
         displayName: Schema.String,
       }),
-      status: Schema.Literal("REGULAR", "NO_DATA"),
-      dayEntries: Schema.Tuple(),
+      status: Schema.Literals(["REGULAR", "NO_DATA"]),
+      dayEntries: Schema.Tuple([]),
       gridEntries: Schema.Array(
         Schema.Struct({
           ids: Schema.Array(Schema.Number),
           duration: DurationSchema,
-          type: Schema.Literal("NORMAL_TEACHING_PERIOD", "EVENT", "EXAM"),
-          status: Schema.Literal("REGULAR", "CHANGED", "ADDITIONAL", "CANCELLED"),
+          type: Schema.Literals(["NORMAL_TEACHING_PERIOD", "EVENT", "EXAM"]),
+          status: Schema.Literals(["REGULAR", "CHANGED", "ADDITIONAL", "CANCELLED"]),
           statusDetail: Schema.Literal("SUBSTITUTED").pipe(Schema.NullOr),
           position1: PositionValueSchema,
           position2: PositionValueSchema,
@@ -122,26 +127,26 @@ export namespace UntisTimetable {
   export const get = Effect.fn(function* (options: Options) {
     const encodedStart = yield* SimpleDate.encode(options.start);
     const encodedEnd = yield* SimpleDate.encode(options.end);
+    const client = yield* HttpClient.HttpClient;
 
-    return yield* HttpClient.HttpClient.pipe(
-      Effect.flatMap((client) =>
-        client.get(untisLegacyApiUrl("/timetable/entries"), {
-          headers: {
-            "x-webuntis-api-school-year-id": options.schoolYearId.toString(),
-          },
-          urlParams: {
-            start: encodedStart,
-            end: encodedEnd,
-            format: "0",
-            resourceType: "CLASS",
-            resources: options.kadmosClassId.toString(),
-            periodTypes: "",
-            timetableType: "STANDARD",
-          },
-        }),
-      ),
-      Effect.flatMap(HttpClientResponse.schemaBodyJson(ResponseSchema)),
-      withUntisHttpResilience("timetable.get"),
-    );
+    return yield* client
+      .get(untisLegacyApiUrl("/timetable/entries"), {
+        headers: {
+          "x-webuntis-api-school-year-id": options.schoolYearId.toString(),
+        },
+        urlParams: {
+          start: encodedStart,
+          end: encodedEnd,
+          format: "0",
+          resourceType: "CLASS",
+          resources: options.kadmosClassId.toString(),
+          periodTypes: "",
+          timetableType: "STANDARD",
+        },
+      })
+      .pipe(
+        Effect.flatMap(HttpClientResponse.schemaBodyJson(ResponseSchema)),
+        withUntisHttpResilience("timetable.get"),
+      );
   });
 }

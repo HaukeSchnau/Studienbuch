@@ -1,14 +1,14 @@
-import { HttpClient } from "@effect/platform";
 import { Database, eq } from "@stu/db";
 import { Schools } from "@stu/db/schema";
 import { UntisAuth, UntisSchoolYears } from "@stu/external-api";
 import { ensureEntityDefined, type SchoolId, simpleDateToDate } from "@stu/lib";
 import { Effect, pipe } from "effect";
+import { HttpClient } from "effect/unstable/http";
 
 const login = Effect.fn(function* (school: SchoolId) {
   const db = yield* Database;
   const schoolEntity = yield* db
-    .execute((db) => db.query.Schools.findFirst({ where: eq(Schools.id, school) }))
+    .execute((dbClient) => dbClient.query.Schools.findFirst({ where: eq(Schools.id, school) }))
     .pipe(Effect.flatMap(ensureEntityDefined("school", school)));
 
   return yield* UntisAuth.login(schoolEntity);

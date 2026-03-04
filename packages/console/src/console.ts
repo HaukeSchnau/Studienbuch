@@ -1,6 +1,5 @@
 import { Command, Options } from "@effect/cli";
-import { FetchHttpClient } from "@effect/platform";
-import { BunContext, BunRuntime } from "@effect/platform-bun";
+import { BunRuntime, BunServices } from "@effect/platform-bun";
 import { bootstrapBroadcastAsync } from "@stu/api";
 import { alias, and, eq, ne, recurringCourses } from "@stu/db";
 import { db } from "@stu/db/client";
@@ -8,7 +7,8 @@ import * as tables from "@stu/db/schema";
 import { upsertCourses } from "@stu/legacy-import";
 import { defaultSchools, ensureEntityDefined, SCHOOL_IDS, type SchoolId, Semester } from "@stu/lib";
 import { Effect } from "effect";
-import { AppLayerLive } from "../../api/src/groundswell";
+import { FetchHttpClient } from "effect/unstable/http";
+import { runtime } from "../../api/src/groundswell";
 import { importClasses } from "./kadmos/import-classes";
 import { importTeachers } from "./kadmos/import-teachers";
 import { importTimetable } from "./kadmos/import-timetable";
@@ -121,9 +121,8 @@ const cli = Command.run(consoleCommand, {
   version: "v1.0.0",
 });
 
-cli(process.argv).pipe(
-  Effect.provide(AppLayerLive),
-  Effect.provide(FetchHttpClient.layer),
-  Effect.provide(BunContext.layer),
-  BunRuntime.runMain,
+const main = Effect.tryPromise(() =>
+  runtime.runPromise(cli(process.argv).pipe(Effect.provide([BunServices.layer, FetchHttpClient.layer]))),
 );
+
+BunRuntime.runMain(main);

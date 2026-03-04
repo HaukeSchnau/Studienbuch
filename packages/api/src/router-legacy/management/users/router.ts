@@ -39,7 +39,7 @@ const setUserPermissionsInputSchema = z.object({
   permissions: z.array(
     z.object({
       permission: z.enum(PERMISSIONS),
-      scope: z.record(z.array(z.number())).nullable(),
+      scope: z.record(z.string(), z.array(z.number())).nullable(),
     }),
   ),
 });

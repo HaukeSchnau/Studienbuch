@@ -2,7 +2,6 @@ import type { NamespaceServerApplicatorMap } from "@groundswell/core";
 import type {
   ClassRepository,
   CourseRepository,
-  DomainEvent,
   HolidayRepository,
   SchoolRepository,
   SemesterRepository,
@@ -10,6 +9,7 @@ import type {
   YearRepository,
 } from "@stu/lib";
 import type { Database } from "../../database";
+import type { DomainEvent } from "../../domain-event";
 import type { PersonRepository } from "../../repositories/person.repo";
 import type { TimetableRepository } from "../../repositories/timetable.repo";
 

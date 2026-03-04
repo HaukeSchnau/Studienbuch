@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { type DomainEvent, defaultTheme } from "@stu/lib";
+import { defaultTheme } from "@stu/lib";
 import { and, eq } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { createClient } from "../testing/client";
+import type { DomainEvent } from "./domain-event";
 import * as schema from "./schema";
 
 const school = "igs-lil";
@@ -20,6 +21,7 @@ const missingTimetableCourseId = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 const orgInitiatorId = "00000000-0000-0000-0000-000000000000";
 const runLivePostgresTests = process.env.RUN_LIVE_DB_TESTS === "1";
 const describeLivePostgres = runLivePostgresTests ? describe : describe.skip;
+const unsafe = <A, E, R>(effect: Effect.Effect<A, E, R>) => effect as Effect.Effect<A, E, never>;
 
 const loadDbModules = async () => {
   const modules = await import("./index");
@@ -40,7 +42,7 @@ const loadDbModules = async () => {
   );
 
   const provideLiveDb = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-    effect.pipe(Effect.provide(repositories), Effect.provide(modules.DatabaseLive));
+    unsafe(effect.pipe(Effect.provide(repositories), Effect.provide(modules.DatabaseLive)));
 
   return {
     ...modules,
@@ -152,8 +154,8 @@ describeLivePostgres("live postgres applicator integration", () => {
     const event = absenceRecorded([courseId]);
     const meta = { initiatorId: studentId } as never;
 
-    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.verify(event, meta)));
-    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.apply(event, meta)));
+    await Effect.runPromise(unsafe(dbModules.provideLiveDb(dbModules.applicators.verify(event, meta))));
+    await Effect.runPromise(unsafe(dbModules.provideLiveDb(dbModules.applicators.apply(event, meta))));
 
     const days = await db
       .select()
@@ -181,11 +183,11 @@ describeLivePostgres("live postgres applicator integration", () => {
     const event = absenceRecorded([missingCourseId]);
     const meta = { initiatorId: studentId } as never;
 
-    const result = await Effect.runPromise(
-      Effect.either(dbModules.provideLiveDb(dbModules.applicators.apply(event, meta))),
+    const error = await Effect.runPromise(
+      dbModules.provideLiveDb(dbModules.applicators.apply(event, meta)).pipe(Effect.flip),
     );
 
-    expect(result._tag).toBe("Left");
+    expect(error).toBeDefined();
 
     const days = await db
       .select()
@@ -231,11 +233,11 @@ describeLivePostgres("live postgres applicator integration", () => {
     };
 
     const meta = { initiatorId: joinedStudentId } as never;
-    const result = await Effect.runPromise(
-      Effect.either(dbModules.provideLiveDb(dbModules.applicators.apply(event, meta))),
+    const error = await Effect.runPromise(
+      dbModules.provideLiveDb(dbModules.applicators.apply(event, meta)).pipe(Effect.flip),
     );
 
-    expect(result._tag).toBe("Left");
+    expect(error).toBeDefined();
 
     const persons = await db.select().from(schema.Persons).where(eq(schema.Persons.id, joinedStudentId));
     const students = await db.select().from(schema.Students).where(eq(schema.Students.person, joinedStudentId));
@@ -309,12 +311,12 @@ describeLivePostgres("live postgres applicator integration", () => {
 
     const meta = { initiatorId: orgInitiatorId } as never;
 
-    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.verify(teacherJoined, meta)));
-    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.apply(teacherJoined, meta)));
-    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.verify(courseCreated, meta)));
-    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.apply(courseCreated, meta)));
-    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.verify(entryCreated, meta)));
-    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.apply(entryCreated, meta)));
+    await Effect.runPromise(unsafe(dbModules.provideLiveDb(dbModules.applicators.verify(teacherJoined, meta))));
+    await Effect.runPromise(unsafe(dbModules.provideLiveDb(dbModules.applicators.apply(teacherJoined, meta))));
+    await Effect.runPromise(unsafe(dbModules.provideLiveDb(dbModules.applicators.verify(courseCreated, meta))));
+    await Effect.runPromise(unsafe(dbModules.provideLiveDb(dbModules.applicators.apply(courseCreated, meta))));
+    await Effect.runPromise(unsafe(dbModules.provideLiveDb(dbModules.applicators.verify(entryCreated, meta))));
+    await Effect.runPromise(unsafe(dbModules.provideLiveDb(dbModules.applicators.apply(entryCreated, meta))));
 
     const courses = await db.select().from(schema.Courses).where(eq(schema.Courses.id, courseId));
     const courseTeachers = await db
@@ -334,8 +336,8 @@ describeLivePostgres("live postgres applicator integration", () => {
     expect(timetableEntriesAfterCreate[0]?.duration).toBe(45);
     expect(timetableEntriesAfterCreate[0]?.rooms).toEqual(["A101"]);
 
-    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.verify(entryDiscarded, meta)));
-    await Effect.runPromise(dbModules.provideLiveDb(dbModules.applicators.apply(entryDiscarded, meta)));
+    await Effect.runPromise(unsafe(dbModules.provideLiveDb(dbModules.applicators.verify(entryDiscarded, meta))));
+    await Effect.runPromise(unsafe(dbModules.provideLiveDb(dbModules.applicators.apply(entryDiscarded, meta))));
 
     const timetableEntriesAfterDiscard = await db
       .select()
@@ -359,10 +361,10 @@ describeLivePostgres("live postgres applicator integration", () => {
     };
     const meta = { initiatorId: orgInitiatorId } as never;
 
-    const result = await Effect.runPromise(
-      Effect.either(dbModules.provideLiveDb(dbModules.applicators.verify(event, meta))),
+    const error = await Effect.runPromise(
+      dbModules.provideLiveDb(dbModules.applicators.verify(event, meta)).pipe(Effect.flip),
     );
 
-    expect(result._tag).toBe("Left");
+    expect(error).toBeDefined();
   });
 });

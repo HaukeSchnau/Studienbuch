@@ -34,22 +34,16 @@ describe("student-event-logic", () => {
   });
 
   test("verifyStudentInitiator fails for mismatched ids", async () => {
-    const result = await Effect.runPromise(
-      Effect.either(
-        verifyStudentInitiator({
-          initiatorId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-          studentId: studentFixture.id,
-          onForbidden: () => new Error("forbidden"),
-        }),
-      ),
+    const error = await Effect.runPromise(
+      verifyStudentInitiator({
+        initiatorId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        studentId: studentFixture.id,
+        onForbidden: () => new Error("forbidden"),
+      }).pipe(Effect.flip),
     );
 
-    expect(result._tag).toBe("Left");
-    if (result._tag === "Left") {
-      const left = result.left as Error;
-      expect(left).toBeInstanceOf(Error);
-      expect(left.message).toBe("forbidden");
-    }
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toBe("forbidden");
   });
 
   test("requireStudent returns loaded student", async () => {
@@ -65,22 +59,16 @@ describe("student-event-logic", () => {
   });
 
   test("requireStudent fails when student is missing", async () => {
-    const result = await Effect.runPromise(
-      Effect.either(
-        requireStudent({
-          studentId: studentFixture.id,
-          load: Effect.succeed(undefined),
-          onMissing: (studentId) => new Error(`missing ${studentId}`),
-        }),
-      ),
+    const error = await Effect.runPromise(
+      requireStudent({
+        studentId: studentFixture.id,
+        load: Effect.succeed(undefined),
+        onMissing: (studentId) => new Error(`missing ${studentId}`),
+      }).pipe(Effect.flip),
     );
 
-    expect(result._tag).toBe("Left");
-    if (result._tag === "Left") {
-      const left = result.left as Error;
-      expect(left).toBeInstanceOf(Error);
-      expect(left.message).toContain(studentFixture.id);
-    }
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toContain(studentFixture.id);
   });
 
   test("requireStudentOrDie defects when student is missing", async () => {
@@ -99,45 +87,33 @@ describe("student-event-logic", () => {
   });
 
   test("verifyStudentAccess fails when initiator does not match student", async () => {
-    const result = await Effect.runPromise(
-      Effect.either(
-        verifyStudentAccess({
-          initiatorId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-          studentId: studentFixture.id,
-          load: Effect.succeed(studentFixture),
-          onForbidden: () => new Error("forbidden"),
-          onMissing: () => new Error("missing"),
-        }),
-      ),
+    const error = await Effect.runPromise(
+      verifyStudentAccess({
+        initiatorId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        studentId: studentFixture.id,
+        load: Effect.succeed(studentFixture),
+        onForbidden: () => new Error("forbidden"),
+        onMissing: () => new Error("missing"),
+      }).pipe(Effect.flip),
     );
 
-    expect(result._tag).toBe("Left");
-    if (result._tag === "Left") {
-      const left = result.left as Error;
-      expect(left).toBeInstanceOf(Error);
-      expect(left.message).toBe("forbidden");
-    }
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toBe("forbidden");
   });
 
   test("verifyStudentAccess fails when student is missing", async () => {
-    const result = await Effect.runPromise(
-      Effect.either(
-        verifyStudentAccess({
-          initiatorId: studentFixture.id,
-          studentId: studentFixture.id,
-          load: Effect.succeed(undefined),
-          onForbidden: () => new Error("forbidden"),
-          onMissing: () => new Error("missing"),
-        }),
-      ),
+    const error = await Effect.runPromise(
+      verifyStudentAccess({
+        initiatorId: studentFixture.id,
+        studentId: studentFixture.id,
+        load: Effect.succeed(undefined),
+        onForbidden: () => new Error("forbidden"),
+        onMissing: () => new Error("missing"),
+      }).pipe(Effect.flip),
     );
 
-    expect(result._tag).toBe("Left");
-    if (result._tag === "Left") {
-      const left = result.left as Error;
-      expect(left).toBeInstanceOf(Error);
-      expect(left.message).toBe("missing");
-    }
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toBe("missing");
   });
 
   test("requireStudentSignatureRequirement returns true when student is under age", async () => {

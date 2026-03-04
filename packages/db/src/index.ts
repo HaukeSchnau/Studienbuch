@@ -4,13 +4,13 @@ import type {
   AuthRepository,
   ClassRepository,
   CourseRepository,
-  DomainEvent,
   HolidayRepository,
   SchoolRepository,
   SemesterRepository,
   UnknownDatabaseError,
   YearRepository,
 } from "@stu/lib";
+import type { DomainEvent } from "./domain-event";
 import type { Database } from "./database";
 import { absenceApplicators } from "./event-handlers/absence";
 import { authApplicators } from "./event-handlers/auth";

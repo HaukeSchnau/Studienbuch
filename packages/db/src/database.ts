@@ -1,23 +1,23 @@
 import type { DatabaseError as BaseDatabaseError } from "@schnau/effect-drizzle/generic-sqlite";
 import { type DatabaseService, makeService } from "@schnau/effect-drizzle/postgres";
-import { Effect, Layer, Redacted } from "effect";
+import { Effect, Layer, Redacted, ServiceMap } from "effect";
 import type pg from "pg";
 import { env } from "../env";
 import * as Schema from "./schema";
 
 export type DatabaseError = BaseDatabaseError<pg.DatabaseError>;
 
-export class Database extends Effect.Tag("db/Database")<Database, DatabaseService<typeof Schema>>() {
+export class Database extends ServiceMap.Service<Database, DatabaseService<typeof Schema>>()("db/Database") {
   static readonly asTransaction = <E, R>(prev: Effect.Effect<void, DatabaseError | E, Database | R>) =>
-    Database.use((db) => db.transaction(prev));
+    Effect.service(Database).pipe(Effect.flatMap((db) => db.transaction(prev)));
 
   static readonly asTransactionCustom =
     (dbEffect: Effect.Effect<DatabaseService<typeof Schema>>) =>
     <E, R>(prev: Effect.Effect<void, DatabaseError | E, R>) =>
-      dbEffect.pipe(Effect.andThen((db) => db.transaction(prev)));
+      dbEffect.pipe(Effect.flatMap((db) => db.transaction(prev)));
 }
 
-export const DatabaseLive = Layer.scoped(
+export const DatabaseLive = Layer.effect(
   Database,
   makeService(
     {

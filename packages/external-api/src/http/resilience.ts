@@ -72,8 +72,8 @@ export const withExternalApiResilience =
     const consoleLogsEnabled = options.policy.observabilityEnabled;
 
     const schedule = Schedule.recurs(options.policy.retryAttempts).pipe(
-      Schedule.addDelay(() => Duration.millis(options.policy.retryDelayMs)),
-      Schedule.modifyDelayEffect((count, delay) =>
+      Schedule.addDelay(() => Effect.succeed(Duration.millis(options.policy.retryDelayMs))),
+      Schedule.modifyDelay((count, delay) =>
         Effect.sync(() => {
           retries = count + 1;
           emitObservation(
@@ -92,14 +92,16 @@ export const withExternalApiResilience =
     );
 
     return effect.pipe(
-      Effect.timeoutFail({
+      Effect.timeoutOrElse({
         duration: Duration.millis(options.policy.timeoutMs),
         onTimeout: () =>
-          new ExternalApiRequestTimeoutError({
-            service: options.service,
-            operation: options.operation,
-            timeoutMs: options.policy.timeoutMs,
-          }),
+          Effect.fail(
+            new ExternalApiRequestTimeoutError({
+              service: options.service,
+              operation: options.operation,
+              timeoutMs: options.policy.timeoutMs,
+            }),
+          ),
       }),
       Effect.retry(schedule),
       Effect.tap(() =>

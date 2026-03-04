@@ -18,8 +18,10 @@ import {
   TimetableRepository,
   YearRepositoryLive,
 } from "@stu/db";
-import { DomainEvent } from "@stu/lib";
-import { Duration, Effect, Layer, Logger, ManagedRuntime, pipe, Schedule } from "effect";
+import { DomainEvent as DomainEventSchema } from "@stu/lib";
+import { Effect, Layer, Logger, ManagedRuntime, pipe } from "effect";
+import type { ZodSchema } from "zod";
+import type { DomainEvent } from "../../db/src/domain-event";
 import { DomainCanonicalStorage, DomainServerApplicator, ingestEngine } from "./boilerplate";
 import { memoryBroadcastLive } from "./broadcast";
 import { getUserTopics } from "./services/topic-service";
@@ -42,7 +44,7 @@ const Repositories = Layer.mergeAll(
 const serverApplicatorLive = Layer.effect(
   DomainServerApplicator,
   Effect.gen(function* () {
-    const db = yield* Database;
+    const db = yield* Effect.service(Database);
     return DomainServerApplicator.of({
       verify: (event, meta) =>
         pipe(
@@ -50,25 +52,26 @@ const serverApplicatorLive = Layer.effect(
           Effect.provide(Repositories),
           Effect.provideService(Database, db),
           Effect.catchTags({
-            DatabaseError: (error) => Effect.fail(new ValidationError({ cause: error, reason: "UNKNOWN" })),
+            DatabaseError: (error: DatabaseError) =>
+              Effect.fail(new ValidationError({ cause: error, reason: "UNKNOWN" })),
           }),
-        ),
+        ) as Effect.Effect<void, ValidationError>,
       apply: (event, meta) =>
         pipe(
           applicators.apply(event, meta),
           Effect.provide(Repositories),
           Effect.provideService(Database, db),
           Effect.catchTags({
-            DatabaseError: (error) => Effect.fail(new ApplicatorError({ cause: error })),
+            DatabaseError: (error: DatabaseError) => Effect.fail(new ApplicatorError({ cause: error })),
           }),
-        ),
+        ) as Effect.Effect<void, ApplicatorError>,
       getEventTopics: (event) =>
         pipe(
           applicators.getEventTopics(event),
           Effect.provide(Repositories),
           Effect.provideService(Database, db),
           Effect.orDie, // TODO: handle error
-        ),
+        ) as Effect.Effect<string[]>,
       getUserTopics: (userId) => Effect.promise(() => getUserTopics(userId)), // TODO: use effect
     });
   }),
@@ -76,20 +79,8 @@ const serverApplicatorLive = Layer.effect(
 
 export const canonicalStorageLive = DrizzleCanonicalStorage.createDrizzleCanonicalStorageLayer(DomainCanonicalStorage, {
   db: Database,
-  eventSchema: DomainEvent,
+  eventSchema: DomainEventSchema as unknown as ZodSchema<DomainEvent>,
 });
-
-const databaseRetrySchedule: Schedule.Schedule<number, DatabaseError, never> = Schedule.exponential("1 second", 2).pipe(
-  Schedule.modifyDelay(Duration.min("8 seconds")),
-  Schedule.jittered,
-  Schedule.repetitions,
-  Schedule.modifyDelayEffect((count, delay) =>
-    Effect.as(
-      Effect.logError(`[Server crashed]: Retrying in ${Duration.format(delay)} (attempt #${count + 1})`),
-      delay,
-    ),
-  ),
-);
 
 const SyncLayerLive = pipe(
   Layer.provideMerge(ingestEngine, serverApplicatorLive),
@@ -99,7 +90,7 @@ const SyncLayerLive = pipe(
 
 export const AppLayerLive = pipe(
   Layer.mergeAll(SyncLayerLive, Repositories),
-  Layer.provideMerge(DatabaseLive.pipe(Layer.retry(databaseRetrySchedule), Layer.orDie)),
+  Layer.provideMerge(DatabaseLive.pipe(Layer.orDie)),
   // Layer.provide(RabbitMQClient.Default),
 );
-export const runtime = ManagedRuntime.make(Layer.mergeAll(AppLayerLive, Logger.pretty));
+export const runtime = ManagedRuntime.make(Layer.mergeAll(AppLayerLive, Logger.layer([Logger.consolePretty()])));

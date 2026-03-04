@@ -15,29 +15,37 @@ const failIfTrue =
     value ? Effect.fail(onTrue()) : Effect.void;
 
 export const verifyOrgSchoolFounded = <E>(options: { data: OrgSchoolFoundedData; onDuplicate: () => E }) =>
-  Effect.andThen(SchoolRepository, (repo) =>
-    repo.doesSchoolExist({
-      id: options.data.id,
-    }),
-  ).pipe(Effect.flatMap(failIfTrue(options.onDuplicate)));
+  Effect.service(SchoolRepository).pipe(
+    Effect.flatMap((repo) =>
+      repo.doesSchoolExist({
+        id: options.data.id,
+      }),
+    ),
+    Effect.flatMap(failIfTrue(options.onDuplicate)),
+  );
 
 export const applyOrgSchoolFounded = (options: { data: OrgSchoolFoundedData }) =>
-  Effect.andThen(SchoolRepository, (repo) =>
-    repo.createSchool({
-      id: options.data.id,
-      name: options.data.name,
-      state: options.data.state,
-    }),
+  Effect.service(SchoolRepository).pipe(
+    Effect.flatMap((repo) =>
+      repo.createSchool({
+        id: options.data.id,
+        name: options.data.name,
+        state: options.data.state,
+      }),
+    ),
   );
 
 export const verifyOrgHolidayCreated = <E>(options: { data: OrgHolidayCreatedData; onDuplicate: () => E }) =>
-  Effect.andThen(HolidayRepository, (repo) =>
-    repo.doesHolidayExist({
-      name: options.data.name,
-      state: options.data.state,
-      year: options.data.year,
-    }),
-  ).pipe(Effect.flatMap(failIfTrue(options.onDuplicate)));
+  Effect.service(HolidayRepository).pipe(
+    Effect.flatMap((repo) =>
+      repo.doesHolidayExist({
+        name: options.data.name,
+        state: options.data.state,
+        year: options.data.year,
+      }),
+    ),
+    Effect.flatMap(failIfTrue(options.onDuplicate)),
+  );
 
 export const applyOrgHolidayCreated = (options: { data: OrgHolidayCreatedData }) =>
   Effect.gen(function* () {
@@ -54,41 +62,51 @@ export const applyOrgHolidayCreated = (options: { data: OrgHolidayCreatedData })
   });
 
 export const verifyOrgYearStarted = <E>(options: { data: OrgYearStartedData; onDuplicate: () => E }) =>
-  Effect.andThen(YearRepository, (repo) =>
-    repo.doesYearExist({
-      startYear: options.data.startYear,
-      school: options.data.school,
-    }),
-  ).pipe(Effect.flatMap(failIfTrue(options.onDuplicate)));
+  Effect.service(YearRepository).pipe(
+    Effect.flatMap((repo) =>
+      repo.doesYearExist({
+        startYear: options.data.startYear,
+        school: options.data.school,
+      }),
+    ),
+    Effect.flatMap(failIfTrue(options.onDuplicate)),
+  );
 
 export const applyOrgYearStarted = (options: { data: OrgYearStartedData }) =>
-  Effect.andThen(YearRepository, (repo) =>
-    repo.createYear({
-      name: options.data.name,
-      startYear: options.data.startYear,
-      graduationYear: options.data.graduationYear,
-      school: options.data.school,
-      classes: options.data.classes,
-    }),
+  Effect.service(YearRepository).pipe(
+    Effect.flatMap((repo) =>
+      repo.createYear({
+        name: options.data.name,
+        startYear: options.data.startYear,
+        graduationYear: options.data.graduationYear,
+        school: options.data.school,
+        classes: options.data.classes,
+      }),
+    ),
   );
 
 export const verifyOrgCoursesCreated = <E>(options: { data: OrgCoursesCreatedData; onDuplicate: () => E }) =>
-  Effect.andThen(CourseRepository, (repo) =>
-    repo.doesCourseExist({
-      id: options.data.id,
-    }),
-  ).pipe(Effect.flatMap(failIfTrue(options.onDuplicate)));
+  Effect.service(CourseRepository).pipe(
+    Effect.flatMap((repo) =>
+      repo.doesCourseExist({
+        id: options.data.id,
+      }),
+    ),
+    Effect.flatMap(failIfTrue(options.onDuplicate)),
+  );
 
 export const applyOrgCoursesCreated = (options: { data: OrgCoursesCreatedData }) =>
-  Effect.andThen(CourseRepository, (repo) =>
-    repo.createCourse({
-      id: options.data.id,
-      name: options.data.name,
-      subject: options.data.subject,
-      school: options.data.school,
-      semester: options.data.semester,
-      isMandatory: options.data.isMandatory,
-      teachers: options.data.teachers,
-      classes: options.data.classes,
-    }),
+  Effect.service(CourseRepository).pipe(
+    Effect.flatMap((repo) =>
+      repo.createCourse({
+        id: options.data.id,
+        name: options.data.name,
+        subject: options.data.subject,
+        school: options.data.school,
+        semester: options.data.semester,
+        isMandatory: options.data.isMandatory,
+        teachers: options.data.teachers,
+        classes: options.data.classes,
+      }),
+    ),
   );

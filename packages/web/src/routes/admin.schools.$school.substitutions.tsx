@@ -26,7 +26,7 @@ const optionalCompare = (a: string | undefined, b: string | undefined) => {
 };
 
 const getSubstitutionsForSchoolFn = createServerFn({ method: "GET" })
-  .validator(z.object({ school: z.enum(SCHOOL_IDS) }))
+  .inputValidator(z.object({ school: z.enum(SCHOOL_IDS) }))
   .handler(async ({ data }) => {
     const schoolName = defaultSchools[data.school]?.name ?? data.school;
     const formatName = "iServ_SuS_heute";

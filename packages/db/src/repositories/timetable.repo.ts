@@ -1,13 +1,13 @@
 import type { SubstitutionType } from "@stu/lib";
 import { and, eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { Effect, Layer, ServiceMap } from "effect";
 import { Database } from "../database";
 import * as tables from "../schema";
 
-export class TimetableRepository extends Effect.Service<TimetableRepository>()("db/TimetableRepository", {
-  effect: Effect.gen(function* () {
+export class TimetableRepository extends ServiceMap.Service<TimetableRepository>()("db/TimetableRepository", {
+  make: Effect.gen(function* () {
     const getTimetableEntry = Effect.fn(function* (payload: { course: string; start: Date }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
       return yield* execute((db) =>
         db.query.TimetableEntries.findFirst({
           where: and(
@@ -24,7 +24,7 @@ export class TimetableRepository extends Effect.Service<TimetableRepository>()("
       duration: number;
       rooms: string[];
     }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
       const existingTimetableEntry = yield* getTimetableEntry({ course: payload.course, start: payload.start });
       yield* execute((db) =>
         db
@@ -46,7 +46,7 @@ export class TimetableRepository extends Effect.Service<TimetableRepository>()("
     }, Database.asTransaction);
 
     const deleteTimetableEntry = Effect.fn(function* (payload: { course: string; start: Date }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
       yield* execute((db) =>
         db
           .delete(tables.TimetableEntries)
@@ -57,7 +57,7 @@ export class TimetableRepository extends Effect.Service<TimetableRepository>()("
     });
 
     const getSubstitution = Effect.fn(function* (payload: { course: string; start: Date; originalTeacher: string }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
       return yield* execute((db) =>
         db.query.Substitutions.findFirst({
           where: and(
@@ -82,7 +82,7 @@ export class TimetableRepository extends Effect.Service<TimetableRepository>()("
         | { substitute?: never; type: "ENTFALL" }
       ),
     ) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
       yield* execute((db) =>
         db.insert(tables.Substitutions).values({
           course: payload.course,
@@ -103,4 +103,6 @@ export class TimetableRepository extends Effect.Service<TimetableRepository>()("
       createSubstitution,
     };
   }),
-}) {}
+}) {
+  static readonly Default = Layer.effect(TimetableRepository, TimetableRepository.make);
+}

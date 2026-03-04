@@ -13,7 +13,7 @@ function generateLicenseKey(): string {
     .slice(0, -1);
 }
 
-const oneYearFromNow = DateTime.now.pipe(Effect.andThen(DateTime.add({ years: 1 })));
+const oneYearFromNow = DateTime.now.pipe(Effect.map(DateTime.add({ years: 1 })));
 
 export const generateLicenses = Effect.fn(function* (numberOfLicenses: number, school: SchoolId) {
   yield* Effect.logInfo(`Generating ${numberOfLicenses} license keys for school "${school}".

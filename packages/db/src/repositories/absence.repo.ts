@@ -1,11 +1,11 @@
 import { shouldDeleteAbsenceDayAfterRemovingCourseAbsences, type StudentId } from "@stu/lib";
 import { and, eq, inArray } from "drizzle-orm";
-import { Effect } from "effect";
+import { Effect, Layer, ServiceMap } from "effect";
 import { Database } from "../database";
 import * as tables from "../schema";
 
-export class AbsenceRepositoryDb extends Effect.Service<AbsenceRepositoryDb>()("db/AbsenceRepositoryDb", {
-  effect: Effect.gen(function* () {
+export class AbsenceRepositoryDb extends ServiceMap.Service<AbsenceRepositoryDb>()("db/AbsenceRepositoryDb", {
+  make: Effect.gen(function* () {
     const addAbsence = Effect.fn(function* (payload: {
       studentId: StudentId;
       date: Date;
@@ -13,7 +13,7 @@ export class AbsenceRepositoryDb extends Effect.Service<AbsenceRepositoryDb>()("
       courseIds: string[];
       isSignatureRequired: boolean;
     }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       yield* execute((db) =>
         db
@@ -45,7 +45,7 @@ export class AbsenceRepositoryDb extends Effect.Service<AbsenceRepositoryDb>()("
     }, Database.asTransaction);
 
     const setParentSignature = Effect.fn(function* (payload: { studentId: StudentId; date: Date; signature: string }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       yield* execute((db) =>
         db
@@ -61,7 +61,7 @@ export class AbsenceRepositoryDb extends Effect.Service<AbsenceRepositoryDb>()("
       courseId: string;
       signature: string;
     }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       yield* execute((db) =>
         db
@@ -78,7 +78,7 @@ export class AbsenceRepositoryDb extends Effect.Service<AbsenceRepositoryDb>()("
     });
 
     const deleteAbsence = Effect.fn(function* (payload: { studentId: StudentId; date: Date; courseIds: string[] }) {
-      const { execute } = yield* Database;
+      const { execute } = yield* Effect.service(Database);
 
       yield* execute((db) =>
         db
@@ -117,4 +117,6 @@ export class AbsenceRepositoryDb extends Effect.Service<AbsenceRepositoryDb>()("
       deleteAbsence,
     };
   }),
-}) {}
+}) {
+  static readonly Default = Layer.effect(AbsenceRepositoryDb, AbsenceRepositoryDb.make);
+}
