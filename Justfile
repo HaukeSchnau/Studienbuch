@@ -85,6 +85,9 @@ qa-smoke-console:
 qa-smoke-web-admin:
     ./tooling/qa/web-admin/smoke-navigation.sh
 
+qa-smoke-mobile-ios:
+    ./tooling/qa/mobile-ios-smoke.sh
+
 qa-smoke-run:
     ./tooling/qa/run-smoke.sh
 

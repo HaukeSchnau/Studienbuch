@@ -104,3 +104,36 @@ Key outputs:
 - `summary.tsv`: per-check PASS/FAIL summary.
 - `preconditions.txt`: captured assumptions for the run.
 - `<check>/` directories (`public-home`, `login-page`, `admin-guard`) with URL/title/body/snapshot/screenshot captures.
+
+## iOS Mobile Smoke
+
+Reproducible iOS lifecycle + lightweight dogfood probe:
+
+- `tooling/qa/mobile-ios-smoke.sh`
+
+### Run
+
+```bash
+./tooling/qa/mobile-ios-smoke.sh
+# or via just:
+just qa-smoke-mobile-ios
+```
+
+Include in aggregate smoke:
+
+```bash
+QA_INCLUDE_MOBILE_IOS_SMOKE=1 just qa-smoke-run
+```
+
+### Artifacts
+
+- `.artifacts/qa/<timestamp>/mobile-ios-smoke.tsv`
+- `.artifacts/qa/<timestamp>/ios-maestro-lifecycle.log`
+- `.artifacts/qa/<timestamp>/ios-agent-device-*.log`
+
+### Preconditions
+
+- iOS simulator available and booted.
+- `Studienbuch (Dev)` app installed on the simulator.
+- `maestro` available (`maestro` or `nix run nixpkgs#maestro -- ...`).
+- `agent-device` available (`agent-device`, `npx --yes agent-device`, or nix fallback).
