@@ -1,15 +1,16 @@
-
 # AGENTS.md
 
 ## Task Completion Requirements
 
 <!-- - All of `bun fmt`, `bun lint`, and `bun typecheck` must pass before considering tasks completed. -->
+
 - All of `just check` must pass before considering tasks completed.
 - NEVER run `bun test`. Always use `bun run test` (runs Vitest).
 
 ## Project Snapshot
 
 <!-- T3 Code is a minimal web GUI for using coding agents like Codex and Claude. -->
+
 Studienbuch is a local-first application for students and teachers to manage their school life.
 It should work offline as much as possible, especially the mobile app.
 

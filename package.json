@@ -25,6 +25,9 @@
     }
   },
   "type": "module",
+  "scripts": {
+    "prepare": "effect-tsgo patch"
+  },
   "devDependencies": {
     "@effect/tsgo": "catalog:",
     "@types/bun": "catalog:",
@@ -46,8 +49,5 @@
     "@effect/vitest": "catalog:",
     "effect": "catalog:",
     "vite": "^8.0.0"
-  },
-  "scripts": {
-    "prepare": "effect-tsgo patch"
   }
 }
