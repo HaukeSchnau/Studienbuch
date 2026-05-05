@@ -1,11 +1,6 @@
 {
   "name": "studienbuch",
   "private": true,
-  "packageManager": "bun@1.3.11",
-  "engines": {
-    "bun": "^1.3.11",
-    "node": "^24.13.1"
-  },
   "workspaces": {
     "packages": [
       "apps/*",
@@ -53,5 +48,10 @@
     "@effect/vitest": "catalog:",
     "effect": "catalog:",
     "vite": "^8.0.0"
-  }
+  },
+  "engines": {
+    "bun": "^1.3.11",
+    "node": "^24.13.1"
+  },
+  "packageManager": "bun@1.3.11"
 }
