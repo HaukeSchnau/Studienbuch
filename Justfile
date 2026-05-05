@@ -16,4 +16,4 @@ lint-fix:
     bun run oxlint --report-unused-disable-directives --fix
 
 clean:
-    rm -rf dist node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/*/dist .turbo apps/*/.turbo packages/*/.turbo
+    rm -rf dist node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/*/dist 
