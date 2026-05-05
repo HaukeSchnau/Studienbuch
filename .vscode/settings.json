@@ -1,0 +1,5 @@
+{
+  "typescript.native-preview.tsdk": "/Users/haukeschnau/Code/Studienbuch/node_modules/@typescript/native-preview",
+  "typescript.experimental.useTsgo": true,
+  "js/ts.experimental.useTsgo": true
+}
