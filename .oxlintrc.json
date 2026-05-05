@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["dist", "node_modules", "bun.lock", "*.tsbuildinfo", "**/routeTree.gen.ts"],
+  "plugins": ["eslint", "oxc", "react", "unicorn", "typescript"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "react-in-jsx-scope": "off",
+    "eslint/no-shadow": "off",
+    "eslint/no-await-in-loop": "off"
+  },
+  "env": {
+    "builtin": true
+  }
+}
