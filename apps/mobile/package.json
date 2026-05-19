@@ -3,7 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "dev": "expo start",
+    "dev": "expo start --dev-client --ios",
     "lint": "expo lint"
   },
   "dependencies": {
