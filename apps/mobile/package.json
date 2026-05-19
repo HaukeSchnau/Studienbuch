@@ -8,6 +8,8 @@
     "dev:dev-client": "expo run:ios",
     "generate:icons": "bun run --cwd ../.. generate:icons",
     "build:dev": "eas build --platform ios --profile development --local",
+    "build:dev:device": "eas build --platform ios --profile development --local",
+    "build:dev:simulator": "eas build --platform ios --profile development-simulator --local",
     "build:prod": "eas build --platform ios --profile production --local"
   },
   "dependencies": {
