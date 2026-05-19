@@ -14,6 +14,8 @@
           nodejs_latest
           just
           mprocs
+          fastlane
+          cocoapods
         ];
       };
     });
