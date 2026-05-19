@@ -1,5 +1,5 @@
 {
-  "name": "studienbuch-web",
+  "name": "@stu/web",
   "private": true,
   "type": "module",
   "imports": {
