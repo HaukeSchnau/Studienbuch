@@ -21,6 +21,9 @@ lint-fix:
 test:
     bun run test
 
+icons:
+    bun run generate:icons
+
 clean:
     rm -rf dist node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/*/dist 
     bun i

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "expo start --dev-client --ios",
     "dev:dev-client": "expo run:ios",
+    "generate:icons": "bun run --cwd ../.. generate:icons",
     "build:dev": "eas build --platform ios --profile development --local",
     "build:prod": "eas build --platform ios --profile production --local"
   },
