@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Studienbuch",
-    "slug": "Studienbuch",
+    "slug": "studienbuch",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "dev.schnau.studienbuch"
+      "bundleIdentifier": "dev.schnau.studienbuch",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -40,6 +43,19 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "76a4b2c7-e6dc-40fa-808e-27c1b574d342"
+      }
+    }
+  },
+  "build": {
+    "development": {
+      "ios": {
+        "simulator": true
+      }
     }
   }
 }
