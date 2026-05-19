@@ -13,6 +13,7 @@
           bun
           nodejs_latest
           just
+          mprocs
         ];
       };
     });
