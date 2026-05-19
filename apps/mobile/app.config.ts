@@ -1,7 +1,4 @@
 const IS_DEV = process.env.APP_VARIANT === "development";
-const iosBundleIdentifier =
-  process.env.IOS_BUNDLE_IDENTIFIER ??
-  (IS_DEV ? "dev.schnau.studienbuch.dev" : "dev.schnau.studienbuch");
 const iconSuffix = IS_DEV ? "-dev" : "";
 const icon = `./assets/images/icon${iconSuffix}.png`;
 const favicon = `./assets/images/favicon${iconSuffix}.png`;
@@ -22,7 +19,7 @@ export default {
     scheme: "studienbuch",
     userInterfaceStyle: "automatic",
     ios: {
-      bundleIdentifier: iosBundleIdentifier,
+      bundleIdentifier: IS_DEV ? "dev.schnau.studienbuch.dev" : "dev.schnau.studienbuch",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },
