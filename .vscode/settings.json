@@ -1,5 +1,9 @@
 {
   "typescript.native-preview.tsdk": "/Users/haukeschnau/Code/Studienbuch/node_modules/@typescript/native-preview",
-  "typescript.experimental.useTsgo": true,
-  "js/ts.experimental.useTsgo": true
+  "js/ts.experimental.useTsgo": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit",
+    "source.sortMembers": "explicit"
+  }
 }

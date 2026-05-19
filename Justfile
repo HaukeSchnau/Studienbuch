@@ -23,7 +23,7 @@ test:
 clean:
     rm -rf dist node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/*/dist 
 
-dev app options:
+dev app options="":
     bun run --cwd apps/{{app}} dev {{options}}
 
 build app:
