@@ -4,7 +4,9 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "expo start --dev-client --ios",
-    "lint": "expo lint"
+    "dev:dev-client": "expo run:ios",
+    "build:dev": "eas build --platform ios --profile development --local",
+    "build:prod": "eas build --platform ios --profile production --local"
   },
   "dependencies": {
     "@react-navigation/bottom-tabs": "^7.15.5",
