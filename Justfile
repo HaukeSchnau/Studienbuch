@@ -12,10 +12,10 @@ fmt-check:
     bun run oxfmt --check
 
 lint:
-    bun run oxlint --report-unused-disable-directives
+    bun run oxlint --disable-nested-config --report-unused-disable-directives
 
 lint-fix:
-    bun run oxlint --report-unused-disable-directives --fix
+    bun run oxlint --disable-nested-config --report-unused-disable-directives --fix
 
 test:
     bun run test

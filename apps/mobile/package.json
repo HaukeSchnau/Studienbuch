@@ -1,7 +1,8 @@
 {
   "name": "@stu/mobile",
-  "main": "expo-router/entry",
   "version": "1.0.0",
+  "private": true,
+  "main": "expo-router/entry",
   "scripts": {
     "dev": "expo start --dev-client --ios",
     "dev:dev-client": "expo run:ios",
@@ -45,9 +46,5 @@
     "postcss": "^8.5.15",
     "tailwindcss": "^4.3.0",
     "typescript": "~5.9.2"
-  },
-  "overrides": {
-    "lightningcss": "1.30.1"
-  },
-  "private": true
+  }
 }
