@@ -9,17 +9,18 @@ Error collection is automatic and configured in `src/router.tsx`.
 We want our server functions instrumented. So if you see a function name like `createServerFn`, you can instrument it with Sentry. You'll need to import `Sentry`:
 
 ```tsx
-import * as Sentry from '@sentry/tanstackstart-react'
+import * as Sentry from "@sentry/tanstackstart-react";
 ```
 
 And then wrap the implementation of the server function with `Sentry.startSpan`, like so:
 
 ```tsx
-Sentry.startSpan({ name: 'Requesting all the pokemon' }, async () => {
+Sentry.startSpan({ name: "Requesting all the pokemon" }, async () => {
   // Some lengthy operation here
-  await fetch('https://api.pokemon.com/data/')
-})
+  await fetch("https://api.pokemon.com/data/");
+});
 ```
+
 # shadcn instructions
 
 Use the latest version of Shadcn to install new components, like this command to add a button component:
