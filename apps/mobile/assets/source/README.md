@@ -1,11 +1,15 @@
-# Source assets
+# Source Assets
 
-`app-icon.png` is the highest-quality source found for the Studienbuch notebook app icon.
+`personal-notebook.svg` is the highest-quality source found for the Studienbuch notebook artwork.
 It is copied unchanged from:
 
-`/Users/haukeschnau/urbs/Products/Studienbuch/expo-54/packages/app-mobile/assets/icon.png`
+`/Volumes/BackupData/broken-macbook/Downloads/Personal notebook.svg`
 
-The Expo-facing files in `../images/` are generated derivatives:
+That SVG contains the full original illustration. The app icon uses only the notebook region,
+cropped away from the person illustration and placed on the Studienbuch green background.
+
+`app-icon.png` is a 4096x4096 generated square raster from that SVG crop. The Expo-facing files in
+`../images/` are generated derivatives:
 
 - `icon.png`: 1024x1024 app icon
 - `android-icon-foreground.png`: Android adaptive icon foreground
