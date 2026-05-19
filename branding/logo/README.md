@@ -8,15 +8,23 @@ background included in the SVG.
 
 `/Volumes/BackupData/broken-macbook/Downloads/Personal notebook.svg`
 
-`app-icon.png` is a 4096x4096 raster preview generated from `app-icon.svg`. The Expo-facing files
-in `apps/mobile/assets/images/` are generated from `app-icon.svg` by rendering large and
-downsampling:
+`app-icon.png` is a 4096x4096 production raster preview generated from `app-icon.svg`.
+`app-icon-dev.png` is a generated development preview with a distinct amber background and `DEV`
+badge.
+
+The Expo-facing files in `apps/mobile/assets/images/` are generated from `app-icon.svg` by rendering
+large and downsampling:
 
 - `icon.png`: 1024x1024 app icon
+- `icon-dev.png`: 1024x1024 development app icon
 - `android-icon-foreground.png`: Android adaptive icon foreground
+- `android-icon-dev-foreground.png`: Android adaptive icon foreground for development builds
 - `android-icon-background.png`: Android adaptive icon background
+- `android-icon-dev-background.png`: Android adaptive icon background for development builds
 - `android-icon-monochrome.png`: Android themed icon mask
+- `android-icon-dev-monochrome.png`: Android themed icon mask for development builds
 - `favicon.png`: web favicon
+- `favicon-dev.png`: web favicon for development builds
 
 Regenerate everything with:
 

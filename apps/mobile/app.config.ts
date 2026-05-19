@@ -1,4 +1,13 @@
 const IS_DEV = process.env.APP_VARIANT === "development";
+const iconSuffix = IS_DEV ? "-dev" : "";
+const icon = `./assets/images/icon${iconSuffix}.png`;
+const favicon = `./assets/images/favicon${iconSuffix}.png`;
+const androidIcon = {
+  foregroundImage: `./assets/images/android-icon${iconSuffix}-foreground.png`,
+  backgroundImage: `./assets/images/android-icon${iconSuffix}-background.png`,
+  monochromeImage: `./assets/images/android-icon${iconSuffix}-monochrome.png`,
+};
+const splashBackgroundColor = IS_DEV ? "#F8C04E" : "#6DB868";
 
 export default {
   expo: {
@@ -6,7 +15,7 @@ export default {
     slug: "studienbuch",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/images/icon.png",
+    icon,
     scheme: "studienbuch",
     userInterfaceStyle: "automatic",
     ios: {
@@ -16,25 +25,21 @@ export default {
       },
     },
     android: {
-      adaptiveIcon: {
-        foregroundImage: "./assets/images/android-icon-foreground.png",
-        backgroundImage: "./assets/images/android-icon-background.png",
-        monochromeImage: "./assets/images/android-icon-monochrome.png",
-      },
+      adaptiveIcon: androidIcon,
       predictiveBackGestureEnabled: false,
       package: IS_DEV ? "dev.schnau.studienbuch.dev" : "dev.schnau.studienbuch",
     },
     web: {
       output: "static",
-      favicon: "./assets/images/favicon.png",
+      favicon,
     },
     plugins: [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          backgroundColor: "#6DB868",
-          image: "./assets/images/icon.png",
+          backgroundColor: splashBackgroundColor,
+          image: icon,
           imageWidth: 200,
         },
       ],
