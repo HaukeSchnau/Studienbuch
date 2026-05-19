@@ -1,3 +1,0 @@
-procs:
-  app-mobile:
-    cmd: just dev mobile
