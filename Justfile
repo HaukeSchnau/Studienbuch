@@ -3,6 +3,7 @@ check: fmt-check lint
 
 fix: fmt lint-fix
 
+[parallel]
 qa: check test
 
 fmt:
@@ -22,6 +23,7 @@ test:
 
 clean:
     rm -rf dist node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/*/dist 
+    bun i
 
 dev app options="":
     bun run --cwd apps/{{app}} dev {{options}}
