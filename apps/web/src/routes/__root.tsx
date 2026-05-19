@@ -2,7 +2,7 @@ import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 
-import PostHogProvider from "../integrations/posthog/provider";
+import PostHogProvider from "../lib/posthog/provider";
 
 import appCss from "../styles.css?url";
 
