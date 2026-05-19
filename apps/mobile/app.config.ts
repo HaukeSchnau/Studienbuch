@@ -10,7 +10,6 @@ export default {
     scheme: "studienbuch",
     userInterfaceStyle: "automatic",
     ios: {
-      icon: "./assets/expo.icon",
       bundleIdentifier: IS_DEV ? "dev.schnau.studienbuch.dev" : "dev.schnau.studienbuch",
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
@@ -18,7 +17,6 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        backgroundColor: "#E6F4FE",
         foregroundImage: "./assets/images/android-icon-foreground.png",
         backgroundImage: "./assets/images/android-icon-background.png",
         monochromeImage: "./assets/images/android-icon-monochrome.png",
@@ -35,11 +33,9 @@ export default {
       [
         "expo-splash-screen",
         {
-          backgroundColor: "#208AEF",
-          android: {
-            image: "./assets/images/splash-icon.png",
-            imageWidth: 76,
-          },
+          backgroundColor: "#6DB868",
+          image: "./assets/images/icon.png",
+          imageWidth: 200,
         },
       ],
     ],
