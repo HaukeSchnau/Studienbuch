@@ -2,14 +2,10 @@
 
 ## Task Completion Requirements
 
-<!-- - All of `bun fmt`, `bun lint`, and `bun typecheck` must pass before considering tasks completed. -->
-
-- All of `just check` must pass before considering tasks completed.
+- All of `just qa` must pass before considering tasks completed.
 - NEVER run `bun test`. Always use `bun run test` (runs Vitest).
 
 ## Project Snapshot
-
-<!-- T3 Code is a minimal web GUI for using coding agents like Codex and Claude. -->
 
 Studienbuch is a local-first application for students and teachers to manage their school life.
 It should work offline as much as possible, especially the mobile app.
@@ -33,5 +29,7 @@ Long term maintainability is a core priority. If you add new functionality, firs
 
 - `apps/mobile`: Expo mobile app. Primary customer-facing surface.
 - `apps/web`: TanStack Start web app, including marketing site.
-- `apps/console`: Admin CLI
+- `apps/console`: Admin/System CLI
 - `packages/core`: Core Domain Model and logic. Should be completely agnostic as to where it runs (e.g. no React-specific code).
+
+These are not set in stone. Feel free to suggest changes to these roles or adding new packages.

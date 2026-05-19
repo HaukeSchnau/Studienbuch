@@ -3,6 +3,8 @@ check: fmt-check lint
 
 fix: fmt lint-fix
 
+qa: check test
+
 fmt:
     bun run oxfmt
 
@@ -14,6 +16,9 @@ lint:
 
 lint-fix:
     bun run oxlint --report-unused-disable-directives --fix
+
+test:
+    bun run test
 
 clean:
     rm -rf dist node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/*/dist 
