@@ -7,6 +7,7 @@
     "dev": "expo start --dev-client --ios",
     "dev:dev-client": "expo run:ios",
     "generate:icons": "bun run --cwd ../.. generate:icons",
+    "test": "vitest run --config vitest.config.ts --passWithNoTests",
     "build:dev": "eas build --platform ios --profile development --local",
     "build:dev:device": "eas build --platform ios --profile development --local",
     "build:dev:simulator": "eas build --platform ios --profile development-simulator --local",
@@ -48,6 +49,7 @@
     "@types/react": "~19.2.15",
     "postcss": "^8.5.15",
     "tailwindcss": "^4.3.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "catalog:"
   }
 }

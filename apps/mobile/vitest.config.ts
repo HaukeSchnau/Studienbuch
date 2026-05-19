@@ -2,7 +2,7 @@ import { defineProject } from "vitest/config";
 
 export default defineProject({
   test: {
-    environment: "jsdom",
-    name: "studienbuch-web",
+    environment: "node",
+    name: "@stu/mobile",
   },
 });

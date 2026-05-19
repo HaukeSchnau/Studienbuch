@@ -9,7 +9,7 @@
     "dev": "dotenv -e .env.local -- sh -c \"NODE_OPTIONS='--import ./instrument.server.mjs' vite dev --port 3000\"",
     "build": "vite build && cp instrument.server.mjs .output/server",
     "preview": "vite preview",
-    "test": "vitest run --config vitest.config.ts",
+    "test": "vitest run --config vitest.config.ts --passWithNoTests",
     "start": "node --import ./.output/server/instrument.server.mjs .output/server/index.mjs",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
@@ -59,7 +59,7 @@
     "jsdom": "^28.1.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
-    "vitest": "^4.1.5"
+    "vitest": "catalog:"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
