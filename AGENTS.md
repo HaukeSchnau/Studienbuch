@@ -12,6 +12,8 @@ It should work offline as much as possible, especially the mobile app.
 
 This repository is a VERY EARLY WIP. Proposing sweeping changes that improve long-term maintainability is encouraged.
 
+I'm willing to use bleeding edge tech, even if it's alpha or experimental.
+
 ## Core Priorities
 
 1. Performance first.
