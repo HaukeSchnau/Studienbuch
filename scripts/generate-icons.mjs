@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { $ } from "bun";
 import { mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -32,31 +33,15 @@ const outputs = {
   webManifest: resolve(webPublic, "manifest.json"),
 };
 
-function run(command) {
-  const result = Bun.spawnSync(command, {
-    stdout: "inherit",
-    stderr: "inherit",
-    stdin: "inherit",
-  });
+async function runMagick(args) {
+  const magick = Bun.env.MAGICK ?? Bun.which("magick");
 
-  if (!result.success) {
-    process.exit(result.exitCode || 1);
+  if (magick) {
+    await $`${magick} ${args}`;
+    return;
   }
-}
 
-function runMagick(args) {
-  const magick = Bun.env.MAGICK ?? "magick";
-
-  try {
-    run([magick, ...args]);
-  } catch (error) {
-    if (error?.code === "ENOENT" && !Bun.env.MAGICK) {
-      run(["nix", "run", "nixpkgs#imagemagick", "--", "magick", ...args]);
-      return;
-    }
-
-    throw error;
-  }
+  await $`nix run nixpkgs#imagemagick -- magick ${args}`;
 }
 
 function generated(path) {
@@ -79,11 +64,11 @@ const webFavicon24 = resolve(tempDir, "favicon-24.png");
 const webFavicon32 = resolve(tempDir, "favicon-32.png");
 const webFavicon64 = resolve(tempDir, "favicon-64.png");
 
-function roundedResize(input, size, output) {
+async function roundedResize(input, size, output) {
   const mask = resolve(tempDir, `rounded-mask-${size}.png`);
   const radius = Math.round(size * 0.22);
 
-  runMagick([
+  await runMagick([
     "-size",
     `${size}x${size}`,
     "xc:black",
@@ -95,7 +80,7 @@ function roundedResize(input, size, output) {
     "8",
     mask,
   ]);
-  runMagick([
+  await runMagick([
     input,
     "-resize",
     `${size}x${size}`,
@@ -122,8 +107,8 @@ await Bun.write(
 `,
 );
 
-runMagick(["-density", "384", "-background", "none", sourceSvg, "-depth", "8", logoPreview]);
-runMagick([
+await runMagick(["-density", "384", "-background", "none", sourceSvg, "-depth", "8", logoPreview]);
+await runMagick([
   logoPreview,
   "-fuzz",
   devRecolorFuzz,
@@ -138,8 +123,8 @@ runMagick([
   "8",
   devBase4096,
 ]);
-runMagick(["-background", "none", devBadge, "-depth", "8", devBadgePng]);
-runMagick([
+await runMagick(["-background", "none", devBadge, "-depth", "8", devBadgePng]);
+await runMagick([
   devBase4096,
   devBadgePng,
   "-compose",
@@ -149,19 +134,19 @@ runMagick([
   "8",
   devLogoPreview,
 ]);
-runMagick([logoPreview, "-resize", "1024x1024", "-depth", "8", outputs.icon]);
-runMagick([devLogoPreview, "-resize", "1024x1024", "-depth", "8", outputs.devIcon]);
-runMagick([logoPreview, "-resize", "48x48", "-depth", "8", outputs.favicon]);
-runMagick([devLogoPreview, "-resize", "48x48", "-depth", "8", outputs.devFavicon]);
-roundedResize(logoPreview, 192, outputs.webLogo192);
-roundedResize(logoPreview, 512, outputs.webLogo512);
-roundedResize(logoPreview, 16, webFavicon16);
-roundedResize(logoPreview, 24, webFavicon24);
-roundedResize(logoPreview, 32, webFavicon32);
-roundedResize(logoPreview, 64, webFavicon64);
-runMagick([webFavicon16, webFavicon24, webFavicon32, webFavicon64, outputs.webFavicon]);
-runMagick([logoPreview, "-transparent", brandGreen, "-depth", "8", transparent4096]);
-runMagick([
+await runMagick([logoPreview, "-resize", "1024x1024", "-depth", "8", outputs.icon]);
+await runMagick([devLogoPreview, "-resize", "1024x1024", "-depth", "8", outputs.devIcon]);
+await runMagick([logoPreview, "-resize", "48x48", "-depth", "8", outputs.favicon]);
+await runMagick([devLogoPreview, "-resize", "48x48", "-depth", "8", outputs.devFavicon]);
+await roundedResize(logoPreview, 192, outputs.webLogo192);
+await roundedResize(logoPreview, 512, outputs.webLogo512);
+await roundedResize(logoPreview, 16, webFavicon16);
+await roundedResize(logoPreview, 24, webFavicon24);
+await roundedResize(logoPreview, 32, webFavicon32);
+await roundedResize(logoPreview, 64, webFavicon64);
+await runMagick([webFavicon16, webFavicon24, webFavicon32, webFavicon64, outputs.webFavicon]);
+await runMagick([logoPreview, "-transparent", brandGreen, "-depth", "8", transparent4096]);
+await runMagick([
   logoPreview,
   "-fuzz",
   devRecolorFuzz,
@@ -176,8 +161,15 @@ runMagick([
   "8",
   devTransparent4096,
 ]);
-runMagick([transparent4096, "-resize", "1024x1024", "-depth", "8", outputs.androidForeground]);
-runMagick([
+await runMagick([
+  transparent4096,
+  "-resize",
+  "1024x1024",
+  "-depth",
+  "8",
+  outputs.androidForeground,
+]);
+await runMagick([
   devTransparent4096,
   "-resize",
   "1024x1024",
@@ -185,8 +177,15 @@ runMagick([
   "8",
   outputs.androidDevForeground,
 ]);
-runMagick(["-size", "1024x1024", `xc:${brandGreen}`, "-depth", "8", outputs.androidBackground]);
-runMagick([
+await runMagick([
+  "-size",
+  "1024x1024",
+  `xc:${brandGreen}`,
+  "-depth",
+  "8",
+  outputs.androidBackground,
+]);
+await runMagick([
   "-size",
   "1024x1024",
   `xc:${devBackground}`,
@@ -194,7 +193,7 @@ runMagick([
   "8",
   outputs.androidDevBackground,
 ]);
-runMagick([
+await runMagick([
   outputs.androidForeground,
   "-alpha",
   "extract",
@@ -214,7 +213,7 @@ runMagick([
   "8",
   outputs.androidMonochrome,
 ]);
-runMagick([
+await runMagick([
   outputs.androidDevForeground,
   "-alpha",
   "extract",
