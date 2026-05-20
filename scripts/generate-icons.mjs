@@ -1,11 +1,9 @@
-#!/usr/bin/env node
-import { spawnSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+#!/usr/bin/env bun
+import { mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = resolve(import.meta.dir, "..");
 const sourceSvg = resolve(repoRoot, "branding/logo/app-icon.svg");
 const logoPreview = resolve(repoRoot, "branding/logo/app-icon.png");
 const devLogoPreview = resolve(repoRoot, "branding/logo/app-icon-dev.png");
@@ -34,33 +32,30 @@ const outputs = {
   webManifest: resolve(webPublic, "manifest.json"),
 };
 
-function run(command, args) {
-  const result = spawnSync(command, args, { stdio: "inherit" });
+function run(command) {
+  const result = Bun.spawnSync(command, {
+    stdout: "inherit",
+    stderr: "inherit",
+    stdin: "inherit",
+  });
 
-  if (result.error) {
-    throw result.error;
-  }
-
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
+  if (!result.success) {
+    process.exit(result.exitCode || 1);
   }
 }
 
 function runMagick(args) {
-  const magick = process.env.MAGICK ?? "magick";
-  const result = spawnSync(magick, args, { stdio: "inherit" });
+  const magick = Bun.env.MAGICK ?? "magick";
 
-  if (result.error?.code === "ENOENT" && !process.env.MAGICK) {
-    run("nix", ["run", "nixpkgs#imagemagick", "--", "magick", ...args]);
-    return;
-  }
+  try {
+    run([magick, ...args]);
+  } catch (error) {
+    if (error?.code === "ENOENT" && !Bun.env.MAGICK) {
+      run(["nix", "run", "nixpkgs#imagemagick", "--", "magick", ...args]);
+      return;
+    }
 
-  if (result.error) {
-    throw result.error;
-  }
-
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
+    throw error;
   }
 }
 
@@ -116,7 +111,7 @@ function roundedResize(input, size, output) {
   ]);
 }
 
-writeFileSync(
+await Bun.write(
   devBadge,
   `<svg xmlns="http://www.w3.org/2000/svg" width="4096" height="4096" viewBox="0 0 4096 4096">
   <g transform="translate(2230 280) rotate(8 760 300)">
@@ -240,7 +235,7 @@ runMagick([
   outputs.androidDevMonochrome,
 ]);
 
-writeFileSync(
+await Bun.write(
   outputs.webManifest,
   `${JSON.stringify(
     {

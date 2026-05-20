@@ -25,7 +25,7 @@
   },
   "type": "module",
   "scripts": {
-    "generate:icons": "node scripts/generate-icons.mjs",
+    "generate:icons": "bun scripts/generate-icons.mjs",
     "test": "vitest run",
     "prepare": "effect-tsgo patch"
   },
