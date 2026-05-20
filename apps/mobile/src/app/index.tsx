@@ -1,7 +1,9 @@
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import StudienbuchInlineModule from "../native/StudienbuchInlineModule";
-import StudienbuchLocalModule from "../../modules/native-module-demo";
+import StudienbuchLocalModule, {
+  StudienbuchNativeBadgeView,
+} from "../../modules/native-module-demo";
 
 type ModuleCardProps = {
   title: string;
@@ -37,6 +39,20 @@ export default function Index() {
           This screen calls one inline module that lives inside the mobile app and one local Expo
           module that lives in its own module boundary.
         </Text>
+
+        <View style={styles.nativeComponentSection}>
+          <Text style={styles.cardEyebrow}>Native component</Text>
+          <Text style={styles.cardTitle}>UIKit / TextView rendered badge</Text>
+          <Text style={styles.cardText}>
+            This is not a styled React Native View. It is a native view class registered by the
+            local Expo module, with React props setting native state.
+          </Text>
+          <StudienbuchNativeBadgeView
+            title="Native school-life component"
+            accentColor="#2f7d69"
+            style={styles.nativeBadge}
+          />
+        </View>
 
         <ModuleCard
           title="Inline module"
@@ -127,6 +143,18 @@ const styles = StyleSheet.create({
     color: "#171b14",
     fontSize: 15,
     lineHeight: 21,
+  },
+  nativeComponentSection: {
+    gap: 10,
+    borderColor: "#cfd8d2",
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: "#f9fffb",
+    padding: 16,
+  },
+  nativeBadge: {
+    height: 54,
+    width: "100%",
   },
   footer: {
     color: "#5b6354",

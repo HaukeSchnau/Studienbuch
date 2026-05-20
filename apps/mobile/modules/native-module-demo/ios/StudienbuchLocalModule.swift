@@ -17,5 +17,15 @@ public class StudienbuchLocalModule: Module {
       let device = UIDevice.current
       return "\(device.systemName) \(device.systemVersion) via Swift local Expo module"
     }
+
+    View(StudienbuchNativeBadgeView.self) {
+      Prop("title") { (view, title: String) in
+        view.title = title
+      }
+
+      Prop("accentColor") { (view, accentColor: String) in
+        view.accentColor = accentColor
+      }
+    }
   }
 }

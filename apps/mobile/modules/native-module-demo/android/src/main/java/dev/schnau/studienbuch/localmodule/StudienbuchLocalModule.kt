@@ -19,5 +19,15 @@ class StudienbuchLocalModule : Module() {
     Function("getPlatformSummary") {
       "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}) via Kotlin local Expo module"
     }
+
+    View(StudienbuchNativeBadgeView::class) {
+      Prop("title") { view: StudienbuchNativeBadgeView, title: String ->
+        view.title = title
+      }
+
+      Prop("accentColor") { view: StudienbuchNativeBadgeView, accentColor: String ->
+        view.accentColor = accentColor
+      }
+    }
   }
 }
