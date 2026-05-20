@@ -1,10 +1,8 @@
 [parallel]
-check: fmt-check lint
+qa-tasks: lint test
 
+qa: fmt qa-tasks
 fix: fmt lint-fix
-
-[parallel]
-qa: check test
 
 fmt:
     bun run oxfmt
