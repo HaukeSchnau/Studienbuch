@@ -1,6 +1,5 @@
 #!/usr/bin/env bun
 import { $ } from "bun";
-import { mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
@@ -48,11 +47,8 @@ function generated(path) {
   return path.replace(`${repoRoot}/`, "");
 }
 
-rmSync(tempDir, { recursive: true, force: true });
-mkdirSync(tempDir, { recursive: true });
-mkdirSync(dirname(logoPreview), { recursive: true });
-mkdirSync(mobileImages, { recursive: true });
-mkdirSync(webPublic, { recursive: true });
+await $`rm -rf ${tempDir}`;
+await $`mkdir -p ${[tempDir, dirname(logoPreview), mobileImages, webPublic]}`;
 
 const transparent4096 = resolve(tempDir, "foreground-4096.png");
 const devBase4096 = resolve(tempDir, "dev-base-4096.png");
