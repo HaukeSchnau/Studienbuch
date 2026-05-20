@@ -30,9 +30,11 @@ const outputs = {
   webLogo192: resolve(webPublic, "logo192.png"),
   webLogo512: resolve(webPublic, "logo512.png"),
   webManifest: resolve(webPublic, "manifest.json"),
-};
+} satisfies Record<string, string>;
 
-async function runMagick(args) {
+type MagickArgs = string[];
+
+async function runMagick(args: MagickArgs) {
   const magick = Bun.env.MAGICK ?? Bun.which("magick");
 
   if (magick) {
@@ -43,7 +45,7 @@ async function runMagick(args) {
   await $`nix run nixpkgs#imagemagick -- magick ${args}`;
 }
 
-function generated(path) {
+function generated(path: string) {
   return path.replace(`${repoRoot}/`, "");
 }
 
@@ -60,7 +62,7 @@ const webFavicon24 = resolve(tempDir, "favicon-24.png");
 const webFavicon32 = resolve(tempDir, "favicon-32.png");
 const webFavicon64 = resolve(tempDir, "favicon-64.png");
 
-async function roundedResize(input, size, output) {
+async function roundedResize(input: string, size: number, output: string) {
   const mask = resolve(tempDir, `rounded-mask-${size}.png`);
   const radius = Math.round(size * 0.22);
 
