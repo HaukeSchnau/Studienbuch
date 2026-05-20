@@ -32,9 +32,7 @@ const outputs = {
   webManifest: resolve(webPublic, "manifest.json"),
 } satisfies Record<string, string>;
 
-type MagickArgs = string[];
-
-async function runMagick(args: MagickArgs) {
+async function runMagick(args: string[]) {
   const magick = Bun.env.MAGICK ?? Bun.which("magick");
 
   if (magick) {

@@ -30,7 +30,7 @@ function Slider({
         className,
       )}
       {...props}
-    >
+    > 
       <SliderPrimitive.Track
         data-slot="slider-track"
         className={cn(
