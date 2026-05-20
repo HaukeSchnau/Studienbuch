@@ -2,18 +2,18 @@
 
 Last verified: 2026-05-21
 
-This document is the durable reference for the native-code showcase in `apps/mobile`. It covers what exists, how the pieces are wired, when to choose inline versus local Expo modules, and how to iterate without rebuilding more than necessary.
+This document is the durable reference for native-code patterns in `apps/mobile`. It covers how the prior showcase was wired, when to choose inline versus local Expo modules, and how to iterate without rebuilding more than necessary.
 
-## Current Showcase
+## Reference Examples
 
-The mobile app renders four native-code examples on the first screen:
+The runnable sample code has been removed from the app. The paths below describe the reference examples that were previously implemented and verified:
 
 - Inline native module: `apps/mobile/src/native/StudienbuchInlineModule.swift`, `apps/mobile/src/native/StudienbuchInlineModule.kt`, and `apps/mobile/src/native/StudienbuchInlineModule.ts`
 - Inline native component: `apps/mobile/src/native/StudienbuchInlineBadgeView.swift`, `apps/mobile/src/native/StudienbuchInlineBadgeView.kt`, and `apps/mobile/src/native/StudienbuchInlineBadgeView.tsx`
 - Local Expo module: `apps/mobile/modules/native-module-demo`
 - Local native component: `apps/mobile/modules/native-module-demo/ios/StudienbuchNativeBadgeView.swift`, `apps/mobile/modules/native-module-demo/android/src/main/java/dev/schnau/studienbuch/localmodule/StudienbuchNativeBadgeView.kt`, and `apps/mobile/modules/native-module-demo/src/StudienbuchNativeBadgeView.tsx`
 
-The examples are intentionally simple and safe: they return platform strings and render native badges. Their purpose is to show the shapes of native code, not to introduce product behavior.
+Those examples were intentionally simple and safe: they returned platform strings and rendered native badges. Their purpose was to show the shapes of native code, not to introduce product behavior. Recreate one of these shapes only when a real native capability needs it.
 
 ## Decision Rule
 
