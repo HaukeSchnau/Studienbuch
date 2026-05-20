@@ -1,5 +1,6 @@
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import StudienbuchInlineBadgeView from "../native/StudienbuchInlineBadgeView";
 import StudienbuchInlineModule from "../native/StudienbuchInlineModule";
 import StudienbuchLocalModule, {
   StudienbuchNativeBadgeView,
@@ -50,6 +51,20 @@ export default function Index() {
           <StudienbuchNativeBadgeView
             title="Native school-life component"
             accentColor="#2f7d69"
+            style={styles.nativeBadge}
+          />
+        </View>
+
+        <View style={styles.inlineComponentSection}>
+          <Text style={styles.cardEyebrow}>Inline native component</Text>
+          <Text style={styles.cardTitle}>App-source native badge</Text>
+          <Text style={styles.cardText}>
+            This one is registered from Swift and Kotlin files in `apps/mobile/src/native`, without
+            a separate Expo module package boundary.
+          </Text>
+          <StudienbuchInlineBadgeView
+            title="Inline app-owned component"
+            accentColor="#7c3aed"
             style={styles.nativeBadge}
           />
         </View>
@@ -150,6 +165,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     backgroundColor: "#f9fffb",
+    padding: 16,
+  },
+  inlineComponentSection: {
+    gap: 10,
+    borderColor: "#d7d0e9",
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: "#fbfaff",
     padding: 16,
   },
   nativeBadge: {

@@ -13,6 +13,12 @@ It also renders one native component from the local Expo module:
 - `apps/mobile/modules/native-module-demo/android/src/main/java/dev/schnau/studienbuch/localmodule/StudienbuchNativeBadgeView.kt`
 - `apps/mobile/modules/native-module-demo/src/StudienbuchNativeBadgeView.tsx`
 
+And one inline native component from app source:
+
+- `apps/mobile/src/native/StudienbuchInlineBadgeView.swift`
+- `apps/mobile/src/native/StudienbuchInlineBadgeView.kt`
+- `apps/mobile/src/native/StudienbuchInlineBadgeView.tsx`
+
 ## Inline Module
 
 The inline module is enabled in `apps/mobile/app.config.ts`:
@@ -28,6 +34,40 @@ experiments: {
 This is the smallest shape for app-owned native code. The Swift and Kotlin files live next to the mobile source tree, and Expo discovers them during prebuild.
 
 Use this shape when the native capability is narrow and belongs only to this app.
+
+Inline native views follow the same Expo Modules idea, but the files stay directly inside the app source directory:
+
+```swift
+class StudienbuchInlineBadgeView: Module {
+  public func definition() -> ModuleDefinition {
+    View(StudienbuchInlineBadgeNativeView.self) {
+      Prop("title") { (view, title: String) in
+        view.title = title
+      }
+    }
+  }
+}
+```
+
+```kotlin
+class StudienbuchInlineBadgeView : Module() {
+  override fun definition() = ModuleDefinition {
+    View(StudienbuchInlineBadgeNativeView::class) {
+      Prop("title") { view: StudienbuchInlineBadgeNativeView, title: String ->
+        view.title = title
+      }
+    }
+  }
+}
+```
+
+React consumes it with `requireNativeView` from `expo`:
+
+```tsx
+const NativeView = requireNativeView("StudienbuchInlineBadgeView");
+```
+
+Use this for small app-local native components. If the view grows multiple props, events, helper types, platform-specific files, or reuse pressure, move it into a local Expo module.
 
 ## Local Expo Module
 
