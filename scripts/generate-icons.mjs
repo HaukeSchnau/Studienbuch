@@ -84,6 +84,38 @@ const webFavicon24 = resolve(tempDir, "favicon-24.png");
 const webFavicon32 = resolve(tempDir, "favicon-32.png");
 const webFavicon64 = resolve(tempDir, "favicon-64.png");
 
+function roundedResize(input, size, output) {
+  const mask = resolve(tempDir, `rounded-mask-${size}.png`);
+  const radius = Math.round(size * 0.22);
+
+  runMagick([
+    "-size",
+    `${size}x${size}`,
+    "xc:black",
+    "-fill",
+    "white",
+    "-draw",
+    `roundrectangle 0,0 ${size - 1},${size - 1} ${radius},${radius}`,
+    "-depth",
+    "8",
+    mask,
+  ]);
+  runMagick([
+    input,
+    "-resize",
+    `${size}x${size}`,
+    mask,
+    "-alpha",
+    "off",
+    "-compose",
+    "CopyOpacity",
+    "-composite",
+    "-depth",
+    "8",
+    output,
+  ]);
+}
+
 writeFileSync(
   devBadge,
   `<svg xmlns="http://www.w3.org/2000/svg" width="4096" height="4096" viewBox="0 0 4096 4096">
@@ -126,12 +158,12 @@ runMagick([logoPreview, "-resize", "1024x1024", "-depth", "8", outputs.icon]);
 runMagick([devLogoPreview, "-resize", "1024x1024", "-depth", "8", outputs.devIcon]);
 runMagick([logoPreview, "-resize", "48x48", "-depth", "8", outputs.favicon]);
 runMagick([devLogoPreview, "-resize", "48x48", "-depth", "8", outputs.devFavicon]);
-runMagick([logoPreview, "-resize", "192x192", "-depth", "8", outputs.webLogo192]);
-runMagick([logoPreview, "-resize", "512x512", "-depth", "8", outputs.webLogo512]);
-runMagick([logoPreview, "-resize", "16x16", "-depth", "8", webFavicon16]);
-runMagick([logoPreview, "-resize", "24x24", "-depth", "8", webFavicon24]);
-runMagick([logoPreview, "-resize", "32x32", "-depth", "8", webFavicon32]);
-runMagick([logoPreview, "-resize", "64x64", "-depth", "8", webFavicon64]);
+roundedResize(logoPreview, 192, outputs.webLogo192);
+roundedResize(logoPreview, 512, outputs.webLogo512);
+roundedResize(logoPreview, 16, webFavicon16);
+roundedResize(logoPreview, 24, webFavicon24);
+roundedResize(logoPreview, 32, webFavicon32);
+roundedResize(logoPreview, 64, webFavicon64);
 runMagick([webFavicon16, webFavicon24, webFavicon32, webFavicon64, outputs.webFavicon]);
 runMagick([logoPreview, "-transparent", brandGreen, "-depth", "8", transparent4096]);
 runMagick([
