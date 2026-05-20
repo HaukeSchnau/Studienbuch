@@ -1,2 +1,3 @@
 procs:
-  app-mobile: just dev mobile
+  mobile: just dev mobile
+  web: just dev web
