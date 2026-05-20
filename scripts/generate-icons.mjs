@@ -13,7 +13,9 @@ const mobileImages = resolve(repoRoot, "apps/mobile/assets/images");
 const webPublic = resolve(repoRoot, "apps/web/public");
 const tempDir = join(tmpdir(), "studienbuch-icon-generation");
 const brandGreen = "#6DB868";
+const brandAccentGreen = "#6DB968";
 const devBackground = "#F8C04E";
+const devRecolorFuzz = "10%";
 
 const outputs = {
   icon: resolve(mobileImages, "icon.png"),
@@ -94,7 +96,21 @@ writeFileSync(
 );
 
 runMagick(["-density", "384", "-background", "none", sourceSvg, "-depth", "8", logoPreview]);
-runMagick([logoPreview, "-fill", devBackground, "-opaque", brandGreen, "-depth", "8", devBase4096]);
+runMagick([
+  logoPreview,
+  "-fuzz",
+  devRecolorFuzz,
+  "-fill",
+  devBackground,
+  "-opaque",
+  brandGreen,
+  "-opaque",
+  brandAccentGreen,
+  "+fuzz",
+  "-depth",
+  "8",
+  devBase4096,
+]);
 runMagick(["-background", "none", devBadge, "-depth", "8", devBadgePng]);
 runMagick([
   devBase4096,
@@ -118,7 +134,21 @@ runMagick([logoPreview, "-resize", "32x32", "-depth", "8", webFavicon32]);
 runMagick([logoPreview, "-resize", "64x64", "-depth", "8", webFavicon64]);
 runMagick([webFavicon16, webFavicon24, webFavicon32, webFavicon64, outputs.webFavicon]);
 runMagick([logoPreview, "-transparent", brandGreen, "-depth", "8", transparent4096]);
-runMagick([devLogoPreview, "-transparent", devBackground, "-depth", "8", devTransparent4096]);
+runMagick([
+  logoPreview,
+  "-fuzz",
+  devRecolorFuzz,
+  "-transparent",
+  brandGreen,
+  "-fill",
+  devBackground,
+  "-opaque",
+  brandAccentGreen,
+  "+fuzz",
+  "-depth",
+  "8",
+  devTransparent4096,
+]);
 runMagick([transparent4096, "-resize", "1024x1024", "-depth", "8", outputs.androidForeground]);
 runMagick([
   devTransparent4096,
