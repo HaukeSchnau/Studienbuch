@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["StudienbuchLocalModule"]
+  },
+  "android": {
+    "modules": ["dev.schnau.studienbuch.localmodule.StudienbuchLocalModule"]
+  }
+}

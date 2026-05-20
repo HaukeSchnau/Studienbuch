@@ -47,6 +47,9 @@ export default {
     experiments: {
       typedRoutes: true,
       reactCompiler: true,
+      inlineModules: {
+        watchedDirectories: ["src/native"],
+      },
     },
     extra: {
       router: {},
