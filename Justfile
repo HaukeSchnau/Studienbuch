@@ -23,7 +23,7 @@ icons:
     bun run generate:icons
 
 clean:
-    rm -rf dist node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/*/dist apps/mobile/ios app/mobile/.expo
+    rm -rf dist node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/*/dist apps/mobile/ios apps/mobile/android app/mobile/.expo
     bun i
 
 dev app options="":
