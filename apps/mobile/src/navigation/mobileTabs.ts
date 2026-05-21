@@ -16,6 +16,20 @@ export const mobileTabs = [
     },
   },
   {
+    name: "week",
+    label: "Week",
+    icon: {
+      sf: {
+        default: "calendar.badge.clock",
+        selected: "calendar.badge.clock",
+      },
+      md: {
+        default: "date_range",
+        selected: "date_range",
+      },
+    },
+  },
+  {
     name: "classes",
     label: "Classes",
     icon: {
