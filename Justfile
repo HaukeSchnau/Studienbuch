@@ -56,5 +56,17 @@ ios-install-prod:
     xcrun devicectl device install app --device {{ios_device}} "$$latest_ipa"
 
 ios-install-both:
-    just ios-install-dev
-    just ios-install-prod
+    dev_marker="$$(mktemp)"; \
+    prod_marker="$$(mktemp)"; \
+    touch "$$dev_marker" "$$prod_marker"; \
+    (just _ios-local-build development && find apps/mobile -maxdepth 1 -name 'build-*.ipa' -newer "$$dev_marker" -print | sort | tail -n 1 > "$$dev_marker.path") & \
+    dev_pid="$$!"; \
+    (just _ios-local-build preview && find apps/mobile -maxdepth 1 -name 'build-*.ipa' -newer "$$prod_marker" -print | sort | tail -n 1 > "$$prod_marker.path") & \
+    prod_pid="$$!"; \
+    wait "$$dev_pid"; \
+    wait "$$prod_pid"; \
+    dev_ipa="$$(cat "$$dev_marker.path")"; \
+    prod_ipa="$$(cat "$$prod_marker.path")"; \
+    xcrun devicectl device install app --device {{ios_device}} "$$dev_ipa"; \
+    xcrun devicectl device install app --device {{ios_device}} "$$prod_ipa"; \
+    rm -f "$$dev_marker" "$$prod_marker" "$$dev_marker.path" "$$prod_marker.path"
