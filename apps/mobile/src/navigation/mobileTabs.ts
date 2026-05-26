@@ -3,71 +3,15 @@ import type { NativeTabsTriggerIconProps } from "expo-router/unstable-native-tab
 export const mobileTabs = [
   {
     name: "index",
-    label: "Today",
+    label: "Home",
     icon: {
       sf: {
-        default: "calendar",
-        selected: "calendar",
+        default: "square.grid.2x2",
+        selected: "square.grid.2x2.fill",
       },
       md: {
-        default: "calendar_month",
-        selected: "calendar_month",
-      },
-    },
-  },
-  {
-    name: "week",
-    label: "Week",
-    icon: {
-      sf: {
-        default: "calendar.badge.clock",
-        selected: "calendar.badge.clock",
-      },
-      md: {
-        default: "date_range",
-        selected: "date_range",
-      },
-    },
-  },
-  {
-    name: "classes",
-    label: "Classes",
-    icon: {
-      sf: {
-        default: "books.vertical",
-        selected: "books.vertical.fill",
-      },
-      md: {
-        default: "school",
-        selected: "school",
-      },
-    },
-  },
-  {
-    name: "tasks",
-    label: "Tasks",
-    icon: {
-      sf: {
-        default: "checklist",
-        selected: "checklist",
-      },
-      md: {
-        default: "checklist",
-        selected: "checklist",
-      },
-    },
-  },
-  {
-    name: "settings",
-    label: "Settings",
-    icon: {
-      sf: {
-        default: "gearshape",
-        selected: "gearshape.fill",
-      },
-      md: {
-        default: "settings",
-        selected: "settings",
+        default: "dashboard",
+        selected: "dashboard",
       },
     },
   },
