@@ -3,3 +3,28 @@
 @import "tailwindcss/utilities.css";
 
 @import "nativewind/theme";
+
+@theme {
+  --color-primary: #33a42b;
+  --color-primary-pale: #6db868;
+  --color-primary-des: #eef5ed;
+  --color-primary-text: #098a00;
+  --color-accent: #3b7fd9;
+  --color-accent-sec: #4d75a8;
+  --color-accent-pale: #76a6e5;
+  --color-accent-des: #ebf0f7;
+  --color-danger: #a42b33;
+  --color-danger-sec: #8a0000;
+  --color-danger-des: #ecd4d6;
+  --color-alert: #dcab3c;
+  --color-alert-des: #f2e9d8;
+  --color-success: #33a42b;
+  --color-success-des: #eef5ed;
+  --color-success-pale: #6db868;
+  --color-neutral: #666666;
+  --color-neutral-sec: #e5e5e5;
+  --color-surface: #ffffff;
+  --color-background: #f9f9f9;
+  --color-grey-100: #e6e6e6;
+  --radius-3xl: 2.5rem;
+}

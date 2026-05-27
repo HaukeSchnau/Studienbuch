@@ -14,8 +14,16 @@
     "build:prod": "eas build --platform ios --profile production --local"
   },
   "dependencies": {
+    "@expo-google-fonts/nunito": "^0.4.2",
     "@expo/ui": "~56.0.14",
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native-community/datetimepicker": "9.1.0",
+    "@react-native-picker/picker": "2.11.4",
+    "@react-native-segmented-control/segmented-control": "2.5.7",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.3.0",
     "expo": "~56.0.5",
+    "expo-checkbox": "~56.0.1",
     "expo-constants": "~56.0.16",
     "expo-dev-client": "~56.0.16",
     "expo-device": "~56.0.4",
@@ -35,16 +43,20 @@
     "react-native": "0.85.3",
     "react-native-css": "^3.0.7",
     "react-native-gesture-handler": "~2.31.1",
+    "react-native-mask-input": "^1.2.3",
     "react-native-reanimated": "4.3.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2",
+    "react-native-svg": "15.15.4",
     "react-native-web": "~0.21.0",
-    "react-native-worklets": "0.8.3"
+    "react-native-worklets": "0.8.3",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.0",
     "@types/react": "~19.2.15",
     "postcss": "^8.5.15",
+    "react-native-svg-transformer": "^1.5.3",
     "tailwindcss": "^4.3.0",
     "typescript": "~6.0.3",
     "vitest": "catalog:"

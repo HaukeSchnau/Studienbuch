@@ -36,6 +36,7 @@ export default {
     plugins: [
       "expo-router",
       "expo-image",
+      "@react-native-community/datetimepicker",
       [
         "expo-splash-screen",
         {

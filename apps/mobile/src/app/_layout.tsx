@@ -1,26 +1,70 @@
-import { mobileTabs } from "@/navigation/mobileTabs";
-import { NativeTabs } from "expo-router/unstable-native-tabs";
-import { StatusBar } from "expo-status-bar";
-import { Fragment } from "react";
+import {
+  Nunito_400Regular,
+  Nunito_400Regular_Italic,
+  Nunito_500Medium,
+  Nunito_500Medium_Italic,
+  Nunito_600SemiBold,
+  Nunito_600SemiBold_Italic,
+  Nunito_700Bold,
+  Nunito_700Bold_Italic,
+  useFonts,
+} from "@expo-google-fonts/nunito";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { PortalRenderer } from "~/components/portal";
+import { MockAppProvider } from "~/mock-app/provider";
+import { colors } from "~/theme/colors";
 import "../global.css";
 
+void SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    Nunito_400Regular,
+    Nunito_400Regular_Italic,
+    Nunito_500Medium,
+    Nunito_500Medium_Italic,
+    Nunito_600SemiBold,
+    Nunito_600SemiBold_Italic,
+    Nunito_700Bold,
+    Nunito_700Bold_Italic,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      void SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
-    <Fragment>
-      <StatusBar style="auto" />
-      <NativeTabs
-        backBehavior="history"
-        labelVisibilityMode="labeled"
-        minimizeBehavior="automatic"
-        sidebarAdaptable
-      >
-        {mobileTabs.map((tab) => (
-          <NativeTabs.Trigger key={tab.name} name={tab.name}>
-            <NativeTabs.Trigger.Icon {...tab.icon} />
-            <NativeTabs.Trigger.Label>{tab.label}</NativeTabs.Trigger.Label>
-          </NativeTabs.Trigger>
-        ))}
-      </NativeTabs>
-    </Fragment>
+    <MockAppProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Stack
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: colors.primary.DEFAULT,
+            },
+            headerTintColor: colors.on.primary,
+            headerTitleStyle: {
+              color: colors.on.primary,
+              fontFamily: "Nunito_700Bold",
+            },
+            contentStyle: {
+              backgroundColor: colors.surface,
+            },
+          }}
+        >
+          <Stack.Screen name="(main)" options={{ headerShown: false }} />
+          <Stack.Screen name="setup" options={{ headerShown: false }} />
+        </Stack>
+        <PortalRenderer />
+      </GestureHandlerRootView>
+    </MockAppProvider>
   );
 }

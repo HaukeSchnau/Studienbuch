@@ -1,0 +1,43 @@
+import { StatusBar } from "expo-status-bar";
+import type { ReactNode } from "react";
+import { ScrollView, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import BackgroundImage from "~/assets/home-bg.svg";
+
+const Background = () => (
+  <View
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+    }}
+  >
+    <View className="h-16 bg-primary" />
+    <BackgroundImage width="100%" preserveAspectRatio="none" />
+  </View>
+);
+
+interface Props {
+  children: ReactNode;
+}
+
+export const CoreLayout = ({ children }: Props) => {
+  return (
+    <View>
+      <View className="absolute top-0 left-0 h-full w-full">
+        <View className="h-1/2 bg-primary" />
+        <View className="h-1/2 bg-white" />
+      </View>
+
+      <ScrollView>
+        <StatusBar style="light" />
+        <View className="bg-white">
+          <Background />
+          <SafeAreaView>{children}</SafeAreaView>
+        </View>
+      </ScrollView>
+    </View>
+  );
+};

@@ -1,0 +1,79 @@
+import { router } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+import { View } from "react-native";
+import { Button } from "~/components/button";
+import { CheckboxRow } from "~/components/checkbox-row";
+import { SelectField } from "~/components/select-field";
+import { Text } from "~/components/text";
+import { TextField } from "~/components/text-field";
+import { useMockApp } from "~/mock-app/provider";
+
+export default function NameAndYear() {
+  const { user, years, classes, updateProfile } = useMockApp();
+  const [name, setName] = useState(user.name);
+  const [isOfAge, setIsOfAge] = useState(user.isOfAge);
+  const [yearId, setYearId] = useState(user.yearId);
+  const year = years.find((item) => item.id === yearId) ?? years[0]!;
+  const classOptions = useMemo(
+    () => classes.filter((item) => item.startYear === year.startYear),
+    [classes, year],
+  );
+  const [classId, setClassId] = useState(user.classId);
+
+  useEffect(() => {
+    if (!classOptions.find((item) => item.id === classId)) {
+      setClassId(classOptions[0]?.id ?? "");
+    }
+  }, [classId, classOptions]);
+
+  return (
+    <View>
+      <Text variant="heading" className="text-center">
+        Willkommen!
+      </Text>
+      <View className="h-4" />
+      <Text>Bitte gib deinen Namen und deinen Jahrgang an.</Text>
+
+      <View className="h-6" />
+
+      <TextField label="Name" value={name} onChangeText={setName} autoCorrect={false} />
+
+      <View className="h-6" />
+
+      <SelectField
+        label="Jahrgang"
+        value={year}
+        onChange={(value) => setYearId(value?.id ?? years[0]!.id)}
+        options={years}
+        getOptionLabel={(value) => value.name}
+        getKey={(value) => value.id}
+      />
+
+      <View className="h-6" />
+
+      <SelectField
+        label="Klasse"
+        value={classOptions.find((item) => item.id === classId)}
+        onChange={(value) => setClassId(value?.id ?? classOptions[0]?.id ?? "")}
+        options={classOptions}
+        getOptionLabel={(value) => `${year.name} ${value.identifierInYear}`}
+        getKey={(value) => value.id}
+      />
+
+      <View className="h-6" />
+
+      <CheckboxRow label="Ich bin volljährig" value={isOfAge} onChange={setIsOfAge} />
+
+      <View className="h-6" />
+
+      <Button
+        label="Weiter"
+        className="self-end"
+        onPress={() => {
+          updateProfile({ name, isOfAge, yearId, classId });
+          router.push("/setup/class-and-courses");
+        }}
+      />
+    </View>
+  );
+}
