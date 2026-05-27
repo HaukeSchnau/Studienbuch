@@ -10,9 +10,8 @@ import { OutlinedButton } from "~/components/button";
 import { Text } from "~/components/text";
 import { colors } from "~/theme/colors";
 import { formatGrade, isGradeConfirmed, type Grade } from "~/mock-app/domain";
-import { useMockApp } from "~/mock-app/provider";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
-import { GradeEditorSheet } from "./grade-editor-sheet";
+import { EditMasterGrade } from "./master/edit-master-grade";
 
 export const MasterGradeRow = ({
   masterGrades,
@@ -22,7 +21,6 @@ export const MasterGradeRow = ({
   courseId: string;
 }) => {
   const { user } = useRequiredAuthenticatedSession();
-  const { upsertGrade } = useMockApp();
   const [isEditVisible, setIsEditVisible] = useState(false);
   const currentMasterGrade = useMemo(() => masterGrades[0], [masterGrades]);
 
@@ -30,15 +28,10 @@ export const MasterGradeRow = ({
     <View className="flex-row gap-4">
       <PortaledBottomSheet onClose={() => setIsEditVisible(false)}>
         {isEditVisible && (
-          <GradeEditorSheet
-            title="Gesamtnote bearbeiten"
-            initialResult={currentMasterGrade?.result ?? 10}
-            initialDate={currentMasterGrade?.date}
+          <EditMasterGrade
+            courseId={courseId}
+            masterGrades={masterGrades}
             onClose={() => setIsEditVisible(false)}
-            onSave={({ result, date }) => {
-              upsertGrade({ courseId, type: "MASTER", result, date });
-              setIsEditVisible(false);
-            }}
           />
         )}
       </PortaledBottomSheet>

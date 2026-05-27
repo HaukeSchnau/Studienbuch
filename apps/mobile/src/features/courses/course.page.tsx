@@ -9,6 +9,7 @@ import { shadow } from "~/components/styles/shadow";
 import { subjectNameMap, Teacher } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
 import { GradesOverviewCard } from "./grades/grades-overview-card";
+import { Tasks } from "~/features/tasks/tasks";
 
 export const CoursePage = ({ courseId }: { courseId: string }) => {
   const { getCourse, semesters } = useMockApp();
@@ -60,6 +61,8 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
         <View className="h-8" />
         <GradesOverviewCard courseId={course.id} />
       </View>
+      <View className="h-8" />
+      <Tasks courseId={course.id} />
     </CoreLayout>
   );
 };

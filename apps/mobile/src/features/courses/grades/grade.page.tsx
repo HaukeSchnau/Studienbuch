@@ -1,11 +1,33 @@
-import { format } from "date-fns";
 import { Stack } from "expo-router";
 import { View } from "react-native";
-import { ConfirmPageContent, ViewConfirmPageContent } from "~/components/confirm-page-content";
 import { Text } from "~/components/text";
-import { subjectNameMap, Teacher, type GradeType } from "~/mock-app/domain";
+import type { GradeType } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import {
+  ConfirmMasterGradeParent,
+  MasterGradeParentConfirmationView,
+} from "./master/confirm-master-grade-parent";
+import {
+  ConfirmMasterGradeTeacher,
+  MasterGradeTeacherConfirmationView,
+} from "./master/confirm-master-grade-teacher";
+import {
+  ConfirmOralGradeParent,
+  OralGradeParentConfirmationView,
+} from "./oral/confirm-oral-grade-parent";
+import {
+  ConfirmOralGradeTeacher,
+  OralGradeTeacherConfirmationView,
+} from "./oral/confirm-oral-grade-teacher";
+import {
+  ConfirmWrittenGradeParent,
+  WrittenGradeParentConfirmationView,
+} from "./written/confirm-written-grade-parent";
+import {
+  ConfirmWrittenGradeTeacher,
+  WrittenGradeTeacherConfirmationView,
+} from "./written/confirm-written-grade-teacher";
 
 interface Props {
   date: Date;
@@ -14,7 +36,7 @@ interface Props {
 }
 
 export const GradePage = ({ date, courseId, type }: Props) => {
-  const { getCourseGrades, getCourse, signGrade } = useMockApp();
+  const { getCourseGrades, getCourse } = useMockApp();
   const { user } = useRequiredAuthenticatedSession();
   const grade = getCourseGrades(courseId).find(
     (item) => item.type === type && item.date.getTime() === date.getTime(),
@@ -30,70 +52,62 @@ export const GradePage = ({ date, courseId, type }: Props) => {
     );
   }
 
-  const teacher = course.teachers[0];
-  const titleMap: Record<GradeType, string> = {
-    MASTER: "Gesamtnote",
-    ORAL: "Mündliche Note",
-    WRITTEN: "Schriftliche Note",
+  const resolvedGrade = {
+    ...grade,
+    course,
   };
 
   if (!grade.teacherSignature) {
-    return (
-      <View className="p-8">
-        <Stack.Screen options={{ title: `${titleMap[type]} bestätigen (Lehrer)` }} />
-        <ConfirmPageContent
-          heading="Bitte lasse deine Lehrkraft hier unterschreiben"
-          confirmLabel="Bestätigen"
-          signatureLabel={`Unterschrift von ${teacher ? Teacher.formalName(teacher) : "Lehrkraft"}`}
-          onConfirm={() => signGrade(grade.id, "teacher")}
-        >
-          Ich, <Text weight="bold">{teacher ? Teacher.formalName(teacher) : "die Lehrkraft"}</Text>{" "}
-          bestätige, dass <Text weight="bold">{user.name}</Text> am{" "}
-          <Text weight="bold">{format(date, "dd.MM.yyyy")}</Text> die Note{" "}
-          <Text weight="bold">{grade.result}</Text> in{" "}
-          <Text weight="bold">{subjectNameMap[course.subject]}</Text> erhalten hat.
-        </ConfirmPageContent>
-      </View>
-    );
+    switch (type) {
+      case "MASTER":
+        return <ConfirmMasterGradeTeacher grade={resolvedGrade} />;
+      case "ORAL":
+        return <ConfirmOralGradeTeacher grade={resolvedGrade} />;
+      case "WRITTEN":
+        return <ConfirmWrittenGradeTeacher grade={resolvedGrade} />;
+    }
   }
 
   if (!user.isOfAge && !grade.parentSignature) {
-    return (
-      <View className="p-8">
-        <Stack.Screen options={{ title: `${titleMap[type]} bestätigen (Eltern)` }} />
-        <ConfirmPageContent
-          heading="Bitte lasse deine Eltern hier unterschreiben"
-          confirmLabel="Bestätigen"
-          signatureLabel="Unterschrift eines Erziehungsberechtigten"
-          onConfirm={() => signGrade(grade.id, "parent")}
-        >
-          Ich habe zur Kenntnis genommen, dass mein Kind <Text weight="bold">{user.name}</Text> am{" "}
-          <Text weight="bold">{format(date, "dd.MM.yyyy")}</Text> die Note{" "}
-          <Text weight="bold">{grade.result}</Text> in{" "}
-          <Text weight="bold">{subjectNameMap[course.subject]}</Text> erhalten hat.
-        </ConfirmPageContent>
-      </View>
-    );
+    switch (type) {
+      case "MASTER":
+        return <ConfirmMasterGradeParent grade={resolvedGrade} />;
+      case "ORAL":
+        return <ConfirmOralGradeParent grade={resolvedGrade} />;
+      case "WRITTEN":
+        return <ConfirmWrittenGradeParent grade={resolvedGrade} />;
+    }
   }
+
+  const confirmedGrade = {
+    ...resolvedGrade,
+    teacherSignature: grade.teacherSignature!,
+  };
 
   return (
     <View className="p-8">
-      <Stack.Screen options={{ title: titleMap[type] }} />
-      <ViewConfirmPageContent
-        signatureLabel={`Unterschrift von ${teacher ? Teacher.formalName(teacher) : "Lehrkraft"}`}
-        signatureSvg={grade.teacherSignature}
-      >
-        Die {titleMap[type].toLowerCase()} wurde von der Lehrkraft bestätigt.
-      </ViewConfirmPageContent>
+      <Stack.Screen options={{ title: "Note bestaetigt" }} />
+      {type === "MASTER" ? <MasterGradeTeacherConfirmationView grade={confirmedGrade} /> : null}
+      {type === "ORAL" ? <OralGradeTeacherConfirmationView grade={confirmedGrade} /> : null}
+      {type === "WRITTEN" ? <WrittenGradeTeacherConfirmationView grade={confirmedGrade} /> : null}
       {!user.isOfAge && grade.parentSignature ? (
         <>
           <View className="h-16" />
-          <ViewConfirmPageContent
-            signatureLabel="Unterschrift eines Erziehungsberechtigten"
-            signatureSvg={grade.parentSignature}
-          >
-            Die Kenntnisnahme wurde durch die Eltern bestätigt.
-          </ViewConfirmPageContent>
+          {type === "MASTER" ? (
+            <MasterGradeParentConfirmationView
+              grade={{ ...confirmedGrade, parentSignature: grade.parentSignature }}
+            />
+          ) : null}
+          {type === "ORAL" ? (
+            <OralGradeParentConfirmationView
+              grade={{ ...confirmedGrade, parentSignature: grade.parentSignature }}
+            />
+          ) : null}
+          {type === "WRITTEN" ? (
+            <WrittenGradeParentConfirmationView
+              grade={{ ...confirmedGrade, parentSignature: grade.parentSignature }}
+            />
+          ) : null}
         </>
       ) : null}
     </View>

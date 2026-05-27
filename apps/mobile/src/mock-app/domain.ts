@@ -116,6 +116,22 @@ export interface Absence {
   teacherSignature: string | null;
 }
 
+export interface TaskAttachment {
+  id: string;
+  label: string;
+  color: string;
+}
+
+export interface Task {
+  id: string;
+  courseId: string;
+  title: string;
+  description: string;
+  dueDate: Date;
+  done: boolean;
+  attachments: TaskAttachment[];
+}
+
 export const formatGrade = (result: number) => `${result.toFixed(1).replace(".", ",")} P`;
 
 export const formatGradeShort = (result: number) => `${Math.round(result)}`;
@@ -134,3 +150,6 @@ export const formatClassName = (schoolClass: SchoolClass, year: Year) =>
   `${year.name} ${schoolClass.identifierInYear}`;
 
 export const findCurrentSemester = (semesters: Semester[]) => semesters.at(-1) ?? semesters[0];
+
+export const isTaskArchived = (task: Task, now = new Date()) =>
+  task.done || task.dueDate.getTime() + 7 * 24 * 60 * 60 * 1000 < now.getTime();

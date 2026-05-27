@@ -8,11 +8,13 @@ import type {
   GradeType,
   SchoolClass,
   Semester,
+  Task,
+  TaskAttachment,
   TeacherInfo,
   TimetableEntry,
   Year,
 } from "./domain";
-import { findCurrentSemester } from "./domain";
+import { findCurrentSemester, isGradeConfirmed } from "./domain";
 
 interface UserProfile {
   name: string;
@@ -32,9 +34,12 @@ interface MockAppContextValue {
   timetable: TimetableEntry[];
   absences: Absence[];
   grades: Grade[];
+  tasks: Task[];
   getCourse: (courseId: string) => Course | undefined;
   getSemesterCourses: (semesterId: string) => Course[];
   getCourseGrades: (courseId: string) => Grade[];
+  getTask: (taskId: string) => Task | undefined;
+  getCourseTasks: (courseId?: string) => Task[];
   updateProfile: (patch: Partial<UserProfile>) => void;
   setSelectedCourses: (semesterId: string, courseIds: string[]) => void;
   addAbsence: (absence: { date: Date; courseIds: string[]; reason: string }) => void;
@@ -47,6 +52,16 @@ interface MockAppContextValue {
     date?: Date;
   }) => void;
   signGrade: (gradeId: string, signer: "parent" | "teacher") => void;
+  restoreLatestConfirmedGrade: (courseId: string, type: GradeType) => void;
+  addTask: (payload: {
+    courseId: string;
+    title: string;
+    description: string;
+    dueDate: Date;
+    attachments?: TaskAttachment[];
+  }) => void;
+  toggleTaskDone: (taskId: string) => void;
+  deleteTask: (taskId: string) => void;
 }
 
 const MockAppContext = createContext<MockAppContextValue | null>(null);
@@ -115,6 +130,12 @@ const timetableSeed: TimetableEntry[] = [
 const mockSignatureSvg = (label: string) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 140"><path d="M18 92 C52 40, 84 114, 122 82 S188 40, 224 90 S274 112, 302 64" fill="none" stroke="#111" stroke-width="4" stroke-linecap="round"/><text x="18" y="124" font-size="14" fill="#666">${label}</text></svg>`;
 
+const attachment = (id: string, label: string, color: string): TaskAttachment => ({
+  id,
+  label,
+  color,
+});
+
 const gradesSeed: Grade[] = [
   {
     id: "g-master-1",
@@ -173,6 +194,42 @@ const absencesSeed: Absence[] = [
   },
 ];
 
+const tasksSeed: Task[] = [
+  {
+    id: "task-1",
+    courseId: "de-1",
+    title: "Gedichtanalyse fertigstellen",
+    description:
+      "Schreibe die Einleitung und den Hauptteil zu 'Der Panther' aus und markiere drei Stilmittel in deinem Heft.",
+    dueDate: addDays(today, 1),
+    done: false,
+    attachments: [attachment("task-1-a", "Foto 1", "#B9D7F5")],
+  },
+  {
+    id: "task-2",
+    courseId: "ma-1",
+    title: "Analysis Blatt 7",
+    description:
+      "Aufgaben 3 bis 6 rechnen und den Rechenweg vollständig notieren. Schwerpunkt: Kurvendiskussion.",
+    dueDate: addDays(today, 3),
+    done: false,
+    attachments: [
+      attachment("task-2-a", "Tafelbild", "#F5D9B9"),
+      attachment("task-2-b", "Skizze", "#D7E9C6"),
+    ],
+  },
+  {
+    id: "task-3",
+    courseId: "ph-1",
+    title: "Versuchsprotokoll hochladen",
+    description:
+      "Das Protokoll zum Fadenpendel sauber übertragen und die Messreihe mit Auswertung ergänzen.",
+    dueDate: addDays(today, -1),
+    done: true,
+    attachments: [],
+  },
+];
+
 const currentSemester = findCurrentSemester(semesters);
 const initialCourseIds = coursesSeed
   .filter((course) => course.semesterId === currentSemester?.id)
@@ -195,6 +252,7 @@ export function MockAppProvider({ children }: PropsWithChildren) {
   });
   const [absences, setAbsences] = useState(absencesSeed);
   const [grades, setGrades] = useState(gradesSeed);
+  const [tasks, setTasks] = useState(tasksSeed);
 
   const getCourse = (courseId: string) => coursesSeed.find((course) => course.id === courseId);
 
@@ -210,6 +268,18 @@ export function MockAppProvider({ children }: PropsWithChildren) {
       .filter((grade) => grade.courseId === courseId)
       .sort((a, b) => b.date.getTime() - a.date.getTime());
 
+  const getTask = (taskId: string) => tasks.find((task) => task.id === taskId);
+
+  const getCourseTasks = (courseId?: string) =>
+    tasks
+      .filter((task) => (courseId ? task.courseId === courseId : true))
+      .sort((a, b) => {
+        if (a.done !== b.done) {
+          return Number(a.done) - Number(b.done);
+        }
+        return a.dueDate.getTime() - b.dueDate.getTime();
+      });
+
   const value: MockAppContextValue = {
     user,
     years,
@@ -224,9 +294,12 @@ export function MockAppProvider({ children }: PropsWithChildren) {
     }),
     absences,
     grades,
+    tasks,
     getCourse,
     getSemesterCourses,
     getCourseGrades,
+    getTask,
+    getCourseTasks,
     updateProfile: (patch) => {
       setUser((current) => ({ ...current, ...patch }));
     },
@@ -324,6 +397,68 @@ export function MockAppProvider({ children }: PropsWithChildren) {
             : grade,
         ),
       );
+    },
+    restoreLatestConfirmedGrade: (courseId, type) => {
+      setGrades((current) => {
+        const confirmedGrade = current.find(
+          (grade) =>
+            grade.courseId === courseId &&
+            grade.type === type &&
+            isGradeConfirmed(grade, user.isOfAge),
+        );
+        const currentGrade = current.find(
+          (grade) => grade.courseId === courseId && grade.type === type,
+        );
+        if (!confirmedGrade) {
+          return current;
+        }
+        if (!currentGrade) {
+          return [
+            {
+              ...confirmedGrade,
+              id: `grade-${Date.now()}`,
+              date: new Date(),
+              teacherSignature: null,
+              parentSignature: null,
+            },
+            ...current,
+          ];
+        }
+
+        return current.map((grade) =>
+          grade.id === currentGrade.id
+            ? {
+                ...grade,
+                result: confirmedGrade.result,
+                date: new Date(),
+                teacherSignature: null,
+                parentSignature: null,
+              }
+            : grade,
+        );
+      });
+    },
+    addTask: ({ courseId, title, description, dueDate, attachments = [] }) => {
+      setTasks((current) => [
+        {
+          id: `task-${Date.now()}`,
+          courseId,
+          title,
+          description,
+          dueDate,
+          done: false,
+          attachments,
+        },
+        ...current,
+      ]);
+    },
+    toggleTaskDone: (taskId) => {
+      setTasks((current) =>
+        current.map((task) => (task.id === taskId ? { ...task, done: !task.done } : task)),
+      );
+    },
+    deleteTask: (taskId) => {
+      setTasks((current) => current.filter((task) => task.id !== taskId));
     },
   };
 

@@ -8,9 +8,8 @@ import { IconButton } from "~/components/icon-button";
 import { OutlinedButton } from "~/components/button";
 import { Text } from "~/components/text";
 import { formatGrade, isGradeConfirmed, type Grade } from "~/mock-app/domain";
-import { useMockApp } from "~/mock-app/provider";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
-import { GradeEditorSheet } from "./grade-editor-sheet";
+import { EditOralGrade } from "./oral/edit-oral-grade";
 import OralIcon from "./oral/oral.svg";
 
 export const OralGradesRow = ({
@@ -21,7 +20,6 @@ export const OralGradesRow = ({
   courseId: string;
 }) => {
   const { user } = useRequiredAuthenticatedSession();
-  const { upsertGrade } = useMockApp();
   const [isEditVisible, setIsEditVisible] = useState(false);
   const currentOralGrade = useMemo(() => oralGrades[0], [oralGrades]);
 
@@ -29,15 +27,10 @@ export const OralGradesRow = ({
     <View className="flex-row gap-4">
       <PortaledBottomSheet onClose={() => setIsEditVisible(false)}>
         {isEditVisible && (
-          <GradeEditorSheet
-            title="Mündliche Note bearbeiten"
-            initialResult={currentOralGrade?.result ?? 11}
-            initialDate={currentOralGrade?.date}
+          <EditOralGrade
+            courseId={courseId}
+            oralGrades={oralGrades}
             onClose={() => setIsEditVisible(false)}
-            onSave={({ result, date }) => {
-              upsertGrade({ courseId, type: "ORAL", result, date });
-              setIsEditVisible(false);
-            }}
           />
         )}
       </PortaledBottomSheet>

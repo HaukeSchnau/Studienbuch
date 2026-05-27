@@ -21,10 +21,18 @@ export const GradeCard = ({
   action,
 }: {
   grade: Grade;
-  action: {
-    label: string;
-    href: Href;
-  } | null;
+  action:
+    | (
+        | {
+            label: string;
+            href: Href;
+          }
+        | {
+            label: string;
+            onClick: () => void;
+          }
+      )
+    | null;
 }) => {
   const { user } = useRequiredAuthenticatedSession();
   const isConfirmed = isGradeConfirmed(grade, user.isOfAge);
@@ -55,9 +63,18 @@ export const GradeCard = ({
       {action ? (
         <>
           <View className="h-2" />
-          <Link href={action.href} asChild>
-            <OutlinedButton label={action.label} color={actionColor} className="self-end" />
-          </Link>
+          {"href" in action ? (
+            <Link href={action.href} asChild>
+              <OutlinedButton label={action.label} color={actionColor} className="self-end" />
+            </Link>
+          ) : (
+            <OutlinedButton
+              label={action.label}
+              color={actionColor}
+              className="self-end"
+              onPress={action.onClick}
+            />
+          )}
         </>
       ) : null}
     </Card>

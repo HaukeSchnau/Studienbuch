@@ -4,9 +4,9 @@ import { PortaledBottomSheet } from "~/components/bottom-sheet";
 import { IconButton } from "~/components/icon-button";
 import { Text } from "~/components/text";
 import { formatGrade, isGradeConfirmed, type Grade } from "~/mock-app/domain";
-import { useMockApp } from "~/mock-app/provider";
+import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { GradeCard } from "./grade-card";
-import { GradeEditorSheet } from "./grade-editor-sheet";
+import { AddWrittenGrade } from "./written/add-written-grade";
 import WrittenIcon from "./written/written.svg";
 
 export const WrittenGradesRow = ({
@@ -16,41 +16,37 @@ export const WrittenGradesRow = ({
   writtenGrades: Grade[];
   courseId: string;
 }) => {
-  const { upsertGrade } = useMockApp();
+  const { user } = useRequiredAuthenticatedSession();
   const [isAddVisible, setIsAddVisible] = useState(false);
   const averageWrittenGrade = useMemo(() => {
-    const confirmedGrades = writtenGrades.filter((grade) => isGradeConfirmed(grade));
+    const confirmedGrades = writtenGrades.filter((grade) => isGradeConfirmed(grade, user.isOfAge));
     if (confirmedGrades.length === 0) return null;
     return confirmedGrades.reduce((acc, grade) => acc + grade.result, 0) / confirmedGrades.length;
-  }, [writtenGrades]);
+  }, [writtenGrades, user.isOfAge]);
 
   return (
     <>
       <View className="flex-row gap-4">
         <PortaledBottomSheet onClose={() => setIsAddVisible(false)}>
           {isAddVisible && (
-            <GradeEditorSheet
-              title="Klausur hinzufügen"
-              initialResult={11}
-              onClose={() => setIsAddVisible(false)}
-              onSave={({ result, date }) => {
-                upsertGrade({ courseId, type: "WRITTEN", result, date });
-                setIsAddVisible(false);
-              }}
-            />
+            <AddWrittenGrade courseId={courseId} onClose={() => setIsAddVisible(false)} />
           )}
         </PortaledBottomSheet>
 
         <WrittenIcon
           width={64}
           height={64}
-          style={{ opacity: writtenGrades.every((grade) => isGradeConfirmed(grade)) ? 1 : 0.25 }}
+          style={{
+            opacity: writtenGrades.every((grade) => isGradeConfirmed(grade, user.isOfAge))
+              ? 1
+              : 0.25,
+          }}
         />
 
         <View className="shrink grow">
           <View className="flex-row items-center justify-between">
             <Text className="grow text-3xl" weight="semi-bold">
-              {averageWrittenGrade ? formatGrade(averageWrittenGrade) : "—"}
+              {averageWrittenGrade !== null ? formatGrade(averageWrittenGrade) : "—"}
             </Text>
             <IconButton icon="add" opacity={0.8} size={24} onPress={() => setIsAddVisible(true)} />
           </View>
@@ -69,7 +65,7 @@ export const WrittenGradesRow = ({
             key={grade.id}
             grade={grade}
             action={
-              isGradeConfirmed(grade)
+              isGradeConfirmed(grade, user.isOfAge)
                 ? null
                 : {
                     label: "Jetzt Bestätigen",
