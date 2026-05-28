@@ -1,28 +1,30 @@
-import { Picker } from "@react-native-picker/picker";
-import type { Key } from "react";
+import { Picker } from "@expo/ui/community/picker";
 import { useEffect } from "react";
 import { View } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
+import { fontNames } from "./text";
 
 import { FieldLabel } from "./field-label";
 
-interface Props<TOption> {
+type PickerValue = string | number | null;
+
+interface Props<TOption, TValue extends PickerValue> {
   label: string;
   value: TOption | undefined;
   getOptionLabel: (option: NonNullable<TOption>) => string;
-  getKey: (option: NonNullable<TOption>) => Key;
+  getKey: (option: NonNullable<TOption>) => TValue;
   options: NonNullable<TOption>[];
   onChange: (value: TOption | undefined) => void;
 }
 
-export const SelectField = <TOption,>({
+export const SelectField = <TOption, TValue extends PickerValue>({
   label,
   value,
   getOptionLabel,
   getKey,
   options,
   onChange,
-}: Props<TOption>) => {
+}: Props<TOption, TValue>) => {
   const active = useSharedValue(true);
   const focused = useSharedValue(false);
 
@@ -43,7 +45,12 @@ export const SelectField = <TOption,>({
         }}
       >
         {options.map((option) => (
-          <Picker.Item key={getKey(option)} label={getOptionLabel(option)} value={getKey(option)} />
+          <Picker.Item
+            key={String(getKey(option))}
+            label={getOptionLabel(option)}
+            value={getKey(option)}
+            style={{ color: "#000000", fontFamily: fontNames.regular }}
+          />
         ))}
       </Picker>
       <FieldLabel label={label} active={active} focused={focused} />

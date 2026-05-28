@@ -83,6 +83,8 @@ Exit criteria:
 
 Goal: replace older community controls with Expo UI drop-ins that render through SwiftUI and Jetpack Compose.
 
+Status: completed on 2026-05-28 for the first control pass.
+
 Packages to remove over this phase:
 
 - `@react-native-community/datetimepicker`
@@ -105,6 +107,12 @@ Notes:
 
 - This should be a mostly import-level migration with small prop adjustments.
 - The main win is not visual novelty; it is better native behavior and less third-party maintenance overhead.
+- Completed in:
+  - `apps/mobile/src/components/date-field.tsx`
+  - `apps/mobile/src/components/select-field.tsx`
+  - `apps/mobile/src/features/profile/semester-selector.tsx`
+  - `apps/mobile/app.config.ts`
+  - `apps/mobile/package.json`
 
 ### Phase 3: Sheet And Overlay Modernization
 
@@ -192,9 +200,9 @@ These are intentionally not part of this roadmap slice:
 
 The next implementation slice should be:
 
-1. migrate the segmented control, picker, and date picker to Expo UI
-2. remove the old `@react-native-community/*` and `@react-native-picker/*` packages
-3. clean up `app.config.ts` plugin usage
+1. replace the custom portaled sheet stack with an Expo UI-backed wrapper
+2. remove `apps/mobile/src/components/portal.tsx` once sheets no longer depend on it
+3. simplify `apps/mobile/src/app/_layout.tsx` after portal removal
 4. run `just qa`
 5. smoke test the affected flows on iOS and Android
 

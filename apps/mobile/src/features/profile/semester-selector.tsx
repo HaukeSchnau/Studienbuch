@@ -1,4 +1,5 @@
-import SegmentedControl from "@react-native-segmented-control/segmented-control";
+import SegmentedControl from "@expo/ui/community/segmented-control";
+import { colors } from "~/theme/colors";
 import type { Semester } from "~/mock-app/domain";
 
 interface SemesterSelectorProps {
@@ -18,6 +19,8 @@ export const SemesterSelector = ({
 
   return (
     <SegmentedControl
+      style={{ minHeight: 44 }}
+      tintColor={colors.accent.DEFAULT}
       values={choices.map((semester) => semester.name)}
       selectedIndex={choices.findIndex((semester) => semester.name === selectedSemester.name)}
       onChange={(event) => {

@@ -1,4 +1,4 @@
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker from "@expo/ui/community/datetime-picker";
 import { format } from "date-fns";
 import { useState } from "react";
 import { Platform, TouchableNativeFeedback, View } from "react-native";
@@ -45,12 +45,15 @@ export const DateField = ({ value, label, onChange }: Props) => {
             value={value}
             mode="date"
             accentColor={colors.primary.text}
-            onChange={(event, date) => {
+            presentation="dialog"
+            onValueChange={(_, date) => {
               setShowAndroidPicker(false);
               focused.value = false;
-              if (event.type === "set" && date) {
-                onChange(date);
-              }
+              onChange(date);
+            }}
+            onDismiss={() => {
+              setShowAndroidPicker(false);
+              focused.value = false;
             }}
           />
         )}
@@ -60,17 +63,15 @@ export const DateField = ({ value, label, onChange }: Props) => {
               alignSelf: "flex-start",
               width: "100%",
             }}
-            value={value}
-            onChange={(e, date) => {
-              if (e.type === "set" && date) {
-                onChange(date);
-              }
-              focused.value = false;
-            }}
-            mode="date"
             accentColor={colors.primary.text}
             display="compact"
-            locale="de-DE"
+            locale="de_DE"
+            mode="date"
+            onValueChange={(_, date) => {
+              onChange(date);
+              focused.value = false;
+            }}
+            value={value}
           />
         )}
         <FieldLabel label={label} active={active} focused={focused} />
