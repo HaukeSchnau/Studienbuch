@@ -6,6 +6,11 @@ ios_device := "539D7C55-85D6-50B1-BE9B-88293D4628C3"
 qa: fmt qa-tasks
 fix: fmt lint-fix
 
+doctor-mobile:
+    bun run --cwd apps/mobile doctor
+    bun run --cwd apps/mobile doctor:deps
+    nix shell nixpkgs#nodejs_24 -c npm exec --prefix apps/mobile react-compiler-healthcheck@latest -- .
+
 fmt:
     bun run oxfmt
 

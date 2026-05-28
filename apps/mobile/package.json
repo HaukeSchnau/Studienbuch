@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "expo start --dev-client --ios",
     "dev:dev-client": "expo run:ios",
+    "doctor": "bunx expo-doctor",
+    "doctor:deps": "expo install --check",
     "generate:icons": "bun run --cwd ../.. generate:icons",
     "test": "vitest run --config vitest.config.ts --passWithNoTests",
     "build:dev": "eas build --platform ios --profile development --local",
@@ -22,7 +24,7 @@
     "@react-native-segmented-control/segmented-control": "2.5.7",
     "clsx": "^2.1.1",
     "date-fns": "^4.3.0",
-    "expo": "~56.0.5",
+    "expo": "~56.0.6",
     "expo-checkbox": "~56.0.1",
     "expo-constants": "~56.0.16",
     "expo-dev-client": "~56.0.16",
