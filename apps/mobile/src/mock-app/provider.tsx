@@ -1,4 +1,4 @@
-import { addDays, set } from "date-fns";
+import { addDays, isWithinInterval, set } from "date-fns";
 import type { PropsWithChildren } from "react";
 import { createContext, useContext, useState } from "react";
 import type {
@@ -6,6 +6,7 @@ import type {
   Course,
   Grade,
   GradeType,
+  Holiday,
   SchoolClass,
   Semester,
   Task,
@@ -31,10 +32,17 @@ interface MockAppContextValue {
   classes: SchoolClass[];
   semesters: Semester[];
   courses: Course[];
+  holidays: Holiday[];
   timetable: TimetableEntry[];
   absences: Absence[];
   grades: Grade[];
   tasks: Task[];
+  getRequiredSetupPath: () =>
+    | "/setup/license-key"
+    | "/setup/name-and-year"
+    | "/setup/class-and-courses"
+    | null;
+  getActiveHoliday: (date?: Date) => Holiday | undefined;
   getCourse: (courseId: string) => Course | undefined;
   getSemesterCourses: (semesterId: string) => Course[];
   getCourseGrades: (courseId: string) => Grade[];
@@ -125,6 +133,27 @@ const timetableSeed: TimetableEntry[] = [
   { id: "tt4", courseId: "ph-1", start: makeDate(2, 11, 30), duration: 80 },
   { id: "tt5", courseId: "ge-1", start: makeDate(3, 12, 50), duration: 80 },
   { id: "tt6", courseId: "sp-1", start: makeDate(4, 13, 50), duration: 80 },
+];
+
+const holidaysSeed: Holiday[] = [
+  {
+    id: "h-summer-2026",
+    name: "Sommerferien",
+    start: new Date("2026-07-16T00:00:00"),
+    end: new Date("2026-08-26T23:59:59"),
+  },
+  {
+    id: "h-fall-2026",
+    name: "Herbstferien",
+    start: new Date("2026-10-12T00:00:00"),
+    end: new Date("2026-10-24T23:59:59"),
+  },
+  {
+    id: "h-christmas-2026",
+    name: "Weihnachtsferien",
+    start: new Date("2026-12-23T00:00:00"),
+    end: new Date("2027-01-06T23:59:59"),
+  },
 ];
 
 const mockSignatureSvg = (label: string) =>
@@ -270,6 +299,27 @@ export function MockAppProvider({ children }: PropsWithChildren) {
 
   const getTask = (taskId: string) => tasks.find((task) => task.id === taskId);
 
+  const getRequiredSetupPath = () => {
+    if (!user.licenseKey.trim()) {
+      return "/setup/license-key";
+    }
+    if (!user.name.trim() || !user.yearId || !user.classId) {
+      return "/setup/name-and-year";
+    }
+    if ((selectedCourseIdsBySemester[currentSemester?.id ?? ""] ?? []).length === 0) {
+      return "/setup/class-and-courses";
+    }
+    return null;
+  };
+
+  const getActiveHoliday = (date = new Date()) =>
+    holidaysSeed.find((holiday) =>
+      isWithinInterval(date, {
+        start: holiday.start,
+        end: holiday.end,
+      }),
+    );
+
   const getCourseTasks = (courseId?: string) =>
     tasks
       .filter((task) => (courseId ? task.courseId === courseId : true))
@@ -286,6 +336,7 @@ export function MockAppProvider({ children }: PropsWithChildren) {
     classes,
     semesters,
     courses: coursesSeed,
+    holidays: holidaysSeed,
     timetable: timetableSeed.filter((entry) => {
       const course = getCourse(entry.courseId);
       return course
@@ -295,6 +346,8 @@ export function MockAppProvider({ children }: PropsWithChildren) {
     absences,
     grades,
     tasks,
+    getRequiredSetupPath,
+    getActiveHoliday,
     getCourse,
     getSemesterCourses,
     getCourseGrades,

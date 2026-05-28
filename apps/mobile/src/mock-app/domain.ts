@@ -88,6 +88,13 @@ export interface Course {
   semesterId: string;
 }
 
+export interface Holiday {
+  id: string;
+  name: string;
+  start: Date;
+  end: Date;
+}
+
 export type GradeType = "MASTER" | "ORAL" | "WRITTEN";
 
 export interface Grade {

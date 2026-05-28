@@ -8,8 +8,19 @@ import { Text } from "~/components/text";
 import { subjectNameMap, Teacher } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
 
+const matchHolidayName = (name: string) => {
+  const normalized = name.toLowerCase();
+  if (normalized.includes("winter")) return "Winterferien";
+  if (normalized.includes("oster")) return "Osterferien";
+  if (normalized.includes("pfingst")) return "Pfingstferien";
+  if (normalized.includes("sommer")) return "Sommerferien";
+  if (normalized.includes("herbst")) return "Herbstferien";
+  if (normalized.includes("weihnacht")) return "Weihnachtsferien";
+  return "Ferien";
+};
+
 export const Agenda = () => {
-  const { timetable, getCourse } = useMockApp();
+  const { getActiveHoliday, getCourse, timetable } = useMockApp();
   const now = useMemo(() => new Date(), []);
 
   const nextEntry = timetable
@@ -18,6 +29,25 @@ export const Agenda = () => {
     .find((entry) => add(entry.start, { minutes: entry.duration }) > now);
 
   if (!nextEntry) {
+    const holiday = getActiveHoliday(now);
+
+    if (holiday) {
+      return (
+        <>
+          <View className="h-4" />
+          <Card className="p-8">
+            <Text className="text-center text-2xl">
+              Schöne {matchHolidayName(holiday.name)}! 🎉
+            </Text>
+            <View className="h-4" />
+            <Text className="text-center opacity-80">
+              {format(holiday.start, "dd.MM.yyyy")} - {format(holiday.end, "dd.MM.yyyy")}
+            </Text>
+          </Card>
+        </>
+      );
+    }
+
     return (
       <>
         <View className="h-4" />

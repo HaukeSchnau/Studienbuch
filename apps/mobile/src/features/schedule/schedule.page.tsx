@@ -1,100 +1,337 @@
-import { getDay, getISOWeek, getISOWeekYear } from "date-fns";
+import Icon from "@expo/vector-icons/MaterialIcons";
+import {
+  addDays,
+  addWeeks,
+  format,
+  getDay,
+  getISOWeek,
+  getISOWeekYear,
+  isToday,
+  set,
+  startOfISOWeek,
+} from "date-fns";
+import { de as localeDE } from "date-fns/locale/de";
 import { router } from "expo-router";
-import { useState } from "react";
-import { type DimensionValue, Pressable, View } from "react-native";
+import { useMemo, useState } from "react";
+import { type DimensionValue, Pressable, ScrollView, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { SubjectIcon } from "~/components/subject-icon";
+import { shadow } from "~/components/styles/shadow";
 import { Text } from "~/components/text";
-import { subjectNameMap } from "~/mock-app/domain";
+import { type Course, subjectNameMap } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
+import { colors } from "~/theme/colors";
 
-const getCurrentWeek = () => {
-  const today = new Date();
-  return {
-    week: getISOWeek(today),
-    year: getISOWeekYear(today),
-  };
-};
-
-const TICKS = [
-  8 * 60,
-  9 * 60 + 20,
-  9 * 60 + 45,
-  11 * 60 + 5,
-  11 * 60 + 30,
-  12 * 60 + 50,
-  13 * 60 + 50,
-  15 * 60 + 10,
+const TIME_MARKERS = [
+  { minute: 8 * 60, label: "08:00" },
+  { minute: 9 * 60 + 20, label: "09:20" },
+  { minute: 9 * 60 + 45, label: "09:45" },
+  { minute: 11 * 60 + 5, label: "11:05" },
+  { minute: 11 * 60 + 30, label: "11:30" },
+  { minute: 12 * 60 + 50, label: "12:50" },
+  { minute: 13 * 60 + 50, label: "13:50" },
+  { minute: 15 * 60 + 10, label: "15:10" },
+  { minute: 17 * 60, label: "17:00" },
 ];
+const WEEKDAY_LABELS = ["Mo", "Di", "Mi", "Do", "Fr"];
 const DAY_START = 8 * 60;
 const DAY_END = 17 * 60;
 const DAY_DURATION = DAY_END - DAY_START;
-const WEEKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
+const GRID_MIN_HEIGHT = 760;
+const TIME_RAIL_WIDTH = 52;
 
-const timeOfDayToYPosition = (time: number): DimensionValue =>
-  `${((time - DAY_START) / DAY_DURATION) * 100}%`;
-const weekdayToXPosition = (weekday: number): DimensionValue =>
-  `${(weekday / WEEKDAYS.length) * 100}%`;
-const dateToTimeOfDay = (date: Date) => date.getHours() * 60 + date.getMinutes();
-const durationToHeight = (duration: number): DimensionValue =>
-  `${(duration / DAY_DURATION) * 100}%`;
-const WIDTH: DimensionValue = `${100 / WEEKDAYS.length}%`;
+const timeToPosition = (minute: number) => ((minute - DAY_START) / DAY_DURATION) * GRID_MIN_HEIGHT;
+const durationToHeight = (duration: number) => (duration / DAY_DURATION) * GRID_MIN_HEIGHT;
+const weekdayToPercent = (weekday: number) =>
+  `${(weekday / WEEKDAY_LABELS.length) * 100}%` as DimensionValue;
+
+const formatWeekLabel = (weekStart: Date) => {
+  const weekEnd = addDays(weekStart, 4);
+  return `${format(weekStart, "dd.MM.", { locale: localeDE })} - ${format(weekEnd, "dd.MM.", {
+    locale: localeDE,
+  })}`;
+};
 
 export const SchedulePage = () => {
-  const [calendarWeek] = useState(getCurrentWeek());
-  const { timetable, getCourse } = useMockApp();
+  const { getCourse, timetable } = useMockApp();
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [isEditMode, setIsEditMode] = useState(false);
 
-  void calendarWeek;
+  const weekStart = useMemo(() => addWeeks(startOfISOWeek(new Date()), weekOffset), [weekOffset]);
+  const weekdays = useMemo(
+    () => WEEKDAY_LABELS.map((_, index) => addDays(weekStart, index)),
+    [weekStart],
+  );
+
+  const visibleEntries = useMemo(
+    () =>
+      timetable
+        .map((entry) => {
+          const weekday = (getDay(entry.start) + 6) % 7;
+          const start = set(addDays(weekStart, weekday), {
+            hours: entry.start.getHours(),
+            minutes: entry.start.getMinutes(),
+            seconds: 0,
+            milliseconds: 0,
+          });
+
+          return {
+            ...entry,
+            weekday,
+            start,
+          };
+        })
+        .filter((entry) => entry.weekday < WEEKDAY_LABELS.length)
+        .sort((a, b) => a.start.getTime() - b.start.getTime()),
+    [timetable, weekStart],
+  );
+
+  const selectedCourses = useMemo(
+    () =>
+      Array.from(
+        visibleEntries
+          .reduce((courses, entry) => {
+            const course = getCourse(entry.courseId);
+            if (course) {
+              courses.set(course.id, course);
+            }
+            return courses;
+          }, new Map<string, Course>())
+          .values(),
+      ),
+    [getCourse, visibleEntries],
+  );
+
+  const currentWeek = getISOWeek(weekStart);
+  const currentYear = getISOWeekYear(weekStart);
+  const now = new Date();
+  const nowWeekday = (getDay(now) + 6) % 7;
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const showNowMarker =
+    weekOffset === 0 &&
+    nowWeekday >= 0 &&
+    nowWeekday < WEEKDAY_LABELS.length &&
+    nowMinutes >= DAY_START &&
+    nowMinutes <= DAY_END;
 
   return (
-    <View className="flex-1">
-      <View className="flex-row justify-around py-2">
-        {WEEKDAYS.map((day) => (
-          <View key={day} className="flex-1">
-            <Text className="text-center">{day}</Text>
+    <View className="flex-1 bg-[#F7F8FB]">
+      <View style={[shadow, { backgroundColor: colors.primary.DEFAULT }]}>
+        <SafeAreaView edges={["top"]}>
+          <View className="px-4 pt-3 pb-4">
+            <Text weight="bold" className="text-center text-3xl text-white">
+              {isEditMode ? "Mein Stundenplan" : `Meine Woche: ${formatWeekLabel(weekStart)}`}
+            </Text>
+            <View className="h-3" />
+            <View className="flex-row">
+              <View style={{ width: TIME_RAIL_WIDTH }} />
+              <View className="flex-1 flex-row">
+                {weekdays.map((day, index) => (
+                  <View key={day.toISOString()} className="flex-1 items-center">
+                    <Text
+                      weight="bold"
+                      className="text-base uppercase text-white/85"
+                      style={{
+                        color: isToday(day) ? "#FFFFFF" : "rgba(255, 255, 255, 0.82)",
+                      }}
+                    >
+                      {WEEKDAY_LABELS[index]}
+                    </Text>
+                    <Text
+                      weight={isToday(day) ? "bold" : "semi-bold"}
+                      className="text-lg text-white"
+                    >
+                      {format(day, "dd.MM.", { locale: localeDE })}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
           </View>
-        ))}
+        </SafeAreaView>
       </View>
 
-      <View className="relative flex-1">
-        {TICKS.map((tick) => (
-          <View
-            key={tick}
-            className="absolute right-0 left-0 bg-[#00000020]"
-            style={{ top: timeOfDayToYPosition(tick), height: 1 }}
-          />
-        ))}
+      <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+        <View className="px-4 pt-4">
+          <View className="flex-row">
+            <View style={{ width: TIME_RAIL_WIDTH }}>
+              {TIME_MARKERS.map((marker) => (
+                <Text
+                  key={marker.minute}
+                  className="absolute right-2 text-xs text-neutral"
+                  style={{ top: timeToPosition(marker.minute) - 7 }}
+                >
+                  {marker.label}
+                </Text>
+              ))}
+            </View>
 
-        {timetable.map((entry) => {
-          const weekday = (getDay(entry.start) + 6) % 7;
-          const course = getCourse(entry.courseId);
-          if (!course || weekday >= WEEKDAYS.length) return null;
-
-          return (
-            <Pressable
-              onPress={() => {
-                router.push({
-                  pathname: "/courses/[course]",
-                  params: { course: course.id },
-                });
-              }}
-              key={entry.id}
-              className="absolute items-center justify-center rounded-md bg-accent/80"
-              style={{
-                top: timeOfDayToYPosition(dateToTimeOfDay(entry.start)),
-                left: weekdayToXPosition(weekday),
-                width: WIDTH,
-                height: durationToHeight(entry.duration),
-              }}
+            <View
+              className="relative flex-1 overflow-hidden rounded-[36px] bg-white"
+              style={[shadow, { minHeight: GRID_MIN_HEIGHT }]}
             >
-              <View className="rounded-full bg-white p-1">
-                <SubjectIcon subject={course.subject} />
-              </View>
-              <Text className="pt-2 text-center text-lg text-white">
-                {subjectNameMap[course.subject]}
+              {weekdays.map((day, index) => (
+                <View
+                  key={`day-bg-${day.toISOString()}`}
+                  className="absolute top-0 bottom-0"
+                  style={{
+                    left: weekdayToPercent(index),
+                    width: `${100 / WEEKDAY_LABELS.length}%`,
+                    backgroundColor: isToday(day) ? "rgba(59, 127, 217, 0.08)" : "transparent",
+                  }}
+                />
+              ))}
+
+              {weekdays.slice(1).map((day, index) => (
+                <View
+                  key={`divider-${day.toISOString()}`}
+                  className="absolute top-0 bottom-0 w-px bg-[#E8EEF8]"
+                  style={{ left: weekdayToPercent(index + 1) }}
+                />
+              ))}
+
+              {TIME_MARKERS.map((marker) => (
+                <View
+                  key={`tick-${marker.minute}`}
+                  className="absolute right-0 left-0 bg-[#E6EBF2]"
+                  style={{ top: timeToPosition(marker.minute), height: 1 }}
+                />
+              ))}
+
+              {visibleEntries.map((entry) => {
+                const course = getCourse(entry.courseId);
+                if (!course) return null;
+
+                return (
+                  <Pressable
+                    key={entry.id}
+                    onPress={() => {
+                      if (isEditMode) {
+                        setIsEditMode(false);
+                        return;
+                      }
+
+                      router.push({
+                        pathname: "/courses/[course]",
+                        params: { course: course.id },
+                      });
+                    }}
+                    className="absolute overflow-hidden rounded-[28px] bg-accent px-2 py-3"
+                    style={[
+                      shadow,
+                      {
+                        top: timeToPosition(entry.start.getHours() * 60 + entry.start.getMinutes()),
+                        left: weekdayToPercent(entry.weekday),
+                        width: `${100 / WEEKDAY_LABELS.length}%`,
+                        height: durationToHeight(entry.duration),
+                        borderWidth: isEditMode ? 2 : 0,
+                        borderColor: isEditMode ? "rgba(255, 255, 255, 0.7)" : "transparent",
+                      },
+                    ]}
+                  >
+                    <View className="items-center">
+                      <View className="rounded-full bg-white p-1.5">
+                        <SubjectIcon subject={course.subject} />
+                      </View>
+                      <View className="h-2" />
+                      <Text
+                        weight="bold"
+                        className="text-center text-sm text-white"
+                        numberOfLines={2}
+                      >
+                        {subjectNameMap[course.subject]}
+                      </Text>
+                      <Text className="pt-1 text-center text-xs text-white/85">
+                        {format(entry.start, "HH:mm")}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+
+              {showNowMarker ? (
+                <>
+                  <View
+                    className="absolute z-10 h-2 w-2 rounded-full bg-[#E54F64]"
+                    style={{
+                      top: timeToPosition(nowMinutes),
+                      left: weekdayToPercent(nowWeekday),
+                      marginTop: -4,
+                      marginLeft: -4,
+                    }}
+                  />
+                  <View
+                    className="absolute right-0 z-10 h-px bg-[#E54F64]"
+                    style={{
+                      top: timeToPosition(nowMinutes),
+                      left: weekdayToPercent(nowWeekday),
+                    }}
+                  />
+                </>
+              ) : null}
+
+              {visibleEntries.length === 0 ? (
+                <View className="absolute inset-0 items-center justify-center">
+                  <Text className="text-lg text-neutral">Diese Woche ist noch leer.</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+
+      <View className="bg-white px-4 py-3" style={shadow}>
+        <View className="flex-row items-center gap-3">
+          {isEditMode ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingRight: 12 }}
+              style={{ flex: 1 }}
+            >
+              {selectedCourses.map((course) => (
+                <View
+                  key={course.id}
+                  className="flex-row items-center rounded-full bg-accent-des px-3 py-2"
+                >
+                  <SubjectIcon subject={course.subject} size={20} />
+                  <View className="w-2" />
+                  <Text weight="bold" className="text-sm text-accent">
+                    {subjectNameMap[course.subject]}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <View className="flex-1 flex-row items-center justify-between">
+              <Pressable
+                className="h-10 w-10 items-center justify-center rounded-full bg-primary-des"
+                onPress={() => setWeekOffset((current) => current - 1)}
+              >
+                <Icon name="chevron-left" size={24} color={colors.primary.text} />
+              </Pressable>
+              <Text weight="semi-bold" className="text-base text-primary-text">
+                KW {currentWeek}
+                {currentYear === new Date().getFullYear() ? "" : ` (${currentYear})`}
               </Text>
-            </Pressable>
-          );
-        })}
+              <Pressable
+                className="h-10 w-10 items-center justify-center rounded-full bg-primary-des"
+                onPress={() => setWeekOffset((current) => current + 1)}
+              >
+                <Icon name="chevron-right" size={24} color={colors.primary.text} />
+              </Pressable>
+            </View>
+          )}
+
+          <Pressable
+            className="rounded-full bg-white px-3 py-2"
+            onPress={() => setIsEditMode((current) => !current)}
+          >
+            <Text weight="bold" className="text-base text-primary">
+              {isEditMode ? "Speichern" : "Bearbeiten"}
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   );

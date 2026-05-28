@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { useMaskedInputProps } from "react-native-mask-input";
@@ -54,7 +55,14 @@ export default function LicenseKey() {
         autoComplete="off"
       />
       <View className="h-6" />
-      <Button label="Weiter" className="self-end" onPress={() => updateProfile({ licenseKey })} />
+      <Button
+        label="Weiter"
+        className="self-end"
+        onPress={() => {
+          updateProfile({ licenseKey });
+          router.push("/setup/name-and-year");
+        }}
+      />
     </View>
   );
 }

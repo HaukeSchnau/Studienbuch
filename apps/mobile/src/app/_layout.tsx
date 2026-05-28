@@ -9,12 +9,12 @@ import {
   Nunito_700Bold_Italic,
   useFonts,
 } from "@expo-google-fonts/nunito";
-import { Stack } from "expo-router";
+import { Redirect, Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PortalRenderer } from "~/components/portal";
-import { MockAppProvider } from "~/mock-app/provider";
+import { MockAppProvider, useMockApp } from "~/mock-app/provider";
 import { colors } from "~/theme/colors";
 import "../global.css";
 
@@ -45,26 +45,41 @@ export default function RootLayout() {
   return (
     <MockAppProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <Stack
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: colors.primary.DEFAULT,
-            },
-            headerTintColor: colors.on.primary,
-            headerTitleStyle: {
-              color: colors.on.primary,
-              fontFamily: "Nunito_700Bold",
-            },
-            contentStyle: {
-              backgroundColor: colors.surface,
-            },
-          }}
-        >
-          <Stack.Screen name="(main)" options={{ headerShown: false }} />
-          <Stack.Screen name="setup" options={{ headerShown: false }} />
-        </Stack>
+        <AppNavigator />
         <PortalRenderer />
       </GestureHandlerRootView>
     </MockAppProvider>
+  );
+}
+
+function AppNavigator() {
+  const segments = useSegments();
+  const { getRequiredSetupPath } = useMockApp();
+  const requiredSetupPath = getRequiredSetupPath();
+  const isSetupRoute = segments[0] === "setup";
+
+  if (requiredSetupPath && !isSetupRoute) {
+    return <Redirect href={requiredSetupPath} />;
+  }
+
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: colors.primary.DEFAULT,
+        },
+        headerTintColor: colors.on.primary,
+        headerTitleStyle: {
+          color: colors.on.primary,
+          fontFamily: "Nunito_700Bold",
+        },
+        contentStyle: {
+          backgroundColor: colors.surface,
+        },
+      }}
+    >
+      <Stack.Screen name="(main)" options={{ headerShown: false }} />
+      <Stack.Screen name="setup" options={{ headerShown: false }} />
+    </Stack>
   );
 }

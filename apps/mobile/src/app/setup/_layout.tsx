@@ -1,7 +1,8 @@
 import { Image } from "expo-image";
-import { Slot, Stack } from "expo-router";
+import { Slot, Stack, usePathname } from "expo-router";
 import { openBrowserAsync } from "expo-web-browser";
-import { ScrollView, TouchableOpacity, View } from "react-native";
+import { useEffect } from "react";
+import { LayoutAnimation, ScrollView, TouchableOpacity, View } from "react-native";
 import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import iconImage from "~/assets/icon.png";
@@ -13,11 +14,17 @@ export default function SetupLayout() {
   const animatedStyle = useAnimatedStyle(() => ({
     paddingBottom: height.value,
   }));
+  const pathname = usePathname();
+
+  useEffect(() => {
+    LayoutAnimation.easeInEaseOut();
+  }, [pathname]);
 
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View className="absolute inset-0 bg-primary-des" />
+      <Backdrop />
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <SafeAreaView style={{ flex: 1 }}>
           <Animated.View
@@ -62,3 +69,11 @@ export default function SetupLayout() {
     </>
   );
 }
+
+const Backdrop = () => (
+  <>
+    <View className="absolute top-36 -left-36 h-72 w-72 rounded-full bg-[#9DBFEC]" />
+    <View className="absolute top-96 -right-28 h-56 w-56 rounded-full bg-[#92C78E]" />
+    <View className="absolute top-[600px] -left-24 h-48 w-48 rounded-full bg-[#CA9093]" />
+  </>
+);
