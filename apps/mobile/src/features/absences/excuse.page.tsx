@@ -34,7 +34,7 @@ export function ExcusePage({ date, courseIds }: { date: Date; courseIds: string[
 
   return (
     <View className="p-8">
-      <Stack.Screen options={{ title: "Fehlzeit bestaetigt" }} />
+      <Stack.Screen options={{ title: "Fehlzeit bestätigt" }} />
       {!user.isOfAge && absence.parentSignature ? (
         <>
           <ViewConfirmPageContent
@@ -51,7 +51,7 @@ export function ExcusePage({ date, courseIds }: { date: Date; courseIds: string[
           signatureLabel="Unterschrift der Lehrkraft"
           signatureSvg={absence.teacherSignature}
         >
-          Die Entschuldigung wurde bestaetigt.
+          Die Entschuldigung wurde bestätigt.
         </ViewConfirmPageContent>
       ) : null}
     </View>

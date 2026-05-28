@@ -18,32 +18,54 @@ export const TaskCard = ({ task }: { task: Task }) => {
       <Card
         noShadow
         style={{
-          width: 180,
+          width: 192,
           minHeight: 205,
           backgroundColor: "#203755",
           opacity: archived ? 0.55 : 1,
         }}
       >
         <View className="flex-1">
-          <Text className="text-sm text-white/80">{course?.name ?? "Kurs"}</Text>
+          <Text className="text-sm text-white/80" numberOfLines={1}>
+            {course?.name ?? "Kurs"}
+          </Text>
           <Text
             weight="bold"
-            className="pt-1 text-2xl"
+            className="pt-1 text-white"
             numberOfLines={2}
-            style={{ color: colors.primary.pale }}
+            style={{
+              color: colors.primary.pale,
+              fontSize: 19,
+              lineHeight: 23,
+            }}
           >
             {task.title}
           </Text>
-          <Text className="pt-2 text-lg text-white" numberOfLines={2}>
+          <Text
+            className="pt-2 text-white"
+            numberOfLines={2}
+            style={{
+              fontSize: 16,
+              lineHeight: 20,
+            }}
+          >
             {task.description}
           </Text>
           <View className="flex-1" />
-          <Text className="text-lg text-white/80">
-            Faellig am:{" "}
+          <Text
+            className="text-white/80"
+            style={{
+              fontSize: 16,
+              lineHeight: 20,
+            }}
+          >
+            Fällig am:{" "}
             <Text
               weight="bold"
-              className="text-lg"
-              style={{ color: !task.done && task.dueDate < new Date() ? "#E96868" : "#FFFFFF" }}
+              style={{
+                fontSize: 16,
+                lineHeight: 20,
+                color: !task.done && task.dueDate < new Date() ? "#E96868" : "#FFFFFF",
+              }}
             >
               {format(task.dueDate, "dd.MM.")}
             </Text>

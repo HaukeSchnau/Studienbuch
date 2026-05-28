@@ -14,15 +14,15 @@ export const ConfirmOralGradeParent = ({ grade }: { grade: ResolvedGrade }) => {
 
   return (
     <View className="p-8">
-      <Stack.Screen options={{ title: "Muendliche Note bestaetigen (Eltern)" }} />
+      <Stack.Screen options={{ title: "Mündliche Note bestätigen (Eltern)" }} />
       <ConfirmPageContent
         heading="Bitte lasse deine Eltern hier unterschreiben"
         onConfirm={() => signGrade(grade.id, "parent")}
-        confirmLabel="Bestaetigen"
+        confirmLabel="Bestätigen"
         signatureLabel="Unterschrift eines Erziehungsberechtigten"
       >
         Ich habe zur Kenntnis genommen, dass mein Kind <Text weight="bold">{user.name}</Text> am{" "}
-        <Text weight="bold">{format(grade.date, "dd.MM.yyyy")}</Text> die muendliche Note{" "}
+        <Text weight="bold">{format(grade.date, "dd.MM.yyyy")}</Text> die mündliche Note{" "}
         <Text weight="bold">{formatGrade(grade.result)}</Text> in{" "}
         <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> hat.
       </ConfirmPageContent>
@@ -43,7 +43,7 @@ export const OralGradeParentConfirmationView = ({
       signatureSvg={grade.parentSignature}
     >
       Ich habe zur Kenntnis genommen, dass mein Kind <Text weight="bold">{user.name}</Text> am{" "}
-      <Text weight="bold">{format(grade.date, "dd.MM.yyyy")}</Text> die muendliche Note{" "}
+      <Text weight="bold">{format(grade.date, "dd.MM.yyyy")}</Text> die mündliche Note{" "}
       <Text weight="bold">{formatGrade(grade.result)}</Text> in{" "}
       <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> hat.
     </ViewConfirmPageContent>

@@ -51,10 +51,10 @@ export const TaskPage = ({ taskId }: { taskId: string }) => {
           <Pressable
             className="rounded-full p-2"
             onPress={() =>
-              Alert.alert("Aufgabe loeschen", "Moechtest du die Aufgabe wirklich loeschen?", [
+              Alert.alert("Aufgabe löschen", "Möchtest du die Aufgabe wirklich löschen?", [
                 { text: "Abbrechen", style: "cancel" },
                 {
-                  text: "Loeschen",
+                  text: "Löschen",
                   style: "destructive",
                   onPress: () => {
                     deleteTask(task.id);
@@ -110,7 +110,7 @@ export const TaskPage = ({ taskId }: { taskId: string }) => {
           <View className="h-4" />
           <View className="items-end">
             <Button
-              label={task.done ? "Bestaetigung zuruecknehmen" : "Bestaetigen"}
+              label={task.done ? "Bestätigung zurücknehmen" : "Bestätigen"}
               onPress={() => toggleTaskDone(task.id)}
             />
           </View>

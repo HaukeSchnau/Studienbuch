@@ -33,7 +33,7 @@ export const EditOralGrade = ({
   return (
     <View className="px-8 py-8">
       <Text variant="heading" className="text-center">
-        Muendliche Mitarbeitsnote eintragen
+        Mündliche Mitarbeitsnote eintragen
       </Text>
       <View className="h-6" />
       <TextField
@@ -45,7 +45,7 @@ export const EditOralGrade = ({
       />
       <View className="h-6" />
       <Text className="text-lg">
-        Diese Note muss im Nachhinein noch von deiner Lehrkraft und deinen Eltern bestaetigt werden.
+        Diese Note muss im Nachhinein noch von deiner Lehrkraft und deinen Eltern bestätigt werden.
       </Text>
 
       {mostRecentConfirmedOralGrade ? (
@@ -54,7 +54,7 @@ export const EditOralGrade = ({
           <Divider />
           <View className="h-4" />
           <Text className="text-lg">
-            Alternativ kannst du deine letzte bestaetigte Note wiederherstellen:
+            Alternativ kannst du deine letzte bestätigte Note wiederherstellen:
           </Text>
           <View className="h-4" />
           <GradeCard

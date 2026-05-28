@@ -20,7 +20,7 @@ export const ExcuseParent = ({ absence }: { absence: Absence }) => {
         onConfirm={() => signAbsence(absence.id, "parent")}
         signatureLabel="Unterschrift des Erziehungsberechtigten"
       >
-        Ich bestaetige, dass mein Kind <Text weight="bold">{user.name}</Text> am{" "}
+        Ich bestätige, dass mein Kind <Text weight="bold">{user.name}</Text> am{" "}
         <Text weight="bold">{absence.date.toLocaleDateString("de-DE")}</Text> mit folgender
         Begruendung nicht am Unterricht teilnehmen konnte.
       </ConfirmPageContent>

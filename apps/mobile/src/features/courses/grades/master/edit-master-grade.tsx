@@ -45,7 +45,7 @@ export const EditMasterGrade = ({
       />
       <View className="h-6" />
       <Text className="text-lg">
-        Diese Note muss im Nachhinein noch von deiner Lehrkraft und deinen Eltern bestaetigt werden.
+        Diese Note muss im Nachhinein noch von deiner Lehrkraft und deinen Eltern bestätigt werden.
       </Text>
 
       {mostRecentConfirmedMasterGrade ? (
@@ -54,7 +54,7 @@ export const EditMasterGrade = ({
           <Divider />
           <View className="h-4" />
           <Text className="text-lg">
-            Alternativ kannst du deine letzte bestaetigte Note wiederherstellen:
+            Alternativ kannst du deine letzte bestätigte Note wiederherstellen:
           </Text>
           <View className="h-4" />
           <GradeCard

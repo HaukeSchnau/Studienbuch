@@ -86,7 +86,7 @@ export const GradePage = ({ date, courseId, type }: Props) => {
 
   return (
     <View className="p-8">
-      <Stack.Screen options={{ title: "Note bestaetigt" }} />
+      <Stack.Screen options={{ title: "Note bestätigt" }} />
       {type === "MASTER" ? <MasterGradeTeacherConfirmationView grade={confirmedGrade} /> : null}
       {type === "ORAL" ? <OralGradeTeacherConfirmationView grade={confirmedGrade} /> : null}
       {type === "WRITTEN" ? <WrittenGradeTeacherConfirmationView grade={confirmedGrade} /> : null}

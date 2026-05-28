@@ -14,11 +14,11 @@ export const ConfirmWrittenGradeParent = ({ grade }: { grade: ResolvedGrade }) =
 
   return (
     <View className="p-8">
-      <Stack.Screen options={{ title: "Schriftliche Note bestaetigen (Eltern)" }} />
+      <Stack.Screen options={{ title: "Schriftliche Note bestätigen (Eltern)" }} />
       <ConfirmPageContent
         heading="Bitte lasse deine Eltern hier unterschreiben"
         onConfirm={() => signGrade(grade.id, "parent")}
-        confirmLabel="Bestaetigen"
+        confirmLabel="Bestätigen"
         signatureLabel="Unterschrift eines Erziehungsberechtigten"
       >
         Ich habe zur Kenntnis genommen, dass mein Kind <Text weight="bold">{user.name}</Text> am{" "}

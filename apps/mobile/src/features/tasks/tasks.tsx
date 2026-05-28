@@ -68,7 +68,7 @@ export const Tasks = ({ courseId }: { courseId?: string }) => {
         <View className="flex-row items-center gap-2 px-8 pt-1">
           <MaterialIcons name="swipe" size={16} color="rgba(255,255,255,0.85)" />
           <Text className="text-sm text-white/80">
-            Zum Oeffnen horizontal durch die Karten wischen
+            Zum Öffnen horizontal durch die Karten wischen
           </Text>
         </View>
       ) : null}

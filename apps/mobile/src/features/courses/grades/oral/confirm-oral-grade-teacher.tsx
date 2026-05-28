@@ -14,21 +14,21 @@ export const ConfirmOralGradeTeacher = ({ grade }: { grade: ResolvedGrade }) => 
   const teacher = grade.course.teachers[0];
 
   if (!teacher) {
-    return <Text>Ungueltige Note.</Text>;
+    return <Text>Ungültige Note.</Text>;
   }
 
   return (
     <View className="p-8">
-      <Stack.Screen options={{ title: "Muendliche Note bestaetigen (Lehrer)" }} />
+      <Stack.Screen options={{ title: "Mündliche Note bestätigen (Lehrer)" }} />
       <ConfirmPageContent
         heading="Bitte lasse deinen Lehrer hier unterschreiben"
         onConfirm={() => signGrade(grade.id, "teacher")}
-        confirmLabel="Bestaetigen"
+        confirmLabel="Bestätigen"
         signatureLabel={`Unterschrift von ${Teacher.formalName(teacher)}`}
       >
-        Ich, {Teacher.formalName(teacher)} bestaetige, dass der/die Schueler:in{" "}
+        Ich, {Teacher.formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
         <Text weight="bold">{user.name}</Text> am{" "}
-        <Text weight="bold">{format(grade.date, "dd.MM.yyyy")}</Text> die muendliche Note{" "}
+        <Text weight="bold">{format(grade.date, "dd.MM.yyyy")}</Text> die mündliche Note{" "}
         <Text weight="bold">{formatGrade(grade.result)}</Text> in{" "}
         <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> hat.
       </ConfirmPageContent>
@@ -41,7 +41,7 @@ export const OralGradeTeacherConfirmationView = ({ grade }: { grade: ConfirmedRe
   const teacher = grade.course.teachers[0];
 
   if (!teacher) {
-    return <Text>Ungueltige Note.</Text>;
+    return <Text>Ungültige Note.</Text>;
   }
 
   return (
@@ -49,9 +49,9 @@ export const OralGradeTeacherConfirmationView = ({ grade }: { grade: ConfirmedRe
       signatureLabel={`Unterschrift von ${Teacher.formalName(teacher)}`}
       signatureSvg={grade.teacherSignature}
     >
-      Ich, {Teacher.formalName(teacher)} bestaetige, dass der/die Schueler:in{" "}
+      Ich, {Teacher.formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
       <Text weight="bold">{user.name}</Text> am{" "}
-      <Text weight="bold">{format(grade.date, "dd.MM.yyyy")}</Text> die muendliche Note{" "}
+      <Text weight="bold">{format(grade.date, "dd.MM.yyyy")}</Text> die mündliche Note{" "}
       <Text weight="bold">{formatGrade(grade.result)}</Text> in{" "}
       <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> hat.
     </ViewConfirmPageContent>

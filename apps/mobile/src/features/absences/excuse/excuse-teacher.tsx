@@ -16,7 +16,7 @@ export const ExcuseTeacher = ({ absence }: { absence: Absence }) => {
   if (!teacher) {
     return (
       <View className="p-8">
-        <Text>Ungueltige Fehlzeit.</Text>
+        <Text>Ungültige Fehlzeit.</Text>
       </View>
     );
   }
@@ -31,7 +31,7 @@ export const ExcuseTeacher = ({ absence }: { absence: Absence }) => {
         onConfirm={() => signAbsence(absence.id, "teacher")}
         signatureLabel={`Unterschrift von ${Teacher.formalName(teacher)}`}
       >
-        Ich, {Teacher.formalName(teacher)} bestaetige, dass der/die Schueler:in{" "}
+        Ich, {Teacher.formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
         <Text weight="bold">{user.name}</Text> am{" "}
         <Text weight="bold">{absence.date.toLocaleDateString("de-DE")}</Text> mit folgender
         Begruendung nicht am Unterricht teilnehmen konnte:

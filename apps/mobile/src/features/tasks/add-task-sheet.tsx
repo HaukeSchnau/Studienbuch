@@ -39,13 +39,13 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
   return (
     <View className="px-8 py-8">
       <Text variant="heading" className="text-center">
-        Aufgabe hinzufuegen
+        Aufgabe hinzufügen
       </Text>
       <View className="h-2" />
       <Text className="text-center text-base opacity-70">
         {existingTaskCount > 0
-          ? `${existingTaskCount} Aufgaben sind fuer diesen Bereich bereits hinterlegt.`
-          : "Lege eine erste Aufgabe fuer diesen Bereich an."}
+          ? `${existingTaskCount} Aufgaben sind für diesen Bereich bereits hinterlegt.`
+          : "Lege eine erste Aufgabe für diesen Bereich an."}
       </Text>
       <View className="h-6" />
 
@@ -108,7 +108,7 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
       ) : null}
 
       <TextButton
-        label="Foto hinzufuegen"
+        label="Foto hinzufügen"
         onPress={() =>
           setAttachments((current) => [...current, createAttachment(nextAttachmentIndex)])
         }

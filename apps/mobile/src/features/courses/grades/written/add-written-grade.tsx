@@ -37,7 +37,7 @@ export const AddWrittenGrade = ({
       />
       <View className="h-6" />
       <Text className="text-lg">
-        Diese Note muss im Nachhinein noch von deiner Lehrkraft und deinen Eltern bestaetigt werden.
+        Diese Note muss im Nachhinein noch von deiner Lehrkraft und deinen Eltern bestätigt werden.
       </Text>
       <View className="h-6" />
       <Button

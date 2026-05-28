@@ -14,19 +14,19 @@ export const ConfirmMasterGradeTeacher = ({ grade }: { grade: ResolvedGrade }) =
   const teacher = grade.course.teachers[0];
 
   if (!teacher) {
-    return <Text>Ungueltige Note.</Text>;
+    return <Text>Ungültige Note.</Text>;
   }
 
   return (
     <View className="p-8">
-      <Stack.Screen options={{ title: "Gesamtnote bestaetigen (Lehrer)" }} />
+      <Stack.Screen options={{ title: "Gesamtnote bestätigen (Lehrer)" }} />
       <ConfirmPageContent
         heading="Bitte lasse deinen Lehrer hier unterschreiben"
         onConfirm={() => signGrade(grade.id, "teacher")}
-        confirmLabel="Bestaetigen"
+        confirmLabel="Bestätigen"
         signatureLabel={`Unterschrift von ${Teacher.formalName(teacher)}`}
       >
-        Ich, {Teacher.formalName(teacher)} bestaetige, dass der/die Schueler:in{" "}
+        Ich, {Teacher.formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
         <Text weight="bold">{user.name}</Text> am{" "}
         <Text weight="bold">{format(grade.date, "dd.MM.yyyy")}</Text> die Gesamtnote{" "}
         <Text weight="bold">{formatGrade(grade.result)}</Text> in{" "}
@@ -45,7 +45,7 @@ export const MasterGradeTeacherConfirmationView = ({
   const teacher = grade.course.teachers[0];
 
   if (!teacher) {
-    return <Text>Ungueltige Note.</Text>;
+    return <Text>Ungültige Note.</Text>;
   }
 
   return (
@@ -53,7 +53,7 @@ export const MasterGradeTeacherConfirmationView = ({
       signatureLabel={`Unterschrift von ${Teacher.formalName(teacher)}`}
       signatureSvg={grade.teacherSignature}
     >
-      Ich, {Teacher.formalName(teacher)} bestaetige, dass der/die Schueler:in{" "}
+      Ich, {Teacher.formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
       <Text weight="bold">{user.name}</Text> am{" "}
       <Text weight="bold">{format(grade.date, "dd.MM.yyyy")}</Text> die Gesamtnote{" "}
       <Text weight="bold">{formatGrade(grade.result)}</Text> in{" "}
