@@ -26,6 +26,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="schedule"
         options={{
+          headerShown: false,
           title: "Meine Woche",
           tabBarIcon: ({ color }) => <FontAwesome size={28} name="calendar-today" color={color} />,
           tabBarLabel: ({ children, color }) => <Text style={{ color }}>{children}</Text>,

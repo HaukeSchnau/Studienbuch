@@ -14,16 +14,16 @@ export const ProfilePage = () => {
 
   return (
     <ScrollView>
-      <View className="p-8">
+      <View>
         <Tabs.Screen options={{ header: () => <Header /> }} />
         {semesters.length > 0 ? (
-          <View className="px-6 py-4">
+          <View className="px-5 py-3">
             <SemesterSelector
               choices={semesters}
               selectedSemester={selectedSemester}
               onSelect={setSelectedSemester}
             />
-            <View className="h-4" />
+            <View className="h-3" />
             <CourseList semester={selectedSemester} />
           </View>
         ) : (

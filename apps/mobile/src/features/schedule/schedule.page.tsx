@@ -37,8 +37,8 @@ const WEEKDAY_LABELS = ["Mo", "Di", "Mi", "Do", "Fr"];
 const DAY_START = 8 * 60;
 const DAY_END = 17 * 60;
 const DAY_DURATION = DAY_END - DAY_START;
-const GRID_MIN_HEIGHT = 760;
-const TIME_RAIL_WIDTH = 52;
+const GRID_MIN_HEIGHT = 560;
+const TIME_RAIL_WIDTH = 44;
 
 const timeToPosition = (minute: number) => ((minute - DAY_START) / DAY_DURATION) * GRID_MIN_HEIGHT;
 const durationToHeight = (duration: number) => (duration / DAY_DURATION) * GRID_MIN_HEIGHT;
@@ -96,11 +96,11 @@ export const SchedulePage = () => {
     <View className="flex-1 bg-[#F7F8FB]">
       <View style={[shadow, { backgroundColor: colors.primary.DEFAULT }]}>
         <SafeAreaView edges={["top"]}>
-          <View className="px-4 pt-3 pb-4">
-            <Text weight="bold" className="text-center text-3xl text-white">
-              {`Meine Woche: ${formatWeekLabel(weekStart)}`}
+          <View className="px-4 pt-2 pb-3">
+            <Text weight="bold" className="text-center text-[34px] text-white">
+              {formatWeekLabel(weekStart)}
             </Text>
-            <View className="h-3" />
+            <View className="h-2" />
             <View className="flex-row">
               <View style={{ width: TIME_RAIL_WIDTH }} />
               <View className="flex-1 flex-row">
@@ -108,7 +108,7 @@ export const SchedulePage = () => {
                   <View key={day.toISOString()} className="flex-1 items-center">
                     <Text
                       weight="bold"
-                      className="text-base uppercase text-white/85"
+                      className="text-sm uppercase text-white/85"
                       style={{
                         color: isToday(day) ? "#FFFFFF" : "rgba(255, 255, 255, 0.82)",
                       }}
@@ -117,7 +117,7 @@ export const SchedulePage = () => {
                     </Text>
                     <Text
                       weight={isToday(day) ? "bold" : "semi-bold"}
-                      className="text-lg text-white"
+                      className="text-base text-white"
                     >
                       {format(day, "dd.MM.", { locale: localeDE })}
                     </Text>
@@ -129,15 +129,15 @@ export const SchedulePage = () => {
         </SafeAreaView>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-        <View className="px-4 pt-4">
+      <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
+        <View className="px-4 pt-3">
           <View className="flex-row">
             <View style={{ width: TIME_RAIL_WIDTH }}>
               {TIME_MARKERS.map((marker) => (
                 <Text
                   key={marker.minute}
-                  className="absolute right-2 text-xs text-neutral"
-                  style={{ top: timeToPosition(marker.minute) - 7 }}
+                  className="absolute right-1 text-[13px] text-neutral"
+                  style={{ top: timeToPosition(marker.minute) - 8 }}
                 >
                   {marker.label}
                 </Text>
@@ -189,7 +189,7 @@ export const SchedulePage = () => {
                         params: { course: course.id },
                       });
                     }}
-                    className="absolute overflow-hidden rounded-[28px] bg-accent px-2 py-3"
+                    className="absolute overflow-hidden rounded-[24px] bg-accent px-2 py-2"
                     style={[
                       shadow,
                       {
@@ -204,15 +204,15 @@ export const SchedulePage = () => {
                       <View className="rounded-full bg-white p-1.5">
                         <SubjectIcon subject={course.subject} />
                       </View>
-                      <View className="h-2" />
+                      <View className="h-1.5" />
                       <Text
                         weight="bold"
-                        className="text-center text-sm text-white"
+                        className="text-center text-[13px] text-white"
                         numberOfLines={2}
                       >
                         {subjectNameMap[course.subject]}
                       </Text>
-                      <Text className="pt-1 text-center text-xs text-white/85">
+                      <Text className="pt-0.5 text-center text-[11px] text-white/85">
                         {format(entry.start, "HH:mm")}
                       </Text>
                     </View>
@@ -251,7 +251,7 @@ export const SchedulePage = () => {
         </View>
       </ScrollView>
 
-      <View className="bg-white px-4 py-3" style={shadow}>
+      <View className="bg-white px-4 py-2.5" style={shadow}>
         <View className="flex-row items-center justify-between">
           <Pressable
             className="h-10 w-10 items-center justify-center rounded-full bg-primary-des"

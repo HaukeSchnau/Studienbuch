@@ -17,9 +17,10 @@ export const CourseList = ({ semester }: { semester: Semester }) => {
     <Table
       items={courses}
       getKey={(course) => course.id}
-      gap={24}
+      gap={16}
       render={(course) => (
         <Card
+          style={{ padding: 20 }}
           onPress={() =>
             router.push({
               pathname: "/courses/[course]",
@@ -29,8 +30,10 @@ export const CourseList = ({ semester }: { semester: Semester }) => {
         >
           <View className="items-center">
             <SubjectIcon subject={course.subject} />
-            <View className="h-2" />
-            <Text weight="bold">{subjectNameMap[course.subject]}</Text>
+            <View className="h-1.5" />
+            <Text weight="bold" className="text-[15px]">
+              {subjectNameMap[course.subject]}
+            </Text>
           </View>
         </Card>
       )}
