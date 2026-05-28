@@ -74,6 +74,7 @@ function AppNavigator() {
           fontFamily: "Nunito_700Bold",
         },
         headerBackTitle: "Zurück",
+        headerBackButtonDisplayMode: "minimal",
         contentStyle: {
           backgroundColor: colors.surface,
         },

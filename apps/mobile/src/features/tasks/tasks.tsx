@@ -16,7 +16,7 @@ export const Tasks = ({ courseId }: { courseId?: string }) => {
   const sectionHeight = 225 * crossAxisCount;
 
   return (
-    <View style={{ backgroundColor: "#3E5D8C" }} className="rounded-t-[40px] py-8">
+    <View style={{ backgroundColor: "#3B7FD9" }} className="rounded-t-[40px] py-8">
       <PortaledBottomSheet onClose={() => setIsAddVisible(false)}>
         {isAddVisible ? (
           <AddTaskSheet courseId={courseId} onClose={() => setIsAddVisible(false)} />

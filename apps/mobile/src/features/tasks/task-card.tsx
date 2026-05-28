@@ -19,7 +19,7 @@ export const TaskCard = ({ task }: { task: Task }) => {
         style={{
           width: 192,
           minHeight: 205,
-          backgroundColor: "#29466C",
+          backgroundColor: "#203755",
           opacity: archived ? 0.55 : 1,
         }}
       >
@@ -32,7 +32,7 @@ export const TaskCard = ({ task }: { task: Task }) => {
             className="pt-1 text-white"
             numberOfLines={2}
             style={{
-              color: "#79C35F",
+              color: "#3CC233",
               fontSize: 19,
               lineHeight: 23,
             }}
