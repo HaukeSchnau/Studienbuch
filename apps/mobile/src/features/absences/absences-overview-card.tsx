@@ -1,4 +1,3 @@
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { format } from "date-fns";
 import { Link } from "expo-router";
 import { useMemo, useState } from "react";
@@ -13,6 +12,7 @@ import { useMockApp } from "~/mock-app/provider";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { AddAbsence } from "./add-absence";
 import BigCheck from "./big-check.svg";
+import WarningTriangle from "./warning-triangle.svg";
 
 export const AbsencesOverviewCard = () => {
   const [isAddVisible, setIsAddVisible] = useState(false);
@@ -84,8 +84,8 @@ const UnexcusedAbsences = ({
 }) => {
   return (
     <View className="flex-row">
-      <View className="h-[50px] w-10 items-center justify-center">
-        <MaterialIcons name="warning-amber" size={40} color="#DCAB3C" />
+      <View className="h-[56px] w-12 items-center justify-center">
+        <WarningTriangle width={38} height={38} />
       </View>
       <View className="w-4" />
       <View className="flex-1">

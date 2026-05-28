@@ -73,6 +73,7 @@ function AppNavigator() {
           color: colors.on.primary,
           fontFamily: "Nunito_700Bold",
         },
+        headerBackTitle: "Zurück",
         contentStyle: {
           backgroundColor: colors.surface,
         },

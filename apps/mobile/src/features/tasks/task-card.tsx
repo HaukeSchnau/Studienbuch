@@ -6,7 +6,6 @@ import { Card } from "~/components/card";
 import { Text } from "~/components/text";
 import { isTaskArchived, type Task } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
-import { colors } from "~/theme/colors";
 
 export const TaskCard = ({ task }: { task: Task }) => {
   const { getCourse } = useMockApp();
@@ -20,7 +19,7 @@ export const TaskCard = ({ task }: { task: Task }) => {
         style={{
           width: 192,
           minHeight: 205,
-          backgroundColor: "#203755",
+          backgroundColor: "#29466C",
           opacity: archived ? 0.55 : 1,
         }}
       >
@@ -33,7 +32,7 @@ export const TaskCard = ({ task }: { task: Task }) => {
             className="pt-1 text-white"
             numberOfLines={2}
             style={{
-              color: colors.primary.pale,
+              color: "#79C35F",
               fontSize: 19,
               lineHeight: 23,
             }}
