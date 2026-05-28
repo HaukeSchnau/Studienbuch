@@ -118,6 +118,8 @@ Notes:
 
 Goal: retire the custom portaled bottom sheet stack in favor of Expo UI's native-backed sheet path.
 
+Status: completed on 2026-05-28 for the first sheet pass.
+
 Files to replace or remove:
 
 - `apps/mobile/src/components/bottom-sheet.tsx`
@@ -137,6 +139,11 @@ Notes:
 
 - This is the highest-value native-feel cleanup in the current codebase.
 - Do the migration behind one app-owned wrapper so future sheet API churn stays localized.
+- Completed in:
+  - `apps/mobile/src/components/bottom-sheet.tsx`
+  - `apps/mobile/src/app/_layout.tsx`
+  - removal of `apps/mobile/src/components/portal.tsx`
+  - removal of the now-unused `zustand` dependency from `apps/mobile/package.json`
 
 ### Phase 4: Shared Primitive Cleanup
 
@@ -198,13 +205,11 @@ These are intentionally not part of this roadmap slice:
 
 ## Next Slice
 
-The next implementation slice should be:
-
-1. replace the custom portaled sheet stack with an Expo UI-backed wrapper
-2. remove `apps/mobile/src/components/portal.tsx` once sheets no longer depend on it
-3. simplify `apps/mobile/src/app/_layout.tsx` after portal removal
+1. clean up remaining shared primitives, especially shadows and field wrappers
+2. replace deprecated `shadow*` usage with a modern `boxShadow` or platform-aware alternative
+3. review sheet content spacing now that native handles and detents are in play
 4. run `just qa`
-5. smoke test the affected flows on iOS and Android
+5. smoke test the profile, tasks, grades, and absences flows on iOS and Android
 
 ## Sources
 

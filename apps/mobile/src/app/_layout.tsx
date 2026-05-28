@@ -13,7 +13,6 @@ import { Redirect, Stack, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { PortalRenderer } from "~/components/portal";
 import { MockAppProvider, useMockApp } from "~/mock-app/provider";
 import { colors } from "~/theme/colors";
 import "../global.css";
@@ -46,7 +45,6 @@ export default function RootLayout() {
     <MockAppProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AppNavigator />
-        <PortalRenderer />
       </GestureHandlerRootView>
     </MockAppProvider>
   );
