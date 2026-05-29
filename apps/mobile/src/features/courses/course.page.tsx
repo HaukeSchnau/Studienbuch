@@ -1,18 +1,24 @@
 import { format } from "date-fns";
 import { de } from "date-fns/locale/de";
 import { Stack } from "expo-router";
+import { useState } from "react";
 import { View } from "react-native";
+import { PortaledBottomSheet } from "~/components/bottom-sheet";
 import { Card } from "~/components/card";
 import { CoreLayout } from "~/components/core-layout";
 import { SubjectIcon } from "~/components/subject-icon";
 import { Text } from "~/components/text";
 import { subjectNameMap, Teacher } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
-import { GradesOverviewCard } from "./grades/grades-overview-card";
 import { Tasks } from "~/features/tasks/tasks";
+import { AddTaskSheet } from "~/features/tasks/add-task-sheet";
+import { GradesOverviewCard } from "./grades/grades-overview-card";
+import { AddWrittenGrade } from "./grades/written/add-written-grade";
 
 export const CoursePage = ({ courseId }: { courseId: string }) => {
   const { getCourse, semesters } = useMockApp();
+  const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
+  const [isAddWrittenGradeVisible, setIsAddWrittenGradeVisible] = useState(false);
   const course = getCourse(courseId);
 
   if (!course) {
@@ -23,6 +29,20 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
 
   return (
     <CoreLayout>
+      {isAddTaskVisible ? (
+        <PortaledBottomSheet onClose={() => setIsAddTaskVisible(false)}>
+          <AddTaskSheet courseId={course.id} onClose={() => setIsAddTaskVisible(false)} />
+        </PortaledBottomSheet>
+      ) : null}
+      {isAddWrittenGradeVisible ? (
+        <PortaledBottomSheet onClose={() => setIsAddWrittenGradeVisible(false)}>
+          <AddWrittenGrade
+            courseId={course.id}
+            onClose={() => setIsAddWrittenGradeVisible(false)}
+          />
+        </PortaledBottomSheet>
+      ) : null}
+
       <Stack.Screen
         options={{
           headerTitle: "",
@@ -30,6 +50,17 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
           headerStyle: { backgroundColor: "transparent" },
         }}
       />
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Menu accessibilityLabel="Kursaktionen">
+          <Stack.Toolbar.Label>Aktionen</Stack.Toolbar.Label>
+          <Stack.Toolbar.MenuAction onPress={() => setIsAddTaskVisible(true)}>
+            Hausaufgabe hinzufügen
+          </Stack.Toolbar.MenuAction>
+          <Stack.Toolbar.MenuAction onPress={() => setIsAddWrittenGradeVisible(true)}>
+            Klausurnote eintragen
+          </Stack.Toolbar.MenuAction>
+        </Stack.Toolbar.Menu>
+      </Stack.Toolbar>
       <View className="px-8">
         <View className="flex-row justify-between">
           <View>
