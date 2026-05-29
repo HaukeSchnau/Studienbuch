@@ -1,5 +1,6 @@
+import { useState } from "react";
 import type { TextInputProps } from "react-native";
-import { TextInput } from "react-native";
+import { TextInput, View } from "react-native";
 
 import { FieldSurface } from "./field-surface";
 import { fontNames, Text } from "./text";
@@ -9,21 +10,32 @@ interface Props extends TextInputProps {
 }
 
 export const TextAreaField = ({ label, style, ...props }: Props) => {
+  const [isFocused, setIsFocused] = useState(false);
+
   return (
-    <FieldSurface className="px-6 py-4">
-      <Text className="pb-2 text-sm opacity-60">{label}</Text>
-      <TextInput
-        {...props}
-        multiline
-        textAlignVertical="top"
-        style={[
-          {
-            minHeight: 92,
-            fontFamily: fontNames.regular,
-          },
-          style,
-        ]}
-      />
-    </FieldSurface>
+    <View className="gap-2">
+      <Text className="px-1 text-[15px] text-[#5B6472]" weight="medium">
+        {label}
+      </Text>
+      <FieldSurface focused={isFocused} className="px-5 py-4">
+        <TextInput
+          {...props}
+          multiline
+          textAlignVertical="top"
+          placeholderTextColor="#98A2B3"
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          style={[
+            {
+              minHeight: 112,
+              fontFamily: fontNames.regular,
+              fontSize: 17,
+              color: "#111827",
+            },
+            style,
+          ]}
+        />
+      </FieldSurface>
+    </View>
   );
 };

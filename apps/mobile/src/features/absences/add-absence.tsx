@@ -1,16 +1,17 @@
 import { getISOWeek, getISOWeekYear, isSameDay, startOfDay } from "date-fns";
 import { useMemo, useState } from "react";
 import { View } from "react-native";
+
 import { Button } from "~/components/button";
 import { CheckboxRow } from "~/components/checkbox-row";
 import { DateField } from "~/components/date-field";
-import { Divider } from "~/components/divider";
+import { SheetCallout } from "~/components/sheet-callout";
 import { SheetScaffold } from "~/components/sheet-scaffold";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
-import { haptics } from "~/utils/haptics";
 import { subjectNameMap } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
+import { haptics } from "~/utils/haptics";
 
 interface Props {
   onClose: () => void;
@@ -36,6 +37,7 @@ export const AddAbsence = ({ onClose }: Props) => {
   return (
     <SheetScaffold
       title="Fehlzeit eintragen"
+      subtitle="Wähle den Tag und markiere die Kurse, in denen du gefehlt hast."
       footer={
         <Button
           className="self-end"
@@ -50,43 +52,47 @@ export const AddAbsence = ({ onClose }: Props) => {
       }
     >
       <DateField onChange={setDate} value={date} label="Datum" />
-      <Divider />
-      <View className="h-4" />
 
       {courseOptionsForDay.length > 0 ? (
-        <View className="gap-4 px-4">
-          <Text className="px-4 text-xl" weight="medium">
-            Fächer, in denen du gefehlt hast:
+        <View className="rounded-[28px] border border-[#E5EAF0] bg-[#FBFCFE] p-4">
+          <Text className="text-[15px] text-[#5B6472]" weight="medium">
+            Fächer
           </Text>
-          {courseOptionsForDay.map((entry) => {
-            const course = getCourse(entry.courseId);
-            if (!course) return null;
-            const checked = courseIds.includes(course.id);
-            return (
-              <CheckboxRow
-                key={entry.id}
-                textStyle={{ fontSize: 16, color: "#000000dd" }}
-                label={subjectNameMap[course.subject]}
-                value={checked}
-                onChange={(value) =>
-                  setCourseIds((current) =>
-                    value
-                      ? [...current, course.id]
-                      : current.filter((courseId) => courseId !== course.id),
-                  )
-                }
-              />
-            );
-          })}
+          <View className="h-3" />
+          <View className="gap-3">
+            {courseOptionsForDay.map((entry) => {
+              const course = getCourse(entry.courseId);
+              if (!course) return null;
+              const checked = courseIds.includes(course.id);
+
+              return (
+                <CheckboxRow
+                  key={entry.id}
+                  textStyle={{ fontSize: 16, color: "#111827" }}
+                  label={subjectNameMap[course.subject]}
+                  value={checked}
+                  onChange={(nextValue) =>
+                    setCourseIds((current) =>
+                      nextValue
+                        ? [...current, course.id]
+                        : current.filter((courseId) => courseId !== course.id),
+                    )
+                  }
+                />
+              );
+            })}
+          </View>
         </View>
       ) : (
-        <Text className="px-8">An diesem Tag hast du keine Kurse.</Text>
+        <SheetCallout>An diesem Tag hast du keine Kurse.</SheetCallout>
       )}
 
-      <View className="h-4" />
-      <Divider />
-      <View className="h-4" />
-      <TextField label="Begründung" onChangeText={setReason} value={reason} />
+      <TextField
+        label="Begründung"
+        placeholder="Optional: kurze Erklärung"
+        onChangeText={setReason}
+        value={reason}
+      />
     </SheetScaffold>
   );
 };

@@ -1,17 +1,17 @@
 import { startOfDay } from "date-fns";
 import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
-import { Button, TextButton } from "~/components/button";
+
+import { Button, OutlinedButton, TextButton } from "~/components/button";
 import { DateField } from "~/components/date-field";
-import { Divider } from "~/components/divider";
 import { SelectField } from "~/components/select-field";
 import { SheetScaffold } from "~/components/sheet-scaffold";
 import { Text } from "~/components/text";
 import { TextAreaField } from "~/components/text-area-field";
 import { TextField } from "~/components/text-field";
-import { haptics } from "~/utils/haptics";
 import type { TaskAttachment } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
+import { haptics } from "~/utils/haptics";
 
 const attachmentPalette = ["#B9D7F5", "#F5D9B9", "#D7E9C6", "#E2CEF5"] as const;
 
@@ -72,21 +72,17 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
       }
     >
       {!courseId ? (
-        <>
-          <SelectField
-            label="Fach"
-            value={selectedCourse}
-            options={options}
-            getKey={(course) => course.id}
-            getOptionLabel={(course) => course.name}
-            onChange={(course) => setSelectedCourseId(course?.id)}
-          />
-          <View className="h-4" />
-        </>
+        <SelectField
+          label="Fach"
+          value={selectedCourse}
+          options={options}
+          getKey={(course) => course.id}
+          getOptionLabel={(course) => course.name}
+          onChange={(course) => setSelectedCourseId(course?.id)}
+        />
       ) : null}
 
       <TextField autoFocus label="Titel" value={title} onChangeText={setTitle} />
-      <View className="h-4" />
 
       <TextAreaField
         label="Beschreibung"
@@ -97,10 +93,11 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
         placeholder="Beschreibe kurz, was zu erledigen ist"
       />
 
-      <View className="h-4" />
-
       {attachments.length > 0 ? (
         <>
+          <Text className="px-1 text-[15px] text-[#5B6472]" weight="medium">
+            Fotos
+          </Text>
           <View className="flex-row flex-wrap gap-3">
             {attachments.map((attachment) => (
               <Pressable
@@ -118,20 +115,18 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
               </Pressable>
             ))}
           </View>
-          <View className="h-2" />
         </>
       ) : null}
 
-      <TextButton
+      <OutlinedButton
         label="Foto hinzufügen"
+        color="#76A6E5"
         onPress={() => {
           haptics.selection();
           setAttachments((current) => [...current, createAttachment(nextAttachmentIndex)]);
         }}
       />
 
-      <Divider />
-      <View className="h-4" />
       <DateField value={dueDate} onChange={setDueDate} label="Abgabetermin" />
     </SheetScaffold>
   );

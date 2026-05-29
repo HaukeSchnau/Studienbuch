@@ -1,13 +1,14 @@
 import { startOfDay } from "date-fns";
 import { useState } from "react";
 import { View } from "react-native";
+
 import { Button, TextButton } from "~/components/button";
 import { DateField } from "~/components/date-field";
+import { SheetCallout } from "~/components/sheet-callout";
 import { SheetScaffold } from "~/components/sheet-scaffold";
-import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
-import { haptics } from "~/utils/haptics";
 import { useMockApp } from "~/mock-app/provider";
+import { haptics } from "~/utils/haptics";
 
 export const AddWrittenGrade = ({
   courseId,
@@ -41,7 +42,6 @@ export const AddWrittenGrade = ({
       }
     >
       <DateField value={date} onChange={setDate} label="Datum der Klausur" />
-      <View className="h-6" />
       <TextField
         autoFocus
         label="Punkte"
@@ -49,10 +49,9 @@ export const AddWrittenGrade = ({
         onChangeText={setPoints}
         keyboardType="numeric"
       />
-      <View className="h-6" />
-      <Text className="text-lg">
+      <SheetCallout>
         Diese Note muss im Nachhinein noch von deiner Lehrkraft und deinen Eltern bestätigt werden.
-      </Text>
+      </SheetCallout>
     </SheetScaffold>
   );
 };

@@ -1,14 +1,15 @@
 import { useMemo, useState } from "react";
 import { View } from "react-native";
+
 import { Button, TextButton } from "~/components/button";
 import { Divider } from "~/components/divider";
+import { SheetCallout } from "~/components/sheet-callout";
 import { SheetScaffold } from "~/components/sheet-scaffold";
-import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
-import { haptics } from "~/utils/haptics";
 import { isGradeConfirmed, type Grade } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { haptics } from "~/utils/haptics";
 import { GradeCard } from "../grade-card";
 
 export const EditOralGrade = ({
@@ -62,20 +63,16 @@ export const EditOralGrade = ({
         onChangeText={setPoints}
         keyboardType="numeric"
       />
-      <View className="h-6" />
-      <Text className="text-lg">
+      <SheetCallout>
         Diese Note muss im Nachhinein noch von deiner Lehrkraft und deinen Eltern bestätigt werden.
-      </Text>
+      </SheetCallout>
 
       {mostRecentConfirmedOralGrade ? (
         <>
-          <View className="h-4" />
           <Divider />
-          <View className="h-4" />
-          <Text className="text-lg">
+          <SheetCallout>
             Alternativ kannst du deine letzte bestätigte Note wiederherstellen:
-          </Text>
-          <View className="h-4" />
+          </SheetCallout>
           <GradeCard
             grade={mostRecentConfirmedOralGrade}
             action={{

@@ -1,10 +1,8 @@
 import { useState } from "react";
 import type { TextInputProps } from "react-native";
 import { TextInput, View } from "react-native";
-import { useSharedValue } from "react-native-reanimated";
 
 import { FieldSurface } from "./field-surface";
-import { FieldLabel } from "./field-label";
 import { fontNames, Text } from "./text";
 
 type Falsy = false | 0 | null | undefined;
@@ -18,41 +16,28 @@ interface Props extends TextInputProps {
 }
 
 export const TextField = ({ label, placeholder, error, ...props }: Props) => {
-  const [isActive, setIsActive] = useState(false);
-  const active = useSharedValue(props.value.length > 0);
-  const focused = useSharedValue(false);
-
-  const onFocus = () => {
-    setIsActive(true);
-    active.value = true;
-    focused.value = true;
-  };
-  const onBlur = () => {
-    setIsActive(false);
-    if (!props.value) {
-      active.value = false;
-    }
-    focused.value = false;
-  };
+  const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <View>
-      <View className="relative h-16">
-        <FieldSurface>
-          <TextInput
-            {...props}
-            placeholder={isActive ? placeholder : ""}
-            className="px-6 py-6"
-            style={{
-              fontFamily: fontNames.regular,
-            }}
-            onFocus={onFocus}
-            onBlur={onBlur}
-          />
-        </FieldSurface>
-        <FieldLabel label={label} active={active} focused={focused} />
-      </View>
-      {error ? <Text className="px-6 pt-1 text-danger">{error}</Text> : undefined}
+    <View className="gap-2">
+      <Text className="px-1 text-[15px] text-[#5B6472]" weight="medium">
+        {label}
+      </Text>
+      <FieldSurface focused={isFocused}>
+        <TextInput
+          {...props}
+          placeholder={placeholder}
+          placeholderTextColor="#98A2B3"
+          className="px-5 py-4 text-[18px] text-[#111827]"
+          style={{
+            fontFamily: fontNames.regular,
+            minHeight: 56,
+          }}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+        />
+      </FieldSurface>
+      {error ? <Text className="px-1 text-danger">{error}</Text> : undefined}
     </View>
   );
 };

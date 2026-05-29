@@ -1,11 +1,10 @@
-import { ActionSheetIOS, Platform, Pressable, View } from "react-native";
 import { Picker } from "@expo/ui/community/picker";
 import { useEffect } from "react";
-import { useSharedValue } from "react-native-reanimated";
-import { FieldSurface } from "./field-surface";
-import { fontNames, Text } from "./text";
+import { ActionSheetIOS, Platform, Pressable, View } from "react-native";
 
-import { FieldLabel } from "./field-label";
+import { FieldSurface } from "./field-surface";
+import { SystemIcon } from "./system-icon";
+import { fontNames, Text } from "./text";
 
 type PickerValue = string | number | null;
 
@@ -26,9 +25,6 @@ export const SelectField = <TOption, TValue extends PickerValue>({
   options,
   onChange,
 }: Props<TOption, TValue>) => {
-  const active = useSharedValue(true);
-  const focused = useSharedValue(false);
-
   useEffect(() => {
     if (!value && options.length > 0) {
       onChange(options[0]);
@@ -39,10 +35,13 @@ export const SelectField = <TOption, TValue extends PickerValue>({
     const selectedLabel = value ? getOptionLabel(value) : "Auswählen";
 
     return (
-      <View className="relative h-16 justify-center">
+      <View className="gap-2">
+        <Text className="px-1 text-[15px] text-[#5B6472]" weight="medium">
+          {label}
+        </Text>
         <FieldSurface>
           <Pressable
-            className="px-6 py-4"
+            className="min-h-14 flex-row items-center justify-between px-5 py-4"
             onPress={() => {
               const labels = options.map((option) => getOptionLabel(option));
 
@@ -59,23 +58,24 @@ export const SelectField = <TOption, TValue extends PickerValue>({
               );
             }}
           >
-            <Text className="pt-3 text-center text-[17px]">{selectedLabel}</Text>
+            <Text className="text-[17px] text-[#111827]">{selectedLabel}</Text>
+            <SystemIcon name="chevron-right" size={20} color="#7B8794" />
           </Pressable>
         </FieldSurface>
-        <FieldLabel label={label} active={active} focused={focused} />
       </View>
     );
   }
 
   return (
-    <View>
-      <FieldSurface>
+    <View className="gap-2">
+      <Text className="px-1 text-[15px] text-[#5B6472]" weight="medium">
+        {label}
+      </Text>
+      <FieldSurface className="min-h-14 justify-center px-1">
         <Picker
           selectedValue={value ? getKey(value) : undefined}
           onValueChange={(_, idx) => onChange(options[idx])}
-          style={{
-            borderRadius: 32,
-          }}
+          style={{ height: 56 }}
         >
           {options.map((option) => (
             <Picker.Item
@@ -87,7 +87,6 @@ export const SelectField = <TOption, TValue extends PickerValue>({
           ))}
         </Picker>
       </FieldSurface>
-      <FieldLabel label={label} active={active} focused={focused} />
     </View>
   );
 };
