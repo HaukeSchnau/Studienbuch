@@ -172,8 +172,16 @@ export const SchedulePage = () => {
         </View>
 
         <View className="flex-1 px-4 pt-2" style={{ paddingBottom: tabBarPadding }}>
-          <View className="flex-1 flex-row">
-            <View style={{ width: TIME_RAIL_WIDTH, height: resolvedGridHeight }}>
+          <View
+            className="min-h-0 flex-1 flex-row items-stretch"
+            onLayout={({ nativeEvent }) => {
+              const nextHeight = nativeEvent.layout.height;
+              if (nextHeight > 0 && Math.abs(nextHeight - gridHeight) > 1) {
+                setGridHeight(nextHeight);
+              }
+            }}
+          >
+            <View className="self-stretch" style={{ width: TIME_RAIL_WIDTH }}>
               {TIME_MARKERS.map((marker) => (
                 <Text
                   key={marker.minute}
@@ -185,15 +193,7 @@ export const SchedulePage = () => {
               ))}
             </View>
 
-            <View
-              className="flex-1"
-              onLayout={({ nativeEvent }) => {
-                const nextHeight = nativeEvent.layout.height;
-                if (nextHeight > 0 && Math.abs(nextHeight - gridHeight) > 1) {
-                  setGridHeight(nextHeight);
-                }
-              }}
-            >
+            <View className="min-h-0 flex-1">
               <Card
                 padding="none"
                 radius="sm"
@@ -255,20 +255,21 @@ export const SchedulePage = () => {
                         height: durationToHeight(entry.duration, resolvedGridHeight),
                       }}
                     >
-                      <View className="items-center justify-center px-2 py-2">
-                        <View className="rounded-full bg-white p-1.5">
+                      <View className="items-center justify-center px-1 py-1.5">
+                        <View className="rounded-full bg-white p-1">
                           <SubjectIcon subject={course.subject} />
                         </View>
-                        <View className="h-1.5" />
+                        <View className="h-1" />
                         <Text
                           weight="bold"
-                          className="text-center text-[13px] text-white"
+                          className="text-center text-xs text-white"
                           numberOfLines={2}
                         >
                           {subjectNameMap[course.subject]}
                         </Text>
-                        <Text className="mt-1 text-center text-[10px] text-white/78">
-                          {format(entry.start, "HH:mm", { locale: localeDE })} -{" "}
+                        <Text className="mt-0.5 text-center text-[8px] leading-[9px] text-white/78">
+                          {format(entry.start, "HH:mm", { locale: localeDE })}
+                          {"\n"}
                           {format(end, "HH:mm", { locale: localeDE })}
                         </Text>
                       </View>
