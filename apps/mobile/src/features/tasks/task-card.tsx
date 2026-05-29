@@ -1,8 +1,7 @@
 import { format } from "date-fns";
 import type { Href } from "expo-router";
 import { Link } from "expo-router";
-import { View } from "react-native";
-import { Card } from "~/components/card";
+import { Pressable, View } from "react-native";
 import { Text } from "~/components/text";
 import { isTaskArchived, type Task } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
@@ -14,12 +13,14 @@ export const TaskCard = ({ task }: { task: Task }) => {
 
   return (
     <Link href={`/tasks/${task.id}` as Href} asChild>
-      <Card
-        noShadow
+      <Pressable
+        accessibilityRole="button"
         style={{
           width: 192,
-          minHeight: 205,
+          height: 205,
+          borderRadius: 36,
           backgroundColor: "#203755",
+          padding: 24,
           opacity: archived ? 0.55 : 1,
         }}
       >
@@ -70,7 +71,7 @@ export const TaskCard = ({ task }: { task: Task }) => {
             </Text>
           </Text>
         </View>
-      </Card>
+      </Pressable>
     </Link>
   );
 };
