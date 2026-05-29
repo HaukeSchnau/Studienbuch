@@ -3,14 +3,13 @@ import { de } from "date-fns/locale/de";
 import { Stack } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useReanimatedHeaderHeight } from "react-native-screens/reanimated";
+import Animated from "react-native-reanimated";
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
 import { Card } from "~/components/card";
 import { CoreLayout } from "~/components/core-layout";
 import { SubjectIcon } from "~/components/subject-icon";
 import { Text } from "~/components/text";
+import { useTransparentHeaderTopPadding } from "~/components/use-transparent-header-top-padding";
 import { subjectNameMap, Teacher } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
 import { Tasks } from "~/features/tasks/tasks";
@@ -22,8 +21,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
   const { getCourse, semesters } = useMockApp();
   const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
   const [isAddWrittenGradeVisible, setIsAddWrittenGradeVisible] = useState(false);
-  const insets = useSafeAreaInsets();
-  const headerHeight = useReanimatedHeaderHeight();
+  const heroStyle = useTransparentHeaderTopPadding();
   const course = getCourse(courseId);
 
   if (!course) {
@@ -31,12 +29,6 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
   }
 
   const semester = semesters.find((item) => item.id === course.semesterId)!;
-  const heroStyle = useAnimatedStyle(
-    () => ({
-      paddingTop: Math.max(headerHeight.value - insets.top, 0),
-    }),
-    [headerHeight, insets.top],
-  );
 
   return (
     <CoreLayout>
