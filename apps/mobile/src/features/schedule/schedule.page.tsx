@@ -13,15 +13,19 @@ import { de as localeDE } from "date-fns/locale/de";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { type DimensionValue, View } from "react-native";
-import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
+import {
+  Directions,
+  Gesture,
+  GestureDetector,
+  TouchableOpacity,
+} from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 import { Card } from "~/components/card";
 import { IconButton } from "~/components/icon-button";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { SubjectIcon } from "~/components/subject-icon";
 import { shadow } from "~/components/styles/shadow";
 import { Text } from "~/components/text";
-import { useMainTabBarPadding } from "~/components/use-main-tab-bar-padding";
 import { haptics } from "~/utils/haptics";
 import { subjectNameMap } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
@@ -55,7 +59,8 @@ export const SchedulePage = () => {
   const { getCourse, timetable } = useMockApp();
   const [weekOffset, setWeekOffset] = useState(0);
   const [gridHeight, setGridHeight] = useState(0);
-  const tabBarPadding = useMainTabBarPadding(8);
+  const insets = useSafeAreaInsets();
+  const bottomClearance = Math.max(insets.bottom + 12, 24);
   const resolvedGridHeight = gridHeight || GRID_FALLBACK_HEIGHT;
 
   const changeWeek = useCallback((delta: number) => {
@@ -171,7 +176,7 @@ export const SchedulePage = () => {
           </SafeAreaView>
         </View>
 
-        <View className="flex-1 px-4 pt-2" style={{ paddingBottom: tabBarPadding }}>
+        <View className="flex-1 px-4 pt-2" style={{ paddingBottom: bottomClearance }}>
           <View
             className="min-h-0 flex-1 flex-row items-stretch"
             onLayout={({ nativeEvent }) => {
@@ -235,7 +240,7 @@ export const SchedulePage = () => {
                   const end = addMinutes(entry.start, entry.duration);
 
                   return (
-                    <Card
+                    <TouchableOpacity
                       key={entry.id}
                       onPress={() => {
                         router.push({
@@ -243,16 +248,16 @@ export const SchedulePage = () => {
                           params: { course: course.id },
                         });
                       }}
-                      padding="none"
-                      radius="sm"
-                      backgroundColor={colors.accent.DEFAULT}
-                      noShadow
-                      className="absolute overflow-hidden"
+                      activeOpacity={0.95}
                       style={{
+                        position: "absolute",
+                        overflow: "hidden",
                         top: timeToPosition(entry.startMinutes, resolvedGridHeight),
                         left: weekdayToPercent(entry.weekday),
                         width: `${100 / WEEKDAY_LABELS.length}%`,
                         height: durationToHeight(entry.duration, resolvedGridHeight),
+                        borderRadius: 24,
+                        backgroundColor: colors.accent.DEFAULT,
                       }}
                     >
                       <View className="items-center justify-center px-1 py-1.5">
@@ -273,7 +278,7 @@ export const SchedulePage = () => {
                           {format(end, "HH:mm", { locale: localeDE })}
                         </Text>
                       </View>
-                    </Card>
+                    </TouchableOpacity>
                   );
                 })}
 
