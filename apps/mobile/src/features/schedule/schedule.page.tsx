@@ -4,7 +4,6 @@ import {
   format,
   getDay,
   getISOWeek,
-  getISOWeekYear,
   isToday,
   startOfISOWeek,
   subMilliseconds,
@@ -36,14 +35,13 @@ const TIME_MARKERS = [
   { minute: 12 * 60 + 50, label: "12:50" },
   { minute: 13 * 60 + 50, label: "13:50" },
   { minute: 15 * 60 + 10, label: "15:10" },
-  { minute: 17 * 60, label: "17:00" },
 ];
 const WEEKDAY_LABELS = ["Mo", "Di", "Mi", "Do", "Fr"];
 const DAY_START = 8 * 60;
-const DAY_END = 17 * 60;
+const DAY_END = 15 * 60 + 10;
 const DAY_DURATION = DAY_END - DAY_START;
-const GRID_MIN_HEIGHT = 560;
-const TIME_RAIL_WIDTH = 44;
+const GRID_MIN_HEIGHT = 500;
+const TIME_RAIL_WIDTH = 40;
 
 const timeToPosition = (minute: number) => ((minute - DAY_START) / DAY_DURATION) * GRID_MIN_HEIGHT;
 const durationToHeight = (duration: number) => (duration / DAY_DURATION) * GRID_MIN_HEIGHT;
@@ -99,6 +97,7 @@ export const SchedulePage = () => {
         .map((entry) => ({
           ...entry,
           weekday: (getDay(entry.start) + 6) % 7,
+          startMinutes: entry.start.getHours() * 60 + entry.start.getMinutes(),
         }))
         .filter(
           (entry) =>
@@ -111,7 +110,6 @@ export const SchedulePage = () => {
   );
 
   const currentWeek = getISOWeek(weekStart);
-  const currentYear = getISOWeekYear(weekStart);
   const now = new Date();
   const nowWeekday = (getDay(now) + 6) % 7;
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
@@ -127,11 +125,28 @@ export const SchedulePage = () => {
       <View className="flex-1 overflow-hidden bg-[#F7F8FB]">
         <View style={[shadow, { backgroundColor: colors.primary.DEFAULT }]}>
           <SafeAreaView edges={["top"]}>
-            <View className="px-4 pt-2 pb-3">
-              <Text weight="bold" className="text-center text-[34px] text-white">
-                {formatWeekLabel(weekStart)}
-              </Text>
-              <View className="h-2" />
+            <View className="px-4 pb-1.5 pt-1">
+              <View className="flex-row items-center">
+                <IconButton
+                  icon="chevron-left"
+                  variant="plain"
+                  color="white"
+                  onPress={() => changeWeek(-1)}
+                />
+                <View className="flex-1 items-center">
+                  <Text className="text-sm text-white/78">KW {currentWeek}</Text>
+                  <Text weight="bold" className="text-center text-[22px] text-white">
+                    {formatWeekLabel(weekStart)}
+                  </Text>
+                </View>
+                <IconButton
+                  icon="chevron-right"
+                  variant="plain"
+                  color="white"
+                  onPress={() => changeWeek(1)}
+                />
+              </View>
+              <View className="h-1" />
               <View className="flex-row">
                 <View style={{ width: TIME_RAIL_WIDTH }} />
                 <View className="flex-1 flex-row">
@@ -163,9 +178,9 @@ export const SchedulePage = () => {
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 16 }}
+          contentContainerStyle={{ paddingBottom: tabBarPadding }}
         >
-          <View className="px-4 pt-3">
+          <View className="px-4 pt-2">
             <View className="flex-row">
               <View style={{ width: TIME_RAIL_WIDTH }}>
                 {TIME_MARKERS.map((marker) => (
@@ -181,6 +196,7 @@ export const SchedulePage = () => {
 
               <Card
                 padding="none"
+                radius="sm"
                 className="relative flex-1 overflow-hidden"
                 style={{ minHeight: GRID_MIN_HEIGHT }}
               >
@@ -231,16 +247,14 @@ export const SchedulePage = () => {
                       className="absolute overflow-hidden"
                       style={[
                         {
-                          top: timeToPosition(
-                            entry.start.getHours() * 60 + entry.start.getMinutes(),
-                          ),
+                          top: timeToPosition(entry.startMinutes),
                           left: weekdayToPercent(entry.weekday),
                           width: `${100 / WEEKDAY_LABELS.length}%`,
                           height: durationToHeight(entry.duration),
                         },
                       ]}
                     >
-                      <View className="items-center px-2 py-2">
+                      <View className="items-center justify-center px-2 py-2">
                         <View className="rounded-full bg-white p-1.5">
                           <SubjectIcon subject={course.subject} />
                         </View>
@@ -251,9 +265,6 @@ export const SchedulePage = () => {
                           numberOfLines={2}
                         >
                           {subjectNameMap[course.subject]}
-                        </Text>
-                        <Text className="pt-0.5 text-center text-[11px] text-white/85">
-                          {format(entry.start, "HH:mm")}
                         </Text>
                       </View>
                     </Card>
@@ -290,17 +301,6 @@ export const SchedulePage = () => {
             </View>
           </View>
         </ScrollView>
-
-        <View className="bg-white px-4 pt-2.5" style={[shadow, { paddingBottom: tabBarPadding }]}>
-          <View className="flex-row items-center justify-between">
-            <IconButton icon="chevron-left" variant="subtle" onPress={() => changeWeek(-1)} />
-            <Text weight="semi-bold" className="text-base text-primary-text">
-              KW {currentWeek}
-              {currentYear === new Date().getFullYear() ? "" : ` (${currentYear})`}
-            </Text>
-            <IconButton icon="chevron-right" variant="subtle" onPress={() => changeWeek(1)} />
-          </View>
-        </View>
       </View>
     </GestureDetector>
   );

@@ -45,19 +45,17 @@ export const Card = ({
       borderRadius: cardRadiusMap[radius],
       padding: cardPaddingMap[padding],
     },
-    noShadow ? undefined : shadow,
-    style,
   ];
+  const containerStyle = [noShadow ? undefined : shadow, style];
 
   if (onPress) {
     return (
-      <Animated.View style={animatedStyle}>
+      <Animated.View style={[animatedStyle, containerStyle]} className={className}>
         <TouchableOpacity
           onPress={onPress}
           onPressIn={onPressIn}
           onPressOut={onPressOut}
           style={contentStyle}
-          className={className}
           activeOpacity={1}
         >
           {children}
@@ -67,7 +65,7 @@ export const Card = ({
   }
 
   return (
-    <View style={contentStyle} className={className}>
+    <View style={[contentStyle, containerStyle]} className={className}>
       {children}
     </View>
   );
