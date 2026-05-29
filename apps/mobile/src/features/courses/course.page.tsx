@@ -3,6 +3,7 @@ import { de } from "date-fns/locale/de";
 import { Stack } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
 import { Card } from "~/components/card";
 import { CoreLayout } from "~/components/core-layout";
@@ -19,6 +20,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
   const { getCourse, semesters } = useMockApp();
   const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
   const [isAddWrittenGradeVisible, setIsAddWrittenGradeVisible] = useState(false);
+  const insets = useSafeAreaInsets();
   const course = getCourse(courseId);
 
   if (!course) {
@@ -26,6 +28,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
   }
 
   const semester = semesters.find((item) => item.id === course.semesterId)!;
+  const heroTopPadding = insets.top + 56;
 
   return (
     <CoreLayout>
@@ -61,10 +64,9 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
           </Stack.Toolbar.MenuAction>
         </Stack.Toolbar.Menu>
       </Stack.Toolbar>
-      <View className="px-8">
-        <View className="flex-row justify-between">
-          <View>
-            <View className="h-12" />
+      <View className="px-8" style={{ paddingTop: heroTopPadding }}>
+        <View className="flex-row justify-between pb-14">
+          <View className="flex-1 pr-4">
             <Text weight="bold" className="text-4xl text-white">
               {subjectNameMap[course.subject]}
             </Text>
@@ -89,8 +91,6 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
             <SubjectIcon subject={course.subject} size={52} />
           </Card>
         </View>
-
-        <View className="h-8" />
         <GradesOverviewCard courseId={course.id} />
       </View>
       <View className="h-8" />
