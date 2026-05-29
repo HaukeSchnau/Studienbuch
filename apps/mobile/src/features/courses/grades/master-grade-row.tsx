@@ -3,8 +3,9 @@ import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { View } from "react-native";
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
-import { Button, TextButton } from "~/components/button";
+import { OutlinedButton } from "~/components/button";
 import { ConfirmationStatus } from "~/components/confirmation-status";
+import { IconButton } from "~/components/icon-button";
 import { SystemIcon } from "~/components/system-icon";
 import { Text } from "~/components/text";
 import { colors } from "~/theme/colors";
@@ -58,9 +59,12 @@ export const MasterGradeRow = ({
       </View>
 
       <View className="grow">
-        <Text className="grow text-3xl" weight="semi-bold">
-          {currentMasterGrade ? formatGrade(currentMasterGrade.result) : "—"}
-        </Text>
+        <View className="flex-row items-center justify-between">
+          <Text className="grow text-3xl" weight="semi-bold">
+            {currentMasterGrade ? formatGrade(currentMasterGrade.result) : "—"}
+          </Text>
+          <IconButton icon="edit" opacity={0.8} size={24} onPress={() => setIsEditVisible(true)} />
+        </View>
         <Text className="text-lg opacity-60">aktuelle Gesamtnote</Text>
         <Text className="text-lg opacity-60">
           Stand: {currentMasterGrade ? format(currentMasterGrade.date, "dd.MM.yyyy") : "—"}
@@ -68,32 +72,24 @@ export const MasterGradeRow = ({
         {currentMasterGrade ? (
           <>
             <View className="h-2" />
-            <View className="flex-row items-center gap-2">
+            <View className="flex-row items-center justify-between gap-2">
               <ConfirmationStatus
                 isOfAge={user.isOfAge}
                 order="teacherParent"
                 parent={Boolean(currentMasterGrade.parentSignature)}
                 teacher={Boolean(currentMasterGrade.teacherSignature)}
               />
+              {isConfirmed ? (
+                <IconButton icon="visibility" opacity={0.8} size={24} onPress={openGradeDetails} />
+              ) : null}
             </View>
-            <View className="h-2" />
-            <View className="flex-row flex-wrap items-center gap-2">
-              <TextButton label="Bearbeiten" size="sm" onPress={() => setIsEditVisible(true)} />
-              <Button
-                label={isConfirmed ? "Ansehen" : "Bestätigen"}
-                size="sm"
-                onPress={openGradeDetails}
-              />
-            </View>
+            {!isConfirmed ? (
+              <View className="flex-row justify-end">
+                <OutlinedButton label="Jetzt bestätigen" onPress={openGradeDetails} />
+              </View>
+            ) : null}
           </>
-        ) : (
-          <>
-            <View className="h-2" />
-            <View className="flex-row flex-wrap items-center gap-2">
-              <Button label="Eintragen" size="sm" onPress={() => setIsEditVisible(true)} />
-            </View>
-          </>
-        )}
+        ) : null}
       </View>
     </View>
   );
