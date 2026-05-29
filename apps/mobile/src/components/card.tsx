@@ -19,6 +19,8 @@ const cardRadiusMap = {
   lg: 36,
 } as const;
 
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+
 export const Card = ({
   children,
   className,
@@ -50,17 +52,16 @@ export const Card = ({
 
   if (onPress) {
     return (
-      <Animated.View style={[animatedStyle, containerStyle]} className={className}>
-        <TouchableOpacity
-          onPress={onPress}
-          onPressIn={onPressIn}
-          onPressOut={onPressOut}
-          style={contentStyle}
-          activeOpacity={1}
-        >
-          {children}
-        </TouchableOpacity>
-      </Animated.View>
+      <AnimatedTouchableOpacity
+        onPress={onPress}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        style={[animatedStyle, contentStyle, containerStyle]}
+        className={className}
+        activeOpacity={1}
+      >
+        {children}
+      </AnimatedTouchableOpacity>
     );
   }
 
