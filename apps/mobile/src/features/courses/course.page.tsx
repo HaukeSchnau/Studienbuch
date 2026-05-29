@@ -28,7 +28,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
   }
 
   const semester = semesters.find((item) => item.id === course.semesterId)!;
-  const heroTopPadding = insets.top + 56;
+  const heroTopPadding = insets.top + 44;
 
   return (
     <CoreLayout>
@@ -65,7 +65,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
         </Stack.Toolbar.Menu>
       </Stack.Toolbar>
       <View className="px-8" style={{ paddingTop: heroTopPadding }}>
-        <View className="flex-row justify-between pb-14">
+        <View className="flex-row justify-between pb-8">
           <View className="flex-1 pr-4">
             <Text weight="bold" className="text-4xl text-white">
               {subjectNameMap[course.subject]}
