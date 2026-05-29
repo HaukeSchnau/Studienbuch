@@ -20,7 +20,8 @@ import { AddWrittenGrade } from "./grades/written/add-written-grade";
 export const CoursePage = ({ courseId }: { courseId: string }) => {
   const { getCourse, semesters } = useMockApp();
   const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
-  const [isAddWrittenGradeVisible, setIsAddWrittenGradeVisible] = useState(false);
+  const [isAddWrittenGradeVisible, setIsAddWrittenGradeVisible] =
+    useState(false);
   const heroStyle = useTransparentHeaderTopPadding();
   const course = getCourse(courseId);
 
@@ -34,7 +35,10 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
     <CoreLayout>
       {isAddTaskVisible ? (
         <PortaledBottomSheet onClose={() => setIsAddTaskVisible(false)}>
-          <AddTaskSheet courseId={course.id} onClose={() => setIsAddTaskVisible(false)} />
+          <AddTaskSheet
+            courseId={course.id}
+            onClose={() => setIsAddTaskVisible(false)}
+          />
         </PortaledBottomSheet>
       ) : null}
       {isAddWrittenGradeVisible ? (
@@ -59,19 +63,23 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
           <Stack.Toolbar.MenuAction onPress={() => setIsAddTaskVisible(true)}>
             Hausaufgabe hinzufügen
           </Stack.Toolbar.MenuAction>
-          <Stack.Toolbar.MenuAction onPress={() => setIsAddWrittenGradeVisible(true)}>
+          <Stack.Toolbar.MenuAction
+            onPress={() => setIsAddWrittenGradeVisible(true)}
+          >
             Klausurnote eintragen
           </Stack.Toolbar.MenuAction>
         </Stack.Toolbar.Menu>
       </Stack.Toolbar>
       <Animated.View className="px-8" style={heroStyle}>
-        <View className="flex-row justify-between pb-10">
+        <View className="flex-row justify-between pb-4">
           <View className="flex-1 pr-4">
             <Text weight="bold" className="text-4xl text-white">
               {subjectNameMap[course.subject]}
             </Text>
             <Text className="text-2xl text-white">
-              {course.teachers.map((teacher) => Teacher.formalName(teacher)).join(", ")}
+              {course.teachers
+                .map((teacher) => Teacher.formalName(teacher))
+                .join(", ")}
             </Text>
             <View className="h-2" />
             <Text italic className="text-lg text-white">
@@ -91,8 +99,10 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
             <SubjectIcon subject={course.subject} size={52} />
           </Card>
         </View>
-        <GradesOverviewCard courseId={course.id} />
       </Animated.View>
+      <View className="px-4">
+        <GradesOverviewCard courseId={course.id} />
+      </View>
       <View className="h-8" />
       <Tasks courseId={course.id} />
     </CoreLayout>
