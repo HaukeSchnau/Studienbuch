@@ -43,35 +43,35 @@ start app:
     bun run --cwd apps/{{app}} start
 
 _ios-local-build profile:
-    tmpbin="$$(mktemp -d)"; \
-    trap 'rm -rf "$$tmpbin"' EXIT; \
-    printf '#!/bin/sh\nexec /usr/bin/sed "$$@"\n' > "$$tmpbin/sed"; \
-    printf '#!/bin/sh\nexec /usr/bin/rsync "$$@"\n' > "$$tmpbin/rsync"; \
-    chmod +x "$$tmpbin/sed" "$$tmpbin/rsync"; \
-    env PATH="$$tmpbin:$$PATH" NODE_OPTIONS=--dns-result-order=ipv4first EXPO_USE_PRECOMPILED_MODULES=0 EAS_LOCAL_BUILD_SKIP_CLEANUP=1 bunx eas build --platform ios --profile {{profile}} --local --non-interactive
+    tmpbin="$(mktemp -d)"; \
+    trap 'rm -rf "$tmpbin"' EXIT; \
+    printf '#!/bin/sh\nexec /usr/bin/sed "$@"\n' > "$tmpbin/sed"; \
+    printf '#!/bin/sh\nexec /usr/bin/rsync "$@"\n' > "$tmpbin/rsync"; \
+    printf '#!/bin/sh\nif [ "$1" = "--no-pager" ] && [ "$2" = "log" ] && [ "$3" = "-1" ] && [ "$4" = "--pretty=%%B" ]; then\n  output="$(/usr/bin/git "$@")"\n  status="$?"\n  if [ "$status" -ne 0 ]; then\n    exit "$status"\n  fi\n  if [ -n "$output" ]; then\n    printf "%%s" "$output"\n  else\n    printf "%%s\\n" "Local {{profile}} build"\n  fi\nelse\n  exec /usr/bin/git "$@"\nfi\n' > "$tmpbin/git"; \
+    chmod +x "$tmpbin/sed" "$tmpbin/rsync" "$tmpbin/git"; \
+    cd apps/mobile && nix shell nixpkgs#fastlane nixpkgs#cocoapods -c sh -c 'PATH="$1:$PATH" NODE_OPTIONS=--dns-result-order=ipv4first EXPO_USE_PRECOMPILED_MODULES=0 EAS_LOCAL_BUILD_SKIP_CLEANUP=1 bunx eas-cli build --platform ios --profile {{profile}} --local --non-interactive --message "Local {{profile}} build"' sh "$tmpbin"
 
 ios-install-dev:
     just _ios-local-build development
-    latest_ipa="$$(ls -t apps/mobile/build-*.ipa | head -n 1)"; \
-    xcrun devicectl device install app --device {{ios_device}} "$$latest_ipa"
+    latest_ipa="$(ls -t apps/mobile/build-*.ipa | head -n 1)"; \
+    xcrun devicectl device install app --device {{ios_device}} "$latest_ipa"
 
 ios-install-prod:
     just _ios-local-build preview
-    latest_ipa="$$(ls -t apps/mobile/build-*.ipa | head -n 1)"; \
-    xcrun devicectl device install app --device {{ios_device}} "$$latest_ipa"
+    latest_ipa="$(ls -t apps/mobile/build-*.ipa | head -n 1)"; \
+    xcrun devicectl device install app --device {{ios_device}} "$latest_ipa"
 
 ios-install-both:
-    dev_marker="$$(mktemp)"; \
-    prod_marker="$$(mktemp)"; \
-    touch "$$dev_marker" "$$prod_marker"; \
-    (just _ios-local-build development && find apps/mobile -maxdepth 1 -name 'build-*.ipa' -newer "$$dev_marker" -print | sort | tail -n 1 > "$$dev_marker.path") & \
-    dev_pid="$$!"; \
-    (just _ios-local-build preview && find apps/mobile -maxdepth 1 -name 'build-*.ipa' -newer "$$prod_marker" -print | sort | tail -n 1 > "$$prod_marker.path") & \
-    prod_pid="$$!"; \
-    wait "$$dev_pid"; \
-    wait "$$prod_pid"; \
-    dev_ipa="$$(cat "$$dev_marker.path")"; \
-    prod_ipa="$$(cat "$$prod_marker.path")"; \
-    xcrun devicectl device install app --device {{ios_device}} "$$dev_ipa"; \
-    xcrun devicectl device install app --device {{ios_device}} "$$prod_ipa"; \
-    rm -f "$$dev_marker" "$$prod_marker" "$$dev_marker.path" "$$prod_marker.path"
+    dev_marker="$(mktemp)"; \
+    prod_marker="$(mktemp)"; \
+    trap 'rm -f "$dev_marker" "$prod_marker" "$dev_marker.path" "$prod_marker.path"' EXIT; \
+    touch "$dev_marker" "$prod_marker"; \
+    just _ios-local-build development; \
+    find apps/mobile -maxdepth 1 -name 'build-*.ipa' -newer "$dev_marker" -print | sort | tail -n 1 > "$dev_marker.path"; \
+    just _ios-local-build preview; \
+    find apps/mobile -maxdepth 1 -name 'build-*.ipa' -newer "$prod_marker" -print | sort | tail -n 1 > "$prod_marker.path"; \
+    dev_ipa="$(cat "$dev_marker.path")"; \
+    prod_ipa="$(cat "$prod_marker.path")"; \
+    if [ -z "$dev_ipa" ] || [ -z "$prod_ipa" ]; then exit 1; fi; \
+    xcrun devicectl device install app --device {{ios_device}} "$dev_ipa"; \
+    xcrun devicectl device install app --device {{ios_device}} "$prod_ipa"

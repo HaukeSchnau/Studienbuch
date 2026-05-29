@@ -10,10 +10,10 @@
     "doctor:deps": "expo install --check",
     "generate:icons": "bun run --cwd ../.. generate:icons",
     "test": "vitest run --config vitest.config.ts --passWithNoTests",
-    "build:dev": "eas build --platform ios --profile development --local",
-    "build:dev:device": "eas build --platform ios --profile development --local",
-    "build:dev:simulator": "eas build --platform ios --profile development-simulator --local",
-    "build:prod": "eas build --platform ios --profile production --local"
+    "build:dev": "bunx eas-cli build --platform ios --profile development --local",
+    "build:dev:device": "bunx eas-cli build --platform ios --profile development --local",
+    "build:dev:simulator": "bunx eas-cli build --platform ios --profile development-simulator --local",
+    "build:prod": "bunx eas-cli build --platform ios --profile production --local"
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.2",
