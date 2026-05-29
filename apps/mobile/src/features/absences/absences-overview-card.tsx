@@ -29,7 +29,13 @@ export const AbsencesOverviewCard = () => {
         <Text variant="heading" style={{ fontSize: 20 }}>
           Fehlzeiten
         </Text>
-        <IconButton onPress={() => setIsAddVisible(true)} icon="add" size={28} color="#098A00" />
+        <IconButton
+          onPress={() => setIsAddVisible(true)}
+          icon="add"
+          variant="plain"
+          size={28}
+          color="#098A00"
+        />
       </View>
 
       <View className="h-2" />
@@ -54,9 +60,11 @@ export const AbsencesOverviewCard = () => {
         <Button label="Alle ansehen" className="self-end" />
       </Link>
 
-      <PortaledBottomSheet onClose={() => setIsAddVisible(false)}>
-        {isAddVisible && <AddAbsence onClose={() => setIsAddVisible(false)} />}
-      </PortaledBottomSheet>
+      {isAddVisible ? (
+        <PortaledBottomSheet onClose={() => setIsAddVisible(false)}>
+          <AddAbsence onClose={() => setIsAddVisible(false)} />
+        </PortaledBottomSheet>
+      ) : null}
     </Card>
   );
 };

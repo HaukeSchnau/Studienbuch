@@ -1,6 +1,5 @@
 import ExpoBottomSheet, { BottomSheetView } from "@expo/ui/community/bottom-sheet";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
 import { Drawer } from "vaul";
 
 interface Props {
@@ -21,38 +20,14 @@ const visuallyHiddenStyle = {
 };
 
 export function PortaledBottomSheet({ children, onClose }: Props) {
-  const isOpen = children !== null && children !== undefined;
-  const [renderedChildren, setRenderedChildren] = useState(children);
-
-  useEffect(() => {
-    if (isOpen) {
-      setRenderedChildren(children);
-    }
-  }, [children, isOpen]);
-
-  if (!isOpen && (renderedChildren === null || renderedChildren === undefined)) {
-    return null;
-  }
-
   return (
-    <ExpoBottomSheet
-      index={isOpen ? 0 : -1}
-      enableDynamicSizing
-      enablePanDownToClose
-      onClose={() => {
-        setRenderedChildren(null);
-        onClose();
-      }}
-      onDismiss={() => {
-        setRenderedChildren(null);
-      }}
-    >
+    <ExpoBottomSheet index={0} enableDynamicSizing enablePanDownToClose onClose={onClose}>
       <BottomSheetView>
         <Drawer.Title style={visuallyHiddenStyle}>Studienbuch Dialog</Drawer.Title>
         <Drawer.Description style={visuallyHiddenStyle}>
           Optionen und Eingaben fuer die aktuelle Ansicht.
         </Drawer.Description>
-        {renderedChildren}
+        {children}
       </BottomSheetView>
     </ExpoBottomSheet>
   );

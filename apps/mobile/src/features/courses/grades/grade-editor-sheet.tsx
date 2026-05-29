@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { View } from "react-native";
-import { Button, OutlinedButton } from "~/components/button";
+import { Button, OutlinedButton, TextButton } from "~/components/button";
 import { DateField } from "~/components/date-field";
+import { SheetScaffold } from "~/components/sheet-scaffold";
 import { Text } from "~/components/text";
+import { haptics } from "~/utils/haptics";
 
 interface Props {
   title: string;
@@ -23,12 +25,21 @@ export const GradeEditorSheet = ({
   const [date, setDate] = useState(initialDate);
 
   return (
-    <View className="px-4 py-2">
-      <Text variant="heading" className="text-center">
-        {title}
-      </Text>
-      <View className="h-4" />
-
+    <SheetScaffold
+      title={title}
+      footer={
+        <View className="flex-row items-center justify-end gap-4">
+          <TextButton label="Abbrechen" onPress={onClose} />
+          <Button
+            label="Speichern"
+            onPress={() => {
+              haptics.success();
+              onSave({ result, date });
+            }}
+          />
+        </View>
+      }
+    >
       <DateField value={date} onChange={setDate} label="Datum" />
       <View className="h-6" />
 
@@ -37,6 +48,7 @@ export const GradeEditorSheet = ({
       <View className="flex-row items-center justify-center gap-4">
         <OutlinedButton
           label="−"
+          size="sm"
           onPress={() => setResult((current) => Math.max(0, current - 1))}
         />
         <Text weight="bold" className="text-4xl">
@@ -44,16 +56,10 @@ export const GradeEditorSheet = ({
         </Text>
         <OutlinedButton
           label="+"
+          size="sm"
           onPress={() => setResult((current) => Math.min(15, current + 1))}
         />
       </View>
-
-      <View className="h-6" />
-
-      <View className="flex-row items-center justify-end gap-4">
-        <OutlinedButton label="Abbrechen" onPress={onClose} />
-        <Button label="Speichern" onPress={() => onSave({ result, date })} />
-      </View>
-    </View>
+    </SheetScaffold>
   );
 };

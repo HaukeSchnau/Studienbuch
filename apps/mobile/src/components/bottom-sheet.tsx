@@ -1,6 +1,5 @@
 import ExpoBottomSheet, { BottomSheetView } from "@expo/ui/community/bottom-sheet";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
 
 interface Props {
   onClose: () => void;
@@ -8,33 +7,9 @@ interface Props {
 }
 
 export function PortaledBottomSheet({ children, onClose }: Props) {
-  const isOpen = children !== null && children !== undefined;
-  const [renderedChildren, setRenderedChildren] = useState(children);
-
-  useEffect(() => {
-    if (isOpen) {
-      setRenderedChildren(children);
-    }
-  }, [children, isOpen]);
-
-  if (!isOpen && (renderedChildren === null || renderedChildren === undefined)) {
-    return null;
-  }
-
   return (
-    <ExpoBottomSheet
-      index={isOpen ? 0 : -1}
-      enableDynamicSizing
-      enablePanDownToClose
-      onClose={() => {
-        setRenderedChildren(null);
-        onClose();
-      }}
-      onDismiss={() => {
-        setRenderedChildren(null);
-      }}
-    >
-      <BottomSheetView>{renderedChildren}</BottomSheetView>
+    <ExpoBottomSheet index={0} enableDynamicSizing enablePanDownToClose onClose={onClose}>
+      <BottomSheetView>{children}</BottomSheetView>
     </ExpoBottomSheet>
   );
 }

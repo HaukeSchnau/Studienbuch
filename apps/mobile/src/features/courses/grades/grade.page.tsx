@@ -1,5 +1,5 @@
-import { Stack } from "expo-router";
 import { View } from "react-native";
+import { PageScaffold } from "~/components/page-scaffold";
 import { Text } from "~/components/text";
 import type { GradeType } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
@@ -45,10 +45,9 @@ export const GradePage = ({ date, courseId, type }: Props) => {
 
   if (!grade || !course) {
     return (
-      <View className="p-8">
-        <Stack.Screen options={{ title: "Note" }} />
+      <PageScaffold title="Note" contentClassName="p-8" useDefaultPadding={false}>
         <Text>Note nicht gefunden.</Text>
-      </View>
+      </PageScaffold>
     );
   }
 
@@ -85,8 +84,7 @@ export const GradePage = ({ date, courseId, type }: Props) => {
   };
 
   return (
-    <View className="p-8">
-      <Stack.Screen options={{ title: "Note bestätigt" }} />
+    <PageScaffold title="Note bestätigt" contentClassName="p-8" useDefaultPadding={false}>
       {type === "MASTER" ? <MasterGradeTeacherConfirmationView grade={confirmedGrade} /> : null}
       {type === "ORAL" ? <OralGradeTeacherConfirmationView grade={confirmedGrade} /> : null}
       {type === "WRITTEN" ? <WrittenGradeTeacherConfirmationView grade={confirmedGrade} /> : null}
@@ -110,6 +108,6 @@ export const GradePage = ({ date, courseId, type }: Props) => {
           ) : null}
         </>
       ) : null}
-    </View>
+    </PageScaffold>
   );
 };

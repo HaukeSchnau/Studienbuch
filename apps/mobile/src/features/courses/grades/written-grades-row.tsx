@@ -27,11 +27,11 @@ export const WrittenGradesRow = ({
   return (
     <>
       <View className="flex-row gap-4">
-        <PortaledBottomSheet onClose={() => setIsAddVisible(false)}>
-          {isAddVisible && (
+        {isAddVisible ? (
+          <PortaledBottomSheet onClose={() => setIsAddVisible(false)}>
             <AddWrittenGrade courseId={courseId} onClose={() => setIsAddVisible(false)} />
-          )}
-        </PortaledBottomSheet>
+          </PortaledBottomSheet>
+        ) : null}
 
         <WrittenIcon
           width={64}

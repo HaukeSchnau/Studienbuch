@@ -1,15 +1,17 @@
 import { startOfDay } from "date-fns";
 import { useMemo, useState } from "react";
-import { Pressable, TextInput, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Button, TextButton } from "~/components/button";
 import { DateField } from "~/components/date-field";
 import { Divider } from "~/components/divider";
 import { SelectField } from "~/components/select-field";
+import { SheetScaffold } from "~/components/sheet-scaffold";
 import { Text } from "~/components/text";
+import { TextAreaField } from "~/components/text-area-field";
 import { TextField } from "~/components/text-field";
+import { haptics } from "~/utils/haptics";
 import type { TaskAttachment } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
-import { fontNames } from "~/components/text";
 
 const attachmentPalette = ["#B9D7F5", "#F5D9B9", "#D7E9C6", "#E2CEF5"] as const;
 
@@ -35,20 +37,40 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
   const nextAttachmentIndex = attachments.length;
   const isValid = title.trim().length > 0 && !!selectedCourse;
   const existingTaskCount = getCourseTasks(courseId).length;
+  const subtitle =
+    existingTaskCount > 0
+      ? `${existingTaskCount} Aufgaben sind für diesen Bereich bereits hinterlegt.`
+      : "Lege eine erste Aufgabe für diesen Bereich an.";
 
   return (
-    <View className="px-8 py-8">
-      <Text variant="heading" className="text-center">
-        Aufgabe hinzufügen
-      </Text>
-      <View className="h-2" />
-      <Text className="text-center text-base opacity-70">
-        {existingTaskCount > 0
-          ? `${existingTaskCount} Aufgaben sind für diesen Bereich bereits hinterlegt.`
-          : "Lege eine erste Aufgabe für diesen Bereich an."}
-      </Text>
-      <View className="h-6" />
+    <SheetScaffold
+      title="Aufgabe hinzufügen"
+      subtitle={subtitle}
+      footer={
+        <View className="flex-row items-center justify-end gap-4">
+          <TextButton label="Abbrechen" onPress={onClose} />
+          <Button
+            disabled={!isValid}
+            label="Speichern"
+            onPress={() => {
+              if (!selectedCourseId) {
+                return;
+              }
 
+              addTask({
+                courseId: selectedCourseId,
+                title: title.trim(),
+                description: description.trim(),
+                dueDate,
+                attachments,
+              });
+              haptics.success();
+              onClose();
+            }}
+          />
+        </View>
+      }
+    >
       {!courseId ? (
         <>
           <SelectField
@@ -66,24 +88,17 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
       <TextField autoFocus label="Titel" value={title} onChangeText={setTitle} />
       <View className="h-4" />
 
-      <View className="rounded-3xl bg-[#E6E6E6] px-6 py-4">
-        <Text className="pb-2 text-sm opacity-60">Beschreibung</Text>
-        <TextInput
-          multiline
-          numberOfLines={4}
-          textAlignVertical="top"
-          value={description}
-          onChangeText={setDescription}
-          maxLength={500}
-          placeholder="Beschreibe kurz, was zu erledigen ist"
-          style={{
-            minHeight: 110,
-            fontFamily: fontNames.regular,
-          }}
-        />
-      </View>
+      <TextAreaField
+        label="Beschreibung"
+        numberOfLines={4}
+        value={description}
+        onChangeText={setDescription}
+        maxLength={500}
+        placeholder="Beschreibe kurz, was zu erledigen ist"
+      />
 
       <View className="h-4" />
+
       {attachments.length > 0 ? (
         <>
           <View className="flex-row flex-wrap gap-3">
@@ -95,11 +110,11 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
                     current.filter((currentAttachment) => currentAttachment.id !== attachment.id),
                   )
                 }
-                className="h-28 w-[47%] items-center justify-center rounded-3xl"
+                className="h-24 w-[47%] items-center justify-center rounded-3xl"
                 style={{ backgroundColor: attachment.color }}
               >
                 <Text weight="bold">{attachment.label}</Text>
-                <Text className="pt-1 text-sm opacity-70">Antippen zum Entfernen</Text>
+                <Text className="pt-1 text-center text-sm opacity-70">Antippen zum Entfernen</Text>
               </Pressable>
             ))}
           </View>
@@ -109,38 +124,15 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
 
       <TextButton
         label="Foto hinzufügen"
-        onPress={() =>
-          setAttachments((current) => [...current, createAttachment(nextAttachmentIndex)])
-        }
+        onPress={() => {
+          haptics.selection();
+          setAttachments((current) => [...current, createAttachment(nextAttachmentIndex)]);
+        }}
       />
 
       <Divider />
       <View className="h-4" />
-
       <DateField value={dueDate} onChange={setDueDate} label="Abgabetermin" />
-
-      <View className="h-6" />
-      <View className="flex-row items-center justify-end gap-4">
-        <TextButton label="Abbrechen" onPress={onClose} />
-        <Button
-          disabled={!isValid}
-          label="Speichern"
-          onPress={() => {
-            if (!selectedCourseId) {
-              return;
-            }
-
-            addTask({
-              courseId: selectedCourseId,
-              title: title.trim(),
-              description: description.trim(),
-              dueDate,
-              attachments,
-            });
-            onClose();
-          }}
-        />
-      </View>
-    </View>
+    </SheetScaffold>
   );
 };

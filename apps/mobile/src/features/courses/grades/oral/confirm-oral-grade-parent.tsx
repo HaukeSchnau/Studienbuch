@@ -1,7 +1,6 @@
 import { format } from "date-fns";
-import { Stack } from "expo-router";
-import { View } from "react-native";
 import { ConfirmPageContent, ViewConfirmPageContent } from "~/components/confirm-page-content";
+import { PageScaffold } from "~/components/page-scaffold";
 import { Text } from "~/components/text";
 import { formatGrade, subjectNameMap } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
@@ -13,8 +12,11 @@ export const ConfirmOralGradeParent = ({ grade }: { grade: ResolvedGrade }) => {
   const { signGrade } = useMockApp();
 
   return (
-    <View className="p-8">
-      <Stack.Screen options={{ title: "Mündliche Note bestätigen (Eltern)" }} />
+    <PageScaffold
+      title="Mündliche Note bestätigen (Eltern)"
+      contentClassName="p-8"
+      useDefaultPadding={false}
+    >
       <ConfirmPageContent
         heading="Bitte lasse deine Eltern hier unterschreiben"
         onConfirm={() => signGrade(grade.id, "parent")}
@@ -26,7 +28,7 @@ export const ConfirmOralGradeParent = ({ grade }: { grade: ResolvedGrade }) => {
         <Text weight="bold">{formatGrade(grade.result)}</Text> in{" "}
         <Text weight="bold">{subjectNameMap[grade.course.subject]}</Text> hat.
       </ConfirmPageContent>
-    </View>
+    </PageScaffold>
   );
 };
 

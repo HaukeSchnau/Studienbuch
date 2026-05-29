@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { View } from "react-native";
 
 import { Text } from "~/components/text";
+import { haptics } from "~/utils/haptics";
 import { Button, TextButton } from "./button";
 import { SignatureField, SignatureView } from "./signature-field";
 
@@ -56,6 +57,7 @@ export const ConfirmPageContent = ({
 
             const signature = await signatureRef.current.getSVG();
             onConfirm(signature);
+            haptics.success();
           }}
           label={confirmLabel}
         />

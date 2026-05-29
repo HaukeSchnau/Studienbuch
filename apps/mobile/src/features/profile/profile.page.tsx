@@ -13,23 +13,23 @@ export const ProfilePage = () => {
   const [selectedSemester, setSelectedSemester] = useState(findCurrentSemester(semesters)!);
 
   return (
-    <ScrollView>
-      <View>
-        <Tabs.Screen options={{ header: () => <Header /> }} />
-        {semesters.length > 0 ? (
-          <View className="px-5 py-3">
-            <SemesterSelector
-              choices={semesters}
-              selectedSemester={selectedSemester}
-              onSelect={setSelectedSemester}
-            />
-            <View className="h-3" />
-            <CourseList semester={selectedSemester} />
-          </View>
-        ) : (
+    <ScrollView className="flex-1 bg-background">
+      <Tabs.Screen options={{ header: () => <Header /> }} />
+      {semesters.length > 0 ? (
+        <View className="px-5 pb-8 pt-3">
+          <SemesterSelector
+            choices={semesters}
+            selectedSemester={selectedSemester}
+            onSelect={setSelectedSemester}
+          />
+          <View className="h-3" />
+          <CourseList semester={selectedSemester} />
+        </View>
+      ) : (
+        <View className="px-5 py-6">
           <Text>Keine Semester gefunden</Text>
-        )}
-      </View>
+        </View>
+      )}
     </ScrollView>
   );
 };

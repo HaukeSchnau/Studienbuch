@@ -1,6 +1,6 @@
-import { Stack } from "expo-router";
 import { View } from "react-native";
 import { ViewConfirmPageContent } from "~/components/confirm-page-content";
+import { PageScaffold } from "~/components/page-scaffold";
 import { Text } from "~/components/text";
 import { useMockApp } from "~/mock-app/provider";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
@@ -17,10 +17,9 @@ export function ExcusePage({ date, courseIds }: { date: Date; courseIds: string[
 
   if (!absence) {
     return (
-      <View className="p-8">
-        <Stack.Screen options={{ title: "Fehlzeit" }} />
+      <PageScaffold title="Fehlzeit" contentClassName="p-8" useDefaultPadding={false}>
         <Text>Fehlzeit nicht gefunden.</Text>
-      </View>
+      </PageScaffold>
     );
   }
 
@@ -33,8 +32,7 @@ export function ExcusePage({ date, courseIds }: { date: Date; courseIds: string[
   }
 
   return (
-    <View className="p-8">
-      <Stack.Screen options={{ title: "Fehlzeit bestätigt" }} />
+    <PageScaffold title="Fehlzeit bestätigt" contentClassName="p-8" useDefaultPadding={false}>
       {!user.isOfAge && absence.parentSignature ? (
         <>
           <ViewConfirmPageContent
@@ -54,6 +52,6 @@ export function ExcusePage({ date, courseIds }: { date: Date; courseIds: string[
           Die Entschuldigung wurde bestätigt.
         </ViewConfirmPageContent>
       ) : null}
-    </View>
+    </PageScaffold>
   );
 }

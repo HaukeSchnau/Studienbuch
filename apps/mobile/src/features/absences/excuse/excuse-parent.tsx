@@ -1,6 +1,5 @@
-import { Stack } from "expo-router";
-import { View } from "react-native";
 import { ConfirmPageContent } from "~/components/confirm-page-content";
+import { PageScaffold } from "~/components/page-scaffold";
 import { Text } from "~/components/text";
 import type { Absence } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
@@ -11,8 +10,11 @@ export const ExcuseParent = ({ absence }: { absence: Absence }) => {
   const { user } = useRequiredAuthenticatedSession();
 
   return (
-    <View className="p-8">
-      <Stack.Screen options={{ title: "Fehlzeit entschuldigen (Eltern)" }} />
+    <PageScaffold
+      title="Fehlzeit entschuldigen (Eltern)"
+      contentClassName="p-8"
+      useDefaultPadding={false}
+    >
       <ConfirmPageContent
         heading="Bitte lasse deine Eltern hier unterschreiben"
         major={absence.reason}
@@ -24,6 +26,6 @@ export const ExcuseParent = ({ absence }: { absence: Absence }) => {
         <Text weight="bold">{absence.date.toLocaleDateString("de-DE")}</Text> mit folgender
         Begruendung nicht am Unterricht teilnehmen konnte.
       </ConfirmPageContent>
-    </View>
+    </PageScaffold>
   );
 };

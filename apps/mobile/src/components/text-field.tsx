@@ -3,6 +3,7 @@ import type { TextInputProps } from "react-native";
 import { TextInput, View } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
 
+import { FieldSurface } from "./field-surface";
 import { FieldLabel } from "./field-label";
 import { fontNames, Text } from "./text";
 
@@ -37,16 +38,18 @@ export const TextField = ({ label, placeholder, error, ...props }: Props) => {
   return (
     <View>
       <View className="relative h-16">
-        <TextInput
-          {...props}
-          placeholder={isActive ? placeholder : ""}
-          className="rounded-3xl bg-[#E6E6E6] px-6 py-6"
-          style={{
-            fontFamily: fontNames.regular,
-          }}
-          onFocus={onFocus}
-          onBlur={onBlur}
-        />
+        <FieldSurface>
+          <TextInput
+            {...props}
+            placeholder={isActive ? placeholder : ""}
+            className="px-6 py-6"
+            style={{
+              fontFamily: fontNames.regular,
+            }}
+            onFocus={onFocus}
+            onBlur={onBlur}
+          />
+        </FieldSurface>
         <FieldLabel label={label} active={active} focused={focused} />
       </View>
       {error ? <Text className="px-6 pt-1 text-danger">{error}</Text> : undefined}

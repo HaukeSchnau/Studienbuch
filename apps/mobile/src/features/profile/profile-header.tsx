@@ -2,9 +2,10 @@ import Icon from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
 import { openBrowserAsync } from "expo-web-browser";
 import { useState } from "react";
-import { Pressable, TouchableOpacity, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
+import { IconButton } from "~/components/icon-button";
 import { Text } from "~/components/text";
 import { getCurrentYearNum } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
@@ -45,12 +46,13 @@ export const Header = () => {
             </View>
 
             <View className="absolute top-4 right-4 z-10">
-              <TouchableOpacity
-                className="h-11 w-11 items-center justify-center rounded-full"
+              <IconButton
+                icon="settings"
+                variant="filled"
+                elevated
+                size={24}
                 onPress={() => setIsSheetVisible(true)}
-              >
-                <Icon name="settings" size={24} color="white" />
-              </TouchableOpacity>
+              />
             </View>
 
             <Avatar />
@@ -118,9 +120,7 @@ const ActionRow = ({
   onPress: () => void;
 }) => (
   <Pressable className="flex-row items-center rounded-[28px] px-2 py-3" onPress={onPress}>
-    <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-des">
-      <Icon name={icon} size={20} color="#098A00" />
-    </View>
+    <IconButton icon={icon} size={20} variant="subtle" />
     <View className="w-3" />
     <Text weight="semi-bold" className="text-lg text-primary-text">
       {label}

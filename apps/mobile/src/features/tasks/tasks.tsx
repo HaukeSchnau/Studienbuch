@@ -17,11 +17,11 @@ export const Tasks = ({ courseId }: { courseId?: string }) => {
 
   return (
     <View style={{ backgroundColor: "#3B7FD9" }} className="rounded-t-[40px] py-8">
-      <PortaledBottomSheet onClose={() => setIsAddVisible(false)}>
-        {isAddVisible ? (
+      {isAddVisible ? (
+        <PortaledBottomSheet onClose={() => setIsAddVisible(false)}>
           <AddTaskSheet courseId={courseId} onClose={() => setIsAddVisible(false)} />
-        ) : null}
-      </PortaledBottomSheet>
+        </PortaledBottomSheet>
+      ) : null}
 
       <View className="flex-row items-center px-8">
         <Text className="flex-1 text-4xl text-white" weight="bold">
@@ -29,6 +29,7 @@ export const Tasks = ({ courseId }: { courseId?: string }) => {
         </Text>
         <IconButton
           icon="add"
+          variant="plain"
           size={24}
           opacity={1}
           color="white"

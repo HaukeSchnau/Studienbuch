@@ -20,7 +20,7 @@ export const CourseList = ({ semester }: { semester: Semester }) => {
       gap={16}
       render={(course) => (
         <Card
-          style={{ padding: 20 }}
+          padding="sm"
           onPress={() =>
             router.push({
               pathname: "/courses/[course]",

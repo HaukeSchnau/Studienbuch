@@ -1,6 +1,7 @@
 import SegmentedControl from "@expo/ui/community/segmented-control";
 import { colors } from "~/theme/colors";
 import type { Semester } from "~/mock-app/domain";
+import { haptics } from "~/utils/haptics";
 
 interface SemesterSelectorProps {
   choices: Semester[];
@@ -24,6 +25,7 @@ export const SemesterSelector = ({
       values={choices.map((semester) => semester.name)}
       selectedIndex={choices.findIndex((semester) => semester.name === selectedSemester.name)}
       onChange={(event) => {
+        haptics.selection();
         onSelect(choices[event.nativeEvent.selectedSegmentIndex]!);
       }}
     />

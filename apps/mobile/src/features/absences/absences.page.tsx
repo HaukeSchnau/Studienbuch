@@ -1,6 +1,7 @@
-import { Stack } from "expo-router";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
+import { PageScaffold } from "~/components/page-scaffold";
 import { Text } from "~/components/text";
+import { colors } from "~/theme/colors";
 import { isAbsenceConfirmed } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
@@ -13,28 +14,44 @@ export const AbsencesPage = () => {
   const excused = absences.filter((absence) => isAbsenceConfirmed(absence, user.isOfAge));
 
   return (
-    <ScrollView>
-      <View className="gap-8 p-8">
-        <Stack.Screen options={{ title: "Meine Fehlzeiten" }} />
+    <PageScaffold title="Meine Fehlzeiten" contentClassName="gap-8">
+      <AbsenceSection
+        title="unentschuldigte Fehlzeiten"
+        titleColor={colors.danger.DEFAULT}
+        items={unexcused}
+        emptyLabel="Keine unentschuldigten Fehlzeiten gefunden"
+      />
+      <AbsenceSection
+        title="entschuldigte Fehlzeiten"
+        titleColor={colors.primary.text}
+        items={excused}
+        emptyLabel="Keine entschuldigten Fehlzeiten gefunden"
+      />
+    </PageScaffold>
+  );
+};
 
-        <View className="gap-2">
-          <Text className="text-lg text-danger">unentschuldigte Fehlzeiten</Text>
-          {unexcused.length > 0 ? (
-            unexcused.map((absence) => <AbsenceItem key={absence.id} absence={absence} />)
-          ) : (
-            <Text className="text-center">Keine unentschuldigten Fehlzeiten gefunden</Text>
-          )}
-        </View>
-
-        <View className="gap-2">
-          <Text className="text-lg text-primary-text">entschuldigte Fehlzeiten</Text>
-          {excused.length > 0 ? (
-            excused.map((absence) => <AbsenceItem key={absence.id} absence={absence} />)
-          ) : (
-            <Text className="text-center">Keine entschuldigten Fehlzeiten gefunden</Text>
-          )}
-        </View>
-      </View>
-    </ScrollView>
+const AbsenceSection = ({
+  title,
+  titleColor,
+  items,
+  emptyLabel,
+}: {
+  title: string;
+  titleColor: string;
+  items: ReturnType<typeof useMockApp>["absences"];
+  emptyLabel: string;
+}) => {
+  return (
+    <View className="gap-2">
+      <Text className="text-lg" style={{ color: titleColor }}>
+        {title}
+      </Text>
+      {items.length > 0 ? (
+        items.map((absence) => <AbsenceItem key={absence.id} absence={absence} />)
+      ) : (
+        <Text className="text-center">{emptyLabel}</Text>
+      )}
+    </View>
   );
 };

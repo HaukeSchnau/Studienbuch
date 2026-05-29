@@ -26,15 +26,15 @@ export const MasterGradeRow = ({
 
   return (
     <View className="flex-row gap-4">
-      <PortaledBottomSheet onClose={() => setIsEditVisible(false)}>
-        {isEditVisible && (
+      {isEditVisible ? (
+        <PortaledBottomSheet onClose={() => setIsEditVisible(false)}>
           <EditMasterGrade
             courseId={courseId}
             masterGrades={masterGrades}
             onClose={() => setIsEditVisible(false)}
           />
-        )}
-      </PortaledBottomSheet>
+        </PortaledBottomSheet>
+      ) : null}
 
       <Icon
         name="star"

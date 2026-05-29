@@ -35,7 +35,7 @@ export const Agenda = () => {
       return (
         <>
           <View className="h-4" />
-          <Card className="p-8">
+          <Card padding="md">
             <Text className="text-center text-2xl">
               Schöne {matchHolidayName(holiday.name)}! 🎉
             </Text>
@@ -51,7 +51,7 @@ export const Agenda = () => {
     return (
       <>
         <View className="h-4" />
-        <Card className="p-8">
+        <Card padding="md">
           <Text className="text-center text-2xl">Heute ist nichts geplant. 🎉</Text>
         </Card>
       </>
@@ -72,7 +72,7 @@ export const Agenda = () => {
     <>
       <Text className="text-2xl text-white">Das steht {dateFormatted} an:</Text>
       <View className="h-4" />
-      <Card className="py-2" style={{ padding: 0 }}>
+      <Card padding="none" style={{ paddingVertical: 8 }}>
         {entries.map((entry, index) => {
           const course = getCourse(entry.courseId);
           if (!course) return null;

@@ -25,15 +25,15 @@ export const OralGradesRow = ({
 
   return (
     <View className="flex-row gap-4">
-      <PortaledBottomSheet onClose={() => setIsEditVisible(false)}>
-        {isEditVisible && (
+      {isEditVisible ? (
+        <PortaledBottomSheet onClose={() => setIsEditVisible(false)}>
           <EditOralGrade
             courseId={courseId}
             oralGrades={oralGrades}
             onClose={() => setIsEditVisible(false)}
           />
-        )}
-      </PortaledBottomSheet>
+        </PortaledBottomSheet>
+      ) : null}
 
       <OralIcon
         width={64}

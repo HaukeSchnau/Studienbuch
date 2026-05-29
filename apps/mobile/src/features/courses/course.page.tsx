@@ -2,10 +2,10 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale/de";
 import { Stack } from "expo-router";
 import { View } from "react-native";
+import { Card } from "~/components/card";
 import { CoreLayout } from "~/components/core-layout";
 import { SubjectIcon } from "~/components/subject-icon";
 import { Text } from "~/components/text";
-import { shadow } from "~/components/styles/shadow";
 import { subjectNameMap, Teacher } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
 import { GradesOverviewCard } from "./grades/grades-overview-card";
@@ -50,12 +50,13 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
             </Text>
           </View>
 
-          <View
-            className="aspect-square h-28 items-center justify-center rounded-2xl bg-white"
-            style={shadow}
+          <Card
+            padding="none"
+            radius="md"
+            className="aspect-square h-28 items-center justify-center"
           >
             <SubjectIcon subject={course.subject} size={52} />
-          </View>
+          </Card>
         </View>
 
         <View className="h-8" />

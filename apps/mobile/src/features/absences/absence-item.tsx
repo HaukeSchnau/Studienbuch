@@ -4,6 +4,7 @@ import { Alert, View } from "react-native";
 import { OutlinedButton } from "~/components/button";
 import { ConfirmationStatus } from "~/components/confirmation-status";
 import { Text } from "~/components/text";
+import { haptics } from "~/utils/haptics";
 import { isAbsenceConfirmed, subjectNameMap, type Absence } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
@@ -63,7 +64,10 @@ export const AbsenceItem = ({ absence }: { absence: Absence }) => {
                     {
                       text: "Löschen",
                       style: "destructive",
-                      onPress: () => deleteAbsence(absence.id),
+                      onPress: () => {
+                        haptics.warning();
+                        deleteAbsence(absence.id);
+                      },
                     },
                   ],
                 )

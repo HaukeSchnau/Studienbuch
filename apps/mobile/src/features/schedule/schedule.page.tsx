@@ -1,4 +1,3 @@
-import Icon from "@expo/vector-icons/MaterialIcons";
 import {
   addDays,
   addWeeks,
@@ -13,11 +12,14 @@ import {
 import { de as localeDE } from "date-fns/locale/de";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { type DimensionValue, Pressable, ScrollView, View } from "react-native";
+import { type DimensionValue, ScrollView, View } from "react-native";
+import { Card } from "~/components/card";
+import { IconButton } from "~/components/icon-button";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SubjectIcon } from "~/components/subject-icon";
 import { shadow } from "~/components/styles/shadow";
 import { Text } from "~/components/text";
+import { haptics } from "~/utils/haptics";
 import { subjectNameMap } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
 import { colors } from "~/theme/colors";
@@ -144,9 +146,10 @@ export const SchedulePage = () => {
               ))}
             </View>
 
-            <View
-              className="relative flex-1 overflow-hidden rounded-[36px] bg-white"
-              style={[shadow, { minHeight: GRID_MIN_HEIGHT }]}
+            <Card
+              padding="none"
+              className="relative flex-1 overflow-hidden"
+              style={{ minHeight: GRID_MIN_HEIGHT }}
             >
               {weekdays.map((day, index) => (
                 <View
@@ -181,7 +184,7 @@ export const SchedulePage = () => {
                 if (!course) return null;
 
                 return (
-                  <Pressable
+                  <Card
                     key={entry.id}
                     onPress={() => {
                       router.push({
@@ -189,9 +192,11 @@ export const SchedulePage = () => {
                         params: { course: course.id },
                       });
                     }}
-                    className="absolute overflow-hidden rounded-[24px] bg-accent px-2 py-2"
+                    padding="none"
+                    radius="sm"
+                    backgroundColor={colors.accent.DEFAULT}
+                    className="absolute overflow-hidden"
                     style={[
-                      shadow,
                       {
                         top: timeToPosition(entry.start.getHours() * 60 + entry.start.getMinutes()),
                         left: weekdayToPercent(entry.weekday),
@@ -200,7 +205,7 @@ export const SchedulePage = () => {
                       },
                     ]}
                   >
-                    <View className="items-center">
+                    <View className="items-center px-2 py-2">
                       <View className="rounded-full bg-white p-1.5">
                         <SubjectIcon subject={course.subject} />
                       </View>
@@ -216,7 +221,7 @@ export const SchedulePage = () => {
                         {format(entry.start, "HH:mm")}
                       </Text>
                     </View>
-                  </Pressable>
+                  </Card>
                 );
               })}
 
@@ -246,29 +251,33 @@ export const SchedulePage = () => {
                   <Text className="text-lg text-neutral">Diese Woche ist noch leer.</Text>
                 </View>
               ) : null}
-            </View>
+            </Card>
           </View>
         </View>
       </ScrollView>
 
       <View className="bg-white px-4 py-2.5" style={shadow}>
         <View className="flex-row items-center justify-between">
-          <Pressable
-            className="h-10 w-10 items-center justify-center rounded-full bg-primary-des"
-            onPress={() => setWeekOffset((current) => current - 1)}
-          >
-            <Icon name="chevron-left" size={24} color={colors.primary.text} />
-          </Pressable>
+          <IconButton
+            icon="chevron-left"
+            variant="subtle"
+            onPress={() => {
+              haptics.selection();
+              setWeekOffset((current) => current - 1);
+            }}
+          />
           <Text weight="semi-bold" className="text-base text-primary-text">
             KW {currentWeek}
             {currentYear === new Date().getFullYear() ? "" : ` (${currentYear})`}
           </Text>
-          <Pressable
-            className="h-10 w-10 items-center justify-center rounded-full bg-primary-des"
-            onPress={() => setWeekOffset((current) => current + 1)}
-          >
-            <Icon name="chevron-right" size={24} color={colors.primary.text} />
-          </Pressable>
+          <IconButton
+            icon="chevron-right"
+            variant="subtle"
+            onPress={() => {
+              haptics.selection();
+              setWeekOffset((current) => current + 1);
+            }}
+          />
         </View>
       </View>
     </View>

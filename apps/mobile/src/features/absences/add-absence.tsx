@@ -4,8 +4,11 @@ import { View } from "react-native";
 import { Button } from "~/components/button";
 import { CheckboxRow } from "~/components/checkbox-row";
 import { DateField } from "~/components/date-field";
+import { Divider } from "~/components/divider";
+import { SheetScaffold } from "~/components/sheet-scaffold";
 import { Text } from "~/components/text";
 import { TextField } from "~/components/text-field";
+import { haptics } from "~/utils/haptics";
 import { subjectNameMap } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
 
@@ -31,13 +34,23 @@ export const AddAbsence = ({ onClose }: Props) => {
   void getISOWeekYear(date);
 
   return (
-    <View className="px-4 py-2">
-      <Text variant="heading" className="text-center">
-        Fehlzeit eintragen
-      </Text>
-      <View className="h-4" />
+    <SheetScaffold
+      title="Fehlzeit eintragen"
+      footer={
+        <Button
+          className="self-end"
+          label="Eintragen"
+          onPress={() => {
+            addAbsence({ date, courseIds, reason: reason || "Ohne Angabe" });
+            haptics.success();
+            onClose();
+          }}
+          disabled={courseIds.length === 0}
+        />
+      }
+    >
       <DateField onChange={setDate} value={date} label="Datum" />
-      <View style={{ height: 1, backgroundColor: "#E6E6E6" }} />
+      <Divider />
       <View className="h-4" />
 
       {courseOptionsForDay.length > 0 ? (
@@ -71,19 +84,9 @@ export const AddAbsence = ({ onClose }: Props) => {
       )}
 
       <View className="h-4" />
-      <View style={{ height: 1, backgroundColor: "#E6E6E6" }} />
+      <Divider />
       <View className="h-4" />
       <TextField label="Begründung" onChangeText={setReason} value={reason} />
-      <View className="h-6" />
-      <Button
-        className="self-end"
-        label="Eintragen"
-        onPress={() => {
-          addAbsence({ date, courseIds, reason: reason || "Ohne Angabe" });
-          onClose();
-        }}
-        disabled={courseIds.length === 0}
-      />
-    </View>
+    </SheetScaffold>
   );
 };

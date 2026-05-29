@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Platform, TouchableNativeFeedback, View } from "react-native";
 import { useSharedValue } from "react-native-reanimated";
 import { colors } from "~/theme/colors";
+import { FieldSurface } from "./field-surface";
 
 import { FieldLabel } from "./field-label";
 import { Text } from "./text";
@@ -35,9 +36,9 @@ export const DateField = ({ value, label, onChange }: Props) => {
       >
         {Platform.OS === "android" && (
           <TouchableNativeFeedback onPress={onFocus}>
-            <View className="rounded-3xl bg-[#E6E6E6] px-6 py-4">
+            <FieldSurface className="px-6 py-4">
               <Text>{format(value, "dd.MM.yyyy")}</Text>
-            </View>
+            </FieldSurface>
           </TouchableNativeFeedback>
         )}
         {Platform.OS === "android" && showAndroidPicker && (
