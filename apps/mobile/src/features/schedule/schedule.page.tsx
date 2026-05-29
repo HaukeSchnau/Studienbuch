@@ -1,4 +1,5 @@
 import {
+  addMinutes,
   addDays,
   addWeeks,
   format,
@@ -11,7 +12,7 @@ import {
 import { de as localeDE } from "date-fns/locale/de";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { type DimensionValue, ScrollView, View } from "react-native";
+import { type DimensionValue, View } from "react-native";
 import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 import { Card } from "~/components/card";
@@ -40,25 +41,22 @@ const WEEKDAY_LABELS = ["Mo", "Di", "Mi", "Do", "Fr"];
 const DAY_START = 8 * 60;
 const DAY_END = 15 * 60 + 10;
 const DAY_DURATION = DAY_END - DAY_START;
-const GRID_MIN_HEIGHT = 500;
+const GRID_FALLBACK_HEIGHT = 500;
 const TIME_RAIL_WIDTH = 40;
 
-const timeToPosition = (minute: number) => ((minute - DAY_START) / DAY_DURATION) * GRID_MIN_HEIGHT;
-const durationToHeight = (duration: number) => (duration / DAY_DURATION) * GRID_MIN_HEIGHT;
+const timeToPosition = (minute: number, gridHeight: number) =>
+  ((minute - DAY_START) / DAY_DURATION) * gridHeight;
+const durationToHeight = (duration: number, gridHeight: number) =>
+  (duration / DAY_DURATION) * gridHeight;
 const weekdayToPercent = (weekday: number) =>
   `${(weekday / WEEKDAY_LABELS.length) * 100}%` as DimensionValue;
-
-const formatWeekLabel = (weekStart: Date) => {
-  const weekEnd = addDays(weekStart, 4);
-  return `${format(weekStart, "dd.MM.", { locale: localeDE })} - ${format(weekEnd, "dd.MM.", {
-    locale: localeDE,
-  })}`;
-};
 
 export const SchedulePage = () => {
   const { getCourse, timetable } = useMockApp();
   const [weekOffset, setWeekOffset] = useState(0);
+  const [gridHeight, setGridHeight] = useState(0);
   const tabBarPadding = useMainTabBarPadding(8);
+  const resolvedGridHeight = gridHeight || GRID_FALLBACK_HEIGHT;
 
   const changeWeek = useCallback((delta: number) => {
     haptics.selection();
@@ -125,7 +123,7 @@ export const SchedulePage = () => {
       <View className="flex-1 overflow-hidden bg-[#F7F8FB]">
         <View style={[shadow, { backgroundColor: colors.primary.DEFAULT }]}>
           <SafeAreaView edges={["top"]}>
-            <View className="px-4 pb-1.5 pt-1">
+            <View className="px-4 pb-2 pt-1">
               <View className="flex-row items-center">
                 <IconButton
                   icon="chevron-left"
@@ -134,9 +132,8 @@ export const SchedulePage = () => {
                   onPress={() => changeWeek(-1)}
                 />
                 <View className="flex-1 items-center">
-                  <Text className="text-sm text-white/78">KW {currentWeek}</Text>
-                  <Text weight="bold" className="text-center text-[22px] text-white">
-                    {formatWeekLabel(weekStart)}
+                  <Text weight="bold" className="text-center text-lg text-white">
+                    KW {currentWeek}
                   </Text>
                 </View>
                 <IconButton
@@ -146,7 +143,6 @@ export const SchedulePage = () => {
                   onPress={() => changeWeek(1)}
                 />
               </View>
-              <View className="h-1" />
               <View className="flex-row">
                 <View style={{ width: TIME_RAIL_WIDTH }} />
                 <View className="flex-1 flex-row">
@@ -175,30 +171,34 @@ export const SchedulePage = () => {
           </SafeAreaView>
         </View>
 
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: tabBarPadding }}
-        >
-          <View className="px-4 pt-2">
-            <View className="flex-row">
-              <View style={{ width: TIME_RAIL_WIDTH }}>
-                {TIME_MARKERS.map((marker) => (
-                  <Text
-                    key={marker.minute}
-                    className="absolute right-1 text-[13px] text-neutral"
-                    style={{ top: timeToPosition(marker.minute) - 8 }}
-                  >
-                    {marker.label}
-                  </Text>
-                ))}
-              </View>
+        <View className="flex-1 px-4 pt-2" style={{ paddingBottom: tabBarPadding }}>
+          <View className="flex-1 flex-row">
+            <View style={{ width: TIME_RAIL_WIDTH, height: resolvedGridHeight }}>
+              {TIME_MARKERS.map((marker) => (
+                <Text
+                  key={marker.minute}
+                  className="absolute right-1 text-[13px] text-neutral"
+                  style={{ top: timeToPosition(marker.minute, resolvedGridHeight) - 8 }}
+                >
+                  {marker.label}
+                </Text>
+              ))}
+            </View>
 
+            <View
+              className="flex-1"
+              onLayout={({ nativeEvent }) => {
+                const nextHeight = nativeEvent.layout.height;
+                if (nextHeight > 0 && Math.abs(nextHeight - gridHeight) > 1) {
+                  setGridHeight(nextHeight);
+                }
+              }}
+            >
               <Card
                 padding="none"
                 radius="sm"
                 className="relative flex-1 overflow-hidden"
-                style={{ minHeight: GRID_MIN_HEIGHT }}
+                style={{ flex: 1 }}
               >
                 {weekdays.map((day, index) => (
                   <View
@@ -224,13 +224,15 @@ export const SchedulePage = () => {
                   <View
                     key={`tick-${marker.minute}`}
                     className="absolute right-0 left-0 bg-[#E6EBF2]"
-                    style={{ top: timeToPosition(marker.minute), height: 1 }}
+                    style={{ top: timeToPosition(marker.minute, resolvedGridHeight), height: 1 }}
                   />
                 ))}
 
                 {visibleEntries.map((entry) => {
                   const course = getCourse(entry.courseId);
                   if (!course) return null;
+
+                  const end = addMinutes(entry.start, entry.duration);
 
                   return (
                     <Card
@@ -244,15 +246,14 @@ export const SchedulePage = () => {
                       padding="none"
                       radius="sm"
                       backgroundColor={colors.accent.DEFAULT}
+                      noShadow
                       className="absolute overflow-hidden"
-                      style={[
-                        {
-                          top: timeToPosition(entry.startMinutes),
-                          left: weekdayToPercent(entry.weekday),
-                          width: `${100 / WEEKDAY_LABELS.length}%`,
-                          height: durationToHeight(entry.duration),
-                        },
-                      ]}
+                      style={{
+                        top: timeToPosition(entry.startMinutes, resolvedGridHeight),
+                        left: weekdayToPercent(entry.weekday),
+                        width: `${100 / WEEKDAY_LABELS.length}%`,
+                        height: durationToHeight(entry.duration, resolvedGridHeight),
+                      }}
                     >
                       <View className="items-center justify-center px-2 py-2">
                         <View className="rounded-full bg-white p-1.5">
@@ -266,6 +267,10 @@ export const SchedulePage = () => {
                         >
                           {subjectNameMap[course.subject]}
                         </Text>
+                        <Text className="mt-1 text-center text-[10px] text-white/78">
+                          {format(entry.start, "HH:mm", { locale: localeDE })} -{" "}
+                          {format(end, "HH:mm", { locale: localeDE })}
+                        </Text>
                       </View>
                     </Card>
                   );
@@ -276,7 +281,7 @@ export const SchedulePage = () => {
                     <View
                       className="absolute z-10 h-2 w-2 rounded-full bg-[#E54F64]"
                       style={{
-                        top: timeToPosition(nowMinutes),
+                        top: timeToPosition(nowMinutes, resolvedGridHeight),
                         left: weekdayToPercent(nowWeekday),
                         marginTop: -4,
                         marginLeft: -4,
@@ -285,7 +290,7 @@ export const SchedulePage = () => {
                     <View
                       className="absolute right-0 z-10 h-px bg-[#E54F64]"
                       style={{
-                        top: timeToPosition(nowMinutes),
+                        top: timeToPosition(nowMinutes, resolvedGridHeight),
                         left: weekdayToPercent(nowWeekday),
                       }}
                     />
@@ -300,7 +305,7 @@ export const SchedulePage = () => {
               </Card>
             </View>
           </View>
-        </ScrollView>
+        </View>
       </View>
     </GestureDetector>
   );
