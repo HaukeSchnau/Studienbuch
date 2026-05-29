@@ -15,6 +15,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ReanimatedScreenProvider } from "react-native-screens/reanimated";
 import { MockAppProvider, useMockApp } from "~/mock-app/provider";
 import { colors } from "~/theme/colors";
 import "../global.css";
@@ -47,8 +48,10 @@ export default function RootLayout() {
     <MockAppProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
-          <StatusBar style="light" />
-          <AppNavigator />
+          <ReanimatedScreenProvider>
+            <StatusBar style="light" />
+            <AppNavigator />
+          </ReanimatedScreenProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
     </MockAppProvider>
