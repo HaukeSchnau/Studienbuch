@@ -10,9 +10,11 @@ import {
   useFonts,
 } from "@expo-google-fonts/nunito";
 import { Redirect, Stack, useSegments } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { MockAppProvider, useMockApp } from "~/mock-app/provider";
 import { colors } from "~/theme/colors";
 import "../global.css";
@@ -44,7 +46,10 @@ export default function RootLayout() {
   return (
     <MockAppProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <AppNavigator />
+        <SafeAreaProvider>
+          <StatusBar style="light" />
+          <AppNavigator />
+        </SafeAreaProvider>
       </GestureHandlerRootView>
     </MockAppProvider>
   );

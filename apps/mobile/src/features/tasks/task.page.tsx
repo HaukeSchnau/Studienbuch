@@ -1,11 +1,11 @@
-import Icon from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import { Alert, View } from "react-native";
 import CrossIcon from "~/assets/cross.svg";
 import { Button } from "~/components/button";
 import { Card } from "~/components/card";
-import { IconButton } from "~/components/icon-button";
 import { PageScaffold } from "~/components/page-scaffold";
+import { SystemIcon } from "~/components/system-icon";
 import { Text } from "~/components/text";
 import { haptics } from "~/utils/haptics";
 import { useMockApp } from "~/mock-app/provider";
@@ -25,41 +25,41 @@ export const TaskPage = ({ taskId }: { taskId: string }) => {
   }
 
   const course = getCourse(task.courseId);
+  const confirmDelete = () =>
+    Alert.alert("Aufgabe löschen", "Möchtest du die Aufgabe wirklich löschen?", [
+      { text: "Abbrechen", style: "cancel" },
+      {
+        text: "Löschen",
+        style: "destructive",
+        onPress: () => {
+          haptics.warning();
+          deleteTask(task.id);
+          router.back();
+        },
+      },
+    ]);
 
   return (
-    <PageScaffold title="Hausaufgabe">
+    <PageScaffold
+      title="Hausaufgabe"
+      headerRight={
+        <Stack.Toolbar.Button
+          tintColor={colors.danger.DEFAULT}
+          accessibilityLabel="Aufgabe löschen"
+          onPress={confirmDelete}
+        >
+          Löschen
+        </Stack.Toolbar.Button>
+      }
+    >
       <Card>
-        <View className="flex-row items-start">
-          <View className="flex-1">
-            <Text className="text-3xl text-primary-text" weight="bold">
-              {task.title}
-            </Text>
-            <View className="h-1.5" />
-            <Text className="text-xl text-black/80" weight="bold">
-              {course?.name ?? "Kurs"}
-            </Text>
-          </View>
-          <IconButton
-            icon="delete"
-            color="rgba(0,0,0,0.58)"
-            variant="plain"
-            size={26}
-            onPress={() =>
-              Alert.alert("Aufgabe löschen", "Möchtest du die Aufgabe wirklich löschen?", [
-                { text: "Abbrechen", style: "cancel" },
-                {
-                  text: "Löschen",
-                  style: "destructive",
-                  onPress: () => {
-                    haptics.warning();
-                    deleteTask(task.id);
-                    router.back();
-                  },
-                },
-              ])
-            }
-          />
-        </View>
+        <Text className="text-3xl text-primary-text" weight="bold">
+          {task.title}
+        </Text>
+        <View className="h-1.5" />
+        <Text className="text-xl text-black/80" weight="bold">
+          {course?.name ?? "Kurs"}
+        </Text>
 
         <View className="h-5" />
         <Text className="text-lg leading-8 text-black/72">
@@ -100,7 +100,7 @@ export const TaskPage = ({ taskId }: { taskId: string }) => {
             {task.done ? "Erledigt " : "Nicht erledigt "}
           </Text>
           {task.done ? (
-            <Icon name="check" size={20} color={colors.primary.text} />
+            <SystemIcon name="check" size={20} color={colors.primary.text} />
           ) : (
             <CrossIcon width={16} height={16} />
           )}

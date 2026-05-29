@@ -1,9 +1,9 @@
-import Icon from "@expo/vector-icons/MaterialIcons";
 import { colors } from "~/theme/colors";
 import clsx from "clsx";
 import { View } from "react-native";
 
 import Cross from "~/assets/cross.svg";
+import { SystemIcon } from "./system-icon";
 import { Text } from "./text";
 
 const SingleConfirmationStatus = ({
@@ -16,7 +16,7 @@ const SingleConfirmationStatus = ({
   return (
     <View className="flex-row items-center gap-1">
       {confirmed ? (
-        <Icon name="verified" size={24} color={colors.primary.text} />
+        <SystemIcon name="verified" size={24} color={colors.primary.text} />
       ) : (
         <Cross color={colors.danger.DEFAULT} />
       )}

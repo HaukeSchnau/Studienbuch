@@ -1,7 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
 import { ScrollView, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import BackgroundImage from "~/assets/home-bg.svg";
 
@@ -24,18 +24,27 @@ interface Props {
 }
 
 export const CoreLayout = ({ children }: Props) => {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View>
+    <View className="flex-1 bg-white">
       <View className="absolute top-0 left-0 h-full w-full">
         <View className="h-1/2 bg-primary" />
         <View className="h-1/2 bg-white" />
       </View>
 
-      <ScrollView>
+      <ScrollView
+        className="flex-1"
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+      >
         <StatusBar style="light" />
         <View className="bg-white">
           <Background />
-          <SafeAreaView>{children}</SafeAreaView>
+          <SafeAreaView edges={["top"]}>{children}</SafeAreaView>
         </View>
       </ScrollView>
     </View>

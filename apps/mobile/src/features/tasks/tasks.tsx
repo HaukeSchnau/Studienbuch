@@ -1,8 +1,8 @@
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
 import { IconButton } from "~/components/icon-button";
+import { SystemIcon } from "~/components/system-icon";
 import { Text } from "~/components/text";
 import { useMockApp } from "~/mock-app/provider";
 import { AddTaskSheet } from "./add-task-sheet";
@@ -67,7 +67,7 @@ export const Tasks = ({ courseId }: { courseId?: string }) => {
 
       {tasks.length > 0 ? (
         <View className="flex-row items-center gap-2 px-8 pt-1">
-          <MaterialIcons name="swipe" size={16} color="rgba(255,255,255,0.85)" />
+          <SystemIcon name="swipe" size={16} color="rgba(255,255,255,0.85)" />
           <Text className="text-sm text-white/80">
             Zum Öffnen horizontal durch die Karten wischen
           </Text>

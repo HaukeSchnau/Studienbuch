@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import { View } from "react-native";
+import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
-import { IconButton } from "~/components/icon-button";
 import { Text } from "~/components/text";
+import { colors } from "~/theme/colors";
 import { formatGrade, isGradeConfirmed, type Grade } from "~/mock-app/domain";
 import { useRequiredAuthenticatedSession } from "~/utils/auth";
 import { GradeCard } from "./grade-card";
+import { GradeRowActions } from "./grade-row-actions";
 import { AddWrittenGrade } from "./written/add-written-grade";
 import WrittenIcon from "./written/written.svg";
 
@@ -23,39 +25,71 @@ export const WrittenGradesRow = ({
     if (confirmedGrades.length === 0) return null;
     return confirmedGrades.reduce((acc, grade) => acc + grade.result, 0) / confirmedGrades.length;
   }, [writtenGrades, user.isOfAge]);
+  const allConfirmed =
+    writtenGrades.length > 0 &&
+    writtenGrades.every((grade) => isGradeConfirmed(grade, user.isOfAge));
 
   return (
     <>
-      <View className="flex-row gap-4">
-        {isAddVisible ? (
-          <PortaledBottomSheet onClose={() => setIsAddVisible(false)}>
-            <AddWrittenGrade courseId={courseId} onClose={() => setIsAddVisible(false)} />
-          </PortaledBottomSheet>
-        ) : null}
+      {isAddVisible ? (
+        <PortaledBottomSheet onClose={() => setIsAddVisible(false)}>
+          <AddWrittenGrade courseId={courseId} onClose={() => setIsAddVisible(false)} />
+        </PortaledBottomSheet>
+      ) : null}
 
-        <WrittenIcon
-          width={64}
-          height={64}
-          style={{
-            opacity: writtenGrades.every((grade) => isGradeConfirmed(grade, user.isOfAge))
-              ? 1
-              : 0.25,
-          }}
-        />
+      <ReanimatedSwipeable
+        enableTrackpadTwoFingerGesture
+        overshootRight={false}
+        rightThreshold={56}
+        renderRightActions={(progress, _translation, swipeableMethods) => (
+          <GradeRowActions
+            progress={progress}
+            primary={{
+              icon: "add",
+              label: "Hinzufügen",
+              color: colors.accent.DEFAULT,
+              onPress: () => {
+                swipeableMethods.close();
+                setIsAddVisible(true);
+              },
+            }}
+          />
+        )}
+        containerStyle={{ borderRadius: 24 }}
+      >
+        <View className="flex-row gap-4">
+          <WrittenIcon
+            width={64}
+            height={64}
+            style={{
+              opacity: allConfirmed ? 1 : 0.25,
+            }}
+          />
 
-        <View className="shrink grow">
-          <View className="flex-row items-center justify-between">
+          <View className="shrink grow">
             <Text className="grow text-3xl" weight="semi-bold">
               {averageWrittenGrade !== null ? formatGrade(averageWrittenGrade) : "—"}
             </Text>
-            <IconButton icon="add" opacity={0.8} size={24} onPress={() => setIsAddVisible(true)} />
+            <Text className="text-lg opacity-60">schriftlich</Text>
+            {writtenGrades.length > 0 ? (
+              <>
+                <Text className="text-lg">
+                  Deine Note setzt sich aus diesen Ergebnissen zusammen:
+                </Text>
+                <View className="h-1" />
+                <Text className="text-sm opacity-55">Nach links wischen zum Hinzufügen</Text>
+              </>
+            ) : (
+              <>
+                <View className="h-1" />
+                <Text className="text-sm opacity-55">
+                  Nach links wischen, um eine Klausur hinzuzufügen
+                </Text>
+              </>
+            )}
           </View>
-          <Text className="text-lg opacity-60">schriftlich</Text>
-          {writtenGrades.length > 0 ? (
-            <Text className="text-lg">Deine Note setzt sich aus diesen Ergebnissen zusammen:</Text>
-          ) : null}
         </View>
-      </View>
+      </ReanimatedSwipeable>
 
       <View className="h-4" />
 

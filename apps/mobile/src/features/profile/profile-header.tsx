@@ -1,4 +1,3 @@
-import Icon from "@expo/vector-icons/MaterialIcons";
 import { router } from "expo-router";
 import { openBrowserAsync } from "expo-web-browser";
 import { useState } from "react";
@@ -7,12 +6,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
 import { IconButton } from "~/components/icon-button";
 import { Text } from "~/components/text";
+import { SystemIcon, type SystemIconName } from "~/components/system-icon";
 import { getCurrentYearNum } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
 
 const Avatar = () => (
   <View className="h-28 w-28 items-center justify-center rounded-full bg-accent p-6">
-    <Icon name="person" size={48} color="white" />
+    <SystemIcon name="person" size={48} color="white" />
   </View>
 );
 
@@ -115,7 +115,7 @@ const ActionRow = ({
   label,
   onPress,
 }: {
-  icon: keyof typeof Icon.glyphMap;
+  icon: SystemIconName;
   label: string;
   onPress: () => void;
 }) => (

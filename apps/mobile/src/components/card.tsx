@@ -2,8 +2,10 @@ import type { ReactNode } from "react";
 import type { StyleProp, ViewStyle } from "react-native";
 import { View } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
+import Animated from "react-native-reanimated";
 
 import { shadow } from "./styles/shadow";
+import { usePressAnimation } from "./use-press-animation";
 
 const cardPaddingMap = {
   none: 0,
@@ -36,6 +38,7 @@ export const Card = ({
   radius?: keyof typeof cardRadiusMap;
   backgroundColor?: string;
 }) => {
+  const { animatedStyle, onPressIn, onPressOut } = usePressAnimation(0.985);
   const contentStyle = [
     {
       backgroundColor,
@@ -48,14 +51,18 @@ export const Card = ({
 
   if (onPress) {
     return (
-      <TouchableOpacity
-        onPress={onPress}
-        style={contentStyle}
-        className={className}
-        activeOpacity={0.9}
-      >
-        {children}
-      </TouchableOpacity>
+      <Animated.View style={animatedStyle}>
+        <TouchableOpacity
+          onPress={onPress}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+          style={contentStyle}
+          className={className}
+          activeOpacity={1}
+        >
+          {children}
+        </TouchableOpacity>
+      </Animated.View>
     );
   }
 

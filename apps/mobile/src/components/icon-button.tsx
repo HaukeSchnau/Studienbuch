@@ -1,15 +1,17 @@
-import Icon from "@expo/vector-icons/MaterialIcons";
 import clsx from "clsx";
-import type { ComponentProps, ComponentRef } from "react";
+import type { ComponentRef } from "react";
 import { forwardRef } from "react";
 import { TouchableOpacity } from "react-native";
+import Animated from "react-native-reanimated";
 import { colors } from "~/theme/colors";
 import { shadow } from "./styles/shadow";
+import { SystemIcon, type SystemIconName } from "./system-icon";
+import { usePressAnimation } from "./use-press-animation";
 
 interface Props {
-  icon: ComponentProps<typeof Icon>["name"];
-  color?: ComponentProps<typeof Icon>["color"];
-  size?: ComponentProps<typeof Icon>["size"];
+  icon: SystemIconName;
+  color?: string;
+  size?: number;
   onPress?: () => void;
   opacity?: number;
   variant?: "plain" | "subtle" | "filled";
@@ -42,31 +44,38 @@ export const IconButton = forwardRef<ComponentRef<typeof TouchableOpacity>, Prop
     },
     ref,
   ) => {
+    const { animatedStyle, onPressIn, onPressOut } = usePressAnimation(
+      variant === "plain" ? 0.92 : 0.95,
+    );
     const containerSize = containerSizeMap[variant];
     const backgroundColor = variant === "plain" ? undefined : backgroundColorMap[variant];
 
     return (
-      <TouchableOpacity
-        onPress={onPress}
-        ref={ref}
-        activeOpacity={0.85}
-        className={clsx(
-          variant === "plain" ? "p-1" : "items-center justify-center rounded-full",
-          className,
-        )}
-        style={[
-          containerSize > 0 ? { width: containerSize, height: containerSize } : undefined,
-          backgroundColor ? { backgroundColor } : undefined,
-          elevated ? shadow : undefined,
-        ]}
-      >
-        <Icon
-          name={icon}
-          color={color ?? (variant === "filled" ? colors.on.primary : colors.primary.text)}
-          size={size}
-          style={{ opacity }}
-        />
-      </TouchableOpacity>
+      <Animated.View style={animatedStyle}>
+        <TouchableOpacity
+          onPress={onPress}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+          ref={ref}
+          activeOpacity={1}
+          className={clsx(
+            variant === "plain" ? "p-2" : "items-center justify-center rounded-full",
+            className,
+          )}
+          style={[
+            containerSize > 0 ? { width: containerSize, height: containerSize } : undefined,
+            backgroundColor ? { backgroundColor } : undefined,
+            elevated ? shadow : undefined,
+          ]}
+        >
+          <SystemIcon
+            name={icon}
+            color={color ?? (variant === "filled" ? colors.on.primary : colors.primary.text)}
+            size={size}
+            opacity={opacity}
+          />
+        </TouchableOpacity>
+      </Animated.View>
     );
   },
 );
