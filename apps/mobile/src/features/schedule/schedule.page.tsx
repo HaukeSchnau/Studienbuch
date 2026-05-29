@@ -17,10 +17,11 @@ import { Directions, Gesture, GestureDetector } from "react-native-gesture-handl
 import { runOnJS } from "react-native-reanimated";
 import { Card } from "~/components/card";
 import { IconButton } from "~/components/icon-button";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { SubjectIcon } from "~/components/subject-icon";
 import { shadow } from "~/components/styles/shadow";
 import { Text } from "~/components/text";
+import { useMainTabBarPadding } from "~/components/use-main-tab-bar-padding";
 import { haptics } from "~/utils/haptics";
 import { subjectNameMap } from "~/mock-app/domain";
 import { useMockApp } from "~/mock-app/provider";
@@ -59,7 +60,7 @@ const formatWeekLabel = (weekStart: Date) => {
 export const SchedulePage = () => {
   const { getCourse, timetable } = useMockApp();
   const [weekOffset, setWeekOffset] = useState(0);
-  const insets = useSafeAreaInsets();
+  const tabBarPadding = useMainTabBarPadding(8);
 
   const changeWeek = useCallback((delta: number) => {
     haptics.selection();
@@ -123,7 +124,7 @@ export const SchedulePage = () => {
 
   return (
     <GestureDetector gesture={swipeGesture}>
-      <View className="flex-1 bg-[#F7F8FB]">
+      <View className="flex-1 overflow-hidden bg-[#F7F8FB]">
         <View style={[shadow, { backgroundColor: colors.primary.DEFAULT }]}>
           <SafeAreaView edges={["top"]}>
             <View className="px-4 pt-2 pb-3">
@@ -162,7 +163,7 @@ export const SchedulePage = () => {
         <ScrollView
           contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 12) + 8 }}
+          contentContainerStyle={{ paddingBottom: 16 }}
         >
           <View className="px-4 pt-3">
             <View className="flex-row">
@@ -290,7 +291,7 @@ export const SchedulePage = () => {
           </View>
         </ScrollView>
 
-        <View className="bg-white px-4 py-2.5" style={shadow}>
+        <View className="bg-white px-4 pt-2.5" style={[shadow, { paddingBottom: tabBarPadding }]}>
           <View className="flex-row items-center justify-between">
             <IconButton icon="chevron-left" variant="subtle" onPress={() => changeWeek(-1)} />
             <Text weight="semi-bold" className="text-base text-primary-text">

@@ -1,9 +1,10 @@
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
 import { ScrollView, View } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import BackgroundImage from "~/assets/home-bg.svg";
+import { useMainTabBarPadding } from "./use-main-tab-bar-padding";
 
 const Background = () => (
   <View
@@ -24,10 +25,10 @@ interface Props {
 }
 
 export const CoreLayout = ({ children }: Props) => {
-  const insets = useSafeAreaInsets();
+  const bottomPadding = useMainTabBarPadding(16);
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 overflow-hidden bg-white">
       <View className="absolute top-0 left-0 h-full w-full">
         <View className="h-1/2 bg-primary" />
         <View className="h-1/2 bg-white" />
@@ -39,7 +40,7 @@ export const CoreLayout = ({ children }: Props) => {
         automaticallyAdjustKeyboardInsets
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
         <StatusBar style="light" />
         <View className="bg-white">

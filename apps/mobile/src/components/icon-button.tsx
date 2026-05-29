@@ -1,10 +1,9 @@
 import clsx from "clsx";
 import type { ComponentRef } from "react";
 import { forwardRef } from "react";
-import { TouchableOpacity } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { colors } from "~/theme/colors";
-import { shadow } from "./styles/shadow";
 import { SystemIcon, type SystemIconName } from "./system-icon";
 import { usePressAnimation } from "./use-press-animation";
 
@@ -30,6 +29,19 @@ const backgroundColorMap = {
   filled: colors.accent.DEFAULT,
 } as const;
 
+const { elevatedShadow } = StyleSheet.create({
+  elevatedShadow: {
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 8,
+      height: 8,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+});
+
 export const IconButton = forwardRef<ComponentRef<typeof TouchableOpacity>, Props>(
   (
     {
@@ -49,24 +61,49 @@ export const IconButton = forwardRef<ComponentRef<typeof TouchableOpacity>, Prop
     );
     const containerSize = containerSizeMap[variant];
     const backgroundColor = variant === "plain" ? undefined : backgroundColorMap[variant];
+    const hasElevatedContainer = elevated && containerSize > 0;
+    const buttonClassName = clsx(
+      variant === "plain" ? "p-2" : "items-center justify-center rounded-full",
+      className,
+    );
+    const buttonStyle = [
+      containerSize > 0 ? { width: containerSize, height: containerSize } : undefined,
+      backgroundColor ? { backgroundColor } : undefined,
+    ];
 
     return (
-      <Animated.View style={animatedStyle}>
+      <Animated.View
+        style={[
+          animatedStyle,
+          hasElevatedContainer
+            ? {
+                width: containerSize,
+                height: containerSize,
+              }
+            : undefined,
+        ]}
+      >
+        {hasElevatedContainer ? (
+          <View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              elevatedShadow,
+              {
+                borderRadius: containerSize / 2,
+                backgroundColor,
+              },
+            ]}
+          />
+        ) : null}
         <TouchableOpacity
           onPress={onPress}
           onPressIn={onPressIn}
           onPressOut={onPressOut}
           ref={ref}
           activeOpacity={1}
-          className={clsx(
-            variant === "plain" ? "p-2" : "items-center justify-center rounded-full",
-            className,
-          )}
-          style={[
-            containerSize > 0 ? { width: containerSize, height: containerSize } : undefined,
-            backgroundColor ? { backgroundColor } : undefined,
-            elevated ? shadow : undefined,
-          ]}
+          className={buttonClassName}
+          style={buttonStyle}
         >
           <SystemIcon
             name={icon}
