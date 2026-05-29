@@ -2,8 +2,8 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale/de";
 import { Stack } from "expo-router";
 import { useState } from "react";
-import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Platform, View } from "react-native";
+import { useSafeAreaFrame, useSafeAreaInsets } from "react-native-safe-area-context";
 import { PortaledBottomSheet } from "~/components/bottom-sheet";
 import { Card } from "~/components/card";
 import { CoreLayout } from "~/components/core-layout";
@@ -16,11 +16,37 @@ import { AddTaskSheet } from "~/features/tasks/add-task-sheet";
 import { GradesOverviewCard } from "./grades/grades-overview-card";
 import { AddWrittenGrade } from "./grades/written/add-written-grade";
 
+const getEstimatedNativeHeaderHeight = ({
+  topInset,
+  width,
+  height,
+}: {
+  topInset: number;
+  width: number;
+  height: number;
+}) => {
+  if (Platform.OS === "android") {
+    return 56 + topInset;
+  }
+
+  const isLandscape = width > height;
+  const isTabletLike = Math.min(width, height) >= 768;
+  const hasDynamicIsland = topInset > 50;
+  const statusBarHeight = hasDynamicIsland ? topInset - 5 : topInset;
+
+  if (isTabletLike) {
+    return 50 + statusBarHeight;
+  }
+
+  return (isLandscape ? 32 : 44) + statusBarHeight;
+};
+
 export const CoursePage = ({ courseId }: { courseId: string }) => {
   const { getCourse, semesters } = useMockApp();
   const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
   const [isAddWrittenGradeVisible, setIsAddWrittenGradeVisible] = useState(false);
   const insets = useSafeAreaInsets();
+  const frame = useSafeAreaFrame();
   const course = getCourse(courseId);
 
   if (!course) {
@@ -28,7 +54,12 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
   }
 
   const semester = semesters.find((item) => item.id === course.semesterId)!;
-  const heroTopPadding = insets.top + 44;
+  const heroTopPadding =
+    getEstimatedNativeHeaderHeight({
+      topInset: insets.top,
+      width: frame.width,
+      height: frame.height,
+    }) - insets.top;
 
   return (
     <CoreLayout>
@@ -65,7 +96,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
         </Stack.Toolbar.Menu>
       </Stack.Toolbar>
       <View className="px-8" style={{ paddingTop: heroTopPadding }}>
-        <View className="flex-row justify-between pb-8">
+        <View className="flex-row justify-between pb-10">
           <View className="flex-1 pr-4">
             <Text weight="bold" className="text-4xl text-white">
               {subjectNameMap[course.subject]}
