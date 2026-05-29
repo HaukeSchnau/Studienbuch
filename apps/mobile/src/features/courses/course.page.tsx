@@ -66,7 +66,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
       </Stack.Toolbar>
       <Animated.View className="px-8" style={heroStyle}>
         <View className="flex-row justify-between pb-10">
-          <View className="flex-1 pl-6 pr-4">
+          <View className="flex-1 pr-4">
             <Text weight="bold" className="text-4xl text-white">
               {subjectNameMap[course.subject]}
             </Text>

@@ -12,7 +12,7 @@ export const GradesOverviewCard = ({ courseId }: { courseId: string }) => {
   const grades = getCourseGrades(courseId);
 
   return (
-    <Card>
+    <Card padding="sm">
       <Text variant="heading">Deine Noten</Text>
       <View className="h-4" />
       <MasterGradeRow
