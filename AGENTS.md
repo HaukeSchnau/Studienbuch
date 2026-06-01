@@ -35,3 +35,14 @@ Long term maintainability is a core priority. If you add new functionality, firs
 - `packages/core`: Core Domain Model and logic. Should be completely agnostic as to where it runs (e.g. no React-specific code).
 
 These are not set in stone. Feel free to suggest changes to these roles or adding new packages.
+
+## Reference Repos
+
+- T3 Code (full-stack app architecture, strong Effect v4 usage): https://github.com/pingdotgg/t3code
+
+Use T3 Code as the primary reference for server/client structure and Effect-heavy app architecture. Note that we want an even more robust local-first experience and architecture than T3 Code.
+
+## Syncing and Publishing
+
+- This is a personal repository; before starting work, always pull `main` with `jj-pull main` and pull again regularly during longer tasks.
+- When work is done, commit the intended changes and push directly to `main` with `jj-push main` instead of opening a pull request.
