@@ -20,8 +20,7 @@ import { AddWrittenGrade } from "./grades/written/add-written-grade";
 export const CoursePage = ({ courseId }: { courseId: string }) => {
   const { getCourse, semesters } = useMockApp();
   const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
-  const [isAddWrittenGradeVisible, setIsAddWrittenGradeVisible] =
-    useState(false);
+  const [isAddWrittenGradeVisible, setIsAddWrittenGradeVisible] = useState(false);
   const heroStyle = useTransparentHeaderTopPadding();
   const course = getCourse(courseId);
 
@@ -35,10 +34,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
     <CoreLayout>
       {isAddTaskVisible ? (
         <PortaledBottomSheet onClose={() => setIsAddTaskVisible(false)}>
-          <AddTaskSheet
-            courseId={course.id}
-            onClose={() => setIsAddTaskVisible(false)}
-          />
+          <AddTaskSheet courseId={course.id} onClose={() => setIsAddTaskVisible(false)} />
         </PortaledBottomSheet>
       ) : null}
       {isAddWrittenGradeVisible ? (
@@ -63,9 +59,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
           <Stack.Toolbar.MenuAction onPress={() => setIsAddTaskVisible(true)}>
             Hausaufgabe hinzufügen
           </Stack.Toolbar.MenuAction>
-          <Stack.Toolbar.MenuAction
-            onPress={() => setIsAddWrittenGradeVisible(true)}
-          >
+          <Stack.Toolbar.MenuAction onPress={() => setIsAddWrittenGradeVisible(true)}>
             Klausurnote eintragen
           </Stack.Toolbar.MenuAction>
         </Stack.Toolbar.Menu>
@@ -77,9 +71,7 @@ export const CoursePage = ({ courseId }: { courseId: string }) => {
               {subjectNameMap[course.subject]}
             </Text>
             <Text className="text-2xl text-white">
-              {course.teachers
-                .map((teacher) => Teacher.formalName(teacher))
-                .join(", ")}
+              {course.teachers.map((teacher) => Teacher.formalName(teacher)).join(", ")}
             </Text>
             <View className="h-2" />
             <Text italic className="text-lg text-white">

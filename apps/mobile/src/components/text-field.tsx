@@ -28,10 +28,10 @@ export const TextField = ({ label, placeholder, error, ...props }: Props) => {
           {...props}
           placeholder={placeholder}
           placeholderTextColor="#98A2B3"
-          className="px-5 py-4 text-[18px] text-[#111827]"
+          className="px-5 py-3 text-[17px] text-[#111827]"
           style={{
             fontFamily: fontNames.regular,
-            minHeight: 56,
+            minHeight: 52,
           }}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}

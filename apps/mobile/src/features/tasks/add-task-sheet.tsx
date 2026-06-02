@@ -82,7 +82,7 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
         />
       ) : null}
 
-      <TextField autoFocus label="Titel" value={title} onChangeText={setTitle} />
+      <TextField label="Titel" value={title} onChangeText={setTitle} />
 
       <TextAreaField
         label="Beschreibung"

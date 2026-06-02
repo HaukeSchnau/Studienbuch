@@ -15,7 +15,7 @@ interface Props {
 export const SheetScaffold = ({ title, subtitle, children, footer }: Props) => {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const footerBottomPadding = Math.max(insets.bottom, 16);
+  const footerBottomPadding = Math.max(insets.bottom - 14, 12);
   const maxBodyHeight = footer ? Math.min(height * 0.56, 520) : Math.min(height * 0.68, 620);
 
   return (
@@ -36,14 +36,14 @@ export const SheetScaffold = ({ title, subtitle, children, footer }: Props) => {
         style={{ maxHeight: maxBodyHeight }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 20 }}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 16 }}
       >
-        <View className="gap-4">{children}</View>
+        <View className="gap-3">{children}</View>
       </ScrollView>
 
       {footer ? (
         <View
-          className="border-t border-[#E5EAF0] bg-[#FBFCFE] px-6 pt-4"
+          className="border-t border-[#E5EAF0] bg-[#FBFCFE] px-6 pt-3"
           style={{ paddingBottom: footerBottomPadding }}
         >
           {footer}

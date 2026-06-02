@@ -17,7 +17,7 @@ export const TextAreaField = ({ label, style, ...props }: Props) => {
       <Text className="px-1 text-[15px] text-[#5B6472]" weight="medium">
         {label}
       </Text>
-      <FieldSurface focused={isFocused} className="px-5 py-4">
+      <FieldSurface focused={isFocused} className="px-5 py-3">
         <TextInput
           {...props}
           multiline
@@ -27,9 +27,9 @@ export const TextAreaField = ({ label, style, ...props }: Props) => {
           onBlur={() => setIsFocused(false)}
           style={[
             {
-              minHeight: 112,
+              minHeight: 84,
               fontFamily: fontNames.regular,
-              fontSize: 17,
+              fontSize: 16,
               color: "#111827",
             },
             style,
