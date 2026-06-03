@@ -1,5 +1,5 @@
-import type { SubjectId } from "~/mock-app/domain";
-import { subjectNameMap } from "~/mock-app/domain";
+import type { SubjectId } from "@stu/core";
+import { subjectNameMap } from "@stu/core";
 import { colors } from "~/theme/colors";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
 import { SubjectIcon } from "./subject-icon";

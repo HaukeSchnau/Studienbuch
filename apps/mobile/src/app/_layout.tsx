@@ -9,14 +9,11 @@ import {
   Nunito_700Bold_Italic,
   useFonts,
 } from "@expo-google-fonts/nunito";
-import { Redirect, Stack, useSegments } from "expo-router";
-import { StatusBar } from "expo-status-bar";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import { ReanimatedScreenProvider } from "react-native-screens/reanimated";
-import { MockAppProvider, useMockApp } from "~/mock-app/provider";
+import { AppProviders } from "~/app-shell/app-providers";
+import { SetupGate } from "~/app-shell/setup/setup-gate";
 import { colors } from "~/theme/colors";
 import "../global.css";
 
@@ -45,29 +42,15 @@ export default function RootLayout() {
   }
 
   return (
-    <MockAppProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <SafeAreaProvider>
-          <ReanimatedScreenProvider>
-            <StatusBar style="light" />
-            <AppNavigator />
-          </ReanimatedScreenProvider>
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
-    </MockAppProvider>
+    <AppProviders>
+      <SetupGate>
+        <AppNavigator />
+      </SetupGate>
+    </AppProviders>
   );
 }
 
 function AppNavigator() {
-  const segments = useSegments();
-  const { getRequiredSetupPath } = useMockApp();
-  const requiredSetupPath = getRequiredSetupPath();
-  const isSetupRoute = segments[0] === "setup";
-
-  if (requiredSetupPath && !isSetupRoute) {
-    return <Redirect href={requiredSetupPath} />;
-  }
-
   return (
     <Stack
       screenOptions={{

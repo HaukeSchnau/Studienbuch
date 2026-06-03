@@ -1,0 +1,21 @@
+import type { Course, TeacherInfo } from "@stu/core";
+
+export const teachers: TeacherInfo[] = [
+  { id: "t1", firstName: "Anna", lastName: "Meyer" },
+  { id: "t2", firstName: "Tobias", lastName: "Kruse" },
+  { id: "t3", firstName: "Nina", lastName: "Petersen" },
+  { id: "t4", firstName: "Lars", lastName: "Becker" },
+];
+
+export const coursesSeed: Course[] = [
+  { id: "de-1", name: "Deutsch LK", subject: "de", teachers: [teachers[0]!], semesterId: "s2" },
+  { id: "en-1", name: "Englisch GK", subject: "en", teachers: [teachers[1]!], semesterId: "s2" },
+  { id: "ma-1", name: "Mathematik LK", subject: "ma", teachers: [teachers[2]!], semesterId: "s2" },
+  { id: "ph-1", name: "Physik GK", subject: "ph", teachers: [teachers[3]!], semesterId: "s2" },
+  { id: "ge-1", name: "Geschichte GK", subject: "ge", teachers: [teachers[0]!], semesterId: "s2" },
+  { id: "sp-1", name: "Sport GK", subject: "sp", teachers: [teachers[1]!], semesterId: "s2" },
+  { id: "de-0", name: "Deutsch LK", subject: "de", teachers: [teachers[0]!], semesterId: "s1" },
+  { id: "ma-0", name: "Mathematik LK", subject: "ma", teachers: [teachers[2]!], semesterId: "s1" },
+  { id: "en-0", name: "Englisch GK", subject: "en", teachers: [teachers[1]!], semesterId: "s1" },
+  { id: "ge-0", name: "Geschichte GK", subject: "ge", teachers: [teachers[0]!], semesterId: "s1" },
+];

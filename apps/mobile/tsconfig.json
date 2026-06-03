@@ -3,6 +3,7 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
+      "@stu/core": ["../../packages/core/src/index.ts"],
       "@/*": ["./src/*"],
       "@/assets/*": ["./assets/*"],
       "~/*": ["./src/*"]

@@ -1,8 +1,8 @@
 import { useLocalSearchParams } from "expo-router";
-import { CoursePage } from "~/features/courses/course.page";
+import { CourseScreen } from "~/features/courses/screens/course-screen";
 
 export default function Course() {
   const { course: courseId } = useLocalSearchParams<{ course: string }>();
 
-  return <CoursePage courseId={courseId} />;
+  return <CourseScreen courseId={courseId} />;
 }

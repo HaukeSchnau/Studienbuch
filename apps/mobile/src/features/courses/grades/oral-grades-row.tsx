@@ -7,8 +7,8 @@ import { OutlinedButton } from "~/components/button";
 import { ConfirmationStatus } from "~/components/confirmation-status";
 import { IconButton } from "~/components/icon-button";
 import { Text } from "~/components/text";
-import { formatGrade, isGradeConfirmed, type Grade } from "~/mock-app/domain";
-import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { formatGrade, isGradeConfirmed, type Grade } from "@stu/core";
+import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { EditOralGrade } from "./oral/edit-oral-grade";
 import OralIcon from "./oral/oral.svg";
 

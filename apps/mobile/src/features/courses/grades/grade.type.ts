@@ -1,4 +1,4 @@
-import type { Course, Grade } from "~/mock-app/domain";
+import type { Course, Grade } from "@stu/core";
 
 export interface ResolvedGrade extends Grade {
   course: Course;

@@ -1,5 +1,5 @@
 [parallel]
-qa-tasks: lint test
+qa-tasks: lint test check-mobile-boundaries
 
 ios_device := "539D7C55-85D6-50B1-BE9B-88293D4628C3"
 
@@ -25,6 +25,9 @@ lint-fix:
 
 test:
     bun run test
+
+check-mobile-boundaries:
+    bun scripts/check-mobile-boundaries.ts
 
 icons:
     bun run generate:icons

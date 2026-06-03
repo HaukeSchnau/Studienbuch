@@ -1,4 +1,4 @@
-import type { SubjectId } from "~/mock-app/domain";
+import type { SubjectId } from "@stu/core";
 import type { ComponentType } from "react";
 import { View } from "react-native";
 import type { SvgProps } from "react-native-svg";

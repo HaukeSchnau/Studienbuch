@@ -6,9 +6,9 @@ import { Divider } from "~/components/divider";
 import { SheetCallout } from "~/components/sheet-callout";
 import { SheetScaffold } from "~/components/sheet-scaffold";
 import { TextField } from "~/components/text-field";
-import { isGradeConfirmed, type Grade } from "~/mock-app/domain";
+import { isGradeConfirmed, type Grade } from "@stu/core";
 import { useMockApp } from "~/mock-app/provider";
-import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { haptics } from "~/utils/haptics";
 import { GradeCard } from "../grade-card";
 

@@ -9,8 +9,8 @@ import { IconButton } from "~/components/icon-button";
 import { SystemIcon } from "~/components/system-icon";
 import { Text } from "~/components/text";
 import { colors } from "~/theme/colors";
-import { formatGrade, isGradeConfirmed, type Grade } from "~/mock-app/domain";
-import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { formatGrade, isGradeConfirmed, type Grade } from "@stu/core";
+import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { EditMasterGrade } from "./master/edit-master-grade";
 
 export const MasterGradeRow = ({

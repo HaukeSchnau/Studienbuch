@@ -1,3 +1,3 @@
-import { OverviewPage } from "~/features/overview.page";
+import { OverviewScreen } from "~/features/overview/screens/overview-screen";
 
-export default OverviewPage;
+export default OverviewScreen;

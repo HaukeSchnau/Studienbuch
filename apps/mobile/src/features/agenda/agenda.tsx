@@ -5,7 +5,7 @@ import { View } from "react-native";
 import { Card } from "~/components/card";
 import { Divider } from "~/components/divider";
 import { Text } from "~/components/text";
-import { subjectNameMap, Teacher } from "~/mock-app/domain";
+import { subjectNameMap, Teacher } from "@stu/core";
 import { useMockApp } from "~/mock-app/provider";
 
 const matchHolidayName = (name: string) => {

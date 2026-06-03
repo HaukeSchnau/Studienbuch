@@ -2,9 +2,9 @@ import { format } from "date-fns";
 import { ConfirmPageContent, ViewConfirmPageContent } from "~/components/confirm-page-content";
 import { PageScaffold } from "~/components/page-scaffold";
 import { Text } from "~/components/text";
-import { formatGrade, subjectNameMap, Teacher } from "~/mock-app/domain";
+import { formatGrade, subjectNameMap, Teacher } from "@stu/core";
 import { useMockApp } from "~/mock-app/provider";
-import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import type { ConfirmedResolvedGrade, ResolvedGrade } from "../grade.type";
 
 export const ConfirmWrittenGradeTeacher = ({ grade }: { grade: ResolvedGrade }) => {

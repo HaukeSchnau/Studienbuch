@@ -1,10 +1,10 @@
 import { ConfirmPageContent } from "~/components/confirm-page-content";
 import { PageScaffold } from "~/components/page-scaffold";
 import { Text } from "~/components/text";
-import type { Absence } from "~/mock-app/domain";
-import { Teacher } from "~/mock-app/domain";
+import type { Absence } from "@stu/core";
+import { Teacher } from "@stu/core";
 import { useMockApp } from "~/mock-app/provider";
-import { useRequiredAuthenticatedSession } from "~/utils/auth";
+import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 
 export const ExcuseTeacher = ({ absence }: { absence: Absence }) => {
   const { signAbsence, getCourse } = useMockApp();

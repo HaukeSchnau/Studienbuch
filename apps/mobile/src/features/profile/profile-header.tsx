@@ -7,7 +7,7 @@ import { PortaledBottomSheet } from "~/components/bottom-sheet";
 import { IconButton } from "~/components/icon-button";
 import { Text } from "~/components/text";
 import { SystemIcon, type SystemIconName } from "~/components/system-icon";
-import { getCurrentYearNum } from "~/mock-app/domain";
+import { getCurrentYearNum } from "@stu/core";
 import { useMockApp } from "~/mock-app/provider";
 
 const Avatar = () => (

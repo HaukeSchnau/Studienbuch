@@ -1,3 +1,3 @@
-import { AbsencesPage } from "~/features/absences/absences.page";
+import { AbsencesScreen } from "~/features/absences/screens/absences-screen";
 
-export default AbsencesPage;
+export default AbsencesScreen;

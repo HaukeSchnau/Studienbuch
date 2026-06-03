@@ -1,3 +1,3 @@
-import { SchedulePage } from "~/features/schedule/schedule.page";
+import { ScheduleScreen } from "~/features/schedule/screens/schedule-screen";
 
-export default SchedulePage;
+export default ScheduleScreen;

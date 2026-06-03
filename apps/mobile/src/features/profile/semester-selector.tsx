@@ -1,6 +1,6 @@
 import SegmentedControl from "@expo/ui/community/segmented-control";
 import { colors } from "~/theme/colors";
-import type { Semester } from "~/mock-app/domain";
+import type { Semester } from "@stu/core";
 import { haptics } from "~/utils/haptics";
 
 interface SemesterSelectorProps {

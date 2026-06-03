@@ -4,8 +4,8 @@ import { Card } from "~/components/card";
 import { SubjectIcon } from "~/components/subject-icon";
 import { Table } from "~/components/table";
 import { Text } from "~/components/text";
-import type { Semester } from "~/mock-app/domain";
-import { subjectNameMap } from "~/mock-app/domain";
+import type { Semester } from "@stu/core";
+import { subjectNameMap } from "@stu/core";
 import { useMockApp } from "~/mock-app/provider";
 
 export const CourseList = ({ semester }: { semester: Semester }) => {
