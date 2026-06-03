@@ -1,10 +1,9 @@
-import { Picker } from "@expo/ui/community/picker";
 import { useEffect } from "react";
 import { ActionSheetIOS, Platform, Pressable, View } from "react-native";
 
 import { FieldSurface } from "./field-surface";
 import { SystemIcon } from "./system-icon";
-import { fontNames, Text } from "./text";
+import { Text } from "./text";
 
 type PickerValue = string | number | null;
 
@@ -31,9 +30,20 @@ export const SelectField = <TOption, TValue extends PickerValue>({
     }
   }, [value, options, onChange]);
 
-  if (Platform.OS === "ios") {
-    const selectedLabel = value ? getOptionLabel(value) : "Auswählen";
+  const selectedLabel = value ? getOptionLabel(value) : "Auswählen";
+  const selectNextOption = () => {
+    if (options.length === 0) {
+      return;
+    }
 
+    const currentIndex = value
+      ? options.findIndex((option) => getKey(option) === getKey(value))
+      : -1;
+    const nextIndex = (currentIndex + 1) % options.length;
+    onChange(options[nextIndex]);
+  };
+
+  if (Platform.OS === "ios") {
     return (
       <View className="gap-2">
         <Text className="px-1 text-[15px] text-[#5B6472]" weight="medium">
@@ -71,21 +81,14 @@ export const SelectField = <TOption, TValue extends PickerValue>({
       <Text className="px-1 text-[15px] text-[#5B6472]" weight="medium">
         {label}
       </Text>
-      <FieldSurface className="min-h-14 justify-center px-1">
-        <Picker
-          selectedValue={value ? getKey(value) : undefined}
-          onValueChange={(_, idx) => onChange(options[idx])}
-          style={{ height: 56 }}
+      <FieldSurface>
+        <Pressable
+          className="min-h-14 flex-row items-center justify-between px-5 py-4"
+          onPress={selectNextOption}
         >
-          {options.map((option) => (
-            <Picker.Item
-              key={String(getKey(option))}
-              label={getOptionLabel(option)}
-              value={getKey(option)}
-              style={{ color: "#000000", fontFamily: fontNames.regular }}
-            />
-          ))}
-        </Picker>
+          <Text className="text-[17px] text-[#111827]">{selectedLabel}</Text>
+          <SystemIcon name="chevron-right" size={20} color="#7B8794" />
+        </Pressable>
       </FieldSurface>
     </View>
   );
