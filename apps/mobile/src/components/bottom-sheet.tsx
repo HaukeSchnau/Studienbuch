@@ -15,7 +15,7 @@ export function PortaledBottomSheet({ children, onClose }: Props) {
       enableDynamicSizing
       enablePanDownToClose
       onClose={onClose}
-      backgroundStyle={styles.sheetBackground}
+      backgroundStyle={Platform.OS === "ios" ? undefined : styles.sheetBackground}
     >
       <BottomSheetView style={styles.sheetFill}>{children}</BottomSheetView>
     </ExpoBottomSheet>
@@ -24,10 +24,10 @@ export function PortaledBottomSheet({ children, onClose }: Props) {
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: Platform.OS === "android" ? colors.surface : "transparent",
+    backgroundColor: colors.surface,
   },
   sheetFill: {
-    backgroundColor: Platform.OS === "ios" ? "rgba(251, 253, 255, 0.72)" : colors.surface,
+    backgroundColor: Platform.OS === "ios" ? "rgba(251, 253, 255, 0.54)" : colors.surface,
     marginTop: Platform.OS === "ios" ? -16 : 0,
     paddingTop: Platform.OS === "ios" ? 16 : 0,
     marginBottom: Platform.OS === "ios" ? -28 : 0,
