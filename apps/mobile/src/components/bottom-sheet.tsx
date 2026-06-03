@@ -1,5 +1,6 @@
 import ExpoBottomSheet, { BottomSheetView } from "@expo/ui/community/bottom-sheet";
 import type { ReactNode } from "react";
+import { Platform, StyleSheet } from "react-native";
 import { colors } from "~/theme/colors";
 
 interface Props {
@@ -14,9 +15,22 @@ export function PortaledBottomSheet({ children, onClose }: Props) {
       enableDynamicSizing
       enablePanDownToClose
       onClose={onClose}
-      backgroundStyle={{ backgroundColor: colors.surface }}
+      backgroundStyle={styles.sheetBackground}
     >
-      <BottomSheetView style={{ backgroundColor: colors.surface }}>{children}</BottomSheetView>
+      <BottomSheetView style={styles.sheetFill}>{children}</BottomSheetView>
     </ExpoBottomSheet>
   );
 }
+
+const styles = StyleSheet.create({
+  sheetBackground: {
+    backgroundColor: Platform.OS === "android" ? colors.surface : "transparent",
+  },
+  sheetFill: {
+    backgroundColor: Platform.OS === "ios" ? "rgba(251, 253, 255, 0.72)" : colors.surface,
+    marginTop: Platform.OS === "ios" ? -16 : 0,
+    paddingTop: Platform.OS === "ios" ? 16 : 0,
+    marginBottom: Platform.OS === "ios" ? -28 : 0,
+    paddingBottom: Platform.OS === "ios" ? 28 : 0,
+  },
+});
