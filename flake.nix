@@ -16,7 +16,8 @@
             android_sdk.accept_license = true;
           };
         };
-        jdk = pkgs.jdk17;
+        jdk = pkgs.jdk21;
+        gradle = pkgs.gradle_8;
         androidComposition = pkgs.androidenv.composeAndroidPackages {
           platformVersions = [ "36" ];
           buildToolsVersions = [
@@ -41,6 +42,7 @@
             cocoapods
             watchman
             jdk
+            gradle
             androidSdk
           ];
 
