@@ -1,8 +1,8 @@
 import { Redirect } from "expo-router";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockSetup } from "~/mock-app/hooks";
 
 export function InitialRedirect() {
-  const { getRequiredSetupPath } = useMockApp();
+  const { getRequiredSetupPath } = useMockSetup();
 
   return <Redirect href={getRequiredSetupPath() ?? "/(main)"} />;
 }

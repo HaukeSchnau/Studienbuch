@@ -1,3 +1,3 @@
-import { LicenseKeyScreen } from "~/features/setup/screens/license-key-screen";
+import { LicenseKeyScreen } from "~/features/setup";
 
 export default LicenseKeyScreen;

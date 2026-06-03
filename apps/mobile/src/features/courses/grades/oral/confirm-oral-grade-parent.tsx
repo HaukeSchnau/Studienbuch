@@ -1,15 +1,18 @@
 import { format } from "date-fns";
-import { ConfirmPageContent, ViewConfirmPageContent } from "~/components/confirm-page-content";
-import { PageScaffold } from "~/components/page-scaffold";
-import { Text } from "~/components/text";
+import {
+  ConfirmPageContent,
+  ViewConfirmPageContent,
+} from "~/components/layout/confirm-page-content";
+import { PageScaffold } from "~/components/layout/page-scaffold";
+import { Text } from "~/components/ui/text";
 import { formatGrade, subjectNameMap } from "@stu/core";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockGrades } from "~/mock-app/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import type { ConfirmedResolvedGrade, ResolvedGrade } from "../grade.type";
 
 export const ConfirmOralGradeParent = ({ grade }: { grade: ResolvedGrade }) => {
   const { user } = useRequiredAuthenticatedSession();
-  const { signGrade } = useMockApp();
+  const { signGrade } = useMockGrades();
 
   return (
     <PageScaffold

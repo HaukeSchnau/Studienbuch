@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { ScrollView, View } from "react-native";
-import { PortaledBottomSheet } from "~/components/bottom-sheet";
-import { IconButton } from "~/components/icon-button";
-import { SystemIcon } from "~/components/system-icon";
-import { Text } from "~/components/text";
-import { useMockApp } from "~/mock-app/provider";
+import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
+import { IconButton } from "~/components/ui/icon-button";
+import { SystemIcon } from "~/components/ui/system-icon";
+import { Text } from "~/components/ui/text";
+import { useMockTasks } from "~/mock-app/hooks";
 import type { Task } from "@stu/core";
 import { getTaskOverviewModel } from "../model/task-overview-model";
 import { AddTaskSheet } from "./add-task-sheet";
 import { TaskCard } from "./task-card";
 
 export const TasksSection = ({ courseId }: { courseId?: string }) => {
-  const { getCourseTasks } = useMockApp();
+  const { getCourseTasks } = useMockTasks();
   const [isAddVisible, setIsAddVisible] = useState(false);
   const model = getTaskOverviewModel(getCourseTasks(courseId));
 

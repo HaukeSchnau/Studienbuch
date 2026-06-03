@@ -1,3 +1,3 @@
-import { AbsencesScreen } from "~/features/absences/screens/absences-screen";
+import { AbsencesScreen } from "~/features/absences";
 
 export default AbsencesScreen;

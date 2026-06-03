@@ -3,7 +3,7 @@ import { subjectNameMap } from "@stu/core";
 import { colors } from "~/theme/colors";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
 import { SubjectIcon } from "./subject-icon";
-import { Text } from "./text";
+import { Text } from "./ui/text";
 
 interface Props<TOption> {
   subject: SubjectId;

@@ -2,12 +2,12 @@ import { format } from "date-fns";
 import type { Href } from "expo-router";
 import { Link } from "expo-router";
 import { Pressable, View } from "react-native";
-import { Text } from "~/components/text";
+import { Text } from "~/components/ui/text";
 import { isTaskArchived, type Task } from "@stu/core";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockCourses } from "~/mock-app/hooks";
 
 export const TaskCard = ({ task }: { task: Task }) => {
-  const { getCourse } = useMockApp();
+  const { getCourse } = useMockCourses();
   const course = getCourse(task.courseId);
   const archived = isTaskArchived(task);
 

@@ -1,10 +1,10 @@
 import type { PropsWithChildren } from "react";
 import { Redirect, useSegments } from "expo-router";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockSetup } from "~/mock-app/hooks";
 
 export function SetupGate({ children }: PropsWithChildren) {
   const segments = useSegments();
-  const { getRequiredSetupPath } = useMockApp();
+  const { getRequiredSetupPath } = useMockSetup();
   const requiredSetupPath = getRequiredSetupPath();
   const isSetupRoute = segments[0] === "setup";
 

@@ -1,15 +1,15 @@
 import { useRouter } from "expo-router";
 import { View } from "react-native";
-import { Card } from "~/components/card";
+import { Card } from "~/components/ui/card";
 import { SubjectIcon } from "~/components/subject-icon";
-import { Table } from "~/components/table";
-import { Text } from "~/components/text";
+import { Table } from "~/components/layout/table";
+import { Text } from "~/components/ui/text";
 import type { Semester } from "@stu/core";
 import { subjectNameMap } from "@stu/core";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockCourses } from "~/mock-app/hooks";
 
 export const CourseList = ({ semester }: { semester: Semester }) => {
-  const { getSemesterCourses } = useMockApp();
+  const { getSemesterCourses } = useMockCourses();
   const courses = getSemesterCourses(semester.id);
   const router = useRouter();
 

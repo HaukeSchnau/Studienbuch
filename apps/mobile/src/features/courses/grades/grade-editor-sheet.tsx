@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { View } from "react-native";
-import { Button, OutlinedButton, TextButton } from "~/components/button";
-import { DateField } from "~/components/date-field";
-import { SheetScaffold } from "~/components/sheet-scaffold";
-import { Text } from "~/components/text";
+import { Button, OutlinedButton, TextButton } from "~/components/ui/button";
+import { DateField } from "~/components/fields/date-field";
+import { SheetScaffold } from "~/components/layout/sheet-scaffold";
+import { Text } from "~/components/ui/text";
 import { haptics } from "~/utils/haptics";
 
 interface Props {

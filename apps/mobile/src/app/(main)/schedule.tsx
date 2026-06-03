@@ -1,3 +1,3 @@
-import { ScheduleScreen } from "~/features/schedule/screens/schedule-screen";
+import { ScheduleScreen } from "~/features/schedule";
 
 export default ScheduleScreen;

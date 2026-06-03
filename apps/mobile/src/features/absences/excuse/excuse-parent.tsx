@@ -1,12 +1,12 @@
-import { ConfirmPageContent } from "~/components/confirm-page-content";
-import { PageScaffold } from "~/components/page-scaffold";
-import { Text } from "~/components/text";
+import { ConfirmPageContent } from "~/components/layout/confirm-page-content";
+import { PageScaffold } from "~/components/layout/page-scaffold";
+import { Text } from "~/components/ui/text";
 import type { Absence } from "@stu/core";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockAbsences } from "~/mock-app/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 
 export const ExcuseParent = ({ absence }: { absence: Absence }) => {
-  const { signAbsence } = useMockApp();
+  const { signAbsence } = useMockAbsences();
   const { user } = useRequiredAuthenticatedSession();
 
   return (

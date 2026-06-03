@@ -1,15 +1,16 @@
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import { Button } from "~/components/button";
-import { CheckboxRow } from "~/components/checkbox-row";
-import { SelectField } from "~/components/select-field";
-import { Text } from "~/components/text";
-import { TextField } from "~/components/text-field";
-import { useMockApp } from "~/mock-app/provider";
+import { Button } from "~/components/ui/button";
+import { CheckboxRow } from "~/components/fields/checkbox-row";
+import { SelectField } from "~/components/fields/select-field";
+import { Text } from "~/components/ui/text";
+import { TextField } from "~/components/fields/text-field";
+import { useMockSchool, useMockSession } from "~/mock-app/hooks";
 
 export function NameAndYearScreen() {
-  const { user, years, classes, updateProfile } = useMockApp();
+  const { user, updateProfile } = useMockSession();
+  const { years, classes } = useMockSchool();
   const [name, setName] = useState(user.name);
   const [isOfAge, setIsOfAge] = useState(user.isOfAge);
   const [yearId, setYearId] = useState(user.yearId);

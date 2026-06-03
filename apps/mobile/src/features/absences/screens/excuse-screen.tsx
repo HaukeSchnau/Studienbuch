@@ -1,14 +1,14 @@
 import { View } from "react-native";
-import { ViewConfirmPageContent } from "~/components/confirm-page-content";
-import { PageScaffold } from "~/components/page-scaffold";
-import { Text } from "~/components/text";
-import { useMockApp } from "~/mock-app/provider";
+import { ViewConfirmPageContent } from "~/components/layout/confirm-page-content";
+import { PageScaffold } from "~/components/layout/page-scaffold";
+import { Text } from "~/components/ui/text";
+import { useMockAbsences } from "~/mock-app/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { ExcuseParent } from "../excuse/excuse-parent";
 import { ExcuseTeacher } from "../excuse/excuse-teacher";
 
 export function ExcuseScreen({ date, courseIds }: { date: Date; courseIds: string[] }) {
-  const { absences } = useMockApp();
+  const { absences } = useMockAbsences();
   const { user } = useRequiredAuthenticatedSession();
   const absence = absences.find(
     (item) =>

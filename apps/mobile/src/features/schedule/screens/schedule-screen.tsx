@@ -15,15 +15,15 @@ import { useCallback, useMemo, useState } from "react";
 import { Pressable, type DimensionValue, View } from "react-native";
 import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
-import { Card } from "~/components/card";
-import { IconButton } from "~/components/icon-button";
+import { Card } from "~/components/ui/card";
+import { IconButton } from "~/components/ui/icon-button";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { SubjectIcon } from "~/components/subject-icon";
 import { shadow } from "~/components/styles/shadow";
-import { Text } from "~/components/text";
+import { Text } from "~/components/ui/text";
 import { haptics } from "~/utils/haptics";
 import { subjectNameMap } from "@stu/core";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockCourses, useMockSchedule } from "~/mock-app/hooks";
 import { colors } from "~/theme/colors";
 
 const TIME_MARKERS = [
@@ -51,7 +51,8 @@ const weekdayToPercent = (weekday: number) =>
   `${(weekday / WEEKDAY_LABELS.length) * 100}%` as DimensionValue;
 
 export const ScheduleScreen = () => {
-  const { getCourse, timetable } = useMockApp();
+  const { getCourse } = useMockCourses();
+  const { timetable } = useMockSchedule();
   const [weekOffset, setWeekOffset] = useState(0);
   const [gridHeight, setGridHeight] = useState(0);
   const insets = useSafeAreaInsets();

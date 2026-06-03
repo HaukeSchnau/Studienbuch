@@ -1,3 +1,3 @@
-import { ClassAndCoursesScreen } from "~/features/setup/screens/class-and-courses-screen";
+import { ClassAndCoursesScreen } from "~/features/setup";
 
 export default ClassAndCoursesScreen;

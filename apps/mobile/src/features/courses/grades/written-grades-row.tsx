@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { View } from "react-native";
-import { PortaledBottomSheet } from "~/components/bottom-sheet";
-import { IconButton } from "~/components/icon-button";
-import { Text } from "~/components/text";
+import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
+import { IconButton } from "~/components/ui/icon-button";
+import { Text } from "~/components/ui/text";
 import { formatGrade, isGradeConfirmed, type Grade } from "@stu/core";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { GradeCard } from "./grade-card";

@@ -2,11 +2,11 @@ import { add, format, isSameDay, isTomorrow, isWithinInterval } from "date-fns";
 import { de as localeDE } from "date-fns/locale/de";
 import { Fragment, useMemo } from "react";
 import { View } from "react-native";
-import { Card } from "~/components/card";
-import { Divider } from "~/components/divider";
-import { Text } from "~/components/text";
+import { Card } from "~/components/ui/card";
+import { Divider } from "~/components/ui/divider";
+import { Text } from "~/components/ui/text";
 import { subjectNameMap, Teacher } from "@stu/core";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockCourses, useMockSchedule } from "~/mock-app/hooks";
 
 const matchHolidayName = (name: string) => {
   const normalized = name.toLowerCase();
@@ -20,7 +20,8 @@ const matchHolidayName = (name: string) => {
 };
 
 export const Agenda = () => {
-  const { getActiveHoliday, getCourse, timetable } = useMockApp();
+  const { getCourse } = useMockCourses();
+  const { getActiveHoliday, timetable } = useMockSchedule();
   const now = useMemo(() => new Date(), []);
 
   const nextEntry = timetable

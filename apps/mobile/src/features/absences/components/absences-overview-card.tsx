@@ -2,13 +2,13 @@ import { format } from "date-fns";
 import { Link } from "expo-router";
 import { useMemo, useState } from "react";
 import { View } from "react-native";
-import { PortaledBottomSheet } from "~/components/bottom-sheet";
-import { Button } from "~/components/button";
-import { Card } from "~/components/card";
-import { IconButton } from "~/components/icon-button";
-import { Text } from "~/components/text";
+import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
+import { Button } from "~/components/ui/button";
+import { Card } from "~/components/ui/card";
+import { IconButton } from "~/components/ui/icon-button";
+import { Text } from "~/components/ui/text";
 import { isAbsenceConfirmed } from "@stu/core";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockAbsences } from "~/mock-app/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { AddAbsence } from "./add-absence";
 import BigCheck from "./big-check.svg";
@@ -16,7 +16,7 @@ import Warning from "./warning.svg";
 
 export const AbsencesOverviewCard = () => {
   const [isAddVisible, setIsAddVisible] = useState(false);
-  const { absences } = useMockApp();
+  const { absences } = useMockAbsences();
   const { user } = useRequiredAuthenticatedSession();
   const unexcused = useMemo(
     () => absences.filter((absence) => !isAbsenceConfirmed(absence, user.isOfAge)),

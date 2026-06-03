@@ -1,19 +1,20 @@
 import { useLocalSearchParams } from "expo-router";
-import { GradeScreen } from "~/features/grades/screens/grade-screen";
-import type { GradeType } from "@stu/core";
+import { getGradeRouteParams } from "~/app-shell/routing/params";
+import { GradeScreen } from "~/features/grades";
 
 export default function GradePageEntry() {
   const params = useLocalSearchParams<{
     course: string;
     date: string;
-    type: GradeType;
+    type: string;
   }>();
+  const routeParams = getGradeRouteParams(params);
+
+  if (!routeParams.courseId || !routeParams.date || !routeParams.type) {
+    return null;
+  }
 
   return (
-    <GradeScreen
-      courseId={params.course}
-      date={new Date(Number.parseInt(params.date, 10))}
-      type={params.type}
-    />
+    <GradeScreen courseId={routeParams.courseId} date={routeParams.date} type={routeParams.type} />
   );
 }

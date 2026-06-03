@@ -1,9 +1,10 @@
 import { useLocalSearchParams } from "expo-router";
-import { TaskScreen } from "~/features/tasks/screens/task-screen";
+import { getTaskRouteParams } from "~/app-shell/routing/params";
+import { TaskScreen } from "~/features/tasks";
 
 export default function TaskRoute() {
   const params = useLocalSearchParams<{ taskId?: string | string[] }>();
-  const taskId = Array.isArray(params.taskId) ? params.taskId[0] : params.taskId;
+  const { taskId } = getTaskRouteParams(params);
 
   if (!taskId) {
     return null;

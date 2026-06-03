@@ -1,11 +1,12 @@
 import { Stack } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
-import { PortaledBottomSheet } from "~/components/bottom-sheet";
-import { PageScaffold } from "~/components/page-scaffold";
-import { Text } from "~/components/text";
+import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
+import { PageScaffold } from "~/components/layout/page-scaffold";
+import { Text } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
-import { useMockApp } from "~/mock-app/provider";
+import type { Absence } from "@stu/core";
+import { useMockAbsences } from "~/mock-app/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { AddAbsence } from "../components/add-absence";
 import { AbsenceItem } from "../components/absence-item";
@@ -13,7 +14,7 @@ import { getAbsencesPageModel } from "../model/absences-page-model";
 
 export const AbsencesScreen = () => {
   const [isAddVisible, setIsAddVisible] = useState(false);
-  const { absences } = useMockApp();
+  const { absences } = useMockAbsences();
   const { user } = useRequiredAuthenticatedSession();
   const { unexcused, excused } = getAbsencesPageModel({
     absences,
@@ -65,7 +66,7 @@ const AbsenceSection = ({
 }: {
   title: string;
   titleColor: string;
-  items: ReturnType<typeof useMockApp>["absences"];
+  items: Absence[];
   emptyLabel: string;
 }) => {
   return (

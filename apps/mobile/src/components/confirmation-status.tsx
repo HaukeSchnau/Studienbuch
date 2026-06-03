@@ -3,8 +3,8 @@ import clsx from "clsx";
 import { View } from "react-native";
 
 import Cross from "~/assets/cross.svg";
-import { SystemIcon } from "./system-icon";
-import { Text } from "./text";
+import { SystemIcon } from "./ui/system-icon";
+import { Text } from "./ui/text";
 
 const SingleConfirmationStatus = ({
   confirmed,

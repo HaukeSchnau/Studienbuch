@@ -2,15 +2,15 @@ import { getISOWeek, getISOWeekYear, isSameDay, startOfDay } from "date-fns";
 import { useMemo, useState } from "react";
 import { View } from "react-native";
 
-import { Button } from "~/components/button";
-import { CheckboxRow } from "~/components/checkbox-row";
-import { DateField } from "~/components/date-field";
-import { SheetCallout } from "~/components/sheet-callout";
-import { SheetScaffold } from "~/components/sheet-scaffold";
-import { Text } from "~/components/text";
-import { TextField } from "~/components/text-field";
+import { Button } from "~/components/ui/button";
+import { CheckboxRow } from "~/components/fields/checkbox-row";
+import { DateField } from "~/components/fields/date-field";
+import { SheetCallout } from "~/components/layout/sheet-callout";
+import { SheetScaffold } from "~/components/layout/sheet-scaffold";
+import { Text } from "~/components/ui/text";
+import { TextField } from "~/components/fields/text-field";
 import { subjectNameMap } from "@stu/core";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockAbsences, useMockCourses, useMockSchedule } from "~/mock-app/hooks";
 import { haptics } from "~/utils/haptics";
 
 interface Props {
@@ -18,7 +18,9 @@ interface Props {
 }
 
 export const AddAbsence = ({ onClose }: Props) => {
-  const { timetable, getCourse, addAbsence } = useMockApp();
+  const { addAbsence } = useMockAbsences();
+  const { getCourse } = useMockCourses();
+  const { timetable } = useMockSchedule();
   const [date, setDate] = useState(startOfDay(new Date()));
   const [reason, setReason] = useState("");
   const [courseIds, setCourseIds] = useState<string[]>([]);

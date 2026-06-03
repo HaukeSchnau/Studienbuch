@@ -3,7 +3,7 @@ import type { ComponentRef, ReactNode } from "react";
 import { useRef } from "react";
 import { View } from "react-native";
 
-import { Text } from "~/components/text";
+import { Text } from "~/components/ui/text";
 import { haptics } from "~/utils/haptics";
 import { SignatureField, SignatureView } from "../signature-field";
 import { Button, TextButton } from "../ui/button";

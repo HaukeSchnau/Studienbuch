@@ -1,14 +1,15 @@
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { View } from "react-native";
-import { Button } from "~/components/button";
+import { Button } from "~/components/ui/button";
 import { SelectCourse } from "~/components/select-course";
-import { Text } from "~/components/text";
+import { Text } from "~/components/ui/text";
 import { findCurrentSemester, type Course, type SubjectId } from "@stu/core";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockCourses, useMockSchool } from "~/mock-app/hooks";
 
 export function ClassAndCoursesScreen() {
-  const { courses, semesters, getSemesterCourses, setSelectedCourses } = useMockApp();
+  const { courses, getSemesterCourses, setSelectedCourses } = useMockCourses();
+  const { semesters } = useMockSchool();
   const currentSemester = findCurrentSemester(semesters)!;
   const currentCourses = getSemesterCourses(currentSemester.id);
   const [selection, setSelection] = useState<Record<SubjectId, Course | undefined>>(

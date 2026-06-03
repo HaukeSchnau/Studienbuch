@@ -7,7 +7,7 @@ import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-re
 import { SafeAreaView } from "react-native-safe-area-context";
 import iconImage from "~/assets/icon.png";
 import { shadow } from "~/components/styles/shadow";
-import { Text } from "~/components/text";
+import { Text } from "~/components/ui/text";
 
 export default function SetupLayout() {
   const { height } = useAnimatedKeyboard();

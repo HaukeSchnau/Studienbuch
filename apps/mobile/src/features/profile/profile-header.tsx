@@ -3,12 +3,12 @@ import { openBrowserAsync } from "expo-web-browser";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { PortaledBottomSheet } from "~/components/bottom-sheet";
-import { IconButton } from "~/components/icon-button";
-import { Text } from "~/components/text";
-import { SystemIcon, type SystemIconName } from "~/components/system-icon";
+import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
+import { IconButton } from "~/components/ui/icon-button";
+import { Text } from "~/components/ui/text";
+import { SystemIcon, type SystemIconName } from "~/components/ui/system-icon";
 import { getCurrentYearNum } from "@stu/core";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockSchool, useMockSession } from "~/mock-app/hooks";
 
 const Avatar = () => (
   <View className="h-28 w-28 items-center justify-center rounded-full bg-accent p-6">
@@ -29,7 +29,8 @@ const DotField = ({ rows, cols }: { rows: number; cols: number }) => (
 );
 
 export const Header = () => {
-  const { user, years } = useMockApp();
+  const { user } = useMockSession();
+  const { years } = useMockSchool();
   const [isSheetVisible, setIsSheetVisible] = useState(false);
   const year = years.find((item) => item.id === user.yearId) ?? years[0]!;
 

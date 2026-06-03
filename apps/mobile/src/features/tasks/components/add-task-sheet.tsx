@@ -2,15 +2,15 @@ import { startOfDay } from "date-fns";
 import { useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
 
-import { Button, OutlinedButton, TextButton } from "~/components/button";
-import { DateField } from "~/components/date-field";
-import { SelectField } from "~/components/select-field";
-import { SheetScaffold } from "~/components/sheet-scaffold";
-import { Text } from "~/components/text";
-import { TextAreaField } from "~/components/text-area-field";
-import { TextField } from "~/components/text-field";
+import { Button, OutlinedButton, TextButton } from "~/components/ui/button";
+import { DateField } from "~/components/fields/date-field";
+import { SelectField } from "~/components/fields/select-field";
+import { SheetScaffold } from "~/components/layout/sheet-scaffold";
+import { Text } from "~/components/ui/text";
+import { TextAreaField } from "~/components/fields/text-area-field";
+import { TextField } from "~/components/fields/text-field";
 import type { TaskAttachment } from "@stu/core";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockCourses, useMockTasks } from "~/mock-app/hooks";
 import { haptics } from "~/utils/haptics";
 
 const attachmentPalette = ["#B9D7F5", "#F5D9B9", "#D7E9C6", "#E2CEF5"] as const;
@@ -22,7 +22,8 @@ const createAttachment = (index: number): TaskAttachment => ({
 });
 
 export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose: () => void }) => {
-  const { getCourseTasks, addTask, courses } = useMockApp();
+  const { courses } = useMockCourses();
+  const { getCourseTasks, addTask } = useMockTasks();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState(startOfDay(new Date()));

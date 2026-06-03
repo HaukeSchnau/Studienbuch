@@ -1,13 +1,14 @@
-import { ConfirmPageContent } from "~/components/confirm-page-content";
-import { PageScaffold } from "~/components/page-scaffold";
-import { Text } from "~/components/text";
+import { ConfirmPageContent } from "~/components/layout/confirm-page-content";
+import { PageScaffold } from "~/components/layout/page-scaffold";
+import { Text } from "~/components/ui/text";
 import type { Absence } from "@stu/core";
 import { Teacher } from "@stu/core";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockAbsences, useMockCourses } from "~/mock-app/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 
 export const ExcuseTeacher = ({ absence }: { absence: Absence }) => {
-  const { signAbsence, getCourse } = useMockApp();
+  const { signAbsence } = useMockAbsences();
+  const { getCourse } = useMockCourses();
   const { user } = useRequiredAuthenticatedSession();
   const firstCourse = absence.courseIds[0] ? getCourse(absence.courseIds[0]) : undefined;
   const teacher = firstCourse?.teachers[0];

@@ -3,19 +3,20 @@ import { Link } from "expo-router";
 import { Alert, TouchableOpacity, View } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Animated, { interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
-import { OutlinedButton } from "~/components/button";
+import { OutlinedButton } from "~/components/ui/button";
 import { ConfirmationStatus } from "~/components/confirmation-status";
-import { SystemIcon } from "~/components/system-icon";
-import { Text } from "~/components/text";
+import { SystemIcon } from "~/components/ui/system-icon";
+import { Text } from "~/components/ui/text";
 import { haptics } from "~/utils/haptics";
 import { isAbsenceConfirmed, subjectNameMap, type Absence } from "@stu/core";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockAbsences, useMockCourses } from "~/mock-app/hooks";
 import { colors } from "~/theme/colors";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 
 export const AbsenceItem = ({ absence }: { absence: Absence }) => {
   const { user } = useRequiredAuthenticatedSession();
-  const { getCourse, deleteAbsence } = useMockApp();
+  const { deleteAbsence } = useMockAbsences();
+  const { getCourse } = useMockCourses();
   const isExcused = isAbsenceConfirmed(absence, user.isOfAge);
   const courseLabels = absence.courseIds
     .map((courseId) => getCourse(courseId))

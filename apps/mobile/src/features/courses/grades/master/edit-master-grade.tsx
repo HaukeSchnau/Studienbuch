@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { View } from "react-native";
 
-import { Button, TextButton } from "~/components/button";
-import { Divider } from "~/components/divider";
-import { SheetCallout } from "~/components/sheet-callout";
-import { SheetScaffold } from "~/components/sheet-scaffold";
-import { TextField } from "~/components/text-field";
+import { Button, TextButton } from "~/components/ui/button";
+import { Divider } from "~/components/ui/divider";
+import { SheetCallout } from "~/components/layout/sheet-callout";
+import { SheetScaffold } from "~/components/layout/sheet-scaffold";
+import { TextField } from "~/components/fields/text-field";
 import { isGradeConfirmed, type Grade } from "@stu/core";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockGrades } from "~/mock-app/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { haptics } from "~/utils/haptics";
 import { GradeCard } from "../grade-card";
@@ -22,7 +22,7 @@ export const EditMasterGrade = ({
   masterGrades: Grade[];
 }) => {
   const { user } = useRequiredAuthenticatedSession();
-  const { upsertGrade, restoreLatestConfirmedGrade } = useMockApp();
+  const { upsertGrade, restoreLatestConfirmedGrade } = useMockGrades();
   const [points, setPoints] = useState("");
   const mostRecentConfirmedMasterGrade = useMemo(() => {
     const currentMasterGrade = masterGrades[0];

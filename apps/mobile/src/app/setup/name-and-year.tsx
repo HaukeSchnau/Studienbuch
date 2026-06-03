@@ -1,3 +1,3 @@
-import { NameAndYearScreen } from "~/features/setup/screens/name-and-year-screen";
+import { NameAndYearScreen } from "~/features/setup";
 
 export default NameAndYearScreen;

@@ -2,18 +2,19 @@ import { useRouter } from "expo-router";
 import { Stack } from "expo-router";
 import { Alert, View } from "react-native";
 import CrossIcon from "~/assets/cross.svg";
-import { Button } from "~/components/button";
-import { Card } from "~/components/card";
-import { PageScaffold } from "~/components/page-scaffold";
-import { SystemIcon } from "~/components/system-icon";
-import { Text } from "~/components/text";
+import { Button } from "~/components/ui/button";
+import { Card } from "~/components/ui/card";
+import { PageScaffold } from "~/components/layout/page-scaffold";
+import { SystemIcon } from "~/components/ui/system-icon";
+import { Text } from "~/components/ui/text";
 import { haptics } from "~/utils/haptics";
-import { useMockApp } from "~/mock-app/provider";
+import { useMockCourses, useMockTasks } from "~/mock-app/hooks";
 import { colors } from "~/theme/colors";
 
 export const TaskScreen = ({ taskId }: { taskId: string }) => {
   const router = useRouter();
-  const { getTask, getCourse, toggleTaskDone, deleteTask } = useMockApp();
+  const { getCourse } = useMockCourses();
+  const { getTask, toggleTaskDone, deleteTask } = useMockTasks();
   const task = getTask(taskId);
 
   if (!task) {

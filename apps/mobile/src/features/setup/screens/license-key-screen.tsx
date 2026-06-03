@@ -2,13 +2,13 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { useMaskedInputProps } from "react-native-mask-input";
-import { Button } from "~/components/button";
-import { Text } from "~/components/text";
-import { TextField } from "~/components/text-field";
-import { useMockApp } from "~/mock-app/provider";
+import { Button } from "~/components/ui/button";
+import { Text } from "~/components/ui/text";
+import { TextField } from "~/components/fields/text-field";
+import { useMockSession } from "~/mock-app/hooks";
 
 export function LicenseKeyScreen() {
-  const { user, updateProfile } = useMockApp();
+  const { user, updateProfile } = useMockSession();
   const [licenseKey, setLicenseKey] = useState(user.licenseKey);
   const maskedInputProps = useMaskedInputProps({
     mask: [

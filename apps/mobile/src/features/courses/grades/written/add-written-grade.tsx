@@ -2,12 +2,12 @@ import { startOfDay } from "date-fns";
 import { useState } from "react";
 import { View } from "react-native";
 
-import { Button, TextButton } from "~/components/button";
-import { DateField } from "~/components/date-field";
-import { SheetCallout } from "~/components/sheet-callout";
-import { SheetScaffold } from "~/components/sheet-scaffold";
-import { TextField } from "~/components/text-field";
-import { useMockApp } from "~/mock-app/provider";
+import { Button, TextButton } from "~/components/ui/button";
+import { DateField } from "~/components/fields/date-field";
+import { SheetCallout } from "~/components/layout/sheet-callout";
+import { SheetScaffold } from "~/components/layout/sheet-scaffold";
+import { TextField } from "~/components/fields/text-field";
+import { useMockGrades } from "~/mock-app/hooks";
 import { haptics } from "~/utils/haptics";
 
 export const AddWrittenGrade = ({
@@ -17,7 +17,7 @@ export const AddWrittenGrade = ({
   courseId: string;
   onClose: () => void;
 }) => {
-  const { upsertGrade } = useMockApp();
+  const { upsertGrade } = useMockGrades();
   const [points, setPoints] = useState("");
   const [date, setDate] = useState(startOfDay(new Date()));
   const gradeNum = Number.parseFloat(points.replaceAll(",", "."));

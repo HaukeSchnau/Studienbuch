@@ -295,7 +295,7 @@ export function MockAppProvider({ children }: PropsWithChildren) {
   return <MockAppContext.Provider value={value}>{children}</MockAppContext.Provider>;
 }
 
-export function useMockApp() {
+export function useMockRuntime() {
   const value = useContext(MockAppContext);
   if (!value) {
     throw new Error("Mock app context is missing");

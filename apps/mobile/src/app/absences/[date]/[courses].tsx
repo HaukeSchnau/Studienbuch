@@ -1,13 +1,17 @@
 import { useLocalSearchParams } from "expo-router";
-import { ExcuseScreen } from "~/features/absences/screens/excuse-screen";
+import { getAbsenceRouteParams } from "~/app-shell/routing/params";
+import { ExcuseScreen } from "~/features/absences";
 
 export default function ExcuseAbsencePage() {
-  const { courses: coursesStr, date: dateStr } = useLocalSearchParams<{
+  const params = useLocalSearchParams<{
     date: string;
     courses: string;
   }>();
+  const { date, courseIds } = getAbsenceRouteParams(params);
 
-  return (
-    <ExcuseScreen date={new Date(Number.parseInt(dateStr, 10))} courseIds={coursesStr.split(";")} />
-  );
+  if (!date) {
+    return null;
+  }
+
+  return <ExcuseScreen date={date} courseIds={courseIds} />;
 }

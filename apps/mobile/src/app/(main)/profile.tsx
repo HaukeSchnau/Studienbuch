@@ -1,3 +1,3 @@
-import { ProfileScreen } from "~/features/profile/screens/profile-screen";
+import { ProfileScreen } from "~/features/profile";
 
 export default ProfileScreen;

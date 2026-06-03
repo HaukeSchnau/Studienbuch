@@ -1,7 +1,7 @@
-import { useMockApp } from "~/mock-app/provider";
+import { useMockSession } from "~/mock-app/hooks";
 
 export const useRequiredAuthenticatedSession = () => {
-  const { user } = useMockApp();
+  const { user } = useMockSession();
 
   return {
     userId: "student-1",
