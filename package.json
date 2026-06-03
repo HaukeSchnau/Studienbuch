@@ -27,7 +27,8 @@
   "scripts": {
     "generate:icons": "bun scripts/generate-icons.ts",
     "test": "vitest run",
-    "prepare": "effect-tsgo patch"
+    "prepare": "effect-tsgo patch",
+    "doctor": "npx react-doctor@latest"
   },
   "devDependencies": {
     "@effect/tsgo": "catalog:",
@@ -38,6 +39,7 @@
     "oxlint": "^1.66.0",
     "oxlint-tsgolint": "^0.23.0",
     "portless": "^0.13.0",
+    "react-doctor": "^0.2.16",
     "vitest": "catalog:"
   },
   "overrides": {
