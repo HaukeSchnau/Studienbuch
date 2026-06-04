@@ -1,18 +1,17 @@
+import { useRouter } from "expo-router";
 import { format } from "date-fns";
-import {
-  ConfirmPageContent,
-  ViewConfirmPageContent,
-} from "~/components/layout/confirm-page-content";
-import { PageScaffold } from "~/components/layout/page-scaffold";
+import { ConfirmPageContent, ViewConfirmPageContent } from "~/domain-ui/confirm-page-content";
+import { PageScaffold } from "~/app-shell/navigation/page-scaffold";
 import { Text } from "~/components/ui/text";
 import { formatGrade, subjectNameMap, Teacher } from "@stu/core";
-import { useMockGrades } from "~/mock-app/hooks";
+import { useGrades } from "~/data/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import type { ConfirmedResolvedGrade, ResolvedGrade } from "../grade.type";
 
 export const ConfirmWrittenGradeTeacher = ({ grade }: { grade: ResolvedGrade }) => {
+  const router = useRouter();
   const { user } = useRequiredAuthenticatedSession();
-  const { signGrade } = useMockGrades();
+  const { signGrade } = useGrades();
   const teacher = grade.course.teachers[0];
 
   if (!teacher) {
@@ -26,6 +25,7 @@ export const ConfirmWrittenGradeTeacher = ({ grade }: { grade: ResolvedGrade }) 
       useDefaultPadding={false}
     >
       <ConfirmPageContent
+        onCancel={() => router.back()}
         heading="Bitte lasse deinen Lehrer hier unterschreiben"
         onConfirm={() => signGrade(grade.id, "teacher")}
         confirmLabel="Bestätigen"

@@ -7,9 +7,9 @@ import { SheetCallout } from "~/components/layout/sheet-callout";
 import { SheetScaffold } from "~/components/layout/sheet-scaffold";
 import { TextField } from "~/components/fields/text-field";
 import { isGradeConfirmed, type Grade } from "@stu/core";
-import { useMockGrades } from "~/mock-app/hooks";
+import { useGrades } from "~/data/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
-import { haptics } from "~/utils/haptics";
+import { haptics } from "~/platform/haptics";
 import { GradeCard } from "../grade-card";
 
 export const EditMasterGrade = ({
@@ -22,7 +22,7 @@ export const EditMasterGrade = ({
   masterGrades: Grade[];
 }) => {
   const { user } = useRequiredAuthenticatedSession();
-  const { upsertGrade, restoreLatestConfirmedGrade } = useMockGrades();
+  const { upsertGrade, restoreLatestConfirmedGrade } = useGrades();
   const [points, setPoints] = useState("");
   const mostRecentConfirmedMasterGrade = useMemo(() => {
     const currentMasterGrade = masterGrades[0];

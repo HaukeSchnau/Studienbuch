@@ -5,6 +5,7 @@ import { IconButton } from "~/components/ui/icon-button";
 import { Text } from "~/components/ui/text";
 import { formatGrade, isGradeConfirmed, type Grade } from "@stu/core";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
+import { gradeRoute } from "~/routing/params";
 import { GradeCard } from "./grade-card";
 import { AddWrittenGrade } from "./written/add-written-grade";
 import WrittenIcon from "./written/written.svg";
@@ -70,10 +71,7 @@ export const WrittenGradesRow = ({
                 ? null
                 : {
                     label: "Jetzt Bestätigen",
-                    href: {
-                      pathname: "/courses/[course]/grades/[type]/[date]",
-                      params: { course: courseId, type: "WRITTEN", date: grade.date.getTime() },
-                    },
+                    href: gradeRoute({ courseId, type: "WRITTEN", date: grade.date }),
                   }
             }
           />

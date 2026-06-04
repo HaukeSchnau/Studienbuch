@@ -1,4 +1,5 @@
 import type { GradeType } from "@stu/core";
+import type { Href } from "expo-router";
 
 type RouteParam = string | string[] | undefined;
 const gradeTypes = new Set<GradeType>(["MASTER", "ORAL", "WRITTEN"]);
@@ -6,6 +7,46 @@ const gradeTypes = new Set<GradeType>(["MASTER", "ORAL", "WRITTEN"]);
 const firstParam = (value: RouteParam) => (Array.isArray(value) ? value[0] : value);
 const parseGradeType = (value: string | undefined) =>
   value && gradeTypes.has(value as GradeType) ? (value as GradeType) : undefined;
+
+export const absencesRoute = "/absences" as const satisfies Href;
+export const mainProfileRoute = "/(main)/profile" as const satisfies Href;
+export const setupClassAndCoursesRoute = "/setup/class-and-courses" as const satisfies Href;
+export const setupNameAndYearRoute = "/setup/name-and-year" as const satisfies Href;
+
+export const taskRoute = (taskId: string) => `/tasks/${taskId}` as Href;
+
+export const courseRoute = (courseId: string) =>
+  ({
+    pathname: "/courses/[course]",
+    params: { course: courseId },
+  }) satisfies Href;
+
+export const absenceConfirmationRoute = (date: Date, courseIds: string[]) =>
+  ({
+    pathname: "/absences/[date]/[courses]",
+    params: {
+      date: date.getTime(),
+      courses: courseIds.join(";"),
+    },
+  }) satisfies Href;
+
+export const gradeRoute = ({
+  courseId,
+  date,
+  type,
+}: {
+  courseId: string;
+  date: Date;
+  type: GradeType;
+}) =>
+  ({
+    pathname: "/courses/[course]/grades/[type]/[date]",
+    params: {
+      course: courseId,
+      type,
+      date: date.getTime(),
+    },
+  }) satisfies Href;
 
 export const getTaskRouteParams = (params: { taskId?: RouteParam }) => ({
   taskId: firstParam(params.taskId),

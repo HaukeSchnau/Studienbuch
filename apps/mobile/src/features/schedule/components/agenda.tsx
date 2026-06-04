@@ -6,7 +6,7 @@ import { Card } from "~/components/ui/card";
 import { Divider } from "~/components/ui/divider";
 import { Text } from "~/components/ui/text";
 import { subjectNameMap, Teacher } from "@stu/core";
-import { useMockCourses, useMockSchedule } from "~/mock-app/hooks";
+import { useCourses, useScheduleData } from "~/data/hooks";
 
 const matchHolidayName = (name: string) => {
   const normalized = name.toLowerCase();
@@ -20,8 +20,8 @@ const matchHolidayName = (name: string) => {
 };
 
 export const Agenda = () => {
-  const { getCourse } = useMockCourses();
-  const { getActiveHoliday, timetable } = useMockSchedule();
+  const { getCourse } = useCourses();
+  const { getActiveHoliday, timetable } = useScheduleData();
   const now = useMemo(() => new Date(), []);
 
   const nextEntry = timetable

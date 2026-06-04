@@ -22,4 +22,5 @@ export {
   ConfirmWrittenGradeTeacher,
   WrittenGradeTeacherConfirmationView,
 } from "./written/confirm-written-grade-teacher";
+export { GradeScreen } from "./screens/grade-screen";
 export { GradesOverviewCard } from "./grades-overview-card";

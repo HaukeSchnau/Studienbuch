@@ -8,7 +8,8 @@ import { Card } from "~/components/ui/card";
 import { IconButton } from "~/components/ui/icon-button";
 import { Text } from "~/components/ui/text";
 import { isAbsenceConfirmed } from "@stu/core";
-import { useMockAbsences } from "~/mock-app/hooks";
+import { useAbsences } from "~/data/hooks";
+import { absencesRoute } from "~/routing/params";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { AddAbsence } from "./add-absence";
 import BigCheck from "./big-check.svg";
@@ -16,7 +17,7 @@ import Warning from "./warning.svg";
 
 export const AbsencesOverviewCard = () => {
   const [isAddVisible, setIsAddVisible] = useState(false);
-  const { absences } = useMockAbsences();
+  const { absences } = useAbsences();
   const { user } = useRequiredAuthenticatedSession();
   const unexcused = useMemo(
     () => absences.filter((absence) => !isAbsenceConfirmed(absence, user.isOfAge)),
@@ -56,7 +57,7 @@ export const AbsencesOverviewCard = () => {
 
       <View className="h-4" />
 
-      <Link href="/absences" asChild>
+      <Link href={absencesRoute} asChild>
         <Button label="Alle ansehen" className="self-end" />
       </Link>
 

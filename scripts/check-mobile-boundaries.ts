@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
@@ -34,6 +34,7 @@ const oldComponentEntrypoints = new Set([
   "card",
   "checkbox-row",
   "confirm-page-content",
+  "confirmation-status",
   "core-layout",
   "date-field",
   "divider",
@@ -41,8 +42,11 @@ const oldComponentEntrypoints = new Set([
   "icon-button",
   "page-scaffold",
   "select-field",
+  "select-course",
   "sheet-callout",
   "sheet-scaffold",
+  "signature-field",
+  "subject-icon",
   "system-icon",
   "table",
   "temp-error",
@@ -50,6 +54,14 @@ const oldComponentEntrypoints = new Set([
   "text-area-field",
   "text-field",
 ]);
+
+const forbiddenMobileSourceDirs = [
+  "apps/mobile/src/mock-app",
+  "apps/mobile/src/navigation",
+  "apps/mobile/src/utils",
+  "apps/mobile/src/features/agenda",
+  "apps/mobile/src/features/grades",
+];
 
 const featureNameFromPath = (file: string) => {
   const normalized = relative(join(root, "apps/mobile/src/features"), file);
@@ -70,13 +82,20 @@ for (const file of sourceFiles(join(root, "packages/core/src"))) {
   }
 }
 
+for (const dir of forbiddenMobileSourceDirs) {
+  const path = join(root, dir);
+  if (existsSync(path)) {
+    violations.push(`${dir}: remove obsolete mobile source directory`);
+  }
+}
+
 for (const file of sourceFiles(join(root, "apps/mobile/src/app"))) {
   for (const specifier of importsOf(file)) {
-    if (specifier.startsWith("~/mock-app")) {
-      report(file, `route files must not import mock runtime directly, found ${specifier}`);
+    if (specifier.startsWith("~/data")) {
+      report(file, `route files must not import app data directly, found ${specifier}`);
     }
     if (specifier.startsWith("@stu/core")) {
-      report(file, `route files should parse params through app-shell, found ${specifier}`);
+      report(file, `route files should parse params through routing helpers, found ${specifier}`);
     }
   }
 }
@@ -93,9 +112,117 @@ for (const file of sourceFiles(join(root, "apps/mobile/src"))) {
 for (const area of ["ui", "fields", "layout"]) {
   for (const file of sourceFiles(join(root, `apps/mobile/src/components/${area}`))) {
     for (const specifier of importsOf(file)) {
-      if (specifier.startsWith("~/mock-app") || specifier.startsWith("~/features")) {
-        report(file, `generic components must not import app data/features, found ${specifier}`);
+      if (
+        specifier.startsWith("~/data") ||
+        specifier.startsWith("~/domain-ui") ||
+        specifier.startsWith("~/features") ||
+        specifier.startsWith("~/app-shell") ||
+        specifier.startsWith("expo-router") ||
+        specifier.startsWith("@stu/core")
+      ) {
+        report(file, `generic components must stay app/domain agnostic, found ${specifier}`);
       }
+    }
+  }
+}
+
+for (const file of sourceFiles(join(root, "apps/mobile/src/domain-ui"))) {
+  for (const specifier of importsOf(file)) {
+    if (
+      specifier.startsWith("~/app-shell") ||
+      specifier.startsWith("~/data") ||
+      specifier.startsWith("~/features") ||
+      specifier.startsWith("expo-router")
+    ) {
+      report(file, `domain-ui must stay presentation-only, found ${specifier}`);
+    }
+  }
+}
+
+for (const file of sourceFiles(join(root, "apps/mobile/src"))) {
+  const relativeFile = relative(root, file);
+  const canImportMockData =
+    relativeFile.startsWith("apps/mobile/src/data/hooks/") ||
+    relativeFile === "apps/mobile/src/data/app-data-provider.tsx" ||
+    relativeFile.startsWith("apps/mobile/src/data/mock/");
+
+  for (const specifier of importsOf(file)) {
+    if (specifier.startsWith("~/data/mock") && !canImportMockData) {
+      report(file, `mock data implementation is private to src/data, found ${specifier}`);
+    }
+    if (specifier.startsWith("~/mock-app")) {
+      report(file, `old mock-app boundary was replaced by src/data, found ${specifier}`);
+    }
+    if (specifier.startsWith("~/utils")) {
+      report(file, `use a named boundary such as platform/routing/data instead of ${specifier}`);
+    }
+    if (specifier.startsWith("~/navigation")) {
+      report(file, `navigation helpers now live under app-shell or routing, found ${specifier}`);
+    }
+    if (specifier.startsWith("~/features/agenda") || specifier.startsWith("~/features/grades")) {
+      report(file, `obsolete feature boundary import, found ${specifier}`);
+    }
+    if (specifier.startsWith("~/app-shell/routing")) {
+      report(file, `routing helpers now live under src/routing, found ${specifier}`);
+    }
+    if (specifier.startsWith("~/components/layout/page-scaffold")) {
+      report(file, `PageScaffold is route-aware and lives under app-shell, found ${specifier}`);
+    }
+    if (specifier.startsWith("~/components/layout/confirm-page-content")) {
+      report(file, `confirmation content is domain-ui, found ${specifier}`);
+    }
+  }
+}
+
+for (const file of sourceFiles(join(root, "apps/mobile/src/data"))) {
+  for (const specifier of importsOf(file)) {
+    if (
+      specifier.startsWith("~/features") ||
+      specifier.startsWith("~/app-shell") ||
+      specifier.startsWith("~/components") ||
+      specifier.startsWith("~/domain-ui") ||
+      specifier.startsWith("expo-router")
+    ) {
+      report(file, `data layer must not import UI/routing features, found ${specifier}`);
+    }
+  }
+}
+
+for (const file of sourceFiles(join(root, "apps/mobile/src/app-shell"))) {
+  for (const specifier of importsOf(file)) {
+    if (specifier.startsWith("~/features")) {
+      report(file, `app-shell must not import product features, found ${specifier}`);
+    }
+    if (specifier.startsWith("~/data/mock")) {
+      report(file, `app-shell must use the data facade, found ${specifier}`);
+    }
+  }
+}
+
+for (const file of sourceFiles(join(root, "apps/mobile/src/routing"))) {
+  for (const specifier of importsOf(file)) {
+    if (
+      specifier.startsWith("~/app-shell") ||
+      specifier.startsWith("~/components") ||
+      specifier.startsWith("~/data") ||
+      specifier.startsWith("~/domain-ui") ||
+      specifier.startsWith("~/features")
+    ) {
+      report(file, `routing helpers must not import app layers, found ${specifier}`);
+    }
+  }
+}
+
+for (const file of sourceFiles(join(root, "apps/mobile/src/platform"))) {
+  for (const specifier of importsOf(file)) {
+    if (
+      specifier.startsWith("~/app-shell") ||
+      specifier.startsWith("~/components") ||
+      specifier.startsWith("~/data") ||
+      specifier.startsWith("~/domain-ui") ||
+      specifier.startsWith("~/features")
+    ) {
+      report(file, `platform wrappers must not import app layers, found ${specifier}`);
     }
   }
 }
@@ -128,7 +255,11 @@ for (const file of sourceFiles(join(root, "apps/mobile/src/features"))) {
   }
   for (const specifier of importsOf(file)) {
     if (
+      specifier.startsWith("~/data") ||
+      specifier.startsWith("~/app-shell") ||
       specifier.startsWith("~/mock-app") ||
+      specifier.startsWith("~/platform") ||
+      specifier.startsWith("~/routing") ||
       specifier === "react" ||
       specifier === "react-native"
     ) {

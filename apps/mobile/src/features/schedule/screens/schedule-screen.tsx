@@ -18,12 +18,13 @@ import { runOnJS } from "react-native-reanimated";
 import { Card } from "~/components/ui/card";
 import { IconButton } from "~/components/ui/icon-button";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { SubjectIcon } from "~/components/subject-icon";
+import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { shadow } from "~/components/styles/shadow";
 import { Text } from "~/components/ui/text";
-import { haptics } from "~/utils/haptics";
+import { haptics } from "~/platform/haptics";
 import { subjectNameMap } from "@stu/core";
-import { useMockCourses, useMockSchedule } from "~/mock-app/hooks";
+import { useCourses, useScheduleData } from "~/data/hooks";
+import { courseRoute } from "~/routing/params";
 import { colors } from "~/theme/colors";
 
 const TIME_MARKERS = [
@@ -51,8 +52,8 @@ const weekdayToPercent = (weekday: number) =>
   `${(weekday / WEEKDAY_LABELS.length) * 100}%` as DimensionValue;
 
 export const ScheduleScreen = () => {
-  const { getCourse } = useMockCourses();
-  const { timetable } = useMockSchedule();
+  const { getCourse } = useCourses();
+  const { timetable } = useScheduleData();
   const [weekOffset, setWeekOffset] = useState(0);
   const [gridHeight, setGridHeight] = useState(0);
   const insets = useSafeAreaInsets();
@@ -269,10 +270,7 @@ export const ScheduleScreen = () => {
                   <Pressable
                     key={entry.id}
                     onPress={() => {
-                      router.push({
-                        pathname: "/courses/[course]",
-                        params: { course: course.id },
-                      });
+                      router.push(courseRoute(course.id));
                     }}
                     accessibilityRole="button"
                     accessibilityLabel={`${subjectNameMap[course.subject]}, ${format(

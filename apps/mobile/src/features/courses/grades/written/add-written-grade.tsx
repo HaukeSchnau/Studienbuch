@@ -7,8 +7,8 @@ import { DateField } from "~/components/fields/date-field";
 import { SheetCallout } from "~/components/layout/sheet-callout";
 import { SheetScaffold } from "~/components/layout/sheet-scaffold";
 import { TextField } from "~/components/fields/text-field";
-import { useMockGrades } from "~/mock-app/hooks";
-import { haptics } from "~/utils/haptics";
+import { useGrades } from "~/data/hooks";
+import { haptics } from "~/platform/haptics";
 
 export const AddWrittenGrade = ({
   courseId,
@@ -17,7 +17,7 @@ export const AddWrittenGrade = ({
   courseId: string;
   onClose: () => void;
 }) => {
-  const { upsertGrade } = useMockGrades();
+  const { upsertGrade } = useGrades();
   const [points, setPoints] = useState("");
   const [date, setDate] = useState(startOfDay(new Date()));
   const gradeNum = Number.parseFloat(points.replaceAll(",", "."));

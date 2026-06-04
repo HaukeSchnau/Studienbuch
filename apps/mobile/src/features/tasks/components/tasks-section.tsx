@@ -4,14 +4,14 @@ import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
 import { IconButton } from "~/components/ui/icon-button";
 import { SystemIcon } from "~/components/ui/system-icon";
 import { Text } from "~/components/ui/text";
-import { useMockTasks } from "~/mock-app/hooks";
+import { useTasks } from "~/data/hooks";
 import type { Task } from "@stu/core";
 import { getTaskOverviewModel } from "../model/task-overview-model";
 import { AddTaskSheet } from "./add-task-sheet";
 import { TaskCard } from "./task-card";
 
 export const TasksSection = ({ courseId }: { courseId?: string }) => {
-  const { getCourseTasks } = useMockTasks();
+  const { getCourseTasks } = useTasks();
   const [isAddVisible, setIsAddVisible] = useState(false);
   const model = getTaskOverviewModel(getCourseTasks(courseId));
 

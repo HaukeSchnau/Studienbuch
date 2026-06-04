@@ -4,7 +4,7 @@ import { Link } from "expo-router";
 import { View } from "react-native";
 import { OutlinedButton } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { ConfirmationStatus } from "~/components/confirmation-status";
+import { ConfirmationStatus } from "~/domain-ui/confirmation-status";
 import { Text } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
 import { formatGradeShort, type Grade, type GradeType, isGradeConfirmed } from "@stu/core";

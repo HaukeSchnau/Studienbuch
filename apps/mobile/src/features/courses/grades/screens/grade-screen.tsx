@@ -1,23 +1,33 @@
 import { View } from "react-native";
-import { PageScaffold } from "~/components/layout/page-scaffold";
+import { PageScaffold } from "~/app-shell/navigation/page-scaffold";
 import { Text } from "~/components/ui/text";
 import type { GradeType } from "@stu/core";
-import { useMockCourses, useMockGrades } from "~/mock-app/hooks";
+import { useCourses, useGrades } from "~/data/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import {
   ConfirmMasterGradeParent,
   MasterGradeParentConfirmationView,
+} from "../master/confirm-master-grade-parent";
+import {
   ConfirmMasterGradeTeacher,
   MasterGradeTeacherConfirmationView,
+} from "../master/confirm-master-grade-teacher";
+import {
   ConfirmOralGradeParent,
   OralGradeParentConfirmationView,
+} from "../oral/confirm-oral-grade-parent";
+import {
   ConfirmOralGradeTeacher,
   OralGradeTeacherConfirmationView,
+} from "../oral/confirm-oral-grade-teacher";
+import {
   ConfirmWrittenGradeParent,
   WrittenGradeParentConfirmationView,
+} from "../written/confirm-written-grade-parent";
+import {
   ConfirmWrittenGradeTeacher,
   WrittenGradeTeacherConfirmationView,
-} from "~/features/courses/grades";
+} from "../written/confirm-written-grade-teacher";
 
 interface Props {
   date: Date;
@@ -26,8 +36,8 @@ interface Props {
 }
 
 export const GradeScreen = ({ date, courseId, type }: Props) => {
-  const { getCourse } = useMockCourses();
-  const { getCourseGrades } = useMockGrades();
+  const { getCourse } = useCourses();
+  const { getCourseGrades } = useGrades();
   const { user } = useRequiredAuthenticatedSession();
   const grade = getCourseGrades(courseId).find(
     (item) => item.type === type && item.date.getTime() === date.getTime(),

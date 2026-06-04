@@ -3,11 +3,11 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ReanimatedScreenProvider } from "react-native-screens/reanimated";
 import { StatusBar } from "expo-status-bar";
-import { MockAppProvider } from "~/mock-app/provider";
+import { AppDataProvider } from "~/data/app-data-provider";
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (
-    <MockAppProvider>
+    <AppDataProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
           <ReanimatedScreenProvider>
@@ -16,6 +16,6 @@ export function AppProviders({ children }: PropsWithChildren) {
           </ReanimatedScreenProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
-    </MockAppProvider>
+    </AppDataProvider>
   );
 }

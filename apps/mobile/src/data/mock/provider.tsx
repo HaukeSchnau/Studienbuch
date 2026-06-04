@@ -36,7 +36,7 @@ import {
 import { createMockId } from "./mock-ids";
 import { mockSignatureSvg } from "./mock-signatures";
 
-interface MockAppContextValue {
+interface MockDataContextValue {
   user: UserProfile;
   years: Year[];
   classes: SchoolClass[];
@@ -82,14 +82,14 @@ interface MockAppContextValue {
   deleteTask: (taskId: string) => void;
 }
 
-const MockAppContext = createContext<MockAppContextValue | null>(null);
+const MockDataContext = createContext<MockDataContextValue | null>(null);
 
 const currentSemester = findCurrentSemester(semesters);
 const initialCourseIds = coursesSeed
   .filter((course) => course.semesterId === currentSemester?.id)
   .map((course) => course.id);
 
-export function MockAppProvider({ children }: PropsWithChildren) {
+export function MockDataProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<UserProfile>({
     name: "Hauke",
     isOfAge: false,
@@ -110,7 +110,7 @@ export function MockAppProvider({ children }: PropsWithChildren) {
 
   const getCourse = (courseId: string) => coursesSeed.find((course) => course.id === courseId);
 
-  const value: MockAppContextValue = {
+  const value: MockDataContextValue = {
     user,
     years,
     classes,
@@ -292,13 +292,13 @@ export function MockAppProvider({ children }: PropsWithChildren) {
     },
   };
 
-  return <MockAppContext.Provider value={value}>{children}</MockAppContext.Provider>;
+  return <MockDataContext.Provider value={value}>{children}</MockDataContext.Provider>;
 }
 
-export function useMockRuntime() {
-  const value = useContext(MockAppContext);
+export function useMockDataRuntime() {
+  const value = useContext(MockDataContext);
   if (!value) {
-    throw new Error("Mock app context is missing");
+    throw new Error("Mock data context is missing");
   }
   return value;
 }

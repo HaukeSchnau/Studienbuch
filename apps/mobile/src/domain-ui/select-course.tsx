@@ -1,9 +1,9 @@
 import type { SubjectId } from "@stu/core";
 import { subjectNameMap } from "@stu/core";
+import { Text } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
 import { Alert, Pressable, StyleSheet, View } from "react-native";
 import { SubjectIcon } from "./subject-icon";
-import { Text } from "./ui/text";
 
 interface Props<TOption> {
   subject: SubjectId;

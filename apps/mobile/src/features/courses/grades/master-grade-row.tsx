@@ -4,13 +4,14 @@ import { useMemo, useState } from "react";
 import { View } from "react-native";
 import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
 import { OutlinedButton } from "~/components/ui/button";
-import { ConfirmationStatus } from "~/components/confirmation-status";
+import { ConfirmationStatus } from "~/domain-ui/confirmation-status";
 import { IconButton } from "~/components/ui/icon-button";
 import { SystemIcon } from "~/components/ui/system-icon";
 import { Text } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
 import { formatGrade, isGradeConfirmed, type Grade } from "@stu/core";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
+import { gradeRoute } from "~/routing/params";
 import { EditMasterGrade } from "./master/edit-master-grade";
 
 export const MasterGradeRow = ({
@@ -32,14 +33,7 @@ export const MasterGradeRow = ({
       return;
     }
 
-    router.push({
-      pathname: "/courses/[course]/grades/[type]/[date]",
-      params: {
-        course: courseId,
-        date: currentMasterGrade.date.getTime(),
-        type: "MASTER",
-      },
-    });
+    router.push(gradeRoute({ courseId, date: currentMasterGrade.date, type: "MASTER" }));
   };
 
   return (

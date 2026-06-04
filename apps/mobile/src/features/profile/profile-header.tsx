@@ -8,7 +8,8 @@ import { IconButton } from "~/components/ui/icon-button";
 import { Text } from "~/components/ui/text";
 import { SystemIcon, type SystemIconName } from "~/components/ui/system-icon";
 import { getCurrentYearNum } from "@stu/core";
-import { useMockSchool, useMockSession } from "~/mock-app/hooks";
+import { useSchool, useSessionData } from "~/data/hooks";
+import { setupNameAndYearRoute } from "~/routing/params";
 
 const Avatar = () => (
   <View className="h-28 w-28 items-center justify-center rounded-full bg-accent p-6">
@@ -29,8 +30,8 @@ const DotField = ({ rows, cols }: { rows: number; cols: number }) => (
 );
 
 export const Header = () => {
-  const { user } = useMockSession();
-  const { years } = useMockSchool();
+  const { user } = useSessionData();
+  const { years } = useSchool();
   const [isSheetVisible, setIsSheetVisible] = useState(false);
   const year = years.find((item) => item.id === user.yearId) ?? years[0]!;
 
@@ -85,7 +86,7 @@ export const Header = () => {
               label="Profil & Kurse bearbeiten"
               onPress={() => {
                 setIsSheetVisible(false);
-                router.push("/setup/name-and-year");
+                router.push(setupNameAndYearRoute);
               }}
             />
             <ActionRow

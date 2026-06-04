@@ -10,17 +10,17 @@ import { SheetScaffold } from "~/components/layout/sheet-scaffold";
 import { Text } from "~/components/ui/text";
 import { TextField } from "~/components/fields/text-field";
 import { subjectNameMap } from "@stu/core";
-import { useMockAbsences, useMockCourses, useMockSchedule } from "~/mock-app/hooks";
-import { haptics } from "~/utils/haptics";
+import { useAbsences, useCourses, useScheduleData } from "~/data/hooks";
+import { haptics } from "~/platform/haptics";
 
 interface Props {
   onClose: () => void;
 }
 
 export const AddAbsence = ({ onClose }: Props) => {
-  const { addAbsence } = useMockAbsences();
-  const { getCourse } = useMockCourses();
-  const { timetable } = useMockSchedule();
+  const { addAbsence } = useAbsences();
+  const { getCourse } = useCourses();
+  const { timetable } = useScheduleData();
   const [date, setDate] = useState(startOfDay(new Date()));
   const [reason, setReason] = useState("");
   const [courseIds, setCourseIds] = useState<string[]>([]);

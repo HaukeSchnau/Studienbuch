@@ -1,12 +1,11 @@
-import { useRouter } from "expo-router";
 import type { ComponentRef, ReactNode } from "react";
 import { useRef } from "react";
 import { View } from "react-native";
 
 import { Text } from "~/components/ui/text";
-import { haptics } from "~/utils/haptics";
-import { SignatureField, SignatureView } from "../signature-field";
-import { Button, TextButton } from "../ui/button";
+import { SignatureField, SignatureView } from "~/domain-ui/signature-field";
+import { haptics } from "~/platform/haptics";
+import { Button, TextButton } from "~/components/ui/button";
 
 interface Props {
   heading: string;
@@ -14,6 +13,7 @@ interface Props {
   major?: string;
   signatureLabel: string;
   confirmLabel: string;
+  onCancel: () => void;
   onConfirm: (signatureSvg: string) => void;
 }
 
@@ -23,9 +23,9 @@ export const ConfirmPageContent = ({
   major,
   signatureLabel,
   confirmLabel,
+  onCancel,
   onConfirm,
 }: Props) => {
-  const router = useRouter();
   const signatureRef = useRef<ComponentRef<typeof SignatureField>>(null);
 
   return (
@@ -48,7 +48,7 @@ export const ConfirmPageContent = ({
       <View className="h-4" />
 
       <View className="flex-row items-center justify-end gap-4">
-        <TextButton onPress={() => router.back()} label="Abbrechen" />
+        <TextButton onPress={onCancel} label="Abbrechen" />
         <Button
           onPress={async () => {
             if (!signatureRef.current) {

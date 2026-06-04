@@ -1,18 +1,18 @@
 import { format } from "date-fns";
-import type { Href } from "expo-router";
 import { Link } from "expo-router";
 import { Pressable, View } from "react-native";
 import { Text } from "~/components/ui/text";
 import { isTaskArchived, type Task } from "@stu/core";
-import { useMockCourses } from "~/mock-app/hooks";
+import { useCourses } from "~/data/hooks";
+import { taskRoute } from "~/routing/params";
 
 export const TaskCard = ({ task }: { task: Task }) => {
-  const { getCourse } = useMockCourses();
+  const { getCourse } = useCourses();
   const course = getCourse(task.courseId);
   const archived = isTaskArchived(task);
 
   return (
-    <Link href={`/tasks/${task.id}` as Href} asChild>
+    <Link href={taskRoute(task.id)} asChild>
       <Pressable
         accessibilityRole="button"
         style={{

@@ -4,7 +4,7 @@ import { Button, OutlinedButton, TextButton } from "~/components/ui/button";
 import { DateField } from "~/components/fields/date-field";
 import { SheetScaffold } from "~/components/layout/sheet-scaffold";
 import { Text } from "~/components/ui/text";
-import { haptics } from "~/utils/haptics";
+import { haptics } from "~/platform/haptics";
 
 interface Props {
   title: string;

@@ -2,14 +2,15 @@ import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { View } from "react-native";
 import { Button } from "~/components/ui/button";
-import { SelectCourse } from "~/components/select-course";
+import { SelectCourse } from "~/domain-ui/select-course";
 import { Text } from "~/components/ui/text";
 import { findCurrentSemester, type Course, type SubjectId } from "@stu/core";
-import { useMockCourses, useMockSchool } from "~/mock-app/hooks";
+import { useCourses, useSchool } from "~/data/hooks";
+import { mainProfileRoute } from "~/routing/params";
 
 export function ClassAndCoursesScreen() {
-  const { courses, getSemesterCourses, setSelectedCourses } = useMockCourses();
-  const { semesters } = useMockSchool();
+  const { courses, getSemesterCourses, setSelectedCourses } = useCourses();
+  const { semesters } = useSchool();
   const currentSemester = findCurrentSemester(semesters)!;
   const currentCourses = getSemesterCourses(currentSemester.id);
   const [selection, setSelection] = useState<Record<SubjectId, Course | undefined>>(
@@ -75,7 +76,7 @@ export function ClassAndCoursesScreen() {
               .filter((value): value is Course => Boolean(value))
               .map((value) => value.id),
           );
-          router.replace("/(main)/profile");
+          router.replace(mainProfileRoute);
         }}
       />
     </View>

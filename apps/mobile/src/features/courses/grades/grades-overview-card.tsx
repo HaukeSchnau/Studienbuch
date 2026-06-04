@@ -2,14 +2,14 @@ import { View } from "react-native";
 import { Card } from "~/components/ui/card";
 import { Divider } from "~/components/ui/divider";
 import { Text } from "~/components/ui/text";
-import { useMockGrades } from "~/mock-app/hooks";
+import { useGrades } from "~/data/hooks";
 import { getGradesOverviewModel } from "./grades-overview-model";
 import { MasterGradeRow } from "./master-grade-row";
 import { OralGradesRow } from "./oral-grades-row";
 import { WrittenGradesRow } from "./written-grades-row";
 
 export const GradesOverviewCard = ({ courseId }: { courseId: string }) => {
-  const { getCourseGrades } = useMockGrades();
+  const { getCourseGrades } = useGrades();
   const grades = getCourseGrades(courseId);
   const { masterGrades, oralGrades, writtenGrades } = getGradesOverviewModel(grades);
 

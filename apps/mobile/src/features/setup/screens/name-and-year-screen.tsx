@@ -6,11 +6,12 @@ import { CheckboxRow } from "~/components/fields/checkbox-row";
 import { SelectField } from "~/components/fields/select-field";
 import { Text } from "~/components/ui/text";
 import { TextField } from "~/components/fields/text-field";
-import { useMockSchool, useMockSession } from "~/mock-app/hooks";
+import { useSchool, useSessionData } from "~/data/hooks";
+import { setupClassAndCoursesRoute } from "~/routing/params";
 
 export function NameAndYearScreen() {
-  const { user, updateProfile } = useMockSession();
-  const { years, classes } = useMockSchool();
+  const { user, updateProfile } = useSessionData();
+  const { years, classes } = useSchool();
   const [name, setName] = useState(user.name);
   const [isOfAge, setIsOfAge] = useState(user.isOfAge);
   const [yearId, setYearId] = useState(user.yearId);
@@ -72,7 +73,7 @@ export function NameAndYearScreen() {
         className="self-end"
         onPress={() => {
           updateProfile({ name, isOfAge, yearId, classId });
-          router.push("/setup/class-and-courses");
+          router.push(setupClassAndCoursesRoute);
         }}
       />
     </View>

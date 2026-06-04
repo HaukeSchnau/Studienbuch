@@ -2,11 +2,11 @@ import { Stack } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
-import { PageScaffold } from "~/components/layout/page-scaffold";
+import { PageScaffold } from "~/app-shell/navigation/page-scaffold";
 import { Text } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
 import type { Absence } from "@stu/core";
-import { useMockAbsences } from "~/mock-app/hooks";
+import { useAbsences } from "~/data/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { AddAbsence } from "../components/add-absence";
 import { AbsenceItem } from "../components/absence-item";
@@ -14,7 +14,7 @@ import { getAbsencesPageModel } from "../model/absences-page-model";
 
 export const AbsencesScreen = () => {
   const [isAddVisible, setIsAddVisible] = useState(false);
-  const { absences } = useMockAbsences();
+  const { absences } = useAbsences();
   const { user } = useRequiredAuthenticatedSession();
   const { unexcused, excused } = getAbsencesPageModel({
     absences,

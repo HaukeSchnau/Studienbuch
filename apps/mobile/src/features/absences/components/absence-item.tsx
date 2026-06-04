@@ -4,19 +4,20 @@ import { Alert, TouchableOpacity, View } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Animated, { interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import { OutlinedButton } from "~/components/ui/button";
-import { ConfirmationStatus } from "~/components/confirmation-status";
+import { ConfirmationStatus } from "~/domain-ui/confirmation-status";
 import { SystemIcon } from "~/components/ui/system-icon";
 import { Text } from "~/components/ui/text";
-import { haptics } from "~/utils/haptics";
+import { haptics } from "~/platform/haptics";
 import { isAbsenceConfirmed, subjectNameMap, type Absence } from "@stu/core";
-import { useMockAbsences, useMockCourses } from "~/mock-app/hooks";
+import { useAbsences, useCourses } from "~/data/hooks";
+import { absenceConfirmationRoute } from "~/routing/params";
 import { colors } from "~/theme/colors";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 
 export const AbsenceItem = ({ absence }: { absence: Absence }) => {
   const { user } = useRequiredAuthenticatedSession();
-  const { deleteAbsence } = useMockAbsences();
-  const { getCourse } = useMockCourses();
+  const { deleteAbsence } = useAbsences();
+  const { getCourse } = useCourses();
   const isExcused = isAbsenceConfirmed(absence, user.isOfAge);
   const courseLabels = absence.courseIds
     .map((courseId) => getCourse(courseId))
@@ -73,16 +74,7 @@ export const AbsenceItem = ({ absence }: { absence: Absence }) => {
           </View>
           {!isExcused && (
             <View className="items-end justify-center gap-1">
-              <Link
-                href={{
-                  pathname: "/absences/[date]/[courses]",
-                  params: {
-                    date: absence.date.getTime(),
-                    courses: absence.courseIds.join(";"),
-                  },
-                }}
-                asChild
-              >
+              <Link href={absenceConfirmationRoute(absence.date, absence.courseIds)} asChild>
                 <OutlinedButton label="Unterschreiben" />
               </Link>
             </View>

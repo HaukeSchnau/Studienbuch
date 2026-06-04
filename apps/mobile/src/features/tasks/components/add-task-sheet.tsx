@@ -10,8 +10,8 @@ import { Text } from "~/components/ui/text";
 import { TextAreaField } from "~/components/fields/text-area-field";
 import { TextField } from "~/components/fields/text-field";
 import type { TaskAttachment } from "@stu/core";
-import { useMockCourses, useMockTasks } from "~/mock-app/hooks";
-import { haptics } from "~/utils/haptics";
+import { useCourses, useTasks } from "~/data/hooks";
+import { haptics } from "~/platform/haptics";
 
 const attachmentPalette = ["#B9D7F5", "#F5D9B9", "#D7E9C6", "#E2CEF5"] as const;
 
@@ -22,8 +22,8 @@ const createAttachment = (index: number): TaskAttachment => ({
 });
 
 export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose: () => void }) => {
-  const { courses } = useMockCourses();
-  const { getCourseTasks, addTask } = useMockTasks();
+  const { courses } = useCourses();
+  const { getCourseTasks, addTask } = useTasks();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState(startOfDay(new Date()));

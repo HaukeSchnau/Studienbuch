@@ -4,11 +4,12 @@ import { useMemo, useState } from "react";
 import { View } from "react-native";
 import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
 import { OutlinedButton } from "~/components/ui/button";
-import { ConfirmationStatus } from "~/components/confirmation-status";
+import { ConfirmationStatus } from "~/domain-ui/confirmation-status";
 import { IconButton } from "~/components/ui/icon-button";
 import { Text } from "~/components/ui/text";
 import { formatGrade, isGradeConfirmed, type Grade } from "@stu/core";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
+import { gradeRoute } from "~/routing/params";
 import { EditOralGrade } from "./oral/edit-oral-grade";
 import OralIcon from "./oral/oral.svg";
 
@@ -29,14 +30,7 @@ export const OralGradesRow = ({
       return;
     }
 
-    router.push({
-      pathname: "/courses/[course]/grades/[type]/[date]",
-      params: {
-        course: courseId,
-        date: currentOralGrade.date.getTime(),
-        type: "ORAL",
-      },
-    });
+    router.push(gradeRoute({ courseId, date: currentOralGrade.date, type: "ORAL" }));
   };
 
   return (

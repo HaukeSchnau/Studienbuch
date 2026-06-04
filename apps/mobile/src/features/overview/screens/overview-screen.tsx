@@ -1,8 +1,8 @@
 import { View } from "react-native";
 import { CoreLayout } from "~/components/layout/core-layout";
 import { Text } from "~/components/ui/text";
-import { Agenda } from "~/features/agenda";
 import { AbsencesOverviewCard } from "~/features/absences";
+import { Agenda } from "~/features/schedule";
 import { TasksSection } from "~/features/tasks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 

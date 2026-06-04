@@ -7,18 +7,18 @@ import Animated from "react-native-reanimated";
 import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
 import { Card } from "~/components/ui/card";
 import { CoreLayout } from "~/components/layout/core-layout";
-import { SubjectIcon } from "~/components/subject-icon";
+import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { Text } from "~/components/ui/text";
 import { useTransparentHeaderTopPadding } from "~/components/use-transparent-header-top-padding";
 import { subjectNameMap, Teacher } from "@stu/core";
-import { useMockCourses, useMockSchool } from "~/mock-app/hooks";
+import { useCourses, useSchool } from "~/data/hooks";
 import { AddTaskSheet, TasksSection } from "~/features/tasks";
 import { GradesOverviewCard } from "~/features/courses/grades";
 import { AddWrittenGrade } from "../grades/written/add-written-grade";
 
 export const CourseScreen = ({ courseId }: { courseId: string }) => {
-  const { getCourse } = useMockCourses();
-  const { semesters } = useMockSchool();
+  const { getCourse } = useCourses();
+  const { semesters } = useSchool();
   const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
   const [isAddWrittenGradeVisible, setIsAddWrittenGradeVisible] = useState(false);
   const heroStyle = useTransparentHeaderTopPadding();

@@ -1,14 +1,16 @@
-import { ConfirmPageContent } from "~/components/layout/confirm-page-content";
-import { PageScaffold } from "~/components/layout/page-scaffold";
+import { useRouter } from "expo-router";
+import { ConfirmPageContent } from "~/domain-ui/confirm-page-content";
+import { PageScaffold } from "~/app-shell/navigation/page-scaffold";
 import { Text } from "~/components/ui/text";
 import type { Absence } from "@stu/core";
 import { Teacher } from "@stu/core";
-import { useMockAbsences, useMockCourses } from "~/mock-app/hooks";
+import { useAbsences, useCourses } from "~/data/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 
 export const ExcuseTeacher = ({ absence }: { absence: Absence }) => {
-  const { signAbsence } = useMockAbsences();
-  const { getCourse } = useMockCourses();
+  const router = useRouter();
+  const { signAbsence } = useAbsences();
+  const { getCourse } = useCourses();
   const { user } = useRequiredAuthenticatedSession();
   const firstCourse = absence.courseIds[0] ? getCourse(absence.courseIds[0]) : undefined;
   const teacher = firstCourse?.teachers[0];
@@ -32,6 +34,7 @@ export const ExcuseTeacher = ({ absence }: { absence: Absence }) => {
       useDefaultPadding={false}
     >
       <ConfirmPageContent
+        onCancel={() => router.back()}
         heading="Bitte lasse deinen Lehrer hier unterschreiben"
         major={absence.reason}
         confirmLabel="Entschuldigen"

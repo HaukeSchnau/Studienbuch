@@ -4,17 +4,17 @@ import { Alert, View } from "react-native";
 import CrossIcon from "~/assets/cross.svg";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
-import { PageScaffold } from "~/components/layout/page-scaffold";
+import { PageScaffold } from "~/app-shell/navigation/page-scaffold";
 import { SystemIcon } from "~/components/ui/system-icon";
 import { Text } from "~/components/ui/text";
-import { haptics } from "~/utils/haptics";
-import { useMockCourses, useMockTasks } from "~/mock-app/hooks";
+import { haptics } from "~/platform/haptics";
+import { useCourses, useTasks } from "~/data/hooks";
 import { colors } from "~/theme/colors";
 
 export const TaskScreen = ({ taskId }: { taskId: string }) => {
   const router = useRouter();
-  const { getCourse } = useMockCourses();
-  const { getTask, toggleTaskDone, deleteTask } = useMockTasks();
+  const { getCourse } = useCourses();
+  const { getTask, toggleTaskDone, deleteTask } = useTasks();
   const task = getTask(taskId);
 
   if (!task) {
