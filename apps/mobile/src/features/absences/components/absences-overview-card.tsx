@@ -12,8 +12,8 @@ import { useAbsences } from "~/data/hooks";
 import { absencesRoute } from "~/routing/params";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { AddAbsence } from "./add-absence";
-import BigCheck from "./big-check.svg";
-import Warning from "./warning.svg";
+import BigCheck from "../big-check.svg";
+import Warning from "../warning.svg";
 
 export const AbsencesOverviewCard = () => {
   const [isAddVisible, setIsAddVisible] = useState(false);
