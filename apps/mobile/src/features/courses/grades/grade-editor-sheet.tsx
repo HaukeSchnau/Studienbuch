@@ -1,3 +1,4 @@
+import { Host, Slider } from "@expo/ui";
 import { useState } from "react";
 import { View } from "react-native";
 import { Button, OutlinedButton, TextButton } from "~/components/ui/button";
@@ -44,6 +45,19 @@ export const GradeEditorSheet = ({
       <View className="h-6" />
 
       <Text className="text-center text-lg opacity-70">Punktzahl</Text>
+      <View className="h-3" />
+      <Host matchContents={{ vertical: true }} style={{ width: "100%" }}>
+        <Slider
+          min={0}
+          max={15}
+          step={1}
+          value={result}
+          onValueChange={(value) => {
+            haptics.selection();
+            setResult(Math.round(value));
+          }}
+        />
+      </Host>
       <View className="h-3" />
       <View className="flex-row items-center justify-center gap-4">
         <OutlinedButton

@@ -2,7 +2,9 @@ import type { SubjectId } from "@stu/core";
 import { subjectNameMap } from "@stu/core";
 import { Text } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
-import { Alert, Pressable, StyleSheet, View } from "react-native";
+import MenuView from "@expo/ui/community/menu";
+import { Pressable, StyleSheet, View } from "react-native";
+import { haptics } from "~/platform/haptics";
 import { SubjectIcon } from "./subject-icon";
 
 interface Props<TOption> {
@@ -62,7 +64,13 @@ export const SelectCourse = <TOption,>({
 
   if (options.length === 1) {
     return (
-      <Pressable onPress={() => (value ? onChange(undefined) : onChange(options[0]))}>
+      <Pressable
+        onPress={() => {
+          const nextValue = value ? undefined : options[0];
+          haptics.toggle(Boolean(nextValue));
+          onChange(nextValue);
+        }}
+      >
         <View
           style={[
             styles.container,
@@ -78,22 +86,25 @@ export const SelectCourse = <TOption,>({
   }
 
   return (
-    <Pressable
-      onPress={() => {
-        Alert.alert(
-          subjectNameMap[subject],
-          "Wähle einen Kurs",
-          [
-            ...options.map((option) => ({
-              text: getOptionLabel(option),
-              onPress: () => onChange(option),
-            })),
-            { text: "nicht belegt", onPress: () => onChange(undefined) },
-            { text: "Abbrechen", style: "cancel" as const },
-          ],
-          { cancelable: true },
-        );
+    <MenuView
+      actions={[
+        ...options.map((option, index) => ({
+          id: String(index),
+          title: getOptionLabel(option),
+          state: value === option ? ("on" as const) : ("off" as const),
+        })),
+        {
+          id: "none",
+          title: "nicht belegt",
+          state: value ? ("off" as const) : ("on" as const),
+        },
+      ]}
+      onPressAction={(event) => {
+        const actionId = event.nativeEvent.event;
+        haptics.selection();
+        onChange(actionId === "none" ? undefined : options[Number(actionId)]);
       }}
+      title={subjectNameMap[subject]}
     >
       <View
         style={[
@@ -106,6 +117,6 @@ export const SelectCourse = <TOption,>({
       >
         {content}
       </View>
-    </Pressable>
+    </MenuView>
   );
 };

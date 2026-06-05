@@ -1,9 +1,8 @@
 import clsx from "clsx";
-import type { ComponentRef } from "react";
-import { forwardRef } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Pressable, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { colors } from "~/theme/colors";
+import { haptics } from "~/platform/haptics";
 import { SystemIcon, type SystemIconName } from "./system-icon";
 import { usePressAnimation } from "../use-press-animation";
 
@@ -42,77 +41,82 @@ const { elevatedShadow } = StyleSheet.create({
   },
 });
 
-export const IconButton = forwardRef<ComponentRef<typeof TouchableOpacity>, Props>(
-  (
-    {
-      icon,
-      color,
-      size = 24,
-      onPress,
-      opacity = 1,
-      variant = "plain",
-      elevated = false,
-      className,
-    },
-    ref,
-  ) => {
-    const { animatedStyle, onPressIn, onPressOut } = usePressAnimation(
-      variant === "plain" ? 0.92 : 0.95,
-    );
-    const containerSize = containerSizeMap[variant];
-    const backgroundColor = variant === "plain" ? undefined : backgroundColorMap[variant];
-    const hasElevatedContainer = elevated && containerSize > 0;
-    const buttonClassName = clsx(
-      variant === "plain" ? "p-2" : "items-center justify-center rounded-full",
-      className,
-    );
-    const buttonStyle = [
-      containerSize > 0 ? { width: containerSize, height: containerSize } : undefined,
-      backgroundColor ? { backgroundColor } : undefined,
-    ];
+export const IconButton = ({
+  icon,
+  color,
+  size = 24,
+  onPress,
+  opacity = 1,
+  variant = "plain",
+  elevated = false,
+  className,
+}: Props) => {
+  const { animatedStyle, onPressIn, onPressOut } = usePressAnimation(
+    variant === "plain" ? 0.92 : 0.95,
+  );
+  const containerSize = containerSizeMap[variant];
+  const backgroundColor = variant === "plain" ? undefined : backgroundColorMap[variant];
+  const hasElevatedContainer = elevated && containerSize > 0;
+  const buttonClassName = clsx(
+    variant === "plain" ? "p-2" : "items-center justify-center rounded-full",
+    className,
+  );
+  const buttonStyle = [
+    containerSize > 0 ? { width: containerSize, height: containerSize } : undefined,
+    backgroundColor ? { backgroundColor } : undefined,
+  ];
 
-    return (
-      <Animated.View
-        style={[
-          animatedStyle,
-          hasElevatedContainer
-            ? {
-                width: containerSize,
-                height: containerSize,
+  return (
+    <Animated.View
+      style={[
+        animatedStyle,
+        hasElevatedContainer
+          ? {
+              width: containerSize,
+              height: containerSize,
+            }
+          : undefined,
+      ]}
+    >
+      {hasElevatedContainer ? (
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            elevatedShadow,
+            {
+              borderRadius: containerSize / 2,
+              backgroundColor,
+            },
+          ]}
+        />
+      ) : null}
+      <Pressable
+        android_ripple={{
+          borderless: variant === "plain",
+          color: "rgba(0, 0, 0, 0.12)",
+          radius: variant === "plain" ? 24 : containerSize / 2,
+        }}
+        onPress={
+          onPress
+            ? () => {
+                haptics.selection();
+                onPress();
               }
-            : undefined,
-        ]}
+            : undefined
+        }
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        className={buttonClassName}
+        style={buttonStyle}
       >
-        {hasElevatedContainer ? (
-          <View
-            pointerEvents="none"
-            style={[
-              StyleSheet.absoluteFill,
-              elevatedShadow,
-              {
-                borderRadius: containerSize / 2,
-                backgroundColor,
-              },
-            ]}
-          />
-        ) : null}
-        <TouchableOpacity
-          onPress={onPress}
-          onPressIn={onPressIn}
-          onPressOut={onPressOut}
-          ref={ref}
-          activeOpacity={1}
-          className={buttonClassName}
-          style={buttonStyle}
-        >
-          <SystemIcon
-            name={icon}
-            color={color ?? (variant === "filled" ? colors.on.primary : colors.primary.text)}
-            size={size}
-            opacity={opacity}
-          />
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  },
-);
+        <SystemIcon
+          name={icon}
+          color={color ?? (variant === "filled" ? colors.on.primary : colors.primary.text)}
+          size={size}
+          opacity={opacity}
+        />
+      </Pressable>
+    </Animated.View>
+  );
+};

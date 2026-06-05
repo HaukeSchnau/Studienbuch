@@ -1,9 +1,5 @@
 import { useRouter } from "expo-router";
-import { View } from "react-native";
-import { Card } from "~/components/ui/card";
-import { SubjectIcon } from "~/domain-ui/subject-icon";
-import { Table } from "~/components/layout/table";
-import { Text } from "~/components/ui/text";
+import { NativeFieldGroup, NativeFieldRow, NativeFieldSection } from "~/components/native";
 import type { Semester } from "@stu/core";
 import { subjectNameMap } from "@stu/core";
 import { useCourses } from "~/data/hooks";
@@ -15,21 +11,17 @@ export const CourseList = ({ semester }: { semester: Semester }) => {
   const router = useRouter();
 
   return (
-    <Table
-      items={courses}
-      getKey={(course) => course.id}
-      gap={16}
-      render={(course) => (
-        <Card padding="sm" onPress={() => router.push(courseRoute(course.id))}>
-          <View className="items-center">
-            <SubjectIcon subject={course.subject} />
-            <View className="h-1.5" />
-            <Text weight="bold" className="text-[15px]">
-              {subjectNameMap[course.subject]}
-            </Text>
-          </View>
-        </Card>
-      )}
-    />
+    <NativeFieldGroup>
+      <NativeFieldSection title="Kurse">
+        {courses.map((course) => (
+          <NativeFieldRow
+            key={course.id}
+            title={subjectNameMap[course.subject]}
+            subtitle={course.name}
+            onPress={() => router.push(courseRoute(course.id))}
+          />
+        ))}
+      </NativeFieldSection>
+    </NativeFieldGroup>
   );
 };

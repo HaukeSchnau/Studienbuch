@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Link } from "expo-router";
+import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { View } from "react-native";
 import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
@@ -57,9 +57,11 @@ export const AbsencesOverviewCard = () => {
 
       <View className="h-4" />
 
-      <Link href={absencesRoute} asChild>
-        <Button label="Alle ansehen" className="self-end" />
-      </Link>
+      <Button
+        label="Alle ansehen"
+        className="self-end"
+        onPress={() => router.push(absencesRoute)}
+      />
 
       {isAddVisible ? (
         <PortaledBottomSheet onClose={() => setIsAddVisible(false)}>

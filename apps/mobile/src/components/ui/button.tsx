@@ -1,13 +1,9 @@
-import { colors } from "~/theme/colors";
+import { Button as ExpoButton, Host } from "@expo/ui";
 import clsx from "clsx";
-import type { ComponentRef } from "react";
-import { forwardRef } from "react";
-import { TouchableOpacity, type StyleProp, type ViewStyle } from "react-native";
-import Animated from "react-native-reanimated";
+import { View, type StyleProp, type ViewStyle } from "react-native";
 
-import { shadow } from "../styles/shadow";
-import { Text } from "./text";
-import { usePressAnimation } from "../use-press-animation";
+import { haptics } from "~/platform/haptics";
+import { colors } from "~/theme/colors";
 
 interface Props {
   label: string;
@@ -23,123 +19,99 @@ const sizeClassNameMap = {
   md: "min-h-12 px-6 py-3",
 } as const;
 
-const textSizeClassNameMap = {
-  sm: "text-base",
-  md: "text-lg",
+const baseButtonStyle = {
+  sm: { paddingHorizontal: 20, paddingVertical: 8 },
+  md: { paddingHorizontal: 24, paddingVertical: 12 },
 } as const;
 
-const BaseButton = forwardRef<
-  ComponentRef<typeof TouchableOpacity>,
-  Props & {
-    textColor: string;
-    backgroundColor?: string;
-    borderColor?: string;
-    elevated?: boolean;
-    rounded?: boolean;
-    style?: StyleProp<ViewStyle>;
-  }
->(
-  (
-    {
-      className,
-      disabled,
-      onPress,
-      label,
-      size = "md",
-      textColor,
-      backgroundColor,
-      borderColor,
-      elevated = false,
-      rounded = true,
-      style,
-    },
-    ref,
-  ) => {
-    const { animatedStyle, onPressIn, onPressOut } = usePressAnimation(rounded ? 0.97 : 0.98);
+function BaseButton({
+  className,
+  disabled,
+  onPress,
+  label,
+  size = "md",
+  backgroundColor,
+  borderColor,
+  rounded = true,
+  style,
+}: Props & {
+  backgroundColor?: string;
+  borderColor?: string;
+  rounded?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const variant = borderColor ? "outlined" : backgroundColor ? "filled" : "text";
 
-    return (
-      <Animated.View style={animatedStyle}>
-        <TouchableOpacity
-          className={clsx(
-            rounded ? "rounded-full" : null,
-            "items-center justify-center",
-            sizeClassNameMap[size],
-            className,
-          )}
-          style={[
-            elevated ? shadow : undefined,
-            backgroundColor ? { backgroundColor } : undefined,
-            borderColor ? { borderWidth: 1, borderColor } : undefined,
-            style,
-          ]}
-          onPress={onPress}
-          onPressIn={disabled ? undefined : onPressIn}
-          onPressOut={disabled ? undefined : onPressOut}
+  return (
+    <View
+      className={clsx(
+        rounded ? "rounded-full" : null,
+        "items-center justify-center",
+        sizeClassNameMap[size],
+        className,
+      )}
+      style={[
+        backgroundColor ? { backgroundColor } : undefined,
+        borderColor ? { borderColor, borderWidth: 1 } : undefined,
+        rounded ? { borderRadius: 999 } : undefined,
+        style,
+      ]}
+    >
+      <Host matchContents>
+        <ExpoButton
           disabled={disabled}
-          activeOpacity={1}
-          ref={ref}
-        >
-          <Text
-            className={clsx("w-fit text-center", textSizeClassNameMap[size])}
-            weight="bold"
-            style={{ color: textColor }}
-          >
-            {label}
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  },
+          label={label}
+          onPress={() => {
+            haptics.selection();
+            onPress?.();
+          }}
+          style={{
+            ...baseButtonStyle[size],
+            ...(backgroundColor ? { backgroundColor } : null),
+            ...(borderColor ? { borderColor, borderWidth: 1 } : null),
+            borderRadius: rounded ? 999 : 8,
+          }}
+          variant={variant}
+        />
+      </Host>
+    </View>
+  );
+}
+
+export const Button = ({ className, disabled, onPress, label, size }: Props) => (
+  <BaseButton
+    className={className}
+    disabled={disabled}
+    onPress={onPress}
+    label={label}
+    size={size}
+    backgroundColor={disabled ? colors.neutral.DEFAULT : colors.accent.DEFAULT}
+  />
 );
 
-export const Button = forwardRef<ComponentRef<typeof TouchableOpacity>, Props>(
-  ({ className, disabled, onPress, label, size }, ref) => {
-    return (
-      <BaseButton
-        className={className}
-        disabled={disabled}
-        onPress={onPress}
-        label={label}
-        size={size}
-        elevated
-        backgroundColor={disabled ? colors.neutral.DEFAULT : colors.accent.DEFAULT}
-        textColor={colors.on.primary}
-        ref={ref}
-      />
-    );
-  },
+export const OutlinedButton = ({
+  className,
+  onPress,
+  label,
+  color = colors.danger.DEFAULT,
+  size = "md",
+}: Props) => (
+  <BaseButton
+    className={className}
+    onPress={onPress}
+    label={label}
+    size={size}
+    backgroundColor={colors.surface}
+    borderColor={color}
+  />
 );
 
-export const OutlinedButton = forwardRef<ComponentRef<typeof TouchableOpacity>, Props>(
-  ({ className, onPress, label, color = colors.danger.DEFAULT, size = "md" }, ref) => {
-    return (
-      <BaseButton
-        className={className}
-        onPress={onPress}
-        label={label}
-        size={size}
-        elevated
-        backgroundColor={colors.surface}
-        borderColor={color}
-        textColor={color}
-        ref={ref}
-      />
-    );
-  },
-);
-
-export const TextButton = forwardRef<ComponentRef<typeof TouchableOpacity>, Props>(
-  ({ className, onPress, label, size = "md", color = colors.accent.DEFAULT }, ref) => {
-    return (
-      <BaseButton
-        className={clsx("min-h-11 px-2 py-1", className)}
-        onPress={onPress}
-        label={label}
-        size={size}
-        textColor={color}
-        rounded={false}
-        ref={ref}
-      />
-    );
-  },
+export const TextButton = ({ className, onPress, label, size = "md" }: Props) => (
+  <BaseButton
+    className={clsx("min-h-11 px-2 py-1", className)}
+    onPress={onPress}
+    label={label}
+    size={size}
+    rounded={false}
+  />
 );

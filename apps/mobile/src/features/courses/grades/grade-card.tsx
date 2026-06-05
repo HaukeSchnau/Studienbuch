@@ -1,6 +1,6 @@
 import { format } from "date-fns";
 import type { Href } from "expo-router";
-import { Link } from "expo-router";
+import { router } from "expo-router";
 import { View } from "react-native";
 import { OutlinedButton } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
@@ -64,9 +64,12 @@ export const GradeCard = ({
         <>
           <View className="h-2" />
           {"href" in action ? (
-            <Link href={action.href} asChild>
-              <OutlinedButton label={action.label} color={actionColor} className="self-end" />
-            </Link>
+            <OutlinedButton
+              label={action.label}
+              color={actionColor}
+              className="self-end"
+              onPress={() => router.push(action.href)}
+            />
           ) : (
             <OutlinedButton
               label={action.label}

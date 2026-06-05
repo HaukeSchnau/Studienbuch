@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Link } from "expo-router";
+import { router } from "expo-router";
 import { Alert, TouchableOpacity, View } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Animated, { interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
@@ -74,9 +74,12 @@ export const AbsenceItem = ({ absence }: { absence: Absence }) => {
           </View>
           {!isExcused && (
             <View className="items-end justify-center gap-1">
-              <Link href={absenceConfirmationRoute(absence.date, absence.courseIds)} asChild>
-                <OutlinedButton label="Unterschreiben" />
-              </Link>
+              <OutlinedButton
+                label="Unterschreiben"
+                onPress={() =>
+                  router.push(absenceConfirmationRoute(absence.date, absence.courseIds))
+                }
+              />
             </View>
           )}
         </View>

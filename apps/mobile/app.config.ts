@@ -26,7 +26,7 @@ export default {
     },
     android: {
       adaptiveIcon: androidIcon,
-      predictiveBackGestureEnabled: false,
+      predictiveBackGestureEnabled: true,
       package: IS_DEV ? "dev.schnau.studienbuch.dev" : "dev.schnau.studienbuch",
     },
     web: {

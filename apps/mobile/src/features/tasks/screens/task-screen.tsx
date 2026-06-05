@@ -2,7 +2,7 @@ import { useRouter } from "expo-router";
 import { Stack } from "expo-router";
 import { Alert, View } from "react-native";
 import CrossIcon from "~/assets/cross.svg";
-import { Button } from "~/components/ui/button";
+import { CheckboxRow } from "~/components/fields/checkbox-row";
 import { Card } from "~/components/ui/card";
 import { PageScaffold } from "~/app-shell/navigation/page-scaffold";
 import { SystemIcon } from "~/components/ui/system-icon";
@@ -107,15 +107,11 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
           )}
         </View>
         <View className="h-4" />
-        <View className="items-end">
-          <Button
-            label={task.done ? "Bestätigung zurücknehmen" : "Bestätigen"}
-            onPress={() => {
-              haptics.toggle(!task.done);
-              toggleTaskDone(task.id);
-            }}
-          />
-        </View>
+        <CheckboxRow
+          label={task.done ? "Bestätigung zurücknehmen" : "Bestätigen"}
+          value={task.done}
+          onChange={() => toggleTaskDone(task.id)}
+        />
       </Card>
     </PageScaffold>
   );
