@@ -2,6 +2,7 @@ import { format } from "date-fns";
 import { Link } from "expo-router";
 import { Pressable, View } from "react-native";
 import { Text } from "~/components/ui/text";
+import { colors } from "~/theme/colors";
 import { isTaskArchived, type Task } from "@stu/core";
 import { useCourses } from "~/data/hooks";
 import { taskRoute } from "~/routing/params";
@@ -17,9 +18,9 @@ export const TaskCard = ({ task }: { task: Task }) => {
         accessibilityRole="button"
         style={{
           width: 192,
-          height: 205,
-          borderRadius: 36,
-          backgroundColor: "#203755",
+          height: 198,
+          borderRadius: 24,
+          backgroundColor: colors.accent.card,
           padding: 24,
           opacity: archived ? 0.55 : 1,
         }}
@@ -33,7 +34,7 @@ export const TaskCard = ({ task }: { task: Task }) => {
             className="pt-1 text-white"
             numberOfLines={2}
             style={{
-              color: "#3CC233",
+              color: colors.primary.punch,
               fontSize: 19,
               lineHeight: 23,
             }}
@@ -64,7 +65,8 @@ export const TaskCard = ({ task }: { task: Task }) => {
               style={{
                 fontSize: 16,
                 lineHeight: 20,
-                color: !task.done && task.dueDate < new Date() ? "#E96868" : "#FFFFFF",
+                color:
+                  !task.done && task.dueDate < new Date() ? colors.danger.pale : colors.on.primary,
               }}
             >
               {format(task.dueDate, "dd.MM.")}

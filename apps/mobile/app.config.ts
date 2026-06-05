@@ -8,6 +8,37 @@ const androidIcon = {
   monochromeImage: `./assets/images/android-icon${iconSuffix}-monochrome.png`,
 };
 const splashBackgroundColor = IS_DEV ? "#F8C04E" : "#6DB868";
+const plugins = [
+  "expo-router",
+  "expo-image",
+  ...(IS_DEV
+    ? [
+        [
+          "expo-dev-launcher",
+          {
+            launchMode: "most-recent",
+            showMenuAtLaunch: false,
+            skipOnboarding: true,
+            toolsButton: false,
+            ios: {
+              defaultLaunchURL: "http://localhost:8081",
+            },
+            android: {
+              defaultLaunchURL: "http://10.0.2.2:8081",
+            },
+          },
+        ],
+      ]
+    : []),
+  [
+    "expo-splash-screen",
+    {
+      backgroundColor: splashBackgroundColor,
+      image: icon,
+      imageWidth: 200,
+    },
+  ],
+];
 
 export default {
   expo: {
@@ -33,18 +64,7 @@ export default {
       output: "static",
       favicon,
     },
-    plugins: [
-      "expo-router",
-      "expo-image",
-      [
-        "expo-splash-screen",
-        {
-          backgroundColor: splashBackgroundColor,
-          image: icon,
-          imageWidth: 200,
-        },
-      ],
-    ],
+    plugins,
     experiments: {
       typedRoutes: true,
       reactCompiler: true,

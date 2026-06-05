@@ -1,6 +1,7 @@
 import { Button as ExpoButton, Host } from "@expo/ui";
+import { tint } from "@expo/ui/swift-ui/modifiers";
 import clsx from "clsx";
-import { View, type StyleProp, type ViewStyle } from "react-native";
+import { Platform, View } from "react-native";
 
 import { haptics } from "~/platform/haptics";
 import { colors } from "~/theme/colors";
@@ -14,14 +15,9 @@ interface Props {
   size?: "sm" | "md";
 }
 
-const sizeClassNameMap = {
-  sm: "min-h-11 px-5 py-2",
-  md: "min-h-12 px-6 py-3",
-} as const;
-
 const baseButtonStyle = {
-  sm: { paddingHorizontal: 20, paddingVertical: 8 },
-  md: { paddingHorizontal: 24, paddingVertical: 12 },
+  sm: { height: 44 },
+  md: { height: 48 },
 } as const;
 
 function BaseButton({
@@ -30,33 +26,16 @@ function BaseButton({
   onPress,
   label,
   size = "md",
-  backgroundColor,
-  borderColor,
-  rounded = true,
-  style,
+  variant,
+  tintColor,
 }: Props & {
-  backgroundColor?: string;
-  borderColor?: string;
-  rounded?: boolean;
-  style?: StyleProp<ViewStyle>;
+  variant: "filled" | "outlined" | "text";
+  tintColor?: string;
 }) {
-  const variant = borderColor ? "outlined" : backgroundColor ? "filled" : "text";
+  const modifiers = Platform.OS === "ios" && tintColor ? [tint(tintColor)] : undefined;
 
   return (
-    <View
-      className={clsx(
-        rounded ? "rounded-full" : null,
-        "items-center justify-center",
-        sizeClassNameMap[size],
-        className,
-      )}
-      style={[
-        backgroundColor ? { backgroundColor } : undefined,
-        borderColor ? { borderColor, borderWidth: 1 } : undefined,
-        rounded ? { borderRadius: 999 } : undefined,
-        style,
-      ]}
-    >
+    <View className={clsx("items-center justify-center", className)}>
       <Host matchContents>
         <ExpoButton
           disabled={disabled}
@@ -67,10 +46,8 @@ function BaseButton({
           }}
           style={{
             ...baseButtonStyle[size],
-            ...(backgroundColor ? { backgroundColor } : null),
-            ...(borderColor ? { borderColor, borderWidth: 1 } : null),
-            borderRadius: rounded ? 999 : 8,
           }}
+          modifiers={modifiers}
           variant={variant}
         />
       </Host>
@@ -85,7 +62,8 @@ export const Button = ({ className, disabled, onPress, label, size }: Props) => 
     onPress={onPress}
     label={label}
     size={size}
-    backgroundColor={disabled ? colors.neutral.DEFAULT : colors.accent.DEFAULT}
+    tintColor={colors.accent.DEFAULT}
+    variant="filled"
   />
 );
 
@@ -101,8 +79,8 @@ export const OutlinedButton = ({
     onPress={onPress}
     label={label}
     size={size}
-    backgroundColor={colors.surface}
-    borderColor={color}
+    tintColor={color}
+    variant="outlined"
   />
 );
 
@@ -112,6 +90,7 @@ export const TextButton = ({ className, onPress, label, size = "md" }: Props) =>
     onPress={onPress}
     label={label}
     size={size}
-    rounded={false}
+    tintColor={colors.primary.text}
+    variant="text"
   />
 );

@@ -3,6 +3,7 @@ export const colors = {
     DEFAULT: "#33A42B",
     pale: "#6DB868",
     des: "#EEF5ED",
+    punch: "#3CC233",
     text: "#098A00",
   },
   accent: {
@@ -10,9 +11,11 @@ export const colors = {
     sec: "#4D75A8",
     pale: "#76A6E5",
     des: "#EBF0F7",
+    card: "#203755",
   },
   danger: {
     DEFAULT: "#A42B33",
+    pale: "#E96868",
     sec: "#8A0000",
     des: "#ECD4D6",
   },

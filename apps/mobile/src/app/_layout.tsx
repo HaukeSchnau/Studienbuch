@@ -14,10 +14,12 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { AppProviders } from "~/app-shell/app-providers";
 import { SetupGate } from "~/app-shell/setup/setup-gate";
+import { configureDevelopmentMenuPreferences } from "~/platform/dev-menu-preferences";
 import { colors } from "~/theme/colors";
 import "../global.css";
 
 void SplashScreen.preventAutoHideAsync();
+configureDevelopmentMenuPreferences();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({

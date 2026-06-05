@@ -2,8 +2,8 @@ import { useState } from "react";
 import { ScrollView, View } from "react-native";
 import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
 import { IconButton } from "~/components/ui/icon-button";
-import { SystemIcon } from "~/components/ui/system-icon";
 import { Text } from "~/components/ui/text";
+import { colors } from "~/theme/colors";
 import { useTasks } from "~/data/hooks";
 import type { Task } from "@stu/core";
 import { getTaskOverviewModel } from "../model/task-overview-model";
@@ -42,7 +42,14 @@ export const TasksSectionView = ({
   const { tasks, sectionHeight } = model;
 
   return (
-    <View style={{ backgroundColor: "#3B7FD9" }} className="rounded-t-[40px] py-8">
+    <View
+      style={{
+        backgroundColor: colors.accent.DEFAULT,
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+      }}
+      className="py-6"
+    >
       {isAddVisible ? (
         <PortaledBottomSheet onClose={onCloseAdd}>
           <AddTaskSheet courseId={courseId} onClose={onCloseAdd} />
@@ -50,7 +57,7 @@ export const TasksSectionView = ({
       ) : null}
 
       <View className="flex-row items-center px-8">
-        <Text className="flex-1 text-4xl text-white" weight="bold">
+        <Text className="flex-1 text-3xl text-white" weight="bold">
           Hausaufgaben
         </Text>
         <IconButton
@@ -73,7 +80,7 @@ export const TasksSectionView = ({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{
             paddingHorizontal: 32,
-            paddingVertical: 16,
+            paddingVertical: 14,
           }}
         >
           <View
@@ -91,14 +98,7 @@ export const TasksSectionView = ({
         </ScrollView>
       )}
 
-      {tasks.length > 0 ? (
-        <View className="flex-row items-center gap-2 px-8 pt-1">
-          <SystemIcon name="swipe" size={16} color="rgba(255,255,255,0.85)" />
-          <Text className="text-sm text-white/80">
-            Zum Öffnen horizontal durch die Karten wischen
-          </Text>
-        </View>
-      ) : null}
+      <View className="h-2" />
     </View>
   );
 };
