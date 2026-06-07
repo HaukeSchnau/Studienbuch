@@ -1,10 +1,10 @@
 import clsx from "clsx";
-import { StyleSheet, Pressable, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { colors } from "~/theme/colors";
-import { haptics } from "~/platform/haptics";
 import { SystemIcon, type SystemIconName } from "./system-icon";
 import { usePressAnimation } from "../use-press-animation";
+import { PressableSurface } from "../feedback/pressable-surface";
 
 interface Props {
   icon: SystemIconName;
@@ -15,6 +15,7 @@ interface Props {
   variant?: "plain" | "subtle" | "filled";
   elevated?: boolean;
   className?: string;
+  accessibilityLabel?: string;
 }
 
 const containerSizeMap = {
@@ -50,6 +51,7 @@ export const IconButton = ({
   variant = "plain",
   elevated = false,
   className,
+  accessibilityLabel,
 }: Props) => {
   const { animatedStyle, onPressIn, onPressOut } = usePressAnimation(
     variant === "plain" ? 0.92 : 0.95,
@@ -91,22 +93,19 @@ export const IconButton = ({
           ]}
         />
       ) : null}
-      <Pressable
+      <PressableSurface
+        accessibilityLabel={accessibilityLabel ?? icon}
         android_ripple={{
           borderless: variant === "plain",
           color: "rgba(0, 0, 0, 0.12)",
           radius: variant === "plain" ? 24 : containerSize / 2,
         }}
-        onPress={
-          onPress
-            ? () => {
-                haptics.selection();
-                onPress();
-              }
-            : undefined
-        }
+        borderRadius={variant === "plain" ? 24 : containerSize / 2}
+        highlightOpacity={0}
+        onPress={onPress}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
+        pressedScale={1}
         className={buttonClassName}
         style={buttonStyle}
       >
@@ -116,7 +115,7 @@ export const IconButton = ({
           size={size}
           opacity={opacity}
         />
-      </Pressable>
+      </PressableSurface>
     </Animated.View>
   );
 };

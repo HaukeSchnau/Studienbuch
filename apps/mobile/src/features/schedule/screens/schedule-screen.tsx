@@ -12,15 +12,17 @@ import {
 import { de as localeDE } from "date-fns/locale/de";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, type DimensionValue, View } from "react-native";
+import { type DimensionValue, View } from "react-native";
 import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
+import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { Card } from "~/components/ui/card";
 import { IconButton } from "~/components/ui/icon-button";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { shadow } from "~/components/styles/shadow";
 import { Text } from "~/components/ui/text";
+import { useMainTabBarPadding } from "~/components/use-main-tab-bar-padding";
 import { haptics } from "~/platform/haptics";
 import { subjectNameMap } from "@stu/core";
 import { useCourses, useScheduleData } from "~/data/hooks";
@@ -56,8 +58,7 @@ export const ScheduleScreen = () => {
   const { timetable } = useScheduleData();
   const [weekOffset, setWeekOffset] = useState(0);
   const [gridHeight, setGridHeight] = useState(0);
-  const insets = useSafeAreaInsets();
-  const bottomClearance = Math.max(insets.bottom + 12, 24);
+  const bottomClearance = useMainTabBarPadding(12);
   const resolvedGridHeight = gridHeight || GRID_FALLBACK_HEIGHT;
 
   const changeWeek = useCallback((delta: number) => {
@@ -130,6 +131,7 @@ export const ScheduleScreen = () => {
           <View className="px-4 pb-2 pt-1">
             <View className="flex-row items-center">
               <IconButton
+                accessibilityLabel="Vorherige Woche"
                 icon="chevron-left"
                 variant="plain"
                 color="white"
@@ -141,6 +143,7 @@ export const ScheduleScreen = () => {
                 </Text>
               </View>
               <IconButton
+                accessibilityLabel="Nächste Woche"
                 icon="chevron-right"
                 variant="plain"
                 color="white"
@@ -267,12 +270,11 @@ export const ScheduleScreen = () => {
                 const end = addMinutes(entry.start, entry.duration);
 
                 return (
-                  <Pressable
+                  <PressableSurface
                     key={entry.id}
                     onPress={() => {
                       router.push(courseRoute(course.id));
                     }}
-                    accessibilityRole="button"
                     accessibilityLabel={`${subjectNameMap[course.subject]}, ${format(
                       entry.start,
                       "HH:mm",
@@ -290,6 +292,9 @@ export const ScheduleScreen = () => {
                       borderRadius: 24,
                       backgroundColor: colors.accent.DEFAULT,
                     }}
+                    borderRadius={24}
+                    highlightColor="rgba(255, 255, 255, 0.18)"
+                    pressedScale={0.965}
                   >
                     <View className="items-center justify-center px-1 py-1.5">
                       <View className="rounded-full bg-white p-1">
@@ -309,7 +314,7 @@ export const ScheduleScreen = () => {
                         {format(end, "HH:mm", { locale: localeDE })}
                       </Text>
                     </View>
-                  </Pressable>
+                  </PressableSurface>
                 );
               })}
 

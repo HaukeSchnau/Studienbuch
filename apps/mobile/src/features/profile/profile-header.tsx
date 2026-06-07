@@ -1,9 +1,10 @@
 import { router } from "expo-router";
 import { openBrowserAsync } from "expo-web-browser";
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
+import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { IconButton } from "~/components/ui/icon-button";
 import { Text } from "~/components/ui/text";
 import { SystemIcon, type SystemIconName } from "~/components/ui/system-icon";
@@ -50,6 +51,7 @@ export const Header = () => {
             <View className="absolute top-4 right-4 z-10">
               <IconButton
                 icon="settings"
+                accessibilityLabel="Einstellungen öffnen"
                 variant="filled"
                 elevated
                 size={24}
@@ -60,7 +62,7 @@ export const Header = () => {
             <Avatar />
             <View className="h-4" />
             <Text weight="bold" className="text-3xl text-white">
-              {user.name}'s Profil
+              Profil von {user.name}
             </Text>
             <View className="h-1.5" />
             <View className="items-center">
@@ -121,11 +123,19 @@ const ActionRow = ({
   label: string;
   onPress: () => void;
 }) => (
-  <Pressable className="flex-row items-center rounded-[28px] px-2 py-3" onPress={onPress}>
-    <IconButton icon={icon} size={20} variant="subtle" />
+  <PressableSurface
+    accessibilityLabel={label}
+    borderRadius={28}
+    className="flex-row items-center px-2 py-3"
+    onPress={onPress}
+    pressedScale={0.985}
+  >
+    <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-des">
+      <SystemIcon name={icon} size={20} color="#098A00" />
+    </View>
     <View className="w-3" />
     <Text weight="semi-bold" className="text-lg text-primary-text">
       {label}
     </Text>
-  </Pressable>
+  </PressableSurface>
 );

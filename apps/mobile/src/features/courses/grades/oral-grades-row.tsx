@@ -58,7 +58,13 @@ export const OralGradesRow = ({
           <Text className="grow text-3xl" weight="semi-bold">
             {currentOralGrade ? formatGrade(currentOralGrade.result) : "—"}
           </Text>
-          <IconButton icon="edit" opacity={0.8} size={24} onPress={() => setIsEditVisible(true)} />
+          <IconButton
+            accessibilityLabel="Mündliche Note bearbeiten"
+            icon="edit"
+            opacity={0.8}
+            size={24}
+            onPress={() => setIsEditVisible(true)}
+          />
         </View>
         <Text className="text-lg opacity-60">mündlich</Text>
         <Text className="text-lg opacity-60">
@@ -75,7 +81,13 @@ export const OralGradesRow = ({
                 teacher={Boolean(currentOralGrade.teacherSignature)}
               />
               {isConfirmed ? (
-                <IconButton icon="visibility" opacity={0.8} size={24} onPress={openGradeDetails} />
+                <IconButton
+                  accessibilityLabel="Mündliche Note ansehen"
+                  icon="visibility"
+                  opacity={0.8}
+                  size={24}
+                  onPress={openGradeDetails}
+                />
               ) : null}
             </View>
             {!isConfirmed ? (

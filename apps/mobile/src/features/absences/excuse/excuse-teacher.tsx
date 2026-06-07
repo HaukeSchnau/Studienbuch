@@ -44,7 +44,7 @@ export const ExcuseTeacher = ({ absence }: { absence: Absence }) => {
         Ich, {Teacher.formalName(teacher)} bestätige, dass der/die Schüler:in{" "}
         <Text weight="bold">{user.name}</Text> am{" "}
         <Text weight="bold">{absence.date.toLocaleDateString("de-DE")}</Text> mit folgender
-        Begruendung nicht am Unterricht teilnehmen konnte:
+        Begründung nicht am Unterricht teilnehmen konnte:
       </ConfirmPageContent>
     </PageScaffold>
   );

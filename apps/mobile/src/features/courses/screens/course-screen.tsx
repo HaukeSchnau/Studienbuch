@@ -54,12 +54,19 @@ export const CourseScreen = ({ courseId }: { courseId: string }) => {
         }}
       />
       <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Menu accessibilityLabel="Kursaktionen">
-          <Stack.Toolbar.Label>Aktionen</Stack.Toolbar.Label>
-          <Stack.Toolbar.MenuAction onPress={() => setIsAddTaskVisible(true)}>
+        <Stack.Toolbar.Menu
+          accessibilityLabel="Kursaktionen"
+          icon="ellipsis.circle"
+          title="Kursaktionen"
+        >
+          <Stack.Toolbar.Label>Mehr</Stack.Toolbar.Label>
+          <Stack.Toolbar.MenuAction icon="checklist" onPress={() => setIsAddTaskVisible(true)}>
             Hausaufgabe hinzufügen
           </Stack.Toolbar.MenuAction>
-          <Stack.Toolbar.MenuAction onPress={() => setIsAddWrittenGradeVisible(true)}>
+          <Stack.Toolbar.MenuAction
+            icon="graduationcap"
+            onPress={() => setIsAddWrittenGradeVisible(true)}
+          >
             Klausurnote eintragen
           </Stack.Toolbar.MenuAction>
         </Stack.Toolbar.Menu>

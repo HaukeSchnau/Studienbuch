@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 import { forwardRef, useImperativeHandle, useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
 import Cross from "~/assets/cross.svg";
+import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { Text } from "~/components/ui/text";
 
 export interface SignatureFieldRef {
@@ -31,42 +32,53 @@ const SignatureFrame = ({ children, label }: { children: ReactNode; label: strin
 
 interface Props {
   label: string;
+  onSignedChange?: (signed: boolean) => void;
 }
 
 const createMockSignatureSvg = (label: string) =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 140"><path d="M18 92 C52 40, 84 114, 122 82 S188 40, 224 90 S274 112, 302 64" fill="none" stroke="#111" stroke-width="4" stroke-linecap="round"/><text x="18" y="124" font-size="14" fill="#666">${label}</text></svg>`;
 
-export const SignatureField = forwardRef<SignatureFieldRef, Props>(({ label }, ref) => {
-  const [svg, setSvg] = useState<string>("");
+export const SignatureField = forwardRef<SignatureFieldRef, Props>(
+  ({ label, onSignedChange }, ref) => {
+    const [svg, setSvg] = useState<string>("");
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      async getSVG() {
-        const next = svg || createMockSignatureSvg(label);
-        setSvg(next);
-        return next;
-      },
-    }),
-    [label, svg],
-  );
+    useImperativeHandle(
+      ref,
+      () => ({
+        async getSVG() {
+          return svg;
+        },
+      }),
+      [svg],
+    );
 
-  return (
-    <SignatureFrame label={label}>
-      <Pressable
-        onPress={() => setSvg(createMockSignatureSvg(label))}
-        className="h-full w-full items-center justify-center"
-        style={{ position: "absolute" }}
-      >
-        {svg ? (
-          <SvgXml xml={svg} style={{ width: "100%", height: "100%", position: "absolute" }} />
-        ) : (
-          <Text className="text-base opacity-50">Tippen, um eine Demo-Unterschrift einzufugen</Text>
-        )}
-      </Pressable>
-    </SignatureFrame>
-  );
-});
+    return (
+      <SignatureFrame label={label}>
+        <PressableSurface
+          accessibilityLabel={`${label} erfassen`}
+          borderRadius={0}
+          haptic={svg ? "none" : "selection"}
+          highlightColor="rgba(9, 138, 0, 0.10)"
+          onPress={() => {
+            const next = createMockSignatureSvg(label);
+            setSvg(next);
+            onSignedChange?.(true);
+          }}
+          className="h-full w-full items-center justify-center"
+          style={{ position: "absolute" }}
+        >
+          {svg ? (
+            <SvgXml xml={svg} style={{ width: "100%", height: "100%", position: "absolute" }} />
+          ) : (
+            <Text className="px-8 text-center text-base opacity-50">
+              Tippen, um eine Demo-Unterschrift einzufügen
+            </Text>
+          )}
+        </PressableSurface>
+      </SignatureFrame>
+    );
+  },
+);
 
 export const SignatureView = ({ svg, label }: { svg: string; label: string }) => {
   return (

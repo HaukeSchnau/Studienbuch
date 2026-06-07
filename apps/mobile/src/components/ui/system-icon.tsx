@@ -5,6 +5,7 @@ import { View } from "react-native";
 
 export type SystemIconName =
   | "add"
+  | "arrow-right"
   | "calendar-today"
   | "check"
   | "chevron-left"
@@ -22,6 +23,7 @@ export type SystemIconName =
 
 const symbolMap: Record<SystemIconName, ComponentProps<typeof SymbolView>["name"]> = {
   add: { ios: "plus", android: "add", web: "add" },
+  "arrow-right": { ios: "arrow.right", android: "arrow_forward", web: "arrow_forward" },
   "calendar-today": { ios: "calendar", android: "calendar_today", web: "calendar_today" },
   check: { ios: "checkmark.circle.fill", android: "check_circle", web: "check_circle" },
   "chevron-left": { ios: "chevron.left", android: "chevron_left", web: "chevron_left" },

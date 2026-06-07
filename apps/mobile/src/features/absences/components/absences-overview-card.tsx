@@ -31,6 +31,7 @@ export const AbsencesOverviewCard = () => {
           Fehlzeiten
         </Text>
         <IconButton
+          accessibilityLabel="Fehlzeit eintragen"
           onPress={() => setIsAddVisible(true)}
           icon="add"
           variant="plain"

@@ -61,6 +61,7 @@ export const TasksSectionView = ({
           Hausaufgaben
         </Text>
         <IconButton
+          accessibilityLabel="Hausaufgabe hinzufügen"
           icon="add"
           variant="plain"
           size={24}
@@ -72,7 +73,7 @@ export const TasksSectionView = ({
 
       {tasks.length === 0 ? (
         <View className="px-8 pb-4 pt-4">
-          <Text className="text-lg text-white">keine Aufgaben gefunden</Text>
+          <Text className="text-lg text-white">Keine Aufgaben gefunden</Text>
         </View>
       ) : (
         <ScrollView

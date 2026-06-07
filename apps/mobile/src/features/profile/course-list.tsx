@@ -13,14 +13,21 @@ export const CourseList = ({ semester }: { semester: Semester }) => {
   return (
     <NativeFieldGroup>
       <NativeFieldSection title="Kurse">
-        {courses.map((course) => (
+        {courses.length > 0 ? (
+          courses.map((course) => (
+            <NativeFieldRow
+              key={course.id}
+              title={subjectNameMap[course.subject]}
+              subtitle={course.name}
+              onPress={() => router.push(courseRoute(course.id))}
+            />
+          ))
+        ) : (
           <NativeFieldRow
-            key={course.id}
-            title={subjectNameMap[course.subject]}
-            subtitle={course.name}
-            onPress={() => router.push(courseRoute(course.id))}
+            title="Noch keine Kurse"
+            subtitle="Füge deine Fächer in den Einstellungen hinzu."
           />
-        ))}
+        )}
       </NativeFieldSection>
     </NativeFieldGroup>
   );

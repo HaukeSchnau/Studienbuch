@@ -1,11 +1,11 @@
 import type { ComponentRef, ReactNode } from "react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { View } from "react-native";
 
+import { Button, TextButton } from "~/components/ui/button";
 import { Text } from "~/components/ui/text";
 import { SignatureField, SignatureView } from "~/domain-ui/signature-field";
 import { haptics } from "~/platform/haptics";
-import { Button, TextButton } from "~/components/ui/button";
 
 interface Props {
   heading: string;
@@ -27,6 +27,7 @@ export const ConfirmPageContent = ({
   onConfirm,
 }: Props) => {
   const signatureRef = useRef<ComponentRef<typeof SignatureField>>(null);
+  const [hasSignature, setHasSignature] = useState(false);
 
   return (
     <>
@@ -43,19 +44,25 @@ export const ConfirmPageContent = ({
       )}
       <View className="h-4" />
 
-      <SignatureField label={signatureLabel} ref={signatureRef} />
+      <SignatureField label={signatureLabel} onSignedChange={setHasSignature} ref={signatureRef} />
 
       <View className="h-4" />
 
       <View className="flex-row items-center justify-end gap-4">
         <TextButton onPress={onCancel} label="Abbrechen" />
         <Button
+          disabled={!hasSignature}
           onPress={async () => {
             if (!signatureRef.current) {
               return;
             }
 
             const signature = await signatureRef.current.getSVG();
+            if (!signature) {
+              haptics.warning();
+              return;
+            }
+
             onConfirm(signature);
             haptics.success();
           }}

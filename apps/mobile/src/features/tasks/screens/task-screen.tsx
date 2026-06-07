@@ -45,6 +45,8 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
       title="Hausaufgabe"
       headerRight={
         <Stack.Toolbar.Button
+          icon="trash"
+          hidesSharedBackground
           tintColor={colors.danger.DEFAULT}
           accessibilityLabel="Aufgabe löschen"
           onPress={confirmDelete}

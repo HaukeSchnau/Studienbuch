@@ -27,7 +27,7 @@ export const ExcuseParent = ({ absence }: { absence: Absence }) => {
       >
         Ich bestätige, dass mein Kind <Text weight="bold">{user.name}</Text> am{" "}
         <Text weight="bold">{absence.date.toLocaleDateString("de-DE")}</Text> mit folgender
-        Begruendung nicht am Unterricht teilnehmen konnte.
+        Begründung nicht am Unterricht teilnehmen konnte.
       </ConfirmPageContent>
     </PageScaffold>
   );

@@ -57,7 +57,13 @@ export const MasterGradeRow = ({
           <Text className="grow text-3xl" weight="semi-bold">
             {currentMasterGrade ? formatGrade(currentMasterGrade.result) : "—"}
           </Text>
-          <IconButton icon="edit" opacity={0.8} size={24} onPress={() => setIsEditVisible(true)} />
+          <IconButton
+            accessibilityLabel="Gesamtnote bearbeiten"
+            icon="edit"
+            opacity={0.8}
+            size={24}
+            onPress={() => setIsEditVisible(true)}
+          />
         </View>
         <Text className="text-lg opacity-60">aktuelle Gesamtnote</Text>
         <Text className="text-lg opacity-60">
@@ -74,7 +80,13 @@ export const MasterGradeRow = ({
                 teacher={Boolean(currentMasterGrade.teacherSignature)}
               />
               {isConfirmed ? (
-                <IconButton icon="visibility" opacity={0.8} size={24} onPress={openGradeDetails} />
+                <IconButton
+                  accessibilityLabel="Gesamtnote ansehen"
+                  icon="visibility"
+                  opacity={0.8}
+                  size={24}
+                  onPress={openGradeDetails}
+                />
               ) : null}
             </View>
             {!isConfirmed ? (

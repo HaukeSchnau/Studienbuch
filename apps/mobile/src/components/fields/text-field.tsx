@@ -1,7 +1,7 @@
 import { Host, TextInput as NativeTextInput, useNativeState } from "@expo/ui";
 import { useEffect, useState } from "react";
-import type { TextInputProps } from "react-native";
-import { View } from "react-native";
+import type { LayoutChangeEvent, TextInputProps } from "react-native";
+import { Platform, TextInput as RNTextInput, View } from "react-native";
 import { colors } from "~/theme/colors";
 
 import { FieldSurface } from "./field-surface";
@@ -19,56 +19,89 @@ interface Props extends TextInputProps {
 
 export const TextField = ({ label, placeholder, error, ...props }: Props) => {
   const [isFocused, setIsFocused] = useState(false);
+  const [inputWidth, setInputWidth] = useState(0);
   const nativeValue = useNativeState(props.value);
 
   useEffect(() => {
     nativeValue.value = props.value;
   }, [nativeValue, props.value]);
 
+  const handleLayout = (event: LayoutChangeEvent) => {
+    setInputWidth(event.nativeEvent.layout.width);
+  };
+
   return (
     <View className="gap-2">
       <Text className="px-1 text-[15px] text-[#5B6472]" weight="medium">
         {label}
       </Text>
-      <FieldSurface focused={isFocused}>
-        <Host matchContents={{ vertical: true }} style={{ width: "100%" }}>
-          <NativeTextInput
-            autoCapitalize={props.autoCapitalize}
-            autoComplete={props.autoComplete}
-            autoCorrect={props.autoCorrect}
-            autoFocus={props.autoFocus}
-            defaultValue={props.value}
-            editable={props.editable}
-            inputMode={props.inputMode}
-            keyboardType={props.keyboardType}
-            maxLength={props.maxLength}
-            onBlur={() => {
+      {Platform.OS === "android" ? (
+        <FieldSurface focused={isFocused}>
+          <RNTextInput
+            {...props}
+            onBlur={(event) => {
               setIsFocused(false);
+              props.onBlur?.(event);
             }}
-            onChangeText={props.onChangeText}
-            onFocus={() => {
+            onFocus={(event) => {
               setIsFocused(true);
+              props.onFocus?.(event);
             }}
-            onSubmitEditing={(text) => props.onSubmitEditing?.({ nativeEvent: { text } } as never)}
             placeholder={placeholder}
             placeholderTextColor="#98A2B3"
-            returnKeyType={props.returnKeyType}
-            secureTextEntry={props.secureTextEntry}
             selectionColor={colors.accent.DEFAULT}
             style={{
-              paddingHorizontal: 20,
-              paddingVertical: 12,
-              width: "100%",
-            }}
-            textStyle={{
               color: "#111827",
               fontFamily: fontNames.regular,
               fontSize: 17,
+              paddingHorizontal: 20,
+              paddingVertical: 12,
             }}
-            value={nativeValue}
           />
-        </Host>
-      </FieldSurface>
+        </FieldSurface>
+      ) : (
+        <FieldSurface focused={isFocused} onLayout={handleLayout}>
+          <Host matchContents={{ vertical: true }} style={{ width: "100%" }}>
+            <NativeTextInput
+              autoCapitalize={props.autoCapitalize}
+              autoComplete={props.autoComplete}
+              autoCorrect={props.autoCorrect}
+              autoFocus={props.autoFocus}
+              defaultValue={props.value}
+              editable={props.editable}
+              inputMode={props.inputMode}
+              keyboardType={props.keyboardType}
+              maxLength={props.maxLength}
+              onBlur={() => {
+                setIsFocused(false);
+              }}
+              onChangeText={props.onChangeText}
+              onFocus={() => {
+                setIsFocused(true);
+              }}
+              onSubmitEditing={(text) =>
+                props.onSubmitEditing?.({ nativeEvent: { text } } as never)
+              }
+              placeholder={placeholder}
+              placeholderTextColor="#98A2B3"
+              returnKeyType={props.returnKeyType}
+              secureTextEntry={props.secureTextEntry}
+              selectionColor={colors.accent.DEFAULT}
+              style={{
+                paddingHorizontal: 20,
+                paddingVertical: 12,
+                width: inputWidth || undefined,
+              }}
+              textStyle={{
+                color: "#111827",
+                fontFamily: fontNames.regular,
+                fontSize: 17,
+              }}
+              value={nativeValue}
+            />
+          </Host>
+        </FieldSurface>
+      )}
       {error ? <Text className="px-1 text-danger">{error}</Text> : undefined}
     </View>
   );

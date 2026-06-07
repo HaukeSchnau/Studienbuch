@@ -1,16 +1,17 @@
-import { startOfDay } from "date-fns";
 import { useMemo, useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 
 import { Button, OutlinedButton, TextButton } from "~/components/ui/button";
+import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { DateField } from "~/components/fields/date-field";
 import { SelectField } from "~/components/fields/select-field";
 import { SheetScaffold } from "~/components/layout/sheet-scaffold";
 import { Text } from "~/components/ui/text";
 import { TextAreaField } from "~/components/fields/text-area-field";
 import { TextField } from "~/components/fields/text-field";
+import { getNextSchoolDay } from "~/domain-ui/school-day";
 import type { TaskAttachment } from "@stu/core";
-import { useCourses, useTasks } from "~/data/hooks";
+import { useCourses, useScheduleData, useTasks } from "~/data/hooks";
 import { haptics } from "~/platform/haptics";
 
 const attachmentPalette = ["#B9D7F5", "#F5D9B9", "#D7E9C6", "#E2CEF5"] as const;
@@ -23,10 +24,11 @@ const createAttachment = (index: number): TaskAttachment => ({
 
 export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose: () => void }) => {
   const { courses } = useCourses();
+  const { timetable } = useScheduleData();
   const { getCourseTasks, addTask } = useTasks();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [dueDate, setDueDate] = useState(startOfDay(new Date()));
+  const [dueDate, setDueDate] = useState(() => getNextSchoolDay(timetable));
   const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(courseId);
   const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
 
@@ -101,7 +103,7 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
           </Text>
           <View className="flex-row flex-wrap gap-3">
             {attachments.map((attachment) => (
-              <Pressable
+              <PressableSurface
                 key={attachment.id}
                 onPress={() =>
                   setAttachments((current) =>
@@ -109,11 +111,14 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
                   )
                 }
                 className="h-24 w-[47%] items-center justify-center rounded-3xl"
+                borderRadius={24}
+                highlightColor="rgba(9, 138, 0, 0.12)"
+                pressedScale={0.97}
                 style={{ backgroundColor: attachment.color }}
               >
                 <Text weight="bold">{attachment.label}</Text>
                 <Text className="pt-1 text-center text-sm opacity-70">Antippen zum Entfernen</Text>
-              </Pressable>
+              </PressableSurface>
             ))}
           </View>
         </>

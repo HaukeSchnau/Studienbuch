@@ -50,7 +50,13 @@ export const WrittenGradesRow = ({
             <Text className="grow text-3xl" weight="semi-bold">
               {averageWrittenGrade !== null ? formatGrade(averageWrittenGrade) : "—"}
             </Text>
-            <IconButton icon="add" opacity={0.8} size={24} onPress={() => setIsAddVisible(true)} />
+            <IconButton
+              accessibilityLabel="Klausurnote eintragen"
+              icon="add"
+              opacity={0.8}
+              size={24}
+              onPress={() => setIsAddVisible(true)}
+            />
           </View>
           <Text className="text-lg opacity-60">schriftlich</Text>
           {writtenGrades.length > 0 ? (
@@ -70,7 +76,7 @@ export const WrittenGradesRow = ({
               isGradeConfirmed(grade, user.isOfAge)
                 ? null
                 : {
-                    label: "Jetzt Bestätigen",
+                    label: "Jetzt bestätigen",
                     href: gradeRoute({ courseId, type: "WRITTEN", date: grade.date }),
                   }
             }

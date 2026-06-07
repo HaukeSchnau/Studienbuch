@@ -3,7 +3,8 @@ import { subjectNameMap } from "@stu/core";
 import { Text } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
 import MenuView from "@expo/ui/community/menu";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { haptics } from "~/platform/haptics";
 import { SubjectIcon } from "./subject-icon";
 
@@ -64,12 +65,16 @@ export const SelectCourse = <TOption,>({
 
   if (options.length === 1) {
     return (
-      <Pressable
+      <PressableSurface
+        accessibilityLabel={`${subjectNameMap[subject]} ${value ? "abwählen" : "belegen"}`}
+        borderRadius={24}
+        haptic="none"
         onPress={() => {
           const nextValue = value ? undefined : options[0];
           haptics.toggle(Boolean(nextValue));
           onChange(nextValue);
         }}
+        pressedScale={0.985}
       >
         <View
           style={[
@@ -81,7 +86,7 @@ export const SelectCourse = <TOption,>({
         >
           {content}
         </View>
-      </Pressable>
+      </PressableSurface>
     );
   }
 

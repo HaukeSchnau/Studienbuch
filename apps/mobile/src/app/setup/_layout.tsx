@@ -2,10 +2,11 @@ import { Image } from "expo-image";
 import { Slot, Stack, usePathname } from "expo-router";
 import { openBrowserAsync } from "expo-web-browser";
 import { useEffect } from "react";
-import { LayoutAnimation, ScrollView, TouchableOpacity, View } from "react-native";
+import { LayoutAnimation, ScrollView, View } from "react-native";
 import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import iconImage from "~/assets/icon.png";
+import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { shadow } from "~/components/styles/shadow";
 import { Text } from "~/components/ui/text";
 
@@ -52,16 +53,24 @@ export default function SetupLayout() {
             </View>
 
             <View className="gap-4 self-center">
-              <TouchableOpacity
+              <PressableSurface
+                accessibilityLabel="Impressum öffnen"
+                borderRadius={18}
+                className="px-4 py-2"
+                highlightColor="rgba(9, 138, 0, 0.10)"
                 onPress={() => void openBrowserAsync("https://studienbuch.app/impressum")}
               >
                 <Text className="text-center text-base text-neutral">Impressum</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </PressableSurface>
+              <PressableSurface
+                accessibilityLabel="Datenschutz öffnen"
+                borderRadius={18}
+                className="px-4 py-2"
+                highlightColor="rgba(9, 138, 0, 0.10)"
                 onPress={() => void openBrowserAsync("https://studienbuch.app/datenschutz")}
               >
                 <Text className="text-center text-base text-neutral">Datenschutz</Text>
-              </TouchableOpacity>
+              </PressableSurface>
             </View>
           </Animated.View>
         </SafeAreaView>
