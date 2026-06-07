@@ -1,3 +1,5 @@
+import { type ConfigPlugin, withAndroidManifest } from "expo/config-plugins";
+
 const IS_DEV = process.env.APP_VARIANT === "development";
 const iconSuffix = IS_DEV ? "-dev" : "";
 const icon = `./assets/images/icon${iconSuffix}.png`;
@@ -8,6 +10,43 @@ const androidIcon = {
   monochromeImage: `./assets/images/android-icon${iconSuffix}-monochrome.png`,
 };
 const splashBackgroundColor = IS_DEV ? "#F8C04E" : "#6DB868";
+
+const androidDevLauncherMetadata = {
+  DEV_CLIENT_DEFAULT_LAUNCHER_URL: "http://10.0.2.2:8081",
+  EXDevMenuShowFloatingActionButton: "false",
+  EXDevMenuShowsAtLaunch: "false",
+  EXDevMenuIsOnboardingFinished: "true",
+};
+
+const withAndroidDevLauncherMetadata: ConfigPlugin = (config) =>
+  withAndroidManifest(config, (manifestConfig) => {
+    const application = manifestConfig.modResults.manifest.application?.[0];
+
+    if (!application) {
+      return manifestConfig;
+    }
+
+    const metadata = application["meta-data"] ?? [];
+    application["meta-data"] = metadata;
+
+    Object.entries(androidDevLauncherMetadata).forEach(([name, value]) => {
+      const existingEntry = metadata.find((entry) => entry.$?.["android:name"] === name);
+      const attributes = {
+        "android:name": name,
+        "android:value": value,
+      };
+
+      if (existingEntry) {
+        existingEntry.$ = { ...existingEntry.$, ...attributes };
+        return;
+      }
+
+      metadata.push({ $: attributes });
+    });
+
+    return manifestConfig;
+  });
+
 const plugins = [
   "expo-router",
   "expo-image",
@@ -28,6 +67,7 @@ const plugins = [
             },
           },
         ],
+        withAndroidDevLauncherMetadata,
       ]
     : []),
   [
