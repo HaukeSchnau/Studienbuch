@@ -14,6 +14,7 @@ const brandGreen = "#6DB868";
 const brandAccentGreen = "#6DB968";
 const devBackground = "#F8C04E";
 const devRecolorFuzz = "10%";
+const androidAdaptiveForegroundSize = 720;
 
 const outputs = {
   icon: resolve(mobileImages, "icon.png"),
@@ -55,6 +56,8 @@ const devBase4096 = resolve(tempDir, "dev-base-4096.png");
 const devTransparent4096 = resolve(tempDir, "dev-foreground-4096.png");
 const devBadge = resolve(tempDir, "dev-badge.svg");
 const devBadgePng = resolve(tempDir, "dev-badge.png");
+const androidForegroundPadded = resolve(tempDir, "android-foreground-padded.png");
+const androidDevForegroundPadded = resolve(tempDir, "android-dev-foreground-padded.png");
 const webFavicon16 = resolve(tempDir, "favicon-16.png");
 const webFavicon24 = resolve(tempDir, "favicon-24.png");
 const webFavicon32 = resolve(tempDir, "favicon-32.png");
@@ -160,19 +163,33 @@ await runMagick([
 await runMagick([
   transparent4096,
   "-resize",
+  `${androidAdaptiveForegroundSize}x${androidAdaptiveForegroundSize}`,
+  "-gravity",
+  "center",
+  "-background",
+  "none",
+  "-extent",
   "1024x1024",
   "-depth",
   "8",
-  outputs.androidForeground,
+  androidForegroundPadded,
 ]);
 await runMagick([
   devTransparent4096,
   "-resize",
+  `${androidAdaptiveForegroundSize}x${androidAdaptiveForegroundSize}`,
+  "-gravity",
+  "center",
+  "-background",
+  "none",
+  "-extent",
   "1024x1024",
   "-depth",
   "8",
-  outputs.androidDevForeground,
+  androidDevForegroundPadded,
 ]);
+await runMagick([androidForegroundPadded, "-depth", "8", outputs.androidForeground]);
+await runMagick([androidDevForegroundPadded, "-depth", "8", outputs.androidDevForeground]);
 await runMagick([
   "-size",
   "1024x1024",
