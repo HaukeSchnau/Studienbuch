@@ -24,7 +24,7 @@ interface Props {
 }
 
 const buttonHeight = {
-  sm: 44,
+  sm: 48,
   md: 48,
 } as const;
 
@@ -163,7 +163,7 @@ export const OutlinedButton = ({
 
 export const TextButton = ({ className, onPress, label, size = "md" }: Props) => (
   <BaseButton
-    className={clsx("min-h-11 px-2 py-1", className)}
+    className={clsx("min-h-12 px-2 py-1", className)}
     label={label}
     onPress={onPress}
     size={size}

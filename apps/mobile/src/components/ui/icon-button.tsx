@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { colors } from "~/theme/colors";
 import { SystemIcon, type SystemIconName } from "./system-icon";
@@ -18,10 +18,12 @@ interface Props {
   accessibilityLabel?: string;
 }
 
+const minimumTouchTarget = Platform.OS === "android" ? 48 : 44;
+
 const containerSizeMap = {
   plain: 0,
-  subtle: 40,
-  filled: 44,
+  subtle: minimumTouchTarget,
+  filled: Platform.OS === "android" ? 48 : 44,
 } as const;
 
 const backgroundColorMap = {
@@ -64,6 +66,9 @@ export const IconButton = ({
     className,
   );
   const buttonStyle = [
+    variant === "plain"
+      ? { minWidth: minimumTouchTarget, minHeight: minimumTouchTarget }
+      : undefined,
     containerSize > 0 ? { width: containerSize, height: containerSize } : undefined,
     backgroundColor ? { backgroundColor } : undefined,
   ];
