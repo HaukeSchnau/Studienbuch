@@ -4,8 +4,10 @@ import { View } from "react-native";
 import { Button, OutlinedButton, TextButton } from "~/components/ui/button";
 import { DateField } from "~/components/fields/date-field";
 import { SheetScaffold } from "~/components/layout/sheet-scaffold";
+import { nativeHostThemeProps } from "~/components/ui/native-theme";
 import { Text } from "~/components/ui/text";
 import { haptics } from "~/platform/haptics";
+import { colors } from "~/theme/colors";
 
 interface Props {
   title: string;
@@ -46,7 +48,11 @@ export const GradeEditorSheet = ({
 
       <Text className="text-center text-lg opacity-70">Punktzahl</Text>
       <View className="h-3" />
-      <Host matchContents={{ vertical: true }} style={{ width: "100%" }}>
+      <Host
+        matchContents={{ vertical: true }}
+        style={{ width: "100%" }}
+        {...nativeHostThemeProps(colors.primary.DEFAULT)}
+      >
         <Slider
           min={0}
           max={15}

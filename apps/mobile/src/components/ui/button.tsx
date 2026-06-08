@@ -1,10 +1,18 @@
-import { Button as ExpoButton, Host } from "@expo/ui";
-import { tint } from "@expo/ui/swift-ui/modifiers";
+import { Button as ExpoButton, Host, Text as ExpoText } from "@expo/ui";
+import {
+  buttonBorderShape,
+  buttonStyle,
+  font,
+  foregroundStyle,
+  tint,
+} from "@expo/ui/swift-ui/modifiers";
 import clsx from "clsx";
 import { Platform, View } from "react-native";
 
 import { haptics } from "~/platform/haptics";
 import { colors } from "~/theme/colors";
+import { nativeHostThemeProps } from "./native-theme";
+import { fontNames } from "./text";
 
 interface Props {
   label: string;
@@ -16,9 +24,49 @@ interface Props {
 }
 
 const baseButtonStyle = {
-  sm: { height: 44 },
-  md: { height: 48 },
+  sm: { height: 44, borderRadius: 999 },
+  md: { height: 48, borderRadius: 999 },
 } as const;
+
+const fontSize = {
+  sm: 16,
+  md: 17,
+} as const;
+
+const fallbackStyle = (
+  variant: "filled" | "outlined" | "text",
+  tintColor: string,
+  size: "sm" | "md",
+) => {
+  if (Platform.OS !== "web") {
+    return baseButtonStyle[size];
+  }
+
+  if (variant === "filled") {
+    return {
+      ...baseButtonStyle[size],
+      backgroundColor: tintColor,
+      paddingHorizontal: 18,
+      paddingVertical: 10,
+    };
+  }
+
+  if (variant === "outlined") {
+    return {
+      ...baseButtonStyle[size],
+      borderColor: tintColor,
+      borderWidth: 1,
+      paddingHorizontal: 18,
+      paddingVertical: 10,
+    };
+  }
+
+  return {
+    ...baseButtonStyle[size],
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  };
+};
 
 function BaseButton({
   className,
@@ -32,24 +80,54 @@ function BaseButton({
   variant: "filled" | "outlined" | "text";
   tintColor?: string;
 }) {
-  const modifiers = Platform.OS === "ios" && tintColor ? [tint(tintColor)] : undefined;
+  const resolvedTintColor = tintColor ?? colors.accent.DEFAULT;
+  const labelColor = disabled
+    ? colors.neutral.DEFAULT
+    : variant === "filled"
+      ? colors.on.primary
+      : resolvedTintColor;
+  const labelTextStyle = {
+    color: labelColor,
+    fontFamily: fontNames["semi-bold"],
+    fontSize: fontSize[size],
+    fontWeight: "600" as const,
+    textAlign: "center" as const,
+  };
+  const modifiers =
+    Platform.OS === "ios"
+      ? [
+          buttonBorderShape("capsule"),
+          tint(resolvedTintColor),
+          ...(variant === "text" ? [buttonStyle("borderless")] : []),
+          font({
+            family: fontNames["semi-bold"],
+            size: fontSize[size],
+            weight: "semibold",
+          }),
+          foregroundStyle(labelColor),
+        ]
+      : undefined;
 
   return (
     <View className={clsx("items-center justify-center", className)}>
-      <Host matchContents>
+      <Host matchContents {...nativeHostThemeProps(resolvedTintColor)}>
         <ExpoButton
           disabled={disabled}
-          label={label}
           onPress={() => {
             haptics.selection();
             onPress?.();
           }}
-          style={{
-            ...baseButtonStyle[size],
-          }}
+          style={fallbackStyle(variant, resolvedTintColor, size)}
           modifiers={modifiers}
           variant={variant}
-        />
+          label={Platform.OS === "ios" ? label : undefined}
+        >
+          {Platform.OS === "ios" ? undefined : (
+            <ExpoText numberOfLines={1} textStyle={labelTextStyle}>
+              {label}
+            </ExpoText>
+          )}
+        </ExpoButton>
       </Host>
     </View>
   );

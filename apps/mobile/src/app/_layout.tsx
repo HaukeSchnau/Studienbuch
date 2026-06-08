@@ -15,6 +15,7 @@ import { useEffect } from "react";
 import { AppProviders } from "~/app-shell/app-providers";
 import { SetupGate } from "~/app-shell/setup/setup-gate";
 import { configureDevelopmentMenuPreferences } from "~/platform/dev-menu-preferences";
+import { fontNames } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
 import "../global.css";
 
@@ -62,7 +63,7 @@ function AppNavigator() {
         headerTintColor: colors.on.primary,
         headerTitleStyle: {
           color: colors.on.primary,
-          fontFamily: "Nunito_700Bold",
+          fontFamily: fontNames.bold,
         },
         headerBackTitle: "Zurück",
         headerBackButtonDisplayMode: "minimal",

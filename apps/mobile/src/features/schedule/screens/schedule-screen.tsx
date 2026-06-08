@@ -13,7 +13,7 @@ import { de as localeDE } from "date-fns/locale/de";
 import SegmentedControl from "@expo/ui/community/segmented-control";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Platform, ScrollView, type DimensionValue, View } from "react-native";
+import { ScrollView, type DimensionValue, View } from "react-native";
 import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 import { PressableSurface } from "~/components/feedback/pressable-surface";
@@ -220,7 +220,7 @@ export const ScheduleScreen = () => {
           <SegmentedControl
             selectedIndex={displayMode === "week" ? 0 : 1}
             style={{ minHeight: 40 }}
-            tintColor={Platform.OS === "android" ? colors.accent.des : colors.accent.DEFAULT}
+            tintColor={colors.accent.DEFAULT}
             values={["Woche", "Agenda"]}
             onChange={(event) => {
               haptics.selection();
