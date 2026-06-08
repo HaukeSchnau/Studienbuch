@@ -1,30 +1,21 @@
 import { format } from "date-fns";
-import { MenuView, type MenuComponentRef } from "@expo/ui/community/menu";
 import { de } from "date-fns/locale/de";
 import { Stack } from "expo-router";
-import { useRef, useState } from "react";
-import { ActionSheetIOS, Platform, View } from "react-native";
+import { View } from "react-native";
 import Animated from "react-native-reanimated";
-import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
 import { Card } from "~/components/ui/card";
 import { CoreLayout } from "~/components/layout/core-layout";
-import { IconButton } from "~/components/ui/icon-button";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { Text } from "~/components/ui/text";
 import { useTransparentHeaderTopPadding } from "~/components/use-transparent-header-top-padding";
 import { subjectNameMap, Teacher } from "@stu/core";
 import { useCourses, useSchool } from "~/data/hooks";
-import { AddTaskSheet, TasksSection } from "~/features/tasks";
+import { TasksSection } from "~/features/tasks";
 import { GradesOverviewCard } from "~/features/courses/grades";
-import { haptics } from "~/platform/haptics";
-import { AddWrittenGrade } from "../grades/written/add-written-grade";
 
 export const CourseScreen = ({ courseId }: { courseId: string }) => {
   const { getCourse } = useCourses();
   const { semesters } = useSchool();
-  const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
-  const [isAddWrittenGradeVisible, setIsAddWrittenGradeVisible] = useState(false);
-  const courseMenuRef = useRef<MenuComponentRef>(null);
   const heroStyle = useTransparentHeaderTopPadding();
   const course = getCourse(courseId);
 
@@ -33,46 +24,9 @@ export const CourseScreen = ({ courseId }: { courseId: string }) => {
   }
 
   const semester = semesters.find((item) => item.id === course.semesterId)!;
-  const showCourseActions = () => {
-    haptics.selection();
-
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          cancelButtonIndex: 2,
-          options: ["Hausaufgabe hinzufügen", "Klausurnote eintragen", "Abbrechen"],
-          title: "Kursaktionen",
-        },
-        (buttonIndex) => {
-          if (buttonIndex === 0) {
-            setIsAddTaskVisible(true);
-          } else if (buttonIndex === 1) {
-            setIsAddWrittenGradeVisible(true);
-          }
-        },
-      );
-      return;
-    }
-
-    courseMenuRef.current?.show();
-  };
 
   return (
     <CoreLayout>
-      {isAddTaskVisible ? (
-        <PortaledBottomSheet onClose={() => setIsAddTaskVisible(false)}>
-          <AddTaskSheet courseId={course.id} onClose={() => setIsAddTaskVisible(false)} />
-        </PortaledBottomSheet>
-      ) : null}
-      {isAddWrittenGradeVisible ? (
-        <PortaledBottomSheet onClose={() => setIsAddWrittenGradeVisible(false)}>
-          <AddWrittenGrade
-            courseId={course.id}
-            onClose={() => setIsAddWrittenGradeVisible(false)}
-          />
-        </PortaledBottomSheet>
-      ) : null}
-
       <Stack.Screen
         options={{
           headerTitle: "",
@@ -99,41 +53,7 @@ export const CourseScreen = ({ courseId }: { courseId: string }) => {
             </Text>
           </View>
 
-          <View className="items-end gap-3">
-            {Platform.OS === "android" ? (
-              <MenuView
-                ref={courseMenuRef}
-                actions={[
-                  { id: "add-task", title: "Hausaufgabe hinzufügen" },
-                  { id: "add-written-grade", title: "Klausurnote eintragen" },
-                ]}
-                onPressAction={(event) => {
-                  if (event.nativeEvent.event === "add-task") {
-                    setIsAddTaskVisible(true);
-                  } else if (event.nativeEvent.event === "add-written-grade") {
-                    setIsAddWrittenGradeVisible(true);
-                  }
-                }}
-              >
-                <IconButton
-                  accessibilityLabel="Kursaktionen"
-                  icon="more"
-                  variant="filled"
-                  elevated
-                  color="white"
-                  onPress={showCourseActions}
-                />
-              </MenuView>
-            ) : (
-              <IconButton
-                accessibilityLabel="Kursaktionen"
-                icon="more"
-                variant="filled"
-                elevated
-                color="white"
-                onPress={showCourseActions}
-              />
-            )}
+          <View className="items-end">
             <Card
               padding="none"
               radius="md"
