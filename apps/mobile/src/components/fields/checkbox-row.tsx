@@ -13,24 +13,37 @@ interface Props {
   label: string;
   value: boolean;
   onChange: (value: boolean) => void;
+  presentation?: "standalone" | "grouped";
   textStyle?: StyleProp<TextStyle>;
 }
 
-export const CheckboxRow = ({ label, value, onChange, textStyle }: Props) => {
+export const CheckboxRow = ({
+  label,
+  value,
+  onChange,
+  presentation = "standalone",
+  textStyle,
+}: Props) => {
+  const isGrouped = presentation === "grouped";
+
   return (
     <PressableSurface
       accessibilityLabel={label}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: value }}
-      borderRadius={20}
-      className="min-h-12 justify-center bg-[#F6F8FB] px-4 py-3"
+      borderRadius={isGrouped ? 0 : 20}
+      className={
+        isGrouped
+          ? "min-h-14 justify-center px-4 py-4"
+          : "min-h-12 justify-center bg-[#F6F8FB] px-4 py-3"
+      }
       haptic="none"
       onPress={() => {
         const nextValue = !value;
         haptics.toggle(nextValue);
         onChange(nextValue);
       }}
-      pressedScale={0.99}
+      pressedScale={isGrouped ? 0.997 : 0.99}
     >
       <View
         className="flex-row items-center gap-3"

@@ -14,15 +14,31 @@ interface Props {
   value: Date;
   label: string;
   onChange: (date: Date) => void;
+  iosContainer?: "field" | "plain";
 }
 
-export const DateField = ({ value, label, onChange }: Props) => {
+export const DateField = ({ value, label, onChange, iosContainer = "field" }: Props) => {
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
   const formattedDate = format(value, "dd.MM.yyyy");
   const pickerValue = new Date(value.getFullYear(), value.getMonth(), value.getDate(), 12);
   const handleDateChange = (date: Date) => {
     onChange(startOfDay(date));
   };
+
+  const iosPicker = (
+    <View className="min-h-10 flex-row items-center justify-between gap-3">
+      <DateTimePicker
+        accentColor={colors.primary.text}
+        display="compact"
+        locale="de_DE"
+        mode="date"
+        onValueChange={(_, date) => handleDateChange(date)}
+        style={{ height: 38, width: 146 }}
+        value={pickerValue}
+      />
+      <SystemIcon name="calendar-today" size={21} color="#7B8794" />
+    </View>
+  );
 
   return (
     <View className="gap-2">
@@ -31,20 +47,13 @@ export const DateField = ({ value, label, onChange }: Props) => {
       </Text>
 
       {Platform.OS === "ios" ? (
-        <FieldSurface className="min-h-14 justify-center px-4 py-2" focused={false}>
-          <View className="min-h-10 flex-row items-center justify-between gap-3">
-            <DateTimePicker
-              accentColor={colors.primary.text}
-              display="compact"
-              locale="de_DE"
-              mode="date"
-              onValueChange={(_, date) => handleDateChange(date)}
-              style={{ height: 38, width: 146 }}
-              value={pickerValue}
-            />
-            <SystemIcon name="calendar-today" size={21} color="#7B8794" />
-          </View>
-        </FieldSurface>
+        iosContainer === "plain" ? (
+          <View className="min-h-12 justify-center px-1">{iosPicker}</View>
+        ) : (
+          <FieldSurface className="min-h-14 justify-center px-4 py-2" focused={false}>
+            {iosPicker}
+          </FieldSurface>
+        )
       ) : (
         <>
           <PressableSurface

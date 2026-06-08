@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { View } from "react-native";
 
 import { Button, TextButton } from "~/components/ui/button";
@@ -54,34 +54,38 @@ export const AddAbsence = ({ onClose }: Props) => {
         </View>
       }
     >
-      <DateField onChange={handleDateChange} value={date} label="Datum" />
+      <DateField onChange={handleDateChange} value={date} label="Datum" iosContainer="plain" />
 
       {courseOptionsForDay.length > 0 ? (
-        <View className="rounded-[28px] border border-[#E5EAF0] bg-[#FBFCFE] p-4">
-          <Text className="text-[15px] text-[#5B6472]" weight="medium">
+        <View className="gap-2">
+          <Text className="px-1 text-[15px] text-[#5B6472]" weight="medium">
             Fächer
           </Text>
-          <View className="h-3" />
-          <View className="gap-3">
-            {courseOptionsForDay.map((entry) => {
+          <View className="overflow-hidden rounded-[24px] border border-[#DCE4EE] bg-[#F6F8FB]">
+            {courseOptionsForDay.map((entry, index) => {
               const course = getCourse(entry.courseId);
               if (!course) return null;
               const checked = courseIds.includes(course.id);
 
               return (
-                <CheckboxRow
-                  key={entry.id}
-                  textStyle={{ fontSize: 16, color: "#111827" }}
-                  label={subjectNameMap[course.subject]}
-                  value={checked}
-                  onChange={(nextValue) =>
-                    setCourseIds((current) =>
-                      nextValue
-                        ? [...current, course.id]
-                        : current.filter((courseId) => courseId !== course.id),
-                    )
-                  }
-                />
+                <Fragment key={entry.id}>
+                  <CheckboxRow
+                    presentation="grouped"
+                    textStyle={{ fontSize: 16, color: "#111827" }}
+                    label={subjectNameMap[course.subject]}
+                    value={checked}
+                    onChange={(nextValue) =>
+                      setCourseIds((current) =>
+                        nextValue
+                          ? [...current, course.id]
+                          : current.filter((courseId) => courseId !== course.id),
+                      )
+                    }
+                  />
+                  {index < courseOptionsForDay.length - 1 ? (
+                    <View className="ml-16 h-px bg-[#E5EAF0]" />
+                  ) : null}
+                </Fragment>
               );
             })}
           </View>
