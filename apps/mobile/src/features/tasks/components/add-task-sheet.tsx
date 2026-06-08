@@ -1,12 +1,13 @@
 import * as ImagePicker from "expo-image-picker";
 import { useMemo, useState } from "react";
-import { ActionSheetIOS, Alert, Platform, View } from "react-native";
+import { Alert, View } from "react-native";
 
-import { Button, OutlinedButton, TextButton } from "~/components/ui/button";
+import { Button, TextButton } from "~/components/ui/button";
 import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { DateField } from "~/components/fields/date-field";
 import { SelectField } from "~/components/fields/select-field";
 import { SheetScaffold } from "~/components/layout/sheet-scaffold";
+import { SystemIcon } from "~/components/ui/system-icon";
 import { Text } from "~/components/ui/text";
 import { TextAreaField } from "~/components/fields/text-area-field";
 import { TextField } from "~/components/fields/text-field";
@@ -57,65 +58,56 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
     haptics.success();
   };
 
-  const pickAttachment = async (source: "camera" | "library") => {
-    const permission =
-      source === "camera"
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+  const showAttachmentError = (source: "camera" | "library") => {
+    haptics.warning();
+    Alert.alert(
+      source === "camera" ? "Kamera nicht verfügbar" : "Fotoauswahl nicht möglich",
+      "Bitte versuche es erneut oder prüfe die Berechtigungen in den Systemeinstellungen.",
+    );
+  };
+
+  const takePhoto = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
 
     if (!permission.granted) {
       haptics.warning();
       Alert.alert(
-        source === "camera" ? "Kamera nicht freigegeben" : "Fotos nicht freigegeben",
+        "Kamera nicht freigegeben",
         "Du kannst die Berechtigung später in den Systemeinstellungen ändern.",
       );
       return;
     }
 
-    const result =
-      source === "camera"
-        ? await ImagePicker.launchCameraAsync({
-            allowsEditing: false,
-            mediaTypes: ["images"],
-            quality: 0.82,
-          })
-        : await ImagePicker.launchImageLibraryAsync({
-            allowsMultipleSelection: false,
-            mediaTypes: ["images"],
-            quality: 0.82,
-          });
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: false,
+        mediaTypes: ["images"],
+        quality: 0.82,
+      });
 
-    if (!result.canceled) {
-      addPickedAsset(result.assets[0]);
+      if (!result.canceled) {
+        addPickedAsset(result.assets[0]);
+      }
+    } catch {
+      showAttachmentError("camera");
     }
   };
 
-  const showAttachmentSourcePicker = () => {
-    haptics.selection();
+  const pickFromLibrary = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsMultipleSelection: false,
+        mediaTypes: ["images"],
+        presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
+        quality: 0.82,
+      });
 
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          cancelButtonIndex: 2,
-          options: ["Foto aufnehmen", "Aus Mediathek wählen", "Abbrechen"],
-          title: "Foto hinzufügen",
-        },
-        (buttonIndex) => {
-          if (buttonIndex === 0) {
-            void pickAttachment("camera");
-          } else if (buttonIndex === 1) {
-            void pickAttachment("library");
-          }
-        },
-      );
-      return;
+      if (!result.canceled) {
+        addPickedAsset(result.assets[0]);
+      }
+    } catch {
+      showAttachmentError("library");
     }
-
-    Alert.alert("Foto hinzufügen", "Woher soll das Foto kommen?", [
-      { text: "Kamera", onPress: () => void pickAttachment("camera") },
-      { text: "Mediathek", onPress: () => void pickAttachment("library") },
-      { style: "cancel", text: "Abbrechen" },
-    ]);
   };
 
   return (
@@ -198,11 +190,30 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
         </>
       ) : null}
 
-      <OutlinedButton
-        label="Foto hinzufügen"
-        color={attachments.length > 0 ? "#76A6E5" : "#3B7FD9"}
-        onPress={showAttachmentSourcePicker}
-      />
+      <View className="flex-row items-center gap-3 self-stretch">
+        <PressableSurface
+          accessibilityLabel="Foto aus Mediathek hinzufügen"
+          borderRadius={24}
+          className="h-12 flex-1 flex-row items-center justify-center rounded-full border border-[#B6C0CC] bg-white px-4"
+          haptic="impact"
+          onPress={() => void pickFromLibrary()}
+          pressedScale={0.985}
+        >
+          <Text weight="semi-bold" className="text-[17px] text-[#3B7FD9]">
+            Foto hinzufügen
+          </Text>
+        </PressableSurface>
+        <PressableSurface
+          accessibilityLabel="Foto aufnehmen"
+          borderRadius={24}
+          className="h-12 w-12 items-center justify-center rounded-full bg-primary-des"
+          haptic="impact"
+          onPress={() => void takePhoto()}
+          pressedScale={0.95}
+        >
+          <SystemIcon name="camera" size={22} color="#098A00" />
+        </PressableSurface>
+      </View>
 
       <DateField value={dueDate} onChange={setDueDate} label="Abgabetermin" />
     </SheetScaffold>

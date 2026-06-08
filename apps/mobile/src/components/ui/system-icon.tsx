@@ -7,6 +7,7 @@ import Svg, { Circle, Path } from "react-native-svg";
 export type SystemIconName =
   | "add"
   | "arrow-right"
+  | "camera"
   | "calendar-today"
   | "check"
   | "chevron-left"
@@ -26,6 +27,7 @@ export type SystemIconName =
 const symbolMap: Record<SystemIconName, ComponentProps<typeof SymbolView>["name"]> = {
   add: { ios: "plus", android: "add", web: "add" },
   "arrow-right": { ios: "arrow.right", android: "arrow_forward", web: "arrow_forward" },
+  camera: { ios: "camera.fill", android: "photo_camera", web: "photo_camera" },
   "calendar-today": { ios: "calendar", android: "calendar_today", web: "calendar_today" },
   check: { ios: "checkmark.circle.fill", android: "check_circle", web: "check_circle" },
   "chevron-left": { ios: "chevron.left", android: "chevron_left", web: "chevron_left" },
@@ -46,6 +48,7 @@ const symbolMap: Record<SystemIconName, ComponentProps<typeof SymbolView>["name"
 const materialFallbackMap: Record<SystemIconName, ComponentProps<typeof MaterialIcons>["name"]> = {
   add: "add",
   "arrow-right": "arrow-forward",
+  camera: "photo-camera",
   "calendar-today": "calendar-today",
   check: "check-circle",
   "chevron-left": "chevron-left",
@@ -66,6 +69,8 @@ const materialFallbackMap: Record<SystemIconName, ComponentProps<typeof Material
 const androidPathMap: Partial<Record<SystemIconName, string>> = {
   add: "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z",
   "arrow-right": "M12 4l1.41 1.41L8.83 10H20v2H8.83l4.58 4.59L12 20l8-8-8-8z",
+  camera:
+    "M20 5h-3.17l-1.84-2H9.01L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 13a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
   "calendar-today":
     "M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z",
   check:
