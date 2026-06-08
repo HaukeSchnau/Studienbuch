@@ -54,7 +54,7 @@ export const AddAbsence = ({ onClose }: Props) => {
         </View>
       }
     >
-      <DateField onChange={handleDateChange} value={date} label="Datum" iosContainer="plain" />
+      <DateField onChange={handleDateChange} value={date} label="Datum" />
 
       {courseOptionsForDay.length > 0 ? (
         <View className="gap-2">
