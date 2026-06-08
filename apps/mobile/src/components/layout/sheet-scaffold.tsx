@@ -14,9 +14,13 @@ interface Props {
 export const SheetScaffold = ({ title, subtitle, children, footer }: Props) => {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const footerBottomPadding = Math.max(insets.bottom - (Platform.OS === "ios" ? 14 : 4), 12);
+  const isIos = Platform.OS === "ios";
+  const footerBottomPadding = isIos
+    ? Math.max(insets.bottom - 20, 8)
+    : Math.max(insets.bottom - 4, 12);
+  const footerTopPadding = isIos ? 8 : 12;
   const maxBodyHeight = footer
-    ? Math.min(height * (Platform.OS === "ios" ? 0.58 : 0.62), 560)
+    ? Math.min(height * (isIos ? 0.52 : 0.62), isIos ? 480 : 560)
     : Math.min(height * 0.7, 640);
 
   return (
@@ -34,13 +38,13 @@ export const SheetScaffold = ({ title, subtitle, children, footer }: Props) => {
       <Divider />
 
       <ScrollView
-        style={{ maxHeight: maxBodyHeight }}
+        style={{ flexGrow: 0, maxHeight: maxBodyHeight }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           paddingHorizontal: 24,
           paddingTop: 16,
-          paddingBottom: footer ? 24 : 20,
+          paddingBottom: footer ? (isIos ? 16 : 24) : 20,
         }}
       >
         <View className="gap-3">{children}</View>
@@ -48,8 +52,15 @@ export const SheetScaffold = ({ title, subtitle, children, footer }: Props) => {
 
       {footer ? (
         <View
-          className="border-t border-[#E5EAF0] px-6 pt-3"
-          style={[styles.footer, { paddingBottom: footerBottomPadding }]}
+          className="border-t border-[#E5EAF0] px-6"
+          style={[
+            styles.footer,
+            {
+              paddingBottom: footerBottomPadding,
+              paddingTop: footerTopPadding,
+              justifyContent: "center",
+            },
+          ]}
         >
           {footer}
         </View>

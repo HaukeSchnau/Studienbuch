@@ -6,15 +6,19 @@ import { colors } from "~/theme/colors";
 interface Props {
   onClose: () => void;
   children: ReactNode;
+  iosSnapPoints?: (string | number)[];
 }
 
-export function PortaledBottomSheet({ children, onClose }: Props) {
+export function PortaledBottomSheet({ children, iosSnapPoints, onClose }: Props) {
+  const snapPoints = Platform.OS === "ios" ? iosSnapPoints : undefined;
+
   return (
     <ExpoBottomSheet
       index={0}
-      enableDynamicSizing
+      enableDynamicSizing={!snapPoints}
       enablePanDownToClose
       onClose={onClose}
+      snapPoints={snapPoints}
       backgroundStyle={Platform.OS === "ios" ? styles.iosSheetBackground : styles.sheetBackground}
       handleIndicatorStyle={Platform.OS === "ios" ? undefined : styles.androidHandle}
     >
@@ -52,7 +56,7 @@ const styles = StyleSheet.create({
   },
   iosMaterialFill: {
     backgroundColor: iosSheetTint,
-    bottom: -160,
+    bottom: 0,
     left: 0,
     position: "absolute",
     right: 0,

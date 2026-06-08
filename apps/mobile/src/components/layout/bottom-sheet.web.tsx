@@ -6,6 +6,7 @@ import { colors } from "~/theme/colors";
 interface Props {
   onClose: () => void;
   children: ReactNode;
+  iosSnapPoints?: (string | number)[];
 }
 
 const visuallyHiddenStyle = {

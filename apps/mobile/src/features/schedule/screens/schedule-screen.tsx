@@ -13,7 +13,7 @@ import { de as localeDE } from "date-fns/locale/de";
 import SegmentedControl from "@expo/ui/community/segmented-control";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { ScrollView, type DimensionValue, View } from "react-native";
+import { Platform, ScrollView, type DimensionValue, View } from "react-native";
 import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 import { PressableSurface } from "~/components/feedback/pressable-surface";
@@ -85,6 +85,8 @@ export const ScheduleScreen = () => {
   const [gridHeight, setGridHeight] = useState(0);
   const [displayMode, setDisplayMode] = useState<"week" | "agenda">("week");
   const bottomClearance = useMainTabBarPadding(12);
+  const weekBottomClearance =
+    Platform.OS === "ios" ? Math.max(bottomClearance - 72, 56) : bottomClearance;
   const resolvedGridHeight = gridHeight || GRID_FALLBACK_HEIGHT;
 
   const changeWeek = useCallback((delta: number) => {
@@ -214,7 +216,7 @@ export const ScheduleScreen = () => {
 
       <View
         className="flex-1 px-4 pt-3"
-        style={{ paddingBottom: displayMode === "week" ? bottomClearance : 0 }}
+        style={{ paddingBottom: displayMode === "week" ? weekBottomClearance : 0 }}
       >
         <View className="px-1 pb-3">
           <SegmentedControl

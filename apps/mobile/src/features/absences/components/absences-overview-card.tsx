@@ -65,7 +65,7 @@ export const AbsencesOverviewCard = () => {
       />
 
       {isAddVisible ? (
-        <PortaledBottomSheet onClose={() => setIsAddVisible(false)}>
+        <PortaledBottomSheet iosSnapPoints={["62%"]} onClose={() => setIsAddVisible(false)}>
           <AddAbsence onClose={() => setIsAddVisible(false)} />
         </PortaledBottomSheet>
       ) : null}
