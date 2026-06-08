@@ -48,7 +48,9 @@ export const DateField = ({ value, label, onChange, iosContainer = "field" }: Pr
 
       {Platform.OS === "ios" ? (
         iosContainer === "plain" ? (
-          <View className="min-h-12 justify-center px-1">{iosPicker}</View>
+          <View className="min-h-14 justify-center rounded-[22px] bg-[#F6F8FB] px-4 py-2">
+            {iosPicker}
+          </View>
         ) : (
           <FieldSurface className="min-h-14 justify-center px-4 py-2" focused={false}>
             {iosPicker}
