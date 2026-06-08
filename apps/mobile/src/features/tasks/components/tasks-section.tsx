@@ -72,8 +72,15 @@ export const TasksSectionView = ({
       </View>
 
       {tasks.length === 0 ? (
-        <View className="px-8 pb-4 pt-4">
-          <Text className="text-lg text-white">Keine Aufgaben gefunden</Text>
+        <View className="px-8 pb-5 pt-4">
+          <View className="rounded-[24px] bg-white/16 px-5 py-4">
+            <Text className="text-lg text-white" weight="semi-bold">
+              Alles frei in diesem Kurs.
+            </Text>
+            <Text className="pt-1 text-base leading-5 text-white/82">
+              Mit dem Plus legst du schnell die nächste Aufgabe an.
+            </Text>
+          </View>
         </View>
       ) : (
         <ScrollView

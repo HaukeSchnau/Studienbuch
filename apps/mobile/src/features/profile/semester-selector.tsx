@@ -1,4 +1,5 @@
 import SegmentedControl from "@expo/ui/community/segmented-control";
+import { Platform } from "react-native";
 import { colors } from "~/theme/colors";
 import type { Semester } from "@stu/core";
 import { haptics } from "~/platform/haptics";
@@ -21,7 +22,7 @@ export const SemesterSelector = ({
   return (
     <SegmentedControl
       style={{ minHeight: 44 }}
-      tintColor={colors.accent.DEFAULT}
+      tintColor={Platform.OS === "android" ? colors.accent.des : colors.accent.DEFAULT}
       values={choices.map((semester) => semester.name)}
       selectedIndex={choices.findIndex((semester) => semester.name === selectedSemester.name)}
       onChange={(event) => {

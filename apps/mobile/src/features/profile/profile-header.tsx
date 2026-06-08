@@ -13,8 +13,8 @@ import { useSchool, useSessionData } from "~/data/hooks";
 import { setupNameAndYearRoute } from "~/routing/params";
 
 const Avatar = () => (
-  <View className="h-28 w-28 items-center justify-center rounded-full bg-accent p-6">
-    <SystemIcon name="person" size={48} color="white" />
+  <View className="h-24 w-24 items-center justify-center rounded-full bg-accent p-5">
+    <SystemIcon name="person" size={42} color="white" />
   </View>
 );
 
@@ -38,13 +38,13 @@ export const Header = () => {
 
   return (
     <>
-      <View className="overflow-hidden rounded-b-[40px] bg-primary">
+      <View className="overflow-hidden rounded-b-[36px] bg-primary">
         <SafeAreaView edges={["top"]}>
-          <View className="relative items-center px-6 py-7">
+          <View className="relative items-center px-6 py-5">
             <View className="absolute top-5 left-5">
-              <DotField rows={8} cols={9} />
+              <DotField rows={7} cols={8} />
             </View>
-            <View className="absolute right-6 bottom-7">
+            <View className="absolute right-6 bottom-6">
               <DotField rows={5} cols={6} />
             </View>
 
@@ -60,14 +60,14 @@ export const Header = () => {
             </View>
 
             <Avatar />
-            <View className="h-4" />
-            <Text weight="bold" className="text-3xl text-white">
+            <View className="h-3" />
+            <Text weight="bold" className="text-[29px] leading-9 text-white">
               Profil von {user.name}
             </Text>
             <View className="h-1.5" />
             <View className="items-center">
               <Text className="text-[18px] text-white/88">
-                Jahrgang {year.name} ({getCurrentYearNum(year)}. Klasse)
+                {year.name} · {getCurrentYearNum(year)}. Klasse
               </Text>
               <Text className="text-[16px] text-white/78">{user.schoolName}</Text>
             </View>

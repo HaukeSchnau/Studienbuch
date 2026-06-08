@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { Stack } from "expo-router";
-import { Alert, View } from "react-native";
+import { Alert, Platform, View } from "react-native";
 import CrossIcon from "~/assets/cross.svg";
 import { CheckboxRow } from "~/components/fields/checkbox-row";
 import { Card } from "~/components/ui/card";
@@ -45,7 +45,7 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
       title="Hausaufgabe"
       headerRight={
         <Stack.Toolbar.Button
-          icon="trash"
+          icon={Platform.OS === "ios" ? "trash" : undefined}
           hidesSharedBackground
           tintColor={colors.danger.DEFAULT}
           accessibilityLabel="Aufgabe löschen"

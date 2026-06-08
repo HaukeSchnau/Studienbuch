@@ -1,5 +1,5 @@
 import { Host, TextInput as NativeTextInput, useNativeState } from "@expo/ui";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { LayoutChangeEvent, TextInputProps } from "react-native";
 import { Platform, TextInput as RNTextInput, View } from "react-native";
 import { colors } from "~/theme/colors";
@@ -15,10 +15,6 @@ export const TextAreaField = ({ label, ...props }: Props) => {
   const [isFocused, setIsFocused] = useState(false);
   const [inputWidth, setInputWidth] = useState(0);
   const nativeValue = useNativeState(props.value ?? "");
-
-  useEffect(() => {
-    nativeValue.value = props.value ?? "";
-  }, [nativeValue, props.value]);
 
   const handleLayout = (event: LayoutChangeEvent) => {
     setInputWidth(Math.max(0, event.nativeEvent.layout.width - 40));

@@ -1,5 +1,6 @@
+import * as ImagePicker from "expo-image-picker";
 import { useMemo, useState } from "react";
-import { View } from "react-native";
+import { ActionSheetIOS, Alert, Platform, View } from "react-native";
 
 import { Button, OutlinedButton, TextButton } from "~/components/ui/button";
 import { PressableSurface } from "~/components/feedback/pressable-surface";
@@ -16,9 +17,9 @@ import { haptics } from "~/platform/haptics";
 
 const attachmentPalette = ["#B9D7F5", "#F5D9B9", "#D7E9C6", "#E2CEF5"] as const;
 
-const createAttachment = (index: number): TaskAttachment => ({
+const createAttachment = (index: number, label?: string | null): TaskAttachment => ({
   id: `attachment-${Date.now()}-${index}`,
-  label: `Foto ${index + 1}`,
+  label: label?.trim() || `Foto ${index + 1}`,
   color: attachmentPalette[index % attachmentPalette.length]!,
 });
 
@@ -37,13 +38,85 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
     [courseId, courses],
   );
   const selectedCourse = options.find((course) => course.id === selectedCourseId);
-  const nextAttachmentIndex = attachments.length;
   const isValid = title.trim().length > 0 && !!selectedCourse;
   const existingTaskCount = getCourseTasks(courseId).length;
   const subtitle =
     existingTaskCount > 0
       ? `${existingTaskCount} Aufgaben sind für diesen Bereich bereits hinterlegt.`
       : "Lege eine erste Aufgabe für diesen Bereich an.";
+
+  const addPickedAsset = (asset: ImagePicker.ImagePickerAsset | undefined) => {
+    if (!asset) {
+      return;
+    }
+
+    setAttachments((current) => [
+      ...current,
+      createAttachment(current.length, asset.fileName ?? `Foto ${current.length + 1}`),
+    ]);
+    haptics.success();
+  };
+
+  const pickAttachment = async (source: "camera" | "library") => {
+    const permission =
+      source === "camera"
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permission.granted) {
+      haptics.warning();
+      Alert.alert(
+        source === "camera" ? "Kamera nicht freigegeben" : "Fotos nicht freigegeben",
+        "Du kannst die Berechtigung später in den Systemeinstellungen ändern.",
+      );
+      return;
+    }
+
+    const result =
+      source === "camera"
+        ? await ImagePicker.launchCameraAsync({
+            allowsEditing: false,
+            mediaTypes: ["images"],
+            quality: 0.82,
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            allowsMultipleSelection: false,
+            mediaTypes: ["images"],
+            quality: 0.82,
+          });
+
+    if (!result.canceled) {
+      addPickedAsset(result.assets[0]);
+    }
+  };
+
+  const showAttachmentSourcePicker = () => {
+    haptics.selection();
+
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          cancelButtonIndex: 2,
+          options: ["Foto aufnehmen", "Aus Mediathek wählen", "Abbrechen"],
+          title: "Foto hinzufügen",
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 0) {
+            void pickAttachment("camera");
+          } else if (buttonIndex === 1) {
+            void pickAttachment("library");
+          }
+        },
+      );
+      return;
+    }
+
+    Alert.alert("Foto hinzufügen", "Woher soll das Foto kommen?", [
+      { text: "Kamera", onPress: () => void pickAttachment("camera") },
+      { text: "Mediathek", onPress: () => void pickAttachment("library") },
+      { style: "cancel", text: "Abbrechen" },
+    ]);
+  };
 
   return (
     <SheetScaffold
@@ -113,6 +186,7 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
                 className="h-24 w-[47%] items-center justify-center rounded-3xl"
                 borderRadius={24}
                 highlightColor="rgba(9, 138, 0, 0.12)"
+                haptic="impact"
                 pressedScale={0.97}
                 style={{ backgroundColor: attachment.color }}
               >
@@ -126,11 +200,8 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
 
       <OutlinedButton
         label="Foto hinzufügen"
-        color="#76A6E5"
-        onPress={() => {
-          haptics.selection();
-          setAttachments((current) => [...current, createAttachment(nextAttachmentIndex)]);
-        }}
+        color={attachments.length > 0 ? "#76A6E5" : "#3B7FD9"}
+        onPress={showAttachmentSourcePicker}
       />
 
       <DateField value={dueDate} onChange={setDueDate} label="Abgabetermin" />

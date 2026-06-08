@@ -22,6 +22,8 @@ export default function TabLayout() {
         },
       }}
       minimizeBehavior="never"
+      rippleColor="rgba(9, 138, 0, 0.16)"
+      tabBarRespectsIMEInsets
     >
       <NativeTabs.Trigger name="index" disableAutomaticContentInsets disableTransparentOnScrollEdge>
         <NativeTabs.Trigger.Icon

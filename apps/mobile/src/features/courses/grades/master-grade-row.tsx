@@ -52,10 +52,16 @@ export const MasterGradeRow = ({
         <SystemIcon name="verified" size={64} color={colors.primary.DEFAULT} />
       </View>
 
-      <View className="grow">
+      <View className="min-w-0 flex-1">
         <View className="flex-row items-center justify-between">
-          <Text className="grow text-3xl" weight="semi-bold">
-            {currentMasterGrade ? formatGrade(currentMasterGrade.result) : "—"}
+          <Text
+            adjustsFontSizeToFit
+            className="min-w-0 flex-1 pr-2 text-[25px] leading-[31px]"
+            minimumFontScale={0.82}
+            numberOfLines={1}
+            weight="semi-bold"
+          >
+            {currentMasterGrade ? formatGrade(currentMasterGrade.result) : "Noch keine Note"}
           </Text>
           <IconButton
             accessibilityLabel="Gesamtnote bearbeiten"
@@ -67,7 +73,9 @@ export const MasterGradeRow = ({
         </View>
         <Text className="text-lg opacity-60">aktuelle Gesamtnote</Text>
         <Text className="text-lg opacity-60">
-          Stand: {currentMasterGrade ? format(currentMasterGrade.date, "dd.MM.yyyy") : "—"}
+          {currentMasterGrade
+            ? `Stand: ${format(currentMasterGrade.date, "dd.MM.yyyy")}`
+            : "Tippe auf den Stift, sobald du sie kennst."}
         </Text>
         {currentMasterGrade ? (
           <>

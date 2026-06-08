@@ -41,14 +41,22 @@ export const WrittenGradesRow = ({
           width={64}
           height={64}
           style={{
-            opacity: allConfirmed ? 1 : 0.25,
+            opacity: allConfirmed || writtenGrades.length === 0 ? 0.72 : 0.25,
           }}
         />
 
-        <View className="shrink grow">
+        <View className="min-w-0 flex-1">
           <View className="flex-row items-center justify-between">
-            <Text className="grow text-3xl" weight="semi-bold">
-              {averageWrittenGrade !== null ? formatGrade(averageWrittenGrade) : "—"}
+            <Text
+              adjustsFontSizeToFit
+              className="min-w-0 flex-1 pr-2 text-[25px] leading-[31px]"
+              minimumFontScale={0.82}
+              numberOfLines={1}
+              weight="semi-bold"
+            >
+              {averageWrittenGrade !== null
+                ? formatGrade(averageWrittenGrade)
+                : "Noch keine Klausur"}
             </Text>
             <IconButton
               accessibilityLabel="Klausurnote eintragen"
@@ -61,7 +69,11 @@ export const WrittenGradesRow = ({
           <Text className="text-lg opacity-60">schriftlich</Text>
           {writtenGrades.length > 0 ? (
             <Text className="text-lg">Deine Note setzt sich aus diesen Ergebnissen zusammen:</Text>
-          ) : null}
+          ) : (
+            <Text className="text-lg opacity-60">
+              Trage deine erste Klausurnote ein, sobald sie zurückkommt.
+            </Text>
+          )}
         </View>
       </View>
 

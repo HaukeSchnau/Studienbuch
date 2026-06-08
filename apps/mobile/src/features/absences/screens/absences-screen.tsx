@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import { useState } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
 import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
 import { PageScaffold } from "~/app-shell/navigation/page-scaffold";
 import { Text } from "~/components/ui/text";
@@ -33,7 +33,7 @@ export const AbsencesScreen = () => {
         contentClassName="gap-8"
         headerRight={
           <Stack.Toolbar.Button
-            icon="plus"
+            icon={Platform.OS === "ios" ? "plus" : undefined}
             accessibilityLabel="Fehlzeit eintragen"
             onPress={() => setIsAddVisible(true)}
           >

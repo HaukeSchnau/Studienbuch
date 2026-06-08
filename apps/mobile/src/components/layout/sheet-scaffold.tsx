@@ -14,8 +14,10 @@ interface Props {
 export const SheetScaffold = ({ title, subtitle, children, footer }: Props) => {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const footerBottomPadding = Math.max(insets.bottom - 14, 12);
-  const maxBodyHeight = footer ? Math.min(height * 0.56, 520) : Math.min(height * 0.68, 620);
+  const footerBottomPadding = Math.max(insets.bottom - (Platform.OS === "ios" ? 14 : 4), 12);
+  const maxBodyHeight = footer
+    ? Math.min(height * (Platform.OS === "ios" ? 0.58 : 0.62), 560)
+    : Math.min(height * 0.7, 640);
 
   return (
     <View style={styles.surface}>
@@ -35,7 +37,11 @@ export const SheetScaffold = ({ title, subtitle, children, footer }: Props) => {
         style={{ maxHeight: maxBodyHeight }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 16 }}
+        contentContainerStyle={{
+          paddingHorizontal: 24,
+          paddingTop: 16,
+          paddingBottom: footer ? 24 : 20,
+        }}
       >
         <View className="gap-3">{children}</View>
       </ScrollView>

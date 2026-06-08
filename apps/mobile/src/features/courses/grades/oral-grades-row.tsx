@@ -49,14 +49,21 @@ export const OralGradesRow = ({
         width={64}
         height={64}
         style={{
-          opacity: !currentOralGrade || isGradeConfirmed(currentOralGrade, user.isOfAge) ? 1 : 0.25,
+          opacity:
+            !currentOralGrade || isGradeConfirmed(currentOralGrade, user.isOfAge) ? 0.72 : 0.25,
         }}
       />
 
-      <View className="grow">
+      <View className="min-w-0 flex-1">
         <View className="flex-row items-center justify-between">
-          <Text className="grow text-3xl" weight="semi-bold">
-            {currentOralGrade ? formatGrade(currentOralGrade.result) : "—"}
+          <Text
+            adjustsFontSizeToFit
+            className="min-w-0 flex-1 pr-2 text-[25px] leading-[31px]"
+            minimumFontScale={0.82}
+            numberOfLines={1}
+            weight="semi-bold"
+          >
+            {currentOralGrade ? formatGrade(currentOralGrade.result) : "Noch keine Note"}
           </Text>
           <IconButton
             accessibilityLabel="Mündliche Note bearbeiten"
@@ -68,7 +75,9 @@ export const OralGradesRow = ({
         </View>
         <Text className="text-lg opacity-60">mündlich</Text>
         <Text className="text-lg opacity-60">
-          Stand: {currentOralGrade ? format(currentOralGrade.date, "dd.MM.yyyy") : "—"}
+          {currentOralGrade
+            ? `Stand: ${format(currentOralGrade.date, "dd.MM.yyyy")}`
+            : "Tippe auf den Stift, wenn du eine Rückmeldung bekommst."}
         </Text>
         {currentOralGrade ? (
           <>

@@ -15,7 +15,8 @@ export function PortaledBottomSheet({ children, onClose }: Props) {
       enableDynamicSizing
       enablePanDownToClose
       onClose={onClose}
-      backgroundStyle={Platform.OS === "ios" ? undefined : styles.sheetBackground}
+      backgroundStyle={Platform.OS === "ios" ? styles.iosSheetBackground : styles.sheetBackground}
+      handleIndicatorStyle={Platform.OS === "ios" ? undefined : styles.androidHandle}
     >
       <BottomSheetView style={styles.sheetFill}>
         {Platform.OS === "ios" ? (
@@ -30,8 +31,19 @@ export function PortaledBottomSheet({ children, onClose }: Props) {
 const iosSheetTint = "rgba(251, 253, 255, 0.74)";
 
 const styles = StyleSheet.create({
+  iosSheetBackground: {
+    backgroundColor: "rgba(251, 253, 255, 0.92)",
+  },
   sheetBackground: {
     backgroundColor: colors.surface,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+  },
+  androidHandle: {
+    backgroundColor: "#7B8794",
+    height: 4,
+    opacity: 0.75,
+    width: 48,
   },
   sheetFill: {
     backgroundColor: Platform.OS === "ios" ? "transparent" : colors.surface,

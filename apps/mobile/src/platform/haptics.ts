@@ -16,6 +16,14 @@ export const haptics = {
 
     ignore(Haptics.selectionAsync());
   },
+  impact() {
+    if (onAndroid) {
+      ignore(Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Gesture_Start));
+      return;
+    }
+
+    ignore(Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
+  },
   success() {
     if (onAndroid) {
       ignore(Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Confirm));

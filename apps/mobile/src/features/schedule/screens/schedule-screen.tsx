@@ -10,9 +10,10 @@ import {
   subMilliseconds,
 } from "date-fns";
 import { de as localeDE } from "date-fns/locale/de";
+import SegmentedControl from "@expo/ui/community/segmented-control";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { type DimensionValue, View } from "react-native";
+import { Platform, ScrollView, type DimensionValue, View } from "react-native";
 import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 import { PressableSurface } from "~/components/feedback/pressable-surface";
@@ -24,7 +25,7 @@ import { shadow } from "~/components/styles/shadow";
 import { Text } from "~/components/ui/text";
 import { useMainTabBarPadding } from "~/components/use-main-tab-bar-padding";
 import { haptics } from "~/platform/haptics";
-import { subjectNameMap } from "@stu/core";
+import { subjectNameMap, type SubjectId } from "@stu/core";
 import { useCourses, useScheduleData } from "~/data/hooks";
 import { courseRoute } from "~/routing/params";
 import { colors } from "~/theme/colors";
@@ -44,7 +45,31 @@ const DAY_START = 8 * 60;
 const DAY_END = 15 * 60 + 10;
 const DAY_DURATION = DAY_END - DAY_START;
 const GRID_FALLBACK_HEIGHT = 500;
-const TIME_RAIL_WIDTH = 40;
+const TIME_RAIL_WIDTH = 44;
+const ENTRY_COLUMN_GAP = 4;
+const timetableSubjectLabelMap: Partial<Record<SubjectId, string>> = {
+  bi: "Bio",
+  ch: "Chemie",
+  de: "Deutsch",
+  ds: "DS",
+  en: "Englisch",
+  fr: "Franz.",
+  ge: "Gesch.",
+  if: "Info",
+  ku: "Kunst",
+  la: "Latein",
+  ma: "Mathe",
+  mu: "Musik",
+  ph: "Physik",
+  pw: "Politik",
+  re: "Reli",
+  sf: "Seminar",
+  sn: "Span.",
+  sp: "Sport",
+  "sport-theorie": "Sport-Th.",
+  tutorium: "Tutorium",
+  wn: "Werte",
+};
 
 const timeToPosition = (minute: number, gridHeight: number) =>
   ((minute - DAY_START) / DAY_DURATION) * gridHeight;
@@ -58,6 +83,7 @@ export const ScheduleScreen = () => {
   const { timetable } = useScheduleData();
   const [weekOffset, setWeekOffset] = useState(0);
   const [gridHeight, setGridHeight] = useState(0);
+  const [displayMode, setDisplayMode] = useState<"week" | "agenda">("week");
   const bottomClearance = useMainTabBarPadding(12);
   const resolvedGridHeight = gridHeight || GRID_FALLBACK_HEIGHT;
 
@@ -111,6 +137,14 @@ export const ScheduleScreen = () => {
         )
         .sort((a, b) => a.start.getTime() - b.start.getTime()),
     [timetable, weekEnd, weekStart],
+  );
+  const entriesByDay = useMemo(
+    () =>
+      weekdays.map((day) => ({
+        day,
+        entries: visibleEntries.filter((entry) => entry.weekday === weekdays.indexOf(day)),
+      })),
+    [visibleEntries, weekdays],
   );
 
   const currentWeek = getISOWeek(weekStart);
@@ -178,154 +212,249 @@ export const ScheduleScreen = () => {
         </SafeAreaView>
       </View>
 
-      <View className="flex-1 px-4 pt-2" style={{ paddingBottom: bottomClearance }}>
-        <View
-          className="min-h-0 flex-1 flex-row items-stretch"
-          onLayout={({ nativeEvent }) => {
-            const nextHeight = nativeEvent.layout.height;
-            if (nextHeight > 0 && Math.abs(nextHeight - gridHeight) > 1) {
-              setGridHeight(nextHeight);
-            }
-          }}
-        >
-          <View className="self-stretch" style={{ width: TIME_RAIL_WIDTH }}>
-            {TIME_MARKERS.map((marker) => (
-              <Text
-                key={marker.minute}
-                className="absolute right-1 text-[13px] text-neutral"
-                style={{ top: timeToPosition(marker.minute, resolvedGridHeight) - 8 }}
-              >
-                {marker.label}
-              </Text>
-            ))}
-          </View>
-
-          <View className="min-h-0 flex-1">
-            <Card
-              padding="none"
-              radius="sm"
-              className="relative flex-1 overflow-hidden"
-              style={{ flex: 1 }}
-            >
-              <GestureDetector gesture={swipeGesture}>
-                <View className="absolute inset-0">
-                  {weekdays.map((day, index) => (
-                    <View
-                      key={`day-bg-${day.toISOString()}`}
-                      className="absolute top-0 bottom-0"
-                      style={{
-                        left: weekdayToPercent(index),
-                        width: `${100 / WEEKDAY_LABELS.length}%`,
-                        backgroundColor: isToday(day) ? "rgba(59, 127, 217, 0.08)" : "transparent",
-                      }}
-                    />
-                  ))}
-
-                  {weekdays.slice(1).map((day, index) => (
-                    <View
-                      key={`divider-${day.toISOString()}`}
-                      className="absolute top-0 bottom-0 w-px bg-[#E8EEF8]"
-                      style={{ left: weekdayToPercent(index + 1) }}
-                    />
-                  ))}
-
-                  {TIME_MARKERS.map((marker) => (
-                    <View
-                      key={`tick-${marker.minute}`}
-                      className="absolute right-0 left-0 bg-[#E6EBF2]"
-                      style={{
-                        top: timeToPosition(marker.minute, resolvedGridHeight),
-                        height: 1,
-                      }}
-                    />
-                  ))}
-
-                  {showNowMarker ? (
-                    <>
-                      <View
-                        className="absolute z-10 h-2 w-2 rounded-full bg-[#E54F64]"
-                        style={{
-                          top: timeToPosition(nowMinutes, resolvedGridHeight),
-                          left: weekdayToPercent(nowWeekday),
-                          marginTop: -4,
-                          marginLeft: -4,
-                        }}
-                      />
-                      <View
-                        className="absolute right-0 z-10 h-px bg-[#E54F64]"
-                        style={{
-                          top: timeToPosition(nowMinutes, resolvedGridHeight),
-                          left: weekdayToPercent(nowWeekday),
-                        }}
-                      />
-                    </>
-                  ) : null}
-                </View>
-              </GestureDetector>
-
-              {visibleEntries.map((entry) => {
-                const course = getCourse(entry.courseId);
-                if (!course) return null;
-
-                const end = addMinutes(entry.start, entry.duration);
-
-                return (
-                  <PressableSurface
-                    key={entry.id}
-                    onPress={() => {
-                      router.push(courseRoute(course.id));
-                    }}
-                    accessibilityLabel={`${subjectNameMap[course.subject]}, ${format(
-                      entry.start,
-                      "HH:mm",
-                      {
-                        locale: localeDE,
-                      },
-                    )} bis ${format(end, "HH:mm", { locale: localeDE })}`}
-                    style={{
-                      position: "absolute",
-                      overflow: "hidden",
-                      top: timeToPosition(entry.startMinutes, resolvedGridHeight),
-                      left: weekdayToPercent(entry.weekday),
-                      width: `${100 / WEEKDAY_LABELS.length}%`,
-                      height: durationToHeight(entry.duration, resolvedGridHeight),
-                      borderRadius: 24,
-                      backgroundColor: colors.accent.DEFAULT,
-                    }}
-                    borderRadius={24}
-                    highlightColor="rgba(255, 255, 255, 0.18)"
-                    pressedScale={0.965}
-                  >
-                    <View className="items-center justify-center px-1 py-1.5">
-                      <View className="rounded-full bg-white p-1">
-                        <SubjectIcon subject={course.subject} />
-                      </View>
-                      <View className="h-1" />
-                      <Text
-                        weight="bold"
-                        className="text-center text-xs text-white"
-                        numberOfLines={2}
-                      >
-                        {subjectNameMap[course.subject]}
-                      </Text>
-                      <Text className="mt-0.5 text-center text-[8px] leading-[9px] text-white/78">
-                        {format(entry.start, "HH:mm", { locale: localeDE })}
-                        {"\n"}
-                        {format(end, "HH:mm", { locale: localeDE })}
-                      </Text>
-                    </View>
-                  </PressableSurface>
-                );
-              })}
-
-              {visibleEntries.length === 0 ? (
-                <View className="absolute inset-0 items-center justify-center">
-                  <Text className="text-lg text-neutral">Diese Woche ist noch leer.</Text>
-                </View>
-              ) : null}
-            </Card>
-          </View>
+      <View
+        className="flex-1 px-4 pt-3"
+        style={{ paddingBottom: displayMode === "week" ? bottomClearance : 0 }}
+      >
+        <View className="px-1 pb-3">
+          <SegmentedControl
+            selectedIndex={displayMode === "week" ? 0 : 1}
+            style={{ minHeight: 40 }}
+            tintColor={Platform.OS === "android" ? colors.accent.des : colors.accent.DEFAULT}
+            values={["Woche", "Agenda"]}
+            onChange={(event) => {
+              haptics.selection();
+              setDisplayMode(event.nativeEvent.selectedSegmentIndex === 0 ? "week" : "agenda");
+            }}
+          />
         </View>
+
+        {displayMode === "week" ? (
+          <View
+            className="min-h-0 flex-1 flex-row items-stretch"
+            onLayout={({ nativeEvent }) => {
+              const nextHeight = nativeEvent.layout.height;
+              if (nextHeight > 0 && Math.abs(nextHeight - gridHeight) > 1) {
+                setGridHeight(nextHeight);
+              }
+            }}
+          >
+            <View className="self-stretch" style={{ width: TIME_RAIL_WIDTH }}>
+              {TIME_MARKERS.map((marker) => (
+                <Text
+                  key={marker.minute}
+                  className="absolute right-1 text-[13px] text-neutral"
+                  style={{
+                    top: Math.max(4, timeToPosition(marker.minute, resolvedGridHeight) - 8),
+                  }}
+                >
+                  {marker.label}
+                </Text>
+              ))}
+            </View>
+
+            <View className="min-h-0 flex-1">
+              <Card
+                padding="none"
+                radius="sm"
+                className="relative flex-1 overflow-hidden"
+                style={{ flex: 1 }}
+              >
+                <GestureDetector gesture={swipeGesture}>
+                  <View className="absolute inset-0">
+                    {weekdays.map((day, index) => (
+                      <View
+                        key={`day-bg-${day.toISOString()}`}
+                        className="absolute top-0 bottom-0"
+                        style={{
+                          left: weekdayToPercent(index),
+                          width: `${100 / WEEKDAY_LABELS.length}%`,
+                          backgroundColor: isToday(day)
+                            ? "rgba(59, 127, 217, 0.08)"
+                            : "transparent",
+                        }}
+                      />
+                    ))}
+
+                    {weekdays.slice(1).map((day, index) => (
+                      <View
+                        key={`divider-${day.toISOString()}`}
+                        className="absolute top-0 bottom-0 w-px bg-[#E8EEF8]"
+                        style={{ left: weekdayToPercent(index + 1) }}
+                      />
+                    ))}
+
+                    {TIME_MARKERS.map((marker) => (
+                      <View
+                        key={`tick-${marker.minute}`}
+                        className="absolute right-0 left-0 bg-[#E6EBF2]"
+                        style={{
+                          top: timeToPosition(marker.minute, resolvedGridHeight),
+                          height: 1,
+                        }}
+                      />
+                    ))}
+
+                    {showNowMarker ? (
+                      <>
+                        <View
+                          className="absolute z-10 h-2 w-2 rounded-full bg-[#E54F64]"
+                          style={{
+                            top: timeToPosition(nowMinutes, resolvedGridHeight),
+                            left: weekdayToPercent(nowWeekday),
+                            marginTop: -4,
+                            marginLeft: -4,
+                          }}
+                        />
+                        <View
+                          className="absolute right-0 z-10 h-px bg-[#E54F64]"
+                          style={{
+                            top: timeToPosition(nowMinutes, resolvedGridHeight),
+                            left: weekdayToPercent(nowWeekday),
+                          }}
+                        />
+                      </>
+                    ) : null}
+                  </View>
+                </GestureDetector>
+
+                {visibleEntries.map((entry) => {
+                  const course = getCourse(entry.courseId);
+                  if (!course) return null;
+
+                  const end = addMinutes(entry.start, entry.duration);
+                  const timetableLabel =
+                    timetableSubjectLabelMap[course.subject] ?? subjectNameMap[course.subject];
+
+                  return (
+                    <View
+                      key={entry.id}
+                      pointerEvents="box-none"
+                      style={{
+                        position: "absolute",
+                        top: timeToPosition(entry.startMinutes, resolvedGridHeight),
+                        left: weekdayToPercent(entry.weekday),
+                        width: `${100 / WEEKDAY_LABELS.length}%`,
+                        height: durationToHeight(entry.duration, resolvedGridHeight),
+                        paddingHorizontal: ENTRY_COLUMN_GAP,
+                      }}
+                    >
+                      <PressableSurface
+                        onPress={() => {
+                          router.push(courseRoute(course.id));
+                        }}
+                        accessibilityLabel={`${subjectNameMap[course.subject]}, ${format(
+                          entry.start,
+                          "HH:mm",
+                          {
+                            locale: localeDE,
+                          },
+                        )} bis ${format(end, "HH:mm", { locale: localeDE })}`}
+                        style={{
+                          flex: 1,
+                          overflow: "hidden",
+                          borderRadius: 24,
+                          backgroundColor: colors.accent.DEFAULT,
+                        }}
+                        borderRadius={24}
+                        haptic="impact"
+                        highlightColor="rgba(255, 255, 255, 0.18)"
+                        pressedScale={0.965}
+                      >
+                        <View className="items-center justify-center px-1 py-1.5">
+                          <View className="rounded-full bg-white p-1">
+                            <SubjectIcon subject={course.subject} />
+                          </View>
+                          <View className="h-1" />
+                          <Text
+                            weight="bold"
+                            className="text-center text-[10px] leading-[14px] text-white"
+                            numberOfLines={1}
+                          >
+                            {timetableLabel}
+                          </Text>
+                          <Text className="mt-0.5 text-center text-[8px] leading-[9px] text-white/78">
+                            {format(entry.start, "HH:mm", { locale: localeDE })}
+                            {"\n"}
+                            {format(end, "HH:mm", { locale: localeDE })}
+                          </Text>
+                        </View>
+                      </PressableSurface>
+                    </View>
+                  );
+                })}
+
+                {visibleEntries.length === 0 ? (
+                  <View className="absolute inset-0 items-center justify-center">
+                    <Text className="text-lg text-neutral">Diese Woche ist noch leer.</Text>
+                  </View>
+                ) : null}
+              </Card>
+            </View>
+          </View>
+        ) : (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: bottomClearance, paddingTop: 2 }}
+          >
+            <View className="gap-3">
+              {entriesByDay.map(({ day, entries }) => (
+                <Card key={day.toISOString()} noShadow padding="md" radius="md">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-[19px] leading-6" weight="bold">
+                      {format(day, "EEEE", { locale: localeDE })}
+                    </Text>
+                    <Text className="text-[15px] text-[#5B6472]">
+                      {format(day, "dd.MM.", { locale: localeDE })}
+                    </Text>
+                  </View>
+                  <View className="h-3" />
+                  {entries.length > 0 ? (
+                    <View className="gap-2.5">
+                      {entries.map((entry) => {
+                        const course = getCourse(entry.courseId);
+                        if (!course) return null;
+                        const end = addMinutes(entry.start, entry.duration);
+
+                        return (
+                          <PressableSurface
+                            key={entry.id}
+                            accessibilityLabel={`${subjectNameMap[course.subject]}, ${format(
+                              entry.start,
+                              "HH:mm",
+                              { locale: localeDE },
+                            )} bis ${format(end, "HH:mm", { locale: localeDE })}`}
+                            borderRadius={22}
+                            haptic="impact"
+                            onPress={() => router.push(courseRoute(course.id))}
+                            pressedScale={0.985}
+                          >
+                            <View className="flex-row items-center gap-3 rounded-[22px] bg-accent-des px-3 py-3">
+                              <View className="h-11 w-11 items-center justify-center rounded-2xl bg-white">
+                                <SubjectIcon subject={course.subject} size={26} />
+                              </View>
+                              <View className="min-w-0 flex-1">
+                                <Text className="text-[17px] leading-6" weight="bold">
+                                  {subjectNameMap[course.subject]}
+                                </Text>
+                                <Text className="text-[15px] text-[#5B6472]">
+                                  {format(entry.start, "HH:mm", { locale: localeDE })} -{" "}
+                                  {format(end, "HH:mm", { locale: localeDE })}
+                                </Text>
+                              </View>
+                            </View>
+                          </PressableSurface>
+                        );
+                      })}
+                    </View>
+                  ) : (
+                    <Text className="text-base text-[#5B6472]">Keine Kurse an diesem Tag.</Text>
+                  )}
+                </Card>
+              ))}
+            </View>
+          </ScrollView>
+        )}
       </View>
     </View>
   );

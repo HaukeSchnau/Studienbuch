@@ -1,12 +1,14 @@
 import { format } from "date-fns";
+import { MenuView, type MenuComponentRef } from "@expo/ui/community/menu";
 import { de } from "date-fns/locale/de";
 import { Stack } from "expo-router";
-import { useState } from "react";
-import { View } from "react-native";
+import { useRef, useState } from "react";
+import { ActionSheetIOS, Platform, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
 import { Card } from "~/components/ui/card";
 import { CoreLayout } from "~/components/layout/core-layout";
+import { IconButton } from "~/components/ui/icon-button";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { Text } from "~/components/ui/text";
 import { useTransparentHeaderTopPadding } from "~/components/use-transparent-header-top-padding";
@@ -14,6 +16,7 @@ import { subjectNameMap, Teacher } from "@stu/core";
 import { useCourses, useSchool } from "~/data/hooks";
 import { AddTaskSheet, TasksSection } from "~/features/tasks";
 import { GradesOverviewCard } from "~/features/courses/grades";
+import { haptics } from "~/platform/haptics";
 import { AddWrittenGrade } from "../grades/written/add-written-grade";
 
 export const CourseScreen = ({ courseId }: { courseId: string }) => {
@@ -21,6 +24,7 @@ export const CourseScreen = ({ courseId }: { courseId: string }) => {
   const { semesters } = useSchool();
   const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
   const [isAddWrittenGradeVisible, setIsAddWrittenGradeVisible] = useState(false);
+  const courseMenuRef = useRef<MenuComponentRef>(null);
   const heroStyle = useTransparentHeaderTopPadding();
   const course = getCourse(courseId);
 
@@ -29,6 +33,29 @@ export const CourseScreen = ({ courseId }: { courseId: string }) => {
   }
 
   const semester = semesters.find((item) => item.id === course.semesterId)!;
+  const showCourseActions = () => {
+    haptics.selection();
+
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          cancelButtonIndex: 2,
+          options: ["Hausaufgabe hinzufügen", "Klausurnote eintragen", "Abbrechen"],
+          title: "Kursaktionen",
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 0) {
+            setIsAddTaskVisible(true);
+          } else if (buttonIndex === 1) {
+            setIsAddWrittenGradeVisible(true);
+          }
+        },
+      );
+      return;
+    }
+
+    courseMenuRef.current?.show();
+  };
 
   return (
     <CoreLayout>
@@ -53,26 +80,8 @@ export const CourseScreen = ({ courseId }: { courseId: string }) => {
           headerStyle: { backgroundColor: "transparent" },
         }}
       />
-      <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Menu
-          accessibilityLabel="Kursaktionen"
-          icon="ellipsis.circle"
-          title="Kursaktionen"
-        >
-          <Stack.Toolbar.Label>Mehr</Stack.Toolbar.Label>
-          <Stack.Toolbar.MenuAction icon="checklist" onPress={() => setIsAddTaskVisible(true)}>
-            Hausaufgabe hinzufügen
-          </Stack.Toolbar.MenuAction>
-          <Stack.Toolbar.MenuAction
-            icon="graduationcap"
-            onPress={() => setIsAddWrittenGradeVisible(true)}
-          >
-            Klausurnote eintragen
-          </Stack.Toolbar.MenuAction>
-        </Stack.Toolbar.Menu>
-      </Stack.Toolbar>
       <Animated.View className="px-8" style={heroStyle}>
-        <View className="flex-row justify-between pb-4">
+        <View className="flex-row justify-between gap-4 pb-4">
           <View className="flex-1 pr-4">
             <Text weight="bold" className="text-4xl text-white">
               {subjectNameMap[course.subject]}
@@ -90,13 +99,49 @@ export const CourseScreen = ({ courseId }: { courseId: string }) => {
             </Text>
           </View>
 
-          <Card
-            padding="none"
-            radius="md"
-            className="aspect-square h-28 items-center justify-center"
-          >
-            <SubjectIcon subject={course.subject} size={52} />
-          </Card>
+          <View className="items-end gap-3">
+            {Platform.OS === "android" ? (
+              <MenuView
+                ref={courseMenuRef}
+                actions={[
+                  { id: "add-task", title: "Hausaufgabe hinzufügen" },
+                  { id: "add-written-grade", title: "Klausurnote eintragen" },
+                ]}
+                onPressAction={(event) => {
+                  if (event.nativeEvent.event === "add-task") {
+                    setIsAddTaskVisible(true);
+                  } else if (event.nativeEvent.event === "add-written-grade") {
+                    setIsAddWrittenGradeVisible(true);
+                  }
+                }}
+              >
+                <IconButton
+                  accessibilityLabel="Kursaktionen"
+                  icon="more"
+                  variant="filled"
+                  elevated
+                  color="white"
+                  onPress={showCourseActions}
+                />
+              </MenuView>
+            ) : (
+              <IconButton
+                accessibilityLabel="Kursaktionen"
+                icon="more"
+                variant="filled"
+                elevated
+                color="white"
+                onPress={showCourseActions}
+              />
+            )}
+            <Card
+              padding="none"
+              radius="md"
+              className="aspect-square h-28 items-center justify-center"
+            >
+              <SubjectIcon subject={course.subject} size={52} />
+            </Card>
+          </View>
         </View>
       </Animated.View>
       <View className="px-4">

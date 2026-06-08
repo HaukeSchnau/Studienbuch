@@ -19,6 +19,7 @@ export const TaskCard = ({ task }: { task: Task }) => {
         task.description || "Keine Beschreibung"
       }, fällig am ${format(task.dueDate, "dd.MM.")}`}
       borderRadius={24}
+      haptic="impact"
       onPress={() => router.push(taskRoute(task.id))}
       pressedScale={0.97}
       style={{

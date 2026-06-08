@@ -10,8 +10,10 @@ import {
   type ViewStyle,
 } from "react-native";
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
   type WithTimingConfig,
 } from "react-native-reanimated";
@@ -21,10 +23,17 @@ import { haptics } from "~/platform/haptics";
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const pressTiming: WithTimingConfig = {
-  duration: 110,
+  duration: Platform.OS === "ios" ? 90 : 120,
+  easing: Easing.out(Easing.quad),
 };
 
-type HapticMode = "none" | "selection";
+const releaseSpring = {
+  damping: 18,
+  mass: 0.7,
+  stiffness: 360,
+};
+
+type HapticMode = "none" | "selection" | "impact";
 
 interface Props extends Omit<PressableProps, "children" | "style" | "onPressIn" | "onPressOut"> {
   children: ReactNode;
@@ -40,6 +49,7 @@ interface Props extends Omit<PressableProps, "children" | "style" | "onPressIn" 
 }
 
 export function PressableSurface({
+  accessible,
   accessibilityRole = "button",
   android_ripple,
   borderRadius = 24,
@@ -69,21 +79,23 @@ export function PressableSurface({
 
   const handlePressIn = useCallback(
     (event: GestureResponderEvent) => {
-      if (!disabled) {
+      if (!disabled && onPress) {
         if (haptic === "selection") {
           haptics.selection();
+        } else if (haptic === "impact") {
+          haptics.impact();
         }
         scale.value = withTiming(pressedScale, pressTiming);
         overlayOpacity.value = withTiming(highlightOpacity, pressTiming);
       }
       onPressIn?.(event);
     },
-    [disabled, haptic, highlightOpacity, onPressIn, overlayOpacity, pressedScale, scale],
+    [disabled, haptic, highlightOpacity, onPress, onPressIn, overlayOpacity, pressedScale, scale],
   );
 
   const handlePressOut = useCallback(
     (event: GestureResponderEvent) => {
-      scale.value = withTiming(1, pressTiming);
+      scale.value = withSpring(1, releaseSpring);
       overlayOpacity.value = withTiming(0, pressTiming);
       onPressOut?.(event);
     },
@@ -93,11 +105,12 @@ export function PressableSurface({
   return (
     <AnimatedPressable
       {...props}
+      accessible={accessible ?? Boolean(onPress)}
       accessibilityRole={onPress ? accessibilityRole : undefined}
       android_ripple={
         android_ripple ?? {
           borderless: false,
-          color: "rgba(0, 0, 0, 0.12)",
+          color: "rgba(9, 138, 0, 0.16)",
           foreground: true,
         }
       }

@@ -50,6 +50,15 @@ const withAndroidDevLauncherMetadata: ConfigPlugin = (config) =>
 const plugins = [
   "expo-router",
   "expo-image",
+  [
+    "expo-image-picker",
+    {
+      photosPermission:
+        "Studienbuch darf Fotos auswählen, damit du Aufgaben mit Tafelbildern und Notizen ergänzen kannst.",
+      cameraPermission:
+        "Studienbuch darf die Kamera öffnen, damit du Aufgaben direkt fotografieren kannst.",
+    },
+  ],
   ...(IS_DEV
     ? [
         [
