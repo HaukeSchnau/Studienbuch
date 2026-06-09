@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Stack } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, Modal, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Modal, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PressableSurface } from "~/components/feedback/pressable-surface";
@@ -26,15 +26,43 @@ const styles = StyleSheet.create({
   },
   bottomBarShadow: {
     shadowColor: "#000000",
-    shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 18,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
   },
   previewImage: {
     height: "100%",
     width: "100%",
   },
 });
+
+const taskHeaderOptions = {
+  title: "Hausaufgabe",
+  ...(Platform.OS === "ios"
+    ? {
+        headerShadowVisible: false,
+        headerStyle: {
+          backgroundColor: colors.background,
+        },
+        headerTintColor: colors.primary.text,
+        headerTitleStyle: {
+          color: "#172033",
+          fontFamily: fontNames.bold,
+        },
+      }
+    : {}),
+};
+
+const detailMetrics = {
+  cardRadius: Platform.OS === "ios" ? 26 : 24,
+  contentPadding: Platform.OS === "ios" ? 18 : 20,
+  titleFontSize: Platform.OS === "ios" ? 29 : 28,
+  titleLineHeight: Platform.OS === "ios" ? 35 : 34,
+  bodyFontSize: Platform.OS === "ios" ? 17 : 18,
+  bodyLineHeight: Platform.OS === "ios" ? 26 : 28,
+  attachmentRadius: Platform.OS === "ios" ? 18 : 16,
+  bottomPadding: Platform.OS === "ios" ? 10 : 12,
+} as const;
 
 const attachmentFallbackPattern = [
   { rotate: "-8deg", top: 16, left: 18, width: 74 },
@@ -129,11 +157,12 @@ const AttachmentTile = ({
 }) => (
   <PressableSurface
     accessibilityLabel={`${attachment.label} öffnen`}
-    borderRadius={24}
-    className="h-32 w-36 overflow-hidden rounded-3xl bg-accent-des"
+    borderRadius={detailMetrics.attachmentRadius}
+    className="h-32 w-36 overflow-hidden bg-accent-des"
     haptic="impact"
     onPress={onPress}
     pressedScale={0.97}
+    style={{ borderRadius: detailMetrics.attachmentRadius }}
   >
     {attachment.uri ? (
       <Image source={{ uri: attachment.uri }} contentFit="cover" style={styles.attachmentImage} />
@@ -240,7 +269,7 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
   if (!task) {
     return (
       <>
-        <Stack.Screen options={{ title: "Hausaufgabe" }} />
+        <Stack.Screen options={taskHeaderOptions} />
         <View className="flex-1 bg-background px-5 pt-6">
           <Text>Aufgabe nicht gefunden.</Text>
         </View>
@@ -272,20 +301,27 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
 
   return (
     <>
-      <Stack.Screen options={{ title: "Hausaufgabe" }} />
+      <Stack.Screen options={taskHeaderOptions} />
 
       <View className="flex-1 bg-background">
         <ScrollView
           className="flex-1"
           contentContainerStyle={{
-            paddingBottom: insets.bottom + 116,
+            paddingBottom: insets.bottom + 102,
             paddingHorizontal: 20,
-            paddingTop: 18,
+            paddingTop: Platform.OS === "ios" ? 10 : 18,
           }}
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
         >
-          <View className="rounded-[34px] bg-white px-5 pb-6 pt-5 shadow-sm">
+          <View
+            className="bg-white shadow-sm"
+            style={{
+              borderRadius: detailMetrics.cardRadius,
+              padding: detailMetrics.contentPadding,
+              paddingBottom: detailMetrics.contentPadding + 2,
+            }}
+          >
             <View className="flex-row flex-wrap items-center gap-2">
               <MetadataChip icon="info" label={course?.name ?? "Kurs"} tone={colors.primary.text} />
               <MetadataChip
@@ -296,21 +332,31 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
             </View>
 
             <Text
-              className="pt-5 text-[32px] leading-[38px] text-primary-text"
+              className="pt-4 text-primary-text"
               weight="bold"
-              style={{ fontFamily: fontNames.bold }}
+              style={{
+                fontFamily: fontNames.bold,
+                fontSize: detailMetrics.titleFontSize,
+                lineHeight: detailMetrics.titleLineHeight,
+              }}
             >
               {task.title}
             </Text>
 
-            <View className="mt-5 border-t border-[#E3E9F1] pt-5">
-              <Text className="text-[18px] leading-7 text-[#172033]">
+            <View className="mt-4 border-t border-[#E3E9F1] pt-4">
+              <Text
+                className="text-[#172033]"
+                style={{
+                  fontSize: detailMetrics.bodyFontSize,
+                  lineHeight: detailMetrics.bodyLineHeight,
+                }}
+              >
                 {task.description || "Keine Beschreibung hinterlegt."}
               </Text>
             </View>
           </View>
 
-          <View className="pt-7">
+          <View className="pt-6">
             <View className="flex-row items-end justify-between px-1">
               <View>
                 <Text className="text-2xl text-primary-text" weight="bold">
@@ -357,7 +403,7 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
           <PressableSurface
             accessibilityLabel="Aufgabe löschen"
             borderRadius={22}
-            className="mt-8 min-h-12 flex-row items-center justify-center gap-2 rounded-full bg-danger-des px-4"
+            className="mt-7 min-h-12 flex-row items-center justify-center gap-2 rounded-full bg-danger-des px-4"
             haptic="impact"
             onPress={confirmDelete}
             pressedScale={0.98}
@@ -371,7 +417,10 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
 
         <View
           className="absolute inset-x-0 bottom-0 border-t border-[#E5E7EB] bg-white px-5 pt-3"
-          style={[styles.bottomBarShadow, { paddingBottom: insets.bottom + 12 }]}
+          style={[
+            styles.bottomBarShadow,
+            { paddingBottom: insets.bottom + detailMetrics.bottomPadding },
+          ]}
         >
           {task.done ? (
             <View className="flex-row items-center gap-3">
@@ -402,7 +451,7 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
               <PressableSurface
                 accessibilityLabel="Aufgabe als erledigt markieren"
                 borderRadius={24}
-                className="mt-3 h-12 flex-row items-center justify-center gap-2 rounded-full bg-accent"
+                className="mt-2.5 h-12 flex-row items-center justify-center gap-2 rounded-full bg-accent"
                 haptic="impact"
                 onPress={toggleDone}
                 pressedScale={0.985}
