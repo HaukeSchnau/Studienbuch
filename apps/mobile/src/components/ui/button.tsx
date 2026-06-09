@@ -109,7 +109,12 @@ function BaseButton({
       : undefined;
 
   return (
-    <View className={clsx("items-center justify-center", className)}>
+    <View
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: Boolean(disabled) }}
+      className={clsx("items-center justify-center", className)}
+    >
       <Host matchContents {...nativeHostThemeProps(resolvedTintColor)}>
         <ExpoButton
           disabled={disabled}

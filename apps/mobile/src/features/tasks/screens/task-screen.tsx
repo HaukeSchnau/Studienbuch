@@ -3,7 +3,7 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Stack } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, Modal, Platform, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PressableSurface } from "~/components/feedback/pressable-surface";
@@ -30,31 +30,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 10,
   },
-  iosBrandArc: {
-    borderColor: colors.accent.DEFAULT,
-    borderRadius: 160,
-    borderWidth: 8,
-    bottom: -64,
-    height: 150,
-    opacity: 0.9,
-    position: "absolute",
-    right: -72,
-    width: 270,
-  },
-  iosBrandBand: {
+  cardAccent: {
     backgroundColor: colors.primary.DEFAULT,
-    borderBottomLeftRadius: 38,
-    borderBottomRightRadius: 38,
-    height: 168,
-    left: 0,
+    height: Platform.OS === "ios" ? 5 : 0,
+  },
+  detailCard: {
     overflow: "hidden",
-    position: "absolute",
-    right: 0,
-    top: 0,
   },
   previewImage: {
     height: "100%",
     width: "100%",
+  },
+  previewFrame: {
+    borderRadius: Platform.OS === "ios" ? 24 : 18,
   },
 });
 
@@ -171,14 +159,16 @@ const MetadataChip = ({
 const AttachmentTile = ({
   attachment,
   index,
+  total,
   onPress,
 }: {
   attachment: TaskAttachment;
   index: number;
+  total: number;
   onPress: () => void;
 }) => (
   <PressableSurface
-    accessibilityLabel={`${attachment.label} öffnen`}
+    accessibilityLabel={`Bild ${index + 1} von ${total}: ${attachment.label || "Anhang"} öffnen`}
     borderRadius={detailMetrics.attachmentRadius}
     className="h-32 w-36 overflow-hidden bg-accent-des"
     haptic="impact"
@@ -244,7 +234,10 @@ const AttachmentPreview = ({
         </View>
 
         <View className="flex-1 justify-center px-4 pb-8">
-          <View className="aspect-[3/4] max-h-full overflow-hidden rounded-[34px] bg-white/8">
+          <View
+            className="aspect-[3/4] max-h-full overflow-hidden bg-white/8"
+            style={styles.previewFrame}
+          >
             {activeAttachment.uri ? (
               <Image
                 source={{ uri: activeAttachment.uri }}
@@ -278,6 +271,39 @@ const AttachmentPreview = ({
   );
 };
 
+const MissingTaskState = ({ onBack }: { onBack: () => void }) => (
+  <View className="flex-1 bg-background px-5 pt-6">
+    <View className="rounded-[26px] bg-white p-5 shadow-sm">
+      <View className="h-12 w-12 items-center justify-center rounded-full bg-accent-des">
+        <SystemIcon name="info" color={colors.accent.DEFAULT} size={24} />
+      </View>
+      <Text className="pt-4 text-2xl text-primary-text" weight="bold">
+        Aufgabe nicht gefunden
+      </Text>
+      <Text className="pt-2 text-[16px] leading-6 text-[#5B6472]">
+        Diese Hausaufgabe wurde vermutlich gelöscht oder ist noch nicht lokal verfügbar.
+      </Text>
+      <Button className="mt-5 self-start" label="Zurück" onPress={onBack} size="sm" />
+    </View>
+  </View>
+);
+
+const HeaderEditButton = ({ onPress }: { onPress: () => void }) => {
+  const iconColor = Platform.OS === "android" ? colors.on.primary : colors.primary.text;
+
+  return (
+    <Pressable
+      accessibilityLabel="Hausaufgabe bearbeiten"
+      accessibilityRole="button"
+      className="h-11 w-11 items-center justify-center"
+      hitSlop={10}
+      onPress={onPress}
+    >
+      <SystemIcon name="edit" color={iconColor} size={23} />
+    </Pressable>
+  );
+};
+
 export const TaskScreen = ({ taskId }: { taskId: string }) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -292,9 +318,7 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
     return (
       <>
         <Stack.Screen options={taskHeaderOptions} />
-        <View className="flex-1 bg-background px-5 pt-6">
-          <Text>Aufgabe nicht gefunden.</Text>
-        </View>
+        <MissingTaskState onBack={() => router.back()} />
       </>
     );
   }
@@ -321,66 +345,81 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
     toggleTaskDone(task.id);
   };
 
+  const showEditPlaceholder = () => {
+    haptics.selection();
+    Alert.alert(
+      "Bearbeiten",
+      "Das Bearbeiten der Hausaufgabe ist vorbereitet und kommt als nächster Schritt.",
+    );
+  };
+
   return (
     <>
-      <Stack.Screen options={taskHeaderOptions} />
+      <Stack.Screen
+        options={{
+          ...taskHeaderOptions,
+          headerRight: () => <HeaderEditButton onPress={showEditPlaceholder} />,
+        }}
+      />
 
       <View className="flex-1 bg-background">
-        {Platform.OS === "ios" ? (
-          <View pointerEvents="none" style={styles.iosBrandBand}>
-            <View style={styles.iosBrandArc} />
-          </View>
-        ) : null}
-
         <ScrollView
           className="flex-1"
           contentContainerStyle={{
             paddingBottom: insets.bottom + 102,
             paddingHorizontal: 20,
-            paddingTop: Platform.OS === "ios" ? 24 : 18,
+            paddingTop: Platform.OS === "ios" ? 12 : 18,
           }}
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
         >
           <View
             className="bg-white shadow-sm"
-            style={{
-              borderRadius: detailMetrics.cardRadius,
-              padding: detailMetrics.contentPadding,
-              paddingBottom: detailMetrics.contentPadding + 2,
-            }}
+            style={[styles.detailCard, { borderRadius: detailMetrics.cardRadius }]}
           >
-            <View className="flex-row flex-wrap items-center gap-2">
-              <MetadataChip icon="info" label={course?.name ?? "Kurs"} tone={colors.primary.text} />
-              <MetadataChip
-                icon="calendar-today"
-                label={detailModel?.dueLabel ?? ""}
-                tone={dueColor}
-              />
-            </View>
-
-            <Text
-              className="pt-4 text-primary-text"
-              weight="bold"
+            <View style={styles.cardAccent} />
+            <View
               style={{
-                fontFamily: fontNames.bold,
-                fontSize: detailMetrics.titleFontSize,
-                lineHeight: detailMetrics.titleLineHeight,
+                padding: detailMetrics.contentPadding,
+                paddingBottom: detailMetrics.contentPadding + 2,
               }}
             >
-              {task.title}
-            </Text>
+              <View className="flex-row flex-wrap items-center gap-2">
+                <MetadataChip
+                  icon="info"
+                  label={course?.name ?? "Kurs"}
+                  tone={colors.primary.text}
+                />
+                <MetadataChip
+                  icon="calendar-today"
+                  label={detailModel?.dueLabel ?? ""}
+                  tone={dueColor}
+                />
+              </View>
 
-            <View className="mt-4 border-t border-[#E3E9F1] pt-4">
               <Text
-                className="text-[#172033]"
+                className="pt-4 text-primary-text"
+                weight="bold"
                 style={{
-                  fontSize: detailMetrics.bodyFontSize,
-                  lineHeight: detailMetrics.bodyLineHeight,
+                  fontFamily: fontNames.bold,
+                  fontSize: detailMetrics.titleFontSize,
+                  lineHeight: detailMetrics.titleLineHeight,
                 }}
               >
-                {task.description || "Keine Beschreibung hinterlegt."}
+                {task.title}
               </Text>
+
+              <View className="mt-4 border-t border-[#E3E9F1] pt-4">
+                <Text
+                  className="text-[#172033]"
+                  style={{
+                    fontSize: detailMetrics.bodyFontSize,
+                    lineHeight: detailMetrics.bodyLineHeight,
+                  }}
+                >
+                  {task.description || "Keine Beschreibung hinterlegt."}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -415,6 +454,7 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
                     key={attachment.id}
                     attachment={attachment}
                     index={index}
+                    total={task.attachments.length}
                     onPress={() => setPreviewIndex(index)}
                   />
                 ))}
@@ -451,17 +491,21 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
           ]}
         >
           {task.done ? (
-            <View className="flex-row items-center gap-3">
-              <View className="h-11 w-11 items-center justify-center rounded-full bg-primary-des">
-                <SystemIcon name="check" color={colors.primary.text} size={24} />
+            <View className="rounded-[24px] bg-primary-des px-3 py-3">
+              <View className="flex-row items-center gap-3">
+                <View className="h-11 w-11 items-center justify-center rounded-full bg-white">
+                  <SystemIcon name="check" color={colors.primary.text} size={24} />
+                </View>
+                <View className="min-w-0 flex-1">
+                  <Text className="text-[17px] text-primary-text" weight="bold">
+                    Erledigt
+                  </Text>
+                  <Text className="text-sm text-[#52616F]">
+                    Gut abgehakt. {detailModel?.dueLabel}
+                  </Text>
+                </View>
+                <TextButton label="Zurücknehmen" onPress={toggleDone} size="sm" />
               </View>
-              <View className="min-w-0 flex-1">
-                <Text className="text-[17px] text-primary-text" weight="bold">
-                  Erledigt
-                </Text>
-                <Text className="text-sm text-[#6B7280]">Gut abgehakt.</Text>
-              </View>
-              <TextButton label="Zurücknehmen" onPress={toggleDone} size="sm" />
             </View>
           ) : (
             <View>
