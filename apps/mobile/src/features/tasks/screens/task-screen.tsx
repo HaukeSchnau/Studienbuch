@@ -62,11 +62,12 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   thumbnailShadow: {
-    elevation: 1,
+    backgroundColor: colors.surface,
+    elevation: 2,
     shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.045,
+    shadowRadius: 10,
   },
 });
 
@@ -202,6 +203,7 @@ const AttachmentTile = ({
       style={[
         styles.thumbnailShadow,
         {
+          borderRadius: detailMetrics.attachmentRadius,
           marginTop: index % 2 === 0 ? 0 : 8,
           transform: [{ rotate }],
         },
