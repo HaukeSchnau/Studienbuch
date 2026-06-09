@@ -30,6 +30,28 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 10,
   },
+  iosBrandArc: {
+    borderColor: colors.accent.DEFAULT,
+    borderRadius: 160,
+    borderWidth: 8,
+    bottom: -64,
+    height: 150,
+    opacity: 0.9,
+    position: "absolute",
+    right: -72,
+    width: 270,
+  },
+  iosBrandBand: {
+    backgroundColor: colors.primary.DEFAULT,
+    borderBottomLeftRadius: 38,
+    borderBottomRightRadius: 38,
+    height: 168,
+    left: 0,
+    overflow: "hidden",
+    position: "absolute",
+    right: 0,
+    top: 0,
+  },
   previewImage: {
     height: "100%",
     width: "100%",
@@ -304,12 +326,18 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
       <Stack.Screen options={taskHeaderOptions} />
 
       <View className="flex-1 bg-background">
+        {Platform.OS === "ios" ? (
+          <View pointerEvents="none" style={styles.iosBrandBand}>
+            <View style={styles.iosBrandArc} />
+          </View>
+        ) : null}
+
         <ScrollView
           className="flex-1"
           contentContainerStyle={{
             paddingBottom: insets.bottom + 102,
             paddingHorizontal: 20,
-            paddingTop: Platform.OS === "ios" ? 10 : 18,
+            paddingTop: Platform.OS === "ios" ? 24 : 18,
           }}
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
