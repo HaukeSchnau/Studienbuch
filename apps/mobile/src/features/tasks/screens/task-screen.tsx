@@ -15,11 +15,19 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import Animated, {
+  Easing,
+  interpolate,
+  type SharedValue,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { Button, TextButton } from "~/components/ui/button";
-import { SystemIcon } from "~/components/ui/system-icon";
+import { SystemIcon, type SystemIconName } from "~/components/ui/system-icon";
 import { Text } from "~/components/ui/text";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { haptics } from "~/platform/haptics";
@@ -56,6 +64,13 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0, 0, 0, 0.1)",
     borderWidth: StyleSheet.hairlineWidth,
   },
+  thumbnailShadow: {
+    elevation: 1,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+  },
 });
 
 const taskHeaderOptions = {
@@ -90,6 +105,17 @@ const attachmentFallbackPattern = [
   { rotate: "-8deg", top: 16, left: 18, width: 74 },
   { rotate: "5deg", top: 46, left: 34, width: 110 },
   { rotate: "-3deg", top: 78, left: 24, width: 88 },
+] as const;
+
+const thumbnailRotations = ["-1.4deg", "1.1deg", "-0.8deg", "1.5deg"] as const;
+
+const burstParticles = [
+  { color: colors.primary.DEFAULT, size: 10, x: -82, y: -36 },
+  { color: colors.accent.DEFAULT, size: 8, x: -52, y: -58 },
+  { color: colors.alert.DEFAULT, size: 9, x: -18, y: -72 },
+  { color: colors.primary.punch, size: 12, x: 22, y: -68 },
+  { color: colors.accent.pale, size: 8, x: 56, y: -50 },
+  { color: colors.alert.DEFAULT, size: 7, x: 84, y: -30 },
 ] as const;
 
 const AttachmentArtwork = ({
@@ -173,24 +199,42 @@ const AttachmentTile = ({
   index: number;
   total: number;
   onPress: () => void;
-}) => (
-  <PressableSurface
-    accessibilityLabel={`Bild ${index + 1} von ${total}: ${attachment.label || "Anhang"} öffnen`}
-    accessibilityHint="Öffnet die Bildvorschau"
-    borderRadius={detailMetrics.attachmentRadius}
-    className="h-40 w-32 overflow-hidden bg-accent-des"
-    haptic="impact"
-    onPress={onPress}
-    pressedScale={0.96}
-    style={[styles.thumbnailOutline, { borderRadius: detailMetrics.attachmentRadius }]}
-  >
-    {attachment.uri ? (
-      <Image source={{ uri: attachment.uri }} contentFit="cover" style={styles.attachmentImage} />
-    ) : (
-      <AttachmentArtwork attachment={attachment} />
-    )}
-  </PressableSurface>
-);
+}) => {
+  const rotate = thumbnailRotations[index % thumbnailRotations.length];
+
+  return (
+    <View
+      style={[
+        styles.thumbnailShadow,
+        {
+          marginTop: index % 2 === 0 ? 0 : 8,
+          transform: [{ rotate }],
+        },
+      ]}
+    >
+      <PressableSurface
+        accessibilityLabel={`Bild ${index + 1} von ${total}: ${attachment.label || "Anhang"} öffnen`}
+        accessibilityHint="Öffnet die Bildvorschau"
+        borderRadius={detailMetrics.attachmentRadius}
+        className="h-40 w-32 overflow-hidden bg-accent-des"
+        haptic="impact"
+        onPress={onPress}
+        pressedScale={0.96}
+        style={[styles.thumbnailOutline, { borderRadius: detailMetrics.attachmentRadius }]}
+      >
+        {attachment.uri ? (
+          <Image
+            source={{ uri: attachment.uri }}
+            contentFit="cover"
+            style={styles.attachmentImage}
+          />
+        ) : (
+          <AttachmentArtwork attachment={attachment} />
+        )}
+      </PressableSurface>
+    </View>
+  );
+};
 
 const AttachmentPreview = ({
   attachments,
@@ -337,19 +381,138 @@ const MissingTaskState = ({ onBack }: { onBack: () => void }) => (
   </View>
 );
 
-const HeaderEditButton = ({ onPress }: { onPress: () => void }) => {
+const HeaderActionButton = ({
+  accessibilityLabel,
+  color,
+  iconName,
+  onPress,
+}: {
+  accessibilityLabel: string;
+  color: string;
+  iconName: SystemIconName;
+  onPress: () => void;
+}) => {
+  return (
+    <Pressable
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      className="h-11 w-11 items-center justify-center"
+      hitSlop={8}
+      onPress={onPress}
+    >
+      <SystemIcon name={iconName} color={color} size={23} />
+    </Pressable>
+  );
+};
+
+const HeaderActions = ({ onDelete, onEdit }: { onDelete: () => void; onEdit: () => void }) => {
   const iconColor = Platform.OS === "android" ? colors.on.primary : colors.primary.text;
 
   return (
-    <Pressable
-      accessibilityLabel="Hausaufgabe bearbeiten"
-      accessibilityRole="button"
-      className="h-11 w-11 items-center justify-center"
-      hitSlop={10}
-      onPress={onPress}
+    <View className="flex-row items-center">
+      <HeaderActionButton
+        accessibilityLabel="Hausaufgabe bearbeiten"
+        color={iconColor}
+        iconName="edit"
+        onPress={onEdit}
+      />
+      <HeaderActionButton
+        accessibilityLabel="Aufgabe löschen"
+        color={Platform.OS === "android" ? colors.on.primary : colors.danger.DEFAULT}
+        iconName="delete"
+        onPress={onDelete}
+      />
+    </View>
+  );
+};
+
+const BurstParticle = ({
+  particle,
+  progress,
+}: {
+  particle: (typeof burstParticles)[number];
+  progress: SharedValue<number>;
+}) => {
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 0.16, 0.78, 1], [0, 1, 1, 0]),
+    transform: [
+      { translateX: interpolate(progress.value, [0, 1], [0, particle.x]) },
+      { translateY: interpolate(progress.value, [0, 1], [0, particle.y]) },
+      { scale: interpolate(progress.value, [0, 0.22, 1], [0.25, 1, 0.65]) },
+    ],
+  }));
+
+  return (
+    <Animated.View
+      className="absolute rounded-full"
+      style={[
+        animatedStyle,
+        {
+          backgroundColor: particle.color,
+          height: particle.size,
+          left: "50%",
+          marginLeft: -particle.size / 2,
+          top: 48,
+          width: particle.size,
+        },
+      ]}
+    />
+  );
+};
+
+const CompletionBurst = () => {
+  const progress = useSharedValue(0);
+  const centerStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [0, 0.14, 0.68, 1], [0, 1, 1, 0]),
+    transform: [
+      { translateY: interpolate(progress.value, [0, 1], [8, -30]) },
+      { scale: interpolate(progress.value, [0, 0.18, 1], [0.7, 1, 0.9]) },
+    ],
+  }));
+
+  useEffect(() => {
+    progress.value = withTiming(1, {
+      duration: 760,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [progress]);
+
+  return (
+    <View
+      pointerEvents="none"
+      className="absolute inset-x-0 items-center"
+      style={{
+        bottom: Platform.OS === "ios" ? 126 : 118,
+        elevation: 3,
+        height: 100,
+        zIndex: 3,
+      }}
     >
-      <SystemIcon name="edit" color={iconColor} size={23} />
-    </Pressable>
+      {burstParticles.map((particle) => (
+        <BurstParticle
+          key={`${particle.x}-${particle.y}`}
+          particle={particle}
+          progress={progress}
+        />
+      ))}
+      <Animated.View
+        className="absolute h-12 w-12 items-center justify-center rounded-full bg-white"
+        style={[
+          centerStyle,
+          {
+            left: "50%",
+            marginLeft: -24,
+            shadowColor: "#000000",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.12,
+            shadowRadius: 10,
+            top: 28,
+          },
+        ]}
+      >
+        <SystemIcon name="check" color={colors.primary.text} size={26} />
+      </Animated.View>
+    </View>
   );
 };
 
@@ -359,6 +522,7 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
   const { getCourse } = useCourses();
   const { getTask, toggleTaskDone, deleteTask } = useTasks();
   const [previewIndex, setPreviewIndex] = useState<number | undefined>();
+  const [completionBurstKey, setCompletionBurstKey] = useState(0);
   const task = getTask(taskId);
 
   const detailModel = useMemo(() => (task ? getTaskDetailModel(task) : undefined), [task]);
@@ -389,7 +553,12 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
     ]);
 
   const toggleDone = () => {
-    haptics.toggle(!task.done);
+    if (task.done) {
+      haptics.toggle(false);
+    } else {
+      haptics.success();
+      setCompletionBurstKey((key) => key + 1);
+    }
     toggleTaskDone(task.id);
   };
 
@@ -406,7 +575,9 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
       <Stack.Screen
         options={{
           ...taskHeaderOptions,
-          headerRight: () => <HeaderEditButton onPress={showEditPlaceholder} />,
+          headerRight: () => (
+            <HeaderActions onDelete={confirmDelete} onEdit={showEditPlaceholder} />
+          ),
         }}
       />
 
@@ -489,28 +660,9 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
               </View>
             )}
           </View>
-
-          <PressableSurface
-            accessibilityLabel="Aufgabe löschen"
-            android_ripple={{
-              borderless: false,
-              color: "rgba(164, 43, 51, 0.12)",
-              foreground: true,
-            }}
-            borderRadius={18}
-            className="mt-5 min-h-11 flex-row items-center justify-center gap-2 self-start px-1"
-            haptic="selection"
-            highlightColor="rgba(164, 43, 51, 0.08)"
-            highlightOpacity={Platform.OS === "ios" ? 1 : 0}
-            onPress={confirmDelete}
-            pressedScale={0.96}
-          >
-            <SystemIcon name="delete" color={colors.danger.DEFAULT} size={17} />
-            <Text className="text-[15px] text-danger" weight="semi-bold">
-              Aufgabe löschen
-            </Text>
-          </PressableSurface>
         </ScrollView>
+
+        {completionBurstKey > 0 ? <CompletionBurst key={completionBurstKey} /> : null}
 
         <View
           className="absolute inset-x-0 bottom-0 border-t border-[#E5E7EB] bg-white px-5 pt-3"
