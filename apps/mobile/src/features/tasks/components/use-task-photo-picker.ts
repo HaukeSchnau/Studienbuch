@@ -1,5 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
-import { ActionSheetIOS, Alert, Platform } from "react-native";
+import { Alert } from "react-native";
 
 import { haptics } from "~/platform/haptics";
 
@@ -60,35 +60,5 @@ export const useTaskPhotoPicker = ({
     }
   };
 
-  const choosePhotoSource = () => {
-    haptics.selection();
-
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          cancelButtonIndex: 2,
-          options: ["Foto aufnehmen", "Aus Mediathek wählen", "Abbrechen"],
-          title: "Foto hinzufügen",
-        },
-        (buttonIndex) => {
-          if (buttonIndex === 0) {
-            void takePhoto();
-          }
-
-          if (buttonIndex === 1) {
-            void pickFromLibrary();
-          }
-        },
-      );
-      return;
-    }
-
-    Alert.alert("Foto hinzufügen", "Woher soll das Foto kommen?", [
-      { text: "Kamera", onPress: () => void takePhoto() },
-      { text: "Mediathek", onPress: () => void pickFromLibrary() },
-      { text: "Abbrechen", style: "cancel" },
-    ]);
-  };
-
-  return { choosePhotoSource, pickFromLibrary, takePhoto };
+  return { pickFromLibrary, takePhoto };
 };

@@ -34,6 +34,7 @@ import { haptics } from "~/platform/haptics";
 import { useCourses, useTasks } from "~/data/hooks";
 import { colors } from "~/theme/colors";
 import { fontNames } from "~/components/ui/text";
+import { TaskPhotoSourceSheet } from "../components/task-photo-source-sheet";
 import { useTaskPhotoPicker } from "../components/use-task-photo-picker";
 import { createTaskAttachment } from "../model/task-attachments";
 import { getTaskDetailModel } from "../model/task-detail-model";
@@ -557,10 +558,11 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
   const { getTask, addTaskAttachment, toggleTaskDone, deleteTask } = useTasks();
   const [previewIndex, setPreviewIndex] = useState<number | undefined>();
   const [completionBurstKey, setCompletionBurstKey] = useState(0);
+  const [isPhotoSourceVisible, setIsPhotoSourceVisible] = useState(false);
   const task = getTask(taskId);
 
   const detailModel = useMemo(() => (task ? getTaskDetailModel(task) : undefined), [task]);
-  const { choosePhotoSource } = useTaskPhotoPicker({
+  const { pickFromLibrary, takePhoto } = useTaskPhotoPicker({
     onAssetPicked: (asset) => {
       if (!task) {
         return;
@@ -693,7 +695,10 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
                   onPress={() => setPreviewIndex(index)}
                 />
               ))}
-              <AddAttachmentTile index={task.attachments.length} onPress={choosePhotoSource} />
+              <AddAttachmentTile
+                index={task.attachments.length}
+                onPress={() => setIsPhotoSourceVisible(true)}
+              />
             </ScrollView>
           </View>
         </ScrollView>
@@ -760,6 +765,14 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
           attachments={task.attachments}
           initialIndex={previewIndex}
           onClose={() => setPreviewIndex(undefined)}
+        />
+      ) : null}
+
+      {isPhotoSourceVisible ? (
+        <TaskPhotoSourceSheet
+          onClose={() => setIsPhotoSourceVisible(false)}
+          onPickFromLibrary={() => void pickFromLibrary()}
+          onTakePhoto={() => void takePhoto()}
         />
       ) : null}
     </>

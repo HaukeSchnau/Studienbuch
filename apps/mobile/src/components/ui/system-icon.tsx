@@ -18,6 +18,7 @@ export type SystemIconName =
   | "info"
   | "more"
   | "person"
+  | "photo-library"
   | "settings"
   | "shield"
   | "swipe"
@@ -38,6 +39,11 @@ const symbolMap: Record<SystemIconName, ComponentProps<typeof SymbolView>["name"
   info: { ios: "info.circle", android: "info", web: "info" },
   more: { ios: "ellipsis.circle", android: "more_vert", web: "more_vert" },
   person: { ios: "person.fill", android: "person", web: "person" },
+  "photo-library": {
+    ios: "photo.on.rectangle.angled",
+    android: "photo_library",
+    web: "photo_library",
+  },
   settings: { ios: "gearshape.fill", android: "settings", web: "settings" },
   shield: { ios: "shield", android: "shield", web: "shield" },
   swipe: { ios: "hand.draw.fill", android: "swipe", web: "swipe" },
@@ -59,6 +65,7 @@ const materialFallbackMap: Record<SystemIconName, ComponentProps<typeof Material
   info: "info",
   more: "more-vert",
   person: "person",
+  "photo-library": "photo-library",
   settings: "settings",
   shield: "shield",
   swipe: "swipe",
@@ -83,6 +90,8 @@ const androidPathMap: Partial<Record<SystemIconName, string>> = {
   info: "M11 17h2v-6h-2v6zm1-15C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-11h2V7h-2v2z",
   person:
     "M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z",
+  "photo-library":
+    "M22 16V4c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2zM11 11.5l2.03 2.71L16 10.5l4 5.5H8l3-4.5zM2 6v16h16v-2H4V6H2z",
   settings:
     "M19.43 12.98c.04-.32.07-.65.07-.98s-.02-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98L14.5 2.42A.49.49 0 0 0 14 2h-4c-.25 0-.46.18-.5.42L9.12 5.07c-.61.23-1.18.56-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.08.65-.08.98s.03.66.08.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46c.13.22.39.31.61.22l2.49-1c.51.4 1.08.73 1.69.98l.38 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.38-2.65c.61-.23 1.18-.56 1.69-.98l2.49 1c.23.08.48 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.12-1.65zM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5z",
   shield:
