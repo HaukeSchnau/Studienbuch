@@ -72,6 +72,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.045,
     shadowRadius: 10,
   },
+  thumbnailStripContent: {
+    gap: 12,
+    paddingBottom: 14,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
 });
 
 const taskHeaderOptions = {
@@ -681,8 +687,8 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
             </Text>
 
             <ScrollView
-              className="-mx-5 mt-3"
-              contentContainerStyle={{ gap: 12, paddingHorizontal: 20 }}
+              className="-mx-5 mt-1"
+              contentContainerStyle={styles.thumbnailStripContent}
               horizontal
               showsHorizontalScrollIndicator={false}
             >
