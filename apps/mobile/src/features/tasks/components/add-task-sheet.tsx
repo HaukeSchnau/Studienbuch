@@ -1,7 +1,6 @@
-import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { useMemo, useState } from "react";
-import { Alert, View } from "react-native";
+import { View } from "react-native";
 
 import { Button, TextButton } from "~/components/ui/button";
 import { PressableSurface } from "~/components/feedback/pressable-surface";
@@ -16,15 +15,8 @@ import { getNextSchoolDay } from "~/domain-ui/school-day";
 import type { TaskAttachment } from "@stu/core";
 import { useCourses, useScheduleData, useTasks } from "~/data/hooks";
 import { haptics } from "~/platform/haptics";
-
-const attachmentPalette = ["#B9D7F5", "#F5D9B9", "#D7E9C6", "#E2CEF5"] as const;
-
-const createAttachment = (index: number, label?: string | null, uri?: string): TaskAttachment => ({
-  id: `attachment-${Date.now()}-${index}`,
-  label: label?.trim() || `Foto ${index + 1}`,
-  color: attachmentPalette[index % attachmentPalette.length]!,
-  uri,
-});
+import { createTaskAttachment } from "../model/task-attachments";
+import { useTaskPhotoPicker } from "./use-task-photo-picker";
 
 export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose: () => void }) => {
   const { courses } = useCourses();
@@ -48,69 +40,22 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
       ? `${existingTaskCount} Aufgaben sind für diesen Bereich bereits hinterlegt.`
       : "Lege eine erste Aufgabe für diesen Bereich an.";
 
-  const addPickedAsset = (asset: ImagePicker.ImagePickerAsset | undefined) => {
-    if (!asset) {
-      return;
-    }
-
-    setAttachments((current) => [
-      ...current,
-      createAttachment(current.length, asset.fileName ?? `Foto ${current.length + 1}`, asset.uri),
-    ]);
-    haptics.success();
-  };
-
-  const showAttachmentError = (source: "camera" | "library") => {
-    haptics.warning();
-    Alert.alert(
-      source === "camera" ? "Kamera nicht verfügbar" : "Fotoauswahl nicht möglich",
-      "Bitte versuche es erneut oder prüfe die Berechtigungen in den Systemeinstellungen.",
-    );
-  };
-
-  const takePhoto = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (!permission.granted) {
-      haptics.warning();
-      Alert.alert(
-        "Kamera nicht freigegeben",
-        "Du kannst die Berechtigung später in den Systemeinstellungen ändern.",
-      );
-      return;
-    }
-
-    try {
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: false,
-        mediaTypes: ["images"],
-        quality: 0.82,
+  const { pickFromLibrary, takePhoto } = useTaskPhotoPicker({
+    onAssetPicked: (asset) => {
+      setAttachments((current) => {
+        const nextIndex = current.length;
+        return [
+          ...current,
+          createTaskAttachment({
+            index: nextIndex,
+            label: asset.fileName ?? `Foto ${nextIndex + 1}`,
+            uri: asset.uri,
+          }),
+        ];
       });
-
-      if (!result.canceled) {
-        addPickedAsset(result.assets[0]);
-      }
-    } catch {
-      showAttachmentError("camera");
-    }
-  };
-
-  const pickFromLibrary = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        allowsMultipleSelection: false,
-        mediaTypes: ["images"],
-        presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
-        quality: 0.82,
-      });
-
-      if (!result.canceled) {
-        addPickedAsset(result.assets[0]);
-      }
-    } catch {
-      showAttachmentError("library");
-    }
-  };
+      haptics.success();
+    },
+  });
 
   return (
     <SheetScaffold

@@ -78,6 +78,7 @@ interface MockDataContextValue {
     dueDate: Date;
     attachments?: TaskAttachment[];
   }) => void;
+  addTaskAttachment: (taskId: string, attachment: TaskAttachment) => void;
   toggleTaskDone: (taskId: string) => void;
   deleteTask: (taskId: string) => void;
 }
@@ -281,6 +282,13 @@ export function MockDataProvider({ children }: PropsWithChildren) {
         },
         ...current,
       ]);
+    },
+    addTaskAttachment: (taskId, attachment) => {
+      setTasks((current) =>
+        current.map((task) =>
+          task.id === taskId ? { ...task, attachments: [...task.attachments, attachment] } : task,
+        ),
+      );
     },
     toggleTaskDone: (taskId) => {
       setTasks((current) =>

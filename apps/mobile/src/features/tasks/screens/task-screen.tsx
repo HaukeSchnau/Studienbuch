@@ -34,6 +34,8 @@ import { haptics } from "~/platform/haptics";
 import { useCourses, useTasks } from "~/data/hooks";
 import { colors } from "~/theme/colors";
 import { fontNames } from "~/components/ui/text";
+import { useTaskPhotoPicker } from "../components/use-task-photo-picker";
+import { createTaskAttachment } from "../model/task-attachments";
 import { getTaskDetailModel } from "../model/task-detail-model";
 
 const styles = StyleSheet.create({
@@ -228,6 +230,41 @@ const AttachmentTile = ({
         ) : (
           <AttachmentArtwork attachment={attachment} />
         )}
+      </PressableSurface>
+    </View>
+  );
+};
+
+const AddAttachmentTile = ({ index, onPress }: { index: number; onPress: () => void }) => {
+  const rotate = thumbnailRotations[index % thumbnailRotations.length];
+
+  return (
+    <View
+      style={[
+        styles.thumbnailShadow,
+        {
+          borderRadius: detailMetrics.attachmentRadius,
+          marginTop: index % 2 === 0 ? 0 : 8,
+          transform: [{ rotate }],
+        },
+      ]}
+    >
+      <PressableSurface
+        accessibilityLabel="Foto hinzufügen"
+        accessibilityHint="Öffnet die Auswahl zwischen Kamera und Mediathek"
+        borderRadius={detailMetrics.attachmentRadius}
+        className="h-40 w-32 items-center justify-center overflow-hidden border border-dashed border-[#B6C0CC] bg-white px-4"
+        haptic="impact"
+        onPress={onPress}
+        pressedScale={0.96}
+        style={{ borderRadius: detailMetrics.attachmentRadius }}
+      >
+        <View className="h-12 w-12 items-center justify-center rounded-full bg-primary-des">
+          <SystemIcon name="add" color={colors.primary.text} size={28} />
+        </View>
+        <Text className="pt-3 text-center text-[15px] leading-5 text-[#52616F]" weight="bold">
+          Foto hinzufügen
+        </Text>
       </PressableSurface>
     </View>
   );
@@ -517,12 +554,31 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { getCourse } = useCourses();
-  const { getTask, toggleTaskDone, deleteTask } = useTasks();
+  const { getTask, addTaskAttachment, toggleTaskDone, deleteTask } = useTasks();
   const [previewIndex, setPreviewIndex] = useState<number | undefined>();
   const [completionBurstKey, setCompletionBurstKey] = useState(0);
   const task = getTask(taskId);
 
   const detailModel = useMemo(() => (task ? getTaskDetailModel(task) : undefined), [task]);
+  const { choosePhotoSource } = useTaskPhotoPicker({
+    onAssetPicked: (asset) => {
+      if (!task) {
+        return;
+      }
+
+      const nextIndex = task.attachments.length;
+
+      addTaskAttachment(
+        task.id,
+        createTaskAttachment({
+          index: nextIndex,
+          label: asset.fileName ?? `Foto ${nextIndex + 1}`,
+          uri: asset.uri,
+        }),
+      );
+      haptics.success();
+    },
+  });
 
   if (!task) {
     return (
@@ -622,30 +678,23 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
               Bilder
             </Text>
 
-            {task.attachments.length > 0 ? (
-              <ScrollView
-                className="-mx-5 mt-3"
-                contentContainerStyle={{ gap: 12, paddingHorizontal: 20 }}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-              >
-                {task.attachments.map((attachment, index) => (
-                  <AttachmentTile
-                    key={attachment.id}
-                    attachment={attachment}
-                    index={index}
-                    total={task.attachments.length}
-                    onPress={() => setPreviewIndex(index)}
-                  />
-                ))}
-              </ScrollView>
-            ) : (
-              <View className="mt-4 rounded-[28px] border border-dashed border-[#CBD5E1] bg-white/72 px-5 py-5">
-                <Text className="text-[17px] leading-6 text-[#5B6472]">
-                  Wenn du später Tafelbilder oder Skizzen ergänzt, erscheinen sie hier als Vorschau.
-                </Text>
-              </View>
-            )}
+            <ScrollView
+              className="-mx-5 mt-3"
+              contentContainerStyle={{ gap: 12, paddingHorizontal: 20 }}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            >
+              {task.attachments.map((attachment, index) => (
+                <AttachmentTile
+                  key={attachment.id}
+                  attachment={attachment}
+                  index={index}
+                  total={task.attachments.length}
+                  onPress={() => setPreviewIndex(index)}
+                />
+              ))}
+              <AddAttachmentTile index={task.attachments.length} onPress={choosePhotoSource} />
+            </ScrollView>
           </View>
         </ScrollView>
 
