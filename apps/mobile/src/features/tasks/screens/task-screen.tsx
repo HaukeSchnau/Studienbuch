@@ -1,20 +1,32 @@
-import type { TaskAttachment } from "@stu/core";
+import type { Course, TaskAttachment } from "@stu/core";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Stack } from "expo-router";
-import { useMemo, useState } from "react";
-import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Alert,
+  Modal,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { Button, TextButton } from "~/components/ui/button";
 import { SystemIcon } from "~/components/ui/system-icon";
 import { Text } from "~/components/ui/text";
+import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { haptics } from "~/platform/haptics";
 import { useCourses, useTasks } from "~/data/hooks";
 import { colors } from "~/theme/colors";
 import { fontNames } from "~/components/ui/text";
-import { getTaskDetailModel, taskToneColor } from "../model/task-detail-model";
+import { getTaskDetailModel } from "../model/task-detail-model";
 
 const styles = StyleSheet.create({
   attachmentImage: {
@@ -30,10 +42,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 10,
   },
-  cardAccent: {
-    backgroundColor: colors.primary.DEFAULT,
-    height: Platform.OS === "ios" ? 5 : 0,
-  },
   detailCard: {
     overflow: "hidden",
   },
@@ -43,6 +51,10 @@ const styles = StyleSheet.create({
   },
   previewFrame: {
     borderRadius: Platform.OS === "ios" ? 24 : 18,
+  },
+  thumbnailOutline: {
+    borderColor: "rgba(0, 0, 0, 0.1)",
+    borderWidth: StyleSheet.hairlineWidth,
   },
 });
 
@@ -64,13 +76,13 @@ const taskHeaderOptions = {
 };
 
 const detailMetrics = {
-  cardRadius: Platform.OS === "ios" ? 26 : 24,
-  contentPadding: Platform.OS === "ios" ? 18 : 20,
-  titleFontSize: Platform.OS === "ios" ? 29 : 28,
-  titleLineHeight: Platform.OS === "ios" ? 35 : 34,
+  cardRadius: Platform.OS === "ios" ? 22 : 20,
+  contentPadding: Platform.OS === "ios" ? 20 : 20,
+  titleFontSize: Platform.OS === "ios" ? 30 : 29,
+  titleLineHeight: Platform.OS === "ios" ? 36 : 35,
   bodyFontSize: Platform.OS === "ios" ? 17 : 18,
   bodyLineHeight: Platform.OS === "ios" ? 26 : 28,
-  attachmentRadius: Platform.OS === "ios" ? 18 : 16,
+  attachmentRadius: Platform.OS === "ios" ? 16 : 14,
   bottomPadding: Platform.OS === "ios" ? 10 : 12,
 } as const;
 
@@ -136,22 +148,17 @@ const AttachmentArtwork = ({
   </View>
 );
 
-const MetadataChip = ({
-  icon,
-  label,
-  tone = colors.accent.sec,
-}: {
-  icon: "calendar-today" | "info";
-  label: string;
-  tone?: string;
-}) => (
-  <View
-    className="min-h-9 flex-row items-center gap-2 rounded-full px-3 py-2"
-    style={{ backgroundColor: `${tone}18` }}
-  >
-    <SystemIcon name={icon} size={16} color={tone} />
-    <Text className="text-[14px]" numberOfLines={1} style={{ color: tone }} weight="semi-bold">
-      {label}
+const SubjectLine = ({ course }: { course?: Course }) => (
+  <View className="flex-row items-center gap-3">
+    <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-des">
+      {course ? (
+        <SubjectIcon subject={course.subject} size={26} />
+      ) : (
+        <SystemIcon name="info" size={21} color={colors.primary.text} />
+      )}
+    </View>
+    <Text className="min-w-0 flex-1 text-[17px] text-[#52616F]" numberOfLines={1} weight="bold">
+      {course?.name ?? "Kurs"}
     </Text>
   </View>
 );
@@ -169,24 +176,19 @@ const AttachmentTile = ({
 }) => (
   <PressableSurface
     accessibilityLabel={`Bild ${index + 1} von ${total}: ${attachment.label || "Anhang"} öffnen`}
+    accessibilityHint="Öffnet die Bildvorschau"
     borderRadius={detailMetrics.attachmentRadius}
-    className="h-32 w-36 overflow-hidden bg-accent-des"
+    className="h-40 w-32 overflow-hidden bg-accent-des"
     haptic="impact"
     onPress={onPress}
-    pressedScale={0.97}
-    style={{ borderRadius: detailMetrics.attachmentRadius }}
+    pressedScale={0.96}
+    style={[styles.thumbnailOutline, { borderRadius: detailMetrics.attachmentRadius }]}
   >
     {attachment.uri ? (
       <Image source={{ uri: attachment.uri }} contentFit="cover" style={styles.attachmentImage} />
     ) : (
       <AttachmentArtwork attachment={attachment} />
     )}
-    <View className="absolute inset-x-0 bottom-0 bg-[#16304F]/78 px-3 py-2.5">
-      <Text className="text-white" numberOfLines={1} weight="bold">
-        {attachment.label || `Bild ${index + 1}`}
-      </Text>
-      <Text className="pt-0.5 text-xs text-white/82">Antippen zum Öffnen</Text>
-    </View>
   </PressableSurface>
 );
 
@@ -199,10 +201,36 @@ const AttachmentPreview = ({
   initialIndex: number;
   onClose: () => void;
 }) => {
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const scrollRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const activeAttachment = attachments[activeIndex];
-  const hasPrevious = activeIndex > 0;
-  const hasNext = activeIndex < attachments.length - 1;
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ animated: false, x: initialIndex * width, y: 0 });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [initialIndex, width]);
+
+  const closePreview = useCallback(() => {
+    haptics.selection();
+    onClose();
+  }, [onClose]);
+
+  const handleMomentumScrollEnd = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+
+      if (nextIndex !== activeIndex && nextIndex >= 0 && nextIndex < attachments.length) {
+        haptics.selection();
+        setActiveIndex(nextIndex);
+      }
+    },
+    [activeIndex, attachments.length, width],
+  );
 
   if (!activeAttachment) {
     return null;
@@ -211,13 +239,16 @@ const AttachmentPreview = ({
   return (
     <Modal animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen" visible>
       <View className="flex-1 bg-[#101418]">
-        <View className="flex-row items-center justify-between px-5 pb-3 pt-14">
+        <View
+          className="flex-row items-center justify-between px-5 pb-3"
+          style={{ paddingTop: insets.top + 10 }}
+        >
           <PressableSurface
             accessibilityLabel="Bildvorschau schließen"
             borderRadius={22}
             className="h-11 w-11 items-center justify-center rounded-full bg-white/12"
             haptic="selection"
-            onPress={onClose}
+            onPress={closePreview}
             pressedScale={0.94}
           >
             <SystemIcon name="chevron-left" color="white" size={24} />
@@ -226,44 +257,62 @@ const AttachmentPreview = ({
             <Text className="text-center text-[17px] text-white" numberOfLines={1} weight="bold">
               {activeAttachment.label}
             </Text>
-            <Text className="pt-0.5 text-center text-sm text-white/62">
-              {activeIndex + 1} von {attachments.length}
-            </Text>
+            {attachments.length > 1 ? (
+              <Text className="pt-0.5 text-center text-sm text-white/62">
+                {activeIndex + 1} von {attachments.length}
+              </Text>
+            ) : null}
           </View>
           <View className="h-11 w-11" />
         </View>
 
-        <View className="flex-1 justify-center px-4 pb-8">
-          <View
-            className="aspect-[3/4] max-h-full overflow-hidden bg-white/8"
-            style={styles.previewFrame}
-          >
-            {activeAttachment.uri ? (
-              <Image
-                source={{ uri: activeAttachment.uri }}
-                contentFit="contain"
-                style={styles.previewImage}
-              />
-            ) : (
-              <AttachmentArtwork attachment={activeAttachment} large />
-            )}
-          </View>
-        </View>
+        <ScrollView
+          ref={scrollRef}
+          className="flex-1"
+          contentOffset={{ x: initialIndex * width, y: 0 }}
+          decelerationRate="fast"
+          horizontal
+          onMomentumScrollEnd={handleMomentumScrollEnd}
+          pagingEnabled
+          scrollEnabled={attachments.length > 1}
+          scrollEventThrottle={16}
+          showsHorizontalScrollIndicator={false}
+        >
+          {attachments.map((attachment) => (
+            <View key={attachment.id} className="justify-center px-4 pb-8" style={{ width }}>
+              <View
+                className="aspect-[3/4] max-h-full overflow-hidden bg-white/8"
+                style={styles.previewFrame}
+              >
+                {attachment.uri ? (
+                  <Image
+                    source={{ uri: attachment.uri }}
+                    contentFit="contain"
+                    style={styles.previewImage}
+                  />
+                ) : (
+                  <AttachmentArtwork attachment={attachment} large />
+                )}
+              </View>
+            </View>
+          ))}
+        </ScrollView>
 
         {attachments.length > 1 ? (
-          <View className="flex-row items-center justify-center gap-4 px-6 pb-10">
-            <Button
-              disabled={!hasPrevious}
-              label="Zurück"
-              onPress={() => setActiveIndex((index) => Math.max(index - 1, 0))}
-              size="sm"
-            />
-            <Button
-              disabled={!hasNext}
-              label="Weiter"
-              onPress={() => setActiveIndex((index) => Math.min(index + 1, attachments.length - 1))}
-              size="sm"
-            />
+          <View
+            className="flex-row items-center justify-center gap-2 px-6"
+            style={{ paddingBottom: insets.bottom + 18 }}
+          >
+            {attachments.map((attachment, index) => (
+              <View
+                key={attachment.id}
+                className="h-2 rounded-full"
+                style={{
+                  backgroundColor: index === activeIndex ? "white" : "rgba(255,255,255,0.32)",
+                  width: index === activeIndex ? 18 : 8,
+                }}
+              />
+            ))}
           </View>
         ) : null}
       </View>
@@ -324,7 +373,6 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
   }
 
   const course = getCourse(task.courseId);
-  const dueColor = detailModel ? taskToneColor[detailModel.dueTone] : colors.accent.sec;
 
   const confirmDelete = () =>
     Alert.alert("Aufgabe löschen", "Möchtest du die Aufgabe wirklich löschen?", [
@@ -377,28 +425,16 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
             className="bg-white shadow-sm"
             style={[styles.detailCard, { borderRadius: detailMetrics.cardRadius }]}
           >
-            <View style={styles.cardAccent} />
             <View
               style={{
                 padding: detailMetrics.contentPadding,
                 paddingBottom: detailMetrics.contentPadding + 2,
               }}
             >
-              <View className="flex-row flex-wrap items-center gap-2">
-                <MetadataChip
-                  icon="info"
-                  label={course?.name ?? "Kurs"}
-                  tone={colors.primary.text}
-                />
-                <MetadataChip
-                  icon="calendar-today"
-                  label={detailModel?.dueLabel ?? ""}
-                  tone={dueColor}
-                />
-              </View>
+              <SubjectLine course={course} />
 
               <Text
-                className="pt-4 text-primary-text"
+                className="pt-5 text-primary-text"
                 weight="bold"
                 style={{
                   fontFamily: fontNames.bold,
@@ -424,27 +460,13 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
           </View>
 
           <View className="pt-6">
-            <View className="flex-row items-end justify-between px-1">
-              <View>
-                <Text className="text-2xl text-primary-text" weight="bold">
-                  Bilder
-                </Text>
-                <Text className="pt-1 text-[15px] text-[#6B7280]">
-                  {task.attachments.length > 0
-                    ? "Tafelbilder und Notizen"
-                    : "Keine Bilder hinterlegt"}
-                </Text>
-              </View>
-              {task.attachments.length > 0 ? (
-                <Text className="text-[15px] text-[#6B7280]" weight="semi-bold">
-                  {task.attachments.length}
-                </Text>
-              ) : null}
-            </View>
+            <Text className="px-1 text-2xl text-primary-text" weight="bold">
+              Bilder
+            </Text>
 
             {task.attachments.length > 0 ? (
               <ScrollView
-                className="-mx-5 mt-4"
+                className="-mx-5 mt-3"
                 contentContainerStyle={{ gap: 12, paddingHorizontal: 20 }}
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -470,14 +492,21 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
 
           <PressableSurface
             accessibilityLabel="Aufgabe löschen"
-            borderRadius={22}
-            className="mt-7 min-h-12 flex-row items-center justify-center gap-2 rounded-full bg-danger-des px-4"
-            haptic="impact"
+            android_ripple={{
+              borderless: false,
+              color: "rgba(164, 43, 51, 0.12)",
+              foreground: true,
+            }}
+            borderRadius={18}
+            className="mt-5 min-h-11 flex-row items-center justify-center gap-2 self-start px-1"
+            haptic="selection"
+            highlightColor="rgba(164, 43, 51, 0.08)"
+            highlightOpacity={Platform.OS === "ios" ? 1 : 0}
             onPress={confirmDelete}
-            pressedScale={0.98}
+            pressedScale={0.96}
           >
-            <SystemIcon name="delete" color={colors.danger.DEFAULT} size={19} />
-            <Text className="text-[16px] text-danger" weight="semi-bold">
+            <SystemIcon name="delete" color={colors.danger.DEFAULT} size={17} />
+            <Text className="text-[15px] text-danger" weight="semi-bold">
               Aufgabe löschen
             </Text>
           </PressableSurface>
