@@ -50,9 +50,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 10,
   },
-  detailCard: {
-    overflow: "hidden",
-  },
   previewImage: {
     height: "100%",
     width: "100%",
@@ -91,8 +88,6 @@ const taskHeaderOptions = {
 };
 
 const detailMetrics = {
-  cardRadius: Platform.OS === "ios" ? 22 : 20,
-  contentPadding: Platform.OS === "ios" ? 20 : 20,
   titleFontSize: Platform.OS === "ios" ? 30 : 29,
   titleLineHeight: Platform.OS === "ios" ? 36 : 35,
   bodyFontSize: Platform.OS === "ios" ? 17 : 18,
@@ -592,45 +587,35 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
           contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
         >
-          <View
-            className="bg-white shadow-sm"
-            style={[styles.detailCard, { borderRadius: detailMetrics.cardRadius }]}
-          >
-            <View
+          <View className="px-1 pt-1">
+            <SubjectLine course={course} />
+
+            <Text
+              className="pt-5 text-primary-text"
+              weight="bold"
               style={{
-                padding: detailMetrics.contentPadding,
-                paddingBottom: detailMetrics.contentPadding + 2,
+                fontFamily: fontNames.bold,
+                fontSize: detailMetrics.titleFontSize,
+                lineHeight: detailMetrics.titleLineHeight,
               }}
             >
-              <SubjectLine course={course} />
+              {task.title}
+            </Text>
 
-              <Text
-                className="pt-5 text-primary-text"
-                weight="bold"
-                style={{
-                  fontFamily: fontNames.bold,
-                  fontSize: detailMetrics.titleFontSize,
-                  lineHeight: detailMetrics.titleLineHeight,
-                }}
-              >
-                {task.title}
-              </Text>
+            <View className="mt-5 h-px bg-[#E3E9F1]" />
 
-              <View className="mt-4 border-t border-[#E3E9F1] pt-4">
-                <Text
-                  className="text-[#172033]"
-                  style={{
-                    fontSize: detailMetrics.bodyFontSize,
-                    lineHeight: detailMetrics.bodyLineHeight,
-                  }}
-                >
-                  {task.description || "Keine Beschreibung hinterlegt."}
-                </Text>
-              </View>
-            </View>
+            <Text
+              className="pt-5 text-[#172033]"
+              style={{
+                fontSize: detailMetrics.bodyFontSize,
+                lineHeight: detailMetrics.bodyLineHeight,
+              }}
+            >
+              {task.description || "Keine Beschreibung hinterlegt."}
+            </Text>
           </View>
 
-          <View className="pt-6">
+          <View className="pt-8">
             <Text className="px-1 text-2xl text-primary-text" weight="bold">
               Bilder
             </Text>
