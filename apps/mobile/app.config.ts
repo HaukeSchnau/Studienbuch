@@ -1,4 +1,11 @@
-import { type ConfigPlugin, withAndroidManifest } from "expo/config-plugins";
+import {
+  type ConfigPlugin,
+  withAndroidManifest,
+  withAppDelegate,
+  withInfoPlist,
+  withPodfile,
+} from "expo/config-plugins";
+import { withBuildSourceFile } from "@expo/config-plugins/build/ios/XcodeProjectFile";
 
 const IS_DEV = process.env.APP_VARIANT === "development";
 const iconSuffix = IS_DEV ? "-dev" : "";
@@ -17,6 +24,80 @@ const androidDevLauncherMetadata = {
   EXDevMenuShowsAtLaunch: "false",
   EXDevMenuIsOnboardingFinished: "true",
 };
+
+const iosDeploymentTarget = "16.4";
+
+const iosSceneDelegate = `import React
+import UIKit
+
+final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+  var window: UIWindow?
+
+  func scene(
+    _ scene: UIScene,
+    willConnectTo session: UISceneSession,
+    options connectionOptions: UIScene.ConnectionOptions
+  ) {
+    guard let windowScene = scene as? UIWindowScene,
+          let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
+      return
+    }
+
+    let window = UIWindow(windowScene: windowScene)
+    appDelegate.startReactNative(in: window, launchOptions: nil)
+    self.window = window
+
+    if let urlContext = connectionOptions.urlContexts.first {
+      open(urlContext)
+    }
+
+    if let userActivity = connectionOptions.userActivities.first {
+      continueUserActivity(userActivity)
+    }
+  }
+
+  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+    URLContexts.forEach(open)
+  }
+
+  func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+    continueUserActivity(userActivity)
+  }
+
+  private func open(_ urlContext: UIOpenURLContext) {
+    var options: [UIApplication.OpenURLOptionsKey: Any] = [
+      .openInPlace: urlContext.options.openInPlace
+    ]
+
+    if let sourceApplication = urlContext.options.sourceApplication {
+      options[.sourceApplication] = sourceApplication
+    }
+
+    if let annotation = urlContext.options.annotation {
+      options[.annotation] = annotation
+    }
+
+    RCTLinkingManager.application(UIApplication.shared, open: urlContext.url, options: options)
+  }
+
+  private func continueUserActivity(_ userActivity: NSUserActivity) {
+    RCTLinkingManager.application(
+      UIApplication.shared,
+      continue: userActivity,
+      restorationHandler: { _ in })
+  }
+}
+`;
+
+const iosPodsDeploymentTargetPatch = `    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        deployment_target = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        if deployment_target.nil? || Gem::Version.new(deployment_target) < Gem::Version.new('${iosDeploymentTarget}')
+          config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '${iosDeploymentTarget}'
+        end
+      end
+    end
+`;
 
 const withAndroidDevLauncherMetadata: ConfigPlugin = (config) =>
   withAndroidManifest(config, (manifestConfig) => {
@@ -47,9 +128,92 @@ const withAndroidDevLauncherMetadata: ConfigPlugin = (config) =>
     return manifestConfig;
   });
 
+const withIosSceneLifecycle: ConfigPlugin = (config) => {
+  config = withBuildSourceFile(config, {
+    filePath: "SceneDelegate.swift",
+    contents: iosSceneDelegate,
+    overwrite: true,
+  });
+
+  config = withInfoPlist(config, (plistConfig) => {
+    plistConfig.modResults.UIApplicationSceneManifest = {
+      UIApplicationSupportsMultipleScenes: false,
+      UISceneConfigurations: {
+        UIWindowSceneSessionRoleApplication: [
+          {
+            UISceneConfigurationName: "Default Configuration",
+            UISceneDelegateClassName: "$(PRODUCT_MODULE_NAME).SceneDelegate",
+          },
+        ],
+      },
+    };
+
+    return plistConfig;
+  });
+
+  return withAppDelegate(config, (delegateConfig) => {
+    if (delegateConfig.modResults.language !== "swift") {
+      throw new Error("withIosSceneLifecycle only supports Swift AppDelegate files.");
+    }
+
+    let contents = delegateConfig.modResults.contents;
+
+    contents = contents.replace(
+      /\n#if os\(iOS\) \|\| os\(tvOS\)\n\s+window = UIWindow\(frame: UIScreen\.main\.bounds\)\n\s+factory\.startReactNative\(\n\s+withModuleName: "main",\n\s+in: window,\n\s+launchOptions: launchOptions\)\n#endif\n/,
+      "\n",
+    );
+
+    if (!contents.includes("configurationForConnecting connectingSceneSession")) {
+      contents = contents.replace(
+        "\n  // Linking API\n",
+        `
+  public func application(
+    _ application: UIApplication,
+    configurationForConnecting connectingSceneSession: UISceneSession,
+    options: UIScene.ConnectionOptions
+  ) -> UISceneConfiguration {
+    let configuration = UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
+    configuration.delegateClass = SceneDelegate.self
+    return configuration
+  }
+
+  func startReactNative(in window: UIWindow, launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
+    self.window = window
+    reactNativeFactory?.startReactNative(
+      withModuleName: "main",
+      in: window,
+      launchOptions: launchOptions)
+  }
+
+  // Linking API
+`,
+      );
+    }
+
+    delegateConfig.modResults.contents = contents;
+    return delegateConfig;
+  });
+};
+
+const withIosPodsDeploymentTarget: ConfigPlugin = (config) =>
+  withPodfile(config, (podfileConfig) => {
+    if (podfileConfig.modResults.contents.includes("installer.pods_project.targets.each")) {
+      return podfileConfig;
+    }
+
+    podfileConfig.modResults.contents = podfileConfig.modResults.contents.replace(
+      /(\n\s+react_native_post_install\([\s\S]*?\n\s+\)\n)/,
+      `$1${iosPodsDeploymentTargetPatch}`,
+    );
+
+    return podfileConfig;
+  });
+
 const plugins = [
   "expo-router",
   "expo-image",
+  withIosSceneLifecycle,
+  withIosPodsDeploymentTarget,
   [
     "expo-image-picker",
     {
@@ -100,6 +264,7 @@ export default {
     userInterfaceStyle: "automatic",
     ios: {
       bundleIdentifier: IS_DEV ? "dev.schnau.studienbuch.dev" : "dev.schnau.studienbuch",
+      deploymentTarget: iosDeploymentTarget,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },
