@@ -12,6 +12,7 @@ export type SystemIconName =
   | "check"
   | "chevron-left"
   | "chevron-right"
+  | "close"
   | "delete"
   | "edit"
   | "home"
@@ -33,6 +34,7 @@ const symbolMap: Record<SystemIconName, ComponentProps<typeof SymbolView>["name"
   check: { ios: "checkmark.circle.fill", android: "check_circle", web: "check_circle" },
   "chevron-left": { ios: "chevron.left", android: "chevron_left", web: "chevron_left" },
   "chevron-right": { ios: "chevron.right", android: "chevron_right", web: "chevron_right" },
+  close: { ios: "xmark", android: "close", web: "close" },
   delete: { ios: "trash", android: "delete", web: "delete" },
   edit: { ios: "pencil", android: "edit", web: "edit" },
   home: { ios: "house.fill", android: "home", web: "home" },
@@ -59,6 +61,7 @@ const materialFallbackMap: Record<SystemIconName, ComponentProps<typeof Material
   check: "check-circle",
   "chevron-left": "chevron-left",
   "chevron-right": "chevron-right",
+  close: "close",
   delete: "delete",
   edit: "edit",
   home: "home",
@@ -84,6 +87,8 @@ const androidPathMap: Partial<Record<SystemIconName, string>> = {
     "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z",
   "chevron-left": "M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z",
   "chevron-right": "M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z",
+  close:
+    "M18.3 5.71 12 12l6.3 6.29-1.41 1.41L10.59 13.41 4.29 19.7 2.88 18.29 9.17 12 2.88 5.71 4.29 4.3l6.3 6.29 6.29-6.29 1.42 1.41z",
   delete: "M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM8 9h8v10H8V9zm7.5-5-1-1h-5l-1 1H5v2h14V4z",
   edit: "M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z",
   home: "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z",

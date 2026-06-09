@@ -15,12 +15,16 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
+  Extrapolation,
   interpolate,
+  runOnJS,
   type SharedValue,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -287,9 +291,12 @@ const AttachmentPreview = ({
   onClose: () => void;
 }) => {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const [activeIndex, setActiveIndex] = useState(initialIndex);
+  const [isChromeVisible, setIsChromeVisible] = useState(true);
+  const chromeOpacity = useSharedValue(1);
+  const dragY = useSharedValue(0);
   const activeAttachment = attachments[activeIndex];
 
   useEffect(() => {
@@ -305,6 +312,36 @@ const AttachmentPreview = ({
     onClose();
   }, [onClose]);
 
+  const signalDismissGesture = useCallback(() => {
+    haptics.selection();
+  }, []);
+
+  const toggleChrome = useCallback(() => {
+    setIsChromeVisible((current) => !current);
+  }, []);
+
+  useEffect(() => {
+    chromeOpacity.value = withTiming(isChromeVisible ? 1 : 0, {
+      duration: 160,
+      easing: Easing.out(Easing.quad),
+    });
+  }, [chromeOpacity, isChromeVisible]);
+
+  const controlsAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: chromeOpacity.value * interpolate(dragY.value, [0, 150], [1, 0], Extrapolation.CLAMP),
+  }));
+
+  const backdropAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(dragY.value, [0, 280], [1, 0.34], Extrapolation.CLAMP),
+  }));
+
+  const viewerAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: dragY.value },
+      { scale: interpolate(dragY.value, [0, 320], [1, 0.92], Extrapolation.CLAMP) },
+    ],
+  }));
+
   const handleMomentumScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
@@ -317,16 +354,71 @@ const AttachmentPreview = ({
     [activeIndex, attachments.length, width],
   );
 
+  const dismissGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetY([-12, 12])
+        .failOffsetX([-28, 28])
+        .onUpdate((event) => {
+          dragY.value = Math.max(event.translationY, 0);
+        })
+        .onEnd((event) => {
+          const shouldDismiss = event.translationY > 110 || event.velocityY > 900;
+
+          if (shouldDismiss) {
+            runOnJS(signalDismissGesture)();
+            dragY.value = withTiming(
+              height * 0.72,
+              {
+                duration: 180,
+                easing: Easing.out(Easing.quad),
+              },
+              (finished) => {
+                if (finished) {
+                  runOnJS(onClose)();
+                }
+              },
+            );
+            return;
+          }
+
+          dragY.value = withSpring(0, {
+            damping: 22,
+            mass: 0.75,
+            stiffness: 260,
+          });
+        }),
+    [dragY, height, onClose, signalDismissGesture],
+  );
+
+  const previewGesture = useMemo(
+    () => Gesture.Simultaneous(Gesture.Native(), dismissGesture),
+    [dismissGesture],
+  );
+
   if (!activeAttachment) {
     return null;
   }
 
   return (
-    <Modal animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen" visible>
-      <View className="flex-1 bg-[#101418]">
-        <View
+    <Modal
+      animationType="slide"
+      onRequestClose={closePreview}
+      presentationStyle="fullScreen"
+      visible
+    >
+      <View className="flex-1 bg-black">
+        <Animated.View
+          pointerEvents="none"
+          className="absolute inset-0 bg-[#101418]"
+          style={backdropAnimatedStyle}
+        />
+        <Animated.View
+          accessibilityElementsHidden={!isChromeVisible}
           className="flex-row items-center justify-between px-5 pb-3"
-          style={{ paddingTop: insets.top + 10 }}
+          importantForAccessibility={isChromeVisible ? "auto" : "no-hide-descendants"}
+          pointerEvents={isChromeVisible ? "auto" : "none"}
+          style={[controlsAnimatedStyle, { paddingTop: insets.top + 10 }]}
         >
           <PressableSurface
             accessibilityLabel="Bildvorschau schließen"
@@ -336,7 +428,7 @@ const AttachmentPreview = ({
             onPress={closePreview}
             pressedScale={0.94}
           >
-            <SystemIcon name="chevron-left" color="white" size={24} />
+            <SystemIcon name="close" color="white" size={22} />
           </PressableSurface>
           <View className="min-w-0 flex-1 px-4">
             <Text className="text-center text-[17px] text-white" numberOfLines={1} weight="bold">
@@ -349,44 +441,57 @@ const AttachmentPreview = ({
             ) : null}
           </View>
           <View className="h-11 w-11" />
-        </View>
+        </Animated.View>
 
-        <ScrollView
-          ref={scrollRef}
-          className="flex-1"
-          contentOffset={{ x: initialIndex * width, y: 0 }}
-          decelerationRate="fast"
-          horizontal
-          onMomentumScrollEnd={handleMomentumScrollEnd}
-          pagingEnabled
-          scrollEnabled={attachments.length > 1}
-          scrollEventThrottle={16}
-          showsHorizontalScrollIndicator={false}
-        >
-          {attachments.map((attachment) => (
-            <View key={attachment.id} className="justify-center px-4 pb-8" style={{ width }}>
-              <View
-                className="aspect-[3/4] max-h-full overflow-hidden bg-white/8"
-                style={styles.previewFrame}
-              >
-                {attachment.uri ? (
-                  <Image
-                    source={{ uri: attachment.uri }}
-                    contentFit="contain"
-                    style={styles.previewImage}
-                  />
-                ) : (
-                  <AttachmentArtwork attachment={attachment} large />
-                )}
-              </View>
-            </View>
-          ))}
-        </ScrollView>
+        <GestureDetector gesture={previewGesture}>
+          <Animated.View className="min-h-0 flex-1" style={viewerAnimatedStyle}>
+            <ScrollView
+              ref={scrollRef}
+              className="flex-1"
+              contentOffset={{ x: initialIndex * width, y: 0 }}
+              decelerationRate="fast"
+              horizontal
+              onMomentumScrollEnd={handleMomentumScrollEnd}
+              pagingEnabled
+              scrollEnabled={attachments.length > 1}
+              scrollEventThrottle={16}
+              showsHorizontalScrollIndicator={false}
+            >
+              {attachments.map((attachment) => (
+                <Pressable
+                  key={attachment.id}
+                  accessible={false}
+                  className="justify-center px-4 pb-8"
+                  onPress={toggleChrome}
+                  style={{ width }}
+                >
+                  <View
+                    className="aspect-[3/4] max-h-full overflow-hidden bg-white/8"
+                    style={styles.previewFrame}
+                  >
+                    {attachment.uri ? (
+                      <Image
+                        source={{ uri: attachment.uri }}
+                        contentFit="contain"
+                        style={styles.previewImage}
+                      />
+                    ) : (
+                      <AttachmentArtwork attachment={attachment} large />
+                    )}
+                  </View>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </Animated.View>
+        </GestureDetector>
 
         {attachments.length > 1 ? (
-          <View
+          <Animated.View
+            accessibilityElementsHidden={!isChromeVisible}
             className="flex-row items-center justify-center gap-2 px-6"
-            style={{ paddingBottom: insets.bottom + 18 }}
+            importantForAccessibility={isChromeVisible ? "auto" : "no-hide-descendants"}
+            pointerEvents={isChromeVisible ? "auto" : "none"}
+            style={[controlsAnimatedStyle, { paddingBottom: insets.bottom + 18 }]}
           >
             {attachments.map((attachment, index) => (
               <View
@@ -398,7 +503,7 @@ const AttachmentPreview = ({
                 }}
               />
             ))}
-          </View>
+          </Animated.View>
         ) : null}
       </View>
     </Modal>
