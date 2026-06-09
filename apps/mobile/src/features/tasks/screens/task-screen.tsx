@@ -68,6 +68,11 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0, 0, 0, 0.1)",
     borderWidth: StyleSheet.hairlineWidth,
   },
+  thumbnailFrame: {
+    height: 160,
+    overflow: "visible",
+    width: 128,
+  },
   thumbnailShadow: {
     backgroundColor: colors.surface,
     elevation: 2,
@@ -214,6 +219,7 @@ const AttachmentTile = ({
   return (
     <View
       style={[
+        styles.thumbnailFrame,
         styles.thumbnailShadow,
         {
           borderRadius: detailMetrics.attachmentRadius,
@@ -226,7 +232,7 @@ const AttachmentTile = ({
         accessibilityLabel={`Bild ${index + 1} von ${total}: ${attachment.label || "Anhang"} öffnen`}
         accessibilityHint="Öffnet die Bildvorschau"
         borderRadius={detailMetrics.attachmentRadius}
-        className="h-40 w-32 overflow-hidden bg-accent-des"
+        className="absolute inset-0 overflow-hidden bg-accent-des"
         haptic="impact"
         onPress={onPress}
         pressedScale={0.96}
@@ -252,6 +258,7 @@ const AddAttachmentTile = ({ index, onPress }: { index: number; onPress: () => v
   return (
     <View
       style={[
+        styles.thumbnailFrame,
         styles.thumbnailShadow,
         {
           borderRadius: detailMetrics.attachmentRadius,
@@ -264,7 +271,7 @@ const AddAttachmentTile = ({ index, onPress }: { index: number; onPress: () => v
         accessibilityLabel="Foto hinzufügen"
         accessibilityHint="Öffnet die Auswahl zwischen Kamera und Mediathek"
         borderRadius={detailMetrics.attachmentRadius}
-        className="h-40 w-32 items-center justify-center overflow-hidden border border-dashed border-[#B6C0CC] bg-white px-4"
+        className="absolute inset-0 items-center justify-center overflow-hidden border border-dashed border-[#B6C0CC] bg-white px-4"
         haptic="impact"
         onPress={onPress}
         pressedScale={0.96}
