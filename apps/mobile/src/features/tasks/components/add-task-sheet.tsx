@@ -1,4 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
+import { Image } from "expo-image";
 import { useMemo, useState } from "react";
 import { Alert, View } from "react-native";
 
@@ -18,10 +19,11 @@ import { haptics } from "~/platform/haptics";
 
 const attachmentPalette = ["#B9D7F5", "#F5D9B9", "#D7E9C6", "#E2CEF5"] as const;
 
-const createAttachment = (index: number, label?: string | null): TaskAttachment => ({
+const createAttachment = (index: number, label?: string | null, uri?: string): TaskAttachment => ({
   id: `attachment-${Date.now()}-${index}`,
   label: label?.trim() || `Foto ${index + 1}`,
   color: attachmentPalette[index % attachmentPalette.length]!,
+  uri,
 });
 
 export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose: () => void }) => {
@@ -53,7 +55,7 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
 
     setAttachments((current) => [
       ...current,
-      createAttachment(current.length, asset.fileName ?? `Foto ${current.length + 1}`),
+      createAttachment(current.length, asset.fileName ?? `Foto ${current.length + 1}`, asset.uri),
     ]);
     haptics.success();
   };
@@ -182,8 +184,28 @@ export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose
                 pressedScale={0.97}
                 style={{ backgroundColor: attachment.color }}
               >
-                <Text weight="bold">{attachment.label}</Text>
-                <Text className="pt-1 text-center text-sm opacity-70">Antippen zum Entfernen</Text>
+                {attachment.uri ? (
+                  <Image
+                    source={{ uri: attachment.uri }}
+                    contentFit="cover"
+                    style={{
+                      borderRadius: 24,
+                      bottom: 0,
+                      left: 0,
+                      position: "absolute",
+                      right: 0,
+                      top: 0,
+                    }}
+                  />
+                ) : null}
+                <View className="absolute inset-x-0 bottom-0 bg-black/45 px-3 py-2">
+                  <Text className="text-center text-white" numberOfLines={1} weight="bold">
+                    {attachment.label}
+                  </Text>
+                  <Text className="pt-0.5 text-center text-xs text-white/85">
+                    Antippen zum Entfernen
+                  </Text>
+                </View>
               </PressableSurface>
             ))}
           </View>

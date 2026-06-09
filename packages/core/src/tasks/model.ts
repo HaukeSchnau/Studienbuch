@@ -2,6 +2,7 @@ export interface TaskAttachment {
   id: string;
   label: string;
   color: string;
+  uri?: string;
 }
 
 export interface Task {

@@ -20,7 +20,6 @@ import { colors } from "~/theme/colors";
 import "../global.css";
 
 void SplashScreen.preventAutoHideAsync();
-configureDevelopmentMenuPreferences();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -35,6 +34,8 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    configureDevelopmentMenuPreferences();
+
     if (fontsLoaded) {
       void SplashScreen.hideAsync();
     }

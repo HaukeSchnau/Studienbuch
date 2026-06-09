@@ -1,12 +1,24 @@
 import type { Absence, Grade, Task, TaskAttachment } from "@stu/core";
 import { addDays } from "date-fns";
+import { Image } from "react-native";
 import { mockNow } from "../mock-clock";
 import { mockSignatureSvg } from "../mock-signatures";
 
-const attachment = (id: string, label: string, color: string): TaskAttachment => ({
+const poetryNotesUri = Image.resolveAssetSource(
+  require("../../../assets/homework/poetry-notes.png"),
+).uri;
+const analysisBoardUri = Image.resolveAssetSource(
+  require("../../../assets/homework/analysis-board.png"),
+).uri;
+const analysisSketchUri = Image.resolveAssetSource(
+  require("../../../assets/homework/analysis-sketch.png"),
+).uri;
+
+const attachment = (id: string, label: string, color: string, uri?: string): TaskAttachment => ({
   id,
   label,
   color,
+  uri,
 });
 
 export const gradesSeed: Grade[] = [
@@ -76,7 +88,7 @@ export const tasksSeed: Task[] = [
       "Schreibe die Einleitung und den Hauptteil zu 'Der Panther' aus und markiere drei Stilmittel in deinem Heft.",
     dueDate: addDays(mockNow, 1),
     done: false,
-    attachments: [attachment("task-1-a", "Foto 1", "#B9D7F5")],
+    attachments: [attachment("task-1-a", "Foto 1", "#B9D7F5", poetryNotesUri)],
   },
   {
     id: "task-2",
@@ -87,8 +99,8 @@ export const tasksSeed: Task[] = [
     dueDate: addDays(mockNow, 3),
     done: false,
     attachments: [
-      attachment("task-2-a", "Tafelbild", "#F5D9B9"),
-      attachment("task-2-b", "Skizze", "#D7E9C6"),
+      attachment("task-2-a", "Tafelbild", "#F5D9B9", analysisBoardUri),
+      attachment("task-2-b", "Skizze", "#D7E9C6", analysisSketchUri),
     ],
   },
   {
