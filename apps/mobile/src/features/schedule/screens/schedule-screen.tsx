@@ -16,8 +16,6 @@ import { Platform, type DimensionValue, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   Easing,
-  Extrapolation,
-  interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -57,6 +55,7 @@ const TIME_RAIL_WIDTH = 44;
 const ENTRY_COLUMN_GAP = 4;
 const WEEK_SWIPE_MIN_DISTANCE = 72;
 const WEEK_SWIPE_VELOCITY = 760;
+const WEEK_PAGE_OFFSETS = [-1, 0, 1] as const;
 const timetableSubjectLabelMap: Partial<Record<SubjectId, string>> = {
   bi: "Bio",
   ch: "Chemie",
@@ -108,16 +107,9 @@ export const ScheduleScreen = () => {
   const settleWeekSwipe = useCallback(
     (delta: number) => {
       changeWeek(delta);
-
-      const entryOffset = (gridWidth || 260) * (delta > 0 ? 0.42 : -0.42);
-      weekDragX.value = entryOffset;
-      weekDragX.value = withSpring(0, {
-        damping: 24,
-        mass: 0.8,
-        stiffness: 270,
-      });
+      weekDragX.value = 0;
     },
-    [changeWeek, gridWidth, weekDragX],
+    [changeWeek, weekDragX],
   );
 
   const swipeGesture = useMemo(
@@ -174,60 +166,54 @@ export const ScheduleScreen = () => {
   );
 
   const weekContentStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      Math.abs(weekDragX.value),
-      [0, Math.max(gridWidth * 0.7, 180)],
-      [1, 0.72],
-      Extrapolation.CLAMP,
-    ),
-    transform: [
-      { translateX: weekDragX.value },
-      {
-        scale: interpolate(
-          Math.abs(weekDragX.value),
-          [0, Math.max(gridWidth * 0.7, 180)],
-          [1, 0.975],
-          Extrapolation.CLAMP,
-        ),
-      },
-    ],
+    transform: [{ translateX: weekDragX.value }],
+  }));
+  const weekHeaderContentStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: weekDragX.value }],
   }));
 
   const weekStart = useMemo(() => addWeeks(startOfISOWeek(new Date()), weekOffset), [weekOffset]);
-  const weekEnd = useMemo(() => subMilliseconds(addDays(weekStart, 5), 1), [weekStart]);
-  const weekdays = useMemo(
-    () => WEEKDAY_LABELS.map((_, index) => addDays(weekStart, index)),
-    [weekStart],
-  );
-
-  const visibleEntries = useMemo(
+  const weekPages = useMemo(
     () =>
-      timetable
-        .map((entry) => ({
-          ...entry,
-          weekday: (getDay(entry.start) + 6) % 7,
-          startMinutes: entry.start.getHours() * 60 + entry.start.getMinutes(),
-        }))
-        .filter(
-          (entry) =>
-            entry.weekday < WEEKDAY_LABELS.length &&
-            entry.start.getTime() >= weekStart.getTime() &&
-            entry.start.getTime() <= weekEnd.getTime(),
-        )
-        .sort((a, b) => a.start.getTime() - b.start.getTime()),
-    [timetable, weekEnd, weekStart],
+      WEEK_PAGE_OFFSETS.map((relativeOffset) => {
+        const pageWeekStart = addWeeks(weekStart, relativeOffset);
+        const pageWeekEnd = subMilliseconds(addDays(pageWeekStart, 5), 1);
+        const pageWeekdays = WEEKDAY_LABELS.map((_, index) => addDays(pageWeekStart, index));
+
+        const pageEntries = timetable
+          .map((entry) => ({
+            ...entry,
+            weekday: (getDay(entry.start) + 6) % 7,
+            startMinutes: entry.start.getHours() * 60 + entry.start.getMinutes(),
+          }))
+          .filter(
+            (entry) =>
+              entry.weekday < WEEKDAY_LABELS.length &&
+              entry.start.getTime() >= pageWeekStart.getTime() &&
+              entry.start.getTime() <= pageWeekEnd.getTime(),
+          )
+          .sort((a, b) => a.start.getTime() - b.start.getTime());
+
+        return {
+          entries: pageEntries,
+          relativeOffset,
+          weekStart: pageWeekStart,
+          weekdays: pageWeekdays,
+        };
+      }),
+    [timetable, weekStart],
   );
 
   const currentWeek = getISOWeek(weekStart);
   const now = new Date();
   const nowWeekday = (getDay(now) + 6) % 7;
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  const showNowMarker =
-    weekOffset === 0 &&
+  const canShowNowMarker =
     nowWeekday >= 0 &&
     nowWeekday < WEEKDAY_LABELS.length &&
     nowMinutes >= DAY_START &&
     nowMinutes <= DAY_END;
+  const measuredGridWidth = gridWidth || 1;
 
   return (
     <View className="flex-1 overflow-hidden bg-[#F7F8FB]">
@@ -257,26 +243,46 @@ export const ScheduleScreen = () => {
             </View>
             <View className="flex-row">
               <View style={{ width: TIME_RAIL_WIDTH }} />
-              <View className="flex-1 flex-row">
-                {weekdays.map((day, index) => (
-                  <View key={day.toISOString()} className="flex-1 items-center">
-                    <Text
-                      weight="bold"
-                      className="text-sm uppercase text-white/85"
+              <View className="h-12 flex-1 overflow-hidden">
+                <Animated.View className="absolute inset-0" style={weekHeaderContentStyle}>
+                  {weekPages.map((page) => (
+                    <View
+                      key={`header-${page.weekStart.toISOString()}`}
+                      accessibilityElementsHidden={page.relativeOffset !== 0}
+                      className="absolute top-0 bottom-0 flex-row"
+                      importantForAccessibility={
+                        page.relativeOffset === 0 ? "auto" : "no-hide-descendants"
+                      }
                       style={{
-                        color: isToday(day) ? "#FFFFFF" : "rgba(255, 255, 255, 0.82)",
+                        width: measuredGridWidth,
+                        transform: [{ translateX: page.relativeOffset * measuredGridWidth }],
                       }}
                     >
-                      {WEEKDAY_LABELS[index]}
-                    </Text>
-                    <Text
-                      weight={isToday(day) ? "bold" : "semi-bold"}
-                      className="text-base text-white"
-                    >
-                      {format(day, "dd.MM.", { locale: localeDE })}
-                    </Text>
-                  </View>
-                ))}
+                      {page.weekdays.map((day, index) => (
+                        <View
+                          key={day.toISOString()}
+                          className="flex-1 items-center justify-center"
+                        >
+                          <Text
+                            weight="bold"
+                            className="text-sm uppercase text-white/85"
+                            style={{
+                              color: isToday(day) ? "#FFFFFF" : "rgba(255, 255, 255, 0.82)",
+                            }}
+                          >
+                            {WEEKDAY_LABELS[index]}
+                          </Text>
+                          <Text
+                            weight={isToday(day) ? "bold" : "semi-bold"}
+                            className="text-base text-white"
+                          >
+                            {format(day, "dd.MM.", { locale: localeDE })}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ))}
+                </Animated.View>
               </View>
             </View>
           </View>
@@ -324,129 +330,152 @@ export const ScheduleScreen = () => {
             >
               <GestureDetector gesture={swipeGesture}>
                 <Animated.View className="absolute inset-0" style={weekContentStyle}>
-                  {weekdays.map((day, index) => (
-                    <View
-                      key={`day-bg-${day.toISOString()}`}
-                      className="absolute top-0 bottom-0"
-                      style={{
-                        left: weekdayToPercent(index),
-                        width: `${100 / WEEKDAY_LABELS.length}%`,
-                        backgroundColor: isToday(day) ? "rgba(59, 127, 217, 0.08)" : "transparent",
-                      }}
-                    />
-                  ))}
-
-                  {weekdays.slice(1).map((day, index) => (
-                    <View
-                      key={`divider-${day.toISOString()}`}
-                      className="absolute top-0 bottom-0 w-px bg-[#E8EEF8]"
-                      style={{ left: weekdayToPercent(index + 1) }}
-                    />
-                  ))}
-
-                  {TIME_MARKERS.map((marker) => (
-                    <View
-                      key={`tick-${marker.minute}`}
-                      className="absolute right-0 left-0 bg-[#E6EBF2]"
-                      style={{
-                        top: timeToPosition(marker.minute, resolvedGridHeight),
-                        height: 1,
-                      }}
-                    />
-                  ))}
-
-                  {showNowMarker ? (
-                    <>
-                      <View
-                        className="absolute z-10 h-2 w-2 rounded-full bg-[#E54F64]"
-                        style={{
-                          top: timeToPosition(nowMinutes, resolvedGridHeight),
-                          left: weekdayToPercent(nowWeekday),
-                          marginTop: -4,
-                          marginLeft: -4,
-                        }}
-                      />
-                      <View
-                        className="absolute right-0 z-10 h-px bg-[#E54F64]"
-                        style={{
-                          top: timeToPosition(nowMinutes, resolvedGridHeight),
-                          left: weekdayToPercent(nowWeekday),
-                        }}
-                      />
-                    </>
-                  ) : null}
-
-                  {visibleEntries.map((entry) => {
-                    const course = getCourse(entry.courseId);
-                    if (!course) return null;
-
-                    const end = addMinutes(entry.start, entry.duration);
-                    const timetableLabel =
-                      timetableSubjectLabelMap[course.subject] ?? subjectNameMap[course.subject];
+                  {weekPages.map((page) => {
+                    const showNowMarker =
+                      canShowNowMarker && weekOffset + page.relativeOffset === 0;
 
                     return (
                       <View
-                        key={entry.id}
-                        pointerEvents="box-none"
+                        key={page.weekStart.toISOString()}
+                        accessibilityElementsHidden={page.relativeOffset !== 0}
+                        className="absolute top-0 bottom-0"
+                        importantForAccessibility={
+                          page.relativeOffset === 0 ? "auto" : "no-hide-descendants"
+                        }
                         style={{
-                          position: "absolute",
-                          top: timeToPosition(entry.startMinutes, resolvedGridHeight),
-                          left: weekdayToPercent(entry.weekday),
-                          width: `${100 / WEEKDAY_LABELS.length}%`,
-                          height: durationToHeight(entry.duration, resolvedGridHeight),
-                          paddingHorizontal: ENTRY_COLUMN_GAP,
+                          width: measuredGridWidth,
+                          transform: [{ translateX: page.relativeOffset * measuredGridWidth }],
                         }}
                       >
-                        <PressableSurface
-                          onPress={() => {
-                            router.push(courseRoute(course.id));
-                          }}
-                          accessibilityLabel={`${subjectNameMap[course.subject]}, ${format(
-                            entry.start,
-                            "HH:mm",
-                            {
-                              locale: localeDE,
-                            },
-                          )} bis ${format(end, "HH:mm", { locale: localeDE })}`}
-                          style={{
-                            flex: 1,
-                            overflow: "hidden",
-                            borderRadius: 24,
-                            backgroundColor: colors.accent.DEFAULT,
-                          }}
-                          borderRadius={24}
-                          haptic="impact"
-                          highlightColor="rgba(255, 255, 255, 0.18)"
-                          pressedScale={0.965}
-                        >
-                          <View className="items-center justify-center px-1 py-1.5">
-                            <View className="rounded-full bg-white p-1">
-                              <SubjectIcon subject={course.subject} />
-                            </View>
-                            <View className="h-1" />
-                            <Text
-                              weight="bold"
-                              className="text-center text-[10px] leading-[14px] text-white"
-                              numberOfLines={1}
+                        {page.weekdays.map((day, index) => (
+                          <View
+                            key={`day-bg-${day.toISOString()}`}
+                            className="absolute top-0 bottom-0"
+                            style={{
+                              left: weekdayToPercent(index),
+                              width: `${100 / WEEKDAY_LABELS.length}%`,
+                              backgroundColor: isToday(day)
+                                ? "rgba(59, 127, 217, 0.08)"
+                                : "transparent",
+                            }}
+                          />
+                        ))}
+
+                        {page.weekdays.slice(1).map((day, index) => (
+                          <View
+                            key={`divider-${day.toISOString()}`}
+                            className="absolute top-0 bottom-0 w-px bg-[#E8EEF8]"
+                            style={{ left: weekdayToPercent(index + 1) }}
+                          />
+                        ))}
+
+                        {TIME_MARKERS.map((marker) => (
+                          <View
+                            key={`tick-${marker.minute}`}
+                            className="absolute right-0 left-0 bg-[#E6EBF2]"
+                            style={{
+                              top: timeToPosition(marker.minute, resolvedGridHeight),
+                              height: 1,
+                            }}
+                          />
+                        ))}
+
+                        {showNowMarker ? (
+                          <>
+                            <View
+                              className="absolute z-10 h-2 w-2 rounded-full bg-[#E54F64]"
+                              style={{
+                                top: timeToPosition(nowMinutes, resolvedGridHeight),
+                                left: weekdayToPercent(nowWeekday),
+                                marginTop: -4,
+                                marginLeft: -4,
+                              }}
+                            />
+                            <View
+                              className="absolute right-0 z-10 h-px bg-[#E54F64]"
+                              style={{
+                                top: timeToPosition(nowMinutes, resolvedGridHeight),
+                                left: weekdayToPercent(nowWeekday),
+                              }}
+                            />
+                          </>
+                        ) : null}
+
+                        {page.entries.map((entry) => {
+                          const course = getCourse(entry.courseId);
+                          if (!course) return null;
+
+                          const end = addMinutes(entry.start, entry.duration);
+                          const timetableLabel =
+                            timetableSubjectLabelMap[course.subject] ??
+                            subjectNameMap[course.subject];
+
+                          return (
+                            <View
+                              key={entry.id}
+                              pointerEvents="box-none"
+                              style={{
+                                position: "absolute",
+                                top: timeToPosition(entry.startMinutes, resolvedGridHeight),
+                                left: weekdayToPercent(entry.weekday),
+                                width: `${100 / WEEKDAY_LABELS.length}%`,
+                                height: durationToHeight(entry.duration, resolvedGridHeight),
+                                paddingHorizontal: ENTRY_COLUMN_GAP,
+                              }}
                             >
-                              {timetableLabel}
-                            </Text>
-                            <Text className="mt-0.5 text-center text-[8px] leading-[9px] text-white/78">
-                              {format(entry.start, "HH:mm", { locale: localeDE })}
-                              {"\n"}
-                              {format(end, "HH:mm", { locale: localeDE })}
-                            </Text>
+                              <PressableSurface
+                                onPress={() => {
+                                  router.push(courseRoute(course.id));
+                                }}
+                                accessibilityLabel={`${subjectNameMap[course.subject]}, ${format(
+                                  entry.start,
+                                  "HH:mm",
+                                  {
+                                    locale: localeDE,
+                                  },
+                                )} bis ${format(end, "HH:mm", { locale: localeDE })}`}
+                                style={{
+                                  flex: 1,
+                                  overflow: "hidden",
+                                  borderRadius: 24,
+                                  backgroundColor: colors.accent.DEFAULT,
+                                }}
+                                borderRadius={24}
+                                haptic="impact"
+                                highlightColor="rgba(255, 255, 255, 0.18)"
+                                pressedScale={0.965}
+                              >
+                                <View className="items-center justify-center px-1 py-1.5">
+                                  <View className="rounded-full bg-white p-1">
+                                    <SubjectIcon subject={course.subject} />
+                                  </View>
+                                  <View className="h-1" />
+                                  <Text
+                                    weight="bold"
+                                    className="text-center text-[10px] leading-[14px] text-white"
+                                    numberOfLines={1}
+                                  >
+                                    {timetableLabel}
+                                  </Text>
+                                  <Text className="mt-0.5 text-center text-[8px] leading-[9px] text-white/78">
+                                    {format(entry.start, "HH:mm", { locale: localeDE })}
+                                    {"\n"}
+                                    {format(end, "HH:mm", { locale: localeDE })}
+                                  </Text>
+                                </View>
+                              </PressableSurface>
+                            </View>
+                          );
+                        })}
+
+                        {page.entries.length === 0 ? (
+                          <View className="absolute inset-0 items-center justify-center">
+                            <Text className="text-lg text-neutral">Diese Woche ist noch leer.</Text>
                           </View>
-                        </PressableSurface>
+                        ) : null}
                       </View>
                     );
                   })}
-
-                  {visibleEntries.length === 0 ? (
-                    <View className="absolute inset-0 items-center justify-center">
-                      <Text className="text-lg text-neutral">Diese Woche ist noch leer.</Text>
-                    </View>
-                  ) : null}
                 </Animated.View>
               </GestureDetector>
             </Card>
