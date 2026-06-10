@@ -11,6 +11,7 @@ const IS_DEV = process.env.APP_VARIANT === "development";
 const iconSuffix = IS_DEV ? "-dev" : "";
 const icon = `./assets/images/icon${iconSuffix}.png`;
 const favicon = `./assets/images/favicon${iconSuffix}.png`;
+const easProjectId = "76a4b2c7-e6dc-40fa-808e-27c1b574d342";
 const androidIcon = {
   foregroundImage: `./assets/images/android-icon${iconSuffix}-foreground.png`,
   backgroundImage: `./assets/images/android-icon${iconSuffix}-background.png`,
@@ -26,6 +27,8 @@ const androidDevLauncherMetadata = {
 };
 
 const iosDeploymentTarget = "16.4";
+const bundleIdentifier = IS_DEV ? "dev.schnau.studienbuch.dev" : "dev.schnau.studienbuch";
+const androidPackage = IS_DEV ? "dev.schnau.studienbuch.dev" : "dev.schnau.studienbuch";
 
 const iosSceneDelegate = `import React
 import UIKit
@@ -212,6 +215,30 @@ const withIosPodsDeploymentTarget: ConfigPlugin = (config) =>
 const plugins = [
   "expo-router",
   "expo-image",
+  [
+    "expo-widgets",
+    {
+      bundleIdentifier: `${bundleIdentifier}.widgets`,
+      groupIdentifier: `group.${bundleIdentifier}`,
+      frequentUpdates: true,
+      widgets: [
+        {
+          name: "StudienbuchSummaryWidget",
+          displayName: "Studienbuch Heute",
+          description: "Zeigt offene Aufgaben und die nächste fällige Aufgabe.",
+          contentMarginsDisabled: true,
+          supportedFamilies: ["systemSmall", "systemMedium"],
+        },
+        {
+          name: "StudienbuchStudySessionActivity",
+          displayName: "Lernzeit",
+          description: "Begleitet eine laufende Lern- oder Unterrichtseinheit.",
+          contentMarginsDisabled: false,
+          supportedFamilies: ["systemSmall", "systemMedium"],
+        },
+      ],
+    },
+  ],
   withIosSceneLifecycle,
   withIosPodsDeploymentTarget,
   [
@@ -258,12 +285,28 @@ export default {
     name: IS_DEV ? "Studienbuch (Dev)" : "Studienbuch",
     slug: "studienbuch",
     version: "1.0.0",
+    runtimeVersion: {
+      policy: "appVersion",
+    },
+    updates: {
+      enabled: !IS_DEV,
+      url: `https://u.expo.dev/${easProjectId}`,
+      checkAutomatically: "ON_LOAD",
+      fallbackToCacheTimeout: 0,
+      useEmbeddedUpdate: true,
+      enableBsdiffPatchSupport: true,
+      assetPatternsToBeBundled: [
+        "assets/images/**/*",
+        "src/assets/**/*",
+        "../../node_modules/expo-router/assets/**/*",
+      ],
+    },
     orientation: "portrait",
     icon,
     scheme: "studienbuch",
     userInterfaceStyle: "automatic",
     ios: {
-      bundleIdentifier: IS_DEV ? "dev.schnau.studienbuch.dev" : "dev.schnau.studienbuch",
+      bundleIdentifier,
       deploymentTarget: iosDeploymentTarget,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
@@ -272,7 +315,7 @@ export default {
     android: {
       adaptiveIcon: androidIcon,
       predictiveBackGestureEnabled: true,
-      package: IS_DEV ? "dev.schnau.studienbuch.dev" : "dev.schnau.studienbuch",
+      package: androidPackage,
     },
     web: {
       output: "static",
@@ -289,7 +332,7 @@ export default {
     extra: {
       router: {},
       eas: {
-        projectId: "76a4b2c7-e6dc-40fa-808e-27c1b574d342",
+        projectId: easProjectId,
       },
     },
   },

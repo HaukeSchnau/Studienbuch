@@ -4,10 +4,12 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ReanimatedScreenProvider } from "react-native-screens/reanimated";
 import { StatusBar } from "expo-status-bar";
 import { AppDataProvider } from "~/data/app-data-provider";
+import { StudienbuchWidgetPublisher } from "~/app-shell/widgets/studienbuch-widget-publisher";
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (
     <AppDataProvider>
+      <StudienbuchWidgetPublisher />
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
           <ReanimatedScreenProvider>

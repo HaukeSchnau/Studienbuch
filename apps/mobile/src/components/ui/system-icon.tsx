@@ -1,4 +1,3 @@
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { SymbolView } from "expo-symbols";
 import type { ComponentProps } from "react";
 import { Platform, View } from "react-native";
@@ -53,30 +52,7 @@ const symbolMap: Record<SystemIconName, ComponentProps<typeof SymbolView>["name"
   visibility: { ios: "eye", android: "visibility", web: "visibility" },
 };
 
-const materialFallbackMap: Record<SystemIconName, ComponentProps<typeof MaterialIcons>["name"]> = {
-  add: "add",
-  "arrow-right": "arrow-forward",
-  camera: "photo-camera",
-  "calendar-today": "calendar-today",
-  check: "check-circle",
-  "chevron-left": "chevron-left",
-  "chevron-right": "chevron-right",
-  close: "close",
-  delete: "delete",
-  edit: "edit",
-  home: "home",
-  info: "info",
-  more: "more-vert",
-  person: "person",
-  "photo-library": "photo-library",
-  settings: "settings",
-  shield: "shield",
-  swipe: "swipe",
-  verified: "verified",
-  visibility: "visibility",
-};
-
-const androidPathMap: Partial<Record<SystemIconName, string>> = {
+const svgPathMap: Record<Exclude<SystemIconName, "more">, string> = {
   add: "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z",
   "arrow-right": "M12 4l1.41 1.41L8.83 10H20v2H8.83l4.58 4.59L12 20l8-8-8-8z",
   camera:
@@ -116,49 +92,43 @@ interface Props {
   opacity?: number;
 }
 
+const SvgSystemIcon = ({ name, color, size = 24, opacity = 1 }: Props) => {
+  const tintColor = color ?? "#000000";
+
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      pointerEvents="none"
+      style={{ opacity }}
+    >
+      <Svg
+        accessibilityElementsHidden
+        accessible={false}
+        importantForAccessibility="no-hide-descendants"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+      >
+        {name === "more" ? (
+          <>
+            <Circle cx={12} cy={8} r={2} fill={tintColor} />
+            <Circle cx={12} cy={12} r={2} fill={tintColor} />
+            <Circle cx={12} cy={16} r={2} fill={tintColor} />
+          </>
+        ) : (
+          <Path d={svgPathMap[name]} fill={tintColor} />
+        )}
+      </Svg>
+    </View>
+  );
+};
+
 export const SystemIcon = ({ name, color, size = 24, opacity = 1 }: Props) => {
   const tintColor = color ?? "#000000";
 
   if (Platform.OS === "android") {
-    const path = androidPathMap[name];
-
-    return (
-      <View
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        pointerEvents="none"
-        style={{ opacity }}
-      >
-        <Svg
-          accessibilityElementsHidden
-          accessible={false}
-          importantForAccessibility="no-hide-descendants"
-          width={size}
-          height={size}
-          viewBox="0 0 24 24"
-        >
-          {name === "more" ? (
-            <>
-              <Circle cx={12} cy={8} r={2} fill={tintColor} />
-              <Circle cx={12} cy={12} r={2} fill={tintColor} />
-              <Circle cx={12} cy={16} r={2} fill={tintColor} />
-            </>
-          ) : path ? (
-            <Path d={path} fill={tintColor} />
-          ) : (
-            <MaterialIcons
-              accessibilityElementsHidden
-              accessibilityLabel=""
-              accessible={false}
-              importantForAccessibility="no-hide-descendants"
-              name={materialFallbackMap[name]}
-              size={size}
-              color={tintColor}
-            />
-          )}
-        </Svg>
-      </View>
-    );
+    return <SvgSystemIcon name={name} color={tintColor} size={size} opacity={opacity} />;
   }
 
   return (
@@ -172,7 +142,7 @@ export const SystemIcon = ({ name, color, size = 24, opacity = 1 }: Props) => {
         name={symbolMap[name]}
         tintColor={tintColor}
         size={size}
-        fallback={<MaterialIcons name={materialFallbackMap[name]} size={size} color={tintColor} />}
+        fallback={<SvgSystemIcon name={name} color={tintColor} size={size} />}
       />
     </View>
   );

@@ -1,6 +1,6 @@
-import ExpoBottomSheet, { BottomSheetView } from "@expo/ui/community/bottom-sheet";
 import type { ReactNode } from "react";
 import { Platform, StyleSheet, View } from "react-native";
+import { NativeBottomSheet, NativeBottomSheetView } from "~/components/native/expo-ui";
 import { colors } from "~/theme/colors";
 
 interface Props {
@@ -13,7 +13,7 @@ export function PortaledBottomSheet({ children, iosSnapPoints, onClose }: Props)
   const snapPoints = Platform.OS === "ios" ? iosSnapPoints : undefined;
 
   return (
-    <ExpoBottomSheet
+    <NativeBottomSheet
       index={0}
       enableDynamicSizing={!snapPoints}
       enablePanDownToClose
@@ -22,13 +22,13 @@ export function PortaledBottomSheet({ children, iosSnapPoints, onClose }: Props)
       backgroundStyle={Platform.OS === "ios" ? styles.iosSheetBackground : styles.sheetBackground}
       handleIndicatorStyle={Platform.OS === "ios" ? undefined : styles.androidHandle}
     >
-      <BottomSheetView style={styles.sheetFill}>
+      <NativeBottomSheetView style={styles.sheetFill}>
         {Platform.OS === "ios" ? (
           <View pointerEvents="none" style={styles.iosMaterialFill} />
         ) : null}
         <View style={styles.sheetContent}>{children}</View>
-      </BottomSheetView>
-    </ExpoBottomSheet>
+      </NativeBottomSheetView>
+    </NativeBottomSheet>
   );
 }
 

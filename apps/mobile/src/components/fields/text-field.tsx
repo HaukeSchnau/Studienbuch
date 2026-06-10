@@ -1,7 +1,7 @@
-import { Host, TextInput as NativeTextInput, useNativeState } from "@expo/ui";
 import { useState } from "react";
 import type { LayoutChangeEvent, TextInputProps } from "react-native";
 import { Platform, TextInput as RNTextInput, View } from "react-native";
+import { NativeHost, NativeTextInput, useNativeState } from "~/components/native/expo-ui";
 import { colors } from "~/theme/colors";
 
 import { FieldSurface } from "./field-surface";
@@ -57,7 +57,7 @@ export const TextField = ({ label, placeholder, error, ...props }: Props) => {
         </FieldSurface>
       ) : (
         <FieldSurface focused={isFocused} onLayout={handleLayout}>
-          <Host matchContents={{ vertical: true }} style={{ width: "100%" }}>
+          <NativeHost matchContents={{ vertical: true }} style={{ width: "100%" }}>
             <NativeTextInput
               autoCapitalize={props.autoCapitalize}
               autoComplete={props.autoComplete}
@@ -95,7 +95,7 @@ export const TextField = ({ label, placeholder, error, ...props }: Props) => {
               }}
               value={nativeValue}
             />
-          </Host>
+          </NativeHost>
         </FieldSurface>
       )}
       {error ? <Text className="px-1 text-danger">{error}</Text> : undefined}

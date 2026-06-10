@@ -1,11 +1,13 @@
-import { Button as ExpoButton, Host, Text as ExpoText } from "@expo/ui";
 import {
   buttonBorderShape,
   buttonStyle,
   font,
   foregroundStyle,
+  NativeButton,
+  NativeHost,
+  NativeText,
   tint,
-} from "@expo/ui/swift-ui/modifiers";
+} from "~/components/native/expo-ui";
 import clsx from "clsx";
 import { Platform, View } from "react-native";
 
@@ -115,8 +117,8 @@ function BaseButton({
       accessibilityState={{ disabled: Boolean(disabled) }}
       className={clsx("items-center justify-center", className)}
     >
-      <Host matchContents {...nativeHostThemeProps(resolvedTintColor)}>
-        <ExpoButton
+      <NativeHost matchContents {...nativeHostThemeProps(resolvedTintColor)}>
+        <NativeButton
           disabled={disabled}
           onPress={() => {
             haptics.selection();
@@ -128,12 +130,12 @@ function BaseButton({
           label={Platform.OS === "ios" ? label : undefined}
         >
           {Platform.OS === "ios" ? undefined : (
-            <ExpoText numberOfLines={1} textStyle={labelTextStyle}>
+            <NativeText numberOfLines={1} textStyle={labelTextStyle}>
               {label}
-            </ExpoText>
+            </NativeText>
           )}
-        </ExpoButton>
-      </Host>
+        </NativeButton>
+      </NativeHost>
     </View>
   );
 }

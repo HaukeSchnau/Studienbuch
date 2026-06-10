@@ -9,6 +9,7 @@ import {
   Nunito_700Bold_Italic,
   useFonts,
 } from "@expo-google-fonts/nunito";
+import { ObserveRoot, useObserve } from "expo-observe";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
@@ -19,7 +20,8 @@ import "../global.css";
 
 void SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayout() {
+  const { markInteractive } = useObserve();
   const [fontsLoaded] = useFonts({
     Nunito_400Regular,
     Nunito_400Regular_Italic,
@@ -35,9 +37,11 @@ export default function RootLayout() {
     configureDevelopmentMenuPreferences();
 
     if (fontsLoaded) {
-      void SplashScreen.hideAsync();
+      void SplashScreen.hideAsync().finally(() => {
+        markInteractive({ params: { readyState: "fonts-loaded" } });
+      });
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, markInteractive]);
 
   if (!fontsLoaded) {
     return null;
@@ -51,6 +55,8 @@ export default function RootLayout() {
     </AppProviders>
   );
 }
+
+export default ObserveRoot.wrap(RootLayout);
 
 function AppNavigator() {
   return (

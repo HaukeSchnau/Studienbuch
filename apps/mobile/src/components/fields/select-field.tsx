@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { Host, Picker } from "@expo/ui";
 import { View } from "react-native";
+import { NativeHost, NativePicker } from "~/components/native/expo-ui";
 
 import { FieldSurface } from "./field-surface";
 import { Text } from "../ui/text";
@@ -39,8 +39,8 @@ export const SelectField = <TOption, TValue extends PickerValue>({
         {label}
       </Text>
       <FieldSurface className="min-h-14 justify-center px-3 py-1">
-        <Host style={{ width: "100%" }}>
-          <Picker
+        <NativeHost style={{ width: "100%" }}>
+          <NativePicker
             appearance="menu"
             enabled={options.length > 0}
             selectedValue={selectedValue}
@@ -50,14 +50,14 @@ export const SelectField = <TOption, TValue extends PickerValue>({
             }}
           >
             {options.map((option) => (
-              <Picker.Item
+              <NativePicker.Item
                 key={String(getKey(option))}
                 label={getOptionLabel(option)}
                 value={getKey(option)}
               />
             ))}
-          </Picker>
-        </Host>
+          </NativePicker>
+        </NativeHost>
       </FieldSurface>
     </View>
   );

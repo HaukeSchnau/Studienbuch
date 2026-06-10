@@ -1,9 +1,9 @@
 import type { SubjectId } from "@stu/core";
 import { subjectNameMap } from "@stu/core";
+import { StyleSheet, View } from "react-native";
+import { NativeMenuView } from "~/components/native/expo-ui";
 import { Text } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
-import MenuView from "@expo/ui/community/menu";
-import { StyleSheet, View } from "react-native";
 import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { haptics } from "~/platform/haptics";
 import { SubjectIcon } from "./subject-icon";
@@ -91,7 +91,7 @@ export const SelectCourse = <TOption,>({
   }
 
   return (
-    <MenuView
+    <NativeMenuView
       actions={[
         ...options.map((option, index) => ({
           id: String(index),
@@ -122,6 +122,6 @@ export const SelectCourse = <TOption,>({
       >
         {content}
       </View>
-    </MenuView>
+    </NativeMenuView>
   );
 };

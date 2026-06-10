@@ -1,12 +1,12 @@
 import {
-  Button as ComposeButton,
-  Host,
-  OutlinedButton as ComposeOutlinedButton,
+  ComposeButton,
+  ComposeHost,
+  ComposeOutlinedButton,
   Shape,
-  Text as ComposeText,
-  TextButton as ComposeTextButton,
-} from "@expo/ui/jetpack-compose";
-import { height } from "@expo/ui/jetpack-compose/modifiers";
+  ComposeText,
+  ComposeTextButton,
+  height,
+} from "~/components/native/expo-ui-compose";
 import clsx from "clsx";
 import { View } from "react-native";
 
@@ -113,7 +113,7 @@ function BaseButton({
       accessibilityState={{ disabled: Boolean(disabled) }}
       className={clsx("items-center justify-center", className)}
     >
-      <Host matchContents seedColor={tintColor}>
+      <ComposeHost matchContents seedColor={tintColor}>
         <ButtonComponent
           colors={nativeColors}
           enabled={!disabled}
@@ -132,7 +132,7 @@ function BaseButton({
             variant={variant}
           />
         </ButtonComponent>
-      </Host>
+      </ComposeHost>
     </View>
   );
 }

@@ -1,4 +1,4 @@
-import { NativeTabs } from "expo-router/unstable-native-tabs";
+import { NativeTabs } from "~/app-shell/navigation/native-tabs";
 import { colors } from "~/theme/colors";
 
 export default function TabLayout() {

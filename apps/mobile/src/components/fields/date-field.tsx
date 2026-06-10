@@ -1,8 +1,8 @@
-import DateTimePicker from "@expo/ui/community/datetime-picker";
 import { format, startOfDay } from "date-fns";
 import { useState } from "react";
 import { Platform, View } from "react-native";
 
+import { NativeDateTimePicker } from "~/components/native/expo-ui";
 import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { colors } from "~/theme/colors";
 
@@ -30,7 +30,7 @@ export const DateField = ({ value, label, onChange }: Props) => {
           <Text className="mr-2 flex-1 text-[15px] text-[#5B6472]" weight="medium">
             {label}
           </Text>
-          <DateTimePicker
+          <NativeDateTimePicker
             accentColor={colors.primary.text}
             display="compact"
             locale="de_DE"
@@ -63,7 +63,7 @@ export const DateField = ({ value, label, onChange }: Props) => {
         </PressableSurface>
 
         {showAndroidPicker ? (
-          <DateTimePicker
+          <NativeDateTimePicker
             value={pickerValue}
             mode="date"
             accentColor={colors.primary.text}

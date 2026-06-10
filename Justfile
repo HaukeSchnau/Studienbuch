@@ -7,7 +7,7 @@ qa: fmt qa-tasks
 fix: fmt lint-fix
 
 doctor-mobile:
-    bun run --cwd apps/mobile doctor
+    nix shell nixpkgs#cocoapods -c bun run --cwd apps/mobile doctor
     bun run --cwd apps/mobile doctor:deps
     nix shell nixpkgs#nodejs_24 -c npm exec --prefix apps/mobile react-compiler-healthcheck@latest -- .
 

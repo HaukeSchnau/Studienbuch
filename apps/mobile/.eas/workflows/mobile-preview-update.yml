@@ -1,0 +1,19 @@
+name: Mobile Preview Update
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - apps/mobile/**
+      - packages/core/**
+
+jobs:
+  update_preview:
+    name: Publish Preview Update
+    type: update
+    environment: preview
+    params:
+      channel: preview
+      platform: all
+      message: "Preview update for ${{ github.ref_name }}"

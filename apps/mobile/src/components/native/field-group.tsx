@@ -1,6 +1,6 @@
-import { FieldGroup, Host, ListItem } from "@expo/ui";
 import type { ReactNode } from "react";
 import { View } from "react-native";
+import { NativeFieldGroupPrimitive, NativeHost, NativeListItem } from "~/components/native/expo-ui";
 
 import { haptics } from "~/platform/haptics";
 
@@ -25,15 +25,17 @@ interface NativeFieldRowProps {
 export function NativeFieldGroup({ children, className }: NativeFieldGroupProps) {
   return (
     <View className={className}>
-      <Host style={{ width: "100%" }}>
-        <FieldGroup>{children}</FieldGroup>
-      </Host>
+      <NativeHost style={{ width: "100%" }}>
+        <NativeFieldGroupPrimitive>{children}</NativeFieldGroupPrimitive>
+      </NativeHost>
     </View>
   );
 }
 
 export function NativeFieldSection({ children, title }: NativeFieldSectionProps) {
-  return <FieldGroup.Section title={title}>{children}</FieldGroup.Section>;
+  return (
+    <NativeFieldGroupPrimitive.Section title={title}>{children}</NativeFieldGroupPrimitive.Section>
+  );
 }
 
 export function NativeFieldRow({
@@ -44,7 +46,7 @@ export function NativeFieldRow({
   testID,
 }: NativeFieldRowProps) {
   return (
-    <ListItem
+    <NativeListItem
       onPress={
         onPress
           ? () => {
@@ -58,6 +60,6 @@ export function NativeFieldRow({
       trailing={trailing}
     >
       {title}
-    </ListItem>
+    </NativeListItem>
   );
 }

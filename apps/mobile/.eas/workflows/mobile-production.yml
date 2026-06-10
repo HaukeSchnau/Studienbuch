@@ -1,0 +1,66 @@
+name: Mobile Production Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - apps/mobile/**
+      - packages/core/**
+
+jobs:
+  fingerprint:
+    name: Calculate Native Fingerprint
+    type: fingerprint
+    environment: production
+
+  ios_get_build:
+    name: Find Compatible iOS Build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: ios
+      profile: production
+      channel: production
+      fingerprint_hash: ${{ needs.fingerprint.outputs.ios_fingerprint_hash }}
+
+  android_get_build:
+    name: Find Compatible Android Build
+    needs: [fingerprint]
+    type: get-build
+    params:
+      platform: android
+      profile: production
+      channel: production
+      fingerprint_hash: ${{ needs.fingerprint.outputs.android_fingerprint_hash }}
+
+  update_production:
+    name: Publish Production Update
+    needs: [ios_get_build, android_get_build]
+    if: ${{ needs.ios_get_build.outputs.build_id && needs.android_get_build.outputs.build_id }}
+    type: update
+    environment: production
+    params:
+      channel: production
+      platform: all
+      message: "Production OTA for ${{ github.commit_message || github.ref_name }}"
+
+  build_ios:
+    name: Build iOS
+    needs: [ios_get_build]
+    if: ${{ !needs.ios_get_build.outputs.build_id }}
+    type: build
+    params:
+      platform: ios
+      profile: production
+      message: "Native iOS build for ${{ github.commit_message || github.ref_name }}"
+
+  build_android:
+    name: Build Android
+    needs: [android_get_build]
+    if: ${{ !needs.android_get_build.outputs.build_id }}
+    type: build
+    params:
+      platform: android
+      profile: production
+      message: "Native Android build for ${{ github.commit_message || github.ref_name }}"

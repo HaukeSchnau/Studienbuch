@@ -1,7 +1,6 @@
-import { Checkbox, Host } from "@expo/ui";
-import { tint } from "@expo/ui/swift-ui/modifiers";
 import type { StyleProp, TextStyle } from "react-native";
 import { Platform, View } from "react-native";
+import { NativeCheckbox, NativeHost, tint } from "~/components/native/expo-ui";
 import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { nativeHostThemeProps } from "~/components/ui/native-theme";
 import { Text } from "~/components/ui/text";
@@ -51,13 +50,13 @@ export const CheckboxRow = ({
         importantForAccessibility="no-hide-descendants"
         pointerEvents="none"
       >
-        <Host matchContents {...nativeHostThemeProps(colors.primary.DEFAULT)}>
-          <Checkbox
+        <NativeHost matchContents {...nativeHostThemeProps(colors.primary.DEFAULT)}>
+          <NativeCheckbox
             value={value}
             onValueChange={() => undefined}
             modifiers={Platform.OS === "ios" ? [tint(colors.primary.DEFAULT)] : undefined}
           />
-        </Host>
+        </NativeHost>
         <Text className="flex-1 text-[17px] text-[#111827]" style={textStyle} weight="semi-bold">
           {label}
         </Text>

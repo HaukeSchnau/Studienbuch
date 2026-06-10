@@ -1,6 +1,6 @@
-import { Host, Slider } from "@expo/ui";
 import { useState } from "react";
 import { View } from "react-native";
+import { NativeHost, NativeSlider } from "~/components/native/expo-ui";
 import { Button, OutlinedButton, TextButton } from "~/components/ui/button";
 import { DateField } from "~/components/fields/date-field";
 import { SheetScaffold } from "~/components/layout/sheet-scaffold";
@@ -48,12 +48,12 @@ export const GradeEditorSheet = ({
 
       <Text className="text-center text-lg opacity-70">Punktzahl</Text>
       <View className="h-3" />
-      <Host
+      <NativeHost
         matchContents={{ vertical: true }}
         style={{ width: "100%" }}
         {...nativeHostThemeProps(colors.primary.DEFAULT)}
       >
-        <Slider
+        <NativeSlider
           min={0}
           max={15}
           step={1}
@@ -63,7 +63,7 @@ export const GradeEditorSheet = ({
             setResult(Math.round(value));
           }}
         />
-      </Host>
+      </NativeHost>
       <View className="h-3" />
       <View className="flex-row items-center justify-center gap-4">
         <OutlinedButton

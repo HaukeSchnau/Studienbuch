@@ -1,6 +1,6 @@
-import ExpoBottomSheet, { BottomSheetView } from "@expo/ui/community/bottom-sheet";
 import type { ReactNode } from "react";
 import { Drawer } from "vaul";
+import { NativeBottomSheet, NativeBottomSheetView } from "~/components/native/expo-ui";
 import { colors } from "~/theme/colors";
 
 interface Props {
@@ -23,20 +23,20 @@ const visuallyHiddenStyle = {
 
 export function PortaledBottomSheet({ children, onClose }: Props) {
   return (
-    <ExpoBottomSheet
+    <NativeBottomSheet
       index={0}
       enableDynamicSizing
       enablePanDownToClose
       onClose={onClose}
       backgroundStyle={{ backgroundColor: colors.surface }}
     >
-      <BottomSheetView style={{ backgroundColor: colors.surface }}>
+      <NativeBottomSheetView style={{ backgroundColor: colors.surface }}>
         <Drawer.Title style={visuallyHiddenStyle}>Studienbuch Dialog</Drawer.Title>
         <Drawer.Description style={visuallyHiddenStyle}>
           Optionen und Eingaben fuer die aktuelle Ansicht.
         </Drawer.Description>
         {children}
-      </BottomSheetView>
-    </ExpoBottomSheet>
+      </NativeBottomSheetView>
+    </NativeBottomSheet>
   );
 }

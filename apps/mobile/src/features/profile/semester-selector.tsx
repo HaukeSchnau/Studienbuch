@@ -1,4 +1,4 @@
-import SegmentedControl from "@expo/ui/community/segmented-control";
+import { NativeSegmentedControl } from "~/components/native/expo-ui";
 import { colors } from "~/theme/colors";
 import type { Semester } from "@stu/core";
 import { haptics } from "~/platform/haptics";
@@ -19,7 +19,7 @@ export const SemesterSelector = ({
   }
 
   return (
-    <SegmentedControl
+    <NativeSegmentedControl
       style={{ minHeight: 44 }}
       tintColor={colors.accent.DEFAULT}
       values={choices.map((semester) => semester.name)}
