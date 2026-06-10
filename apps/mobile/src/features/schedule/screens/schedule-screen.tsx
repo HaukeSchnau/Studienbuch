@@ -11,7 +11,7 @@ import {
 } from "date-fns";
 import { de as localeDE } from "date-fns/locale/de";
 import { router } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import { Platform, type DimensionValue, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -107,10 +107,13 @@ export const ScheduleScreen = () => {
   const settleWeekSwipe = useCallback(
     (delta: number) => {
       changeWeek(delta);
-      weekDragX.value = 0;
     },
-    [changeWeek, weekDragX],
+    [changeWeek],
   );
+
+  useLayoutEffect(() => {
+    weekDragX.value = 0;
+  }, [weekDragX, weekOffset]);
 
   const swipeGesture = useMemo(
     () =>
@@ -121,7 +124,7 @@ export const ScheduleScreen = () => {
           .failOffsetY([-18, 18])
           .onUpdate((event) => {
             const width = gridWidth || 260;
-            const limit = width * 0.42;
+            const limit = width;
             const distance = Math.abs(event.translationX);
             const sign = event.translationX < 0 ? -1 : 1;
 
