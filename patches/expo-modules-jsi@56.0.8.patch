@@ -18,3 +18,32 @@ index a0e3e24d6070c5ec0a220af3cb56fe3373fe1968..e0d7f4b33e1642cd9719ae40694c4231
      let hostObject = expo.HostObject.makeObject(pointee, consume callbacks)
  
      return JavaScriptObject(self, hostObject)
+diff --git a/apple/scripts/build-xcframework.sh b/apple/scripts/build-xcframework.sh
+index 7c2587ae2f44066da28a7d57e7d90b9a12926ab2..fe1992eac3ebf8e4859b27da7527c5df75bdc704 100755
+--- a/apple/scripts/build-xcframework.sh
++++ b/apple/scripts/build-xcframework.sh
+@@ -199,7 +199,9 @@ build_slice() {
+     env_args+=(DEVELOPER_DIR="$DEVELOPER_DIR")
+   fi
+ 
+-  (cd "$PACKAGE_DIR" && env -i "${env_args[@]}" \
++  local xcodebuild_log
++  xcodebuild_log="$(mktemp "${TMPDIR:-/tmp}/${PACKAGE_NAME}-${platform}-xcodebuild.XXXXXX.log")"
++  if ! (cd "$PACKAGE_DIR" && env -i "${env_args[@]}" \
+     xcodebuild \
+     build \
+     -scheme "$PACKAGE_NAME" \
+@@ -217,7 +219,12 @@ build_slice() {
+     DEBUG_INFORMATION_FORMAT=dwarf-with-dsym \
+     COMPILER_INDEX_STORE_ENABLE=NO \
+     SWIFT_COMPILATION_MODE=wholemodule \
+-  )
++  ) >"$xcodebuild_log" 2>&1; then
++    cat "$xcodebuild_log"
++    rm -f "$xcodebuild_log"
++    exit 1
++  fi
++  rm -f "$xcodebuild_log"
+ 
+   local product_path="${BUILD_PRODUCTS_PATH}/${build_dir_name}"
+   local framework_src="${product_path}/PackageFrameworks/${PACKAGE_NAME}.framework"

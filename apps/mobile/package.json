@@ -14,6 +14,7 @@
     "build:dev:device": "bunx eas-cli build --platform ios --profile development --local",
     "build:dev:simulator": "bunx eas-cli build --platform ios --profile development-simulator --local",
     "build:prod": "bunx eas-cli build --platform ios --profile production --local",
+    "build:prod:device": "bunx eas-cli build --platform ios --profile production-device --local",
     "update:preview": "bunx eas-cli update --channel preview",
     "update:production": "bunx eas-cli update --channel production",
     "update:production:rollout": "bunx eas-cli update --channel production --rollout-percentage 10",

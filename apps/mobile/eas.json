@@ -22,6 +22,11 @@
       "distribution": "internal",
       "channel": "preview"
     },
+    "production-device": {
+      "extends": "production",
+      "distribution": "internal",
+      "autoIncrement": false
+    },
     "production": {
       "autoIncrement": true,
       "channel": "production"

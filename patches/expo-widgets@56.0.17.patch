@@ -1,0 +1,45 @@
+diff --git a/plugin/build/ios/xcode/withTargetXcodeProject.js b/plugin/build/ios/xcode/withTargetXcodeProject.js
+index 06307c6cab9ea745e3b2e163b485ab745e4e08ac..cbab48911354d467029b137e78e249cb28936c00 100644
+--- a/plugin/build/ios/xcode/withTargetXcodeProject.js
++++ b/plugin/build/ios/xcode/withTargetXcodeProject.js
+@@ -46,13 +46,15 @@ const withTargetXcodeProject = (config, { targetName, bundleIdentifier, deployme
+     const xcodeProject = config.modResults;
+     const targetUuid = xcodeProject.generateUuid();
+     const groupName = 'Embed Foundation Extensions';
++    const marketingVersion = config.ios?.version ?? config.version ?? '1.0';
++    const currentProjectVersion = config.ios?.buildNumber ?? '1';
+     const xCConfigurationList = (0, addXCConfigurationList_1.addXCConfigurationList)(xcodeProject, {
+         targetName,
+         bundleIdentifier,
+         deploymentTarget,
+         appleTeamId,
+-        marketingVersion: '1.0',
+-        currentProjectVersion: '1',
++        marketingVersion,
++        currentProjectVersion,
+     });
+     const productFile = (0, addProductFile_1.addProductFile)(xcodeProject, {
+         targetName,
+diff --git a/plugin/src/ios/xcode/withTargetXcodeProject.ts b/plugin/src/ios/xcode/withTargetXcodeProject.ts
+index 823b1d2d46af26a3ca579087fdf608950a8315f1..f32d9facfd539e2a126e29c2ecb372721c32d355 100644
+--- a/plugin/src/ios/xcode/withTargetXcodeProject.ts
++++ b/plugin/src/ios/xcode/withTargetXcodeProject.ts
+@@ -25,14 +25,16 @@ const withTargetXcodeProject: ConfigPlugin<TargetXcodeProjectProps> = (
+     const xcodeProject = config.modResults;
+     const targetUuid = xcodeProject.generateUuid();
+     const groupName = 'Embed Foundation Extensions';
++    const marketingVersion = config.ios?.version ?? config.version ?? '1.0';
++    const currentProjectVersion = config.ios?.buildNumber ?? '1';
+ 
+     const xCConfigurationList = addXCConfigurationList(xcodeProject, {
+       targetName,
+       bundleIdentifier,
+       deploymentTarget,
+       appleTeamId,
+-      marketingVersion: '1.0',
+-      currentProjectVersion: '1',
++      marketingVersion,
++      currentProjectVersion,
+     });
+ 
+     const productFile = addProductFile(xcodeProject, {

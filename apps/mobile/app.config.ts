@@ -8,6 +8,7 @@ import {
 import { withBuildSourceFile } from "@expo/config-plugins/build/ios/XcodeProjectFile";
 
 const IS_DEV = process.env.APP_VARIANT === "development";
+const appVersion = "1.0.0";
 const iconSuffix = IS_DEV ? "-dev" : "";
 const icon = `./assets/images/icon${iconSuffix}.png`;
 const favicon = `./assets/images/favicon${iconSuffix}.png`;
@@ -284,7 +285,7 @@ export default {
   expo: {
     name: IS_DEV ? "Studienbuch (Dev)" : "Studienbuch",
     slug: "studienbuch",
-    version: "1.0.0",
+    version: appVersion,
     runtimeVersion: {
       policy: "appVersion",
     },
