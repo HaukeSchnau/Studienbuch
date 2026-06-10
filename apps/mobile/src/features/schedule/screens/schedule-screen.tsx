@@ -13,8 +13,17 @@ import { de as localeDE } from "date-fns/locale/de";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Platform, type DimensionValue, View } from "react-native";
-import { Directions, Gesture, GestureDetector } from "react-native-gesture-handler";
-import { runOnJS } from "react-native-reanimated";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  Easing,
+  Extrapolation,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { Card } from "~/components/ui/card";
 import { IconButton } from "~/components/ui/icon-button";
@@ -46,6 +55,8 @@ const DAY_DURATION = DAY_END - DAY_START;
 const GRID_FALLBACK_HEIGHT = 500;
 const TIME_RAIL_WIDTH = 44;
 const ENTRY_COLUMN_GAP = 4;
+const WEEK_SWIPE_MIN_DISTANCE = 72;
+const WEEK_SWIPE_VELOCITY = 760;
 const timetableSubjectLabelMap: Partial<Record<SubjectId, string>> = {
   bi: "Bio",
   ch: "Chemie",
@@ -82,6 +93,8 @@ export const ScheduleScreen = () => {
   const { timetable } = useScheduleData();
   const [weekOffset, setWeekOffset] = useState(0);
   const [gridHeight, setGridHeight] = useState(0);
+  const [gridWidth, setGridWidth] = useState(0);
+  const weekDragX = useSharedValue(0);
   const bottomClearance = useMainTabBarPadding(12);
   const weekBottomClearance =
     Platform.OS === "ios" ? Math.max(bottomClearance - 72, 56) : bottomClearance;
@@ -92,27 +105,93 @@ export const ScheduleScreen = () => {
     setWeekOffset((current) => current + delta);
   }, []);
 
+  const settleWeekSwipe = useCallback(
+    (delta: number) => {
+      changeWeek(delta);
+
+      const entryOffset = (gridWidth || 260) * (delta > 0 ? 0.42 : -0.42);
+      weekDragX.value = entryOffset;
+      weekDragX.value = withSpring(0, {
+        damping: 24,
+        mass: 0.8,
+        stiffness: 270,
+      });
+    },
+    [changeWeek, gridWidth, weekDragX],
+  );
+
   const swipeGesture = useMemo(
     () =>
       Gesture.Simultaneous(
         Gesture.Native(),
-        Gesture.Exclusive(
-          Gesture.Fling()
-            .direction(Directions.LEFT)
-            .numberOfPointers(1)
-            .onEnd(() => {
-              runOnJS(changeWeek)(1);
-            }),
-          Gesture.Fling()
-            .direction(Directions.RIGHT)
-            .numberOfPointers(1)
-            .onEnd(() => {
-              runOnJS(changeWeek)(-1);
-            }),
-        ),
+        Gesture.Pan()
+          .activeOffsetX([-14, 14])
+          .failOffsetY([-18, 18])
+          .onUpdate((event) => {
+            const width = gridWidth || 260;
+            const limit = width * 0.42;
+            const distance = Math.abs(event.translationX);
+            const sign = event.translationX < 0 ? -1 : 1;
+
+            weekDragX.value =
+              distance <= limit ? event.translationX : sign * (limit + (distance - limit) * 0.18);
+          })
+          .onEnd((event) => {
+            const width = gridWidth || 260;
+            const threshold = Math.max(WEEK_SWIPE_MIN_DISTANCE, width * 0.23);
+            const shouldMoveNext =
+              event.translationX < -threshold || event.velocityX < -WEEK_SWIPE_VELOCITY;
+            const shouldMovePrevious =
+              event.translationX > threshold || event.velocityX > WEEK_SWIPE_VELOCITY;
+
+            if (shouldMoveNext || shouldMovePrevious) {
+              const delta = shouldMoveNext ? 1 : -1;
+              const exitX = delta > 0 ? -width : width;
+
+              weekDragX.value = withTiming(
+                exitX,
+                {
+                  duration: 170,
+                  easing: Easing.out(Easing.quad),
+                },
+                (finished) => {
+                  if (finished) {
+                    runOnJS(settleWeekSwipe)(delta);
+                  }
+                },
+              );
+              return;
+            }
+
+            weekDragX.value = withSpring(0, {
+              damping: 22,
+              mass: 0.82,
+              stiffness: 260,
+            });
+          }),
       ),
-    [changeWeek],
+    [gridWidth, settleWeekSwipe, weekDragX],
   );
+
+  const weekContentStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      Math.abs(weekDragX.value),
+      [0, Math.max(gridWidth * 0.7, 180)],
+      [1, 0.72],
+      Extrapolation.CLAMP,
+    ),
+    transform: [
+      { translateX: weekDragX.value },
+      {
+        scale: interpolate(
+          Math.abs(weekDragX.value),
+          [0, Math.max(gridWidth * 0.7, 180)],
+          [1, 0.975],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
+  }));
 
   const weekStart = useMemo(() => addWeeks(startOfISOWeek(new Date()), weekOffset), [weekOffset]);
   const weekEnd = useMemo(() => subMilliseconds(addDays(weekStart, 5), 1), [weekStart]);
@@ -228,7 +307,15 @@ export const ScheduleScreen = () => {
             ))}
           </View>
 
-          <View className="min-h-0 flex-1">
+          <View
+            className="min-h-0 flex-1"
+            onLayout={({ nativeEvent }) => {
+              const nextWidth = nativeEvent.layout.width;
+              if (nextWidth > 0 && Math.abs(nextWidth - gridWidth) > 1) {
+                setGridWidth(nextWidth);
+              }
+            }}
+          >
             <Card
               padding="none"
               radius="sm"
@@ -236,7 +323,7 @@ export const ScheduleScreen = () => {
               style={{ flex: 1 }}
             >
               <GestureDetector gesture={swipeGesture}>
-                <View className="absolute inset-0">
+                <Animated.View className="absolute inset-0" style={weekContentStyle}>
                   {weekdays.map((day, index) => (
                     <View
                       key={`day-bg-${day.toISOString()}`}
@@ -288,80 +375,80 @@ export const ScheduleScreen = () => {
                       />
                     </>
                   ) : null}
-                </View>
-              </GestureDetector>
 
-              {visibleEntries.map((entry) => {
-                const course = getCourse(entry.courseId);
-                if (!course) return null;
+                  {visibleEntries.map((entry) => {
+                    const course = getCourse(entry.courseId);
+                    if (!course) return null;
 
-                const end = addMinutes(entry.start, entry.duration);
-                const timetableLabel =
-                  timetableSubjectLabelMap[course.subject] ?? subjectNameMap[course.subject];
+                    const end = addMinutes(entry.start, entry.duration);
+                    const timetableLabel =
+                      timetableSubjectLabelMap[course.subject] ?? subjectNameMap[course.subject];
 
-                return (
-                  <View
-                    key={entry.id}
-                    pointerEvents="box-none"
-                    style={{
-                      position: "absolute",
-                      top: timeToPosition(entry.startMinutes, resolvedGridHeight),
-                      left: weekdayToPercent(entry.weekday),
-                      width: `${100 / WEEKDAY_LABELS.length}%`,
-                      height: durationToHeight(entry.duration, resolvedGridHeight),
-                      paddingHorizontal: ENTRY_COLUMN_GAP,
-                    }}
-                  >
-                    <PressableSurface
-                      onPress={() => {
-                        router.push(courseRoute(course.id));
-                      }}
-                      accessibilityLabel={`${subjectNameMap[course.subject]}, ${format(
-                        entry.start,
-                        "HH:mm",
-                        {
-                          locale: localeDE,
-                        },
-                      )} bis ${format(end, "HH:mm", { locale: localeDE })}`}
-                      style={{
-                        flex: 1,
-                        overflow: "hidden",
-                        borderRadius: 24,
-                        backgroundColor: colors.accent.DEFAULT,
-                      }}
-                      borderRadius={24}
-                      haptic="impact"
-                      highlightColor="rgba(255, 255, 255, 0.18)"
-                      pressedScale={0.965}
-                    >
-                      <View className="items-center justify-center px-1 py-1.5">
-                        <View className="rounded-full bg-white p-1">
-                          <SubjectIcon subject={course.subject} />
-                        </View>
-                        <View className="h-1" />
-                        <Text
-                          weight="bold"
-                          className="text-center text-[10px] leading-[14px] text-white"
-                          numberOfLines={1}
+                    return (
+                      <View
+                        key={entry.id}
+                        pointerEvents="box-none"
+                        style={{
+                          position: "absolute",
+                          top: timeToPosition(entry.startMinutes, resolvedGridHeight),
+                          left: weekdayToPercent(entry.weekday),
+                          width: `${100 / WEEKDAY_LABELS.length}%`,
+                          height: durationToHeight(entry.duration, resolvedGridHeight),
+                          paddingHorizontal: ENTRY_COLUMN_GAP,
+                        }}
+                      >
+                        <PressableSurface
+                          onPress={() => {
+                            router.push(courseRoute(course.id));
+                          }}
+                          accessibilityLabel={`${subjectNameMap[course.subject]}, ${format(
+                            entry.start,
+                            "HH:mm",
+                            {
+                              locale: localeDE,
+                            },
+                          )} bis ${format(end, "HH:mm", { locale: localeDE })}`}
+                          style={{
+                            flex: 1,
+                            overflow: "hidden",
+                            borderRadius: 24,
+                            backgroundColor: colors.accent.DEFAULT,
+                          }}
+                          borderRadius={24}
+                          haptic="impact"
+                          highlightColor="rgba(255, 255, 255, 0.18)"
+                          pressedScale={0.965}
                         >
-                          {timetableLabel}
-                        </Text>
-                        <Text className="mt-0.5 text-center text-[8px] leading-[9px] text-white/78">
-                          {format(entry.start, "HH:mm", { locale: localeDE })}
-                          {"\n"}
-                          {format(end, "HH:mm", { locale: localeDE })}
-                        </Text>
+                          <View className="items-center justify-center px-1 py-1.5">
+                            <View className="rounded-full bg-white p-1">
+                              <SubjectIcon subject={course.subject} />
+                            </View>
+                            <View className="h-1" />
+                            <Text
+                              weight="bold"
+                              className="text-center text-[10px] leading-[14px] text-white"
+                              numberOfLines={1}
+                            >
+                              {timetableLabel}
+                            </Text>
+                            <Text className="mt-0.5 text-center text-[8px] leading-[9px] text-white/78">
+                              {format(entry.start, "HH:mm", { locale: localeDE })}
+                              {"\n"}
+                              {format(end, "HH:mm", { locale: localeDE })}
+                            </Text>
+                          </View>
+                        </PressableSurface>
                       </View>
-                    </PressableSurface>
-                  </View>
-                );
-              })}
+                    );
+                  })}
 
-              {visibleEntries.length === 0 ? (
-                <View className="absolute inset-0 items-center justify-center">
-                  <Text className="text-lg text-neutral">Diese Woche ist noch leer.</Text>
-                </View>
-              ) : null}
+                  {visibleEntries.length === 0 ? (
+                    <View className="absolute inset-0 items-center justify-center">
+                      <Text className="text-lg text-neutral">Diese Woche ist noch leer.</Text>
+                    </View>
+                  ) : null}
+                </Animated.View>
+              </GestureDetector>
             </Card>
           </View>
         </View>
