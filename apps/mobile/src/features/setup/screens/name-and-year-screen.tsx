@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import type { Href } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { Button } from "~/components/ui/button";
@@ -9,7 +10,17 @@ import { TextField } from "~/components/fields/text-field";
 import { useSchool, useSessionData } from "~/data/hooks";
 import { setupClassAndCoursesRoute } from "~/routing/params";
 
-export function NameAndYearScreen() {
+interface NameAndYearScreenProps {
+  heading?: string;
+  intro?: string;
+  nextRoute?: Href;
+}
+
+export function NameAndYearScreen({
+  heading = "Willkommen!",
+  intro = "Bitte gib deinen Namen und deinen Jahrgang an.",
+  nextRoute = setupClassAndCoursesRoute,
+}: NameAndYearScreenProps) {
   const { user, updateProfile } = useSessionData();
   const { years, classes } = useSchool();
   const [name, setName] = useState(user.name);
@@ -31,10 +42,10 @@ export function NameAndYearScreen() {
   return (
     <View>
       <Text variant="heading" className="text-center">
-        Willkommen!
+        {heading}
       </Text>
       <View className="h-4" />
-      <Text>Bitte gib deinen Namen und deinen Jahrgang an.</Text>
+      <Text>{intro}</Text>
 
       <View className="h-6" />
 
@@ -73,7 +84,7 @@ export function NameAndYearScreen() {
         className="self-end"
         onPress={() => {
           updateProfile({ name, isOfAge, yearId, classId });
-          router.push(setupClassAndCoursesRoute);
+          router.push(nextRoute);
         }}
       />
     </View>

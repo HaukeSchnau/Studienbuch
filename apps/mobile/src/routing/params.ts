@@ -9,7 +9,9 @@ const parseGradeType = (value: string | undefined) =>
   value && gradeTypes.has(value as GradeType) ? (value as GradeType) : undefined;
 
 export const absencesRoute = "/absences" as const satisfies Href;
-export const mainProfileRoute = "/(main)/profile" as const satisfies Href;
+export const mainProfileRoute = "/profile" as const satisfies Href;
+export const profileCoursesRoute = "/profile/courses" as const satisfies Href;
+export const profileEditRoute = "/profile/edit" as const satisfies Href;
 export const setupClassAndCoursesRoute = "/setup/class-and-courses" as const satisfies Href;
 export const setupNameAndYearRoute = "/setup/name-and-year" as const satisfies Href;
 

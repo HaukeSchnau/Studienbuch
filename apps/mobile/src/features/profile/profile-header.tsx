@@ -10,7 +10,7 @@ import { Text } from "~/components/ui/text";
 import { SystemIcon, type SystemIconName } from "~/components/ui/system-icon";
 import { getCurrentYearNum } from "@stu/core";
 import { useSchool, useSessionData } from "~/data/hooks";
-import { setupNameAndYearRoute } from "~/routing/params";
+import { profileEditRoute } from "~/routing/params";
 
 const Avatar = () => (
   <View className="h-24 w-24 items-center justify-center rounded-full bg-accent p-5">
@@ -88,7 +88,7 @@ export const Header = () => {
               label="Profil & Kurse bearbeiten"
               onPress={() => {
                 setIsSheetVisible(false);
-                router.push(setupNameAndYearRoute);
+                router.push(profileEditRoute);
               }}
             />
             <ActionRow

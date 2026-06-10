@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import type { Href } from "expo-router";
 import { useMemo, useState } from "react";
 import { View } from "react-native";
 import { Button } from "~/components/ui/button";
@@ -8,7 +9,17 @@ import { findCurrentSemester, type Course, type SubjectId } from "@stu/core";
 import { useCourses, useSchool } from "~/data/hooks";
 import { mainProfileRoute } from "~/routing/params";
 
-export function ClassAndCoursesScreen() {
+interface ClassAndCoursesScreenProps {
+  doneRoute?: Href;
+  heading?: string;
+  intro?: string;
+}
+
+export function ClassAndCoursesScreen({
+  doneRoute = mainProfileRoute,
+  heading = "Kurse",
+  intro = "Bitte wähle deine Kurse aus. Du kannst diese später jederzeit ändern. Tippe auf die Fächer, um deine Kurse auszuwählen.",
+}: ClassAndCoursesScreenProps) {
   const { courses, getSemesterCourses, setSelectedCourses } = useCourses();
   const { semesters } = useSchool();
   const currentSemester = findCurrentSemester(semesters)!;
@@ -31,12 +42,9 @@ export function ClassAndCoursesScreen() {
   return (
     <View>
       <Text variant="heading" className="text-center">
-        Kurse
+        {heading}
       </Text>
-      <Text>
-        Bitte wähle deine Kurse aus. Du kannst diese später jederzeit ändern. Tippe auf die Fächer,
-        um deine Kurse auszuwählen.
-      </Text>
+      <Text>{intro}</Text>
 
       <View className="h-6" />
 
@@ -76,7 +84,7 @@ export function ClassAndCoursesScreen() {
               .filter((value): value is Course => Boolean(value))
               .map((value) => value.id),
           );
-          router.replace(mainProfileRoute);
+          router.replace(doneRoute);
         }}
       />
     </View>

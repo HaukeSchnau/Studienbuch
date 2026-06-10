@@ -15,8 +15,6 @@ import { useEffect } from "react";
 import { AppProviders } from "~/app-shell/app-providers";
 import { SetupGate } from "~/app-shell/setup/setup-gate";
 import { configureDevelopmentMenuPreferences } from "~/platform/dev-menu-preferences";
-import { fontNames } from "~/components/ui/text";
-import { colors } from "~/theme/colors";
 import "../global.css";
 
 void SplashScreen.preventAutoHideAsync();
@@ -56,24 +54,8 @@ export default function RootLayout() {
 
 function AppNavigator() {
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.primary.DEFAULT,
-        },
-        headerTintColor: colors.on.primary,
-        headerTitleStyle: {
-          color: colors.on.primary,
-          fontFamily: fontNames.bold,
-        },
-        headerBackTitle: "Zurück",
-        headerBackButtonDisplayMode: "minimal",
-        contentStyle: {
-          backgroundColor: colors.surface,
-        },
-      }}
-    >
-      <Stack.Screen name="(main)" options={{ headerShown: false }} />
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(app)" />
       <Stack.Screen name="setup" options={{ headerShown: false }} />
     </Stack>
   );

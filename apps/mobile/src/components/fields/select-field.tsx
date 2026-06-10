@@ -1,12 +1,12 @@
 import { useEffect } from "react";
-import { Picker } from "@expo/ui/community/picker";
+import { Host, Picker } from "@expo/ui";
 import { View } from "react-native";
 
 import { FieldSurface } from "./field-surface";
 import { Text } from "../ui/text";
 import { haptics } from "~/platform/haptics";
 
-type PickerValue = string | number | null;
+type PickerValue = string | number;
 
 interface Props<TOption, TValue extends PickerValue> {
   label: string;
@@ -31,7 +31,7 @@ export const SelectField = <TOption, TValue extends PickerValue>({
     }
   }, [value, options, onChange]);
 
-  const selectedValue = value ? getKey(value) : options[0] ? getKey(options[0]) : null;
+  const selectedValue = value ? getKey(value) : options[0] ? getKey(options[0]) : ("" as TValue);
 
   return (
     <View className="gap-2">
@@ -39,23 +39,25 @@ export const SelectField = <TOption, TValue extends PickerValue>({
         {label}
       </Text>
       <FieldSurface className="min-h-14 justify-center px-3 py-1">
-        <Picker
-          enabled={options.length > 0}
-          selectedValue={selectedValue}
-          onValueChange={(nextValue) => {
-            haptics.selection();
-            onChange(options.find((option) => getKey(option) === nextValue));
-          }}
-          style={{ width: "100%" }}
-        >
-          {options.map((option) => (
-            <Picker.Item
-              key={String(getKey(option))}
-              label={getOptionLabel(option)}
-              value={getKey(option)}
-            />
-          ))}
-        </Picker>
+        <Host style={{ width: "100%" }}>
+          <Picker
+            appearance="menu"
+            enabled={options.length > 0}
+            selectedValue={selectedValue}
+            onValueChange={(nextValue) => {
+              haptics.selection();
+              onChange(options.find((option) => getKey(option) === nextValue));
+            }}
+          >
+            {options.map((option) => (
+              <Picker.Item
+                key={String(getKey(option))}
+                label={getOptionLabel(option)}
+                value={getKey(option)}
+              />
+            ))}
+          </Picker>
+        </Host>
       </FieldSurface>
     </View>
   );
