@@ -36,6 +36,9 @@ Long term maintainability is a core priority. If you add new functionality, firs
 
 These are not set in stone. Feel free to suggest changes to these roles or adding new packages.
 
+- `flake.nix` should provide a reproducible dev environment including all necessary dependencies needed to work in the project and be able to build the server-side packages as well as OCI containers in a reproducible fashion.
+- `Justfile` is the primary entrypoint for day-to-day tasks and commands.
+
 ## Reference Repos
 
 - T3 Code (full-stack app architecture, strong Effect v4 usage): https://github.com/pingdotgg/t3code
