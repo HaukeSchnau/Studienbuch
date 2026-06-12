@@ -12,9 +12,19 @@ import { getCurrentYearNum } from "@stu/core";
 import { useSchool, useSessionData } from "~/data/hooks";
 import { profileEditRoute } from "~/routing/params";
 
-const Avatar = () => (
-  <View className="h-24 w-24 items-center justify-center rounded-full bg-accent p-5">
-    <SystemIcon name="person" size={42} color="white" />
+const initialsForName = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "S";
+
+const Avatar = ({ name }: { name: string }) => (
+  <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-accent p-4">
+    <Text className="text-[27px] leading-8 text-white" weight="bold">
+      {initialsForName(name)}
+    </Text>
   </View>
 );
 
@@ -59,17 +69,20 @@ export const Header = () => {
               />
             </View>
 
-            <Avatar />
-            <View className="h-3" />
-            <Text weight="bold" className="text-[29px] leading-9 text-white">
-              Profil von {user.name}
+            <Avatar name={user.name} />
+            <View className="h-4" />
+            <Text weight="bold" className="text-[30px] leading-9 text-white">
+              Mein Profil
             </Text>
-            <View className="h-1.5" />
+            <View className="h-1" />
             <View className="items-center">
-              <Text className="text-[18px] text-white/88">
+              <Text className="text-[18px] leading-6 text-white/92" weight="semi-bold">
+                {user.name}
+              </Text>
+              <Text className="text-[16px] leading-6 text-white/78">
                 {year.name} · {getCurrentYearNum(year)}. Klasse
               </Text>
-              <Text className="text-[16px] text-white/78">{user.schoolName}</Text>
+              <Text className="text-[15px] leading-5 text-white/72">{user.schoolName}</Text>
             </View>
           </View>
         </SafeAreaView>
