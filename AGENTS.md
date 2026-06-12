@@ -42,12 +42,12 @@ These are not set in stone. Feel free to suggest changes to these roles or addin
 ## Reference Repos
 
 - T3 Code (full-stack app architecture, strong Effect v4 usage): https://github.com/pingdotgg/t3code
-- Legacy React Native / Expo app reference: `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch-Legacy/packages/app-mobile`
 - Legacy Flutter production app reference: `/Users/haukeschnau/urbs/Products/Studienbuch/Stubu-legacy-flutter/apps/flutter`
+- Legacy React Native / Expo app reference: `/Users/haukeschnau/urbs/Products/Studienbuch/Studienbuch-Legacy/packages/app-mobile`
 - Broader legacy product archive: `/Users/haukeschnau/urbs/Products/Studienbuch`
 
 Use T3 Code as the primary reference for server/client structure and Effect-heavy app architecture. Note that we want an even more robust local-first experience and architecture than T3 Code.
-When implementing or reviewing mobile UI, compare against the legacy React Native / Expo app first and use the Flutter app as the previous production reference for visual and behavioral fidelity.
+When implementing or reviewing mobile UI, use the legacy Flutter app as the primary visual and behavioral reference because it is the current production app this project supersedes. Use the legacy React Native / Expo app as a secondary implementation reference.
 
 ## Syncing and Publishing
 
