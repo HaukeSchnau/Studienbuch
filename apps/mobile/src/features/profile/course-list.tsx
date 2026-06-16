@@ -40,72 +40,48 @@ export const CourseList = ({ semester }: { semester: Semester }) => {
   }
 
   return (
-    <View className="gap-6">
-      {model.examCourses.length > 0 ? (
-        <View className="gap-3">
-          <SectionHeader title="Prüfungsfächer" detail={`${model.examCourses.length} Fächer`} />
-          {model.featuredExamCourses.length > 0 ? (
-            <View className="flex-row gap-3">
-              {model.featuredExamCourses.map((signal) => (
-                <View key={signal.course.id} className="min-w-0 flex-1">
-                  <FeaturedExamCourseCard
-                    signal={signal}
-                    onPress={() => router.push(courseRoute(signal.course.id))}
-                  />
-                </View>
-              ))}
-            </View>
-          ) : null}
-          {model.compactExamCourses.length > 0 ? (
-            <View className="flex-row flex-wrap gap-3">
-              {model.compactExamCourses.map((signal) => (
-                <View key={signal.course.id} style={{ flexShrink: 0, width: "47%" }}>
-                  <CompactExamCourseCard
-                    signal={signal}
-                    onPress={() => router.push(courseRoute(signal.course.id))}
-                  />
-                </View>
-              ))}
-            </View>
-          ) : null}
-        </View>
-      ) : null}
-
-      <View className="gap-3">
-        <SectionHeader title="Weitere Kurse" detail={`${model.regularCourses.length} Kurse`} />
-        {model.regularCourses.length > 0 ? (
-          <View className="overflow-hidden rounded-[26px] border border-[#DDE6F1] bg-white">
-            {model.regularCourses.map((signal, index) => (
-              <View key={signal.course.id}>
-                <CourseRow
+    <View className="gap-4">
+      {model.featuredExamCourses.length > 0 ? (
+        <View className="gap-2.5">
+          <SectionHeader title="Leistungskurse" />
+          <View className="flex-row gap-3.5">
+            {model.featuredExamCourses.map((signal) => (
+              <View key={signal.course.id} className="min-w-0 flex-1">
+                <FeaturedExamCourseCard
                   signal={signal}
                   onPress={() => router.push(courseRoute(signal.course.id))}
                 />
-                {index < model.regularCourses.length - 1 ? (
-                  <View className="ml-[76px] h-px bg-[#E7EDF4]" />
-                ) : null}
               </View>
             ))}
           </View>
-        ) : (
-          <View className="rounded-[26px] border border-[#DDE6F1] bg-white px-5 py-4">
-            <Text className="text-[15px] leading-5 text-[#5B6472]">
-              Alle Kurse dieses Halbjahrs sind Prüfungsfächer.
-            </Text>
+        </View>
+      ) : null}
+
+      {model.compactExamCourses.length > 0 ? (
+        <View className="gap-2.5">
+          <SectionHeader title="Weitere Abiturfächer" />
+          <View className="flex-row gap-2.5">
+            {model.compactExamCourses.map((signal) => (
+              <View key={signal.course.id} className="min-w-0 flex-1">
+                <CompactExamCourseCard
+                  signal={signal}
+                  onPress={() => router.push(courseRoute(signal.course.id))}
+                />
+              </View>
+            ))}
           </View>
-        )}
-      </View>
+        </View>
+      ) : null}
+
+      <EncouragementCard />
     </View>
   );
 };
 
-const SectionHeader = ({ title, detail }: { title: string; detail: string }) => (
-  <View className="flex-row items-end justify-between px-1">
-    <Text className="text-[22px] leading-7 text-primary-text" weight="bold">
+const SectionHeader = ({ title }: { title: string }) => (
+  <View className="px-1">
+    <Text className="text-[20px] leading-7 text-[#435160]" weight="bold">
       {title}
-    </Text>
-    <Text className="text-[14px] leading-5 text-[#718095]" weight="medium">
-      {detail}
     </Text>
   </View>
 );
@@ -121,37 +97,35 @@ const FeaturedExamCourseCard = ({
     <PressableSurface
       accessibilityLabel={courseAccessibilityLabel(signal.course)}
       borderRadius={28}
-      className="min-h-[188px] bg-white p-4"
+      className="min-h-[208px] bg-white p-3"
       haptic="impact"
       onPress={onPress}
       pressedScale={0.985}
       style={styles.featuredBorder}
     >
-      <View className="flex-1 justify-between gap-3">
-        <View className="gap-3">
-          <View className="flex-row items-start justify-between gap-2">
-            <View className="h-[54px] w-[54px] items-center justify-center rounded-[19px] bg-primary-des">
-              <SubjectIcon subject={signal.course.subject} size={34} />
-            </View>
-            <ExamSlotBadge slot={signal.course.examSlot} elevated />
-          </View>
-          <View className="gap-1">
-            <Text
-              className="text-[18px] leading-6 text-primary-text"
-              weight="bold"
-              numberOfLines={2}
-            >
-              {signal.course.name}
-            </Text>
-            <Text className="text-[13px] leading-5 text-[#5B6472]" numberOfLines={1}>
-              {courseTeacherLabel(signal.course)}
-            </Text>
+      <View className="flex-1 gap-1.5">
+        <View className="flex-row items-start justify-between gap-2">
+          <ExamSlotBadge slot={signal.course.examSlot} elevated />
+          <View className="h-10 w-10 items-center justify-center">
+            <SubjectIcon subject={signal.course.subject} size={38} />
           </View>
         </View>
-        <View className="flex-row items-end justify-between gap-3 pb-2">
-          <GradeBadge signal={signal} large />
-          <SecondaryGradeLine signal={signal} compact stacked />
+        <View className="gap-1">
+          <Text
+            className="text-[17px] leading-[22px] text-primary-text"
+            weight="bold"
+            numberOfLines={1}
+          >
+            {signal.course.name}
+          </Text>
+          <TeacherLine course={signal.course} />
         </View>
+        <View className="h-px bg-[#E7EDF4]" />
+        <View className="gap-1">
+          <GradeReadout signal={signal} large />
+        </View>
+        <View className="h-px bg-[#E7EDF4]" />
+        <SecondaryGradeSplit signal={signal} />
       </View>
     </PressableSurface>
   </View>
@@ -164,79 +138,46 @@ const CompactExamCourseCard = ({
   signal: ProfileCourseSignal;
   onPress: () => void;
 }) => (
-  <PressableSurface
-    accessibilityLabel={courseAccessibilityLabel(signal.course)}
-    borderRadius={24}
-    className="min-h-[136px] border border-[#DDE6F1] bg-white p-3"
-    onPress={onPress}
-    pressedScale={0.987}
-  >
-    <View className="flex-1 justify-between gap-2">
-      <View className="flex-row items-start justify-between gap-2">
-        <View className="h-10 w-10 items-center justify-center rounded-[15px] bg-accent-des">
-          <SubjectIcon subject={signal.course.subject} size={25} />
+  <View style={styles.compactShadow}>
+    <PressableSurface
+      accessibilityLabel={courseAccessibilityLabel(signal.course)}
+      borderRadius={22}
+      className="min-h-[182px] border border-[#DDE6F1] bg-white px-2.5 py-2.5"
+      onPress={onPress}
+      pressedScale={0.987}
+    >
+      <View className="flex-1 gap-1.5">
+        <View className="flex-row items-start justify-between gap-1">
+          <ExamSlotBadge slot={signal.course.examSlot} />
+          <View className="h-8 w-8 justify-center">
+            <SubjectIcon subject={signal.course.subject} size={30} />
+          </View>
         </View>
-        <ExamSlotBadge slot={signal.course.examSlot} />
-      </View>
-      <View>
-        <Text className="text-[15px] leading-5 text-primary-text" weight="bold" numberOfLines={1}>
-          {subjectNameMap[signal.course.subject]}
-        </Text>
-        <View className="h-1" />
         <View className="gap-1">
-          <GradeBadge signal={signal} />
-          <SecondaryGradeLine signal={signal} />
-        </View>
-      </View>
-    </View>
-  </PressableSurface>
-);
-
-const CourseRow = ({ signal, onPress }: { signal: ProfileCourseSignal; onPress: () => void }) => (
-  <PressableSurface
-    accessibilityLabel={courseAccessibilityLabel(signal.course)}
-    borderRadius={0}
-    className="bg-white px-4 py-3.5"
-    haptic="selection"
-    onPress={onPress}
-    pressedScale={1}
-  >
-    <View className="flex-row items-center gap-3">
-      <View className="h-11 w-11 items-center justify-center rounded-[16px] bg-accent-des">
-        <SubjectIcon subject={signal.course.subject} size={27} />
-      </View>
-      <View className="min-w-0 flex-1 gap-0.5">
-        <View className="flex-row items-center gap-2">
-          <Text
-            className="min-w-0 flex-1 text-[17px] leading-6 text-primary-text"
-            weight="bold"
-            numberOfLines={1}
-          >
+          <Text className="text-[14px] leading-4 text-primary-text" weight="bold" numberOfLines={1}>
             {signal.course.name}
           </Text>
-          {signal.taskSignal ? <TaskPill label={signal.taskSignal} /> : null}
+          <TeacherLine course={signal.course} small />
         </View>
-        <Text className="text-[13px] leading-5 text-[#5B6472]" numberOfLines={1}>
-          {courseTeacherLabel(signal.course)}
-        </Text>
-        <SecondaryGradeLine signal={signal} />
+        <View className="h-px bg-[#E7EDF4]" />
+        <GradeReadout signal={signal} />
+        <View className="h-px bg-[#E7EDF4]" />
+        <SecondaryGradeSplit signal={signal} compact />
       </View>
-      <View className="items-end gap-1">
-        <GradeBadge signal={signal} />
-        <SystemIcon name="chevron-right" size={18} color="#9AA8B8" />
-      </View>
-    </View>
-  </PressableSurface>
+    </PressableSurface>
+  </View>
 );
 
-const GradeBadge = ({ signal, large }: { signal: ProfileCourseSignal; large?: boolean }) => {
+const GradeReadout = ({ signal, large }: { signal: ProfileCourseSignal; large?: boolean }) => {
   if (!signal.primaryGrade) {
     return (
-      <View
-        className="items-center justify-center rounded-full bg-[#F2F5F8]"
-        style={{ minWidth: large ? 76 : 52, height: large ? 44 : 32 }}
-      >
-        <Text className={large ? "text-[16px]" : "text-[13px]"} weight="bold">
+      <View>
+        <Text
+          className={
+            large ? "text-[26px] leading-8 text-[#AAB4C2]" : "text-[21px] leading-6 text-[#AAB4C2]"
+          }
+          weight="bold"
+        >
           --
         </Text>
       </View>
@@ -244,12 +185,16 @@ const GradeBadge = ({ signal, large }: { signal: ProfileCourseSignal; large?: bo
   }
 
   return (
-    <View
-      className="items-center justify-center rounded-full bg-primary px-3"
-      style={{ minWidth: large ? 78 : 56, height: large ? 46 : 34 }}
-    >
+    <View>
+      <Text className="text-[12px] leading-4 text-[#3E4C5E]" weight="bold">
+        {signal.primaryGrade.label === "Gesamt" ? "Gesamtnote" : signal.primaryGrade.label}
+      </Text>
       <Text
-        className={large ? "text-[17px] leading-6 text-white" : "text-[14px] leading-4 text-white"}
+        className={
+          large
+            ? "text-[24px] leading-[30px] text-primary-text"
+            : "text-[22px] leading-7 text-primary-text"
+        }
         weight="bold"
       >
         {signal.primaryGrade.value}
@@ -258,44 +203,94 @@ const GradeBadge = ({ signal, large }: { signal: ProfileCourseSignal; large?: bo
   );
 };
 
-const SecondaryGradeLine = ({
+const SecondaryGradeSplit = ({
   signal,
   compact,
-  stacked,
 }: {
   signal: ProfileCourseSignal;
   compact?: boolean;
-  stacked?: boolean;
 }) => {
   const oral = signal.oralGrade ?? "-";
   const written = signal.writtenGrade ?? "-";
 
-  if (stacked) {
-    return (
-      <View className="min-w-0 flex-1 items-end">
-        <Text className="text-right text-[11px] leading-4 text-[#718095]" numberOfLines={1}>
-          mdl. {oral}
-        </Text>
-        <Text className="text-right text-[11px] leading-4 text-[#718095]" numberOfLines={1}>
-          schr. {written}
-        </Text>
-      </View>
-    );
-  }
-
   return (
+    <View className="flex-row items-center justify-center">
+      <GradeMiniColumn label="mdl." value={oral} compact={compact} />
+      <View className={compact ? "mx-2 h-7 w-px bg-[#DDE6F1]" : "mx-4 h-8 w-px bg-[#DDE6F1]"} />
+      <GradeMiniColumn label="schr." value={written} compact={compact} />
+    </View>
+  );
+};
+
+const GradeMiniColumn = ({
+  compact,
+  label,
+  value,
+}: {
+  compact?: boolean;
+  label: string;
+  value: string;
+}) => (
+  <View className="min-w-0 flex-1 items-center">
     <Text
       className={
-        compact
-          ? "text-right text-[11px] leading-4 text-[#718095]"
-          : "text-[13px] leading-5 text-[#718095]"
+        compact ? "text-[11px] leading-4 text-[#5B6472]" : "text-[13px] leading-5 text-[#5B6472]"
       }
       numberOfLines={1}
     >
-      mdl. {oral} · schr. {written}
+      {label}
     </Text>
-  );
-};
+    <Text
+      className={
+        compact
+          ? "text-[13px] leading-4 text-primary-text"
+          : "text-[15px] leading-5 text-primary-text"
+      }
+      weight="medium"
+    >
+      {value}
+    </Text>
+  </View>
+);
+
+const TeacherLine = ({ course, small }: { course: Course; small?: boolean }) => (
+  <View className="min-w-0 flex-row items-center gap-1.5">
+    <SystemIcon name="person" size={small ? 14 : 17} color="#7F8A97" />
+    <Text
+      className={
+        small
+          ? "min-w-0 flex-1 text-[11px] leading-4 text-[#5B6472]"
+          : "min-w-0 flex-1 text-[13px] leading-[18px] text-[#5B6472]"
+      }
+      numberOfLines={1}
+    >
+      {courseTeacherLabel(course)}
+    </Text>
+  </View>
+);
+
+const EncouragementCard = () => (
+  <PressableSurface
+    accessibilityLabel="Stark, weiter so"
+    borderRadius={22}
+    className="flex-row items-center gap-3 bg-[#EAF3FF] px-4 py-3.5"
+    haptic="selection"
+    pressedScale={0.99}
+  >
+    <View className="h-10 w-10 items-center justify-center rounded-full bg-[#D7E9FF]">
+      <SystemIcon name="verified" size={23} color={colors.accent.DEFAULT} />
+    </View>
+    <View className="min-w-0 flex-1">
+      <Text className="text-[16px] leading-5 text-[#1269C8]" weight="bold">
+        Stark!
+      </Text>
+      <Text className="text-[14px] leading-5 text-[#214D83]" numberOfLines={1}>
+        Weiter so - du machst das super!
+      </Text>
+    </View>
+    <SystemIcon name="chevron-right" size={20} color={colors.accent.DEFAULT} />
+  </PressableSurface>
+);
 
 const ExamSlotBadge = ({ slot, elevated }: { slot?: string; elevated?: boolean }) => {
   if (!slot) {
@@ -304,15 +299,15 @@ const ExamSlotBadge = ({ slot, elevated }: { slot?: string; elevated?: boolean }
 
   return (
     <View
-      className="items-center justify-center rounded-full px-2.5"
+      className="self-start items-center justify-center rounded-full px-2.5"
       style={{
-        backgroundColor: elevated ? colors.accent.DEFAULT : colors.accent.des,
+        backgroundColor: colors.primary.text,
         minHeight: elevated ? 30 : 26,
       }}
     >
       <Text
         className={
-          elevated ? "text-[13px] leading-4 text-white" : "text-[12px] leading-4 text-[#3F638F]"
+          elevated ? "text-[13px] leading-4 text-white" : "text-[12px] leading-4 text-white"
         }
         weight="bold"
       >
@@ -321,14 +316,6 @@ const ExamSlotBadge = ({ slot, elevated }: { slot?: string; elevated?: boolean }
     </View>
   );
 };
-
-const TaskPill = ({ label }: { label: string }) => (
-  <View className="rounded-full bg-alert-des px-2 py-0.5">
-    <Text className="text-[11px] leading-4 text-[#8A6500]" weight="bold" numberOfLines={1}>
-      {label}
-    </Text>
-  </View>
-);
 
 const courseTeacherLabel = (course: Course) =>
   course.teachers.map((teacher) => Teacher.formalNameShort(teacher)).join(", ");
@@ -351,5 +338,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: Platform.OS === "ios" ? 0.08 : 0,
     shadowRadius: 18,
+  },
+  compactShadow: {
+    borderRadius: 22,
+    boxShadow: Platform.OS === "web" ? "0px 8px 18px rgba(32, 55, 85, 0.06)" : undefined,
+    elevation: Platform.OS === "android" ? 1 : 0,
+    shadowColor: "#203755",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: Platform.OS === "ios" ? 0.06 : 0,
+    shadowRadius: 14,
   },
 });

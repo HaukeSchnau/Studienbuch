@@ -9,6 +9,7 @@ export type SystemIconName =
   | "camera"
   | "calendar-today"
   | "check"
+  | "chevron-down"
   | "chevron-left"
   | "chevron-right"
   | "close"
@@ -31,6 +32,11 @@ const symbolMap: Record<SystemIconName, ComponentProps<typeof SymbolView>["name"
   camera: { ios: "camera.fill", android: "photo_camera", web: "photo_camera" },
   "calendar-today": { ios: "calendar", android: "calendar_today", web: "calendar_today" },
   check: { ios: "checkmark.circle.fill", android: "check_circle", web: "check_circle" },
+  "chevron-down": {
+    ios: "chevron.down",
+    android: "keyboard_arrow_down",
+    web: "keyboard_arrow_down",
+  },
   "chevron-left": { ios: "chevron.left", android: "chevron_left", web: "chevron_left" },
   "chevron-right": { ios: "chevron.right", android: "chevron_right", web: "chevron_right" },
   close: { ios: "xmark", android: "close", web: "close" },
@@ -61,6 +67,7 @@ const svgPathMap: Record<Exclude<SystemIconName, "more">, string> = {
     "M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z",
   check:
     "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z",
+  "chevron-down": "M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z",
   "chevron-left": "M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z",
   "chevron-right": "M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z",
   close:

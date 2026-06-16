@@ -14,6 +14,7 @@ interface SemesterSelectorProps {
   choices: Semester[];
   onSelect: (semester: Semester) => void;
   selectedSemester: Semester;
+  variant?: "card" | "header";
 }
 
 const semesterRangeLabel = (semester: Semester) =>
@@ -25,18 +26,40 @@ export const SemesterSelector = ({
   choices,
   selectedSemester,
   onSelect,
+  variant = "card",
 }: SemesterSelectorProps) => {
   const [isSheetVisible, setIsSheetVisible] = useState(false);
+  const isHeader = variant === "header";
 
   if (choices.length <= 1) {
     return (
-      <View className="rounded-[24px] border border-[#DDE6F1] bg-white px-4 py-3">
-        <Text className="text-[14px] leading-5 text-[#5B6472]" weight="medium">
-          Aktuelles Halbjahr
-        </Text>
-        <Text className="text-[18px] leading-6 text-primary-text" weight="bold">
-          {selectedSemester.name}
-        </Text>
+      <View
+        className={
+          isHeader
+            ? "self-start rounded-full bg-[#087800]/70 px-4 py-2"
+            : "rounded-[24px] border border-[#DDE6F1] bg-white px-4 py-3"
+        }
+      >
+        <View className="flex-row items-center justify-between gap-3">
+          {isHeader ? <SystemIcon name="calendar-today" size={18} color="#FFFFFF" /> : null}
+          <Text
+            className={
+              isHeader
+                ? "text-[16px] leading-5 text-white"
+                : "text-[15px] leading-5 text-primary-text"
+            }
+            weight="bold"
+          >
+            {selectedSemester.name}
+          </Text>
+          <Text
+            className={
+              isHeader ? "text-[16px] leading-5 text-white" : "text-[13px] leading-5 text-[#718095]"
+            }
+          >
+            {semesterRangeLabel(selectedSemester)}
+          </Text>
+        </View>
       </View>
     );
   }
@@ -45,27 +68,53 @@ export const SemesterSelector = ({
     <>
       <PressableSurface
         accessibilityLabel={`Halbjahr auswählen, aktuell ${selectedSemester.name}`}
-        borderRadius={24}
-        className="rounded-[24px] border border-[#DDE6F1] bg-white px-4 py-3"
+        borderRadius={isHeader ? 999 : 24}
+        className={
+          isHeader
+            ? "self-start rounded-full bg-[#087800]/70 px-4 py-2"
+            : "rounded-[24px] border border-[#DDE6F1] bg-white px-4 py-3"
+        }
         haptic="selection"
         onPress={() => setIsSheetVisible(true)}
         pressedScale={0.99}
       >
         <View className="flex-row items-center justify-between gap-3">
-          <View className="min-w-0 flex-1">
-            <Text className="text-[14px] leading-5 text-[#5B6472]" weight="medium">
-              Aktuelles Halbjahr
-            </Text>
-            <Text className="text-[18px] leading-6 text-primary-text" weight="bold">
+          {isHeader ? <SystemIcon name="calendar-today" size={18} color="#FFFFFF" /> : null}
+          <View
+            className={
+              isHeader
+                ? "min-w-0 flex-row items-baseline gap-1.5"
+                : "min-w-0 flex-1 flex-row items-baseline gap-2"
+            }
+          >
+            <Text
+              className={
+                isHeader
+                  ? "text-[15px] leading-5 text-white"
+                  : "text-[16px] leading-6 text-primary-text"
+              }
+              weight="bold"
+            >
               {selectedSemester.name}
             </Text>
-            <Text className="text-[13px] leading-5 text-[#718095]">
+            <Text
+              className={
+                isHeader
+                  ? "min-w-0 text-[15px] leading-5 text-white"
+                  : "min-w-0 flex-1 text-[13px] leading-5 text-[#718095]"
+              }
+              numberOfLines={1}
+            >
               {semesterRangeLabel(selectedSemester)}
             </Text>
           </View>
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-primary-des">
-            <SystemIcon name="chevron-right" size={20} color={colors.primary.text} />
-          </View>
+          {isHeader ? (
+            <SystemIcon name="chevron-down" size={19} color="#FFFFFF" />
+          ) : (
+            <View className="h-8 w-8 items-center justify-center rounded-full bg-primary-des">
+              <SystemIcon name="chevron-right" size={18} color={colors.primary.text} />
+            </View>
+          )}
         </View>
       </PressableSurface>
 

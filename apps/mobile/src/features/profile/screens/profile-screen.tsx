@@ -6,7 +6,6 @@ import { findCurrentSemester } from "@stu/core";
 import { useSchool } from "~/data/hooks";
 import { CourseList } from "../course-list";
 import { Header } from "../profile-header";
-import { SemesterSelector } from "../semester-selector";
 
 export const ProfileScreen = () => {
   const { semesters } = useSchool();
@@ -23,17 +22,17 @@ export const ProfileScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
-        <Header />
         {semesters.length > 0 ? (
-          <View className="px-5 pt-3">
-            <SemesterSelector
-              choices={semesters}
+          <>
+            <Header
+              semesters={semesters}
               selectedSemester={selectedSemester}
-              onSelect={setSelectedSemester}
+              onSelectSemester={setSelectedSemester}
             />
-            <View className="h-3" />
-            <CourseList semester={selectedSemester} />
-          </View>
+            <View className="px-6 pt-1">
+              <CourseList semester={selectedSemester} />
+            </View>
+          </>
         ) : (
           <View className="px-5 py-6">
             <Text>Keine Semester gefunden</Text>

@@ -3,89 +3,64 @@ import { openBrowserAsync } from "expo-web-browser";
 import { useState } from "react";
 import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Path } from "react-native-svg";
 import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
 import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { IconButton } from "~/components/ui/icon-button";
 import { Text } from "~/components/ui/text";
 import { SystemIcon, type SystemIconName } from "~/components/ui/system-icon";
-import { getCurrentYearNum } from "@stu/core";
-import { useSchool, useSessionData } from "~/data/hooks";
+import type { Semester } from "@stu/core";
 import { profileEditRoute } from "~/routing/params";
+import { SemesterSelector } from "./semester-selector";
 
-const initialsForName = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "S";
-
-const Avatar = ({ name }: { name: string }) => (
-  <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-accent p-4">
-    <Text className="text-[27px] leading-8 text-white" weight="bold">
-      {initialsForName(name)}
-    </Text>
-  </View>
-);
-
-const DotField = ({ rows, cols }: { rows: number; cols: number }) => (
-  <View style={{ gap: 6 }}>
-    {Array.from({ length: rows }, (_, row) => (
-      <View key={row} className="flex-row" style={{ gap: 6 }}>
-        {Array.from({ length: cols }, (_, col) => (
-          <View key={col} className="h-1.5 w-1.5 rounded-full bg-white/22" />
-        ))}
-      </View>
-    ))}
-  </View>
-);
-
-export const Header = () => {
-  const { user } = useSessionData();
-  const { years } = useSchool();
+export const Header = ({
+  semesters,
+  selectedSemester,
+  onSelectSemester,
+}: {
+  semesters: Semester[];
+  selectedSemester: Semester;
+  onSelectSemester: (semester: Semester) => void;
+}) => {
   const [isSheetVisible, setIsSheetVisible] = useState(false);
-  const year = years.find((item) => item.id === user.yearId) ?? years[0]!;
 
   return (
     <>
-      <View className="overflow-hidden rounded-b-[36px] bg-primary">
+      <View className="relative h-[178px] overflow-hidden bg-primary">
         <SafeAreaView edges={["top"]}>
-          <View className="relative items-center px-6 py-5">
-            <View className="absolute top-5 left-5">
-              <DotField rows={7} cols={8} />
-            </View>
-            <View className="absolute right-6 bottom-6">
-              <DotField rows={5} cols={6} />
-            </View>
-
-            <View className="absolute top-4 right-4 z-10">
+          <View className="relative px-8 pt-5">
+            <View className="absolute top-5 right-5 z-10 opacity-70">
               <IconButton
                 icon="settings"
                 accessibilityLabel="Einstellungen öffnen"
-                variant="filled"
-                elevated
-                size={24}
+                color="#FFFFFF"
+                size={23}
                 onPress={() => setIsSheetVisible(true)}
               />
             </View>
 
-            <Avatar name={user.name} />
-            <View className="h-4" />
-            <Text weight="bold" className="text-[30px] leading-9 text-white">
+            <Text weight="bold" className="text-[34px] leading-[40px] text-white">
               Mein Profil
             </Text>
-            <View className="h-1" />
-            <View className="items-center">
-              <Text className="text-[18px] leading-6 text-white/92" weight="semi-bold">
-                {user.name}
-              </Text>
-              <Text className="text-[16px] leading-6 text-white/78">
-                {year.name} · {getCurrentYearNum(year)}. Klasse
-              </Text>
-              <Text className="text-[15px] leading-5 text-white/72">{user.schoolName}</Text>
-            </View>
+            <View className="h-2.5" />
+            <SemesterSelector
+              choices={semesters}
+              selectedSemester={selectedSemester}
+              onSelect={onSelectSemester}
+              variant="header"
+            />
           </View>
         </SafeAreaView>
+        <Svg
+          width="100%"
+          height={36}
+          viewBox="0 0 390 36"
+          preserveAspectRatio="none"
+          style={{ bottom: -1, left: 0, position: "absolute", right: 0 }}
+        >
+          <Path d="M0 25 C95 34 238 35 390 14 L390 36 L0 36 Z" fill="#F9F9F9" />
+          <Path d="M0 25 C95 34 238 35 390 14" fill="none" stroke="#3B7FD9" strokeWidth={5} />
+        </Svg>
       </View>
 
       {isSheetVisible ? (
