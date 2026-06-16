@@ -33,14 +33,14 @@ const backgroundColorMap = {
 
 const { elevatedShadow } = StyleSheet.create({
   elevatedShadow: {
-    shadowColor: "#000",
+    shadowColor: "#203755",
     shadowOffset: {
-      width: 8,
-      height: 8,
+      width: 0,
+      height: 3,
     },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 8,
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    elevation: 2,
   },
 });
 

@@ -9,7 +9,8 @@ import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { IconButton } from "~/components/ui/icon-button";
 import { Text } from "~/components/ui/text";
 import { SystemIcon, type SystemIconName } from "~/components/ui/system-icon";
-import type { Semester } from "@stu/core";
+import { formatClassName, getCurrentYearNum, type Semester } from "@stu/core";
+import { useSchool, useSessionData } from "~/data/hooks";
 import { profileEditRoute } from "~/routing/params";
 import { SemesterSelector } from "./semester-selector";
 
@@ -23,10 +24,20 @@ export const Header = ({
   onSelectSemester: (semester: Semester) => void;
 }) => {
   const [isSheetVisible, setIsSheetVisible] = useState(false);
+  const { user } = useSessionData();
+  const { classes, years } = useSchool();
+  const year = years.find((item) => item.id === user.yearId);
+  const schoolClass = classes.find((item) => item.id === user.classId);
+  const classLabel =
+    year && schoolClass
+      ? formatClassName(schoolClass, year)
+      : year
+        ? `${getCurrentYearNum(year)}. Klasse`
+        : "Schule";
 
   return (
     <>
-      <View className="relative h-[178px] overflow-hidden bg-primary">
+      <View className="relative h-[190px] overflow-hidden bg-primary">
         <SafeAreaView edges={["top"]}>
           <View className="relative px-8 pt-5">
             <View className="absolute top-5 right-5 z-10 opacity-70">
@@ -42,7 +53,13 @@ export const Header = ({
             <Text weight="bold" className="text-[34px] leading-[40px] text-white">
               Mein Profil
             </Text>
-            <View className="h-2.5" />
+            <Text
+              className="mt-0.5 max-w-[82%] text-[15px] leading-5 text-white/82"
+              numberOfLines={1}
+            >
+              {user.name} · {classLabel} · {user.schoolName}
+            </Text>
+            <View className="h-2" />
             <SemesterSelector
               choices={semesters}
               selectedSemester={selectedSemester}

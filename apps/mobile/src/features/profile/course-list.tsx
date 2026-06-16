@@ -74,6 +74,25 @@ export const CourseList = ({ semester }: { semester: Semester }) => {
       ) : null}
 
       <EncouragementCard />
+
+      {model.regularCourses.length > 0 ? (
+        <View className="gap-2.5">
+          <SectionHeader title="Weitere Kurse" />
+          <View className="overflow-hidden rounded-[26px] border border-[#DDE6F1] bg-white">
+            {model.regularCourses.map((signal, index) => (
+              <View key={signal.course.id}>
+                <CourseRow
+                  signal={signal}
+                  onPress={() => router.push(courseRoute(signal.course.id))}
+                />
+                {index < model.regularCourses.length - 1 ? (
+                  <View className="ml-[68px] h-px bg-[#E7EDF4]" />
+                ) : null}
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 };
@@ -166,6 +185,40 @@ const CompactExamCourseCard = ({
       </View>
     </PressableSurface>
   </View>
+);
+
+const CourseRow = ({ signal, onPress }: { signal: ProfileCourseSignal; onPress: () => void }) => (
+  <PressableSurface
+    accessibilityLabel={courseAccessibilityLabel(signal.course)}
+    borderRadius={0}
+    className="bg-white px-4 py-3"
+    haptic="selection"
+    onPress={onPress}
+    pressedScale={1}
+  >
+    <View className="flex-row items-center gap-3">
+      <View className="h-10 w-10 items-center justify-center">
+        <SubjectIcon subject={signal.course.subject} size={32} />
+      </View>
+      <View className="min-w-0 flex-1 gap-0.5">
+        <View className="flex-row items-center gap-2">
+          <Text
+            className="min-w-0 flex-1 text-[16px] leading-5 text-primary-text"
+            weight="bold"
+            numberOfLines={1}
+          >
+            {signal.course.name}
+          </Text>
+          {signal.taskSignal ? <TaskPill label={signal.taskSignal} /> : null}
+        </View>
+        <TeacherLine course={signal.course} />
+      </View>
+      <View className="flex-row items-center gap-1.5">
+        <CourseGradePill signal={signal} />
+        <SystemIcon name="chevron-right" size={18} color="#9AA8B8" />
+      </View>
+    </View>
+  </PressableSurface>
 );
 
 const GradeReadout = ({ signal, large }: { signal: ProfileCourseSignal; large?: boolean }) => {
@@ -292,6 +345,22 @@ const EncouragementCard = () => (
   </PressableSurface>
 );
 
+const CourseGradePill = ({ signal }: { signal: ProfileCourseSignal }) => (
+  <View className="items-center justify-center rounded-full bg-primary px-3 py-1">
+    <Text className="text-[13px] leading-4 text-white" weight="bold">
+      {signal.primaryGrade?.value ?? "--"}
+    </Text>
+  </View>
+);
+
+const TaskPill = ({ label }: { label: string }) => (
+  <View className="rounded-full bg-alert-des px-2 py-0.5">
+    <Text className="text-[11px] leading-4 text-[#8A6500]" weight="bold" numberOfLines={1}>
+      {label}
+    </Text>
+  </View>
+);
+
 const ExamSlotBadge = ({ slot, elevated }: { slot?: string; elevated?: boolean }) => {
   if (!slot) {
     return null;
@@ -332,20 +401,20 @@ const styles = StyleSheet.create({
   },
   featuredShadow: {
     borderRadius: 28,
-    boxShadow: Platform.OS === "web" ? "0px 10px 24px rgba(32, 55, 85, 0.08)" : undefined,
-    elevation: Platform.OS === "android" ? 2 : 0,
+    boxShadow: Platform.OS === "web" ? "0px 6px 16px rgba(32, 55, 85, 0.045)" : undefined,
+    elevation: Platform.OS === "android" ? 1 : 0,
     shadowColor: "#203755",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: Platform.OS === "ios" ? 0.08 : 0,
-    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: Platform.OS === "ios" ? 0.045 : 0,
+    shadowRadius: 10,
   },
   compactShadow: {
     borderRadius: 22,
-    boxShadow: Platform.OS === "web" ? "0px 8px 18px rgba(32, 55, 85, 0.06)" : undefined,
-    elevation: Platform.OS === "android" ? 1 : 0,
+    boxShadow: Platform.OS === "web" ? "0px 4px 12px rgba(32, 55, 85, 0.035)" : undefined,
+    elevation: 0,
     shadowColor: "#203755",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: Platform.OS === "ios" ? 0.06 : 0,
-    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: Platform.OS === "ios" ? 0.035 : 0,
+    shadowRadius: 8,
   },
 });
