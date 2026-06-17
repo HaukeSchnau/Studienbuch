@@ -161,9 +161,10 @@ const CompactExamCourseCard = ({
     <PressableSurface
       accessibilityLabel={courseAccessibilityLabel(signal.course)}
       borderRadius={22}
-      className="min-h-[182px] border border-[#DDE6F1] bg-white px-2.5 py-2.5"
+      className="min-h-[182px] bg-white px-2.5 py-2.5"
       onPress={onPress}
       pressedScale={0.987}
+      style={styles.compactBorder}
     >
       <View className="flex-1 gap-1.5">
         <View className="flex-row items-start justify-between gap-1">
@@ -401,8 +402,12 @@ const courseAccessibilityLabel = (course: Course) =>
 
 const styles = StyleSheet.create({
   featuredBorder: {
-    borderColor: "#DDE6F1",
-    borderWidth: 1,
+    borderColor: "rgba(121, 145, 174, 0.16)",
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  compactBorder: {
+    borderColor: "rgba(121, 145, 174, 0.16)",
+    borderWidth: StyleSheet.hairlineWidth,
   },
   featuredShadow: {
     borderRadius: 28,
