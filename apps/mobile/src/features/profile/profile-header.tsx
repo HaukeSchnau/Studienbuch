@@ -37,29 +37,41 @@ export const Header = ({
 
   return (
     <>
-      <View className="relative h-[190px] overflow-hidden bg-primary">
-        <SafeAreaView edges={["top"]}>
+      <View className="relative h-[222px] overflow-hidden bg-primary">
+        <Svg
+          width="100%"
+          height={42}
+          viewBox="0 0 390 42"
+          pointerEvents="none"
+          preserveAspectRatio="none"
+          style={{ bottom: -1, left: 0, position: "absolute", right: 0, zIndex: 0 }}
+        >
+          <Path d="M0 30 C95 39 238 40 390 17 L390 42 L0 42 Z" fill="#F9F9F9" />
+          <Path d="M0 30 C95 39 238 40 390 17" fill="none" stroke="#3B7FD9" strokeWidth={5} />
+        </Svg>
+
+        <SafeAreaView edges={["top"]} style={{ zIndex: 1 }}>
           <View className="relative px-8 pt-5">
-            <View className="absolute top-5 right-5 z-10 opacity-70">
+            <View className="flex-row items-start justify-between gap-4">
+              <View className="min-w-0 flex-1">
+                <Text weight="bold" className="text-[34px] leading-[40px] text-white">
+                  Mein Profil
+                </Text>
+                <Text className="mt-0.5 text-[15px] leading-5 text-white/82" numberOfLines={1}>
+                  {user.name} · {classLabel} · {user.schoolName}
+                </Text>
+              </View>
               <IconButton
                 icon="settings"
                 accessibilityLabel="Einstellungen öffnen"
                 color="#FFFFFF"
-                size={23}
+                size={25}
+                className="-mr-2 -mt-1"
                 onPress={() => setIsSheetVisible(true)}
               />
             </View>
 
-            <Text weight="bold" className="text-[34px] leading-[40px] text-white">
-              Mein Profil
-            </Text>
-            <Text
-              className="mt-0.5 max-w-[82%] text-[15px] leading-5 text-white/82"
-              numberOfLines={1}
-            >
-              {user.name} · {classLabel} · {user.schoolName}
-            </Text>
-            <View className="h-2" />
+            <View className="h-3" />
             <SemesterSelector
               choices={semesters}
               selectedSemester={selectedSemester}
@@ -68,16 +80,6 @@ export const Header = ({
             />
           </View>
         </SafeAreaView>
-        <Svg
-          width="100%"
-          height={36}
-          viewBox="0 0 390 36"
-          preserveAspectRatio="none"
-          style={{ bottom: -1, left: 0, position: "absolute", right: 0 }}
-        >
-          <Path d="M0 25 C95 34 238 35 390 14 L390 36 L0 36 Z" fill="#F9F9F9" />
-          <Path d="M0 25 C95 34 238 35 390 14" fill="none" stroke="#3B7FD9" strokeWidth={5} />
-        </Svg>
       </View>
 
       {isSheetVisible ? (

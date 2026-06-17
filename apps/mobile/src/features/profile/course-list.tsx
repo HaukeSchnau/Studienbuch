@@ -222,16 +222,26 @@ const CourseRow = ({ signal, onPress }: { signal: ProfileCourseSignal; onPress: 
 );
 
 const GradeReadout = ({ signal, large }: { signal: ProfileCourseSignal; large?: boolean }) => {
+  const label = signal.primaryGrade
+    ? signal.primaryGrade.label === "Gesamt"
+      ? "Gesamtnote"
+      : signal.primaryGrade.label
+    : "Gesamtnote";
+  const value = signal.primaryGrade?.value ?? "--";
+
   if (!signal.primaryGrade) {
     return (
       <View>
+        <Text className="text-[12px] leading-4 text-[#3E4C5E]" weight="bold">
+          {label}
+        </Text>
         <Text
           className={
             large ? "text-[26px] leading-8 text-[#AAB4C2]" : "text-[21px] leading-6 text-[#AAB4C2]"
           }
           weight="bold"
         >
-          --
+          {value}
         </Text>
       </View>
     );
@@ -240,7 +250,7 @@ const GradeReadout = ({ signal, large }: { signal: ProfileCourseSignal; large?: 
   return (
     <View>
       <Text className="text-[12px] leading-4 text-[#3E4C5E]" weight="bold">
-        {signal.primaryGrade.label === "Gesamt" ? "Gesamtnote" : signal.primaryGrade.label}
+        {label}
       </Text>
       <Text
         className={
@@ -250,7 +260,7 @@ const GradeReadout = ({ signal, large }: { signal: ProfileCourseSignal; large?: 
         }
         weight="bold"
       >
-        {signal.primaryGrade.value}
+        {value}
       </Text>
     </View>
   );
