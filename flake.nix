@@ -201,6 +201,8 @@
 
                 export APP_VARIANT=development
                 export EXPO_PACKAGER_PROXY_URL="$metro_url"
+                export EXPO_UNSTABLE_HEADLESS=1
+                export NODE_OPTIONS="--dns-result-order=ipv4first''${NODE_OPTIONS:+ $NODE_OPTIONS}"
                 export TMPDIR="$metro_cache/tmp"
                 export XDG_CACHE_HOME="$metro_cache"
 
