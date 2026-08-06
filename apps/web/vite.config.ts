@@ -11,9 +11,11 @@ import { nitro } from "nitro/vite";
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
   server: {
-    allowedHosts: process.env.BETTER_AUTH_URL
-      ? [new URL(process.env.BETTER_AUTH_URL).hostname]
-      : [],
+    allowedHosts: process.env.STUDIENBUCH_WEB_ALLOWED_HOSTS
+      ? process.env.STUDIENBUCH_WEB_ALLOWED_HOSTS.split(",")
+      : process.env.BETTER_AUTH_URL
+        ? [new URL(process.env.BETTER_AUTH_URL).hostname]
+        : [],
   },
   plugins: [
     devtools(),

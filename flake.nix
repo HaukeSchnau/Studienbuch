@@ -178,12 +178,20 @@
               web)
                 read_endpoint web
                 web_url=$(jq -er '.endpoints.web.url' "$runtime_file")
+                web_allowed_hosts=$(jq -er '
+                  .endpoints.web.hostNames // [] |
+                  map(select(type == "string" and length > 0)) |
+                  join(",")
+                ' "$runtime_file")
                 web_host=$(jq -er '.endpoints.web.listen.host' "$runtime_file")
                 web_port=$(jq -er '.endpoints.web.listen.port' "$runtime_file")
 
                 export HOST="$web_host"
                 export PORT="$web_port"
                 export BETTER_AUTH_URL="$web_url"
+                if [[ -n "$web_allowed_hosts" ]]; then
+                  export STUDIENBUCH_WEB_ALLOWED_HOSTS="$web_allowed_hosts"
+                fi
                 export NODE_OPTIONS="--import ./instrument.server.mjs''${NODE_OPTIONS:+ $NODE_OPTIONS}"
 
                 better_auth_credential=$(jq -r '.secrets.betterAuthSecret // ""' "$runtime_file")
