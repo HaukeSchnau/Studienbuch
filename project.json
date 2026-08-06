@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "project": "studienbuch",
+  "secrets": {
+    "betterAuthSecret": {
+      "description": "Secret used to sign Better Auth sessions"
+    }
+  },
+  "development": {
+    "workloads": {
+      "web": {
+        "secrets": ["betterAuthSecret"]
+      }
+    },
+    "endpoints": {
+      "web": {},
+      "metro": {
+        "health": {
+          "paths": ["/status"]
+        }
+      }
+    }
+  }
+}
