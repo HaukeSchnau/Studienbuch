@@ -191,6 +191,10 @@
                 export BETTER_AUTH_URL="$web_url"
                 if [[ -n "$web_allowed_hosts" ]]; then
                   export STUDIENBUCH_WEB_ALLOWED_HOSTS="$web_allowed_hosts"
+                  # Vite reads this built-in variable before loading the
+                  # mutable checkout's config, so older workspaces also accept
+                  # every hostname supplied by the Project controller.
+                  export __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS="$web_allowed_hosts"
                 fi
                 export NODE_OPTIONS="--import ./instrument.server.mjs''${NODE_OPTIONS:+ $NODE_OPTIONS}"
 
