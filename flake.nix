@@ -47,6 +47,7 @@
             pkgs.git
             pkgs.jq
             pkgs.nodejs_latest
+            pkgs.util-linux
           ];
           text = ''
             set -euo pipefail
@@ -147,12 +148,18 @@
                 stamp_file="$preparation_state/dependencies.sha256"
                 cd "$checkout"
 
+                coordination_root="''${XDG_RUNTIME_DIR:-/tmp}/studienbuch-project-runtime-$UID"
+                install -d -m 0700 "$coordination_root"
+                checkout_key=$(pwd -P | sha256sum | cut -d ' ' -f 1)
+                exec 9>"$coordination_root/prepare-$checkout_key.lock"
+                flock 9
+
                 dependency_key=$(
                   {
                     sha256sum bun.lock flake.lock package.json
-                    find apps packages -type f -name package.json -print \
-                      | sort \
-                      | xargs sha256sum
+                    find apps packages -type f -name package.json -print0 \
+                      | sort -z \
+                      | xargs -0 -r sha256sum
                   } | sha256sum | cut -d ' ' -f 1
                 )
 
@@ -247,7 +254,10 @@
 
         development = pkgs.writeShellApplication {
           name = "studienbuch-development";
-          runtimeInputs = [ pkgs.coreutils ];
+          runtimeInputs = [
+            pkgs.coreutils
+            pkgs.jq
+          ];
           text = ''
             set -euo pipefail
 
@@ -263,7 +273,25 @@
               exit 64
             fi
 
-            log_root="''${XDG_STATE_HOME:-$HOME/.local/state}/studienbuch/process-compose"
+            runtime_file="''${PROJECT_RUNTIME_FILE:-}"
+            if [[ -n "$runtime_file" ]]; then
+              if ! state_root=$(jq -er '
+                select(
+                  .schemaVersion == 1 and
+                  .project == "studienbuch" and
+                  .realization == "development"
+                ) |
+                .paths.state |
+                select(type == "string" and length > 0)
+              ' "$runtime_file"); then
+                echo "Studienbuch Project Runtime manifest is invalid: $runtime_file" >&2
+                exit 65
+              fi
+            else
+              state_root="''${XDG_STATE_HOME:-$HOME/.local/state}/studienbuch"
+            fi
+
+            log_root="$state_root/process-compose"
             install -d -m 0700 "$log_root"
             export PC_LOG_FILE="$log_root/''${selected:-all}.log"
             if [[ ! -t 1 ]]; then
@@ -314,6 +342,97 @@
           inherit developmentProcesses projectRuntime;
           default = development;
         };
+
+        checks.projectRuntime =
+          pkgs.runCommand "studienbuch-project-runtime-check"
+            {
+              nativeBuildInputs = [
+                pkgs.bash
+                pkgs.coreutils
+                pkgs.findutils
+                pkgs.gnugrep
+                pkgs.jq
+              ];
+            }
+            ''
+              set -euo pipefail
+
+              bash -n ${projectRuntime}/bin/studienbuch-project-runtime
+              bash -n ${development}/bin/studienbuch-development
+              grep -Fq 'flock 9' ${projectRuntime}/bin/studienbuch-project-runtime
+              grep -Fq 'log_root="$state_root/process-compose"' ${development}/bin/studienbuch-development
+
+              fixture="$TMPDIR/project-runtime-fixture"
+              checkout="$fixture/checkout"
+              state="$fixture/state"
+              cache="$fixture/cache"
+              runtime="$fixture/runtime"
+              secrets="$fixture/secrets"
+              mkdir -p \
+                "$checkout/apps/mobile" \
+                "$checkout/packages/core" \
+                "$checkout/node_modules" \
+                "$state/preparation" \
+                "$cache" \
+                "$runtime" \
+                "$secrets"
+              printf '{}\n' > "$checkout/bun.lock"
+              printf '{}\n' > "$checkout/flake.lock"
+              printf '{}\n' > "$checkout/package.json"
+              printf '{}\n' > "$checkout/apps/mobile/package.json"
+              printf '{}\n' > "$checkout/packages/core/package.json"
+
+              dependency_key=$(
+                cd "$checkout"
+                {
+                  sha256sum bun.lock flake.lock package.json
+                  find apps packages -type f -name package.json -print0 \
+                    | sort -z \
+                    | xargs -0 -r sha256sum
+                } | sha256sum | cut -d ' ' -f 1
+              )
+              printf '%s\n' "$dependency_key" > "$state/preparation/dependencies.sha256"
+
+              jq -n \
+                --arg checkout "$checkout" \
+                --arg state "$state" \
+                --arg cache "$cache" \
+                --arg runtime "$runtime" \
+                '{
+                  schemaVersion: 1,
+                  project: "studienbuch",
+                  realization: "development",
+                  paths: {
+                    checkout: $checkout,
+                    state: $state,
+                    cache: $cache,
+                    runtime: $runtime
+                  },
+                  endpoints: {},
+                  settings: {},
+                  secrets: {}
+                }' > "$runtime/runtime.json"
+
+              PROJECT_RUNTIME_FILE="$runtime/runtime.json" \
+                PROJECT_SECRETS_DIR="$secrets" \
+                ${projectRuntime}/bin/studienbuch-project-runtime prepare \
+                > "$fixture/prepare.out"
+              grep -Fq "Studienbuch dependencies are already prepared ($dependency_key)" \
+                "$fixture/prepare.out"
+
+              printf '{}\n' > "$runtime/invalid.json"
+              set +e
+              PROJECT_RUNTIME_FILE="$runtime/invalid.json" \
+                PROJECT_SECRETS_DIR="$secrets" \
+                ${projectRuntime}/bin/studienbuch-project-runtime prepare \
+                > "$fixture/invalid.out" 2> "$fixture/invalid.err"
+              invalid_status=$?
+              set -e
+              test "$invalid_status" -eq 65
+              grep -Fq 'Studienbuch Project Runtime manifest is invalid' "$fixture/invalid.err"
+
+              touch "$out"
+            '';
 
         devShells.default = pkgs.mkShellNoCC {
           packages = with pkgs; [
