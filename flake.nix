@@ -41,6 +41,7 @@
           name = "studienbuch-project-runtime";
           runtimeInputs = [
             pkgs.bun
+            pkgs.bash
             pkgs.coreutils
             pkgs.findutils
             pkgs.git
