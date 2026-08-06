@@ -43,6 +43,7 @@
             pkgs.bun
             pkgs.coreutils
             pkgs.findutils
+            pkgs.git
             pkgs.jq
             pkgs.nodejs_latest
           ];
