@@ -183,6 +183,11 @@
                   map(select(type == "string" and length > 0)) |
                   join(",")
                 ' "$runtime_file")
+                web_generated_host=$(jq -er '
+                  .endpoints.web.hostNames // [] |
+                  map(select(type == "string" and length > 0)) |
+                  last // ""
+                ' "$runtime_file")
                 web_host=$(jq -er '.endpoints.web.listen.host' "$runtime_file")
                 web_port=$(jq -er '.endpoints.web.listen.port' "$runtime_file")
 
@@ -194,7 +199,7 @@
                   # Vite reads this built-in variable before loading the
                   # mutable checkout's config, so older workspaces also accept
                   # every hostname supplied by the Project controller.
-                  export __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS="$web_allowed_hosts"
+                  export __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS="$web_generated_host"
                 fi
                 export NODE_OPTIONS="--import ./instrument.server.mjs''${NODE_OPTIONS:+ $NODE_OPTIONS}"
 
