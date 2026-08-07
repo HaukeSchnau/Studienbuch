@@ -59,8 +59,8 @@
             set -euo pipefail
 
             action="''${1:-}"
-            if [[ "$#" != 1 ]] || [[ "$action" != "prepare" && "$action" != "web" && "$action" != "metro" ]]; then
-              echo "usage: studienbuch-project-runtime <prepare|web|metro>" >&2
+            if [[ "$#" != 1 ]] || [[ "$action" != "prepare" && "$action" != "web" && "$action" != "mobile" ]]; then
+              echo "usage: studienbuch-project-runtime <prepare|web|mobile>" >&2
               exit 64
             fi
 
@@ -92,7 +92,7 @@
                       visibility: "local",
                       listen: {host: "127.0.0.1", port: 3000}
                     },
-                    metro: {
+                    mobile: {
                       url: "http://127.0.0.1:8081",
                       visibility: "local",
                       listen: {host: "127.0.0.1", port: 8081}
@@ -224,21 +224,21 @@
                 exec bun run dev:server -- --host "$HOST" --port "$PORT" --strictPort
                 ;;
 
-              metro)
-                read_endpoint metro
-                metro_url=$(jq -er '.endpoints.metro.url' "$runtime_file")
-                metro_port=$(jq -er '.endpoints.metro.listen.port' "$runtime_file")
-                metro_cache="$cache_root/metro"
-                install -d -m 0700 "$metro_cache/tmp"
+              mobile)
+                read_endpoint mobile
+                mobile_url=$(jq -er '.endpoints.mobile.url' "$runtime_file")
+                mobile_port=$(jq -er '.endpoints.mobile.listen.port' "$runtime_file")
+                mobile_cache="$cache_root/mobile"
+                install -d -m 0700 "$mobile_cache/tmp"
 
                 export APP_VARIANT=development
-                export EXPO_PACKAGER_PROXY_URL="$metro_url"
+                export EXPO_PACKAGER_PROXY_URL="$mobile_url"
                 export EXPO_UNSTABLE_HEADLESS=1
                 export NODE_OPTIONS="--dns-result-order=ipv4first''${NODE_OPTIONS:+ $NODE_OPTIONS}"
-                export TMPDIR="$metro_cache/tmp"
-                export XDG_CACHE_HOME="$metro_cache"
+                export TMPDIR="$mobile_cache/tmp"
+                export XDG_CACHE_HOME="$mobile_cache"
 
-                deep_link="studienbuch://expo-development-client/?url=$(jq -rn --arg url "$metro_url" '$url | @uri')"
+                deep_link="studienbuch://expo-development-client/?url=$(jq -rn --arg url "$mobile_url" '$url | @uri')"
                 echo "Studienbuch Dev Client: $deep_link"
 
                 cd "$checkout/apps/mobile"
@@ -246,7 +246,7 @@
                   --dev-client \
                   --scheme studienbuch \
                   --localhost \
-                  --port "$metro_port"
+                  --port "$mobile_port"
                 ;;
             esac
           '';
@@ -269,7 +269,7 @@
               };
               settings.processes = {
                 web.command = "${projectRuntime}/bin/studienbuch-project-runtime web";
-                metro.command = "${projectRuntime}/bin/studienbuch-project-runtime metro";
+                mobile.command = "${projectRuntime}/bin/studienbuch-project-runtime mobile";
               };
             }
           ];
@@ -287,12 +287,12 @@
             selected=""
             if [[ "$#" == 2 && "$1" == "--only" ]]; then
               selected="$2"
-              if [[ "$selected" != "web" && "$selected" != "metro" ]]; then
+              if [[ "$selected" != "web" && "$selected" != "mobile" ]]; then
                 echo "unknown Studienbuch development workload: $selected" >&2
                 exit 64
               fi
             elif [[ "$#" != 0 ]]; then
-              echo "usage: nix run .#dev [-- --only <web|metro>]" >&2
+              echo "usage: nix run .#dev [-- --only <web|mobile>]" >&2
               exit 64
             fi
 
@@ -355,9 +355,9 @@
             type = "app";
             program = "${onlyWorkload "web"}/bin/studienbuch-development-web";
           };
-          dev-metro = {
+          dev-mobile = {
             type = "app";
-            program = "${onlyWorkload "metro"}/bin/studienbuch-development-metro";
+            program = "${onlyWorkload "mobile"}/bin/studienbuch-development-mobile";
           };
         };
 
@@ -383,9 +383,9 @@
                   .secrets.betterAuthSecret.description == "Secret used to sign Better Auth sessions" and
                   (.development.workloads | keys) == ["web"] and
                   .development.workloads.web.secrets == ["betterAuthSecret"] and
-                  (.development.endpoints | keys) == ["metro", "web"] and
+                  (.development.endpoints | keys) == ["mobile", "web"] and
                   .development.endpoints.web == {} and
-                  .development.endpoints.metro.health.paths == ["/status"]
+                  .development.endpoints.mobile.health.paths == ["/status"]
                 ' "$descriptor" >/dev/null
 
                 touch "$out"

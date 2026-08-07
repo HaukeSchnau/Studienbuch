@@ -14,7 +14,7 @@
     },
     "endpoints": {
       "web": {},
-      "metro": {
+      "mobile": {
         "health": {
           "paths": ["/status"]
         }
