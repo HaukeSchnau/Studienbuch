@@ -160,9 +160,7 @@
         };
       in
       {
-        apps = projectRuntime.apps // {
-          default = projectRuntime.apps.dev;
-        };
+        apps = projectRuntime.apps;
 
         packages = {
           projectRuntime = projectRuntime.package;
