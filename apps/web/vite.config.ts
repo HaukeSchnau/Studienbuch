@@ -8,14 +8,17 @@ import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
 
+const projectHostNames = JSON.parse(process.env.STUDIENBUCH_WEB_HOST_NAMES ?? "[]") as string[];
+const authHostName = process.env.BETTER_AUTH_URL
+  ? new URL(process.env.BETTER_AUTH_URL).hostname
+  : undefined;
+
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
   server: {
-    allowedHosts: process.env.STUDIENBUCH_WEB_ALLOWED_HOSTS
-      ? process.env.STUDIENBUCH_WEB_ALLOWED_HOSTS.split(",")
-      : process.env.BETTER_AUTH_URL
-        ? [new URL(process.env.BETTER_AUTH_URL).hostname]
-        : [],
+    allowedHosts: [...new Set([...projectHostNames, authHostName])].filter(
+      (hostName): hostName is string => hostName !== undefined,
+    ),
   },
   plugins: [
     devtools(),
