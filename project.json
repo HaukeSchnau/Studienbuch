@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "project": "studienbuch",
   "secrets": {
     "betterAuthSecret": {
@@ -7,9 +7,16 @@
     }
   },
   "development": {
+    "preparation": {
+      "action": "prepare"
+    },
     "workloads": {
       "web": {
+        "action": "web",
         "secrets": ["betterAuthSecret"]
+      },
+      "mobile": {
+        "action": "mobile"
       }
     },
     "endpoints": {
@@ -19,6 +26,15 @@
           "paths": ["/status"]
         }
       }
+    }
+  },
+  "release": {
+    "action": "web",
+    "health": {
+      "paths": ["/"]
+    },
+    "ingress": {
+      "compression": true
     }
   }
 }

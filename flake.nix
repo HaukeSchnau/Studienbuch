@@ -31,6 +31,8 @@
             android_sdk.accept_license = true;
           };
         };
+        lib = pkgs.lib;
+        nodejs = pkgs.nodejs_24;
         jdk = pkgs.jdk21;
         gradle = pkgs.gradle_8;
         androidComposition = pkgs.androidenv.composeAndroidPackages {
@@ -45,6 +47,132 @@
           ndkVersions = [ "27.1.12297006" ];
         };
         androidSdk = androidComposition.androidsdk;
+
+        dependencySource = lib.cleanSourceWith {
+          src = ./.;
+          filter =
+            path: type:
+            let
+              relative = lib.removePrefix ((toString ./.) + "/") (toString path);
+              ignored =
+                lib.any (prefix: lib.hasPrefix prefix relative) [
+                  ".direnv/"
+                  ".git/"
+                  ".jj/"
+                  "apps/console/node_modules/"
+                  "apps/mobile/node_modules/"
+                  "apps/web/.output/"
+                  "apps/web/node_modules/"
+                  "node_modules/"
+                  "packages/core/node_modules/"
+                  "tmp/"
+                ]
+                || lib.elem relative [
+                  ".direnv"
+                  ".git"
+                  ".jj"
+                  "apps/console/node_modules"
+                  "apps/mobile/node_modules"
+                  "apps/web/.output"
+                  "apps/web/node_modules"
+                  "node_modules"
+                  "packages/core/node_modules"
+                  "tmp"
+                ];
+            in
+            !ignored
+            && (
+              type == "directory"
+              || relative == "bun.lock"
+              || relative == "bunfig.toml"
+              || relative == "package.json"
+              || lib.hasSuffix "/package.json" relative
+              || lib.hasPrefix "patches/" relative
+            );
+        };
+
+        webSource = lib.cleanSourceWith {
+          src = ./.;
+          filter =
+            path: type:
+            let
+              relative = lib.removePrefix ((toString ./.) + "/") (toString path);
+              ignored =
+                lib.hasPrefix "apps/web/.output/" relative
+                || lib.hasPrefix "apps/web/node_modules/" relative
+                || lib.elem relative [
+                  "apps/web/.output"
+                  "apps/web/README.md"
+                  "apps/web/node_modules"
+                ];
+            in
+            !ignored
+            && (
+              type == "directory"
+              || relative == "bun.lock"
+              || relative == "bunfig.toml"
+              || relative == "package.json"
+              || relative == "tsconfig.json"
+              || lib.hasPrefix "apps/web/" relative
+            );
+        };
+
+        webDependencies = pkgs.stdenvNoCC.mkDerivation {
+          pname = "studienbuch-web-dependencies";
+          version = "0.0.0";
+          src = dependencySource;
+
+          nativeBuildInputs = [ pkgs.bun ];
+          dontConfigure = true;
+          dontFixup = true;
+
+          buildPhase = ''
+            runHook preBuild
+            export HOME="$TMPDIR/home"
+            export XDG_CACHE_HOME="$TMPDIR/cache"
+            export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
+            mkdir -p "$HOME" "$XDG_CACHE_HOME"
+            bun install --frozen-lockfile --ignore-scripts --filter @stu/web --cpu='*' --os='*'
+            runHook postBuild
+          '';
+
+          installPhase = ''
+            runHook preInstall
+            mkdir -p "$out"
+            cp -R node_modules "$out/node_modules"
+            runHook postInstall
+          '';
+
+          outputHashAlgo = "sha256";
+          outputHashMode = "recursive";
+          outputHash = "sha256-6xPVSxjeJ0l5Cy7l9wBm03v6EcNtoUATXDN1JsXjS1E=";
+        };
+
+        webApplication = pkgs.stdenvNoCC.mkDerivation {
+          pname = "studienbuch-web";
+          version = "0.0.0";
+          src = webSource;
+
+          nativeBuildInputs = [
+            pkgs.bun
+            nodejs
+          ];
+
+          buildPhase = ''
+            runHook preBuild
+            ln -s ${webDependencies}/node_modules node_modules
+            bun run --cwd apps/web build
+            runHook postBuild
+          '';
+
+          installPhase = ''
+            runHook preInstall
+            mkdir -p "$out/lib/studienbuch-web"
+            cp -R apps/web/.output/. "$out/lib/studienbuch-web/"
+            ln -s ${webDependencies}/node_modules "$out/lib/studienbuch-web/node_modules"
+            runHook postInstall
+          '';
+        };
 
         prepareAction = pkgs.writeShellApplication {
           name = "studienbuch-prepare-action";
@@ -88,7 +216,7 @@
           name = "studienbuch-web-action";
           runtimeInputs = [
             pkgs.bun
-            pkgs.nodejs_latest
+            nodejs
           ];
           text = ''
             set -euo pipefail
@@ -118,7 +246,7 @@
           runtimeInputs = [
             pkgs.bun
             pkgs.coreutils
-            pkgs.nodejs_latest
+            nodejs
           ];
           text = ''
             set -euo pipefail
@@ -149,6 +277,28 @@
           '';
         };
 
+        releaseWebAction = pkgs.writeShellApplication {
+          name = "studienbuch-release-web-action";
+          runtimeInputs = [ nodejs ];
+          text = ''
+            set -euo pipefail
+
+            web_url="$($PROJECT_RUNTIME_QUERY endpoint default url)"
+            HOST="$($PROJECT_RUNTIME_QUERY endpoint default listen-host)"
+            PORT="$($PROJECT_RUNTIME_QUERY endpoint default listen-port)"
+            BETTER_AUTH_URL="$web_url"
+            export HOST PORT BETTER_AUTH_URL
+            export NODE_ENV=production
+
+            better_auth_secret_file="$($PROJECT_RUNTIME_QUERY secret-file betterAuthSecret --required)"
+            BETTER_AUTH_SECRET="$(<"$better_auth_secret_file")"
+            export BETTER_AUTH_SECRET
+
+            cd ${webApplication}/lib/studienbuch-web
+            exec node --import ./server/instrument.server.mjs ./server/index.mjs
+          '';
+        };
+
         projectRuntime = nix-infra-modules.lib.projectRuntime.mkDevelopment {
           inherit pkgs;
           descriptorPath = ./project.json;
@@ -158,6 +308,17 @@
             mobile = mobileAction;
           };
         };
+
+        projectRelease =
+          if pkgs.stdenv.hostPlatform.isLinux then
+            nix-infra-modules.lib.projectRuntime.mkServiceRelease {
+              inherit pkgs;
+              descriptorPath = ./project.json;
+              payloads = [ webApplication ];
+              actions.web = releaseWebAction;
+            }
+          else
+            null;
       in
       {
         apps = projectRuntime.apps;
@@ -165,14 +326,99 @@
         packages = {
           projectRuntime = projectRuntime.package;
           default = projectRuntime.package;
+        }
+        // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+          projectRelease = projectRelease.package;
+          inherit webApplication;
         };
 
-        checks = projectRuntime.checks;
+        checks = projectRuntime.checks // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+          projectDescriptor = pkgs.runCommand "studienbuch-project-descriptor-check" { } ''
+            ${pkgs.jq}/bin/jq -e '
+              .schemaVersion == 2 and
+              .project == "studienbuch" and
+              (.development.endpoints | keys) == ["mobile", "web"] and
+              (.development.workloads | keys) == ["mobile", "web"] and
+              .development.workloads.web.secrets == ["betterAuthSecret"] and
+              (.development.workloads.mobile.secrets // []) == [] and
+              .release.action == "web" and
+              .release.health.paths == ["/"]
+            ' ${./project.json} >/dev/null
+            cmp ${./project.json} ${projectRelease.package}/share/project/descriptor.json
+            touch "$out"
+          '';
+          releaseInterface = projectRelease.checks.interface;
+          releasePackage = projectRelease.package;
+          inherit webApplication;
+          releaseSmoke = pkgs.runCommand "studienbuch-release-smoke" {
+            nativeBuildInputs = [
+              pkgs.coreutils
+              pkgs.curl
+              pkgs.jq
+            ];
+          } ''
+            set -euo pipefail
+
+            root="$TMPDIR/runtime"
+            state="$root/state"
+            runtime="$root/run"
+            secrets="$root/secrets"
+            mkdir -p "$state" "$runtime" "$secrets"
+            printf '%s\n' 'release-smoke-secret-with-sufficient-length' > "$secrets/better-auth-secret"
+
+            jq -n \
+              --arg state "$state" \
+              --arg runtime "$runtime" \
+              '{
+                schemaVersion: 2,
+                project: "studienbuch",
+                realization: "release",
+                paths: {state: $state, runtime: $runtime},
+                endpoints: {
+                  default: {
+                    protocol: "http",
+                    url: "http://127.0.0.1:32117",
+                    listen: {host: "127.0.0.1", port: 32117},
+                    hostNames: ["studienbuch.example.test"],
+                    visibility: "local"
+                  }
+                },
+                parameters: {},
+                secrets: {betterAuthSecret: "better-auth-secret"}
+              }' > "$root/manifest.json"
+
+            PROJECT_RUNTIME_FILE="$root/manifest.json" \
+              PROJECT_SECRETS_DIR="$secrets" \
+              ${projectRelease.package}/bin/project-release-runtime \
+              > "$root/server.log" 2>&1 &
+            server_pid="$!"
+            cleanup() {
+              kill "$server_pid" 2>/dev/null || true
+              wait "$server_pid" 2>/dev/null || true
+            }
+            trap cleanup EXIT
+
+            for _ in $(seq 1 60); do
+              if curl --fail --silent --show-error http://127.0.0.1:32117/ > "$root/index.html"; then
+                touch "$out"
+                exit 0
+              fi
+              if ! kill -0 "$server_pid" 2>/dev/null; then
+                cat "$root/server.log" >&2
+                exit 1
+              fi
+              sleep 0.25
+            done
+
+            cat "$root/server.log" >&2
+            exit 1
+          '';
+        };
 
         devShells.default = pkgs.mkShellNoCC {
           packages = with pkgs; [
             bun
-            nodejs_latest
+            nodejs
             just
             mprocs
             fastlane

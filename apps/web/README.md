@@ -44,10 +44,17 @@ This project uses Nitro as a generic server adapter, so it can run on any Node-c
 
 ```bash
 npm run build
-node dist/server/index.mjs
+node --import .output/server/instrument.server.mjs .output/server/index.mjs
 ```
 
-The build output is a self-contained Node server. To deploy, push the `dist/` directory to your host (Render, Fly.io, your own VPS, etc.) and run the server command above.
+The build output is a self-contained Node server under `.output/`.
+
+The repository's Nix flake exposes this production server as
+`packages.projectRelease`. Its embedded Project descriptor pairs the immutable
+web Release with the mutable Vite and Expo Development workloads. Deployment
+infrastructure supplies the public URL, listener, and Better Auth credential;
+the repository runtime derives `BETTER_AUTH_URL`, `HOST`, and `PORT` from that
+generic context. The Release intentionally contains no Metro server or database.
 
 For host-specific presets (Vercel, Netlify, Cloudflare, AWS Lambda, etc.) and tuning, see https://v3.nitro.build/deploy.
 
