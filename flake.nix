@@ -3,7 +3,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     nix-infra-modules = {
-      url = "github:HaukeSchnau/nix-infra-modules";
+      url = "github:HaukeSchnau/nix-infra-modules/c2998d026da5c5c4403269f2135d94a9e7c1f7cb";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -184,9 +184,9 @@
           text = ''
             set -euo pipefail
 
-            checkout="$($PROJECT_RUNTIME_QUERY path checkout)"
-            state_root="$($PROJECT_RUNTIME_QUERY path state)"
-            preparation_state="$state_root/preparation"
+            checkout="$(project-context path checkout)"
+            cache_root="$(project-context path cache)"
+            preparation_state="$cache_root/preparation"
             stamp_file="$preparation_state/dependencies.sha256"
             cd "$checkout"
 
@@ -221,16 +221,16 @@
           text = ''
             set -euo pipefail
 
-            checkout="$($PROJECT_RUNTIME_QUERY path checkout)"
-            web_url="$($PROJECT_RUNTIME_QUERY endpoint web url)"
-            web_host="$($PROJECT_RUNTIME_QUERY endpoint web listen-host)"
-            web_port="$($PROJECT_RUNTIME_QUERY endpoint web listen-port)"
+            checkout="$(project-context path checkout)"
+            web_url="$(project-context endpoint web url)"
+            web_host="$(project-context endpoint web listen-host)"
+            web_port="$(project-context endpoint web listen-port)"
 
             export BETTER_AUTH_URL="$web_url"
-            STUDIENBUCH_WEB_HOST_NAMES="$($PROJECT_RUNTIME_QUERY endpoint web host-names --json)"
+            STUDIENBUCH_WEB_HOST_NAMES="$(project-context endpoint web host-names --json)"
             export STUDIENBUCH_WEB_HOST_NAMES
-            if better_auth_secret_file="$($PROJECT_RUNTIME_QUERY secret-file betterAuthSecret)"; then
-              better_auth_secret_file="$($PROJECT_RUNTIME_QUERY secret-file betterAuthSecret --required)"
+            if better_auth_secret_file="$(project-context secret-file betterAuthSecret)"; then
+              better_auth_secret_file="$(project-context secret-file betterAuthSecret --required)"
               BETTER_AUTH_SECRET="$(<"$better_auth_secret_file")"
               export BETTER_AUTH_SECRET
             fi
@@ -251,10 +251,10 @@
           text = ''
             set -euo pipefail
 
-            checkout="$($PROJECT_RUNTIME_QUERY path checkout)"
-            cache_root="$($PROJECT_RUNTIME_QUERY path cache)"
-            mobile_url="$($PROJECT_RUNTIME_QUERY endpoint mobile url)"
-            mobile_port="$($PROJECT_RUNTIME_QUERY endpoint mobile listen-port)"
+            checkout="$(project-context path checkout)"
+            cache_root="$(project-context path cache)"
+            mobile_url="$(project-context endpoint mobile url)"
+            mobile_port="$(project-context endpoint mobile listen-port)"
             mobile_cache="$cache_root/mobile"
             install -d -m 0700 "$mobile_cache/tmp"
 
@@ -283,14 +283,14 @@
           text = ''
             set -euo pipefail
 
-            web_url="$($PROJECT_RUNTIME_QUERY endpoint default url)"
-            HOST="$($PROJECT_RUNTIME_QUERY endpoint default listen-host)"
-            PORT="$($PROJECT_RUNTIME_QUERY endpoint default listen-port)"
+            web_url="$(project-context endpoint web url)"
+            HOST="$(project-context endpoint web listen-host)"
+            PORT="$(project-context endpoint web listen-port)"
             BETTER_AUTH_URL="$web_url"
             export HOST PORT BETTER_AUTH_URL
             export NODE_ENV=production
 
-            better_auth_secret_file="$($PROJECT_RUNTIME_QUERY secret-file betterAuthSecret --required)"
+            better_auth_secret_file="$(project-context secret-file betterAuthSecret --required)"
             BETTER_AUTH_SECRET="$(<"$better_auth_secret_file")"
             export BETTER_AUTH_SECRET
 
@@ -332,88 +332,93 @@
           inherit webApplication;
         };
 
-        checks = projectRuntime.checks // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-          projectDescriptor = pkgs.runCommand "studienbuch-project-descriptor-check" { } ''
-            ${pkgs.jq}/bin/jq -e '
-              .schemaVersion == 2 and
-              .project == "studienbuch" and
-              (.development.endpoints | keys) == ["mobile", "web"] and
-              (.development.workloads | keys) == ["mobile", "web"] and
-              .development.workloads.web.secrets == ["betterAuthSecret"] and
-              (.development.workloads.mobile.secrets // []) == [] and
-              .release.action == "web" and
-              .release.health.paths == ["/"]
-            ' ${./project.json} >/dev/null
-            cmp ${./project.json} ${projectRelease.package}/share/project/descriptor.json
-            touch "$out"
-          '';
-          releaseInterface = projectRelease.checks.interface;
-          releasePackage = projectRelease.package;
-          inherit webApplication;
-          releaseSmoke = pkgs.runCommand "studienbuch-release-smoke" {
-            nativeBuildInputs = [
-              pkgs.coreutils
-              pkgs.curl
-              pkgs.jq
-            ];
-          } ''
-            set -euo pipefail
+        checks =
+          projectRuntime.checks
+          // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+            projectDescriptor = pkgs.runCommand "studienbuch-project-descriptor-check" { } ''
+              ${pkgs.jq}/bin/jq -e '
+                .schemaVersion == 2 and
+                .project == "studienbuch" and
+                (.development.endpoints | keys) == ["mobile", "web"] and
+                (.development.workloads | keys) == ["mobile", "web"] and
+                .development.workloads.web.secrets == ["betterAuthSecret"] and
+                (.development.workloads.mobile.secrets // []) == [] and
+                .release.action == "web" and
+                .release.health.paths == ["/"]
+              ' ${./project.json} >/dev/null
+              cmp ${./project.json} ${projectRelease.package}/share/project/descriptor.json
+              touch "$out"
+            '';
+            releaseInterface = projectRelease.checks.interface;
+            releasePackage = projectRelease.package;
+            inherit webApplication;
+            releaseSmoke =
+              pkgs.runCommand "studienbuch-release-smoke"
+                {
+                  nativeBuildInputs = [
+                    pkgs.coreutils
+                    pkgs.curl
+                    pkgs.jq
+                  ];
+                }
+                ''
+                  set -euo pipefail
 
-            root="$TMPDIR/runtime"
-            state="$root/state"
-            runtime="$root/run"
-            secrets="$root/secrets"
-            mkdir -p "$state" "$runtime" "$secrets"
-            printf '%s\n' 'release-smoke-secret-with-sufficient-length' > "$secrets/better-auth-secret"
+                  root="$TMPDIR/runtime"
+                  state="$root/state"
+                  runtime="$root/run"
+                  secrets="$root/secrets"
+                  mkdir -p "$state" "$runtime" "$secrets"
+                  printf '%s\n' 'release-smoke-secret-with-sufficient-length' > "$secrets/better-auth-secret"
 
-            jq -n \
-              --arg state "$state" \
-              --arg runtime "$runtime" \
-              '{
-                schemaVersion: 2,
-                project: "studienbuch",
-                realization: "release",
-                paths: {state: $state, runtime: $runtime},
-                endpoints: {
-                  default: {
-                    protocol: "http",
-                    url: "http://127.0.0.1:32117",
-                    listen: {host: "127.0.0.1", port: 32117},
-                    hostNames: ["studienbuch.example.test"],
-                    visibility: "local"
+                  jq -n \
+                    --arg state "$state" \
+                    --arg runtime "$runtime" \
+                    '{
+                      schemaVersion: 2,
+                      project: "studienbuch",
+                      realization: "release",
+                      paths: {state: $state, runtime: $runtime},
+                      endpoints: {
+                        web: {
+                          protocol: "http",
+                          url: "http://127.0.0.1:32117",
+                          listen: {host: "127.0.0.1", port: 32117},
+                          hostNames: ["studienbuch.example.test"],
+                          visibility: "local"
+                        }
+                      },
+                      parameters: {},
+                      secrets: {betterAuthSecret: "better-auth-secret"}
+                    }' > "$root/manifest.json"
+
+                  PROJECT_RUNTIME_FILE="$root/manifest.json" \
+                    PROJECT_SECRETS_DIR="$secrets" \
+                    ${projectRelease.package}/bin/project-release-runtime \
+                    > "$root/server.log" 2>&1 &
+                  server_pid="$!"
+                  cleanup() {
+                    kill "$server_pid" 2>/dev/null || true
+                    wait "$server_pid" 2>/dev/null || true
                   }
-                },
-                parameters: {},
-                secrets: {betterAuthSecret: "better-auth-secret"}
-              }' > "$root/manifest.json"
+                  trap cleanup EXIT
 
-            PROJECT_RUNTIME_FILE="$root/manifest.json" \
-              PROJECT_SECRETS_DIR="$secrets" \
-              ${projectRelease.package}/bin/project-release-runtime \
-              > "$root/server.log" 2>&1 &
-            server_pid="$!"
-            cleanup() {
-              kill "$server_pid" 2>/dev/null || true
-              wait "$server_pid" 2>/dev/null || true
-            }
-            trap cleanup EXIT
+                  for _ in $(seq 1 60); do
+                    if curl --fail --silent --show-error http://127.0.0.1:32117/ > "$root/index.html"; then
+                      touch "$out"
+                      exit 0
+                    fi
+                    if ! kill -0 "$server_pid" 2>/dev/null; then
+                      cat "$root/server.log" >&2
+                      exit 1
+                    fi
+                    sleep 0.25
+                  done
 
-            for _ in $(seq 1 60); do
-              if curl --fail --silent --show-error http://127.0.0.1:32117/ > "$root/index.html"; then
-                touch "$out"
-                exit 0
-              fi
-              if ! kill -0 "$server_pid" 2>/dev/null; then
-                cat "$root/server.log" >&2
-                exit 1
-              fi
-              sleep 0.25
-            done
-
-            cat "$root/server.log" >&2
-            exit 1
-          '';
-        };
+                  cat "$root/server.log" >&2
+                  exit 1
+                '';
+          };
 
         devShells.default = pkgs.mkShellNoCC {
           packages = with pkgs; [
