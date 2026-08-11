@@ -418,7 +418,6 @@
               nodejs
               pnpm
               just
-              mprocs
               watchman
               jdk
               gradle

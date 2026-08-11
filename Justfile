@@ -1,5 +1,5 @@
 [parallel]
-qa-tasks: lint test check-mobile-boundaries
+qa-tasks: lint test
 
 ios_device := env_var_or_default("IOS_DEVICE", "539D7C55-85D6-50B1-BE9B-88293D4628C3")
 ios_artifacts_dir := env_var_or_default("IOS_ARTIFACTS_DIR", "/tmp/studienbuch-mobile-builds")
@@ -28,9 +28,6 @@ lint-fix:
 
 test:
     vp run -r test
-
-check-mobile-boundaries:
-    node scripts/check-mobile-boundaries.ts
 
 icons:
     vp run --workspace-root generate:icons

@@ -26,16 +26,4 @@ large and downsampling:
 - `favicon.png`: web favicon
 - `favicon-dev.png`: web favicon for development builds
 
-Regenerate everything with:
-
-```sh
-vp run --workspace-root generate:icons
-```
-
-From the mobile app workspace, the same generator is available as:
-
-```sh
-vp run --workspace-root generate:icons
-```
-
-You can also use `just icons` from the repository root.
+Regenerate everything with `just icons`.
