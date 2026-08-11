@@ -6,25 +6,25 @@
   "scripts": {
     "dev": "NODE_OPTIONS=--dns-result-order=ipv4first expo start --dev-client --ios",
     "dev:dev-client": "expo run:ios",
-    "doctor": "bunx expo-doctor",
+    "doctor": "vp dlx expo-doctor",
     "doctor:deps": "expo install --check",
-    "generate:icons": "bun run --cwd ../.. generate:icons",
-    "test": "vitest run --config vitest.config.ts --passWithNoTests",
-    "build:dev": "bunx eas-cli build --platform ios --profile development --local",
-    "build:dev:device": "bunx eas-cli build --platform ios --profile development --local",
-    "build:dev:simulator": "bunx eas-cli build --platform ios --profile development-simulator --local",
-    "build:prod": "bunx eas-cli build --platform ios --profile production --local",
-    "build:prod:device": "bunx eas-cli build --platform ios --profile production-device --local",
-    "update:preview": "bunx eas-cli update --channel preview",
-    "update:production": "bunx eas-cli update --channel production",
-    "update:production:rollout": "bunx eas-cli update --channel production --rollout-percentage 10",
-    "update:rollback": "bunx eas-cli update:rollback --channel production",
+    "generate:icons": "vp run --workspace-root generate:icons",
+    "test": "vp test run --passWithNoTests",
+    "build:dev": "vp dlx eas-cli build --platform ios --profile development --local",
+    "build:dev:device": "vp dlx eas-cli build --platform ios --profile development --local",
+    "build:dev:simulator": "vp dlx eas-cli build --platform ios --profile development-simulator --local",
+    "build:prod": "vp dlx eas-cli build --platform ios --profile production --local",
+    "build:prod:device": "vp dlx eas-cli build --platform ios --profile production-device --local",
+    "update:preview": "vp dlx eas-cli update --channel preview",
+    "update:production": "vp dlx eas-cli update --channel production",
+    "update:production:rollout": "vp dlx eas-cli update --channel production --rollout-percentage 10",
+    "update:rollback": "vp dlx eas-cli update:rollback --channel production",
     "updates:assets:verify": "node scripts/verify-update-assets.mjs",
-    "updates:fingerprint": "bun run updates:fingerprint:ios && bun run updates:fingerprint:android",
-    "updates:fingerprint:ios": "bunx expo-updates fingerprint:generate --platform ios",
-    "updates:fingerprint:android": "bunx expo-updates fingerprint:generate --platform android",
-    "observe:versions": "bunx eas-cli observe:versions",
-    "observe:metrics": "bunx eas-cli observe:metrics-summary"
+    "updates:fingerprint": "vp run updates:fingerprint:ios && vp run updates:fingerprint:android",
+    "updates:fingerprint:ios": "expo-updates fingerprint:generate --platform ios",
+    "updates:fingerprint:android": "expo-updates fingerprint:generate --platform android",
+    "observe:versions": "vp dlx eas-cli observe:versions",
+    "observe:metrics": "vp dlx eas-cli observe:metrics-summary"
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.2",
@@ -73,6 +73,6 @@
     "react-native-svg-transformer": "^1.5.3",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.3",
-    "vitest": "catalog:"
+    "vite-plus": "catalog:"
   }
 }

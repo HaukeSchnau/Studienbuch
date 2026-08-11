@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(projectRoot, "../..");
+const vp = resolve(repoRoot, "node_modules/vite-plus/bin/vp");
 const workDir = resolve(projectRoot, ".expo-update-verify");
 const requestedPlatform = process.env.PLATFORM;
 const platforms = requestedPlatform ? [requestedPlatform] : ["ios", "android"];
@@ -50,7 +51,9 @@ for (const platform of platforms) {
     "all",
   ]);
 
-  run("bunx", [
+  run(process.execPath, [
+    vp,
+    "exec",
     "expo",
     "export",
     "--platform",
@@ -60,7 +63,9 @@ for (const platform of platforms) {
     exportDir,
   ]);
 
-  run("bunx", [
+  run(process.execPath, [
+    vp,
+    "exec",
     "expo-updates",
     "assets:verify",
     projectRoot,

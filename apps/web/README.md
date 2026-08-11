@@ -5,8 +5,8 @@ Welcome to your new TanStack Start app!
 To run this application:
 
 ```bash
-bun install
-bun --bun run dev
+vp install
+vp run --filter @stu/web dev
 ```
 
 # Building For Production
@@ -14,7 +14,7 @@ bun --bun run dev
 To build this application for production:
 
 ```bash
-bun --bun run build
+vp run --filter @stu/web build
 ```
 
 ## Testing
@@ -22,7 +22,7 @@ bun --bun run build
 This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
 
 ```bash
-bun --bun run test
+vp run --filter @stu/web test
 ```
 
 ## Styling
@@ -36,14 +36,14 @@ If you prefer not to use Tailwind CSS:
 1. Remove the demo pages in `src/routes/demo/`
 2. Replace the Tailwind import in `src/styles.css` with your own styles
 3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `bun install @tailwindcss/vite tailwindcss -D`
+4. Uninstall the packages: `vp remove --filter @stu/web @tailwindcss/vite tailwindcss`
 
 ## Deploy with Nitro
 
 This project uses Nitro as a generic server adapter, so it can run on any Node-compatible host.
 
 ```bash
-npm run build
+vp build
 node --import .output/server/instrument.server.mjs .output/server/index.mjs
 ```
 
@@ -63,7 +63,7 @@ For host-specific presets (Vercel, Netlify, Cloudflare, AWS Lambda, etc.) and tu
 Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
 
 ```bash
-pnpm dlx shadcn@latest add button
+vp dlx shadcn@latest add button
 ```
 
 ## Setting up Better Auth
@@ -71,7 +71,7 @@ pnpm dlx shadcn@latest add button
 1. Generate and set the `BETTER_AUTH_SECRET` environment variable in your `.env.local`:
 
    ```bash
-   bunx --bun @better-auth/cli secret
+   vp dlx @better-auth/cli secret
    ```
 
 2. Visit the [Better Auth documentation](https://www.better-auth.com) to unlock the full potential of authentication in your app.
@@ -96,7 +96,7 @@ export const auth = betterAuth({
 Then run migrations:
 
 ```bash
-bunx --bun @better-auth/cli migrate
+vp dlx @better-auth/cli migrate
 ```
 
 ## Setting up PostHog

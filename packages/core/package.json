@@ -7,9 +7,9 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "test": "vitest run --config vitest.config.ts --passWithNoTests"
+    "test": "vp test run --passWithNoTests"
   },
   "devDependencies": {
-    "vitest": "catalog:"
+    "vite-plus": "catalog:"
   }
 }

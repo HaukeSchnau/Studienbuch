@@ -29,13 +29,13 @@ large and downsampling:
 Regenerate everything with:
 
 ```sh
-bun run generate:icons
+vp run --workspace-root generate:icons
 ```
 
 From the mobile app workspace, the same generator is available as:
 
 ```sh
-bun run generate:icons
+vp run --workspace-root generate:icons
 ```
 
 You can also use `just icons` from the repository root.

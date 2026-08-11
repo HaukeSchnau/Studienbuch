@@ -3,15 +3,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bun run src/index.ts",
-    "build": "bun build src/index.ts --target=bun --outdir=dist --production",
-    "test": "vitest run --config vitest.config.ts --passWithNoTests"
+    "dev": "node src/index.ts",
+    "build": "vp pack",
+    "start": "node dist/index.mjs",
+    "test": "vp test run --passWithNoTests"
   },
   "dependencies": {
-    "@effect/platform-bun": "catalog:",
+    "@effect/platform-node": "catalog:",
     "effect": "catalog:"
   },
   "devDependencies": {
-    "vitest": "catalog:"
+    "vite-plus": "catalog:"
   }
 }

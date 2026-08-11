@@ -10,43 +10,43 @@ qa: fmt qa-tasks
 fix: fmt lint-fix
 
 doctor-mobile:
-    nix shell nixpkgs#cocoapods -c bun run --cwd apps/mobile doctor
-    bun run --cwd apps/mobile doctor:deps
-    nix shell nixpkgs#nodejs_24 -c npm exec --prefix apps/mobile react-compiler-healthcheck@latest -- .
+    nix shell nixpkgs#cocoapods -c vp run --filter @stu/mobile doctor
+    vp run --filter @stu/mobile doctor:deps
+    nix shell nixpkgs#nodejs_24 -c vp dlx react-compiler-healthcheck@latest apps/mobile
 
 fmt:
-    bun run oxfmt
+    vp fmt
 
 fmt-check:
-    bun run oxfmt --check
+    vp fmt --check
 
 lint:
-    bun run oxlint --disable-nested-config --report-unused-disable-directives
+    vp lint --report-unused-disable-directives
 
 lint-fix:
-    bun run oxlint --disable-nested-config --report-unused-disable-directives --fix
+    vp lint --report-unused-disable-directives --fix
 
 test:
-    bun run test
+    vp run -r test
 
 check-mobile-boundaries:
-    bun scripts/check-mobile-boundaries.ts
+    node scripts/check-mobile-boundaries.ts
 
 icons:
-    bun run generate:icons
+    vp run --workspace-root generate:icons
 
 clean:
-    rm -rf dist node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/*/dist apps/mobile/ios apps/mobile/android app/mobile/.expo
-    bun i
+    rm -rf dist node_modules .vite-plus apps/*/node_modules apps/*/.vite-plus packages/*/node_modules packages/*/.vite-plus apps/*/dist packages/*/dist apps/mobile/ios apps/mobile/android apps/mobile/.expo
+    pnpm install
 
 dev app options="":
-    bun run --cwd apps/{{app}} dev {{options}}
+    vp run --filter "./apps/{{app}}" dev -- {{options}}
 
 build app:
-    bun run --cwd apps/{{app}} build
+    vp run --filter "./apps/{{app}}" build
 
 start app:
-    bun run --cwd apps/{{app}} start
+    vp run --filter "./apps/{{app}}" start
 
 _ios-local-build profile output:
     mkdir -p "$(dirname "{{output}}")"
@@ -57,7 +57,7 @@ _ios-local-build profile output:
     printf '#!/bin/sh\nexec /usr/bin/rsync "$@"\n' > "$tmpbin/rsync"; \
     printf '#!/bin/sh\nif [ "$1" = "--no-pager" ] && [ "$2" = "log" ] && [ "$3" = "-1" ] && [ "$4" = "--pretty=%%B" ]; then\n  output="$(/usr/bin/git "$@")"\n  status="$?"\n  if [ "$status" -ne 0 ]; then\n    exit "$status"\n  fi\n  if [ -n "$output" ]; then\n    printf "%%s" "$output"\n  else\n    printf "%%s\\n" "Local {{profile}} build"\n  fi\nelse\n  exec /usr/bin/git "$@"\nfi\n' > "$tmpbin/git"; \
     chmod +x "$tmpbin/sed" "$tmpbin/rsync" "$tmpbin/git"; \
-    cd apps/mobile && nix shell nixpkgs#fastlane nixpkgs#cocoapods -c sh -c 'PATH="$1:$PATH" NODE_OPTIONS=--dns-result-order=ipv4first EXPO_USE_PRECOMPILED_MODULES=0 EAS_LOCAL_BUILD_SKIP_CLEANUP=1 bunx eas-cli build --platform ios --profile "$2" --local --non-interactive --message "Local $2 build" --output "$3"' sh "$tmpbin" "{{profile}}" "{{output}}"
+    cd apps/mobile && nix shell nixpkgs#fastlane nixpkgs#cocoapods -c sh -c 'PATH="$1:$PATH" NODE_OPTIONS=--dns-result-order=ipv4first EXPO_USE_PRECOMPILED_MODULES=0 EAS_LOCAL_BUILD_SKIP_CLEANUP=1 vp dlx eas-cli build --platform ios --profile "$2" --local --non-interactive --message "Local $2 build" --output "$3"' sh "$tmpbin" "{{profile}}" "{{output}}"
     test -s "{{output}}"
 
 ios-devices:

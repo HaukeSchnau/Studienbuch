@@ -1,9 +1,10 @@
-#!/usr/bin/env bun
-import { $ } from "bun";
+#!/usr/bin/env node
+import { spawn } from "node:child_process";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
-const repoRoot = resolve(import.meta.dir, "..");
+const repoRoot = resolve(import.meta.dirname, "..");
 const sourceSvg = resolve(repoRoot, "branding/logo/app-icon.svg");
 const logoPreview = resolve(repoRoot, "branding/logo/app-icon.png");
 const devLogoPreview = resolve(repoRoot, "branding/logo/app-icon-dev.png");
@@ -33,23 +34,56 @@ const outputs = {
   webManifest: resolve(webPublic, "manifest.json"),
 } satisfies Record<string, string>;
 
-async function runMagick(args: string[]) {
-  const magick = Bun.env.MAGICK ?? Bun.which("magick");
+function run(command: string, args: readonly string[]): Promise<void> {
+  return new Promise<void>((complete, reject) => {
+    const child = spawn(command, args, { stdio: "inherit" });
 
-  if (magick) {
-    await $`${magick} ${args}`;
+    child.once("error", reject);
+    child.once("close", (code, signal) => {
+      if (code === 0) {
+        complete();
+        return;
+      }
+
+      const outcome = signal ? `signal ${signal}` : `exit code ${code ?? "unknown"}`;
+      reject(new Error(`${command} failed with ${outcome}`));
+    });
+  });
+}
+
+function isExecutableMissing(error: unknown): boolean {
+  return error instanceof Error && "code" in error && error.code === "ENOENT";
+}
+
+async function runMagick(args: readonly string[]): Promise<void> {
+  const configuredMagick = process.env.MAGICK;
+
+  if (configuredMagick !== undefined) {
+    await run(configuredMagick, args);
     return;
   }
 
-  await $`nix run nixpkgs#imagemagick -- magick ${args}`;
+  try {
+    await run("magick", args);
+  } catch (error) {
+    if (!isExecutableMissing(error)) {
+      throw error;
+    }
+
+    await run("nix", ["run", "nixpkgs#imagemagick", "--", "magick", ...args]);
+  }
 }
 
-function generated(path: string) {
+function generated(path: string): string {
   return path.replace(`${repoRoot}/`, "");
 }
 
-await $`rm -rf ${tempDir}`;
-await $`mkdir -p ${[tempDir, dirname(logoPreview), mobileImages, webPublic]}`;
+await rm(tempDir, { recursive: true, force: true });
+await Promise.all(
+  [tempDir, dirname(logoPreview), mobileImages, webPublic].map((path) =>
+    mkdir(path, { recursive: true }),
+  ),
+);
 
 const transparent4096 = resolve(tempDir, "foreground-4096.png");
 const devBase4096 = resolve(tempDir, "dev-base-4096.png");
@@ -63,7 +97,7 @@ const webFavicon24 = resolve(tempDir, "favicon-24.png");
 const webFavicon32 = resolve(tempDir, "favicon-32.png");
 const webFavicon64 = resolve(tempDir, "favicon-64.png");
 
-async function roundedResize(input: string, size: number, output: string) {
+async function roundedResize(input: string, size: number, output: string): Promise<void> {
   const mask = resolve(tempDir, `rounded-mask-${size}.png`);
   const radius = Math.round(size * 0.22);
 
@@ -95,7 +129,7 @@ async function roundedResize(input: string, size: number, output: string) {
   ]);
 }
 
-await Bun.write(
+await writeFile(
   devBadge,
   `<svg xmlns="http://www.w3.org/2000/svg" width="4096" height="4096" viewBox="0 0 4096 4096">
   <g transform="translate(2230 280) rotate(8 760 300)">
@@ -247,7 +281,7 @@ await runMagick([
   outputs.androidDevMonochrome,
 ]);
 
-await Bun.write(
+await writeFile(
   outputs.webManifest,
   `${JSON.stringify(
     {

@@ -1,10 +1,11 @@
-import { BunRuntime, BunServices } from "@effect/platform-bun";
+import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
+import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Effect } from "effect";
 import { Command } from "effect/unstable/cli";
-import { pullCommand } from "./commands/pull";
+import { pullCommand } from "./commands/pull.ts";
 
 const consoleCommand = Command.make("console").pipe(Command.withSubcommands([pullCommand]));
 
 const cli = Command.run(consoleCommand, { version: "0.1.0" });
 
-BunRuntime.runMain(cli.pipe(Effect.provide(BunServices.layer)));
+NodeRuntime.runMain(cli.pipe(Effect.provide(NodeServices.layer)));

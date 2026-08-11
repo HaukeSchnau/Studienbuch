@@ -28,11 +28,11 @@ Channels are defined in `apps/mobile/eas.json`:
 
 Useful commands:
 
-- `bun run --cwd apps/mobile updates:fingerprint`
-- `bun run --cwd apps/mobile updates:assets:verify`
-- `bun run --cwd apps/mobile update:preview`
-- `bun run --cwd apps/mobile update:production`
-- `bun run --cwd apps/mobile update:rollback`
+- `vp run --filter @stu/mobile updates:fingerprint`
+- `vp run --filter @stu/mobile updates:assets:verify`
+- `vp run --filter @stu/mobile update:preview`
+- `vp run --filter @stu/mobile update:production`
+- `vp run --filter @stu/mobile update:rollback`
 
 The EAS workflow files in `apps/mobile/.eas/workflows` publish preview updates on pull requests and gate production OTA updates by native fingerprint. If no compatible production build exists, the production workflow creates fresh native builds instead of publishing an incompatible OTA.
 
@@ -42,8 +42,8 @@ The EAS workflow files in `apps/mobile/.eas/workflows` publish preview updates o
 
 `apps/mobile/src/app/_layout.tsx` is wrapped with `ObserveRoot`. It marks the app interactive after fonts are ready and the splash screen has been hidden. Query production metrics with:
 
-- `bun run --cwd apps/mobile observe:versions`
-- `bun run --cwd apps/mobile observe:metrics`
+- `vp run --filter @stu/mobile observe:versions`
+- `vp run --filter @stu/mobile observe:metrics`
 
 ## Widgets And Live Activities
 

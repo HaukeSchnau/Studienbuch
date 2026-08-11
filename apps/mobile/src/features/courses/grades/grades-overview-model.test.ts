@@ -1,5 +1,5 @@
 import type { Grade } from "@stu/core";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { getGradesOverviewModel } from "./grades-overview-model";
 
 const grade = (id: string, type: Grade["type"]): Grade => ({

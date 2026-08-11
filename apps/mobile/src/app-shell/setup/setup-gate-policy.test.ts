@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { mainProfileRoute } from "../../routing/params";
 import { getSetupGateRedirect } from "./setup-gate-policy";
 

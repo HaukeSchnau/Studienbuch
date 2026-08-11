@@ -3,7 +3,7 @@
 ## Task Completion Requirements
 
 - All of `just qa` must pass before considering tasks completed.
-- NEVER run `bun test`. Always use `bun run test` (runs Vitest).
+- Run tests through Vite+ with `vp run -r test` or the relevant package script.
 
 ## Project Snapshot
 

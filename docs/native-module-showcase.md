@@ -239,14 +239,14 @@ Native code is compiled into a development build. Fast Refresh updates TypeScrip
 From the repo root, run the existing iOS development-client script:
 
 ```sh
-bun run --cwd apps/mobile dev:dev-client
+vp run --filter @stu/mobile dev:dev-client
 ```
 
 For Android, run Expo from the mobile app directory:
 
 ```sh
 cd apps/mobile
-bunx expo run:android
+vp exec expo run:android
 ```
 
 Generated `ios/` and `android/` folders are ignored in this repo.
@@ -268,7 +268,7 @@ Recommended iOS loop while actively editing existing native files:
 
 ```sh
 cd apps/mobile
-bunx expo prebuild
+vp exec expo prebuild
 open ios/Studienbuch.xcworkspace
 ```
 
@@ -278,7 +278,7 @@ Recommended Android loop:
 
 ```sh
 cd apps/mobile
-bunx expo prebuild
+vp exec expo prebuild
 open -a "Android Studio" android
 ```
 
@@ -288,7 +288,7 @@ Only use the clean prebuild reset when the generated project may be stale:
 
 ```sh
 cd apps/mobile
-bunx expo prebuild --clean --no-install
+vp exec expo prebuild --clean --no-install
 ```
 
 ## Debugging Native Code
@@ -347,17 +347,17 @@ just qa
 Useful targeted checks while editing native code:
 
 ```sh
-bun run --cwd apps/mobile test
-bun run oxlint --disable-nested-config --report-unused-disable-directives apps/mobile docs/native-module-showcase.md
-cd apps/mobile && bunx expo prebuild --clean --no-install
+vp run --filter @stu/mobile test
+vp lint --report-unused-disable-directives apps/mobile docs/native-module-showcase.md
+cd apps/mobile && vp exec expo prebuild --clean --no-install
 ```
 
 Useful autolinking check for the local module:
 
 ```sh
 cd apps/mobile
-bunx expo-modules-autolinking resolve --platform apple --json | rg 'native-module-demo|StudienbuchLocalModule'
-bunx expo-modules-autolinking resolve --platform android --json | rg 'native-module-demo|StudienbuchLocalModule'
+vp exec expo-modules-autolinking resolve --platform apple --json | rg 'native-module-demo|StudienbuchLocalModule'
+vp exec expo-modules-autolinking resolve --platform android --json | rg 'native-module-demo|StudienbuchLocalModule'
 ```
 
 ## Sources

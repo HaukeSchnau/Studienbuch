@@ -1,5 +1,5 @@
 import type { Task } from "@stu/core";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { getTaskOverviewModel } from "./task-overview-model";
 
 const task = (id: string): Task => ({

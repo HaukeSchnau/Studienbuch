@@ -1,5 +1,5 @@
 import type { Course, Grade, Task } from "@stu/core";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { getProfileCoursesModel } from "./profile-model";
 
 const course = (id: string, patch: Partial<Course> = {}): Course => ({

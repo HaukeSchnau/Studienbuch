@@ -33,6 +33,7 @@
         };
         lib = pkgs.lib;
         nodejs = pkgs.nodejs_24;
+        pnpm = pkgs.pnpm_11.override { nodejs-slim = nodejs; };
         jdk = pkgs.jdk21;
         gradle = pkgs.gradle_8;
         androidComposition = pkgs.androidenv.composeAndroidPackages {
@@ -42,7 +43,7 @@
             "35.0.0"
           ];
           cmakeVersions = [ "3.22.1" ];
-          includeEmulator = true;
+          includeEmulator = system != "aarch64-linux";
           includeNDK = true;
           ndkVersions = [ "27.1.12297006" ];
         };
@@ -83,9 +84,9 @@
             !ignored
             && (
               type == "directory"
-              || relative == "bun.lock"
-              || relative == "bunfig.toml"
               || relative == "package.json"
+              || relative == "pnpm-lock.yaml"
+              || relative == "pnpm-workspace.yaml"
               || lib.hasSuffix "/package.json" relative
               || lib.hasPrefix "patches/" relative
             );
@@ -109,43 +110,24 @@
             !ignored
             && (
               type == "directory"
-              || relative == "bun.lock"
-              || relative == "bunfig.toml"
               || relative == "package.json"
+              || relative == "pnpm-lock.yaml"
+              || relative == "pnpm-workspace.yaml"
               || relative == "tsconfig.json"
+              || lib.hasSuffix "/package.json" relative
               || lib.hasPrefix "apps/web/" relative
+              || lib.hasPrefix "patches/" relative
             );
         };
 
-        webDependencies = pkgs.stdenvNoCC.mkDerivation {
+        webDependencies = pkgs.fetchPnpmDeps {
           pname = "studienbuch-web-dependencies";
           version = "0.0.0";
           src = dependencySource;
-
-          nativeBuildInputs = [ pkgs.bun ];
-          dontConfigure = true;
-          dontFixup = true;
-
-          buildPhase = ''
-            runHook preBuild
-            export HOME="$TMPDIR/home"
-            export XDG_CACHE_HOME="$TMPDIR/cache"
-            export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
-            mkdir -p "$HOME" "$XDG_CACHE_HOME"
-            bun install --frozen-lockfile --ignore-scripts --filter @stu/web --cpu='*' --os='*'
-            runHook postBuild
-          '';
-
-          installPhase = ''
-            runHook preInstall
-            mkdir -p "$out"
-            cp -R node_modules "$out/node_modules"
-            runHook postInstall
-          '';
-
-          outputHashAlgo = "sha256";
-          outputHashMode = "recursive";
-          outputHash = "sha256-n/4zTkfi+mytrNA1Cc3kS29upDqRIhQKhpzTKZkchlg=";
+          inherit pnpm;
+          pnpmWorkspaces = [ "@stu/web" ];
+          fetcherVersion = 4;
+          hash = "sha256-8f9o/YsOLG4fehqJWrGNU0whXjjx+lRcrHpIflRxmPI=";
         };
 
         webApplication = pkgs.stdenvNoCC.mkDerivation {
@@ -154,22 +136,25 @@
           src = webSource;
 
           nativeBuildInputs = [
-            pkgs.bun
             nodejs
+            pnpm
+            pkgs.pnpmConfigHook
           ];
+          pnpmDeps = webDependencies;
+          pnpmWorkspaces = [ "@stu/web" ];
 
           buildPhase = ''
             runHook preBuild
-            ln -s ${webDependencies}/node_modules node_modules
-            bun run --cwd apps/web build
+            "$PWD/node_modules/.bin/vp" run --filter @stu/web build
             runHook postBuild
           '';
 
           installPhase = ''
             runHook preInstall
-            mkdir -p "$out/lib/studienbuch-web"
-            cp -R apps/web/.output/. "$out/lib/studienbuch-web/"
-            ln -s ${webDependencies}/node_modules "$out/lib/studienbuch-web/node_modules"
+            mkdir -p "$out/lib/studienbuch-web/apps/web"
+            cp -R node_modules "$out/lib/studienbuch-web/node_modules"
+            cp -R apps/web/node_modules "$out/lib/studienbuch-web/apps/web/node_modules"
+            cp -R apps/web/.output "$out/lib/studienbuch-web/apps/web/.output"
             runHook postInstall
           '';
         };
@@ -177,9 +162,9 @@
         prepareAction = pkgs.writeShellApplication {
           name = "studienbuch-prepare-action";
           runtimeInputs = [
-            pkgs.bun
             pkgs.coreutils
             pkgs.findutils
+            pnpm
           ];
           text = ''
             set -euo pipefail
@@ -192,10 +177,15 @@
 
             dependency_key=$(
               {
-                sha256sum bun.lock flake.lock package.json
+                sha256sum flake.lock package.json pnpm-lock.yaml pnpm-workspace.yaml
                 find apps packages -type f -name package.json -print0 \
                   | sort -z \
                   | xargs -0 -r sha256sum
+                if [[ -d patches ]]; then
+                  find patches -type f -print0 \
+                    | sort -z \
+                    | xargs -0 -r sha256sum
+                fi
               } | sha256sum | cut -d ' ' -f 1
             )
 
@@ -205,7 +195,7 @@
               exit 0
             fi
 
-            bun install --frozen-lockfile
+            pnpm install --frozen-lockfile
             install -d -m 0700 "$preparation_state"
             printf '%s\n' "$dependency_key" > "$stamp_file.next"
             mv "$stamp_file.next" "$stamp_file"
@@ -215,7 +205,6 @@
         webAction = pkgs.writeShellApplication {
           name = "studienbuch-web-action";
           runtimeInputs = [
-            pkgs.bun
             nodejs
           ];
           text = ''
@@ -237,14 +226,16 @@
             export NODE_OPTIONS="--import ./instrument.server.mjs''${NODE_OPTIONS:+ $NODE_OPTIONS}"
 
             cd "$checkout/apps/web"
-            exec bun run dev:server -- --host "$web_host" --port "$web_port" --strictPort
+            exec "$checkout/node_modules/.bin/vp" dev \
+              --host "$web_host" \
+              --port "$web_port" \
+              --strictPort
           '';
         };
 
         mobileAction = pkgs.writeShellApplication {
           name = "studienbuch-mobile-action";
           runtimeInputs = [
-            pkgs.bun
             pkgs.coreutils
             nodejs
           ];
@@ -269,7 +260,7 @@
             echo "Studienbuch Dev Client: studienbuch://expo-development-client/?url=$encoded_mobile_url"
 
             cd "$checkout/apps/mobile"
-            exec bunx expo start \
+            exec "$checkout/node_modules/.bin/vp" exec expo start \
               --dev-client \
               --scheme studienbuch \
               --localhost \
@@ -294,7 +285,7 @@
             BETTER_AUTH_SECRET="$(<"$better_auth_secret_file")"
             export BETTER_AUTH_SECRET
 
-            cd ${webApplication}/lib/studienbuch-web
+            cd ${webApplication}/lib/studienbuch-web/apps/web/.output
             exec node --import ./server/instrument.server.mjs ./server/index.mjs
           '';
         };
@@ -421,23 +412,30 @@
           };
 
         devShells.default = pkgs.mkShellNoCC {
-          packages = with pkgs; [
-            bun
-            nodejs
-            just
-            mprocs
-            fastlane
-            cocoapods
-            watchman
-            jdk
-            gradle
-            androidSdk
-          ];
+          packages =
+            with pkgs;
+            [
+              nodejs
+              pnpm
+              just
+              mprocs
+              watchman
+              jdk
+              gradle
+              androidSdk
+            ]
+            ++ lib.optionals stdenv.hostPlatform.isDarwin [
+              fastlane
+              cocoapods
+            ];
 
           ANDROID_HOME = "${androidSdk}/libexec/android-sdk";
           ANDROID_SDK_ROOT = "${androidSdk}/libexec/android-sdk";
           ANDROID_NDK_ROOT = "${androidSdk}/libexec/android-sdk/ndk/27.1.12297006";
           JAVA_HOME = "${jdk.home}";
+          shellHook = ''
+            export PATH="$PWD/node_modules/.bin:$PATH"
+          '';
         };
       }
     );

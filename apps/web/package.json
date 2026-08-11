@@ -7,11 +7,11 @@
   },
   "scripts": {
     "dev": "portless",
-    "dev:app": "dotenv -e .env.local -- sh -c \"NODE_OPTIONS='--import ./instrument.server.mjs' vite dev --host 127.0.0.1 --port ${PORT:-3000} --open ${PORTLESS_URL:-/}\"",
-    "dev:server": "vite dev",
-    "build": "vite build && cp instrument.server.mjs .output/server",
-    "preview": "vite preview",
-    "test": "vitest run --config vitest.config.ts --passWithNoTests",
+    "dev:app": "dotenv -e .env.local -- sh -c \"NODE_OPTIONS='--import ./instrument.server.mjs' vp dev --host 127.0.0.1 --port ${PORT:-3000} --open ${PORTLESS_URL:-/}\"",
+    "dev:server": "vp dev",
+    "build": "vp build && cp instrument.server.mjs .output/server",
+    "preview": "vp preview",
+    "test": "vp test run --config vitest.config.ts --passWithNoTests",
     "start": "node --import ./.output/server/instrument.server.mjs .output/server/index.mjs",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
@@ -60,14 +60,8 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "jsdom": "^30.0.1",
     "typescript": "catalog:",
-    "vite": "^8.2.1",
-    "vitest": "catalog:"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "lightningcss"
-    ]
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   },
   "portless": {
     "name": "studienbuch",
