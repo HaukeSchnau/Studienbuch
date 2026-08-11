@@ -1,0 +1,12 @@
+{
+  "name": "@stu/scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate:icons": "node generate-icons.ts"
+  },
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "effect": "catalog:"
+  }
+}
