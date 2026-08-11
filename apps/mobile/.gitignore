@@ -44,4 +44,7 @@ app-example
 /android
 
 # local EAS build outputs
-build-*.ipa
+*.ipa
+*.apk
+*.aab
+*.xcarchive/

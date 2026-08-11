@@ -1,37 +1,53 @@
-# dependencies (pnpm install)
-node_modules
+# dependencies
+node_modules/
 
-# output
-out
-dist
+# build outputs and distributable archives
+dist/
+out/
+.output/
 *.tgz
+*.ipa
+*.apk
+*.aab
+*.xcarchive/
 
-# code coverage
-coverage
+# test and automation artifacts
+coverage/
 *.lcov
+test-results/
+playwright-report/
+blob-report/
+/tmp/
 
 # logs
-logs
-_.log
-report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # dotenv environment variable files
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+.env.*
+!.env.example
+!.env.*.example
 
 # caches
 .eslintcache
-.cache
-.vite-plus
+.cache/
+.vite/
+.vite-plus/
 *.tsbuildinfo
 
-# IntelliJ based IDEs
-.idea
+# local tool state
+/.direnv/
+/.vite-hooks/
+/result
+/result-*
+
+# IDEs
+.idea/
 
 # Finder (MacOS) folder config
 .DS_Store
-
-*.log
