@@ -3,10 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "generate:icons": "vp run --filter @stu/scripts generate:icons",
-    "test": "vp run -r test",
-    "prepare": "effect-tsgo patch && vp config --no-agent",
-    "doctor": "react-doctor"
+    "prepare": "effect-tsgo patch && vp config --no-agent"
   },
   "devDependencies": {
     "@effect/tsgo": "catalog:",

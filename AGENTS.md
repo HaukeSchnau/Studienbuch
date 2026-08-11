@@ -3,7 +3,7 @@
 ## Task Completion Requirements
 
 - All of `just qa` must pass before considering tasks completed.
-- Run tests through Vite+ with `vp run -r test` or the relevant package script.
+- Run tests with `just test` or a relevant package's test script when targeting one workspace.
 
 ## Project Snapshot
 

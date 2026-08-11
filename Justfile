@@ -9,9 +9,12 @@ ios_prod_ipa := ios_artifacts_dir + "/studienbuch-prod.ipa"
 qa: fmt qa-tasks
 fix: fmt lint-fix
 
+doctor:
+    react-doctor
+
 doctor-mobile:
-    nix shell nixpkgs#cocoapods -c vp run --filter @stu/mobile doctor
-    vp run --filter @stu/mobile doctor:deps
+    cd apps/mobile && nix shell nixpkgs#cocoapods -c vp dlx expo-doctor
+    cd apps/mobile && vp exec expo install --check
     nix shell nixpkgs#nodejs_24 -c vp dlx react-compiler-healthcheck@latest apps/mobile
 
 fmt:
@@ -30,11 +33,14 @@ test:
     vp run -r test
 
 icons:
-    vp run --workspace-root generate:icons
+    node scripts/generate-icons.ts
+
+install:
+    pnpm install
 
 clean:
-    rm -rf dist node_modules .vite-plus apps/*/node_modules apps/*/.vite-plus packages/*/node_modules packages/*/.vite-plus apps/*/dist packages/*/dist apps/mobile/ios apps/mobile/android apps/mobile/.expo
-    pnpm install
+    rm -rf dist node_modules .vite-plus apps/*/node_modules apps/*/.vite-plus packages/*/node_modules packages/*/.vite-plus scripts/node_modules apps/*/dist packages/*/dist apps/mobile/ios apps/mobile/android apps/mobile/.expo
+    just install
 
 dev app options="":
     vp run --filter "./apps/{{app}}" dev -- {{options}}
@@ -44,6 +50,46 @@ build app:
 
 start app:
     vp run --filter "./apps/{{app}}" start
+
+web-dev-server:
+    cd apps/web && vp dev
+
+web-preview:
+    cd apps/web && vp preview
+
+storybook:
+    cd apps/web && vp exec storybook dev -p 6006
+
+storybook-build:
+    cd apps/web && vp exec storybook build
+
+mobile-dev-client:
+    cd apps/mobile && vp exec expo run:ios
+
+mobile-update-preview:
+    cd apps/mobile && vp dlx eas-cli update --channel preview
+
+mobile-update-production:
+    cd apps/mobile && vp dlx eas-cli update --channel production
+
+mobile-update-rollout percentage="10":
+    cd apps/mobile && vp dlx eas-cli update --channel production --rollout-percentage "{{percentage}}"
+
+mobile-update-rollback:
+    cd apps/mobile && vp dlx eas-cli update:rollback --channel production
+
+mobile-update-assets platform="":
+    PLATFORM="{{platform}}" node apps/mobile/scripts/verify-update-assets.mjs
+
+mobile-update-fingerprints:
+    cd apps/mobile && vp exec expo-updates fingerprint:generate --platform ios
+    cd apps/mobile && vp exec expo-updates fingerprint:generate --platform android
+
+mobile-observe-versions:
+    cd apps/mobile && vp dlx eas-cli observe:versions
+
+mobile-observe-metrics:
+    cd apps/mobile && vp dlx eas-cli observe:metrics-summary
 
 _ios-local-build profile output:
     mkdir -p "$(dirname "{{output}}")"
@@ -56,6 +102,9 @@ _ios-local-build profile output:
     chmod +x "$tmpbin/sed" "$tmpbin/rsync" "$tmpbin/git"; \
     cd apps/mobile && nix shell nixpkgs#fastlane nixpkgs#cocoapods -c sh -c 'PATH="$1:$PATH" NODE_OPTIONS=--dns-result-order=ipv4first EXPO_USE_PRECOMPILED_MODULES=0 EAS_LOCAL_BUILD_SKIP_CLEANUP=1 vp dlx eas-cli build --platform ios --profile "$2" --local --non-interactive --message "Local $2 build" --output "$3"' sh "$tmpbin" "{{profile}}" "{{output}}"
     test -s "{{output}}"
+
+ios-build profile output:
+    just _ios-local-build "{{profile}}" "{{output}}"
 
 ios-devices:
     xcrun devicectl list devices
