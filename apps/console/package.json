@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node src/index.ts",
     "build": "vp pack",
+    "clean": "rm -rf dist",
     "start": "node dist/index.mjs",
     "test": "vp test run --passWithNoTests"
   },

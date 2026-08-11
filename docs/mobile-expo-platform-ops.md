@@ -26,24 +26,24 @@ Channels are defined in `apps/mobile/eas.json`:
 - `preview`
 - `production`
 
-Useful commands:
+From `apps/mobile`, useful commands are:
 
-- `just mobile-update-fingerprints`
-- `just mobile-update-assets`
-- `just mobile-update-preview`
-- `just mobile-update-production`
-- `just mobile-update-rollback`
+- `vp run updates:fingerprint`
+- `vp run updates:assets:verify`
+- `vp run update:preview`
+- `vp run update:production`
+- `vp run update:rollback`
 
 The EAS workflow files in `apps/mobile/.eas/workflows` publish preview updates on pull requests and gate production OTA updates by native fingerprint. If no compatible production build exists, the production workflow creates fresh native builds instead of publishing an incompatible OTA.
 
-`just mobile-update-assets` generates temporary iOS and Android embedded manifests under `apps/mobile/.expo-update-verify`, exports each native bundle with an asset map, and runs `expo-updates assets:verify` against both. Pass `ios` or `android` as the recipe argument to check only one target.
+`updates:assets:verify` generates temporary iOS and Android embedded manifests under `apps/mobile/.expo-update-verify`, exports each native bundle with an asset map, and runs `expo-updates assets:verify` against both. Set `PLATFORM=ios` or `PLATFORM=android` to check only one target.
 
 ## Observe
 
 `apps/mobile/src/app/_layout.tsx` is wrapped with `ObserveRoot`. It marks the app interactive after fonts are ready and the splash screen has been hidden. Query production metrics with:
 
-- `just mobile-observe-versions`
-- `just mobile-observe-metrics`
+- `vp run observe:versions`
+- `vp run observe:metrics`
 
 ## Widgets And Live Activities
 

@@ -4,8 +4,19 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
+    "clean": "rm -rf dist ios android .expo .expo-update-verify",
     "dev": "NODE_OPTIONS=--dns-result-order=ipv4first expo start --dev-client --ios",
-    "test": "vp test run --passWithNoTests"
+    "dev:dev-client": "expo run:ios",
+    "doctor": "nix shell nixpkgs#cocoapods -c vp dlx expo-doctor && vp exec expo install --check && nix shell nixpkgs#nodejs_24 -c vp dlx react-compiler-healthcheck@latest .",
+    "test": "vp test run --passWithNoTests",
+    "update:preview": "vp dlx eas-cli update --channel preview",
+    "update:production": "vp dlx eas-cli update --channel production",
+    "update:production:rollout": "vp dlx eas-cli update --channel production --rollout-percentage 10",
+    "update:rollback": "vp dlx eas-cli update:rollback --channel production",
+    "updates:assets:verify": "node scripts/verify-update-assets.mjs",
+    "updates:fingerprint": "expo-updates fingerprint:generate --platform ios && expo-updates fingerprint:generate --platform android",
+    "observe:versions": "vp dlx eas-cli observe:versions",
+    "observe:metrics": "vp dlx eas-cli observe:metrics-summary"
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.2",
