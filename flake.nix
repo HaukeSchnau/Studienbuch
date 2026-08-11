@@ -145,7 +145,7 @@
 
           outputHashAlgo = "sha256";
           outputHashMode = "recursive";
-          outputHash = "sha256-6xPVSxjeJ0l5Cy7l9wBm03v6EcNtoUATXDN1JsXjS1E=";
+          outputHash = "sha256-n/4zTkfi+mytrNA1Cc3kS29upDqRIhQKhpzTKZkchlg=";
         };
 
         webApplication = pkgs.stdenvNoCC.mkDerivation {

@@ -7,20 +7,20 @@
       "packages/*"
     ],
     "catalog": {
-      "effect": "4.0.0-beta.59",
-      "@effect/atom-react": "4.0.0-beta.59",
-      "@effect/openapi-generator": "4.0.0-beta.59",
-      "@effect/platform-bun": "4.0.0-beta.59",
-      "@effect/platform-node": "4.0.0-beta.59",
-      "@effect/platform-node-shared": "4.0.0-beta.59",
-      "@effect/sql-sqlite-bun": "4.0.0-beta.59",
-      "@effect/vitest": "4.0.0-beta.59",
-      "@effect/tsgo": "0.7.4",
+      "effect": "4.0.0-beta.107",
+      "@effect/atom-react": "4.0.0-beta.107",
+      "@effect/openapi-generator": "4.0.0-beta.107",
+      "@effect/platform-bun": "4.0.0-beta.107",
+      "@effect/platform-node": "4.0.0-beta.107",
+      "@effect/platform-node-shared": "4.0.0-beta.107",
+      "@effect/sql-sqlite-bun": "4.0.0-beta.107",
+      "@effect/vitest": "4.0.0-beta.107",
+      "@effect/tsgo": "0.36.4",
       "@types/bun": "^1.3.14",
-      "@types/node": "^25.9.1",
-      "@typescript/native-preview": "^7.0.0-dev.20260519.1",
-      "tsdown": "^0.20.3",
-      "vitest": "^4.1.6"
+      "@types/node": "^26.2.0",
+      "tsdown": "^0.22.14",
+      "typescript": "^7.0.2",
+      "vitest": "^4.1.10"
     }
   },
   "type": "module",
@@ -34,12 +34,12 @@
     "@effect/tsgo": "catalog:",
     "@types/bun": "catalog:",
     "@types/node": "catalog:",
-    "@typescript/native-preview": "catalog:",
-    "oxfmt": "^0.51.0",
-    "oxlint": "^1.66.0",
-    "oxlint-tsgolint": "^0.23.0",
-    "portless": "^0.13.0",
-    "react-doctor": "^0.2.16",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0",
+    "oxlint-tsgolint": "^7.0.2001",
+    "portless": "^0.15.5",
+    "react-doctor": "^0.9.11",
+    "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "overrides": {
@@ -50,17 +50,14 @@
     "@effect/sql-sqlite-bun": "catalog:",
     "@effect/vitest": "catalog:",
     "effect": "catalog:",
-    "expo-constants": "56.0.17",
+    "expo-constants": "57.0.10",
     "lightningcss": "1.30.1",
-    "vite": "^8.0.0"
+    "react-native-screens": "4.26.2",
+    "vite": "^8.2.1"
   },
   "engines": {
-    "bun": "^1.3.11",
+    "bun": "^1.3.14",
     "node": "^24.13.1"
   },
-  "packageManager": "bun@1.3.11",
-  "patchedDependencies": {
-    "expo-modules-jsi@56.0.8": "patches/expo-modules-jsi@56.0.8.patch",
-    "expo-widgets@56.0.17": "patches/expo-widgets@56.0.17.patch"
-  }
+  "packageManager": "bun@1.3.14"
 }
