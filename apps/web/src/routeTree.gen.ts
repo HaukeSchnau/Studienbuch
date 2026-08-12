@@ -11,6 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiHealthLiveRouteImport } from './routes/api/health/live'
+import { Route as ApiHealthReadyRouteImport } from './routes/api/health/ready'
+import { Route as ApiObservabilityV1CanaryRouteImport } from './routes/api/observability/v1/canary'
+import { Route as ApiObservabilityV1TelemetryRouteImport } from './routes/api/observability/v1/telemetry'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +26,88 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHealthLiveRoute = ApiHealthLiveRouteImport.update({
+  id: '/api/health/live',
+  path: '/api/health/live',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthReadyRoute = ApiHealthReadyRouteImport.update({
+  id: '/api/health/ready',
+  path: '/api/health/ready',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiObservabilityV1CanaryRoute =
+  ApiObservabilityV1CanaryRouteImport.update({
+    id: '/api/observability/v1/canary',
+    path: '/api/observability/v1/canary',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiObservabilityV1TelemetryRoute =
+  ApiObservabilityV1TelemetryRouteImport.update({
+    id: '/api/observability/v1/telemetry',
+    path: '/api/observability/v1/telemetry',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/health/live': typeof ApiHealthLiveRoute
+  '/api/health/ready': typeof ApiHealthReadyRoute
+  '/api/observability/v1/canary': typeof ApiObservabilityV1CanaryRoute
+  '/api/observability/v1/telemetry': typeof ApiObservabilityV1TelemetryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/health/live': typeof ApiHealthLiveRoute
+  '/api/health/ready': typeof ApiHealthReadyRoute
+  '/api/observability/v1/canary': typeof ApiObservabilityV1CanaryRoute
+  '/api/observability/v1/telemetry': typeof ApiObservabilityV1TelemetryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/health/live': typeof ApiHealthLiveRoute
+  '/api/health/ready': typeof ApiHealthReadyRoute
+  '/api/observability/v1/canary': typeof ApiObservabilityV1CanaryRoute
+  '/api/observability/v1/telemetry': typeof ApiObservabilityV1TelemetryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/api/auth/$'
+    | '/api/health/live'
+    | '/api/health/ready'
+    | '/api/observability/v1/canary'
+    | '/api/observability/v1/telemetry'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/auth/$'
-  id: '__root__' | '/' | '/api/auth/$'
+  to:
+    | '/'
+    | '/api/auth/$'
+    | '/api/health/live'
+    | '/api/health/ready'
+    | '/api/observability/v1/canary'
+    | '/api/observability/v1/telemetry'
+  id:
+    | '__root__'
+    | '/'
+    | '/api/auth/$'
+    | '/api/health/live'
+    | '/api/health/ready'
+    | '/api/observability/v1/canary'
+    | '/api/observability/v1/telemetry'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiHealthLiveRoute: typeof ApiHealthLiveRoute
+  ApiHealthReadyRoute: typeof ApiHealthReadyRoute
+  ApiObservabilityV1CanaryRoute: typeof ApiObservabilityV1CanaryRoute
+  ApiObservabilityV1TelemetryRoute: typeof ApiObservabilityV1TelemetryRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +126,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/health/live': {
+      id: '/api/health/live'
+      path: '/api/health/live'
+      fullPath: '/api/health/live'
+      preLoaderRoute: typeof ApiHealthLiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health/ready': {
+      id: '/api/health/ready'
+      path: '/api/health/ready'
+      fullPath: '/api/health/ready'
+      preLoaderRoute: typeof ApiHealthReadyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/observability/v1/canary': {
+      id: '/api/observability/v1/canary'
+      path: '/api/observability/v1/canary'
+      fullPath: '/api/observability/v1/canary'
+      preLoaderRoute: typeof ApiObservabilityV1CanaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/observability/v1/telemetry': {
+      id: '/api/observability/v1/telemetry'
+      path: '/api/observability/v1/telemetry'
+      fullPath: '/api/observability/v1/telemetry'
+      preLoaderRoute: typeof ApiObservabilityV1TelemetryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiHealthLiveRoute: ApiHealthLiveRoute,
+  ApiHealthReadyRoute: ApiHealthReadyRoute,
+  ApiObservabilityV1CanaryRoute: ApiObservabilityV1CanaryRoute,
+  ApiObservabilityV1TelemetryRoute: ApiObservabilityV1TelemetryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
