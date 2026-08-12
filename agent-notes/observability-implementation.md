@@ -46,7 +46,7 @@ Only the root integration agent performs Jujutsu operations and production deplo
 - [x] P5 browser/Sentry boundary.
 - [x] P6 mobile durability/crash boundary (first-party sending remains safely disabled until the app has a short-lived user authority).
 - [x] P7 release wiring and documentation.
-- [ ] P8 application deployment and final live verification. Collector deployment, synthetic three-signal verification, application packaging, and release smoke are complete.
+- [x] P8 application deployment and final live verification.
 
 ## Live verification — 2026-08-12
 
@@ -57,7 +57,11 @@ Only the root integration agent performs Jujutsu operations and production deplo
 - Repository `just qa` passes: 5 core tests, 9 observability tests, 4 console tests, 21 web tests, and 21 mobile tests, plus type-aware lint and formatting.
 - Reproducible `webApplication`, release package, descriptor, workspace-source, and strengthened all-signal `releaseSmoke` builds pass with the final lockfile hash.
 - React Doctor could not establish a changed-lines baseline from this JJ working copy and fell back to a full scan (46/100, dominated by pre-existing mobile/UI and generated-output diagnostics); repository lint, tests, and builds remain the completion authority for this packet.
-- Remaining: commit/push Studienbuch, deploy its release, and verify its real health/canary/browser ingress signals. Native mobile document persistence still requires signed-device testing, and first-party mobile sending remains disabled pending a short-lived user authority.
+- Pushed Studienbuch revision `ddcb2b7f02d5d80d79a83a89689ec3c04d199663`, updated the fleet's pinned release contract, and deployed `/nix/store/1zsqc0ys1wqijs3zfgwk8h7dds452g6g-studienbuch-project-release` on `srv-2`.
+- The live and ready routes return their healthy contracts through both loopback and the canonical HTTPS endpoint. The production canary trace `64bd3339dbaea1bbfdee3e6f3983eae6` reached Tempo with its request spans, exactly one correlated VictoriaLogs record, and the canary metric in VictoriaMetrics.
+- The public-client relay rejected missing and cross-origin requests with `403`, rejected a body above 64 KiB with `413`, and accepted a valid same-origin allowlisted batch with `202`. Its canary log and `studienbuch_client_canary_total` metric reached storage with server-owned production resource identity.
+- A controlled systemd restart stopped the Effect runtime cleanly, restored readiness, and delivered post-restart trace `40d1446e0e610552a2fc4c2c015004b8`. Collector queues drained to zero, refusal counters remained zero, and `just verify-host srv-2` passed.
+- Native mobile document persistence still requires signed-device testing, and first-party mobile sending remains disabled pending a short-lived user authority.
 
 ## Known risks and mitigations
 
