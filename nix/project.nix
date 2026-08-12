@@ -34,7 +34,7 @@ let
         inherit (workspace) nodejs;
       };
       web = import ../apps/web/nix.nix {
-        inherit pkgs root workspace;
+        inherit pkgs workspace;
       };
 
       projectRuntime = nix-infra-modules.lib.projectRuntime.mkDevelopment {
@@ -70,6 +70,32 @@ let
 
       checks =
         projectRuntime.checks
+        // {
+          workspaceSource = pkgs.runCommand "studienbuch-workspace-source-check" { } ''
+            dependency_source=${workspace.dependencySource}
+            web_source=${workspace.sourceFor "@stu/web"}
+            mobile_source=${workspace.sourceFor "@stu/mobile"}
+
+            test -f "$dependency_source/apps/web/package.json"
+            test -f "$dependency_source/apps/mobile/package.json"
+            test -f "$dependency_source/packages/core/package.json"
+            test ! -e "$dependency_source/apps/web/src"
+
+            test -f "$web_source/apps/web/package.json"
+            test ! -e "$web_source/apps/mobile/src"
+            test ! -e "$web_source/packages/core/src"
+
+            test -f "$mobile_source/apps/mobile/package.json"
+            test -f "$mobile_source/packages/core/package.json"
+            test -d "$mobile_source/packages/core/src"
+            test ! -e "$mobile_source/apps/web/src"
+
+            test ! -e "$web_source/apps/web/node_modules"
+            test ! -e "$web_source/apps/web/.output"
+            test ! -e "$web_source/apps/web/nix.nix"
+            touch "$out"
+          '';
+        }
         // lib.optionalAttrs isLinux {
           projectDescriptor = pkgs.runCommand "studienbuch-project-descriptor-check" { } ''
             ${pkgs.jq}/bin/jq -e '
