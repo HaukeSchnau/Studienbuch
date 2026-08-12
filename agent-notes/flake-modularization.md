@@ -71,9 +71,12 @@ interface.
 
 ## Workspace source closure (2026-08-12)
 
-- `nix/workspace-source.nix` reads the authoritative `packages:` patterns from
+- `nix/lib/pnpm-workspace-source.nix` reads the authoritative `packages:` patterns from
   `pnpm-workspace.yaml`, discovers package manifests, and derives the local
   dependency graph across dependency, development, optional, and peer fields.
+- The module is project-agnostic: derivation naming, package root files, patch
+  location, and generated-file exclusions are constructor inputs. The local
+  `nix/workspace.nix` adapter supplies the Studienbuch conventions.
 - `workspace.sourceFor packageName` produces a build source containing the
   selected package, its transitive local dependencies, root pnpm metadata,
   every workspace manifest, patches, and the shared root TypeScript config.

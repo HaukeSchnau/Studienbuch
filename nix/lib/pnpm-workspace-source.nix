@@ -1,4 +1,15 @@
-{ lib, root }:
+{
+  lib,
+  root,
+  name ? "pnpm-workspace",
+  packageRootFiles ? [ ],
+  patchDirectory ? null,
+  ignoredDirectories ? [
+    ".git"
+    "node_modules"
+  ],
+  ignoredFileNames ? [ ],
+}:
 let
   unquote =
     value:
@@ -35,7 +46,7 @@ let
       (lib.splitString "\n" (builtins.readFile (root + "/pnpm-workspace.yaml")));
   workspacePatterns =
     if workspacePatternState.patterns == [ ] then
-      throw "workspace source: pnpm-workspace.yaml does not declare packages"
+      throw "pnpm workspace source: pnpm-workspace.yaml does not declare packages"
     else
       workspacePatternState.patterns;
 
@@ -49,7 +60,7 @@ let
       if builtins.pathExists (pathFor "${pattern}/package.json") then
         [ pattern ]
       else
-        throw "workspace source: ${pattern} does not contain package.json"
+        throw "pnpm workspace source: ${pattern} does not contain package.json"
     else
       let
         directory = builtins.elemAt wildcard 0;
@@ -78,7 +89,7 @@ let
         name = manifest.name;
       }
     else
-      throw "workspace source: ${relativePath}/package.json has no package name"
+      throw "pnpm workspace source: ${relativePath}/package.json has no package name"
   ) workspacePaths;
   packageNames = map (package: package.name) workspacePackages;
   packagesByName = builtins.listToAttrs (
@@ -121,7 +132,7 @@ let
     if builtins.hasAttr rootPackage packagesByName then
       visit [ ] [ rootPackage ]
     else
-      throw "workspace source: unknown package ${rootPackage}; expected one of ${lib.concatStringsSep ", " packageNames}";
+      throw "pnpm workspace source: unknown package ${rootPackage}; expected one of ${lib.concatStringsSep ", " packageNames}";
 
   rootFiles = [
     "package.json"
@@ -129,25 +140,12 @@ let
     "pnpm-workspace.yaml"
   ];
   workspaceManifestFiles = map (relativePath: "${relativePath}/package.json") workspacePaths;
-  ignoredDirectories = [
-    ".direnv"
-    ".git"
-    ".jj"
-    ".nitro"
-    ".output"
-    ".tanstack"
-    ".vite-plus"
-    "dist"
-    "node_modules"
-    "storybook-static"
-    "tmp"
-  ];
   isWithin = relative: directory: relative == directory || lib.hasPrefix "${directory}/" relative;
   isAncestor = relative: target: relative == "" || lib.hasPrefix "${relative}/" target;
   isIgnored =
     relative: type:
     (type == "directory" && lib.elem (baseNameOf relative) ignoredDirectories)
-    || lib.hasSuffix "/nix.nix" relative;
+    || lib.elem (baseNameOf relative) ignoredFileNames;
 
   mkSource =
     {
@@ -158,7 +156,10 @@ let
     let
       includedFiles = rootFiles ++ workspaceManifestFiles ++ extraRootFiles;
       includedDirectories =
-        packageRoots ++ lib.optional (builtins.pathExists (root + "/patches")) "patches";
+        packageRoots
+        ++ lib.optional (
+          patchDirectory != null && builtins.pathExists (root + "/${patchDirectory}")
+        ) patchDirectory;
       relevantDirectory =
         relative:
         lib.any (target: isWithin relative target || isAncestor relative target) (
@@ -185,10 +186,10 @@ let
 in
 assert
   lib.length packageNames == lib.length (lib.unique packageNames)
-  || throw "workspace source: workspace package names must be unique";
+  || throw "pnpm workspace source: workspace package names must be unique";
 {
   dependencySource = mkSource {
-    name = "studienbuch-workspace-dependencies";
+    name = "${name}-dependencies";
   };
 
   sourceFor =
@@ -198,8 +199,8 @@ assert
       sourceName = lib.replaceStrings [ "@" "/" ] [ "" "-" ] packageName;
     in
     mkSource {
-      name = "studienbuch-${sourceName}-source";
+      name = "${name}-${sourceName}-source";
       packageRoots = map (name: packagesByName.${name}.relativePath) closure;
-      extraRootFiles = lib.optional (builtins.pathExists (root + "/tsconfig.json")) "tsconfig.json";
+      extraRootFiles = packageRootFiles;
     };
 }
