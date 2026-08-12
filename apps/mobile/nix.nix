@@ -6,7 +6,8 @@ let
   lib = pkgs.lib;
   jdk = pkgs.jdk21;
   gradle = pkgs.gradle_8;
-  androidComposition = pkgs.androidenv.composeAndroidPackages {
+  ndkVersion = "27.1.12297006";
+  androidPackages = pkgs.androidenv.composeAndroidPackages {
     platformVersions = [ "36" ];
     buildToolsVersions = [
       "36.0.0"
@@ -15,9 +16,10 @@ let
     cmakeVersions = [ "3.22.1" ];
     includeEmulator = pkgs.stdenv.hostPlatform.system != "aarch64-linux";
     includeNDK = true;
-    ndkVersions = [ "27.1.12297006" ];
+    ndkVersions = [ ndkVersion ];
   };
-  androidSdk = androidComposition.androidsdk;
+  androidSdk = androidPackages.androidsdk;
+  androidSdkRoot = "${androidSdk}/libexec/android-sdk";
 in
 {
   developmentAction = pkgs.writeShellApplication {
@@ -27,8 +29,6 @@ in
       nodejs
     ];
     text = ''
-      set -euo pipefail
-
       checkout="$(project-context path checkout)"
       cache_root="$(project-context path cache)"
       mobile_url="$(project-context endpoint mobile url)"
@@ -67,9 +67,9 @@ in
   ];
 
   devShellEnvironment = {
-    ANDROID_HOME = "${androidSdk}/libexec/android-sdk";
-    ANDROID_SDK_ROOT = "${androidSdk}/libexec/android-sdk";
-    ANDROID_NDK_ROOT = "${androidSdk}/libexec/android-sdk/ndk/27.1.12297006";
+    ANDROID_HOME = androidSdkRoot;
+    ANDROID_SDK_ROOT = androidSdkRoot;
+    ANDROID_NDK_ROOT = "${androidSdkRoot}/ndk/${ndkVersion}";
     JAVA_HOME = "${jdk.home}";
   };
 }

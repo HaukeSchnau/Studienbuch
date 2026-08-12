@@ -5,7 +5,7 @@
   root,
 }:
 let
-  descriptor = builtins.fromJSON (builtins.readFile descriptorPath);
+  descriptor = nixpkgs.lib.importJSON descriptorPath;
 
   systems = [
     "aarch64-darwin"
@@ -45,16 +45,35 @@ let
           mobile = mobile.developmentAction;
         };
       };
-
-      projectRelease =
+      projectChecks = import ./checks.nix {
+        inherit
+          descriptorPath
+          pkgs
+          web
+          workspace
+          ;
+      };
+      linuxOutputs =
         if isLinux then
-          nix-infra-modules.lib.projectRuntime.mkServiceRelease {
-            inherit pkgs descriptorPath;
-            payloads = [ web.webApplication ];
-            actions.web = web.releaseAction;
+          let
+            projectRelease = nix-infra-modules.lib.projectRuntime.mkServiceRelease {
+              inherit pkgs descriptorPath;
+              payloads = [ web.webApplication ];
+              actions.web = web.releaseAction;
+            };
+          in
+          {
+            packages = {
+              projectRelease = projectRelease.package;
+              webApplication = web.webApplication;
+            };
+            checks = projectChecks.forRelease projectRelease;
           }
         else
-          null;
+          {
+            packages = { };
+            checks = { };
+          };
     in
     {
       apps = projectRuntime.apps;
@@ -63,59 +82,16 @@ let
         projectRuntime = projectRuntime.package;
         default = projectRuntime.package;
       }
-      // lib.optionalAttrs isLinux {
-        projectRelease = projectRelease.package;
-        webApplication = web.webApplication;
-      };
+      // linuxOutputs.packages;
 
       checks =
         projectRuntime.checks
         // {
-          workspaceSource = pkgs.runCommand "studienbuch-workspace-source-check" { } ''
-            dependency_source=${workspace.dependencySource}
-            web_source=${workspace.sourceFor "@stu/web"}
-            mobile_source=${workspace.sourceFor "@stu/mobile"}
-
-            test -f "$dependency_source/apps/web/package.json"
-            test -f "$dependency_source/apps/mobile/package.json"
-            test -f "$dependency_source/packages/core/package.json"
-            test ! -e "$dependency_source/apps/web/src"
-
-            test -f "$web_source/apps/web/package.json"
-            test ! -e "$web_source/apps/mobile/src"
-            test ! -e "$web_source/packages/core/src"
-
-            test -f "$mobile_source/apps/mobile/package.json"
-            test -f "$mobile_source/packages/core/package.json"
-            test -d "$mobile_source/packages/core/src"
-            test ! -e "$mobile_source/apps/web/src"
-
-            test ! -e "$web_source/apps/web/node_modules"
-            test ! -e "$web_source/apps/web/.output"
-            test ! -e "$web_source/apps/web/nix.nix"
-            touch "$out"
-          '';
+          inherit (projectChecks) workspaceSource;
         }
-        // lib.optionalAttrs isLinux {
-          projectDescriptor = pkgs.runCommand "studienbuch-project-descriptor-check" { } ''
-            ${pkgs.jq}/bin/jq -e '
-              .schemaVersion == 2 and
-              .project == "studienbuch" and
-              (.development.endpoints | keys) == ["mobile", "web"] and
-              (.development.workloads | keys) == ["mobile", "web"] and
-              .development.workloads.web.secrets == ["betterAuthSecret"] and
-              (.development.workloads.mobile.secrets // []) == [] and
-              .release.action == "web" and
-              .release.health.paths == ["/"]
-            ' ${descriptorPath} >/dev/null
-            cmp ${descriptorPath} ${projectRelease.package}/share/project/descriptor.json
-            touch "$out"
-          '';
-          releaseInterface = projectRelease.checks.interface;
-          releasePackage = projectRelease.package;
-          releaseSmoke = web.mkReleaseSmoke projectRelease.package;
-          webApplication = web.webApplication;
-        };
+        // linuxOutputs.checks;
+
+      formatter = pkgs.nixfmt-tree;
 
       devShells.default = pkgs.mkShellNoCC (
         mobile.devShellEnvironment
