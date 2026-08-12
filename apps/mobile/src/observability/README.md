@@ -1,7 +1,8 @@
 # Mobile operational telemetry
 
-This module is the first-party operational telemetry channel. It complements,
-and does not replace, EAS Observe's native crash and performance reporting.
+This module is the first-party operational telemetry channel. It complements EAS Observe and
+Sentry: Sentry owns deployed crash/error reporting, while this channel owns allowlisted operational
+records. Effect/OpenTelemetry remains the server instrumentation system.
 
 Only the allowlisted records from `@stu/observability/browser` can enter the
 queue. They intentionally contain no student identifiers, content, free text,
@@ -24,10 +25,15 @@ Once mobile authentication exists, pass that authority from the session owner
 to `MobileTelemetryProvider`. The endpoint must be the Studienbuch server relay,
 never the fleet collector directly.
 
-Native reachability is currently inferred from send results and retried on a
-bounded timer and foreground transitions. Web builds additionally respect the
-browser online state. Introduce Expo Network only together with a deliberate
-dependency/lockfile update and real-device validation.
+`expo-network` is installed for Better Auth's Expo client and is the preferred native reachability
+source when the telemetry provider is connected to authenticated sessions. Until then, send results,
+bounded retries, and foreground transitions remain the telemetry channel's only signals.
+
+## Sentry
+
+`EXPO_PUBLIC_SENTRY_DSN` enables Sentry. The SDK sends no default PII, screenshots, replay, or
+performance traces. Native build source maps use `SENTRY_ORG`, `SENTRY_PROJECT`, and the secret
+`SENTRY_AUTH_TOKEN`; never place the auth token in Expo public variables or app config.
 
 ## Verification
 

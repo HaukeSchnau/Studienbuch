@@ -25,6 +25,12 @@ lint-fix:
 test:
     vp run -r test
 
+db-generate:
+    vp run --filter "@stu/server" db:generate
+
+db-migrate:
+    vp run --filter "@stu/server" db:migrate
+
 icons:
     node scripts/generate-icons.ts
 
@@ -50,3 +56,6 @@ console *args:
 
 ios *args:
     node scripts/ios.ts {{ quote(args) }}
+
+mobile-e2e flow="apps/mobile/.maestro/smoke.yaml":
+    maestro test {{ flow }}

@@ -17,13 +17,14 @@ let
   pnpmWorkspaces = [
     application.workspaceName
     "@stu/observability"
+    "@stu/server"
   ];
   source = workspace.sources.sourceFor application.workspaceName;
 
   # Update with the `got:` hash reported by:
   #   nix build .#webApplication
   # after regenerating pnpm-lock.yaml for all workspace manifest changes.
-  pnpmDependencyHash = "sha256-E+0FLHbGnI1peFT1XwKVy1C2PNis0Ku/pO10LlaARRY=";
+  pnpmDependencyHash = "sha256-xOf8kqusBdL8qsu4J3eN3G5nNt275cngkiZrtUORAZ8=";
 
   pnpmDeps = pkgs.fetchPnpmDeps {
     pname = "studienbuch-web-dependencies";
@@ -59,6 +60,7 @@ let
       cp -R node_modules "$out/${application.installRoot}/node_modules"
       mkdir -p "$out/${application.installRoot}/packages"
       cp -R packages/observability "$out/${application.installRoot}/packages/observability"
+      cp -R packages/server "$out/${application.installRoot}/packages/server"
       cp -R ${application.relativePath}/node_modules "$out/${applicationPath}/node_modules"
       cp -R ${application.relativePath}/.output "$out/${applicationPath}/.output"
       runHook postInstall
@@ -81,6 +83,9 @@ let
         BETTER_AUTH_SECRET="$(<"$better_auth_secret_file")"
         export BETTER_AUTH_SECRET
       fi
+      database_url_file="$(project-context secret-file databaseUrl --required)"
+      DATABASE_URL="$(<"$database_url_file")"
+      export DATABASE_URL
       export NODE_OPTIONS="--import ./instrument.server.mjs''${NODE_OPTIONS:+ $NODE_OPTIONS}"
 
       cd "$checkout/${application.relativePath}"
@@ -114,6 +119,10 @@ let
       better_auth_secret_file="$(project-context secret-file betterAuthSecret --required)"
       BETTER_AUTH_SECRET="$(<"$better_auth_secret_file")"
       export BETTER_AUTH_SECRET
+
+      database_url_file="$(project-context secret-file databaseUrl --required)"
+      DATABASE_URL="$(<"$database_url_file")"
+      export DATABASE_URL
 
       cd ${webApplication}/${applicationPath}/.output
       exec node --import ./server/instrument.server.mjs ./server/index.mjs

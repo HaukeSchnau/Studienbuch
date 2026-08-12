@@ -1,12 +1,13 @@
+import { LegendList } from "@legendapp/list/react-native";
 import { useState } from "react";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
 import { IconButton } from "~/components/ui/icon-button";
 import { Text } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
 import { useTasks } from "~/data/hooks";
 import type { Task } from "@stu/core";
-import { getTaskOverviewModel } from "../model/task-overview-model";
+import { getTaskOverviewModel, type TaskOverviewModel } from "../model/task-overview-model";
 import { AddTaskSheet } from "./add-task-sheet";
 import { TaskCard } from "./task-card";
 
@@ -35,11 +36,11 @@ export const TasksSectionView = ({
 }: {
   courseId?: string;
   isAddVisible: boolean;
-  model: { tasks: Task[]; sectionHeight: number };
+  model: TaskOverviewModel;
   onShowAdd: () => void;
   onCloseAdd: () => void;
 }) => {
-  const { tasks, sectionHeight } = model;
+  const { columns, tasks, sectionHeight } = model;
 
   return (
     <View
@@ -83,30 +84,32 @@ export const TasksSectionView = ({
           </View>
         </View>
       ) : (
-        <ScrollView
+        <LegendList
+          data={columns}
           horizontal
+          keyExtractor={taskColumnKey}
+          renderItem={renderTaskColumn}
+          recycleItems
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{
             paddingHorizontal: 32,
             paddingVertical: 14,
           }}
-        >
-          <View
-            style={{
-              flexDirection: "column",
-              flexWrap: "wrap",
-              gap: 15,
-              height: sectionHeight,
-            }}
-          >
-            {tasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
-            ))}
-          </View>
-        </ScrollView>
+          style={{ height: sectionHeight }}
+        />
       )}
 
       <View className="h-2" />
     </View>
   );
 };
+
+const taskColumnKey = (tasks: Task[]) => tasks.map((task) => task.id).join(":");
+
+const renderTaskColumn = ({ item }: { item: Task[] }) => (
+  <View className="gap-[15px] pr-[15px]">
+    {item.map((task) => (
+      <TaskCard key={task.id} task={task} />
+    ))}
+  </View>
+);

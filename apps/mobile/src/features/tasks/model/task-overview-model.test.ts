@@ -17,6 +17,7 @@ describe("getTaskOverviewModel", () => {
     expect(getTaskOverviewModel([task("a"), task("b"), task("c")])).toMatchObject({
       crossAxisCount: 1,
       sectionHeight: 225,
+      columns: [[task("a")], [task("b")], [task("c")]],
     });
   });
 
@@ -24,6 +25,10 @@ describe("getTaskOverviewModel", () => {
     expect(getTaskOverviewModel([task("a"), task("b"), task("c"), task("d")])).toMatchObject({
       crossAxisCount: 2,
       sectionHeight: 450,
+      columns: [
+        [task("a"), task("b")],
+        [task("c"), task("d")],
+      ],
     });
   });
 });

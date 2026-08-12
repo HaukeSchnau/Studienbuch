@@ -52,9 +52,9 @@ The build output is a self-contained Node server under `.output/`.
 The repository's Nix flake exposes this production server as
 `packages.projectRelease`. Its embedded Project descriptor pairs the immutable
 web Release with the mutable Vite and Expo Development workloads. Deployment
-infrastructure supplies the public URL, listener, and Better Auth credential;
-the repository runtime derives `BETTER_AUTH_URL`, `HOST`, and `PORT` from that
-generic context. The Release intentionally contains no Metro server or database.
+infrastructure supplies the public URL, listener, Better Auth credential, and PostgreSQL URL;
+the repository runtime derives `BETTER_AUTH_URL`, `DATABASE_URL`, `HOST`, and `PORT` from that
+generic context. The Release intentionally contains no Metro server or embedded database.
 
 For host-specific presets (Vercel, Netlify, Cloudflare, AWS Lambda, etc.) and tuning, see https://v3.nitro.build/deploy.
 
@@ -68,36 +68,21 @@ vp dlx shadcn@latest add button
 
 ## Setting up Better Auth
 
-1. Generate and set the `BETTER_AUTH_SECRET` environment variable in your `.env.local`:
+1. Copy `.env.example` to `.env.local`, point `DATABASE_URL` at PostgreSQL, and generate a
+   `BETTER_AUTH_SECRET`:
 
    ```bash
    vp dlx @better-auth/cli secret
    ```
 
-2. Visit the [Better Auth documentation](https://www.better-auth.com) to unlock the full potential of authentication in your app.
-
-### Adding a Database (Optional)
-
-Better Auth can work in stateless mode, but to persist user data, add a database:
-
-```typescript
-// src/lib/auth.ts
-import { betterAuth } from "better-auth";
-import { Pool } from "pg";
-
-export const auth = betterAuth({
-  database: new Pool({
-    connectionString: process.env.DATABASE_URL,
-  }),
-  // ... rest of config
-});
-```
-
-Then run migrations:
+2. Apply the repository-owned Drizzle migrations:
 
 ```bash
-vp dlx @better-auth/cli migrate
+just db-migrate
 ```
+
+Better Auth uses the server runtime's scoped PostgreSQL pool. Its tables live in the same migration
+history as future application tables; do not run Better Auth's independent migration command.
 
 ## Setting up PostHog
 

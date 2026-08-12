@@ -32,12 +32,14 @@ in
       checkout="$(project-context path checkout)"
       cache_root="$(project-context path cache)"
       mobile_url="$(project-context endpoint mobile url)"
+      web_url="$(project-context endpoint web url)"
       mobile_port="$(project-context endpoint mobile listen-port)"
       mobile_cache="$cache_root/mobile"
       install -d -m 0700 "$mobile_cache/tmp"
 
       export APP_VARIANT=development
       export EXPO_PACKAGER_PROXY_URL="$mobile_url"
+      export EXPO_PUBLIC_API_URL="$web_url"
       export EXPO_UNSTABLE_HEADLESS=1
       export NODE_OPTIONS="--dns-result-order=ipv4first''${NODE_OPTIONS:+ $NODE_OPTIONS}"
       export TMPDIR="$mobile_cache/tmp"
@@ -58,6 +60,7 @@ in
   devShell = {
     packages = [
       pkgs.watchman
+      pkgs.maestro
       jdk
       gradle
       androidSdk
