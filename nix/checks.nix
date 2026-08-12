@@ -1,38 +1,13 @@
 {
   descriptorPath,
   pkgs,
-  workspace,
-  web,
 }:
 let
-  workspaceSource = pkgs.runCommand "studienbuch-workspace-source-check" { } ''
-    dependency_source=${workspace.dependencySource}
-    web_source=${web.source}
-    mobile_source=${workspace.sourceFor "@stu/mobile"}
-
-    test -f "$dependency_source/apps/web/package.json"
-    test -f "$dependency_source/apps/mobile/package.json"
-    test -f "$dependency_source/packages/core/package.json"
-    test -f "$dependency_source/scripts/package.json"
-    test ! -e "$dependency_source/apps/web/src"
-
-    test -f "$web_source/apps/web/package.json"
-    test ! -e "$web_source/apps/mobile/src"
-    test ! -e "$web_source/packages/core/src"
-
-    test -f "$mobile_source/apps/mobile/package.json"
-    test -f "$mobile_source/packages/core/package.json"
-    test -d "$mobile_source/packages/core/src"
-    test ! -e "$mobile_source/apps/web/src"
-
-    test ! -e "$web_source/apps/web/node_modules"
-    test ! -e "$web_source/apps/web/.output"
-    test ! -e "$web_source/apps/web/nix.nix"
-    touch "$out"
-  '';
-
   forRelease =
-    projectRelease:
+    {
+      projectRelease,
+      webApplication,
+    }:
     let
       releasePackage = projectRelease.package;
       releaseSmoke =
@@ -119,9 +94,9 @@ let
       '';
       releaseInterface = projectRelease.checks.interface;
       inherit releasePackage releaseSmoke;
-      webApplication = web.webApplication;
+      inherit webApplication;
     };
 in
 {
-  inherit forRelease workspaceSource;
+  inherit forRelease;
 }

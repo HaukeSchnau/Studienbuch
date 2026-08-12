@@ -79,7 +79,7 @@ interface.
 - The module is project-agnostic: derivation naming, package root files, patch
   location, and generated-file exclusions are constructor inputs. The local
   `nix/workspace.nix` adapter supplies the Studienbuch conventions.
-- `workspace.sourceFor packageName` produces a build source containing the
+- `workspace.sources.sourceFor packageName` produces a build source containing the
   selected package, its transitive local dependencies, root pnpm metadata,
   every workspace manifest, patches, and the shared root TypeScript config.
 - Generated directories, dependency installations, and colocated `nix.nix`
@@ -116,3 +116,19 @@ interface.
 - Native `nix flake check` passes all 14 checks, including the HTTP release
   smoke check. `nix develop -c just qa` passes formatting, lint, and all 19
   tests.
+
+## Colocation follow-up (2026-08-12)
+
+- Workspace source policy and its `workspaceSource` contract check now live in
+  `nix/workspace.nix`. The project-level check module no longer knows package
+  graph fixtures, selected source layouts, or workspace filtering details.
+- Workspace callers consume cohesive `toolchain`, `sources`, `preparation`, and
+  `checks` interfaces instead of a flat attribute set.
+- App callers likewise consume `development`, `release`, and `devShell`
+  interfaces. The composition root remains explicit while no longer
+  reconstructing those concepts from unrelated attributes.
+- `apps/web/nix.nix` reads the authoritative `@stu/web` identity from its
+  colocated `package.json`; Nix-only artifact naming and installation layout
+  remain local to the Nix implementation.
+- Cross-module action topology, release construction, descriptor verification,
+  and the end-to-end release smoke remain at the project seam deliberately.
