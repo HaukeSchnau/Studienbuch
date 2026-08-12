@@ -1,42 +1,10 @@
 {
   pkgs,
-  root,
   workspace,
 }:
 let
-  inherit (pkgs) lib;
   inherit (workspace) dependencySource nodejs pnpm;
-
-  webSource = lib.cleanSourceWith {
-    src = root;
-    filter =
-      path: type:
-      let
-        relative = lib.removePrefix ((toString root) + "/") (toString path);
-        ignored =
-          lib.any (directory: relative == directory || lib.hasPrefix "${directory}/" relative) [
-            "agent-notes"
-            "apps/web/.output"
-            "apps/web/node_modules"
-            "nix"
-          ]
-          || lib.elem relative [
-            "apps/web/nix.nix"
-            "apps/web/README.md"
-          ];
-      in
-      !ignored
-      && (
-        type == "directory"
-        || relative == "package.json"
-        || relative == "pnpm-lock.yaml"
-        || relative == "pnpm-workspace.yaml"
-        || relative == "tsconfig.json"
-        || lib.hasSuffix "/package.json" relative
-        || lib.hasPrefix "apps/web/" relative
-        || lib.hasPrefix "patches/" relative
-      );
-  };
+  webSource = workspace.sourceFor "@stu/web";
 
   webDependencies = pkgs.fetchPnpmDeps {
     pname = "studienbuch-web-dependencies";

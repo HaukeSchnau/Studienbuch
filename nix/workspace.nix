@@ -3,37 +3,8 @@ let
   lib = pkgs.lib;
   nodejs = pkgs.nodejs_24;
   pnpm = pkgs.pnpm_11.override { nodejs-slim = nodejs; };
-
-  dependencySource = lib.cleanSourceWith {
-    src = root;
-    filter =
-      path: type:
-      let
-        relative = lib.removePrefix ((toString root) + "/") (toString path);
-        ignored = lib.any (directory: relative == directory || lib.hasPrefix "${directory}/" relative) [
-          ".direnv"
-          ".git"
-          ".jj"
-          "agent-notes"
-          "apps/console/node_modules"
-          "apps/mobile/node_modules"
-          "apps/web/.output"
-          "apps/web/node_modules"
-          "nix"
-          "node_modules"
-          "packages/core/node_modules"
-          "tmp"
-        ];
-      in
-      !ignored
-      && (
-        type == "directory"
-        || relative == "package.json"
-        || relative == "pnpm-lock.yaml"
-        || relative == "pnpm-workspace.yaml"
-        || lib.hasSuffix "/package.json" relative
-        || lib.hasPrefix "patches/" relative
-      );
+  sources = import ./workspace-source.nix {
+    inherit lib root;
   };
 
   prepareAction = pkgs.writeShellApplication {
@@ -81,9 +52,9 @@ let
 in
 {
   inherit
-    dependencySource
     nodejs
     pnpm
     prepareAction
     ;
+  inherit (sources) dependencySource sourceFor;
 }
