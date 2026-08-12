@@ -5,6 +5,9 @@
   "secrets": {
     "betterAuthSecret": {
       "description": "Secret used to sign Better Auth sessions"
+    },
+    "databaseUrl": {
+      "description": "PostgreSQL connection URL used by the web runtime and migrations"
     }
   },
   "development": {
@@ -14,7 +17,7 @@
     "workloads": {
       "web": {
         "action": "web",
-        "secrets": ["betterAuthSecret"]
+        "secrets": ["betterAuthSecret", "databaseUrl"]
       },
       "mobile": {
         "action": "mobile"

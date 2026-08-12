@@ -1,0 +1,47 @@
+# Production foundation
+
+## Goal
+
+Establish the first production persistence and mobile operations foundation without introducing
+sync or event sourcing.
+
+## Scope
+
+- PostgreSQL through `@effect/sql-pg` and Drizzle's Effect-native driver
+- one Drizzle migration history, initially containing Better Auth's required tables
+- Better Auth persistence plus its Expo client using SecureStore and network awareness
+- a real Testcontainers PostgreSQL integration test using `@effect/vitest`
+- Legend List in a real mobile list
+- privacy-conscious React Native Sentry crash reporting and source-map configuration
+- Maestro supplied through Nix with a smoke flow
+
+## Architectural decisions
+
+- `packages/server` owns server-only persistence. `packages/core` remains runtime-agnostic.
+- PostgreSQL stores current authoritative state only. No event log, replication protocol, or sync
+  abstraction is part of this change.
+- Drizzle's Effect driver is used by application workflows. Better Auth uses its supported `pg`
+  interface against the same pool and schema because its Drizzle adapter currently peers on the
+  stable Drizzle line while Effect support is on Drizzle 1.0 RC. The pinned RC 5 preview includes
+  the Effect RC 108 compatibility fixes that RC 4 lacked.
+- Domain tables wait for their first server use case; the initial schema does not speculate about
+  them.
+
+## Verification status
+
+- Complete: `just qa` (all six workspaces; PostgreSQL Testcontainers test included)
+- Complete: `expo install --check` and public Expo config evaluation
+- Complete: production web build
+- Complete: `nix build .#webApplication`
+- Complete: Nix project descriptor and release smoke checks, including runtime startup against an
+  ephemeral PostgreSQL 17 server
+- Complete: Maestro 2.7.0 resolves from the project development shell
+
+## Follow-up tasks
+
+- Supply `databaseUrl` alongside `betterAuthSecret` in each deployed project runtime.
+- Set `SENTRY_ORG`, `SENTRY_PROJECT`, and secret `SENTRY_AUTH_TOKEN` in EAS before the first release
+  that should upload native source maps; set `EXPO_PUBLIC_SENTRY_DSN` to enable capture.
+- Run the Maestro smoke flow on a development build for each platform; simulator/device execution is
+  intentionally outside repository QA.
+- Add the first domain schema only with its first server workflow.

@@ -17,6 +17,7 @@ let
               pkgs.coreutils
               pkgs.curl
               pkgs.jq
+              pkgs.postgresql_17
               pkgs.python3
             ];
           }
@@ -29,6 +30,15 @@ let
             secrets="$root/secrets"
             mkdir -p "$state" "$runtime" "$secrets"
             printf '%s\n' 'release-smoke-secret-with-sufficient-length' > "$secrets/better-auth-secret"
+            postgres_root="$root/postgres"
+            postgres_socket="$root/postgres-socket"
+            mkdir -p "$postgres_socket"
+            initdb --auth=trust --no-locale --encoding=UTF8 -D "$postgres_root" >/dev/null
+            pg_ctl -D "$postgres_root" -o "-h ''' -k $postgres_socket" -w start >/dev/null
+            encoded_postgres_socket="$(printf '%s' "$postgres_socket" | jq -sRr @uri)"
+            postgres_user="$(id -un)"
+            printf 'postgresql://%s@/postgres?host=%s\n' \
+              "$postgres_user" "$encoded_postgres_socket" > "$secrets/database-url"
 
             ${pkgs.python3}/bin/python - "$root/otlp-paths" <<'PY' &
             import http.server
@@ -72,7 +82,10 @@ let
                   }
                 },
                 parameters: {},
-                secrets: {betterAuthSecret: "better-auth-secret"}
+                secrets: {
+                  betterAuthSecret: "better-auth-secret",
+                  databaseUrl: "database-url"
+                }
               }' > "$root/manifest.json"
 
             PROJECT_RUNTIME_FILE="$root/manifest.json" \
@@ -86,6 +99,7 @@ let
               wait "$server_pid" 2>/dev/null || true
               kill "$collector_pid" 2>/dev/null || true
               wait "$collector_pid" 2>/dev/null || true
+              pg_ctl -D "$postgres_root" -m fast -w stop >/dev/null 2>&1 || true
             }
             trap cleanup EXIT
 
@@ -147,7 +161,7 @@ let
           .project == "studienbuch" and
           (.development.endpoints | keys) == ["mobile", "web"] and
           (.development.workloads | keys) == ["mobile", "web"] and
-          .development.workloads.web.secrets == ["betterAuthSecret"] and
+          .development.workloads.web.secrets == ["betterAuthSecret", "databaseUrl"] and
           (.development.workloads.mobile.secrets // []) == [] and
           .release.action == "web" and
           .release.health.paths == ["/api/health/live", "/api/health/ready"] and

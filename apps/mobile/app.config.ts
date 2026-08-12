@@ -218,6 +218,7 @@ const withIosPodsDeploymentTarget: ConfigPlugin = (config) =>
 const plugins = [
   "expo-router",
   "expo-image",
+  "@sentry/react-native/expo",
   [
     "expo-widgets",
     {

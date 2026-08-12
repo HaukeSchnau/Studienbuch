@@ -15,6 +15,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { AppProviders } from "~/app-shell/app-providers";
 import { SetupGate } from "~/app-shell/setup/setup-gate";
+import { withMobileCrashReporting } from "~/observability/sentry";
 import { configureDevelopmentMenuPreferences } from "~/platform/dev-menu-preferences";
 import "../global.css";
 
@@ -56,7 +57,7 @@ function RootLayout() {
   );
 }
 
-export default ObserveRoot.wrap(RootLayout);
+export default withMobileCrashReporting(ObserveRoot.wrap(RootLayout));
 
 function AppNavigator() {
   return (

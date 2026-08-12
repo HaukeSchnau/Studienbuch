@@ -45,6 +45,8 @@ Keep this document and other docs up-to-date.
 - `apps/web`: TanStack Start web app, including marketing site.
 - `apps/console`: Admin/System CLI
 - `packages/core`: Core Domain Model and logic. Should be completely agnostic as to where it runs (e.g. no React-specific code).
+- `packages/server`: Server-only persistence and application infrastructure. It owns the PostgreSQL
+  schema and Drizzle migrations; browser and mobile bundles must never import it.
 
 These are not set in stone. Feel free to suggest changes to these roles or adding new packages.
 

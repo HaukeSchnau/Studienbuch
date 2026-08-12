@@ -4,6 +4,7 @@ import {
   productionJsonLayer,
   serverConfig,
 } from "@stu/observability/server";
+import { Database } from "@stu/server";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
@@ -41,6 +42,6 @@ const telemetryLayer = Layer.unwrap(
   }),
 );
 
-export const WebApplicationLive = Layer.mergeAll(ClientTelemetryLive).pipe(
+export const WebApplicationLive = Layer.mergeAll(ClientTelemetryLive, Database.layerConfig).pipe(
   Layer.provideMerge(telemetryLayer),
 );
