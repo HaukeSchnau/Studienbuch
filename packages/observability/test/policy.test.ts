@@ -93,6 +93,16 @@ describe("resource and trace policy", () => {
       "deployment.environment.name": "production",
       "service.instance.id": "instance-1",
     });
+    expect(
+      resourceAttributes({
+        serviceName: "studienbuch-server",
+        serviceVersion: "release-1",
+        environment: "production",
+      }),
+    ).toEqual({
+      "service.namespace": "studienbuch",
+      "deployment.environment.name": "production",
+    });
   });
 
   it("decodes valid W3C context and rejects malformed context", () => {

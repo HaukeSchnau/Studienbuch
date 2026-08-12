@@ -2,7 +2,7 @@ import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
-  if (typeof window !== "undefined") {
+  if (globalThis.window !== undefined) {
     void import("#/lib/observability/sentry-client.ts").then(({ initializeSentryClient }) => {
       initializeSentryClient();
     });
@@ -15,7 +15,7 @@ export function getRouter() {
     defaultPreloadStaleTime: 0,
   });
 
-  if (typeof window !== "undefined") {
+  if (globalThis.window !== undefined) {
     const initializedAt = performance.now();
     void import("#/lib/observability/browser-client.ts").then(
       ({ browserTelemetry, installBrowserTelemetryLifecycle }) => {

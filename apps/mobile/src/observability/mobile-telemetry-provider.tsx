@@ -73,8 +73,7 @@ export function MobileTelemetryProvider({ authorization, children }: MobileTelem
       connectivity: {
         // Native has no already-pinned reachability module. Failed sends remain
         // durable and back off; foregrounding and the timer provide recovery.
-        isOnline: () =>
-          typeof globalThis.navigator?.onLine === "boolean" ? globalThis.navigator.onLine : true,
+        isOnline: () => globalThis.navigator?.onLine ?? true,
         subscribe: (onOnline) => {
           if (Platform.OS !== "web") return () => undefined;
           globalThis.addEventListener?.("online", onOnline);

@@ -24,12 +24,13 @@ export function ClassAndCoursesScreen({
   const { semesters } = useSchool();
   const currentSemester = findCurrentSemester(semesters)!;
   const currentCourses = getSemesterCourses(currentSemester.id);
-  const [selection, setSelection] = useState<Record<SubjectId, Course | undefined>>(
-    currentCourses.reduce(
-      (acc, course) => ({ ...acc, [course.subject]: course }),
-      {} as Record<SubjectId, Course | undefined>,
-    ),
-  );
+  const [selection, setSelection] = useState<Partial<Record<SubjectId, Course>>>(() => {
+    const initialSelection: Partial<Record<SubjectId, Course>> = {};
+    for (const course of currentCourses) {
+      initialSelection[course.subject] = course;
+    }
+    return initialSelection;
+  });
 
   const groupedChoices = useMemo(() => {
     const result = new Map<SubjectId, Course[]>();

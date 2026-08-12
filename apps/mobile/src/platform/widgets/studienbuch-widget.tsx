@@ -6,7 +6,7 @@ import {
   Text,
   VStack,
   background,
-  clipShape,
+  clipToContainer,
   font,
   foregroundStyle,
   padding,
@@ -62,7 +62,7 @@ const SummaryWidget = (props: StudienbuchWidgetSnapshot, environment: WidgetEnvi
       modifiers={[
         padding({ all: isCompact ? 14 : 16 }),
         background(canvas),
-        clipShape("containerRelativeShape"),
+        clipToContainer("containerRelativeShape"),
         widgetURL("studienbuch://"),
       ]}
     >

@@ -14,6 +14,7 @@ export default defineConfig({
     sortPackageJson: {},
   },
   lint: {
+    jsPlugins: [{ name: "anti-slop", specifier: "./tools/oxlint/anti-slop/index.ts" }],
     ignorePatterns: [
       "dist",
       "node_modules",
@@ -28,6 +29,16 @@ export default defineConfig({
       correctness: "error",
     },
     rules: {
+      "anti-slop/no-chained-type-assertions": "error",
+      "anti-slop/no-conditional-empty-object-spread": "error",
+      "anti-slop/no-known-value-widening": "error",
+      "anti-slop/no-object-parameters": "error",
+      "anti-slop/no-runtime-typeof": "error",
+      "anti-slop/no-shape-in-symbol-names": "error",
+      "anti-slop/no-unknown-parameters": "error",
+      "anti-slop/no-unknown-type-aliases": "error",
+      "anti-slop/no-unsafe-dictionary-type": "error",
+      "anti-slop/no-widen-then-assert": "error",
       "react-in-jsx-scope": "off",
       "eslint/no-shadow": "off",
       "eslint/no-await-in-loop": "off",

@@ -57,7 +57,7 @@ const ENTRY_COLUMN_GAP = 4;
 const WEEK_SWIPE_MIN_DISTANCE = 72;
 const WEEK_SWIPE_VELOCITY = 760;
 const WEEK_PAGE_OFFSETS = [-1, 0, 1] as const;
-const timetableSubjectLabelMap: Partial<Record<SubjectId, string>> = {
+const timetableSubjectLabelMap = {
   bi: "Bio",
   ch: "Chemie",
   de: "Deutsch",
@@ -79,7 +79,7 @@ const timetableSubjectLabelMap: Partial<Record<SubjectId, string>> = {
   "sport-theorie": "Sport-Th.",
   tutorium: "Tutorium",
   wn: "Werte",
-};
+} as const satisfies Partial<Record<SubjectId, string>>;
 
 const timeToPosition = (minute: number, gridHeight: number) =>
   ((minute - DAY_START) / DAY_DURATION) * gridHeight;

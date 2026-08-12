@@ -27,7 +27,7 @@ export type SystemIconName =
   | "verified"
   | "visibility";
 
-const symbolMap: Record<SystemIconName, ComponentProps<typeof SymbolView>["name"]> = {
+const symbolMap = {
   add: { ios: "plus", android: "add", web: "add" },
   "arrow-right": { ios: "arrow.right", android: "arrow_forward", web: "arrow_forward" },
   camera: { ios: "camera.fill", android: "photo_camera", web: "photo_camera" },
@@ -58,9 +58,9 @@ const symbolMap: Record<SystemIconName, ComponentProps<typeof SymbolView>["name"
   swipe: { ios: "hand.draw.fill", android: "swipe", web: "swipe" },
   verified: { ios: "checkmark.seal.fill", android: "verified", web: "verified" },
   visibility: { ios: "eye", android: "visibility", web: "visibility" },
-};
+} satisfies Record<SystemIconName, ComponentProps<typeof SymbolView>["name"]>;
 
-const svgPathMap: Record<Exclude<SystemIconName, "more">, string> = {
+const svgPathMap = {
   add: "M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z",
   "arrow-right": "M12 4l1.41 1.41L8.83 10H20v2H8.83l4.58 4.59L12 20l8-8-8-8z",
   camera:
@@ -93,7 +93,7 @@ const svgPathMap: Record<Exclude<SystemIconName, "more">, string> = {
     "m23 12-2.44-2.78.34-3.68-3.61-.82L15.4 1.5 12 2.96 8.6 1.5 6.71 4.72l-3.61.81.34 3.69L1 12l2.44 2.78-.34 3.69 3.61.81L8.6 22.5l3.4-1.47 3.4 1.46 1.89-3.22 3.61-.81-.34-3.68L23 12zm-12.91 4.72-3.8-3.81 1.48-1.48 2.32 2.33 5.85-5.87 1.48 1.48-7.42 7.35z",
   visibility:
     "M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-8a3 3 0 1 0 .01 0z",
-};
+} satisfies Record<Exclude<SystemIconName, "more">, string>;
 
 interface Props {
   name: SystemIconName;

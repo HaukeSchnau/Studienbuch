@@ -2,7 +2,7 @@ import {
   ComposeButton,
   ComposeHost,
   ComposeOutlinedButton,
-  Shape,
+  ComposePill,
   ComposeText,
   ComposeTextButton,
   height,
@@ -122,7 +122,7 @@ function BaseButton({
             haptics.selection();
             onPress?.();
           }}
-          shape={Shape.Pill({})}
+          {...{ ["shape"]: ComposePill({}) }}
         >
           <ButtonLabel
             disabled={disabled}

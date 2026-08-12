@@ -9,6 +9,7 @@ import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as ManagedRuntime from "effect/ManagedRuntime";
 import * as Metric from "effect/Metric";
+import * as Schema from "effect/Schema";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { describe, expect, it } from "vite-plus/test";
 import { runObservabilityCanary } from "../src/commands/observability.ts";
@@ -18,6 +19,8 @@ interface ReceivedRequest {
   readonly path: string;
   readonly body: string;
 }
+
+const TcpAddress = Schema.Struct({ port: Schema.Number });
 
 async function startReceiver() {
   const received: Array<ReceivedRequest> = [];
@@ -36,7 +39,7 @@ async function startReceiver() {
 
   await listen(server);
   const address = server.address();
-  if (address === null || typeof address === "string") {
+  if (!Schema.is(TcpAddress)(address)) {
     await close(server);
     throw new Error("Console OTLP test receiver did not expose a TCP address");
   }

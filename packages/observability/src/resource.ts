@@ -20,12 +20,22 @@ export interface ResourceIdentity {
   readonly instanceId?: string;
 }
 
-export function resourceAttributes(identity: ResourceIdentity): Readonly<Record<string, string>> {
-  return {
+interface ResourceAttributes extends Record<string, string> {
+  "service.namespace": typeof serviceNamespace;
+  "deployment.environment.name": DeploymentEnvironment;
+}
+
+export function resourceAttributes(identity: ResourceIdentity): Readonly<ResourceAttributes> {
+  const attributes: ResourceAttributes = {
     "service.namespace": serviceNamespace,
     "deployment.environment.name": identity.environment,
-    ...(identity.instanceId === undefined ? {} : { "service.instance.id": identity.instanceId }),
   };
+
+  if (identity.instanceId !== undefined) {
+    attributes["service.instance.id"] = identity.instanceId;
+  }
+
+  return attributes;
 }
 
 export function otlpResource(identity: ResourceIdentity) {

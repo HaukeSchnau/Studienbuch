@@ -1,5 +1,5 @@
 import {
-  buttonBorderShape,
+  buttonBorderGeometry,
   buttonStyle,
   font,
   foregroundStyle,
@@ -98,7 +98,7 @@ function BaseButton({
   const modifiers =
     Platform.OS === "ios"
       ? [
-          buttonBorderShape("capsule"),
+          buttonBorderGeometry("capsule"),
           tint(resolvedTintColor),
           ...(variant === "text" ? [buttonStyle("borderless")] : []),
           font({

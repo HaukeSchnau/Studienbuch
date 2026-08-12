@@ -11,8 +11,8 @@ export default definePlugin((nitroApp) => {
     removeNodeHandlers();
     await disposeApplicationRuntime();
   });
-  void warmApplicationRuntime().catch((error: unknown) => {
-    console.error("Studienbuch application runtime failed to start", error);
+  void warmApplicationRuntime().catch((cause: unknown) => {
+    console.error("Studienbuch application runtime failed to start", cause);
     process.exitCode = 1;
     setImmediate(() => process.kill(process.pid, "SIGTERM"));
   });

@@ -12,8 +12,8 @@ export function installNodeShutdownHandlers(
   globalHandlers[shutdownHandlerKey]?.();
 
   const handleSignal = () => {
-    void lifecycle.dispose().catch((error: unknown) => {
-      console.error("Failed to dispose the Studienbuch application runtime", error);
+    void lifecycle.dispose().catch((cause: unknown) => {
+      console.error("Failed to dispose the Studienbuch application runtime", cause);
     });
   };
   process.once("SIGINT", handleSignal);

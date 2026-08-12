@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type {
   ClientTelemetryEnvelopeType,
   ClientTelemetryRecordType,
@@ -95,6 +95,35 @@ describe("TelemetryOutbox", () => {
     });
 
     expect(await setup({ storage }).outbox.stats()).toMatchObject({ depth: 0, dropped: 1 });
+  });
+
+  it("salvages valid persisted siblings while counting malformed records", async () => {
+    const storage = new MemoryStorage();
+    storage.value = JSON.stringify({
+      version: 1,
+      sequence: 2,
+      dropped: 0,
+      records: [
+        {
+          id: "valid",
+          priority: "normal",
+          enqueuedAt: 1_800_000_000_000,
+          attempts: 0,
+          nextAttemptAt: 1_800_000_000_000,
+          record: metric(1, 1_800_000_000_000),
+        },
+        {
+          id: "invalid",
+          priority: "normal",
+          enqueuedAt: 1_800_000_000_000,
+          attempts: 0,
+          nextAttemptAt: 1_800_000_000_000,
+          record: { ...metric(2, 1_800_000_000_000), studentFreeText: "must stay local" },
+        },
+      ],
+    });
+
+    expect(await setup({ storage }).outbox.stats()).toMatchObject({ depth: 1, dropped: 1 });
   });
 
   it("does not invoke transport while offline", async () => {

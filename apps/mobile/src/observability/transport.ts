@@ -1,4 +1,5 @@
 import type { ClientTelemetryEnvelopeType } from "@stu/observability/browser";
+import { Option, Schema } from "effect";
 import type { TelemetryTransport } from "./outbox";
 
 export type TelemetryAuthorization = () => Promise<string | undefined>;
@@ -8,6 +9,12 @@ export interface FetchTelemetryTransportOptions {
   readonly authorization: TelemetryAuthorization;
   readonly fetch?: typeof globalThis.fetch;
 }
+
+const TelemetryAcknowledgement = Schema.Struct({
+  acceptedRecords: Schema.Number.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(0)),
+});
+
+const decodeTelemetryAcknowledgement = Schema.decodeUnknownOption(TelemetryAcknowledgement);
 
 export const makeFetchTelemetryTransport = (
   options: FetchTelemetryTransportOptions,
@@ -33,16 +40,13 @@ export const makeFetchTelemetryTransport = (
       body: JSON.stringify(envelope),
     });
     if (!response.ok) throw new Error(`Telemetry relay rejected the batch (${response.status})`);
-    const body: unknown = await response.json().catch(() => undefined);
+    const body = await response.json().catch(() => undefined);
+    const acknowledgement = decodeTelemetryAcknowledgement(body, { onExcessProperty: "error" });
     if (
-      typeof body === "object" &&
-      body !== null &&
-      "acceptedRecords" in body &&
-      Number.isSafeInteger(body.acceptedRecords) &&
-      (body.acceptedRecords as number) >= 0 &&
-      (body.acceptedRecords as number) <= envelope.records.length
+      Option.isSome(acknowledgement) &&
+      acknowledgement.value.acceptedRecords <= envelope.records.length
     ) {
-      return body.acceptedRecords as number;
+      return acknowledgement.value.acceptedRecords;
     }
     if (body === undefined) return envelope.records.length;
     throw new Error("Telemetry relay returned an invalid acknowledgement");

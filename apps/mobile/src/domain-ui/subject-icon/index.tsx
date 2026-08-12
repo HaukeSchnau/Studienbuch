@@ -26,7 +26,7 @@ import sportTheorie from "./icons/sp.svg";
 import wn from "./icons/wn.svg";
 
 // TODO: Remove partial when all subjects have icons
-const subjectIconMap: Partial<Record<SubjectId, ComponentType<SvgProps>>> = {
+const subjectIconMap = {
   de,
   en,
   ma,
@@ -48,7 +48,7 @@ const subjectIconMap: Partial<Record<SubjectId, ComponentType<SvgProps>>> = {
   sf,
   tutorium,
   ds,
-} as const;
+} as const satisfies Partial<Record<SubjectId, ComponentType<SvgProps>>>;
 
 export const SubjectIcon = ({ subject, size = 24 }: { subject: SubjectId; size?: number }) => {
   const Icon = subjectIconMap[subject];

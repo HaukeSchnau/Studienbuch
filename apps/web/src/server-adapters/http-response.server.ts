@@ -1,7 +1,7 @@
 import * as Cause from "effect/Cause";
 import * as Exit from "effect/Exit";
 
-export function jsonResponse(body: unknown, status = 200): Response {
+export function jsonResponse<Body>(body: Body, status = 200): Response {
   return Response.json(body, {
     status,
     headers: {

@@ -10,11 +10,11 @@ import { colors } from "~/theme/colors";
 import { formatGradeShort, type Grade, type GradeType, isGradeConfirmed } from "@stu/core";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 
-const TYPE_MAP: Record<GradeType, string> = {
+const TYPE_MAP = {
   MASTER: "Aktuelle Gesamtnote",
   ORAL: "Mündliche Note",
   WRITTEN: "Klausur",
-};
+} satisfies Record<GradeType, string>;
 
 export const GradeCard = ({
   grade,

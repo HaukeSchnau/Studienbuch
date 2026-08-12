@@ -52,7 +52,9 @@ type ScriptCommand = (
   ...expressions: ReadonlyArray<ChildProcess.TemplateExpression>
 ) => ReturnType<typeof runCommand>;
 
-function isExecutableMissing(error: unknown): error is PlatformError.PlatformError {
+type CommandExecutionError = CommandFailedError | PlatformError.PlatformError;
+
+function isExecutableMissing(error: CommandExecutionError): error is PlatformError.PlatformError {
   return error instanceof PlatformError.PlatformError && error.reason._tag === "NotFound";
 }
 
