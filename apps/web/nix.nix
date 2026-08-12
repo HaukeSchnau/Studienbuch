@@ -14,8 +14,16 @@ let
     installRoot = "lib/studienbuch-web";
   };
   applicationPath = "${application.installRoot}/${application.relativePath}";
-  pnpmWorkspaces = [ application.workspaceName ];
+  pnpmWorkspaces = [
+    application.workspaceName
+    "@stu/observability"
+  ];
   source = workspace.sources.sourceFor application.workspaceName;
+
+  # Update with the `got:` hash reported by:
+  #   nix build .#webApplication
+  # after regenerating pnpm-lock.yaml for all workspace manifest changes.
+  pnpmDependencyHash = "sha256-E+0FLHbGnI1peFT1XwKVy1C2PNis0Ku/pO10LlaARRY=";
 
   pnpmDeps = pkgs.fetchPnpmDeps {
     pname = "studienbuch-web-dependencies";
@@ -24,7 +32,7 @@ let
     inherit pnpm;
     inherit pnpmWorkspaces;
     fetcherVersion = 4;
-    hash = "sha256-8f9o/YsOLG4fehqJWrGNU0whXjjx+lRcrHpIflRxmPI=";
+    hash = pnpmDependencyHash;
   };
 
   webApplication = pkgs.stdenvNoCC.mkDerivation {
@@ -49,6 +57,8 @@ let
       runHook preInstall
       mkdir -p "$out/${applicationPath}"
       cp -R node_modules "$out/${application.installRoot}/node_modules"
+      mkdir -p "$out/${application.installRoot}/packages"
+      cp -R packages/observability "$out/${application.installRoot}/packages/observability"
       cp -R ${application.relativePath}/node_modules "$out/${applicationPath}/node_modules"
       cp -R ${application.relativePath}/.output "$out/${applicationPath}/.output"
       runHook postInstall
@@ -91,6 +101,15 @@ let
       BETTER_AUTH_URL="$web_url"
       export HOST PORT BETTER_AUTH_URL
       export NODE_ENV=production
+
+      # The collector is deliberately local to the host. OTLP exporter
+      # failures must never prevent the application from serving requests.
+      export STUDIENBUCH_OTEL_ENABLED=true
+      export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
+      export STUDIENBUCH_ENVIRONMENT=production
+      export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
+      export STUDIENBUCH_OTEL_EXPORT_INTERVAL="5 seconds"
+      export STUDIENBUCH_OTEL_SHUTDOWN_TIMEOUT="3 seconds"
 
       better_auth_secret_file="$(project-context secret-file betterAuthSecret --required)"
       BETTER_AUTH_SECRET="$(<"$better_auth_secret_file")"

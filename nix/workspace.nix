@@ -36,16 +36,19 @@ let
       test -f ${dependencySource}/apps/web/package.json
       test -f ${dependencySource}/apps/mobile/package.json
       test -f ${dependencySource}/packages/core/package.json
+      test -f ${dependencySource}/packages/observability/package.json
       test -f ${dependencySource}/scripts/package.json
       test ! -e ${dependencySource}/apps/web/src
 
       test -f ${webSource}/apps/web/package.json
       test ! -e ${webSource}/apps/mobile/src
       test ! -e ${webSource}/packages/core/src
+      test -d ${webSource}/packages/observability/src
 
       test -f ${mobileSource}/apps/mobile/package.json
       test -f ${mobileSource}/packages/core/package.json
       test -d ${mobileSource}/packages/core/src
+      test -d ${mobileSource}/packages/observability/src
       test ! -e ${mobileSource}/apps/web/src
 
       test ! -e ${webSource}/apps/web/node_modules

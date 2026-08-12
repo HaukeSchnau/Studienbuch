@@ -32,7 +32,10 @@
   "release": {
     "action": "web",
     "health": {
-      "paths": ["/"]
+      "paths": ["/api/health/live", "/api/health/ready"],
+      "startupTimeoutSec": 60,
+      "intervalSec": 2,
+      "requestTimeoutSec": 2
     },
     "ingress": {
       "compression": true

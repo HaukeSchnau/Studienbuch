@@ -1,11 +1,13 @@
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
-import * as NodeServices from "@effect/platform-node/NodeServices";
-import { Effect } from "effect";
 import { Command } from "effect/unstable/cli";
+import { observabilityCommand } from "./commands/observability.ts";
 import { pullCommand } from "./commands/pull.ts";
+import { withConsoleRuntime } from "./runtime.ts";
 
-const consoleCommand = Command.make("console").pipe(Command.withSubcommands([pullCommand]));
+export const consoleCommand = Command.make("console").pipe(
+  Command.withSubcommands([pullCommand, observabilityCommand]),
+);
 
 const cli = Command.run(consoleCommand, { version: "0.1.0" });
 
-NodeRuntime.runMain(cli.pipe(Effect.provide(NodeServices.layer)));
+NodeRuntime.runMain(withConsoleRuntime(cli));
