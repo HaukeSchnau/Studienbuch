@@ -20,10 +20,10 @@ catalogs:
       version: 0.2.9
 
 overrides:
-  '@effect/atom-react': 4.0.0-beta.107
-  '@effect/platform-node': 4.0.0-beta.107
-  '@effect/platform-node-shared': 4.0.0-beta.107
-  effect: 4.0.0-beta.107
+  '@effect/atom-react': 4.0.0-rc.108
+  '@effect/platform-node': 4.0.0-rc.108
+  '@effect/platform-node-shared': 4.0.0-rc.108
+  effect: 4.0.0-rc.108
   expo-constants: 57.0.10
   lightningcss: 1.30.1
   react-native-screens: 4.26.2
@@ -63,14 +63,14 @@ importers:
   apps/console:
     dependencies:
       '@effect/platform-node':
-        specifier: 4.0.0-beta.107
-        version: 4.0.0-beta.107(effect@4.0.0-beta.107)(ioredis@5.11.1(supports-color@8.1.1))
+        specifier: 4.0.0-rc.108
+        version: 4.0.0-rc.108(effect@4.0.0-rc.108)(ioredis@5.11.1(supports-color@8.1.1))
       '@stu/observability':
         specifier: workspace:*
         version: link:../../packages/observability
       effect:
-        specifier: 4.0.0-beta.107
-        version: 4.0.0-beta.107
+        specifier: 4.0.0-rc.108
+        version: 4.0.0-rc.108
     devDependencies:
       vite-plus:
         specifier: 'catalog:'
@@ -97,8 +97,8 @@ importers:
         specifier: ^4.4.0
         version: 4.4.0
       effect:
-        specifier: 4.0.0-beta.107
-        version: 4.0.0-beta.107
+        specifier: 4.0.0-rc.108
+        version: 4.0.0-rc.108
       expo:
         specifier: ~57.0.12
         version: 57.0.12(@babel/core@7.29.7(supports-color@8.1.1))(@expo/dom-webview@57.0.1)(@expo/metro-runtime@57.0.9)(expo-router@57.0.12)(expo-widgets@57.0.9)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.1(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(react-native@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1))(react-native@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1)(typescript@6.0.3)
@@ -287,8 +287,8 @@ importers:
         specifier: ^11.0.0
         version: 11.0.0
       effect:
-        specifier: 4.0.0-beta.107
-        version: 4.0.0-beta.107
+        specifier: 4.0.0-rc.108
+        version: 4.0.0-rc.108
       lucide-react:
         specifier: ^1.31.0
         version: 1.31.0(react@19.2.8)
@@ -375,8 +375,8 @@ importers:
   packages/observability:
     dependencies:
       effect:
-        specifier: 4.0.0-beta.107
-        version: 4.0.0-beta.107
+        specifier: 4.0.0-rc.108
+        version: 4.0.0-rc.108
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -388,11 +388,11 @@ importers:
   scripts:
     dependencies:
       '@effect/platform-node':
-        specifier: 4.0.0-beta.107
-        version: 4.0.0-beta.107(effect@4.0.0-beta.107)(ioredis@5.11.1(supports-color@8.1.1))
+        specifier: 4.0.0-rc.108
+        version: 4.0.0-rc.108(effect@4.0.0-rc.108)(ioredis@5.11.1(supports-color@8.1.1))
       effect:
-        specifier: 4.0.0-beta.107
-        version: 4.0.0-beta.107
+        specifier: 4.0.0-rc.108
+        version: 4.0.0-rc.108
 
 packages:
 
@@ -939,17 +939,17 @@ packages:
     resolution: {integrity: sha512-QxULHAm7cNu72w97JUNCBFODFaXpbDg+dP8b/oWFAZ2MTRppA3U00Y2L1HqaS4J6yBqxwa/Y3nMBaxVKbB/NsA==}
     engines: {node: '>=20.19.0'}
 
-  '@effect/platform-node-shared@4.0.0-beta.107':
-    resolution: {integrity: sha512-y6BqcRi86BfTJv+tvDrob4ozYVHxxlHYcn/zIQqZjXI9CvKnkgD6ng+38G1o45c4f2ucU+6HRI9POCmFdMoVGA==}
+  '@effect/platform-node-shared@4.0.0-rc.108':
+    resolution: {integrity: sha512-g5dSRR+tHzFcWav5A6zbug78oV8WPJL5BJqgKlKtow0cQ2IpULcLZaP2xCYR3RJDvz5SETREmPCJ+BNONIsalw==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      effect: 4.0.0-beta.107
+      effect: 4.0.0-rc.108
 
-  '@effect/platform-node@4.0.0-beta.107':
-    resolution: {integrity: sha512-k+6YNbV4Ck0L6YXtlgkvEnuP5tlxWD8EeWOrpn46PDqbGEwt4ONpRltTwm3tn2cyBXD0i+2P11cUH/6sdFagTA==}
+  '@effect/platform-node@4.0.0-rc.108':
+    resolution: {integrity: sha512-Nof78154BaHGdSYr4TPQFZ5+Dg+HkpmbI3SQUdwsby5QNs6yahGJPu2AgdIVqdx7pKZ2w7j/bvdnqoMmkG0PbA==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
-      effect: 4.0.0-beta.107
+      effect: 4.0.0-rc.108
       ioredis: '>=5.7.0 <6.0.0'
 
   '@effect/tsgo-darwin-arm64@0.36.4':
@@ -5522,8 +5522,8 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
-  effect@4.0.0-beta.107:
-    resolution: {integrity: sha512-OoBAv8eF+yanc+C6xhgEUnWeXUSHA6ynnscYqpkAY9GSnzZWystsIjBowVqCkLpHGlnRtdIqYT3wHwpOY6JDnQ==}
+  effect@4.0.0-rc.108:
+    resolution: {integrity: sha512-KmI3DlKZWPvCL4QQ2FMaPOuxMt/7DrKMENCY/gQ+MkDR5QYw25wgU5Zmh/wVLboNjIci1gNOgNCFe4xqgxli3A==}
 
   electron-to-chromium@1.5.403:
     resolution: {integrity: sha512-MQsYmdaLzvaCX5j+ZZBr5Fm6uCCnPQcRtlvmvRlWqrXy+BH2O4ffXIAScF+JQznQWB9brWp4lSD9Z4yNmaf2BA==}
@@ -8900,19 +8900,19 @@ snapshots:
 
   '@csstools/css-tokenizer@4.0.0': {}
 
-  '@effect/platform-node-shared@4.0.0-beta.107(effect@4.0.0-beta.107)':
+  '@effect/platform-node-shared@4.0.0-rc.108(effect@4.0.0-rc.108)':
     dependencies:
       '@types/ws': 8.18.1
-      effect: 4.0.0-beta.107
+      effect: 4.0.0-rc.108
       ws: 8.21.3
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform-node@4.0.0-beta.107(effect@4.0.0-beta.107)(ioredis@5.11.1(supports-color@8.1.1))':
+  '@effect/platform-node@4.0.0-rc.108(effect@4.0.0-rc.108)(ioredis@5.11.1(supports-color@8.1.1))':
     dependencies:
-      '@effect/platform-node-shared': 4.0.0-beta.107(effect@4.0.0-beta.107)
-      effect: 4.0.0-beta.107
+      '@effect/platform-node-shared': 4.0.0-rc.108(effect@4.0.0-rc.108)
+      effect: 4.0.0-rc.108
       ioredis: 5.11.1(supports-color@8.1.1)
       mime: 4.1.0
       undici: 8.10.0
@@ -13328,7 +13328,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  effect@4.0.0-beta.107:
+  effect@4.0.0-rc.108:
     dependencies:
       '@standard-schema/spec': 1.1.0
       fast-check: 4.9.0
