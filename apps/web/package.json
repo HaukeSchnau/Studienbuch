@@ -7,9 +7,7 @@
   },
   "scripts": {
     "clean": "rm -rf dist .output storybook-static .tanstack .nitro .vinxi",
-    "dev": "portless",
-    "dev:app": "dotenv -e .env.local -- sh -c \"NODE_OPTIONS='--import ./instrument.server.mjs' vp dev --host 127.0.0.1 --port ${PORT:-3000} --open ${PORTLESS_URL:-/}\"",
-    "dev:server": "vp dev",
+    "dev": "dotenv -e .env.local -- sh -c \"NODE_OPTIONS='--import ./instrument.server.mjs' vp dev --host 127.0.0.1 --port ${PORT:-3000} --open\"",
     "build": "vp build && cp instrument.server.mjs .output/server",
     "preview": "vp preview",
     "test": "vp test run --config vitest.config.ts --passWithNoTests",
@@ -63,9 +61,5 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:"
-  },
-  "portless": {
-    "name": "studienbuch",
-    "script": "dev:app"
   }
 }
