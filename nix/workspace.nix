@@ -3,10 +3,12 @@ let
   lib = pkgs.lib;
   nodejs = pkgs.nodejs_24;
   pnpm = pkgs.pnpm_11.override { nodejs-slim = nodejs; };
-  sources = import ./lib/pnpm-workspace-source.nix {
+  workspaceSources = import ./lib/pnpm-workspace-source.nix {
     inherit lib root;
     name = "studienbuch-workspace";
-    packageRootFiles = lib.optional (builtins.pathExists (root + "/tsconfig.json")) "tsconfig.json";
+    additionalPackageFiles = lib.optional (builtins.pathExists (
+      root + "/tsconfig.json"
+    )) "tsconfig.json";
     patchDirectory = "patches";
     ignoredDirectories = [
       ".direnv"
@@ -32,8 +34,6 @@ let
       pnpm
     ];
     text = ''
-      set -euo pipefail
-
       checkout="$(project-context path checkout)"
       cache_root="$(project-context path cache)"
       preparation_state="$cache_root/preparation"
@@ -42,10 +42,7 @@ let
 
       dependency_key=$(
         {
-          sha256sum flake.lock package.json pnpm-lock.yaml pnpm-workspace.yaml
-          find apps packages -type f -name package.json -print0 \
-            | sort -z \
-            | xargs -0 -r sha256sum
+          sha256sum flake.lock ${lib.escapeShellArgs workspaceSources.dependencyInputPaths}
           if [[ -d patches ]]; then
             find patches -type f -print0 \
               | sort -z \
@@ -73,5 +70,5 @@ in
     pnpm
     prepareAction
     ;
-  inherit (sources) dependencySource sourceFor;
+  inherit (workspaceSources) dependencyInputPaths dependencySource sourceFor;
 }

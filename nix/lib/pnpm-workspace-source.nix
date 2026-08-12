@@ -2,7 +2,7 @@
   lib,
   root,
   name ? "pnpm-workspace",
-  packageRootFiles ? [ ],
+  additionalPackageFiles ? [ ],
   patchDirectory ? null,
   ignoredDirectories ? [
     ".git"
@@ -11,77 +11,91 @@
   ignoredFileNames ? [ ],
 }:
 let
-  unquote =
-    value:
+  pathFor = relative: root + "/${relative}";
+
+  readWorkspacePatterns =
+    manifestPath:
     let
-      doubleQuoted = builtins.match ''"(.*)"'' value;
-      singleQuoted = builtins.match "'(.*)'" value;
-    in
-    if doubleQuoted != null then
-      builtins.head doubleQuoted
-    else if singleQuoted != null then
-      builtins.head singleQuoted
-    else
-      value;
-  workspacePatternState =
-    lib.foldl'
-      (
+      unquote =
+        value:
+        let
+          doubleQuoted = builtins.match ''"(.*)"'' value;
+          singleQuoted = builtins.match "'(.*)'" value;
+        in
+        if doubleQuoted != null then
+          builtins.head doubleQuoted
+        else if singleQuoted != null then
+          builtins.head singleQuoted
+        else
+          value;
+
+      step =
         state: line:
         let
-          item = if state.inPackages then builtins.match "  - (.+)" line else null;
+          packageItem = if state.inPackages then builtins.match "  - (.+)" line else null;
         in
         if line == "packages:" then
           state // { inPackages = true; }
-        else if item != null then
-          state // { patterns = state.patterns ++ [ (unquote (builtins.head item)) ]; }
+        else if packageItem != null then
+          state // { patterns = [ (unquote (builtins.head packageItem)) ] ++ state.patterns; }
         else if state.inPackages && builtins.match "[^ ].*" line != null then
           state // { inPackages = false; }
         else
-          state
-      )
-      {
+          state;
+
+      result = lib.foldl' step {
         inPackages = false;
         patterns = [ ];
-      }
-      (lib.splitString "\n" (builtins.readFile (root + "/pnpm-workspace.yaml")));
-  workspacePatterns =
-    if workspacePatternState.patterns == [ ] then
+      } (lib.splitString "\n" (builtins.readFile manifestPath));
+    in
+    if result.patterns == [ ] then
       throw "pnpm workspace source: pnpm-workspace.yaml does not declare packages"
     else
-      workspacePatternState.patterns;
+      lib.reverseList result.patterns;
 
-  pathFor = relative: root + "/${relative}";
+  workspacePatterns = readWorkspacePatterns (pathFor "pnpm-workspace.yaml");
+
+  validatePackagePath =
+    relativePath:
+    if builtins.pathExists (pathFor "${relativePath}/package.json") then
+      [ relativePath ]
+    else
+      throw "pnpm workspace source: ${relativePath} does not contain package.json";
+
+  expandPackageDirectory =
+    parentPath:
+    let
+      entries = builtins.readDir (pathFor parentPath);
+      isPackageDirectory =
+        childName:
+        lib.elem entries.${childName} [
+          "directory"
+          "symlink"
+        ]
+        && builtins.pathExists (pathFor "${parentPath}/${childName}/package.json");
+    in
+    map (childName: "${parentPath}/${childName}") (
+      lib.filter isPackageDirectory (builtins.attrNames entries)
+    );
+
   expandWorkspacePattern =
     pattern:
     let
-      wildcard = builtins.match "(.+)/\\*" pattern;
+      wildcardMatch = builtins.match "(.+)/\\*" pattern;
     in
-    if wildcard == null then
-      if builtins.pathExists (pathFor "${pattern}/package.json") then
-        [ pattern ]
+    if wildcardMatch == null then
+      if lib.hasInfix "*" pattern then
+        throw "pnpm workspace source: unsupported workspace pattern ${pattern}; expected a package path or parent/*"
       else
-        throw "pnpm workspace source: ${pattern} does not contain package.json"
+        validatePackagePath pattern
     else
-      let
-        directory = builtins.elemAt wildcard 0;
-        entries = builtins.readDir (pathFor directory);
-      in
-      map (entry: "${directory}/${entry}") (
-        lib.filter (
-          entry:
-          lib.elem entries.${entry} [
-            "directory"
-            "symlink"
-          ]
-          && builtins.pathExists (pathFor "${directory}/${entry}/package.json")
-        ) (builtins.attrNames entries)
-      );
+      expandPackageDirectory (builtins.head wildcardMatch);
 
   workspacePaths = lib.concatMap expandWorkspacePattern workspacePatterns;
   workspacePackages = map (
     relativePath:
     let
-      manifest = builtins.fromJSON (builtins.readFile (pathFor "${relativePath}/package.json"));
+      manifest = lib.importJSON (pathFor "${relativePath}/package.json");
     in
     if manifest ? name then
       {
@@ -92,12 +106,7 @@ let
       throw "pnpm workspace source: ${relativePath}/package.json has no package name"
   ) workspacePaths;
   packageNames = map (package: package.name) workspacePackages;
-  packagesByName = builtins.listToAttrs (
-    map (package: {
-      inherit (package) name;
-      value = package;
-    }) workspacePackages
-  );
+  packagesByName = lib.genAttrs' workspacePackages (package: lib.nameValuePair package.name package);
 
   dependencyFields = [
     "dependencies"
@@ -112,25 +121,15 @@ let
     );
   packageClosure =
     rootPackage:
-    let
-      visit =
-        visited: pending:
-        if pending == [ ] then
-          visited
-        else
-          let
-            packageName = builtins.head pending;
-            remaining = builtins.tail pending;
-          in
-          if lib.elem packageName visited then
-            visit visited remaining
-          else
-            visit (visited ++ [ packageName ]) (
-              remaining ++ localDependencies packagesByName.${packageName}.manifest
-            );
-    in
     if builtins.hasAttr rootPackage packagesByName then
-      visit [ ] [ rootPackage ]
+      map (package: package.key) (
+        builtins.genericClosure {
+          startSet = [ { key = rootPackage; } ];
+          operator =
+            package:
+            map (dependency: { key = dependency; }) (localDependencies packagesByName.${package.key}.manifest);
+        }
+      )
     else
       throw "pnpm workspace source: unknown package ${rootPackage}; expected one of ${lib.concatStringsSep ", " packageNames}";
 
@@ -140,8 +139,9 @@ let
     "pnpm-workspace.yaml"
   ];
   workspaceManifestFiles = map (relativePath: "${relativePath}/package.json") workspacePaths;
-  isWithin = relative: directory: relative == directory || lib.hasPrefix "${directory}/" relative;
-  isAncestor = relative: target: relative == "" || lib.hasPrefix "${relative}/" target;
+  dependencyInputPaths = rootFiles ++ workspaceManifestFiles;
+  isWithin = directory: path: path == directory || lib.hasPrefix "${directory}/" path;
+  pathsOverlap = first: second: isWithin first second || isWithin second first;
   isIgnored =
     relative: type:
     (type == "directory" && lib.elem (baseNameOf relative) ignoredDirectories)
@@ -150,21 +150,23 @@ let
   mkSource =
     {
       name,
-      packageRoots ? [ ],
-      extraRootFiles ? [ ],
+      packageDirectories ? [ ],
+      additionalRootFiles ? [ ],
     }:
     let
-      includedFiles = rootFiles ++ workspaceManifestFiles ++ extraRootFiles;
-      includedDirectories =
-        packageRoots
+      includedFiles = dependencyInputPaths ++ additionalRootFiles;
+      includedFileSet = lib.genAttrs includedFiles (_: true);
+      selectedDirectories =
+        packageDirectories
         ++ lib.optional (
           patchDirectory != null && builtins.pathExists (root + "/${patchDirectory}")
         ) patchDirectory;
-      relevantDirectory =
+      shouldIncludeDirectory =
+        relative: lib.any (pathsOverlap relative) (selectedDirectories ++ includedFiles);
+      shouldIncludeFile =
         relative:
-        lib.any (target: isWithin relative target || isAncestor relative target) (
-          includedDirectories ++ includedFiles
-        );
+        builtins.hasAttr relative includedFileSet
+        || lib.any (directory: isWithin directory relative) selectedDirectories;
     in
     lib.cleanSourceWith {
       inherit name;
@@ -175,19 +177,14 @@ let
           relative = lib.removePrefix ((toString root) + "/") (toString path);
         in
         !isIgnored relative type
-        && (
-          if type == "directory" then
-            relevantDirectory relative
-          else
-            lib.elem relative includedFiles
-            || lib.any (directory: isWithin relative directory) includedDirectories
-        );
+        && (if type == "directory" then shouldIncludeDirectory relative else shouldIncludeFile relative);
     };
 in
 assert
-  lib.length packageNames == lib.length (lib.unique packageNames)
-  || throw "pnpm workspace source: workspace package names must be unique";
+  lib.allUnique packageNames || throw "pnpm workspace source: workspace package names must be unique";
 {
+  inherit dependencyInputPaths;
+
   dependencySource = mkSource {
     name = "${name}-dependencies";
   };
@@ -200,7 +197,7 @@ assert
     in
     mkSource {
       name = "${name}-${sourceName}-source";
-      packageRoots = map (name: packagesByName.${name}.relativePath) closure;
-      extraRootFiles = packageRootFiles;
+      packageDirectories = map (packageName: packagesByName.${packageName}.relativePath) closure;
+      additionalRootFiles = additionalPackageFiles;
     };
 }

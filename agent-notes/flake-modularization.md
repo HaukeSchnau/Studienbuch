@@ -13,8 +13,10 @@ existing Project Runtime, web release, and mobile development behavior.
   mutable-checkout preparation action.
 - `apps/mobile/nix.nix` owns the Expo development action and Android/iOS
   toolchain policy.
-- `apps/web/nix.nix` owns the web source, reproducible build, development and
-  release actions, and release smoke scenario.
+- `apps/web/nix.nix` owns the web source, reproducible build, and development
+  and release actions.
+- `nix/checks.nix` owns project-level source, descriptor, interface, package,
+  and release-smoke verification.
 - `project.json` remains at the root as the Project contract.
 - Supported systems are explicit: `aarch64-darwin`, `aarch64-linux`, and
   `x86_64-linux`. Current `eachDefaultSystem` also evaluates
@@ -93,3 +95,24 @@ interface.
 - Native `nix flake check --print-build-logs` passes all eight aarch64-linux
   checks, including the release HTTP smoke scenario and source-closure check.
 - `nix develop --command just qa` passes formatting, lint, and all 19 tests.
+
+## Readability pass (2026-08-12)
+
+- Replaced the hand-written dependency-graph traversal with
+  `builtins.genericClosure` and standard Nixpkgs helpers for JSON, unique-name
+  validation, and attribute indexing.
+- Encapsulated workspace-pattern reading and gave package discovery and source
+  filtering intent-revealing predicates. Unsupported pnpm glob shapes now
+  fail explicitly instead of being interpreted as literal paths.
+- `dependencyInputPaths` is the single workspace-manifest inventory used by
+  both source construction and preparation hashing. This removes the broad
+  `find apps packages` scan and includes the `scripts` workspace correctly.
+- Web package identity and output layout now have one local descriptor; mobile
+  SDK and NDK paths likewise derive from one SDK root and NDK version.
+- Linux release construction is structurally isolated without a nullable
+  release value, and all project verification lives in `nix/checks.nix`.
+- The flake exposes `pkgs.nixfmt-tree`, so `nix fmt . -- --fail-on-change`
+  formats/checks all tracked Nix files.
+- Native `nix flake check` passes all 14 checks, including the HTTP release
+  smoke check. `nix develop -c just qa` passes formatting, lint, and all 19
+  tests.
