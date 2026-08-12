@@ -31,7 +31,7 @@ let
       };
       mobile = import ../apps/mobile/nix.nix {
         inherit pkgs;
-        inherit (workspace) nodejs;
+        inherit (workspace.toolchain) nodejs;
       };
       web = import ../apps/web/nix.nix {
         inherit pkgs workspace;
@@ -40,34 +40,32 @@ let
       projectRuntime = nix-infra-modules.lib.projectRuntime.mkDevelopment {
         inherit pkgs descriptorPath;
         actions = {
-          prepare = workspace.prepareAction;
-          web = web.developmentAction;
-          mobile = mobile.developmentAction;
+          prepare = workspace.preparation.action;
+          web = web.development.action;
+          mobile = mobile.development.action;
         };
       };
       projectChecks = import ./checks.nix {
-        inherit
-          descriptorPath
-          pkgs
-          web
-          workspace
-          ;
+        inherit descriptorPath pkgs;
       };
       linuxOutputs =
         if isLinux then
           let
             projectRelease = nix-infra-modules.lib.projectRuntime.mkServiceRelease {
               inherit pkgs descriptorPath;
-              payloads = [ web.webApplication ];
-              actions.web = web.releaseAction;
+              payloads = [ web.release.payload ];
+              actions.web = web.release.action;
             };
           in
           {
             packages = {
               projectRelease = projectRelease.package;
-              webApplication = web.webApplication;
+              webApplication = web.release.payload;
             };
-            checks = projectChecks.forRelease projectRelease;
+            checks = projectChecks.forRelease {
+              inherit projectRelease;
+              webApplication = web.release.payload;
+            };
           }
         else
           {
@@ -84,24 +82,19 @@ let
       }
       // linuxOutputs.packages;
 
-      checks =
-        projectRuntime.checks
-        // {
-          inherit (projectChecks) workspaceSource;
-        }
-        // linuxOutputs.checks;
+      checks = projectRuntime.checks // workspace.checks // linuxOutputs.checks;
 
       formatter = pkgs.nixfmt-tree;
 
       devShells.default = pkgs.mkShellNoCC (
-        mobile.devShellEnvironment
+        mobile.devShell.environment
         // {
           packages = [
-            workspace.nodejs
-            workspace.pnpm
+            workspace.toolchain.nodejs
+            workspace.toolchain.pnpm
             pkgs.just
           ]
-          ++ mobile.devShellPackages;
+          ++ mobile.devShell.packages;
 
           shellHook = ''
             export PATH="$PWD/node_modules/.bin:$PATH"

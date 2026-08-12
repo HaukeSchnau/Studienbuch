@@ -26,6 +26,34 @@ let
     ignoredFileNames = [ "nix.nix" ];
   };
 
+  sourceCheck =
+    let
+      inherit (workspaceSources) dependencySource;
+      webSource = workspaceSources.sourceFor "@stu/web";
+      mobileSource = workspaceSources.sourceFor "@stu/mobile";
+    in
+    pkgs.runCommand "studienbuch-workspace-source-check" { } ''
+      test -f ${dependencySource}/apps/web/package.json
+      test -f ${dependencySource}/apps/mobile/package.json
+      test -f ${dependencySource}/packages/core/package.json
+      test -f ${dependencySource}/scripts/package.json
+      test ! -e ${dependencySource}/apps/web/src
+
+      test -f ${webSource}/apps/web/package.json
+      test ! -e ${webSource}/apps/mobile/src
+      test ! -e ${webSource}/packages/core/src
+
+      test -f ${mobileSource}/apps/mobile/package.json
+      test -f ${mobileSource}/packages/core/package.json
+      test -d ${mobileSource}/packages/core/src
+      test ! -e ${mobileSource}/apps/web/src
+
+      test ! -e ${webSource}/apps/web/node_modules
+      test ! -e ${webSource}/apps/web/.output
+      test ! -e ${webSource}/apps/web/nix.nix
+      touch "$out"
+    '';
+
   prepareAction = pkgs.writeShellApplication {
     name = "studienbuch-prepare-action";
     runtimeInputs = [
@@ -65,10 +93,10 @@ let
   };
 in
 {
-  inherit
-    nodejs
-    pnpm
-    prepareAction
-    ;
-  inherit (workspaceSources) dependencyInputPaths dependencySource sourceFor;
+  checks.workspaceSource = sourceCheck;
+  preparation.action = prepareAction;
+  sources = {
+    inherit (workspaceSources) dependencySource sourceFor;
+  };
+  toolchain = { inherit nodejs pnpm; };
 }

@@ -22,7 +22,7 @@ let
   androidSdkRoot = "${androidSdk}/libexec/android-sdk";
 in
 {
-  developmentAction = pkgs.writeShellApplication {
+  development.action = pkgs.writeShellApplication {
     name = "studienbuch-mobile-action";
     runtimeInputs = [
       pkgs.coreutils
@@ -55,21 +55,23 @@ in
     '';
   };
 
-  devShellPackages = [
-    pkgs.watchman
-    jdk
-    gradle
-    androidSdk
-  ]
-  ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
-    pkgs.fastlane
-    pkgs.cocoapods
-  ];
+  devShell = {
+    packages = [
+      pkgs.watchman
+      jdk
+      gradle
+      androidSdk
+    ]
+    ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
+      pkgs.fastlane
+      pkgs.cocoapods
+    ];
 
-  devShellEnvironment = {
-    ANDROID_HOME = androidSdkRoot;
-    ANDROID_SDK_ROOT = androidSdkRoot;
-    ANDROID_NDK_ROOT = "${androidSdkRoot}/ndk/${ndkVersion}";
-    JAVA_HOME = "${jdk.home}";
+    environment = {
+      ANDROID_HOME = androidSdkRoot;
+      ANDROID_SDK_ROOT = androidSdkRoot;
+      ANDROID_NDK_ROOT = "${androidSdkRoot}/ndk/${ndkVersion}";
+      JAVA_HOME = "${jdk.home}";
+    };
   };
 }

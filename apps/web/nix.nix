@@ -3,16 +3,19 @@
   workspace,
 }:
 let
-  inherit (workspace) dependencySource nodejs pnpm;
+  inherit (pkgs) lib;
+  inherit (workspace.sources) dependencySource;
+  inherit (workspace.toolchain) nodejs pnpm;
+  manifest = lib.importJSON ./package.json;
   application = {
-    workspaceName = "@stu/web";
+    workspaceName = manifest.name;
     relativePath = "apps/web";
     pname = "studienbuch-web";
     installRoot = "lib/studienbuch-web";
   };
   applicationPath = "${application.installRoot}/${application.relativePath}";
   pnpmWorkspaces = [ application.workspaceName ];
-  source = workspace.sourceFor application.workspaceName;
+  source = workspace.sources.sourceFor application.workspaceName;
 
   pnpmDeps = pkgs.fetchPnpmDeps {
     pname = "studienbuch-web-dependencies";
@@ -99,10 +102,9 @@ let
   };
 in
 {
-  inherit
-    developmentAction
-    releaseAction
-    source
-    webApplication
-    ;
+  development.action = developmentAction;
+  release = {
+    action = releaseAction;
+    payload = webApplication;
+  };
 }
