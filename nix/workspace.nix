@@ -3,8 +3,25 @@ let
   lib = pkgs.lib;
   nodejs = pkgs.nodejs_24;
   pnpm = pkgs.pnpm_11.override { nodejs-slim = nodejs; };
-  sources = import ./workspace-source.nix {
+  sources = import ./lib/pnpm-workspace-source.nix {
     inherit lib root;
+    name = "studienbuch-workspace";
+    packageRootFiles = lib.optional (builtins.pathExists (root + "/tsconfig.json")) "tsconfig.json";
+    patchDirectory = "patches";
+    ignoredDirectories = [
+      ".direnv"
+      ".git"
+      ".jj"
+      ".nitro"
+      ".output"
+      ".tanstack"
+      ".vite-plus"
+      "dist"
+      "node_modules"
+      "storybook-static"
+      "tmp"
+    ];
+    ignoredFileNames = [ "nix.nix" ];
   };
 
   prepareAction = pkgs.writeShellApplication {
