@@ -45,5 +45,8 @@ build app:
 start app:
     vp run --filter "./apps/{{app}}" start
 
+console *args:
+    vp run --filter "./apps/console" dev {{ quote(args) }}
+
 ios *args:
     node scripts/ios.ts {{ quote(args) }}
