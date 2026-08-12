@@ -57,6 +57,8 @@ These are not set in stone. Feel free to suggest changes to these roles or addin
 - Legacy Flutter production app reference: `/home/haukeschnau/context/studienbuch-archive/Stubu-legacy-flutter/apps/flutter`
 - Legacy React Native / Expo app reference: `/home/haukeschnau/context/studienbuch-archive/Studienbuch-Legacy/packages/app-mobile`
 - Broader legacy product archive (source-oriented copy without secrets, generated files, or service data): `/home/haukeschnau/context/studienbuch-archive`
+- April 2026 repository snapshot (pre-current architecture and `packages/apps/*` layout): `/home/haukeschnau/context/studienbuch-history/2026-04-02-b325561`
+- August 2026 legacy Flutter release snapshot (Android release tooling, final package identity, and store assets): `/home/haukeschnau/context/studienbuch-archive/native-release`
 - Groundswell (event-driven local/client-to-server sync architecture): `/home/haukeschnau/context/schnau-dev-Groundswell`
 - LiveStore (Expo-capable reactive SQLite and event-sourced sync comparison): `/home/haukeschnau/context/livestorejs-livestore` ([upstream](https://github.com/livestorejs/livestore))
 - Expo 54 migration snapshot (intermediate native/mobile architecture): `/home/haukeschnau/context/studienbuch-archive/expo-54`
@@ -64,7 +66,7 @@ These are not set in stone. Feel free to suggest changes to these roles or addin
 
 Use T3 Code as the primary reference for server/client structure and Effect-heavy app architecture. Note that we want an even more robust local-first experience and architecture than T3 Code.
 When implementing or reviewing mobile UI, use the legacy Flutter app as the primary visual and behavioral reference because it is the current production app this project supersedes. Use the legacy React Native / Expo app as a secondary implementation reference.
-When working on synchronization, event ingestion, replay, or client/server persistence boundaries, consult Groundswell before introducing a parallel abstraction and use LiveStore as an independent comparison point. Use the Expo 54 snapshot and experiments as historical context, not as authoritative architecture.
+When working on synchronization, event ingestion, replay, or client/server persistence boundaries, consult Groundswell before introducing a parallel abstraction and use LiveStore as an independent comparison point. Use the April 2026 repository, Expo 54, native-release, and experiments snapshots as historical context, not as authoritative architecture.
 
 ## Syncing and Publishing
 
