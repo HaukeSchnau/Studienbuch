@@ -15,7 +15,7 @@ Build one coherent operational-observability system for Studienbuch around Effec
 - Grafana remains the primary query surface over the existing self-hosted backends;
 - crash reporting and product analytics remain explicit adjacent systems rather than being mixed into operational telemetry.
 
-This proposal assumes the desired primary backend is Hauke's existing self-hosted fleet. The application-facing contract is OTLP, so a future SaaS backend remains a collector configuration change rather than an application refactor.
+The primary production backend is Hauke's existing self-hosted fleet. The application-facing contract is OTLP, so a future SaaS backend remains a collector configuration change rather than an application refactor.
 
 ## Current state
 
@@ -65,13 +65,33 @@ Do not make it a generic dumping ground or a second application framework. Its n
 
 `packages/core` must not depend on it. Instrument the Effect services that call pure domain functions, persistence adapters, sync workers, transports, and UI/application workflows. Pure selectors, formatters, schemas, and policies do not need spans.
 
-### 3. Introduce an Effect-native server runtime
+### 3. Start with an integrated TanStack Start + Effect modular monolith
 
-The recommended structural direction is a new `apps/server` for the application API, sync protocol, background jobs, authentication adapters, and persistence. Keep `apps/web` focused on the TanStack frontend/marketing/SSR surface and use it as a thin proxy/BFF only where TanStack Start requires one.
+Do not introduce `apps/server` in the first implementation slice. Keep `apps/web` as one deployment unit, but establish a hard internal boundary:
 
-This split is not required merely to export telemetry, but it gives the future local-first sync engine, RPC/HTTP boundaries, lifecycle, configuration, and observability one explicit Effect runtime root. It also prevents Sentry/TanStack server bootstrap code from becoming the de facto backend architecture.
+- TanStack Start owns SSR, HTTP dispatch, web-only server functions, authentication cookies, and raw `/api/v1` routes.
+- One process-wide Effect `ManagedRuntime` owns application services, persistence, sync workflows, configuration, and observability resources.
+- Server functions are web adapters and raw server routes are public/mobile adapters. Both call the same Effect services; neither contains business logic.
+- Pure shared domain logic remains in `packages/core`. Add a contracts package only when schemas must cross the public HTTP boundary.
+- Keep server-only modules behind `.server.ts` or TanStack's server-only import protection so runtime authority cannot enter the browser bundle.
 
-The console and server should each construct one named top-level layer graph. Observability is supplied at the runtime root, never repeatedly inside services.
+TanStack Start's custom fetch-style `src/server.ts`, global middleware, server functions, raw server routes, and typed request context are sufficient for this shape. An Effect `ManagedRuntime` caches one layer-built service graph across requests and owns its resource scope. Its disposal and OTLP flush must be wired to the actual Node/Nitro shutdown path and tested; do not create or rebuild the runtime per request.
+
+This gives one origin, one authentication boundary, one deployment, direct SSR access, and one local development loop. It also avoids an internal HTTP hop and prevents duplicate TanStack/standalone transport implementations.
+
+A separate `apps/server` remains a valid later extraction, but only when an operational boundary earns it. Extraction triggers are:
+
+- the API/sync plane needs independent availability, rollout cadence, or scaling from SSR;
+- long-lived WebSocket/SSE/sync sessions are disrupted by frontend deployments or awkward under Nitro's lifecycle;
+- background workers need independent restart, resource limits, or singleton/leader ownership;
+- multiple replicas would accidentally duplicate scheduled/background work;
+- the mobile API becomes the dominant product boundary and TanStack's transport/runtime creates measurable friction;
+- another frontend or integration needs the backend independently;
+- the desired server runtime or placement diverges from the web runtime.
+
+If extraction happens, move the existing Effect runtime composition and transport-independent services rather than rewriting them. Code duplication is not an inherent consequence of two deployables, but duplicated lifecycle, configuration, authentication, local development, and deployment plumbing are real costs and should be justified.
+
+The console and integrated web server should each construct one named top-level layer graph. Observability is supplied at the runtime root, never repeatedly inside services.
 
 ### 4. Use an OpenTelemetry Collector as the server-side gateway
 
@@ -147,7 +167,7 @@ For browser telemetry:
 
 - emit a deliberately small set of root interaction/navigation/network spans;
 - propagate W3C trace context into API requests;
-- send OTLP/HTTP through a same-origin, size-limited, rate-limited ingestion endpoint or an authenticated collector proxy;
+- send OTLP/HTTP through a same-origin, size-limited, rate-limited Studienbuch server endpoint;
 - use strict CORS/CSP, payload-size limits, content-type checks, and server-side resource/attribute overwrites;
 - do not accept client-provided `service.namespace`, deployment, tenant, or user identity as authoritative;
 - batch and flush on visibility/page lifecycle events, accepting that browser delivery is best-effort.
@@ -172,6 +192,8 @@ Retain or add Sentry where it provides capabilities the self-hosted OTel stack d
 - narrowly sampled, privacy-configured error replays if genuinely useful.
 
 Disable duplicate Sentry APM tracing once Effect/OTLP traces are active. Replace direct `Sentry.startSpan` application instrumentation with Effect spans. Change the current 100% production trace/replay sampling before real user traffic. Errors reported to Sentry should carry the current OTel trace ID when available so the two systems can be cross-linked.
+
+Error-only session replay is acceptable for student-facing screens after the privacy controls and masking behavior are verified. Normal-session replay remains disabled by default.
 
 ### 8. Product analytics and audit history are different systems
 
@@ -280,6 +302,18 @@ Expose an explicit no-export/testing profile rather than sprinkling environment 
 
 ## Verification and operability
 
+### Initial retention defaults
+
+There is no product-specific retention requirement yet. Start with the fleet's existing operational defaults and revisit them using observed volume and incident usefulness:
+
+- metrics: 60 days;
+- application logs: 14 days;
+- traces: 7 days;
+- Sentry errors and error-only replays: the configured Sentry plan retention, without an additional first-party copy;
+- mobile telemetry outbox: at most 7 days and a strict byte cap, initially 10 MiB per installation, with oldest low-priority records dropped first.
+
+Retention is a privacy and capacity control, not merely a storage setting. Record actual ingestion volume before extending it.
+
 ### Automated checks
 
 - Unit-test attribute normalization, redaction, outcome mapping, and cardinality restrictions.
@@ -323,10 +357,10 @@ Do not alert on every individual exception.
 
 Exit criterion: a canary Effect program emits one correlated trace/log/metric set visible in Grafana, and exporter/backend interruption behavior is tested.
 
-### Phase 1: console canary and Effect server root
+### Phase 1: console canary and integrated Effect server root
 
 1. Wire `apps/console` through the shared runtime layer as the smallest production-shaped canary.
-2. Introduce `apps/server` and move server-side application workflows behind Effect services.
+2. Add the process-wide Effect runtime to `apps/web` and put server-side application workflows behind Effect services.
 3. Instrument HTTP/RPC, persistence, sync, background-worker, and external-call boundaries.
 4. Add RED and first local-first health metrics.
 
@@ -369,15 +403,17 @@ Exit criterion: offline telemetry survives process restart within explicit bound
 
 ## Open decisions before implementation
 
-1. Confirm that the existing self-hosted fleet is the intended primary production backend rather than a managed vendor.
-2. Decide whether public-client OTLP should enter through the Studienbuch server (recommended initially) or a separately exposed collector gateway.
-3. Decide the acceptable retention windows for traces, application logs, metrics, Sentry events, and mobile queued telemetry.
-4. Decide whether error-only session replay is acceptable for student-facing screens; default to disabled until privacy review.
-5. Decide whether introducing `apps/server` is in the first implementation slice or follows the collector/package foundation immediately afterward.
+1. Confirm the integrated `apps/web` modular-monolith recommendation or choose an immediate standalone server despite its additional operational boundaries.
+2. Prove the process-wide Effect runtime startup/disposal path under the pinned TanStack Start and Nitro versions before adding long-lived workers.
+3. Define the authenticated public-client telemetry envelope, limits, and server-side attribute overwrites.
 
 ## Primary references
 
 - Effect v4 beta 107 source in the pinned dependency and `~/context/effect-ts-effect`, especially `effect/unstable/observability`, `Tracer`, `Logger`, and Effect HTTP tracing.
+- TanStack Start server entry point and request-context documentation: <https://tanstack.com/start/latest/docs/framework/react/guide/server-entry-point>
+- TanStack Start server routes and server functions: <https://tanstack.com/start/latest/docs/framework/react/guide/server-routes> and <https://tanstack.com/start/latest/docs/framework/react/guide/server-functions>
+- TanStack Start execution model and server-only import protection: <https://tanstack.com/start/latest/docs/framework/react/guide/execution-model>
+- Nitro 3 runtime lifecycle source in the pinned dependency, especially `NitroRuntimeHooks.close` and runtime plugins.
 - OpenTelemetry Collector overview and deployment patterns: <https://opentelemetry.io/docs/collector/>
 - OpenTelemetry gateway pattern: <https://opentelemetry.io/docs/collector/deploy/gateway/>
 - OpenTelemetry browser exporter constraints: <https://opentelemetry.io/docs/languages/js/exporters/>
