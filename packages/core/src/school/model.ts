@@ -21,7 +21,7 @@ export type SubjectId =
   | "tutorium"
   | "ds";
 
-export const subjectNameMap: Record<SubjectId, string> = {
+export const subjectNameMap = {
   bi: "Biologie",
   ch: "Chemie",
   de: "Deutsch",
@@ -43,7 +43,7 @@ export const subjectNameMap: Record<SubjectId, string> = {
   "sport-theorie": "Sporttheorie",
   tutorium: "Tutorium",
   wn: "Werte und Normen",
-};
+} satisfies Record<SubjectId, string>;
 
 export interface TeacherInfo {
   id: string;

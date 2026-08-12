@@ -2,6 +2,7 @@ import { createServer, type Server } from "node:http";
 import * as Layer from "effect/Layer";
 import * as ManagedRuntime from "effect/ManagedRuntime";
 import * as Metric from "effect/Metric";
+import * as Schema from "effect/Schema";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { describe, expect, it } from "vite-plus/test";
 import { runCanary } from "../src/index.ts";
@@ -19,6 +20,8 @@ interface Receiver {
   readonly received: Array<ReceivedRequest>;
   readonly close: () => Promise<void>;
 }
+
+const TcpAddress = Schema.Struct({ port: Schema.Number });
 
 async function startReceiver(): Promise<Receiver> {
   const received: Array<ReceivedRequest> = [];
@@ -41,7 +44,7 @@ async function startReceiver(): Promise<Receiver> {
 
   await listen(server);
   const address = server.address();
-  if (address === null || typeof address === "string") {
+  if (!Schema.is(TcpAddress)(address)) {
     await close(server);
     throw new Error("OTLP test receiver did not expose a TCP address");
   }

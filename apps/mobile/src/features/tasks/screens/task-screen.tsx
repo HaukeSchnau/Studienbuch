@@ -89,10 +89,10 @@ const styles = StyleSheet.create({
   },
 });
 
-const taskHeaderOptions = {
-  title: "Hausaufgabe",
-  ...(Platform.OS === "ios"
+const taskHeaderOptions =
+  Platform.OS === "ios"
     ? {
+        title: "Hausaufgabe",
         headerShadowVisible: false,
         headerStyle: {
           backgroundColor: colors.background,
@@ -103,8 +103,7 @@ const taskHeaderOptions = {
           fontFamily: fontNames.bold,
         },
       }
-    : {}),
-};
+    : { title: "Hausaufgabe" };
 
 const detailMetrics = {
   titleFontSize: Platform.OS === "ios" ? 30 : 29,

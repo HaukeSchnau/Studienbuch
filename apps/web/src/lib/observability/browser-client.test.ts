@@ -59,9 +59,8 @@ async function envelopeFromFetch(fetchMock: BrowserTelemetryEnvironment["fetch"]
   const mock = vi.mocked(fetchMock);
   const [, init] = mock.mock.calls[call] ?? [];
   const body = init?.body;
-  expect(typeof body).toBe("string");
-  if (typeof body !== "string") throw new Error("Expected a JSON request body");
-  const parsed = JSON.parse(body) as unknown;
+  expect(body).toBeTypeOf("string");
+  const parsed = JSON.parse(await new Response(body).text());
   return Effect.runPromise(decodeClientTelemetryEnvelope(parsed));
 }
 

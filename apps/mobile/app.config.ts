@@ -1,11 +1,13 @@
 import {
   type ConfigPlugin,
+  IOSConfig,
   withAndroidManifest,
   withAppDelegate,
   withInfoPlist,
   withPodfile,
 } from "expo/config-plugins";
-import { withBuildSourceFile } from "@expo/config-plugins/build/ios/XcodeProjectFile";
+
+const { withBuildSourceFile } = IOSConfig.XcodeProjectFile;
 
 const IS_DEV = process.env.APP_VARIANT === "development";
 const appVersion = "1.0.0";

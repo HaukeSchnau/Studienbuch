@@ -36,7 +36,9 @@ export function outcomeFromExit(exit: Exit.Exit<unknown, unknown>): Observabilit
   return Cause.hasInterruptsOnly(exit.cause) ? "interrupt" : "failure";
 }
 
-function compactAttributes(attributes: object): Readonly<Record<string, string>> {
+function compactAttributes(
+  attributes: SpanAttributes | MetricAttributes,
+): Readonly<Record<string, string>> {
   return Object.fromEntries(
     Object.entries(attributes).filter((entry): entry is [string, string] => entry[1] !== undefined),
   );

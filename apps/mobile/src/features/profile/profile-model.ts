@@ -9,13 +9,13 @@ import {
 } from "@stu/core";
 import { differenceInCalendarDays } from "date-fns";
 
-const examSlotOrder: Record<ExamSlot, number> = {
+const examSlotOrder = {
   P1: 1,
   P2: 2,
   P3: 3,
   P4: 4,
   P5: 5,
-};
+} satisfies Record<ExamSlot, number>;
 
 export interface ProfileCourseSignal {
   course: Course;

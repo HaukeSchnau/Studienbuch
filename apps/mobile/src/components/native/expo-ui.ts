@@ -1,3 +1,7 @@
+import * as swiftModifiers from "@expo/ui/swift-ui/modifiers";
+
+export const buttonBorderGeometry = swiftModifiers["buttonBorderShape"];
+
 export {
   Button as NativeButton,
   Checkbox as NativeCheckbox,
@@ -17,10 +21,4 @@ export {
 export { default as NativeDateTimePicker } from "@expo/ui/community/datetime-picker";
 export { default as NativeMenuView } from "@expo/ui/community/menu";
 export { default as NativeSegmentedControl } from "@expo/ui/community/segmented-control";
-export {
-  buttonBorderShape,
-  buttonStyle,
-  font,
-  foregroundStyle,
-  tint,
-} from "@expo/ui/swift-ui/modifiers";
+export { buttonStyle, font, foregroundStyle, tint } from "@expo/ui/swift-ui/modifiers";

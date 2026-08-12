@@ -12,6 +12,14 @@ const maximumBackoffMillis = 60_000;
 
 type ScreenName = "overview" | "schedule" | "tasks" | "courses" | "profile" | "setup";
 
+interface KnownRouteAttribute {
+  readonly "http.route"?: "/" | typeof telemetryPath;
+}
+
+interface ScreenAttribute {
+  readonly "screen.name"?: ScreenName;
+}
+
 export interface BrowserTelemetryEnvironment {
   readonly origin: string;
   readonly fetch: BrowserFetch;
@@ -391,8 +399,8 @@ export function createBrowserTelemetryClient(options: {
   };
 }
 
-function encodedLength(value: unknown): number {
-  return new TextEncoder().encode(JSON.stringify(value)).byteLength;
+function encodedLength(record: ClientTelemetryRecordType): number {
+  return new TextEncoder().encode(JSON.stringify(record)).byteLength;
 }
 
 function normalizeServiceVersion(version: string): string {
@@ -416,13 +424,13 @@ function requestMethod(input: RequestInfo | URL, init?: RequestInit): "GET" | "P
   return method === "GET" || method === "POST" ? method : "other";
 }
 
-function knownRoute(pathname: string): { readonly "http.route"?: "/" | typeof telemetryPath } {
+function knownRoute(pathname: string): KnownRouteAttribute {
   if (pathname === "/") return { "http.route": "/" };
   if (pathname === telemetryPath) return { "http.route": telemetryPath };
   return {};
 }
 
-function screenAttribute(pathname: string): { readonly "screen.name"?: ScreenName } {
+function screenAttribute(pathname: string): ScreenAttribute {
   const segment = pathname.split("/", 2)[1];
   switch (segment) {
     case "schedule":
@@ -441,7 +449,7 @@ function browserEnvironment(): BrowserTelemetryEnvironment {
     origin: window.location.origin,
     fetch: window.fetch.bind(window),
     sendBeacon:
-      typeof navigator.sendBeacon === "function" ? navigator.sendBeacon.bind(navigator) : undefined,
+      navigator.sendBeacon === undefined ? undefined : navigator.sendBeacon.bind(navigator),
     now: Date.now,
     randomBytes(length) {
       return crypto.getRandomValues(new Uint8Array(length));
@@ -462,7 +470,7 @@ const browserGlobal = globalThis as typeof globalThis & { [clientKey]?: BrowserT
 const lifecycleGlobal = globalThis as typeof globalThis & { [lifecycleKey]?: () => void };
 
 export function browserTelemetry(): BrowserTelemetryClient {
-  if (typeof window === "undefined") {
+  if (globalThis.window === undefined) {
     throw new Error("Browser telemetry is only available in a browser runtime");
   }
   return (browserGlobal[clientKey] ??= createBrowserTelemetryClient({

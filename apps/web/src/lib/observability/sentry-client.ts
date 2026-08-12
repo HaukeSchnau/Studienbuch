@@ -3,7 +3,7 @@ import * as Sentry from "@sentry/tanstackstart-react";
 let initialized = false;
 
 export function initializeSentryClient() {
-  if (initialized || typeof window === "undefined") {
+  if (initialized || globalThis.window === undefined) {
     return;
   }
 

@@ -1,7 +1,9 @@
-import type {
-  ClientTelemetryEnvelopeType,
-  ClientTelemetryRecordType,
+import {
+  ClientTelemetryRecord,
+  type ClientTelemetryEnvelopeType,
+  type ClientTelemetryRecordType,
 } from "@stu/observability/browser";
+import { Option, Schema } from "effect";
 
 export const OUTBOX_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 export const OUTBOX_MAX_BYTES = 10 * 1024 * 1024;
@@ -78,145 +80,51 @@ const utf8Bytes = (value: string): number => {
 
 const snapshotBytes = (snapshot: Snapshot): number => utf8Bytes(JSON.stringify(snapshot));
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
+const SafeInteger = Schema.Number.check(Schema.isInt());
+const TelemetryPrioritySchema = Schema.Literals(["low", "normal", "high"]);
+const StoredRecordSchema = Schema.Struct({
+  id: Schema.String.check(Schema.isMaxLength(64)),
+  priority: TelemetryPrioritySchema,
+  enqueuedAt: SafeInteger,
+  attempts: SafeInteger,
+  nextAttemptAt: SafeInteger,
+  record: ClientTelemetryRecord,
+});
+const SnapshotEnvelopeSchema = Schema.Struct({
+  version: Schema.Literal(1),
+  sequence: SafeInteger,
+  records: Schema.Array(Schema.Unknown),
+  dropped: Schema.Number.check(Schema.isFinite()),
+});
+const decodeTelemetryRecord = Schema.decodeUnknownOption(ClientTelemetryRecord);
+const decodeStoredRecord = Schema.decodeUnknownOption(StoredRecordSchema);
+const decodeSnapshotEnvelope = Schema.decodeUnknownOption(SnapshotEnvelopeSchema);
+const exactContract = { onExcessProperty: "error" } as const;
 
-const priorities = new Set<TelemetryPriority>(["low", "normal", "high"]);
-const exactKeys = (value: Record<string, unknown>, allowed: ReadonlyArray<string>): boolean =>
-  Object.keys(value).every((key) => allowed.includes(key));
-const isFiniteNonNegative = (value: unknown): value is number =>
-  typeof value === "number" && Number.isFinite(value) && value >= 0;
-const isUnixMillis = (value: unknown): value is number =>
-  Number.isSafeInteger(value) && (value as number) >= 0;
-const isHex = (value: unknown, length: number): value is string =>
-  typeof value === "string" && new RegExp(`^[0-9a-f]{${length}}$`).test(value);
-const clientAttributeValues: Readonly<Record<string, ReadonlySet<string>>> = {
-  "app.operation": new Set(["navigation", "request", "render", "telemetry.flush"]),
-  "error.type": new Set(["network", "timeout", "decode", "unknown"]),
-  "http.method": new Set(["GET", "POST"]),
-  "http.route": new Set(["/", "/api/observability/v1/telemetry"]),
-  outcome: new Set(["success", "failure", "interrupt"]),
-  "screen.name": new Set(["overview", "schedule", "tasks", "courses", "profile", "setup"]),
-  "telemetry.priority": priorities,
-};
-const metricAttributeValues: Readonly<Record<string, ReadonlySet<string>>> = {
-  operation: clientAttributeValues["app.operation"]!,
-  outcome: clientAttributeValues.outcome!,
-  platform: new Set(["web", "ios", "android"]),
-  signal: new Set(["traces", "logs", "metrics", "all"]),
-};
-const hasAllowedAttributes = (
-  value: unknown,
-  allowed: Readonly<Record<string, ReadonlySet<string>>>,
-): boolean =>
-  isObject(value) &&
-  Object.entries(value).every(
-    ([key, attribute]) => allowed[key] !== undefined && allowed[key].has(attribute as string),
-  );
-
-const isTelemetryRecord = (value: unknown): value is ClientTelemetryRecordType => {
-  if (!isObject(value)) return false;
-  if (value.type === "span") {
-    return (
-      exactKeys(value, [
-        "type",
-        "name",
-        "traceId",
-        "spanId",
-        "parentSpanId",
-        "startedAtUnixMillis",
-        "durationMillis",
-        "status",
-        "attributes",
-      ]) &&
-      new Set([
-        "client.navigation",
-        "client.request",
-        "client.render",
-        "client.telemetry.flush",
-      ]).has(value.name as string) &&
-      isHex(value.traceId, 32) &&
-      isHex(value.spanId, 16) &&
-      (value.parentSpanId === undefined || isHex(value.parentSpanId, 16)) &&
-      isUnixMillis(value.startedAtUnixMillis) &&
-      isFiniteNonNegative(value.durationMillis) &&
-      new Set(["unset", "ok", "error"]).has(value.status as string) &&
-      hasAllowedAttributes(value.attributes, clientAttributeValues)
-    );
-  }
-  if (value.type === "log") {
-    return (
-      exactKeys(value, [
-        "type",
-        "event",
-        "severity",
-        "occurredAtUnixMillis",
-        "traceId",
-        "spanId",
-        "attributes",
-      ]) &&
-      new Set(["client.request.failed", "client.telemetry.canary", "client.telemetry.dropped"]).has(
-        value.event as string,
-      ) &&
-      new Set(["debug", "info", "warn", "error"]).has(value.severity as string) &&
-      isUnixMillis(value.occurredAtUnixMillis) &&
-      (value.traceId === undefined || isHex(value.traceId, 32)) &&
-      (value.spanId === undefined || isHex(value.spanId, 16)) &&
-      hasAllowedAttributes(value.attributes, clientAttributeValues)
-    );
-  }
-  if (value.type === "metric") {
-    return (
-      exactKeys(value, ["type", "name", "kind", "value", "recordedAtUnixMillis", "attributes"]) &&
-      new Set([
-        "studienbuch_client_canary_total",
-        "studienbuch_client_request_duration_ms",
-        "studienbuch_client_outbox_depth",
-        "studienbuch_client_outbox_dropped_total",
-      ]).has(value.name as string) &&
-      new Set(["counter", "gauge", "histogram"]).has(value.kind as string) &&
-      isFiniteNonNegative(value.value) &&
-      isUnixMillis(value.recordedAtUnixMillis) &&
-      hasAllowedAttributes(value.attributes, metricAttributeValues)
-    );
-  }
-  return false;
-};
-
-// Persisted state is an untrusted boundary. Be deliberately conservative: a
-// malformed entry is discarded rather than ever being forwarded.
-const isStoredRecord = (value: unknown): value is StoredRecord => {
-  if (!isObject(value) || !isTelemetryRecord(value.record)) return false;
-  return (
-    typeof value.id === "string" &&
-    value.id.length <= 64 &&
-    priorities.has(value.priority as TelemetryPriority) &&
-    Number.isSafeInteger(value.enqueuedAt) &&
-    Number.isSafeInteger(value.attempts) &&
-    Number.isSafeInteger(value.nextAttemptAt)
-  );
-};
+const priorities = new Set<TelemetryPriority>(TelemetryPrioritySchema.literals);
 
 const decodeSnapshot = (serialized: string | undefined): Snapshot => {
   if (serialized === undefined) return emptySnapshot();
   try {
-    const value: unknown = JSON.parse(serialized);
-    if (
-      !isObject(value) ||
-      value.version !== 1 ||
-      !Number.isSafeInteger(value.sequence) ||
-      !Number.isFinite(value.dropped) ||
-      !Array.isArray(value.records)
-    ) {
+    const decoded = decodeSnapshotEnvelope(JSON.parse(serialized), exactContract);
+    if (Option.isNone(decoded)) {
       return emptySnapshot();
     }
-    const records = value.records.filter(isStoredRecord);
-    const invalidRecords = value.records.length - records.length;
+    const records: StoredRecord[] = [];
+    let invalidRecords = 0;
+    for (const persistedRecord of decoded.value.records) {
+      const record = decodeStoredRecord(persistedRecord, exactContract);
+      if (Option.isSome(record)) {
+        records.push(record.value);
+      } else {
+        invalidRecords += 1;
+      }
+    }
     return {
       version: 1,
-      sequence: value.sequence as number,
+      sequence: decoded.value.sequence,
       records,
-      dropped: Math.max(0, value.dropped as number) + invalidRecords,
+      dropped: Math.max(0, decoded.value.dropped) + invalidRecords,
     };
   } catch {
     return emptySnapshot();
@@ -298,7 +206,10 @@ export class TelemetryOutbox {
     priority: TelemetryPriority = "normal",
   ): Promise<void> {
     return this.#serial(async () => {
-      if (!isTelemetryRecord(record) || !priorities.has(priority)) {
+      if (
+        Option.isNone(decodeTelemetryRecord(record, exactContract)) ||
+        !priorities.has(priority)
+      ) {
         throw new TypeError("Telemetry record is outside the allowlisted client contract");
       }
       this.#pruneExpired();

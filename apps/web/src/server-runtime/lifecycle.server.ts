@@ -47,10 +47,10 @@ export function createLifecycleController(actions: {
         warmed = true;
         currentState = { status: "ready" };
       },
-      (error: unknown) => {
-        const reason = error instanceof Error ? error.message : String(error);
+      (cause: unknown) => {
+        const reason = cause instanceof Error ? cause.message : String(cause);
         currentState = { status: "failed", reason };
-        throw error;
+        throw cause;
       },
     );
     return warmup;
