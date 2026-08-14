@@ -12,10 +12,9 @@ after a cold app launch.
 ## Preconditions
 
 - The development app `dev.schnau.studienbuch.dev` is installed and connected to its development
-  bundle.
-- Local app state has no accepted license key.
-- The runner owns restoring this state before its timed path; a prior run must not influence the
-  result.
+  bundle started with `EXPO_PUBLIC_E2E_SCENARIO=startup`.
+- A cold process launch reconstructs the mock session without an accepted license key, so a prior
+  run cannot influence the result.
 
 ## Actions
 
