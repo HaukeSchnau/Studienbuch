@@ -13,6 +13,11 @@ The comparison harness refuses to run an unpaired scenario. Generated reports li
 check: one runner implementation can never land without its counterpart; contracts may remain
 pending until a live authoring device is available.
 
+Each contract follows `apps/mobile/e2e/SCENARIO_TEMPLATE.md`. The contract is readable product
+specification; recorded runner files are executable adapters. Write rules and Given/When/Then
+examples in domain language, keep UI mechanics in the recordings, and map every outcome to stable
+executable evidence. `just mobile-e2e-check` rejects contracts missing this structure.
+
 ## Authoring a scenario
 
 Start the development bundle with the scenario fixture before recording or replaying. For example,
