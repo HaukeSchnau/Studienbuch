@@ -1,5 +1,5 @@
-import type { SubjectId } from "@stu/core";
-import { subjectNameMap } from "@stu/core";
+import type { SubjectId } from "@stu/core/compat/mobile-v0";
+import { subjectNameMap } from "@stu/core/compat/mobile-v0";
 import { StyleSheet, View } from "react-native";
 import { NativeMenuView } from "~/components/native/expo-ui";
 import { Text } from "~/components/ui/text";

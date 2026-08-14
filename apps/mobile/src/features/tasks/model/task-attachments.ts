@@ -1,4 +1,4 @@
-import type { TaskAttachment } from "@stu/core";
+import type { TaskAttachment } from "@stu/core/compat/mobile-v0";
 
 const attachmentPalette = ["#B9D7F5", "#F5D9B9", "#D7E9C6", "#E2CEF5"] as const;
 

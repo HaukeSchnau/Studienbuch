@@ -6,7 +6,7 @@ import { Divider } from "~/components/ui/divider";
 import { SheetCallout } from "~/components/layout/sheet-callout";
 import { SheetScaffold } from "~/components/layout/sheet-scaffold";
 import { TextField } from "~/components/fields/text-field";
-import { isGradeConfirmed, type Grade } from "@stu/core";
+import { isGradeConfirmed, type Grade } from "@stu/core/compat/mobile-v0";
 import { useGrades } from "~/data/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { haptics } from "~/platform/haptics";

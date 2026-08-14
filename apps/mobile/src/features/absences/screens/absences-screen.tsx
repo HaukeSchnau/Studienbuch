@@ -5,7 +5,7 @@ import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
 import { PageScaffold } from "~/app-shell/navigation/page-scaffold";
 import { Text } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
-import type { Absence } from "@stu/core";
+import type { Absence } from "@stu/core/compat/mobile-v0";
 import { useAbsences } from "~/data/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { AddAbsence } from "../components/add-absence";

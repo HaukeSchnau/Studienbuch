@@ -7,7 +7,7 @@ import { OutlinedButton } from "~/components/ui/button";
 import { ConfirmationStatus } from "~/domain-ui/confirmation-status";
 import { IconButton } from "~/components/ui/icon-button";
 import { Text } from "~/components/ui/text";
-import { formatGrade, isGradeConfirmed, type Grade } from "@stu/core";
+import { formatGrade, isGradeConfirmed, type Grade } from "@stu/core/compat/mobile-v0";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { gradeRoute } from "~/routing/params";
 import { EditOralGrade } from "./oral/edit-oral-grade";

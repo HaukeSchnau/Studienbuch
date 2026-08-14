@@ -9,7 +9,7 @@ import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { IconButton } from "~/components/ui/icon-button";
 import { Text } from "~/components/ui/text";
 import { SystemIcon, type SystemIconName } from "~/components/ui/system-icon";
-import { formatClassName, getCurrentYearNum, type Semester } from "@stu/core";
+import { formatClassName, getCurrentYearNum, type Semester } from "@stu/core/compat/mobile-v0";
 import { useSchool, useSessionData } from "~/data/hooks";
 import { profileEditRoute } from "~/routing/params";
 import { SemesterSelector } from "./semester-selector";

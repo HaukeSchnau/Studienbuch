@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { ConfirmPageContent, ViewConfirmPageContent } from "~/domain-ui/confirm-page-content";
 import { PageScaffold } from "~/app-shell/navigation/page-scaffold";
 import { Text } from "~/components/ui/text";
-import { formatGrade, subjectNameMap } from "@stu/core";
+import { formatGrade, subjectNameMap } from "@stu/core/compat/mobile-v0";
 import { useGrades } from "~/data/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import type { ConfirmedResolvedGrade, ResolvedGrade } from "../grade.type";

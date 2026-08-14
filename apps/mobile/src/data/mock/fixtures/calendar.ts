@@ -1,4 +1,4 @@
-import type { Holiday, TimetableEntry } from "@stu/core";
+import type { Holiday, TimetableEntry } from "@stu/core/compat/mobile-v0";
 import { makeMockWeekDate } from "../mock-clock";
 
 export const timetableSeed: TimetableEntry[] = [

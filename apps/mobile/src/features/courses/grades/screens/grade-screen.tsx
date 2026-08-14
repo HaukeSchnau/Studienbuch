@@ -1,7 +1,7 @@
 import { View } from "react-native";
 import { PageScaffold } from "~/app-shell/navigation/page-scaffold";
 import { Text } from "~/components/ui/text";
-import type { GradeType } from "@stu/core";
+import type { GradeType } from "@stu/core/compat/mobile-v0";
 import { useCourses, useGrades } from "~/data/hooks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import {
