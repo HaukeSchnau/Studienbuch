@@ -42,6 +42,10 @@ agent-device script when a live recording is possible. A device-less agent may i
 the harness, or application accessibility identifiers, but must leave runner artifacts to an agent
 that can record and verify them.
 
+Android exposes one UI-automation channel per device. Before switching runners, close the active
+agent-device session or call Argent's `stop-all-simulator-servers` scoped to that device; otherwise
+the incoming runner can fail even though the application is healthy.
+
 ## Comparing the runners
 
 Use the same app build, device model, OS version, network conditions, and reset procedure for both

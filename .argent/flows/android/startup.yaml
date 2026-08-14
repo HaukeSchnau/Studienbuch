@@ -1,0 +1,10 @@
+steps:
+  - launch: dev.schnau.studienbuch.dev
+  - tool: open-url
+    args:
+      url: studienbuch://expo-development-client/?url=http%3A%2F%2F10.0.2.2%3A8081
+  - await: { visible: { id: setup-license-key-heading }, timeout: 15000 }
+  - await: { idle: true, stableFor: 500, timeout: 10000 }
+  - assert: { text: { in: { id: setup-license-key-heading }, equals: "Willkommen!" } }
+  - assert: { visible: { text: "Lizenzschlüssel" } }
+  - assert: { visible: { id: setup-license-key-input } }

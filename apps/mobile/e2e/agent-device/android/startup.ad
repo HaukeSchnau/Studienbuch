@@ -1,0 +1,11 @@
+context platform=android device="Studienbuch API 35 Pixel 8" kind=emulator theme=unknown
+open "dev.schnau.studienbuch.dev" --relaunch
+# agent-device:target-v1 {"id":"setup-license-key-heading","role":"textview","label":"Willkommen!","ancestry":[{"role":"viewgroup"},{"role":"viewgroup"},{"role":"viewgroup"},{"role":"viewgroup"},{"role":"scrollview"},{"role":"viewgroup"},{"role":"viewgroup"},{"role":"scrollview"}],"sibling":0,"viewportOrder":0,"scrollRegion":{"role":"scrollview"},"rect":{"x":139,"y":1072,"width":802,"height":83},"verification":"verified"}
+wait "id=setup-license-key-heading"
+wait "stable" 500 10000
+# agent-device:target-v1 {"id":"setup-license-key-heading","role":"textview","label":"Willkommen!","ancestry":[{"role":"viewgroup"},{"role":"viewgroup"},{"role":"viewgroup"},{"role":"viewgroup"},{"role":"scrollview"},{"role":"viewgroup"},{"role":"viewgroup"},{"role":"scrollview"}],"sibling":0,"viewportOrder":0,"scrollRegion":{"role":"scrollview"},"rect":{"x":139,"y":1072,"width":802,"height":83},"verification":"verified"}
+is "text" "id=setup-license-key-heading" "Willkommen!"
+# agent-device:target-v1 {"role":"textview","label":"Lizenzschlüssel","ancestry":[{"role":"viewgroup"},{"role":"viewgroup"},{"role":"viewgroup"},{"role":"viewgroup"},{"role":"scrollview"},{"role":"viewgroup"},{"role":"viewgroup"},{"role":"scrollview"}],"sibling":2,"viewportOrder":0,"scrollRegion":{"role":"scrollview"},"rect":{"x":139,"y":1349,"width":802,"height":57},"verification":"verified"}
+is "visible" "text=Lizenzschlüssel"
+# agent-device:target-v1 {"id":"setup-license-key-input","role":"edittext","label":"XXXX-XXXX-XXXX-XXXX","ancestry":[{"role":"viewgroup"},{"role":"viewgroup"},{"role":"viewgroup"},{"role":"viewgroup"},{"role":"scrollview"},{"role":"viewgroup"},{"role":"viewgroup"},{"role":"scrollview"}],"sibling":3,"viewportOrder":0,"scrollRegion":{"role":"scrollview"},"rect":{"x":141,"y":1426,"width":798,"height":127},"verification":"verified"}
+is "visible" "id=setup-license-key-input"
