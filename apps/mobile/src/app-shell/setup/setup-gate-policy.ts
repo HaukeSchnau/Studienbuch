@@ -1,4 +1,4 @@
-import type { SetupPath } from "@stu/core";
+import type { SetupPath } from "@stu/core/compat/mobile-v0";
 import type { Href } from "expo-router";
 import { mainProfileRoute } from "../../routing/params";
 

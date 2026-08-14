@@ -1,4 +1,4 @@
-import type { GradeType } from "@stu/core";
+import type { GradeType } from "@stu/core/compat/mobile-v0";
 import type { Href } from "expo-router";
 
 type RouteParam = string | string[] | undefined;

@@ -1,4 +1,4 @@
-import type { Task } from "@stu/core";
+import type { Task } from "@stu/core/compat/mobile-v0";
 import { describe, expect, it } from "vite-plus/test";
 import { getTaskOverviewModel } from "./task-overview-model";
 

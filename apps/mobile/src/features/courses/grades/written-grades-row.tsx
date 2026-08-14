@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
 import { IconButton } from "~/components/ui/icon-button";
 import { Text } from "~/components/ui/text";
-import { formatGrade, isGradeConfirmed, type Grade } from "@stu/core";
+import { formatGrade, isGradeConfirmed, type Grade } from "@stu/core/compat/mobile-v0";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { gradeRoute } from "~/routing/params";
 import { GradeCard } from "./grade-card";

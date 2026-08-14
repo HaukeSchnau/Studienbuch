@@ -4,7 +4,7 @@ import { View } from "react-native";
 import { PressableSurface } from "~/components/feedback/pressable-surface";
 import { Text } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
-import { isTaskArchived, type Task } from "@stu/core";
+import { isTaskArchived, type Task } from "@stu/core/compat/mobile-v0";
 import { useCourses } from "~/data/hooks";
 import { taskRoute } from "~/routing/params";
 

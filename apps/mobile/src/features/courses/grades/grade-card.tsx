@@ -7,7 +7,12 @@ import { Card } from "~/components/ui/card";
 import { ConfirmationStatus } from "~/domain-ui/confirmation-status";
 import { Text } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
-import { formatGradeShort, type Grade, type GradeType, isGradeConfirmed } from "@stu/core";
+import {
+  formatGradeShort,
+  type Grade,
+  type GradeType,
+  isGradeConfirmed,
+} from "@stu/core/compat/mobile-v0";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 
 const TYPE_MAP = {

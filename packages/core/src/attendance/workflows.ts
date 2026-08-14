@@ -1,0 +1,311 @@
+import type * as DateTime from "effect/DateTime";
+import * as Effect from "effect/Effect";
+import * as Schema from "effect/Schema";
+import { Enrollment, isEnrollmentEffectiveOn } from "../academics/model";
+import { AuthorityDenied, AuthoritySnapshot, Capability, authorize } from "../people/authority";
+import { Acknowledgement, ActorRef, LegalAgePolicy, Person, legalStatusOn } from "../people/model";
+import {
+  AcknowledgementId,
+  ArtifactRef,
+  MissedLessonId,
+  NonEmptyText,
+  Revision,
+} from "../primitives";
+import { LessonOccurrence } from "../schedule";
+import { AbsenceCase, MissedLesson, MissedLessonDecision } from "./model";
+
+export class ConcurrentAbsenceRevisionError extends Schema.TaggedError<ConcurrentAbsenceRevisionError>()(
+  "Attendance.ConcurrentRevision",
+  { expected: Revision, actual: Revision },
+) {}
+
+export class AbsenceAlreadyAcknowledgedError extends Schema.TaggedError<AbsenceAlreadyAcknowledgedError>()(
+  "Attendance.AlreadyAcknowledged",
+  { absenceCaseId: AbsenceCase.fields.id },
+) {}
+
+export class AcknowledgementActorError extends Schema.TaggedError<AcknowledgementActorError>()(
+  "Attendance.AcknowledgementActor",
+  {
+    actor: ActorRef,
+    reason: Schema.Literals(["AdultMustAcknowledgeSelf", "GuardianRequired", "LegalStatusUnknown"]),
+  },
+) {}
+
+export class AbsenceStudentIdentityError extends Schema.TaggedError<AbsenceStudentIdentityError>()(
+  "Attendance.StudentIdentity",
+  { absenceCaseId: AbsenceCase.fields.id, personId: Person.fields.id },
+) {}
+
+export class MissedLessonNotFoundError extends Schema.TaggedError<MissedLessonNotFoundError>()(
+  "Attendance.MissedLessonNotFound",
+  { missedLessonId: MissedLessonId },
+) {}
+
+export class MissedLessonAlreadyDecidedError extends Schema.TaggedError<MissedLessonAlreadyDecidedError>()(
+  "Attendance.MissedLessonAlreadyDecided",
+  { missedLessonId: MissedLessonId },
+) {}
+
+export class AbsenceNotAcknowledgedError extends Schema.TaggedError<AbsenceNotAcknowledgedError>()(
+  "Attendance.AbsenceNotAcknowledged",
+  { absenceCaseId: AbsenceCase.fields.id },
+) {}
+
+export class MissedLessonOccurrenceMismatchError extends Schema.TaggedError<MissedLessonOccurrenceMismatchError>()(
+  "Attendance.MissedLessonOccurrenceMismatch",
+  { missedLessonId: MissedLessonId, lessonOccurrenceId: LessonOccurrence.fields.id },
+) {}
+
+export class StudentNotEnrolledError extends Schema.TaggedError<StudentNotEnrolledError>()(
+  "Attendance.StudentNotEnrolled",
+  { missedLessonId: MissedLessonId },
+) {}
+
+export const AbsenceAcknowledgementError = Schema.Union([
+  ConcurrentAbsenceRevisionError,
+  AbsenceAlreadyAcknowledgedError,
+  AcknowledgementActorError,
+  AbsenceStudentIdentityError,
+  AuthorityDenied,
+]);
+export type AbsenceAcknowledgementError = typeof AbsenceAcknowledgementError.Type;
+
+export const MissedLessonDecisionError = Schema.Union([
+  ConcurrentAbsenceRevisionError,
+  MissedLessonNotFoundError,
+  MissedLessonAlreadyDecidedError,
+  AbsenceNotAcknowledgedError,
+  MissedLessonOccurrenceMismatchError,
+  StudentNotEnrolledError,
+  AuthorityDenied,
+]);
+export type MissedLessonDecisionError = typeof MissedLessonDecisionError.Type;
+
+export interface AcknowledgeAbsenceCaseInput {
+  readonly absence: AbsenceCase;
+  readonly expectedRevision: Revision;
+  readonly actor: ActorRef;
+  readonly student: Person;
+  readonly legalAgePolicy: LegalAgePolicy;
+  readonly authority: AuthoritySnapshot;
+  readonly acknowledgementId: AcknowledgementId;
+  readonly acknowledgedAt: DateTime.Utc;
+  readonly artifact?: ArtifactRef;
+}
+
+const checkRevision = (absence: AbsenceCase, expectedRevision: Revision) =>
+  absence.revision === expectedRevision
+    ? Effect.void
+    : Effect.fail(
+        new ConcurrentAbsenceRevisionError({
+          expected: expectedRevision,
+          actual: absence.revision,
+        }),
+      );
+
+const makeAcknowledgement = (
+  id: AcknowledgementId,
+  actor: ActorRef,
+  acknowledgedAt: DateTime.Utc,
+  revision: Revision,
+  artifact: ArtifactRef | undefined,
+) => {
+  const fields = { id, actor, acknowledgedAt, revision };
+  return artifact === undefined
+    ? Acknowledgement.make(fields)
+    : Acknowledgement.make({ ...fields, artifact });
+};
+
+export const acknowledgeAbsenceCase = Effect.fn("Attendance.acknowledgeAbsenceCase")(function* (
+  input: AcknowledgeAbsenceCaseInput,
+) {
+  yield* checkRevision(input.absence, input.expectedRevision);
+  if (input.absence.acknowledgement !== undefined) {
+    return yield* new AbsenceAlreadyAcknowledgedError({ absenceCaseId: input.absence.id });
+  }
+
+  const studentMembership = input.authority.memberships.find(
+    (membership) => membership.id === input.absence.studentMembershipId,
+  );
+  if (studentMembership?.personId !== input.student.id) {
+    return yield* new AbsenceStudentIdentityError({
+      absenceCaseId: input.absence.id,
+      personId: input.student.id,
+    });
+  }
+
+  const legalStatus = legalStatusOn(input.student, input.absence.date, input.legalAgePolicy);
+  if (legalStatus === "Unknown") {
+    return yield* new AcknowledgementActorError({
+      actor: input.actor,
+      reason: "LegalStatusUnknown",
+    });
+  }
+  const isAdult = legalStatus === "Adult";
+  const actorIsStudent = input.actor.personId === input.student.id;
+
+  if (isAdult && !actorIsStudent) {
+    return yield* new AcknowledgementActorError({
+      actor: input.actor,
+      reason: "AdultMustAcknowledgeSelf",
+    });
+  }
+  if (!isAdult && actorIsStudent) {
+    return yield* new AcknowledgementActorError({ actor: input.actor, reason: "GuardianRequired" });
+  }
+
+  yield* authorize(
+    input.actor,
+    actorIsStudent
+      ? Capability.cases.ManageOwnNotebook.make({
+          studentMembershipId: input.absence.studentMembershipId,
+        })
+      : Capability.cases.AcknowledgeForStudent.make({
+          studentMembershipId: input.absence.studentMembershipId,
+        }),
+    input.absence.date,
+    input.authority,
+  );
+
+  const acknowledgement = makeAcknowledgement(
+    input.acknowledgementId,
+    input.actor,
+    input.acknowledgedAt,
+    input.absence.detailsRevision,
+    input.artifact,
+  );
+
+  return AbsenceCase.make({
+    id: input.absence.id,
+    studentMembershipId: input.absence.studentMembershipId,
+    date: input.absence.date,
+    reason: input.absence.reason,
+    detailsRevision: input.absence.detailsRevision,
+    revision: Revision.make(input.absence.revision + 1),
+    acknowledgement,
+    missedLessons: input.absence.missedLessons,
+  });
+});
+
+export interface DecideMissedLessonInput {
+  readonly absence: AbsenceCase;
+  readonly expectedRevision: Revision;
+  readonly missedLessonId: MissedLessonId;
+  /** Authoritative materialized occurrence loaded by the application boundary. */
+  readonly occurrence: LessonOccurrence;
+  readonly enrollments: ReadonlyArray<Enrollment>;
+  readonly actor: ActorRef;
+  readonly authority: AuthoritySnapshot;
+  readonly decidedAt: DateTime.Utc;
+  readonly decision:
+    | {
+        readonly _tag: "Excused";
+        readonly acknowledgementId: AcknowledgementId;
+        readonly artifact?: ArtifactRef;
+      }
+    | { readonly _tag: "Rejected"; readonly reason?: NonEmptyText };
+}
+
+export const decideMissedLesson = Effect.fn("Attendance.decideMissedLesson")(function* (
+  input: DecideMissedLessonInput,
+) {
+  yield* checkRevision(input.absence, input.expectedRevision);
+  const lesson = input.absence.missedLessons.find(
+    (candidate) => candidate.id === input.missedLessonId,
+  );
+  if (lesson === undefined) {
+    return yield* new MissedLessonNotFoundError({ missedLessonId: input.missedLessonId });
+  }
+  if (lesson.decision._tag !== "Pending") {
+    return yield* new MissedLessonAlreadyDecidedError({ missedLessonId: input.missedLessonId });
+  }
+  if (input.absence.acknowledgement === undefined) {
+    return yield* new AbsenceNotAcknowledgedError({ absenceCaseId: input.absence.id });
+  }
+  if (
+    lesson.lessonOccurrenceId !== input.occurrence.id ||
+    lesson.courseOfferingId !== input.occurrence.courseOfferingId ||
+    input.absence.date !== input.occurrence.date
+  ) {
+    return yield* new MissedLessonOccurrenceMismatchError({
+      missedLessonId: lesson.id,
+      lessonOccurrenceId: input.occurrence.id,
+    });
+  }
+  if (
+    !input.enrollments.some(
+      (enrollment) =>
+        enrollment.studentMembershipId === input.absence.studentMembershipId &&
+        enrollment.courseOfferingId === input.occurrence.courseOfferingId &&
+        isEnrollmentEffectiveOn(enrollment, input.occurrence.date),
+    )
+  ) {
+    return yield* new StudentNotEnrolledError({ missedLessonId: lesson.id });
+  }
+
+  yield* authorize(
+    input.actor,
+    Capability.cases.DecideCourseAttendance.make({
+      studentMembershipId: input.absence.studentMembershipId,
+      courseOfferingId: lesson.courseOfferingId,
+    }),
+    input.absence.date,
+    input.authority,
+  );
+
+  const nextRevision = Revision.make(input.absence.revision + 1);
+  let decision: MissedLessonDecision;
+  if (input.decision._tag === "Excused") {
+    decision = MissedLessonDecision.cases.Excused.make({
+      acknowledgement: makeAcknowledgement(
+        input.decision.acknowledgementId,
+        input.actor,
+        input.decidedAt,
+        nextRevision,
+        input.decision.artifact,
+      ),
+    });
+  } else {
+    const fields = {
+      decidedBy: input.actor,
+      decidedAt: input.decidedAt,
+      revision: nextRevision,
+    };
+    decision =
+      input.decision.reason === undefined
+        ? MissedLessonDecision.cases.Rejected.make(fields)
+        : MissedLessonDecision.cases.Rejected.make({ ...fields, reason: input.decision.reason });
+  }
+
+  const updateLesson = (candidate: MissedLesson) =>
+    candidate.id === lesson.id
+      ? MissedLesson.make({
+          id: candidate.id,
+          lessonOccurrenceId: candidate.lessonOccurrenceId,
+          courseOfferingId: candidate.courseOfferingId,
+          decision,
+        })
+      : candidate;
+  const [firstLesson, ...remainingLessons] = input.absence.missedLessons;
+  const nextLessons: readonly [MissedLesson, ...Array<MissedLesson>] = [
+    updateLesson(firstLesson),
+    ...remainingLessons.map(updateLesson),
+  ];
+
+  const nextAbsence = {
+    id: input.absence.id,
+    studentMembershipId: input.absence.studentMembershipId,
+    date: input.absence.date,
+    reason: input.absence.reason,
+    detailsRevision: input.absence.detailsRevision,
+    revision: nextRevision,
+    missedLessons: nextLessons,
+  };
+  return input.absence.acknowledgement === undefined
+    ? AbsenceCase.make(nextAbsence)
+    : AbsenceCase.make({
+        ...nextAbsence,
+        acknowledgement: input.absence.acknowledgement,
+      });
+});

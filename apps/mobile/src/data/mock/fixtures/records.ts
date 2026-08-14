@@ -1,4 +1,4 @@
-import type { Absence, Grade, Task, TaskAttachment } from "@stu/core";
+import type { Absence, Grade, Task, TaskAttachment } from "@stu/core/compat/mobile-v0";
 import { addDays } from "date-fns";
 import { Image } from "react-native";
 import { mockNow } from "../mock-clock";

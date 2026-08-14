@@ -1,0 +1,64 @@
+import * as Schema from "effect/Schema";
+
+export const TrimmedNonEmptyString = Schema.String.check(Schema.isTrimmed(), Schema.isNonEmpty());
+
+const entityId = <Brand extends string>(brand: Brand) =>
+  TrimmedNonEmptyString.pipe(Schema.brand(brand));
+
+export const SchoolId = entityId("SchoolId");
+export type SchoolId = typeof SchoolId.Type;
+export const SubjectId = entityId("SubjectId");
+export type SubjectId = typeof SubjectId.Type;
+export const AcademicTermId = entityId("AcademicTermId");
+export type AcademicTermId = typeof AcademicTermId.Type;
+export const CohortId = entityId("CohortId");
+export type CohortId = typeof CohortId.Type;
+export const ClassGroupId = entityId("ClassGroupId");
+export type ClassGroupId = typeof ClassGroupId.Type;
+export const CourseOfferingId = entityId("CourseOfferingId");
+export type CourseOfferingId = typeof CourseOfferingId.Type;
+export const CourseChoiceGroupId = entityId("CourseChoiceGroupId");
+export type CourseChoiceGroupId = typeof CourseChoiceGroupId.Type;
+export const EnrollmentId = entityId("EnrollmentId");
+export type EnrollmentId = typeof EnrollmentId.Type;
+export const PersonId = entityId("PersonId");
+export type PersonId = typeof PersonId.Type;
+export const SchoolMembershipId = entityId("SchoolMembershipId");
+export type SchoolMembershipId = typeof SchoolMembershipId.Type;
+export const GuardianRelationshipId = entityId("GuardianRelationshipId");
+export type GuardianRelationshipId = typeof GuardianRelationshipId.Type;
+export const TeachingAssignmentId = entityId("TeachingAssignmentId");
+export type TeachingAssignmentId = typeof TeachingAssignmentId.Type;
+export const ArtifactId = entityId("ArtifactId");
+export type ArtifactId = typeof ArtifactId.Type;
+export const AcknowledgementId = entityId("AcknowledgementId");
+export type AcknowledgementId = typeof AcknowledgementId.Type;
+export const BellScheduleId = entityId("BellScheduleId");
+export type BellScheduleId = typeof BellScheduleId.Type;
+export const BellPeriodId = entityId("BellPeriodId");
+export type BellPeriodId = typeof BellPeriodId.Type;
+export const RecurringMeetingId = entityId("RecurringMeetingId");
+export type RecurringMeetingId = typeof RecurringMeetingId.Type;
+export const LessonOccurrenceId = entityId("LessonOccurrenceId");
+export type LessonOccurrenceId = typeof LessonOccurrenceId.Type;
+export const ScheduleExceptionId = entityId("ScheduleExceptionId");
+export type ScheduleExceptionId = typeof ScheduleExceptionId.Type;
+export const AbsenceCaseId = entityId("AbsenceCaseId");
+export type AbsenceCaseId = typeof AbsenceCaseId.Type;
+export const MissedLessonId = entityId("MissedLessonId");
+export type MissedLessonId = typeof MissedLessonId.Type;
+export const AssessmentId = entityId("AssessmentId");
+export type AssessmentId = typeof AssessmentId.Type;
+export const CourseStandingId = entityId("CourseStandingId");
+export type CourseStandingId = typeof CourseStandingId.Type;
+export const StandingRevisionId = entityId("StandingRevisionId");
+export type StandingRevisionId = typeof StandingRevisionId.Type;
+export const SchoolTaskId = entityId("SchoolTaskId");
+export type SchoolTaskId = typeof SchoolTaskId.Type;
+export const DataSourceId = entityId("DataSourceId");
+export type DataSourceId = typeof DataSourceId.Type;
+export const ImportId = entityId("ImportId");
+export type ImportId = typeof ImportId.Type;
+
+export const ExternalId = TrimmedNonEmptyString.pipe(Schema.brand("ExternalId"));
+export type ExternalId = typeof ExternalId.Type;
