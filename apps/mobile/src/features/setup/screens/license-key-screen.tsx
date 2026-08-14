@@ -41,7 +41,7 @@ export function LicenseKeyScreen() {
 
   return (
     <View>
-      <Text variant="heading" className="text-center">
+      <Text testID="setup-license-key-heading" variant="heading" className="text-center">
         Willkommen!
       </Text>
       <View className="h-4" />
@@ -50,6 +50,7 @@ export function LicenseKeyScreen() {
       </Text>
       <View className="h-6" />
       <TextField
+        testID="setup-license-key-input"
         label="Lizenzschlüssel"
         {...maskedInputProps}
         autoCorrect={false}

@@ -83,6 +83,7 @@ export const TextField = ({ label, placeholder, error, ...props }: Props) => {
               returnKeyType={props.returnKeyType}
               secureTextEntry={props.secureTextEntry}
               selectionColor={colors.accent.DEFAULT}
+              testID={props.testID}
               style={{
                 paddingHorizontal: 20,
                 paddingVertical: 12,
