@@ -50,11 +50,14 @@ the incoming runner can fail even though the application is healthy.
 
 Use the same app build, device model, OS version, network conditions, and reset procedure for both
 runs. Alternate order with `MOBILE_E2E_ORDER=argent-first` to expose warm-cache and state bias.
-Set `MOBILE_E2E_DEVICE` when auto-detection could select different devices. It is required when a
-later job follows Argent (including `MOBILE_E2E_ORDER=argent-first`) so the harness can release only
-that device's automation services before the next runner. Runtime reports capture versions, order,
-exit codes, and wall-clock duration; use repository history and agent-thread history to compare
-authoring effort, repair effort, and churn.
+Set `MOBILE_E2E_AGENT_DEVICE` and `MOBILE_E2E_ARGENT_DEVICE` when auto-detection could select
+different devices. Android normally needs both because agent-device selects the AVD name while
+Argent selects its ADB serial. `MOBILE_E2E_DEVICE` is shorthand when both runners accept one value.
+The Argent selector is required when a later job follows Argent (including
+`MOBILE_E2E_ORDER=argent-first`) so the harness can release only that device's automation services
+before the next runner. Runtime reports capture both selectors, versions, order, exit codes, and
+wall-clock duration; use repository history and agent-thread history to compare authoring effort,
+repair effort, and churn.
 
 Do not choose a winner from one smoke test. Accumulate representative setup, offline, sync,
 reconnect, validation, navigation, and failure-recovery scenarios, then compare pass rate, flake
@@ -68,5 +71,6 @@ just mobile-e2e-agent-device android startup
 just mobile-e2e-argent android startup
 ```
 
-The optional environment variables are `MOBILE_E2E_DEVICE`, `MOBILE_E2E_ORDER` (`agent-device-first`
-or `argent-first`), and `MOBILE_E2E_TIMEOUT_MS`.
+The optional environment variables are `MOBILE_E2E_DEVICE`, `MOBILE_E2E_AGENT_DEVICE`,
+`MOBILE_E2E_ARGENT_DEVICE`, `MOBILE_E2E_ORDER` (`agent-device-first` or `argent-first`), and
+`MOBILE_E2E_TIMEOUT_MS`.
