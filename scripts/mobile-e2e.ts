@@ -135,6 +135,20 @@ const selectedRunners =
   runnerFilter === undefined
     ? orderedRunners
     : orderedRunners.filter((runner) => runner === runnerFilter);
+const jobs = scenarios.flatMap((scenario) =>
+  selectedRunners.map((runner) => ({ runner, scenario })),
+);
+const argentCli = join(repositoryRoot, "node_modules/@swmansion/argent/dist/cli.js");
+const device = process.env.MOBILE_E2E_DEVICE;
+
+if (
+  device === undefined &&
+  jobs.some((job, index) => job.runner === "argent" && index < jobs.length - 1)
+) {
+  fail(
+    "MOBILE_E2E_DEVICE is required when another job follows Argent so its device services can be stopped without affecting other devices.",
+  );
+}
 
 const timeoutMs = Number(process.env.MOBILE_E2E_TIMEOUT_MS ?? "600000");
 if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) {
@@ -156,8 +170,7 @@ if (missingImplementations.length > 0) {
 }
 
 mkdirSync(artifactRoot, { recursive: true });
-const deviceArguments =
-  process.env.MOBILE_E2E_DEVICE === undefined ? [] : ["--device", process.env.MOBILE_E2E_DEVICE];
+const deviceArguments = device === undefined ? [] : ["--device", device];
 
 function commandFor(runner: Runner, scenario: string): ReadonlyArray<string> {
   const implementation = implementationPath(runner, platform, scenario);
@@ -184,7 +197,7 @@ function commandFor(runner: Runner, scenario: string): ReadonlyArray<string> {
   }
 
   return [
-    join(repositoryRoot, "node_modules/@swmansion/argent/dist/cli.js"),
+    argentCli,
     "flow",
     "run",
     implementation,
@@ -197,29 +210,47 @@ function commandFor(runner: Runner, scenario: string): ReadonlyArray<string> {
 }
 
 const results: Array<Result> = [];
-for (const scenario of scenarios) {
-  for (const runner of selectedRunners) {
-    const startedAt = performance.now();
-    console.log(`\n=== ${scenario} · ${runner} · ${platform} ===`);
-    const execution = spawnSync(process.execPath, commandFor(runner, scenario), {
-      cwd: repositoryRoot,
-      env: { ...process.env, ARGENT_TELEMETRY: "0" },
-      stdio: "inherit",
-      timeout: timeoutMs + 5_000,
-    });
-    const exitCode = execution.status;
-    if (execution.error !== undefined) {
-      console.error(`${runner} failed to execute: ${execution.error.message}`);
-    }
-    results.push({
-      durationMs: Math.round(performance.now() - startedAt),
-      exitCode,
-      runner,
-      scenario,
-      signal: execution.signal,
-      status: exitCode === 0 ? "passed" : "failed",
-    });
+for (const [jobIndex, { runner, scenario }] of jobs.entries()) {
+  const startedAt = performance.now();
+  console.log(`\n=== ${scenario} · ${runner} · ${platform} ===`);
+  const execution = spawnSync(process.execPath, commandFor(runner, scenario), {
+    cwd: repositoryRoot,
+    env: { ...process.env, ARGENT_TELEMETRY: "0" },
+    stdio: "inherit",
+    timeout: timeoutMs + 5_000,
+  });
+  let exitCode = execution.status;
+  if (execution.error !== undefined) {
+    console.error(`${runner} failed to execute: ${execution.error.message}`);
   }
+
+  if (runner === "argent" && jobIndex < jobs.length - 1) {
+    const cleanup = spawnSync(
+      process.execPath,
+      [argentCli, "run", "stop-all-simulator-servers", "--devices", device!, "--json"],
+      {
+        cwd: repositoryRoot,
+        env: { ...process.env, ARGENT_TELEMETRY: "0" },
+        stdio: "inherit",
+        timeout: 30_000,
+      },
+    );
+    if (cleanup.status !== 0 || cleanup.error !== undefined) {
+      console.error(
+        `Argent service cleanup failed: ${cleanup.error?.message ?? `exit ${cleanup.status}`}`,
+      );
+      exitCode = cleanup.status ?? 1;
+    }
+  }
+
+  results.push({
+    durationMs: Math.round(performance.now() - startedAt),
+    exitCode,
+    runner,
+    scenario,
+    signal: execution.signal,
+    status: exitCode === 0 ? "passed" : "failed",
+  });
 }
 
 const summary = {
