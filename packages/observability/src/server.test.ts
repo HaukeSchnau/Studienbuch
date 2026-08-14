@@ -5,9 +5,9 @@ import * as Metric from "effect/Metric";
 import * as Schema from "effect/Schema";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { describe, expect, it } from "vite-plus/test";
-import { runCanary } from "../src/index.ts";
-import { flushOtlp, otlpProtobufLayer } from "../src/server.ts";
-import { otlpJsonTestLayer } from "../src/testing.ts";
+import { runCanary } from "./index.ts";
+import { flushOtlp, otlpProtobufLayer } from "./server.ts";
+import { otlpJsonTestLayer } from "./testing.ts";
 
 interface ReceivedRequest {
   readonly path: string;

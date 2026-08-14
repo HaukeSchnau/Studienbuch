@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import { CourseOffering } from "../../src/academics";
+import { CourseOffering } from "../academics/index.ts";
 import {
   AcademicTermId,
   CalendarDate,
@@ -14,7 +14,7 @@ import {
   SchoolMembershipId,
   SubjectId,
   TeachingAssignmentId,
-} from "../../src/primitives";
+} from "../primitives/index.ts";
 import {
   ActorRef,
   AuthoritySnapshot,
@@ -29,7 +29,7 @@ import {
   authorize,
   legalStatusOn,
   requiresGuardianAcknowledgement,
-} from "../../src/people";
+} from "./index.ts";
 
 const date = (value: string) => CalendarDate.make(value);
 const interval = (start: string, end: string) =>

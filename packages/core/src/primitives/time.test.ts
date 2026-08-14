@@ -10,7 +10,7 @@ import {
   isoWeek,
   timeRangesOverlap,
   weekdayOf,
-} from "../../src/primitives";
+} from "./index.ts";
 
 describe("CalendarDate", () => {
   it("rejects impossible dates and supports leap days", () => {

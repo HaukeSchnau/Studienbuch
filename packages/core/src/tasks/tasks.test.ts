@@ -1,7 +1,12 @@
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import { ActorRef, AuthoritySnapshot, SchoolMembership, StudentMembership } from "../../src/people";
+import {
+  ActorRef,
+  AuthoritySnapshot,
+  SchoolMembership,
+  StudentMembership,
+} from "../people/index.ts";
 import {
   ArtifactId,
   CalendarDate,
@@ -14,7 +19,7 @@ import {
   SchoolMembershipId,
   SchoolTaskId,
   TrimmedNonEmptyString,
-} from "../../src/primitives";
+} from "../primitives/index.ts";
 import {
   cancelTask,
   completeTask,
@@ -29,7 +34,7 @@ import {
   selectVisibleTasks,
   TaskStatus,
   TaskVisibilityPolicy,
-} from "../../src/tasks";
+} from "./index.ts";
 
 const date = (value: string) => CalendarDate.make(value);
 const taskId = (value: string) => SchoolTaskId.make(value);

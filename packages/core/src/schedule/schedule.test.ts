@@ -15,7 +15,7 @@ import {
   ScheduleExceptionId,
   SchoolId,
   TimeRange,
-} from "../../src/primitives";
+} from "../primitives/index.ts";
 import {
   AcademicCalendar,
   AcademicTerm,
@@ -31,7 +31,7 @@ import {
   materializeSchoolDay,
   meetingOccursOn,
   nextSchoolDay,
-} from "../../src/schedule";
+} from "./index.ts";
 
 const date = (value: string) => CalendarDate.make(value);
 const time = (value: number) => LocalTime.make(value);

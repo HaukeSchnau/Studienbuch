@@ -11,7 +11,7 @@ import {
   relinquishOverride,
   resolveSubject,
   sourcedValue,
-} from "../../src/provenance";
+} from "./index.ts";
 import {
   DataSourceId,
   ExternalId,
@@ -22,8 +22,8 @@ import {
   SchoolId,
   SchoolMembershipId,
   SubjectId,
-} from "../../src/primitives";
-import { Subject, SubjectCatalog } from "../../src/academics";
+} from "../primitives/index.ts";
+import { Subject, SubjectCatalog } from "../academics/index.ts";
 
 const source = DataSource.make({
   id: DataSourceId.make("untis-school-1"),

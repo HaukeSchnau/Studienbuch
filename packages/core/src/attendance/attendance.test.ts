@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
-import { CourseOffering, Enrollment, EnrollmentOrigin } from "../../src/academics";
+import { CourseOffering, Enrollment, EnrollmentOrigin } from "../academics/index.ts";
 import {
   AbsenceCase,
   AbsenceReason,
@@ -10,7 +10,7 @@ import {
   absenceStatus,
   acknowledgeAbsenceCase,
   decideMissedLesson,
-} from "../../src/attendance";
+} from "./index.ts";
 import {
   ActorRef,
   AuthoritySnapshot,
@@ -21,8 +21,8 @@ import {
   SchoolMembership,
   StudentMembership,
   TeachingAssignment,
-} from "../../src/people";
-import { LessonOccurrence } from "../../src/schedule";
+} from "../people/index.ts";
+import { LessonOccurrence } from "../schedule/index.ts";
 import {
   AbsenceCaseId,
   AcademicTermId,
@@ -44,7 +44,7 @@ import {
   SubjectId,
   TeachingAssignmentId,
   TimeRange,
-} from "../../src/primitives";
+} from "../primitives/index.ts";
 
 const date = (value: string) => CalendarDate.make(value);
 const schoolId = SchoolId.make("school");
