@@ -15,6 +15,16 @@ pending until a live authoring device is available.
 
 ## Authoring a scenario
 
+Start the development bundle with the scenario fixture before recording or replaying. For example,
+the startup contract uses:
+
+```sh
+EXPO_PUBLIC_E2E_SCENARIO=startup APP_VARIANT=development pnpm --dir apps/mobile start
+```
+
+The fixture is part of the shared app bundle, so a cold launch restores the same precondition for
+both runners without runner-specific setup behavior.
+
 1. Write or update `scenarios/<id>.md` with user-visible preconditions, actions, and assertions.
 2. Put the app in the declared precondition on a real simulator, emulator, or device.
 3. Record the agent-device path with `open ... --save-script`, semantic targets, recorded hard

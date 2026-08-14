@@ -89,6 +89,8 @@ const currentSemester = findCurrentSemester(semesters);
 const initialCourseIds = coursesSeed
   .filter((course) => course.semesterId === currentSemester?.id)
   .map((course) => course.id);
+const initialLicenseKey =
+  process.env.EXPO_PUBLIC_E2E_SCENARIO === "startup" ? "" : "STUB-U123-2026-UI00";
 
 export function MockDataProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<UserProfile>({
@@ -97,7 +99,7 @@ export function MockDataProvider({ children }: PropsWithChildren) {
     yearId: "y12",
     classId: "c12a",
     schoolName: "IGS Lilienthal",
-    licenseKey: "STUB-U123-2026-UI00",
+    licenseKey: initialLicenseKey,
   });
   const [selectedCourseIdsBySemester, setSelectedCourseIdsBySemester] = useState<
     Record<string, string[]>
