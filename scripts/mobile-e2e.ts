@@ -16,9 +16,15 @@ const artifactRoot = join(
 
 const platforms = ["android", "ios"] as const;
 const runners = ["agent-device", "argent"] as const;
+const confidenceLevels = ["established", "corroborated", "inferred"] as const;
 const PackageManifest = Schema.Struct({ version: Schema.String });
 type Platform = (typeof platforms)[number];
 type Runner = (typeof runners)[number];
+
+interface ScenarioContract {
+  readonly name: string;
+  readonly platforms: ReadonlyArray<Platform>;
+}
 
 interface Result {
   readonly durationMs: number;
@@ -63,25 +69,139 @@ function packageVersion(name: string): string {
   return manifest.version;
 }
 
+function scenarioMetadata(content: string, field: string): string | undefined {
+  return content.match(new RegExp(`^${field}:\\s*(.+)$`, "m"))?.[1]?.trim();
+}
+
+function parseScenarioContract(name: string): ScenarioContract {
+  const path = join(scenarioDirectory, `${name}.md`);
+  const content = readFileSync(path, "utf8");
+  const errors: Array<string> = [];
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name)) {
+    errors.push("the filename must be a lowercase semantic slug");
+  }
+  if ((content.match(/^# [^#\n].+$/gm) ?? []).length !== 1) {
+    errors.push("the contract needs exactly one descriptive level-one title");
+  }
+  const status = scenarioMetadata(content, "Status");
+  if (status !== "accepted") {
+    errors.push("`Status` must be `accepted`; unresolved behavior belongs in the legacy catalogue");
+  }
+
+  const confidence = scenarioMetadata(content, "Confidence");
+  if (confidence === undefined || !isOneOf(confidence, confidenceLevels)) {
+    errors.push(`\`Confidence\` must be ${confidenceLevels.join(", ")}`);
+  }
+
+  const platformValues = scenarioMetadata(content, "Platforms")?.split(",") ?? [];
+  const scenarioPlatforms = platformValues
+    .map((value) => value.trim().toLowerCase())
+    .filter((value): value is Platform => isOneOf(value, platforms));
+  if (scenarioPlatforms.length === 0 || new Set(scenarioPlatforms).size !== platformValues.length) {
+    errors.push("`Platforms` must be a unique comma-separated subset of `Android, iOS`");
+  }
+
+  for (const heading of [
+    "Rule",
+    "Example",
+    "Evidence contract",
+    "State",
+    "Sources",
+    "Recordings",
+  ]) {
+    if (!content.includes(`## ${heading}\n`)) errors.push(`missing \`## ${heading}\``);
+  }
+
+  for (const keyword of ["Given", "When", "Then"]) {
+    if (!new RegExp(`^${keyword}\\s+\\S`, "m").test(content)) {
+      errors.push(`the Example needs a ${keyword} step`);
+    }
+  }
+
+  if (!/^\|\s*Outcome\s*\|\s*Executable evidence\s*\|/m.test(content)) {
+    errors.push("the Evidence contract needs `Outcome` and `Executable evidence` columns");
+  }
+  for (const stateField of ["Initial state", "Final state", "Side effects"]) {
+    if (!new RegExp(`^${stateField}:\\s*\\S`, "m").test(content)) {
+      errors.push(`State needs a non-empty \`${stateField}\``);
+    }
+  }
+  if (!/^-[ \t]+`(?:flutter|react-native|current):[^`]+`/m.test(content)) {
+    errors.push("Sources needs at least one `flutter:`, `react-native:`, or `current:` reference");
+  }
+  if (/\b(?:works? correctly|happy path)\b/i.test(content)) {
+    errors.push(
+      "replace vague `works correctly` or `happy path` wording with an observable outcome",
+    );
+  }
+
+  if (errors.length > 0) {
+    fail(
+      `Unreadable scenario contract ${relative(repositoryRoot, path)}:\n${errors
+        .map((error) => `- ${error}`)
+        .join("\n")}`,
+    );
+  }
+
+  return { name, platforms: scenarioPlatforms };
+}
+
 const firstArgument = process.argv[2];
 if (firstArgument === "--help" || firstArgument === "-h") usage();
-const availableScenarios = readdirSync(scenarioDirectory)
+const scenarioNames = readdirSync(scenarioDirectory)
   .filter((file) => file.endsWith(".md"))
   .map((file) => file.slice(0, -3))
   .sort();
+const scenarioContracts = scenarioNames.map(parseScenarioContract);
+
+function implementationDirectory(runner: Runner, platform: Platform): string {
+  return runner === "agent-device"
+    ? join(repositoryRoot, "apps/mobile/e2e/agent-device", platform)
+    : join(repositoryRoot, ".argent/flows", platform);
+}
 
 const implementationPath = (runner: Runner, platform: Platform, scenario: string): string =>
   runner === "agent-device"
-    ? join(repositoryRoot, "apps/mobile/e2e/agent-device", platform, `${scenario}.ad`)
-    : join(repositoryRoot, ".argent/flows", platform, `${scenario}.yaml`);
+    ? join(implementationDirectory(runner, platform), `${scenario}.ad`)
+    : join(implementationDirectory(runner, platform), `${scenario}.yaml`);
+
+function implementedScenarios(runner: Runner, platform: Platform): ReadonlyArray<string> {
+  const directory = implementationDirectory(runner, platform);
+  if (!existsSync(directory)) return [];
+  const extension = runner === "agent-device" ? ".ad" : ".yaml";
+  return readdirSync(directory)
+    .filter((file) => file.endsWith(extension))
+    .map((file) => file.slice(0, -extension.length));
+}
 
 if (firstArgument === "--check") {
-  const incompletePairs = platforms.flatMap((platform) =>
-    availableScenarios.flatMap((scenario) => {
-      const paths = runners.map((runner) => implementationPath(runner, platform, scenario));
-      const present = paths.filter(existsSync);
-      return present.length === 1 ? paths.filter((path) => !existsSync(path)) : [];
-    }),
+  const orphanImplementations = runners.flatMap((runner) =>
+    platforms.flatMap((platform) =>
+      implementedScenarios(runner, platform)
+        .filter(
+          (scenario) =>
+            !scenarioContracts.some(
+              (contract) => contract.name === scenario && contract.platforms.includes(platform),
+            ),
+        )
+        .map((scenario) => implementationPath(runner, platform, scenario)),
+    ),
+  );
+  if (orphanImplementations.length > 0) {
+    fail(
+      `Runner implementations need an applicable readable contract. Orphaned:\n${orphanImplementations
+        .map((path) => `- ${relative(repositoryRoot, path)}`)
+        .join("\n")}`,
+    );
+  }
+
+  const incompletePairs = scenarioContracts.flatMap(
+    ({ name: scenario, platforms: contractPlatforms }) =>
+      contractPlatforms.flatMap((platform) => {
+        const paths = runners.map((runner) => implementationPath(runner, platform, scenario));
+        const present = paths.filter(existsSync);
+        return present.length === 1 ? paths.filter((path) => !existsSync(path)) : [];
+      }),
   );
 
   if (incompletePairs.length > 0) {
@@ -92,17 +212,20 @@ if (firstArgument === "--check") {
     );
   }
 
-  const completePairCount = platforms.reduce(
-    (count, platform) =>
+  const completePairCount = scenarioContracts.reduce(
+    (count, { name: scenario, platforms: contractPlatforms }) =>
       count +
-      availableScenarios.filter((scenario) =>
+      contractPlatforms.filter((platform) =>
         runners.every((runner) => existsSync(implementationPath(runner, platform, scenario))),
       ).length,
     0,
   );
-  const possiblePairCount = platforms.length * availableScenarios.length;
+  const possiblePairCount = scenarioContracts.reduce(
+    (count, contract) => count + contract.platforms.length,
+    0,
+  );
   console.log(
-    `Mobile E2E parity: ${completePairCount} complete, ${possiblePairCount - completePairCount} awaiting live recording.`,
+    `Mobile E2E contracts: ${scenarioContracts.length} accepted. Parity: ${completePairCount} complete, ${possiblePairCount - completePairCount} awaiting live recording.`,
   );
   process.exit(0);
 }
@@ -112,6 +235,9 @@ if (!isOneOf(platformArgument, platforms)) {
   fail(`Unknown platform ${platformArgument}; expected ${platforms.join(" or ")}.`);
 }
 const platform: Platform = platformArgument;
+const availableScenarios = scenarioContracts
+  .filter((contract) => contract.platforms.includes(platform))
+  .map((contract) => contract.name);
 
 const requestedScenario = process.argv[3] || undefined;
 const scenarios = requestedScenario === undefined ? availableScenarios : [requestedScenario];

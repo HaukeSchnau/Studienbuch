@@ -1,30 +1,36 @@
-# Startup
+# Route incomplete setup to activation
 
-Platforms: Android and iOS
+Status: accepted
+Platforms: Android, iOS
+Confidence: established
 
-Status: Android recorded and verified; iOS live runner recordings are required.
+## Rule
 
-## Purpose
+A student who has not completed setup reaches activation instead of entering the main application.
 
-Prove that a development build with setup still incomplete reaches the license-key entry screen
-after a cold app launch.
+## Example
 
-## Preconditions
+Given the app has no accepted licence key
+When the student cold-launches the app
+Then the welcome screen is shown
+And a licence key can be entered
 
-- The development app `dev.schnau.studienbuch.dev` is installed and connected to its development
-  bundle started with `EXPO_PUBLIC_E2E_SCENARIO=startup`.
-- A cold process launch reconstructs the mock session without an accepted license key, so a prior
-  run cannot influence the result.
+## Evidence contract
 
-## Actions
+| Outcome                               | Executable evidence                             |
+| ------------------------------------- | ----------------------------------------------- |
+| The activation destination is reached | The heading `Willkommen!` is visible            |
+| The screen is ready for input         | The field labelled `Lizenzschlüssel` is visible |
 
-1. Cold-launch the application.
-2. Wait for rendering and animation to become idle.
+## State
 
-## Assertions
+Initial state: Setup is incomplete and no licence key has been accepted
+Final state: Setup remains incomplete
+Side effects: None
 
-- The heading `Willkommen!` is visible.
-- The license-key field labelled `Lizenzschlüssel` is visible.
+## Sources
+
+- `current:apps/mobile/src/features/setup/screens/license-key-screen.tsx:45`
 
 ## Recordings
 
