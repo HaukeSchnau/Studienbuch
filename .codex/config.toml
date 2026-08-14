@@ -1,0 +1,8 @@
+[mcp_servers.argent]
+command = "node"
+args = ["node_modules/@swmansion/argent/dist/cli.js", "mcp"]
+env = { ARGENT_TELEMETRY = "0" }
+
+[mcp_servers.agent-device]
+command = "node"
+args = ["node_modules/agent-device/bin/agent-device.mjs", "mcp"]

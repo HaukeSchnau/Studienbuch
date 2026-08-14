@@ -3,15 +3,23 @@ packages:
   - packages/*
   - scripts
 
+patchedDependencies:
+  tree-sitter@0.21.1: patches/tree-sitter@0.21.1.patch
+
 allowBuilds:
+  "@fails-components/webtransport-transport-http3-quiche": true
   "@sentry/cli": true
   core-js: false
   cpu-features: false
   esbuild: true
   lightningcss: true
   msgpackr-extract: true
+  node-pty: true
   protobufjs: false
   ssh2: false
+  tree-sitter: true
+  tree-sitter-javascript: true
+  tree-sitter-typescript: true
 
 catalog:
   "@effect/atom-react": 4.0.0-rc.108
