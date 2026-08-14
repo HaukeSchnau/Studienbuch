@@ -24,7 +24,7 @@ after a cold app launch.
 ## Assertions
 
 - The heading `Willkommen!` is visible.
-- The license-key field labelled `Lizenzschlüssel` is visible and enabled.
+- The license-key field labelled `Lizenzschlüssel` is visible.
 
 ## Recording backlog
 
