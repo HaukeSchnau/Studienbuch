@@ -60,7 +60,6 @@ in
   devShell = {
     packages = [
       pkgs.watchman
-      pkgs.maestro
       jdk
       gradle
       androidSdk

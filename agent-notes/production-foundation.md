@@ -13,7 +13,7 @@ sync or event sourcing.
 - a real Testcontainers PostgreSQL integration test using `@effect/vitest`
 - Legend List in a real mobile list
 - privacy-conscious React Native Sentry crash reporting and source-map configuration
-- Maestro supplied through Nix with a smoke flow
+- A repository-pinned, paired Argent and agent-device mobile E2E evaluation harness
 
 ## Architectural decisions
 
@@ -35,13 +35,14 @@ sync or event sourcing.
 - Complete: `nix build .#webApplication`
 - Complete: Nix project descriptor and release smoke checks, including runtime startup against an
   ephemeral PostgreSQL 17 server
-- Complete: Maestro 2.7.0 resolves from the project development shell
+- Complete: Argent 0.20.0 and agent-device 0.20.8 install from the project lockfile; the paired
+  comparison harness validates implementation parity before running either tool
 
 ## Follow-up tasks
 
 - Supply `databaseUrl` alongside `betterAuthSecret` in each deployed project runtime.
 - Set `SENTRY_ORG`, `SENTRY_PROJECT`, and secret `SENTRY_AUTH_TOKEN` in EAS before the first release
   that should upload native source maps; set `EXPO_PUBLIC_SENTRY_DSN` to enable capture.
-- Run the Maestro smoke flow on a development build for each platform; simulator/device execution is
-  intentionally outside repository QA.
+- Record and run both implementations of the startup scenario on an Android device/emulator and an
+  iOS simulator/device; the current Linux ARM64 host cannot provide either live authoring target.
 - Add the first domain schema only with its first server workflow.

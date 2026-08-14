@@ -93,6 +93,8 @@ let
             workspace.toolchain.nodejs
             workspace.toolchain.pnpm
             pkgs.just
+            pkgs.python3
+            pkgs.stdenv.cc
           ]
           ++ mobile.devShell.packages;
 

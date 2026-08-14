@@ -2,7 +2,7 @@ set unstable
 set lists
 
 [parallel]
-qa-tasks: lint test
+qa-tasks: lint mobile-e2e-check test
 
 qa: fmt qa-tasks
 fix: fmt lint-fix
@@ -57,5 +57,14 @@ console *args:
 ios *args:
     node scripts/ios.ts {{ quote(args) }}
 
-mobile-e2e flow="apps/mobile/.maestro/smoke.yaml":
-    maestro test {{ flow }}
+mobile-e2e platform="android" scenario="":
+    node scripts/mobile-e2e.ts {{ platform }} {{ scenario }}
+
+mobile-e2e-check:
+    node scripts/mobile-e2e.ts --check
+
+mobile-e2e-agent-device platform="android" scenario="":
+    MOBILE_E2E_RUNNER=agent-device node scripts/mobile-e2e.ts {{ platform }} {{ scenario }}
+
+mobile-e2e-argent platform="android" scenario="":
+    MOBILE_E2E_RUNNER=argent node scripts/mobile-e2e.ts {{ platform }} {{ scenario }}

@@ -53,6 +53,22 @@ These are not set in stone. Feel free to suggest changes to these roles or addin
 - `flake.nix` should provide a reproducible dev environment including all necessary dependencies needed to work in the project and be able to build the server-side packages as well as OCI containers in a reproducible fashion.
 - `Justfile` is the primary entrypoint for day-to-day tasks and commands.
 
+## Paired Mobile E2E Evaluation
+
+- Argent and agent-device are both first-class mobile E2E runners while their evaluation is in
+  progress. Do not remove, demote, or select a winner without evidence from representative flows.
+- `apps/mobile/e2e/scenarios/*.md` is the runner-neutral source of truth. Each scenario and platform
+  must have both a recorded agent-device script and a recorded Argent flow, using the paths defined
+  in `apps/mobile/e2e/README.md`.
+- Treat the pair as one atomic change. Any mobile behavior change that updates one runner must update
+  and verify the other against the same contract. New durable user journeys should receive paired
+  coverage when E2E is the appropriate test level.
+- Record flows from live app interactions using each tool's project skill; never fabricate an
+  Argent YAML flow or an agent-device script from memory. Require deterministic preconditions,
+  semantic selectors, hard assertions, destination identity, and two unchanged passes per runner.
+- Run comparisons through `just mobile-e2e <platform> [scenario]`. Preserve the generated report
+  when gathering evaluation evidence, and keep device/build/reset conditions equal across runners.
+
 ## Reference Repos
 
 - T3 Code (full-stack app architecture, strong Effect v4 usage): `/home/haukeschnau/context/pingdotgg-t3code` ([upstream](https://github.com/pingdotgg/t3code))

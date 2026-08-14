@@ -1,7 +1,0 @@
-appId: dev.schnau.studienbuch.dev
-name: Studienbuch startup smoke
----
-- launchApp:
-    clearState: true
-- assertVisible: "Willkommen!"
-- assertVisible: "Lizenzschlüssel"

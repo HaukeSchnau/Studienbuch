@@ -8,7 +8,9 @@
   "devDependencies": {
     "@effect/tsgo": "catalog:",
     "@oxlint/plugins": "1.78.0",
+    "@swmansion/argent": "0.20.0",
     "@types/node": "catalog:",
+    "agent-device": "0.20.8",
     "oxlint": "1.78.0",
     "react-doctor": "^0.9.11",
     "typescript": "catalog:",
