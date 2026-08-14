@@ -2,7 +2,7 @@
 
 Platforms: Android and iOS
 
-Status: contract ready; live runner recordings are required.
+Status: Android recorded and verified; iOS live runner recordings are required.
 
 ## Purpose
 
@@ -26,13 +26,16 @@ after a cold app launch.
 - The heading `Willkommen!` is visible.
 - The license-key field labelled `Lizenzschlüssel` is visible.
 
-## Recording backlog
+## Recordings
 
-- `apps/mobile/e2e/agent-device/android/startup.ad`
+- `apps/mobile/e2e/agent-device/android/startup.ad` — passed unchanged twice on a Pixel 8 API 35
+  emulator hosted on the evaluation MacBook.
+- `.argent/flows/android/startup.yaml` — passed unchanged twice on the same emulator and build.
+
+Remaining iOS recordings:
+
 - `apps/mobile/e2e/agent-device/ios/startup.ad`
-- `.argent/flows/android/startup.yaml`
 - `.argent/flows/ios/startup.yaml`
 
-These files intentionally do not exist yet: the current Linux ARM64 host has neither a connected
-Android device nor an AVD, and cannot run the Nix-provided Android emulator. Create each platform's
-pair from live interactions and pass both unchanged twice before marking it complete.
+Create the iOS pair from live interactions on the evaluation MacBook and pass both unchanged twice
+before marking the scenario complete.
