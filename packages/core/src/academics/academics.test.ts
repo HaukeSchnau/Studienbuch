@@ -19,7 +19,7 @@ import {
   validateAcademicStructure,
   validateAcademicTerms,
   validateCourseChoice,
-} from "../../src/academics";
+} from "./index.ts";
 import {
   AcademicTermId,
   CalendarDate,
@@ -32,7 +32,7 @@ import {
   SchoolId,
   SchoolMembershipId,
   SubjectId,
-} from "../../src/primitives";
+} from "../primitives/index.ts";
 
 const date = (value: string) => CalendarDate.make(value);
 const interval = (start: string, end: string) =>

@@ -12,8 +12,8 @@ import * as Metric from "effect/Metric";
 import * as Schema from "effect/Schema";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { describe, expect, it } from "vite-plus/test";
-import { runObservabilityCanary } from "../src/commands/observability.ts";
-import { withConsoleRuntime } from "../src/runtime.ts";
+import { withConsoleRuntime } from "../runtime.ts";
+import { runObservabilityCanary } from "./observability.ts";
 
 interface ReceivedRequest {
   readonly path: string;

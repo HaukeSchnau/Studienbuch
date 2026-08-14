@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
-import { CourseOffering } from "../../src/academics";
+import { CourseOffering } from "../academics/index.ts";
 import {
   AssessmentWeight,
   CourseStanding,
@@ -20,7 +20,7 @@ import {
   isStandingRevisionConfirmed,
   isWrittenAssessmentConfirmed,
   lastConfirmedStandingRevision,
-} from "../../src/assessment";
+} from "./index.ts";
 import {
   Acknowledgement,
   ActorRef,
@@ -30,7 +30,7 @@ import {
   PersonName,
   SchoolMembership,
   StudentMembership,
-} from "../../src/people";
+} from "../people/index.ts";
 import {
   AcademicTermId,
   AcknowledgementId,
@@ -46,7 +46,7 @@ import {
   SchoolMembershipId,
   StandingRevisionId,
   SubjectId,
-} from "../../src/primitives";
+} from "../primitives/index.ts";
 
 const date = (value: string) => CalendarDate.make(value);
 const schoolId = SchoolId.make("school");
