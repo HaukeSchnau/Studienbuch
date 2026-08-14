@@ -34,10 +34,12 @@ function usage(): never {
        node scripts/mobile-e2e.ts --check
 
 Runs both paired mobile E2E implementations by default. Environment:
-  MOBILE_E2E_RUNNER      agent-device | argent
-  MOBILE_E2E_DEVICE      explicit simulator, emulator, or device id
-  MOBILE_E2E_ORDER       agent-device-first | argent-first
-  MOBILE_E2E_TIMEOUT_MS  per-runner timeout (default: 600000)`);
+  MOBILE_E2E_RUNNER        agent-device | argent
+  MOBILE_E2E_DEVICE        shared device selector when both runners accept it
+  MOBILE_E2E_AGENT_DEVICE  agent-device simulator, emulator, or device selector
+  MOBILE_E2E_ARGENT_DEVICE Argent UDID, ADB serial, or Chromium id
+  MOBILE_E2E_ORDER         agent-device-first | argent-first
+  MOBILE_E2E_TIMEOUT_MS    per-runner timeout (default: 600000)`);
   process.exit(0);
 }
 
@@ -139,14 +141,18 @@ const jobs = scenarios.flatMap((scenario) =>
   selectedRunners.map((runner) => ({ runner, scenario })),
 );
 const argentCli = join(repositoryRoot, "node_modules/@swmansion/argent/dist/cli.js");
-const device = process.env.MOBILE_E2E_DEVICE;
+const sharedDevice = process.env.MOBILE_E2E_DEVICE;
+const devices = {
+  "agent-device": process.env.MOBILE_E2E_AGENT_DEVICE ?? sharedDevice,
+  argent: process.env.MOBILE_E2E_ARGENT_DEVICE ?? sharedDevice,
+} satisfies Readonly<Record<Runner, string | undefined>>;
 
 if (
-  device === undefined &&
+  devices.argent === undefined &&
   jobs.some((job, index) => job.runner === "argent" && index < jobs.length - 1)
 ) {
   fail(
-    "MOBILE_E2E_DEVICE is required when another job follows Argent so its device services can be stopped without affecting other devices.",
+    "MOBILE_E2E_ARGENT_DEVICE (or shared MOBILE_E2E_DEVICE) is required when another job follows Argent so its device services can be stopped without affecting other devices.",
   );
 }
 
@@ -170,7 +176,8 @@ if (missingImplementations.length > 0) {
 }
 
 mkdirSync(artifactRoot, { recursive: true });
-const deviceArguments = device === undefined ? [] : ["--device", device];
+const deviceArguments = (runner: Runner): ReadonlyArray<string> =>
+  devices[runner] === undefined ? [] : ["--device", devices[runner]];
 
 function commandFor(runner: Runner, scenario: string): ReadonlyArray<string> {
   const implementation = implementationPath(runner, platform, scenario);
@@ -184,7 +191,7 @@ function commandFor(runner: Runner, scenario: string): ReadonlyArray<string> {
       implementation,
       "--platform",
       platform,
-      ...deviceArguments,
+      ...deviceArguments(runner),
       "--timeout",
       String(timeoutMs),
       "--artifacts-dir",
@@ -203,7 +210,7 @@ function commandFor(runner: Runner, scenario: string): ReadonlyArray<string> {
     implementation,
     "--platform",
     platform,
-    ...deviceArguments,
+    ...deviceArguments(runner),
     "--output",
     outputDirectory,
   ];
@@ -227,7 +234,7 @@ for (const [jobIndex, { runner, scenario }] of jobs.entries()) {
   if (runner === "argent" && jobIndex < jobs.length - 1) {
     const cleanup = spawnSync(
       process.execPath,
-      [argentCli, "run", "stop-all-simulator-servers", "--devices", device!, "--json"],
+      [argentCli, "run", "stop-all-simulator-servers", "--devices", devices.argent!, "--json"],
       {
         cwd: repositoryRoot,
         env: { ...process.env, ARGENT_TELEMETRY: "0" },
@@ -254,10 +261,13 @@ for (const [jobIndex, { runner, scenario }] of jobs.entries()) {
 }
 
 const summary = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   startedAt: comparisonStartedAt.toISOString(),
   platform,
-  device: process.env.MOBILE_E2E_DEVICE ?? null,
+  devices: {
+    agentDevice: devices["agent-device"] ?? null,
+    argent: devices.argent ?? null,
+  },
   order,
   versions: {
     agentDevice: packageVersion("agent-device"),
