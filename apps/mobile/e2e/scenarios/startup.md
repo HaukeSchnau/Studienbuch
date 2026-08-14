@@ -26,7 +26,6 @@ after a cold app launch.
 
 - The heading `Willkommen!` is visible.
 - The license-key field labelled `Lizenzschlüssel` is visible and enabled.
-- No developer error overlay is visible.
 
 ## Recording backlog
 
