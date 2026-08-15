@@ -1,16 +1,8 @@
 import { assert, describe, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
-import { CourseOffering, Enrollment, EnrollmentOrigin } from "../academics/index.ts";
-import {
-  AbsenceCase,
-  AbsenceReason,
-  MissedLesson,
-  MissedLessonDecision,
-  absenceStatus,
-  acknowledgeAbsenceCase,
-  decideMissedLesson,
-} from "./index.ts";
+import { CourseOffering, Enrollment, EnrollmentOrigin } from "../organization/index.ts";
+import * as Attendance from "./index.ts";
 import {
   ActorRef,
   AuthoritySnapshot,
@@ -21,7 +13,7 @@ import {
   SchoolMembership,
   StudentMembership,
   TeachingAssignment,
-} from "../people/index.ts";
+} from "../organization/index.ts";
 import { LessonOccurrence } from "../schedule/index.ts";
 import {
   AbsenceCaseId,
@@ -44,7 +36,7 @@ import {
   SubjectId,
   TeachingAssignmentId,
   TimeRange,
-} from "../primitives/index.ts";
+} from "../foundation/index.ts";
 
 const date = (value: string) => CalendarDate.make(value);
 const schoolId = SchoolId.make("school");
@@ -150,25 +142,25 @@ const student = Person.make({
   name: PersonName.make({ displayName: NonEmptyText.make("Student"), givenNames: [] }),
   dateOfBirth: date("2012-01-01"),
 });
-const absence = AbsenceCase.make({
+const absence = Attendance.AbsenceCase.make({
   id: AbsenceCaseId.make("absence"),
   studentMembershipId,
   date: occurrenceDate,
-  reason: AbsenceReason.cases.Illness.make({}),
+  reason: Attendance.AbsenceReason.cases.Illness.make({}),
   detailsRevision: Revision.make(0),
   revision: Revision.make(0),
   missedLessons: [
-    MissedLesson.make({
+    Attendance.MissedLesson.make({
       id: lessonIds[0],
       lessonOccurrenceId: LessonOccurrenceId.make("occurrence-1"),
       courseOfferingId: courseIds[0],
-      decision: MissedLessonDecision.cases.Pending.make({}),
+      decision: Attendance.MissedLessonDecision.cases.Pending.make({}),
     }),
-    MissedLesson.make({
+    Attendance.MissedLesson.make({
       id: lessonIds[1],
       lessonOccurrenceId: LessonOccurrenceId.make("occurrence-2"),
       courseOfferingId: courseIds[1],
-      decision: MissedLessonDecision.cases.Pending.make({}),
+      decision: Attendance.MissedLessonDecision.cases.Pending.make({}),
     }),
   ],
 });
@@ -176,7 +168,7 @@ const absence = AbsenceCase.make({
 describe("attendance workflow", () => {
   it.effect("models a two-lesson absence becoming partially and then mixed resolved", () =>
     Effect.gen(function* () {
-      const acknowledged = yield* acknowledgeAbsenceCase({
+      const acknowledged = yield* Attendance.acknowledge({
         absence,
         expectedRevision: Revision.make(0),
         actor: guardianActor,
@@ -186,12 +178,12 @@ describe("attendance workflow", () => {
         acknowledgementId: AcknowledgementId.make("guardian-ack"),
         acknowledgedAt: now,
       });
-      assert.deepEqual(absenceStatus(acknowledged), {
+      assert.deepEqual(Attendance.status(acknowledged), {
         _tag: "AwaitingLessonDecisions",
         pending: 2,
       });
 
-      const partial = yield* decideMissedLesson({
+      const partial = yield* Attendance.decideMissedLesson({
         absence: acknowledged,
         expectedRevision: Revision.make(1),
         missedLessonId: lessonIds[0],
@@ -202,14 +194,14 @@ describe("attendance workflow", () => {
         decidedAt: now,
         decision: { _tag: "Excused", acknowledgementId: AcknowledgementId.make("teacher-ack") },
       });
-      assert.deepEqual(absenceStatus(partial), {
+      assert.deepEqual(Attendance.status(partial), {
         _tag: "PartiallyResolved",
         excused: 1,
         rejected: 0,
         pending: 1,
       });
 
-      const resolved = yield* decideMissedLesson({
+      const resolved = yield* Attendance.decideMissedLesson({
         absence: partial,
         expectedRevision: Revision.make(2),
         missedLessonId: lessonIds[1],
@@ -220,14 +212,14 @@ describe("attendance workflow", () => {
         decidedAt: now,
         decision: { _tag: "Rejected", reason: NonEmptyText.make("Insufficient evidence") },
       });
-      assert.deepEqual(absenceStatus(resolved), {
+      assert.deepEqual(Attendance.status(resolved), {
         _tag: "ResolvedMixed",
         excused: 1,
         rejected: 1,
       });
 
       const duplicate = yield* Effect.flip(
-        decideMissedLesson({
+        Attendance.decideMissedLesson({
           absence: resolved,
           expectedRevision: Revision.make(3),
           missedLessonId: lessonIds[1],
@@ -246,7 +238,7 @@ describe("attendance workflow", () => {
   it.effect("refuses a stale concurrent acknowledgement", () =>
     Effect.gen(function* () {
       const failure = yield* Effect.flip(
-        acknowledgeAbsenceCase({
+        Attendance.acknowledge({
           absence,
           expectedRevision: Revision.make(1),
           actor: guardianActor,
@@ -269,7 +261,7 @@ describe("attendance workflow", () => {
         dateOfBirth: date("2015-01-01"),
       });
       const failure = yield* Effect.flip(
-        acknowledgeAbsenceCase({
+        Attendance.acknowledge({
           absence,
           expectedRevision: Revision.make(0),
           actor: guardianActor,
@@ -286,7 +278,7 @@ describe("attendance workflow", () => {
 
   it.effect("refuses lesson decisions before the absence is acknowledged", () =>
     Effect.gen(function* () {
-      const failure = yield* decideMissedLesson({
+      const failure = yield* Attendance.decideMissedLesson({
         absence,
         expectedRevision: Revision.make(0),
         missedLessonId: lessonIds[0],
@@ -303,7 +295,7 @@ describe("attendance workflow", () => {
 
   it.effect("rejects a forged occurrence and course pairing", () =>
     Effect.gen(function* () {
-      const acknowledged = yield* acknowledgeAbsenceCase({
+      const acknowledged = yield* Attendance.acknowledge({
         absence,
         expectedRevision: Revision.make(0),
         actor: guardianActor,
@@ -316,7 +308,7 @@ describe("attendance workflow", () => {
       const forged = LessonOccurrence.make(
         Object.assign({}, occurrences[0], { courseOfferingId: courseIds[1] }),
       );
-      const failure = yield* decideMissedLesson({
+      const failure = yield* Attendance.decideMissedLesson({
         absence: acknowledged,
         expectedRevision: Revision.make(1),
         missedLessonId: lessonIds[0],

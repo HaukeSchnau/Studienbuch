@@ -6,13 +6,12 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./academics": "./src/academics/index.ts",
     "./assessment": "./src/assessment/index.ts",
     "./attendance": "./src/attendance/index.ts",
     "./compat/mobile-v0": "./src/compat/mobile-v0.ts",
-    "./people": "./src/people/index.ts",
-    "./primitives": "./src/primitives/index.ts",
-    "./provenance": "./src/provenance/index.ts",
+    "./foundation": "./src/foundation/index.ts",
+    "./importing": "./src/importing/index.ts",
+    "./organization": "./src/organization/index.ts",
     "./schedule": "./src/schedule/index.ts",
     "./tasks": "./src/tasks/index.ts"
   },

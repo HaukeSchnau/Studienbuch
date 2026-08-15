@@ -15,23 +15,9 @@ import {
   ScheduleExceptionId,
   SchoolId,
   TimeRange,
-} from "../primitives/index.ts";
-import {
-  AcademicCalendar,
-  AcademicTerm,
-  BellPeriod,
-  CalendarClosure,
-  LessonOccurrenceRef,
-  RecurringMeeting,
-  RotationPattern,
-  ScheduleException,
-  findBellPeriodCollisions,
-  findRecurringMeetingCollisions,
-  isSchoolDay,
-  materializeSchoolDay,
-  meetingOccursOn,
-  nextSchoolDay,
-} from "./index.ts";
+} from "../foundation/index.ts";
+import * as Organization from "../organization/index.ts";
+import * as Schedule from "./index.ts";
 
 const date = (value: string) => CalendarDate.make(value);
 const time = (value: number) => LocalTime.make(value);
@@ -41,32 +27,32 @@ const interval = (start: string, end: string) =>
   DateInterval.make({ start: date(start), end: date(end) });
 
 const schoolId = SchoolId.make("school-1");
-const term = AcademicTerm.make({
+const term = Organization.AcademicTerm.make({
   id: AcademicTermId.make("term-1"),
   schoolId,
   name: NonEmptyText.make("First term"),
   interval: interval("2022-12-01", "2023-02-28"),
 });
 
-const calendar = AcademicCalendar.make({
+const calendar = Schedule.AcademicCalendar.make({
   schoolId,
   schoolDays: [1, 2, 3, 4, 5],
   terms: [term],
   closures: [
-    CalendarClosure.make({
+    Schedule.CalendarClosure.make({
       name: NonEmptyText.make("Winter break"),
       interval: interval("2022-12-23", "2023-01-06"),
     }),
   ],
 });
 
-const everyWeek = RotationPattern.cases.EveryWeek.make({});
+const everyWeek = Schedule.RotationPattern.cases.EveryWeek.make({});
 
 const meeting = (
   id: string,
-  overrides: Partial<Parameters<typeof RecurringMeeting.make>[0]> = {},
+  overrides: Partial<Parameters<typeof Schedule.RecurringMeeting.make>[0]> = {},
 ) =>
-  RecurringMeeting.make({
+  Schedule.RecurringMeeting.make({
     id: RecurringMeetingId.make(id),
     courseOfferingId: CourseOfferingId.make(`course-${id}`),
     weekday: 1,
@@ -80,17 +66,17 @@ const meeting = (
 
 describe("academic calendar", () => {
   it("treats both closure boundaries as closed and finds the next school day", () => {
-    assert.isFalse(isSchoolDay(calendar, date("2022-12-23")));
-    assert.isFalse(isSchoolDay(calendar, date("2023-01-06")));
+    assert.isFalse(Schedule.isSchoolDay(calendar, date("2022-12-23")));
+    assert.isFalse(Schedule.isSchoolDay(calendar, date("2023-01-06")));
     assert.deepEqual(
-      Option.getOrUndefined(nextSchoolDay(calendar, date("2023-01-05"))),
+      Option.getOrUndefined(Schedule.nextSchoolDay(calendar, date("2023-01-05"))),
       date("2023-01-09"),
     );
   });
 
   it.effect("suppresses recurring meetings during closures", () =>
     Effect.gen(function* () {
-      const result = yield* materializeSchoolDay({
+      const result = yield* Schedule.materializeSchoolDay({
         calendar,
         date: date("2022-12-26"),
         meetings: [meeting("math")],
@@ -107,7 +93,7 @@ describe("academic calendar", () => {
         schoolDays: calendar.schoolDays,
         terms: [
           term,
-          AcademicTerm.make({
+          Organization.AcademicTerm.make({
             ...term,
             id: AcademicTermId.make("foreign"),
             schoolId: SchoolId.make("other-school"),
@@ -115,31 +101,31 @@ describe("academic calendar", () => {
         ],
         closures: [],
       };
-      yield* Schema.decodeEffect(AcademicCalendar)(malformed).pipe(Effect.flip);
+      yield* Schema.decodeEffect(Schedule.AcademicCalendar)(malformed).pipe(Effect.flip);
     }),
   );
 });
 
 describe("half-open schedule ranges", () => {
   it("allows adjacent bell periods and finds actual overlaps", () => {
-    const first = BellPeriod.make({
+    const first = Schedule.BellPeriod.make({
       id: BellPeriodId.make("period-1"),
       label: NonEmptyText.make("1"),
       timeRange: range(8 * 60, 8 * 60 + 45),
     });
-    const adjacent = BellPeriod.make({
+    const adjacent = Schedule.BellPeriod.make({
       id: BellPeriodId.make("period-2"),
       label: NonEmptyText.make("2"),
       timeRange: range(8 * 60 + 45, 9 * 60 + 30),
     });
-    const overlapping = BellPeriod.make({
+    const overlapping = Schedule.BellPeriod.make({
       id: BellPeriodId.make("period-3"),
       label: NonEmptyText.make("Overlap"),
       timeRange: range(8 * 60 + 30, 9 * 60),
     });
 
-    assert.deepEqual(findBellPeriodCollisions([adjacent, first]), []);
-    assert.deepEqual(findBellPeriodCollisions([overlapping, adjacent, first]), [
+    assert.deepEqual(Schedule.findBellPeriodCollisions([adjacent, first]), []);
+    assert.deepEqual(Schedule.findBellPeriodCollisions([overlapping, adjacent, first]), [
       { leftId: first.id, rightId: overlapping.id },
       { leftId: adjacent.id, rightId: overlapping.id },
     ]);
@@ -147,13 +133,13 @@ describe("half-open schedule ranges", () => {
 
   it("does not report odd and even rotations as colliding", () => {
     const odd = meeting("odd", {
-      rotation: RotationPattern.cases.OddIsoWeek.make({}),
+      rotation: Schedule.RotationPattern.cases.OddIsoWeek.make({}),
     });
     const even = meeting("even", {
-      rotation: RotationPattern.cases.EvenIsoWeek.make({}),
+      rotation: Schedule.RotationPattern.cases.EvenIsoWeek.make({}),
     });
-    assert.deepEqual(findRecurringMeetingCollisions([odd, even]), []);
-    assert.equal(findRecurringMeetingCollisions([odd, meeting("weekly")]).length, 1);
+    assert.deepEqual(Schedule.findRecurringMeetingCollisions([odd, even]), []);
+    assert.equal(Schedule.findRecurringMeetingCollisions([odd, meeting("weekly")]).length, 1);
   });
 });
 
@@ -161,10 +147,10 @@ describe("ISO week rotation", () => {
   it("uses the ISO week across the calendar-year boundary", () => {
     const evenSunday = meeting("rotation", {
       weekday: 7,
-      rotation: RotationPattern.cases.EvenIsoWeek.make({}),
+      rotation: Schedule.RotationPattern.cases.EvenIsoWeek.make({}),
     });
     // 2023-01-01 belongs to ISO week 52 of 2022.
-    assert.isTrue(meetingOccursOn(evenSunday, date("2023-01-01")));
+    assert.isTrue(Schedule.meetingOccursOn(evenSunday, date("2023-01-01")));
   });
 });
 
@@ -172,16 +158,19 @@ describe("lesson occurrence materialization", () => {
   const monday = date("2023-01-09");
   const tuesday = date("2023-01-10");
   const baseMeeting = meeting("math");
-  const target = LessonOccurrenceRef.make({ meetingId: baseMeeting.id, scheduledDate: monday });
+  const target = Schedule.LessonOccurrenceRef.make({
+    meetingId: baseMeeting.id,
+    scheduledDate: monday,
+  });
 
   it.effect("cancels a dated occurrence", () =>
     Effect.gen(function* () {
-      const result = yield* materializeSchoolDay({
+      const result = yield* Schedule.materializeSchoolDay({
         calendar,
         date: monday,
         meetings: [baseMeeting],
         exceptions: [
-          ScheduleException.cases.Cancelled.make({
+          Schedule.ScheduleException.cases.Cancelled.make({
             id: ScheduleExceptionId.make("cancel"),
             target,
           }),
@@ -193,19 +182,19 @@ describe("lesson occurrence materialization", () => {
 
   it.effect("moves an occurrence to another date while preserving its identity", () =>
     Effect.gen(function* () {
-      const rescheduled = ScheduleException.cases.Rescheduled.make({
+      const rescheduled = Schedule.ScheduleException.cases.Rescheduled.make({
         id: ScheduleExceptionId.make("reschedule"),
         target,
         date: tuesday,
         timeRange: range(10 * 60, 10 * 60 + 45),
       });
-      const originalDay = yield* materializeSchoolDay({
+      const originalDay = yield* Schedule.materializeSchoolDay({
         calendar,
         date: monday,
         meetings: [baseMeeting],
         exceptions: [rescheduled],
       });
-      const destinationDay = yield* materializeSchoolDay({
+      const destinationDay = yield* Schedule.materializeSchoolDay({
         calendar,
         date: tuesday,
         meetings: [baseMeeting],
@@ -224,16 +213,16 @@ describe("lesson occurrence materialization", () => {
 
   it.effect("does not resurrect a closure-suppressed occurrence by rescheduling it", () =>
     Effect.gen(function* () {
-      const holidayTarget = LessonOccurrenceRef.make({
+      const holidayTarget = Schedule.LessonOccurrenceRef.make({
         meetingId: baseMeeting.id,
         scheduledDate: date("2022-12-26"),
       });
-      const failure = yield* materializeSchoolDay({
+      const failure = yield* Schedule.materializeSchoolDay({
         calendar,
         date: monday,
         meetings: [baseMeeting],
         exceptions: [
-          ScheduleException.cases.Rescheduled.make({
+          Schedule.ScheduleException.cases.Rescheduled.make({
             id: ScheduleExceptionId.make("holiday-reschedule"),
             target: holidayTarget,
             date: monday,
@@ -250,14 +239,14 @@ describe("lesson occurrence materialization", () => {
 
   it.effect("ignores unrelated invalid exceptions when materializing a day", () =>
     Effect.gen(function* () {
-      const result = yield* materializeSchoolDay({
+      const result = yield* Schedule.materializeSchoolDay({
         calendar,
         date: monday,
         meetings: [baseMeeting],
         exceptions: [
-          ScheduleException.cases.Cancelled.make({
+          Schedule.ScheduleException.cases.Cancelled.make({
             id: ScheduleExceptionId.make("unrelated-stale"),
-            target: LessonOccurrenceRef.make({
+            target: Schedule.LessonOccurrenceRef.make({
               meetingId: RecurringMeetingId.make("missing"),
               scheduledDate: tuesday,
             }),
@@ -272,17 +261,17 @@ describe("lesson occurrence materialization", () => {
     Effect.gen(function* () {
       const firstExceptionId = ScheduleExceptionId.make("room-a");
       const secondExceptionId = ScheduleExceptionId.make("room-z");
-      const failure = yield* materializeSchoolDay({
+      const failure = yield* Schedule.materializeSchoolDay({
         calendar,
         date: monday,
         meetings: [baseMeeting],
         exceptions: [
-          ScheduleException.cases.RoomChanged.make({
+          Schedule.ScheduleException.cases.RoomChanged.make({
             id: secondExceptionId,
             target,
             room: NonEmptyText.make("B2"),
           }),
-          ScheduleException.cases.RoomChanged.make({
+          Schedule.ScheduleException.cases.RoomChanged.make({
             id: firstExceptionId,
             target,
             room: NonEmptyText.make("C3"),
@@ -299,16 +288,16 @@ describe("lesson occurrence materialization", () => {
 
   it.effect("reports an exception whose target cannot be resolved", () =>
     Effect.gen(function* () {
-      const missingTarget = LessonOccurrenceRef.make({
+      const missingTarget = Schedule.LessonOccurrenceRef.make({
         meetingId: RecurringMeetingId.make("missing"),
         scheduledDate: monday,
       });
-      const failure = yield* materializeSchoolDay({
+      const failure = yield* Schedule.materializeSchoolDay({
         calendar,
         date: monday,
         meetings: [baseMeeting],
         exceptions: [
-          ScheduleException.cases.Cancelled.make({
+          Schedule.ScheduleException.cases.Cancelled.make({
             id: ScheduleExceptionId.make("unresolved"),
             target: missingTarget,
           }),
@@ -326,13 +315,13 @@ describe("lesson occurrence materialization", () => {
     Effect.gen(function* () {
       const later = meeting("later", { timeRange: range(11 * 60, 11 * 60 + 45) });
       const earlier = meeting("earlier", { timeRange: range(9 * 60, 9 * 60 + 45) });
-      const first = yield* materializeSchoolDay({
+      const first = yield* Schedule.materializeSchoolDay({
         calendar,
         date: monday,
         meetings: [later, earlier],
         exceptions: [],
       });
-      const second = yield* materializeSchoolDay({
+      const second = yield* Schedule.materializeSchoolDay({
         calendar,
         date: monday,
         meetings: [earlier, later],
@@ -351,7 +340,7 @@ describe("lesson occurrence materialization", () => {
       const duplicate = meeting("math", {
         courseOfferingId: CourseOfferingId.make("different-course"),
       });
-      const failure = yield* materializeSchoolDay({
+      const failure = yield* Schedule.materializeSchoolDay({
         calendar,
         date: monday,
         meetings: [baseMeeting, duplicate],

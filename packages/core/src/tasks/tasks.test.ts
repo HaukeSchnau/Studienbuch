@@ -2,12 +2,6 @@ import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import {
-  ActorRef,
-  AuthoritySnapshot,
-  SchoolMembership,
-  StudentMembership,
-} from "../people/index.ts";
-import {
   ArtifactId,
   CalendarDate,
   CourseOfferingId,
@@ -19,22 +13,11 @@ import {
   SchoolMembershipId,
   SchoolTaskId,
   TrimmedNonEmptyString,
-} from "../primitives/index.ts";
-import {
-  cancelTask,
-  completeTask,
-  defaultTaskVisibilityPolicy,
-  getTaskDueStatus,
-  isTaskArchived,
-  reopenTask,
-  SchoolTask,
-  selectArchivedTasks,
-  selectTasksForCourse,
-  selectTasksWithoutCourse,
-  selectVisibleTasks,
-  TaskStatus,
-  TaskVisibilityPolicy,
-} from "./index.ts";
+} from "../foundation/index.ts";
+import { ActorRef } from "../organization/acknowledgement.ts";
+import { AuthoritySnapshot } from "../organization/authority.ts";
+import { SchoolMembership, StudentMembership } from "../organization/membership.ts";
+import * as Tasks from "./index.ts";
 
 const date = (value: string) => CalendarDate.make(value);
 const taskId = (value: string) => SchoolTaskId.make(value);
@@ -60,7 +43,7 @@ const authority = AuthoritySnapshot.make({
   courseOfferings: [],
 });
 
-const transition = (task: SchoolTask) => ({
+const transition = (task: Tasks.SchoolTask) => ({
   task,
   expectedRevision: task.revision,
   actor,
@@ -68,22 +51,22 @@ const transition = (task: SchoolTask) => ({
   on: date("2026-03-29"),
 });
 
-const makeTask = (overrides: Partial<SchoolTask> = {}): SchoolTask =>
-  SchoolTask.make({
+const makeTask = (overrides: Partial<Tasks.SchoolTask> = {}): Tasks.SchoolTask =>
+  Tasks.SchoolTask.make({
     id: taskId("task-1"),
     studentMembershipId,
     revision: Revision.make(0),
     title: title("Read chapter 4"),
     dueDate: date("2026-03-29"),
     attachments: [],
-    status: TaskStatus.cases.Open.make({}),
+    status: Tasks.TaskStatus.cases.Open.make({}),
     ...overrides,
   });
 
 describe("SchoolTask schema", () => {
   it.effect("supports tasks without a course and validates artifact references", () =>
     Effect.gen(function* () {
-      const decoded = yield* Schema.decodeEffect(SchoolTask)({
+      const decoded = yield* Schema.decodeEffect(Tasks.SchoolTask)({
         id: "task-1",
         studentMembershipId: "student-membership",
         revision: 0,
@@ -119,38 +102,38 @@ describe("task date policies", () => {
   it("classifies due dates using calendar dates only", () => {
     const task = makeTask();
 
-    expect(getTaskDueStatus(task, date("2026-03-28"))).toBe("Upcoming");
-    expect(getTaskDueStatus(task, date("2026-03-29"))).toBe("DueToday");
-    expect(getTaskDueStatus(task, date("2026-03-30"))).toBe("Overdue");
+    expect(Tasks.dueStatus(task, date("2026-03-28"))).toBe("Upcoming");
+    expect(Tasks.dueStatus(task, date("2026-03-29"))).toBe("DueToday");
+    expect(Tasks.dueStatus(task, date("2026-03-30"))).toBe("Overdue");
   });
 
   it("keeps an overdue task visible through the exact seven-day threshold", () => {
     const task = makeTask({ dueDate: date("2026-03-22") });
 
-    expect(isTaskArchived(task, date("2026-03-29"))).toBe(false);
-    expect(isTaskArchived(task, date("2026-03-30"))).toBe(true);
+    expect(Tasks.isArchived(task, date("2026-03-29"))).toBe(false);
+    expect(Tasks.isArchived(task, date("2026-03-30"))).toBe(true);
   });
 
   it("uses DST-independent calendar arithmetic across the spring transition", () => {
     const task = makeTask({ dueDate: date("2026-03-24") });
 
-    expect(isTaskArchived(task, date("2026-03-31"))).toBe(false);
-    expect(isTaskArchived(task, date("2026-04-01"))).toBe(true);
+    expect(Tasks.isArchived(task, date("2026-03-31"))).toBe(false);
+    expect(Tasks.isArchived(task, date("2026-04-01"))).toBe(true);
   });
 
   it("allows visibility to be configured without changing task state", () => {
     const completed = makeTask({
-      status: TaskStatus.cases.Completed.make({ completedOn: date("2026-03-20") }),
+      status: Tasks.TaskStatus.cases.Completed.make({ completedOn: date("2026-03-20") }),
     });
-    const policy = TaskVisibilityPolicy.make({
+    const policy = Tasks.VisibilityPolicy.make({
       archiveCompleted: false,
-      archiveCancelled: defaultTaskVisibilityPolicy.archiveCancelled,
+      archiveCancelled: Tasks.defaultVisibilityPolicy.archiveCancelled,
       archiveOpenTasksAfterOverdueDays: 30,
     });
 
     expect(completed.status._tag).toBe("Completed");
     expect(policy.archiveCompleted).toBe(false);
-    expect(isTaskArchived(completed, date("2026-04-01"), policy)).toBe(false);
+    expect(Tasks.isArchived(completed, date("2026-04-01"), policy)).toBe(false);
     expect(completed.status._tag).toBe("Completed");
   });
 });
@@ -159,9 +142,9 @@ describe("task lifecycle", () => {
   it.effect("completes, reopens, and cancels with caller-supplied dates", () =>
     Effect.gen(function* () {
       const original = makeTask();
-      const completed = yield* completeTask(transition(original), date("2026-03-28"));
-      const reopened = yield* reopenTask(transition(completed));
-      const cancelled = yield* cancelTask(
+      const completed = yield* Tasks.complete(transition(original), date("2026-03-28"));
+      const reopened = yield* Tasks.reopen(transition(completed));
+      const cancelled = yield* Tasks.cancel(
         transition(reopened),
         date("2026-03-29"),
         title("No longer assigned"),
@@ -175,7 +158,7 @@ describe("task lifecycle", () => {
         cancelledOn: "2026-03-29",
         reason: "No longer assigned",
       });
-      const cancelledWithoutReason = yield* cancelTask(
+      const cancelledWithoutReason = yield* Tasks.cancel(
         transition(makeTask({ id: taskId("without-reason") })),
         date("2026-03-29"),
       );
@@ -189,7 +172,7 @@ describe("task lifecycle", () => {
   it.effect("rejects a stale task transition", () =>
     Effect.gen(function* () {
       const task = makeTask({ revision: Revision.make(2) });
-      const failure = yield* completeTask(
+      const failure = yield* Tasks.complete(
         { ...transition(task), expectedRevision: Revision.make(1) },
         date("2026-03-29"),
       ).pipe(Effect.flip);
@@ -200,16 +183,16 @@ describe("task lifecycle", () => {
   it.effect("returns a typed refusal for invalid transitions", () =>
     Effect.gen(function* () {
       const completed = makeTask({
-        status: TaskStatus.cases.Completed.make({ completedOn: date("2026-03-28") }),
+        status: Tasks.TaskStatus.cases.Completed.make({ completedOn: date("2026-03-28") }),
       });
-      const completeRefusal = yield* completeTask(transition(completed), date("2026-03-29")).pipe(
+      const completeRefusal = yield* Tasks.complete(transition(completed), date("2026-03-29")).pipe(
         Effect.flip,
       );
-      const cancelRefusal = yield* cancelTask(transition(completed), date("2026-03-29")).pipe(
+      const cancelRefusal = yield* Tasks.cancel(transition(completed), date("2026-03-29")).pipe(
         Effect.flip,
       );
       const open = makeTask();
-      const reopenRefusal = yield* reopenTask(transition(open)).pipe(Effect.flip);
+      const reopenRefusal = yield* Tasks.reopen(transition(open)).pipe(Effect.flip);
 
       expect(completeRefusal).toMatchObject({
         _tag: "Tasks.TaskTransitionRefused",
@@ -236,7 +219,7 @@ describe("task selectors", () => {
       id: taskId("completed"),
       title: title("Completed"),
       dueDate: date("2026-04-01"),
-      status: TaskStatus.cases.Completed.make({ completedOn: date("2026-04-01") }),
+      status: Tasks.TaskStatus.cases.Completed.make({ completedOn: date("2026-04-01") }),
     }),
     makeTask({ id: taskId("old"), title: title("Old"), dueDate: date("2026-03-01") }),
   ] as const;
@@ -244,8 +227,8 @@ describe("task selectors", () => {
   it("selects course-bound and unassigned tasks without mutating the input", () => {
     const originalOrder = tasks.map((task) => task.id);
 
-    expect(selectTasksForCourse(tasks, german).map((task) => task.id)).toEqual(["course"]);
-    expect(selectTasksWithoutCourse(tasks).map((task) => task.id)).toEqual([
+    expect(Tasks.selectForCourse(tasks, german).map((task) => task.id)).toEqual(["course"]);
+    expect(Tasks.selectWithoutCourse(tasks).map((task) => task.id)).toEqual([
       "old",
       "later",
       "completed",
@@ -256,7 +239,7 @@ describe("task selectors", () => {
   it("deterministically partitions visible and archived tasks", () => {
     const today = date("2026-04-10");
 
-    expect(selectVisibleTasks(tasks, today).map((task) => task.id)).toEqual(["course", "later"]);
-    expect(selectArchivedTasks(tasks, today).map((task) => task.id)).toEqual(["old", "completed"]);
+    expect(Tasks.selectVisible(tasks, today).map((task) => task.id)).toEqual(["course", "later"]);
+    expect(Tasks.selectArchived(tasks, today).map((task) => task.id)).toEqual(["old", "completed"]);
   });
 });

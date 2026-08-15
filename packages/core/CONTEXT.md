@@ -4,6 +4,10 @@ Studienbuch Core describes school life independently of persistence, synchroniza
 
 ## Academic structure
 
+**School directory**:
+A school-scoped collection of terms, cohorts, class groups, course offerings, choices, and enrollment facts.
+_Avoid_: Academic structure, school configuration
+
 **Subject**:
 A school-scoped catalog entry such as Mathematics or Informatics.
 _Avoid_: Hard-coded subject code, course
