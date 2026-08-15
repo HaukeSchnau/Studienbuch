@@ -10,6 +10,7 @@ export {
   dueStatus,
   reopen,
 } from "./school-task";
+export { SchoolTaskId } from "./identity";
 export {
   VisibilityPolicy,
   defaultVisibilityPolicy,

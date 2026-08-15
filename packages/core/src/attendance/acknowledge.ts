@@ -1,8 +1,9 @@
 import type * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import { AcknowledgementId, ArtifactRef, Revision } from "../foundation";
-import { Acknowledgement, ActorRef } from "../organization/acknowledgement";
+import * as AggregateRevision from "../foundation/aggregate-revision";
+import * as Artifact from "../foundation/artifact";
+import { ActorRef, makeAcknowledgement } from "../organization/acknowledgement";
 import {
   AuthorityDenied,
   AuthoritySnapshot,
@@ -10,6 +11,7 @@ import {
   authorize,
 } from "../organization/authority";
 import { LegalAgePolicy, Person, legalStatusOn } from "../organization/person";
+import { AcknowledgementId } from "../organization/identity";
 import { AbsenceCase, ConcurrentAbsenceRevisionError } from "./absence-case";
 
 export class AbsenceAlreadyAcknowledgedError extends Schema.TaggedError<AbsenceAlreadyAcknowledgedError>()(
@@ -39,8 +41,8 @@ export const AcknowledgeError = Schema.Union([
 ]);
 export type AcknowledgeError = typeof AcknowledgeError.Type;
 
-const checkRevision = (absence: AbsenceCase, expectedRevision: Revision) =>
-  absence.revision === expectedRevision
+const checkRevision = (absence: AbsenceCase, expectedRevision: AggregateRevision.Type) =>
+  AggregateRevision.Equivalence(absence.revision, expectedRevision)
     ? Effect.void
     : Effect.fail(
         new ConcurrentAbsenceRevisionError({
@@ -48,19 +50,6 @@ const checkRevision = (absence: AbsenceCase, expectedRevision: Revision) =>
           actual: absence.revision,
         }),
       );
-
-const makeAcknowledgement = (
-  id: AcknowledgementId,
-  actor: ActorRef,
-  acknowledgedAt: DateTime.Utc,
-  revision: Revision,
-  artifact: ArtifactRef | undefined,
-) => {
-  const fields = { id, actor, acknowledgedAt, revision };
-  return artifact === undefined
-    ? Acknowledgement.make(fields)
-    : Acknowledgement.make({ ...fields, artifact });
-};
 
 export const acknowledge = Effect.fn("Attendance.acknowledge")(function* (
   input: acknowledge.Input,
@@ -113,13 +102,13 @@ export const acknowledge = Effect.fn("Attendance.acknowledge")(function* (
     input.authority,
   );
 
-  const acknowledgement = makeAcknowledgement(
-    input.acknowledgementId,
-    input.actor,
-    input.acknowledgedAt,
-    input.absence.detailsRevision,
-    input.artifact,
-  );
+  const acknowledgement = makeAcknowledgement({
+    id: input.acknowledgementId,
+    actor: input.actor,
+    acknowledgedAt: input.acknowledgedAt,
+    revision: input.absence.detailsRevision,
+    artifact: input.artifact,
+  });
 
   return AbsenceCase.make({
     id: input.absence.id,
@@ -127,7 +116,7 @@ export const acknowledge = Effect.fn("Attendance.acknowledge")(function* (
     date: input.absence.date,
     reason: input.absence.reason,
     detailsRevision: input.absence.detailsRevision,
-    revision: Revision.make(input.absence.revision + 1),
+    revision: AggregateRevision.unsafeNext(input.absence.revision),
     acknowledgement,
     missedLessons: input.absence.missedLessons,
   });
@@ -136,14 +125,14 @@ export const acknowledge = Effect.fn("Attendance.acknowledge")(function* (
 export declare namespace acknowledge {
   export interface Input {
     readonly absence: AbsenceCase;
-    readonly expectedRevision: Revision;
+    readonly expectedRevision: AggregateRevision.Type;
     readonly actor: ActorRef;
     readonly student: Person;
     readonly legalAgePolicy: LegalAgePolicy;
     readonly authority: AuthoritySnapshot;
     readonly acknowledgementId: AcknowledgementId;
     readonly acknowledgedAt: DateTime.Utc;
-    readonly artifact?: ArtifactRef;
+    readonly artifact?: Artifact.Reference;
   }
 
   export type Error = AcknowledgeError;

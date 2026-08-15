@@ -1,32 +1,25 @@
 import { assert, describe, expect, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as Importing from "./index.ts";
-import {
-  DataSourceId,
-  ExternalId,
-  ImportId,
-  NonEmptyText,
-  PersonId,
-  Revision,
-  SchoolId,
-  SchoolMembershipId,
-  SubjectId,
-} from "../foundation/index.ts";
+import * as AggregateRevision from "../foundation/aggregate-revision";
+import * as NonBlankText from "../foundation/non-blank-text";
 import { Subject, SubjectCatalog } from "../organization/catalog.ts";
+import { PersonId, SchoolId, SchoolMembershipId, SubjectId } from "../organization/identity";
 
 const source = Importing.DataSource.make({
-  id: DataSourceId.make("untis-school-1"),
-  provider: NonEmptyText.make("Untis"),
+  id: Importing.DataSourceId.make("untis-school-1"),
+  provider: NonBlankText.unsafeFromString("Untis"),
 });
 
 const stamp = (revision: number, dataSource = source) =>
   Importing.SourceStamp.make({
     dataSource,
-    externalId: ExternalId.make("course-42"),
-    importId: ImportId.make(`import-${revision}`),
-    revision: Revision.make(revision),
+    externalId: Importing.ExternalId.make("course-42"),
+    importId: Importing.ImportId.make(`import-${revision}`),
+    revision: Importing.SourceRevision.Schema.make(revision),
     observedAt: DateTime.makeUnsafe(`2026-08-${String(revision + 1).padStart(2, "0")}T08:00:00Z`),
   });
 
@@ -58,7 +51,7 @@ describe("import reconciliation", () => {
 
     const otherProvider = Importing.DataSource.make({
       id: source.id,
-      provider: NonEmptyText.make("Another provider"),
+      provider: NonBlankText.unsafeFromString("Another provider"),
     });
     const renamedProvider = Importing.reconcileIncoming(current, {
       ...observation("Mathematics", 3),
@@ -131,10 +124,9 @@ describe("subject resolution", () => {
     Subject.make({
       id: SubjectId.make(id),
       schoolId,
-      name: NonEmptyText.make(name),
-      code: NonEmptyText.make(code),
-      aliases: aliases.map((alias) => NonEmptyText.make(alias)),
-      externalRefs: [],
+      name: NonBlankText.unsafeFromString(name),
+      code: NonBlankText.unsafeFromString(code),
+      aliases: aliases.map((alias) => NonBlankText.unsafeFromString(alias)),
     });
 
   const catalog = SubjectCatalog.make({
@@ -167,5 +159,49 @@ describe("subject resolution", () => {
       _tag: "Unknown",
       rawLabel: "Mystery Lab",
     });
+  });
+});
+
+describe("SourceRevision", () => {
+  it("round-trips through its schema and advances independently of aggregate revisions", () => {
+    const revision = Importing.SourceRevision.Schema.make(7);
+    const encoded = Schema.encodeSync(Importing.SourceRevision.Schema)(revision);
+    expect(encoded).toBe(7);
+    expect(Schema.decodeSync(Importing.SourceRevision.Schema)(encoded)).toBe(revision);
+    expect(Importing.SourceRevision.next(revision)).toEqual(
+      Option.some(Importing.SourceRevision.Schema.make(8)),
+    );
+
+    // @ts-expect-error Aggregate and source revisions represent different ordering scopes.
+    Importing.SourceRevision.next(AggregateRevision.initial);
+  });
+});
+
+describe("entity links", () => {
+  it("keeps provider identity outside organization entities and enforces source uniqueness", () => {
+    const subjectId = SubjectId.make("mathematics");
+    const firstSource = Importing.SourceIdentity.make({
+      dataSourceId: Importing.DataSourceId.make("untis"),
+      externalId: Importing.ExternalId.make("subject-42"),
+    });
+    const secondSource = Importing.SourceIdentity.make({
+      dataSourceId: Importing.DataSourceId.make("schild"),
+      externalId: Importing.ExternalId.make("math"),
+    });
+    const first = Importing.EntityLink.cases.Subject.make({ source: firstSource, subjectId });
+    const second = Importing.EntityLink.cases.Subject.make({ source: secondSource, subjectId });
+
+    expect(Importing.EntityLinkSet.makeOption([first, second])).toEqual(
+      Option.some([first, second]),
+    );
+    expect(
+      Importing.EntityLinkSet.makeOption([
+        first,
+        Importing.EntityLink.cases.Subject.make({
+          source: firstSource,
+          subjectId: SubjectId.make("physics"),
+        }),
+      ]),
+    ).toEqual(Option.none());
   });
 });

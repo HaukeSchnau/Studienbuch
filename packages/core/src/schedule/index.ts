@@ -7,6 +7,16 @@ export {
 } from "./academic-calendar";
 export { BellPeriod, BellSchedule } from "./bell-schedule";
 export {
+  BellPeriodId,
+  BellScheduleId,
+  LessonOccurrenceId,
+  RecurringMeetingId,
+  ScheduleExceptionId,
+} from "./identity";
+export * as LocalTime from "./local-time";
+export * as LocalTimeRange from "./local-time-range";
+export * as Weekday from "./weekday";
+export {
   findBellPeriodCollisions,
   findLessonOccurrenceCollisions,
   findRecurringMeetingCollisions,

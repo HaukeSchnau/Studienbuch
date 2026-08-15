@@ -1,5 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
+import * as CalendarDateRange from "../foundation/calendar-date-range";
 import { AcademicTerm, Cohort, validateAcademicTerms } from "./academic-term";
 import { School, SubjectCatalog } from "./catalog";
 import { ClassGroup, CourseOffering } from "./course-offering";
@@ -133,11 +134,7 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
       return yield* invalidDirectory("Enrollment", enrollment.id, "UnknownReference");
     }
     const term = terms.get(offering.termId);
-    if (
-      term === undefined ||
-      enrollment.effective.start < term.interval.start ||
-      enrollment.effective.end > term.interval.end
-    ) {
+    if (term === undefined || !CalendarDateRange.encloses(term.interval, enrollment.effective)) {
       return yield* invalidDirectory("Enrollment", enrollment.id, "OutsideTerm");
     }
     if (enrollment.origin._tag === "Choice") {

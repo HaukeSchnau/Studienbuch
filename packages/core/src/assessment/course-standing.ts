@@ -1,14 +1,8 @@
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-import {
-  CalendarDate,
-  CourseOfferingId,
-  CourseStandingId,
-  Revision,
-  SchoolMembershipId,
-  StandingRevisionId,
-} from "../foundation";
+import * as AggregateRevision from "../foundation/aggregate-revision";
+import * as CalendarDate from "../foundation/calendar-date";
 import { Acknowledgement } from "../organization/acknowledgement";
 import {
   AuthorityDenied,
@@ -17,8 +11,10 @@ import {
   authorize,
 } from "../organization/authority";
 import { LegalAgePolicy, Person } from "../organization/person";
+import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import { InvalidGradeValueError, Service as GradingPolicy } from "./grading-policy";
 import { GradeValue } from "./grading";
+import { CourseStandingId, StandingRevisionId } from "./identity";
 import {
   AssessmentAcknowledgementActorError,
   AssessmentAlreadyLearnerAcknowledgedError,
@@ -35,7 +31,7 @@ export type StandingKind = typeof StandingKind.Type;
 export const StandingRevision = Schema.Struct({
   id: StandingRevisionId,
   value: GradeValue,
-  observedOn: CalendarDate,
+  observedOn: CalendarDate.Schema,
   supersedes: Schema.optionalKey(StandingRevisionId),
   teacherAttestation: Schema.optionalKey(Acknowledgement),
   learnerAcknowledgement: Schema.optionalKey(Acknowledgement),
@@ -43,7 +39,7 @@ export const StandingRevision = Schema.Struct({
 export interface StandingRevision extends Schema.Schema.Type<typeof StandingRevision> {}
 
 const hasValidRevisionChain = (standing: {
-  readonly revision: Revision;
+  readonly revision: AggregateRevision.Type;
   readonly currentRevisionId: StandingRevisionId;
   readonly revisions: readonly [StandingRevision, ...Array<StandingRevision>];
 }) => {
@@ -54,8 +50,15 @@ const hasValidRevisionChain = (standing: {
     ...(revision.teacherAttestation === undefined ? [] : [revision.teacherAttestation]),
     ...(revision.learnerAcknowledgement === undefined ? [] : [revision.learnerAcknowledgement]),
   ]);
+  const isChronological = standing.revisions.every((revision, index) => {
+    const previous = standing.revisions[index - 1];
+    return (
+      previous === undefined || CalendarDate.compare(previous.observedOn, revision.observedOn) <= 0
+    );
+  });
   return (
-    records.every((record) => record.revision <= standing.revision) &&
+    isChronological &&
+    records.every((record) => AggregateRevision.compare(record.revision, standing.revision) <= 0) &&
     new Set(records.map((record) => record.id)).size === records.length &&
     standing.revisions.every((revision, index) =>
       index === 0
@@ -70,7 +73,7 @@ export const CourseStanding = Schema.Struct({
   studentMembershipId: SchoolMembershipId,
   courseOfferingId: CourseOfferingId,
   kind: StandingKind,
-  revision: Revision,
+  revision: AggregateRevision.Schema,
   currentRevisionId: StandingRevisionId,
   revisions: Schema.NonEmptyArray(StandingRevision),
 }).check(
@@ -104,7 +107,7 @@ export const lastConfirmedStandingRevision = (
 
 export class ConcurrentStandingRevisionError extends Schema.TaggedError<ConcurrentStandingRevisionError>()(
   "Assessment.ConcurrentStandingRevision",
-  { expected: Revision, actual: Revision },
+  { expected: AggregateRevision.Schema, actual: AggregateRevision.Schema },
 ) {}
 
 export class StandingRevisionNotFoundError extends Schema.TaggedError<StandingRevisionNotFoundError>()(
@@ -119,7 +122,7 @@ export class InvalidStandingSupersessionError extends Schema.TaggedError<Invalid
 
 export class StandingRevisionChronologyError extends Schema.TaggedError<StandingRevisionChronologyError>()(
   "Assessment.StandingRevisionChronology",
-  { previousObservedOn: CalendarDate, nextObservedOn: CalendarDate },
+  { previousObservedOn: CalendarDate.Schema, nextObservedOn: CalendarDate.Schema },
 ) {}
 
 export class StandingRevisionNotCurrentError extends Schema.TaggedError<StandingRevisionNotCurrentError>()(
@@ -159,7 +162,7 @@ export const AcknowledgeStandingError = Schema.Union([
 ]);
 export type AcknowledgeStandingError = typeof AcknowledgeStandingError.Type;
 
-const checkRevision = (standing: CourseStanding, expectedRevision: Revision) =>
+const checkRevision = (standing: CourseStanding, expectedRevision: AggregateRevision.Type) =>
   standing.revision === expectedRevision
     ? Effect.void
     : Effect.fail(
@@ -196,7 +199,7 @@ export const reviseStanding = Effect.fn("Assessment.addStandingRevision")(functi
       () => new StandingRevisionNotFoundError({ revisionId: input.standing.currentRevisionId }),
     ),
   );
-  if (input.revision.observedOn < current.observedOn) {
+  if (CalendarDate.compare(input.revision.observedOn, current.observedOn) < 0) {
     return yield* new StandingRevisionChronologyError({
       previousObservedOn: current.observedOn,
       nextObservedOn: input.revision.observedOn,
@@ -208,7 +211,7 @@ export const reviseStanding = Effect.fn("Assessment.addStandingRevision")(functi
 
   return CourseStanding.make(
     Object.assign({}, input.standing, {
-      revision: Revision.make(input.standing.revision + 1),
+      revision: AggregateRevision.unsafeNext(input.standing.revision),
       currentRevisionId: input.revision.id,
       revisions: [...input.standing.revisions, input.revision],
     }),
@@ -218,7 +221,7 @@ export const reviseStanding = Effect.fn("Assessment.addStandingRevision")(functi
 export declare namespace reviseStanding {
   export interface Input {
     readonly standing: CourseStanding;
-    readonly expectedRevision: Revision;
+    readonly expectedRevision: AggregateRevision.Type;
     readonly revision: StandingRevision;
   }
 
@@ -227,7 +230,7 @@ export declare namespace reviseStanding {
 
 interface StandingConfirmationInput extends ConfirmationRecordInput {
   readonly standing: CourseStanding;
-  readonly expectedRevision: Revision;
+  readonly expectedRevision: AggregateRevision.Type;
   readonly revisionId: StandingRevisionId;
   readonly authority: AuthoritySnapshot;
 }
@@ -257,7 +260,7 @@ const updateCurrentStanding = (
   const first = input.standing.revisions[0];
   return CourseStanding.make(
     Object.assign({}, input.standing, {
-      revision: Revision.make(input.standing.revision + 1),
+      revision: AggregateRevision.unsafeNext(input.standing.revision),
       revisions: [update(first), ...input.standing.revisions.slice(1).map(update)],
     }),
   );

@@ -1,5 +1,9 @@
 import { assert, describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
+import * as Schema from "effect/Schema";
+import * as CalendarDate from "../foundation/calendar-date";
+import * as CalendarDateRange from "../foundation/calendar-date-range";
+import * as NonBlankText from "../foundation/non-blank-text";
 import {
   AcademicTerm,
   Cohort,
@@ -19,34 +23,42 @@ import {
   validateSchoolDirectory,
   validateAcademicTerms,
   validateCourseChoice,
-} from "./index.ts";
-import {
   AcademicTermId,
-  CalendarDate,
   CohortId,
   CourseChoiceGroupId,
   CourseOfferingId,
-  DateInterval,
   EnrollmentId,
-  NonEmptyText,
   SchoolId,
   SchoolMembershipId,
   SubjectId,
-} from "../foundation/index.ts";
+} from "./index.ts";
 
-const date = (value: string) => CalendarDate.make(value);
+const date = CalendarDate.unsafeFromString;
 const interval = (start: string, end: string) =>
-  DateInterval.make({ start: date(start), end: date(end) });
+  CalendarDateRange.Schema.make({ start: date(start), end: date(end) });
 const schoolId = SchoolId.make("school-1");
 const term = (id: string, start: string, end: string) =>
   AcademicTerm.make({
     id: AcademicTermId.make(id),
     schoolId,
-    name: NonEmptyText.make(id),
+    name: NonBlankText.unsafeFromString(id),
     interval: interval(start, end),
   });
 
 describe("academic terms and cohort progression", () => {
+  it("round-trips its nested calendar-date range at the wire boundary", () => {
+    const encoded = {
+      id: "term-a",
+      schoolId: "school-1",
+      name: "First term",
+      interval: { start: "2026-08-01", end: "2027-01-31" },
+    };
+    const decoded = Schema.decodeSync(AcademicTerm)(encoded);
+
+    expect(CalendarDate.toString(decoded.interval.start)).toBe("2026-08-01");
+    expect(Schema.encodeSync(AcademicTerm)(decoded)).toEqual(encoded);
+  });
+
   it.effect("rejects overlapping school terms, including a shared boundary date", () =>
     Effect.gen(function* () {
       const error = yield* Effect.flip(
@@ -70,7 +82,7 @@ describe("academic terms and cohort progression", () => {
       const cohort = Cohort.make({
         id: CohortId.make("cohort-1"),
         schoolId,
-        name: NonEmptyText.make("2026 intake"),
+        name: NonBlankText.unsafeFromString("2026 intake"),
         entryTermId: terms[0]!.id,
         entryGradeLevel: GradeLevel.make(5),
       });
@@ -92,21 +104,19 @@ describe("school directory", () => {
       const subject = Subject.make({
         id: SubjectId.make("mathematics"),
         schoolId,
-        name: NonEmptyText.make("Mathematics"),
+        name: NonBlankText.unsafeFromString("Mathematics"),
         aliases: [],
-        externalRefs: [],
       });
       const offering = CourseOffering.make({
         id: CourseOfferingId.make("foreign-offering"),
         schoolId: SchoolId.make("other-school"),
         termId: academicTerm.id,
         subjectId: subject.id,
-        name: NonEmptyText.make("Mathematics"),
+        name: NonBlankText.unsafeFromString("Mathematics"),
         classGroupIds: [],
-        externalRefs: [],
       });
       const structure = SchoolDirectory.make({
-        school: School.make({ id: schoolId, name: NonEmptyText.make("School") }),
+        school: School.make({ id: schoolId, name: NonBlankText.unsafeFromString("School") }),
         subjectCatalog: SubjectCatalog.make({ schoolId, subjects: [subject] }),
         terms: [academicTerm],
         cohorts: [],
@@ -132,7 +142,7 @@ describe("course choices and enrollments", () => {
     id: CourseChoiceGroupId.make("choice-1"),
     schoolId,
     termId: AcademicTermId.make("term-1"),
-    name: NonEmptyText.make("Choose one language"),
+    name: NonBlankText.unsafeFromString("Choose one language"),
     offeringIds: [firstOffering, secondOffering],
     cardinality: { minimum: 1, maximum: 1 },
   });
@@ -188,9 +198,8 @@ describe("course choices and enrollments", () => {
       schoolId,
       termId: AcademicTermId.make("term-1"),
       subjectId,
-      name: NonEmptyText.make("Mathematics 8a"),
+      name: NonBlankText.unsafeFromString("Mathematics 8a"),
       classGroupIds: [],
-      externalRefs: [],
     });
     const enrollment = Enrollment.make({
       id: EnrollmentId.make("enrollment-1"),

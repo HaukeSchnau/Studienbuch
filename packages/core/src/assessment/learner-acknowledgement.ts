@@ -1,16 +1,16 @@
 import type * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
+import * as AggregateRevision from "../foundation/aggregate-revision";
+import * as Artifact from "../foundation/artifact";
+import * as CalendarDate from "../foundation/calendar-date";
 import {
-  AcknowledgementId,
-  ArtifactRef,
-  CalendarDate,
-  PersonId,
-  Revision,
-  SchoolMembershipId,
-} from "../foundation";
-import { Acknowledgement, ActorRef } from "../organization/acknowledgement";
+  type Acknowledgement,
+  ActorRef,
+  makeAcknowledgement as makeOrganizationAcknowledgement,
+} from "../organization/acknowledgement";
 import { AuthoritySnapshot, Capability, authorize } from "../organization/authority";
+import { AcknowledgementId, PersonId, SchoolMembershipId } from "../organization/identity";
 import { LegalAgePolicy, Person, legalStatusOn } from "../organization/person";
 
 export class AssessmentAcknowledgementActorError extends Schema.TaggedError<AssessmentAcknowledgementActorError>()(
@@ -28,7 +28,7 @@ export class AssessmentAcknowledgementActorError extends Schema.TaggedError<Asse
 /** A missing date of birth is not treated as minority: the legal decision must be explicit. */
 export class AssessmentLegalStatusUnknownError extends Schema.TaggedError<AssessmentLegalStatusUnknownError>()(
   "Assessment.LegalStatusUnknown",
-  { studentId: PersonId, on: CalendarDate },
+  { studentId: PersonId, on: CalendarDate.Schema },
 ) {}
 
 export class AssessmentAlreadyTeacherAttestedError extends Schema.TaggedError<AssessmentAlreadyTeacherAttestedError>()(
@@ -45,23 +45,20 @@ export interface ConfirmationRecordInput {
   readonly actor: ActorRef;
   readonly acknowledgementId: AcknowledgementId;
   readonly acknowledgedAt: DateTime.Utc;
-  readonly artifact?: ArtifactRef;
+  readonly artifact?: Artifact.Reference;
 }
 
 export const makeAcknowledgement = (
   input: ConfirmationRecordInput,
-  revision: Revision,
-): Acknowledgement => {
-  const fields = {
+  revision: AggregateRevision.Type,
+): Acknowledgement =>
+  makeOrganizationAcknowledgement({
     id: input.acknowledgementId,
     actor: input.actor,
     acknowledgedAt: input.acknowledgedAt,
     revision,
-  };
-  return input.artifact === undefined
-    ? Acknowledgement.make(fields)
-    : Acknowledgement.make({ ...fields, artifact: input.artifact });
-};
+    artifact: input.artifact,
+  });
 
 export const authorizeLearnerAcknowledgement = Effect.fn(
   "Assessment.authorizeLearnerAcknowledgement",
@@ -69,7 +66,7 @@ export const authorizeLearnerAcknowledgement = Effect.fn(
   readonly actor: ActorRef;
   readonly student: Person;
   readonly studentMembershipId: SchoolMembershipId;
-  readonly on: CalendarDate;
+  readonly on: CalendarDate.Type;
   readonly legalAgePolicy: LegalAgePolicy;
   readonly authority: AuthoritySnapshot;
 }) {

@@ -1,10 +1,12 @@
 import * as Schema from "effect/Schema";
-import { DataSourceId, ExternalId, ImportId, NonEmptyText, Revision } from "../foundation";
+import * as NonBlankText from "../foundation/non-blank-text";
+import { DataSourceId, ExternalId, ImportId } from "./identity";
+import * as SourceRevision from "./source-revision";
 
 /** A configured provider feed. Its id distinguishes multiple feeds from the same provider. */
 export const DataSource = Schema.Struct({
   id: DataSourceId,
-  provider: NonEmptyText,
+  provider: NonBlankText.Schema,
 });
 export interface DataSource extends Schema.Schema.Type<typeof DataSource> {}
 
@@ -16,7 +18,7 @@ export const SourceStamp = Schema.Struct({
   dataSource: DataSource,
   externalId: ExternalId,
   importId: ImportId,
-  revision: Revision,
+  revision: SourceRevision.Schema,
   observedAt: Schema.DateTimeUtcFromString,
 });
 export interface SourceStamp extends Schema.Schema.Type<typeof SourceStamp> {}

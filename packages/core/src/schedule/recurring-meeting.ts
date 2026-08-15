@@ -1,18 +1,11 @@
 import * as Schema from "effect/Schema";
-import {
-  BellPeriodId,
-  containsDate,
-  type CalendarDate,
-  CourseOfferingId,
-  DateInterval,
-  isoWeek,
-  NonEmptyText,
-  PersonId,
-  RecurringMeetingId,
-  TimeRange,
-  Weekday,
-  weekdayOf,
-} from "../foundation";
+import * as CalendarDate from "../foundation/calendar-date";
+import * as CalendarDateRange from "../foundation/calendar-date-range";
+import * as NonBlankText from "../foundation/non-blank-text";
+import { CourseOfferingId, PersonId } from "../organization/identity";
+import { BellPeriodId, RecurringMeetingId } from "./identity";
+import * as LocalTimeRange from "./local-time-range";
+import * as Weekday from "./weekday";
 
 export const RotationPattern = Schema.TaggedUnion({
   EveryWeek: {},
@@ -24,23 +17,33 @@ export type RotationPattern = typeof RotationPattern.Type;
 export const RecurringMeeting = Schema.Struct({
   id: RecurringMeetingId,
   courseOfferingId: CourseOfferingId,
-  weekday: Weekday,
-  timeRange: TimeRange,
+  weekday: Weekday.Schema,
+  timeRange: LocalTimeRange.Schema,
   rotation: RotationPattern,
-  effectiveInterval: DateInterval,
+  effectiveInterval: CalendarDateRange.Schema,
   bellPeriodId: Schema.optionalKey(BellPeriodId),
-  room: Schema.optionalKey(NonEmptyText),
+  room: Schema.optionalKey(NonBlankText.Schema),
   teacherIds: Schema.Array(PersonId),
 });
 export interface RecurringMeeting extends Schema.Schema.Type<typeof RecurringMeeting> {}
 
-export const rotationIncludesDate = (rotation: RotationPattern, date: CalendarDate): boolean =>
-  rotation._tag === "EveryWeek" ||
-  (rotation._tag === "OddIsoWeek" ? isoWeek(date) % 2 === 1 : isoWeek(date) % 2 === 0);
+const isoWeekIdentity = (date: CalendarDate.Type) => ({
+  year: CalendarDate.yearOfWeek(date),
+  week: CalendarDate.weekOfYear(date),
+});
 
-export const meetingOccursOn = (meeting: RecurringMeeting, date: CalendarDate): boolean =>
-  containsDate(meeting.effectiveInterval, date) &&
-  meeting.weekday === weekdayOf(date) &&
+export const rotationIncludesDate = (
+  rotation: RotationPattern,
+  date: CalendarDate.Type,
+): boolean => {
+  if (rotation._tag === "EveryWeek") return true;
+  const identity = isoWeekIdentity(date);
+  return rotation._tag === "OddIsoWeek" ? identity.week % 2 === 1 : identity.week % 2 === 0;
+};
+
+export const meetingOccursOn = (meeting: RecurringMeeting, date: CalendarDate.Type): boolean =>
+  CalendarDateRange.contains(meeting.effectiveInterval, date) &&
+  meeting.weekday === CalendarDate.dayOfWeek(date) &&
   rotationIncludesDate(meeting.rotation, date);
 
 export const rotationsCanCoincide = (left: RotationPattern, right: RotationPattern): boolean =>

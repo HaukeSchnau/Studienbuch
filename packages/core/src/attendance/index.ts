@@ -26,3 +26,4 @@ export {
   StudentNotEnrolledError,
   decideMissedLesson,
 } from "./decide-missed-lesson";
+export { AbsenceCaseId, MissedLessonId } from "./identity";

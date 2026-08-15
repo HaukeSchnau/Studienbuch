@@ -1,11 +1,7 @@
 import * as Effect from "effect/Effect";
-import {
-  LessonOccurrenceId,
-  type CalendarDate,
-  type RecurringMeetingId,
-  type ScheduleExceptionId,
-} from "../foundation";
+import * as CalendarDate from "../foundation/calendar-date";
 import { type AcademicCalendar, isSchoolDay } from "./academic-calendar";
+import { LessonOccurrenceId, type RecurringMeetingId, type ScheduleExceptionId } from "./identity";
 import {
   ConflictingScheduleExceptionsError,
   InvalidScheduleInputError,
@@ -17,16 +13,16 @@ import {
 import { meetingOccursOn, type RecurringMeeting } from "./recurring-meeting";
 
 export const lessonOccurrenceId = (target: LessonOccurrenceRef): LessonOccurrenceId =>
-  LessonOccurrenceId.make(`${target.meetingId}@${target.scheduledDate}`);
+  LessonOccurrenceId.make(`${target.meetingId}@${CalendarDate.toString(target.scheduledDate)}`);
 
 const targetKey = (target: LessonOccurrenceRef) =>
-  `${target.meetingId}\u0000${target.scheduledDate}`;
+  `${target.meetingId}\u0000${CalendarDate.toString(target.scheduledDate)}`;
 
 const exceptionOrder = (left: ScheduleException, right: ScheduleException) =>
   left.id.localeCompare(right.id);
 
 const occurrenceOrder = (left: LessonOccurrence, right: LessonOccurrence) =>
-  left.date.localeCompare(right.date) ||
+  CalendarDate.compare(left.date, right.date) ||
   left.timeRange.start - right.timeRange.start ||
   left.timeRange.end - right.timeRange.end ||
   left.courseOfferingId.localeCompare(right.courseOfferingId) ||
@@ -118,13 +114,8 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
   );
   const exceptionsByTarget = new Map<string, Array<ScheduleException>>();
 
-  const relevantExceptions = input.exceptions.filter(
-    (exception) =>
-      exception.target.scheduledDate === input.date ||
-      (exception._tag === "Rescheduled" && exception.date === input.date),
-  );
   const exceptionIds = new Set<ScheduleExceptionId>();
-  for (const exception of relevantExceptions) {
+  for (const exception of input.exceptions) {
     if (exceptionIds.has(exception.id)) {
       return yield* new InvalidScheduleInputError({
         reason: "DuplicateExceptionId",
@@ -132,6 +123,24 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
       });
     }
     exceptionIds.add(exception.id);
+
+    const key = targetKey(exception.target);
+    const group = exceptionsByTarget.get(key) ?? [];
+    group.push(exception);
+    exceptionsByTarget.set(key, group);
+  }
+
+  for (const group of exceptionsByTarget.values()) {
+    const conflict = validateExceptionGroup(group);
+    if (conflict !== undefined) return yield* conflict;
+  }
+
+  const relevantExceptions = input.exceptions.filter(
+    (exception) =>
+      CalendarDate.Equivalence(exception.target.scheduledDate, input.date) ||
+      (exception._tag === "Rescheduled" && CalendarDate.Equivalence(exception.date, input.date)),
+  );
+  for (const exception of relevantExceptions) {
     const meeting = meetingsById.get(exception.target.meetingId);
     if (meeting === undefined) {
       return yield* new UnresolvedScheduleExceptionError({
@@ -157,16 +166,6 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
         reason: "DestinationNotSchoolDay",
       });
     }
-
-    const key = targetKey(exception.target);
-    const group = exceptionsByTarget.get(key) ?? [];
-    group.push(exception);
-    exceptionsByTarget.set(key, group);
-  }
-
-  for (const group of exceptionsByTarget.values()) {
-    const conflict = validateExceptionGroup(group);
-    if (conflict !== undefined) return yield* conflict;
   }
 
   if (!isSchoolDay(input.calendar, input.date)) return [];
@@ -180,7 +179,10 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
   }
   for (const group of exceptionsByTarget.values()) {
     const rescheduled = group.find((exception) => exception._tag === "Rescheduled");
-    if (rescheduled?._tag === "Rescheduled" && rescheduled.date === input.date) {
+    if (
+      rescheduled?._tag === "Rescheduled" &&
+      CalendarDate.Equivalence(rescheduled.date, input.date)
+    ) {
       const meeting = meetingsById.get(rescheduled.target.meetingId);
       if (meeting !== undefined) {
         targets.set(targetKey(rescheduled.target), { meeting, target: rescheduled.target });
@@ -194,7 +196,7 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
     )
     .filter(
       (occurrence): occurrence is LessonOccurrence =>
-        occurrence !== undefined && occurrence.date === input.date,
+        occurrence !== undefined && CalendarDate.Equivalence(occurrence.date, input.date),
     )
     .sort(occurrenceOrder);
 });
@@ -202,7 +204,7 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
 export declare namespace materializeSchoolDay {
   export interface Input {
     readonly calendar: AcademicCalendar;
-    readonly date: CalendarDate;
+    readonly date: CalendarDate.Type;
     readonly meetings: ReadonlyArray<RecurringMeeting>;
     readonly exceptions: ReadonlyArray<ScheduleException>;
   }
