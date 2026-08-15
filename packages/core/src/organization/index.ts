@@ -8,11 +8,26 @@ export {
   gradeLevelAt,
   validateAcademicTerms,
 } from "./academic-term";
-export { Acknowledgement, ActorRef } from "./acknowledgement";
+export { Acknowledgement, ActorRef, makeAcknowledgement } from "./acknowledgement";
 export { AuthorityDenied, AuthoritySnapshot, Capability, authorize, may } from "./authority";
 export { School, Subject, SubjectCatalog, findSubject } from "./catalog";
 export { ClassGroup, CourseOffering } from "./course-offering";
 export { InvalidSchoolDirectory, SchoolDirectory, validateSchoolDirectory } from "./directory";
+export {
+  AcknowledgementId,
+  AcademicTermId,
+  ClassGroupId,
+  CohortId,
+  CourseChoiceGroupId,
+  CourseOfferingId,
+  EnrollmentId,
+  GuardianRelationshipId,
+  PersonId,
+  SchoolId,
+  SchoolMembershipId,
+  SubjectId,
+  TeachingAssignmentId,
+} from "./identity";
 export {
   CourseChoiceGroup,
   CourseChoiceViolation,
@@ -36,6 +51,7 @@ export {
 } from "./membership";
 export {
   LegalAgePolicy,
+  LeapDayAnniversary,
   LegalStatus,
   Person,
   PersonName,

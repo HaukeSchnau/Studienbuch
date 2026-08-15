@@ -1,14 +1,11 @@
 import type * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import {
-  AcknowledgementId,
-  ArtifactRef,
-  MissedLessonId,
-  NonEmptyText,
-  Revision,
-} from "../foundation";
-import { Acknowledgement, ActorRef } from "../organization/acknowledgement";
+import * as AggregateRevision from "../foundation/aggregate-revision";
+import * as Artifact from "../foundation/artifact";
+import * as CalendarDate from "../foundation/calendar-date";
+import * as NonBlankText from "../foundation/non-blank-text";
+import { ActorRef, makeAcknowledgement } from "../organization/acknowledgement";
 import {
   AuthorityDenied,
   AuthoritySnapshot,
@@ -16,6 +13,7 @@ import {
   authorize,
 } from "../organization/authority";
 import { Enrollment, isEnrollmentEffectiveOn } from "../organization/enrollment";
+import { AcknowledgementId } from "../organization/identity";
 import { LessonOccurrence } from "../schedule/lesson-occurrence";
 import {
   AbsenceCase,
@@ -23,6 +21,7 @@ import {
   MissedLesson,
   MissedLessonDecision,
 } from "./absence-case";
+import { MissedLessonId } from "./identity";
 
 export class MissedLessonNotFoundError extends Schema.TaggedError<MissedLessonNotFoundError>()(
   "Attendance.MissedLessonNotFound",
@@ -60,8 +59,8 @@ export const DecideMissedLessonError = Schema.Union([
 ]);
 export type DecideMissedLessonError = typeof DecideMissedLessonError.Type;
 
-const checkRevision = (absence: AbsenceCase, expectedRevision: Revision) =>
-  absence.revision === expectedRevision
+const checkRevision = (absence: AbsenceCase, expectedRevision: AggregateRevision.Type) =>
+  AggregateRevision.Equivalence(absence.revision, expectedRevision)
     ? Effect.void
     : Effect.fail(
         new ConcurrentAbsenceRevisionError({
@@ -69,19 +68,6 @@ const checkRevision = (absence: AbsenceCase, expectedRevision: Revision) =>
           actual: absence.revision,
         }),
       );
-
-const makeAcknowledgement = (
-  id: AcknowledgementId,
-  actor: ActorRef,
-  acknowledgedAt: DateTime.Utc,
-  revision: Revision,
-  artifact: ArtifactRef | undefined,
-) => {
-  const fields = { id, actor, acknowledgedAt, revision };
-  return artifact === undefined
-    ? Acknowledgement.make(fields)
-    : Acknowledgement.make({ ...fields, artifact });
-};
 
 export const decideMissedLesson = Effect.fn("Attendance.decideMissedLesson")(function* (
   input: decideMissedLesson.Input,
@@ -102,7 +88,7 @@ export const decideMissedLesson = Effect.fn("Attendance.decideMissedLesson")(fun
   if (
     lesson.lessonOccurrenceId !== input.occurrence.id ||
     lesson.courseOfferingId !== input.occurrence.courseOfferingId ||
-    input.absence.date !== input.occurrence.date
+    !CalendarDate.Equivalence(input.absence.date, input.occurrence.date)
   ) {
     return yield* new MissedLessonOccurrenceMismatchError({
       missedLessonId: lesson.id,
@@ -130,17 +116,17 @@ export const decideMissedLesson = Effect.fn("Attendance.decideMissedLesson")(fun
     input.authority,
   );
 
-  const nextRevision = Revision.make(input.absence.revision + 1);
+  const nextRevision = AggregateRevision.unsafeNext(input.absence.revision);
   let decision: MissedLessonDecision;
   if (input.decision._tag === "Excused") {
     decision = MissedLessonDecision.cases.Excused.make({
-      acknowledgement: makeAcknowledgement(
-        input.decision.acknowledgementId,
-        input.actor,
-        input.decidedAt,
-        nextRevision,
-        input.decision.artifact,
-      ),
+      acknowledgement: makeAcknowledgement({
+        id: input.decision.acknowledgementId,
+        actor: input.actor,
+        acknowledgedAt: input.decidedAt,
+        revision: nextRevision,
+        artifact: input.decision.artifact,
+      }),
     });
   } else {
     const fields = {
@@ -189,7 +175,7 @@ export const decideMissedLesson = Effect.fn("Attendance.decideMissedLesson")(fun
 export declare namespace decideMissedLesson {
   export interface Input {
     readonly absence: AbsenceCase;
-    readonly expectedRevision: Revision;
+    readonly expectedRevision: AggregateRevision.Type;
     readonly missedLessonId: MissedLessonId;
     /** Authoritative materialized occurrence loaded by the application boundary. */
     readonly occurrence: LessonOccurrence;
@@ -201,9 +187,9 @@ export declare namespace decideMissedLesson {
       | {
           readonly _tag: "Excused";
           readonly acknowledgementId: AcknowledgementId;
-          readonly artifact?: ArtifactRef;
+          readonly artifact?: Artifact.Reference;
         }
-      | { readonly _tag: "Rejected"; readonly reason?: NonEmptyText };
+      | { readonly _tag: "Rejected"; readonly reason?: NonBlankText.Type };
   }
 
   export type Error = DecideMissedLessonError;

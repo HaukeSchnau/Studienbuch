@@ -1,4 +1,5 @@
 export { AssessmentWeight, GradeAverage, GradeValue } from "./grading";
+export { AssessmentId, CourseStandingId, StandingRevisionId } from "./identity";
 export * as GradingPolicy from "./grading-policy";
 export {
   AssessmentAlreadyLearnerAcknowledgedError,

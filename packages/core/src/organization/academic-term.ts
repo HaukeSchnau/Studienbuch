@@ -1,13 +1,9 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import {
-  AcademicTermId,
-  CohortId,
-  DateInterval,
-  NonEmptyText,
-  SchoolId,
-  dateIntervalsOverlap,
-} from "../foundation";
+import * as CalendarDate from "../foundation/calendar-date";
+import * as CalendarDateRange from "../foundation/calendar-date-range";
+import * as NonBlankText from "../foundation/non-blank-text";
+import { AcademicTermId, CohortId, SchoolId } from "./identity";
 
 export const GradeLevel = Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 20 })).pipe(
   Schema.brand("GradeLevel"),
@@ -17,15 +13,15 @@ export type GradeLevel = typeof GradeLevel.Type;
 export const AcademicTerm = Schema.Struct({
   id: AcademicTermId,
   schoolId: SchoolId,
-  name: NonEmptyText,
-  interval: DateInterval,
+  name: NonBlankText.Schema,
+  interval: CalendarDateRange.Schema,
 });
 export interface AcademicTerm extends Schema.Schema.Type<typeof AcademicTerm> {}
 
 export const Cohort = Schema.Struct({
   id: CohortId,
   schoolId: SchoolId,
-  name: NonEmptyText,
+  name: NonBlankText.Schema,
   entryTermId: AcademicTermId,
   entryGradeLevel: GradeLevel,
 });
@@ -60,13 +56,13 @@ export const validateAcademicTerms = Effect.fn("Organization.validateAcademicTer
   terms: ReadonlyArray<AcademicTerm>,
 ) {
   const ordered = [...terms].sort((left, right) =>
-    left.interval.start.localeCompare(right.interval.start),
+    CalendarDate.compare(left.interval.start, right.interval.start),
   );
   for (const [index, first] of ordered.entries()) {
     for (const second of ordered.slice(index + 1)) {
       if (
         first.schoolId === second.schoolId &&
-        dateIntervalsOverlap(first.interval, second.interval)
+        CalendarDateRange.overlaps(first.interval, second.interval)
       ) {
         return yield* new OverlappingAcademicTerms({
           schoolId: first.schoolId,

@@ -1,17 +1,17 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
+import * as CalendarDate from "../foundation/calendar-date";
+import * as CalendarDateRange from "../foundation/calendar-date-range";
+import * as NonBlankText from "../foundation/non-blank-text";
 import {
   AcademicTermId,
-  CalendarDate,
   ClassGroupId,
   CourseChoiceGroupId,
   CourseOfferingId,
-  DateInterval,
   EnrollmentId,
-  NonEmptyText,
   SchoolId,
   SchoolMembershipId,
-} from "../foundation";
+} from "./identity";
 import type { CourseOffering } from "./course-offering";
 
 export const EnrollmentOrigin = Schema.TaggedUnion({
@@ -26,7 +26,7 @@ export const Enrollment = Schema.Struct({
   id: EnrollmentId,
   studentMembershipId: SchoolMembershipId,
   courseOfferingId: CourseOfferingId,
-  effective: DateInterval,
+  effective: CalendarDateRange.Schema,
   origin: EnrollmentOrigin,
 });
 export interface Enrollment extends Schema.Schema.Type<typeof Enrollment> {}
@@ -45,7 +45,7 @@ export const CourseChoiceGroup = Schema.Struct({
   id: CourseChoiceGroupId,
   schoolId: SchoolId,
   termId: AcademicTermId,
-  name: NonEmptyText,
+  name: NonBlankText.Schema,
   offeringIds: Schema.NonEmptyArray(CourseOfferingId),
   cardinality: SelectionCardinality,
 }).check(
@@ -91,8 +91,8 @@ export class EnrollmentNotRemovable extends Schema.TaggedError<EnrollmentNotRemo
 ) {}
 
 /** Effective intervals are closed; both boundary dates participate in the enrollment. */
-export const isEnrollmentEffectiveOn = (enrollment: Enrollment, date: CalendarDate) =>
-  enrollment.effective.start <= date && date <= enrollment.effective.end;
+export const isEnrollmentEffectiveOn = (enrollment: Enrollment, date: CalendarDate.Type) =>
+  CalendarDateRange.contains(enrollment.effective, date);
 
 export const validateCourseChoice = Effect.fn("Organization.validateCourseChoice")(function* (
   group: CourseChoiceGroup,

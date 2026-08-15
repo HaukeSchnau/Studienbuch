@@ -2,30 +2,28 @@ import { assert, describe, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 import * as Assessment from "./index.ts";
-import {
-  AcademicTermId,
-  AcknowledgementId,
-  AssessmentId,
-  CalendarDate,
-  CourseOfferingId,
-  CourseStandingId,
-  DateInterval,
-  NonEmptyText,
-  PersonId,
-  Revision,
-  SchoolId,
-  SchoolMembershipId,
-  StandingRevisionId,
-  SubjectId,
-} from "../foundation/index.ts";
+import * as AggregateRevision from "../foundation/aggregate-revision.ts";
+import * as CalendarDate from "../foundation/calendar-date.ts";
+import * as CalendarDateRange from "../foundation/calendar-date-range.ts";
+import * as NonBlankText from "../foundation/non-blank-text.ts";
 import { Acknowledgement, ActorRef } from "../organization/acknowledgement.ts";
 import { AuthoritySnapshot } from "../organization/authority.ts";
 import { CourseOffering } from "../organization/course-offering.ts";
+import {
+  AcademicTermId,
+  AcknowledgementId,
+  CourseOfferingId,
+  PersonId,
+  SchoolId,
+  SchoolMembershipId,
+  SubjectId,
+} from "../organization/identity.ts";
 import { SchoolMembership, StudentMembership } from "../organization/membership.ts";
 import { LegalAgePolicy, Person, PersonName } from "../organization/person.ts";
 
-const date = (value: string) => CalendarDate.make(value);
+const date = CalendarDate.unsafeFromString;
 const schoolId = SchoolId.make("school");
 const studentMembershipId = SchoolMembershipId.make("student");
 const teacherMembershipId = SchoolMembershipId.make("teacher");
@@ -41,13 +39,13 @@ const teacherActor = ActorRef.make({
   schoolMembershipId: teacherMembershipId,
 });
 const at = DateTime.makeUnsafe("2026-08-14T12:00:00Z");
-const activeSchoolYear = DateInterval.make({
+const activeSchoolYear = CalendarDateRange.Schema.make({
   start: date("2026-08-01"),
   end: date("2027-07-31"),
 });
 const student = Person.make({
   id: studentPersonId,
-  name: PersonName.make({ displayName: NonEmptyText.make("Student"), givenNames: [] }),
+  name: PersonName.make({ displayName: NonBlankText.Schema.make("Student"), givenNames: [] }),
   dateOfBirth: date("2000-01-01"),
 });
 const courseOffering = CourseOffering.make({
@@ -55,9 +53,8 @@ const courseOffering = CourseOffering.make({
   schoolId,
   termId: AcademicTermId.make("term"),
   subjectId: SubjectId.make("subject"),
-  name: NonEmptyText.make("Mathematics"),
+  name: NonBlankText.Schema.make("Mathematics"),
   classGroupIds: [],
-  externalRefs: [],
 });
 const authority = AuthoritySnapshot.make({
   memberships: [
@@ -81,23 +78,26 @@ const authority = AuthoritySnapshot.make({
   teachingAssignments: [],
   courseOfferings: [courseOffering],
 });
-const legalAgePolicy = LegalAgePolicy.make({ ageOfMajority: 18 });
+const legalAgePolicy = LegalAgePolicy.make({
+  ageOfMajority: 18,
+  leapDayAnniversary: "March1",
+});
 const acknowledgement = (id: string, actor: ActorRef, revision: number) =>
   Acknowledgement.make({
     id: AcknowledgementId.make(id),
     actor,
     acknowledgedAt: at,
-    revision: Revision.make(revision),
+    revision: AggregateRevision.Schema.make(revision),
   });
 const written = (id: string, value: number, confirmed: boolean) => {
   const fields = {
-    id: AssessmentId.make(id),
+    id: Assessment.AssessmentId.make(id),
     studentMembershipId,
     courseOfferingId,
     assessedOn: date("2026-08-14"),
     value: Assessment.GradeValue.make(value),
     weight: Assessment.AssessmentWeight.make(1),
-    revision: Revision.make(confirmed ? 2 : 0),
+    revision: AggregateRevision.Schema.make(confirmed ? 2 : 0),
   };
   return confirmed
     ? Assessment.WrittenAssessment.make({
@@ -165,7 +165,7 @@ describe("written assessment confirmation", () => {
       const initial = written("written", 12, false);
       const attested = yield* Assessment.attestWritten({
         assessment: initial,
-        expectedRevision: Revision.make(0),
+        expectedRevision: AggregateRevision.Schema.make(0),
         actor: teacherActor,
         authority,
         acknowledgementId: AcknowledgementId.make("written-teacher"),
@@ -175,7 +175,7 @@ describe("written assessment confirmation", () => {
       const stale = yield* Effect.flip(
         Assessment.acknowledgeWritten({
           assessment: attested,
-          expectedRevision: Revision.make(0),
+          expectedRevision: AggregateRevision.Schema.make(0),
           actor: studentActor,
           student,
           legalAgePolicy,
@@ -188,7 +188,7 @@ describe("written assessment confirmation", () => {
 
       const confirmed = yield* Assessment.acknowledgeWritten({
         assessment: attested,
-        expectedRevision: Revision.make(1),
+        expectedRevision: AggregateRevision.Schema.make(1),
         actor: studentActor,
         student,
         legalAgePolicy,
@@ -205,7 +205,7 @@ describe("written assessment confirmation", () => {
     Effect.gen(function* () {
       const failure = yield* Assessment.attestWritten({
         assessment: written("invalid-attestation", 16, false),
-        expectedRevision: Revision.make(0),
+        expectedRevision: AggregateRevision.Schema.make(0),
         actor: teacherActor,
         authority,
         acknowledgementId: AcknowledgementId.make("invalid-teacher-attestation"),
@@ -224,7 +224,7 @@ describe("written assessment confirmation", () => {
       const failure = yield* Effect.flip(
         Assessment.acknowledgeWritten({
           assessment: written("unknown-age", 10, false),
-          expectedRevision: Revision.make(0),
+          expectedRevision: AggregateRevision.Schema.make(0),
           actor: studentActor,
           student: unknownAge,
           legalAgePolicy,
@@ -240,20 +240,59 @@ describe("written assessment confirmation", () => {
 
 describe("standing revisions", () => {
   const root = Assessment.StandingRevision.make({
-    id: StandingRevisionId.make("standing-r1"),
+    id: Assessment.StandingRevisionId.make("standing-r1"),
     value: Assessment.GradeValue.make(10),
     observedOn: date("2026-08-01"),
     teacherAttestation: acknowledgement("standing-r1-teacher", teacherActor, 0),
     learnerAcknowledgement: acknowledgement("standing-r1-learner", studentActor, 1),
   });
   const standing = Assessment.CourseStanding.make({
-    id: CourseStandingId.make("standing"),
+    id: Assessment.CourseStandingId.make("standing"),
     studentMembershipId,
     courseOfferingId,
     kind: "Oral",
-    revision: Revision.make(2),
+    revision: AggregateRevision.Schema.make(2),
     currentRevisionId: root.id,
     revisions: [root],
+  });
+
+  it("round-trips civil dates and nested acknowledgement revisions through the wire schema", () => {
+    const encoded = Schema.encodeSync(Assessment.CourseStanding)(standing);
+    assert.strictEqual(encoded.revisions[0].observedOn, "2026-08-01");
+
+    const decoded = Schema.decodeSync(Assessment.CourseStanding)(encoded);
+    assert.strictEqual(CalendarDate.toString(decoded.revisions[0].observedOn), "2026-08-01");
+    assert.deepEqual(Schema.encodeSync(Assessment.CourseStanding)(decoded), encoded);
+
+    assert.throws(() =>
+      Schema.decodeSync(Assessment.CourseStanding)({
+        ...encoded,
+        revision: 0,
+      }),
+    );
+
+    assert.throws(() =>
+      Schema.decodeSync(Assessment.CourseStanding)({
+        ...encoded,
+        currentRevisionId: "standing-r2",
+        revisions: [
+          encoded.revisions[0],
+          {
+            id: "standing-r2",
+            value: 12,
+            observedOn: "2026-07-31",
+            supersedes: encoded.revisions[0].id,
+          },
+        ],
+      }),
+    );
+  });
+
+  it("keeps assessment aggregate identities nominally distinct", () => {
+    const assessmentId = Assessment.AssessmentId.make("assessment");
+    // @ts-expect-error An assessment is not a course-standing aggregate.
+    const standingId: Assessment.CourseStandingId = assessmentId;
+    assert.strictEqual(standingId, "assessment");
   });
 
   it.effect(
@@ -261,14 +300,14 @@ describe("standing revisions", () => {
     () =>
       Effect.gen(function* () {
         const second = Assessment.StandingRevision.make({
-          id: StandingRevisionId.make("standing-r2"),
+          id: Assessment.StandingRevisionId.make("standing-r2"),
           value: Assessment.GradeValue.make(12),
           observedOn: date("2026-08-14"),
           supersedes: root.id,
         });
         const revised = yield* Assessment.reviseStanding({
           standing,
-          expectedRevision: Revision.make(2),
+          expectedRevision: AggregateRevision.Schema.make(2),
           revision: second,
         });
         assert.strictEqual(
@@ -282,7 +321,7 @@ describe("standing revisions", () => {
 
         const attested = yield* Assessment.attestStanding({
           standing: revised,
-          expectedRevision: Revision.make(3),
+          expectedRevision: AggregateRevision.Schema.make(3),
           revisionId: second.id,
           actor: teacherActor,
           authority,
@@ -296,7 +335,7 @@ describe("standing revisions", () => {
         );
         const confirmed = yield* Assessment.acknowledgeStanding({
           standing: attested,
-          expectedRevision: Revision.make(4),
+          expectedRevision: AggregateRevision.Schema.make(4),
           revisionId: second.id,
           actor: studentActor,
           student,
@@ -316,7 +355,7 @@ describe("standing revisions", () => {
   it.effect("refuses branching, stale, backward-dated, and pre-confirmed revisions", () =>
     Effect.gen(function* () {
       const invalid = Assessment.StandingRevision.make({
-        id: StandingRevisionId.make("standing-invalid"),
+        id: Assessment.StandingRevisionId.make("standing-invalid"),
         value: Assessment.GradeValue.make(11),
         observedOn: date("2026-07-31"),
         supersedes: root.id,
@@ -324,7 +363,7 @@ describe("standing revisions", () => {
       const chronology = yield* Effect.flip(
         Assessment.reviseStanding({
           standing,
-          expectedRevision: Revision.make(2),
+          expectedRevision: AggregateRevision.Schema.make(2),
           revision: invalid,
         }),
       );
@@ -333,7 +372,7 @@ describe("standing revisions", () => {
       const stale = yield* Effect.flip(
         Assessment.reviseStanding({
           standing,
-          expectedRevision: Revision.make(1),
+          expectedRevision: AggregateRevision.Schema.make(1),
           revision: invalid,
         }),
       );
@@ -341,14 +380,14 @@ describe("standing revisions", () => {
 
       const injected = Assessment.StandingRevision.make({
         ...invalid,
-        id: StandingRevisionId.make("injected"),
+        id: Assessment.StandingRevisionId.make("injected"),
         observedOn: date("2026-08-02"),
         teacherAttestation: acknowledgement("injected", teacherActor, 0),
       });
       const injection = yield* Effect.flip(
         Assessment.reviseStanding({
           standing,
-          expectedRevision: Revision.make(2),
+          expectedRevision: AggregateRevision.Schema.make(2),
           revision: injected,
         }),
       );
@@ -357,12 +396,12 @@ describe("standing revisions", () => {
       const branch = Assessment.StandingRevision.make({
         ...invalid,
         observedOn: date("2026-08-02"),
-        supersedes: StandingRevisionId.make("not-current"),
+        supersedes: Assessment.StandingRevisionId.make("not-current"),
       });
       const branching = yield* Effect.flip(
         Assessment.reviseStanding({
           standing,
-          expectedRevision: Revision.make(2),
+          expectedRevision: AggregateRevision.Schema.make(2),
           revision: branch,
         }),
       );

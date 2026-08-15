@@ -1,31 +1,33 @@
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import {
-  ArtifactId,
-  CalendarDate,
-  CourseOfferingId,
-  DateInterval,
-  NonEmptyText,
-  PersonId,
-  Revision,
-  SchoolId,
-  SchoolMembershipId,
-  SchoolTaskId,
-  TrimmedNonEmptyString,
-} from "../foundation/index.ts";
+import * as AggregateRevision from "../foundation/aggregate-revision.ts";
+import * as Artifact from "../foundation/artifact.ts";
+import * as CalendarDate from "../foundation/calendar-date.ts";
+import * as CalendarDateRange from "../foundation/calendar-date-range.ts";
+import * as NonBlankText from "../foundation/non-blank-text.ts";
 import { ActorRef } from "../organization/acknowledgement.ts";
 import { AuthoritySnapshot } from "../organization/authority.ts";
+import {
+  CourseOfferingId,
+  PersonId,
+  SchoolId,
+  SchoolMembershipId,
+} from "../organization/identity.ts";
 import { SchoolMembership, StudentMembership } from "../organization/membership.ts";
+import { SchoolTaskId } from "./identity.ts";
 import * as Tasks from "./index.ts";
 
-const date = (value: string) => CalendarDate.make(value);
+const date = CalendarDate.unsafeFromString;
 const taskId = (value: string) => SchoolTaskId.make(value);
-const title = (value: string) => NonEmptyText.make(value);
+const title = (value: string) => NonBlankText.Schema.make(value);
 const courseId = (value: string) => CourseOfferingId.make(value);
 const studentMembershipId = SchoolMembershipId.make("student-membership");
 const studentPersonId = PersonId.make("student-person");
-const effective = DateInterval.make({ start: date("2026-01-01"), end: date("2026-12-31") });
+const effective = CalendarDateRange.Schema.make({
+  start: date("2026-01-01"),
+  end: date("2026-12-31"),
+});
 const actor = ActorRef.make({ personId: studentPersonId, schoolMembershipId: studentMembershipId });
 const authority = AuthoritySnapshot.make({
   memberships: [
@@ -55,7 +57,7 @@ const makeTask = (overrides: Partial<Tasks.SchoolTask> = {}): Tasks.SchoolTask =
   Tasks.SchoolTask.make({
     id: taskId("task-1"),
     studentMembershipId,
-    revision: Revision.make(0),
+    revision: AggregateRevision.initial,
     title: title("Read chapter 4"),
     dueDate: date("2026-03-29"),
     attachments: [],
@@ -64,9 +66,9 @@ const makeTask = (overrides: Partial<Tasks.SchoolTask> = {}): Tasks.SchoolTask =
   });
 
 describe("SchoolTask schema", () => {
-  it.effect("supports tasks without a course and validates artifact references", () =>
+  it.effect("round-trips a nested task without a course and validates artifact references", () =>
     Effect.gen(function* () {
-      const decoded = yield* Schema.decodeEffect(Tasks.SchoolTask)({
+      const encoded: typeof Tasks.SchoolTask.Encoded = {
         id: "task-1",
         studentMembershipId: "student-membership",
         revision: 0,
@@ -77,23 +79,26 @@ describe("SchoolTask schema", () => {
           {
             id: "artifact-1",
             mediaType: "image/jpeg",
-            digest: "sha256:abc",
+            contentDigest: { algorithm: "sha256", value: "abc" },
           },
         ],
         status: { _tag: "Open" },
-      });
+      };
+      const decoded = yield* Schema.decodeEffect(Tasks.SchoolTask)(encoded);
 
       expect(decoded.courseOfferingId).toBeUndefined();
       expect(decoded.attachments).toEqual([
         {
-          id: ArtifactId.make("artifact-1"),
-          mediaType: TrimmedNonEmptyString.make("image/jpeg"),
-          digest: TrimmedNonEmptyString.make("sha256:abc"),
+          id: Artifact.Id.make("artifact-1"),
+          mediaType: Artifact.MediaType.make("image/jpeg"),
+          contentDigest: { algorithm: "sha256", value: "abc" },
         },
       ]);
       const attachment = decoded.attachments[0];
       if (attachment === undefined) return yield* Effect.die("Expected a decoded attachment");
       expect("uri" in attachment).toBe(false);
+      expect(CalendarDate.toString(decoded.dueDate)).toBe("2026-03-29");
+      expect(yield* Schema.encodeEffect(Tasks.SchoolTask)(decoded)).toEqual(encoded);
     }),
   );
 });
@@ -151,29 +156,33 @@ describe("task lifecycle", () => {
       );
 
       expect(original.status._tag).toBe("Open");
-      expect(completed.status).toEqual({ _tag: "Completed", completedOn: "2026-03-28" });
+      expect(completed.status._tag).toBe("Completed");
+      if (completed.status._tag === "Completed") {
+        expect(CalendarDate.toString(completed.status.completedOn)).toBe("2026-03-28");
+      }
       expect(reopened.status).toEqual({ _tag: "Open" });
-      expect(cancelled.status).toEqual({
-        _tag: "Cancelled",
-        cancelledOn: "2026-03-29",
-        reason: "No longer assigned",
-      });
+      expect(cancelled.status._tag).toBe("Cancelled");
+      if (cancelled.status._tag === "Cancelled") {
+        expect(CalendarDate.toString(cancelled.status.cancelledOn)).toBe("2026-03-29");
+        expect(cancelled.status.reason).toBe("No longer assigned");
+      }
       const cancelledWithoutReason = yield* Tasks.cancel(
         transition(makeTask({ id: taskId("without-reason") })),
         date("2026-03-29"),
       );
-      expect(cancelledWithoutReason.status).toEqual({
-        _tag: "Cancelled",
-        cancelledOn: "2026-03-29",
-      });
+      expect(cancelledWithoutReason.status._tag).toBe("Cancelled");
+      if (cancelledWithoutReason.status._tag === "Cancelled") {
+        expect(CalendarDate.toString(cancelledWithoutReason.status.cancelledOn)).toBe("2026-03-29");
+        expect(cancelledWithoutReason.status.reason).toBeUndefined();
+      }
     }),
   );
 
   it.effect("rejects a stale task transition", () =>
     Effect.gen(function* () {
-      const task = makeTask({ revision: Revision.make(2) });
+      const task = makeTask({ revision: AggregateRevision.Schema.make(2) });
       const failure = yield* Tasks.complete(
-        { ...transition(task), expectedRevision: Revision.make(1) },
+        { ...transition(task), expectedRevision: AggregateRevision.Schema.make(1) },
         date("2026-03-29"),
       ).pipe(Effect.flip);
       expect(failure).toMatchObject({ _tag: "Tasks.ConcurrentRevision", actual: 2, expected: 1 });
@@ -241,5 +250,19 @@ describe("task selectors", () => {
 
     expect(Tasks.selectVisible(tasks, today).map((task) => task.id)).toEqual(["course", "later"]);
     expect(Tasks.selectArchived(tasks, today).map((task) => task.id)).toEqual(["old", "completed"]);
+  });
+
+  it("sorts equal, separately-created dates deterministically", () => {
+    const equalDateA = date("2026-04-10");
+    const equalDateB = date("2026-04-10");
+    expect(equalDateA).not.toBe(equalDateB);
+    expect(CalendarDate.Equivalence(equalDateA, equalDateB)).toBe(true);
+
+    const sameDay = [
+      makeTask({ id: taskId("z"), title: title("Zulu"), dueDate: equalDateA }),
+      makeTask({ id: taskId("a"), title: title("Alpha"), dueDate: equalDateB }),
+    ];
+
+    expect(Tasks.sort(sameDay).map((task) => task.id)).toEqual(["a", "z"]);
   });
 });

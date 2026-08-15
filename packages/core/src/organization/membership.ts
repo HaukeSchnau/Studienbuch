@@ -1,15 +1,15 @@
 import * as Schema from "effect/Schema";
+import * as CalendarDateRange from "../foundation/calendar-date-range";
 import {
   ClassGroupId,
   CohortId,
   CourseOfferingId,
-  DateInterval,
   GuardianRelationshipId,
   PersonId,
   SchoolId,
   SchoolMembershipId,
   TeachingAssignmentId,
-} from "../foundation";
+} from "./identity";
 
 export const SchoolRole = Schema.Literals([
   "Student",
@@ -25,7 +25,7 @@ export const SchoolMembership = Schema.Struct({
   schoolId: SchoolId,
   personId: PersonId,
   roles: Schema.NonEmptyArray(SchoolRole),
-  effective: DateInterval,
+  effective: CalendarDateRange.Schema,
 });
 export interface SchoolMembership extends Schema.Schema.Type<typeof SchoolMembership> {}
 
@@ -49,7 +49,7 @@ export const GuardianRelationship = Schema.Struct({
   guardianPersonId: PersonId,
   studentMembershipId: SchoolMembershipId,
   authority: GuardianAuthority,
-  effective: DateInterval,
+  effective: CalendarDateRange.Schema,
 });
 export interface GuardianRelationship extends Schema.Schema.Type<typeof GuardianRelationship> {}
 
@@ -57,6 +57,6 @@ export const TeachingAssignment = Schema.Struct({
   id: TeachingAssignmentId,
   teacherMembershipId: SchoolMembershipId,
   courseOfferingId: CourseOfferingId,
-  effective: DateInterval,
+  effective: CalendarDateRange.Schema,
 });
 export interface TeachingAssignment extends Schema.Schema.Type<typeof TeachingAssignment> {}

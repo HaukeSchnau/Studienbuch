@@ -1,44 +1,42 @@
 import { assert, describe, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
-import { CourseOffering, Enrollment, EnrollmentOrigin } from "../organization/index.ts";
+import * as Schema from "effect/Schema";
+import * as AggregateRevision from "../foundation/aggregate-revision";
+import * as CalendarDate from "../foundation/calendar-date";
+import * as CalendarDateRange from "../foundation/calendar-date-range";
+import * as NonBlankText from "../foundation/non-blank-text";
 import * as Attendance from "./index.ts";
+import { ActorRef } from "../organization/acknowledgement";
+import { AuthoritySnapshot } from "../organization/authority";
+import { CourseOffering } from "../organization/course-offering";
+import { Enrollment, EnrollmentOrigin } from "../organization/enrollment";
 import {
-  ActorRef,
-  AuthoritySnapshot,
-  GuardianRelationship,
-  LegalAgePolicy,
-  Person,
-  PersonName,
-  SchoolMembership,
-  StudentMembership,
-  TeachingAssignment,
-} from "../organization/index.ts";
-import { LessonOccurrence } from "../schedule/index.ts";
-import {
-  AbsenceCaseId,
   AcademicTermId,
   AcknowledgementId,
-  CalendarDate,
   CourseOfferingId,
-  DateInterval,
-  GuardianRelationshipId,
   EnrollmentId,
-  LessonOccurrenceId,
-  LocalTime,
-  MissedLessonId,
-  NonEmptyText,
+  GuardianRelationshipId,
   PersonId,
-  Revision,
-  RecurringMeetingId,
   SchoolId,
   SchoolMembershipId,
   SubjectId,
   TeachingAssignmentId,
-  TimeRange,
-} from "../foundation/index.ts";
+} from "../organization/identity";
+import {
+  GuardianRelationship,
+  SchoolMembership,
+  StudentMembership,
+  TeachingAssignment,
+} from "../organization/membership";
+import { LegalAgePolicy, Person, PersonName } from "../organization/person";
+import { LessonOccurrenceId, RecurringMeetingId } from "../schedule/identity";
+import { LessonOccurrence } from "../schedule/lesson-occurrence";
+import * as LocalTime from "../schedule/local-time";
+import * as LocalTimeRange from "../schedule/local-time-range";
+import { AbsenceCaseId, MissedLessonId } from "./identity";
 
-const date = (value: string) => CalendarDate.make(value);
+const date = CalendarDate.unsafeFromString;
 const schoolId = SchoolId.make("school");
 const studentMembershipId = SchoolMembershipId.make("student-membership");
 const guardianMembershipId = SchoolMembershipId.make("guardian-membership");
@@ -47,7 +45,10 @@ const studentPersonId = PersonId.make("student-person");
 const guardianPersonId = PersonId.make("guardian-person");
 const teacherPersonId = PersonId.make("teacher-person");
 const occurrenceDate = date("2026-08-14");
-const effective = DateInterval.make({ start: date("2026-08-01"), end: date("2027-07-31") });
+const effective = CalendarDateRange.Schema.make({
+  start: date("2026-08-01"),
+  end: date("2027-07-31"),
+});
 const now = DateTime.makeUnsafe("2026-08-14T12:00:00Z");
 
 const member = (
@@ -80,11 +81,11 @@ const occurrence = (courseOfferingId: CourseOfferingId, index: number) =>
     id: LessonOccurrenceId.make(`occurrence-${index + 1}`),
     meetingId: RecurringMeetingId.make(`meeting-${index + 1}`),
     courseOfferingId,
-    scheduledDate: occurrenceDate,
-    date: occurrenceDate,
-    timeRange: TimeRange.make({
-      start: LocalTime.make(480 + index * 60),
-      end: LocalTime.make(525 + index * 60),
+    scheduledDate: date("2026-08-14"),
+    date: date("2026-08-14"),
+    timeRange: LocalTimeRange.Schema.make({
+      start: LocalTime.unsafeFromParts(8 + index, 0),
+      end: LocalTime.unsafeFromParts(8 + index, 45),
     }),
     teacherIds: [teacherPersonId],
     appliedExceptionIds: [],
@@ -100,9 +101,8 @@ const offerings = courseIds.map((id) =>
     schoolId,
     termId: AcademicTermId.make("term"),
     subjectId: SubjectId.make(`subject-${id}`),
-    name: NonEmptyText.make(`Course ${id}`),
+    name: NonBlankText.Schema.make(`Course ${id}`),
     classGroupIds: [],
-    externalRefs: [],
   }),
 );
 const enrollments = courseIds.map((courseOfferingId, index) =>
@@ -139,7 +139,7 @@ const authority = AuthoritySnapshot.make({
 });
 const student = Person.make({
   id: studentPersonId,
-  name: PersonName.make({ displayName: NonEmptyText.make("Student"), givenNames: [] }),
+  name: PersonName.make({ displayName: NonBlankText.Schema.make("Student"), givenNames: [] }),
   dateOfBirth: date("2012-01-01"),
 });
 const absence = Attendance.AbsenceCase.make({
@@ -147,8 +147,8 @@ const absence = Attendance.AbsenceCase.make({
   studentMembershipId,
   date: occurrenceDate,
   reason: Attendance.AbsenceReason.cases.Illness.make({}),
-  detailsRevision: Revision.make(0),
-  revision: Revision.make(0),
+  detailsRevision: AggregateRevision.initial,
+  revision: AggregateRevision.initial,
   missedLessons: [
     Attendance.MissedLesson.make({
       id: lessonIds[0],
@@ -166,14 +166,30 @@ const absence = Attendance.AbsenceCase.make({
 });
 
 describe("attendance workflow", () => {
+  it("round-trips a nested absence through its wire schema", () => {
+    const encoded = Schema.encodeSync(Attendance.AbsenceCase)(absence);
+    assert.strictEqual(encoded.date, "2026-08-14");
+
+    const decoded = Schema.decodeSync(Attendance.AbsenceCase)(encoded);
+    assert.strictEqual(CalendarDate.Equivalence(decoded.date, absence.date), true);
+    assert.deepEqual(Schema.encodeSync(Attendance.AbsenceCase)(decoded), encoded);
+  });
+
   it.effect("models a two-lesson absence becoming partially and then mixed resolved", () =>
     Effect.gen(function* () {
+      // These values were decoded independently, so matching must be structural.
+      assert.notStrictEqual(absence.date, occurrences[0].date);
+      assert.strictEqual(CalendarDate.Equivalence(absence.date, occurrences[0].date), true);
+
       const acknowledged = yield* Attendance.acknowledge({
         absence,
-        expectedRevision: Revision.make(0),
+        expectedRevision: AggregateRevision.initial,
         actor: guardianActor,
         student,
-        legalAgePolicy: LegalAgePolicy.make({ ageOfMajority: 18 }),
+        legalAgePolicy: LegalAgePolicy.make({
+          ageOfMajority: 18,
+          leapDayAnniversary: "March1",
+        }),
         authority,
         acknowledgementId: AcknowledgementId.make("guardian-ack"),
         acknowledgedAt: now,
@@ -185,7 +201,7 @@ describe("attendance workflow", () => {
 
       const partial = yield* Attendance.decideMissedLesson({
         absence: acknowledged,
-        expectedRevision: Revision.make(1),
+        expectedRevision: AggregateRevision.Schema.make(1),
         missedLessonId: lessonIds[0],
         occurrence: occurrences[0],
         enrollments,
@@ -203,14 +219,17 @@ describe("attendance workflow", () => {
 
       const resolved = yield* Attendance.decideMissedLesson({
         absence: partial,
-        expectedRevision: Revision.make(2),
+        expectedRevision: AggregateRevision.Schema.make(2),
         missedLessonId: lessonIds[1],
         occurrence: occurrences[1],
         enrollments,
         actor: teacherActor,
         authority,
         decidedAt: now,
-        decision: { _tag: "Rejected", reason: NonEmptyText.make("Insufficient evidence") },
+        decision: {
+          _tag: "Rejected",
+          reason: NonBlankText.Schema.make("Insufficient evidence"),
+        },
       });
       assert.deepEqual(Attendance.status(resolved), {
         _tag: "ResolvedMixed",
@@ -221,7 +240,7 @@ describe("attendance workflow", () => {
       const duplicate = yield* Effect.flip(
         Attendance.decideMissedLesson({
           absence: resolved,
-          expectedRevision: Revision.make(3),
+          expectedRevision: AggregateRevision.Schema.make(3),
           missedLessonId: lessonIds[1],
           occurrence: occurrences[1],
           enrollments,
@@ -240,10 +259,13 @@ describe("attendance workflow", () => {
       const failure = yield* Effect.flip(
         Attendance.acknowledge({
           absence,
-          expectedRevision: Revision.make(1),
+          expectedRevision: AggregateRevision.Schema.make(1),
           actor: guardianActor,
           student,
-          legalAgePolicy: LegalAgePolicy.make({ ageOfMajority: 18 }),
+          legalAgePolicy: LegalAgePolicy.make({
+            ageOfMajority: 18,
+            leapDayAnniversary: "March1",
+          }),
           authority,
           acknowledgementId: AcknowledgementId.make("stale-ack"),
           acknowledgedAt: now,
@@ -257,16 +279,22 @@ describe("attendance workflow", () => {
     Effect.gen(function* () {
       const unrelated = Person.make({
         id: PersonId.make("unrelated-minor"),
-        name: PersonName.make({ displayName: NonEmptyText.make("Unrelated"), givenNames: [] }),
+        name: PersonName.make({
+          displayName: NonBlankText.Schema.make("Unrelated"),
+          givenNames: [],
+        }),
         dateOfBirth: date("2015-01-01"),
       });
       const failure = yield* Effect.flip(
         Attendance.acknowledge({
           absence,
-          expectedRevision: Revision.make(0),
+          expectedRevision: AggregateRevision.initial,
           actor: guardianActor,
           student: unrelated,
-          legalAgePolicy: LegalAgePolicy.make({ ageOfMajority: 18 }),
+          legalAgePolicy: LegalAgePolicy.make({
+            ageOfMajority: 18,
+            leapDayAnniversary: "March1",
+          }),
           authority,
           acknowledgementId: AcknowledgementId.make("forged-age-ack"),
           acknowledgedAt: now,
@@ -280,7 +308,7 @@ describe("attendance workflow", () => {
     Effect.gen(function* () {
       const failure = yield* Attendance.decideMissedLesson({
         absence,
-        expectedRevision: Revision.make(0),
+        expectedRevision: AggregateRevision.initial,
         missedLessonId: lessonIds[0],
         occurrence: occurrences[0],
         enrollments,
@@ -297,10 +325,13 @@ describe("attendance workflow", () => {
     Effect.gen(function* () {
       const acknowledged = yield* Attendance.acknowledge({
         absence,
-        expectedRevision: Revision.make(0),
+        expectedRevision: AggregateRevision.initial,
         actor: guardianActor,
         student,
-        legalAgePolicy: LegalAgePolicy.make({ ageOfMajority: 18 }),
+        legalAgePolicy: LegalAgePolicy.make({
+          ageOfMajority: 18,
+          leapDayAnniversary: "March1",
+        }),
         authority,
         acknowledgementId: AcknowledgementId.make("guardian-ack-for-forgery-test"),
         acknowledgedAt: now,
@@ -310,7 +341,7 @@ describe("attendance workflow", () => {
       );
       const failure = yield* Attendance.decideMissedLesson({
         absence: acknowledged,
-        expectedRevision: Revision.make(1),
+        expectedRevision: AggregateRevision.Schema.make(1),
         missedLessonId: lessonIds[0],
         occurrence: forged,
         enrollments,

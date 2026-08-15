@@ -1,36 +1,27 @@
 import { assert, describe, it } from "@effect/vitest";
+import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-import {
-  AcademicTermId,
-  BellPeriodId,
-  CalendarDate,
-  CourseOfferingId,
-  DateInterval,
-  LocalTime,
-  NonEmptyText,
-  PersonId,
-  RecurringMeetingId,
-  ScheduleExceptionId,
-  SchoolId,
-  TimeRange,
-} from "../foundation/index.ts";
+import * as CalendarDate from "../foundation/calendar-date";
+import * as CalendarDateRange from "../foundation/calendar-date-range";
+import * as NonBlankText from "../foundation/non-blank-text";
+import { AcademicTermId, CourseOfferingId, PersonId, SchoolId } from "../organization/identity";
 import * as Organization from "../organization/index.ts";
 import * as Schedule from "./index.ts";
 
-const date = (value: string) => CalendarDate.make(value);
-const time = (value: number) => LocalTime.make(value);
-const range = (start: number, end: number) =>
-  TimeRange.make({ start: time(start), end: time(end) });
+const date = CalendarDate.unsafeFromString;
+const time = Schedule.LocalTime.unsafeFromParts;
+const range = (start: Schedule.LocalTime.Type, end: Schedule.LocalTime.Type) =>
+  Schedule.LocalTimeRange.Schema.make({ start, end });
 const interval = (start: string, end: string) =>
-  DateInterval.make({ start: date(start), end: date(end) });
+  CalendarDateRange.Schema.make({ start: date(start), end: date(end) });
 
 const schoolId = SchoolId.make("school-1");
 const term = Organization.AcademicTerm.make({
   id: AcademicTermId.make("term-1"),
   schoolId,
-  name: NonEmptyText.make("First term"),
+  name: NonBlankText.Schema.make("First term"),
   interval: interval("2022-12-01", "2023-02-28"),
 });
 
@@ -40,7 +31,7 @@ const calendar = Schedule.AcademicCalendar.make({
   terms: [term],
   closures: [
     Schedule.CalendarClosure.make({
-      name: NonEmptyText.make("Winter break"),
+      name: NonBlankText.Schema.make("Winter break"),
       interval: interval("2022-12-23", "2023-01-06"),
     }),
   ],
@@ -53,25 +44,67 @@ const meeting = (
   overrides: Partial<Parameters<typeof Schedule.RecurringMeeting.make>[0]> = {},
 ) =>
   Schedule.RecurringMeeting.make({
-    id: RecurringMeetingId.make(id),
+    id: Schedule.RecurringMeetingId.make(id),
     courseOfferingId: CourseOfferingId.make(`course-${id}`),
     weekday: 1,
-    timeRange: range(8 * 60, 8 * 60 + 45),
+    timeRange: range(time(8, 0), time(8, 45)),
     rotation: everyWeek,
     effectiveInterval: term.interval,
-    room: NonEmptyText.make("A1"),
+    room: NonBlankText.Schema.make("A1"),
     teacherIds: [PersonId.make(`teacher-${id}`)],
     ...overrides,
   });
+
+describe("local schedule time", () => {
+  it("parses only the supported exact forms with millisecond precision", () => {
+    const minutePrecision = Option.getOrThrow(Schedule.LocalTime.fromString("08:05"));
+    const secondPrecision = Option.getOrThrow(Schedule.LocalTime.fromString("08:05:09"));
+    const millisecondPrecision = Option.getOrThrow(Schedule.LocalTime.fromString("08:05:09.007"));
+
+    assert.equal(Schedule.LocalTime.toString(minutePrecision), "08:05:00.000");
+    assert.equal(Schedule.LocalTime.second(secondPrecision), 9);
+    assert.equal(Schedule.LocalTime.millisecond(millisecondPrecision), 7);
+    assert.equal(Schedule.LocalTime.hour(millisecondPrecision), 8);
+    assert.equal(Schedule.LocalTime.minute(millisecondPrecision), 5);
+    assert.isTrue(Option.isNone(Schedule.LocalTime.fromString("8:05")));
+    assert.isTrue(Option.isNone(Schedule.LocalTime.fromString("24:00")));
+    assert.isTrue(Option.isNone(Schedule.LocalTime.fromString("08:05:09.1")));
+    assert.isTrue(Option.isNone(Schedule.LocalTime.fromString("08:05:09.0000")));
+  });
+
+  it("covers the millisecond boundaries and round-trips its numeric wire value", () => {
+    const first = Schedule.LocalTime.unsafeFromMilliseconds(0);
+    const last = Schedule.LocalTime.unsafeFromMilliseconds(86_399_999);
+    assert.equal(Schedule.LocalTime.toString(first), "00:00:00.000");
+    assert.equal(Schedule.LocalTime.toString(last), "23:59:59.999");
+    assert.isTrue(Option.isNone(Schedule.LocalTime.fromMilliseconds(-1)));
+    assert.isTrue(Option.isNone(Schedule.LocalTime.fromMilliseconds(86_400_000)));
+
+    const decoded = Schema.decodeSync(Schedule.LocalTime.Schema)(29_109_007);
+    assert.equal(Schema.encodeSync(Schedule.LocalTime.Schema)(decoded), 29_109_007);
+    assert.isTrue(Schedule.LocalTime.Equivalence(decoded, time(8, 5, 9, 7)));
+  });
+
+  it("models ranges as non-empty and half-open", () => {
+    const start = time(9, 0);
+    const end = time(9, 0, 0, 1);
+    const value = range(start, end);
+    assert.isTrue(Schedule.LocalTimeRange.contains(value, start));
+    assert.isFalse(Schedule.LocalTimeRange.contains(value, end));
+    assert.equal(Duration.toMillis(Schedule.LocalTimeRange.duration(value)), 1);
+    assert.isTrue(
+      Option.isNone(Schedule.LocalTimeRange.Schema.makeOption({ start: end, end: start })),
+    );
+    assert.isTrue(Option.isNone(Schedule.LocalTimeRange.Schema.makeOption({ start, end: start })));
+  });
+});
 
 describe("academic calendar", () => {
   it("treats both closure boundaries as closed and finds the next school day", () => {
     assert.isFalse(Schedule.isSchoolDay(calendar, date("2022-12-23")));
     assert.isFalse(Schedule.isSchoolDay(calendar, date("2023-01-06")));
-    assert.deepEqual(
-      Option.getOrUndefined(Schedule.nextSchoolDay(calendar, date("2023-01-05"))),
-      date("2023-01-09"),
-    );
+    const next = Option.getOrThrow(Schedule.nextSchoolDay(calendar, date("2023-01-05")));
+    assert.isTrue(CalendarDate.Equivalence(next, date("2023-01-09")));
   });
 
   it.effect("suppresses recurring meetings during closures", () =>
@@ -86,42 +119,40 @@ describe("academic calendar", () => {
     }),
   );
 
-  it.effect("rejects foreign-school and overlapping calendar terms", () =>
-    Effect.gen(function* () {
-      const malformed = {
-        schoolId,
-        schoolDays: calendar.schoolDays,
-        terms: [
-          term,
-          Organization.AcademicTerm.make({
-            ...term,
-            id: AcademicTermId.make("foreign"),
-            schoolId: SchoolId.make("other-school"),
-          }),
-        ],
-        closures: [],
-      };
-      yield* Schema.decodeEffect(Schedule.AcademicCalendar)(malformed).pipe(Effect.flip);
-    }),
-  );
+  it("rejects foreign-school and overlapping calendar terms", () => {
+    const malformed = {
+      schoolId,
+      schoolDays: calendar.schoolDays,
+      terms: [
+        term,
+        Organization.AcademicTerm.make({
+          ...term,
+          id: AcademicTermId.make("foreign"),
+          schoolId: SchoolId.make("other-school"),
+        }),
+      ],
+      closures: [],
+    };
+    assert.isTrue(Option.isNone(Schedule.AcademicCalendar.makeOption(malformed)));
+  });
 });
 
 describe("half-open schedule ranges", () => {
   it("allows adjacent bell periods and finds actual overlaps", () => {
     const first = Schedule.BellPeriod.make({
-      id: BellPeriodId.make("period-1"),
-      label: NonEmptyText.make("1"),
-      timeRange: range(8 * 60, 8 * 60 + 45),
+      id: Schedule.BellPeriodId.make("period-1"),
+      label: NonBlankText.Schema.make("1"),
+      timeRange: range(time(8, 0), time(8, 45)),
     });
     const adjacent = Schedule.BellPeriod.make({
-      id: BellPeriodId.make("period-2"),
-      label: NonEmptyText.make("2"),
-      timeRange: range(8 * 60 + 45, 9 * 60 + 30),
+      id: Schedule.BellPeriodId.make("period-2"),
+      label: NonBlankText.Schema.make("2"),
+      timeRange: range(time(8, 45), time(9, 30)),
     });
     const overlapping = Schedule.BellPeriod.make({
-      id: BellPeriodId.make("period-3"),
-      label: NonEmptyText.make("Overlap"),
-      timeRange: range(8 * 60 + 30, 9 * 60),
+      id: Schedule.BellPeriodId.make("period-3"),
+      label: NonBlankText.Schema.make("Overlap"),
+      timeRange: range(time(8, 30), time(9, 0)),
     });
 
     assert.deepEqual(Schedule.findBellPeriodCollisions([adjacent, first]), []);
@@ -141,6 +172,35 @@ describe("half-open schedule ranges", () => {
     assert.deepEqual(Schedule.findRecurringMeetingCollisions([odd, even]), []);
     assert.equal(Schedule.findRecurringMeetingCollisions([odd, meeting("weekly")]).length, 1);
   });
+
+  it("recognizes separately decoded equal occurrence dates", () => {
+    const firstDate = date("2023-01-09");
+    const secondDate = date("2023-01-09");
+    const first = Schedule.LessonOccurrence.make({
+      id: Schedule.LessonOccurrenceId.make("occurrence-a"),
+      meetingId: Schedule.RecurringMeetingId.make("meeting-a"),
+      courseOfferingId: CourseOfferingId.make("course-a"),
+      scheduledDate: firstDate,
+      date: firstDate,
+      timeRange: range(time(8, 0), time(8, 45)),
+      teacherIds: [],
+      appliedExceptionIds: [],
+    });
+    const second = Schedule.LessonOccurrence.make({
+      id: Schedule.LessonOccurrenceId.make("occurrence-b"),
+      meetingId: Schedule.RecurringMeetingId.make("meeting-b"),
+      courseOfferingId: CourseOfferingId.make("course-b"),
+      scheduledDate: secondDate,
+      date: secondDate,
+      timeRange: range(time(8, 30), time(9, 0)),
+      teacherIds: [],
+      appliedExceptionIds: [],
+    });
+
+    assert.deepEqual(Schedule.findLessonOccurrenceCollisions([first, second]), [
+      { leftId: first.id, rightId: second.id },
+    ]);
+  });
 });
 
 describe("ISO week rotation", () => {
@@ -152,11 +212,22 @@ describe("ISO week rotation", () => {
     // 2023-01-01 belongs to ISO week 52 of 2022.
     assert.isTrue(Schedule.meetingOccursOn(evenSunday, date("2023-01-01")));
   });
+
+  it("uses the ISO week-numbering year at a calendar-year boundary", () => {
+    const oddFriday = meeting("week-year", {
+      weekday: 5,
+      rotation: Schedule.RotationPattern.cases.OddIsoWeek.make({}),
+      effectiveInterval: interval("2020-12-28", "2021-01-03"),
+    });
+    // 2021-01-01 is Friday of ISO week 53 in ISO week-numbering year 2020.
+    assert.isTrue(Schedule.meetingOccursOn(oddFriday, date("2021-01-01")));
+  });
 });
 
 describe("lesson occurrence materialization", () => {
   const monday = date("2023-01-09");
   const tuesday = date("2023-01-10");
+  const wednesday = date("2023-01-11");
   const baseMeeting = meeting("math");
   const target = Schedule.LessonOccurrenceRef.make({
     meetingId: baseMeeting.id,
@@ -171,7 +242,7 @@ describe("lesson occurrence materialization", () => {
         meetings: [baseMeeting],
         exceptions: [
           Schedule.ScheduleException.cases.Cancelled.make({
-            id: ScheduleExceptionId.make("cancel"),
+            id: Schedule.ScheduleExceptionId.make("cancel"),
             target,
           }),
         ],
@@ -183,10 +254,10 @@ describe("lesson occurrence materialization", () => {
   it.effect("moves an occurrence to another date while preserving its identity", () =>
     Effect.gen(function* () {
       const rescheduled = Schedule.ScheduleException.cases.Rescheduled.make({
-        id: ScheduleExceptionId.make("reschedule"),
+        id: Schedule.ScheduleExceptionId.make("reschedule"),
         target,
         date: tuesday,
-        timeRange: range(10 * 60, 10 * 60 + 45),
+        timeRange: range(time(10, 0), time(10, 45)),
       });
       const originalDay = yield* Schedule.materializeSchoolDay({
         calendar,
@@ -205,9 +276,9 @@ describe("lesson occurrence materialization", () => {
       assert.equal(destinationDay.length, 1);
       const occurrence = destinationDay[0];
       if (occurrence === undefined) return yield* Effect.die("Expected the rescheduled occurrence");
-      assert.equal(occurrence.scheduledDate, monday);
-      assert.equal(occurrence.date, tuesday);
-      assert.equal(occurrence.id, `${baseMeeting.id}@${monday}`);
+      assert.isTrue(CalendarDate.Equivalence(occurrence.scheduledDate, monday));
+      assert.isTrue(CalendarDate.Equivalence(occurrence.date, tuesday));
+      assert.equal(occurrence.id, `${baseMeeting.id}@${CalendarDate.toString(monday)}`);
     }),
   );
 
@@ -223,10 +294,10 @@ describe("lesson occurrence materialization", () => {
         meetings: [baseMeeting],
         exceptions: [
           Schedule.ScheduleException.cases.Rescheduled.make({
-            id: ScheduleExceptionId.make("holiday-reschedule"),
+            id: Schedule.ScheduleExceptionId.make("holiday-reschedule"),
             target: holidayTarget,
             date: monday,
-            timeRange: range(10 * 60, 10 * 60 + 45),
+            timeRange: range(time(10, 0), time(10, 45)),
           }),
         ],
       }).pipe(Effect.flip);
@@ -245,9 +316,9 @@ describe("lesson occurrence materialization", () => {
         meetings: [baseMeeting],
         exceptions: [
           Schedule.ScheduleException.cases.Cancelled.make({
-            id: ScheduleExceptionId.make("unrelated-stale"),
+            id: Schedule.ScheduleExceptionId.make("unrelated-stale"),
             target: Schedule.LessonOccurrenceRef.make({
-              meetingId: RecurringMeetingId.make("missing"),
+              meetingId: Schedule.RecurringMeetingId.make("missing"),
               scheduledDate: tuesday,
             }),
           }),
@@ -259,8 +330,8 @@ describe("lesson occurrence materialization", () => {
 
   it.effect("fails conflicting exception operations deterministically", () =>
     Effect.gen(function* () {
-      const firstExceptionId = ScheduleExceptionId.make("room-a");
-      const secondExceptionId = ScheduleExceptionId.make("room-z");
+      const firstExceptionId = Schedule.ScheduleExceptionId.make("room-a");
+      const secondExceptionId = Schedule.ScheduleExceptionId.make("room-z");
       const failure = yield* Schedule.materializeSchoolDay({
         calendar,
         date: monday,
@@ -269,12 +340,43 @@ describe("lesson occurrence materialization", () => {
           Schedule.ScheduleException.cases.RoomChanged.make({
             id: secondExceptionId,
             target,
-            room: NonEmptyText.make("B2"),
+            room: NonBlankText.Schema.make("B2"),
           }),
           Schedule.ScheduleException.cases.RoomChanged.make({
             id: firstExceptionId,
             target,
-            room: NonEmptyText.make("C3"),
+            room: NonBlankText.Schema.make("C3"),
+          }),
+        ],
+      }).pipe(Effect.flip);
+
+      assert.equal(failure._tag, "Schedule.ConflictingExceptions");
+      if (failure._tag === "Schedule.ConflictingExceptions") {
+        assert.deepEqual(failure.exceptionIds, [firstExceptionId, secondExceptionId]);
+      }
+    }),
+  );
+
+  it.effect("detects conflicting reschedules before selecting one destination day", () =>
+    Effect.gen(function* () {
+      const firstExceptionId = Schedule.ScheduleExceptionId.make("reschedule-tuesday");
+      const secondExceptionId = Schedule.ScheduleExceptionId.make("reschedule-wednesday");
+      const failure = yield* Schedule.materializeSchoolDay({
+        calendar,
+        date: tuesday,
+        meetings: [baseMeeting],
+        exceptions: [
+          Schedule.ScheduleException.cases.Rescheduled.make({
+            id: secondExceptionId,
+            target,
+            date: wednesday,
+            timeRange: range(time(10, 0), time(10, 45)),
+          }),
+          Schedule.ScheduleException.cases.Rescheduled.make({
+            id: firstExceptionId,
+            target,
+            date: tuesday,
+            timeRange: range(time(10, 0), time(10, 45)),
           }),
         ],
       }).pipe(Effect.flip);
@@ -289,7 +391,7 @@ describe("lesson occurrence materialization", () => {
   it.effect("reports an exception whose target cannot be resolved", () =>
     Effect.gen(function* () {
       const missingTarget = Schedule.LessonOccurrenceRef.make({
-        meetingId: RecurringMeetingId.make("missing"),
+        meetingId: Schedule.RecurringMeetingId.make("missing"),
         scheduledDate: monday,
       });
       const failure = yield* Schedule.materializeSchoolDay({
@@ -298,7 +400,7 @@ describe("lesson occurrence materialization", () => {
         meetings: [baseMeeting],
         exceptions: [
           Schedule.ScheduleException.cases.Cancelled.make({
-            id: ScheduleExceptionId.make("unresolved"),
+            id: Schedule.ScheduleExceptionId.make("unresolved"),
             target: missingTarget,
           }),
         ],
@@ -313,8 +415,8 @@ describe("lesson occurrence materialization", () => {
 
   it.effect("orders results independently of input order", () =>
     Effect.gen(function* () {
-      const later = meeting("later", { timeRange: range(11 * 60, 11 * 60 + 45) });
-      const earlier = meeting("earlier", { timeRange: range(9 * 60, 9 * 60 + 45) });
+      const later = meeting("later", { timeRange: range(time(11, 0), time(11, 45)) });
+      const earlier = meeting("earlier", { timeRange: range(time(9, 0), time(9, 45)) });
       const first = yield* Schedule.materializeSchoolDay({
         calendar,
         date: monday,
@@ -327,7 +429,10 @@ describe("lesson occurrence materialization", () => {
         meetings: [earlier, later],
         exceptions: [],
       });
-      assert.deepEqual(first, second);
+      const encodeOccurrences = Schema.encodeEffect(Schema.Array(Schedule.LessonOccurrence));
+      const encodedFirst = yield* encodeOccurrences(first);
+      const encodedSecond = yield* encodeOccurrences(second);
+      assert.deepEqual(encodedFirst, encodedSecond);
       assert.deepEqual(
         first.map((occurrence) => occurrence.meetingId),
         [earlier.id, later.id],

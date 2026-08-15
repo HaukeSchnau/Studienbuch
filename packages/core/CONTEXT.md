@@ -2,10 +2,36 @@
 
 Studienbuch Core describes school life independently of persistence, synchronization, transport, and user interface concerns.
 
+## Shared values
+
+**Calendar date**:
+A timezone-free ISO calendar day such as 2026-08-15. It has no clock time or UTC offset and is encoded as `YYYY-MM-DD`.
+_Avoid_: JavaScript `Date`, timestamp, date string
+
+**Calendar-date range**:
+A closed range of calendar dates whose start and end dates are both included.
+_Avoid_: Date interval, when that could imply instants or times
+
+**Local time**:
+A wall-clock position within one day, represented with millisecond precision and no date, timezone, or UTC offset.
+_Avoid_: Duration, timestamp, minutes
+
+**Local-time range**:
+A half-open range of local times that includes its start and excludes its end.
+_Avoid_: Duration, bell period when no period identity is present
+
+**Aggregate revision**:
+A monotonic version used to detect concurrent changes to one domain aggregate.
+_Avoid_: Source revision, timestamp, global version
+
+**Non-blank text**:
+User- or provider-authored text that contains at least one non-whitespace character; its original spacing is preserved.
+_Avoid_: Identifier, normalized label
+
 ## Academic structure
 
 **School directory**:
-A school-scoped collection of terms, cohorts, class groups, course offerings, choices, and enrollment facts.
+A school-scoped snapshot of terms, cohorts, class groups, course offerings, choices, and enrollment facts used to validate their relationships as a whole.
 _Avoid_: Academic structure, school configuration
 
 **Subject**:
@@ -38,12 +64,32 @@ _Avoid_: Semester when the institution does not use semesters
 
 ## Scheduling
 
+**Academic calendar**:
+The school-day policy formed by academic terms, enabled weekdays, and calendar closures.
+_Avoid_: Calendar when the school-day rules are meant
+
+**School day**:
+A date within an academic term, on an enabled weekday, and outside every calendar closure.
+_Avoid_: Weekday, working day
+
+**Calendar closure**:
+A closed range of dates on which ordinary school activity is suspended.
+_Avoid_: Holiday when the closure may have another cause
+
+**Bell schedule**:
+The set of named bell periods that applies to a school for a range of dates.
+_Avoid_: Timetable
+
+**Bell period**:
+A named, half-open range of local wall-clock time; it does not by itself represent a lesson.
+_Avoid_: Lesson, duration
+
 **Recurring meeting**:
 A rule that places a course offering at a local time on matching school dates.
 _Avoid_: Timetable entry
 
 **Lesson occurrence**:
-The dated realization of a recurring meeting.
+A dated realization of a recurring meeting with both its originally scheduled identity and its effective date, time, teacher, and room.
 _Avoid_: Recurring lesson
 
 **Schedule exception**:
@@ -63,6 +109,14 @@ _Avoid_: Course absence
 **Acknowledgement**:
 Evidence that an authorized actor accepted or confirmed a specific revision of a domain fact.
 _Avoid_: Signature, confirmation boolean
+
+**Legal-age policy**:
+The age of majority and the explicit non-leap-year anniversary convention used to evaluate a person's legal status on a calendar date.
+_Avoid_: A hard-coded birthday calculation
+
+**Evidence artifact**:
+An immutable content reference attached as supporting evidence; the content itself is managed outside Core.
+_Avoid_: File when referring only to its domain reference
 
 ## Assessment
 
@@ -97,6 +151,22 @@ _Avoid_: Homework when the item may represent other work
 **Source stamp**:
 The provider identity, source revision, external identity, and observation time attached to imported information.
 _Avoid_: Sync metadata
+
+**Source observation**:
+One provider record as observed during an import, together with its source stamp and raw value.
+_Avoid_: Authoritative domain fact
+
+**Source revision**:
+A provider sequence used to order observations of one external record within one data source.
+_Avoid_: Aggregate revision, global version
+
+**External identifier**:
+An identity assigned to a record by another system and interpreted only within its data source.
+_Avoid_: Domain identifier
+
+**Entity link**:
+A persistent correspondence from a provider-scoped external identity to an internal subject or course-offering identity. Several providers may identify the same internal entity.
+_Avoid_: Storing provider identifiers on organization entities
 
 **Override**:
 An explicit user-owned replacement for a sourced value that remains until relinquished.

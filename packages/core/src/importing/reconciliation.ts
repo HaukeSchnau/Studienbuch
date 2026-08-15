@@ -1,7 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Equal from "effect/Equal";
 import * as Schema from "effect/Schema";
-import { Revision } from "../foundation";
 import {
   ProvenancedValue,
   UserOverride,
@@ -9,6 +8,7 @@ import {
   sourcedValue,
 } from "./provenanced-value";
 import { DataSource, SourceObservation, SourceStamp } from "./source";
+import * as SourceRevision from "./source-revision";
 
 export const IncomingReconciliationResult = <Value extends Schema.Top>(value: Value) => {
   const provenanced = ProvenancedValue(value);
@@ -143,10 +143,11 @@ export const reconcileIncoming = <Value>(
   if (!sameSourceIdentity(previous.stamp, incoming.stamp)) {
     return { _tag: "Conflict", value: current, incoming, reason: "DifferentSource" };
   }
-  if (incoming.stamp.revision < previous.stamp.revision) {
+  const revisionOrder = SourceRevision.compare(incoming.stamp.revision, previous.stamp.revision);
+  if (revisionOrder < 0) {
     return { _tag: "Stale", value: current, rejectedObservation: incoming };
   }
-  if (incoming.stamp.revision === previous.stamp.revision) {
+  if (revisionOrder === 0) {
     return jsonEquals(previous.rawValue, incoming.rawValue) &&
       equivalent(previous.value, incoming.value)
       ? { _tag: "Duplicate", value: current, observation: incoming }
@@ -179,7 +180,7 @@ export const reconcileSourceDeletion = <Value>(
   if (!sameSourceIdentity(source.stamp, deletion)) {
     return { _tag: "Retained", value: current, reason: "DifferentSource" };
   }
-  if (deletion.revision <= source.stamp.revision) {
+  if (SourceRevision.compare(deletion.revision, source.stamp.revision) <= 0) {
     return { _tag: "Retained", value: current, reason: "DeletionNotNewer" };
   }
   if (current._tag === "Sourced") return { _tag: "Deleted", previous: current };
@@ -209,5 +210,3 @@ export const overrideFrom = <Value>(
   changedBy: UserOverride<Value>["changedBy"],
   changedAt: UserOverride<Value>["changedAt"],
 ): UserOverride<Value> => ({ value, changedBy, changedAt });
-
-export const nextRevision = (revision: Revision): Revision => Revision.make(revision + 1);

@@ -1,13 +1,8 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import {
-  AssessmentId,
-  CalendarDate,
-  CourseOfferingId,
-  NonEmptyText,
-  Revision,
-  SchoolMembershipId,
-} from "../foundation";
+import * as AggregateRevision from "../foundation/aggregate-revision";
+import * as CalendarDate from "../foundation/calendar-date";
+import * as NonBlankText from "../foundation/non-blank-text";
 import { Acknowledgement } from "../organization/acknowledgement";
 import {
   AuthorityDenied,
@@ -16,8 +11,10 @@ import {
   authorize,
 } from "../organization/authority";
 import { LegalAgePolicy, Person } from "../organization/person";
+import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import { InvalidGradeValueError, Service as GradingPolicy } from "./grading-policy";
 import { AssessmentWeight, GradeValue } from "./grading";
+import { AssessmentId } from "./identity";
 import {
   AssessmentAlreadyLearnerAcknowledgedError,
   AssessmentAlreadyTeacherAttestedError,
@@ -32,11 +29,11 @@ export const WrittenAssessment = Schema.Struct({
   id: AssessmentId,
   studentMembershipId: SchoolMembershipId,
   courseOfferingId: CourseOfferingId,
-  title: Schema.optionalKey(NonEmptyText),
-  assessedOn: CalendarDate,
+  title: Schema.optionalKey(NonBlankText.Schema),
+  assessedOn: CalendarDate.Schema,
   value: GradeValue,
   weight: AssessmentWeight,
-  revision: Revision,
+  revision: AggregateRevision.Schema,
   teacherAttestation: Schema.optionalKey(Acknowledgement),
   learnerAcknowledgement: Schema.optionalKey(Acknowledgement),
 }).check(
@@ -46,8 +43,9 @@ export const WrittenAssessment = Schema.Struct({
         (record): record is Acknowledgement => record !== undefined,
       );
       return (
-        records.every((record) => record.revision <= assessment.revision) &&
-        new Set(records.map((record) => record.id)).size === records.length
+        records.every(
+          (record) => AggregateRevision.compare(record.revision, assessment.revision) <= 0,
+        ) && new Set(records.map((record) => record.id)).size === records.length
       );
     },
     { expected: "assessment evidence from an existing revision with unique evidence IDs" },
@@ -64,7 +62,7 @@ export const confirmedWritten = (
 
 export class ConcurrentWrittenAssessmentRevisionError extends Schema.TaggedError<ConcurrentWrittenAssessmentRevisionError>()(
   "Assessment.ConcurrentWrittenAssessmentRevision",
-  { expected: Revision, actual: Revision },
+  { expected: AggregateRevision.Schema, actual: AggregateRevision.Schema },
 ) {}
 
 export const AttestWrittenError = Schema.Union([
@@ -84,7 +82,7 @@ export const AcknowledgeWrittenError = Schema.Union([
 ]);
 export type AcknowledgeWrittenError = typeof AcknowledgeWrittenError.Type;
 
-const checkRevision = (assessment: WrittenAssessment, expectedRevision: Revision) =>
+const checkRevision = (assessment: WrittenAssessment, expectedRevision: AggregateRevision.Type) =>
   assessment.revision === expectedRevision
     ? Effect.void
     : Effect.fail(
@@ -113,7 +111,7 @@ export const attestWritten = Effect.fn("Assessment.attestWrittenAssessment")(fun
   );
   return WrittenAssessment.make(
     Object.assign({}, input.assessment, {
-      revision: Revision.make(input.assessment.revision + 1),
+      revision: AggregateRevision.unsafeNext(input.assessment.revision),
       teacherAttestation: makeAcknowledgement(input, input.assessment.revision),
     }),
   );
@@ -122,7 +120,7 @@ export const attestWritten = Effect.fn("Assessment.attestWrittenAssessment")(fun
 export declare namespace attestWritten {
   export interface Input extends ConfirmationRecordInput {
     readonly assessment: WrittenAssessment;
-    readonly expectedRevision: Revision;
+    readonly expectedRevision: AggregateRevision.Type;
     readonly authority: AuthoritySnapshot;
   }
 
@@ -148,7 +146,7 @@ export const acknowledgeWritten = Effect.fn("Assessment.acknowledgeWrittenAssess
   });
   return WrittenAssessment.make(
     Object.assign({}, input.assessment, {
-      revision: Revision.make(input.assessment.revision + 1),
+      revision: AggregateRevision.unsafeNext(input.assessment.revision),
       learnerAcknowledgement: makeAcknowledgement(input, input.assessment.revision),
     }),
   );
@@ -157,7 +155,7 @@ export const acknowledgeWritten = Effect.fn("Assessment.acknowledgeWrittenAssess
 export declare namespace acknowledgeWritten {
   export interface Input extends ConfirmationRecordInput {
     readonly assessment: WrittenAssessment;
-    readonly expectedRevision: Revision;
+    readonly expectedRevision: AggregateRevision.Type;
     readonly student: Person;
     readonly legalAgePolicy: LegalAgePolicy;
     readonly authority: AuthoritySnapshot;

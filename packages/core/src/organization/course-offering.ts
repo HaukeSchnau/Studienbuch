@@ -1,20 +1,19 @@
 import * as Schema from "effect/Schema";
+import * as NonBlankText from "../foundation/non-blank-text";
 import {
   AcademicTermId,
   ClassGroupId,
   CohortId,
   CourseOfferingId,
-  ExternalRef,
-  NonEmptyText,
   SchoolId,
   SubjectId,
-} from "../foundation";
+} from "./identity";
 
 export const ClassGroup = Schema.Struct({
   id: ClassGroupId,
   schoolId: SchoolId,
   termId: AcademicTermId,
-  name: NonEmptyText,
+  name: NonBlankText.Schema,
   cohortId: Schema.optionalKey(CohortId),
 });
 export interface ClassGroup extends Schema.Schema.Type<typeof ClassGroup> {}
@@ -24,8 +23,7 @@ export const CourseOffering = Schema.Struct({
   schoolId: SchoolId,
   termId: AcademicTermId,
   subjectId: SubjectId,
-  name: NonEmptyText,
+  name: NonBlankText.Schema,
   classGroupIds: Schema.Array(ClassGroupId),
-  externalRefs: Schema.Array(ExternalRef),
 });
 export interface CourseOffering extends Schema.Schema.Type<typeof CourseOffering> {}

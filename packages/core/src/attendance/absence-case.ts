@@ -1,21 +1,17 @@
 import * as Schema from "effect/Schema";
+import * as AggregateRevision from "../foundation/aggregate-revision";
+import * as CalendarDate from "../foundation/calendar-date";
+import * as NonBlankText from "../foundation/non-blank-text";
 import { Acknowledgement, ActorRef } from "../organization/acknowledgement";
-import {
-  AbsenceCaseId,
-  CalendarDate,
-  CourseOfferingId,
-  LessonOccurrenceId,
-  MissedLessonId,
-  NonEmptyText,
-  Revision,
-  SchoolMembershipId,
-} from "../foundation";
+import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
+import { LessonOccurrenceId } from "../schedule/identity";
+import { AbsenceCaseId, MissedLessonId } from "./identity";
 
 export const AbsenceReason = Schema.TaggedUnion({
   Illness: {},
   Appointment: {},
   SchoolActivity: {},
-  Other: { description: NonEmptyText },
+  Other: { description: NonBlankText.Schema },
 });
 export type AbsenceReason = typeof AbsenceReason.Type;
 
@@ -25,8 +21,8 @@ export const MissedLessonDecision = Schema.TaggedUnion({
   Rejected: {
     decidedBy: ActorRef,
     decidedAt: Schema.DateTimeUtcFromString,
-    revision: Revision,
-    reason: Schema.optionalKey(NonEmptyText),
+    revision: AggregateRevision.Schema,
+    reason: Schema.optionalKey(NonBlankText.Schema),
   },
 });
 export type MissedLessonDecision = typeof MissedLessonDecision.Type;
@@ -47,18 +43,19 @@ export interface MissedLesson extends Schema.Schema.Type<typeof MissedLesson> {}
 export const AbsenceCase = Schema.Struct({
   id: AbsenceCaseId,
   studentMembershipId: SchoolMembershipId,
-  date: CalendarDate,
+  date: CalendarDate.Schema,
   reason: AbsenceReason,
-  detailsRevision: Revision,
-  revision: Revision,
+  detailsRevision: AggregateRevision.Schema,
+  revision: AggregateRevision.Schema,
   acknowledgement: Schema.optionalKey(Acknowledgement),
   missedLessons: Schema.NonEmptyArray(MissedLesson),
 }).check(
   Schema.makeFilter(
     (absence) =>
-      absence.detailsRevision <= absence.revision &&
+      AggregateRevision.compare(absence.detailsRevision, absence.revision) <= 0 &&
       (absence.acknowledgement === undefined ||
-        absence.acknowledgement.revision === absence.detailsRevision) &&
+        AggregateRevision.compare(absence.acknowledgement.revision, absence.detailsRevision) ===
+          0) &&
       new Set(absence.missedLessons.map((lesson) => lesson.id)).size ===
         absence.missedLessons.length &&
       new Set(absence.missedLessons.map((lesson) => lesson.lessonOccurrenceId)).size ===
@@ -68,9 +65,14 @@ export const AbsenceCase = Schema.Struct({
           case "Pending":
             return true;
           case "Excused":
-            return lesson.decision.acknowledgement.revision <= absence.revision;
+            return (
+              AggregateRevision.compare(
+                lesson.decision.acknowledgement.revision,
+                absence.revision,
+              ) <= 0
+            );
           case "Rejected":
-            return lesson.decision.revision <= absence.revision;
+            return AggregateRevision.compare(lesson.decision.revision, absence.revision) <= 0;
         }
       }) &&
       (() => {
@@ -92,7 +94,7 @@ export interface AbsenceCase extends Schema.Schema.Type<typeof AbsenceCase> {}
 
 export class ConcurrentAbsenceRevisionError extends Schema.TaggedError<ConcurrentAbsenceRevisionError>()(
   "Attendance.ConcurrentRevision",
-  { expected: Revision, actual: Revision },
+  { expected: AggregateRevision.Schema, actual: AggregateRevision.Schema },
 ) {}
 
 const PositiveCount = Schema.Int.check(Schema.isGreaterThan(0));

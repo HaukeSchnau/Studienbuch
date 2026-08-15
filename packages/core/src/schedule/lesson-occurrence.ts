@@ -1,19 +1,18 @@
 import * as Schema from "effect/Schema";
+import * as CalendarDate from "../foundation/calendar-date";
+import * as NonBlankText from "../foundation/non-blank-text";
+import { CourseOfferingId, PersonId } from "../organization/identity";
 import {
   BellPeriodId,
-  CalendarDate,
-  CourseOfferingId,
   LessonOccurrenceId,
-  NonEmptyText,
-  PersonId,
   RecurringMeetingId,
   ScheduleExceptionId,
-  TimeRange,
-} from "../foundation";
+} from "./identity";
+import * as LocalTimeRange from "./local-time-range";
 
 export const LessonOccurrenceRef = Schema.Struct({
   meetingId: RecurringMeetingId,
-  scheduledDate: CalendarDate,
+  scheduledDate: CalendarDate.Schema,
 });
 export interface LessonOccurrenceRef extends Schema.Schema.Type<typeof LessonOccurrenceRef> {}
 
@@ -22,10 +21,10 @@ export const ScheduleException = Schema.TaggedUnion({
   Rescheduled: {
     id: ScheduleExceptionId,
     target: LessonOccurrenceRef,
-    date: CalendarDate,
-    timeRange: TimeRange,
+    date: CalendarDate.Schema,
+    timeRange: LocalTimeRange.Schema,
   },
-  RoomChanged: { id: ScheduleExceptionId, target: LessonOccurrenceRef, room: NonEmptyText },
+  RoomChanged: { id: ScheduleExceptionId, target: LessonOccurrenceRef, room: NonBlankText.Schema },
   TeacherChanged: {
     id: ScheduleExceptionId,
     target: LessonOccurrenceRef,
@@ -38,11 +37,11 @@ export const LessonOccurrence = Schema.Struct({
   id: LessonOccurrenceId,
   meetingId: RecurringMeetingId,
   courseOfferingId: CourseOfferingId,
-  scheduledDate: CalendarDate,
-  date: CalendarDate,
-  timeRange: TimeRange,
+  scheduledDate: CalendarDate.Schema,
+  date: CalendarDate.Schema,
+  timeRange: LocalTimeRange.Schema,
   bellPeriodId: Schema.optionalKey(BellPeriodId),
-  room: Schema.optionalKey(NonEmptyText),
+  room: Schema.optionalKey(NonBlankText.Schema),
   teacherIds: Schema.Array(PersonId),
   appliedExceptionIds: Schema.Array(ScheduleExceptionId),
 });

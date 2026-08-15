@@ -1,13 +1,9 @@
-import {
-  addCalendarDays,
-  dateIntervalsOverlap,
-  timeRangesOverlap,
-  type BellPeriodId,
-  type LessonOccurrenceId,
-  type RecurringMeetingId,
-} from "../foundation";
+import * as CalendarDate from "../foundation/calendar-date";
+import * as CalendarDateRange from "../foundation/calendar-date-range";
 import type { BellPeriod } from "./bell-schedule";
+import type { BellPeriodId, LessonOccurrenceId, RecurringMeetingId } from "./identity";
 import type { LessonOccurrence } from "./lesson-occurrence";
+import * as LocalTimeRange from "./local-time-range";
 import { meetingOccursOn, type RecurringMeeting, rotationsCanCoincide } from "./recurring-meeting";
 
 export interface BellPeriodCollision {
@@ -50,25 +46,25 @@ const meetingsCanCoincide = (left: RecurringMeeting, right: RecurringMeeting): b
   if (
     left.weekday !== right.weekday ||
     !rotationsCanCoincide(left.rotation, right.rotation) ||
-    !dateIntervalsOverlap(left.effectiveInterval, right.effectiveInterval) ||
-    !timeRangesOverlap(left.timeRange, right.timeRange)
+    !CalendarDateRange.overlaps(left.effectiveInterval, right.effectiveInterval) ||
+    !LocalTimeRange.overlaps(left.timeRange, right.timeRange)
   ) {
     return false;
   }
 
   let date =
-    left.effectiveInterval.start > right.effectiveInterval.start
+    CalendarDate.compare(left.effectiveInterval.start, right.effectiveInterval.start) > 0
       ? left.effectiveInterval.start
       : right.effectiveInterval.start;
   const end =
-    left.effectiveInterval.end < right.effectiveInterval.end
+    CalendarDate.compare(left.effectiveInterval.end, right.effectiveInterval.end) < 0
       ? left.effectiveInterval.end
       : right.effectiveInterval.end;
 
   // Weekday and parity repeat every 14 days, so a longer scan cannot find a new pattern.
-  for (let offset = 0; offset < 14 && date <= end; offset += 1) {
+  for (let offset = 0; offset < 14 && CalendarDate.compare(date, end) <= 0; offset += 1) {
     if (meetingOccursOn(left, date) && meetingOccursOn(right, date)) return true;
-    date = addCalendarDays(date, 1);
+    date = CalendarDate.unsafeAddDays(date, 1);
   }
   return false;
 };
@@ -77,7 +73,7 @@ export const findBellPeriodCollisions = (
   periods: ReadonlyArray<BellPeriod>,
 ): ReadonlyArray<BellPeriodCollision> =>
   pairs(periods)
-    .filter(([left, right]) => timeRangesOverlap(left.timeRange, right.timeRange))
+    .filter(([left, right]) => LocalTimeRange.overlaps(left.timeRange, right.timeRange))
     .map(([left, right]) => orderedPair(left.id, right.id))
     .sort(comparePairs);
 
@@ -95,7 +91,8 @@ export const findLessonOccurrenceCollisions = (
   pairs(occurrences)
     .filter(
       ([left, right]) =>
-        left.date === right.date && timeRangesOverlap(left.timeRange, right.timeRange),
+        CalendarDate.Equivalence(left.date, right.date) &&
+        LocalTimeRange.overlaps(left.timeRange, right.timeRange),
     )
     .map(([left, right]) => orderedPair(left.id, right.id))
     .sort(comparePairs);

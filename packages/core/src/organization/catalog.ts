@@ -1,19 +1,19 @@
 import * as Schema from "effect/Schema";
-import { ExternalRef, NonEmptyText, SchoolId, SubjectId } from "../foundation";
+import * as NonBlankText from "../foundation/non-blank-text";
+import { SchoolId, SubjectId } from "./identity";
 
 export const School = Schema.Struct({
   id: SchoolId,
-  name: NonEmptyText,
+  name: NonBlankText.Schema,
 });
 export interface School extends Schema.Schema.Type<typeof School> {}
 
 export const Subject = Schema.Struct({
   id: SubjectId,
   schoolId: SchoolId,
-  name: NonEmptyText,
-  code: Schema.optionalKey(NonEmptyText),
-  aliases: Schema.Array(NonEmptyText),
-  externalRefs: Schema.Array(ExternalRef),
+  name: NonBlankText.Schema,
+  code: Schema.optionalKey(NonBlankText.Schema),
+  aliases: Schema.Array(NonBlankText.Schema),
 });
 export interface Subject extends Schema.Schema.Type<typeof Subject> {}
 

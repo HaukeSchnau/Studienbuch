@@ -1,13 +1,9 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
+import * as CalendarDate from "../foundation/calendar-date";
+import * as CalendarDateRange from "../foundation/calendar-date-range";
 import { CourseOffering } from "./course-offering";
-import {
-  CalendarDate,
-  CourseOfferingId,
-  SchoolId,
-  SchoolMembershipId,
-  containsDate,
-} from "../foundation";
+import { CourseOfferingId, SchoolId, SchoolMembershipId } from "./identity";
 import {
   GuardianRelationship,
   SchoolMembership,
@@ -50,10 +46,6 @@ export const AuthoritySnapshot = Schema.Struct({
       }
       const membershipById = new Map(snapshot.memberships.map((item) => [item.id, item]));
       const offeringById = new Map(snapshot.courseOfferings.map((item) => [item.id, item]));
-      const encloses = (
-        outer: { readonly start: CalendarDate; readonly end: CalendarDate },
-        inner: { readonly start: CalendarDate; readonly end: CalendarDate },
-      ) => outer.start <= inner.start && inner.end <= outer.end;
       if (
         snapshot.students.some((student) => {
           const membership = membershipById.get(student.membershipId);
@@ -70,14 +62,14 @@ export const AuthoritySnapshot = Schema.Struct({
               membership.personId === relationship.guardianPersonId &&
               membership.schoolId === relationship.schoolId &&
               membership.roles.includes("Guardian") &&
-              encloses(membership.effective, relationship.effective),
+              CalendarDateRange.encloses(membership.effective, relationship.effective),
           );
           return (
             student === undefined ||
             !student.roles.includes("Student") ||
             student.schoolId !== relationship.schoolId ||
             !hasGuardianMembership ||
-            !encloses(student.effective, relationship.effective)
+            !CalendarDateRange.encloses(student.effective, relationship.effective)
           );
         })
       ) {
@@ -91,7 +83,7 @@ export const AuthoritySnapshot = Schema.Struct({
           teacher.roles.includes("Teacher") &&
           offering !== undefined &&
           teacher.schoolId === offering.schoolId &&
-          encloses(teacher.effective, assignment.effective)
+          CalendarDateRange.encloses(teacher.effective, assignment.effective)
         );
       });
     },
@@ -115,10 +107,8 @@ export class AuthorityDenied extends Schema.TaggedError<AuthorityDenied>()("Auth
   ]),
 }) {}
 
-const activeOn = (
-  effective: { readonly start: CalendarDate; readonly end: CalendarDate },
-  on: CalendarDate,
-) => containsDate(effective, on);
+const activeOn = (effective: CalendarDateRange.Type, on: CalendarDate.Type) =>
+  CalendarDateRange.contains(effective, on);
 
 const deny = (actor: ActorRef, capability: Capability, reason: AuthorityDenied["reason"]) =>
   new AuthorityDenied({ actor, capability, reason });
@@ -130,7 +120,7 @@ const deny = (actor: ActorRef, capability: Capability, reason: AuthorityDenied["
 export const authorize = Effect.fn("Organization.authorize")(function* (
   actor: ActorRef,
   capability: Capability,
-  on: CalendarDate,
+  on: CalendarDate.Type,
   snapshot: AuthoritySnapshot,
 ) {
   const actorMembership = snapshot.memberships.find(
@@ -235,6 +225,6 @@ export const authorize = Effect.fn("Organization.authorize")(function* (
 export const may = (
   actor: ActorRef,
   capability: Capability,
-  on: CalendarDate,
+  on: CalendarDate.Type,
   snapshot: AuthoritySnapshot,
 ) => authorize(actor, capability, on, snapshot).pipe(Effect.isSuccess);
