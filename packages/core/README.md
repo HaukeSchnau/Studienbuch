@@ -1,57 +1,72 @@
 # `@stu/core`
 
-`@stu/core` is Studienbuch's runtime-independent school-life domain. It owns validated
-vocabulary, invariants, deterministic projections, and composable workflows. It does not own
-React, persistence, synchronization transports, database rows, or provider-specific payloads.
+`@stu/core` is Studienbuch's runtime-independent school-life domain. It owns validated vocabulary,
+business invariants, deterministic projections, and composable decisions. It does not own React,
+persistence, synchronization transports, database rows, or provider payloads.
 
-The canonical language is recorded in [CONTEXT.md](./CONTEXT.md).
+The canonical school language is recorded in [CONTEXT.md](./CONTEXT.md).
 
-## Module interface
+## Start here
 
-The package root exports shared primitives and domain namespaces. Each domain is also an explicit
-subpath for focused imports:
+Read the package by following a domain question, not by looking for technical buckets such as
+`model.ts` or `workflows.ts`:
 
-```ts
-import { CalendarDate, Schedule } from "@stu/core";
-import * as Attendance from "@stu/core/attendance";
-```
+| Question                                                  | Module         | Good first file             |
+| --------------------------------------------------------- | -------------- | --------------------------- |
+| What are our shared IDs, dates, intervals, and revisions? | `Foundation`   | `src/foundation/index.ts`   |
+| How is a school organized, and who may act?               | `Organization` | `src/organization/index.ts` |
+| Which lessons happen on a date?                           | `Schedule`     | `src/schedule/index.ts`     |
+| How is an absence acknowledged and resolved?              | `Attendance`   | `src/attendance/index.ts`   |
+| How are results attested, acknowledged, and averaged?     | `Assessment`   | `src/assessment/index.ts`   |
+| How do school tasks move through their lifecycle?         | `Tasks`        | `src/tasks/index.ts`        |
+| How are provider observations reconciled with overrides?  | `Importing`    | `src/importing/index.ts`    |
 
-- `academics`: schools, subject catalogs, terms, cohorts, class groups, offerings, enrollments,
-  and course choices
-- `people`: contextual memberships, guardian relationships, teaching assignments,
-  acknowledgements, and authority decisions
-- `schedule`: academic calendars, recurring meetings, dated occurrences, exceptions, and
-  collision detection
-- `attendance`: absence cases and independently resolved missed lessons
-- `assessment`: written assessments, revisable course standings, independent attestations, and grading
-  policy
-- `tasks`: task lifecycle, due-state, visibility, and deterministic selection
-- `provenance`: sourced values, overrides, subject resolution, and import reconciliation
+Each domain index is its deliberate public contract. Files behind it are organized around concepts
+or substantial use cases and may change without creating another public API.
 
-## Construction and decoding
+## Public interface
 
-Public boundary values are Effect schemas. Decode untrusted input and use `.make` only after the
-caller has established that construction is trusted:
+The package root exposes ES-module namespace projections. Focused subpaths expose the same domain
+interface without loading the root:
 
 ```ts
-import { Schema } from "effect";
-import { CalendarDate } from "@stu/core";
+import { Attendance, Foundation } from "@stu/core";
+import * as Schedule from "@stu/core/schedule";
 
-const decoded = Schema.decodeUnknownEffect(CalendarDate)("2026-08-14");
-const trusted = CalendarDate.make("2026-08-14");
+const day = Foundation.CalendarDate.make("2026-08-14");
+const status = Attendance.status(absence);
+const lessons = Schedule.materializeSchoolDay({ calendar, date: day, meetings, exceptions });
 ```
 
-Civil school dates and local lesson times are deliberately not represented as JavaScript `Date`. Absolute
-audit timestamps use Effect's UTC date-time value. All new domain functions receive the relevant date
-explicitly; replay and projections never consult an ambient clock.
+Substantial object-input operations keep their operation-specific types discoverable through
+type-only companion namespaces:
 
-## Effect usage
+```ts
+const acknowledge = (input: Attendance.acknowledge.Input) => Attendance.acknowledge(input);
 
-Pure calculations remain ordinary functions. Operations use `Effect` when callers benefit from
-typed refusal or when an institutional policy is a genuine runtime dependency. Policy layers are
-configuration, not service-locator wrappers around arithmetic.
+type AcknowledgeFailure = Attendance.acknowledge.Error;
+```
 
-The current mobile application still uses its old DTOs through
-`@stu/core/compat/mobile-v0`. That module is intentionally isolated and carries its own removal
-condition; it preserves the legacy ambient-date defaults until its consumers migrate. New code
-must use the domain modules.
+This is the useful namespace pattern from Effect itself: runtime organization remains ordinary ESM,
+while declaration merging keeps an operation's types discoverable. Runtime TypeScript namespaces
+are not used.
+
+## Modeling conventions
+
+- Boundary and persisted values are Effect schemas with same-name TypeScript types.
+- Decode untrusted values at the boundary. Use a schema's `.make` only for trusted construction.
+- Civil school dates and local lesson times are not JavaScript `Date` values. Absolute audit
+  timestamps use Effect's UTC date-time value.
+- Pure calculations remain ordinary total functions. Use `Effect` when a decision has typed refusal
+  or a genuine runtime policy dependency.
+- Domain operations receive the relevant date, actor, and evidence explicitly. Replay and
+  projections never consult an ambient clock.
+- Services model real institutional variability, not every helper. `Assessment.GradingPolicy` is
+  the current example.
+- Internal modules import owning leaves directly; callers import the public domain namespace.
+
+## Compatibility boundary
+
+The mobile application still uses its legacy DTO contract through `@stu/core/compat/mobile-v0`.
+That module is intentionally isolated and preserves legacy ambient-date defaults until its consumers
+migrate. New code must use the domain modules above.

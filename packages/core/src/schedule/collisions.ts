@@ -5,9 +5,10 @@ import {
   type BellPeriodId,
   type LessonOccurrenceId,
   type RecurringMeetingId,
-} from "../primitives";
-import type { BellPeriod, LessonOccurrence, RecurringMeeting } from "./model";
-import { meetingOccursOn, rotationsCanCoincide } from "./recurrence";
+} from "../foundation";
+import type { BellPeriod } from "./bell-schedule";
+import type { LessonOccurrence } from "./lesson-occurrence";
+import { meetingOccursOn, type RecurringMeeting, rotationsCanCoincide } from "./recurring-meeting";
 
 export interface BellPeriodCollision {
   readonly leftId: BellPeriodId;

@@ -1,4 +1,11 @@
-export { academicTermOn, isSchoolDay, nextSchoolDay } from "./calendar";
+export {
+  AcademicCalendar,
+  academicTermOn,
+  CalendarClosure,
+  isSchoolDay,
+  nextSchoolDay,
+} from "./academic-calendar";
+export { BellPeriod, BellSchedule } from "./bell-schedule";
 export {
   findBellPeriodCollisions,
   findLessonOccurrenceCollisions,
@@ -7,26 +14,20 @@ export {
   type LessonOccurrenceCollision,
   type RecurringMeetingCollision,
 } from "./collisions";
+export { lessonOccurrenceId, materializeSchoolDay } from "./materialize";
 export {
-  lessonOccurrenceId,
-  materializeSchoolDay,
-  type MaterializeSchoolDayInput,
-} from "./materialize";
-export {
-  AcademicCalendar,
-  AcademicTerm,
-  BellPeriod,
-  BellSchedule,
-  CalendarClosure,
   ConflictingScheduleExceptionsError,
   LessonOccurrence,
   LessonOccurrenceRef,
   InvalidScheduleInputError,
-  RecurringMeeting,
-  RotationPattern,
   ScheduleException,
   ScheduleMaterializationError,
   UnresolvedScheduleExceptionError,
-  type ScheduleMaterializationError as ScheduleMaterializationFailure,
-} from "./model";
-export { meetingOccursOn, rotationIncludesDate, rotationsCanCoincide } from "./recurrence";
+} from "./lesson-occurrence";
+export {
+  meetingOccursOn,
+  RecurringMeeting,
+  RotationPattern,
+  rotationIncludesDate,
+  rotationsCanCoincide,
+} from "./recurring-meeting";

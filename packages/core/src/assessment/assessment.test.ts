@@ -2,35 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
-import { CourseOffering } from "../academics/index.ts";
-import {
-  AssessmentWeight,
-  CourseStanding,
-  GradeValue,
-  StandingRevision,
-  WrittenAssessment,
-  acknowledgeStandingRevision,
-  acknowledgeWrittenAssessment,
-  addStandingRevision,
-  attestStandingRevision,
-  attestWrittenAssessment,
-  calculateAverage,
-  currentStandingRevision,
-  defaultGradingPolicyLayer,
-  isStandingRevisionConfirmed,
-  isWrittenAssessmentConfirmed,
-  lastConfirmedStandingRevision,
-} from "./index.ts";
-import {
-  Acknowledgement,
-  ActorRef,
-  AuthoritySnapshot,
-  LegalAgePolicy,
-  Person,
-  PersonName,
-  SchoolMembership,
-  StudentMembership,
-} from "../people/index.ts";
+import * as Assessment from "./index.ts";
 import {
   AcademicTermId,
   AcknowledgementId,
@@ -46,7 +18,12 @@ import {
   SchoolMembershipId,
   StandingRevisionId,
   SubjectId,
-} from "../primitives/index.ts";
+} from "../foundation/index.ts";
+import { Acknowledgement, ActorRef } from "../organization/acknowledgement.ts";
+import { AuthoritySnapshot } from "../organization/authority.ts";
+import { CourseOffering } from "../organization/course-offering.ts";
+import { SchoolMembership, StudentMembership } from "../organization/membership.ts";
+import { LegalAgePolicy, Person, PersonName } from "../organization/person.ts";
 
 const date = (value: string) => CalendarDate.make(value);
 const schoolId = SchoolId.make("school");
@@ -118,46 +95,67 @@ const written = (id: string, value: number, confirmed: boolean) => {
     studentMembershipId,
     courseOfferingId,
     assessedOn: date("2026-08-14"),
-    value: GradeValue.make(value),
-    weight: AssessmentWeight.make(1),
+    value: Assessment.GradeValue.make(value),
+    weight: Assessment.AssessmentWeight.make(1),
     revision: Revision.make(confirmed ? 2 : 0),
   };
   return confirmed
-    ? WrittenAssessment.make({
+    ? Assessment.WrittenAssessment.make({
         ...fields,
         teacherAttestation: acknowledgement(`${id}-teacher`, teacherActor, 0),
         learnerAcknowledgement: acknowledgement(`${id}-learner`, studentActor, 1),
       })
-    : WrittenAssessment.make(fields);
+    : Assessment.WrittenAssessment.make(fields);
 };
 
 describe("grading policy", () => {
   it.effect("includes only independently teacher-attested and learner-acknowledged grades", () =>
     Effect.gen(function* () {
       const provisional = written("provisional", 2, false);
-      const empty = yield* calculateAverage([
-        WrittenAssessment.make({
+      const empty = yield* Assessment.GradingPolicy.calculateAverage([
+        Assessment.WrittenAssessment.make({
           ...provisional,
           teacherAttestation: acknowledgement("teacher-only", teacherActor, 0),
         }),
       ]);
       assert.isTrue(Option.isNone(empty));
 
-      const average = yield* calculateAverage([
+      const average = yield* Assessment.GradingPolicy.calculateAverage([
         written("confirmed-a", 10, true),
         written("confirmed-b", 14, true),
         provisional,
       ]);
       assert.strictEqual(Option.getOrThrow(average).value, 12);
       assert.strictEqual(Option.getOrThrow(average).assessmentCount, 2);
-    }).pipe(Effect.provide(defaultGradingPolicyLayer)),
+    }).pipe(Effect.provide(Assessment.GradingPolicy.defaultLayer)),
   );
 
   it.effect("rejects a grade outside the configured 0-15 scale", () =>
     Effect.gen(function* () {
-      const failure = yield* Effect.flip(calculateAverage([written("invalid", 16, true)]));
+      const failure = yield* Effect.flip(
+        Assessment.GradingPolicy.calculateAverage([written("invalid", 16, true)]),
+      );
       assert.strictEqual(failure._tag, "Assessment.InvalidGradeValue");
-    }).pipe(Effect.provide(defaultGradingPolicyLayer)),
+    }).pipe(Effect.provide(Assessment.GradingPolicy.defaultLayer)),
+  );
+
+  it.effect("rejects mixed scope even when the conflicting grade is provisional", () =>
+    Effect.gen(function* () {
+      const provisional = written("other-student", 8, false);
+      const failure = yield* Effect.flip(
+        Assessment.GradingPolicy.calculateAverage([
+          written("confirmed", 12, true),
+          Assessment.WrittenAssessment.make({
+            ...provisional,
+            studentMembershipId: SchoolMembershipId.make("other-student"),
+          }),
+        ]),
+      );
+      if (failure._tag !== "Assessment.InvalidScope") {
+        return assert.fail(`expected mixed scope, received ${failure._tag}`);
+      }
+      assert.strictEqual(failure.reason, "MixedStudents");
+    }).pipe(Effect.provide(Assessment.GradingPolicy.defaultLayer)),
   );
 });
 
@@ -165,7 +163,7 @@ describe("written assessment confirmation", () => {
   it.effect("requires separate authorized, revision-safe teacher and learner records", () =>
     Effect.gen(function* () {
       const initial = written("written", 12, false);
-      const attested = yield* attestWrittenAssessment({
+      const attested = yield* Assessment.attestWritten({
         assessment: initial,
         expectedRevision: Revision.make(0),
         actor: teacherActor,
@@ -173,9 +171,9 @@ describe("written assessment confirmation", () => {
         acknowledgementId: AcknowledgementId.make("written-teacher"),
         acknowledgedAt: at,
       });
-      assert.isFalse(isWrittenAssessmentConfirmed(attested));
+      assert.isFalse(Assessment.isWrittenConfirmed(attested));
       const stale = yield* Effect.flip(
-        acknowledgeWrittenAssessment({
+        Assessment.acknowledgeWritten({
           assessment: attested,
           expectedRevision: Revision.make(0),
           actor: studentActor,
@@ -188,7 +186,7 @@ describe("written assessment confirmation", () => {
       );
       assert.strictEqual(stale._tag, "Assessment.ConcurrentWrittenAssessmentRevision");
 
-      const confirmed = yield* acknowledgeWrittenAssessment({
+      const confirmed = yield* Assessment.acknowledgeWritten({
         assessment: attested,
         expectedRevision: Revision.make(1),
         actor: studentActor,
@@ -198,14 +196,14 @@ describe("written assessment confirmation", () => {
         acknowledgementId: AcknowledgementId.make("written-learner"),
         acknowledgedAt: at,
       });
-      assert.isTrue(isWrittenAssessmentConfirmed(confirmed));
+      assert.isTrue(Assessment.isWrittenConfirmed(confirmed));
       assert.strictEqual(confirmed.revision, 2);
-    }).pipe(Effect.provide(defaultGradingPolicyLayer)),
+    }).pipe(Effect.provide(Assessment.GradingPolicy.defaultLayer)),
   );
 
   it.effect("refuses teacher attestation of an out-of-policy value", () =>
     Effect.gen(function* () {
-      const failure = yield* attestWrittenAssessment({
+      const failure = yield* Assessment.attestWritten({
         assessment: written("invalid-attestation", 16, false),
         expectedRevision: Revision.make(0),
         actor: teacherActor,
@@ -214,7 +212,7 @@ describe("written assessment confirmation", () => {
         acknowledgedAt: at,
       }).pipe(Effect.flip);
       assert.strictEqual(failure._tag, "Assessment.InvalidGradeValue");
-    }).pipe(Effect.provide(defaultGradingPolicyLayer)),
+    }).pipe(Effect.provide(Assessment.GradingPolicy.defaultLayer)),
   );
 
   it.effect("returns a distinct refusal when legal status cannot be established", () =>
@@ -224,7 +222,7 @@ describe("written assessment confirmation", () => {
         name: student.name,
       });
       const failure = yield* Effect.flip(
-        acknowledgeWrittenAssessment({
+        Assessment.acknowledgeWritten({
           assessment: written("unknown-age", 10, false),
           expectedRevision: Revision.make(0),
           actor: studentActor,
@@ -241,14 +239,14 @@ describe("written assessment confirmation", () => {
 });
 
 describe("standing revisions", () => {
-  const root = StandingRevision.make({
+  const root = Assessment.StandingRevision.make({
     id: StandingRevisionId.make("standing-r1"),
-    value: GradeValue.make(10),
+    value: Assessment.GradeValue.make(10),
     observedOn: date("2026-08-01"),
     teacherAttestation: acknowledgement("standing-r1-teacher", teacherActor, 0),
     learnerAcknowledgement: acknowledgement("standing-r1-learner", studentActor, 1),
   });
-  const standing = CourseStanding.make({
+  const standing = Assessment.CourseStanding.make({
     id: CourseStandingId.make("standing"),
     studentMembershipId,
     courseOfferingId,
@@ -262,21 +260,27 @@ describe("standing revisions", () => {
     "retains the confirmed baseline until both confirmations exist on the new revision",
     () =>
       Effect.gen(function* () {
-        const second = StandingRevision.make({
+        const second = Assessment.StandingRevision.make({
           id: StandingRevisionId.make("standing-r2"),
-          value: GradeValue.make(12),
+          value: Assessment.GradeValue.make(12),
           observedOn: date("2026-08-14"),
           supersedes: root.id,
         });
-        const revised = yield* addStandingRevision({
+        const revised = yield* Assessment.reviseStanding({
           standing,
           expectedRevision: Revision.make(2),
           revision: second,
         });
-        assert.strictEqual(Option.getOrThrow(currentStandingRevision(revised)).id, second.id);
-        assert.strictEqual(Option.getOrThrow(lastConfirmedStandingRevision(revised)).id, root.id);
+        assert.strictEqual(
+          Option.getOrThrow(Assessment.currentStandingRevision(revised)).id,
+          second.id,
+        );
+        assert.strictEqual(
+          Option.getOrThrow(Assessment.lastConfirmedStandingRevision(revised)).id,
+          root.id,
+        );
 
-        const attested = yield* attestStandingRevision({
+        const attested = yield* Assessment.attestStanding({
           standing: revised,
           expectedRevision: Revision.make(3),
           revisionId: second.id,
@@ -286,9 +290,11 @@ describe("standing revisions", () => {
           acknowledgedAt: at,
         });
         assert.isFalse(
-          isStandingRevisionConfirmed(Option.getOrThrow(currentStandingRevision(attested))),
+          Assessment.isStandingRevisionConfirmed(
+            Option.getOrThrow(Assessment.currentStandingRevision(attested)),
+          ),
         );
-        const confirmed = yield* acknowledgeStandingRevision({
+        const confirmed = yield* Assessment.acknowledgeStanding({
           standing: attested,
           expectedRevision: Revision.make(4),
           revisionId: second.id,
@@ -300,49 +306,67 @@ describe("standing revisions", () => {
           acknowledgedAt: at,
         });
         assert.isTrue(
-          isStandingRevisionConfirmed(Option.getOrThrow(currentStandingRevision(confirmed))),
+          Assessment.isStandingRevisionConfirmed(
+            Option.getOrThrow(Assessment.currentStandingRevision(confirmed)),
+          ),
         );
-      }).pipe(Effect.provide(defaultGradingPolicyLayer)),
+      }).pipe(Effect.provide(Assessment.GradingPolicy.defaultLayer)),
   );
 
   it.effect("refuses branching, stale, backward-dated, and pre-confirmed revisions", () =>
     Effect.gen(function* () {
-      const invalid = StandingRevision.make({
+      const invalid = Assessment.StandingRevision.make({
         id: StandingRevisionId.make("standing-invalid"),
-        value: GradeValue.make(11),
+        value: Assessment.GradeValue.make(11),
         observedOn: date("2026-07-31"),
         supersedes: root.id,
       });
       const chronology = yield* Effect.flip(
-        addStandingRevision({ standing, expectedRevision: Revision.make(2), revision: invalid }),
+        Assessment.reviseStanding({
+          standing,
+          expectedRevision: Revision.make(2),
+          revision: invalid,
+        }),
       );
       assert.strictEqual(chronology._tag, "Assessment.StandingRevisionChronology");
 
       const stale = yield* Effect.flip(
-        addStandingRevision({ standing, expectedRevision: Revision.make(1), revision: invalid }),
+        Assessment.reviseStanding({
+          standing,
+          expectedRevision: Revision.make(1),
+          revision: invalid,
+        }),
       );
       assert.strictEqual(stale._tag, "Assessment.ConcurrentStandingRevision");
 
-      const injected = StandingRevision.make({
+      const injected = Assessment.StandingRevision.make({
         ...invalid,
         id: StandingRevisionId.make("injected"),
         observedOn: date("2026-08-02"),
         teacherAttestation: acknowledgement("injected", teacherActor, 0),
       });
       const injection = yield* Effect.flip(
-        addStandingRevision({ standing, expectedRevision: Revision.make(2), revision: injected }),
+        Assessment.reviseStanding({
+          standing,
+          expectedRevision: Revision.make(2),
+          revision: injected,
+        }),
       );
       assert.strictEqual(injection._tag, "Assessment.AlreadyTeacherAttested");
 
-      const branch = StandingRevision.make({
+      const branch = Assessment.StandingRevision.make({
         ...invalid,
         observedOn: date("2026-08-02"),
         supersedes: StandingRevisionId.make("not-current"),
       });
       const branching = yield* Effect.flip(
-        addStandingRevision({ standing, expectedRevision: Revision.make(2), revision: branch }),
+        Assessment.reviseStanding({
+          standing,
+          expectedRevision: Revision.make(2),
+          revision: branch,
+        }),
       );
       assert.strictEqual(branching._tag, "Assessment.InvalidStandingSupersession");
-    }).pipe(Effect.provide(defaultGradingPolicyLayer)),
+    }).pipe(Effect.provide(Assessment.GradingPolicy.defaultLayer)),
   );
 });

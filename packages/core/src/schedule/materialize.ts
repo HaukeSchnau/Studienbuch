@@ -4,26 +4,17 @@ import {
   type CalendarDate,
   type RecurringMeetingId,
   type ScheduleExceptionId,
-} from "../primitives";
-import { isSchoolDay } from "./calendar";
+} from "../foundation";
+import { type AcademicCalendar, isSchoolDay } from "./academic-calendar";
 import {
   ConflictingScheduleExceptionsError,
   InvalidScheduleInputError,
   LessonOccurrence,
   LessonOccurrenceRef,
-  type AcademicCalendar,
-  type RecurringMeeting,
   type ScheduleException,
   UnresolvedScheduleExceptionError,
-} from "./model";
-import { meetingOccursOn } from "./recurrence";
-
-export interface MaterializeSchoolDayInput {
-  readonly calendar: AcademicCalendar;
-  readonly date: CalendarDate;
-  readonly meetings: ReadonlyArray<RecurringMeeting>;
-  readonly exceptions: ReadonlyArray<ScheduleException>;
-}
+} from "./lesson-occurrence";
+import { meetingOccursOn, type RecurringMeeting } from "./recurring-meeting";
 
 export const lessonOccurrenceId = (target: LessonOccurrenceRef): LessonOccurrenceId =>
   LessonOccurrenceId.make(`${target.meetingId}@${target.scheduledDate}`);
@@ -110,7 +101,7 @@ const applyExceptions = (
 };
 
 export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(function* (
-  input: MaterializeSchoolDayInput,
+  input: materializeSchoolDay.Input,
 ) {
   const meetingIds = new Set<RecurringMeetingId>();
   for (const meeting of input.meetings) {
@@ -207,3 +198,17 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
     )
     .sort(occurrenceOrder);
 });
+
+export declare namespace materializeSchoolDay {
+  export interface Input {
+    readonly calendar: AcademicCalendar;
+    readonly date: CalendarDate;
+    readonly meetings: ReadonlyArray<RecurringMeeting>;
+    readonly exceptions: ReadonlyArray<ScheduleException>;
+  }
+
+  export type Error =
+    | UnresolvedScheduleExceptionError
+    | ConflictingScheduleExceptionsError
+    | InvalidScheduleInputError;
+}
