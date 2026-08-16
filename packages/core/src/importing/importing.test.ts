@@ -3,9 +3,9 @@ import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-import * as Importing from "./index.ts";
-import * as AggregateRevision from "../foundation/aggregate-revision";
-import * as NonBlankText from "../foundation/non-blank-text";
+import { Importing } from "../index.ts";
+import { AggregateRevision } from "../foundation/aggregate-revision";
+import { NonBlankText } from "../foundation/non-blank-text";
 import { Subject, SubjectCatalog } from "../organization/catalog.ts";
 import { PersonId, SchoolId, SchoolMembershipId, SubjectId } from "../organization/identity";
 

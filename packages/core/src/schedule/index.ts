@@ -13,9 +13,9 @@ export {
   RecurringMeetingId,
   ScheduleExceptionId,
 } from "./identity";
-export * as LocalTime from "./local-time";
-export * as LocalTimeRange from "./local-time-range";
-export * as Weekday from "./weekday";
+export { LocalTime } from "./local-time";
+export { LocalTimeRange } from "./local-time-range";
+export { Weekday } from "./weekday";
 export {
   findBellPeriodCollisions,
   findLessonOccurrenceCollisions,

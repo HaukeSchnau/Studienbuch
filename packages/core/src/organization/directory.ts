@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import * as CalendarDateRange from "../foundation/calendar-date-range";
+import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { AcademicTerm, Cohort, validateAcademicTerms } from "./academic-term";
 import { School, SubjectCatalog } from "./catalog";
 import { ClassGroup, CourseOffering } from "./course-offering";

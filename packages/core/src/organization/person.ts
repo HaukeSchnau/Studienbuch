@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
-import * as CalendarDate from "../foundation/calendar-date";
-import * as NonBlankText from "../foundation/non-blank-text";
+import { CalendarDate } from "../foundation/calendar-date";
+import { NonBlankText } from "../foundation/non-blank-text";
 import { PersonId } from "./identity";
 
 /**

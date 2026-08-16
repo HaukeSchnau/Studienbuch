@@ -1,5 +1,5 @@
 import * as Schema from "effect/Schema";
-import * as CalendarDate from "../foundation/calendar-date";
+import { CalendarDate } from "../foundation/calendar-date";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import type { SchoolTask } from "./school-task";
 

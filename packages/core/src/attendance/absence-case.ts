@@ -1,7 +1,7 @@
 import * as Schema from "effect/Schema";
-import * as AggregateRevision from "../foundation/aggregate-revision";
-import * as CalendarDate from "../foundation/calendar-date";
-import * as NonBlankText from "../foundation/non-blank-text";
+import { AggregateRevision } from "../foundation/aggregate-revision";
+import { CalendarDate } from "../foundation/calendar-date";
+import { NonBlankText } from "../foundation/non-blank-text";
 import { Acknowledgement, ActorRef } from "../organization/acknowledgement";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import { LessonOccurrenceId } from "../schedule/identity";

@@ -1,11 +1,11 @@
 import * as Schema from "effect/Schema";
-import * as CalendarDate from "../foundation/calendar-date";
-import * as CalendarDateRange from "../foundation/calendar-date-range";
-import * as NonBlankText from "../foundation/non-blank-text";
+import { CalendarDate } from "../foundation/calendar-date";
+import { CalendarDateRange } from "../foundation/calendar-date-range";
+import { NonBlankText } from "../foundation/non-blank-text";
 import { CourseOfferingId, PersonId } from "../organization/identity";
 import { BellPeriodId, RecurringMeetingId } from "./identity";
-import * as LocalTimeRange from "./local-time-range";
-import * as Weekday from "./weekday";
+import { LocalTimeRange } from "./local-time-range";
+import { Weekday } from "./weekday";
 
 export const RotationPattern = Schema.TaggedUnion({
   EveryWeek: {},

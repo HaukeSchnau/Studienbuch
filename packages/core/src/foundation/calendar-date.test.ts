@@ -3,7 +3,7 @@ import * as Schema from "effect/Schema";
 import * as Calendar from "temporal-polyfill/fns/Calendar";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { describe, expect, it } from "vite-plus/test";
-import * as CalendarDate from "./calendar-date";
+import { CalendarDate } from "./calendar-date";
 
 describe("CalendarDate", () => {
   it("parses valid dates and rejects impossible or non-canonical input", () => {

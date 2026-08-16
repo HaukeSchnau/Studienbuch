@@ -1,9 +1,9 @@
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vite-plus/test";
-import * as AggregateRevision from "./aggregate-revision";
-import * as Artifact from "./artifact";
-import * as NonBlankText from "./non-blank-text";
+import { AggregateRevision } from "./aggregate-revision";
+import { Artifact } from "./artifact";
+import { NonBlankText } from "./non-blank-text";
 
 describe("AggregateRevision", () => {
   it("starts at zero and advances monotonically", () => {

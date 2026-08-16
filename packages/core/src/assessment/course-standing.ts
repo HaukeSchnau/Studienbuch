@@ -1,8 +1,8 @@
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-import * as AggregateRevision from "../foundation/aggregate-revision";
-import * as CalendarDate from "../foundation/calendar-date";
+import { AggregateRevision } from "../foundation/aggregate-revision";
+import { CalendarDate } from "../foundation/calendar-date";
 import { Acknowledgement } from "../organization/acknowledgement";
 import {
   AuthorityDenied,
@@ -12,7 +12,7 @@ import {
 } from "../organization/authority";
 import { LegalAgePolicy, Person } from "../organization/person";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
-import { InvalidGradeValueError, Service as GradingPolicy } from "./grading-policy";
+import { GradingPolicy } from "./grading-policy";
 import { GradeValue } from "./grading";
 import { CourseStandingId, StandingRevisionId } from "./identity";
 import {
@@ -137,7 +137,7 @@ export const ReviseStandingError = Schema.Union([
   StandingRevisionChronologyError,
   AssessmentAlreadyTeacherAttestedError,
   AssessmentAlreadyLearnerAcknowledgedError,
-  InvalidGradeValueError,
+  GradingPolicy.InvalidGradeValueError,
 ]);
 export type ReviseStandingError = typeof ReviseStandingError.Type;
 
@@ -146,7 +146,7 @@ export const AttestStandingError = Schema.Union([
   StandingRevisionNotFoundError,
   StandingRevisionNotCurrentError,
   AssessmentAlreadyTeacherAttestedError,
-  InvalidGradeValueError,
+  GradingPolicy.InvalidGradeValueError,
   AuthorityDenied,
 ]);
 export type AttestStandingError = typeof AttestStandingError.Type;
@@ -206,7 +206,7 @@ export const reviseStanding = Effect.fn("Assessment.addStandingRevision")(functi
     });
   }
 
-  const policy = yield* GradingPolicy;
+  const policy = yield* GradingPolicy.Service;
   yield* policy.validateValue(input.revision.value);
 
   return CourseStanding.make(
@@ -273,7 +273,7 @@ export const attestStanding = Effect.fn("Assessment.attestStandingRevision")(fun
   if (target.teacherAttestation !== undefined) {
     return yield* new AssessmentAlreadyTeacherAttestedError({ target: "StandingRevision" });
   }
-  const policy = yield* GradingPolicy;
+  const policy = yield* GradingPolicy.Service;
   yield* policy.validateValue(target.value);
   yield* authorize(
     input.actor,

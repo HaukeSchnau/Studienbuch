@@ -1,8 +1,8 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import * as CalendarDate from "../foundation/calendar-date";
-import * as CalendarDateRange from "../foundation/calendar-date-range";
-import * as NonBlankText from "../foundation/non-blank-text";
+import { CalendarDate } from "../foundation/calendar-date";
+import { CalendarDateRange } from "../foundation/calendar-date-range";
+import { NonBlankText } from "../foundation/non-blank-text";
 import { AcademicTermId, CohortId, SchoolId } from "./identity";
 
 export const GradeLevel = Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 20 })).pipe(

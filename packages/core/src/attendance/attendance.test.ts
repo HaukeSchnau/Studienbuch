@@ -2,11 +2,11 @@ import { assert, describe, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import * as AggregateRevision from "../foundation/aggregate-revision";
-import * as CalendarDate from "../foundation/calendar-date";
-import * as CalendarDateRange from "../foundation/calendar-date-range";
-import * as NonBlankText from "../foundation/non-blank-text";
-import * as Attendance from "./index.ts";
+import { AggregateRevision } from "../foundation/aggregate-revision";
+import { CalendarDate } from "../foundation/calendar-date";
+import { CalendarDateRange } from "../foundation/calendar-date-range";
+import { NonBlankText } from "../foundation/non-blank-text";
+import { Attendance } from "../index.ts";
 import { ActorRef } from "../organization/acknowledgement";
 import { AuthoritySnapshot } from "../organization/authority";
 import { CourseOffering } from "../organization/course-offering";
@@ -32,8 +32,8 @@ import {
 import { LegalAgePolicy, Person, PersonName } from "../organization/person";
 import { LessonOccurrenceId, RecurringMeetingId } from "../schedule/identity";
 import { LessonOccurrence } from "../schedule/lesson-occurrence";
-import * as LocalTime from "../schedule/local-time";
-import * as LocalTimeRange from "../schedule/local-time-range";
+import { LocalTime } from "../schedule/local-time";
+import { LocalTimeRange } from "../schedule/local-time-range";
 import { AbsenceCaseId, MissedLessonId } from "./identity";
 
 const date = CalendarDate.unsafeFromString;

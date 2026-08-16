@@ -1,5 +1,5 @@
 import * as Schema from "effect/Schema";
-import * as NonBlankText from "../foundation/non-blank-text";
+import { NonBlankText } from "../foundation/non-blank-text";
 import {
   AcademicTermId,
   ClassGroupId,

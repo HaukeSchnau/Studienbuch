@@ -1,11 +1,11 @@
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import * as AggregateRevision from "../foundation/aggregate-revision.ts";
-import * as Artifact from "../foundation/artifact.ts";
-import * as CalendarDate from "../foundation/calendar-date.ts";
-import * as CalendarDateRange from "../foundation/calendar-date-range.ts";
-import * as NonBlankText from "../foundation/non-blank-text.ts";
+import { AggregateRevision } from "../foundation/aggregate-revision.ts";
+import { Artifact } from "../foundation/artifact.ts";
+import { CalendarDate } from "../foundation/calendar-date.ts";
+import { CalendarDateRange } from "../foundation/calendar-date-range.ts";
+import { NonBlankText } from "../foundation/non-blank-text.ts";
 import { ActorRef } from "../organization/acknowledgement.ts";
 import { AuthoritySnapshot } from "../organization/authority.ts";
 import {
@@ -16,7 +16,7 @@ import {
 } from "../organization/identity.ts";
 import { SchoolMembership, StudentMembership } from "../organization/membership.ts";
 import { SchoolTaskId } from "./identity.ts";
-import * as Tasks from "./index.ts";
+import { Tasks } from "../index.ts";
 
 const date = CalendarDate.unsafeFromString;
 const taskId = (value: string) => SchoolTaskId.make(value);
