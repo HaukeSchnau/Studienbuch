@@ -1,11 +1,11 @@
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-import * as CalendarDate from "../foundation/calendar-date";
-import * as CalendarDateRange from "../foundation/calendar-date-range";
-import * as NonBlankText from "../foundation/non-blank-text";
+import { CalendarDate } from "../foundation/calendar-date";
+import { CalendarDateRange } from "../foundation/calendar-date-range";
+import { NonBlankText } from "../foundation/non-blank-text";
 import { AcademicTerm } from "../organization/academic-term";
 import { SchoolId } from "../organization/identity";
-import * as Weekday from "./weekday";
+import { Weekday } from "./weekday";
 
 export const CalendarClosure = Schema.Struct({
   name: NonBlankText.Schema,

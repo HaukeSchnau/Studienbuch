@@ -1,9 +1,9 @@
 import { assert, describe, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import * as CalendarDate from "../foundation/calendar-date";
-import * as CalendarDateRange from "../foundation/calendar-date-range";
-import * as NonBlankText from "../foundation/non-blank-text";
+import { CalendarDate } from "../foundation/calendar-date";
+import { CalendarDateRange } from "../foundation/calendar-date-range";
+import { NonBlankText } from "../foundation/non-blank-text";
 import { CourseOffering } from "./course-offering.ts";
 import {
   AcademicTermId,

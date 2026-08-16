@@ -3,12 +3,12 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-import * as CalendarDate from "../foundation/calendar-date";
-import * as CalendarDateRange from "../foundation/calendar-date-range";
-import * as NonBlankText from "../foundation/non-blank-text";
+import { CalendarDate } from "../foundation/calendar-date";
+import { CalendarDateRange } from "../foundation/calendar-date-range";
+import { NonBlankText } from "../foundation/non-blank-text";
 import { AcademicTermId, CourseOfferingId, PersonId, SchoolId } from "../organization/identity";
-import * as Organization from "../organization/index.ts";
-import * as Schedule from "./index.ts";
+import { Organization } from "../index.ts";
+import { Schedule } from "../index.ts";
 
 const date = CalendarDate.unsafeFromString;
 const time = Schedule.LocalTime.unsafeFromParts;

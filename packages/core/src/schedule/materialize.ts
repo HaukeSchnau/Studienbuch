@@ -1,5 +1,5 @@
 import * as Effect from "effect/Effect";
-import * as CalendarDate from "../foundation/calendar-date";
+import { CalendarDate } from "../foundation/calendar-date";
 import { type AcademicCalendar, isSchoolDay } from "./academic-calendar";
 import { LessonOccurrenceId, type RecurringMeetingId, type ScheduleExceptionId } from "./identity";
 import {

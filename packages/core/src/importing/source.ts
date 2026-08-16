@@ -1,7 +1,7 @@
 import * as Schema from "effect/Schema";
-import * as NonBlankText from "../foundation/non-blank-text";
+import { NonBlankText } from "../foundation/non-blank-text";
 import { DataSourceId, ExternalId, ImportId } from "./identity";
-import * as SourceRevision from "./source-revision";
+import { SourceRevision } from "./source-revision";
 
 /** A configured provider feed. Its id distinguishes multiple feeds from the same provider. */
 export const DataSource = Schema.Struct({

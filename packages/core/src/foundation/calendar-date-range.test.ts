@@ -1,8 +1,8 @@
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vite-plus/test";
-import * as CalendarDate from "./calendar-date";
-import * as CalendarDateRange from "./calendar-date-range";
+import { CalendarDate } from "./calendar-date";
+import { CalendarDateRange } from "./calendar-date-range";
 
 const date = CalendarDate.unsafeFromString;
 

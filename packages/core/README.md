@@ -26,20 +26,19 @@ or substantial use cases and may change without creating another public API.
 
 ## Public interface
 
-The package root exposes ES-module namespace projections. Focused subpaths expose the same domain
-interface without loading the root:
+The package root and focused subpaths expose named ES-module namespace projections:
 
 ```ts
 import { Attendance, Foundation } from "@stu/core";
-import * as Schedule from "@stu/core/schedule";
+import { Schedule } from "@stu/core/schedule";
 
 const day = Foundation.CalendarDate.unsafeFromString("2026-08-14");
 const status = Attendance.status(absence);
 const lessons = Schedule.materializeSchoolDay({ calendar, date: day, meetings, exceptions });
 ```
 
-Bundle-sensitive clients may import a value module directly, for example
-`import * as Artifact from "@stu/core/foundation/artifact"`. This avoids making Temporal reachable
+Bundle-sensitive clients may import a named value namespace directly, for example
+`import { Artifact } from "@stu/core/foundation/artifact"`. This avoids making Temporal reachable
 when the client does not use calendar dates; prefer leaf subpaths for new mobile code.
 
 Substantial object-input operations keep their operation-specific types discoverable through
@@ -51,9 +50,9 @@ const acknowledge = (input: Attendance.acknowledge.Input) => Attendance.acknowle
 type AcknowledgeFailure = Attendance.acknowledge.Error;
 ```
 
-This is the useful namespace pattern from Effect itself: runtime organization remains ordinary ESM,
+This follows Effect's namespace pattern: indexes project ordinary ESM modules as named namespaces,
 while declaration merging keeps an operation's types discoverable. Runtime TypeScript namespaces
-are not used.
+are not used, and Core-owned modules are consumed with named imports rather than `import * as`.
 
 ## Modeling conventions
 

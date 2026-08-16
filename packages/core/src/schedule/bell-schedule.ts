@@ -1,9 +1,9 @@
 import * as Schema from "effect/Schema";
-import * as CalendarDateRange from "../foundation/calendar-date-range";
-import * as NonBlankText from "../foundation/non-blank-text";
+import { CalendarDateRange } from "../foundation/calendar-date-range";
+import { NonBlankText } from "../foundation/non-blank-text";
 import { SchoolId } from "../organization/identity";
 import { BellPeriodId, BellScheduleId } from "./identity";
-import * as LocalTimeRange from "./local-time-range";
+import { LocalTimeRange } from "./local-time-range";
 
 export const BellPeriod = Schema.Struct({
   id: BellPeriodId,

@@ -22,5 +22,5 @@ export {
 } from "./reconciliation";
 export { DataSourceId, ExternalId, ImportId } from "./identity";
 export { DataSource, SourceObservation, SourceStamp } from "./source";
-export * as SourceRevision from "./source-revision";
+export { SourceRevision } from "./source-revision";
 export { resolveSubject, SubjectInferenceRule, SubjectResolution } from "./subject-resolution";

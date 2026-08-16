@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
-import * as CalendarDate from "../foundation/calendar-date";
-import * as NonBlankText from "../foundation/non-blank-text";
+import { CalendarDate } from "../foundation/calendar-date";
+import { NonBlankText } from "../foundation/non-blank-text";
 import { CourseOfferingId, PersonId } from "../organization/identity";
 import {
   BellPeriodId,
@@ -8,7 +8,7 @@ import {
   RecurringMeetingId,
   ScheduleExceptionId,
 } from "./identity";
-import * as LocalTimeRange from "./local-time-range";
+import { LocalTimeRange } from "./local-time-range";
 
 export const LessonOccurrenceRef = Schema.Struct({
   meetingId: RecurringMeetingId,

@@ -1,9 +1,9 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import * as AggregateRevision from "../foundation/aggregate-revision";
-import * as Artifact from "../foundation/artifact";
-import * as CalendarDate from "../foundation/calendar-date";
-import * as NonBlankText from "../foundation/non-blank-text";
+import { AggregateRevision } from "../foundation/aggregate-revision";
+import { Artifact } from "../foundation/artifact";
+import { CalendarDate } from "../foundation/calendar-date";
+import { NonBlankText } from "../foundation/non-blank-text";
 import { ActorRef } from "../organization/acknowledgement";
 import {
   AuthorityDenied,

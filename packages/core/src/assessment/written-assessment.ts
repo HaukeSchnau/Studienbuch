@@ -1,8 +1,8 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import * as AggregateRevision from "../foundation/aggregate-revision";
-import * as CalendarDate from "../foundation/calendar-date";
-import * as NonBlankText from "../foundation/non-blank-text";
+import { AggregateRevision } from "../foundation/aggregate-revision";
+import { CalendarDate } from "../foundation/calendar-date";
+import { NonBlankText } from "../foundation/non-blank-text";
 import { Acknowledgement } from "../organization/acknowledgement";
 import {
   AuthorityDenied,
@@ -12,7 +12,7 @@ import {
 } from "../organization/authority";
 import { LegalAgePolicy, Person } from "../organization/person";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
-import { InvalidGradeValueError, Service as GradingPolicy } from "./grading-policy";
+import { GradingPolicy } from "./grading-policy";
 import { AssessmentWeight, GradeValue } from "./grading";
 import { AssessmentId } from "./identity";
 import {
@@ -68,7 +68,7 @@ export class ConcurrentWrittenAssessmentRevisionError extends Schema.TaggedError
 export const AttestWrittenError = Schema.Union([
   ConcurrentWrittenAssessmentRevisionError,
   AssessmentAlreadyTeacherAttestedError,
-  InvalidGradeValueError,
+  GradingPolicy.InvalidGradeValueError,
   AuthorityDenied,
 ]);
 export type AttestWrittenError = typeof AttestWrittenError.Type;
@@ -99,7 +99,7 @@ export const attestWritten = Effect.fn("Assessment.attestWrittenAssessment")(fun
   if (input.assessment.teacherAttestation !== undefined) {
     return yield* new AssessmentAlreadyTeacherAttestedError({ target: "WrittenAssessment" });
   }
-  const policy = yield* GradingPolicy;
+  const policy = yield* GradingPolicy.Service;
   yield* policy.validateValue(input.assessment.value);
   yield* authorize(
     input.actor,

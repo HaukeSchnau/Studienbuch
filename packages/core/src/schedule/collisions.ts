@@ -1,9 +1,9 @@
-import * as CalendarDate from "../foundation/calendar-date";
-import * as CalendarDateRange from "../foundation/calendar-date-range";
+import { CalendarDate } from "../foundation/calendar-date";
+import { CalendarDateRange } from "../foundation/calendar-date-range";
 import type { BellPeriod } from "./bell-schedule";
 import type { BellPeriodId, LessonOccurrenceId, RecurringMeetingId } from "./identity";
 import type { LessonOccurrence } from "./lesson-occurrence";
-import * as LocalTimeRange from "./local-time-range";
+import { LocalTimeRange } from "./local-time-range";
 import { meetingOccursOn, type RecurringMeeting, rotationsCanCoincide } from "./recurring-meeting";
 
 export interface BellPeriodCollision {

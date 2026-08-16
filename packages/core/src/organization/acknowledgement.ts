@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
-import * as AggregateRevision from "../foundation/aggregate-revision";
-import * as Artifact from "../foundation/artifact";
+import { AggregateRevision } from "../foundation/aggregate-revision";
+import { Artifact } from "../foundation/artifact";
 import { AcknowledgementId, PersonId, SchoolMembershipId } from "./identity";
 
 export const ActorRef = Schema.Struct({

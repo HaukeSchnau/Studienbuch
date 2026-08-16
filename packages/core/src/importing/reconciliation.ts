@@ -8,7 +8,7 @@ import {
   sourcedValue,
 } from "./provenanced-value";
 import { DataSource, SourceObservation, SourceStamp } from "./source";
-import * as SourceRevision from "./source-revision";
+import { SourceRevision } from "./source-revision";
 
 export const IncomingReconciliationResult = <Value extends Schema.Top>(value: Value) => {
   const provenanced = ProvenancedValue(value);

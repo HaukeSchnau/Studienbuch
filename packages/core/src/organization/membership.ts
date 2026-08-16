@@ -1,5 +1,5 @@
 import * as Schema from "effect/Schema";
-import * as CalendarDateRange from "../foundation/calendar-date-range";
+import { CalendarDateRange } from "../foundation/calendar-date-range";
 import {
   ClassGroupId,
   CohortId,
