@@ -11,7 +11,7 @@ import { PersonId, SchoolId, SchoolMembershipId, SubjectId } from "../organizati
 
 const source = Importing.DataSource.make({
   id: Importing.DataSourceId.make("untis-school-1"),
-  provider: NonBlankText.unsafeFromString("Untis"),
+  provider: "Untis",
 });
 
 const stamp = (revision: number, dataSource = source) =>
@@ -51,7 +51,7 @@ describe("import reconciliation", () => {
 
     const otherProvider = Importing.DataSource.make({
       id: source.id,
-      provider: NonBlankText.unsafeFromString("Another provider"),
+      provider: "Another provider",
     });
     const renamedProvider = Importing.reconcileIncoming(current, {
       ...observation("Mathematics", 3),

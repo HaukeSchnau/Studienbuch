@@ -7,7 +7,6 @@ import { Assessment } from "../index.ts";
 import { AggregateRevision } from "../foundation/aggregate-revision.ts";
 import { CalendarDate } from "../foundation/calendar-date.ts";
 import { CalendarDateRange } from "../foundation/calendar-date-range.ts";
-import { NonBlankText } from "../foundation/non-blank-text.ts";
 import { Acknowledgement, ActorRef } from "../organization/acknowledgement.ts";
 import { AuthoritySnapshot } from "../organization/authority.ts";
 import { CourseOffering } from "../organization/course-offering.ts";
@@ -45,7 +44,7 @@ const activeSchoolYear = CalendarDateRange.Schema.make({
 });
 const student = Person.make({
   id: studentPersonId,
-  name: PersonName.make({ displayName: NonBlankText.Schema.make("Student"), givenNames: [] }),
+  name: PersonName.make({ displayName: "Student", givenNames: [] }),
   dateOfBirth: date("2000-01-01"),
 });
 const courseOffering = CourseOffering.make({
@@ -53,7 +52,7 @@ const courseOffering = CourseOffering.make({
   schoolId,
   termId: AcademicTermId.make("term"),
   subjectId: SubjectId.make("subject"),
-  name: NonBlankText.Schema.make("Mathematics"),
+  name: "Mathematics",
   classGroupIds: [],
 });
 const authority = AuthoritySnapshot.make({

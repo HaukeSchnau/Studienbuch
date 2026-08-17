@@ -5,7 +5,6 @@ import { AggregateRevision } from "../foundation/aggregate-revision.ts";
 import { Artifact } from "../foundation/artifact.ts";
 import { CalendarDate } from "../foundation/calendar-date.ts";
 import { CalendarDateRange } from "../foundation/calendar-date-range.ts";
-import { NonBlankText } from "../foundation/non-blank-text.ts";
 import { ActorRef } from "../organization/acknowledgement.ts";
 import { AuthoritySnapshot } from "../organization/authority.ts";
 import {
@@ -20,7 +19,6 @@ import { Tasks } from "../index.ts";
 
 const date = CalendarDate.unsafeFromString;
 const taskId = (value: string) => SchoolTaskId.make(value);
-const title = (value: string) => NonBlankText.Schema.make(value);
 const courseId = (value: string) => CourseOfferingId.make(value);
 const studentMembershipId = SchoolMembershipId.make("student-membership");
 const studentPersonId = PersonId.make("student-person");
@@ -58,7 +56,7 @@ const makeTask = (overrides: Partial<Tasks.SchoolTask> = {}): Tasks.SchoolTask =
     id: taskId("task-1"),
     studentMembershipId,
     revision: AggregateRevision.initial,
-    title: title("Read chapter 4"),
+    title: "Read chapter 4",
     dueDate: date("2026-03-29"),
     attachments: [],
     status: Tasks.TaskStatus.cases.Open.make({}),
@@ -152,7 +150,7 @@ describe("task lifecycle", () => {
       const cancelled = yield* Tasks.cancel(
         transition(reopened),
         date("2026-03-29"),
-        title("No longer assigned"),
+        "No longer assigned",
       );
 
       expect(original.status._tag).toBe("Open");
@@ -217,20 +215,20 @@ describe("task lifecycle", () => {
 describe("task selectors", () => {
   const german = courseId("de-1");
   const tasks = [
-    makeTask({ id: taskId("later"), title: title("Later"), dueDate: date("2026-04-20") }),
+    makeTask({ id: taskId("later"), title: "Later", dueDate: date("2026-04-20") }),
     makeTask({
       id: taskId("course"),
-      title: title("Course work"),
+      title: "Course work",
       dueDate: date("2026-04-10"),
       courseOfferingId: german,
     }),
     makeTask({
       id: taskId("completed"),
-      title: title("Completed"),
+      title: "Completed",
       dueDate: date("2026-04-01"),
       status: Tasks.TaskStatus.cases.Completed.make({ completedOn: date("2026-04-01") }),
     }),
-    makeTask({ id: taskId("old"), title: title("Old"), dueDate: date("2026-03-01") }),
+    makeTask({ id: taskId("old"), title: "Old", dueDate: date("2026-03-01") }),
   ] as const;
 
   it("selects course-bound and unassigned tasks without mutating the input", () => {
@@ -259,8 +257,8 @@ describe("task selectors", () => {
     expect(CalendarDate.Equivalence(equalDateA, equalDateB)).toBe(true);
 
     const sameDay = [
-      makeTask({ id: taskId("z"), title: title("Zulu"), dueDate: equalDateA }),
-      makeTask({ id: taskId("a"), title: title("Alpha"), dueDate: equalDateB }),
+      makeTask({ id: taskId("z"), title: "Zulu", dueDate: equalDateA }),
+      makeTask({ id: taskId("a"), title: "Alpha", dueDate: equalDateB }),
     ];
 
     expect(Tasks.sort(sameDay).map((task) => task.id)).toEqual(["a", "z"]);

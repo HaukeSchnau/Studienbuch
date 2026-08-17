@@ -3,7 +3,6 @@ import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { CalendarDate } from "../foundation/calendar-date";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
-import { NonBlankText } from "../foundation/non-blank-text";
 import { CourseOffering } from "./course-offering.ts";
 import {
   AcademicTermId,
@@ -66,7 +65,7 @@ const offering = CourseOffering.make({
   schoolId,
   termId: AcademicTermId.make("term-1"),
   subjectId: SubjectId.make("mathematics"),
-  name: NonBlankText.unsafeFromString("Mathematics"),
+  name: "Mathematics",
   classGroupIds: [],
 });
 
@@ -84,7 +83,7 @@ describe("legal status", () => {
   const person = Person.make({
     id: studentPersonId,
     name: PersonName.make({
-      displayName: NonBlankText.unsafeFromString("Alex Example"),
+      displayName: "Alex Example",
       givenNames: [],
     }),
     dateOfBirth: date("2008-08-15"),

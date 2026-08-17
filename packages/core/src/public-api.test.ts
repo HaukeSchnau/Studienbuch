@@ -54,7 +54,7 @@ describe("public namespace exports", () => {
       start: date,
       end: date,
     });
-    const text: NonBlankText.Type = NonBlankText.Schema.make("Lesson notes");
+    const text: NonBlankText.Type = "Lesson notes";
     const start: LocalTime.Type = LocalTime.unsafeFromString("08:00");
     const end: LocalTime.Type = LocalTime.unsafeFromString("08:45");
     const timeRange: LocalTimeRange.Type = LocalTimeRange.Schema.make({ start, end });
