@@ -3,9 +3,9 @@ export { Attendance } from "./attendance";
 export {
   AggregateRevision,
   Artifact,
-  CalendarDate,
   CalendarDateRange,
   NonBlankText,
+  PlainDateSchema,
 } from "./foundation";
 export { Importing } from "./importing";
 export { Organization } from "./organization";

@@ -120,13 +120,18 @@ describe("import reconciliation", () => {
 
 describe("subject resolution", () => {
   const schoolId = SchoolId.make("school-1");
-  const subject = (id: string, name: string, code: string, aliases: ReadonlyArray<string>) =>
+  const subject = (
+    id: string,
+    name: NonBlankText.Type,
+    code: NonBlankText.Type,
+    aliases: ReadonlyArray<NonBlankText.Type>,
+  ) =>
     Subject.make({
       id: SubjectId.make(id),
       schoolId,
-      name: NonBlankText.unsafeFromString(name),
-      code: NonBlankText.unsafeFromString(code),
-      aliases: aliases.map((alias) => NonBlankText.unsafeFromString(alias)),
+      name,
+      code,
+      aliases,
     });
 
   const catalog = SubjectCatalog.make({
@@ -163,18 +168,23 @@ describe("subject resolution", () => {
 });
 
 describe("SourceRevision", () => {
-  it("round-trips through its schema and advances independently of aggregate revisions", () => {
-    const revision = Importing.SourceRevision.Schema.make(7);
-    const encoded = Schema.encodeSync(Importing.SourceRevision.Schema)(revision);
-    expect(encoded).toBe(7);
-    expect(Schema.decodeSync(Importing.SourceRevision.Schema)(encoded)).toBe(revision);
-    expect(Importing.SourceRevision.next(revision)).toEqual(
-      Option.some(Importing.SourceRevision.Schema.make(8)),
-    );
+  it.effect(
+    "round-trips through its schema and advances independently of aggregate revisions",
+    () =>
+      Effect.gen(function* () {
+        const revision = Importing.SourceRevision.Schema.make(7);
+        const encoded = yield* Schema.encodeEffect(Importing.SourceRevision.Schema)(revision);
+        expect(encoded).toBe(7);
+        expect(yield* Schema.decodeEffect(Importing.SourceRevision.Schema)(encoded)).toBe(revision);
+        expect(yield* Importing.SourceRevision.next(revision)).toBe(
+          Importing.SourceRevision.Schema.make(8),
+        );
 
-    // @ts-expect-error Aggregate and source revisions represent different ordering scopes.
-    Importing.SourceRevision.next(AggregateRevision.initial);
-  });
+        // @ts-expect-error Aggregate and source revisions represent different ordering scopes.
+        const wrongScope = Importing.SourceRevision.next(AggregateRevision.initial);
+        void wrongScope;
+      }),
+  );
 });
 
 describe("entity links", () => {

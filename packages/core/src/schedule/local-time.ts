@@ -1,5 +1,4 @@
 import * as Equivalence_ from "effect/Equivalence";
-import * as Option from "effect/Option";
 import * as Order_ from "effect/Order";
 import * as Schema_ from "effect/Schema";
 
@@ -7,7 +6,6 @@ const millisecondsPerSecond = 1_000;
 const millisecondsPerMinute = 60 * millisecondsPerSecond;
 const millisecondsPerHour = 60 * millisecondsPerMinute;
 const lastMillisecondOfDay = 24 * millisecondsPerHour - 1;
-const localTimePattern = /^(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{3}))?)?$/;
 
 /**
  * A wall-clock time within one local calendar day, with millisecond precision.
@@ -21,72 +19,6 @@ export const Schema = Schema_.Int.check(
 ).pipe(Schema_.brand("LocalTime"));
 
 export type Type = typeof Schema.Type;
-
-/** Validates a millisecond offset from the start of the day. */
-export const fromMilliseconds = (value: number): Option.Option<Type> => Schema.makeOption(value);
-
-/** Creates a trusted millisecond offset and throws when it is outside this day. */
-export const unsafeFromMilliseconds = (value: number): Type => Schema.make(value);
-
-/** Creates a local time when all components are integral and in range. */
-export const fromParts = (
-  hour: number,
-  minute: number,
-  second = 0,
-  millisecond = 0,
-): Option.Option<Type> => {
-  if (
-    !Number.isInteger(hour) ||
-    hour < 0 ||
-    hour > 23 ||
-    !Number.isInteger(minute) ||
-    minute < 0 ||
-    minute > 59 ||
-    !Number.isInteger(second) ||
-    second < 0 ||
-    second > 59 ||
-    !Number.isInteger(millisecond) ||
-    millisecond < 0 ||
-    millisecond > 999
-  ) {
-    return Option.none();
-  }
-  return fromMilliseconds(
-    hour * millisecondsPerHour +
-      minute * millisecondsPerMinute +
-      second * millisecondsPerSecond +
-      millisecond,
-  );
-};
-
-/** Creates a trusted local time and throws when any component is invalid. */
-export const unsafeFromParts = (hour: number, minute: number, second = 0, millisecond = 0): Type =>
-  Option.getOrThrowWith(
-    fromParts(hour, minute, second, millisecond),
-    () => new RangeError("LocalTime parts are outside their valid ranges"),
-  );
-
-/**
- * Parses exactly `HH:mm`, `HH:mm:ss`, or `HH:mm:ss.SSS`.
- * Short fields, 24:00, timezone suffixes, and sub-millisecond fractions fail.
- */
-export const fromString = (value: string): Option.Option<Type> => {
-  const match = localTimePattern.exec(value);
-  if (match === null) return Option.none();
-  const hourPart = match[1];
-  const minutePart = match[2];
-  if (hourPart === undefined || minutePart === undefined) return Option.none();
-  return fromParts(
-    Number(hourPart),
-    Number(minutePart),
-    match[3] === undefined ? 0 : Number(match[3]),
-    match[4] === undefined ? 0 : Number(match[4]),
-  );
-};
-
-/** Parses a trusted local-time string and throws when its syntax or value is invalid. */
-export const unsafeFromString = (value: string): Type =>
-  Option.getOrThrowWith(fromString(value), () => new RangeError(`Invalid local time: ${value}`));
 
 export const toMilliseconds = (time: Type): number => time;
 

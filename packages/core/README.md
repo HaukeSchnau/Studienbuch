@@ -30,12 +30,16 @@ Domain surfaces use named ES-module namespace projections. Foundational values a
 directly from both the package root and the focused Foundation subpath:
 
 ```ts
-import { Attendance, CalendarDate } from "@stu/core";
+import { Attendance, PlainDateSchema } from "@stu/core";
 import { Schedule } from "@stu/core/schedule";
+import { gen } from "effect/Effect";
+import { decodeEffect } from "effect/Schema";
 
-const day = CalendarDate.unsafeFromString("2026-08-14");
-const status = Attendance.status(absence);
-const lessons = Schedule.materializeSchoolDay({ calendar, date: day, meetings, exceptions });
+const program = gen(function* () {
+  const day = yield* decodeEffect(PlainDateSchema)("2026-08-14");
+  const status = Attendance.status(absence);
+  return yield* Schedule.materializeSchoolDay({ calendar, date: day, meetings, exceptions });
+});
 ```
 
 Bundle-sensitive clients may import a named value namespace directly, for example
@@ -59,20 +63,19 @@ implementation and namespace-facade files. Domain indexes only relay those estab
 
 ## Modeling conventions
 
-- Boundary and persisted values are Effect schemas. Companion value modules expose them as
-  `.Schema` and `.Type`, alongside their construction and domain operations.
-- Decode untrusted values at the boundary. Use a schema's `.make` only for trusted construction.
+- Boundary and persisted values are Effect schemas. Decode them with `Schema.decodeEffect` or
+  `Schema.decodeUnknownEffect`; schema issues remain in the Effect error channel.
 - Civil school dates use timezone-free Temporal plain-date values, and local lesson times use
   milliseconds since midnight. Neither is a JavaScript `Date`; absolute audit timestamps use
   Effect's UTC date-time value and elapsed time uses Effect `Duration`.
-- Pure calculations remain ordinary total functions. Use `Effect` when a decision has typed refusal
-  or a genuine runtime policy dependency.
+- Pure calculations remain ordinary total functions. Typed refusal, validation, and finite-domain
+  exhaustion use `Effect`; Core exports no `unsafe…` construction or parsing APIs.
 - Domain operations receive the relevant date, actor, and evidence explicitly. Replay and
   projections never consult an ambient clock.
 - Services model real institutional variability, not every helper. `Assessment.GradingPolicy` is
   the current example.
 - Internal modules import owning leaves directly; callers import the public domain namespace.
-- Foundation values are imported directly (`CalendarDate`), never through a `Foundation` namespace.
+- Foundation values are imported directly (`PlainDateSchema`), never through a `Foundation` namespace.
 - Entity IDs live with their owning domain (`Organization.PersonId`, `Schedule.LessonOccurrenceId`),
   not in a global registry.
 

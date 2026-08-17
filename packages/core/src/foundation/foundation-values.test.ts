@@ -1,20 +1,22 @@
-import * as Option from "effect/Option";
+import { assert, describe, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import { describe, expect, it } from "vite-plus/test";
 import { AggregateRevision } from "./aggregate-revision";
 import { Artifact } from "./artifact";
 import { NonBlankText } from "./non-blank-text";
 
 describe("AggregateRevision", () => {
-  it("starts at zero and advances monotonically", () => {
-    const next = AggregateRevision.unsafeNext(AggregateRevision.initial);
-    expect(AggregateRevision.next(AggregateRevision.initial)).toEqual(Option.some(next));
-    expect(AggregateRevision.compare(AggregateRevision.initial, next)).toBe(-1);
-    expect(AggregateRevision.Equivalence(next, AggregateRevision.Schema.make(1))).toBe(true);
-    expect(AggregateRevision.next(AggregateRevision.Schema.make(Number.MAX_SAFE_INTEGER))).toEqual(
-      Option.none(),
-    );
-  });
+  it.effect("starts at zero, advances monotonically, and reports exhaustion", () =>
+    Effect.gen(function* () {
+      const next = yield* AggregateRevision.next(AggregateRevision.initial);
+      assert.strictEqual(AggregateRevision.compare(AggregateRevision.initial, next), -1);
+      assert.isTrue(AggregateRevision.Equivalence(next, AggregateRevision.Schema.make(1)));
+      const exhausted = yield* Effect.flip(
+        AggregateRevision.next(AggregateRevision.Schema.make(Number.MAX_SAFE_INTEGER)),
+      );
+      assert.strictEqual(exhausted._tag, "AggregateRevision.Exhausted");
+    }),
+  );
 });
 
 describe("NonBlankText", () => {
@@ -22,8 +24,8 @@ describe("NonBlankText", () => {
     const latin: NonBlankText.Type = "Untis";
     const unicode: NonBlankText.Type = "数学";
 
-    expect(latin).toBe("Untis");
-    expect(unicode).toBe("数学");
+    assert.strictEqual(latin, "Untis");
+    assert.strictEqual(unicode, "数学");
 
     // @ts-expect-error An empty literal is not non-blank text.
     const empty: NonBlankText.Type = "";
@@ -32,20 +34,26 @@ describe("NonBlankText", () => {
     void [empty, dynamic];
   });
 
-  it("accepts only trimmed non-empty text", () => {
-    expect(Option.isSome(NonBlankText.fromString("Lesson notes"))).toBe(true);
-    expect(Option.isNone(NonBlankText.fromString(""))).toBe(true);
-    expect(Option.isNone(NonBlankText.fromString("   "))).toBe(true);
-    expect(Option.isNone(NonBlankText.fromString(" padded "))).toBe(true);
-  });
+  it.effect("validates non-blank text while preserving authored spacing", () =>
+    Effect.gen(function* () {
+      const text = yield* Schema.decodeEffect(NonBlankText.Schema)("Lesson notes");
+      assert.strictEqual(text, "Lesson notes");
+      for (const invalid of ["", "   "]) {
+        yield* Schema.decodeEffect(NonBlankText.Schema)(invalid).pipe(Effect.flip);
+      }
+      assert.strictEqual(yield* Schema.decodeEffect(NonBlankText.Schema)(" padded "), " padded ");
+    }),
+  );
 
-  it("round-trips as an ordinary string", () => {
-    const text: NonBlankText.Type = "Lesson notes";
-    const encoded = Schema.encodeSync(NonBlankText.Schema)(text);
+  it.effect("round-trips as an ordinary string", () =>
+    Effect.gen(function* () {
+      const text: NonBlankText.Type = "Lesson notes";
+      const encoded = yield* Schema.encodeEffect(NonBlankText.Schema)(text);
 
-    expect(encoded).toBe("Lesson notes");
-    expect(Schema.decodeSync(NonBlankText.Schema)(encoded)).toBe(text);
-  });
+      assert.strictEqual(encoded, "Lesson notes");
+      assert.strictEqual(yield* Schema.decodeEffect(NonBlankText.Schema)(encoded), text);
+    }),
+  );
 });
 
 describe("Artifact", () => {
@@ -59,7 +67,7 @@ describe("Artifact", () => {
       }),
     });
 
-    expect(Schema.is(Artifact.Reference)(reference)).toBe(true);
-    expect(Artifact.MediaType.makeOption("not-a-media-type")).toEqual(Option.none());
+    assert.isTrue(Schema.is(Artifact.Reference)(reference));
+    assert.isFalse(Schema.is(Artifact.MediaType)("not-a-media-type"));
   });
 });

@@ -1,4 +1,4 @@
-import { CalendarDate } from "../foundation/calendar-date";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
 import type { BellPeriod } from "./bell-schedule";
 import type { BellPeriodId, LessonOccurrenceId, RecurringMeetingId } from "./identity";
@@ -53,18 +53,19 @@ const meetingsCanCoincide = (left: RecurringMeeting, right: RecurringMeeting): b
   }
 
   let date =
-    CalendarDate.compare(left.effectiveInterval.start, right.effectiveInterval.start) > 0
+    PlainDate.compare(left.effectiveInterval.start, right.effectiveInterval.start) > 0
       ? left.effectiveInterval.start
       : right.effectiveInterval.start;
   const end =
-    CalendarDate.compare(left.effectiveInterval.end, right.effectiveInterval.end) < 0
+    PlainDate.compare(left.effectiveInterval.end, right.effectiveInterval.end) < 0
       ? left.effectiveInterval.end
       : right.effectiveInterval.end;
 
   // Weekday and parity repeat every 14 days, so a longer scan cannot find a new pattern.
-  for (let offset = 0; offset < 14 && CalendarDate.compare(date, end) <= 0; offset += 1) {
+  for (let offset = 0; offset < 14 && PlainDate.compare(date, end) <= 0; offset += 1) {
     if (meetingOccursOn(left, date) && meetingOccursOn(right, date)) return true;
-    date = CalendarDate.unsafeAddDays(date, 1);
+    if (PlainDate.equals(date, end)) break;
+    date = PlainDate.addDays(date, 1);
   }
   return false;
 };
@@ -91,7 +92,7 @@ export const findLessonOccurrenceCollisions = (
   pairs(occurrences)
     .filter(
       ([left, right]) =>
-        CalendarDate.Equivalence(left.date, right.date) &&
+        PlainDate.equals(left.date, right.date) &&
         LocalTimeRange.overlaps(left.timeRange, right.timeRange),
     )
     .map(([left, right]) => orderedPair(left.id, right.id))

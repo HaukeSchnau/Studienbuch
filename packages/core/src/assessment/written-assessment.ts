@@ -1,7 +1,7 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision";
-import { CalendarDate } from "../foundation/calendar-date";
+import { PlainDateSchema } from "../foundation/plain-date";
 import { NonBlankText } from "../foundation/non-blank-text";
 import { Acknowledgement } from "../organization/acknowledgement";
 import {
@@ -30,7 +30,7 @@ export const WrittenAssessment = Schema.Struct({
   studentMembershipId: SchoolMembershipId,
   courseOfferingId: CourseOfferingId,
   title: Schema.optionalKey(NonBlankText.Schema),
-  assessedOn: CalendarDate.Schema,
+  assessedOn: PlainDateSchema,
   value: GradeValue,
   weight: AssessmentWeight,
   revision: AggregateRevision.Schema,
@@ -68,6 +68,7 @@ export class ConcurrentWrittenAssessmentRevisionError extends Schema.TaggedError
 export const AttestWrittenError = Schema.Union([
   ConcurrentWrittenAssessmentRevisionError,
   AssessmentAlreadyTeacherAttestedError,
+  AggregateRevision.Exhausted,
   GradingPolicy.InvalidGradeValueError,
   AuthorityDenied,
 ]);
@@ -76,6 +77,7 @@ export type AttestWrittenError = typeof AttestWrittenError.Type;
 export const AcknowledgeWrittenError = Schema.Union([
   ConcurrentWrittenAssessmentRevisionError,
   AssessmentAlreadyLearnerAcknowledgedError,
+  AggregateRevision.Exhausted,
   AssessmentAcknowledgementActorError,
   AssessmentLegalStatusUnknownError,
   AuthorityDenied,
@@ -109,9 +111,10 @@ export const attestWritten = Effect.fn("Assessment.attestWrittenAssessment")(fun
     input.assessment.assessedOn,
     input.authority,
   );
+  const revision = yield* AggregateRevision.next(input.assessment.revision);
   return WrittenAssessment.make(
     Object.assign({}, input.assessment, {
-      revision: AggregateRevision.unsafeNext(input.assessment.revision),
+      revision,
       teacherAttestation: makeAcknowledgement(input, input.assessment.revision),
     }),
   );
@@ -144,9 +147,10 @@ export const acknowledgeWritten = Effect.fn("Assessment.acknowledgeWrittenAssess
     legalAgePolicy: input.legalAgePolicy,
     authority: input.authority,
   });
+  const revision = yield* AggregateRevision.next(input.assessment.revision);
   return WrittenAssessment.make(
     Object.assign({}, input.assessment, {
-      revision: AggregateRevision.unsafeNext(input.assessment.revision),
+      revision,
       learnerAcknowledgement: makeAcknowledgement(input, input.assessment.revision),
     }),
   );

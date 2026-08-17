@@ -1,5 +1,5 @@
 import * as Schema from "effect/Schema";
-import { CalendarDate } from "../foundation/calendar-date";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { NonBlankText } from "../foundation/non-blank-text";
 import { CourseOfferingId, PersonId } from "../organization/identity";
@@ -27,23 +27,18 @@ export const RecurringMeeting = Schema.Struct({
 });
 export interface RecurringMeeting extends Schema.Schema.Type<typeof RecurringMeeting> {}
 
-const isoWeekIdentity = (date: CalendarDate.Type) => ({
-  year: CalendarDate.yearOfWeek(date),
-  week: CalendarDate.weekOfYear(date),
-});
-
 export const rotationIncludesDate = (
   rotation: RotationPattern,
-  date: CalendarDate.Type,
+  date: PlainDate.Record,
 ): boolean => {
   if (rotation._tag === "EveryWeek") return true;
-  const identity = isoWeekIdentity(date);
-  return rotation._tag === "OddIsoWeek" ? identity.week % 2 === 1 : identity.week % 2 === 0;
+  const week = PlainDate.weekOfYear(date);
+  return week !== undefined && (rotation._tag === "OddIsoWeek" ? week % 2 === 1 : week % 2 === 0);
 };
 
-export const meetingOccursOn = (meeting: RecurringMeeting, date: CalendarDate.Type): boolean =>
+export const meetingOccursOn = (meeting: RecurringMeeting, date: PlainDate.Record): boolean =>
   CalendarDateRange.contains(meeting.effectiveInterval, date) &&
-  meeting.weekday === CalendarDate.dayOfWeek(date) &&
+  meeting.weekday === PlainDate.dayOfWeek(date) &&
   rotationIncludesDate(meeting.rotation, date);
 
 export const rotationsCanCoincide = (left: RotationPattern, right: RotationPattern): boolean =>

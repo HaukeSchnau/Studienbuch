@@ -3,7 +3,7 @@ import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision";
 import { Artifact } from "../foundation/artifact";
-import { CalendarDate } from "../foundation/calendar-date";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { NonBlankText } from "../foundation/non-blank-text";
 import { ActorRef, makeAcknowledgement } from "../organization/acknowledgement";
 import {
@@ -55,6 +55,7 @@ export const DecideMissedLessonError = Schema.Union([
   AbsenceNotAcknowledgedError,
   MissedLessonOccurrenceMismatchError,
   StudentNotEnrolledError,
+  AggregateRevision.Exhausted,
   AuthorityDenied,
 ]);
 export type DecideMissedLessonError = typeof DecideMissedLessonError.Type;
@@ -88,7 +89,7 @@ export const decideMissedLesson = Effect.fn("Attendance.decideMissedLesson")(fun
   if (
     lesson.lessonOccurrenceId !== input.occurrence.id ||
     lesson.courseOfferingId !== input.occurrence.courseOfferingId ||
-    !CalendarDate.Equivalence(input.absence.date, input.occurrence.date)
+    !PlainDate.equals(input.absence.date, input.occurrence.date)
   ) {
     return yield* new MissedLessonOccurrenceMismatchError({
       missedLessonId: lesson.id,
@@ -116,7 +117,7 @@ export const decideMissedLesson = Effect.fn("Attendance.decideMissedLesson")(fun
     input.authority,
   );
 
-  const nextRevision = AggregateRevision.unsafeNext(input.absence.revision);
+  const nextRevision = yield* AggregateRevision.next(input.absence.revision);
   let decision: MissedLessonDecision;
   if (input.decision._tag === "Excused") {
     decision = MissedLessonDecision.cases.Excused.make({

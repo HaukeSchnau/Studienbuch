@@ -2,7 +2,8 @@ import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision";
-import { CalendarDate } from "../foundation/calendar-date";
+import { PlainDateSchema } from "../foundation/plain-date";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { Acknowledgement } from "../organization/acknowledgement";
 import {
   AuthorityDenied,
@@ -31,7 +32,7 @@ export type StandingKind = typeof StandingKind.Type;
 export const StandingRevision = Schema.Struct({
   id: StandingRevisionId,
   value: GradeValue,
-  observedOn: CalendarDate.Schema,
+  observedOn: PlainDateSchema,
   supersedes: Schema.optionalKey(StandingRevisionId),
   teacherAttestation: Schema.optionalKey(Acknowledgement),
   learnerAcknowledgement: Schema.optionalKey(Acknowledgement),
@@ -53,7 +54,7 @@ const hasValidRevisionChain = (standing: {
   const isChronological = standing.revisions.every((revision, index) => {
     const previous = standing.revisions[index - 1];
     return (
-      previous === undefined || CalendarDate.compare(previous.observedOn, revision.observedOn) <= 0
+      previous === undefined || PlainDate.compare(previous.observedOn, revision.observedOn) <= 0
     );
   });
   return (
@@ -83,12 +84,10 @@ export const CourseStanding = Schema.Struct({
 );
 export interface CourseStanding extends Schema.Schema.Type<typeof CourseStanding> {}
 
-export const currentStandingRevision = (
-  standing: CourseStanding,
-): Option.Option<StandingRevision> =>
-  Option.fromUndefinedOr(
-    standing.revisions.find((revision) => revision.id === standing.currentRevisionId),
-  );
+export const currentStandingRevision = (standing: CourseStanding): StandingRevision => {
+  const [first, ...remaining] = standing.revisions;
+  return remaining.at(-1) ?? first;
+};
 
 export const isStandingRevisionConfirmed = (revision: StandingRevision): boolean =>
   revision.teacherAttestation !== undefined && revision.learnerAcknowledgement !== undefined;
@@ -122,7 +121,7 @@ export class InvalidStandingSupersessionError extends Schema.TaggedError<Invalid
 
 export class StandingRevisionChronologyError extends Schema.TaggedError<StandingRevisionChronologyError>()(
   "Assessment.StandingRevisionChronology",
-  { previousObservedOn: CalendarDate.Schema, nextObservedOn: CalendarDate.Schema },
+  { previousObservedOn: PlainDateSchema, nextObservedOn: PlainDateSchema },
 ) {}
 
 export class StandingRevisionNotCurrentError extends Schema.TaggedError<StandingRevisionNotCurrentError>()(
@@ -137,6 +136,7 @@ export const ReviseStandingError = Schema.Union([
   StandingRevisionChronologyError,
   AssessmentAlreadyTeacherAttestedError,
   AssessmentAlreadyLearnerAcknowledgedError,
+  AggregateRevision.Exhausted,
   GradingPolicy.InvalidGradeValueError,
 ]);
 export type ReviseStandingError = typeof ReviseStandingError.Type;
@@ -146,6 +146,7 @@ export const AttestStandingError = Schema.Union([
   StandingRevisionNotFoundError,
   StandingRevisionNotCurrentError,
   AssessmentAlreadyTeacherAttestedError,
+  AggregateRevision.Exhausted,
   GradingPolicy.InvalidGradeValueError,
   AuthorityDenied,
 ]);
@@ -158,6 +159,7 @@ export const AcknowledgeStandingError = Schema.Union([
   AssessmentAlreadyLearnerAcknowledgedError,
   AssessmentAcknowledgementActorError,
   AssessmentLegalStatusUnknownError,
+  AggregateRevision.Exhausted,
   AuthorityDenied,
 ]);
 export type AcknowledgeStandingError = typeof AcknowledgeStandingError.Type;
@@ -194,12 +196,8 @@ export const reviseStanding = Effect.fn("Assessment.addStandingRevision")(functi
       supersedes: input.revision.supersedes ?? input.revision.id,
     });
   }
-  const current = yield* currentStandingRevision(input.standing).pipe(
-    Effect.fromOption(
-      () => new StandingRevisionNotFoundError({ revisionId: input.standing.currentRevisionId }),
-    ),
-  );
-  if (CalendarDate.compare(input.revision.observedOn, current.observedOn) < 0) {
+  const current = currentStandingRevision(input.standing);
+  if (PlainDate.compare(input.revision.observedOn, current.observedOn) < 0) {
     return yield* new StandingRevisionChronologyError({
       previousObservedOn: current.observedOn,
       nextObservedOn: input.revision.observedOn,
@@ -209,9 +207,10 @@ export const reviseStanding = Effect.fn("Assessment.addStandingRevision")(functi
   const policy = yield* GradingPolicy.Service;
   yield* policy.validateValue(input.revision.value);
 
+  const revision = yield* AggregateRevision.next(input.standing.revision);
   return CourseStanding.make(
     Object.assign({}, input.standing, {
-      revision: AggregateRevision.unsafeNext(input.standing.revision),
+      revision,
       currentRevisionId: input.revision.id,
       revisions: [...input.standing.revisions, input.revision],
     }),
@@ -252,19 +251,20 @@ const currentTarget = Effect.fn("Assessment.currentStandingTarget")(function* (
   return target;
 });
 
-const updateCurrentStanding = (
+const updateCurrentStanding = Effect.fn("Assessment.updateCurrentStanding")(function* (
   input: StandingConfirmationInput,
   target: StandingRevision,
-): CourseStanding => {
+) {
   const update = (revision: StandingRevision) => (revision.id === target.id ? target : revision);
   const first = input.standing.revisions[0];
+  const revision = yield* AggregateRevision.next(input.standing.revision);
   return CourseStanding.make(
     Object.assign({}, input.standing, {
-      revision: AggregateRevision.unsafeNext(input.standing.revision),
+      revision,
       revisions: [update(first), ...input.standing.revisions.slice(1).map(update)],
     }),
   );
-};
+});
 
 export const attestStanding = Effect.fn("Assessment.attestStandingRevision")(function* (
   input: attestStanding.Input,
@@ -283,7 +283,7 @@ export const attestStanding = Effect.fn("Assessment.attestStandingRevision")(fun
     target.observedOn,
     input.authority,
   );
-  return updateCurrentStanding(input, {
+  return yield* updateCurrentStanding(input, {
     ...target,
     teacherAttestation: makeAcknowledgement(input, input.standing.revision),
   });
@@ -311,7 +311,7 @@ export const acknowledgeStanding = Effect.fn("Assessment.acknowledgeStandingRevi
     legalAgePolicy: input.legalAgePolicy,
     authority: input.authority,
   });
-  return updateCurrentStanding(input, {
+  return yield* updateCurrentStanding(input, {
     ...target,
     learnerAcknowledgement: makeAcknowledgement(input, input.standing.revision),
   });

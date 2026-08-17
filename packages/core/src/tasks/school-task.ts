@@ -2,7 +2,8 @@ import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision";
 import { Artifact } from "../foundation/artifact";
-import { CalendarDate } from "../foundation/calendar-date";
+import { PlainDateSchema } from "../foundation/plain-date";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { NonBlankText } from "../foundation/non-blank-text";
 import { ActorRef } from "../organization/acknowledgement";
 import {
@@ -16,9 +17,9 @@ import { SchoolTaskId } from "./identity";
 
 export const TaskStatus = Schema.TaggedUnion({
   Open: {},
-  Completed: { completedOn: CalendarDate.Schema },
+  Completed: { completedOn: PlainDateSchema },
   Cancelled: {
-    cancelledOn: CalendarDate.Schema,
+    cancelledOn: PlainDateSchema,
     reason: Schema.optionalKey(NonBlankText.Schema),
   },
 });
@@ -30,7 +31,7 @@ export const SchoolTask = Schema.Struct({
   revision: AggregateRevision.Schema,
   title: NonBlankText.Schema,
   description: Schema.optionalKey(NonBlankText.Schema),
-  dueDate: CalendarDate.Schema,
+  dueDate: PlainDateSchema,
   courseOfferingId: Schema.optionalKey(CourseOfferingId),
   attachments: Schema.Array(Artifact.Reference),
   status: TaskStatus,
@@ -40,8 +41,8 @@ export interface SchoolTask extends Schema.Schema.Type<typeof SchoolTask> {}
 export const DueStatus = Schema.Literals(["Upcoming", "DueToday", "Overdue"]);
 export type DueStatus = typeof DueStatus.Type;
 
-export const dueStatus = (task: SchoolTask, today: CalendarDate.Type): DueStatus => {
-  const order = CalendarDate.compare(task.dueDate, today);
+export const dueStatus = (task: SchoolTask, today: PlainDate.Record): DueStatus => {
+  const order = PlainDate.compare(task.dueDate, today);
   return order < 0 ? "Overdue" : order === 0 ? "DueToday" : "Upcoming";
 };
 
@@ -73,6 +74,7 @@ export class ConcurrentTaskRevision extends Schema.TaggedError<ConcurrentTaskRev
 export const TransitionError = Schema.Union([
   TaskTransitionRefused,
   ConcurrentTaskRevision,
+  AggregateRevision.Exhausted,
   AuthorityDenied,
 ]);
 export type TransitionError = typeof TransitionError.Type;
@@ -82,7 +84,7 @@ interface TransitionInput {
   readonly expectedRevision: AggregateRevision.Type;
   readonly actor: ActorRef;
   readonly authority: AuthoritySnapshot;
-  readonly on: CalendarDate.Type;
+  readonly on: PlainDate.Record;
 }
 
 const refuse = (task: SchoolTask, transition: typeof TaskTransition.Type) =>
@@ -94,10 +96,13 @@ const refuse = (task: SchoolTask, transition: typeof TaskTransition.Type) =>
     }),
   );
 
-const withStatus = (task: SchoolTask, status: TaskStatus): SchoolTask =>
-  SchoolTask.make(
-    Object.assign({}, task, { revision: AggregateRevision.unsafeNext(task.revision), status }),
-  );
+const withStatus = Effect.fn("SchoolTask.withStatus")(function* (
+  task: SchoolTask,
+  status: TaskStatus,
+) {
+  const revision = yield* AggregateRevision.next(task.revision);
+  return SchoolTask.make(Object.assign({}, task, { revision, status }));
+});
 
 const prepare = (input: TransitionInput) =>
   Effect.gen(function* () {
@@ -120,12 +125,12 @@ const prepare = (input: TransitionInput) =>
 
 export const complete = Effect.fn("SchoolTask.complete")(function* (
   input: complete.Input,
-  completedOn: CalendarDate.Type,
+  completedOn: PlainDate.Record,
 ) {
   yield* prepare(input);
   if (input.task.status._tag !== "Open") return yield* refuse(input.task, "Complete");
 
-  return withStatus(input.task, TaskStatus.cases.Completed.make({ completedOn }));
+  return yield* withStatus(input.task, TaskStatus.cases.Completed.make({ completedOn }));
 });
 
 export declare namespace complete {
@@ -137,7 +142,7 @@ export const reopen = Effect.fn("SchoolTask.reopen")(function* (input: reopen.In
   yield* prepare(input);
   if (input.task.status._tag === "Open") return yield* refuse(input.task, "Reopen");
 
-  return withStatus(input.task, TaskStatus.cases.Open.make({}));
+  return yield* withStatus(input.task, TaskStatus.cases.Open.make({}));
 });
 
 export declare namespace reopen {
@@ -147,13 +152,13 @@ export declare namespace reopen {
 
 export const cancel = Effect.fn("SchoolTask.cancel")(function* (
   input: cancel.Input,
-  cancelledOn: CalendarDate.Type,
+  cancelledOn: PlainDate.Record,
   reason?: NonBlankText.Type,
 ) {
   yield* prepare(input);
   if (input.task.status._tag !== "Open") return yield* refuse(input.task, "Cancel");
 
-  return withStatus(
+  return yield* withStatus(
     input.task,
     reason === undefined
       ? TaskStatus.cases.Cancelled.make({ cancelledOn })

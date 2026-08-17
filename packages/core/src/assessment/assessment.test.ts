@@ -5,7 +5,8 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { Assessment } from "../index.ts";
 import { AggregateRevision } from "../foundation/aggregate-revision.ts";
-import { CalendarDate } from "../foundation/calendar-date.ts";
+import * as Calendar from "temporal-polyfill/fns/Calendar";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range.ts";
 import { Acknowledgement, ActorRef } from "../organization/acknowledgement.ts";
 import { AuthoritySnapshot } from "../organization/authority.ts";
@@ -22,7 +23,7 @@ import {
 import { SchoolMembership, StudentMembership } from "../organization/membership.ts";
 import { LegalAgePolicy, Person, PersonName } from "../organization/person.ts";
 
-const date = CalendarDate.unsafeFromString;
+const date = (value: string) => PlainDate.fromString(value, Calendar.getBasic);
 const schoolId = SchoolId.make("school");
 const studentMembershipId = SchoolMembershipId.make("student");
 const teacherMembershipId = SchoolMembershipId.make("teacher");
@@ -255,37 +256,41 @@ describe("standing revisions", () => {
     revisions: [root],
   });
 
-  it("round-trips civil dates and nested acknowledgement revisions through the wire schema", () => {
-    const encoded = Schema.encodeSync(Assessment.CourseStanding)(standing);
-    assert.strictEqual(encoded.revisions[0].observedOn, "2026-08-01");
+  it.effect(
+    "round-trips civil dates and nested acknowledgement revisions through the wire schema",
+    () =>
+      Effect.gen(function* () {
+        const encoded = yield* Schema.encodeEffect(Assessment.CourseStanding)(standing);
+        assert.strictEqual(encoded.revisions[0].observedOn, "2026-08-01");
 
-    const decoded = Schema.decodeSync(Assessment.CourseStanding)(encoded);
-    assert.strictEqual(CalendarDate.toString(decoded.revisions[0].observedOn), "2026-08-01");
-    assert.deepEqual(Schema.encodeSync(Assessment.CourseStanding)(decoded), encoded);
+        const decoded = yield* Schema.decodeEffect(Assessment.CourseStanding)(encoded);
+        assert.strictEqual(PlainDate.toString(decoded.revisions[0].observedOn), "2026-08-01");
+        assert.deepEqual(yield* Schema.encodeEffect(Assessment.CourseStanding)(decoded), encoded);
 
-    assert.throws(() =>
-      Schema.decodeSync(Assessment.CourseStanding)({
-        ...encoded,
-        revision: 0,
+        yield* Effect.flip(
+          Schema.decodeEffect(Assessment.CourseStanding)({
+            ...encoded,
+            revision: 0,
+          }),
+        );
+
+        yield* Effect.flip(
+          Schema.decodeEffect(Assessment.CourseStanding)({
+            ...encoded,
+            currentRevisionId: "standing-r2",
+            revisions: [
+              encoded.revisions[0],
+              {
+                id: "standing-r2",
+                value: 12,
+                observedOn: "2026-07-31",
+                supersedes: encoded.revisions[0].id,
+              },
+            ],
+          }),
+        );
       }),
-    );
-
-    assert.throws(() =>
-      Schema.decodeSync(Assessment.CourseStanding)({
-        ...encoded,
-        currentRevisionId: "standing-r2",
-        revisions: [
-          encoded.revisions[0],
-          {
-            id: "standing-r2",
-            value: 12,
-            observedOn: "2026-07-31",
-            supersedes: encoded.revisions[0].id,
-          },
-        ],
-      }),
-    );
-  });
+  );
 
   it("keeps assessment aggregate identities nominally distinct", () => {
     const assessmentId = Assessment.AssessmentId.make("assessment");
@@ -309,10 +314,7 @@ describe("standing revisions", () => {
           expectedRevision: AggregateRevision.Schema.make(2),
           revision: second,
         });
-        assert.strictEqual(
-          Option.getOrThrow(Assessment.currentStandingRevision(revised)).id,
-          second.id,
-        );
+        assert.strictEqual(Assessment.currentStandingRevision(revised).id, second.id);
         assert.strictEqual(
           Option.getOrThrow(Assessment.lastConfirmedStandingRevision(revised)).id,
           root.id,
@@ -328,9 +330,7 @@ describe("standing revisions", () => {
           acknowledgedAt: at,
         });
         assert.isFalse(
-          Assessment.isStandingRevisionConfirmed(
-            Option.getOrThrow(Assessment.currentStandingRevision(attested)),
-          ),
+          Assessment.isStandingRevisionConfirmed(Assessment.currentStandingRevision(attested)),
         );
         const confirmed = yield* Assessment.acknowledgeStanding({
           standing: attested,
@@ -344,9 +344,7 @@ describe("standing revisions", () => {
           acknowledgedAt: at,
         });
         assert.isTrue(
-          Assessment.isStandingRevisionConfirmed(
-            Option.getOrThrow(Assessment.currentStandingRevision(confirmed)),
-          ),
+          Assessment.isStandingRevisionConfirmed(Assessment.currentStandingRevision(confirmed)),
         );
       }).pipe(Effect.provide(Assessment.GradingPolicy.defaultLayer)),
   );

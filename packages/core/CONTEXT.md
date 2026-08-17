@@ -5,7 +5,7 @@ Studienbuch Core describes school life independently of persistence, synchroniza
 ## Shared values
 
 **Calendar date**:
-A timezone-free ISO calendar day such as 2026-08-15. It has no clock time or UTC offset and is encoded as `YYYY-MM-DD`.
+A timezone-free ISO calendar day such as 2026-08-15, represented directly by Temporal `PlainDate.Record`. It has no clock time or UTC offset and is encoded as `YYYY-MM-DD` at external boundaries.
 _Avoid_: JavaScript `Date`, timestamp, date string
 
 **Calendar-date range**:

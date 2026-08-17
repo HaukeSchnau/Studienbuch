@@ -37,6 +37,7 @@ export const AcknowledgeError = Schema.Union([
   AbsenceAlreadyAcknowledgedError,
   AcknowledgementActorError,
   AbsenceStudentIdentityError,
+  AggregateRevision.Exhausted,
   AuthorityDenied,
 ]);
 export type AcknowledgeError = typeof AcknowledgeError.Type;
@@ -110,13 +111,14 @@ export const acknowledge = Effect.fn("Attendance.acknowledge")(function* (
     artifact: input.artifact,
   });
 
+  const revision = yield* AggregateRevision.next(input.absence.revision);
   return AbsenceCase.make({
     id: input.absence.id,
     studentMembershipId: input.absence.studentMembershipId,
     date: input.absence.date,
     reason: input.absence.reason,
     detailsRevision: input.absence.detailsRevision,
-    revision: AggregateRevision.unsafeNext(input.absence.revision),
+    revision,
     acknowledgement,
     missedLessons: input.absence.missedLessons,
   });

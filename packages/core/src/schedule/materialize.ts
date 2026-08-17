@@ -1,5 +1,5 @@
 import * as Effect from "effect/Effect";
-import { CalendarDate } from "../foundation/calendar-date";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { type AcademicCalendar, isSchoolDay } from "./academic-calendar";
 import { LessonOccurrenceId, type RecurringMeetingId, type ScheduleExceptionId } from "./identity";
 import {
@@ -13,16 +13,16 @@ import {
 import { meetingOccursOn, type RecurringMeeting } from "./recurring-meeting";
 
 export const lessonOccurrenceId = (target: LessonOccurrenceRef): LessonOccurrenceId =>
-  LessonOccurrenceId.make(`${target.meetingId}@${CalendarDate.toString(target.scheduledDate)}`);
+  LessonOccurrenceId.make(`${target.meetingId}@${PlainDate.toString(target.scheduledDate)}`);
 
 const targetKey = (target: LessonOccurrenceRef) =>
-  `${target.meetingId}\u0000${CalendarDate.toString(target.scheduledDate)}`;
+  `${target.meetingId}\u0000${PlainDate.toString(target.scheduledDate)}`;
 
 const exceptionOrder = (left: ScheduleException, right: ScheduleException) =>
   left.id.localeCompare(right.id);
 
 const occurrenceOrder = (left: LessonOccurrence, right: LessonOccurrence) =>
-  CalendarDate.compare(left.date, right.date) ||
+  PlainDate.compare(left.date, right.date) ||
   left.timeRange.start - right.timeRange.start ||
   left.timeRange.end - right.timeRange.end ||
   left.courseOfferingId.localeCompare(right.courseOfferingId) ||
@@ -137,8 +137,8 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
 
   const relevantExceptions = input.exceptions.filter(
     (exception) =>
-      CalendarDate.Equivalence(exception.target.scheduledDate, input.date) ||
-      (exception._tag === "Rescheduled" && CalendarDate.Equivalence(exception.date, input.date)),
+      PlainDate.equals(exception.target.scheduledDate, input.date) ||
+      (exception._tag === "Rescheduled" && PlainDate.equals(exception.date, input.date)),
   );
   for (const exception of relevantExceptions) {
     const meeting = meetingsById.get(exception.target.meetingId);
@@ -179,10 +179,7 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
   }
   for (const group of exceptionsByTarget.values()) {
     const rescheduled = group.find((exception) => exception._tag === "Rescheduled");
-    if (
-      rescheduled?._tag === "Rescheduled" &&
-      CalendarDate.Equivalence(rescheduled.date, input.date)
-    ) {
+    if (rescheduled?._tag === "Rescheduled" && PlainDate.equals(rescheduled.date, input.date)) {
       const meeting = meetingsById.get(rescheduled.target.meetingId);
       if (meeting !== undefined) {
         targets.set(targetKey(rescheduled.target), { meeting, target: rescheduled.target });
@@ -196,7 +193,7 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
     )
     .filter(
       (occurrence): occurrence is LessonOccurrence =>
-        occurrence !== undefined && CalendarDate.Equivalence(occurrence.date, input.date),
+        occurrence !== undefined && PlainDate.equals(occurrence.date, input.date),
     )
     .sort(occurrenceOrder);
 });
@@ -204,7 +201,7 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
 export declare namespace materializeSchoolDay {
   export interface Input {
     readonly calendar: AcademicCalendar;
-    readonly date: CalendarDate.Type;
+    readonly date: PlainDate.Record;
     readonly meetings: ReadonlyArray<RecurringMeeting>;
     readonly exceptions: ReadonlyArray<ScheduleException>;
   }

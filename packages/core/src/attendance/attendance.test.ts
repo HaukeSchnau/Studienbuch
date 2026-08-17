@@ -3,7 +3,8 @@ import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision";
-import { CalendarDate } from "../foundation/calendar-date";
+import * as Calendar from "temporal-polyfill/fns/Calendar";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { Attendance } from "../index.ts";
 import { ActorRef } from "../organization/acknowledgement";
@@ -35,7 +36,7 @@ import { LocalTime } from "../schedule/local-time";
 import { LocalTimeRange } from "../schedule/local-time-range";
 import { AbsenceCaseId, MissedLessonId } from "./identity";
 
-const date = CalendarDate.unsafeFromString;
+const date = (value: string) => PlainDate.fromString(value, Calendar.getBasic);
 const schoolId = SchoolId.make("school");
 const studentMembershipId = SchoolMembershipId.make("student-membership");
 const guardianMembershipId = SchoolMembershipId.make("guardian-membership");
@@ -83,8 +84,8 @@ const occurrence = (courseOfferingId: CourseOfferingId, index: number) =>
     scheduledDate: date("2026-08-14"),
     date: date("2026-08-14"),
     timeRange: LocalTimeRange.Schema.make({
-      start: LocalTime.unsafeFromParts(8 + index, 0),
-      end: LocalTime.unsafeFromParts(8 + index, 45),
+      start: LocalTime.Schema.make((8 + index) * 3_600_000),
+      end: LocalTime.Schema.make((8 + index) * 3_600_000 + 45 * 60_000),
     }),
     teacherIds: [teacherPersonId],
     appliedExceptionIds: [],
@@ -165,20 +166,22 @@ const absence = Attendance.AbsenceCase.make({
 });
 
 describe("attendance workflow", () => {
-  it("round-trips a nested absence through its wire schema", () => {
-    const encoded = Schema.encodeSync(Attendance.AbsenceCase)(absence);
-    assert.strictEqual(encoded.date, "2026-08-14");
+  it.effect("round-trips a nested absence through its wire schema", () =>
+    Effect.gen(function* () {
+      const encoded = yield* Schema.encodeEffect(Attendance.AbsenceCase)(absence);
+      assert.strictEqual(encoded.date, "2026-08-14");
 
-    const decoded = Schema.decodeSync(Attendance.AbsenceCase)(encoded);
-    assert.strictEqual(CalendarDate.Equivalence(decoded.date, absence.date), true);
-    assert.deepEqual(Schema.encodeSync(Attendance.AbsenceCase)(decoded), encoded);
-  });
+      const decoded = yield* Schema.decodeEffect(Attendance.AbsenceCase)(encoded);
+      assert.strictEqual(PlainDate.equals(decoded.date, absence.date), true);
+      assert.deepEqual(yield* Schema.encodeEffect(Attendance.AbsenceCase)(decoded), encoded);
+    }),
+  );
 
   it.effect("models a two-lesson absence becoming partially and then mixed resolved", () =>
     Effect.gen(function* () {
       // These values were decoded independently, so matching must be structural.
       assert.notStrictEqual(absence.date, occurrences[0].date);
-      assert.strictEqual(CalendarDate.Equivalence(absence.date, occurrences[0].date), true);
+      assert.strictEqual(PlainDate.equals(absence.date, occurrences[0].date), true);
 
       const acknowledged = yield* Attendance.acknowledge({
         absence,
