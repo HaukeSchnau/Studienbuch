@@ -23,3 +23,5 @@ export {
   selectWithoutCourse,
   sort,
 } from "./task-list";
+
+export * as Tasks from "./index";

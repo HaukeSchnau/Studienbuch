@@ -36,3 +36,5 @@ export {
   lastConfirmedStandingRevision,
   reviseStanding,
 } from "./course-standing";
+
+export * as Assessment from "./index";

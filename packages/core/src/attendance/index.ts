@@ -27,3 +27,5 @@ export {
   decideMissedLesson,
 } from "./decide-missed-lesson";
 export { AbsenceCaseId, MissedLessonId } from "./identity";
+
+export * as Attendance from "./index";

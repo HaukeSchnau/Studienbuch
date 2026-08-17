@@ -41,3 +41,5 @@ export {
   rotationIncludesDate,
   rotationsCanCoincide,
 } from "./recurring-meeting";
+
+export * as Schedule from "./index";
