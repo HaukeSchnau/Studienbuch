@@ -1,5 +1,5 @@
 import * as Equivalence_ from "effect/Equivalence";
-import * as Option from "effect/Option";
+import * as Effect from "effect/Effect";
 import * as Order_ from "effect/Order";
 import * as Schema_ from "effect/Schema";
 
@@ -15,12 +15,18 @@ export type Type = typeof Schema.Type;
 
 export const initial: Type = Schema.make(0);
 
-/** Advances a source revision, returning None when the safe-integer range is exhausted. */
-export const next = (revision: Type): Option.Option<Type> => Schema.makeOption(revision + 1);
+export class Exhausted extends Schema_.TaggedError<Exhausted>()(
+  "Importing.SourceRevisionExhausted",
+  {
+    revision: Schema,
+  },
+) {}
 
-/** Advances a trusted source revision and throws when the safe-integer range is exhausted. */
-export const unsafeNext = (revision: Type): Type =>
-  Option.getOrThrowWith(next(revision), () => new RangeError("SourceRevision is exhausted"));
+/** Advances a source revision or reports exhaustion of its finite wire representation. */
+export const next = (revision: Type): Effect.Effect<Type, Exhausted> =>
+  revision === Number.MAX_SAFE_INTEGER
+    ? Effect.fail(new Exhausted({ revision }))
+    : Effect.succeed(Schema.make(revision + 1));
 
 export const compare = (left: Type, right: Type): -1 | 0 | 1 =>
   left < right ? -1 : left > right ? 1 : 0;

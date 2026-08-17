@@ -1,7 +1,8 @@
 import { assert, describe, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import { CalendarDate } from "../foundation/calendar-date";
+import * as Calendar from "temporal-polyfill/fns/Calendar";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { CourseOffering } from "./course-offering.ts";
 import {
@@ -30,7 +31,7 @@ import {
   requiresGuardianAcknowledgement,
 } from "./index.ts";
 
-const date = CalendarDate.unsafeFromString;
+const date = (value: string) => PlainDate.fromString(value, Calendar.getBasic);
 const interval = (start: string, end: string) =>
   CalendarDateRange.Schema.make({ start: date(start), end: date(end) });
 const schoolId = SchoolId.make("school-1");
@@ -178,14 +179,16 @@ describe("contextual authority", () => {
   );
 
   it.effect("rejects duplicate authority identities at the boundary", () => {
-    const encoded = Schema.encodeSync(AuthoritySnapshot)(snapshot());
-    return Schema.decodeEffect(AuthoritySnapshot)({
-      ...encoded,
-      memberships: [
-        encoded.memberships[0]!,
-        { ...encoded.memberships[0]!, personId: "teacher-person" },
-      ],
-    }).pipe(Effect.flip);
+    return Effect.gen(function* () {
+      const encoded = yield* Schema.encodeEffect(AuthoritySnapshot)(snapshot());
+      yield* Schema.decodeEffect(AuthoritySnapshot)({
+        ...encoded,
+        memberships: [
+          encoded.memberships[0]!,
+          { ...encoded.memberships[0]!, personId: "teacher-person" },
+        ],
+      }).pipe(Effect.flip);
+    });
   });
 
   it.effect("does not treat administrative authority as guardian evidence", () =>

@@ -1,10 +1,11 @@
-import * as Option from "effect/Option";
+import { assert, describe, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import { describe, expect, it } from "vite-plus/test";
-import { CalendarDate } from "./calendar-date";
+import * as Calendar from "temporal-polyfill/fns/Calendar";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "./calendar-date-range";
 
-const date = CalendarDate.unsafeFromString;
+const date = (value: string) => PlainDate.fromString(value, Calendar.getBasic);
 
 describe("CalendarDateRange", () => {
   it("is closed and reports its inclusive length", () => {
@@ -13,21 +14,19 @@ describe("CalendarDateRange", () => {
       end: date("2026-08-17"),
     });
 
-    expect(CalendarDateRange.contains(range, date("2026-08-15"))).toBe(true);
-    expect(CalendarDateRange.contains(range, date("2026-08-17"))).toBe(true);
-    expect(CalendarDateRange.lengthInDays(range)).toBe(3);
+    assert.isTrue(CalendarDateRange.contains(range, date("2026-08-15")));
+    assert.isTrue(CalendarDateRange.contains(range, date("2026-08-17")));
+    assert.strictEqual(CalendarDateRange.lengthInDays(range), 3);
   });
 
-  it("rejects reversed ranges", () => {
-    expect(
-      Option.isNone(
-        CalendarDateRange.Schema.makeOption({
-          start: date("2026-08-17"),
-          end: date("2026-08-15"),
-        }),
-      ),
-    ).toBe(true);
-  });
+  it.effect("rejects reversed ranges at the decode boundary", () =>
+    Effect.flip(
+      Schema.decodeEffect(CalendarDateRange.Schema)({
+        start: "2026-08-17",
+        end: "2026-08-15",
+      }),
+    ),
+  );
 
   it("treats a shared endpoint as overlap and supports enclosure", () => {
     const outer = CalendarDateRange.Schema.make({
@@ -43,13 +42,18 @@ describe("CalendarDateRange", () => {
       end: date("2026-08-22"),
     });
 
-    expect(CalendarDateRange.encloses(outer, inner)).toBe(true);
-    expect(CalendarDateRange.overlaps(inner, adjacentAtEndpoint)).toBe(true);
+    assert.isTrue(CalendarDateRange.encloses(outer, inner));
+    assert.isTrue(CalendarDateRange.overlaps(inner, adjacentAtEndpoint));
   });
 
-  it("round-trips nested dates as ISO strings", () => {
-    const encoded = { start: "2026-08-15", end: "2026-08-17" };
-    const decoded = Schema.decodeSync(CalendarDateRange.Schema)(encoded);
-    expect(Schema.encodeSync(CalendarDateRange.Schema)(decoded)).toEqual(encoded);
-  });
+  it.effect("round-trips nested dates as ISO strings", () =>
+    Effect.gen(function* () {
+      const encoded = { start: "2026-08-15", end: "2026-08-17" };
+      const decoded = yield* Schema.decodeEffect(CalendarDateRange.Schema)(encoded);
+      assert.deepStrictEqual(
+        yield* Schema.encodeEffect(CalendarDateRange.Schema)(decoded),
+        encoded,
+      );
+    }),
+  );
 });

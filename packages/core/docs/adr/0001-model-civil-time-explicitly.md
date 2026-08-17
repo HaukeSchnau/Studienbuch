@@ -3,13 +3,13 @@
 - Status: accepted
 - Date: 2026-08-15
 
-Core represents a `CalendarDate` as a timezone-free Temporal plain-date value while encoding it as an ISO `YYYY-MM-DD` string, and Schedule represents a `LocalTime` as integer milliseconds since midnight while encoding it as that number. Calendar-date ranges are closed and local-time ranges are half-open; absolute audit timestamps continue to use Effect `DateTime.Utc`, zoned instants use `DateTime.Zoned`, and elapsed time uses Effect `Duration`. This prevents JavaScript `Date`, time zones, and string ordering from silently changing school-day rules while preserving compact, stable wire formats.
+Core represents calendar dates directly as timezone-free Temporal `PlainDate.Record` values while `PlainDateSchema` encodes them as ISO `YYYY-MM-DD` strings at persistence and transport boundaries. Schedule represents `LocalTime` as integer milliseconds since midnight while encoding it as that number. Calendar-date ranges are closed and local-time ranges are half-open; absolute audit timestamps continue to use Effect `DateTime.Utc`, zoned instants use `DateTime.Zoned`, and elapsed time uses Effect `Duration`. This prevents JavaScript `Date`, time zones, and string ordering from silently changing school-day rules while preserving compact, stable wire formats.
 
 We use the tree-shakeable `temporal-polyfill` functional API because Temporal supplies the established parsing and calendar arithmetic that a civil-date model needs without requiring global mutation. Alternatives considered were retaining validated strings, which keeps calendar arithmetic in our code, and the global Temporal shim, which mutates the runtime and makes its cost unavoidable.
 
 ## Consequences
 
-Date values must be compared, formatted, and changed through `CalendarDate`; their decoded Temporal records are not strings and do not have useful JavaScript object equality. Bundle-sensitive mobile consumers should use the package's leaf exports rather than the coarse root namespace.
+Date values use the `temporal-polyfill/fns/PlainDate` operations directly; their records are not strings and do not have useful JavaScript object equality. `PlainDateSchema` is only the wire boundary, not a second temporal API. Bundle-sensitive mobile consumers should use the package's leaf exports rather than the coarse root namespace.
 
 ## Bundle evidence
 

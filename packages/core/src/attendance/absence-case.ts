@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision";
-import { CalendarDate } from "../foundation/calendar-date";
+import { PlainDateSchema } from "../foundation/plain-date";
 import { NonBlankText } from "../foundation/non-blank-text";
 import { Acknowledgement, ActorRef } from "../organization/acknowledgement";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
@@ -43,7 +43,7 @@ export interface MissedLesson extends Schema.Schema.Type<typeof MissedLesson> {}
 export const AbsenceCase = Schema.Struct({
   id: AbsenceCaseId,
   studentMembershipId: SchoolMembershipId,
-  date: CalendarDate.Schema,
+  date: PlainDateSchema,
   reason: AbsenceReason,
   detailsRevision: AggregateRevision.Schema,
   revision: AggregateRevision.Schema,

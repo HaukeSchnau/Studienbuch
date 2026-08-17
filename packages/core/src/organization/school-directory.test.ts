@@ -1,7 +1,8 @@
 import { assert, describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import { CalendarDate } from "../foundation/calendar-date";
+import * as Calendar from "temporal-polyfill/fns/Calendar";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { NonBlankText } from "../foundation/non-blank-text";
 import {
@@ -33,31 +34,33 @@ import {
   SubjectId,
 } from "./index.ts";
 
-const date = CalendarDate.unsafeFromString;
+const date = (value: string) => PlainDate.fromString(value, Calendar.getBasic);
 const interval = (start: string, end: string) =>
   CalendarDateRange.Schema.make({ start: date(start), end: date(end) });
 const schoolId = SchoolId.make("school-1");
-const term = (id: string, start: string, end: string) =>
+const term = (id: NonBlankText.Type, start: string, end: string) =>
   AcademicTerm.make({
     id: AcademicTermId.make(id),
     schoolId,
-    name: NonBlankText.unsafeFromString(id),
+    name: id,
     interval: interval(start, end),
   });
 
 describe("academic terms and cohort progression", () => {
-  it("round-trips its nested calendar-date range at the wire boundary", () => {
-    const encoded = {
-      id: "term-a",
-      schoolId: "school-1",
-      name: "First term",
-      interval: { start: "2026-08-01", end: "2027-01-31" },
-    };
-    const decoded = Schema.decodeSync(AcademicTerm)(encoded);
+  it.effect("round-trips its nested calendar-date range at the wire boundary", () =>
+    Effect.gen(function* () {
+      const encoded = {
+        id: "term-a",
+        schoolId: "school-1",
+        name: "First term",
+        interval: { start: "2026-08-01", end: "2027-01-31" },
+      };
+      const decoded = yield* Schema.decodeEffect(AcademicTerm)(encoded);
 
-    expect(CalendarDate.toString(decoded.interval.start)).toBe("2026-08-01");
-    expect(Schema.encodeSync(AcademicTerm)(decoded)).toEqual(encoded);
-  });
+      assert.strictEqual(PlainDate.toString(decoded.interval.start), "2026-08-01");
+      assert.deepStrictEqual(yield* Schema.encodeEffect(AcademicTerm)(decoded), encoded);
+    }),
+  );
 
   it.effect("rejects overlapping school terms, including a shared boundary date", () =>
     Effect.gen(function* () {

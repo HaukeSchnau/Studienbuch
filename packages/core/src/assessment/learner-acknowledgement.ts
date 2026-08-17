@@ -3,7 +3,8 @@ import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision";
 import { Artifact } from "../foundation/artifact";
-import { CalendarDate } from "../foundation/calendar-date";
+import { PlainDateSchema } from "../foundation/plain-date";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import {
   type Acknowledgement,
   ActorRef,
@@ -28,7 +29,7 @@ export class AssessmentAcknowledgementActorError extends Schema.TaggedError<Asse
 /** A missing date of birth is not treated as minority: the legal decision must be explicit. */
 export class AssessmentLegalStatusUnknownError extends Schema.TaggedError<AssessmentLegalStatusUnknownError>()(
   "Assessment.LegalStatusUnknown",
-  { studentId: PersonId, on: CalendarDate.Schema },
+  { studentId: PersonId, on: PlainDateSchema },
 ) {}
 
 export class AssessmentAlreadyTeacherAttestedError extends Schema.TaggedError<AssessmentAlreadyTeacherAttestedError>()(
@@ -66,7 +67,7 @@ export const authorizeLearnerAcknowledgement = Effect.fn(
   readonly actor: ActorRef;
   readonly student: Person;
   readonly studentMembershipId: SchoolMembershipId;
-  readonly on: CalendarDate.Type;
+  readonly on: PlainDate.Record;
   readonly legalAgePolicy: LegalAgePolicy;
   readonly authority: AuthoritySnapshot;
 }) {

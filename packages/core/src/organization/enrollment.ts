@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import { CalendarDate } from "../foundation/calendar-date";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { NonBlankText } from "../foundation/non-blank-text";
 import {
@@ -91,7 +91,7 @@ export class EnrollmentNotRemovable extends Schema.TaggedError<EnrollmentNotRemo
 ) {}
 
 /** Effective intervals are closed; both boundary dates participate in the enrollment. */
-export const isEnrollmentEffectiveOn = (enrollment: Enrollment, date: CalendarDate.Type) =>
+export const isEnrollmentEffectiveOn = (enrollment: Enrollment, date: PlainDate.Record) =>
   CalendarDateRange.contains(enrollment.effective, date);
 
 export const validateCourseChoice = Effect.fn("Organization.validateCourseChoice")(function* (

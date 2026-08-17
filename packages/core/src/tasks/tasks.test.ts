@@ -3,7 +3,8 @@ import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision.ts";
 import { Artifact } from "../foundation/artifact.ts";
-import { CalendarDate } from "../foundation/calendar-date.ts";
+import * as Calendar from "temporal-polyfill/fns/Calendar";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range.ts";
 import { ActorRef } from "../organization/acknowledgement.ts";
 import { AuthoritySnapshot } from "../organization/authority.ts";
@@ -17,7 +18,7 @@ import { SchoolMembership, StudentMembership } from "../organization/membership.
 import { SchoolTaskId } from "./identity.ts";
 import { Tasks } from "../index.ts";
 
-const date = CalendarDate.unsafeFromString;
+const date = (value: string) => PlainDate.fromString(value, Calendar.getBasic);
 const taskId = (value: string) => SchoolTaskId.make(value);
 const courseId = (value: string) => CourseOfferingId.make(value);
 const studentMembershipId = SchoolMembershipId.make("student-membership");
@@ -95,7 +96,7 @@ describe("SchoolTask schema", () => {
       const attachment = decoded.attachments[0];
       if (attachment === undefined) return yield* Effect.die("Expected a decoded attachment");
       expect("uri" in attachment).toBe(false);
-      expect(CalendarDate.toString(decoded.dueDate)).toBe("2026-03-29");
+      expect(PlainDate.toString(decoded.dueDate)).toBe("2026-03-29");
       expect(yield* Schema.encodeEffect(Tasks.SchoolTask)(decoded)).toEqual(encoded);
     }),
   );
@@ -156,12 +157,12 @@ describe("task lifecycle", () => {
       expect(original.status._tag).toBe("Open");
       expect(completed.status._tag).toBe("Completed");
       if (completed.status._tag === "Completed") {
-        expect(CalendarDate.toString(completed.status.completedOn)).toBe("2026-03-28");
+        expect(PlainDate.toString(completed.status.completedOn)).toBe("2026-03-28");
       }
       expect(reopened.status).toEqual({ _tag: "Open" });
       expect(cancelled.status._tag).toBe("Cancelled");
       if (cancelled.status._tag === "Cancelled") {
-        expect(CalendarDate.toString(cancelled.status.cancelledOn)).toBe("2026-03-29");
+        expect(PlainDate.toString(cancelled.status.cancelledOn)).toBe("2026-03-29");
         expect(cancelled.status.reason).toBe("No longer assigned");
       }
       const cancelledWithoutReason = yield* Tasks.cancel(
@@ -170,7 +171,7 @@ describe("task lifecycle", () => {
       );
       expect(cancelledWithoutReason.status._tag).toBe("Cancelled");
       if (cancelledWithoutReason.status._tag === "Cancelled") {
-        expect(CalendarDate.toString(cancelledWithoutReason.status.cancelledOn)).toBe("2026-03-29");
+        expect(PlainDate.toString(cancelledWithoutReason.status.cancelledOn)).toBe("2026-03-29");
         expect(cancelledWithoutReason.status.reason).toBeUndefined();
       }
     }),
@@ -254,7 +255,7 @@ describe("task selectors", () => {
     const equalDateA = date("2026-04-10");
     const equalDateB = date("2026-04-10");
     expect(equalDateA).not.toBe(equalDateB);
-    expect(CalendarDate.Equivalence(equalDateA, equalDateB)).toBe(true);
+    expect(PlainDate.equals(equalDateA, equalDateB)).toBe(true);
 
     const sameDay = [
       makeTask({ id: taskId("z"), title: "Zulu", dueDate: equalDateA }),

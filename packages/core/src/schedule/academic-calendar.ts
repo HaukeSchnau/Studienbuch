@@ -1,6 +1,6 @@
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-import { CalendarDate } from "../foundation/calendar-date";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { NonBlankText } from "../foundation/non-blank-text";
 import { AcademicTerm } from "../organization/academic-term";
@@ -34,37 +34,38 @@ export interface AcademicCalendar extends Schema.Schema.Type<typeof AcademicCale
 
 export const academicTermOn = (
   calendar: AcademicCalendar,
-  date: CalendarDate.Type,
+  date: PlainDate.Record,
 ): Option.Option<AcademicTerm> =>
   Option.fromUndefinedOr(
     calendar.terms.find((term) => CalendarDateRange.contains(term.interval, date)),
   );
 
-export const isSchoolDay = (calendar: AcademicCalendar, date: CalendarDate.Type): boolean =>
+export const isSchoolDay = (calendar: AcademicCalendar, date: PlainDate.Record): boolean =>
   Option.isSome(academicTermOn(calendar, date)) &&
-  calendar.schoolDays.some((weekday) => weekday === CalendarDate.dayOfWeek(date)) &&
+  calendar.schoolDays.some((weekday) => weekday === PlainDate.dayOfWeek(date)) &&
   !calendar.closures.some((closure) => CalendarDateRange.contains(closure.interval, date));
 
 /** Returns the first school day strictly after `date`. */
 export const nextSchoolDay = (
   calendar: AcademicCalendar,
-  date: CalendarDate.Type,
-): Option.Option<CalendarDate.Type> => {
-  const latestTermEnd = calendar.terms.reduce<CalendarDate.Type | undefined>(
+  date: PlainDate.Record,
+): Option.Option<PlainDate.Record> => {
+  const latestTermEnd = calendar.terms.reduce<PlainDate.Record | undefined>(
     (latest, term) =>
-      latest === undefined || CalendarDate.compare(latest, term.interval.end) < 0
+      latest === undefined || PlainDate.compare(latest, term.interval.end) < 0
         ? term.interval.end
         : latest,
     undefined,
   );
-  if (latestTermEnd === undefined || CalendarDate.compare(date, latestTermEnd) >= 0) {
+  if (latestTermEnd === undefined || PlainDate.compare(date, latestTermEnd) >= 0) {
     return Option.none();
   }
 
-  let candidate = CalendarDate.unsafeAddDays(date, 1);
-  while (CalendarDate.compare(candidate, latestTermEnd) <= 0) {
+  let candidate = PlainDate.addDays(date, 1);
+  while (PlainDate.compare(candidate, latestTermEnd) <= 0) {
     if (isSchoolDay(calendar, candidate)) return Option.some(candidate);
-    candidate = CalendarDate.unsafeAddDays(candidate, 1);
+    if (PlainDate.equals(candidate, latestTermEnd)) break;
+    candidate = PlainDate.addDays(candidate, 1);
   }
   return Option.none();
 };

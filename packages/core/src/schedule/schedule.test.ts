@@ -3,14 +3,16 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-import { CalendarDate } from "../foundation/calendar-date";
+import * as Calendar from "temporal-polyfill/fns/Calendar";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { AcademicTermId, CourseOfferingId, PersonId, SchoolId } from "../organization/identity";
 import { Organization } from "../index.ts";
 import { Schedule } from "../index.ts";
 
-const date = CalendarDate.unsafeFromString;
-const time = Schedule.LocalTime.unsafeFromParts;
+const date = (value: string) => PlainDate.fromString(value, Calendar.getBasic);
+const time = (hour: number, minute: number, second = 0, millisecond = 0) =>
+  Schedule.LocalTime.Schema.make(hour * 3_600_000 + minute * 60_000 + second * 1_000 + millisecond);
 const range = (start: Schedule.LocalTime.Type, end: Schedule.LocalTime.Type) =>
   Schedule.LocalTimeRange.Schema.make({ start, end });
 const interval = (start: string, end: string) =>
@@ -55,34 +57,32 @@ const meeting = (
   });
 
 describe("local schedule time", () => {
-  it("parses only the supported exact forms with millisecond precision", () => {
-    const minutePrecision = Option.getOrThrow(Schedule.LocalTime.fromString("08:05"));
-    const secondPrecision = Option.getOrThrow(Schedule.LocalTime.fromString("08:05:09"));
-    const millisecondPrecision = Option.getOrThrow(Schedule.LocalTime.fromString("08:05:09.007"));
+  it("exposes millisecond precision through its numeric wire value", () => {
+    const minutePrecision = time(8, 5);
+    const secondPrecision = time(8, 5, 9);
+    const millisecondPrecision = time(8, 5, 9, 7);
 
     assert.equal(Schedule.LocalTime.toString(minutePrecision), "08:05:00.000");
     assert.equal(Schedule.LocalTime.second(secondPrecision), 9);
     assert.equal(Schedule.LocalTime.millisecond(millisecondPrecision), 7);
     assert.equal(Schedule.LocalTime.hour(millisecondPrecision), 8);
     assert.equal(Schedule.LocalTime.minute(millisecondPrecision), 5);
-    assert.isTrue(Option.isNone(Schedule.LocalTime.fromString("8:05")));
-    assert.isTrue(Option.isNone(Schedule.LocalTime.fromString("24:00")));
-    assert.isTrue(Option.isNone(Schedule.LocalTime.fromString("08:05:09.1")));
-    assert.isTrue(Option.isNone(Schedule.LocalTime.fromString("08:05:09.0000")));
   });
 
-  it("covers the millisecond boundaries and round-trips its numeric wire value", () => {
-    const first = Schedule.LocalTime.unsafeFromMilliseconds(0);
-    const last = Schedule.LocalTime.unsafeFromMilliseconds(86_399_999);
-    assert.equal(Schedule.LocalTime.toString(first), "00:00:00.000");
-    assert.equal(Schedule.LocalTime.toString(last), "23:59:59.999");
-    assert.isTrue(Option.isNone(Schedule.LocalTime.fromMilliseconds(-1)));
-    assert.isTrue(Option.isNone(Schedule.LocalTime.fromMilliseconds(86_400_000)));
+  it.effect("covers the millisecond boundaries and round-trips its numeric wire value", () =>
+    Effect.gen(function* () {
+      const first = Schedule.LocalTime.Schema.make(0);
+      const last = Schedule.LocalTime.Schema.make(86_399_999);
+      assert.equal(Schedule.LocalTime.toString(first), "00:00:00.000");
+      assert.equal(Schedule.LocalTime.toString(last), "23:59:59.999");
+      assert.isFalse(Schema.is(Schedule.LocalTime.Schema)(-1));
+      assert.isFalse(Schema.is(Schedule.LocalTime.Schema)(86_400_000));
 
-    const decoded = Schema.decodeSync(Schedule.LocalTime.Schema)(29_109_007);
-    assert.equal(Schema.encodeSync(Schedule.LocalTime.Schema)(decoded), 29_109_007);
-    assert.isTrue(Schedule.LocalTime.Equivalence(decoded, time(8, 5, 9, 7)));
-  });
+      const decoded = yield* Schema.decodeEffect(Schedule.LocalTime.Schema)(29_109_007);
+      assert.equal(yield* Schema.encodeEffect(Schedule.LocalTime.Schema)(decoded), 29_109_007);
+      assert.isTrue(Schedule.LocalTime.Equivalence(decoded, time(8, 5, 9, 7)));
+    }),
+  );
 
   it("models ranges as non-empty and half-open", () => {
     const start = time(9, 0);
@@ -91,10 +91,8 @@ describe("local schedule time", () => {
     assert.isTrue(Schedule.LocalTimeRange.contains(value, start));
     assert.isFalse(Schedule.LocalTimeRange.contains(value, end));
     assert.equal(Duration.toMillis(Schedule.LocalTimeRange.duration(value)), 1);
-    assert.isTrue(
-      Option.isNone(Schedule.LocalTimeRange.Schema.makeOption({ start: end, end: start })),
-    );
-    assert.isTrue(Option.isNone(Schedule.LocalTimeRange.Schema.makeOption({ start, end: start })));
+    assert.isFalse(Schema.is(Schedule.LocalTimeRange.Schema)({ start: end, end: start }));
+    assert.isFalse(Schema.is(Schedule.LocalTimeRange.Schema)({ start, end: start }));
   });
 });
 
@@ -103,7 +101,7 @@ describe("academic calendar", () => {
     assert.isFalse(Schedule.isSchoolDay(calendar, date("2022-12-23")));
     assert.isFalse(Schedule.isSchoolDay(calendar, date("2023-01-06")));
     const next = Option.getOrThrow(Schedule.nextSchoolDay(calendar, date("2023-01-05")));
-    assert.isTrue(CalendarDate.Equivalence(next, date("2023-01-09")));
+    assert.isTrue(PlainDate.equals(next, date("2023-01-09")));
   });
 
   it.effect("suppresses recurring meetings during closures", () =>
@@ -275,9 +273,9 @@ describe("lesson occurrence materialization", () => {
       assert.equal(destinationDay.length, 1);
       const occurrence = destinationDay[0];
       if (occurrence === undefined) return yield* Effect.die("Expected the rescheduled occurrence");
-      assert.isTrue(CalendarDate.Equivalence(occurrence.scheduledDate, monday));
-      assert.isTrue(CalendarDate.Equivalence(occurrence.date, tuesday));
-      assert.equal(occurrence.id, `${baseMeeting.id}@${CalendarDate.toString(monday)}`);
+      assert.isTrue(PlainDate.equals(occurrence.scheduledDate, monday));
+      assert.isTrue(PlainDate.equals(occurrence.date, tuesday));
+      assert.equal(occurrence.id, `${baseMeeting.id}@${PlainDate.toString(monday)}`);
     }),
   );
 

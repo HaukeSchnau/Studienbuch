@@ -3,10 +3,10 @@ import {
   Artifact as ArtifactFromRoot,
   Assessment as AssessmentFromRoot,
   Attendance as AttendanceFromRoot,
-  CalendarDate as CalendarDateFromRoot,
   CalendarDateRange as CalendarDateRangeFromRoot,
   Importing as ImportingFromRoot,
   NonBlankText as NonBlankTextFromRoot,
+  PlainDateSchema as PlainDateSchemaFromRoot,
   Organization as OrganizationFromRoot,
   Schedule as ScheduleFromRoot,
   Tasks as TasksFromRoot,
@@ -15,15 +15,17 @@ import { Assessment } from "@stu/core/assessment";
 import { Attendance } from "@stu/core/attendance";
 import { AggregateRevision } from "@stu/core/foundation/aggregate-revision";
 import { Artifact } from "@stu/core/foundation/artifact";
-import { CalendarDate } from "@stu/core/foundation/calendar-date";
+import { PlainDateSchema } from "@stu/core/foundation/plain-date";
+import * as Calendar from "temporal-polyfill/fns/Calendar";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "@stu/core/foundation/calendar-date-range";
 import { NonBlankText } from "@stu/core/foundation/non-blank-text";
 import {
   AggregateRevision as AggregateRevisionFromFoundation,
   Artifact as ArtifactFromFoundation,
-  CalendarDate as CalendarDateFromFoundation,
   CalendarDateRange as CalendarDateRangeFromFoundation,
   NonBlankText as NonBlankTextFromFoundation,
+  PlainDateSchema as PlainDateSchemaFromFoundation,
 } from "@stu/core/foundation";
 import { Importing } from "@stu/core/importing";
 import { Organization } from "@stu/core/organization";
@@ -49,14 +51,14 @@ describe("public namespace exports", () => {
       id: Artifact.Id.make("artifact-1"),
       mediaType: Artifact.MediaType.make("application/pdf"),
     });
-    const date: CalendarDate.Type = CalendarDate.unsafeFromString("2026-08-16");
+    const date: PlainDate.Record = PlainDate.fromString("2026-08-16", Calendar.getBasic);
     const dateRange: CalendarDateRange.Type = CalendarDateRange.Schema.make({
       start: date,
       end: date,
     });
     const text: NonBlankText.Type = "Lesson notes";
-    const start: LocalTime.Type = LocalTime.unsafeFromString("08:00");
-    const end: LocalTime.Type = LocalTime.unsafeFromString("08:45");
+    const start: LocalTime.Type = LocalTime.Schema.make(28_800_000);
+    const end: LocalTime.Type = LocalTime.Schema.make(31_500_000);
     const timeRange: LocalTimeRange.Type = LocalTimeRange.Schema.make({ start, end });
 
     expect(revision).toBe(0);
@@ -69,8 +71,8 @@ describe("public namespace exports", () => {
     expect(AggregateRevision.Schema).toBe(AggregateRevisionFromFoundation.Schema);
     expect(Artifact.Reference).toBe(ArtifactFromRoot.Reference);
     expect(Artifact.Reference).toBe(ArtifactFromFoundation.Reference);
-    expect(CalendarDate.Schema).toBe(CalendarDateFromRoot.Schema);
-    expect(CalendarDate.Schema).toBe(CalendarDateFromFoundation.Schema);
+    expect(PlainDateSchema).toBe(PlainDateSchemaFromRoot);
+    expect(PlainDateSchema).toBe(PlainDateSchemaFromFoundation);
     expect(CalendarDateRange.Schema).toBe(CalendarDateRangeFromRoot.Schema);
     expect(CalendarDateRange.Schema).toBe(CalendarDateRangeFromFoundation.Schema);
     expect(NonBlankText.Schema).toBe(NonBlankTextFromRoot.Schema);

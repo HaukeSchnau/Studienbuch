@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import { CalendarDate } from "../foundation/calendar-date";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { CourseOffering } from "./course-offering";
 import { CourseOfferingId, SchoolId, SchoolMembershipId } from "./identity";
@@ -107,7 +107,7 @@ export class AuthorityDenied extends Schema.TaggedError<AuthorityDenied>()("Auth
   ]),
 }) {}
 
-const activeOn = (effective: CalendarDateRange.Type, on: CalendarDate.Type) =>
+const activeOn = (effective: CalendarDateRange.Type, on: PlainDate.Record) =>
   CalendarDateRange.contains(effective, on);
 
 const deny = (actor: ActorRef, capability: Capability, reason: AuthorityDenied["reason"]) =>
@@ -120,7 +120,7 @@ const deny = (actor: ActorRef, capability: Capability, reason: AuthorityDenied["
 export const authorize = Effect.fn("Organization.authorize")(function* (
   actor: ActorRef,
   capability: Capability,
-  on: CalendarDate.Type,
+  on: PlainDate.Record,
   snapshot: AuthoritySnapshot,
 ) {
   const actorMembership = snapshot.memberships.find(
@@ -225,6 +225,6 @@ export const authorize = Effect.fn("Organization.authorize")(function* (
 export const may = (
   actor: ActorRef,
   capability: Capability,
-  on: CalendarDate.Type,
+  on: PlainDate.Record,
   snapshot: AuthoritySnapshot,
 ) => authorize(actor, capability, on, snapshot).pipe(Effect.isSuccess);

@@ -1,5 +1,5 @@
 import * as Schema from "effect/Schema";
-import { CalendarDate } from "../foundation/calendar-date";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import type { SchoolTask } from "./school-task";
 
@@ -18,21 +18,17 @@ export const defaultVisibilityPolicy: VisibilityPolicy = VisibilityPolicy.make({
 
 export const isArchived = (
   task: SchoolTask,
-  today: CalendarDate.Type,
+  today: PlainDate.Record,
   policy: VisibilityPolicy = defaultVisibilityPolicy,
 ): boolean => {
   if (task.status._tag === "Completed") return policy.archiveCompleted;
   if (task.status._tag === "Cancelled") return policy.archiveCancelled;
-  const archiveAfter = CalendarDate.unsafeAddDays(
-    task.dueDate,
-    policy.archiveOpenTasksAfterOverdueDays,
-  );
-  return CalendarDate.compare(today, archiveAfter) > 0;
+  return PlainDate.diffDays(task.dueDate, today) > policy.archiveOpenTasksAfterOverdueDays;
 };
 
 export const isVisible = (
   task: SchoolTask,
-  today: CalendarDate.Type,
+  today: PlainDate.Record,
   policy: VisibilityPolicy = defaultVisibilityPolicy,
 ): boolean => !isArchived(task, today, policy);
 
@@ -46,7 +42,7 @@ const compareText = (left: string, right: string) => (left < right ? -1 : left >
 
 const compare = (left: SchoolTask, right: SchoolTask) =>
   statusOrder[left.status._tag] - statusOrder[right.status._tag] ||
-  CalendarDate.compare(left.dueDate, right.dueDate) ||
+  PlainDate.compare(left.dueDate, right.dueDate) ||
   compareText(left.title, right.title) ||
   compareText(left.id, right.id);
 
@@ -70,12 +66,12 @@ export const selectWithoutCourse = (tasks: ReadonlyArray<SchoolTask>): ReadonlyA
 
 export const selectVisible = (
   tasks: ReadonlyArray<SchoolTask>,
-  today: CalendarDate.Type,
+  today: PlainDate.Record,
   policy: VisibilityPolicy = defaultVisibilityPolicy,
 ): ReadonlyArray<SchoolTask> => sort(tasks.filter((task) => !isArchived(task, today, policy)));
 
 export const selectArchived = (
   tasks: ReadonlyArray<SchoolTask>,
-  today: CalendarDate.Type,
+  today: PlainDate.Record,
   policy: VisibilityPolicy = defaultVisibilityPolicy,
 ): ReadonlyArray<SchoolTask> => sort(tasks.filter((task) => isArchived(task, today, policy)));

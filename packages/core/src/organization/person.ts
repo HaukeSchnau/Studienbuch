@@ -1,5 +1,6 @@
 import * as Schema from "effect/Schema";
-import { CalendarDate } from "../foundation/calendar-date";
+import { PlainDateSchema } from "../foundation/plain-date";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { NonBlankText } from "../foundation/non-blank-text";
 import { PersonId } from "./identity";
 
@@ -18,7 +19,7 @@ export interface PersonName extends Schema.Schema.Type<typeof PersonName> {}
 export const Person = Schema.Struct({
   id: PersonId,
   name: PersonName,
-  dateOfBirth: Schema.optionalKey(CalendarDate.Schema),
+  dateOfBirth: Schema.optionalKey(PlainDateSchema),
 });
 export interface Person extends Schema.Schema.Type<typeof Person> {}
 
@@ -38,14 +39,13 @@ export type LegalStatus = typeof LegalStatus.Type;
 /** Evaluates legal status for an explicit date; it never reads the ambient clock. */
 export const legalStatusOn = (
   person: Person,
-  on: CalendarDate.Type,
+  on: PlainDate.Record,
   policy: LegalAgePolicy,
 ): LegalStatus => {
   if (person.dateOfBirth === undefined) return "Unknown";
   const { year: birthYear, month: birthMonth, day: birthDay } = person.dateOfBirth;
   const { year, month, day } = on;
-  const usesNonLeapAnniversary =
-    birthMonth === 2 && birthDay === 29 && !CalendarDate.inLeapYear(on);
+  const usesNonLeapAnniversary = birthMonth === 2 && birthDay === 29 && !PlainDate.inLeapYear(on);
   let anniversaryMonth = birthMonth;
   let anniversaryDay = birthDay;
   if (usesNonLeapAnniversary) {
@@ -66,6 +66,6 @@ export const legalStatusOn = (
 
 export const requiresGuardianAcknowledgement = (
   person: Person,
-  on: CalendarDate.Type,
+  on: PlainDate.Record,
   policy: LegalAgePolicy,
 ) => legalStatusOn(person, on, policy) !== "Adult";

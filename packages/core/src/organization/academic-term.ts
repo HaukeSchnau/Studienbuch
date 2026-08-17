@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import { CalendarDate } from "../foundation/calendar-date";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { NonBlankText } from "../foundation/non-blank-text";
 import { AcademicTermId, CohortId, SchoolId } from "./identity";
@@ -56,7 +56,7 @@ export const validateAcademicTerms = Effect.fn("Organization.validateAcademicTer
   terms: ReadonlyArray<AcademicTerm>,
 ) {
   const ordered = [...terms].sort((left, right) =>
-    CalendarDate.compare(left.interval.start, right.interval.start),
+    PlainDate.compare(left.interval.start, right.interval.start),
   );
   for (const [index, first] of ordered.entries()) {
     for (const second of ordered.slice(index + 1)) {
