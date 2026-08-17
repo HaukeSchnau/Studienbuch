@@ -13,7 +13,7 @@ Read the package by following a domain question, not by looking for technical bu
 
 | Question                                                   | Module         | Good first file             |
 | ---------------------------------------------------------- | -------------- | --------------------------- |
-| What are our shared dates, revisions, text, and artifacts? | `Foundation`   | `src/foundation/index.ts`   |
+| What are our shared dates, revisions, text, and artifacts? | Root values    | `src/foundation/index.ts`   |
 | How is a school organized, and who may act?                | `Organization` | `src/organization/index.ts` |
 | Which lessons happen on a date?                            | `Schedule`     | `src/schedule/index.ts`     |
 | How is an absence acknowledged and resolved?               | `Attendance`   | `src/attendance/index.ts`   |
@@ -26,13 +26,14 @@ or substantial use cases and may change without creating another public API.
 
 ## Public interface
 
-The package root and focused subpaths expose named ES-module namespace projections:
+Domain surfaces use named ES-module namespace projections. Foundational values are promoted
+directly from both the package root and the focused Foundation subpath:
 
 ```ts
-import { Attendance, Foundation } from "@stu/core";
+import { Attendance, CalendarDate } from "@stu/core";
 import { Schedule } from "@stu/core/schedule";
 
-const day = Foundation.CalendarDate.unsafeFromString("2026-08-14");
+const day = CalendarDate.unsafeFromString("2026-08-14");
 const status = Attendance.status(absence);
 const lessons = Schedule.materializeSchoolDay({ calendar, date: day, meetings, exceptions });
 ```
@@ -71,6 +72,7 @@ implementation and namespace-facade files. Domain indexes only relay those estab
 - Services model real institutional variability, not every helper. `Assessment.GradingPolicy` is
   the current example.
 - Internal modules import owning leaves directly; callers import the public domain namespace.
+- Foundation values are imported directly (`CalendarDate`), never through a `Foundation` namespace.
 - Entity IDs live with their owning domain (`Organization.PersonId`, `Schedule.LessonOccurrenceId`),
   not in a global registry.
 
