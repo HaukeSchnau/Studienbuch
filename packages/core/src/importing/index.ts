@@ -24,3 +24,5 @@ export { DataSourceId, ExternalId, ImportId } from "./identity";
 export { DataSource, SourceObservation, SourceStamp } from "./source";
 export { SourceRevision } from "./source-revision";
 export { resolveSubject, SubjectInferenceRule, SubjectResolution } from "./subject-resolution";
+
+export * as Importing from "./index";

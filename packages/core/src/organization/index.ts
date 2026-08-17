@@ -58,3 +58,5 @@ export {
   legalStatusOn,
   requiresGuardianAcknowledgement,
 } from "./person";
+
+export * as Organization from "./index";

@@ -53,6 +53,8 @@ type AcknowledgeFailure = Attendance.acknowledge.Error;
 This follows Effect's namespace pattern: indexes project ordinary ESM modules as named namespaces,
 while declaration merging keeps an operation's types discoverable. Runtime TypeScript namespaces
 are not used, and Core-owned modules are consumed with named imports rather than `import * as`.
+The canonical namespace is self-exported by its owning module; do not split a concept into separate
+implementation and namespace-facade files. Domain indexes only relay those established identities.
 
 ## Modeling conventions
 

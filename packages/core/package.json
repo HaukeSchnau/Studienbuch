@@ -6,21 +6,21 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./assessment": "./src/exports/assessment.ts",
-    "./attendance": "./src/exports/attendance.ts",
+    "./assessment": "./src/assessment/index.ts",
+    "./attendance": "./src/attendance/index.ts",
     "./compat/mobile-v0": "./src/compat/mobile-v0.ts",
-    "./foundation": "./src/exports/foundation.ts",
+    "./foundation": "./src/foundation/index.ts",
     "./foundation/aggregate-revision": "./src/foundation/aggregate-revision.ts",
     "./foundation/artifact": "./src/foundation/artifact.ts",
     "./foundation/calendar-date": "./src/foundation/calendar-date.ts",
     "./foundation/calendar-date-range": "./src/foundation/calendar-date-range.ts",
     "./foundation/non-blank-text": "./src/foundation/non-blank-text.ts",
-    "./importing": "./src/exports/importing.ts",
-    "./organization": "./src/exports/organization.ts",
-    "./schedule": "./src/exports/schedule.ts",
+    "./importing": "./src/importing/index.ts",
+    "./organization": "./src/organization/index.ts",
+    "./schedule": "./src/schedule/index.ts",
     "./schedule/local-time": "./src/schedule/local-time.ts",
     "./schedule/local-time-range": "./src/schedule/local-time-range.ts",
-    "./tasks": "./src/exports/tasks.ts"
+    "./tasks": "./src/tasks/index.ts"
   },
   "scripts": {
     "test": "tsc --noEmit -p tsconfig.json && vp test run --passWithNoTests"

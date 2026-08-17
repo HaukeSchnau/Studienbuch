@@ -1,7 +1,7 @@
-export * as Assessment from "./assessment";
-export * as Attendance from "./attendance";
-export * as Foundation from "./foundation";
-export * as Importing from "./importing";
-export * as Organization from "./organization";
-export * as Schedule from "./schedule";
-export * as Tasks from "./tasks";
+export { Assessment } from "./assessment";
+export { Attendance } from "./attendance";
+export { Foundation } from "./foundation";
+export { Importing } from "./importing";
+export { Organization } from "./organization";
+export { Schedule } from "./schedule";
+export { Tasks } from "./tasks";

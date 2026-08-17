@@ -10,20 +10,20 @@ import {
   Capability,
   authorize,
 } from "../organization/authority";
-import { LegalAgePolicy, Person } from "../organization/person";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
-import { GradingPolicy } from "./grading-policy";
+import { LegalAgePolicy, Person } from "../organization/person";
 import { AssessmentWeight, GradeValue } from "./grading";
+import { GradingPolicy } from "./grading-policy";
 import { AssessmentId } from "./identity";
+import type { ConfirmationRecordInput } from "./learner-acknowledgement";
 import {
+  AssessmentAcknowledgementActorError,
   AssessmentAlreadyLearnerAcknowledgedError,
   AssessmentAlreadyTeacherAttestedError,
-  AssessmentAcknowledgementActorError,
   AssessmentLegalStatusUnknownError,
   authorizeLearnerAcknowledgement,
   makeAcknowledgement,
 } from "./learner-acknowledgement";
-import type { ConfirmationRecordInput } from "./learner-acknowledgement";
 
 export const WrittenAssessment = Schema.Struct({
   id: AssessmentId,
