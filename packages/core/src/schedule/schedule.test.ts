@@ -5,7 +5,6 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { CalendarDate } from "../foundation/calendar-date";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
-import { NonBlankText } from "../foundation/non-blank-text";
 import { AcademicTermId, CourseOfferingId, PersonId, SchoolId } from "../organization/identity";
 import { Organization } from "../index.ts";
 import { Schedule } from "../index.ts";
@@ -21,7 +20,7 @@ const schoolId = SchoolId.make("school-1");
 const term = Organization.AcademicTerm.make({
   id: AcademicTermId.make("term-1"),
   schoolId,
-  name: NonBlankText.Schema.make("First term"),
+  name: "First term",
   interval: interval("2022-12-01", "2023-02-28"),
 });
 
@@ -31,7 +30,7 @@ const calendar = Schedule.AcademicCalendar.make({
   terms: [term],
   closures: [
     Schedule.CalendarClosure.make({
-      name: NonBlankText.Schema.make("Winter break"),
+      name: "Winter break",
       interval: interval("2022-12-23", "2023-01-06"),
     }),
   ],
@@ -50,7 +49,7 @@ const meeting = (
     timeRange: range(time(8, 0), time(8, 45)),
     rotation: everyWeek,
     effectiveInterval: term.interval,
-    room: NonBlankText.Schema.make("A1"),
+    room: "A1",
     teacherIds: [PersonId.make(`teacher-${id}`)],
     ...overrides,
   });
@@ -141,17 +140,17 @@ describe("half-open schedule ranges", () => {
   it("allows adjacent bell periods and finds actual overlaps", () => {
     const first = Schedule.BellPeriod.make({
       id: Schedule.BellPeriodId.make("period-1"),
-      label: NonBlankText.Schema.make("1"),
+      label: "1",
       timeRange: range(time(8, 0), time(8, 45)),
     });
     const adjacent = Schedule.BellPeriod.make({
       id: Schedule.BellPeriodId.make("period-2"),
-      label: NonBlankText.Schema.make("2"),
+      label: "2",
       timeRange: range(time(8, 45), time(9, 30)),
     });
     const overlapping = Schedule.BellPeriod.make({
       id: Schedule.BellPeriodId.make("period-3"),
-      label: NonBlankText.Schema.make("Overlap"),
+      label: "Overlap",
       timeRange: range(time(8, 30), time(9, 0)),
     });
 
@@ -340,12 +339,12 @@ describe("lesson occurrence materialization", () => {
           Schedule.ScheduleException.cases.RoomChanged.make({
             id: secondExceptionId,
             target,
-            room: NonBlankText.Schema.make("B2"),
+            room: "B2",
           }),
           Schedule.ScheduleException.cases.RoomChanged.make({
             id: firstExceptionId,
             target,
-            room: NonBlankText.Schema.make("C3"),
+            room: "C3",
           }),
         ],
       }).pipe(Effect.flip);

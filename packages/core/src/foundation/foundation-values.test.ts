@@ -18,10 +18,33 @@ describe("AggregateRevision", () => {
 });
 
 describe("NonBlankText", () => {
+  it("accepts non-empty literals without construction", () => {
+    const latin: NonBlankText.Type = "Untis";
+    const unicode: NonBlankText.Type = "数学";
+
+    expect(latin).toBe("Untis");
+    expect(unicode).toBe("数学");
+
+    // @ts-expect-error An empty literal is not non-blank text.
+    const empty: NonBlankText.Type = "";
+    // @ts-expect-error A dynamic string must be decoded because it may be blank.
+    const dynamic: NonBlankText.Type = String(Date.now());
+    void [empty, dynamic];
+  });
+
   it("accepts only trimmed non-empty text", () => {
     expect(Option.isSome(NonBlankText.fromString("Lesson notes"))).toBe(true);
     expect(Option.isNone(NonBlankText.fromString(""))).toBe(true);
+    expect(Option.isNone(NonBlankText.fromString("   "))).toBe(true);
     expect(Option.isNone(NonBlankText.fromString(" padded "))).toBe(true);
+  });
+
+  it("round-trips as an ordinary string", () => {
+    const text: NonBlankText.Type = "Lesson notes";
+    const encoded = Schema.encodeSync(NonBlankText.Schema)(text);
+
+    expect(encoded).toBe("Lesson notes");
+    expect(Schema.decodeSync(NonBlankText.Schema)(encoded)).toBe(text);
   });
 });
 

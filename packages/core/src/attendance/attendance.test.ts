@@ -5,7 +5,6 @@ import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision";
 import { CalendarDate } from "../foundation/calendar-date";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
-import { NonBlankText } from "../foundation/non-blank-text";
 import { Attendance } from "../index.ts";
 import { ActorRef } from "../organization/acknowledgement";
 import { AuthoritySnapshot } from "../organization/authority";
@@ -101,7 +100,7 @@ const offerings = courseIds.map((id) =>
     schoolId,
     termId: AcademicTermId.make("term"),
     subjectId: SubjectId.make(`subject-${id}`),
-    name: NonBlankText.Schema.make(`Course ${id}`),
+    name: `Course ${id}`,
     classGroupIds: [],
   }),
 );
@@ -139,7 +138,7 @@ const authority = AuthoritySnapshot.make({
 });
 const student = Person.make({
   id: studentPersonId,
-  name: PersonName.make({ displayName: NonBlankText.Schema.make("Student"), givenNames: [] }),
+  name: PersonName.make({ displayName: "Student", givenNames: [] }),
   dateOfBirth: date("2012-01-01"),
 });
 const absence = Attendance.AbsenceCase.make({
@@ -228,7 +227,7 @@ describe("attendance workflow", () => {
         decidedAt: now,
         decision: {
           _tag: "Rejected",
-          reason: NonBlankText.Schema.make("Insufficient evidence"),
+          reason: "Insufficient evidence",
         },
       });
       assert.deepEqual(Attendance.status(resolved), {
@@ -280,7 +279,7 @@ describe("attendance workflow", () => {
       const unrelated = Person.make({
         id: PersonId.make("unrelated-minor"),
         name: PersonName.make({
-          displayName: NonBlankText.Schema.make("Unrelated"),
+          displayName: "Unrelated",
           givenNames: [],
         }),
         dateOfBirth: date("2015-01-01"),

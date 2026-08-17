@@ -82,7 +82,7 @@ describe("academic terms and cohort progression", () => {
       const cohort = Cohort.make({
         id: CohortId.make("cohort-1"),
         schoolId,
-        name: NonBlankText.unsafeFromString("2026 intake"),
+        name: "2026 intake",
         entryTermId: terms[0]!.id,
         entryGradeLevel: GradeLevel.make(5),
       });
@@ -104,7 +104,7 @@ describe("school directory", () => {
       const subject = Subject.make({
         id: SubjectId.make("mathematics"),
         schoolId,
-        name: NonBlankText.unsafeFromString("Mathematics"),
+        name: "Mathematics",
         aliases: [],
       });
       const offering = CourseOffering.make({
@@ -112,11 +112,11 @@ describe("school directory", () => {
         schoolId: SchoolId.make("other-school"),
         termId: academicTerm.id,
         subjectId: subject.id,
-        name: NonBlankText.unsafeFromString("Mathematics"),
+        name: "Mathematics",
         classGroupIds: [],
       });
       const structure = SchoolDirectory.make({
-        school: School.make({ id: schoolId, name: NonBlankText.unsafeFromString("School") }),
+        school: School.make({ id: schoolId, name: "School" }),
         subjectCatalog: SubjectCatalog.make({ schoolId, subjects: [subject] }),
         terms: [academicTerm],
         cohorts: [],
@@ -142,7 +142,7 @@ describe("course choices and enrollments", () => {
     id: CourseChoiceGroupId.make("choice-1"),
     schoolId,
     termId: AcademicTermId.make("term-1"),
-    name: NonBlankText.unsafeFromString("Choose one language"),
+    name: "Choose one language",
     offeringIds: [firstOffering, secondOffering],
     cardinality: { minimum: 1, maximum: 1 },
   });
@@ -198,7 +198,7 @@ describe("course choices and enrollments", () => {
       schoolId,
       termId: AcademicTermId.make("term-1"),
       subjectId,
-      name: NonBlankText.unsafeFromString("Mathematics 8a"),
+      name: "Mathematics 8a",
       classGroupIds: [],
     });
     const enrollment = Enrollment.make({
