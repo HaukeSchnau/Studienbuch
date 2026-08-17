@@ -3,7 +3,7 @@
 - Status: accepted
 - Date: 2026-08-15
 
-Core represents calendar dates directly as timezone-free Temporal `PlainDate.Record` values while `PlainDateSchema` encodes them as ISO `YYYY-MM-DD` strings at persistence and transport boundaries. Schedule represents `LocalTime` as integer milliseconds since midnight while encoding it as that number. Calendar-date ranges are closed and local-time ranges are half-open; absolute audit timestamps continue to use Effect `DateTime.Utc`, zoned instants use `DateTime.Zoned`, and elapsed time uses Effect `Duration`. This prevents JavaScript `Date`, time zones, and string ordering from silently changing school-day rules while preserving compact, stable wire formats.
+Core represents calendar dates directly as timezone-free Temporal `PlainDate.Record` values while `PlainDateSchema` encodes them as ISO 8601 strings at persistence and transport boundaries. Schedule represents `LocalTime` as integer milliseconds since midnight while encoding it as that number. Calendar-date ranges are closed and local-time ranges are half-open; absolute audit timestamps continue to use Effect `DateTime.Utc`, zoned instants use `DateTime.Zoned`, and elapsed time uses Effect `Duration`. This prevents JavaScript `Date`, time zones, and string ordering from silently changing school-day rules while preserving compact, stable wire formats.
 
 We use the tree-shakeable `temporal-polyfill` functional API because Temporal supplies the established parsing and calendar arithmetic that a civil-date model needs without requiring global mutation. Alternatives considered were retaining validated strings, which keeps calendar arithmetic in our code, and the global Temporal shim, which mutates the runtime and makes its cost unavoidable.
 
