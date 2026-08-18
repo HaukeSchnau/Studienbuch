@@ -83,8 +83,9 @@ let
         BETTER_AUTH_SECRET="$(<"$better_auth_secret_file")"
         export BETTER_AUTH_SECRET
       fi
-      database_url_file="$(project-context secret-file databaseUrl --required)"
-      DATABASE_URL="$(<"$database_url_file")"
+      database_host="$(project-context endpoint database listen-host)"
+      database_port="$(project-context endpoint database listen-port)"
+      DATABASE_URL="postgresql://postgres@$database_host:$database_port/postgres"
       export DATABASE_URL
       export NODE_OPTIONS="--import ./instrument.server.mjs''${NODE_OPTIONS:+ $NODE_OPTIONS}"
 
@@ -120,8 +121,7 @@ let
       BETTER_AUTH_SECRET="$(<"$better_auth_secret_file")"
       export BETTER_AUTH_SECRET
 
-      database_url_file="$(project-context secret-file databaseUrl --required)"
-      DATABASE_URL="$(<"$database_url_file")"
+      DATABASE_URL="$(project-context parameter databaseUrl)"
       export DATABASE_URL
 
       cd ${webApplication}/${applicationPath}/.output

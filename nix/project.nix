@@ -36,11 +36,16 @@ let
       web = import ../apps/web/nix.nix {
         inherit pkgs workspace;
       };
+      database = import ./database.nix {
+        inherit pkgs workspace;
+      };
 
       projectRuntime = nix-infra-modules.lib.projectRuntime.mkDevelopment {
         inherit pkgs descriptorPath;
         actions = {
           prepare = workspace.preparation.action;
+          database = database.action;
+          migrate = database.migrationAction;
           web = web.development.action;
           mobile = mobile.development.action;
         };
