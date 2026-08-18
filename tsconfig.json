@@ -17,7 +17,6 @@
     // Best practices
     "strict": true,
     "skipLibCheck": true,
-    "exactOptionalPropertyTypes": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "noUncheckedIndexedAccess": true,

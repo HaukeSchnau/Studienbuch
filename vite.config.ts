@@ -67,6 +67,7 @@ export default defineConfig({
       "effecttsgo/unnecessary-arrow-block": "off",
       "react-in-jsx-scope": "off",
       "react/jsx-no-constructed-context-values": "off",
+      "react/no-object-type-as-default-prop": "off",
       "react/no-unstable-nested-components": "off",
       "react/style-prop-object": "off",
       "eslint/no-shadow": "off",

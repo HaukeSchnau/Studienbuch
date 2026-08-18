@@ -1,8 +1,6 @@
 {
   "extends": ["../../tsconfig.json", "expo/tsconfig.base"],
   "compilerOptions": {
-    // TODO: Enable once the mobile app and React Native dependencies use exact optional props.
-    "exactOptionalPropertyTypes": false,
     "paths": {
       "@stu/core": ["../../packages/core/src/index.ts"],
       "@/*": ["./src/*"],
