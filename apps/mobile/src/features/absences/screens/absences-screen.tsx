@@ -68,17 +68,15 @@ const AbsenceSection = ({
   titleColor: string;
   items: Absence[];
   emptyLabel: string;
-}) => {
-  return (
-    <View className="gap-2">
-      <Text className="text-lg" style={{ color: titleColor }}>
-        {title}
-      </Text>
-      {items.length > 0 ? (
-        items.map((absence) => <AbsenceItem key={absence.id} absence={absence} />)
-      ) : (
-        <Text className="text-center">{emptyLabel}</Text>
-      )}
-    </View>
-  );
-};
+}) => (
+  <View className="gap-2">
+    <Text className="text-lg" style={{ color: titleColor }}>
+      {title}
+    </Text>
+    {items.length > 0 ? (
+      items.map((absence) => <AbsenceItem key={absence.id} absence={absence} />)
+    ) : (
+      <Text className="text-center">{emptyLabel}</Text>
+    )}
+  </View>
+);

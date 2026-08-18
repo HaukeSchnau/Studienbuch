@@ -2,11 +2,18 @@ import type { GradeType } from "@/compat/mobile-v0";
 import type { Href } from "expo-router";
 
 type RouteParam = string | string[] | undefined;
-const gradeTypes = new Set<GradeType>(["MASTER", "ORAL", "WRITTEN"]);
 
 const firstParam = (value: RouteParam) => (Array.isArray(value) ? value[0] : value);
-const parseGradeType = (value: string | undefined) =>
-  value && gradeTypes.has(value as GradeType) ? (value as GradeType) : undefined;
+const parseGradeType = (value: string | undefined): GradeType | undefined => {
+  switch (value) {
+    case "MASTER":
+    case "ORAL":
+    case "WRITTEN":
+      return value;
+    default:
+      return undefined;
+  }
+};
 
 export const absencesRoute = "/absences" as const satisfies Href;
 export const mainProfileRoute = "/profile" as const satisfies Href;

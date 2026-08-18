@@ -6,21 +6,19 @@ import { Agenda } from "~/features/schedule";
 import { TasksSection } from "~/features/tasks";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 
-export const OverviewScreen = () => {
-  return (
-    <CoreLayout>
-      <View className="px-8">
-        <View className="h-4" />
-        <Greeting />
-        <Agenda />
-        <View className="h-8" />
-        <AbsencesOverviewCard />
-      </View>
+export const OverviewScreen = () => (
+  <CoreLayout>
+    <View className="px-8">
+      <View className="h-4" />
+      <Greeting />
+      <Agenda />
       <View className="h-8" />
-      <TasksSection />
-    </CoreLayout>
-  );
-};
+      <AbsencesOverviewCard />
+    </View>
+    <View className="h-8" />
+    <TasksSection />
+  </CoreLayout>
+);
 
 const Greeting = () => {
   const session = useRequiredAuthenticatedSession();

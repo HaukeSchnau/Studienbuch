@@ -178,8 +178,8 @@ describe("contextual authority", () => {
     }),
   );
 
-  it.effect("rejects duplicate authority identities at the boundary", () => {
-    return Effect.gen(function* () {
+  it.effect("rejects duplicate authority identities at the boundary", () =>
+    Effect.gen(function* () {
       const encoded = yield* Schema.encodeEffect(AuthoritySnapshot)(snapshot());
       yield* Schema.decodeEffect(AuthoritySnapshot)({
         ...encoded,
@@ -188,8 +188,8 @@ describe("contextual authority", () => {
           { ...encoded.memberships[0]!, personId: "teacher-person" },
         ],
       }).pipe(Effect.flip);
-    });
-  });
+    }),
+  );
 
   it.effect("does not treat administrative authority as guardian evidence", () =>
     Effect.gen(function* () {

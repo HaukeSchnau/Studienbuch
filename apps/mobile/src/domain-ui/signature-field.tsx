@@ -11,24 +11,22 @@ export interface SignatureFieldRef {
   getSVG: () => Promise<string>;
 }
 
-const SignatureFrame = ({ children, label }: { children: ReactNode; label: string }) => {
-  return (
-    <View
-      className="h-80 w-full items-center justify-center"
-      style={{
-        borderBottomColor: "#9E9E9E",
-        borderBottomWidth: 1,
-        backgroundColor: "#F5F5F5",
-      }}
-    >
-      {children}
-      <View className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between p-4">
-        <Cross width={35} height={35} color={"rgba(0, 0, 0, 0.25)"} />
-        <Text className="text-lg opacity-60">{label}</Text>
-      </View>
+const SignatureFrame = ({ children, label }: { children: ReactNode; label: string }) => (
+  <View
+    className="h-80 w-full items-center justify-center"
+    style={{
+      borderBottomColor: "#9E9E9E",
+      borderBottomWidth: 1,
+      backgroundColor: "#F5F5F5",
+    }}
+  >
+    {children}
+    <View className="absolute right-0 bottom-0 left-0 flex-row items-center justify-between p-4">
+      <Cross width={35} height={35} color={"rgba(0, 0, 0, 0.25)"} />
+      <Text className="text-lg opacity-60">{label}</Text>
     </View>
-  );
-};
+  </View>
+);
 
 interface Props {
   label: string;
@@ -80,10 +78,8 @@ export const SignatureField = forwardRef<SignatureFieldRef, Props>(
   },
 );
 
-export const SignatureView = ({ svg, label }: { svg: string; label: string }) => {
-  return (
-    <SignatureFrame label={label}>
-      <SvgXml xml={svg} style={{ width: "100%", height: "100%", position: "absolute" }} />
-    </SignatureFrame>
-  );
-};
+export const SignatureView = ({ svg, label }: { svg: string; label: string }) => (
+  <SignatureFrame label={label}>
+    <SvgXml xml={svg} style={{ width: "100%", height: "100%", position: "absolute" }} />
+  </SignatureFrame>
+);

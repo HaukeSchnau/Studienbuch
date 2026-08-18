@@ -12,6 +12,8 @@ import {
 } from "./membership";
 import { ActorRef } from "./acknowledgement";
 
+const unique = (values: ReadonlyArray<string>) => new Set(values).size === values.length;
+
 export const Capability = Schema.TaggedUnion({
   ManageSchoolDirectory: { schoolId: SchoolId },
   ManageOwnNotebook: { studentMembershipId: SchoolMembershipId },
@@ -33,7 +35,6 @@ export const AuthoritySnapshot = Schema.Struct({
 }).check(
   Schema.makeFilter(
     (snapshot) => {
-      const unique = (values: ReadonlyArray<string>) => new Set(values).size === values.length;
       if (
         !unique(snapshot.memberships.map((item) => item.id)) ||
         !unique(snapshot.students.map((item) => item.membershipId)) ||

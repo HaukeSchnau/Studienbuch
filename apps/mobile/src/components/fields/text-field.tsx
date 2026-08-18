@@ -9,15 +9,16 @@ import { fontNames, Text } from "../ui/text";
 
 type Falsy = false | 0 | null | undefined;
 
-interface Props extends TextInputProps {
+interface Props extends Omit<TextInputProps, "onSubmitEditing"> {
   label: string;
   value: string;
   placeholder?: string;
   onChangeText: (text: string) => void;
+  onSubmitEditing?: (text: string) => void;
   error?: string | Falsy;
 }
 
-export const TextField = ({ label, placeholder, error, ...props }: Props) => {
+export const TextField = ({ label, placeholder, error, onSubmitEditing, ...props }: Props) => {
   const [isFocused, setIsFocused] = useState(false);
   const [inputWidth, setInputWidth] = useState(0);
   const nativeValue = useNativeState(props.value);
@@ -43,6 +44,7 @@ export const TextField = ({ label, placeholder, error, ...props }: Props) => {
               setIsFocused(true);
               props.onFocus?.(event);
             }}
+            onSubmitEditing={(event) => onSubmitEditing?.(event.nativeEvent.text)}
             placeholder={placeholder}
             placeholderTextColor="#98A2B3"
             selectionColor={colors.accent.DEFAULT}
@@ -75,9 +77,7 @@ export const TextField = ({ label, placeholder, error, ...props }: Props) => {
               onFocus={() => {
                 setIsFocused(true);
               }}
-              onSubmitEditing={(text) =>
-                props.onSubmitEditing?.({ nativeEvent: { text } } as never)
-              }
+              onSubmitEditing={onSubmitEditing}
               placeholder={placeholder}
               placeholderTextColor="#98A2B3"
               returnKeyType={props.returnKeyType}
