@@ -17,7 +17,7 @@ export class Exhausted extends Schema_.TaggedError<Exhausted>()("AggregateRevisi
 /** Advances a revision or reports that the finite wire representation is exhausted. */
 export const next = (revision: Type): Effect.Effect<Type, Exhausted> =>
   revision === Number.MAX_SAFE_INTEGER
-    ? Effect.fail(new Exhausted({ revision }))
+    ? Effect.fail(Exhausted.make({ revision }))
     : Effect.succeed(Schema.make(revision + 1));
 
 export const compare = (left: Type, right: Type): -1 | 0 | 1 =>

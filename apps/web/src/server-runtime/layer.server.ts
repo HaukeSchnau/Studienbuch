@@ -5,23 +5,31 @@ import {
   serverConfig,
 } from "@stu/observability/server";
 import { Database } from "@stu/server";
+import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { OtlpExporter } from "effect/unstable/observability";
 import { ClientTelemetryLive } from "./client-telemetry.server.ts";
 
-function deploymentEnvironment(): "development" | "test" | "staging" | "production" {
-  const value = process.env.STUDIENBUCH_ENVIRONMENT ?? process.env.NODE_ENV;
-  return value === "production" || value === "staging" || value === "test" ? value : "development";
-}
+const environmentConfig = Config.string("STUDIENBUCH_ENVIRONMENT").pipe(
+  Config.orElse(() => Config.string("NODE_ENV")),
+  Config.withDefault("development"),
+  Config.map((value) =>
+    value === "production" || value === "staging" || value === "test" ? value : "development",
+  ),
+);
 
 const telemetryLayer = Layer.unwrap(
   Effect.gen(function* () {
     const config = yield* serverConfig;
+    const serviceVersion = yield* Config.string("STUDIENBUCH_VERSION").pipe(
+      Config.withDefault("development"),
+    );
+    const environment = yield* environmentConfig;
     if (!config.enabled) {
       const logger =
-        deploymentEnvironment() === "production"
+        environment === "production"
           ? productionJsonLayer({ logLevel: config.logLevel, traceLevel: config.traceLevel })
           : developmentLayer({ logLevel: config.logLevel, traceLevel: config.traceLevel });
       return Layer.mergeAll(logger, OtlpExporter.layerFlusher);
@@ -31,8 +39,8 @@ const telemetryLayer = Layer.unwrap(
       endpoint: config.endpoint,
       resource: {
         serviceName: "studienbuch-server",
-        serviceVersion: process.env.STUDIENBUCH_VERSION ?? "development",
-        environment: deploymentEnvironment(),
+        serviceVersion,
+        environment,
       },
       logLevel: config.logLevel,
       traceLevel: config.traceLevel,

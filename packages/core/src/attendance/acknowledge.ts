@@ -46,7 +46,7 @@ const checkRevision = (absence: AbsenceCase, expectedRevision: AggregateRevision
   AggregateRevision.Equivalence(absence.revision, expectedRevision)
     ? Effect.void
     : Effect.fail(
-        new ConcurrentAbsenceRevisionError({
+        ConcurrentAbsenceRevisionError.make({
           expected: expectedRevision,
           actual: absence.revision,
         }),
@@ -57,14 +57,14 @@ export const acknowledge = Effect.fn("Attendance.acknowledge")(function* (
 ) {
   yield* checkRevision(input.absence, input.expectedRevision);
   if (input.absence.acknowledgement !== undefined) {
-    return yield* new AbsenceAlreadyAcknowledgedError({ absenceCaseId: input.absence.id });
+    return yield* AbsenceAlreadyAcknowledgedError.make({ absenceCaseId: input.absence.id });
   }
 
   const studentMembership = input.authority.memberships.find(
     (membership) => membership.id === input.absence.studentMembershipId,
   );
   if (studentMembership?.personId !== input.student.id) {
-    return yield* new AbsenceStudentIdentityError({
+    return yield* AbsenceStudentIdentityError.make({
       absenceCaseId: input.absence.id,
       personId: input.student.id,
     });
@@ -72,7 +72,7 @@ export const acknowledge = Effect.fn("Attendance.acknowledge")(function* (
 
   const legalStatus = legalStatusOn(input.student, input.absence.date, input.legalAgePolicy);
   if (legalStatus === "Unknown") {
-    return yield* new AcknowledgementActorError({
+    return yield* AcknowledgementActorError.make({
       actor: input.actor,
       reason: "LegalStatusUnknown",
     });
@@ -81,13 +81,16 @@ export const acknowledge = Effect.fn("Attendance.acknowledge")(function* (
   const actorIsStudent = input.actor.personId === input.student.id;
 
   if (isAdult && !actorIsStudent) {
-    return yield* new AcknowledgementActorError({
+    return yield* AcknowledgementActorError.make({
       actor: input.actor,
       reason: "AdultMustAcknowledgeSelf",
     });
   }
   if (!isAdult && actorIsStudent) {
-    return yield* new AcknowledgementActorError({ actor: input.actor, reason: "GuardianRequired" });
+    return yield* AcknowledgementActorError.make({
+      actor: input.actor,
+      reason: "GuardianRequired",
+    });
   }
 
   yield* authorize(

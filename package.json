@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "effect-tsgo patch && vp config --no-agent"
+    "prepare": "effect-tsgo patch --oxlint && vp config --no-agent"
   },
   "devDependencies": {
     "@effect/tsgo": "catalog:",

@@ -168,7 +168,7 @@ const checkRevision = (standing: CourseStanding, expectedRevision: AggregateRevi
   standing.revision === expectedRevision
     ? Effect.void
     : Effect.fail(
-        new ConcurrentStandingRevisionError({
+        ConcurrentStandingRevisionError.make({
           expected: expectedRevision,
           actual: standing.revision,
         }),
@@ -179,26 +179,26 @@ export const reviseStanding = Effect.fn("Assessment.addStandingRevision")(functi
 ) {
   yield* checkRevision(input.standing, input.expectedRevision);
   if (input.revision.teacherAttestation !== undefined) {
-    return yield* new AssessmentAlreadyTeacherAttestedError({ target: "StandingRevision" });
+    return yield* AssessmentAlreadyTeacherAttestedError.make({ target: "StandingRevision" });
   }
   if (input.revision.learnerAcknowledgement !== undefined) {
-    return yield* new AssessmentAlreadyLearnerAcknowledgedError({ target: "StandingRevision" });
+    return yield* AssessmentAlreadyLearnerAcknowledgedError.make({ target: "StandingRevision" });
   }
   if (input.standing.revisions.some((revision) => revision.id === input.revision.id)) {
-    return yield* new InvalidStandingSupersessionError({
+    return yield* InvalidStandingSupersessionError.make({
       expectedCurrentRevisionId: input.standing.currentRevisionId,
       supersedes: input.revision.id,
     });
   }
   if (input.revision.supersedes !== input.standing.currentRevisionId) {
-    return yield* new InvalidStandingSupersessionError({
+    return yield* InvalidStandingSupersessionError.make({
       expectedCurrentRevisionId: input.standing.currentRevisionId,
       supersedes: input.revision.supersedes ?? input.revision.id,
     });
   }
   const current = currentStandingRevision(input.standing);
   if (PlainDate.compare(input.revision.observedOn, current.observedOn) < 0) {
-    return yield* new StandingRevisionChronologyError({
+    return yield* StandingRevisionChronologyError.make({
       previousObservedOn: current.observedOn,
       nextObservedOn: input.revision.observedOn,
     });
@@ -240,10 +240,10 @@ const currentTarget = Effect.fn("Assessment.currentStandingTarget")(function* (
   yield* checkRevision(input.standing, input.expectedRevision);
   const target = input.standing.revisions.find((revision) => revision.id === input.revisionId);
   if (target === undefined) {
-    return yield* new StandingRevisionNotFoundError({ revisionId: input.revisionId });
+    return yield* StandingRevisionNotFoundError.make({ revisionId: input.revisionId });
   }
   if (target.id !== input.standing.currentRevisionId) {
-    return yield* new StandingRevisionNotCurrentError({
+    return yield* StandingRevisionNotCurrentError.make({
       revisionId: target.id,
       currentRevisionId: input.standing.currentRevisionId,
     });
@@ -271,7 +271,7 @@ export const attestStanding = Effect.fn("Assessment.attestStandingRevision")(fun
 ) {
   const target = yield* currentTarget(input);
   if (target.teacherAttestation !== undefined) {
-    return yield* new AssessmentAlreadyTeacherAttestedError({ target: "StandingRevision" });
+    return yield* AssessmentAlreadyTeacherAttestedError.make({ target: "StandingRevision" });
   }
   const policy = yield* GradingPolicy.Service;
   yield* policy.validateValue(target.value);
@@ -299,7 +299,7 @@ export const acknowledgeStanding = Effect.fn("Assessment.acknowledgeStandingRevi
 ) {
   const target = yield* currentTarget(input);
   if (target.learnerAcknowledgement !== undefined) {
-    return yield* new AssessmentAlreadyLearnerAcknowledgedError({
+    return yield* AssessmentAlreadyLearnerAcknowledgedError.make({
       target: "StandingRevision",
     });
   }

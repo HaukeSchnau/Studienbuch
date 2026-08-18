@@ -196,7 +196,7 @@ export const relinquishOverride = Effect.fn("Importing.relinquishOverride")(func
 ) {
   if (current._tag === "Sourced") return current;
   if (current.source === undefined) {
-    return yield* new OverrideRelinquishmentRefused({ reason: "SourceNoLongerAvailable" });
+    return yield* OverrideRelinquishmentRefused.make({ reason: "SourceNoLongerAvailable" });
   }
   return sourcedValue(current.source);
 });

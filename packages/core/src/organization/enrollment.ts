@@ -100,28 +100,28 @@ export const validateCourseChoice = Effect.fn("Organization.validateCourseChoice
 ) {
   const distinct = new Set<CourseOfferingId>(selectedOfferingIds);
   if (distinct.size !== selectedOfferingIds.length) {
-    return yield* new CourseChoiceViolation({
+    return yield* CourseChoiceViolation.make({
       choiceGroupId: group.id,
       reason: "DuplicateSelection",
       selectedCount: distinct.size,
     });
   }
   if (selectedOfferingIds.some((id) => !group.offeringIds.includes(id))) {
-    return yield* new CourseChoiceViolation({
+    return yield* CourseChoiceViolation.make({
       choiceGroupId: group.id,
       reason: "OfferingOutsideGroup",
       selectedCount: selectedOfferingIds.length,
     });
   }
   if (selectedOfferingIds.length < group.cardinality.minimum) {
-    return yield* new CourseChoiceViolation({
+    return yield* CourseChoiceViolation.make({
       choiceGroupId: group.id,
       reason: "BelowMinimum",
       selectedCount: selectedOfferingIds.length,
     });
   }
   if (selectedOfferingIds.length > group.cardinality.maximum) {
-    return yield* new CourseChoiceViolation({
+    return yield* CourseChoiceViolation.make({
       choiceGroupId: group.id,
       reason: "AboveMaximum",
       selectedCount: selectedOfferingIds.length,
@@ -138,7 +138,7 @@ export const removeEnrollment = Effect.fn("Organization.removeEnrollment")(funct
   const enrollment = enrollments.find((candidate) => candidate.id === enrollmentId);
   if (enrollment === undefined) return enrollments;
   if (enrollment.origin._tag === "Required" || enrollment.origin._tag === "InheritedFromClass") {
-    return yield* new EnrollmentNotRemovable({
+    return yield* EnrollmentNotRemovable.make({
       enrollmentId,
       reason: enrollment.origin._tag,
     });
@@ -148,7 +148,7 @@ export const removeEnrollment = Effect.fn("Organization.removeEnrollment")(funct
     const choiceGroupId = enrollment.origin.choiceGroupId;
     const group = choiceGroups.find((candidate) => candidate.id === choiceGroupId);
     if (group === undefined) {
-      return yield* new EnrollmentNotRemovable({
+      return yield* EnrollmentNotRemovable.make({
         enrollmentId,
         reason: "ChoiceGroupUnavailable",
       });

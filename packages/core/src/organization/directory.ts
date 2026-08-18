@@ -46,7 +46,7 @@ const invalidDirectory = (
   entity: InvalidSchoolDirectory["entity"],
   entityId: string,
   reason: InvalidSchoolDirectory["reason"],
-) => new InvalidSchoolDirectory({ entity, entityId, reason });
+) => InvalidSchoolDirectory.make({ entity, entityId, reason });
 
 /** Validates references and school/term scope after every constituent schema has decoded. */
 export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDirectory")(function* (

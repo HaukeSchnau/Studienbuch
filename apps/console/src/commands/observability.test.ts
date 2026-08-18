@@ -20,7 +20,7 @@ interface ReceivedRequest {
   readonly body: string;
 }
 
-const TcpAddress = Schema.Struct({ port: Schema.Number });
+const TcpAddress = Schema.Struct({ port: Schema.Finite });
 
 async function startReceiver() {
   const received: Array<ReceivedRequest> = [];

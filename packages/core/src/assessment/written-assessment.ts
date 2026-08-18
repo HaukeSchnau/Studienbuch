@@ -88,7 +88,7 @@ const checkRevision = (assessment: WrittenAssessment, expectedRevision: Aggregat
   assessment.revision === expectedRevision
     ? Effect.void
     : Effect.fail(
-        new ConcurrentWrittenAssessmentRevisionError({
+        ConcurrentWrittenAssessmentRevisionError.make({
           expected: expectedRevision,
           actual: assessment.revision,
         }),
@@ -99,7 +99,7 @@ export const attestWritten = Effect.fn("Assessment.attestWrittenAssessment")(fun
 ) {
   yield* checkRevision(input.assessment, input.expectedRevision);
   if (input.assessment.teacherAttestation !== undefined) {
-    return yield* new AssessmentAlreadyTeacherAttestedError({ target: "WrittenAssessment" });
+    return yield* AssessmentAlreadyTeacherAttestedError.make({ target: "WrittenAssessment" });
   }
   const policy = yield* GradingPolicy.Service;
   yield* policy.validateValue(input.assessment.value);
@@ -135,7 +135,7 @@ export const acknowledgeWritten = Effect.fn("Assessment.acknowledgeWrittenAssess
 ) {
   yield* checkRevision(input.assessment, input.expectedRevision);
   if (input.assessment.learnerAcknowledgement !== undefined) {
-    return yield* new AssessmentAlreadyLearnerAcknowledgedError({
+    return yield* AssessmentAlreadyLearnerAcknowledgedError.make({
       target: "WrittenAssessment",
     });
   }

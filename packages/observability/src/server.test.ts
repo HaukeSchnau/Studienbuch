@@ -21,7 +21,7 @@ interface Receiver {
   readonly close: () => Promise<void>;
 }
 
-const TcpAddress = Schema.Struct({ port: Schema.Number });
+const TcpAddress = Schema.Struct({ port: Schema.Finite });
 
 async function startReceiver(): Promise<Receiver> {
   const received: Array<ReceivedRequest> = [];
