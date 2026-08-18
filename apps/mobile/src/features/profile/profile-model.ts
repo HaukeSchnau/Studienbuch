@@ -132,11 +132,16 @@ export const getProfileCoursesModel = ({
 
   const examCourses = signals
     .filter((signal) => signal.course.examSlot)
-    .sort(
-      (a, b) =>
-        examSlotOrder[a.course.examSlot!] - examSlotOrder[b.course.examSlot!] ||
-        a.course.name.localeCompare(b.course.name, "de"),
-    );
+    .sort((a, b) => {
+      const aSlot = a.course.examSlot;
+      const bSlot = b.course.examSlot;
+      if (aSlot === undefined || bSlot === undefined) return 0;
+
+      return (
+        examSlotOrder[aSlot] - examSlotOrder[bSlot] ||
+        a.course.name.localeCompare(b.course.name, "de")
+      );
+    });
 
   return {
     examCourses,

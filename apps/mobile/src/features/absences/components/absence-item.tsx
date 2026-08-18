@@ -21,8 +21,8 @@ export const AbsenceItem = ({ absence }: { absence: Absence }) => {
   const isExcused = isAbsenceConfirmed(absence, user.isOfAge);
   const courseLabels = absence.courseIds
     .map((courseId) => getCourse(courseId))
-    .filter(Boolean)
-    .map((course) => subjectNameMap[course!.subject])
+    .filter((course) => course !== undefined)
+    .map((course) => subjectNameMap[course.subject])
     .join(", ");
   const confirmDelete = () =>
     Alert.alert("Fehlzeit löschen", "Bist du sicher, dass du diese Fehlzeit löschen möchtest?", [

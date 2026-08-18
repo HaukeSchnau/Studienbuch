@@ -213,7 +213,7 @@ const AttachmentTile = ({
   total: number;
   onPress: () => void;
 }) => {
-  const rotate = thumbnailRotations[index % thumbnailRotations.length]!;
+  const rotate = thumbnailRotations[index % thumbnailRotations.length] ?? thumbnailRotations[0];
 
   return (
     <View
@@ -252,7 +252,7 @@ const AttachmentTile = ({
 };
 
 const AddAttachmentTile = ({ index, onPress }: { index: number; onPress: () => void }) => {
-  const rotate = thumbnailRotations[index % thumbnailRotations.length]!;
+  const rotate = thumbnailRotations[index % thumbnailRotations.length] ?? thumbnailRotations[0];
 
   return (
     <View

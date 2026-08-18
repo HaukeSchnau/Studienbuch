@@ -22,8 +22,8 @@ export function ClassAndCoursesScreen({
 }: ClassAndCoursesScreenProps) {
   const { courses, getSemesterCourses, setSelectedCourses } = useCourses();
   const { semesters } = useSchool();
-  const currentSemester = findCurrentSemester(semesters)!;
-  const currentCourses = getSemesterCourses(currentSemester.id);
+  const currentSemester = findCurrentSemester(semesters);
+  const currentCourses = currentSemester ? getSemesterCourses(currentSemester.id) : [];
   const [selection, setSelection] = useState<Partial<Record<SubjectId, Course>>>(() => {
     const initialSelection: Partial<Record<SubjectId, Course>> = {};
     for (const course of currentCourses) {
@@ -33,12 +33,16 @@ export function ClassAndCoursesScreen({
   });
 
   const groupedChoices = useMemo(() => {
+    if (!currentSemester) return [];
+
     const result = new Map<SubjectId, Course[]>();
     for (const course of courses.filter((item) => item.semesterId === currentSemester.id)) {
       result.set(course.subject, [...(result.get(course.subject) ?? []), course]);
     }
     return Array.from(result.entries());
-  }, [courses, currentSemester.id]);
+  }, [courses, currentSemester]);
+
+  if (!currentSemester) return null;
 
   return (
     <View>

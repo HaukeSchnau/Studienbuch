@@ -1,18 +1,18 @@
 import type { Course, TeacherInfo } from "@/compat/mobile-v0";
 
-export const teachers: TeacherInfo[] = [
-  { id: "t1", firstName: "Anna", lastName: "Meyer" },
-  { id: "t2", firstName: "Tobias", lastName: "Kruse" },
-  { id: "t3", firstName: "Nina", lastName: "Petersen" },
-  { id: "t4", firstName: "Lars", lastName: "Becker" },
-];
+const annaMeyer: TeacherInfo = { id: "t1", firstName: "Anna", lastName: "Meyer" };
+const tobiasKruse: TeacherInfo = { id: "t2", firstName: "Tobias", lastName: "Kruse" };
+const ninaPetersen: TeacherInfo = { id: "t3", firstName: "Nina", lastName: "Petersen" };
+const larsBecker: TeacherInfo = { id: "t4", firstName: "Lars", lastName: "Becker" };
+
+export const teachers: TeacherInfo[] = [annaMeyer, tobiasKruse, ninaPetersen, larsBecker];
 
 export const coursesSeed: Course[] = [
   {
     id: "de-1",
     name: "Deutsch LK",
     subject: "de",
-    teachers: [teachers[0]!],
+    teachers: [annaMeyer],
     semesterId: "s2",
     level: "ADVANCED",
     examSlot: "P1",
@@ -21,7 +21,7 @@ export const coursesSeed: Course[] = [
     id: "ma-1",
     name: "Mathematik LK",
     subject: "ma",
-    teachers: [teachers[2]!],
+    teachers: [ninaPetersen],
     semesterId: "s2",
     level: "ADVANCED",
     examSlot: "P2",
@@ -30,7 +30,7 @@ export const coursesSeed: Course[] = [
     id: "en-1",
     name: "Englisch GK",
     subject: "en",
-    teachers: [teachers[1]!],
+    teachers: [tobiasKruse],
     semesterId: "s2",
     level: "BASIC",
     examSlot: "P3",
@@ -39,7 +39,7 @@ export const coursesSeed: Course[] = [
     id: "ge-1",
     name: "Geschichte GK",
     subject: "ge",
-    teachers: [teachers[0]!],
+    teachers: [annaMeyer],
     semesterId: "s2",
     level: "BASIC",
     examSlot: "P4",
@@ -48,17 +48,17 @@ export const coursesSeed: Course[] = [
     id: "ph-1",
     name: "Physik GK",
     subject: "ph",
-    teachers: [teachers[3]!],
+    teachers: [larsBecker],
     semesterId: "s2",
     level: "BASIC",
     examSlot: "P5",
   },
-  { id: "sp-1", name: "Sport GK", subject: "sp", teachers: [teachers[1]!], semesterId: "s2" },
+  { id: "sp-1", name: "Sport GK", subject: "sp", teachers: [tobiasKruse], semesterId: "s2" },
   {
     id: "de-0",
     name: "Deutsch LK",
     subject: "de",
-    teachers: [teachers[0]!],
+    teachers: [annaMeyer],
     semesterId: "s1",
     level: "ADVANCED",
     examSlot: "P1",
@@ -67,7 +67,7 @@ export const coursesSeed: Course[] = [
     id: "ma-0",
     name: "Mathematik LK",
     subject: "ma",
-    teachers: [teachers[2]!],
+    teachers: [ninaPetersen],
     semesterId: "s1",
     level: "ADVANCED",
     examSlot: "P2",
@@ -76,7 +76,7 @@ export const coursesSeed: Course[] = [
     id: "en-0",
     name: "Englisch GK",
     subject: "en",
-    teachers: [teachers[1]!],
+    teachers: [tobiasKruse],
     semesterId: "s1",
     level: "BASIC",
     examSlot: "P3",
@@ -85,7 +85,7 @@ export const coursesSeed: Course[] = [
     id: "ge-0",
     name: "Geschichte GK",
     subject: "ge",
-    teachers: [teachers[0]!],
+    teachers: [annaMeyer],
     semesterId: "s1",
     level: "BASIC",
     examSlot: "P4",

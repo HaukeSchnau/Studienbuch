@@ -91,10 +91,16 @@ describe("task policies", () => {
   });
 
   it("archives done tasks and old overdue tasks", () => {
-    expect(isTaskArchived(tasks[0]!, new Date("2026-06-03T00:00:00"))).toBe(true);
+    const firstTask = tasks[0];
+    const secondTask = tasks[1];
+    if (firstTask === undefined || secondTask === undefined) {
+      throw new Error("Expected the task fixtures to contain two tasks");
+    }
+
+    expect(isTaskArchived(firstTask, new Date("2026-06-03T00:00:00"))).toBe(true);
     expect(
       isTaskArchived(
-        { ...tasks[1]!, dueDate: new Date("2026-05-20T00:00:00") },
+        { ...secondTask, dueDate: new Date("2026-05-20T00:00:00") },
         new Date("2026-06-03T00:00:00"),
       ),
     ).toBe(true);
