@@ -24,7 +24,12 @@ export interface TelemetryStorage {
 }
 
 export interface TelemetryTransport {
-  readonly send: (envelope: ClientTelemetryEnvelopeType) => Promise<number>;
+  readonly send: (
+    envelope: ClientTelemetryEnvelopeType,
+  ) => Promise<
+    | { readonly status: "sent"; readonly accepted: number }
+    | { readonly status: "failed"; readonly reason: string }
+  >;
 }
 
 interface StoredRecord {
@@ -204,13 +209,13 @@ export class TelemetryOutbox {
   enqueue(
     record: ClientTelemetryRecordType,
     priority: TelemetryPriority = "normal",
-  ): Promise<void> {
+  ): Promise<boolean> {
     return this.#serial(async () => {
       if (
         Option.isNone(decodeTelemetryRecord(record, exactContract)) ||
         !priorities.has(priority)
       ) {
-        throw new TypeError("Telemetry record is outside the allowlisted client contract");
+        return false;
       }
       this.#pruneExpired();
       const sequence = this.#snapshot.sequence + 1;
@@ -232,6 +237,7 @@ export class TelemetryOutbox {
       };
       this.#enforceCapacity();
       await this.#persist();
+      return true;
     });
   }
 
@@ -295,10 +301,9 @@ export class TelemetryOutbox {
       };
 
       try {
-        const acceptedTotal = Math.max(
-          0,
-          Math.min(records.length, await this.#options.transport.send(envelope)),
-        );
+        const delivery = await this.#options.transport.send(envelope);
+        if (delivery.status === "failed") return this.#recordFailedAttempt(eligible, now);
+        const acceptedTotal = Math.max(0, Math.min(records.length, delivery.accepted));
         const accepted = Math.min(eligible.length, acceptedTotal);
         const acceptedIds = new Set(eligible.slice(0, accepted).map((entry) => entry.id));
         const attemptedIds = new Set(eligible.slice(accepted).map((entry) => entry.id));
@@ -321,22 +326,29 @@ export class TelemetryOutbox {
         await this.#persist();
         return { status: "sent", accepted, remaining: nextRecords.length };
       } catch {
-        const attemptedIds = new Set(eligible.map((entry) => entry.id));
-        this.#snapshot = {
-          ...this.#snapshot,
-          records: this.#snapshot.records.map((entry) =>
-            attemptedIds.has(entry.id)
-              ? {
-                  ...entry,
-                  attempts: entry.attempts + 1,
-                  nextAttemptAt: now + retryDelay(entry.attempts + 1, this.#options.random.next()),
-                }
-              : entry,
-          ),
-        };
-        await this.#persist();
-        return { status: "failed", accepted: 0, remaining: this.#snapshot.records.length };
+        return this.#recordFailedAttempt(eligible, now);
       }
     });
+  }
+
+  async #recordFailedAttempt(
+    eligible: ReadonlyArray<StoredRecord>,
+    now: number,
+  ): Promise<FlushResult> {
+    const attemptedIds = new Set(eligible.map((entry) => entry.id));
+    this.#snapshot = {
+      ...this.#snapshot,
+      records: this.#snapshot.records.map((entry) =>
+        attemptedIds.has(entry.id)
+          ? {
+              ...entry,
+              attempts: entry.attempts + 1,
+              nextAttemptAt: now + retryDelay(entry.attempts + 1, this.#options.random.next()),
+            }
+          : entry,
+      ),
+    };
+    await this.#persist();
+    return { status: "failed", accepted: 0, remaining: this.#snapshot.records.length };
   }
 }

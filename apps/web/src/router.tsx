@@ -20,6 +20,7 @@ export function getRouter() {
     void import("#/lib/observability/browser-client.ts").then(
       ({ browserTelemetry, installBrowserTelemetryLifecycle }) => {
         const telemetry = browserTelemetry();
+        if (telemetry === undefined) return;
         let navigationStartedAt: number | undefined;
         let recordedInitialRender = false;
         telemetry.recordCanary();

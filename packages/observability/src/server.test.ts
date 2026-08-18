@@ -23,7 +23,7 @@ interface Receiver {
 
 const TcpAddress = Schema.Struct({ port: Schema.Finite });
 
-async function startReceiver(): Promise<Receiver> {
+async function startReceiver(): Promise<Receiver | undefined> {
   const received: Array<ReceivedRequest> = [];
   const server = createServer((request, response) => {
     request.setEncoding("utf8");
@@ -46,7 +46,7 @@ async function startReceiver(): Promise<Receiver> {
   const address = server.address();
   if (!Schema.is(TcpAddress)(address)) {
     await close(server);
-    throw new Error("OTLP test receiver did not expose a TCP address");
+    return undefined;
   }
 
   return {
@@ -87,6 +87,8 @@ const resource = {
 describe("Effect OTLP integration", () => {
   it("explicitly flushes correlated traces, logs, and metrics", async () => {
     const receiver = await startReceiver();
+    expect(receiver).toBeDefined();
+    if (receiver === undefined) return;
     const runtime = ManagedRuntime.make(
       otlpJsonTestLayer({ endpoint: receiver.endpoint, resource }).pipe(
         Layer.provide(FetchHttpClient.layer),
@@ -112,6 +114,8 @@ describe("Effect OTLP integration", () => {
 
   it("uses protobuf for every production signal endpoint", async () => {
     const receiver = await startReceiver();
+    expect(receiver).toBeDefined();
+    if (receiver === undefined) return;
     const runtime = ManagedRuntime.make(
       otlpProtobufLayer({
         endpoint: receiver.endpoint,

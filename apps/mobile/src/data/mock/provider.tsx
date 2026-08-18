@@ -83,24 +83,59 @@ interface MockDataContextValue {
   deleteTask: (taskId: string) => void;
 }
 
-const MockDataContext = createContext<MockDataContextValue | null>(null);
-
 const currentSemester = findCurrentSemester(semesters);
 const initialCourseIds = coursesSeed
   .filter((course) => course.semesterId === currentSemester?.id)
   .map((course) => course.id);
 const initialLicenseKey =
   process.env.EXPO_PUBLIC_E2E_SCENARIO === "startup" ? "" : "STUB-U123-2026-UI00";
+const initialUser: UserProfile = {
+  name: "Hauke",
+  isOfAge: false,
+  yearId: "y12",
+  classId: "c12a",
+  schoolName: "IGS Lilienthal",
+  licenseKey: initialLicenseKey,
+};
+
+// Missing providers degrade to an empty, read-only data source. The app shell installs the real
+// provider, but keeping the context total lets render code represent absence without exceptions.
+const unavailableMockDataRuntime: MockDataContextValue = {
+  user: initialUser,
+  years: [],
+  classes: [],
+  semesters: [],
+  courses: [],
+  holidays: [],
+  timetable: [],
+  absences: [],
+  grades: [],
+  tasks: [],
+  getRequiredSetupPath: () => "/setup/license-key",
+  getActiveHoliday: () => undefined,
+  getCourse: () => undefined,
+  getSemesterCourses: () => [],
+  getCourseGrades: () => [],
+  getTask: () => undefined,
+  getCourseTasks: () => [],
+  updateProfile: () => undefined,
+  setSelectedCourses: () => undefined,
+  addAbsence: () => undefined,
+  deleteAbsence: () => undefined,
+  signAbsence: () => undefined,
+  upsertGrade: () => undefined,
+  signGrade: () => undefined,
+  restoreLatestConfirmedGrade: () => undefined,
+  addTask: () => undefined,
+  addTaskAttachment: () => undefined,
+  toggleTaskDone: () => undefined,
+  deleteTask: () => undefined,
+};
+
+const MockDataContext = createContext<MockDataContextValue>(unavailableMockDataRuntime);
 
 export function MockDataProvider({ children }: PropsWithChildren) {
-  const [user, setUser] = useState<UserProfile>({
-    name: "Hauke",
-    isOfAge: false,
-    yearId: "y12",
-    classId: "c12a",
-    schoolName: "IGS Lilienthal",
-    licenseKey: initialLicenseKey,
-  });
+  const [user, setUser] = useState<UserProfile>(initialUser);
   const [selectedCourseIdsBySemester, setSelectedCourseIdsBySemester] = useState<
     Record<string, string[]>
   >({
@@ -306,9 +341,5 @@ export function MockDataProvider({ children }: PropsWithChildren) {
 }
 
 export function useMockDataRuntime() {
-  const value = useContext(MockDataContext);
-  if (!value) {
-    throw new Error("Mock data context is missing");
-  }
-  return value;
+  return useContext(MockDataContext);
 }
