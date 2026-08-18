@@ -2,16 +2,13 @@ import type * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision";
-import { Artifact } from "../foundation/artifact";
+import type { Artifact } from "../foundation/artifact";
 import { ActorRef, makeAcknowledgement } from "../organization/acknowledgement";
-import {
-  AuthorityDenied,
-  AuthoritySnapshot,
-  Capability,
-  authorize,
-} from "../organization/authority";
-import { LegalAgePolicy, Person, legalStatusOn } from "../organization/person";
-import { AcknowledgementId } from "../organization/identity";
+import type { AuthoritySnapshot } from "../organization/authority";
+import { AuthorityDenied, Capability, authorize } from "../organization/authority";
+import type { LegalAgePolicy } from "../organization/person";
+import { Person, legalStatusOn } from "../organization/person";
+import type { AcknowledgementId } from "../organization/identity";
 import { AbsenceCase, ConcurrentAbsenceRevisionError } from "./absence-case";
 
 export class AbsenceAlreadyAcknowledgedError extends Schema.TaggedError<AbsenceAlreadyAcknowledgedError>()(

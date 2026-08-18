@@ -5,13 +5,9 @@ import { Artifact } from "../foundation/artifact";
 import { PlainDateSchema } from "../foundation/plain-date";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { NonBlankText } from "../foundation/non-blank-text";
-import { ActorRef } from "../organization/acknowledgement";
-import {
-  AuthorityDenied,
-  AuthoritySnapshot,
-  Capability,
-  authorize,
-} from "../organization/authority";
+import type { ActorRef } from "../organization/acknowledgement";
+import type { AuthoritySnapshot } from "../organization/authority";
+import { AuthorityDenied, Capability, authorize } from "../organization/authority";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import { SchoolTaskId } from "./identity";
 

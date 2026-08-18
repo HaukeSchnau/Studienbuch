@@ -5,13 +5,9 @@ import { AggregateRevision } from "../foundation/aggregate-revision";
 import { PlainDateSchema } from "../foundation/plain-date";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { Acknowledgement } from "../organization/acknowledgement";
-import {
-  AuthorityDenied,
-  AuthoritySnapshot,
-  Capability,
-  authorize,
-} from "../organization/authority";
-import { LegalAgePolicy, Person } from "../organization/person";
+import type { AuthoritySnapshot } from "../organization/authority";
+import { AuthorityDenied, Capability, authorize } from "../organization/authority";
+import type { LegalAgePolicy, Person } from "../organization/person";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import { GradingPolicy } from "./grading-policy";
 import { GradeValue } from "./grading";

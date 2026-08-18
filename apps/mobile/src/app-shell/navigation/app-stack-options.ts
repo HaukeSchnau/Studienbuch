@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { Stack } from "expo-router";
+import type { Stack } from "expo-router";
 import { fontNames } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
 

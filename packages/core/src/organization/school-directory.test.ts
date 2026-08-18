@@ -4,7 +4,7 @@ import * as Schema from "effect/Schema";
 import * as Calendar from "temporal-polyfill/fns/Calendar";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
-import { NonBlankText } from "../foundation/non-blank-text";
+import type { NonBlankText } from "../foundation/non-blank-text";
 import {
   AcademicTerm,
   Cohort,

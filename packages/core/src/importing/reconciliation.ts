@@ -1,13 +1,10 @@
 import * as Effect from "effect/Effect";
 import * as Equal from "effect/Equal";
 import * as Schema from "effect/Schema";
-import {
-  ProvenancedValue,
-  UserOverride,
-  importedObservation,
-  sourcedValue,
-} from "./provenanced-value";
-import { DataSource, SourceObservation, SourceStamp } from "./source";
+import type { UserOverride } from "./provenanced-value";
+import { ProvenancedValue, importedObservation, sourcedValue } from "./provenanced-value";
+import type { DataSource } from "./source";
+import { SourceObservation, SourceStamp } from "./source";
 import { SourceRevision } from "./source-revision";
 
 export const IncomingReconciliationResult = <Value extends Schema.Top>(value: Value) => {

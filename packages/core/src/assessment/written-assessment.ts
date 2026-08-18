@@ -4,14 +4,10 @@ import { AggregateRevision } from "../foundation/aggregate-revision";
 import { PlainDateSchema } from "../foundation/plain-date";
 import { NonBlankText } from "../foundation/non-blank-text";
 import { Acknowledgement } from "../organization/acknowledgement";
-import {
-  AuthorityDenied,
-  AuthoritySnapshot,
-  Capability,
-  authorize,
-} from "../organization/authority";
+import type { AuthoritySnapshot } from "../organization/authority";
+import { AuthorityDenied, Capability, authorize } from "../organization/authority";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
-import { LegalAgePolicy, Person } from "../organization/person";
+import type { LegalAgePolicy, Person } from "../organization/person";
 import { AssessmentWeight, GradeValue } from "./grading";
 import { GradingPolicy } from "./grading-policy";
 import { AssessmentId } from "./identity";
