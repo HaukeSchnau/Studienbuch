@@ -9,7 +9,7 @@ import {
   type Semester,
   type Task,
   type UserProfile,
-} from "./mobile-v0.ts";
+} from "./mobile-v0";
 
 const baseUser: UserProfile = {
   name: "Hauke",

@@ -81,9 +81,3 @@ implementation and namespace-facade files. Domain indexes only relay those estab
 
 The civil-time representation and its bundle trade-off are recorded in
 [ADR 0001](./docs/adr/0001-model-civil-time-explicitly.md).
-
-## Compatibility boundary
-
-The mobile application still uses its legacy DTO contract through `@stu/core/compat/mobile-v0`.
-That module is intentionally isolated and preserves legacy ambient-date defaults until its consumers
-migrate. New code must use the domain modules above.

@@ -10,6 +10,7 @@ young. Prefer clear ownership over clever abstractions. A folder should exist be
 src/
   app/          Expo Router route adapters only
   app-shell/    app boot, providers, setup gates, and route-aware shell components
+  compat/       temporary legacy mobile DTOs and policies
   data/         mobile data facade and implementations
   domain-ui/    reusable school-domain presentation components
   features/     product features and feature-local model/view code
@@ -24,6 +25,8 @@ src/
 
 - `packages/core` owns domain types, policies, selectors, and formatters. It must stay platform
   agnostic: no React, React Native, Expo, app routes, storage, or network code.
+- `src/compat` owns the mobile app's temporary legacy DTO contract and policies. New code should use
+  the domain modules in `packages/core`; remove compatibility code as its consumers migrate.
 - `src/app` owns filesystem routes. Route files parse params, configure route-level navigation, and
   render feature screens. They should stay thin.
 - `src/app-shell` owns app bootstrapping and route-aware shell pieces: providers, splash/font

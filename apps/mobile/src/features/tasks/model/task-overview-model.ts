@@ -1,4 +1,4 @@
-import type { Task } from "@stu/core/compat/mobile-v0";
+import type { Task } from "@/compat/mobile-v0";
 
 export interface TaskOverviewModel {
   tasks: Task[];

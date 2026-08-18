@@ -9,7 +9,7 @@ import { IconButton } from "~/components/ui/icon-button";
 import { SystemIcon } from "~/components/ui/system-icon";
 import { Text } from "~/components/ui/text";
 import { colors } from "~/theme/colors";
-import { formatGrade, isGradeConfirmed, type Grade } from "@stu/core/compat/mobile-v0";
+import { formatGrade, isGradeConfirmed, type Grade } from "@/compat/mobile-v0";
 import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
 import { gradeRoute } from "~/routing/params";
 import { EditMasterGrade } from "./master/edit-master-grade";

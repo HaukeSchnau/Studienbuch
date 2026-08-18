@@ -1,4 +1,4 @@
-import type { Absence } from "@stu/core/compat/mobile-v0";
+import type { Absence } from "@/compat/mobile-v0";
 import { describe, expect, it } from "vite-plus/test";
 import { getAbsencesPageModel } from "./absences-page-model";
 

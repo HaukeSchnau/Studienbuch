@@ -1,4 +1,4 @@
-import type { Course, Grade, Task } from "@stu/core/compat/mobile-v0";
+import type { Course, Grade, Task } from "@/compat/mobile-v0";
 import { describe, expect, it } from "vite-plus/test";
 import { getProfileCoursesModel } from "./profile-model";
 

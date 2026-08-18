@@ -1,4 +1,4 @@
-import type { Course, Grade } from "@stu/core/compat/mobile-v0";
+import type { Course, Grade } from "@/compat/mobile-v0";
 
 export interface ResolvedGrade extends Grade {
   course: Course;
