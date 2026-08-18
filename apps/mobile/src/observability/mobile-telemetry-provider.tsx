@@ -11,10 +11,10 @@ interface MobileTelemetry {
   readonly record: (
     record: ClientTelemetryRecordType,
     priority?: TelemetryPriority,
-  ) => Promise<void>;
+  ) => Promise<boolean>;
 }
 
-const disabledTelemetry: MobileTelemetry = { record: async () => undefined };
+const disabledTelemetry: MobileTelemetry = { record: async () => false };
 const MobileTelemetryContext = createContext<MobileTelemetry>(disabledTelemetry);
 
 export interface MobileTelemetryProviderProps extends PropsWithChildren {

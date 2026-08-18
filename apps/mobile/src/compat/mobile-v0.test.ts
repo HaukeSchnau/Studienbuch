@@ -56,7 +56,7 @@ describe("setup policy", () => {
 });
 
 describe("task policies", () => {
-  const tasks: Task[] = [
+  const tasks = [
     {
       id: "done",
       courseId: "de-1",
@@ -84,23 +84,17 @@ describe("task policies", () => {
       done: false,
       attachments: [],
     },
-  ];
+  ] satisfies [Task, Task, Task];
 
   it("sorts active tasks before done tasks by due date", () => {
     expect(getCourseTasks(tasks).map((task) => task.id)).toEqual(["soon", "later", "done"]);
   });
 
   it("archives done tasks and old overdue tasks", () => {
-    const firstTask = tasks[0];
-    const secondTask = tasks[1];
-    if (firstTask === undefined || secondTask === undefined) {
-      throw new Error("Expected the task fixtures to contain two tasks");
-    }
-
-    expect(isTaskArchived(firstTask, new Date("2026-06-03T00:00:00"))).toBe(true);
+    expect(isTaskArchived(tasks[0], new Date("2026-06-03T00:00:00"))).toBe(true);
     expect(
       isTaskArchived(
-        { ...secondTask, dueDate: new Date("2026-05-20T00:00:00") },
+        { ...tasks[1], dueDate: new Date("2026-05-20T00:00:00") },
         new Date("2026-06-03T00:00:00"),
       ),
     ).toBe(true);

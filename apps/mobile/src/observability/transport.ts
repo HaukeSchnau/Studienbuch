@@ -29,7 +29,7 @@ export const makeFetchTelemetryTransport = (
       authorization.includes("\r") ||
       authorization.includes("\n")
     ) {
-      throw new Error("Authenticated telemetry authority is unavailable");
+      return { status: "failed", reason: "Authenticated telemetry authority is unavailable" };
     }
     const response = await (options.fetch ?? globalThis.fetch)(options.endpoint, {
       method: "POST",
@@ -39,16 +39,21 @@ export const makeFetchTelemetryTransport = (
       },
       body: JSON.stringify(envelope),
     });
-    if (!response.ok) throw new Error(`Telemetry relay rejected the batch (${response.status})`);
+    if (!response.ok) {
+      return {
+        status: "failed",
+        reason: `Telemetry relay rejected the batch (${response.status})`,
+      };
+    }
     const body = await response.json().catch(() => undefined);
     const acknowledgement = decodeTelemetryAcknowledgement(body, { onExcessProperty: "error" });
     if (
       Option.isSome(acknowledgement) &&
       acknowledgement.value.acceptedRecords <= envelope.records.length
     ) {
-      return acknowledgement.value.acceptedRecords;
+      return { status: "sent", accepted: acknowledgement.value.acceptedRecords };
     }
-    if (body === undefined) return envelope.records.length;
-    throw new Error("Telemetry relay returned an invalid acknowledgement");
+    if (body === undefined) return { status: "sent", accepted: envelope.records.length };
+    return { status: "failed", reason: "Telemetry relay returned an invalid acknowledgement" };
   },
 });

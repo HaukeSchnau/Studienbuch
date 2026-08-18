@@ -159,7 +159,8 @@ const withIosSceneLifecycle: ConfigPlugin = (config) => {
 
   return withAppDelegate(config, (delegateConfig) => {
     if (delegateConfig.modResults.language !== "swift") {
-      throw new Error("withIosSceneLifecycle only supports Swift AppDelegate files.");
+      console.error("withIosSceneLifecycle only supports Swift AppDelegate files.");
+      process.exit(1);
     }
 
     let contents = delegateConfig.modResults.contents;

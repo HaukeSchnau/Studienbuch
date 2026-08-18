@@ -263,14 +263,8 @@ export function createBrowserTelemetryClient(options: {
     new Headers(init?.headers).forEach((value, key) => headers.set(key, value));
     headers.set("traceparent", `00-${traceId}-${spanId}-01`);
 
-    try {
-      const response = await environment.fetch(input, { ...init, headers });
-      const outcome = response.ok ? "success" : "failure";
-      enqueueRequestSpan(traceId, spanId, startedAt, method, url.pathname, outcome);
-      enqueueRequestDuration(Math.max(0, environment.now() - startedAt), outcome);
-      if (!response.ok) enqueueRequestFailure(traceId, spanId, method, url.pathname, "unknown");
-      return response;
-    } catch (error) {
+    const request = environment.fetch(input, { ...init, headers });
+    void request.catch(() => {
       enqueueRequestSpan(traceId, spanId, startedAt, method, url.pathname, "failure");
       enqueueRequestDuration(Math.max(0, environment.now() - startedAt), "failure");
       enqueueRequestFailure(
@@ -278,10 +272,15 @@ export function createBrowserTelemetryClient(options: {
         spanId,
         method,
         url.pathname,
-        error instanceof DOMException && error.name === "AbortError" ? "timeout" : "network",
+        init?.signal?.aborted ? "timeout" : "network",
       );
-      throw error;
-    }
+    });
+    const response = await request;
+    const outcome = response.ok ? "success" : "failure";
+    enqueueRequestSpan(traceId, spanId, startedAt, method, url.pathname, outcome);
+    enqueueRequestDuration(Math.max(0, environment.now() - startedAt), outcome);
+    if (!response.ok) enqueueRequestFailure(traceId, spanId, method, url.pathname, "unknown");
+    return response;
   };
 
   const enqueueRequestSpan = (
@@ -469,10 +468,8 @@ const lifecycleKey = Symbol.for("@stu/web/browser-telemetry-lifecycle");
 const browserGlobal = globalThis as typeof globalThis & { [clientKey]?: BrowserTelemetryClient };
 const lifecycleGlobal = globalThis as typeof globalThis & { [lifecycleKey]?: () => void };
 
-export function browserTelemetry(): BrowserTelemetryClient {
-  if (globalThis.window === undefined) {
-    throw new Error("Browser telemetry is only available in a browser runtime");
-  }
+export function browserTelemetry(): BrowserTelemetryClient | undefined {
+  if (globalThis.window === undefined) return undefined;
   return (browserGlobal[clientKey] ??= createBrowserTelemetryClient({
     environment: browserEnvironment(),
     serviceVersion: import.meta.env.VITE_STUDIENBUCH_VERSION ?? "development",
@@ -480,7 +477,7 @@ export function browserTelemetry(): BrowserTelemetryClient {
   }));
 }
 
-export function installBrowserTelemetryLifecycle(client = browserTelemetry()): () => void {
+export function installBrowserTelemetryLifecycle(client: BrowserTelemetryClient): () => void {
   if (lifecycleGlobal[lifecycleKey] !== undefined) return () => undefined;
   const flushWithBeacon = () => void client.flush({ preferBeacon: true });
   const onVisibilityChange = () => {

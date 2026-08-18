@@ -134,7 +134,7 @@ describe("browser operational telemetry", () => {
     expect(sendBeacon).toHaveBeenCalledOnce();
     const call = sendBeacon.mock.calls[0];
     expect(call).toBeDefined();
-    if (call === undefined) throw new Error("Expected a beacon call");
+    if (call === undefined) return;
     const [url, body] = call;
     expect(url).toBe("https://studienbuch.test/api/observability/v1/telemetry");
     expect(body.type).toBe("application/json");

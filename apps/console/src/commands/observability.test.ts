@@ -41,7 +41,7 @@ async function startReceiver() {
   const address = server.address();
   if (!Schema.is(TcpAddress)(address)) {
     await close(server);
-    throw new Error("Console OTLP test receiver did not expose a TCP address");
+    return undefined;
   }
 
   return {
@@ -76,6 +76,8 @@ function close(server: Server): Promise<void> {
 describe("console observability", () => {
   it("exports a correlated all-signal canary", async () => {
     const receiver = await startReceiver();
+    expect(receiver).toBeDefined();
+    if (receiver === undefined) return;
     const runtime = ManagedRuntime.make(
       otlpJsonTestLayer({
         endpoint: receiver.endpoint,

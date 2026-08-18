@@ -13,13 +13,13 @@ export type RuntimeState =
 
 export interface RuntimeLifecycle {
   readonly runtime: ReturnType<typeof createManagedRuntime>;
-  readonly warm: () => Promise<void>;
+  readonly warm: () => Promise<RuntimeState>;
   readonly dispose: () => Promise<void>;
   readonly state: () => RuntimeState;
 }
 
 export interface LifecycleController {
-  readonly warm: () => Promise<void>;
+  readonly warm: () => Promise<RuntimeState>;
   readonly dispose: () => Promise<void>;
   readonly state: () => RuntimeState;
 }
@@ -29,30 +29,26 @@ function createManagedRuntime() {
 }
 
 export function createLifecycleController(actions: {
-  readonly warm: () => Promise<void>;
+  readonly warm: () => Promise<
+    { readonly success: true } | { readonly success: false; readonly reason: string }
+  >;
   readonly flush: () => Promise<void>;
   readonly dispose: () => Promise<void>;
 }): LifecycleController {
   let currentState: RuntimeState = { status: "starting" };
-  let warmup: Promise<void> | undefined;
+  let warmup: Promise<RuntimeState> | undefined;
   let shutdown: Promise<void> | undefined;
   let warmed = false;
 
-  const warm = () => {
-    if (shutdown !== undefined) {
-      return Promise.reject(new Error("The application runtime is stopping or stopped"));
-    }
-    warmup ??= actions.warm().then(
-      () => {
+  const warm = async () => {
+    if (shutdown !== undefined) return currentState;
+    warmup ??= actions.warm().then((result): RuntimeState => {
+      if (result.success) {
         warmed = true;
-        currentState = { status: "ready" };
-      },
-      (cause: unknown) => {
-        const reason = cause instanceof Error ? cause.message : String(cause);
-        currentState = { status: "failed", reason };
-        throw cause;
-      },
-    );
+        return (currentState = { status: "ready" });
+      }
+      return (currentState = { status: "failed", reason: result.reason });
+    });
     return warmup;
   };
 
@@ -61,7 +57,7 @@ export function createLifecycleController(actions: {
       currentState = { status: "stopping" };
       try {
         if (warmup !== undefined) {
-          await warmup.catch(() => undefined);
+          await warmup;
           if (warmed) await actions.flush();
         }
       } finally {
@@ -78,7 +74,14 @@ export function createLifecycleController(actions: {
 export function createRuntimeLifecycle(): RuntimeLifecycle {
   const runtime = createManagedRuntime();
   const controller = createLifecycleController({
-    warm: () => runtime.context().then(() => undefined),
+    warm: () =>
+      runtime.context().then(
+        () => ({ success: true as const }),
+        (cause: unknown) => ({
+          success: false as const,
+          reason: cause instanceof Error ? cause.message : String(cause),
+        }),
+      ),
     flush: () =>
       runtime.runPromise(flushOtlp.pipe(Effect.timeoutOption(Duration.seconds(3)), Effect.asVoid)),
     dispose: runtime.dispose,

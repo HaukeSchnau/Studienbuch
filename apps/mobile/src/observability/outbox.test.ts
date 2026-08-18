@@ -40,7 +40,7 @@ const setup = (overrides?: {
     ({
       send: async (envelope: ClientTelemetryEnvelopeType) => {
         envelopes.push(envelope);
-        return envelope.records.length;
+        return { status: "sent", accepted: envelope.records.length } as const;
       },
     } satisfies TelemetryTransport);
   const outbox = new TelemetryOutbox({
@@ -129,7 +129,7 @@ describe("TelemetryOutbox", () => {
   it("does not invoke transport while offline", async () => {
     let sends = 0;
     const test = setup({
-      transport: { send: async () => (sends += 1) },
+      transport: { send: async () => ({ status: "sent", accepted: (sends += 1) }) },
     });
     await test.outbox.enqueue(metric(1, test.now()));
 
@@ -144,7 +144,7 @@ describe("TelemetryOutbox", () => {
 
     const restarted = new TelemetryOutbox({
       storage: first.storage,
-      transport: { send: async () => 0 },
+      transport: { send: async () => ({ status: "sent", accepted: 0 }) },
       clock: { now: first.now },
       random: { next: () => 0.5 },
       serviceVersion: "test",
@@ -179,7 +179,7 @@ describe("TelemetryOutbox", () => {
       transport: {
         send: async () => {
           sends += 1;
-          return 1;
+          return { status: "sent", accepted: 1 } as const;
         },
       },
     });
@@ -202,7 +202,7 @@ describe("TelemetryOutbox", () => {
     const storage = new MemoryStorage();
     const failed = setup({
       storage,
-      transport: { send: async () => Promise.reject(new Error("down")) },
+      transport: { send: async () => ({ status: "failed", reason: "down" }) },
     });
     await failed.outbox.enqueue(metric(1, failed.now()));
     expect(await failed.outbox.flush(true)).toMatchObject({ status: "failed", remaining: 1 });
