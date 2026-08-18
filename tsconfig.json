@@ -99,6 +99,7 @@
           "effectMapVoid": "error",
           "effectSucceedWithVoid": "error",
           "flatMapToMap": "error",
+          "missedPipeableOpportunity": "error",
           "missingEffectServiceDependency": "error",
           "multipleCatchTag": "error",
           "nestedEffectGenYield": "error",

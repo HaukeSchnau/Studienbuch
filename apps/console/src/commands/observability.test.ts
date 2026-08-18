@@ -133,7 +133,7 @@ describe("console observability", () => {
   });
 
   it("preserves command failures while the disabled runtime flushes and disposes", async () => {
-    const exit = await Effect.runPromiseExit(withConsoleRuntime(Effect.fail("expected")));
+    const exit = await Effect.fail("expected").pipe(withConsoleRuntime, Effect.runPromiseExit);
     expect(exit).toEqual(Exit.fail("expected"));
   });
 

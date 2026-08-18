@@ -10,4 +10,4 @@ export const consoleCommand = Command.make("console").pipe(
 
 const cli = Command.run(consoleCommand, { version: "0.1.0" });
 
-NodeRuntime.runMain(withConsoleRuntime(cli));
+cli.pipe(withConsoleRuntime, NodeRuntime.runMain);

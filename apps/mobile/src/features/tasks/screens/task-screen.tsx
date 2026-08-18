@@ -666,14 +666,6 @@ const CompletionBurst = () => {
   );
 };
 
-const showEditPlaceholder = () => {
-  haptics.selection();
-  Alert.alert(
-    "Bearbeiten",
-    "Das Bearbeiten der Hausaufgabe ist vorbereitet und kommt als nächster Schritt.",
-  );
-};
-
 export const TaskScreen = ({ taskId }: { taskId: string }) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -738,6 +730,14 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
       setCompletionBurstKey((key) => key + 1);
     }
     toggleTaskDone(task.id);
+  };
+
+  const showEditPlaceholder = () => {
+    haptics.selection();
+    Alert.alert(
+      "Bearbeiten",
+      "Das Bearbeiten der Hausaufgabe ist vorbereitet und kommt als nächster Schritt.",
+    );
   };
 
   return (

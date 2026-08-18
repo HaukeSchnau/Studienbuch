@@ -91,7 +91,6 @@ const initialCourseIds = coursesSeed
   .map((course) => course.id);
 const initialLicenseKey =
   process.env.EXPO_PUBLIC_E2E_SCENARIO === "startup" ? "" : "STUB-U123-2026-UI00";
-const getCourse = (courseId: string) => coursesSeed.find((course) => course.id === courseId);
 
 export function MockDataProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<UserProfile>({
@@ -111,6 +110,8 @@ export function MockDataProvider({ children }: PropsWithChildren) {
   const [absences, setAbsences] = useState(absencesSeed);
   const [grades, setGrades] = useState(gradesSeed);
   const [tasks, setTasks] = useState(tasksSeed);
+
+  const getCourse = (courseId: string) => coursesSeed.find((course) => course.id === courseId);
 
   const value: MockDataContextValue = {
     user,
