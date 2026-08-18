@@ -1,5 +1,5 @@
 import * as Schema from "effect/Schema";
-import { Subject, SubjectCatalog } from "../organization/catalog";
+import type { Subject, SubjectCatalog } from "../organization/catalog";
 import { SubjectId } from "../organization/identity";
 
 export const SubjectInferenceRule = Schema.Literal("CourseCodePrefix");

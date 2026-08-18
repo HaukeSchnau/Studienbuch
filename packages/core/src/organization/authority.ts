@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import * as PlainDate from "temporal-polyfill/fns/PlainDate";
+import type * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { CourseOffering } from "./course-offering";
 import { CourseOfferingId, SchoolId, SchoolMembershipId } from "./identity";

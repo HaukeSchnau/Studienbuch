@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
-import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
+import type { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import type { SchoolTask } from "./school-task";
 
 export const VisibilityPolicy = Schema.Struct({

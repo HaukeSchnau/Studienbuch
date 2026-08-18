@@ -5,7 +5,7 @@ import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { Importing } from "../index.ts";
 import { AggregateRevision } from "../foundation/aggregate-revision";
-import { NonBlankText } from "../foundation/non-blank-text";
+import type { NonBlankText } from "../foundation/non-blank-text";
 import { Subject, SubjectCatalog } from "../organization/catalog.ts";
 import { PersonId, SchoolId, SchoolMembershipId, SubjectId } from "../organization/identity";
 

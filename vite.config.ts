@@ -33,7 +33,7 @@ export default defineConfig({
       "*.tsbuildinfo",
       "**/routeTree.gen.ts",
     ],
-    plugins: ["effecttsgo", "eslint", "oxc", "react", "unicorn", "typescript"],
+    plugins: ["effecttsgo", "eslint", "jsx-a11y", "oxc", "react", "unicorn", "typescript"],
     categories: {
       correctness: "error",
       perf: "error",
@@ -53,6 +53,7 @@ export default defineConfig({
       "anti-slop/no-widen-then-assert": "error",
       "effecttsgo/abort-controller-in-effect": "error",
       "effecttsgo/crypto-random-uuid-in-effect": "error",
+      "effecttsgo/extends-native-error": "error",
       "effecttsgo/global-console-in-effect": "error",
       "effecttsgo/global-date-in-effect": "error",
       "effecttsgo/global-fetch-in-effect": "error",
@@ -61,6 +62,11 @@ export default defineConfig({
       "effecttsgo/instance-of-schema": "error",
       "effecttsgo/process-env-in-effect": "error",
       "effecttsgo/unsafe-effect-type-assertion": "error",
+      "eslint/eqeqeq": "error",
+      "typescript/consistent-type-imports": "error",
+      "typescript/no-explicit-any": "error",
+      "unicorn/error-message": "error",
+      "unicorn/prefer-node-protocol": "error",
 
       // This treats every exported fixed-arity function as an Effect-style `self` API; enabling it
       // would require dual overloads for ordinary route, React, CLI, and tooling helpers.
@@ -73,6 +79,10 @@ export default defineConfig({
       // JavaScript truthiness is readable in guards, while this rule emits especially noisy
       // diagnostics for framework-generated unions such as Expo's typed routes.
       "effecttsgo/strict-boolean-expressions": "off",
+
+      // Mobile form flows intentionally focus their primary field when a screen opens; applying
+      // the DOM-focused rule to React Native would reject that deliberate keyboard behavior.
+      "jsx-a11y/no-autofocus": "off",
 
       // The automatic JSX runtime does not require React to be imported for JSX.
       "react-in-jsx-scope": "off",

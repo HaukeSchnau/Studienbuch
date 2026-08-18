@@ -1,7 +1,7 @@
 import * as Layer from "effect/Layer";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
+import type { OtlpExporter } from "effect/unstable/observability";
 import {
-  OtlpExporter,
   OtlpLogger,
   OtlpMetrics,
   OtlpSerialization,

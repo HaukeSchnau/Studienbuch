@@ -1,18 +1,21 @@
 import type * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import { AggregateRevision } from "../foundation/aggregate-revision";
-import { Artifact } from "../foundation/artifact";
+import type { AggregateRevision } from "../foundation/aggregate-revision";
+import type { Artifact } from "../foundation/artifact";
 import { PlainDateSchema } from "../foundation/plain-date";
-import * as PlainDate from "temporal-polyfill/fns/PlainDate";
+import type * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import {
   type Acknowledgement,
   ActorRef,
   makeAcknowledgement as makeOrganizationAcknowledgement,
 } from "../organization/acknowledgement";
-import { AuthoritySnapshot, Capability, authorize } from "../organization/authority";
-import { AcknowledgementId, PersonId, SchoolMembershipId } from "../organization/identity";
-import { LegalAgePolicy, Person, legalStatusOn } from "../organization/person";
+import type { AuthoritySnapshot } from "../organization/authority";
+import { Capability, authorize } from "../organization/authority";
+import type { AcknowledgementId, SchoolMembershipId } from "../organization/identity";
+import { PersonId } from "../organization/identity";
+import type { LegalAgePolicy, Person } from "../organization/person";
+import { legalStatusOn } from "../organization/person";
 
 export class AssessmentAcknowledgementActorError extends Schema.TaggedError<AssessmentAcknowledgementActorError>()(
   "Assessment.AcknowledgementActor",

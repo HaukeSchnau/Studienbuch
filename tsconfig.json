@@ -78,6 +78,7 @@
 
           "abortControllerInEffect": "error",
           "cryptoRandomUUIDInEffect": "error",
+          "extendsNativeError": "error",
           "globalConsoleInEffect": "error",
           "globalDateInEffect": "error",
           "globalFetchInEffect": "error",
