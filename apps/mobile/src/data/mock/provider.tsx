@@ -90,7 +90,7 @@ const initialCourseIds = coursesSeed
   .filter((course) => course.semesterId === currentSemester?.id)
   .map((course) => course.id);
 const initialLicenseKey =
-  process.env.EXPO_PUBLIC_E2E_SCENARIO === "startup" ? "" : "STUB-U123-2026-UI00";
+  process.env["EXPO_PUBLIC_E2E_SCENARIO"] === "startup" ? "" : "STUB-U123-2026-UI00";
 
 export function MockDataProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<UserProfile>({

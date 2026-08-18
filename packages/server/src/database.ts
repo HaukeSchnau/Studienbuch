@@ -12,7 +12,7 @@ import type * as SqlError from "effect/unstable/sql/SqlError";
 import { Pool, types } from "pg";
 
 export interface Options {
-  readonly url: Redacted.Redacted<string>;
+  readonly url: Redacted.Redacted;
   readonly maxConnections?: number;
 }
 

@@ -445,11 +445,9 @@ function screenAttribute(pathname: string): ScreenAttribute {
 }
 
 function browserEnvironment(): BrowserTelemetryEnvironment {
-  return {
+  const environment: Omit<BrowserTelemetryEnvironment, "sendBeacon"> = {
     origin: window.location.origin,
     fetch: window.fetch.bind(window),
-    sendBeacon:
-      navigator.sendBeacon === undefined ? undefined : navigator.sendBeacon.bind(navigator),
     now: Date.now,
     randomBytes(length) {
       return crypto.getRandomValues(new Uint8Array(length));
@@ -457,6 +455,8 @@ function browserEnvironment(): BrowserTelemetryEnvironment {
     setTimeout: window.setTimeout.bind(window),
     clearTimeout: window.clearTimeout.bind(window),
   };
+  if (navigator.sendBeacon === undefined) return environment;
+  return { ...environment, sendBeacon: navigator.sendBeacon.bind(navigator) };
 }
 
 function deploymentEnvironment(): DeploymentEnvironment {
@@ -475,7 +475,7 @@ export function browserTelemetry(): BrowserTelemetryClient {
   }
   return (browserGlobal[clientKey] ??= createBrowserTelemetryClient({
     environment: browserEnvironment(),
-    serviceVersion: import.meta.env.VITE_STUDIENBUCH_VERSION ?? "development",
+    serviceVersion: import.meta.env["VITE_STUDIENBUCH_VERSION"] ?? "development",
     deploymentEnvironment: deploymentEnvironment(),
   }));
 }

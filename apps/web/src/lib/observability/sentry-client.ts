@@ -8,7 +8,7 @@ export function initializeSentryClient() {
   }
 
   initialized = true;
-  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  const dsn = import.meta.env["VITE_SENTRY_DSN"];
   if (!dsn) {
     return;
   }

@@ -9,7 +9,7 @@ import {
 
 const { withBuildSourceFile } = IOSConfig.XcodeProjectFile;
 
-const IS_DEV = process.env.APP_VARIANT === "development";
+const IS_DEV = process.env["APP_VARIANT"] === "development";
 const appVersion = "1.0.0";
 const iconSuffix = IS_DEV ? "-dev" : "";
 const icon = `./assets/images/icon${iconSuffix}.png`;
@@ -142,7 +142,7 @@ const withIosSceneLifecycle: ConfigPlugin = (config) => {
   });
 
   config = withInfoPlist(config, (plistConfig) => {
-    plistConfig.modResults.UIApplicationSceneManifest = {
+    plistConfig.modResults["UIApplicationSceneManifest"] = {
       UIApplicationSupportsMultipleScenes: false,
       UISceneConfigurations: {
         UIWindowSceneSessionRoleApplication: [

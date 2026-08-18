@@ -22,7 +22,7 @@ export interface MobileTelemetryProviderProps extends PropsWithChildren {
   readonly authorization?: TelemetryAuthorization;
 }
 
-const endpoint = process.env.EXPO_PUBLIC_TELEMETRY_ENDPOINT?.trim();
+const endpoint = process.env["EXPO_PUBLIC_TELEMETRY_ENDPOINT"]?.trim();
 const isAllowedEndpoint = (value: string | undefined): value is string => {
   if (value === undefined || value.length === 0) return false;
   try {
