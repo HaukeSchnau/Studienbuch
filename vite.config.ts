@@ -27,6 +27,8 @@ export default defineConfig({
     plugins: ["eslint", "oxc", "react", "unicorn", "typescript"],
     categories: {
       correctness: "error",
+      perf: "error",
+      suspicious: "error",
     },
     rules: {
       "anti-slop/no-chained-type-assertions": "error",
@@ -40,8 +42,18 @@ export default defineConfig({
       "anti-slop/no-unsafe-dictionary-type": "error",
       "anti-slop/no-widen-then-assert": "error",
       "react-in-jsx-scope": "off",
+      "react/jsx-no-constructed-context-values": "off",
+      "react/no-unstable-nested-components": "off",
+      "react/style-prop-object": "off",
       "eslint/no-shadow": "off",
       "eslint/no-await-in-loop": "off",
+      "eslint/no-underscore-dangle": "off",
+      "typescript/consistent-return": "off",
+      "typescript/no-unsafe-type-assertion": "off",
+      "oxc/no-map-spread": "off",
+      "unicorn/consistent-function-scoping": "off",
+      "unicorn/no-array-reverse": "off",
+      "unicorn/no-array-sort": "off",
     },
     env: {
       builtin: true,

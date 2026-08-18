@@ -248,12 +248,12 @@ for (const scenario of scenarios) {
   }
 }
 
-const runnerFilter = process.env.MOBILE_E2E_RUNNER;
+const runnerFilter = process.env["MOBILE_E2E_RUNNER"];
 if (runnerFilter !== undefined && !isOneOf(runnerFilter, runners)) {
   fail(`Unknown MOBILE_E2E_RUNNER ${runnerFilter}; expected ${runners.join(" or ")}.`);
 }
 
-const order = process.env.MOBILE_E2E_ORDER ?? "agent-device-first";
+const order = process.env["MOBILE_E2E_ORDER"] ?? "agent-device-first";
 if (order !== "agent-device-first" && order !== "argent-first") {
   fail(`Unknown MOBILE_E2E_ORDER ${order}.`);
 }
@@ -267,10 +267,10 @@ const jobs = scenarios.flatMap((scenario) =>
   selectedRunners.map((runner) => ({ runner, scenario })),
 );
 const argentCli = join(repositoryRoot, "node_modules/@swmansion/argent/dist/cli.js");
-const sharedDevice = process.env.MOBILE_E2E_DEVICE;
+const sharedDevice = process.env["MOBILE_E2E_DEVICE"];
 const devices = {
-  "agent-device": process.env.MOBILE_E2E_AGENT_DEVICE ?? sharedDevice,
-  argent: process.env.MOBILE_E2E_ARGENT_DEVICE ?? sharedDevice,
+  "agent-device": process.env["MOBILE_E2E_AGENT_DEVICE"] ?? sharedDevice,
+  argent: process.env["MOBILE_E2E_ARGENT_DEVICE"] ?? sharedDevice,
 } satisfies Readonly<Record<Runner, string | undefined>>;
 
 if (
@@ -282,7 +282,7 @@ if (
   );
 }
 
-const timeoutMs = Number(process.env.MOBILE_E2E_TIMEOUT_MS ?? "600000");
+const timeoutMs = Number(process.env["MOBILE_E2E_TIMEOUT_MS"] ?? "600000");
 if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) {
   fail("MOBILE_E2E_TIMEOUT_MS must be a positive integer.");
 }

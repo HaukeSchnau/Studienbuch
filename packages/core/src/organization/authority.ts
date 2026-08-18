@@ -33,8 +33,7 @@ export const AuthoritySnapshot = Schema.Struct({
 }).check(
   Schema.makeFilter(
     (snapshot) => {
-      const unique = <Value extends string>(values: ReadonlyArray<Value>) =>
-        new Set(values).size === values.length;
+      const unique = (values: ReadonlyArray<string>) => new Set(values).size === values.length;
       if (
         !unique(snapshot.memberships.map((item) => item.id)) ||
         !unique(snapshot.students.map((item) => item.membershipId)) ||

@@ -1,7 +1,12 @@
 import * as Cause from "effect/Cause";
 import * as Exit from "effect/Exit";
 
-export function jsonResponse<Body>(body: Body, status = 200): Response {
+type JsonValue = string | number | boolean | null | JsonObject | ReadonlyArray<JsonValue>;
+interface JsonObject {
+  readonly [key: string]: JsonValue;
+}
+
+export function jsonResponse(body: JsonValue, status = 200): Response {
   return Response.json(body, {
     status,
     headers: {

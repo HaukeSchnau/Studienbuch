@@ -81,7 +81,7 @@ export const GradeScreen = ({ date, courseId, type }: Props) => {
 
   const confirmedGrade = {
     ...resolvedGrade,
-    teacherSignature: grade.teacherSignature!,
+    teacherSignature: grade.teacherSignature,
   };
 
   return (

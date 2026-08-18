@@ -7,6 +7,14 @@ import {
   type BrowserTelemetryEnvironment,
 } from "./browser-client.ts";
 
+interface FixtureClientOptions {
+  environment: BrowserTelemetryEnvironment;
+  serviceVersion: string;
+  deploymentEnvironment: "test";
+  maximumRecords?: number;
+  maximumBytes?: number;
+}
+
 function fixture(options?: {
   readonly fetch?: BrowserTelemetryEnvironment["fetch"];
   readonly maximumRecords?: number;
@@ -38,13 +46,18 @@ function fixture(options?: {
       timers.delete(id);
     },
   };
-  const client = createBrowserTelemetryClient({
+  const clientOptions: FixtureClientOptions = {
     environment,
     serviceVersion: "test-version",
     deploymentEnvironment: "test",
-    maximumRecords: options?.maximumRecords,
-    maximumBytes: options?.maximumBytes,
-  });
+  };
+  if (options?.maximumRecords !== undefined) {
+    clientOptions.maximumRecords = options.maximumRecords;
+  }
+  if (options?.maximumBytes !== undefined) {
+    clientOptions.maximumBytes = options.maximumBytes;
+  }
+  const client = createBrowserTelemetryClient(clientOptions);
   return {
     client,
     fetchMock,

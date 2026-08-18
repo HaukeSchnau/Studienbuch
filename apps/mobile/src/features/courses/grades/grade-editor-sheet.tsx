@@ -17,15 +17,9 @@ interface Props {
   onClose: () => void;
 }
 
-export const GradeEditorSheet = ({
-  title,
-  initialResult,
-  initialDate = new Date(),
-  onSave,
-  onClose,
-}: Props) => {
+export const GradeEditorSheet = ({ title, initialResult, initialDate, onSave, onClose }: Props) => {
   const [result, setResult] = useState(Math.round(initialResult));
-  const [date, setDate] = useState(initialDate);
+  const [date, setDate] = useState(() => initialDate ?? new Date());
 
   return (
     <SheetScaffold

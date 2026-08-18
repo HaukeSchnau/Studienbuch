@@ -12,7 +12,7 @@ import { OtlpExporter } from "effect/unstable/observability";
 import { ClientTelemetryLive } from "./client-telemetry.server.ts";
 
 function deploymentEnvironment(): "development" | "test" | "staging" | "production" {
-  const value = process.env.STUDIENBUCH_ENVIRONMENT ?? process.env.NODE_ENV;
+  const value = process.env["STUDIENBUCH_ENVIRONMENT"] ?? process.env["NODE_ENV"];
   return value === "production" || value === "staging" || value === "test" ? value : "development";
 }
 
@@ -31,7 +31,7 @@ const telemetryLayer = Layer.unwrap(
       endpoint: config.endpoint,
       resource: {
         serviceName: "studienbuch-server",
-        serviceVersion: process.env.STUDIENBUCH_VERSION ?? "development",
+        serviceVersion: process.env["STUDIENBUCH_VERSION"] ?? "development",
         environment: deploymentEnvironment(),
       },
       logLevel: config.logLevel,

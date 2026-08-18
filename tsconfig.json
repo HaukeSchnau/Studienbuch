@@ -17,14 +17,17 @@
     // Best practices
     "strict": true,
     "skipLibCheck": true,
+    "exactOptionalPropertyTypes": true,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
     "noUncheckedIndexedAccess": true,
+    "noUncheckedSideEffectImports": true,
     "noImplicitOverride": true,
-
-    // Some stricter flags (disabled by default)
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
 
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
