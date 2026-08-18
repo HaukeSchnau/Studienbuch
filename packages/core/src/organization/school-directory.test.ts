@@ -77,16 +77,15 @@ describe("academic terms and cohort progression", () => {
 
   it.effect("progresses from an explicit entry term without consulting the current date", () =>
     Effect.gen(function* () {
-      const terms = [
-        term("t1", "2026-08-01", "2027-01-31"),
-        term("t2", "2027-02-01", "2027-07-31"),
-        term("t3", "2027-08-01", "2028-01-31"),
-      ];
+      const firstTerm = term("t1", "2026-08-01", "2027-01-31");
+      const secondTerm = term("t2", "2027-02-01", "2027-07-31");
+      const thirdTerm = term("t3", "2027-08-01", "2028-01-31");
+      const terms = [firstTerm, secondTerm, thirdTerm];
       const cohort = Cohort.make({
         id: CohortId.make("cohort-1"),
         schoolId,
         name: "2026 intake",
-        entryTermId: terms[0]!.id,
+        entryTermId: firstTerm.id,
         entryGradeLevel: GradeLevel.make(5),
       });
       const policy = CohortProgressionPolicy.make({
@@ -94,8 +93,8 @@ describe("academic terms and cohort progression", () => {
         maximumGradeLevel: GradeLevel.make(13),
       });
 
-      assert.strictEqual(yield* gradeLevelAt(cohort, policy, terms, terms[1]!.id), 5);
-      assert.strictEqual(yield* gradeLevelAt(cohort, policy, terms, terms[2]!.id), 6);
+      assert.strictEqual(yield* gradeLevelAt(cohort, policy, terms, secondTerm.id), 5);
+      assert.strictEqual(yield* gradeLevelAt(cohort, policy, terms, thirdTerm.id), 6);
     }),
   );
 });

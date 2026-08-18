@@ -65,6 +65,7 @@ export default defineConfig({
       "eslint/eqeqeq": "error",
       "typescript/consistent-type-imports": "error",
       "typescript/no-explicit-any": "error",
+      "typescript/no-non-null-assertion": "error",
       "unicorn/error-message": "error",
       "unicorn/prefer-node-protocol": "error",
 

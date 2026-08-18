@@ -11,7 +11,10 @@ export const getNextSchoolDay = (timetable: TimetableEntry[], from = new Date())
   const sortedDates = timetable
     .map((entry) => startOfDay(entry.start))
     .sort(compareAsc)
-    .filter((date, index, dates) => index === 0 || !isSameDay(date, dates[index - 1]!));
+    .filter((date, index, dates) => {
+      const previousDate = dates[index - 1];
+      return previousDate === undefined || !isSameDay(date, previousDate);
+    });
 
   return sortedDates.find((date) => !isBefore(date, today)) ?? sortedDates[0] ?? today;
 };

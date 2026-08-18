@@ -13,6 +13,6 @@ export const createTaskAttachment = ({
 }): TaskAttachment => ({
   id: `attachment-${Date.now()}-${index}`,
   label: label?.trim() || `Foto ${index + 1}`,
-  color: attachmentPalette[index % attachmentPalette.length]!,
+  color: attachmentPalette[index % attachmentPalette.length] ?? attachmentPalette[0],
   uri,
 });

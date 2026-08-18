@@ -9,7 +9,8 @@ import { Header } from "../profile-header";
 
 export const ProfileScreen = () => {
   const { semesters } = useSchool();
-  const [selectedSemester, setSelectedSemester] = useState(findCurrentSemester(semesters)!);
+  const [selectedSemester, setSelectedSemester] = useState(findCurrentSemester(semesters));
+  const displayedSemester = selectedSemester ?? findCurrentSemester(semesters);
   const bottomPadding = useMainTabBarPadding(24);
 
   return (
@@ -22,15 +23,15 @@ export const ProfileScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
-        {semesters.length > 0 ? (
+        {displayedSemester ? (
           <>
             <Header
               semesters={semesters}
-              selectedSemester={selectedSemester}
+              selectedSemester={displayedSemester}
               onSelectSemester={setSelectedSemester}
             />
             <View className="px-6 pt-1">
-              <CourseList semester={selectedSemester} />
+              <CourseList semester={displayedSemester} />
             </View>
           </>
         ) : (

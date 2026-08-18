@@ -23,7 +23,11 @@ export const CourseScreen = ({ courseId }: { courseId: string }) => {
     return null;
   }
 
-  const semester = semesters.find((item) => item.id === course.semesterId)!;
+  const semester = semesters.find((item) => item.id === course.semesterId);
+
+  if (!semester) {
+    return null;
+  }
 
   return (
     <CoreLayout>

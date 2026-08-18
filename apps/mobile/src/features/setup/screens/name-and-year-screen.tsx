@@ -26,9 +26,9 @@ export function NameAndYearScreen({
   const [name, setName] = useState(user.name);
   const [isOfAge, setIsOfAge] = useState(user.isOfAge);
   const [yearId, setYearId] = useState(user.yearId);
-  const year = years.find((item) => item.id === yearId) ?? years[0]!;
+  const year = years.find((item) => item.id === yearId) ?? years[0];
   const classOptions = useMemo(
-    () => classes.filter((item) => item.startYear === year.startYear),
+    () => (year ? classes.filter((item) => item.startYear === year.startYear) : []),
     [classes, year],
   );
   const [classId, setClassId] = useState(user.classId);
@@ -38,6 +38,8 @@ export function NameAndYearScreen({
       setClassId(classOptions[0]?.id ?? "");
     }
   }, [classId, classOptions]);
+
+  if (!year) return null;
 
   return (
     <View>
@@ -56,7 +58,7 @@ export function NameAndYearScreen({
       <SelectField
         label="Jahrgang"
         value={year}
-        onChange={(value) => setYearId(value?.id ?? years[0]!.id)}
+        onChange={(value) => setYearId(value?.id ?? year.id)}
         options={years}
         getOptionLabel={(value) => value.name}
         getKey={(value) => value.id}

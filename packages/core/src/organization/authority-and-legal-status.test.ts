@@ -181,12 +181,11 @@ describe("contextual authority", () => {
   it.effect("rejects duplicate authority identities at the boundary", () =>
     Effect.gen(function* () {
       const encoded = yield* Schema.encodeEffect(AuthoritySnapshot)(snapshot());
+      const encodedStudent = encoded.memberships[0];
+      assert.isDefined(encodedStudent);
       yield* Schema.decodeEffect(AuthoritySnapshot)({
         ...encoded,
-        memberships: [
-          encoded.memberships[0]!,
-          { ...encoded.memberships[0]!, personId: "teacher-person" },
-        ],
+        memberships: [encodedStudent, { ...encodedStudent, personId: "teacher-person" }],
       }).pipe(Effect.flip);
     }),
   );

@@ -273,15 +273,6 @@ const devices = {
   argent: process.env.MOBILE_E2E_ARGENT_DEVICE ?? sharedDevice,
 } satisfies Readonly<Record<Runner, string | undefined>>;
 
-if (
-  devices.argent === undefined &&
-  jobs.some((job, index) => job.runner === "argent" && index < jobs.length - 1)
-) {
-  fail(
-    "MOBILE_E2E_ARGENT_DEVICE (or shared MOBILE_E2E_DEVICE) is required when another job follows Argent so its device services can be stopped without affecting other devices.",
-  );
-}
-
 const timeoutMs = Number(process.env.MOBILE_E2E_TIMEOUT_MS ?? "600000");
 if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) {
   fail("MOBILE_E2E_TIMEOUT_MS must be a positive integer.");
@@ -344,6 +335,13 @@ function commandFor(runner: Runner, scenario: string): ReadonlyArray<string> {
 
 const results: Array<Result> = [];
 for (const [jobIndex, { runner, scenario }] of jobs.entries()) {
+  const argentCleanupDevice =
+    runner === "argent" && jobIndex < jobs.length - 1
+      ? (devices.argent ??
+        fail(
+          "MOBILE_E2E_ARGENT_DEVICE (or shared MOBILE_E2E_DEVICE) is required when another job follows Argent so its device services can be stopped without affecting other devices.",
+        ))
+      : undefined;
   const startedAt = performance.now();
   console.log(`\n=== ${scenario} · ${runner} · ${platform} ===`);
   const execution = spawnSync(process.execPath, commandFor(runner, scenario), {
@@ -357,10 +355,10 @@ for (const [jobIndex, { runner, scenario }] of jobs.entries()) {
     console.error(`${runner} failed to execute: ${execution.error.message}`);
   }
 
-  if (runner === "argent" && jobIndex < jobs.length - 1) {
+  if (argentCleanupDevice !== undefined) {
     const cleanup = spawnSync(
       process.execPath,
-      [argentCli, "run", "stop-all-simulator-servers", "--devices", devices.argent!, "--json"],
+      [argentCli, "run", "stop-all-simulator-servers", "--devices", argentCleanupDevice, "--json"],
       {
         cwd: repositoryRoot,
         env: { ...process.env, ARGENT_TELEMETRY: "0" },
