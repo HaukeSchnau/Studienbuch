@@ -61,23 +61,66 @@ export default defineConfig({
       "effecttsgo/instance-of-schema": "error",
       "effecttsgo/process-env-in-effect": "error",
       "effecttsgo/unsafe-effect-type-assertion": "error",
+
+      // These style transforms can make ordinary TypeScript APIs less direct; use pipeable and
+      // concise forms when they improve a specific call site instead of requiring them everywhere.
       "effecttsgo/missed-pipeable-opportunity": "off",
       "effecttsgo/missing-pipeable-signature": "off",
-      "effecttsgo/strict-effect-provide": "off",
-      "effecttsgo/strict-boolean-expressions": "off",
       "effecttsgo/unnecessary-arrow-block": "off",
+
+      // Final dependency provision belongs in tests and executable entry points, which this rule
+      // cannot identify without maintaining a growing file allowlist.
+      "effecttsgo/strict-effect-provide": "off",
+
+      // JavaScript truthiness is readable in guards, while this rule emits especially noisy
+      // diagnostics for framework-generated unions such as Expo's typed routes.
+      "effecttsgo/strict-boolean-expressions": "off",
+
+      // The automatic JSX runtime does not require React to be imported for JSX.
       "react-in-jsx-scope": "off",
+
+      // React Compiler stabilizes constructed values, so manual memoization would duplicate it.
       "react/jsx-no-constructed-context-values": "off",
+
+      // Object defaults can initialize state exactly once; forcing indirection at those call sites
+      // makes the initialization harder to read without improving runtime behavior.
       "react/no-object-type-as-default-prop": "off",
+
+      // Framework APIs such as navigation headers intentionally accept inline render callbacks,
+      // which this rule mistakes for stateful nested component declarations.
       "react/no-unstable-nested-components": "off",
+
+      // React Native has semantic `style` props and supports style arrays, not only object literals.
       "react/style-prop-object": "off",
+
+      // Reusing a precise local name in a nested callback is clearer and TypeScript resolves the
+      // scopes unambiguously.
       "eslint/no-shadow": "off",
+
+      // Some loops must await sequentially to preserve ordering or apply backpressure.
       "eslint/no-await-in-loop": "off",
+
+      // Effect's standard discriminated unions intentionally expose the `_tag` field.
       "eslint/no-underscore-dangle": "off",
+
+      // TypeScript's noImplicitReturns catches missing paths; this rule misreads exhaustive
+      // branches and Effect generators whose terminal branches yield errors.
       "typescript/consistent-return": "off",
+
+      // A blanket assertion ban rejects guarded boundary assertions; the targeted anti-slop rules
+      // above catch the unsafe widening and chained assertions we actually want to prevent.
       "typescript/no-unsafe-type-assertion": "off",
+
+      // Immutable map updates intentionally allocate; object spread is clearer than mutation for
+      // the small collections where we use it.
       "oxc/no-map-spread": "off",
+
+      // Keeping small helpers beside their only caller is more readable than hoisting them for a
+      // negligible allocation optimization.
       "unicorn/consistent-function-scoping": "off",
+
+      // In-place ordering is sometimes intentional; requiring copying variants changes allocation
+      // and identity semantics rather than providing a universal improvement.
       "unicorn/no-array-reverse": "off",
       "unicorn/no-array-sort": "off",
     },
