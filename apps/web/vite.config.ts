@@ -8,9 +8,9 @@ import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
 
-const projectHostNames = JSON.parse(process.env["STUDIENBUCH_WEB_HOST_NAMES"] ?? "[]") as string[];
-const authHostName = process.env["BETTER_AUTH_URL"]
-  ? new URL(process.env["BETTER_AUTH_URL"]).hostname
+const projectHostNames = JSON.parse(process.env.STUDIENBUCH_WEB_HOST_NAMES ?? "[]") as string[];
+const authHostName = process.env.BETTER_AUTH_URL
+  ? new URL(process.env.BETTER_AUTH_URL).hostname
   : undefined;
 
 const config = defineConfig({

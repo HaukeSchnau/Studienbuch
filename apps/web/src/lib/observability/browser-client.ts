@@ -475,7 +475,7 @@ export function browserTelemetry(): BrowserTelemetryClient {
   }
   return (browserGlobal[clientKey] ??= createBrowserTelemetryClient({
     environment: browserEnvironment(),
-    serviceVersion: import.meta.env["VITE_STUDIENBUCH_VERSION"] ?? "development",
+    serviceVersion: import.meta.env.VITE_STUDIENBUCH_VERSION ?? "development",
     deploymentEnvironment: deploymentEnvironment(),
   }));
 }
