@@ -29,12 +29,24 @@ let
 
   migrationAction = pkgs.writeShellApplication {
     name = "studienbuch-migration-action";
-    runtimeInputs = [ pnpm ];
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.postgresql_17
+      pnpm
+    ];
     text = ''
       checkout="$(project-context path checkout)"
       database_host="$(project-context endpoint database listen-host)"
       database_port="$(project-context endpoint database listen-port)"
       export DATABASE_URL="postgresql://postgres@$database_host:$database_port/postgres"
+
+      for _ in {1..60}; do
+        if pg_isready --quiet --host="$database_host" --port="$database_port"; then
+          break
+        fi
+        sleep 1
+      done
+      pg_isready --quiet --host="$database_host" --port="$database_port"
 
       cd "$checkout/packages/server"
       exec "$checkout/node_modules/.bin/vp" run db:migrate
