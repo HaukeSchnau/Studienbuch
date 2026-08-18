@@ -64,7 +64,7 @@ const checkRevision = (absence: AbsenceCase, expectedRevision: AggregateRevision
   AggregateRevision.Equivalence(absence.revision, expectedRevision)
     ? Effect.void
     : Effect.fail(
-        new ConcurrentAbsenceRevisionError({
+        ConcurrentAbsenceRevisionError.make({
           expected: expectedRevision,
           actual: absence.revision,
         }),
@@ -78,20 +78,20 @@ export const decideMissedLesson = Effect.fn("Attendance.decideMissedLesson")(fun
     (candidate) => candidate.id === input.missedLessonId,
   );
   if (lesson === undefined) {
-    return yield* new MissedLessonNotFoundError({ missedLessonId: input.missedLessonId });
+    return yield* MissedLessonNotFoundError.make({ missedLessonId: input.missedLessonId });
   }
   if (lesson.decision._tag !== "Pending") {
-    return yield* new MissedLessonAlreadyDecidedError({ missedLessonId: input.missedLessonId });
+    return yield* MissedLessonAlreadyDecidedError.make({ missedLessonId: input.missedLessonId });
   }
   if (input.absence.acknowledgement === undefined) {
-    return yield* new AbsenceNotAcknowledgedError({ absenceCaseId: input.absence.id });
+    return yield* AbsenceNotAcknowledgedError.make({ absenceCaseId: input.absence.id });
   }
   if (
     lesson.lessonOccurrenceId !== input.occurrence.id ||
     lesson.courseOfferingId !== input.occurrence.courseOfferingId ||
     !PlainDate.equals(input.absence.date, input.occurrence.date)
   ) {
-    return yield* new MissedLessonOccurrenceMismatchError({
+    return yield* MissedLessonOccurrenceMismatchError.make({
       missedLessonId: lesson.id,
       lessonOccurrenceId: input.occurrence.id,
     });
@@ -104,7 +104,7 @@ export const decideMissedLesson = Effect.fn("Attendance.decideMissedLesson")(fun
         isEnrollmentEffectiveOn(enrollment, input.occurrence.date),
     )
   ) {
-    return yield* new StudentNotEnrolledError({ missedLessonId: lesson.id });
+    return yield* StudentNotEnrolledError.make({ missedLessonId: lesson.id });
   }
 
   yield* authorize(

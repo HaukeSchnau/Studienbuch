@@ -75,7 +75,7 @@ export const authorizeLearnerAcknowledgement = Effect.fn(
     (membership) => membership.id === input.studentMembershipId,
   );
   if (studentMembership?.personId !== input.student.id) {
-    return yield* new AssessmentAcknowledgementActorError({
+    return yield* AssessmentAcknowledgementActorError.make({
       actor: input.actor,
       reason: "StudentIdentityMismatch",
     });
@@ -83,20 +83,20 @@ export const authorizeLearnerAcknowledgement = Effect.fn(
 
   const legalStatus = legalStatusOn(input.student, input.on, input.legalAgePolicy);
   if (legalStatus === "Unknown") {
-    return yield* new AssessmentLegalStatusUnknownError({
+    return yield* AssessmentLegalStatusUnknownError.make({
       studentId: input.student.id,
       on: input.on,
     });
   }
   const actorIsStudent = input.actor.personId === input.student.id;
   if (legalStatus === "Adult" && !actorIsStudent) {
-    return yield* new AssessmentAcknowledgementActorError({
+    return yield* AssessmentAcknowledgementActorError.make({
       actor: input.actor,
       reason: "AdultMustAcknowledgeSelf",
     });
   }
   if (legalStatus === "Minor" && actorIsStudent) {
-    return yield* new AssessmentAcknowledgementActorError({
+    return yield* AssessmentAcknowledgementActorError.make({
       actor: input.actor,
       reason: "GuardianRequired",
     });

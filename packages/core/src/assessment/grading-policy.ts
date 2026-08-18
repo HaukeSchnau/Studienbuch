@@ -49,7 +49,7 @@ export interface Interface {
 }
 
 export class Service extends Context.Service<Service, Interface>()(
-  "@stu/core/assessment/GradingPolicy",
+  "@stu/core/assessment/grading-policy/Service",
 ) {}
 
 export const defaultConfig = Config.make({
@@ -78,7 +78,7 @@ const isConfirmed = (assessment: WrittenAssessment): boolean =>
 export const make = (config: Config): Interface => {
   const validateValue = Effect.fn("GradingPolicy.validateValue")(function* (value: GradeValue) {
     if (value < config.minimum || value > config.maximum) {
-      return yield* new InvalidGradeValueError({
+      return yield* InvalidGradeValueError.make({
         value,
         minimum: config.minimum,
         maximum: config.maximum,
@@ -94,10 +94,10 @@ export const make = (config: Config): Interface => {
     if (
       assessments.some((assessment) => assessment.studentMembershipId !== first.studentMembershipId)
     ) {
-      return yield* new InvalidAssessmentScopeError({ reason: "MixedStudents" });
+      return yield* InvalidAssessmentScopeError.make({ reason: "MixedStudents" });
     }
     if (assessments.some((assessment) => assessment.courseOfferingId !== first.courseOfferingId)) {
-      return yield* new InvalidAssessmentScopeError({ reason: "MixedCourses" });
+      return yield* InvalidAssessmentScopeError.make({ reason: "MixedCourses" });
     }
 
     const included = config.inclusion === "All" ? assessments : assessments.filter(isConfirmed);
@@ -111,7 +111,7 @@ export const make = (config: Config): Interface => {
       weightedTotal += assessment.value * weight;
       totalWeight += weight;
       if (!Number.isFinite(weightedTotal) || !Number.isFinite(totalWeight)) {
-        return yield* new GradeAverageOverflowError();
+        return yield* GradeAverageOverflowError.make();
       }
     }
 

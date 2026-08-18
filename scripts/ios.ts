@@ -154,12 +154,12 @@ const build = Effect.fn("ios.build")(function* (profile: string, output: string)
 
   const artifactExists = yield* fs.exists(artifact);
   if (!artifactExists) {
-    return yield* new EmptyArtifactError({ path: artifact });
+    return yield* EmptyArtifactError.make({ path: artifact });
   }
 
   const info = yield* fs.stat(artifact);
   if (info.type !== "File" || info.size === 0n) {
-    return yield* new EmptyArtifactError({ path: artifact });
+    return yield* EmptyArtifactError.make({ path: artifact });
   }
 
   yield* Console.log(`Built ${profile}: ${artifact}`);
@@ -213,7 +213,7 @@ const listInstalledApps = Effect.fn("ios.listInstalledApps")(function* () {
   const installedApps = output.split("\n").filter((line) => line.includes(bundleIdentifier));
 
   if (installedApps.length === 0) {
-    return yield* new NoInstalledAppsError({ device });
+    return yield* NoInstalledAppsError.make({ device });
   }
 
   yield* Console.log(installedApps.join("\n"));

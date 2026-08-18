@@ -27,7 +27,7 @@ catalog:
   "@effect/platform-node": 4.0.0-rc.108
   "@effect/platform-node-shared": 4.0.0-rc.108
   "@effect/sql-pg": 4.0.0-rc.108
-  "@effect/tsgo": 0.36.4
+  "@effect/tsgo": 0.36.5
   "@effect/vitest": 4.0.0-rc.108
   "@types/node": ^26.2.0
   "@types/pg": ^8.15.5

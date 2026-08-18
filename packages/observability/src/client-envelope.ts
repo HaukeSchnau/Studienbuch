@@ -3,8 +3,8 @@ import { Schema } from "effect";
 const ShortString = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(128));
 const TraceId = Schema.String.check(Schema.isPattern(/^[0-9a-f]{32}$/));
 const SpanId = Schema.String.check(Schema.isPattern(/^[0-9a-f]{16}$/));
-const NonNegativeFinite = Schema.Number.check(Schema.isFinite(), Schema.isGreaterThanOrEqualTo(0));
-const UnixMillis = Schema.Number.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(0));
+const NonNegativeFinite = Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0));
+const UnixMillis = Schema.Finite.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(0));
 
 const ClientAttributes = Schema.Struct({
   "app.operation": Schema.optionalKey(

@@ -34,7 +34,7 @@ export interface ClientTelemetryService {
 }
 
 export class ClientTelemetry extends Context.Service<ClientTelemetry, ClientTelemetryService>()(
-  "@stu/web/ClientTelemetry",
+  "@stu/web/server-runtime/client-telemetry.server/ClientTelemetry",
 ) {}
 
 function metricForRecord(

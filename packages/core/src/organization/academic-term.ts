@@ -64,7 +64,7 @@ export const validateAcademicTerms = Effect.fn("Organization.validateAcademicTer
         first.schoolId === second.schoolId &&
         CalendarDateRange.overlaps(first.interval, second.interval)
       ) {
-        return yield* new OverlappingAcademicTerms({
+        return yield* OverlappingAcademicTerms.make({
           schoolId: first.schoolId,
           firstTermId: first.id,
           secondTermId: second.id,
@@ -87,16 +87,16 @@ export const gradeLevelAt = Effect.fn("Organization.gradeLevelAt")(function* (
   const targetIndex = schoolTerms.findIndex((term) => term.id === targetTermId);
   if (targetIndex < 0) {
     const target = ordered.find((term) => term.id === targetTermId);
-    return yield* new AcademicTermUnavailable({
+    return yield* AcademicTermUnavailable.make({
       termId: targetTermId,
       reason: target === undefined ? "Unknown" : "WrongSchool",
     });
   }
   if (entryIndex < 0) {
-    return yield* new AcademicTermUnavailable({ termId: cohort.entryTermId, reason: "Unknown" });
+    return yield* AcademicTermUnavailable.make({ termId: cohort.entryTermId, reason: "Unknown" });
   }
   if (targetIndex < entryIndex) {
-    return yield* new AcademicTermUnavailable({
+    return yield* AcademicTermUnavailable.make({
       termId: targetTermId,
       reason: "BeforeCohortEntry",
     });

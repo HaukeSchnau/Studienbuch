@@ -41,7 +41,7 @@ const validateExceptionGroup = (
   const ordered = [...exceptions].sort(exceptionOrder);
   const first = ordered[0];
   if (first === undefined) return undefined;
-  return new ConflictingScheduleExceptionsError({
+  return ConflictingScheduleExceptionsError.make({
     target: first.target,
     exceptionIds: [first.id, ...ordered.slice(1).map((exception) => exception.id)],
   });
@@ -102,7 +102,7 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
   const meetingIds = new Set<RecurringMeetingId>();
   for (const meeting of input.meetings) {
     if (meetingIds.has(meeting.id)) {
-      return yield* new InvalidScheduleInputError({
+      return yield* InvalidScheduleInputError.make({
         reason: "DuplicateMeetingId",
         id: meeting.id,
       });
@@ -117,7 +117,7 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
   const exceptionIds = new Set<ScheduleExceptionId>();
   for (const exception of input.exceptions) {
     if (exceptionIds.has(exception.id)) {
-      return yield* new InvalidScheduleInputError({
+      return yield* InvalidScheduleInputError.make({
         reason: "DuplicateExceptionId",
         id: exception.id,
       });
@@ -143,7 +143,7 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
   for (const exception of relevantExceptions) {
     const meeting = meetingsById.get(exception.target.meetingId);
     if (meeting === undefined) {
-      return yield* new UnresolvedScheduleExceptionError({
+      return yield* UnresolvedScheduleExceptionError.make({
         exceptionId: exception.id,
         target: exception.target,
         reason: "MeetingNotFound",
@@ -153,14 +153,14 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
       !meetingOccursOn(meeting, exception.target.scheduledDate) ||
       !isSchoolDay(input.calendar, exception.target.scheduledDate)
     ) {
-      return yield* new UnresolvedScheduleExceptionError({
+      return yield* UnresolvedScheduleExceptionError.make({
         exceptionId: exception.id,
         target: exception.target,
         reason: "OccurrenceNotScheduled",
       });
     }
     if (exception._tag === "Rescheduled" && !isSchoolDay(input.calendar, exception.date)) {
-      return yield* new UnresolvedScheduleExceptionError({
+      return yield* UnresolvedScheduleExceptionError.make({
         exceptionId: exception.id,
         target: exception.target,
         reason: "DestinationNotSchoolDay",

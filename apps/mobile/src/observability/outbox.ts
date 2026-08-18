@@ -80,7 +80,7 @@ const utf8Bytes = (value: string): number => {
 
 const snapshotBytes = (snapshot: Snapshot): number => utf8Bytes(JSON.stringify(snapshot));
 
-const SafeInteger = Schema.Number.check(Schema.isInt());
+const SafeInteger = Schema.Finite.check(Schema.isInt());
 const TelemetryPrioritySchema = Schema.Literals(["low", "normal", "high"]);
 const StoredRecordSchema = Schema.Struct({
   id: Schema.String.check(Schema.isMaxLength(64)),
@@ -94,7 +94,7 @@ const SnapshotEnvelopeSchema = Schema.Struct({
   version: Schema.Literal(1),
   sequence: SafeInteger,
   records: Schema.Array(Schema.Unknown),
-  dropped: Schema.Number.check(Schema.isFinite()),
+  dropped: Schema.Finite,
 });
 const decodeTelemetryRecord = Schema.decodeUnknownOption(ClientTelemetryRecord);
 const decodeStoredRecord = Schema.decodeUnknownOption(StoredRecordSchema);

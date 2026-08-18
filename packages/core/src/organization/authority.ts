@@ -110,7 +110,7 @@ const activeOn = (effective: CalendarDateRange.Type, on: PlainDate.Record) =>
   CalendarDateRange.contains(effective, on);
 
 const deny = (actor: ActorRef, capability: Capability, reason: AuthorityDenied["reason"]) =>
-  new AuthorityDenied({ actor, capability, reason });
+  AuthorityDenied.make({ actor, capability, reason });
 
 /**
  * Contextual authorization over a complete, already-loaded snapshot. It performs no IO and

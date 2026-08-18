@@ -25,7 +25,9 @@ export interface Interface {
   readonly pool: Pool;
 }
 
-export class Service extends Context.Service<Service, Interface>()("@stu/server/Database") {}
+export class Service extends Context.Service<Service, Interface>()(
+  "@stu/server/database/Service",
+) {}
 
 const postgresDateTypeIds = new Set([1184, 1114, 1082, 1186, 1231, 1115, 1185, 1187, 1182]);
 
@@ -52,7 +54,7 @@ const acquirePool = (options: Options) =>
         return pool;
       },
       catch: (cause) =>
-        new Unavailable({
+        Unavailable.make({
           reason: cause instanceof Error ? cause.message : String(cause),
         }),
     }),
@@ -73,8 +75,8 @@ export const layer = (options: Options): Layer.Layer<Service, Unavailable | SqlE
         Effect.provideService(PgClient.PgClient, client),
       );
       return Service.of({ drizzle, pool });
-    }).pipe(Effect.provide(Reactivity.layer)),
-  );
+    }),
+  ).pipe(Layer.provide(Reactivity.layer));
 
 export const layerConfig: Layer.Layer<
   Service,

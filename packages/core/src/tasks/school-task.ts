@@ -89,7 +89,7 @@ interface TransitionInput {
 
 const refuse = (task: SchoolTask, transition: typeof TaskTransition.Type) =>
   Effect.fail(
-    new TaskTransitionRefused({
+    TaskTransitionRefused.make({
       taskId: task.id,
       transition,
       currentStatus: task.status._tag,
@@ -107,7 +107,7 @@ const withStatus = Effect.fn("SchoolTask.withStatus")(function* (
 const prepare = (input: TransitionInput) =>
   Effect.gen(function* () {
     if (!AggregateRevision.Equivalence(input.task.revision, input.expectedRevision)) {
-      return yield* new ConcurrentTaskRevision({
+      return yield* ConcurrentTaskRevision.make({
         taskId: input.task.id,
         expected: input.expectedRevision,
         actual: input.task.revision,

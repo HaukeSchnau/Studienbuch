@@ -11,7 +11,7 @@ export interface FetchTelemetryTransportOptions {
 }
 
 const TelemetryAcknowledgement = Schema.Struct({
-  acceptedRecords: Schema.Number.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(0)),
+  acceptedRecords: Schema.Finite.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(0)),
 });
 
 const decodeTelemetryAcknowledgement = Schema.decodeUnknownOption(TelemetryAcknowledgement);

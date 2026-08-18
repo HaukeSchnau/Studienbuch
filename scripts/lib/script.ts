@@ -32,7 +32,7 @@ const runCommand = Effect.fn("Script.command")(function* (
   const exitCode = Number(yield* child.exitCode);
 
   if (exitCode !== 0) {
-    return yield* new CommandFailedError({ command: [executable, ...args].join(" "), exitCode });
+    return yield* CommandFailedError.make({ command: [executable, ...args].join(" "), exitCode });
   }
 }, Effect.scoped);
 
@@ -105,7 +105,7 @@ export const capture = Effect.fn("Script.capture")(function* (
   );
 
   if (Number(exitCode) !== 0) {
-    return yield* new CommandFailedError({
+    return yield* CommandFailedError.make({
       command: [executable, ...args].join(" "),
       exitCode: Number(exitCode),
     });
