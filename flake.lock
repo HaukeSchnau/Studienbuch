@@ -48,27 +48,26 @@
         ]
       },
       "locked": {
-        "lastModified": 1786482597,
-        "narHash": "sha256-l9c445Mlbo1d9VDq8B5m1GOYS5dd9Mva2Y3nfVqQ+R4=",
+        "lastModified": 1786615824,
+        "narHash": "sha256-oijZVhEBzjVi9VpLiPiBauW/Gn0UJVoWLmFUQJ4KUY0=",
         "owner": "HaukeSchnau",
         "repo": "nix-infra-modules",
-        "rev": "3d11957d4d1c585578548c9a66a95be4edb4021d",
+        "rev": "cf8ab3477c2536cbff7a1b683b0c0e331325e4a7",
         "type": "github"
       },
       "original": {
         "owner": "HaukeSchnau",
         "repo": "nix-infra-modules",
-        "rev": "3d11957d4d1c585578548c9a66a95be4edb4021d",
         "type": "github"
       }
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1785354713,
-        "narHash": "sha256-Nc5x6m6ekyI1L0B6FFG0l2gY8H2xCIphZFngP3tRyaE=",
+        "lastModified": 1787001381,
+        "narHash": "sha256-Ue1Yo8gfHdD4TMtNewhA4tkSYeFqXThju0nCyJc3ALo=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "ea36ce2caf709000ed26b18342c92cf055fde1a8",
+        "rev": "ec2d622de0773551768cf98f3fc50cbcc003b9c5",
         "type": "github"
       },
       "original": {

@@ -1,27 +1,9 @@
-# AGENTS.md
+# Studienbuch
 
-## Task Completion Requirements
-
-- All of `just qa` must pass before considering tasks completed.
-- Run tests with `just test` or a relevant package's test script when targeting one workspace.
-
-## Project Snapshot
-
-Studienbuch is a local-first application for students and teachers to manage their school life.
+Studienbuch is a local-first/offline-first application for students and teachers to manage their school life.
 It should work offline as much as possible, especially the mobile app.
 
-This repository is a VERY EARLY WIP. Proposing sweeping changes that improve long-term maintainability is encouraged.
-
 I'm willing to use bleeding edge tech, even if it's alpha or experimental.
-
-## Core Priorities
-
-1. Performance first.
-2. Reliability first.
-3. Offline/local first.
-4. Keep behavior predictable under load and during failures (session restarts, reconnects, partial streams).
-
-If a tradeoff is required, choose correctness and robustness over short-term convenience.
 
 ## Maintainability
 
@@ -34,8 +16,6 @@ I like ambitious ideas, simple systems, and software that feels obvious. Do not 
 Channel both "measure twice, cut once" and "yagni". Fight scope creep. Try to honor the dev's intent in both a minimal and realistic fashion.
 
 The rest of this document is meant to help you navigate the codebase and make changes effectively. Think of these instructions less as "hard rules", more as "good defaults". The developer's preferences should be able to override anything here.
-
-If a rule here fights the task in front of you, say so loudly and get a human sign-off before breaking it.
 
 Keep this document and other docs up-to-date.
 
@@ -50,8 +30,15 @@ Keep this document and other docs up-to-date.
 
 These are not set in stone. Feel free to suggest changes to these roles or adding new packages.
 
-- `flake.nix` should provide a reproducible dev environment including all necessary dependencies needed to work in the project and be able to build the server-side packages as well as OCI containers in a reproducible fashion.
+- `flake.nix` should provide a reproducible dev environment including all necessary dependencies needed to work in the project and be able to build the packages that will be deployed to my infra using Nix.
 - `Justfile` is the primary entrypoint for day-to-day tasks and commands.
+
+## Taste
+
+- Complexity belongs at the adapter boundary. Orchestration stays pure, UI stays dumb.
+- Inferred types over annotations. `any` is the enemy.
+- Comments describe how a thing is used, and move when the code moves. To be used mostly to describe functions, not to annotate every line of behavior.
+- If a rule here fights the task in front of you, say so loudly and get a human sign-off before breaking it.
 
 ## Paired Mobile E2E Evaluation
 
@@ -82,7 +69,7 @@ These are not set in stone. Feel free to suggest changes to these roles or addin
 - Expo 54 migration snapshot (intermediate native/mobile architecture): `/home/haukeschnau/context/studienbuch-archive/expo-54`
 - Early event and aggregate modeling experiments: `/home/haukeschnau/context/studienbuch-archive/Experiments`
 
-Use T3 Code as the primary reference for server/client structure and Effect-heavy app architecture. Note that we want an even more robust local-first experience and architecture than T3 Code.
+Use T3 Code as the primary reference for server/client structure and Effect-heavy app architecture. Note that we want an even more robust local-first/offline-first experience and architecture than T3 Code.
 When implementing or reviewing mobile UI, use the legacy Flutter app as the primary visual and behavioral reference because it is the current production app this project supersedes. Use the legacy React Native / Expo app as a secondary implementation reference.
 When working on synchronization, event ingestion, replay, or client/server persistence boundaries, consult Groundswell before introducing a parallel abstraction and use LiveStore as an independent comparison point. Use the April 2026 repository, Expo 54, native-release, and experiments snapshots as historical context, not as authoritative architecture.
 
