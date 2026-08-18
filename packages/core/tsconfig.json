@@ -1,7 +1,6 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "exactOptionalPropertyTypes": true,
     "types": ["vite-plus/test"]
   },
   "include": ["src/**/*.ts", "vite.config.ts"]
