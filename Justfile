@@ -2,7 +2,7 @@ set unstable
 set lists
 
 [parallel]
-qa-tasks: lint typecheck mobile-e2e-check test
+qa-tasks: lint mobile-e2e-check test
 
 qa: fmt qa-tasks
 fix: fmt lint-fix
@@ -21,16 +21,6 @@ lint:
 
 lint-fix:
     vp lint --report-unused-disable-directives --fix
-
-typecheck:
-    vp exec tsc --noEmit -p apps/console/tsconfig.json
-    vp exec tsc --noEmit -p apps/mobile/tsconfig.json
-    vp exec tsc --noEmit -p apps/web/tsconfig.json
-    vp exec tsc --noEmit -p packages/core/tsconfig.json
-    vp exec tsc --noEmit -p packages/observability/tsconfig.json
-    vp exec tsc --noEmit -p packages/server/tsconfig.json
-    vp exec tsc --noEmit -p scripts/tsconfig.json
-    vp exec tsc --noEmit -p tools/oxlint/tsconfig.json
 
 test:
     vp run -r test

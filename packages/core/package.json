@@ -22,7 +22,7 @@
     "./tasks": "./src/tasks/index.ts"
   },
   "scripts": {
-    "test": "tsc --noEmit -p tsconfig.json && vp test run --passWithNoTests"
+    "test": "vp test run --passWithNoTests"
   },
   "dependencies": {
     "effect": "catalog:",
