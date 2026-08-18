@@ -62,9 +62,8 @@ export default defineConfig({
       "effecttsgo/process-env-in-effect": "error",
       "effecttsgo/unsafe-effect-type-assertion": "error",
 
-      // Requiring every ordinary TypeScript API to support pipeable usage adds overloads and can
-      // make direct calls less clear; use pipeable forms where they improve a specific API.
-      "effecttsgo/missed-pipeable-opportunity": "off",
+      // This treats every exported fixed-arity function as an Effect-style `self` API; enabling it
+      // would require dual overloads for ordinary route, React, CLI, and tooling helpers.
       "effecttsgo/missing-pipeable-signature": "off",
 
       // Final dependency provision belongs in tests and executable entry points, which this rule
@@ -109,6 +108,10 @@ export default defineConfig({
       // Immutable map updates intentionally allocate; object spread is clearer than mutation for
       // the small collections where we use it.
       "oxc/no-map-spread": "off",
+
+      // Keeping small helpers beside their only caller is more readable than hoisting them for a
+      // negligible allocation optimization.
+      "unicorn/consistent-function-scoping": "off",
 
       // In-place ordering is sometimes intentional; requiring copying variants changes allocation
       // and identity semantics rather than providing a universal improvement.

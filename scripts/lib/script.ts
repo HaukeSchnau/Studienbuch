@@ -100,7 +100,7 @@ export const capture = Effect.fn("Script.capture")(function* (
     stderr: "inherit",
   });
   const [output, exitCode] = yield* Effect.all(
-    [Stream.mkString(Stream.decodeText(child.stdout)), child.exitCode],
+    [child.stdout.pipe(Stream.decodeText, Stream.mkString), child.exitCode],
     { concurrency: "unbounded" },
   );
 

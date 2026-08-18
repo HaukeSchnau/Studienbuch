@@ -35,10 +35,6 @@ import { Schedule } from "@stu/core/schedule";
 import { Tasks } from "@stu/core/tasks";
 import { describe, expect, it } from "vite-plus/test";
 
-const preserveAttendanceInput = (
-  input: Attendance.acknowledge.Input,
-): Parameters<typeof Attendance.acknowledge>[0] => input;
-
 describe("public namespace exports", () => {
   it("exposes each domain as the same namespace from the root and its subpath", () => {
     expect(Assessment.GradeValue).toBe(AssessmentFromRoot.GradeValue);
@@ -86,6 +82,10 @@ describe("public namespace exports", () => {
   });
 
   it("keeps operation companion types discoverable through a domain namespace", () => {
-    expect(preserveAttendanceInput).toBeTypeOf("function");
+    const preserveInput = (
+      input: Attendance.acknowledge.Input,
+    ): Parameters<typeof Attendance.acknowledge>[0] => input;
+
+    expect(preserveInput).toBeTypeOf("function");
   });
 });
