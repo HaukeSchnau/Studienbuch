@@ -12,18 +12,16 @@ const SingleConfirmationStatus = ({
 }: {
   confirmed: boolean;
   confirmedText: string;
-}) => {
-  return (
-    <View className="flex-row items-center gap-1">
-      {confirmed ? (
-        <SystemIcon name="verified" size={24} color={colors.primary.text} />
-      ) : (
-        <Cross color={colors.danger.DEFAULT} />
-      )}
-      <Text className={clsx(confirmed ? "text-primary-text" : "text-danger")}>{confirmedText}</Text>
-    </View>
-  );
-};
+}) => (
+  <View className="flex-row items-center gap-1">
+    {confirmed ? (
+      <SystemIcon name="verified" size={24} color={colors.primary.text} />
+    ) : (
+      <Cross color={colors.danger.DEFAULT} />
+    )}
+    <Text className={clsx(confirmed ? "text-primary-text" : "text-danger")}>{confirmedText}</Text>
+  </View>
+);
 
 export const ConfirmationStatus = ({
   parent,

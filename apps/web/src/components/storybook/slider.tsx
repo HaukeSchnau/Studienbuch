@@ -22,33 +22,31 @@ export const Slider: React.FC<SliderProps> = ({
   step = 1,
   showValue = true,
   className = "",
-}) => {
-  return (
-    <div className={`flex flex-col gap-2 ${className}`}>
-      <div className="flex justify-between items-center">
-        <label htmlFor={id} className="text-sm font-medium text-gray-700 dark:text-gray-200">
-          {label}
-        </label>
-        {showValue && (
-          <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 min-w-12 text-right">
-            {value}
-          </span>
-        )}
-      </div>
-      <input
-        type="range"
-        id={id}
-        value={value}
-        onChange={(event) => onChange?.(Number(event.currentTarget.value))}
-        min={min}
-        max={max}
-        step={step}
-        className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-blue-500"
-      />
-      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-        <span>{min}</span>
-        <span>{max}</span>
-      </div>
+}) => (
+  <div className={`flex flex-col gap-2 ${className}`}>
+    <div className="flex justify-between items-center">
+      <label htmlFor={id} className="text-sm font-medium text-gray-700 dark:text-gray-200">
+        {label}
+      </label>
+      {showValue && (
+        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 min-w-12 text-right">
+          {value}
+        </span>
+      )}
     </div>
-  );
-};
+    <input
+      type="range"
+      id={id}
+      value={value}
+      onChange={(event) => onChange?.(Number(event.currentTarget.value))}
+      min={min}
+      max={max}
+      step={step}
+      className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-blue-500"
+    />
+    <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+      <span>{min}</span>
+      <span>{max}</span>
+    </div>
+  </div>
+);

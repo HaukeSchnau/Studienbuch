@@ -543,19 +543,17 @@ const HeaderActionButton = ({
   color: string;
   iconName: SystemIconName;
   onPress: () => void;
-}) => {
-  return (
-    <Pressable
-      accessibilityLabel={accessibilityLabel}
-      accessibilityRole="button"
-      className="h-11 w-11 items-center justify-center"
-      hitSlop={8}
-      onPress={onPress}
-    >
-      <SystemIcon name={iconName} color={color} size={23} />
-    </Pressable>
-  );
-};
+}) => (
+  <Pressable
+    accessibilityLabel={accessibilityLabel}
+    accessibilityRole="button"
+    className="h-11 w-11 items-center justify-center"
+    hitSlop={8}
+    onPress={onPress}
+  >
+    <SystemIcon name={iconName} color={color} size={23} />
+  </Pressable>
+);
 
 const HeaderActions = ({ onDelete, onEdit }: { onDelete: () => void; onEdit: () => void }) => {
   const iconColor = Platform.OS === "android" ? colors.on.primary : colors.primary.text;
@@ -668,6 +666,14 @@ const CompletionBurst = () => {
   );
 };
 
+const showEditPlaceholder = () => {
+  haptics.selection();
+  Alert.alert(
+    "Bearbeiten",
+    "Das Bearbeiten der Hausaufgabe ist vorbereitet und kommt als nächster Schritt.",
+  );
+};
+
 export const TaskScreen = ({ taskId }: { taskId: string }) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -732,14 +738,6 @@ export const TaskScreen = ({ taskId }: { taskId: string }) => {
       setCompletionBurstKey((key) => key + 1);
     }
     toggleTaskDone(task.id);
-  };
-
-  const showEditPlaceholder = () => {
-    haptics.selection();
-    Alert.alert(
-      "Bearbeiten",
-      "Das Bearbeiten der Hausaufgabe ist vorbereitet und kommt als nächster Schritt.",
-    );
   };
 
   return (

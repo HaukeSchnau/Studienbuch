@@ -5,10 +5,13 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 
 import viteReact, { reactCompilerPreset } from "@vitejs/plugin-react";
 import babel from "@rolldown/plugin-babel";
+import * as Schema from "effect/Schema";
 import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
 
-const projectHostNames = JSON.parse(process.env.STUDIENBUCH_WEB_HOST_NAMES ?? "[]") as string[];
+const projectHostNames = Schema.decodeUnknownSync(Schema.Array(Schema.String))(
+  JSON.parse(process.env.STUDIENBUCH_WEB_HOST_NAMES ?? "[]"),
+);
 const authHostName = process.env.BETTER_AUTH_URL
   ? new URL(process.env.BETTER_AUTH_URL).hostname
   : undefined;

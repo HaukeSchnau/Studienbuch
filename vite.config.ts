@@ -62,11 +62,10 @@ export default defineConfig({
       "effecttsgo/process-env-in-effect": "error",
       "effecttsgo/unsafe-effect-type-assertion": "error",
 
-      // These style transforms can make ordinary TypeScript APIs less direct; use pipeable and
-      // concise forms when they improve a specific call site instead of requiring them everywhere.
+      // Requiring every ordinary TypeScript API to support pipeable usage adds overloads and can
+      // make direct calls less clear; use pipeable forms where they improve a specific API.
       "effecttsgo/missed-pipeable-opportunity": "off",
       "effecttsgo/missing-pipeable-signature": "off",
-      "effecttsgo/unnecessary-arrow-block": "off",
 
       // Final dependency provision belongs in tests and executable entry points, which this rule
       // cannot identify without maintaining a growing file allowlist.
@@ -107,17 +106,9 @@ export default defineConfig({
       // branches and Effect generators whose terminal branches yield errors.
       "typescript/consistent-return": "off",
 
-      // A blanket assertion ban rejects guarded boundary assertions; the targeted anti-slop rules
-      // above catch the unsafe widening and chained assertions we actually want to prevent.
-      "typescript/no-unsafe-type-assertion": "off",
-
       // Immutable map updates intentionally allocate; object spread is clearer than mutation for
       // the small collections where we use it.
       "oxc/no-map-spread": "off",
-
-      // Keeping small helpers beside their only caller is more readable than hoisting them for a
-      // negligible allocation optimization.
-      "unicorn/consistent-function-scoping": "off",
 
       // In-place ordering is sometimes intentional; requiring copying variants changes allocation
       // and identity semantics rather than providing a universal improvement.

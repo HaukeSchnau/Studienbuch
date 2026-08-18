@@ -8,22 +8,20 @@ interface Props<T> {
   gap?: number;
 }
 
-export const Table = <T,>({ items, render, getKey, gap = 12 }: Props<T>) => {
-  return (
-    <View className="flex flex-row flex-wrap">
-      {items.map((item, idx) => (
-        <View
-          key={getKey(item)}
-          style={{
-            width: "50%",
-            paddingLeft: idx % 2 === 1 ? gap / 2 : 0,
-            paddingRight: idx % 2 === 0 ? gap / 2 : 0,
-            paddingTop: idx >= 2 ? gap : 0,
-          }}
-        >
-          {render(item)}
-        </View>
-      ))}
-    </View>
-  );
-};
+export const Table = <T,>({ items, render, getKey, gap = 12 }: Props<T>) => (
+  <View className="flex flex-row flex-wrap">
+    {items.map((item, idx) => (
+      <View
+        key={getKey(item)}
+        style={{
+          width: "50%",
+          paddingLeft: idx % 2 === 1 ? gap / 2 : 0,
+          paddingRight: idx % 2 === 0 ? gap / 2 : 0,
+          paddingTop: idx >= 2 ? gap : 0,
+        }}
+      >
+        {render(item)}
+      </View>
+    ))}
+  </View>
+);

@@ -93,18 +93,16 @@ const UnexcusedAbsences = ({
 }: {
   numberOfDays: number;
   numberOfAbsences: number;
-}) => {
-  return (
-    <View className="flex-row">
-      <Warning width={40} height={50} />
-      <View className="w-4" />
-      <View className="flex-1">
-        <Text className="opacity-80">
-          Du hast noch <Text weight="bold">{numberOfAbsences}</Text> unentschuldigte{" "}
-          {numberOfAbsences === 1 ? "Fehlzeit" : "Fehlzeiten"} an{" "}
-          <Text weight="bold">{numberOfDays}</Text> {numberOfDays === 1 ? "Tag" : "Tagen"}.
-        </Text>
-      </View>
+}) => (
+  <View className="flex-row">
+    <Warning width={40} height={50} />
+    <View className="w-4" />
+    <View className="flex-1">
+      <Text className="opacity-80">
+        Du hast noch <Text weight="bold">{numberOfAbsences}</Text> unentschuldigte{" "}
+        {numberOfAbsences === 1 ? "Fehlzeit" : "Fehlzeiten"} an{" "}
+        <Text weight="bold">{numberOfDays}</Text> {numberOfDays === 1 ? "Tag" : "Tagen"}.
+      </Text>
     </View>
-  );
-};
+  </View>
+);

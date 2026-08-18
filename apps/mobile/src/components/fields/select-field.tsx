@@ -31,7 +31,7 @@ export const SelectField = <TOption, TValue extends PickerValue>({
     }
   }, [value, options, onChange]);
 
-  const selectedValue = value ? getKey(value) : options[0] ? getKey(options[0]) : ("" as TValue);
+  const selectedValue = value ? getKey(value) : options[0] ? getKey(options[0]) : "";
 
   return (
     <View className="gap-2">
