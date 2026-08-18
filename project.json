@@ -5,9 +5,12 @@
   "secrets": {
     "betterAuthSecret": {
       "description": "Secret used to sign Better Auth sessions"
-    },
+    }
+  },
+  "parameters": {
     "databaseUrl": {
-      "description": "PostgreSQL connection URL used by the web runtime and migrations"
+      "description": "PostgreSQL connection URL used by the Release runtime",
+      "default": "postgresql:///studienbuch?host=/run/postgresql"
     }
   },
   "development": {
@@ -15,15 +18,28 @@
       "action": "prepare"
     },
     "workloads": {
+      "database": {
+        "action": "database"
+      },
+      "migrate": {
+        "action": "migrate",
+        "kind": "task",
+        "dependsOn": ["database"]
+      },
       "web": {
         "action": "web",
-        "secrets": ["betterAuthSecret", "databaseUrl"]
+        "dependsOn": ["migrate"],
+        "secrets": ["betterAuthSecret"]
       },
       "mobile": {
         "action": "mobile"
       }
     },
     "endpoints": {
+      "database": {
+        "protocol": "tcp",
+        "workload": "database"
+      },
       "web": {},
       "mobile": {
         "health": {
