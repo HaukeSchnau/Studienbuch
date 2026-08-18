@@ -1,4 +1,4 @@
-import type { SchoolClass, Semester, Year } from "@stu/core/compat/mobile-v0";
+import type { SchoolClass, Semester, Year } from "@/compat/mobile-v0";
 
 export const years: Year[] = [
   { id: "y12", name: "Jahrgang 12", startYear: 2024, classLevel: 12 },

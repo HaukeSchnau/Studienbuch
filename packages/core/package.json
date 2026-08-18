@@ -8,7 +8,6 @@
     ".": "./src/index.ts",
     "./assessment": "./src/assessment/index.ts",
     "./attendance": "./src/attendance/index.ts",
-    "./compat/mobile-v0": "./src/compat/mobile-v0.ts",
     "./foundation": "./src/foundation/index.ts",
     "./foundation/aggregate-revision": "./src/foundation/aggregate-revision.ts",
     "./foundation/artifact": "./src/foundation/artifact.ts",

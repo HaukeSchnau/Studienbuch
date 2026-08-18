@@ -5,7 +5,7 @@ import { View } from "react-native";
 import { Button } from "~/components/ui/button";
 import { SelectCourse } from "~/domain-ui/select-course";
 import { Text } from "~/components/ui/text";
-import { findCurrentSemester, type Course, type SubjectId } from "@stu/core/compat/mobile-v0";
+import { findCurrentSemester, type Course, type SubjectId } from "@/compat/mobile-v0";
 import { useCourses, useSchool } from "~/data/hooks";
 import { mainProfileRoute } from "~/routing/params";
 

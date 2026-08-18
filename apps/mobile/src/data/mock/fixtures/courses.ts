@@ -1,4 +1,4 @@
-import type { Course, TeacherInfo } from "@stu/core/compat/mobile-v0";
+import type { Course, TeacherInfo } from "@/compat/mobile-v0";
 
 export const teachers: TeacherInfo[] = [
   { id: "t1", firstName: "Anna", lastName: "Meyer" },

@@ -19,7 +19,7 @@ import {
   type TimetableEntry,
   type UserProfile,
   type Year,
-} from "@stu/core/compat/mobile-v0";
+} from "@/compat/mobile-v0";
 import type { PropsWithChildren } from "react";
 import { createContext, useContext, useState } from "react";
 import {

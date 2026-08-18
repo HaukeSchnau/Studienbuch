@@ -8,7 +8,7 @@ import { ConfirmationStatus } from "~/domain-ui/confirmation-status";
 import { SystemIcon } from "~/components/ui/system-icon";
 import { Text } from "~/components/ui/text";
 import { haptics } from "~/platform/haptics";
-import { isAbsenceConfirmed, subjectNameMap, type Absence } from "@stu/core/compat/mobile-v0";
+import { isAbsenceConfirmed, subjectNameMap, type Absence } from "@/compat/mobile-v0";
 import { useAbsences, useCourses } from "~/data/hooks";
 import { absenceConfirmationRoute } from "~/routing/params";
 import { colors } from "~/theme/colors";

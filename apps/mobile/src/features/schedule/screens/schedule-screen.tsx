@@ -32,7 +32,7 @@ import { shadow } from "~/components/styles/shadow";
 import { Text } from "~/components/ui/text";
 import { useMainTabBarPadding } from "~/components/use-main-tab-bar-padding";
 import { haptics } from "~/platform/haptics";
-import { subjectNameMap, type SubjectId } from "@stu/core/compat/mobile-v0";
+import { subjectNameMap, type SubjectId } from "@/compat/mobile-v0";
 import { useCourses, useScheduleData } from "~/data/hooks";
 import { courseRoute } from "~/routing/params";
 import { colors } from "~/theme/colors";

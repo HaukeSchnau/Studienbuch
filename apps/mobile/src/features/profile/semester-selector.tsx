@@ -8,7 +8,7 @@ import { SystemIcon } from "~/components/ui/system-icon";
 import { Text } from "~/components/ui/text";
 import { haptics } from "~/platform/haptics";
 import { colors } from "~/theme/colors";
-import type { Semester } from "@stu/core/compat/mobile-v0";
+import type { Semester } from "@/compat/mobile-v0";
 
 interface SemesterSelectorProps {
   choices: Semester[];

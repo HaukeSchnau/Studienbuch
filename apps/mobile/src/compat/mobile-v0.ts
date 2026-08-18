@@ -3,7 +3,7 @@
  *
  * TODO: Remove this module after the mobile data provider constructs the new
  * CourseOffering, Assessment, AbsenceCase, SchoolTask, and schedule models.
- * New code must import the domain modules instead of this subpath.
+ * New code must import the domain modules from `@stu/core` instead of this module.
  */
 
 export type SubjectId =
