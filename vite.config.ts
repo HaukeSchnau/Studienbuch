@@ -63,6 +63,7 @@ export default defineConfig({
       "effecttsgo/unsafe-effect-type-assertion": "error",
       "effecttsgo/missed-pipeable-opportunity": "off",
       "effecttsgo/missing-pipeable-signature": "off",
+      "effecttsgo/strict-effect-provide": "off",
       "effecttsgo/strict-boolean-expressions": "off",
       "effecttsgo/unnecessary-arrow-block": "off",
       "react-in-jsx-scope": "off",
@@ -80,20 +81,6 @@ export default defineConfig({
       "unicorn/no-array-reverse": "off",
       "unicorn/no-array-sort": "off",
     },
-    overrides: [
-      {
-        files: ["**/*.test.ts", "**/*.test.tsx"],
-        rules: {
-          "effecttsgo/strict-effect-provide": "off",
-        },
-      },
-      {
-        files: ["apps/console/src/runtime.ts", "scripts/lib/script.ts"],
-        rules: {
-          "effecttsgo/strict-effect-provide": "off",
-        },
-      },
-    ],
     env: {
       builtin: true,
     },

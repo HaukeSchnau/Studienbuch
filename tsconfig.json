@@ -73,7 +73,6 @@
           "runEffectInsideEffect": "error",
           "schemaSyncInEffect": "error",
           "scopeInLayerEffect": "error",
-          "strictEffectProvide": "error",
           "tryCatchInEffectGen": "error",
           "unknownInEffectCatch": "error",
 
@@ -119,22 +118,7 @@
           "unnecessaryPipe": "error",
           "unnecessaryPipeChain": "error",
           "unnecessaryTypeofType": "error"
-        },
-        "overrides": [
-          {
-            "include": [
-              "**/*.test.ts",
-              "**/*.test.tsx",
-              "apps/console/src/runtime.ts",
-              "scripts/lib/script.ts"
-            ],
-            "options": {
-              "diagnosticSeverity": {
-                "strictEffectProvide": "off"
-              }
-            }
-          }
-        ]
+        }
       }
     ]
   },
