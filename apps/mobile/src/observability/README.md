@@ -4,13 +4,10 @@ This module is the first-party operational telemetry channel. It complements EAS
 Sentry: Sentry owns deployed crash/error reporting, while this channel owns allowlisted operational
 records. Effect/OpenTelemetry remains the server instrumentation system.
 
-Only the allowlisted records from `@stu/observability/browser` can enter the
-queue. They intentionally contain no student identifiers, content, free text,
-URLs, or arbitrary attributes. The durable Expo document-storage outbox is
-limited to 10 MiB and seven days. Capacity eviction removes the oldest
-low-priority records first, then normal and high priority. Sends are capped at
-100 records, retain partially accepted records, and use bounded exponential
-backoff.
+The queue itself is `TelemetryOutbox` from `@stu/observability/browser`, shared with the web client.
+This module supplies only the native ports: the durable Expo document-storage adapter, the
+authenticated transport, and the app-lifecycle controller. See that package's README for the
+channel contract and the queue's guarantees.
 
 ## Activation
 
@@ -21,9 +18,11 @@ Authorization header. The current application has no mobile session authority,
 so its provider is deliberately disabled. Do not replace this with a static
 public token or an unauthenticated ingestion route.
 
-Once mobile authentication exists, pass that authority from the session owner
-to `MobileTelemetryProvider`. The endpoint must be the Studienbuch server relay,
-never the fleet collector directly.
+The server side is ready: the ingress admits native clients on a resolvable Better Auth session,
+having previously refused them for lacking an `Origin` header. What is still missing is only the
+app's own session, so once mobile authentication exists, pass that authority from the session owner
+to `MobileTelemetryProvider`. The endpoint must be the Studienbuch server relay, never the fleet
+collector directly.
 
 `expo-network` is installed for Better Auth's Expo client and is the preferred native reachability
 source when the telemetry provider is connected to authenticated sessions. Until then, send results,
@@ -37,7 +36,7 @@ performance traces. Native build source maps use `SENTRY_ORG`, `SENTRY_PROJECT`,
 
 ## Verification
 
-Run `vp test run src/observability/outbox.test.ts` for deterministic restart,
-offline, expiry, eviction, retry, and partial-acceptance coverage. Validate the
-document-directory behavior on a signed iOS and Android development build; the
-Node tests use the storage port and cannot prove platform persistence semantics.
+Queue behavior -- restart, offline, expiry, eviction, retry, partial acceptance -- is covered once
+in `@stu/observability`. Validate the document-directory behavior on a signed iOS and Android
+development build; the Node tests use the storage port and cannot prove platform persistence
+semantics.
