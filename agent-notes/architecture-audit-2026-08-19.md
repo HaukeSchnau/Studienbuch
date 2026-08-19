@@ -208,6 +208,10 @@ against the migrated schema, since `db:generate` can no longer catch a mismatch.
 
 ### 11. One telemetry protocol, two incompatible implementations
 
+**Fixed 2026-08-19.** All five items done. `TelemetryOutbox` moved into `@stu/observability` with storage/delivery/clock/random ports; the mobile copy and its test are deleted and the merged suite covers both platforms once. The acknowledgement is a schema in `client-envelope.ts` that the ingress encodes and both transports decode, and a bare `202` is now a failed delivery rather than assumed success. Admission is a seam with same-origin and session paths into one handler, which is what unblocks native clients. Rate limiting is per principal instead of one global window; it stays per-process, documented where it lives. `releaseSmoke` posts a real envelope through a running Release, asserts it reaches the OTLP collector, and asserts an unauthenticated one is refused.
+
+**Open:** the limiter's shared-state version, which is only worth building once more than one instance runs. Mobile still has no session of its own, so its channel stays off — but the server side no longer blocks it.
+
 Decision on record: the client telemetry channel is deliberate and stays. This finding is therefore
 not about its size — it is that the channel does not currently work end to end, and that the two
 client halves are diverging copies rather than one implementation.
