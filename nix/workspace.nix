@@ -41,6 +41,8 @@ let
       test ! -e ${dependencySource}/apps/web/src
 
       test -f ${webSource}/apps/web/package.json
+      # The Release applies migrations in-process, so the history must reach the web build.
+      test -d ${webSource}/packages/server/drizzle
       test ! -e ${webSource}/apps/mobile/src
       test ! -e ${webSource}/packages/core/src
       test -d ${webSource}/packages/observability/src

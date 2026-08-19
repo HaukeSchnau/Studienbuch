@@ -118,6 +118,15 @@ let
 
             jq -e '.status == "alive"' "$root/live.json" >/dev/null
             jq -e '.status == "ready"' "$root/ready.json" >/dev/null
+
+            # Readiness only reports "ready" once migrations applied and the database answered, so
+            # the schema must exist. Assert it directly: a Release that serves traffic against an
+            # unmigrated database is the failure this check exists to prevent.
+            psql -h "$postgres_socket" -d postgres -tAc \
+              "select to_regclass('public.users') is not null
+               and to_regclass('public.studienbuch_migrations') is not null" \
+              > "$root/schema.txt"
+            grep -qx t "$root/schema.txt"
             curl --fail --silent --show-error \
               http://127.0.0.1:32117/api/observability/v1/canary > "$root/canary.json"
             jq -e '.status == "ok"' "$root/canary.json" >/dev/null
