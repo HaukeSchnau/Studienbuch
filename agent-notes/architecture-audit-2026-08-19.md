@@ -146,6 +146,8 @@ per-request runtime wiring is wanted later, that is the idiomatic seam — not a
 
 ### 7. The route layering is right; it is not applied consistently
 
+**Partly fixed 2026-08-19.** `health.server.ts` now uses the `makeHealthHandlers` factory, so both current adapters share one shape and the health tests no longer assert on process globals. **Open:** `http-response.server.ts` still hand-rolls a recursive `JsonValue` type.
+
 `routes/api/**` (thin binding) → `server-adapters/*.server.ts` (handler) → `server-runtime/*.server.ts`
 (shared plumbing) is the correct shape, and the per-endpoint file count stops looking like ceremony
 somewhere around the tenth endpoint. Keep it.
@@ -293,6 +295,8 @@ diagnostics directly: a deliberate `const x: number = "…"` probe produced
 therefore by `just qa`. No separate `typecheck` script is needed.
 
 ### 14. Smaller items
+
+**Partly fixed 2026-08-19.** Done: the `JSON.parse` host decoding, the `getRouter` telemetry side effects (moved into `ClientObservability`), `defaultPreloadStaleTime: 0` (dropped), `packages/server`'s missing `types` entry and test project name, and `.env.example`. **Open:** `packages/server/scripts/test.mjs`, the stale status header on `agent-notes/observability-architecture.md`, and the missing `packages/observability` README.
 
 - ~~`apps/web/vite.config.ts` parsed `STUDIENBUCH_WEB_HOST_NAMES` with `JSON.parse` outside the
   schema, so malformed input threw before decoding.~~ Fixed during this audit via
