@@ -36,6 +36,6 @@ A bundled server has no workspace neighbours to resolve `drizzle/` against, so t
 copies the history beside the bundle and sets `STUDIENBUCH_MIGRATIONS_DIR`.
 
 `vp run --filter @stu/server test` starts PostgreSQL with Testcontainers, applies the real migration
-history, and exercises the Effect Drizzle client. The test runner automatically uses the current
-user's Podman socket when `DOCKER_HOST` is unset; ordinary Docker environments require no special
-configuration.
+history, and exercises the Effect Drizzle client. The flake development shell points `DOCKER_HOST`
+at the current user's Podman socket when one exists and the variable is unset; ordinary Docker
+environments require no special configuration.

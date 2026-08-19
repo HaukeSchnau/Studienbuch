@@ -1,7 +1,8 @@
 # Observability architecture research
 
-Status: proposed target architecture, not yet implemented  
-Last updated: 2026-08-12
+Status: implemented. The design below is the record of why the channel is shaped this way; the
+current contract and guarantees live in `packages/observability/README.md`.  
+Last updated: 2026-08-20
 
 ## Goal
 
