@@ -101,6 +101,10 @@ keeps returning `200`. Readiness measures construction, not serving capacity.
 
 ### 5. Client Sentry and PostHog are compile-time disabled in the Nix release
 
+**Mostly fixed 2026-08-19.** Both are now read from the server environment (`STUDIENBUCH_SENTRY_DSN`, `STUDIENBUCH_POSTHOG_KEY`, `STUDIENBUCH_POSTHOG_HOST`) and served through the root route loader. Verified against the built server: the SSR payload carries the real deployed version and environment. Sentry now lazily loads a genuine 219 KB chunk when a DSN is present.
+
+**Open:** `posthog-js` still ships in the entry bundle (562 KB total). `@posthog/react` imports it eagerly, and its `slim` entry takes a constructed `client` rather than an `apiKey`, so the lazy treatment Sentry got would either remount the whole tree or delay first paint behind a Suspense boundary. The remaining option is to drop `@posthog/react`, initialise `posthog-js` lazily beside Sentry, and re-add the React bindings when a component actually needs `useFeatureFlagEnabled`. That is a capability trade-off, so it needs a decision rather than a refactor.
+
 `VITE_*` variables are inlined at build time. `apps/web/nix.nix` sets none of them, so in
 `.output/public/assets`:
 
