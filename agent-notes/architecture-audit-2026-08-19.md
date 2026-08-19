@@ -148,7 +148,9 @@ per-request runtime wiring is wanted later, that is the idiomatic seam — not a
 
 ### 7. The route layering is right; it is not applied consistently
 
-**Partly fixed 2026-08-19.** `health.server.ts` now uses the `makeHealthHandlers` factory, so both current adapters share one shape and the health tests no longer assert on process globals. **Open:** `http-response.server.ts` still hand-rolls a recursive `JsonValue` type.
+**Fixed 2026-08-19; second half withdrawn 2026-08-20.** `health.server.ts` uses the `makeHealthHandlers` factory, so both adapters share one shape and the health tests no longer assert on process globals.
+
+The `JsonValue` complaint was wrong. Widening `jsonResponse`'s parameter to `unknown` type-checks but fails `anti-slop/no-unknown-parameters`, and the rule is right: this is an I/O boundary and the parameter type is where the response contract is stated. Restored, with the reasoning recorded in the file so it is not 'simplified' again.
 
 `routes/api/**` (thin binding) → `server-adapters/*.server.ts` (handler) → `server-runtime/*.server.ts`
 (shared plumbing) is the correct shape, and the per-endpoint file count stops looking like ceremony
@@ -304,7 +306,7 @@ therefore by `just qa`. No separate `typecheck` script is needed.
 
 ### 14. Smaller items
 
-**Partly fixed 2026-08-19.** Done: the `JSON.parse` host decoding, the `getRouter` telemetry side effects (moved into `ClientObservability`), `defaultPreloadStaleTime: 0` (dropped), `packages/server`'s missing `types` entry and test project name, and `.env.example`. **Open:** `packages/server/scripts/test.mjs`, the stale status header on `agent-notes/observability-architecture.md`, and the missing `packages/observability` README.
+**Fixed 2026-08-19/20.** All items done: the `JSON.parse` host decoding, the `getRouter` telemetry side effects (moved into `ClientObservability`), `defaultPreloadStaleTime: 0` (dropped), `packages/server`'s missing `types` entry and test project name, `.env.example`, `packages/server/scripts/test.mjs` (deleted; the flake development shell sets `DOCKER_HOST`), the stale status header on `agent-notes/observability-architecture.md`, and the missing `packages/observability` README.
 
 - ~~`apps/web/vite.config.ts` parsed `STUDIENBUCH_WEB_HOST_NAMES` with `JSON.parse` outside the
   schema, so malformed input threw before decoding.~~ Fixed during this audit via
