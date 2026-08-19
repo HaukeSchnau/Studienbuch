@@ -7,6 +7,12 @@ import {
   type BrowserTelemetryEnvironment,
 } from "./browser-client.ts";
 
+const accepted = (count: number) =>
+  new Response(JSON.stringify({ acceptedRecords: count }), {
+    status: 202,
+    headers: { "content-type": "application/json" },
+  });
+
 function fixture(options?: {
   readonly fetch?: BrowserTelemetryEnvironment["fetch"];
   readonly maximumRecords?: number;
@@ -16,14 +22,14 @@ function fixture(options?: {
   let randomValue = 1;
   const timers = new Map<number, () => void>();
   let timerId = 0;
-  const fetchMock =
-    options?.fetch ?? vi.fn<BrowserFetch>(async () => new Response(null, { status: 202 }));
+  const fetchMock = options?.fetch ?? vi.fn<BrowserFetch>(async () => accepted(100));
   const sendBeacon = vi.fn<(url: string, data: Blob) => boolean>(() => true);
   const environment: BrowserTelemetryEnvironment = {
     origin: "https://studienbuch.test",
     fetch: fetchMock,
     sendBeacon,
     now: () => now,
+    random: () => 0.5,
     randomBytes(length) {
       const bytes = new Uint8Array(length);
       bytes.fill(randomValue++ % 255);
@@ -60,7 +66,12 @@ async function envelopeFromFetch(fetchMock: BrowserTelemetryEnvironment["fetch"]
   const [, init] = mock.mock.calls[call] ?? [];
   const body = init?.body;
   expect(body).toBeTypeOf("string");
-  const parsed = JSON.parse(await new Response(body).text());
+  const parsed: unknown = JSON.parse(await new Response(body).text());
+  return Effect.runPromise(decodeClientTelemetryEnvelope(parsed));
+}
+
+function decodeEnvelopeText(text: string) {
+  const parsed: unknown = JSON.parse(text);
   return Effect.runPromise(decodeClientTelemetryEnvelope(parsed));
 }
 
@@ -84,8 +95,40 @@ describe("browser operational telemetry", () => {
     expect(init).toMatchObject({ credentials: "same-origin", keepalive: true, method: "POST" });
     const envelope = await envelopeFromFetch(fetchMock);
     expect(envelope.serviceName).toBe("studienbuch-web-client");
-    expect(envelope.records.map((record) => record.type)).toContain("span");
+    expect(envelope.serviceVersion).toBe("test-version");
     expect(JSON.stringify(envelope)).not.toContain("4318");
+  });
+
+  it("treats a missing or malformed acknowledgement as a failed delivery", async () => {
+    const unacknowledged = vi
+      .fn<BrowserFetch>()
+      .mockResolvedValueOnce(new Response(null, { status: 202 }))
+      .mockResolvedValue(accepted(100));
+    const { client, advanceBy } = fixture({ fetch: unacknowledged });
+    client.recordCanary();
+
+    // The ingress promises `{ acceptedRecords }`; a bare 202 means the two sides disagree, and
+    // guessing "everything landed" would silently lose records.
+    await expect(client.flush()).resolves.toBe(false);
+
+    advanceBy(5_000);
+    await expect(client.flush()).resolves.toBe(true);
+  });
+
+  it("retries only the unacknowledged remainder of a partially accepted batch", async () => {
+    const partial = vi
+      .fn<BrowserFetch>()
+      .mockResolvedValueOnce(accepted(1))
+      .mockResolvedValue(accepted(100));
+    const { client, advanceBy } = fixture({ fetch: partial });
+    client.recordCanary();
+
+    await expect(client.flush()).resolves.toBe(true);
+    advanceBy(5_000);
+    await expect(client.flush()).resolves.toBe(true);
+
+    const retried = await envelopeFromFetch(partial, 1);
+    expect(retried.records.length).toBeGreaterThan(0);
   });
 
   it("propagates W3C context only to observed same-origin GET and POST requests", async () => {
@@ -101,28 +144,23 @@ describe("browser operational telemetry", () => {
     expect(crossOriginHeaders.has("traceparent")).toBe(false);
   });
 
-  it("bounds memory, backs off failures, and reports dropped records without free text", async () => {
-    const deliveryFetch = vi
-      .fn<BrowserFetch>()
-      .mockResolvedValueOnce(new Response(null, { status: 503 }))
-      .mockResolvedValue(new Response(null, { status: 202 }));
-    const { client, advanceBy, fetchMock } = fixture({ fetch: deliveryFetch, maximumRecords: 2 });
+  it("bounds memory and reports drops without leaking the paths that caused them", async () => {
+    const { client, sendBeacon } = fixture({ maximumRecords: 2 });
     client.recordCanary();
     client.recordNavigation(12, "/students/Alice-Sensitive");
-    expect(client.snapshot().queuedRecords).toBe(2);
-    expect(client.snapshot().pendingDrops).toBeGreaterThan(0);
+    client.recordNavigation(13, "/students/Bob-Sensitive");
 
-    await expect(client.flush()).resolves.toBe(false);
-    expect(client.snapshot().consecutiveFailures).toBe(1);
-    expect(client.snapshot().queuedRecords).toBeLessThanOrEqual(2);
-
-    advanceBy(1_000);
-    await expect(client.flush()).resolves.toBe(true);
-    const envelope = await envelopeFromFetch(fetchMock, 1);
+    await expect(client.flush({ preferBeacon: true })).resolves.toBe(true);
+    const blob = sendBeacon.mock.calls[0]?.[1];
+    expect(blob).toBeDefined();
+    if (blob === undefined) return;
+    const envelope = await decodeEnvelopeText(await blob.text());
     expect(envelope.records).toContainEqual(
       expect.objectContaining({ name: "studienbuch_client_outbox_dropped_total" }),
     );
-    expect(JSON.stringify(envelope)).not.toContain("Alice-Sensitive");
+    const serialized = JSON.stringify(envelope);
+    expect(serialized).not.toContain("Alice-Sensitive");
+    expect(serialized).not.toContain("Bob-Sensitive");
   });
 
   it("uses a content-typed beacon for lifecycle best-effort delivery", async () => {

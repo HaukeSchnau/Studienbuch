@@ -1,4 +1,7 @@
-import { decodeClientTelemetryEnvelope } from "@stu/observability/browser";
+import {
+  decodeClientTelemetryEnvelope,
+  type ClientTelemetryAcknowledgement,
+} from "@stu/observability/browser";
 import * as Cause from "effect/Cause";
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
@@ -7,7 +10,7 @@ import * as Option from "effect/Option";
 import { ClientTelemetry } from "../server-runtime/client-telemetry.server.ts";
 import { runRouteEffect } from "../server-runtime/request.server.ts";
 import { jsonResponse } from "./http-response.server.ts";
-import { telemetryIngressPolicy, type TelemetryIngressPolicy } from "./telemetry-policy.server.ts";
+import { telemetryAdmission, type TelemetryAdmission } from "./telemetry-policy.server.ts";
 
 export const telemetryRoute = "/api/observability/v1/telemetry";
 export const maximumTelemetryBodyBytes = 64 * 1_024;
@@ -81,14 +84,14 @@ async function readBoundedBody(request: Request): Promise<BodyResult> {
 }
 
 export function makeTelemetryIngressHandler(options?: {
-  readonly policy?: TelemetryIngressPolicy;
+  readonly admission?: TelemetryAdmission;
   readonly run?: typeof runRouteEffect;
 }) {
-  const policy = options?.policy ?? telemetryIngressPolicy;
+  const admission = options?.admission ?? telemetryAdmission;
   const run = options?.run ?? runRouteEffect;
 
   return async (request: Request): Promise<Response> => {
-    const decision = policy.check(request);
+    const decision = await admission.check(request);
     if (!decision.allowed) {
       const response = jsonResponse({ error: decision.error }, decision.status);
       if (decision.retryAfterSeconds !== undefined) {
@@ -108,13 +111,17 @@ export function makeTelemetryIngressHandler(options?: {
       );
       const telemetry = yield* ClientTelemetry;
       yield* telemetry.ingest(envelope);
+      return envelope.records.length;
     });
     const exit = await run(program, { request, route: telemetryRoute });
     if (Exit.isSuccess(exit)) {
-      return new Response(null, {
-        status: 202,
-        headers: { "cache-control": "no-store", "x-content-type-options": "nosniff" },
-      });
+      // Ingestion is all-or-nothing today, so every accepted envelope acknowledges in full. The
+      // count is still reported because clients decode it to decide what to retry, and a future
+      // partial path must not need a protocol change.
+      return jsonResponse(
+        { acceptedRecords: exit.value } satisfies ClientTelemetryAcknowledgement,
+        202,
+      );
     }
 
     const failure = Cause.findErrorOption(exit.cause);

@@ -1,14 +1,19 @@
+import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 import {
   ClientTelemetryRecord,
-  type ClientTelemetryEnvelopeType,
-  type ClientTelemetryRecordType,
-} from "@stu/observability/browser";
-import { Option, Schema } from "effect";
+  type ClientTelemetryEnvelope,
+  type ServiceName,
+} from "./client-envelope.ts";
 
 export const OUTBOX_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 export const OUTBOX_MAX_BYTES = 10 * 1024 * 1024;
 
+/** Records are sent at most this many per envelope, leaving room for the two self-report metrics. */
+const maximumRecordsPerFlush = 98;
+
 export type TelemetryPriority = "low" | "normal" | "high";
+export type TelemetryPlatform = "web" | "ios" | "android";
 
 export interface TelemetryClock {
   readonly now: () => number;
@@ -18,18 +23,27 @@ export interface TelemetryRandom {
   readonly next: () => number;
 }
 
+/**
+ * Where the queue survives between runs. Mobile persists to the document directory; the browser
+ * uses `memoryTelemetryStorage`, which keeps the same contract without durability.
+ */
 export interface TelemetryStorage {
   readonly read: () => Promise<string | undefined>;
   readonly write: (snapshot: string) => Promise<void>;
 }
 
-export interface TelemetryTransport {
+export interface TelemetryDelivery {
   readonly send: (
-    envelope: ClientTelemetryEnvelopeType,
+    envelope: ClientTelemetryEnvelope,
   ) => Promise<
     | { readonly status: "sent"; readonly accepted: number }
     | { readonly status: "failed"; readonly reason: string }
   >;
+  /**
+   * Best-effort delivery for page teardown, where no response can be read. Returning `true` counts
+   * the whole batch as accepted, because the browser gives us nothing better to go on.
+   */
+  readonly sendBeacon?: (envelope: ClientTelemetryEnvelope) => boolean;
 }
 
 interface StoredRecord {
@@ -38,7 +52,7 @@ interface StoredRecord {
   readonly enqueuedAt: number;
   readonly attempts: number;
   readonly nextAttemptAt: number;
-  readonly record: ClientTelemetryRecordType;
+  readonly record: ClientTelemetryRecord;
 }
 
 interface Snapshot {
@@ -62,14 +76,27 @@ export interface FlushResult {
 
 export interface TelemetryOutboxOptions {
   readonly storage: TelemetryStorage;
-  readonly transport: TelemetryTransport;
+  readonly delivery: TelemetryDelivery;
   readonly clock: TelemetryClock;
   readonly random: TelemetryRandom;
+  readonly serviceName: ServiceName;
   readonly serviceVersion: string;
   readonly environment: "development" | "test" | "staging" | "production";
-  readonly platform: "web" | "ios" | "android";
+  readonly platform: TelemetryPlatform;
   readonly maxAgeMs?: number;
   readonly maxBytes?: number;
+  readonly maxRecords?: number;
+}
+
+/** Non-durable storage for clients that have nowhere to persist, such as a browser tab. */
+export function memoryTelemetryStorage(): TelemetryStorage {
+  let contents: string | undefined;
+  return {
+    read: async () => contents,
+    write: async (snapshot) => {
+      contents = snapshot;
+    },
+  };
 }
 
 const emptySnapshot = (): Snapshot => ({ version: 1, sequence: 0, records: [], dropped: 0 });
@@ -144,6 +171,14 @@ const retryDelay = (attempt: number, random: number): number => {
 
 const evictionOrder: ReadonlyArray<TelemetryPriority> = ["low", "normal", "high"];
 
+/**
+ * The one client telemetry queue.
+ *
+ * Web and mobile previously each had their own, with different eviction rules and backoff curves,
+ * so every change to record types or retry policy had to be made and verified twice. Platform
+ * differences belong in the ports — storage, delivery, clock, random — not in a second copy of the
+ * queue.
+ */
 export class TelemetryOutbox {
   readonly #options: TelemetryOutboxOptions;
   #snapshot = emptySnapshot();
@@ -189,10 +224,18 @@ export class TelemetryOutbox {
     return true;
   }
 
+  #overCapacity(): boolean {
+    const maxRecords = this.#options.maxRecords;
+    return (
+      snapshotBytes(this.#snapshot) > (this.#options.maxBytes ?? OUTBOX_MAX_BYTES) ||
+      (maxRecords !== undefined && this.#snapshot.records.length > maxRecords)
+    );
+  }
+
+  /** Sheds the oldest low-priority records first, so a full queue still reports its failures. */
   #enforceCapacity(): void {
-    const maxBytes = this.#options.maxBytes ?? OUTBOX_MAX_BYTES;
     for (const priority of evictionOrder) {
-      while (snapshotBytes(this.#snapshot) > maxBytes) {
+      while (this.#overCapacity()) {
         const index = this.#snapshot.records.findIndex((entry) => entry.priority === priority);
         if (index === -1) break;
         const records = [...this.#snapshot.records];
@@ -206,10 +249,7 @@ export class TelemetryOutbox {
     return this.#options.storage.write(JSON.stringify(this.#snapshot));
   }
 
-  enqueue(
-    record: ClientTelemetryRecordType,
-    priority: TelemetryPriority = "normal",
-  ): Promise<boolean> {
+  enqueue(record: ClientTelemetryRecord, priority: TelemetryPriority = "normal"): Promise<boolean> {
     return this.#serial(async () => {
       if (
         Option.isNone(decodeTelemetryRecord(record, exactContract)) ||
@@ -253,7 +293,12 @@ export class TelemetryOutbox {
     });
   }
 
-  flush(online: boolean): Promise<FlushResult> {
+  flush(options?: {
+    readonly online?: boolean;
+    readonly preferBeacon?: boolean;
+  }): Promise<FlushResult> {
+    const online = options?.online ?? true;
+    const preferBeacon = options?.preferBeacon ?? false;
     return this.#serial(async () => {
       const pruned = this.#pruneExpired();
       if (pruned) await this.#persist();
@@ -265,14 +310,15 @@ export class TelemetryOutbox {
       }
 
       const now = this.#options.clock.now();
+      // Page teardown gets one last chance regardless of backoff; there is no later attempt.
       const eligible = this.#snapshot.records
-        .filter((entry) => entry.nextAttemptAt <= now)
-        .slice(0, 98);
+        .filter((entry) => preferBeacon || entry.nextAttemptAt <= now)
+        .slice(0, maximumRecordsPerFlush);
       if (eligible.length === 0) {
         return { status: "backoff", accepted: 0, remaining: this.#snapshot.records.length };
       }
 
-      const records: ClientTelemetryRecordType[] = [
+      const records: ClientTelemetryRecord[] = [
         ...eligible.map((entry) => entry.record),
         {
           type: "metric",
@@ -291,9 +337,9 @@ export class TelemetryOutbox {
           attributes: { platform: this.#options.platform, signal: "all" },
         },
       ];
-      const envelope: ClientTelemetryEnvelopeType = {
+      const envelope: ClientTelemetryEnvelope = {
         schemaVersion: 1,
-        serviceName: "studienbuch-mobile",
+        serviceName: this.#options.serviceName,
         serviceVersion: this.#options.serviceVersion,
         environment: this.#options.environment,
         sentAtUnixMillis: now,
@@ -301,7 +347,13 @@ export class TelemetryOutbox {
       };
 
       try {
-        const delivery = await this.#options.transport.send(envelope);
+        const beacon = preferBeacon ? this.#options.delivery.sendBeacon : undefined;
+        const delivery =
+          beacon === undefined
+            ? await this.#options.delivery.send(envelope)
+            : beacon(envelope)
+              ? ({ status: "sent", accepted: records.length } as const)
+              : ({ status: "failed", reason: "beacon rejected" } as const);
         if (delivery.status === "failed") return this.#recordFailedAttempt(eligible, now);
         const acceptedTotal = Math.max(0, Math.min(records.length, delivery.accepted));
         const accepted = Math.min(eligible.length, acceptedTotal);

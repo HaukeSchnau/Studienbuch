@@ -1,6 +1,9 @@
-import type { ClientTelemetryEnvelopeType } from "@stu/observability/browser";
-import { Option, Schema } from "effect";
-import type { TelemetryTransport } from "./outbox";
+import {
+  decodeClientTelemetryAcknowledgement,
+  type ClientTelemetryEnvelopeType,
+  type TelemetryDelivery,
+} from "@stu/observability/browser";
+import { Option } from "effect";
 
 export type TelemetryAuthorization = () => Promise<string | undefined>;
 
@@ -10,15 +13,16 @@ export interface FetchTelemetryTransportOptions {
   readonly fetch?: typeof globalThis.fetch;
 }
 
-const TelemetryAcknowledgement = Schema.Struct({
-  acceptedRecords: Schema.Finite.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(0)),
-});
-
-const decodeTelemetryAcknowledgement = Schema.decodeUnknownOption(TelemetryAcknowledgement);
-
+/**
+ * Native delivery to the Studienbuch relay.
+ *
+ * A native client sends no `Origin` header, so the server admits it on its session instead. The
+ * acknowledgement is decoded from the shared contract, which is what lets a partially accepted
+ * batch retain its remainder rather than being dropped or replayed whole.
+ */
 export const makeFetchTelemetryTransport = (
   options: FetchTelemetryTransportOptions,
-): TelemetryTransport => ({
+): TelemetryDelivery => ({
   send: async (envelope: ClientTelemetryEnvelopeType) => {
     const authorization = await options.authorization();
     if (
@@ -45,15 +49,13 @@ export const makeFetchTelemetryTransport = (
         reason: `Telemetry relay rejected the batch (${response.status})`,
       };
     }
-    const body = await response.json().catch(() => undefined);
-    const acknowledgement = decodeTelemetryAcknowledgement(body, { onExcessProperty: "error" });
-    if (
-      Option.isSome(acknowledgement) &&
+    const body: unknown = await response.json().catch(() => undefined);
+    const acknowledgement = decodeClientTelemetryAcknowledgement(body, {
+      onExcessProperty: "error",
+    });
+    return Option.isSome(acknowledgement) &&
       acknowledgement.value.acceptedRecords <= envelope.records.length
-    ) {
-      return { status: "sent", accepted: acknowledgement.value.acceptedRecords };
-    }
-    if (body === undefined) return { status: "sent", accepted: envelope.records.length };
-    return { status: "failed", reason: "Telemetry relay returned an invalid acknowledgement" };
+      ? { status: "sent", accepted: acknowledgement.value.acceptedRecords }
+      : { status: "failed", reason: "Telemetry relay returned an invalid acknowledgement" };
   },
 });

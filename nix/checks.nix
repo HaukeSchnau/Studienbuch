@@ -39,19 +39,22 @@ let
             postgres_user="$(id -un)"
             database_url="postgresql://$postgres_user@/postgres?host=$encoded_postgres_socket"
 
-            ${pkgs.python3}/bin/python - "$root/otlp-paths" <<'PY' &
+            ${pkgs.python3}/bin/python - "$root/otlp-paths" "$root/otlp-bodies" <<'PY' &
             import http.server
             import pathlib
             import sys
 
             paths = pathlib.Path(sys.argv[1])
+            bodies = pathlib.Path(sys.argv[2])
 
             class Collector(http.server.BaseHTTPRequestHandler):
                 def do_POST(self):
                     length = int(self.headers.get("content-length", "0"))
-                    self.rfile.read(length)
+                    payload = self.rfile.read(length)
                     with paths.open("a", encoding="utf-8") as output:
                         output.write(f"{self.path}\n")
+                    with bodies.open("ab") as output:
+                        output.write(payload)
                     self.send_response(200)
                     self.send_header("content-type", "application/x-protobuf")
                     self.end_headers()
@@ -138,6 +141,53 @@ let
               sleep 0.1
             done
             grep -Eq '^/v1/(logs|metrics|traces)$' "$root/otlp-paths"
+
+            # A client envelope must survive the whole path: same-origin admission, the strict
+            # schema, ingestion into the Effect runtime, and OTLP export. Each half of this channel
+            # was previously tested alone, which is how the two ends came to disagree about
+            # admission and acknowledgement without any test noticing.
+            jq -n '{
+              schemaVersion: 1,
+              serviceName: "studienbuch-web-client",
+              serviceVersion: "release-smoke",
+              environment: "production",
+              sentAtUnixMillis: 1,
+              records: [{
+                type: "log",
+                event: "client.telemetry.canary",
+                severity: "info",
+                occurredAtUnixMillis: 1,
+                attributes: {"telemetry.priority": "high"}
+              }]
+            }' > "$root/envelope.json"
+
+            curl --fail --silent --show-error \
+              --header 'content-type: application/json' \
+              --header 'origin: http://127.0.0.1:32117' \
+              --data @"$root/envelope.json" \
+              http://127.0.0.1:32117/api/observability/v1/telemetry > "$root/ingest.json"
+            jq -e '.acceptedRecords == 1' "$root/ingest.json" >/dev/null
+
+            # An envelope posted with no Origin and no session must be refused, or the route is an
+            # unauthenticated write into the fleet's telemetry pipeline.
+            anonymous_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+              --header 'content-type: application/json' \
+              --data @"$root/envelope.json" \
+              http://127.0.0.1:32117/api/observability/v1/telemetry)"
+            test "$anonymous_status" = 403
+
+            # Force an export cycle, then look for the ingress marker the server annotates onto
+            # every client-sourced record.
+            curl --fail --silent --show-error \
+              http://127.0.0.1:32117/api/observability/v1/canary > /dev/null
+
+            for _ in $(seq 1 60); do
+              if grep -qa 'public-client-ingress' "$root/otlp-bodies" 2>/dev/null; then
+                break
+              fi
+              sleep 0.25
+            done
+            grep -qa 'public-client-ingress' "$root/otlp-bodies"
 
             kill -TERM "$server_pid"
             stopped=false
