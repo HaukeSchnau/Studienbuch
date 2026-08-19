@@ -12,7 +12,7 @@
   "scripts": {
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "test": "node scripts/test.mjs"
+    "test": "vp test run --passWithNoTests"
   },
   "dependencies": {
     "@effect/sql-pg": "catalog:",
