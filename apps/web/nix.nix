@@ -24,7 +24,7 @@ let
   # Update with the `got:` hash reported by:
   #   nix build .#webApplication
   # after regenerating pnpm-lock.yaml for all workspace manifest changes.
-  pnpmDependencyHash = "sha256-lr+BT05BKzZNNTqhPr29pY1vQg3CKqmN6OKfup/RDRk=";
+  pnpmDependencyHash = "sha256-VsGjESkVpFqFxyosx8vXzxoVe5CFwgOhRnyLBcKW0o8=";
 
   pnpmDeps = pkgs.fetchPnpmDeps {
     pname = "studienbuch-web-dependencies";
@@ -128,10 +128,9 @@ let
 
       DATABASE_URL="$(project-context parameter databaseUrl)"
       export DATABASE_URL
-      # STUDIENBUCH_SENTRY_DSN, STUDIENBUCH_POSTHOG_KEY and STUDIENBUCH_POSTHOG_HOST are read from
-      # the deployment environment and inherited by the server process. They are public client
-      # credentials served to the browser through the root route loader, so rotating one needs a
-      # restart rather than a rebuild.
+      # STUDIENBUCH_SENTRY_DSN is read from the deployment environment and inherited by the server
+      # process. It is a public client credential served to the browser through the root route
+      # loader, so rotating it needs a restart rather than a rebuild.
       export STUDIENBUCH_MIGRATIONS_DIR=${webApplication}/${applicationPath}/drizzle
 
       cd ${webApplication}/${applicationPath}/.output
