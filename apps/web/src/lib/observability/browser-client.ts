@@ -458,22 +458,27 @@ function browserEnvironment(): BrowserTelemetryEnvironment {
   };
 }
 
-function deploymentEnvironment(): DeploymentEnvironment {
-  const mode = import.meta.env.MODE;
-  return mode === "production" || mode === "staging" || mode === "test" ? mode : "development";
-}
-
 const clientKey = Symbol.for("@stu/web/browser-telemetry-client");
 const lifecycleKey = Symbol.for("@stu/web/browser-telemetry-lifecycle");
 const browserGlobal = globalThis as typeof globalThis & { [clientKey]?: BrowserTelemetryClient };
 const lifecycleGlobal = globalThis as typeof globalThis & { [lifecycleKey]?: () => void };
 
-export function browserTelemetry(): BrowserTelemetryClient | undefined {
+/**
+ * The process-wide browser telemetry client, created on first use.
+ *
+ * Identity and environment come from the server's public runtime configuration rather than from
+ * `import.meta.env`, so a release reports its real version instead of whatever the build machine
+ * happened to know.
+ */
+export function browserTelemetry(identity: {
+  readonly serviceVersion: string;
+  readonly deploymentEnvironment: DeploymentEnvironment;
+}): BrowserTelemetryClient | undefined {
   if (globalThis.window === undefined) return undefined;
   return (browserGlobal[clientKey] ??= createBrowserTelemetryClient({
     environment: browserEnvironment(),
-    serviceVersion: import.meta.env.VITE_STUDIENBUCH_VERSION ?? "development",
-    deploymentEnvironment: deploymentEnvironment(),
+    serviceVersion: identity.serviceVersion,
+    deploymentEnvironment: identity.deploymentEnvironment,
   }));
 }
 

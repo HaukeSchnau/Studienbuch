@@ -2,17 +2,16 @@ import * as Sentry from "@sentry/tanstackstart-react";
 
 let initialized = false;
 
-export function initializeSentryClient() {
+/**
+ * Initializes browser crash reporting. The DSN arrives from the server's runtime configuration, so
+ * a release can be pointed at a Sentry project without rebuilding the application.
+ */
+export function initializeSentryClient(dsn: string) {
   if (initialized || globalThis.window === undefined) {
     return;
   }
 
   initialized = true;
-  const dsn = import.meta.env.VITE_SENTRY_DSN;
-  if (!dsn) {
-    return;
-  }
-
   Sentry.init({
     dsn,
     integrations: [
