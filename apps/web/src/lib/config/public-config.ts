@@ -7,18 +7,14 @@ import { createServerFn } from "@tanstack/react-start";
  *
  * These are read from the server's environment per request rather than inlined at build time. A
  * `VITE_`-prefixed variable is baked into the bundle by whatever environment ran `vite build`, and
- * the Nix release build has no access to deployment secrets — which is how client Sentry and
- * PostHog previously shipped permanently disabled.
+ * the Nix release build has no access to deployment secrets — which is how client Sentry previously
+ * shipped permanently disabled.
  */
 export interface PublicConfig {
   readonly sentryDsn: string | undefined;
-  readonly posthogKey: string | undefined;
-  readonly posthogHost: string;
   readonly environment: DeploymentEnvironment;
   readonly version: string;
 }
-
-const defaultPosthogHost = "https://us.i.posthog.com";
 
 function optionalText(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
@@ -31,8 +27,6 @@ function deploymentEnvironment(value: string | undefined): DeploymentEnvironment
 
 export const getPublicConfig = createServerFn({ method: "GET" }).handler((): PublicConfig => ({
   sentryDsn: optionalText(process.env.STUDIENBUCH_SENTRY_DSN),
-  posthogKey: optionalText(process.env.STUDIENBUCH_POSTHOG_KEY),
-  posthogHost: optionalText(process.env.STUDIENBUCH_POSTHOG_HOST) ?? defaultPosthogHost,
   environment: deploymentEnvironment(process.env.STUDIENBUCH_ENVIRONMENT ?? process.env.NODE_ENV),
   version: optionalText(process.env.STUDIENBUCH_VERSION) ?? "development",
 }));

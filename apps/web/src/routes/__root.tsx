@@ -4,7 +4,6 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
 import { getPublicConfig } from "#/lib/config/public-config.ts";
 import { ClientObservability } from "#/lib/observability/client-bootstrap.tsx";
-import PostHogProvider from "#/lib/posthog/provider.tsx";
 
 import appCss from "../styles.css?url";
 
@@ -44,21 +43,19 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <PostHogProvider config={config}>
-          <ClientObservability config={config} />
-          {children}
-          <TanStackDevtools
-            config={{
-              position: "bottom-right",
-            }}
-            plugins={[
-              {
-                name: "Tanstack Router",
-                render: <TanStackRouterDevtoolsPanel />,
-              },
-            ]}
-          />
-        </PostHogProvider>
+        <ClientObservability config={config} />
+        {children}
+        <TanStackDevtools
+          config={{
+            position: "bottom-right",
+          }}
+          plugins={[
+            {
+              name: "Tanstack Router",
+              render: <TanStackRouterDevtoolsPanel />,
+            },
+          ]}
+        />
         <Scripts />
       </body>
     </html>
