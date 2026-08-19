@@ -35,6 +35,8 @@ repository idiom while they are still cheap to change.
 
 ### 1. The pg type-parser override corrupts Better Auth's dates — high
 
+**Fixed 2026-08-19.** Override removed; `database.integration.test.ts` now asserts the pool returns `Date`. Verified the test fails against the old code with `expected '2026-08-19 21:32:55.977263+00' to be an instance of Date`. The Drizzle assertion passed either way, confirming the override only ever harmed Better Auth.
+
 `packages/server/src/database.ts:32-39` installs a global `getTypeParser` that returns the raw string
 for `timestamptz` (1184), `timestamp` (1114), `date` (1082) and friends. That `Pool` is handed
 verbatim to Better Auth (`apps/web/src/lib/auth/auth.ts:11`).
@@ -56,11 +58,15 @@ codecs already emit `::text` casts for `date`/`timestamp`/`timestamptz`
 
 ### 2. `postgresDateTypeIds` contains a non-date OID
 
+**Fixed 2026-08-19.** The whole OID set went with finding 1.
+
 `packages/server/src/database.ts:32` includes `1231`, which is `_numeric` (numeric array), not a date
 type. Any future `numeric[]` column will come back as an unparsed string from a set explicitly named
 "date type ids". Latent; remove it.
 
 ### 3. The Release never runs migrations
+
+**Fixed 2026-08-19.** `Migrate.migrateToLatest` runs inside the runtime layer, so the process that serves traffic is the one that proved the schema. The Nix release copies `drizzle/` beside the bundle and sets `STUDIENBUCH_MIGRATIONS_DIR`; `releaseSmoke` asserts the tables exist. Drizzle's runtime migrator defaults `migrationsSchema` to `"drizzle"` while `drizzle.config.ts` used `"public"` — the two paths would have kept separate bookkeeping and replayed each other's migrations, so both now import `src/migration-history.ts`.
 
 `project.json` gives development a `migrate` task workload gated ahead of `web`. The Release has
 `"action": "web"` only, and `apps/web/nix.nix:releaseAction` execs the Nitro server directly. A
@@ -75,6 +81,8 @@ Fix: apply migrations at server startup with `migrate()` from
 workspace checkout from the deployment path, which the current dev-only `migrationAction` requires.
 
 ### 4. Liveness and readiness are inverted
+
+**Fixed 2026-08-19.** Liveness is unconditional; readiness checks runtime state _and_ a `Database.ping` with a 2s timeout, so it withdraws when PostgreSQL stops answering after startup. Handlers moved to a `makeHealthHandlers` factory, so the tests exercise all four states without touching process globals.
 
 `apps/web/src/server.ts:6-9` warms the runtime and returns a plain-text `503` for **every** request
 when it is not ready — including `/api/health/live` and `/api/health/ready` themselves. So:
@@ -115,6 +123,8 @@ imported at module scope for a call that is eliminated. A lazy import fixes both
 ## Simplification findings
 
 ### 6. Runtime warm-up is implemented three times
+
+**Fixed 2026-08-19.** `src/server.ts` deleted and the check removed from `runRouteEffect`. The Nitro plugin is now the only warm-up.
 
 1. `apps/web/server/plugins/effect-runtime.ts` warms at Nitro startup and SIGTERMs the process on
    failure.
@@ -165,6 +175,8 @@ export class Database extends Context.Service<Database>()("@stu/server/Database"
 One declaration, inferred shape, no hand-written interface to keep in sync.
 
 ### 9. Dead options in the Database layer
+
+**Fixed 2026-08-19.** Both arguments removed, with a comment recording why they cannot work.
 
 `PgClient.fromPool` never reads `options.applicationName` or `options.types` — it derives both from
 `pool.options` (`@effect/sql-pg/src/PgClient.ts:438-447`). The two arguments at

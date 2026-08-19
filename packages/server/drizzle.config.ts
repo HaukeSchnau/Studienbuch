@@ -1,4 +1,5 @@
 import { defineConfig } from "drizzle-kit";
+import { migrationsSchema, migrationsTable } from "./src/migration-history.ts";
 
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -15,8 +16,8 @@ export default defineConfig({
     url: databaseUrl,
   },
   migrations: {
-    table: "studienbuch_migrations",
-    schema: "public",
+    table: migrationsTable,
+    schema: migrationsSchema,
   },
   verbose: true,
 });

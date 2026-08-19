@@ -9,7 +9,7 @@ import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
 import * as Reactivity from "effect/unstable/reactivity/Reactivity";
 import type * as SqlError from "effect/unstable/sql/SqlError";
-import { Pool, types } from "pg";
+import { Pool } from "pg";
 
 export interface Options {
   readonly url: Redacted.Redacted;
@@ -23,20 +23,16 @@ export class Unavailable extends Schema.TaggedError<Unavailable>()("Database.Una
 export interface Interface {
   readonly drizzle: EffectPgDatabase;
   readonly pool: Pool;
+  /**
+   * Round-trips a trivial query so callers can distinguish "the pool was built once" from "the
+   * database is answering now". Readiness probes need the second.
+   */
+  readonly ping: Effect.Effect<void, Unavailable>;
 }
 
 export class Service extends Context.Service<Service, Interface>()(
   "@stu/server/database/Service",
 ) {}
-
-const postgresDateTypeIds = new Set([1184, 1114, 1082, 1186, 1231, 1115, 1185, 1187, 1182]);
-
-const typeParsers = {
-  getTypeParser: (typeId: number, format?: "text" | "binary") =>
-    postgresDateTypeIds.has(typeId)
-      ? (value: string) => value
-      : types.getTypeParser(typeId, format),
-};
 
 const acquirePool = (options: Options) =>
   Effect.acquireRelease(
@@ -48,7 +44,6 @@ const acquirePool = (options: Options) =>
           connectionTimeoutMillis: 5_000,
           idleTimeoutMillis: 30_000,
           max: options.maxConnections ?? 10,
-          types: typeParsers,
         });
         await pool.query("select 1");
         return pool;
@@ -66,15 +61,20 @@ export const layer = (options: Options): Layer.Layer<Service, Unavailable | SqlE
     Service,
     Effect.gen(function* () {
       const pool = yield* acquirePool(options);
-      const client = yield* PgClient.fromPool({
-        acquire: Effect.succeed(pool),
-        applicationName: "studienbuch-server",
-        types: typeParsers,
-      });
+      // `fromPool` reads application name and type parsers off `pool.options`; passing them here
+      // would be ignored, so the pool above is the only place either is configured.
+      const client = yield* PgClient.fromPool({ acquire: Effect.succeed(pool) });
       const drizzle = yield* PgDrizzle.makeWithDefaults().pipe(
         Effect.provideService(PgClient.PgClient, client),
       );
-      return Service.of({ drizzle, pool });
+      const ping = Effect.tryPromise({
+        try: async () => {
+          await pool.query("select 1");
+        },
+        catch: (cause) =>
+          Unavailable.make({ reason: cause instanceof Error ? cause.message : String(cause) }),
+      });
+      return Service.of({ drizzle, pool, ping });
     }),
   ).pipe(Layer.provide(Reactivity.layer));
 

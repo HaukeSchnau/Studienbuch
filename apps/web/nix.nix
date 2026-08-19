@@ -65,6 +65,9 @@ let
       runHook preInstall
       mkdir -p "$out/${applicationPath}"
       cp -R ${application.relativePath}/.output "$out/${applicationPath}/.output"
+      # The bundled server has no workspace neighbours, so the Drizzle history ships beside it and
+      # the release action points STUDIENBUCH_MIGRATIONS_DIR at this copy.
+      cp -R packages/server/drizzle "$out/${applicationPath}/drizzle"
       runHook postInstall
     '';
   };
@@ -125,6 +128,7 @@ let
 
       DATABASE_URL="$(project-context parameter databaseUrl)"
       export DATABASE_URL
+      export STUDIENBUCH_MIGRATIONS_DIR=${webApplication}/${applicationPath}/drizzle
 
       cd ${webApplication}/${applicationPath}/.output
       exec node --import ./server/instrument.server.cjs ./server/index.mjs
