@@ -21,13 +21,15 @@ correctness-under-load, or weight.
 
 The domain model and the persistence layer have never met. `@stu/core` is not imported by
 `@stu/server` or `apps/web` anywhere. Every seam that will actually hurt during growth — aggregate →
-row, decode/encode at the DB edge, transaction boundaries, sync envelope — is still unexercised,
-while significant effort has gone into an operational-telemetry platform that currently observes an
-application that renders `null`.
+row, decode/encode at the DB edge, transaction boundaries, sync envelope — is still unexercised.
 
-The highest-value next unit of work is one vertical slice (tasks is the smallest) from
-`@stu/core` aggregate → Drizzle table → Effect service in `@stu/server` → TanStack server function →
-web route. Do that before adding more breadth anywhere.
+Building infrastructure ahead of product is a deliberate strategy here, and the table above is not
+an argument against it. But it _is_ an argument for which infrastructure comes next: the
+core↔persistence seam is the one most likely to force rework once it carries load, and it is the
+only major seam with no implementation pinning it down. One vertical slice (tasks is the smallest)
+from `@stu/core` aggregate → Drizzle table → Effect service in `@stu/server` → TanStack server
+function → web route would settle the encode/decode boundary, the transaction shape, and the
+repository idiom while they are still cheap to change.
 
 ## Correctness findings
 
@@ -102,9 +104,13 @@ keeps returning `200`. Readiness measures construction, not serving capacity.
   because `provider.tsx` imports it at module scope, but `posthog.init` is eliminated for the same
   reason. Users download the SDK and it does nothing.
 
-`index-*.js` is 557 KB for a page that renders `null`. Decide per tool: either thread the DSN/key
-through the Nix build as build-time inputs, or make both runtime-configured and lazily imported the
-way `sentry-client.ts` already is, or drop them until there are users.
+Fix: make both runtime-configured rather than build-time inlined, and lazily imported the way
+`sentry-client.ts` already is, so the release action can supply the DSN/key from
+`project-context` like it does for `BETTER_AUTH_SECRET`. Threading `VITE_*` through the Nix build
+as build-time inputs also works but rebuilds the application whenever a key rotates.
+
+The 557 KB `index-*.js` is a consequence, not a separate finding: `posthog-js` is statically
+imported at module scope for a call that is eliminated. A lazy import fixes both.
 
 ## Simplification findings
 
@@ -124,15 +130,21 @@ before SSR, server routes, and server functions and can push typed context down 
 per-request runtime wiring is wanted later, that is the idiomatic seam — not a wrapped
 `createServerEntry`.
 
-### 7. Three directories and three hops for four endpoints
+### 7. The route layering is right; it is not applied consistently
 
-`routes/api/**` (6-line re-export) → `server-adapters/*.server.ts` → `server-runtime/*.server.ts`.
-Ten files, ~450 lines, for liveness, readiness, canary, and telemetry ingress. `routes/api/health/live.ts`
-exists solely to call `handleLiveness()`, which exists solely to call `jsonResponse()`.
+`routes/api/**` (thin binding) → `server-adapters/*.server.ts` (handler) → `server-runtime/*.server.ts`
+(shared plumbing) is the correct shape, and the per-endpoint file count stops looking like ceremony
+somewhere around the tenth endpoint. Keep it.
 
-Collapse to a single `src/server/` module: one `runRoute` helper (span + trace context + exit
-mapping) plus handlers written directly in the route files. Keep the split only where a handler has
-real logic worth testing without a route (telemetry ingress qualifies; health does not).
+What does not scale is that the layer has two different shapes for the same job. `telemetry-ingress`
+exports a `makeTelemetryIngressHandler({ policy, run })` factory with injectable seams plus a
+default instance; `health.server.ts` exports plain module functions that reach for the module-level
+`runRouteEffect` and `applicationRuntimeState` directly, so it can only be tested against the real
+process-wide runtime — which is why `health.server.test.ts` asserts on global state and gets finding
+4 wrong. Pick the factory shape for every adapter and derive the default instance mechanically.
+
+Also fold `http-response.server.ts`'s hand-rolled `JsonValue` recursion away; `Response.json`
+accepts `unknown`, and the type buys nothing that the handler's own return type does not.
 
 ### 8. Effect service triplets can collapse
 
@@ -158,10 +170,9 @@ One declaration, inferred shape, no hand-written interface to keep in sync.
 `pool.options` (`@effect/sql-pg/src/PgClient.ts:438-447`). The two arguments at
 `packages/server/src/database.ts:71-72` read as configuration and do nothing.
 
-Related: `Database.layer` calls `await pool.query("select 1")` at construction. That is what makes a
-DB outage fail the whole web runtime including the marketing surface. If the web app should serve
-static pages without PostgreSQL, the connection check belongs in readiness, not in layer
-construction.
+The `await pool.query("select 1")` at construction is fine as a deliberate fail-fast: a service that
+will be database-backed everywhere is better off refusing to start than serving a degraded surface.
+The gap is only that nothing re-checks afterwards — see finding 4.
 
 ### 10. `Database` leaks its pool to satisfy Better Auth
 
@@ -177,74 +188,102 @@ choice, not a shortcut. Its real cost is schema drift between `schema/auth.ts` a
 expectations, plus the quoted camelCase column names it forces. Worth a test that boots Better Auth
 against the migrated schema, since `db:generate` can no longer catch a mismatch.
 
-### 11. The client telemetry pipeline is a product of its own
+### 11. One telemetry protocol, two incompatible implementations
+
+Decision on record: the client telemetry channel is deliberate and stays. This finding is therefore
+not about its size — it is that the channel does not currently work end to end, and that the two
+client halves are diverging copies rather than one implementation.
 
 - `packages/observability` — 712 lines
 - `apps/web/src/lib/observability/browser-client.ts` — 498 lines
 - `apps/web/src/server-adapters/telemetry-*.server.ts` + `server-runtime/client-telemetry.server.ts` — ~325 lines
 - `apps/mobile/src/observability/` — 812 lines
 
-Two independent outbox implementations (web `browser-client.ts`, mobile `outbox.ts`) over the same
-`ClientTelemetryEnvelope`, each with its own bounding, backoff, and drop accounting. This is exactly
-the duplication `CLAUDE.md` names as a code smell, and the two halves do not actually interoperate:
+The web and mobile clients cannot talk to the ingress they were written against:
 
-- the web ingress requires an `Origin` header matching the request origin
-  (`telemetry-policy.server.ts:25-28`); React Native `fetch` sends no `Origin`, so mobile gets `403
-same_origin_required`;
-- the mobile transport decodes a `{ acceptedRecords }` acknowledgement; the web ingress answers
-  `202` with a null body (it happens to fall through to the `body === undefined` branch, but the
-  contract was never agreed);
-- mobile sends `Authorization: Bearer …`; the ingress has no authenticated relay route, and
-  `apps/mobile/src/observability/README.md` records that the mobile channel is therefore disabled.
+- the ingress requires an `Origin` header matching the request origin
+  (`telemetry-policy.server.ts:25-28`); React Native `fetch` sends no `Origin`, so mobile receives
+  `403 same_origin_required`;
+- the mobile transport decodes a `{ acceptedRecords }` acknowledgement; the ingress answers `202`
+  with a null body. Mobile survives only because it falls through to its `body === undefined`
+  branch — the contract was never actually agreed;
+- mobile sends `Authorization: Bearer …`, but there is no authenticated relay route, which is why
+  `apps/mobile/src/observability/README.md` records the whole mobile channel as disabled.
 
-The parts that clearly earn their keep are small: the server OTLP layer
-(`packages/observability/src/server.ts`), the resource/attribute vocabulary, and `flushOtlp`. Keep
-those. The bespoke client envelope, both outboxes, the public ingress, the rate limiter, and the
-canary duplicate what Sentry and PostHog already do for a product with no users. Recommendation:
-delete the client half and re-derive it from one shared implementation when there is real client
-traffic and a real authenticated relay. This is the single largest weight reduction available.
+`browser-client.ts` (498 lines) and `outbox.ts` (354 lines) independently implement the same
+concern — a bounded, backoff-driven, drop-accounting outbox over one `ClientTelemetryEnvelope` —
+with different eviction rules, different backoff curves, and different flush results. This is the
+duplication `CLAUDE.md` names as a code smell, and it gets _worse_ with scale, not better: every
+future record type, priority rule, or retry change has to be made twice and verified twice.
 
-If it is kept: the rate limiter in `telemetry-policy.server.ts` is per-process module state and is
-ineffective across instances, and `metricForRecord` / `logLevelForSeverity` in
-`client-telemetry.server.ts` are switch tables that would be a lookup object.
+Building this right means:
 
-### 12. Two unused component libraries plus scaffold residue
+1. **One outbox in `@stu/observability`** with platform ports (`storage`, `fetch`, `clock`,
+   `random`, timers). The web supplies in-memory + `sendBeacon`; mobile supplies the Expo document
+   store. Both existing test suites become one suite against the shared implementation.
+2. **One wire contract.** Decide whether the ingress acknowledges with `{ acceptedRecords }` or with
+   a bare `202`, put it in the shared package next to `ClientTelemetryEnvelope`, and make both the
+   ingress and the transports decode it from that one definition.
+3. **Two admission paths, one handler.** Same-origin browser traffic keeps the `Origin` check;
+   mobile needs a session-authenticated route. Model this as an explicit `TelemetryAdmission` seam
+   rather than a single hard-coded origin policy, so `Origin` is one strategy and bearer-token
+   verification is another.
+4. **A rate limiter that survives horizontal scaling.** `telemetry-policy.server.ts` holds its
+   window in per-process module state. That is not a limiter once there is more than one instance;
+   it needs to be per-principal and backed by shared state, or dropped in favour of ingress-level
+   limiting.
+5. **An end-to-end test that a client envelope reaches the OTLP exporter.** The release smoke check
+   already stands up an OTLP collector and asserts `/v1/{logs,metrics,traces}` — extend it to post
+   a real envelope through the ingress. That single test would have caught all three interop gaps.
 
-- `apps/web/src/components/ui/` — 7 shadcn components, 383 lines, imported by nothing.
-- `apps/web/src/components/storybook/` — 5 components + 5 stories, ~500 lines, imported only by
-  Storybook, and duplicating button/input/slider/dialog from `components/ui`.
-- `apps/web/src/lib/auth/header-user.tsx` — rendered nowhere.
-- `apps/web/src/routes/index.tsx` returns `null`; the "marketing site" in the package roles does not exist.
+Minor: `metricForRecord` and `logLevelForSeverity` in `client-telemetry.server.ts` are switch
+statements over closed unions that would read better as lookup objects, and the metric allowlist in
+`metricForRecord` has to be kept in sync by hand with the names the clients emit — worth deriving
+both from one table.
 
-Unused dependencies (verified by import scan): `@faker-js/faker`, `@tanstack/match-sorter-utils`,
-`@tanstack/react-form`, `@tanstack/react-router-ssr-query`, `@tanstack/react-table`,
-`@tanstack/router-plugin`, `@testing-library/react`, `@testing-library/dom`. Build-time packages
-(`storybook`, `@storybook/react-vite`, `tailwindcss`, `@tailwindcss/vite`, `nitro`) are in
-`dependencies` rather than `devDependencies`, which inflates the Nix `pnpmDeps` closure.
+### 12. Two overlapping component libraries
 
-Pick one component library. `@tanstack/react-router-ssr-query` being installed but unused suggests
-TanStack Query was intended for the data layer — decide now, since that choice shapes every route
-loader that follows.
+`apps/web/src/components/ui/` (7 shadcn components, 383 lines) and
+`apps/web/src/components/storybook/` (5 components + 5 stories, ~500 lines) both define button,
+input, slider, and dialog. Neither is imported by a route. Two component vocabularies is the one
+item here that compounds with scale rather than being absorbed by it: the first real screen has to
+pick, and whichever loses becomes a second dialect that keeps attracting edits.
 
-`apps/web/.cta.json` is create-tanstack-app residue. `apps/web/README.md` is ~80% scaffold text
-("Removing Tailwind CSS", "Files prefixed with `demo` can be safely deleted", a tutorial on `Link`);
-the Nix/release and Better Auth sections are the only project-specific parts worth keeping.
+Decide which is canonical — `components/ui` (shadcn, regenerable via `shadcn add`, matching
+`components.json`) or the hand-written `components/storybook` set — and point the stories at it.
 
-### 13. No typecheck task
+Lower-priority residue, not urgent: `lib/auth/header-user.tsx` is rendered nowhere; `.cta.json` is
+create-tanstack-app output; `apps/web/README.md` is ~80% scaffold text ("Removing Tailwind CSS",
+"Files prefixed with `demo` can be safely deleted", a tutorial on `Link`) around genuinely useful
+Nix/release and Better Auth sections.
 
-No package defines a `typecheck` script and `just qa` does not run one. `vp lint` with `typeAware`
-is not equivalent to a full program check — all five packages currently pass `tsc --noEmit`, but
-nothing enforces that. Add `typecheck` per package and to `qa`. (T3 Code does exactly this with
-`tsgo --noEmit`.)
+Currently-unimported dependencies, listed as inventory rather than as a deletion list, since several
+are plainly forward commitments: `@tanstack/react-form`, `@tanstack/react-table`,
+`@tanstack/react-router-ssr-query`, `@tanstack/match-sorter-utils`, `@testing-library/react`,
+`@testing-library/dom`, `@faker-js/faker`. Worth an actual decision on
+`@tanstack/react-router-ssr-query` specifically — whether TanStack Query backs the data layer
+shapes every route loader that follows, and that is cheaper to settle before the first loader than
+after the twentieth.
+
+Build-time packages (`storybook`, `@storybook/react-vite`, `tailwindcss`, `@tailwindcss/vite`,
+`nitro`) sit in `dependencies` rather than `devDependencies`, which inflates the Nix `pnpmDeps`
+closure that the release build fetches.
+
+### 13. ~~No typecheck task~~ — withdrawn
+
+Wrong when written. `vp lint` runs with `options.typeCheck: true` and reports TypeScript
+diagnostics directly: a deliberate `const x: number = "…"` probe produced
+`error typescript(TS2322)` and exit code 1. Full type checking is enforced by `just lint` and
+therefore by `just qa`. No separate `typecheck` script is needed.
 
 ### 14. Smaller items
 
 - ~~`apps/web/vite.config.ts` parsed `STUDIENBUCH_WEB_HOST_NAMES` with `JSON.parse` outside the
   schema, so malformed input threw before decoding.~~ Fixed during this audit via
   `Schema.fromJsonString` / `Schema.URLFromString`.
-- `apps/web/src/router.tsx` — `getRouter()` is a factory that also installs telemetry subscriptions,
-  ~35 lines of side effects. Move them behind one `installRouterTelemetry(router)` call, or delete
-  with finding 11.
+- `apps/web/src/router.tsx` — `getRouter()` is a factory that also installs ~35 lines of telemetry
+  subscriptions inline. Move them behind one `installRouterTelemetry(router)` in the observability
+  module; the router factory should not be where navigation-timing policy lives.
 - `defaultPreloadStaleTime: 0` (scaffold default) makes every intent-preload re-run loaders. Harmless
   today because there are no loaders; will not be later.
 - `packages/server/scripts/test.mjs` exists only to set `DOCKER_HOST` for Podman. Put it in the flake
@@ -254,9 +293,9 @@ nothing enforces that. Add `typecheck` per package and to `qa`. (T3 Code does ex
 - `apps/web/.env.example` documents only `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`; the
   README also requires `VITE_POSTHOG_KEY`, `VITE_POSTHOG_HOST`, `VITE_SENTRY_DSN`.
 - `agent-notes/observability-architecture.md` (428 lines) is headed "proposed target architecture,
-  not yet implemented" and is implemented. The five agent-notes are completion records, not
-  continuity notes; fold the durable decisions into `packages/observability/README` (which does not
-  exist) and delete the rest.
+  not yet implemented" and is implemented. The design content is worth keeping; the status header is
+  actively misleading. `packages/observability` has no README, so the one place a reader looks for
+  the channel's contract is the place that says it does not exist yet.
 
 ## What is genuinely good
 
@@ -277,9 +316,27 @@ Worth saying, because most of the above is subtraction:
 
 ## Suggested order
 
-1. Finding 1 (Better Auth dates), 2, 3 (migrations in the Release), 4 (health probes) — correctness.
-2. Finding 6 (one warm-up) and 7 (collapse the route hops) — this is where the indirection is.
-3. Finding 11 — decide on the client telemetry pipeline. Biggest single lever.
-4. Finding 12/13 — delete the scaffold, pick one component library, add `typecheck`.
-5. Then the vertical slice: `@stu/core` tasks → `@stu/server` table + service → web route.
-   Findings 8, 9, and 10 are best done as part of that slice, not before it.
+1. Findings 1 (Better Auth dates), 2 (OID 1231), 3 (migrations in the Release), 4 (health probes),
+   9 (dead `fromPool` options) — correctness and pure facts, small and independent.
+2. Finding 6 — collapse three warm-ups to one. Finishes the fix for 4.
+3. Finding 11 — make the telemetry channel work end to end: one shared outbox, one wire contract,
+   an authenticated admission path for mobile, and the release-smoke assertion that proves it.
+   Largest and most valuable piece of work on this list.
+4. Finding 5 — runtime-configure and lazily import Sentry/PostHog so the release actually reports.
+5. Finding 12 — pick the canonical component library; settle the TanStack Query question.
+6. The vertical slice: `@stu/core` tasks → `@stu/server` table + service → web route.
+   Findings 7, 8, and 10 are best done as part of that slice, where the second and third adapters
+   show whether the shape generalizes.
+
+## Revision history
+
+**2026-08-19, after review.** Two corrections and a premise change:
+
+- Finding 13 withdrawn — `vp lint` does enforce full type checking (verified with a probe).
+- The client telemetry pipeline is a deliberate keeper. Finding 11 previously recommended deleting
+  the client half; that recommendation is retracted. What survives, and strengthens, is that the
+  channel does not work end to end and exists as two diverging implementations.
+- Findings 7, 9, 12, and the opening framing softened where they rested on "this is premature"
+  rather than on the code. Building infrastructure ahead of product is the stated strategy; an
+  audit should not keep re-litigating it. Everything argued from correctness, duplication, or a
+  broken contract stands unchanged.
