@@ -37,8 +37,7 @@ let
             pg_ctl -D "$postgres_root" -o "-h ''' -k $postgres_socket" -w start >/dev/null
             encoded_postgres_socket="$(printf '%s' "$postgres_socket" | jq -sRr @uri)"
             postgres_user="$(id -un)"
-            printf 'postgresql://%s@/postgres?host=%s\n' \
-              "$postgres_user" "$encoded_postgres_socket" > "$secrets/database-url"
+            database_url="postgresql://$postgres_user@/postgres?host=$encoded_postgres_socket"
 
             ${pkgs.python3}/bin/python - "$root/otlp-paths" <<'PY' &
             import http.server
@@ -67,6 +66,7 @@ let
             jq -n \
               --arg state "$state" \
               --arg runtime "$runtime" \
+              --arg databaseUrl "$database_url" \
               '{
                 schemaVersion: 2,
                 project: "studienbuch",
@@ -81,10 +81,9 @@ let
                     visibility: "local"
                   }
                 },
-                parameters: {},
+                parameters: {databaseUrl: $databaseUrl},
                 secrets: {
-                  betterAuthSecret: "better-auth-secret",
-                  databaseUrl: "database-url"
+                  betterAuthSecret: "better-auth-secret"
                 }
               }' > "$root/manifest.json"
 
@@ -159,10 +158,14 @@ let
         ${pkgs.jq}/bin/jq -e '
           .schemaVersion == 2 and
           .project == "studienbuch" and
-          (.development.endpoints | keys) == ["mobile", "web"] and
-          (.development.workloads | keys) == ["mobile", "web"] and
-          .development.workloads.web.secrets == ["betterAuthSecret", "databaseUrl"] and
+          (.development.endpoints | keys) == ["database", "mobile", "web"] and
+          (.development.workloads | keys) == ["database", "migrate", "mobile", "web"] and
+          .development.workloads.migrate.kind == "task" and
+          .development.workloads.migrate.dependsOn == ["database"] and
+          .development.workloads.web.dependsOn == ["migrate"] and
+          .development.workloads.web.secrets == ["betterAuthSecret"] and
           (.development.workloads.mobile.secrets // []) == [] and
+          (.parameters | keys) == ["databaseUrl"] and
           .release.action == "web" and
           .release.health.paths == ["/api/health/live", "/api/health/ready"] and
           .release.health.startupTimeoutSec == 60 and

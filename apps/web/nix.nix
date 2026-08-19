@@ -42,6 +42,7 @@ let
     src = source;
 
     nativeBuildInputs = [
+      pkgs.esbuild
       nodejs
       pnpm
       pkgs.pnpmConfigHook
@@ -51,17 +52,18 @@ let
     buildPhase = ''
       runHook preBuild
       "$PWD/node_modules/.bin/vp" run --filter ${application.workspaceName} build
+      esbuild ${application.relativePath}/instrument.server.mjs \
+        --bundle \
+        --format=cjs \
+        --platform=node \
+        --outfile=${application.relativePath}/.output/server/instrument.server.cjs
+      rm ${application.relativePath}/.output/server/instrument.server.mjs
       runHook postBuild
     '';
 
     installPhase = ''
       runHook preInstall
       mkdir -p "$out/${applicationPath}"
-      cp -R node_modules "$out/${application.installRoot}/node_modules"
-      mkdir -p "$out/${application.installRoot}/packages"
-      cp -R packages/observability "$out/${application.installRoot}/packages/observability"
-      cp -R packages/server "$out/${application.installRoot}/packages/server"
-      cp -R ${application.relativePath}/node_modules "$out/${applicationPath}/node_modules"
       cp -R ${application.relativePath}/.output "$out/${applicationPath}/.output"
       runHook postInstall
     '';
@@ -125,7 +127,7 @@ let
       export DATABASE_URL
 
       cd ${webApplication}/${applicationPath}/.output
-      exec node --import ./server/instrument.server.mjs ./server/index.mjs
+      exec node --import ./server/instrument.server.cjs ./server/index.mjs
     '';
   };
 in

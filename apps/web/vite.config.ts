@@ -26,7 +26,6 @@ const config = defineConfig({
     devtools(),
     nitro({
       plugins: ["./server/plugins/effect-runtime.ts"],
-      rollupConfig: { external: [/^@sentry\//] },
     }),
     tailwindcss(),
     tanstackStart(),
