@@ -101,9 +101,11 @@ keeps returning `200`. Readiness measures construction, not serving capacity.
 
 ### 5. Client Sentry and PostHog are compile-time disabled in the Nix release
 
-**Mostly fixed 2026-08-19.** Both are now read from the server environment (`STUDIENBUCH_SENTRY_DSN`, `STUDIENBUCH_POSTHOG_KEY`, `STUDIENBUCH_POSTHOG_HOST`) and served through the root route loader. Verified against the built server: the SSR payload carries the real deployed version and environment. Sentry now lazily loads a genuine 219 KB chunk when a DSN is present.
+**Fixed 2026-08-19/20.** Sentry is read from the server environment (`STUDIENBUCH_SENTRY_DSN`) and served through the root route loader; verified against the built server that the SSR payload carries the real deployed version and environment. It now lazily loads a genuine 219 KB chunk when a DSN is present, instead of the 96-byte tree-shaken stub.
 
-**Open:** `posthog-js` still ships in the entry bundle (562 KB total). `@posthog/react` imports it eagerly, and its `slim` entry takes a constructed `client` rather than an `apiKey`, so the lazy treatment Sentry got would either remount the whole tree or delay first paint behind a Suspense boundary. The remaining option is to drop `@posthog/react`, initialise `posthog-js` lazily beside Sentry, and re-add the React bindings when a component actually needs `useFeatureFlagEnabled`. That is a capability trade-off, so it needs a decision rather than a refactor.
+PostHog was removed outright rather than fixed. Staged rollout is not needed, so feature flags were the only thing it offered that Sentry and the OTLP channel do not. The deciding detail came from the shipped bundle, not the docs: `autocapture:!0` with `mask_all_text:!1`, meaning it sends the visible text of clicked elements — course names, grade values, teacher names, absence reasons — for users who are largely minors. The entry bundle fell from 562 KB to 318 KB.
+
+Note the cost incurred elsewhere: sharing the outbox (finding 11) pulled Effect Schema into the browser telemetry chunk, which grew from 6 KB to 73 KB. It is lazily loaded and off the critical path, so this is recorded rather than acted on; splitting the snapshot decoder into a module only mobile imports would recover it.
 
 `VITE_*` variables are inlined at build time. `apps/web/nix.nix` sets none of them, so in
 `.output/public/assets`:
@@ -264,6 +266,8 @@ statements over closed unions that would read better as lookup objects, and the 
 both from one table.
 
 ### 12. Two overlapping component libraries
+
+**Fixed 2026-08-20.** `components/ui` is canonical; the create-tanstack-app samples under `components/storybook` are deleted, with one Button story added beside the shadcn component so Storybook documents the real library. `.cta.json`, `@faker-js/faker` and `@tanstack/match-sorter-utils` removed. The TanStack Query question is still open.
 
 `apps/web/src/components/ui/` (7 shadcn components, 383 lines) and
 `apps/web/src/components/storybook/` (5 components + 5 stories, ~500 lines) both define button,

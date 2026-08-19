@@ -86,19 +86,22 @@ history as future application tables; do not run Better Auth's independent migra
 
 ## Client observability configuration
 
-Sentry and PostHog are configured from the **server's** environment, not from `VITE_` build
-variables. The root route loader reads them once per document and serializes them into the SSR
-payload, so a deployed release can be pointed at a project without rebuilding, and a build machine
-never needs deployment credentials.
+Sentry is configured from the **server's** environment, not from a `VITE_` build variable. The root
+route loader reads it once per document and serializes it into the SSR payload, so a deployed
+release can be pointed at a project without rebuilding, and a build machine never needs deployment
+credentials.
 
-| Variable                   | Effect                                                           |
-| -------------------------- | ---------------------------------------------------------------- |
-| `STUDIENBUCH_SENTRY_DSN`   | Enables browser and server crash reporting. Unset disables both. |
-| `STUDIENBUCH_POSTHOG_KEY`  | Enables product analytics. Unset skips the provider entirely.    |
-| `STUDIENBUCH_POSTHOG_HOST` | Defaults to `https://us.i.posthog.com`.                          |
+| Variable                 | Effect                                                           |
+| ------------------------ | ---------------------------------------------------------------- |
+| `STUDIENBUCH_SENTRY_DSN` | Enables browser and server crash reporting. Unset disables both. |
 
-Because the PostHog provider is skipped when no key is configured, treat `usePostHog` as optional
-rather than assuming a client is always mounted.
+There is deliberately no product-analytics SDK. Sentry owns crash reporting, and Effect plus
+OpenTelemetry own traces, logs, and metrics through the channel described in
+`packages/observability/README.md`, whose envelope is an allowlist with no free-text field.
+
+A general analytics SDK would have undone that. `posthog-js` enables autocapture by default with
+`mask_all_text` off, so it sends the visible text of clicked elements — which in this product means
+course names, grade values, teacher names, and absence reasons, for users who are largely minors.
 
 ## Routing
 
