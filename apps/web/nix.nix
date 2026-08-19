@@ -128,6 +128,10 @@ let
 
       DATABASE_URL="$(project-context parameter databaseUrl)"
       export DATABASE_URL
+      # STUDIENBUCH_SENTRY_DSN, STUDIENBUCH_POSTHOG_KEY and STUDIENBUCH_POSTHOG_HOST are read from
+      # the deployment environment and inherited by the server process. They are public client
+      # credentials served to the browser through the root route loader, so rotating one needs a
+      # restart rather than a rebuild.
       export STUDIENBUCH_MIGRATIONS_DIR=${webApplication}/${applicationPath}/drizzle
 
       cd ${webApplication}/${applicationPath}/.output

@@ -84,15 +84,21 @@ just db-migrate
 Better Auth uses the server runtime's scoped PostgreSQL pool. Its tables live in the same migration
 history as future application tables; do not run Better Auth's independent migration command.
 
-## Setting up PostHog
+## Client observability configuration
 
-1. Create a PostHog account at [posthog.com](https://posthog.com)
-2. Get your Project API Key from [Project Settings](https://app.posthog.com/project/settings)
-3. Set `VITE_POSTHOG_KEY` in your `.env.local`
+Sentry and PostHog are configured from the **server's** environment, not from `VITE_` build
+variables. The root route loader reads them once per document and serializes them into the SSR
+payload, so a deployed release can be pointed at a project without rebuilding, and a build machine
+never needs deployment credentials.
 
-### Optional Configuration
+| Variable                   | Effect                                                           |
+| -------------------------- | ---------------------------------------------------------------- |
+| `STUDIENBUCH_SENTRY_DSN`   | Enables browser and server crash reporting. Unset disables both. |
+| `STUDIENBUCH_POSTHOG_KEY`  | Enables product analytics. Unset skips the provider entirely.    |
+| `STUDIENBUCH_POSTHOG_HOST` | Defaults to `https://us.i.posthog.com`.                          |
 
-- `VITE_POSTHOG_HOST` - Set this if you're using PostHog Cloud EU (`https://eu.i.posthog.com`) or self-hosting
+Because the PostHog provider is skipped when no key is configured, treat `usePostHog` as optional
+rather than assuming a client is always mounted.
 
 ## Routing
 
