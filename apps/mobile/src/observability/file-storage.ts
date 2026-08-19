@@ -1,5 +1,5 @@
+import type { TelemetryStorage } from "@stu/observability/browser";
 import { Directory, File, Paths } from "expo-file-system";
-import type { TelemetryStorage } from "./outbox";
 
 export const makeTelemetryFileStorage = (): TelemetryStorage => {
   const directory = new Directory(Paths.document, "studienbuch", "observability");

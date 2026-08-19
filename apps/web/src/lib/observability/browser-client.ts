@@ -1,14 +1,19 @@
-import type {
-  ClientTelemetryEnvelopeType,
-  ClientTelemetryRecordType,
-  DeploymentEnvironment,
+import {
+  TelemetryOutbox,
+  decodeClientTelemetryAcknowledgement,
+  memoryTelemetryStorage,
+  type ClientTelemetryEnvelopeType,
+  type ClientTelemetryRecordType,
+  type DeploymentEnvironment,
+  type TelemetryDelivery,
+  type TelemetryPriority,
 } from "@stu/observability/browser";
+import * as Option from "effect/Option";
 
 const telemetryPath = "/api/observability/v1/telemetry";
 const defaultMaximumRecords = 48;
 const defaultMaximumBytes = 32 * 1_024;
 const defaultFlushDelayMillis = 2_000;
-const maximumBackoffMillis = 60_000;
 
 type ScreenName = "overview" | "schedule" | "tasks" | "courses" | "profile" | "setup";
 
@@ -20,24 +25,17 @@ interface ScreenAttribute {
   readonly "screen.name"?: ScreenName;
 }
 
+export type BrowserFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+
 export interface BrowserTelemetryEnvironment {
   readonly origin: string;
   readonly fetch: BrowserFetch;
   readonly sendBeacon?: (url: string, data: Blob) => boolean;
   readonly now: () => number;
+  readonly random: () => number;
   readonly randomBytes: (length: number) => Uint8Array;
   readonly setTimeout: (callback: () => void, delay: number) => number;
   readonly clearTimeout: (timer: number) => void;
-}
-
-export type BrowserFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
-
-export interface BrowserTelemetrySnapshot {
-  readonly queuedRecords: number;
-  readonly queuedBytes: number;
-  readonly pendingDrops: number;
-  readonly consecutiveFailures: number;
-  readonly nextAttemptAt: number;
 }
 
 export interface BrowserTelemetryClient {
@@ -46,12 +44,45 @@ export interface BrowserTelemetryClient {
   readonly recordRender: (durationMillis: number, pathname: string) => void;
   readonly fetch: BrowserFetch;
   readonly flush: (options?: { readonly preferBeacon?: boolean }) => Promise<boolean>;
-  readonly snapshot: () => BrowserTelemetrySnapshot;
 }
 
-interface QueuedRecord {
-  readonly bytes: number;
-  readonly record: ClientTelemetryRecordType;
+/**
+ * Delivers an envelope to the same-origin ingress, decoding the shared acknowledgement so partial
+ * acceptance leaves the remainder queued rather than dropping it.
+ */
+function browserDelivery(
+  environment: BrowserTelemetryEnvironment,
+  endpoint: string,
+): TelemetryDelivery {
+  return {
+    send: async (envelope) => {
+      const response = await environment.fetch(endpoint, {
+        method: "POST",
+        body: JSON.stringify(envelope),
+        credentials: "same-origin",
+        keepalive: true,
+        headers: { "content-type": "application/json" },
+      });
+      if (!response.ok) {
+        return { status: "failed", reason: `ingress rejected the batch (${response.status})` };
+      }
+      const body: unknown = await response.json().catch(() => undefined);
+      const acknowledgement = decodeClientTelemetryAcknowledgement(body, {
+        onExcessProperty: "error",
+      });
+      return Option.isSome(acknowledgement)
+        ? { status: "sent", accepted: acknowledgement.value.acceptedRecords }
+        : { status: "failed", reason: "ingress returned an invalid acknowledgement" };
+    },
+    sendBeacon:
+      environment.sendBeacon === undefined
+        ? undefined
+        : (envelope: ClientTelemetryEnvelopeType) =>
+            environment.sendBeacon?.(
+              endpoint,
+              new Blob([JSON.stringify(envelope)], { type: "application/json" }),
+            ) ?? false,
+  };
 }
 
 export function createBrowserTelemetryClient(options: {
@@ -64,189 +95,114 @@ export function createBrowserTelemetryClient(options: {
 }): BrowserTelemetryClient {
   const environment = options.environment;
   const endpoint = new URL(telemetryPath, environment.origin).href;
-  const maximumRecords = options.maximumRecords ?? defaultMaximumRecords;
-  const maximumBytes = options.maximumBytes ?? defaultMaximumBytes;
   const flushDelayMillis = options.flushDelayMillis ?? defaultFlushDelayMillis;
-  const serviceVersion = normalizeServiceVersion(options.serviceVersion);
-  const queue: QueuedRecord[] = [];
-  let queuedBytes = 0;
-  let pendingDrops = 0;
-  let consecutiveFailures = 0;
-  let nextAttemptAt = 0;
-  let scheduledFlush: number | undefined;
-  let activeFlush: Promise<boolean> | undefined;
+  const outbox = new TelemetryOutbox({
+    storage: memoryTelemetryStorage(),
+    delivery: browserDelivery(environment, endpoint),
+    clock: { now: environment.now },
+    random: { next: environment.random },
+    serviceName: "studienbuch-web-client",
+    serviceVersion: normalizeServiceVersion(options.serviceVersion),
+    environment: options.deploymentEnvironment,
+    platform: "web",
+    maxRecords: options.maximumRecords ?? defaultMaximumRecords,
+    maxBytes: options.maximumBytes ?? defaultMaximumBytes,
+  });
 
-  const scheduleFlush = (delay = flushDelayMillis) => {
+  let scheduledFlush: number | undefined;
+
+  const scheduleFlush = () => {
     if (scheduledFlush !== undefined) return;
     scheduledFlush = environment.setTimeout(() => {
       scheduledFlush = undefined;
       void flush();
-    }, delay);
+    }, flushDelayMillis);
   };
 
-  const enqueue = (record: ClientTelemetryRecordType) => {
-    const bytes = encodedLength(record);
-    if (bytes > maximumBytes) {
-      pendingDrops += 1;
-      return;
-    }
-    while (
-      queue.length > 0 &&
-      (queue.length >= maximumRecords || queuedBytes + bytes > maximumBytes)
-    ) {
-      const dropped = queue.shift();
-      if (dropped !== undefined) {
-        queuedBytes -= dropped.bytes;
-        pendingDrops += 1;
-      }
-    }
-    queue.push({ bytes, record });
-    queuedBytes += bytes;
+  const enqueue = (record: ClientTelemetryRecordType, priority: TelemetryPriority) => {
+    void outbox.enqueue(record, priority);
     scheduleFlush();
   };
 
-  const restore = (records: readonly QueuedRecord[]) => {
-    for (const item of [...records].reverse()) {
-      queue.unshift(item);
-      queuedBytes += item.bytes;
-    }
-    while (queue.length > maximumRecords || queuedBytes > maximumBytes) {
-      const dropped = queue.shift();
-      if (dropped !== undefined) {
-        queuedBytes -= dropped.bytes;
-        pendingDrops += 1;
-      }
-    }
-  };
-
-  const flush = (flushOptions?: { readonly preferBeacon?: boolean }): Promise<boolean> => {
-    if (activeFlush !== undefined) return activeFlush;
-    activeFlush = flushOnce(flushOptions).finally(() => {
-      activeFlush = undefined;
-    });
-    return activeFlush;
-  };
-
-  const flushOnce = async (flushOptions?: { readonly preferBeacon?: boolean }) => {
-    if (environment.now() < nextAttemptAt && !flushOptions?.preferBeacon) {
-      scheduleFlush(nextAttemptAt - environment.now());
-      return false;
-    }
+  const flush = async (flushOptions?: { readonly preferBeacon?: boolean }) => {
     if (scheduledFlush !== undefined) {
       environment.clearTimeout(scheduledFlush);
       scheduledFlush = undefined;
     }
-    if (queue.length === 0 && pendingDrops === 0) return true;
+    const result = await outbox.flush({ preferBeacon: flushOptions?.preferBeacon });
+    if (result.status === "failed") scheduleFlush();
+    return result.status === "sent" || result.status === "empty";
+  };
 
-    const batch = queue.splice(0, queue.length);
-    queuedBytes = 0;
-    const dropsInBatch = pendingDrops;
-    const flushTraceId = randomHex(environment, 16);
-    const flushSpanId = randomHex(environment, 8);
-    const startedAt = environment.now();
-    const records = batch.map((item) => item.record);
-    if (dropsInBatch > 0) {
-      records.push({
-        type: "metric",
-        name: "studienbuch_client_outbox_dropped_total",
-        kind: "counter",
-        value: dropsInBatch,
-        recordedAtUnixMillis: startedAt,
-        attributes: { operation: "telemetry.flush", platform: "web", signal: "all" },
-      });
-    }
-    records.push({
-      type: "span",
-      name: "client.telemetry.flush",
-      traceId: flushTraceId,
-      spanId: flushSpanId,
-      startedAtUnixMillis: startedAt,
-      durationMillis: 0,
-      status: "unset",
-      attributes: {
-        "app.operation": "telemetry.flush",
-        "http.method": "POST",
-        "http.route": telemetryPath,
-        "telemetry.priority": "low",
+  const enqueueRequestSpan = (
+    traceId: string,
+    spanId: string,
+    startedAtUnixMillis: number,
+    method: "GET" | "POST",
+    pathname: string,
+    outcome: "success" | "failure",
+  ) => {
+    enqueue(
+      {
+        type: "span",
+        name: "client.request",
+        traceId,
+        spanId,
+        startedAtUnixMillis,
+        durationMillis: Math.max(0, environment.now() - startedAtUnixMillis),
+        status: outcome === "success" ? "ok" : "error",
+        attributes: {
+          "app.operation": "request",
+          "http.method": method,
+          ...knownRoute(pathname),
+          outcome,
+          "telemetry.priority": outcome === "success" ? "low" : "high",
+        },
       },
-    });
+      outcome === "success" ? "low" : "high",
+    );
+  };
 
-    const envelope: ClientTelemetryEnvelopeType = {
-      schemaVersion: 1,
-      serviceName: "studienbuch-web-client",
-      serviceVersion,
-      environment: options.deploymentEnvironment,
-      sentAtUnixMillis: startedAt,
-      records,
-    };
-    const body = JSON.stringify(envelope);
-
-    let delivered = false;
-    try {
-      if (flushOptions?.preferBeacon && environment.sendBeacon !== undefined) {
-        delivered = environment.sendBeacon(
-          endpoint,
-          new Blob([body], { type: "application/json" }),
-        );
-      } else {
-        const response = await environment.fetch(endpoint, {
-          method: "POST",
-          body,
-          credentials: "same-origin",
-          keepalive: true,
-          headers: {
-            "content-type": "application/json",
-            traceparent: `00-${flushTraceId}-${flushSpanId}-01`,
-          },
-        });
-        delivered = response.ok;
-      }
-    } catch {
-      delivered = false;
-    }
-
-    const durationMillis = Math.max(0, environment.now() - startedAt);
-    if (delivered) {
-      pendingDrops = Math.max(0, pendingDrops - dropsInBatch);
-      consecutiveFailures = 0;
-      nextAttemptAt = 0;
-      return true;
-    }
-
-    restore(batch);
-    consecutiveFailures += 1;
-    const backoffMillis = Math.min(maximumBackoffMillis, 1_000 * 2 ** (consecutiveFailures - 1));
-    nextAttemptAt = environment.now() + backoffMillis;
-    enqueueRequestDuration(durationMillis, "failure");
-    enqueue({
-      type: "log",
-      event: "client.request.failed",
-      severity: "warn",
-      occurredAtUnixMillis: environment.now(),
-      traceId: flushTraceId,
-      spanId: flushSpanId,
-      attributes: {
-        "app.operation": "telemetry.flush",
-        "error.type": "network",
-        "http.method": "POST",
-        "http.route": telemetryPath,
-        outcome: "failure",
-        "telemetry.priority": "normal",
+  const enqueueRequestFailure = (
+    traceId: string,
+    spanId: string,
+    method: "GET" | "POST",
+    pathname: string,
+    errorType: "network" | "timeout" | "unknown",
+  ) => {
+    enqueue(
+      {
+        type: "log",
+        event: "client.request.failed",
+        severity: "warn",
+        occurredAtUnixMillis: environment.now(),
+        traceId,
+        spanId,
+        attributes: {
+          "app.operation": "request",
+          "error.type": errorType,
+          "http.method": method,
+          ...knownRoute(pathname),
+          outcome: "failure",
+          "telemetry.priority": "high",
+        },
       },
-    });
-    scheduleFlush(backoffMillis);
-    return false;
+      "high",
+    );
   };
 
   const enqueueRequestDuration = (durationMillis: number, outcome: "success" | "failure") => {
-    enqueue({
-      type: "metric",
-      name: "studienbuch_client_request_duration_ms",
-      kind: "histogram",
-      value: durationMillis,
-      recordedAtUnixMillis: environment.now(),
-      attributes: { operation: "telemetry.flush", outcome, platform: "web" },
-    });
+    enqueue(
+      {
+        type: "metric",
+        name: "studienbuch_client_request_duration_ms",
+        kind: "histogram",
+        value: durationMillis,
+        recordedAtUnixMillis: environment.now(),
+        attributes: { operation: "request", outcome, platform: "web" },
+      },
+      "low",
+    );
   };
 
   const observedFetch: BrowserFetch = async (input, init) => {
@@ -283,123 +239,63 @@ export function createBrowserTelemetryClient(options: {
     return response;
   };
 
-  const enqueueRequestSpan = (
-    traceId: string,
-    spanId: string,
-    startedAtUnixMillis: number,
-    method: "GET" | "POST",
+  const timedSpan = (
+    name: "client.navigation" | "client.render",
+    operation: "navigation" | "render",
+    durationMillis: number,
     pathname: string,
-    outcome: "success" | "failure",
   ) => {
-    enqueue({
-      type: "span",
-      name: "client.request",
-      traceId,
-      spanId,
-      startedAtUnixMillis,
-      durationMillis: Math.max(0, environment.now() - startedAtUnixMillis),
-      status: outcome === "success" ? "ok" : "error",
-      attributes: {
-        "app.operation": "request",
-        "http.method": method,
-        ...knownRoute(pathname),
-        outcome,
-        "telemetry.priority": outcome === "success" ? "low" : "high",
+    enqueue(
+      {
+        type: "span",
+        name,
+        traceId: randomHex(environment, 16),
+        spanId: randomHex(environment, 8),
+        startedAtUnixMillis: Math.max(0, environment.now() - durationMillis),
+        durationMillis: Math.max(0, durationMillis),
+        status: "ok",
+        attributes: {
+          "app.operation": operation,
+          ...screenAttribute(pathname),
+          outcome: "success",
+          "telemetry.priority": "normal",
+        },
       },
-    });
-  };
-
-  const enqueueRequestFailure = (
-    traceId: string,
-    spanId: string,
-    method: "GET" | "POST",
-    pathname: string,
-    errorType: "network" | "timeout" | "unknown",
-  ) => {
-    enqueue({
-      type: "log",
-      event: "client.request.failed",
-      severity: "warn",
-      occurredAtUnixMillis: environment.now(),
-      traceId,
-      spanId,
-      attributes: {
-        "app.operation": "request",
-        "error.type": errorType,
-        "http.method": method,
-        ...knownRoute(pathname),
-        outcome: "failure",
-        "telemetry.priority": "high",
-      },
-    });
+      "normal",
+    );
   };
 
   return {
     recordCanary() {
-      enqueue({
-        type: "log",
-        event: "client.telemetry.canary",
-        severity: "info",
-        occurredAtUnixMillis: environment.now(),
-        attributes: { "telemetry.priority": "low" },
-      });
-      enqueue({
-        type: "metric",
-        name: "studienbuch_client_canary_total",
-        kind: "counter",
-        value: 1,
-        recordedAtUnixMillis: environment.now(),
-        attributes: { platform: "web", signal: "all" },
-      });
-    },
-    recordNavigation(durationMillis, pathname) {
-      const ids = { traceId: randomHex(environment, 16), spanId: randomHex(environment, 8) };
-      enqueue({
-        type: "span",
-        name: "client.navigation",
-        ...ids,
-        startedAtUnixMillis: Math.max(0, environment.now() - durationMillis),
-        durationMillis: Math.max(0, durationMillis),
-        status: "ok",
-        attributes: {
-          "app.operation": "navigation",
-          ...screenAttribute(pathname),
-          outcome: "success",
-          "telemetry.priority": "normal",
+      enqueue(
+        {
+          type: "log",
+          event: "client.telemetry.canary",
+          severity: "info",
+          occurredAtUnixMillis: environment.now(),
+          attributes: { "telemetry.priority": "low" },
         },
-      });
-    },
-    recordRender(durationMillis, pathname) {
-      const ids = { traceId: randomHex(environment, 16), spanId: randomHex(environment, 8) };
-      enqueue({
-        type: "span",
-        name: "client.render",
-        ...ids,
-        startedAtUnixMillis: Math.max(0, environment.now() - durationMillis),
-        durationMillis: Math.max(0, durationMillis),
-        status: "ok",
-        attributes: {
-          "app.operation": "render",
-          ...screenAttribute(pathname),
-          outcome: "success",
-          "telemetry.priority": "normal",
+        "low",
+      );
+      enqueue(
+        {
+          type: "metric",
+          name: "studienbuch_client_canary_total",
+          kind: "counter",
+          value: 1,
+          recordedAtUnixMillis: environment.now(),
+          attributes: { platform: "web", signal: "all" },
         },
-      });
+        "low",
+      );
     },
+    recordNavigation: (durationMillis, pathname) =>
+      timedSpan("client.navigation", "navigation", durationMillis, pathname),
+    recordRender: (durationMillis, pathname) =>
+      timedSpan("client.render", "render", durationMillis, pathname),
     fetch: observedFetch,
     flush,
-    snapshot: () => ({
-      queuedRecords: queue.length,
-      queuedBytes,
-      pendingDrops,
-      consecutiveFailures,
-      nextAttemptAt,
-    }),
   };
-}
-
-function encodedLength(record: ClientTelemetryRecordType): number {
-  return new TextEncoder().encode(JSON.stringify(record)).byteLength;
 }
 
 function normalizeServiceVersion(version: string): string {
@@ -450,6 +346,7 @@ function browserEnvironment(): BrowserTelemetryEnvironment {
     sendBeacon:
       navigator.sendBeacon === undefined ? undefined : navigator.sendBeacon.bind(navigator),
     now: Date.now,
+    random: Math.random,
     randomBytes(length) {
       return crypto.getRandomValues(new Uint8Array(length));
     },

@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import * as Schema from "effect/Schema";
 
 const ShortString = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(128));
 const TraceId = Schema.String.check(Schema.isPattern(/^[0-9a-f]{32}$/));
@@ -80,9 +80,12 @@ export interface ClientMetric extends Schema.Schema.Type<typeof ClientMetric> {}
 export const ClientTelemetryRecord = Schema.Union([ClientSpan, ClientLog, ClientMetric]);
 export type ClientTelemetryRecord = typeof ClientTelemetryRecord.Type;
 
+export const ServiceName = Schema.Literals(["studienbuch-web-client", "studienbuch-mobile"]);
+export type ServiceName = typeof ServiceName.Type;
+
 export const ClientTelemetryEnvelope = Schema.Struct({
   schemaVersion: Schema.Literal(1),
-  serviceName: Schema.Literals(["studienbuch-web-client", "studienbuch-mobile"]),
+  serviceName: ServiceName,
   serviceVersion: ShortString,
   environment: Schema.Literals(["development", "test", "staging", "production"]),
   sentAtUnixMillis: UnixMillis,
@@ -99,3 +102,21 @@ export const decodeClientTelemetryEnvelope = Schema.decodeUnknownEffect(ClientTe
   errors: "all",
   onExcessProperty: "error",
 });
+
+/**
+ * What the ingress answers with. Both the server handler and every client transport decode this
+ * one definition, so partial acceptance cannot mean two different things on the two sides.
+ *
+ * `acceptedRecords` may be lower than the number sent; the client retries the remainder rather
+ * than dropping it.
+ */
+export const ClientTelemetryAcknowledgement = Schema.Struct({
+  acceptedRecords: Schema.Finite.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(0)),
+});
+export interface ClientTelemetryAcknowledgement extends Schema.Schema.Type<
+  typeof ClientTelemetryAcknowledgement
+> {}
+
+export const decodeClientTelemetryAcknowledgement = Schema.decodeUnknownOption(
+  ClientTelemetryAcknowledgement,
+);

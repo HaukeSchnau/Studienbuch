@@ -1,10 +1,13 @@
 import Constants from "expo-constants";
 import { AppState, Platform } from "react-native";
 import { createContext, useContext, useEffect, useMemo, type PropsWithChildren } from "react";
-import type { ClientTelemetryRecordType } from "@stu/observability/browser";
+import {
+  TelemetryOutbox,
+  type ClientTelemetryRecordType,
+  type TelemetryPriority,
+} from "@stu/observability/browser";
 import { startTelemetryController } from "./controller";
 import { makeTelemetryFileStorage } from "./file-storage";
-import { TelemetryOutbox, type TelemetryPriority } from "./outbox";
 import { makeFetchTelemetryTransport, type TelemetryAuthorization } from "./transport";
 
 interface MobileTelemetry {
@@ -48,9 +51,10 @@ export function MobileTelemetryProvider({ authorization, children }: MobileTelem
     }
     return new TelemetryOutbox({
       storage: makeTelemetryFileStorage(),
-      transport: makeFetchTelemetryTransport({ endpoint, authorization }),
+      delivery: makeFetchTelemetryTransport({ endpoint, authorization }),
       clock: { now: Date.now },
       random: { next: Math.random },
+      serviceName: "studienbuch-mobile",
       serviceVersion: Constants.expoConfig?.version ?? "unknown",
       environment: __DEV__ ? "development" : "production",
       platform: Platform.OS === "android" ? "android" : Platform.OS === "web" ? "web" : "ios",

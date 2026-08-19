@@ -1,4 +1,4 @@
-import type { TelemetryOutbox } from "./outbox";
+import type { TelemetryOutbox } from "@stu/observability/browser";
 
 export interface TelemetryLifecycle {
   readonly isActive: () => boolean;
@@ -25,7 +25,7 @@ export const startTelemetryController = (options: {
   const flush = () => {
     if (running || !options.lifecycle.isActive()) return;
     running = true;
-    void options.outbox.flush(options.connectivity.isOnline()).finally(() => {
+    void options.outbox.flush({ online: options.connectivity.isOnline() }).finally(() => {
       running = false;
     });
   };

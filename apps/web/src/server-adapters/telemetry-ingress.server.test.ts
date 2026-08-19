@@ -9,7 +9,7 @@ import {
   maximumTelemetryBodyBytes,
   telemetryRoute,
 } from "./telemetry-ingress.server.ts";
-import { makeTelemetryIngressPolicy } from "./telemetry-policy.server.ts";
+import { makeTelemetryAdmission } from "./telemetry-policy.server.ts";
 
 const validEnvelope = {
   schemaVersion: 1,
@@ -39,7 +39,16 @@ function request(body: BodyInit = JSON.stringify(validEnvelope), headers?: Heade
   });
 }
 
-function fixture(options?: { readonly limit?: number }) {
+/** A native client: no `Origin`, but a session the server can resolve. */
+function nativeRequest(body: BodyInit = JSON.stringify(validEnvelope)) {
+  return new Request(`https://studienbuch.test${telemetryRoute}`, {
+    method: "POST",
+    body,
+    headers: { "content-type": "application/json", authorization: "Bearer session-token" },
+  });
+}
+
+function fixture(options?: { readonly limit?: number; readonly userId?: string }) {
   const ingest = vi.fn(() => Effect.void);
   const run: RouteEffectRunner = (effect) =>
     Effect.runPromiseExit(
@@ -49,24 +58,48 @@ function fixture(options?: { readonly limit?: number }) {
       ),
     );
   const handler = makeTelemetryIngressHandler({
-    policy: makeTelemetryIngressPolicy({ limit: options?.limit ?? 60, now: () => 1_000 }),
+    admission: makeTelemetryAdmission({
+      authority: async () => options?.userId,
+      limit: options?.limit ?? 60,
+      now: () => 1_000,
+    }),
     run,
   });
   return { handler, ingest, run };
 }
 
 describe("public telemetry ingress", () => {
-  it("accepts a strict same-origin envelope", async () => {
+  it("accepts a same-origin browser envelope and acknowledges the record count", async () => {
     const { handler, ingest } = fixture();
     const response = await handler(request());
 
     expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toEqual({ acceptedRecords: 1 });
     expect(ingest).toHaveBeenCalledOnce();
   });
 
+  it("admits a native client on its session, which sends no Origin header", async () => {
+    const { handler, ingest } = fixture({ userId: "user-1" });
+    const response = await handler(nativeRequest());
+
+    // The origin-only policy this replaced rejected every native envelope with 403, which is why
+    // the mobile channel could never be switched on.
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toEqual({ acceptedRecords: 1 });
+    expect(ingest).toHaveBeenCalledOnce();
+  });
+
+  it("refuses a client that is neither same-origin nor authenticated", async () => {
+    const { handler, ingest } = fixture();
+    const response = await handler(nativeRequest());
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: "admission_denied" });
+    expect(ingest).not.toHaveBeenCalled();
+  });
+
   it.each([
-    ["missing origin", { origin: undefined }, 403, "same_origin_required"],
-    ["cross origin", { origin: "https://attacker.test" }, 403, "same_origin_required"],
+    ["cross origin", { origin: "https://attacker.test" }, 403, "admission_denied"],
     ["wrong content type", { "content-type": "text/plain" }, 415, "unsupported_content_type"],
     ["compressed", { "content-encoding": "gzip" }, 415, "compressed_body_not_supported"],
     ["invalid length", { "content-length": "nope" }, 400, "invalid_content_length"],
@@ -82,10 +115,7 @@ describe("public telemetry ingress", () => {
       origin: "https://studienbuch.test",
       "content-type": "application/json",
     });
-    for (const [key, value] of Object.entries(headerValues)) {
-      if (value === undefined) headers.delete(key);
-      else headers.set(key, value);
-    }
+    for (const [key, value] of Object.entries(headerValues)) headers.set(key, value);
     const response = await handler(request(JSON.stringify(validEnvelope), headers));
 
     expect(response.status).toBe(status);
@@ -112,11 +142,15 @@ describe("public telemetry ingress", () => {
     await expect(invalid.json()).resolves.toEqual({ error: "invalid_telemetry_envelope" });
   });
 
-  it("provides a bounded rate-limit seam", async () => {
-    const { handler } = fixture({ limit: 1 });
+  it("rate limits per principal so one noisy client cannot starve the rest", async () => {
+    const { handler } = fixture({ limit: 1, userId: "user-1" });
+
     expect((await handler(request())).status).toBe(202);
     const limited = await handler(request());
     expect(limited.status).toBe(429);
     expect(limited.headers.get("retry-after")).toBe("60");
+
+    // A different principal has its own window; the previous single global window did not.
+    expect((await handler(nativeRequest())).status).toBe(202);
   });
 });
