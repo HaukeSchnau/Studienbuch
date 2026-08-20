@@ -4,9 +4,6 @@ packages:
   - scripts
 
 patchedDependencies:
-  # TODO: Remove after https://github.com/vitejs/vite-plugin-react/pull/1419 ships.
-  # Derived from upstream commit cb1fd1ca656653895acdc92efebf37a774e7ab25.
-  "@vitejs/plugin-react@6.0.5": patches/@vitejs__plugin-react@6.0.5.patch
   tree-sitter@0.21.1: patches/tree-sitter@0.21.1.patch
 
 allowBuilds:
@@ -44,9 +41,6 @@ catalog:
   vite-plus: 0.2.9
 
 minimumReleaseAgeExclude:
-  # Reviewed native React Compiler release used by the temporary upstream patch above.
-  - "oxc-transform-react@0.145.0"
-  - "@oxc-transform-react/*"
   - "@effect/atom-react@4.0.0-rc.108"
   - "@effect/openapi-generator@4.0.0-rc.108"
   - "@effect/platform-node@4.0.0-rc.108"
@@ -86,6 +80,7 @@ minimumReleaseAgeExclude:
   - "@voidzero-dev/vite-plus-win32-arm64-msvc@0.2.9"
   - "@voidzero-dev/vite-plus-win32-x64-msvc@0.2.9"
   - "vite-plus@0.2.9"
+  - "@vitejs/plugin-react@6.1.0"
 
 overrides:
   "@effect/atom-react": "catalog:"
