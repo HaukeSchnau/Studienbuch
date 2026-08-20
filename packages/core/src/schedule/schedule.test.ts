@@ -354,6 +354,32 @@ describe("lesson occurrence materialization", () => {
     }),
   );
 
+  it.effect("orders exception ids by code point, not by the runtime's locale", () =>
+    Effect.gen(function* () {
+      // "B" sorts before "a" by code point but after it under en-US collation. Locale-aware
+      // ordering would make two devices replaying the same events disagree about which exception
+      // is reported first, so the comparison must not depend on the host's ICU data.
+      const upper = Schedule.ScheduleExceptionId.make("B-room");
+      const lower = Schedule.ScheduleExceptionId.make("a-room");
+      assert.equal("B-room".localeCompare("a-room") > 0, true);
+
+      const failure = yield* Schedule.materializeSchoolDay({
+        calendar,
+        date: monday,
+        meetings: [baseMeeting],
+        exceptions: [
+          Schedule.ScheduleException.cases.RoomChanged.make({ id: lower, target, room: "B2" }),
+          Schedule.ScheduleException.cases.RoomChanged.make({ id: upper, target, room: "C3" }),
+        ],
+      }).pipe(Effect.flip);
+
+      assert.equal(failure._tag, "Schedule.ConflictingExceptions");
+      if (failure._tag === "Schedule.ConflictingExceptions") {
+        assert.deepEqual(failure.exceptionIds, [upper, lower]);
+      }
+    }),
+  );
+
   it.effect("detects conflicting reschedules before selecting one destination day", () =>
     Effect.gen(function* () {
       const firstExceptionId = Schedule.ScheduleExceptionId.make("reschedule-tuesday");

@@ -190,6 +190,4 @@ export declare namespace decideMissedLesson {
         }
       | { readonly _tag: "Rejected"; readonly reason?: NonBlankText.Type };
   }
-
-  export type Error = DecideMissedLessonError;
 }

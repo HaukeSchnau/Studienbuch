@@ -7,7 +7,8 @@ import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { NonBlankText } from "../foundation/non-blank-text";
 import type { ActorRef } from "../organization/acknowledgement";
 import type { AuthoritySnapshot } from "../organization/authority";
-import { AuthorityDenied, Capability, authorize } from "../organization/authority";
+import type { AuthorityDenied } from "../organization/authority";
+import { Capability, authorize } from "../organization/authority";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import { SchoolTaskId } from "./identity";
 
@@ -67,13 +68,11 @@ export class ConcurrentTaskRevision extends Schema.TaggedError<ConcurrentTaskRev
   },
 ) {}
 
-export const TransitionError = Schema.Union([
-  TaskTransitionRefused,
-  ConcurrentTaskRevision,
-  AggregateRevision.Exhausted,
-  AuthorityDenied,
-]);
-export type TransitionError = typeof TransitionError.Type;
+export type TransitionError =
+  | TaskTransitionRefused
+  | ConcurrentTaskRevision
+  | AggregateRevision.Exhausted
+  | AuthorityDenied;
 
 interface TransitionInput {
   readonly task: SchoolTask;
@@ -97,7 +96,8 @@ const withStatus = Effect.fn("SchoolTask.withStatus")(function* (
   status: TaskStatus,
 ) {
   const revision = yield* AggregateRevision.next(task.revision);
-  return SchoolTask.make(Object.assign({}, task, { revision, status }));
+  // oxlint-disable-next-line typescript/no-misused-spread
+  return SchoolTask.make({ ...task, revision, status });
 });
 
 const prepare = (input: TransitionInput) =>
@@ -131,7 +131,6 @@ export const complete = Effect.fn("SchoolTask.complete")(function* (
 
 export declare namespace complete {
   export type Input = TransitionInput;
-  export type Error = TransitionError;
 }
 
 export const reopen = Effect.fn("SchoolTask.reopen")(function* (input: reopen.Input) {
@@ -143,7 +142,6 @@ export const reopen = Effect.fn("SchoolTask.reopen")(function* (input: reopen.In
 
 export declare namespace reopen {
   export type Input = TransitionInput;
-  export type Error = TransitionError;
 }
 
 export const cancel = Effect.fn("SchoolTask.cancel")(function* (
@@ -164,5 +162,4 @@ export const cancel = Effect.fn("SchoolTask.cancel")(function* (
 
 export declare namespace cancel {
   export type Input = TransitionInput;
-  export type Error = TransitionError;
 }

@@ -136,6 +136,4 @@ export declare namespace acknowledge {
     readonly acknowledgedAt: DateTime.Utc;
     readonly artifact?: Artifact.Reference;
   }
-
-  export type Error = AcknowledgeError;
 }

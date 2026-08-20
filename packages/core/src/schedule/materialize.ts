@@ -1,4 +1,5 @@
 import * as Effect from "effect/Effect";
+import * as Order from "effect/Order";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { type AcademicCalendar, isSchoolDay } from "./academic-calendar";
 import { LessonOccurrenceId, type RecurringMeetingId, type ScheduleExceptionId } from "./identity";
@@ -18,15 +19,20 @@ export const lessonOccurrenceId = (target: LessonOccurrenceRef): LessonOccurrenc
 const targetKey = (target: LessonOccurrenceRef) =>
   `${target.meetingId}\u0000${PlainDate.toString(target.scheduledDate)}`;
 
+/**
+ * Ordering is lexicographic rather than locale-aware on purpose. `localeCompare` resolves against
+ * the runtime's collation, so two devices replaying the same events could apply exceptions in
+ * different orders and disagree about the result.
+ */
 const exceptionOrder = (left: ScheduleException, right: ScheduleException) =>
-  left.id.localeCompare(right.id);
+  Order.String(left.id, right.id);
 
 const occurrenceOrder = (left: LessonOccurrence, right: LessonOccurrence) =>
   PlainDate.compare(left.date, right.date) ||
   left.timeRange.start - right.timeRange.start ||
   left.timeRange.end - right.timeRange.end ||
-  left.courseOfferingId.localeCompare(right.courseOfferingId) ||
-  left.id.localeCompare(right.id);
+  Order.String(left.courseOfferingId, right.courseOfferingId) ||
+  Order.String(left.id, right.id);
 
 const validateExceptionGroup = (
   exceptions: ReadonlyArray<ScheduleException>,

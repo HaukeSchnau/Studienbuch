@@ -8,8 +8,6 @@ export {
   AssessmentLegalStatusUnknownError,
 } from "./learner-acknowledgement";
 export {
-  AcknowledgeWrittenError,
-  AttestWrittenError,
   ConcurrentWrittenAssessmentRevisionError,
   WrittenAssessment,
   acknowledgeWritten,
@@ -18,12 +16,9 @@ export {
   isWrittenConfirmed,
 } from "./written-assessment";
 export {
-  AcknowledgeStandingError,
-  AttestStandingError,
   ConcurrentStandingRevisionError,
   CourseStanding,
   InvalidStandingSupersessionError,
-  ReviseStandingError,
   StandingKind,
   StandingRevision,
   StandingRevisionChronologyError,
@@ -35,6 +30,13 @@ export {
   isStandingRevisionConfirmed,
   lastConfirmedStandingRevision,
   reviseStanding,
+} from "./course-standing";
+
+export type { AcknowledgeWrittenError, AttestWrittenError } from "./written-assessment";
+export type {
+  AcknowledgeStandingError,
+  AttestStandingError,
+  ReviseStandingError,
 } from "./course-standing";
 
 export * as Assessment from "./index";
