@@ -14,6 +14,23 @@ coerces strings back to `Date`; overriding the parsers there would silently brea
 refresh. Drizzle needs no such override — its `effect-postgres` codecs cast date and timestamp
 columns to text in SQL and decode them themselves.
 
+## Authentication
+
+`Auth` builds Better Auth against the same pool. It lives here rather than in the web app because
+everything it configures has to agree with `schema/auth.ts`: the model names, `generateId: false`
+(which lets PostgreSQL own identity through `defaultRandom()`), and the pool itself.
+
+Better Auth's Drizzle adapter expects a Promise-based instance and cannot consume
+`EffectPgDatabase`, so it runs through the Kysely adapter on the raw pool. That is a deliberate
+trade, and it has one consequence worth naming: `db:generate` cannot see `auth.ts`, so nothing but
+agreement keeps the mapping and the migration history in step. `database.integration.test.ts` signs
+a user up through Better Auth and reads the row back out of `users`, so a renamed table or column
+fails the build instead of first login.
+
+Applications supply their own plugins and trusted origins. `tanstackStartCookies()` is a web
+concern and `expo()` a mobile one, and neither belongs in a package that only knows about the
+database.
+
 There is deliberately no generic repository, domain schema, sync protocol, or event log yet. Add a
 domain table with the first server use case that needs it, and keep the workflow behind a narrow
 Effect module rather than exposing Drizzle queries to route handlers.
