@@ -1,3 +1,4 @@
+import * as Order from "effect/Order";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
 import type { BellPeriod } from "./bell-schedule";
@@ -40,7 +41,7 @@ const orderedPair = <Id extends string>(leftId: Id, rightId: Id) =>
 const comparePairs = <Id extends string>(
   left: { readonly leftId: Id; readonly rightId: Id },
   right: { readonly leftId: Id; readonly rightId: Id },
-) => left.leftId.localeCompare(right.leftId) || left.rightId.localeCompare(right.rightId);
+) => Order.String(left.leftId, right.leftId) || Order.String(left.rightId, right.rightId);
 
 const meetingsCanCoincide = (left: RecurringMeeting, right: RecurringMeeting): boolean => {
   if (

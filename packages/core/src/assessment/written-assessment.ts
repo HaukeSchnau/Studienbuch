@@ -5,18 +5,21 @@ import { PlainDateSchema } from "../foundation/plain-date";
 import { NonBlankText } from "../foundation/non-blank-text";
 import { Acknowledgement } from "../organization/acknowledgement";
 import type { AuthoritySnapshot } from "../organization/authority";
-import { AuthorityDenied, Capability, authorize } from "../organization/authority";
+import type { AuthorityDenied } from "../organization/authority";
+import { Capability, authorize } from "../organization/authority";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import type { LegalAgePolicy, Person } from "../organization/person";
 import { AssessmentWeight, GradeValue } from "./grading";
 import { GradingPolicy } from "./grading-policy";
 import { AssessmentId } from "./identity";
 import type { ConfirmationRecordInput } from "./learner-acknowledgement";
-import {
+import type {
   AssessmentAcknowledgementActorError,
+  AssessmentLegalStatusUnknownError,
+} from "./learner-acknowledgement";
+import {
   AssessmentAlreadyLearnerAcknowledgedError,
   AssessmentAlreadyTeacherAttestedError,
-  AssessmentLegalStatusUnknownError,
   authorizeLearnerAcknowledgement,
   makeAcknowledgement,
 } from "./learner-acknowledgement";
@@ -61,24 +64,20 @@ export class ConcurrentWrittenAssessmentRevisionError extends Schema.TaggedError
   { expected: AggregateRevision.Schema, actual: AggregateRevision.Schema },
 ) {}
 
-export const AttestWrittenError = Schema.Union([
-  ConcurrentWrittenAssessmentRevisionError,
-  AssessmentAlreadyTeacherAttestedError,
-  AggregateRevision.Exhausted,
-  GradingPolicy.InvalidGradeValueError,
-  AuthorityDenied,
-]);
-export type AttestWrittenError = typeof AttestWrittenError.Type;
+export type AttestWrittenError =
+  | ConcurrentWrittenAssessmentRevisionError
+  | AssessmentAlreadyTeacherAttestedError
+  | AggregateRevision.Exhausted
+  | GradingPolicy.InvalidGradeValueError
+  | AuthorityDenied;
 
-export const AcknowledgeWrittenError = Schema.Union([
-  ConcurrentWrittenAssessmentRevisionError,
-  AssessmentAlreadyLearnerAcknowledgedError,
-  AggregateRevision.Exhausted,
-  AssessmentAcknowledgementActorError,
-  AssessmentLegalStatusUnknownError,
-  AuthorityDenied,
-]);
-export type AcknowledgeWrittenError = typeof AcknowledgeWrittenError.Type;
+export type AcknowledgeWrittenError =
+  | ConcurrentWrittenAssessmentRevisionError
+  | AssessmentAlreadyLearnerAcknowledgedError
+  | AggregateRevision.Exhausted
+  | AssessmentAcknowledgementActorError
+  | AssessmentLegalStatusUnknownError
+  | AuthorityDenied;
 
 const checkRevision = (assessment: WrittenAssessment, expectedRevision: AggregateRevision.Type) =>
   assessment.revision === expectedRevision
@@ -108,12 +107,12 @@ export const attestWritten = Effect.fn("Assessment.attestWrittenAssessment")(fun
     input.authority,
   );
   const revision = yield* AggregateRevision.next(input.assessment.revision);
-  return WrittenAssessment.make(
-    Object.assign({}, input.assessment, {
-      revision,
-      teacherAttestation: makeAcknowledgement(input, input.assessment.revision),
-    }),
-  );
+  return WrittenAssessment.make({
+    // oxlint-disable-next-line typescript/no-misused-spread
+    ...input.assessment,
+    revision,
+    teacherAttestation: makeAcknowledgement(input, input.assessment.revision),
+  });
 });
 
 export declare namespace attestWritten {
@@ -122,8 +121,6 @@ export declare namespace attestWritten {
     readonly expectedRevision: AggregateRevision.Type;
     readonly authority: AuthoritySnapshot;
   }
-
-  export type Error = AttestWrittenError;
 }
 
 export const acknowledgeWritten = Effect.fn("Assessment.acknowledgeWrittenAssessment")(function* (
@@ -144,12 +141,12 @@ export const acknowledgeWritten = Effect.fn("Assessment.acknowledgeWrittenAssess
     authority: input.authority,
   });
   const revision = yield* AggregateRevision.next(input.assessment.revision);
-  return WrittenAssessment.make(
-    Object.assign({}, input.assessment, {
-      revision,
-      learnerAcknowledgement: makeAcknowledgement(input, input.assessment.revision),
-    }),
-  );
+  return WrittenAssessment.make({
+    // oxlint-disable-next-line typescript/no-misused-spread
+    ...input.assessment,
+    revision,
+    learnerAcknowledgement: makeAcknowledgement(input, input.assessment.revision),
+  });
 });
 
 export declare namespace acknowledgeWritten {
@@ -160,6 +157,4 @@ export declare namespace acknowledgeWritten {
     readonly legalAgePolicy: LegalAgePolicy;
     readonly authority: AuthoritySnapshot;
   }
-
-  export type Error = AcknowledgeWrittenError;
 }

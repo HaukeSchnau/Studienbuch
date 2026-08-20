@@ -338,9 +338,8 @@ describe("attendance workflow", () => {
         acknowledgementId: AcknowledgementId.make("guardian-ack-for-forgery-test"),
         acknowledgedAt: now,
       });
-      const forged = LessonOccurrence.make(
-        Object.assign({}, occurrences[0], { courseOfferingId: courseIds[1] }),
-      );
+      // oxlint-disable-next-line typescript/no-misused-spread
+      const forged = LessonOccurrence.make({ ...occurrences[0], courseOfferingId: courseIds[1] });
       const failure = yield* Attendance.decideMissedLesson({
         absence: acknowledged,
         expectedRevision: AggregateRevision.Schema.make(1),

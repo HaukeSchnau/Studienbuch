@@ -198,9 +198,7 @@ export const relinquishOverride = Effect.fn("Importing.relinquishOverride")(func
   return sourcedValue(current.source);
 });
 
-export declare namespace relinquishOverride {
-  export type Error = OverrideRelinquishmentRefused;
-}
+export declare namespace relinquishOverride {}
 
 export const overrideFrom = <Value>(
   value: Value,

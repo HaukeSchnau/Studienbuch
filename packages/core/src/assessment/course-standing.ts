@@ -1,22 +1,26 @@
+import * as Array from "effect/Array";
 import * as Effect from "effect/Effect";
-import * as Option from "effect/Option";
+import type * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision";
 import { PlainDateSchema } from "../foundation/plain-date";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { Acknowledgement } from "../organization/acknowledgement";
 import type { AuthoritySnapshot } from "../organization/authority";
-import { AuthorityDenied, Capability, authorize } from "../organization/authority";
+import type { AuthorityDenied } from "../organization/authority";
+import { Capability, authorize } from "../organization/authority";
 import type { LegalAgePolicy, Person } from "../organization/person";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import { GradingPolicy } from "./grading-policy";
 import { GradeValue } from "./grading";
 import { CourseStandingId, StandingRevisionId } from "./identity";
-import {
+import type {
   AssessmentAcknowledgementActorError,
+  AssessmentLegalStatusUnknownError,
+} from "./learner-acknowledgement";
+import {
   AssessmentAlreadyLearnerAcknowledgedError,
   AssessmentAlreadyTeacherAttestedError,
-  AssessmentLegalStatusUnknownError,
   authorizeLearnerAcknowledgement,
   makeAcknowledgement,
 } from "./learner-acknowledgement";
@@ -35,34 +39,42 @@ export const StandingRevision = Schema.Struct({
 });
 export interface StandingRevision extends Schema.Schema.Type<typeof StandingRevision> {}
 
+/**
+ * The chain must be append-only and unbranched: each revision supersedes exactly its predecessor,
+ * observation dates never move backwards, evidence is unique and never claims a revision the
+ * standing has not reached, and the last link is the current one.
+ *
+ * One pass, because `Schema.make` re-runs this on every append.
+ */
 const hasValidRevisionChain = (standing: {
   readonly revision: AggregateRevision.Type;
   readonly currentRevisionId: StandingRevisionId;
   readonly revisions: readonly [StandingRevision, ...Array<StandingRevision>];
 }) => {
-  const ids = new Set(standing.revisions.map((revision) => revision.id));
-  if (ids.size !== standing.revisions.length) return false;
-  if (standing.revisions.at(-1)?.id !== standing.currentRevisionId) return false;
-  const records = standing.revisions.flatMap((revision) => [
-    ...(revision.teacherAttestation === undefined ? [] : [revision.teacherAttestation]),
-    ...(revision.learnerAcknowledgement === undefined ? [] : [revision.learnerAcknowledgement]),
-  ]);
-  const isChronological = standing.revisions.every((revision, index) => {
-    const previous = standing.revisions[index - 1];
-    return (
-      previous === undefined || PlainDate.compare(previous.observedOn, revision.observedOn) <= 0
-    );
-  });
-  return (
-    isChronological &&
-    records.every((record) => AggregateRevision.compare(record.revision, standing.revision) <= 0) &&
-    new Set(records.map((record) => record.id)).size === records.length &&
-    standing.revisions.every((revision, index) =>
-      index === 0
-        ? revision.supersedes === undefined
-        : revision.supersedes === standing.revisions[index - 1]?.id,
-    )
-  );
+  const seenRevisionIds = new Set<StandingRevisionId>();
+  const seenEvidenceIds = new Set<Acknowledgement["id"]>();
+  let previous: StandingRevision | undefined;
+
+  for (const revision of standing.revisions) {
+    if (seenRevisionIds.has(revision.id)) return false;
+    seenRevisionIds.add(revision.id);
+
+    if (revision.supersedes !== previous?.id) return false;
+    if (previous !== undefined && PlainDate.compare(previous.observedOn, revision.observedOn) > 0) {
+      return false;
+    }
+
+    for (const evidence of [revision.teacherAttestation, revision.learnerAcknowledgement]) {
+      if (evidence === undefined) continue;
+      if (AggregateRevision.compare(evidence.revision, standing.revision) > 0) return false;
+      if (seenEvidenceIds.has(evidence.id)) return false;
+      seenEvidenceIds.add(evidence.id);
+    }
+
+    previous = revision;
+  }
+
+  return previous?.id === standing.currentRevisionId;
 };
 
 export const CourseStanding = Schema.Struct({
@@ -80,25 +92,16 @@ export const CourseStanding = Schema.Struct({
 );
 export interface CourseStanding extends Schema.Schema.Type<typeof CourseStanding> {}
 
-export const currentStandingRevision = (standing: CourseStanding): StandingRevision => {
-  const [first, ...remaining] = standing.revisions;
-  return remaining.at(-1) ?? first;
-};
+export const currentStandingRevision = (standing: CourseStanding): StandingRevision =>
+  Array.lastNonEmpty(standing.revisions);
 
 export const isStandingRevisionConfirmed = (revision: StandingRevision): boolean =>
   revision.teacherAttestation !== undefined && revision.learnerAcknowledgement !== undefined;
 
 export const lastConfirmedStandingRevision = (
   standing: CourseStanding,
-): Option.Option<StandingRevision> => {
-  for (let index = standing.revisions.length - 1; index >= 0; index -= 1) {
-    const revision = standing.revisions[index];
-    if (revision !== undefined && isStandingRevisionConfirmed(revision)) {
-      return Option.some(revision);
-    }
-  }
-  return Option.none();
-};
+): Option.Option<StandingRevision> =>
+  Array.findLast(standing.revisions, isStandingRevisionConfirmed);
 
 export class ConcurrentStandingRevisionError extends Schema.TaggedError<ConcurrentStandingRevisionError>()(
   "Assessment.ConcurrentStandingRevision",
@@ -125,40 +128,34 @@ export class StandingRevisionNotCurrentError extends Schema.TaggedError<Standing
   { revisionId: StandingRevisionId, currentRevisionId: StandingRevisionId },
 ) {}
 
-export const ReviseStandingError = Schema.Union([
-  ConcurrentStandingRevisionError,
-  StandingRevisionNotFoundError,
-  InvalidStandingSupersessionError,
-  StandingRevisionChronologyError,
-  AssessmentAlreadyTeacherAttestedError,
-  AssessmentAlreadyLearnerAcknowledgedError,
-  AggregateRevision.Exhausted,
-  GradingPolicy.InvalidGradeValueError,
-]);
-export type ReviseStandingError = typeof ReviseStandingError.Type;
+export type ReviseStandingError =
+  | ConcurrentStandingRevisionError
+  | StandingRevisionNotFoundError
+  | InvalidStandingSupersessionError
+  | StandingRevisionChronologyError
+  | AssessmentAlreadyTeacherAttestedError
+  | AssessmentAlreadyLearnerAcknowledgedError
+  | AggregateRevision.Exhausted
+  | GradingPolicy.InvalidGradeValueError;
 
-export const AttestStandingError = Schema.Union([
-  ConcurrentStandingRevisionError,
-  StandingRevisionNotFoundError,
-  StandingRevisionNotCurrentError,
-  AssessmentAlreadyTeacherAttestedError,
-  AggregateRevision.Exhausted,
-  GradingPolicy.InvalidGradeValueError,
-  AuthorityDenied,
-]);
-export type AttestStandingError = typeof AttestStandingError.Type;
+export type AttestStandingError =
+  | ConcurrentStandingRevisionError
+  | StandingRevisionNotFoundError
+  | StandingRevisionNotCurrentError
+  | AssessmentAlreadyTeacherAttestedError
+  | AggregateRevision.Exhausted
+  | GradingPolicy.InvalidGradeValueError
+  | AuthorityDenied;
 
-export const AcknowledgeStandingError = Schema.Union([
-  ConcurrentStandingRevisionError,
-  StandingRevisionNotFoundError,
-  StandingRevisionNotCurrentError,
-  AssessmentAlreadyLearnerAcknowledgedError,
-  AssessmentAcknowledgementActorError,
-  AssessmentLegalStatusUnknownError,
-  AggregateRevision.Exhausted,
-  AuthorityDenied,
-]);
-export type AcknowledgeStandingError = typeof AcknowledgeStandingError.Type;
+export type AcknowledgeStandingError =
+  | ConcurrentStandingRevisionError
+  | StandingRevisionNotFoundError
+  | StandingRevisionNotCurrentError
+  | AssessmentAlreadyLearnerAcknowledgedError
+  | AssessmentAcknowledgementActorError
+  | AssessmentLegalStatusUnknownError
+  | AggregateRevision.Exhausted
+  | AuthorityDenied;
 
 const checkRevision = (standing: CourseStanding, expectedRevision: AggregateRevision.Type) =>
   standing.revision === expectedRevision
@@ -204,13 +201,16 @@ export const reviseStanding = Effect.fn("Assessment.addStandingRevision")(functi
   yield* policy.validateValue(input.revision.value);
 
   const revision = yield* AggregateRevision.next(input.standing.revision);
-  return CourseStanding.make(
-    Object.assign({}, input.standing, {
-      revision,
-      currentRevisionId: input.revision.id,
-      revisions: [...input.standing.revisions, input.revision],
-    }),
-  );
+  return CourseStanding.make({
+    // `Schema.Struct` values are plain objects (Object.prototype), so spreading one keeps every
+    // property. The rule reads the merged `interface X extends Schema.Schema.Type<typeof X>`
+    // declaration as a class. Verified with a prototype assertion before suppressing.
+    // oxlint-disable-next-line typescript/no-misused-spread
+    ...input.standing,
+    revision,
+    currentRevisionId: input.revision.id,
+    revisions: [...input.standing.revisions, input.revision],
+  });
 });
 
 export declare namespace reviseStanding {
@@ -219,8 +219,6 @@ export declare namespace reviseStanding {
     readonly expectedRevision: AggregateRevision.Type;
     readonly revision: StandingRevision;
   }
-
-  export type Error = ReviseStandingError;
 }
 
 interface StandingConfirmationInput extends ConfirmationRecordInput {
@@ -252,14 +250,16 @@ const updateCurrentStanding = Effect.fn("Assessment.updateCurrentStanding")(func
   target: StandingRevision,
 ) {
   const update = (revision: StandingRevision) => (revision.id === target.id ? target : revision);
-  const first = input.standing.revisions[0];
   const revision = yield* AggregateRevision.next(input.standing.revision);
-  return CourseStanding.make(
-    Object.assign({}, input.standing, {
-      revision,
-      revisions: [update(first), ...input.standing.revisions.slice(1).map(update)],
-    }),
-  );
+  return CourseStanding.make({
+    // `Schema.Struct` values are plain objects (Object.prototype), so spreading one keeps every
+    // property. The rule reads the merged `interface X extends Schema.Schema.Type<typeof X>`
+    // declaration as a class. Verified with a prototype assertion before suppressing.
+    // oxlint-disable-next-line typescript/no-misused-spread
+    ...input.standing,
+    revision,
+    revisions: Array.map(input.standing.revisions, update),
+  });
 });
 
 export const attestStanding = Effect.fn("Assessment.attestStandingRevision")(function* (
@@ -287,7 +287,6 @@ export const attestStanding = Effect.fn("Assessment.attestStandingRevision")(fun
 
 export declare namespace attestStanding {
   export interface Input extends StandingConfirmationInput {}
-  export type Error = AttestStandingError;
 }
 
 export const acknowledgeStanding = Effect.fn("Assessment.acknowledgeStandingRevision")(function* (
@@ -318,6 +317,4 @@ export declare namespace acknowledgeStanding {
     readonly student: Person;
     readonly legalAgePolicy: LegalAgePolicy;
   }
-
-  export type Error = AcknowledgeStandingError;
 }

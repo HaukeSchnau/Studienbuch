@@ -4,7 +4,6 @@ export {
   SchoolTask,
   TaskStatus,
   TaskTransitionRefused,
-  TransitionError,
   cancel,
   complete,
   dueStatus,
@@ -23,5 +22,7 @@ export {
   selectWithoutCourse,
   sort,
 } from "./task-list";
+
+export type { TransitionError } from "./school-task";
 
 export * as Tasks from "./index";
