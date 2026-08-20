@@ -1,10 +1,11 @@
 import * as Metric from "effect/Metric";
 import { metricAttributes } from "./attributes.ts";
+import { canaryMetricNames } from "./project.ts";
 
-export const canaryTotal = Metric.counter("studienbuch_observability_canary_total", {
-  description: "Successful Studienbuch observability canary signal sets.",
+export const canaryTotal = Metric.counter(canaryMetricNames.total, {
+  description: "Successful observability canary signal sets.",
 }).pipe(Metric.withAttributes(metricAttributes({ signal: "all" })));
 
-export const canaryDuration = Metric.timer("studienbuch_observability_canary_duration", {
-  description: "Duration of the Studienbuch observability canary.",
+export const canaryDuration = Metric.timer(canaryMetricNames.duration, {
+  description: "Duration of the observability canary.",
 });

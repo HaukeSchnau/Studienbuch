@@ -1,3 +1,4 @@
+import { consoleServiceName, environmentVariables } from "@stu/observability";
 import { developmentLayer } from "@stu/observability/server";
 import { flushOtlp, otlpProtobufLayer, serverConfig } from "@stu/observability/server";
 import * as NodeServices from "@effect/platform-node/NodeServices";
@@ -10,10 +11,12 @@ import * as OtlpExporter from "effect/unstable/observability/OtlpExporter";
 
 const environmentConfig = Config.schema(
   Schema.Literals(["development", "test", "staging", "production"]),
-  "STUDIENBUCH_ENVIRONMENT",
+  environmentVariables.environment,
 ).pipe(Config.withDefault("development"));
 
-const serviceVersionConfig = Config.string("STUDIENBUCH_VERSION").pipe(Config.withDefault("0.1.0"));
+const serviceVersionConfig = Config.string(environmentVariables.version).pipe(
+  Config.withDefault("0.1.0"),
+);
 
 const disabledFlusherLayer = Layer.succeed(OtlpExporter.Flusher, {
   flush: Effect.void,
@@ -36,7 +39,7 @@ const observabilityLayer = Layer.unwrap(
     return otlpProtobufLayer({
       endpoint: config.endpoint,
       resource: {
-        serviceName: "studienbuch-console",
+        serviceName: consoleServiceName,
         serviceVersion,
         environment,
       },

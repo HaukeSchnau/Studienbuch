@@ -1,30 +1,35 @@
-import type { ClientTelemetryEnvelopeType } from "@stu/observability/browser";
+import {
+  clientMetricNames,
+  type ClientMetricName,
+  type ClientTelemetryEnvelopeType,
+} from "@stu/observability/browser";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Metric from "effect/Metric";
 import * as Tracer from "effect/Tracer";
+import { ingestedRecordsMetricName, ingressSource } from "#/project.ts";
 
-const acceptedRecords = Metric.counter("studienbuch_client_telemetry_records_total", {
-  description: "Validated client telemetry records accepted by the Studienbuch server.",
+const acceptedRecords = Metric.counter(ingestedRecordsMetricName, {
+  description: "Validated client telemetry records accepted by the server.",
   incremental: true,
 });
 
-const clientCanaryTotal = Metric.counter("studienbuch_client_canary_total", {
-  description: "Client observability canaries accepted by the Studienbuch server.",
+const clientCanaryTotal = Metric.counter(clientMetricNames.canaryTotal, {
+  description: "Client observability canaries accepted by the server.",
   incremental: true,
 });
 
-const clientRequestDuration = Metric.histogram("studienbuch_client_request_duration_ms", {
+const clientRequestDuration = Metric.histogram(clientMetricNames.requestDuration, {
   description: "Client-observed request duration in milliseconds.",
   boundaries: [10, 25, 50, 100, 250, 500, 1_000, 2_500, 5_000, 10_000],
 });
 
-const clientOutboxDepth = Metric.gauge("studienbuch_client_outbox_depth", {
+const clientOutboxDepth = Metric.gauge(clientMetricNames.outboxDepth, {
   description: "Client-reported durable telemetry outbox depth.",
 });
 
-const clientOutboxDropped = Metric.counter("studienbuch_client_outbox_dropped_total", {
+const clientOutboxDropped = Metric.counter(clientMetricNames.outboxDropped, {
   description: "Client-reported telemetry records dropped from a bounded outbox.",
   incremental: true,
 });
@@ -57,20 +62,34 @@ export class ClientTelemetry extends Context.Service<ClientTelemetry>()(
   static readonly layer = Layer.effect(ClientTelemetry, this.make);
 }
 
+type RecordAttributes = Readonly<Record<string, string>>;
+type MetricUpdate = (value: number, attributes: RecordAttributes) => Effect.Effect<void>;
+
+/**
+ * Every client metric name mapped onto the server instrument that records it.
+ *
+ * `satisfies Record<ClientMetricName, …>` is the point: adding a name to the shared vocabulary
+ * fails this file until it is handled here, which the previous switch could not guarantee. Each
+ * entry closes over its own instrument, so the differing state types never have to be unified.
+ */
+const updatesByName = {
+  [clientMetricNames.canaryTotal]: (value, attributes) =>
+    Metric.update(Metric.withAttributes(clientCanaryTotal, attributes), value),
+  [clientMetricNames.requestDuration]: (value, attributes) =>
+    Metric.update(Metric.withAttributes(clientRequestDuration, attributes), value),
+  [clientMetricNames.outboxDepth]: (value, attributes) =>
+    Metric.update(Metric.withAttributes(clientOutboxDepth, attributes), value),
+  [clientMetricNames.outboxDropped]: (value, attributes) =>
+    Metric.update(Metric.withAttributes(clientOutboxDropped, attributes), value),
+} satisfies Record<ClientMetricName, MetricUpdate>;
+
 function metricForRecord(
   record: Extract<ClientTelemetryEnvelopeType["records"][number], { readonly type: "metric" }>,
 ) {
-  const attributes = { ...record.attributes, source: "public-client-ingress" };
-  switch (record.name) {
-    case "studienbuch_client_canary_total":
-      return Metric.update(Metric.withAttributes(clientCanaryTotal, attributes), record.value);
-    case "studienbuch_client_request_duration_ms":
-      return Metric.update(Metric.withAttributes(clientRequestDuration, attributes), record.value);
-    case "studienbuch_client_outbox_depth":
-      return Metric.update(Metric.withAttributes(clientOutboxDepth, attributes), record.value);
-    case "studienbuch_client_outbox_dropped_total":
-      return Metric.update(Metric.withAttributes(clientOutboxDropped, attributes), record.value);
-  }
+  return updatesByName[record.name](record.value, {
+    ...record.attributes,
+    source: ingressSource,
+  });
 }
 
 function logLevelForSeverity(
@@ -105,7 +124,7 @@ function ingestRecord(record: ClientTelemetryEnvelopeType["records"][number]): E
             Effect.annotateLogs({
               ...record.attributes,
               event: record.event,
-              source: "public-client-ingress",
+              source: ingressSource,
             }),
           ),
         ],
@@ -131,7 +150,7 @@ function ingestRecord(record: ClientTelemetryEnvelopeType["records"][number]): E
                   ...record.attributes,
                   "client.duration_ms": record.durationMillis,
                   "client.status": record.status,
-                  source: "public-client-ingress",
+                  source: ingressSource,
                 },
               },
               { captureStackTrace: false },

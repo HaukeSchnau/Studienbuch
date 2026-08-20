@@ -7,7 +7,7 @@ import * as Redacted from "effect/Redacted";
 import { Auth } from "./auth.ts";
 import { Database } from "./database.ts";
 import { migrateToLatest } from "./migrate.ts";
-import { migrationsSchema, migrationsTable } from "./migration-history.ts";
+import { migrationsSchema, migrationsTable } from "./project.ts";
 import { users } from "./schema/auth.ts";
 
 let container: StartedPostgreSqlContainer;

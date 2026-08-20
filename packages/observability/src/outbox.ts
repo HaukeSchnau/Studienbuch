@@ -5,6 +5,7 @@ import {
   type ClientTelemetryEnvelope,
   type ServiceName,
 } from "./client-envelope.ts";
+import { clientMetricNames } from "./project.ts";
 
 export const OUTBOX_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 export const OUTBOX_MAX_BYTES = 10 * 1024 * 1024;
@@ -322,7 +323,7 @@ export class TelemetryOutbox {
         ...eligible.map((entry) => entry.record),
         {
           type: "metric",
-          name: "studienbuch_client_outbox_depth",
+          name: clientMetricNames.outboxDepth,
           kind: "gauge",
           value: this.#snapshot.records.length,
           recordedAtUnixMillis: now,
@@ -330,7 +331,7 @@ export class TelemetryOutbox {
         },
         {
           type: "metric",
-          name: "studienbuch_client_outbox_dropped_total",
+          name: clientMetricNames.outboxDropped,
           kind: "counter",
           value: this.#snapshot.dropped,
           recordedAtUnixMillis: now,

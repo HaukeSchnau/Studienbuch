@@ -11,9 +11,10 @@ import * as Layer from "effect/Layer";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { OtlpExporter } from "effect/unstable/observability";
 import { authOptions } from "#/lib/auth/auth.ts";
+import { environmentVariables, serverServiceName } from "#/project.ts";
 import { ClientTelemetry } from "./client-telemetry.server.ts";
 
-const environmentConfig = Config.string("STUDIENBUCH_ENVIRONMENT").pipe(
+const environmentConfig = Config.string(environmentVariables.environment).pipe(
   Config.orElse(() => Config.string("NODE_ENV")),
   Config.withDefault("development"),
   Config.map((value) =>
@@ -24,7 +25,7 @@ const environmentConfig = Config.string("STUDIENBUCH_ENVIRONMENT").pipe(
 const telemetryLayer = Layer.unwrap(
   Effect.gen(function* () {
     const config = yield* serverConfig;
-    const serviceVersion = yield* Config.string("STUDIENBUCH_VERSION").pipe(
+    const serviceVersion = yield* Config.string(environmentVariables.version).pipe(
       Config.withDefault("development"),
     );
     const environment = yield* environmentConfig;
@@ -39,7 +40,7 @@ const telemetryLayer = Layer.unwrap(
     return otlpProtobufLayer({
       endpoint: config.endpoint,
       resource: {
-        serviceName: "studienbuch-server",
+        serviceName: serverServiceName,
         serviceVersion,
         environment,
       },
