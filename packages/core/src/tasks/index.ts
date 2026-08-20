@@ -1,5 +1,5 @@
 export {
-  ConcurrentTaskRevision,
+  ConcurrentRevision,
   DueStatus,
   SchoolTask,
   TaskStatus,

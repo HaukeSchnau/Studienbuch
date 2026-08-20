@@ -2,13 +2,13 @@ export { AssessmentWeight, GradeAverage, GradeValue } from "./grading";
 export { AssessmentId, CourseStandingId, StandingRevisionId } from "./identity";
 export { GradingPolicy } from "./grading-policy";
 export {
-  AssessmentAlreadyLearnerAcknowledgedError,
-  AssessmentAlreadyTeacherAttestedError,
-  AssessmentAcknowledgementActorError,
-  AssessmentLegalStatusUnknownError,
+  AlreadyLearnerAcknowledged,
+  AlreadyTeacherAttested,
+  AcknowledgementActor,
+  LegalStatusUnknown,
 } from "./learner-acknowledgement";
 export {
-  ConcurrentWrittenAssessmentRevisionError,
+  ConcurrentWrittenAssessmentRevision,
   WrittenAssessment,
   acknowledgeWritten,
   attestWritten,
@@ -16,14 +16,14 @@ export {
   isWrittenConfirmed,
 } from "./written-assessment";
 export {
-  ConcurrentStandingRevisionError,
+  ConcurrentStandingRevision,
   CourseStanding,
-  InvalidStandingSupersessionError,
+  InvalidStandingSupersession,
   StandingKind,
   StandingRevision,
-  StandingRevisionChronologyError,
-  StandingRevisionNotCurrentError,
-  StandingRevisionNotFoundError,
+  StandingRevisionChronology,
+  StandingRevisionNotCurrent,
+  StandingRevisionNotFound,
   acknowledgeStanding,
   attestStanding,
   currentStandingRevision,

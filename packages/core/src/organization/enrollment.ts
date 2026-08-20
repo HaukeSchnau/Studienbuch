@@ -69,7 +69,7 @@ export const EnrollmentSuggestion = Schema.Struct({
 export interface EnrollmentSuggestion extends Schema.Schema.Type<typeof EnrollmentSuggestion> {}
 
 export class CourseChoiceViolation extends Schema.TaggedError<CourseChoiceViolation>()(
-  "CourseChoiceViolation",
+  "Organization.CourseChoiceViolation",
   {
     choiceGroupId: CourseChoiceGroupId,
     reason: Schema.Literals([
@@ -83,7 +83,7 @@ export class CourseChoiceViolation extends Schema.TaggedError<CourseChoiceViolat
 ) {}
 
 export class EnrollmentNotRemovable extends Schema.TaggedError<EnrollmentNotRemovable>()(
-  "EnrollmentNotRemovable",
+  "Organization.EnrollmentNotRemovable",
   {
     enrollmentId: EnrollmentId,
     reason: Schema.Literals(["Required", "InheritedFromClass", "ChoiceGroupUnavailable"]),

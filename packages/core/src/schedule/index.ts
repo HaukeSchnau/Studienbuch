@@ -26,13 +26,13 @@ export {
 } from "./collisions";
 export { lessonOccurrenceId, materializeSchoolDay } from "./materialize";
 export {
-  ConflictingScheduleExceptionsError,
+  ConflictingExceptions,
   LessonOccurrence,
   LessonOccurrenceRef,
-  InvalidScheduleInputError,
+  InvalidInput,
   ScheduleException,
   ScheduleMaterializationError,
-  UnresolvedScheduleExceptionError,
+  UnresolvedException,
 } from "./lesson-occurrence";
 export {
   meetingOccursOn,

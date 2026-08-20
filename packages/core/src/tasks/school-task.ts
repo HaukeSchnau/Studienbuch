@@ -59,7 +59,7 @@ export class TaskTransitionRefused extends Schema.TaggedError<TaskTransitionRefu
   }
 }
 
-export class ConcurrentTaskRevision extends Schema.TaggedError<ConcurrentTaskRevision>()(
+export class ConcurrentRevision extends Schema.TaggedError<ConcurrentRevision>()(
   "Tasks.ConcurrentRevision",
   {
     taskId: SchoolTaskId,
@@ -70,7 +70,7 @@ export class ConcurrentTaskRevision extends Schema.TaggedError<ConcurrentTaskRev
 
 export type TransitionError =
   | TaskTransitionRefused
-  | ConcurrentTaskRevision
+  | ConcurrentRevision
   | AggregateRevision.Exhausted
   | AuthorityDenied;
 
@@ -103,7 +103,7 @@ const withStatus = Effect.fn("SchoolTask.withStatus")(function* (
 const prepare = (input: TransitionInput) =>
   Effect.gen(function* () {
     if (!AggregateRevision.Equivalence(input.task.revision, input.expectedRevision)) {
-      return yield* ConcurrentTaskRevision.make({
+      return yield* ConcurrentRevision.make({
         taskId: input.task.id,
         expected: input.expectedRevision,
         actual: input.task.revision,

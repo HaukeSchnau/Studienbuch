@@ -14,13 +14,10 @@ import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import { GradingPolicy } from "./grading-policy";
 import { GradeValue } from "./grading";
 import { CourseStandingId, StandingRevisionId } from "./identity";
-import type {
-  AssessmentAcknowledgementActorError,
-  AssessmentLegalStatusUnknownError,
-} from "./learner-acknowledgement";
+import type { AcknowledgementActor, LegalStatusUnknown } from "./learner-acknowledgement";
 import {
-  AssessmentAlreadyLearnerAcknowledgedError,
-  AssessmentAlreadyTeacherAttestedError,
+  AlreadyLearnerAcknowledged,
+  AlreadyTeacherAttested,
   authorizeLearnerAcknowledgement,
   makeAcknowledgement,
 } from "./learner-acknowledgement";
@@ -103,57 +100,57 @@ export const lastConfirmedStandingRevision = (
 ): Option.Option<StandingRevision> =>
   Array.findLast(standing.revisions, isStandingRevisionConfirmed);
 
-export class ConcurrentStandingRevisionError extends Schema.TaggedError<ConcurrentStandingRevisionError>()(
+export class ConcurrentStandingRevision extends Schema.TaggedError<ConcurrentStandingRevision>()(
   "Assessment.ConcurrentStandingRevision",
   { expected: AggregateRevision.Schema, actual: AggregateRevision.Schema },
 ) {}
 
-export class StandingRevisionNotFoundError extends Schema.TaggedError<StandingRevisionNotFoundError>()(
+export class StandingRevisionNotFound extends Schema.TaggedError<StandingRevisionNotFound>()(
   "Assessment.StandingRevisionNotFound",
   { revisionId: StandingRevisionId },
 ) {}
 
-export class InvalidStandingSupersessionError extends Schema.TaggedError<InvalidStandingSupersessionError>()(
+export class InvalidStandingSupersession extends Schema.TaggedError<InvalidStandingSupersession>()(
   "Assessment.InvalidStandingSupersession",
   { expectedCurrentRevisionId: StandingRevisionId, supersedes: StandingRevisionId },
 ) {}
 
-export class StandingRevisionChronologyError extends Schema.TaggedError<StandingRevisionChronologyError>()(
+export class StandingRevisionChronology extends Schema.TaggedError<StandingRevisionChronology>()(
   "Assessment.StandingRevisionChronology",
   { previousObservedOn: PlainDateSchema, nextObservedOn: PlainDateSchema },
 ) {}
 
-export class StandingRevisionNotCurrentError extends Schema.TaggedError<StandingRevisionNotCurrentError>()(
+export class StandingRevisionNotCurrent extends Schema.TaggedError<StandingRevisionNotCurrent>()(
   "Assessment.StandingRevisionNotCurrent",
   { revisionId: StandingRevisionId, currentRevisionId: StandingRevisionId },
 ) {}
 
 export type ReviseStandingError =
-  | ConcurrentStandingRevisionError
-  | StandingRevisionNotFoundError
-  | InvalidStandingSupersessionError
-  | StandingRevisionChronologyError
-  | AssessmentAlreadyTeacherAttestedError
-  | AssessmentAlreadyLearnerAcknowledgedError
+  | ConcurrentStandingRevision
+  | StandingRevisionNotFound
+  | InvalidStandingSupersession
+  | StandingRevisionChronology
+  | AlreadyTeacherAttested
+  | AlreadyLearnerAcknowledged
   | AggregateRevision.Exhausted
-  | GradingPolicy.InvalidGradeValueError;
+  | GradingPolicy.InvalidGradeValue;
 
 export type AttestStandingError =
-  | ConcurrentStandingRevisionError
-  | StandingRevisionNotFoundError
-  | StandingRevisionNotCurrentError
-  | AssessmentAlreadyTeacherAttestedError
+  | ConcurrentStandingRevision
+  | StandingRevisionNotFound
+  | StandingRevisionNotCurrent
+  | AlreadyTeacherAttested
   | AggregateRevision.Exhausted
-  | GradingPolicy.InvalidGradeValueError
+  | GradingPolicy.InvalidGradeValue
   | AuthorityDenied;
 
 export type AcknowledgeStandingError =
-  | ConcurrentStandingRevisionError
-  | StandingRevisionNotFoundError
-  | StandingRevisionNotCurrentError
-  | AssessmentAlreadyLearnerAcknowledgedError
-  | AssessmentAcknowledgementActorError
-  | AssessmentLegalStatusUnknownError
+  | ConcurrentStandingRevision
+  | StandingRevisionNotFound
+  | StandingRevisionNotCurrent
+  | AlreadyLearnerAcknowledged
+  | AcknowledgementActor
+  | LegalStatusUnknown
   | AggregateRevision.Exhausted
   | AuthorityDenied;
 
@@ -161,7 +158,7 @@ const checkRevision = (standing: CourseStanding, expectedRevision: AggregateRevi
   standing.revision === expectedRevision
     ? Effect.void
     : Effect.fail(
-        ConcurrentStandingRevisionError.make({
+        ConcurrentStandingRevision.make({
           expected: expectedRevision,
           actual: standing.revision,
         }),
@@ -172,26 +169,26 @@ export const reviseStanding = Effect.fn("Assessment.addStandingRevision")(functi
 ) {
   yield* checkRevision(input.standing, input.expectedRevision);
   if (input.revision.teacherAttestation !== undefined) {
-    return yield* AssessmentAlreadyTeacherAttestedError.make({ target: "StandingRevision" });
+    return yield* AlreadyTeacherAttested.make({ target: "StandingRevision" });
   }
   if (input.revision.learnerAcknowledgement !== undefined) {
-    return yield* AssessmentAlreadyLearnerAcknowledgedError.make({ target: "StandingRevision" });
+    return yield* AlreadyLearnerAcknowledged.make({ target: "StandingRevision" });
   }
   if (input.standing.revisions.some((revision) => revision.id === input.revision.id)) {
-    return yield* InvalidStandingSupersessionError.make({
+    return yield* InvalidStandingSupersession.make({
       expectedCurrentRevisionId: input.standing.currentRevisionId,
       supersedes: input.revision.id,
     });
   }
   if (input.revision.supersedes !== input.standing.currentRevisionId) {
-    return yield* InvalidStandingSupersessionError.make({
+    return yield* InvalidStandingSupersession.make({
       expectedCurrentRevisionId: input.standing.currentRevisionId,
       supersedes: input.revision.supersedes ?? input.revision.id,
     });
   }
   const current = currentStandingRevision(input.standing);
   if (PlainDate.compare(input.revision.observedOn, current.observedOn) < 0) {
-    return yield* StandingRevisionChronologyError.make({
+    return yield* StandingRevisionChronology.make({
       previousObservedOn: current.observedOn,
       nextObservedOn: input.revision.observedOn,
     });
@@ -234,10 +231,10 @@ const currentTarget = Effect.fn("Assessment.currentStandingTarget")(function* (
   yield* checkRevision(input.standing, input.expectedRevision);
   const target = input.standing.revisions.find((revision) => revision.id === input.revisionId);
   if (target === undefined) {
-    return yield* StandingRevisionNotFoundError.make({ revisionId: input.revisionId });
+    return yield* StandingRevisionNotFound.make({ revisionId: input.revisionId });
   }
   if (target.id !== input.standing.currentRevisionId) {
-    return yield* StandingRevisionNotCurrentError.make({
+    return yield* StandingRevisionNotCurrent.make({
       revisionId: target.id,
       currentRevisionId: input.standing.currentRevisionId,
     });
@@ -267,7 +264,7 @@ export const attestStanding = Effect.fn("Assessment.attestStandingRevision")(fun
 ) {
   const target = yield* currentTarget(input);
   if (target.teacherAttestation !== undefined) {
-    return yield* AssessmentAlreadyTeacherAttestedError.make({ target: "StandingRevision" });
+    return yield* AlreadyTeacherAttested.make({ target: "StandingRevision" });
   }
   const policy = yield* GradingPolicy.Service;
   yield* policy.validateValue(target.value);
@@ -294,7 +291,7 @@ export const acknowledgeStanding = Effect.fn("Assessment.acknowledgeStandingRevi
 ) {
   const target = yield* currentTarget(input);
   if (target.learnerAcknowledgement !== undefined) {
-    return yield* AssessmentAlreadyLearnerAcknowledgedError.make({
+    return yield* AlreadyLearnerAcknowledged.make({
       target: "StandingRevision",
     });
   }

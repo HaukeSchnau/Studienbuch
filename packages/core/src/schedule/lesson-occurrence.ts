@@ -47,7 +47,7 @@ export const LessonOccurrence = Schema.Struct({
 });
 export interface LessonOccurrence extends Schema.Schema.Type<typeof LessonOccurrence> {}
 
-export class UnresolvedScheduleExceptionError extends Schema.TaggedError<UnresolvedScheduleExceptionError>()(
+export class UnresolvedException extends Schema.TaggedError<UnresolvedException>()(
   "Schedule.UnresolvedException",
   {
     exceptionId: ScheduleExceptionId,
@@ -60,22 +60,19 @@ export class UnresolvedScheduleExceptionError extends Schema.TaggedError<Unresol
   },
 ) {}
 
-export class ConflictingScheduleExceptionsError extends Schema.TaggedError<ConflictingScheduleExceptionsError>()(
+export class ConflictingExceptions extends Schema.TaggedError<ConflictingExceptions>()(
   "Schedule.ConflictingExceptions",
   { target: LessonOccurrenceRef, exceptionIds: Schema.NonEmptyArray(ScheduleExceptionId) },
 ) {}
 
-export class InvalidScheduleInputError extends Schema.TaggedError<InvalidScheduleInputError>()(
-  "Schedule.InvalidInput",
-  {
-    reason: Schema.Literals(["DuplicateMeetingId", "DuplicateExceptionId"]),
-    id: Schema.String.check(Schema.isMinLength(1)),
-  },
-) {}
+export class InvalidInput extends Schema.TaggedError<InvalidInput>()("Schedule.InvalidInput", {
+  reason: Schema.Literals(["DuplicateMeetingId", "DuplicateExceptionId"]),
+  id: Schema.String.check(Schema.isMinLength(1)),
+}) {}
 
 export const ScheduleMaterializationError = Schema.Union([
-  UnresolvedScheduleExceptionError,
-  ConflictingScheduleExceptionsError,
-  InvalidScheduleInputError,
+  UnresolvedException,
+  ConflictingExceptions,
+  InvalidInput,
 ]);
 export type ScheduleMaterializationError = typeof ScheduleMaterializationError.Type;

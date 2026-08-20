@@ -2,7 +2,7 @@ export {
   AbsenceCase,
   AbsenceReason,
   AbsenceStatus,
-  ConcurrentAbsenceRevisionError,
+  ConcurrentRevision,
   MissedLesson,
   MissedLessonDecision,
   excusedLessons,
@@ -11,19 +11,19 @@ export {
   status,
 } from "./absence-case";
 export {
-  AbsenceAlreadyAcknowledgedError,
-  AbsenceStudentIdentityError,
+  AlreadyAcknowledged,
+  StudentIdentity,
   AcknowledgeError,
-  AcknowledgementActorError,
+  AcknowledgementActor,
   acknowledge,
 } from "./acknowledge";
 export {
-  AbsenceNotAcknowledgedError,
+  AbsenceNotAcknowledged,
   DecideMissedLessonError,
-  MissedLessonAlreadyDecidedError,
-  MissedLessonNotFoundError,
-  MissedLessonOccurrenceMismatchError,
-  StudentNotEnrolledError,
+  MissedLessonAlreadyDecided,
+  MissedLessonNotFound,
+  MissedLessonOccurrenceMismatch,
+  StudentNotEnrolled,
   decideMissedLesson,
 } from "./decide-missed-lesson";
 export { AbsenceCaseId, MissedLessonId } from "./identity";

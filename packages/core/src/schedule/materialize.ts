@@ -4,12 +4,12 @@ import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { type AcademicCalendar, isSchoolDay } from "./academic-calendar";
 import { LessonOccurrenceId, type RecurringMeetingId, type ScheduleExceptionId } from "./identity";
 import {
-  ConflictingScheduleExceptionsError,
-  InvalidScheduleInputError,
+  ConflictingExceptions,
+  InvalidInput,
   LessonOccurrence,
   LessonOccurrenceRef,
   type ScheduleException,
-  UnresolvedScheduleExceptionError,
+  UnresolvedException,
 } from "./lesson-occurrence";
 import { meetingOccursOn, type RecurringMeeting } from "./recurring-meeting";
 
@@ -36,7 +36,7 @@ const occurrenceOrder = (left: LessonOccurrence, right: LessonOccurrence) =>
 
 const validateExceptionGroup = (
   exceptions: ReadonlyArray<ScheduleException>,
-): ConflictingScheduleExceptionsError | undefined => {
+): ConflictingExceptions | undefined => {
   if (exceptions.length < 2) return undefined;
 
   const tags = exceptions.map((exception) => exception._tag);
@@ -47,7 +47,7 @@ const validateExceptionGroup = (
   const ordered = [...exceptions].sort(exceptionOrder);
   const first = ordered[0];
   if (first === undefined) return undefined;
-  return ConflictingScheduleExceptionsError.make({
+  return ConflictingExceptions.make({
     target: first.target,
     exceptionIds: [first.id, ...ordered.slice(1).map((exception) => exception.id)],
   });
@@ -108,7 +108,7 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
   const meetingIds = new Set<RecurringMeetingId>();
   for (const meeting of input.meetings) {
     if (meetingIds.has(meeting.id)) {
-      return yield* InvalidScheduleInputError.make({
+      return yield* InvalidInput.make({
         reason: "DuplicateMeetingId",
         id: meeting.id,
       });
@@ -123,7 +123,7 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
   const exceptionIds = new Set<ScheduleExceptionId>();
   for (const exception of input.exceptions) {
     if (exceptionIds.has(exception.id)) {
-      return yield* InvalidScheduleInputError.make({
+      return yield* InvalidInput.make({
         reason: "DuplicateExceptionId",
         id: exception.id,
       });
@@ -149,7 +149,7 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
   for (const exception of relevantExceptions) {
     const meeting = meetingsById.get(exception.target.meetingId);
     if (meeting === undefined) {
-      return yield* UnresolvedScheduleExceptionError.make({
+      return yield* UnresolvedException.make({
         exceptionId: exception.id,
         target: exception.target,
         reason: "MeetingNotFound",
@@ -159,14 +159,14 @@ export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(f
       !meetingOccursOn(meeting, exception.target.scheduledDate) ||
       !isSchoolDay(input.calendar, exception.target.scheduledDate)
     ) {
-      return yield* UnresolvedScheduleExceptionError.make({
+      return yield* UnresolvedException.make({
         exceptionId: exception.id,
         target: exception.target,
         reason: "OccurrenceNotScheduled",
       });
     }
     if (exception._tag === "Rescheduled" && !isSchoolDay(input.calendar, exception.date)) {
-      return yield* UnresolvedScheduleExceptionError.make({
+      return yield* UnresolvedException.make({
         exceptionId: exception.id,
         target: exception.target,
         reason: "DestinationNotSchoolDay",
@@ -212,8 +212,5 @@ export declare namespace materializeSchoolDay {
     readonly exceptions: ReadonlyArray<ScheduleException>;
   }
 
-  export type Error =
-    | UnresolvedScheduleExceptionError
-    | ConflictingScheduleExceptionsError
-    | InvalidScheduleInputError;
+  export type Error = UnresolvedException | ConflictingExceptions | InvalidInput;
 }

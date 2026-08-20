@@ -91,20 +91,23 @@ export const AuthoritySnapshot = Schema.Struct({
 );
 export interface AuthoritySnapshot extends Schema.Schema.Type<typeof AuthoritySnapshot> {}
 
-export class AuthorityDenied extends Schema.TaggedError<AuthorityDenied>()("AuthorityDenied", {
-  actor: ActorRef,
-  capability: Capability,
-  reason: Schema.Literals([
-    "ActorMembershipMismatch",
-    "ActorMembershipInactive",
-    "TargetNotFound",
-    "TargetInactive",
-    "TargetOutsideSchool",
-    "InsufficientRole",
-    "GuardianRelationshipInactive",
-    "TeacherNotAssigned",
-  ]),
-}) {}
+export class AuthorityDenied extends Schema.TaggedError<AuthorityDenied>()(
+  "Organization.AuthorityDenied",
+  {
+    actor: ActorRef,
+    capability: Capability,
+    reason: Schema.Literals([
+      "ActorMembershipMismatch",
+      "ActorMembershipInactive",
+      "TargetNotFound",
+      "TargetInactive",
+      "TargetOutsideSchool",
+      "InsufficientRole",
+      "GuardianRelationshipInactive",
+      "TeacherNotAssigned",
+    ]),
+  },
+) {}
 
 const activeOn = (effective: CalendarDateRange.Type, on: PlainDate.Record) =>
   CalendarDateRange.contains(effective, on);

@@ -17,7 +17,7 @@ import { PersonId } from "../organization/identity";
 import type { LegalAgePolicy, Person } from "../organization/person";
 import { legalStatusOn } from "../organization/person";
 
-export class AssessmentAcknowledgementActorError extends Schema.TaggedError<AssessmentAcknowledgementActorError>()(
+export class AcknowledgementActor extends Schema.TaggedError<AcknowledgementActor>()(
   "Assessment.AcknowledgementActor",
   {
     actor: ActorRef,
@@ -30,17 +30,17 @@ export class AssessmentAcknowledgementActorError extends Schema.TaggedError<Asse
 ) {}
 
 /** A missing date of birth is not treated as minority: the legal decision must be explicit. */
-export class AssessmentLegalStatusUnknownError extends Schema.TaggedError<AssessmentLegalStatusUnknownError>()(
+export class LegalStatusUnknown extends Schema.TaggedError<LegalStatusUnknown>()(
   "Assessment.LegalStatusUnknown",
   { studentId: PersonId, on: PlainDateSchema },
 ) {}
 
-export class AssessmentAlreadyTeacherAttestedError extends Schema.TaggedError<AssessmentAlreadyTeacherAttestedError>()(
+export class AlreadyTeacherAttested extends Schema.TaggedError<AlreadyTeacherAttested>()(
   "Assessment.AlreadyTeacherAttested",
   { target: Schema.Literals(["WrittenAssessment", "StandingRevision"]) },
 ) {}
 
-export class AssessmentAlreadyLearnerAcknowledgedError extends Schema.TaggedError<AssessmentAlreadyLearnerAcknowledgedError>()(
+export class AlreadyLearnerAcknowledged extends Schema.TaggedError<AlreadyLearnerAcknowledged>()(
   "Assessment.AlreadyLearnerAcknowledged",
   { target: Schema.Literals(["WrittenAssessment", "StandingRevision"]) },
 ) {}
@@ -78,7 +78,7 @@ export const authorizeLearnerAcknowledgement = Effect.fn(
     (membership) => membership.id === input.studentMembershipId,
   );
   if (studentMembership?.personId !== input.student.id) {
-    return yield* AssessmentAcknowledgementActorError.make({
+    return yield* AcknowledgementActor.make({
       actor: input.actor,
       reason: "StudentIdentityMismatch",
     });
@@ -86,20 +86,20 @@ export const authorizeLearnerAcknowledgement = Effect.fn(
 
   const legalStatus = legalStatusOn(input.student, input.on, input.legalAgePolicy);
   if (legalStatus === "Unknown") {
-    return yield* AssessmentLegalStatusUnknownError.make({
+    return yield* LegalStatusUnknown.make({
       studentId: input.student.id,
       on: input.on,
     });
   }
   const actorIsStudent = input.actor.personId === input.student.id;
   if (legalStatus === "Adult" && !actorIsStudent) {
-    return yield* AssessmentAcknowledgementActorError.make({
+    return yield* AcknowledgementActor.make({
       actor: input.actor,
       reason: "AdultMustAcknowledgeSelf",
     });
   }
   if (legalStatus === "Minor" && actorIsStudent) {
-    return yield* AssessmentAcknowledgementActorError.make({
+    return yield* AcknowledgementActor.make({
       actor: input.actor,
       reason: "GuardianRequired",
     });
