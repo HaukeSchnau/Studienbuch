@@ -1,5 +1,4 @@
 import { PgClient } from "@effect/sql-pg";
-import type { EffectPgDatabase } from "drizzle-orm/effect-postgres";
 import * as PgDrizzle from "drizzle-orm/effect-postgres";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
@@ -19,20 +18,6 @@ export interface Options {
 export class Unavailable extends Schema.TaggedError<Unavailable>()("Database.Unavailable", {
   reason: Schema.String,
 }) {}
-
-export interface Interface {
-  readonly drizzle: EffectPgDatabase;
-  readonly pool: Pool;
-  /**
-   * Round-trips a trivial query so callers can distinguish "the pool was built once" from "the
-   * database is answering now". Readiness probes need the second.
-   */
-  readonly ping: Effect.Effect<void, Unavailable>;
-}
-
-export class Service extends Context.Service<Service, Interface>()(
-  "@stu/server/database/Service",
-) {}
 
 const acquirePool = (options: Options) =>
   Effect.acquireRelease(
@@ -56,9 +41,15 @@ const acquirePool = (options: Options) =>
     (pool) => Effect.promise(() => pool.end()),
   );
 
-export const layer = (options: Options): Layer.Layer<Service, Unavailable | SqlError.SqlError> =>
-  Layer.effect(
-    Service,
+/**
+ * The PostgreSQL seam.
+ *
+ * `pool` is the raw driver handle. It exists because Better Auth's adapter cannot consume an
+ * Effect-flavoured Drizzle instance, so `@stu/server/auth` hands it the pool directly. Nothing
+ * outside this package should reach for it; use `drizzle` instead.
+ */
+export class Service extends Context.Service<Service>()("@stu/server/database/Service", {
+  make: (options: Options) =>
     Effect.gen(function* () {
       const pool = yield* acquirePool(options);
       // `fromPool` reads application name and type parsers off `pool.options`; passing them here
@@ -74,9 +65,12 @@ export const layer = (options: Options): Layer.Layer<Service, Unavailable | SqlE
         catch: (cause) =>
           Unavailable.make({ reason: cause instanceof Error ? cause.message : String(cause) }),
       });
-      return Service.of({ drizzle, pool, ping });
+      return { drizzle, pool, ping };
     }),
-  ).pipe(Layer.provide(Reactivity.layer));
+}) {}
+
+export const layer = (options: Options): Layer.Layer<Service, Unavailable | SqlError.SqlError> =>
+  Layer.effect(Service, Service.make(options)).pipe(Layer.provide(Reactivity.layer));
 
 export const layerConfig: Layer.Layer<
   Service,
