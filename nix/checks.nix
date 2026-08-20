@@ -38,6 +38,20 @@ let
             encoded_postgres_socket="$(printf '%s' "$postgres_socket" | jq -sRr @uri)"
             postgres_user="$(id -un)"
             database_url="postgresql://$postgres_user@/postgres?host=$encoded_postgres_socket"
+            collector_pid=""
+            server_pid=""
+            cleanup() {
+              if [ -n "$server_pid" ]; then
+                kill "$server_pid" 2>/dev/null || true
+                wait "$server_pid" 2>/dev/null || true
+              fi
+              if [ -n "$collector_pid" ]; then
+                kill "$collector_pid" 2>/dev/null || true
+                wait "$collector_pid" 2>/dev/null || true
+              fi
+              pg_ctl -D "$postgres_root" -m fast -w stop >/dev/null 2>&1 || true
+            }
+            trap cleanup EXIT
 
             ${pkgs.python3}/bin/python - "$root/otlp-paths" "$root/otlp-bodies" <<'PY' &
             import http.server
@@ -92,18 +106,15 @@ let
 
             PROJECT_RUNTIME_FILE="$root/manifest.json" \
               PROJECT_SECRETS_DIR="$secrets" \
+              ${releasePackage}/bin/project-release-runtime migrate \
+              > "$root/migrate.log" 2>&1
+
+            PROJECT_RUNTIME_FILE="$root/manifest.json" \
+              PROJECT_SECRETS_DIR="$secrets" \
               OTEL_EXPORTER_OTLP_ENDPOINT="http://127.0.0.1:24318" \
               ${releasePackage}/bin/project-release-runtime \
               > "$root/server.log" 2>&1 &
             server_pid="$!"
-            cleanup() {
-              kill "$server_pid" 2>/dev/null || true
-              wait "$server_pid" 2>/dev/null || true
-              kill "$collector_pid" 2>/dev/null || true
-              wait "$collector_pid" 2>/dev/null || true
-              pg_ctl -D "$postgres_root" -m fast -w stop >/dev/null 2>&1 || true
-            }
-            trap cleanup EXIT
 
             for _ in $(seq 1 60); do
               if curl --fail --silent --show-error \
@@ -226,6 +237,7 @@ let
           (.development.workloads.mobile.secrets // []) == [] and
           (.parameters | keys) == ["databaseUrl"] and
           .release.action == "web" and
+          .release.preDeployTasks == {migrate: {timeoutSec: 300}} and
           .release.health.paths == ["/api/health/live", "/api/health/ready"] and
           .release.health.startupTimeoutSec == 60 and
           .release.health.intervalSec == 2 and

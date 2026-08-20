@@ -50,8 +50,8 @@ just db-generate
 just db-migrate
 ```
 
-`just db-migrate` is a convenience for development. The server also applies pending migrations
-itself during startup, so a deployed Release never serves traffic against an unmigrated schema.
+`just db-migrate` is a convenience for development. A deployed Release applies pending migrations
+as a staged pre-deploy task before the active artifact or web process changes.
 Both paths record their work in `public.studienbuch_migrations`; the table and schema names live in
 `src/migration-history.ts` so the two cannot drift.
 

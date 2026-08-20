@@ -59,7 +59,10 @@ let
             projectRelease = nix-infra-modules.lib.projectRuntime.mkServiceRelease {
               inherit pkgs descriptorPath;
               payloads = [ web.release.payload ];
-              actions.web = web.release.action;
+              actions = {
+                web = web.release.action;
+                migrate = web.release.migrationAction;
+              };
             };
           in
           {

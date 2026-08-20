@@ -24,7 +24,7 @@ let
   # Update with the `got:` hash reported by:
   #   nix build .#webApplication
   # after regenerating pnpm-lock.yaml for all workspace manifest changes.
-  pnpmDependencyHash = "sha256-fHBXkDEPtOWBkilyaBMrsvREXzVHPJdYcNs0iMrYbas=";
+  pnpmDependencyHash = "sha256-hLy/q4PReuU3FeWv2MTubyrjlaNNTigTQ/qghKgkMrI=";
 
   pnpmDeps = pkgs.fetchPnpmDeps {
     pname = "studienbuch-web-dependencies";
@@ -57,6 +57,12 @@ let
         --format=cjs \
         --platform=node \
         --outfile=${application.relativePath}/.output/server/instrument.server.cjs
+      esbuild packages/server/src/database/migrate.cli.ts \
+        --bundle \
+        --format=esm \
+        --platform=node \
+        --banner:js='import { createRequire } from "node:module"; const require = createRequire(import.meta.url);' \
+        --outfile=${application.relativePath}/.output/server/migrate.mjs
       rm ${application.relativePath}/.output/server/instrument.server.mjs
       runHook postBuild
     '';
@@ -137,11 +143,24 @@ let
       exec node --import ./server/instrument.server.cjs ./server/index.mjs
     '';
   };
+
+  migrationAction = pkgs.writeShellApplication {
+    name = "studienbuch-release-migrate-action";
+    runtimeInputs = [ nodejs ];
+    text = ''
+      DATABASE_URL="$(project-context parameter databaseUrl)"
+      export DATABASE_URL
+      export STUDIENBUCH_MIGRATIONS_DIR=${webApplication}/${applicationPath}/drizzle
+
+      exec node ${webApplication}/${applicationPath}/.output/server/migrate.mjs
+    '';
+  };
 in
 {
   development.action = developmentAction;
   release = {
     action = releaseAction;
+    migrationAction = migrationAction;
     payload = webApplication;
   };
 }

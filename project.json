@@ -50,6 +50,11 @@
   },
   "release": {
     "action": "web",
+    "preDeployTasks": {
+      "migrate": {
+        "timeoutSec": 300
+      }
+    },
     "health": {
       "paths": ["/api/health/live", "/api/health/ready"],
       "startupTimeoutSec": 60,

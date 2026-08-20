@@ -17,9 +17,8 @@ export const migrationsFolder = Config.string("STUDIENBUCH_MIGRATIONS_DIR").pipe
 );
 
 /**
- * Applies every pending migration. Idempotent, and safe to run on each server start: Drizzle takes
- * a PostgreSQL advisory lock, so concurrent instances of the same release serialize rather than
- * racing.
+ * Applies every pending migration. Idempotent and safe to retry: Drizzle takes a PostgreSQL
+ * advisory lock, so concurrent invocations serialize rather than racing.
  */
 export const migrateToLatest = Effect.gen(function* () {
   const database = yield* Database.Service;
