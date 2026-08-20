@@ -29,13 +29,33 @@ const clientOutboxDropped = Metric.counter("studienbuch_client_outbox_dropped_to
   incremental: true,
 });
 
-export interface ClientTelemetryService {
-  readonly ingest: (envelope: ClientTelemetryEnvelopeType) => Effect.Effect<void>;
-}
-
-export class ClientTelemetry extends Context.Service<ClientTelemetry, ClientTelemetryService>()(
+export class ClientTelemetry extends Context.Service<ClientTelemetry>()(
   "@stu/web/server-runtime/client-telemetry.server/ClientTelemetry",
-) {}
+  {
+    make: Effect.succeed({
+      ingest: Effect.fn("ClientTelemetry.ingest")((envelope: ClientTelemetryEnvelopeType) =>
+        Effect.forEach(envelope.records, ingestRecord, { discard: true }).pipe(
+          Effect.annotateLogs({
+            client_service: envelope.serviceName,
+            record_count: envelope.records.length,
+          }),
+          Effect.withSpan(
+            "client.telemetry.ingest",
+            {
+              attributes: {
+                "client.service.name": envelope.serviceName,
+                "telemetry.record.count": envelope.records.length,
+              },
+            },
+            { captureStackTrace: false },
+          ),
+        ),
+      ),
+    }),
+  },
+) {
+  static readonly layer = Layer.effect(ClientTelemetry, this.make);
+}
 
 function metricForRecord(
   record: Extract<ClientTelemetryEnvelopeType["records"][number], { readonly type: "metric" }>,
@@ -123,24 +143,3 @@ function ingestRecord(record: ClientTelemetryEnvelopeType["records"][number]): E
     }
   }
 }
-
-export const ClientTelemetryLive = Layer.succeed(ClientTelemetry, {
-  ingest: Effect.fn("ClientTelemetry.ingest")((envelope: ClientTelemetryEnvelopeType) =>
-    Effect.forEach(envelope.records, ingestRecord, { discard: true }).pipe(
-      Effect.annotateLogs({
-        client_service: envelope.serviceName,
-        record_count: envelope.records.length,
-      }),
-      Effect.withSpan(
-        "client.telemetry.ingest",
-        {
-          attributes: {
-            "client.service.name": envelope.serviceName,
-            "telemetry.record.count": envelope.records.length,
-          },
-        },
-        { captureStackTrace: false },
-      ),
-    ),
-  ),
-});

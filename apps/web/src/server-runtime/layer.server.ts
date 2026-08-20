@@ -4,13 +4,14 @@ import {
   productionJsonLayer,
   serverConfig,
 } from "@stu/observability/server";
-import { Database, Migrate } from "@stu/server";
+import { Auth, Database, Migrate } from "@stu/server";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { OtlpExporter } from "effect/unstable/observability";
-import { ClientTelemetryLive } from "./client-telemetry.server.ts";
+import { authOptions } from "#/lib/auth/auth.ts";
+import { ClientTelemetry } from "./client-telemetry.server.ts";
 
 const environmentConfig = Config.string("STUDIENBUCH_ENVIRONMENT").pipe(
   Config.orElse(() => Config.string("NODE_ENV")),
@@ -59,6 +60,11 @@ const databaseLayer = Layer.effectDiscard(Migrate.migrateToLatest).pipe(
   Layer.provideMerge(Database.layerConfig),
 );
 
-export const WebApplicationLive = Layer.mergeAll(ClientTelemetryLive, databaseLayer).pipe(
-  Layer.provideMerge(telemetryLayer),
-);
+/** Better Auth, sharing the migrated database and receiving this application's framework plugins. */
+const authLayer = Auth.layer(authOptions).pipe(Layer.provide(databaseLayer));
+
+export const WebApplicationLive = Layer.mergeAll(
+  ClientTelemetry.layer,
+  authLayer,
+  databaseLayer,
+).pipe(Layer.provideMerge(telemetryLayer));

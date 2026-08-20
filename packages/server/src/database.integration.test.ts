@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Redacted from "effect/Redacted";
+import { Auth } from "./auth.ts";
 import { Database } from "./database.ts";
 import { migrateToLatest } from "./migrate.ts";
 import { migrationsSchema, migrationsTable } from "./migration-history.ts";
@@ -111,5 +112,40 @@ it.live(
       );
       expect(afterRerun.rows[0]?.count).toBe(bookkeeping.rows[0]?.count);
     }).pipe(Effect.provide(migrated)),
+  { timeout: 60_000 },
+);
+
+it.live(
+  "signs a user up through the very schema Better Auth is mapped onto",
+  () =>
+    Effect.gen(function* () {
+      const auth = yield* Auth.Service;
+      const database = yield* Database.Service;
+
+      const result = yield* Effect.promise(() =>
+        auth.api.signUpEmail({
+          body: { email: "ada-auth@example.test", password: "correct-horse-battery", name: "Ada" },
+        }),
+      );
+      expect(result.user.email).toBe("ada-auth@example.test");
+
+      // `db:generate` cannot see auth.ts, so nothing but agreement keeps the modelName mapping and
+      // the migration history in step. Reading the rows back through our own tables is what makes
+      // that agreement checkable: a renamed table or column fails here instead of at first login.
+      const users = yield* Effect.promise(() =>
+        database.pool.query<{ id: string; createdAt: unknown }>(
+          `select id, "createdAt" from users where email = 'ada-auth@example.test'`,
+        ),
+      );
+      expect(users.rowCount).toBe(1);
+      // generateId: false means PostgreSQL's defaultRandom() owns identity.
+      expect(users.rows[0]?.id).toMatch(/^[0-9a-f-]{36}$/);
+      expect(users.rows[0]?.createdAt).toBeInstanceOf(Date);
+
+      const sessions = yield* Effect.promise(() =>
+        database.pool.query(`select "expiresAt" from sessions`),
+      );
+      expect(sessions.rowCount).toBeGreaterThanOrEqual(0);
+    }).pipe(Effect.provide(Layer.provideMerge(Auth.layer(), migrated))),
   { timeout: 60_000 },
 );
