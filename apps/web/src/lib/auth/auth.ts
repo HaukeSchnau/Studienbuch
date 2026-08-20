@@ -1,6 +1,7 @@
 import { expo } from "@better-auth/expo";
 import { Auth } from "@stu/server";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
+import { mobileTrustedOrigins } from "#/project.ts";
 import { applicationRuntime } from "#/server-runtime/lifecycle.server.ts";
 
 /**
@@ -12,7 +13,7 @@ import { applicationRuntime } from "#/server-runtime/lifecycle.server.ts";
  */
 export const authOptions: Auth.Options = {
   plugins: [expo(), tanstackStartCookies()],
-  trustedOrigins: ["studienbuch://", "studienbuch://*"],
+  trustedOrigins: [...mobileTrustedOrigins],
 };
 
 /** The process-wide Better Auth instance, built once as part of the application runtime. */

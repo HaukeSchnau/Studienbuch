@@ -7,22 +7,24 @@ import {
   type DeploymentEnvironment,
   type TelemetryDelivery,
   type TelemetryPriority,
+  clientMetricNames,
+  httpRoutes,
+  screenNames,
 } from "@stu/observability/browser";
 import * as Option from "effect/Option";
+import { webClientServiceName } from "#/project.ts";
 
 const telemetryPath = "/api/observability/v1/telemetry";
 const defaultMaximumRecords = 48;
 const defaultMaximumBytes = 32 * 1_024;
 const defaultFlushDelayMillis = 2_000;
 
-type ScreenName = "overview" | "schedule" | "tasks" | "courses" | "profile" | "setup";
-
 interface KnownRouteAttribute {
-  readonly "http.route"?: "/" | typeof telemetryPath;
+  readonly "http.route"?: (typeof httpRoutes)[number];
 }
 
 interface ScreenAttribute {
-  readonly "screen.name"?: ScreenName;
+  readonly "screen.name"?: (typeof screenNames)[number];
 }
 
 export type BrowserFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -101,7 +103,7 @@ export function createBrowserTelemetryClient(options: {
     delivery: browserDelivery(environment, endpoint),
     clock: { now: environment.now },
     random: { next: environment.random },
-    serviceName: "studienbuch-web-client",
+    serviceName: webClientServiceName,
     serviceVersion: normalizeServiceVersion(options.serviceVersion),
     environment: options.deploymentEnvironment,
     platform: "web",
@@ -195,7 +197,7 @@ export function createBrowserTelemetryClient(options: {
     enqueue(
       {
         type: "metric",
-        name: "studienbuch_client_request_duration_ms",
+        name: clientMetricNames.requestDuration,
         kind: "histogram",
         value: durationMillis,
         recordedAtUnixMillis: environment.now(),
@@ -280,7 +282,7 @@ export function createBrowserTelemetryClient(options: {
       enqueue(
         {
           type: "metric",
-          name: "studienbuch_client_canary_total",
+          name: clientMetricNames.canaryTotal,
           kind: "counter",
           value: 1,
           recordedAtUnixMillis: environment.now(),
@@ -319,24 +321,19 @@ function requestMethod(input: RequestInfo | URL, init?: RequestInit): "GET" | "P
   return method === "GET" || method === "POST" ? method : "other";
 }
 
+/**
+ * Both allowlists come from `@stu/observability`, which is what keeps the envelope schema and this
+ * mapping from drifting. Anything unrecognised is reported as no attribute at all rather than as
+ * free text, because a raw pathname could carry a student name.
+ */
 function knownRoute(pathname: string): KnownRouteAttribute {
-  if (pathname === "/") return { "http.route": "/" };
-  if (pathname === telemetryPath) return { "http.route": telemetryPath };
-  return {};
+  const route = httpRoutes.find((candidate) => candidate === pathname);
+  return route === undefined ? {} : { "http.route": route };
 }
 
 function screenAttribute(pathname: string): ScreenAttribute {
   const segment = pathname.split("/", 2)[1];
-  switch (segment) {
-    case "schedule":
-    case "tasks":
-    case "courses":
-    case "profile":
-    case "setup":
-      return { "screen.name": segment };
-    default:
-      return { "screen.name": "overview" };
-  }
+  return { "screen.name": screenNames.find((name) => name === segment) ?? "overview" };
 }
 
 function browserEnvironment(): BrowserTelemetryEnvironment {

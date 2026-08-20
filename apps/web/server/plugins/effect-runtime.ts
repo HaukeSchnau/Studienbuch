@@ -13,7 +13,7 @@ export default definePlugin((nitroApp) => {
   });
   void warmApplicationRuntime().then((state) => {
     if (state.status !== "failed") return;
-    console.error("Studienbuch application runtime failed to start", state.reason);
+    console.error("Application runtime failed to start", state.reason);
     process.exitCode = 1;
     setImmediate(() => process.kill(process.pid, "SIGTERM"));
   });

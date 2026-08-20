@@ -23,7 +23,10 @@ export default defineConfig({
     sortPackageJson: {},
   },
   lint: {
-    jsPlugins: [{ name: "anti-slop", specifier: "./tools/oxlint/anti-slop/index.ts" }],
+    jsPlugins: [
+      { name: "anti-slop", specifier: "./tools/oxlint/anti-slop/index.ts" },
+      { name: "boundaries", specifier: "./tools/oxlint/boundaries/index.ts" },
+    ],
     ignorePatterns: [
       "dist",
       "node_modules",
@@ -41,6 +44,7 @@ export default defineConfig({
     },
     rules: {
       ...effectRules,
+      "boundaries/no-project-name": "error",
       "anti-slop/no-chained-type-assertions": "error",
       "anti-slop/no-conditional-empty-object-spread": "error",
       "anti-slop/no-known-value-widening": "error",
@@ -130,6 +134,31 @@ export default defineConfig({
       "unicorn/no-array-reverse": "off",
       "unicorn/no-array-sort": "off",
     },
+    overrides: [
+      {
+        // Project vocabulary modules exist precisely to hold these names. Everything else in a
+        // package is meant to be copyable once this one file is rewritten.
+        files: ["**/project.ts", "tools/oxlint/boundaries/rules/no-project-name.ts"],
+        rules: { "boundaries/no-project-name": "off" },
+      },
+      {
+        // Tests should assert literal wire values. Routing them through the same constant the
+        // implementation uses would make the assertion tautological and stop catching renames.
+        files: ["**/*.test.ts", "**/*.test.tsx"],
+        rules: { "boundaries/no-project-name": "off" },
+      },
+      {
+        // Native and build artifacts are legitimately named after the product: bundle identifiers,
+        // URL schemes, widget names, icon filenames. There is nothing to extract here.
+        files: [
+          "apps/mobile/**",
+          "scripts/**",
+          "apps/web/instrument.server.mjs",
+          "apps/web/vite.config.ts",
+        ],
+        rules: { "boundaries/no-project-name": "off" },
+      },
+    ],
     env: {
       builtin: true,
     },

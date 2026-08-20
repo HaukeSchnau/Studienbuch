@@ -32,3 +32,13 @@ export {
   withIncomingTraceContext,
 } from "./trace-context.ts";
 export type { DeploymentEnvironment } from "./resource.ts";
+export {
+  clientMetricNameList,
+  clientMetricNames,
+  clientServiceNames,
+  httpRoutes,
+  mobileServiceName,
+  screenNames,
+  webClientServiceName,
+  type ClientMetricName,
+} from "./project.ts";

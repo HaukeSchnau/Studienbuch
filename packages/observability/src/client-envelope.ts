@@ -1,4 +1,5 @@
 import * as Schema from "effect/Schema";
+import { clientMetricNameList, clientServiceNames, httpRoutes, screenNames } from "./project.ts";
 
 const ShortString = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(128));
 const TraceId = Schema.String.check(Schema.isPattern(/^[0-9a-f]{32}$/));
@@ -12,11 +13,9 @@ const ClientAttributes = Schema.Struct({
   ),
   "error.type": Schema.optionalKey(Schema.Literals(["network", "timeout", "decode", "unknown"])),
   "http.method": Schema.optionalKey(Schema.Literals(["GET", "POST"])),
-  "http.route": Schema.optionalKey(Schema.Literals(["/", "/api/observability/v1/telemetry"])),
+  "http.route": Schema.optionalKey(Schema.Literals(httpRoutes)),
   outcome: Schema.optionalKey(Schema.Literals(["success", "failure", "interrupt"])),
-  "screen.name": Schema.optionalKey(
-    Schema.Literals(["overview", "schedule", "tasks", "courses", "profile", "setup"]),
-  ),
+  "screen.name": Schema.optionalKey(Schema.Literals(screenNames)),
   "telemetry.priority": Schema.optionalKey(Schema.Literals(["low", "normal", "high"])),
 });
 
@@ -64,12 +63,7 @@ export interface ClientLog extends Schema.Schema.Type<typeof ClientLog> {}
 
 export const ClientMetric = Schema.Struct({
   type: Schema.Literal("metric"),
-  name: Schema.Literals([
-    "studienbuch_client_canary_total",
-    "studienbuch_client_request_duration_ms",
-    "studienbuch_client_outbox_depth",
-    "studienbuch_client_outbox_dropped_total",
-  ]),
+  name: Schema.Literals(clientMetricNameList),
   kind: Schema.Literals(["counter", "gauge", "histogram"]),
   value: NonNegativeFinite,
   recordedAtUnixMillis: UnixMillis,
@@ -80,7 +74,8 @@ export interface ClientMetric extends Schema.Schema.Type<typeof ClientMetric> {}
 export const ClientTelemetryRecord = Schema.Union([ClientSpan, ClientLog, ClientMetric]);
 export type ClientTelemetryRecord = typeof ClientTelemetryRecord.Type;
 
-export const ServiceName = Schema.Literals(["studienbuch-web-client", "studienbuch-mobile"]);
+/** Only clients report through this envelope; the server and console export OTLP directly. */
+export const ServiceName = Schema.Literals(clientServiceNames);
 export type ServiceName = typeof ServiceName.Type;
 
 export const ClientTelemetryEnvelope = Schema.Struct({
