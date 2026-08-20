@@ -6,9 +6,9 @@ export {
   type ObservabilityOutcome,
   type SpanAttributes,
   type TelemetryPriority,
-} from "./attributes.ts";
-export { runCanary, type CanaryResult } from "./canary.ts";
-export { canaryDuration, canaryTotal } from "./metrics.ts";
+} from "./shared/attributes.ts";
+export { runCanary, type CanaryResult } from "./otlp/canary.ts";
+export { canaryDuration, canaryTotal } from "./otlp/metrics.ts";
 export {
   deploymentEnvironments,
   otlpResource,
@@ -18,4 +18,4 @@ export {
   type DeploymentEnvironment,
   type ResourceIdentity,
   type ServiceName,
-} from "./resource.ts";
+} from "./shared/resource.ts";

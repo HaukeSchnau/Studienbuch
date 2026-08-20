@@ -1,4 +1,4 @@
-export { Auth } from "./auth.ts";
-export { Database } from "./database.ts";
-export { Migrate } from "./migrate.ts";
-export * as schema from "./schema/index.ts";
+export { Auth } from "./auth/better-auth.ts";
+export { Database } from "./database/client.ts";
+export { Migrate } from "./database/migrate.ts";
+export * as schema from "./auth/schema.ts";

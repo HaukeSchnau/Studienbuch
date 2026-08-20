@@ -2,11 +2,11 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { useMaskedInputProps } from "react-native-mask-input";
-import { Button } from "~/components/ui/button";
-import { Text } from "~/components/ui/text";
-import { TextField } from "~/components/fields/text-field";
-import { useSessionData } from "~/data/hooks";
-import { setupNameAndYearRoute } from "~/routing/params";
+import { Button } from "~/ui/button";
+import { Text } from "~/ui/text";
+import { TextField } from "~/ui/fields/text-field";
+import { useSessionData } from "~/infra/data/hooks";
+import { setupNameAndYearRoute } from "~/infra/routing/params";
 
 export function LicenseKeyScreen() {
   const { user, updateProfile } = useSessionData();

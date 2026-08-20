@@ -22,20 +22,20 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import { PressableSurface } from "~/components/feedback/pressable-surface";
-import { Card } from "~/components/ui/card";
-import { IconButton } from "~/components/ui/icon-button";
+import { PressableSurface } from "~/ui/feedback/pressable-surface";
+import { Card } from "~/ui/card";
+import { IconButton } from "~/ui/icon-button";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
-import { SystemIcon } from "~/components/ui/system-icon";
-import { shadow } from "~/components/styles/shadow";
-import { Text } from "~/components/ui/text";
-import { useMainTabBarPadding } from "~/components/use-main-tab-bar-padding";
-import { haptics } from "~/platform/haptics";
+import { SystemIcon } from "~/ui/system-icon";
+import { shadow } from "~/ui/styles/shadow";
+import { Text } from "~/ui/text";
+import { useMainTabBarPadding } from "~/ui/use-main-tab-bar-padding";
+import { haptics } from "~/infra/native/haptics";
 import { subjectNameMap, type SubjectId } from "@/compat/mobile-v0";
-import { useCourses, useScheduleData } from "~/data/hooks";
-import { courseRoute } from "~/routing/params";
-import { colors } from "~/theme/colors";
+import { useCourses, useScheduleData } from "~/infra/data/hooks";
+import { courseRoute } from "~/infra/routing/params";
+import { colors } from "~/ui/colors";
 
 const TIME_MARKERS = [
   { minute: 8 * 60, label: "08:00" },

@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { View } from "react-native";
-import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
-import { IconButton } from "~/components/ui/icon-button";
-import { Text } from "~/components/ui/text";
+import { PortaledBottomSheet } from "~/ui/layout/bottom-sheet";
+import { IconButton } from "~/ui/icon-button";
+import { Text } from "~/ui/text";
 import { formatGrade, isGradeConfirmed, type Grade } from "@/compat/mobile-v0";
-import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
-import { gradeRoute } from "~/routing/params";
+import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { gradeRoute } from "~/infra/routing/params";
 import { GradeCard } from "./grade-card";
 import { AddWrittenGrade } from "./written/add-written-grade";
 import WrittenIcon from "./written/written.svg";

@@ -1,10 +1,10 @@
 import { Platform, View } from "react-native";
 
-import { PressableSurface } from "~/components/feedback/pressable-surface";
-import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
-import { SystemIcon, type SystemIconName } from "~/components/ui/system-icon";
-import { Text } from "~/components/ui/text";
-import { colors } from "~/theme/colors";
+import { PressableSurface } from "~/ui/feedback/pressable-surface";
+import { PortaledBottomSheet } from "~/ui/layout/bottom-sheet";
+import { SystemIcon, type SystemIconName } from "~/ui/system-icon";
+import { Text } from "~/ui/text";
+import { colors } from "~/ui/colors";
 
 interface Props {
   onClose: () => void;

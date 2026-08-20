@@ -1,15 +1,15 @@
 import { useMemo, useState } from "react";
 import { View } from "react-native";
 
-import { Button, TextButton } from "~/components/ui/button";
-import { Divider } from "~/components/ui/divider";
-import { SheetCallout } from "~/components/layout/sheet-callout";
-import { SheetScaffold } from "~/components/layout/sheet-scaffold";
-import { TextField } from "~/components/fields/text-field";
+import { Button, TextButton } from "~/ui/button";
+import { Divider } from "~/ui/divider";
+import { SheetCallout } from "~/ui/layout/sheet-callout";
+import { SheetScaffold } from "~/ui/layout/sheet-scaffold";
+import { TextField } from "~/ui/fields/text-field";
 import { isGradeConfirmed, type Grade } from "@/compat/mobile-v0";
-import { useGrades } from "~/data/hooks";
-import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
-import { haptics } from "~/platform/haptics";
+import { useGrades } from "~/infra/data/hooks";
+import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { haptics } from "~/infra/native/haptics";
 import { GradeCard } from "../grade-card";
 
 export const EditOralGrade = ({

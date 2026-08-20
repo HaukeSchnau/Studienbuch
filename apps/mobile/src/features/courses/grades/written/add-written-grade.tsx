@@ -2,13 +2,13 @@ import { startOfDay } from "date-fns";
 import { useState } from "react";
 import { View } from "react-native";
 
-import { Button, TextButton } from "~/components/ui/button";
-import { DateField } from "~/components/fields/date-field";
-import { SheetCallout } from "~/components/layout/sheet-callout";
-import { SheetScaffold } from "~/components/layout/sheet-scaffold";
-import { TextField } from "~/components/fields/text-field";
-import { useGrades } from "~/data/hooks";
-import { haptics } from "~/platform/haptics";
+import { Button, TextButton } from "~/ui/button";
+import { DateField } from "~/ui/fields/date-field";
+import { SheetCallout } from "~/ui/layout/sheet-callout";
+import { SheetScaffold } from "~/ui/layout/sheet-scaffold";
+import { TextField } from "~/ui/fields/text-field";
+import { useGrades } from "~/infra/data/hooks";
+import { haptics } from "~/infra/native/haptics";
 
 export const AddWrittenGrade = ({
   courseId,

@@ -1,10 +1,10 @@
 import { View } from "react-native";
-import { CoreLayout } from "~/components/layout/core-layout";
-import { Text } from "~/components/ui/text";
+import { CoreLayout } from "~/ui/layout/core-layout";
+import { Text } from "~/ui/text";
 import { AbsencesOverviewCard } from "~/features/absences";
 import { Agenda } from "~/features/schedule";
 import { TasksSection } from "~/features/tasks";
-import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
+import { useRequiredAuthenticatedSession } from "~/infra/session/session";
 
 export const OverviewScreen = () => (
   <CoreLayout>

@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import { getTaskRouteParams } from "~/routing/params";
+import { getTaskRouteParams } from "~/infra/routing/params";
 import { TaskScreen } from "~/features/tasks";
 
 export default function TaskRoute() {

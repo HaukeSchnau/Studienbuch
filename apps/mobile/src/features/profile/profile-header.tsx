@@ -4,14 +4,14 @@ import { useState } from "react";
 import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
-import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
-import { PressableSurface } from "~/components/feedback/pressable-surface";
-import { IconButton } from "~/components/ui/icon-button";
-import { Text } from "~/components/ui/text";
-import { SystemIcon, type SystemIconName } from "~/components/ui/system-icon";
+import { PortaledBottomSheet } from "~/ui/layout/bottom-sheet";
+import { PressableSurface } from "~/ui/feedback/pressable-surface";
+import { IconButton } from "~/ui/icon-button";
+import { Text } from "~/ui/text";
+import { SystemIcon, type SystemIconName } from "~/ui/system-icon";
 import { formatClassName, getCurrentYearNum, type Semester } from "@/compat/mobile-v0";
-import { useSchool, useSessionData } from "~/data/hooks";
-import { profileEditRoute } from "~/routing/params";
+import { useSchool, useSessionData } from "~/infra/data/hooks";
+import { profileEditRoute } from "~/infra/routing/params";
 import { SemesterSelector } from "./semester-selector";
 
 export const Header = ({

@@ -2,13 +2,13 @@ import { router } from "expo-router";
 import type { Href } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import { Button } from "~/components/ui/button";
-import { CheckboxRow } from "~/components/fields/checkbox-row";
-import { SelectField } from "~/components/fields/select-field";
-import { Text } from "~/components/ui/text";
-import { TextField } from "~/components/fields/text-field";
-import { useSchool, useSessionData } from "~/data/hooks";
-import { setupClassAndCoursesRoute } from "~/routing/params";
+import { Button } from "~/ui/button";
+import { CheckboxRow } from "~/ui/fields/checkbox-row";
+import { SelectField } from "~/ui/fields/select-field";
+import { Text } from "~/ui/text";
+import { TextField } from "~/ui/fields/text-field";
+import { useSchool, useSessionData } from "~/infra/data/hooks";
+import { setupClassAndCoursesRoute } from "~/infra/routing/params";
 
 interface NameAndYearScreenProps {
   heading?: string;

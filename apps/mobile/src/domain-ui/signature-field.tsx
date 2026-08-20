@@ -4,8 +4,8 @@ import { View } from "react-native";
 import { SvgXml } from "react-native-svg";
 
 import Cross from "~/assets/cross.svg";
-import { PressableSurface } from "~/components/feedback/pressable-surface";
-import { Text } from "~/components/ui/text";
+import { PressableSurface } from "~/ui/feedback/pressable-surface";
+import { Text } from "~/ui/text";
 
 export interface SignatureFieldRef {
   getSVG: () => Promise<string>;

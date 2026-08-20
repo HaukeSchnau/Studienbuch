@@ -3,16 +3,16 @@ import { router } from "expo-router";
 import { Alert, View } from "react-native";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Animated, { interpolate, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
-import { PressableSurface } from "~/components/feedback/pressable-surface";
+import { PressableSurface } from "~/ui/feedback/pressable-surface";
 import { ConfirmationStatus } from "~/domain-ui/confirmation-status";
-import { SystemIcon } from "~/components/ui/system-icon";
-import { Text } from "~/components/ui/text";
-import { haptics } from "~/platform/haptics";
+import { SystemIcon } from "~/ui/system-icon";
+import { Text } from "~/ui/text";
+import { haptics } from "~/infra/native/haptics";
 import { isAbsenceConfirmed, subjectNameMap, type Absence } from "@/compat/mobile-v0";
-import { useAbsences, useCourses } from "~/data/hooks";
-import { absenceConfirmationRoute } from "~/routing/params";
-import { colors } from "~/theme/colors";
-import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
+import { useAbsences, useCourses } from "~/infra/data/hooks";
+import { absenceConfirmationRoute } from "~/infra/routing/params";
+import { colors } from "~/ui/colors";
+import { useRequiredAuthenticatedSession } from "~/infra/session/session";
 
 export const AbsenceItem = ({ absence }: { absence: Absence }) => {
   const { user } = useRequiredAuthenticatedSession();

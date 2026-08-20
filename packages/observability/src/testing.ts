@@ -8,7 +8,7 @@ import {
   OtlpTracer,
 } from "effect/unstable/observability";
 import type { OtlpServerLayerOptions } from "./server.ts";
-import { otlpResource } from "./resource.ts";
+import { otlpResource } from "./shared/resource.ts";
 
 export function otlpJsonTestLayer(
   options: OtlpServerLayerOptions,

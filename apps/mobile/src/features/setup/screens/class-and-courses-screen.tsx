@@ -2,12 +2,12 @@ import { router } from "expo-router";
 import type { Href } from "expo-router";
 import { useMemo, useState } from "react";
 import { View } from "react-native";
-import { Button } from "~/components/ui/button";
+import { Button } from "~/ui/button";
 import { SelectCourse } from "~/domain-ui/select-course";
-import { Text } from "~/components/ui/text";
+import { Text } from "~/ui/text";
 import { findCurrentSemester, type Course, type SubjectId } from "@/compat/mobile-v0";
-import { useCourses, useSchool } from "~/data/hooks";
-import { mainProfileRoute } from "~/routing/params";
+import { useCourses, useSchool } from "~/infra/data/hooks";
+import { mainProfileRoute } from "~/infra/routing/params";
 
 interface ClassAndCoursesScreenProps {
   doneRoute?: Href;

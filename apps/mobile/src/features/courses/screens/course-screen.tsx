@@ -3,13 +3,13 @@ import { de } from "date-fns/locale/de";
 import { Stack } from "expo-router";
 import { View } from "react-native";
 import Animated from "react-native-reanimated";
-import { Card } from "~/components/ui/card";
-import { CoreLayout } from "~/components/layout/core-layout";
+import { Card } from "~/ui/card";
+import { CoreLayout } from "~/ui/layout/core-layout";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
-import { Text } from "~/components/ui/text";
-import { useTransparentHeaderTopPadding } from "~/components/use-transparent-header-top-padding";
+import { Text } from "~/ui/text";
+import { useTransparentHeaderTopPadding } from "~/ui/use-transparent-header-top-padding";
 import { subjectNameMap, Teacher } from "@/compat/mobile-v0";
-import { useCourses, useSchool } from "~/data/hooks";
+import { useCourses, useSchool } from "~/infra/data/hooks";
 import { TasksSection } from "~/features/tasks";
 import { GradesOverviewCard } from "~/features/courses/grades";
 

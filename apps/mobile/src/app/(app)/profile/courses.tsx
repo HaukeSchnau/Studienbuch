@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
-import { SetupScreenLayout } from "~/app-shell/setup/setup-screen-layout";
+import { SetupScreenLayout } from "~/features/setup/setup-screen-layout";
 import { ClassAndCoursesScreen } from "~/features/setup";
-import { mainProfileRoute } from "~/routing/params";
+import { mainProfileRoute } from "~/infra/routing/params";
 
 export default function ProfileCoursesPage() {
   return (

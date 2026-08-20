@@ -14,6 +14,12 @@ traces, logs, and metrics; Sentry stays narrowly scoped to crash reporting.
 
 `./browser` is safe in every client bundle: it pulls in no Node built-ins and no server modules.
 
+## Layout
+
+`index.ts`, `server.ts`, `browser.ts` and `testing.ts` are the four package exports and hold nothing
+but re-exports. Implementation sits in `shared/` (identity and attributes, used everywhere),
+`otlp/` (exporter layers, config, canary) and `client/` (the envelope contract and the outbox).
+
 ## The client telemetry channel
 
 Web and mobile report a narrow, allowlisted set of operational records to the Studienbuch server,
@@ -22,7 +28,7 @@ fleet collector is never reachable from a public client.
 
 ### One contract
 
-`client-envelope.ts` is the whole protocol:
+`client/envelope.ts` is the whole protocol:
 
 - `ClientTelemetryEnvelope` — what a client sends. Records are a closed union of span, log, and
   metric shapes with literal names and literal attribute values. There is no free-text field, so no

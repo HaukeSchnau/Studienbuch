@@ -1,11 +1,11 @@
 import type { SubjectId } from "@/compat/mobile-v0";
 import { subjectNameMap } from "@/compat/mobile-v0";
 import { StyleSheet, View } from "react-native";
-import { NativeMenuView } from "~/components/native/expo-ui";
-import { Text } from "~/components/ui/text";
-import { colors } from "~/theme/colors";
-import { PressableSurface } from "~/components/feedback/pressable-surface";
-import { haptics } from "~/platform/haptics";
+import { NativeMenuView } from "~/ui/native/expo-ui";
+import { Text } from "~/ui/text";
+import { colors } from "~/ui/colors";
+import { PressableSurface } from "~/ui/feedback/pressable-surface";
+import { haptics } from "~/infra/native/haptics";
 import { SubjectIcon } from "./subject-icon";
 
 interface Props<TOption> {

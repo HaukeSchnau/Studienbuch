@@ -2,12 +2,12 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale/de";
 import { useState } from "react";
 import { View } from "react-native";
-import { PressableSurface } from "~/components/feedback/pressable-surface";
-import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
-import { SystemIcon } from "~/components/ui/system-icon";
-import { Text } from "~/components/ui/text";
-import { haptics } from "~/platform/haptics";
-import { colors } from "~/theme/colors";
+import { PressableSurface } from "~/ui/feedback/pressable-surface";
+import { PortaledBottomSheet } from "~/ui/layout/bottom-sheet";
+import { SystemIcon } from "~/ui/system-icon";
+import { Text } from "~/ui/text";
+import { haptics } from "~/infra/native/haptics";
+import { colors } from "~/ui/colors";
 import type { Semester } from "@/compat/mobile-v0";
 
 interface SemesterSelectorProps {

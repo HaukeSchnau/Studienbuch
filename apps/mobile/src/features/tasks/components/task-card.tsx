@@ -1,12 +1,12 @@
 import { format } from "date-fns";
 import { router } from "expo-router";
 import { View } from "react-native";
-import { PressableSurface } from "~/components/feedback/pressable-surface";
-import { Text } from "~/components/ui/text";
-import { colors } from "~/theme/colors";
+import { PressableSurface } from "~/ui/feedback/pressable-surface";
+import { Text } from "~/ui/text";
+import { colors } from "~/ui/colors";
 import { isTaskArchived, type Task } from "@/compat/mobile-v0";
-import { useCourses } from "~/data/hooks";
-import { taskRoute } from "~/routing/params";
+import { useCourses } from "~/infra/data/hooks";
+import { taskRoute } from "~/infra/routing/params";
 
 export const TaskCard = ({ task }: { task: Task }) => {
   const { getCourse } = useCourses();

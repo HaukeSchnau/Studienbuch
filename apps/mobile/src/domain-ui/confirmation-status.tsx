@@ -1,10 +1,10 @@
-import { colors } from "~/theme/colors";
+import { colors } from "~/ui/colors";
 import clsx from "clsx";
 import { View } from "react-native";
 
 import Cross from "~/assets/cross.svg";
-import { SystemIcon } from "~/components/ui/system-icon";
-import { Text } from "~/components/ui/text";
+import { SystemIcon } from "~/ui/system-icon";
+import { Text } from "~/ui/text";
 
 const SingleConfirmationStatus = ({
   confirmed,

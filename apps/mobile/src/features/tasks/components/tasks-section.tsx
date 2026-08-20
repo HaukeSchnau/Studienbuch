@@ -1,11 +1,11 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { useState } from "react";
 import { View } from "react-native";
-import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
-import { IconButton } from "~/components/ui/icon-button";
-import { Text } from "~/components/ui/text";
-import { colors } from "~/theme/colors";
-import { useTasks } from "~/data/hooks";
+import { PortaledBottomSheet } from "~/ui/layout/bottom-sheet";
+import { IconButton } from "~/ui/icon-button";
+import { Text } from "~/ui/text";
+import { colors } from "~/ui/colors";
+import { useTasks } from "~/infra/data/hooks";
 import type { Task } from "@/compat/mobile-v0";
 import { getTaskOverviewModel, type TaskOverviewModel } from "../model/task-overview-model";
 import { AddTaskSheet } from "./add-task-sheet";

@@ -29,15 +29,15 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { PressableSurface } from "~/components/feedback/pressable-surface";
-import { Button, TextButton } from "~/components/ui/button";
-import { SystemIcon, type SystemIconName } from "~/components/ui/system-icon";
-import { Text } from "~/components/ui/text";
+import { PressableSurface } from "~/ui/feedback/pressable-surface";
+import { Button, TextButton } from "~/ui/button";
+import { SystemIcon, type SystemIconName } from "~/ui/system-icon";
+import { Text } from "~/ui/text";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
-import { haptics } from "~/platform/haptics";
-import { useCourses, useTasks } from "~/data/hooks";
-import { colors } from "~/theme/colors";
-import { fontNames } from "~/components/ui/text";
+import { haptics } from "~/infra/native/haptics";
+import { useCourses, useTasks } from "~/infra/data/hooks";
+import { colors } from "~/ui/colors";
+import { fontNames } from "~/ui/text";
 import { TaskPhotoSourceSheet } from "../components/task-photo-source-sheet";
 import { useTaskPhotoPicker } from "../components/use-task-photo-picker";
 import { createTaskAttachment } from "../model/task-attachments";

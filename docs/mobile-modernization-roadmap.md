@@ -24,12 +24,12 @@ Assumptions:
 ### What Is Carrying Old UI Debt
 
 - A custom sheet and portal system lives in:
-  - `apps/mobile/src/components/bottom-sheet.tsx`
-  - `apps/mobile/src/components/portal.tsx`
+  - `apps/mobile/src/ui/bottom-sheet.tsx`
+  - `apps/mobile/src/ui/portal.tsx`
   - `apps/mobile/src/app/_layout.tsx`
 - Community form controls still back key flows:
-  - `apps/mobile/src/components/date-field.tsx`
-  - `apps/mobile/src/components/select-field.tsx`
+  - `apps/mobile/src/ui/date-field.tsx`
+  - `apps/mobile/src/ui/select-field.tsx`
   - `apps/mobile/src/features/profile/semester-selector.tsx`
 - Shared visual primitives are still partly hand-rolled per screen instead of forming a small stable design system.
 - The project runtime story is slightly inconsistent:
@@ -98,8 +98,8 @@ Packages to keep and lean on:
 
 Files to migrate:
 
-- `apps/mobile/src/components/date-field.tsx`
-- `apps/mobile/src/components/select-field.tsx`
+- `apps/mobile/src/ui/date-field.tsx`
+- `apps/mobile/src/ui/select-field.tsx`
 - `apps/mobile/src/features/profile/semester-selector.tsx`
 - `apps/mobile/app.config.ts` once `@react-native-community/datetimepicker` is removed from plugins
 
@@ -108,8 +108,8 @@ Notes:
 - This should be a mostly import-level migration with small prop adjustments.
 - The main win is not visual novelty; it is better native behavior and less third-party maintenance overhead.
 - Completed in:
-  - `apps/mobile/src/components/date-field.tsx`
-  - `apps/mobile/src/components/select-field.tsx`
+  - `apps/mobile/src/ui/date-field.tsx`
+  - `apps/mobile/src/ui/select-field.tsx`
   - `apps/mobile/src/features/profile/semester-selector.tsx`
   - `apps/mobile/app.config.ts`
   - `apps/mobile/package.json`
@@ -122,8 +122,8 @@ Status: completed on 2026-05-28 for the first sheet pass.
 
 Files to replace or remove:
 
-- `apps/mobile/src/components/bottom-sheet.tsx`
-- `apps/mobile/src/components/portal.tsx`
+- `apps/mobile/src/ui/bottom-sheet.tsx`
+- `apps/mobile/src/ui/portal.tsx`
 - `apps/mobile/src/app/_layout.tsx`
 
 Primary call sites:
@@ -140,9 +140,9 @@ Notes:
 - This is the highest-value native-feel cleanup in the current codebase.
 - Do the migration behind one app-owned wrapper so future sheet API churn stays localized.
 - Completed in:
-  - `apps/mobile/src/components/bottom-sheet.tsx`
+  - `apps/mobile/src/ui/bottom-sheet.tsx`
   - `apps/mobile/src/app/_layout.tsx`
-  - removal of `apps/mobile/src/components/portal.tsx`
+  - removal of `apps/mobile/src/ui/portal.tsx`
   - removal of the now-unused `zustand` dependency from `apps/mobile/package.json`
 
 ### Phase 4: Shared Primitive Cleanup
@@ -161,11 +161,11 @@ Focus areas:
 
 Candidate files:
 
-- `apps/mobile/src/components/button.tsx`
-- `apps/mobile/src/components/card.tsx`
-- `apps/mobile/src/components/text.tsx`
-- `apps/mobile/src/components/field-label.tsx`
-- `apps/mobile/src/components/styles/shadow.ts`
+- `apps/mobile/src/ui/button.tsx`
+- `apps/mobile/src/ui/card.tsx`
+- `apps/mobile/src/ui/text.tsx`
+- `apps/mobile/src/ui/field-label.tsx`
+- `apps/mobile/src/ui/styles/shadow.ts`
 
 Notes:
 

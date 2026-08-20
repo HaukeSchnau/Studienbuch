@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import { Alert } from "react-native";
 
-import { haptics } from "~/platform/haptics";
+import { haptics } from "~/infra/native/haptics";
 
 const showAttachmentError = (source: "camera" | "library") => {
   haptics.warning();

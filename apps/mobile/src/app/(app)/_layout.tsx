@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import { appStackScreenOptions } from "~/app-shell/navigation/app-stack-options";
+import { appStackScreenOptions } from "~/ui/navigation/app-stack-options";
 
 export default function AppLayout() {
   return (
