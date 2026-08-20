@@ -1,5 +1,39 @@
 import * as Schema from "effect/Schema";
-import { clientMetricNameList, clientServiceNames, httpRoutes, screenNames } from "./project.ts";
+
+/**
+ * Screens and routes a client may name. Allowlists rather than free strings: that is what
+ * guarantees no student identifier or URL can ride along in a telemetry attribute.
+ */
+export const screenNames = [
+  "overview",
+  "schedule",
+  "tasks",
+  "courses",
+  "profile",
+  "setup",
+] as const;
+export const httpRoutes = ["/", "/api/observability/v1/telemetry"] as const;
+
+/**
+ * Metric names a client may report. The envelope accepts no others, the outbox emits two of them,
+ * and the server ingress maps every one onto an instrument. All three read this.
+ */
+export const clientMetricNames = {
+  canaryTotal: "studienbuch_client_canary_total",
+  requestDuration: "studienbuch_client_request_duration_ms",
+  outboxDepth: "studienbuch_client_outbox_depth",
+  outboxDropped: "studienbuch_client_outbox_dropped_total",
+} as const;
+
+export type ClientMetricName = (typeof clientMetricNames)[keyof typeof clientMetricNames];
+
+/** Tuple form for `Schema.Literals`, which needs positional literals rather than a union. */
+const clientMetricNameList = [
+  clientMetricNames.canaryTotal,
+  clientMetricNames.requestDuration,
+  clientMetricNames.outboxDepth,
+  clientMetricNames.outboxDropped,
+] as const satisfies ReadonlyArray<ClientMetricName>;
 
 const ShortString = Schema.String.check(Schema.isMinLength(1), Schema.isMaxLength(128));
 const TraceId = Schema.String.check(Schema.isPattern(/^[0-9a-f]{32}$/));
@@ -75,7 +109,7 @@ export const ClientTelemetryRecord = Schema.Union([ClientSpan, ClientLog, Client
 export type ClientTelemetryRecord = typeof ClientTelemetryRecord.Type;
 
 /** Only clients report through this envelope; the server and console export OTLP directly. */
-export const ServiceName = Schema.Literals(clientServiceNames);
+export const ServiceName = Schema.Literals(["studienbuch-web-client", "studienbuch-mobile"]);
 export type ServiceName = typeof ServiceName.Type;
 
 export const ClientTelemetryEnvelope = Schema.Struct({

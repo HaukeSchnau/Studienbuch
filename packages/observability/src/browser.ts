@@ -6,6 +6,10 @@ export {
   ClientTelemetryEnvelope,
   ClientTelemetryRecord,
   ServiceName,
+  clientMetricNames,
+  httpRoutes,
+  screenNames,
+  type ClientMetricName,
   decodeClientTelemetryAcknowledgement,
   decodeClientTelemetryEnvelope,
   type ClientTelemetryEnvelope as ClientTelemetryEnvelopeType,
@@ -32,13 +36,3 @@ export {
   withIncomingTraceContext,
 } from "./trace-context.ts";
 export type { DeploymentEnvironment } from "./resource.ts";
-export {
-  clientMetricNameList,
-  clientMetricNames,
-  clientServiceNames,
-  httpRoutes,
-  mobileServiceName,
-  screenNames,
-  webClientServiceName,
-  type ClientMetricName,
-} from "./project.ts";

@@ -12,7 +12,6 @@ import {
   screenNames,
 } from "@stu/observability/browser";
 import * as Option from "effect/Option";
-import { webClientServiceName } from "#/project.ts";
 
 const telemetryPath = "/api/observability/v1/telemetry";
 const defaultMaximumRecords = 48;
@@ -103,7 +102,7 @@ export function createBrowserTelemetryClient(options: {
     delivery: browserDelivery(environment, endpoint),
     clock: { now: environment.now },
     random: { next: environment.random },
-    serviceName: webClientServiceName,
+    serviceName: "studienbuch-web-client",
     serviceVersion: normalizeServiceVersion(options.serviceVersion),
     environment: options.deploymentEnvironment,
     platform: "web",

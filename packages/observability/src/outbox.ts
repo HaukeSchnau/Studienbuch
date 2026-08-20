@@ -3,9 +3,9 @@ import * as Schema from "effect/Schema";
 import {
   ClientTelemetryRecord,
   type ClientTelemetryEnvelope,
+  clientMetricNames,
   type ServiceName,
 } from "./client-envelope.ts";
-import { clientMetricNames } from "./project.ts";
 
 export const OUTBOX_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 export const OUTBOX_MAX_BYTES = 10 * 1024 * 1024;
