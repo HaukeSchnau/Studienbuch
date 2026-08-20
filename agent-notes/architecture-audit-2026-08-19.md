@@ -168,6 +168,8 @@ accepts `unknown`, and the type buys nothing that the handler's own return type 
 
 ### 8. Effect service triplets can collapse
 
+**Fixed 2026-08-20.** `Database` and `ClientTelemetry` both use `Context.Service<Self>()(id, { make })` with a `static layer`. The hand-written `Interface` and `ClientTelemetryService` types are gone; the shape is inferred from `make`.
+
 `packages/server/src/database.ts` and `apps/web/src/server-runtime/client-telemetry.server.ts` both
 spell out `interface Interface` + `class Service extends Context.Service<Service, Interface>()` +
 a separate exported `layer`. Effect v4 supports the shape used throughout the Effect repo itself:
@@ -197,6 +199,12 @@ will be database-backed everywhere is better off refusing to start than serving 
 The gap is only that nothing re-checks afterwards — see finding 4.
 
 ### 10. `Database` leaks its pool to satisfy Better Auth
+
+**Fixed 2026-08-20.** `betterAuth(...)` moved to `@stu/server/auth` as an `Auth` service, so `apps/web` no longer reaches through the database for a driver handle; `getAuth()` is now one line that resolves the service off the runtime.
+
+The split follows what each side actually owns. `@stu/server` owns everything that has to agree with `schema/auth.ts` (model names, `generateId: false`, the pool). The app supplies framework plugins, because `tanstackStartCookies()` is a web concern and `expo()` a mobile one, and the server package has no business knowing either.
+
+`pool` stays on the `Database` shape. Removing it would need a second type to hide one field from one in-package consumer, which buys less than it costs; it is documented as the Better Auth escape hatch instead. The drift risk I flagged is now covered: an integration test signs a user up through Better Auth and reads the row back out of our own `users` table, so a renamed table or column fails the build rather than first login.
 
 `Interface` exposes `pool: Pool` purely so `apps/web/src/lib/auth/auth.ts` can build `betterAuth`.
 Auth is server-only infrastructure and its tables already live in `packages/server/src/schema/auth.ts`.
