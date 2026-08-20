@@ -9,7 +9,6 @@ export {
 } from "./attributes.ts";
 export { runCanary, type CanaryResult } from "./canary.ts";
 export { canaryDuration, canaryTotal } from "./metrics.ts";
-export { consoleServiceName, environmentVariables, serverServiceName } from "./project.ts";
 export {
   deploymentEnvironments,
   otlpResource,

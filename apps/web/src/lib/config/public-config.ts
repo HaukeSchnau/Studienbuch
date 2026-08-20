@@ -1,6 +1,5 @@
 import type { DeploymentEnvironment } from "@stu/observability/browser";
 import { createServerFn } from "@tanstack/react-start";
-import { environmentVariables } from "#/project.ts";
 
 /**
  * Configuration the browser is allowed to see. Every value here is a public client credential or a
@@ -27,9 +26,7 @@ function deploymentEnvironment(value: string | undefined): DeploymentEnvironment
 }
 
 export const getPublicConfig = createServerFn({ method: "GET" }).handler((): PublicConfig => ({
-  sentryDsn: optionalText(process.env[environmentVariables.sentryDsn]),
-  environment: deploymentEnvironment(
-    process.env[environmentVariables.environment] ?? process.env.NODE_ENV,
-  ),
-  version: optionalText(process.env[environmentVariables.version]) ?? "development",
+  sentryDsn: optionalText(process.env.STUDIENBUCH_SENTRY_DSN),
+  environment: deploymentEnvironment(process.env.STUDIENBUCH_ENVIRONMENT ?? process.env.NODE_ENV),
+  version: optionalText(process.env.STUDIENBUCH_VERSION) ?? "development",
 }));

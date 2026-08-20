@@ -1,5 +1,5 @@
 import { defineConfig } from "drizzle-kit";
-import { migrationsSchema, migrationsTable } from "./src/project.ts";
+import { migrationsSchema, migrationsTable } from "./src/migration-history.ts";
 
 const databaseUrl = process.env.DATABASE_URL;
 

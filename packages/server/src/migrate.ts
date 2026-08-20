@@ -3,7 +3,7 @@ import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import { fileURLToPath } from "node:url";
 import { Database } from "./database.ts";
-import { environmentVariables, migrationsSchema, migrationsTable } from "./project.ts";
+import { migrationsSchema, migrationsTable } from "./migration-history.ts";
 
 /**
  * Directory holding the generated migration history.
@@ -12,7 +12,7 @@ import { environmentVariables, migrationsSchema, migrationsTable } from "./proje
  * workspace. A bundled server (`.output/server/index.mjs`) has no such neighbour, so the release
  * copies `drizzle/` beside the bundle and points `STUDIENBUCH_MIGRATIONS_DIR` at it.
  */
-export const migrationsFolder = Config.string(environmentVariables.migrationsDirectory).pipe(
+export const migrationsFolder = Config.string("STUDIENBUCH_MIGRATIONS_DIR").pipe(
   Config.withDefault(fileURLToPath(new URL("../drizzle", import.meta.url))),
 );
 

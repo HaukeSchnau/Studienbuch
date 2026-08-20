@@ -1,5 +1,11 @@
-import { serviceNamespace, type serviceNames } from "./project.ts";
-export { serviceNames, serviceNamespace } from "./project.ts";
+export const serviceNamespace = "studienbuch" as const;
+
+export const serviceNames = [
+  "studienbuch-server",
+  "studienbuch-console",
+  "studienbuch-web-client",
+  "studienbuch-mobile",
+] as const;
 
 export type ServiceName = (typeof serviceNames)[number];
 

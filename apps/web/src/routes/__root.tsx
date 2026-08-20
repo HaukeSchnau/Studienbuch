@@ -3,7 +3,6 @@ import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
 import { getPublicConfig } from "#/lib/config/public-config.ts";
-import { documentTitle } from "#/project.ts";
 import { ClientObservability } from "#/lib/observability/client-bootstrap.tsx";
 
 import appCss from "../styles.css?url";
@@ -22,7 +21,7 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: documentTitle,
+        title: "Studienbuch",
       },
     ],
     links: [

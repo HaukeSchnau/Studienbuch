@@ -8,9 +8,8 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Metric from "effect/Metric";
 import * as Tracer from "effect/Tracer";
-import { ingestedRecordsMetricName, ingressSource } from "#/project.ts";
 
-const acceptedRecords = Metric.counter(ingestedRecordsMetricName, {
+const acceptedRecords = Metric.counter("studienbuch_client_telemetry_records_total", {
   description: "Validated client telemetry records accepted by the server.",
   incremental: true,
 });
@@ -88,7 +87,7 @@ function metricForRecord(
 ) {
   return updatesByName[record.name](record.value, {
     ...record.attributes,
-    source: ingressSource,
+    source: "public-client-ingress",
   });
 }
 
@@ -124,7 +123,7 @@ function ingestRecord(record: ClientTelemetryEnvelopeType["records"][number]): E
             Effect.annotateLogs({
               ...record.attributes,
               event: record.event,
-              source: ingressSource,
+              source: "public-client-ingress",
             }),
           ),
         ],
@@ -150,7 +149,7 @@ function ingestRecord(record: ClientTelemetryEnvelopeType["records"][number]): E
                   ...record.attributes,
                   "client.duration_ms": record.durationMillis,
                   "client.status": record.status,
-                  source: ingressSource,
+                  source: "public-client-ingress",
                 },
               },
               { captureStackTrace: false },

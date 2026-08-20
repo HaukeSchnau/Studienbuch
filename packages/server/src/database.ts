@@ -9,7 +9,6 @@ import * as Schema from "effect/Schema";
 import * as Reactivity from "effect/unstable/reactivity/Reactivity";
 import type * as SqlError from "effect/unstable/sql/SqlError";
 import { Pool } from "pg";
-import { applicationName, environmentVariables } from "./project.ts";
 
 export interface Options {
   readonly url: Redacted.Redacted;
@@ -26,7 +25,7 @@ const acquirePool = (options: Options) =>
       try: async () => {
         const pool = new Pool({
           connectionString: Redacted.value(options.url),
-          application_name: applicationName,
+          application_name: "studienbuch-server",
           connectionTimeoutMillis: 5_000,
           idleTimeoutMillis: 30_000,
           max: options.maxConnections ?? 10,
@@ -78,7 +77,7 @@ export const layerConfig: Layer.Layer<
   Config.ConfigError | Unavailable | SqlError.SqlError
 > = Layer.unwrap(
   Effect.gen(function* () {
-    const url = yield* Config.redacted(environmentVariables.databaseUrl);
+    const url = yield* Config.redacted("DATABASE_URL");
     return layer({ url });
   }),
 );
