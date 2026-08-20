@@ -2,16 +2,16 @@ import { format } from "date-fns";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { View } from "react-native";
-import { PortaledBottomSheet } from "~/components/layout/bottom-sheet";
-import { OutlinedButton } from "~/components/ui/button";
+import { PortaledBottomSheet } from "~/ui/layout/bottom-sheet";
+import { OutlinedButton } from "~/ui/button";
 import { ConfirmationStatus } from "~/domain-ui/confirmation-status";
-import { IconButton } from "~/components/ui/icon-button";
-import { SystemIcon } from "~/components/ui/system-icon";
-import { Text } from "~/components/ui/text";
-import { colors } from "~/theme/colors";
+import { IconButton } from "~/ui/icon-button";
+import { SystemIcon } from "~/ui/system-icon";
+import { Text } from "~/ui/text";
+import { colors } from "~/ui/colors";
 import { formatGrade, isGradeConfirmed, type Grade } from "@/compat/mobile-v0";
-import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
-import { gradeRoute } from "~/routing/params";
+import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { gradeRoute } from "~/infra/routing/params";
 import { EditMasterGrade } from "./master/edit-master-grade";
 
 export const MasterGradeRow = ({

@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import { getCourseRouteParams } from "~/routing/params";
+import { getCourseRouteParams } from "~/infra/routing/params";
 import { CourseScreen } from "~/features/courses";
 
 export default function Course() {

@@ -14,7 +14,7 @@ export {
   decodeClientTelemetryEnvelope,
   type ClientTelemetryEnvelope as ClientTelemetryEnvelopeType,
   type ClientTelemetryRecord as ClientTelemetryRecordType,
-} from "./client-envelope.ts";
+} from "./client/envelope.ts";
 export {
   OUTBOX_MAX_AGE_MS,
   OUTBOX_MAX_BYTES,
@@ -29,10 +29,10 @@ export {
   type TelemetryPriority,
   type TelemetryRandom,
   type TelemetryStorage,
-} from "./outbox.ts";
+} from "./client/outbox.ts";
 export {
   externalSpanFromHeaders,
   propagationHeaders,
   withIncomingTraceContext,
-} from "./trace-context.ts";
-export type { DeploymentEnvironment } from "./resource.ts";
+} from "./shared/trace-context.ts";
+export type { DeploymentEnvironment } from "./shared/resource.ts";

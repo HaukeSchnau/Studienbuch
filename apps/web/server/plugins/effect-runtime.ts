@@ -2,8 +2,8 @@ import { definePlugin } from "nitro";
 import {
   disposeApplicationRuntime,
   warmApplicationRuntime,
-} from "../../src/server-runtime/lifecycle.server.ts";
-import { installNodeShutdownHandlers } from "../../src/server-runtime/shutdown.server.ts";
+} from "../../src/infra/runtime/lifecycle.server.ts";
+import { installNodeShutdownHandlers } from "../../src/infra/runtime/shutdown.server.ts";
 
 export default definePlugin((nitroApp) => {
   const removeNodeHandlers = installNodeShutdownHandlers();

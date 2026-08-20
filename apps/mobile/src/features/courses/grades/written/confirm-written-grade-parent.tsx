@@ -1,11 +1,11 @@
 import { useRouter } from "expo-router";
 import { format } from "date-fns";
 import { ConfirmPageContent, ViewConfirmPageContent } from "~/domain-ui/confirm-page-content";
-import { PageScaffold } from "~/app-shell/navigation/page-scaffold";
-import { Text } from "~/components/ui/text";
+import { PageScaffold } from "~/ui/navigation/page-scaffold";
+import { Text } from "~/ui/text";
 import { formatGrade, subjectNameMap } from "@/compat/mobile-v0";
-import { useGrades } from "~/data/hooks";
-import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
+import { useGrades } from "~/infra/data/hooks";
+import { useRequiredAuthenticatedSession } from "~/infra/session/session";
 import type { ConfirmedResolvedGrade, ResolvedGrade } from "../grade.type";
 
 export const ConfirmWrittenGradeParent = ({ grade }: { grade: ResolvedGrade }) => {

@@ -13,10 +13,10 @@ import { ObserveRoot, useObserve } from "expo-observe";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { AppProviders } from "~/app-shell/app-providers";
-import { SetupGate } from "~/app-shell/setup/setup-gate";
-import { withMobileCrashReporting } from "~/observability/sentry";
-import { configureDevelopmentMenuPreferences } from "~/platform/dev-menu-preferences";
+import { AppProviders } from "~/infra/providers";
+import { SetupGate } from "~/features/setup/setup-gate";
+import { withMobileCrashReporting } from "~/infra/observability/sentry";
+import { configureDevelopmentMenuPreferences } from "~/infra/native/dev-menu-preferences";
 import "../global.css";
 
 void SplashScreen.preventAutoHideAsync();

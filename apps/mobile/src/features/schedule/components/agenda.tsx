@@ -2,11 +2,11 @@ import { add, format, isSameDay, isTomorrow, isWithinInterval } from "date-fns";
 import { de as localeDE } from "date-fns/locale/de";
 import { Fragment, useMemo } from "react";
 import { View } from "react-native";
-import { Card } from "~/components/ui/card";
-import { Divider } from "~/components/ui/divider";
-import { Text } from "~/components/ui/text";
+import { Card } from "~/ui/card";
+import { Divider } from "~/ui/divider";
+import { Text } from "~/ui/text";
 import { subjectNameMap, Teacher } from "@/compat/mobile-v0";
-import { useCourses, useScheduleData } from "~/data/hooks";
+import { useCourses, useScheduleData } from "~/infra/data/hooks";
 
 const matchHolidayName = (name: string) => {
   const normalized = name.toLowerCase();

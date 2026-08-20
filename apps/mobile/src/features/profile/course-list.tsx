@@ -1,16 +1,16 @@
 import { useRouter } from "expo-router";
 import { Platform, StyleSheet, View } from "react-native";
-import { PressableSurface } from "~/components/feedback/pressable-surface";
-import { SystemIcon } from "~/components/ui/system-icon";
-import { Text } from "~/components/ui/text";
+import { PressableSurface } from "~/ui/feedback/pressable-surface";
+import { SystemIcon } from "~/ui/system-icon";
+import { Text } from "~/ui/text";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
 import type { ProfileCourseSignal } from "./profile-model";
 import { getProfileCoursesModel } from "./profile-model";
 import type { Course, Semester } from "@/compat/mobile-v0";
 import { subjectNameMap, Teacher } from "@/compat/mobile-v0";
-import { useCourses, useGrades, useSessionData, useTasks } from "~/data/hooks";
-import { courseRoute } from "~/routing/params";
-import { colors } from "~/theme/colors";
+import { useCourses, useGrades, useSessionData, useTasks } from "~/infra/data/hooks";
+import { courseRoute } from "~/infra/routing/params";
+import { colors } from "~/ui/colors";
 
 export const CourseList = ({ semester }: { semester: Semester }) => {
   const { getSemesterCourses } = useCourses();

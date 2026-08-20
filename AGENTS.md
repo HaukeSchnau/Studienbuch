@@ -35,6 +35,33 @@ These are not set in stone. Feel free to suggest changes to these roles or addin
 - `flake.nix` should provide a reproducible dev environment including all necessary dependencies needed to work in the project and be able to build the packages that will be deployed to my infra using Nix.
 - `Justfile` is the primary entrypoint for day-to-day tasks and commands.
 
+## Directory naming
+
+A directory name answers **why this code exists**, never **what kind of file it is**. There are two
+reasons to exist: the **problem** (domain), or a **technology choice** (infrastructure). The top
+level of every app and package makes which one visible.
+
+`lib`, `utils`, `helpers`, `common`, `shared`, `misc` and `types` are not directory names. They
+describe file kinds, so they attract anything without an obvious home and stop explaining themselves
+the moment they hold two things.
+
+The test: swap the technology, which directories change? Change the product, which change? Anything
+that would change for both is misnamed.
+
+Apps use:
+
+```
+src/routes/ | src/app/   delivery surface, shaped by the framework
+src/features/            domain, one directory per domain area
+src/domain-ui/           UI that knows the domain, shared across features
+src/ui/                  design system, domain-free
+src/infra/               exists because of a technology choice
+```
+
+In packages, top-level files are the entry points named in `package.json`; everything else is a
+directory. `packages/core` is the reference for domain layout: every directory names a domain
+question, and there are no technical buckets.
+
 ## Taste
 
 - Complexity belongs at the adapter boundary. Orchestration stays pure, UI stays dumb.

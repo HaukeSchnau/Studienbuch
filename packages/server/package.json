@@ -4,11 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./database": "./src/database.ts",
-    "./schema": "./src/schema/index.ts",
-    "./migrate": "./src/migrate.ts",
-    "./auth": "./src/auth.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate",

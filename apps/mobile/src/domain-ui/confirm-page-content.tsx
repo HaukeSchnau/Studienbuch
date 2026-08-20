@@ -2,10 +2,10 @@ import type { ComponentRef, ReactNode } from "react";
 import { useRef, useState } from "react";
 import { View } from "react-native";
 
-import { Button, TextButton } from "~/components/ui/button";
-import { Text } from "~/components/ui/text";
+import { Button, TextButton } from "~/ui/button";
+import { Text } from "~/ui/text";
 import { SignatureField, SignatureView } from "~/domain-ui/signature-field";
-import { haptics } from "~/platform/haptics";
+import { haptics } from "~/infra/native/haptics";
 
 interface Props {
   heading: string;

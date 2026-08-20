@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { View } from "react-native";
-import { NativeHost, NativeSlider } from "~/components/native/expo-ui";
-import { Button, OutlinedButton, TextButton } from "~/components/ui/button";
-import { DateField } from "~/components/fields/date-field";
-import { SheetScaffold } from "~/components/layout/sheet-scaffold";
-import { nativeHostThemeProps } from "~/components/ui/native-theme";
-import { Text } from "~/components/ui/text";
-import { haptics } from "~/platform/haptics";
-import { colors } from "~/theme/colors";
+import { NativeHost, NativeSlider } from "~/ui/native/expo-ui";
+import { Button, OutlinedButton, TextButton } from "~/ui/button";
+import { DateField } from "~/ui/fields/date-field";
+import { SheetScaffold } from "~/ui/layout/sheet-scaffold";
+import { nativeHostThemeProps } from "~/ui/native-theme";
+import { Text } from "~/ui/text";
+import { haptics } from "~/infra/native/haptics";
+import { colors } from "~/ui/colors";
 
 interface Props {
   title: string;

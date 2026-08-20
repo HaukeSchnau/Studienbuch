@@ -2,13 +2,13 @@ import { format } from "date-fns";
 import type { Href } from "expo-router";
 import { router } from "expo-router";
 import { View } from "react-native";
-import { OutlinedButton } from "~/components/ui/button";
-import { Card } from "~/components/ui/card";
+import { OutlinedButton } from "~/ui/button";
+import { Card } from "~/ui/card";
 import { ConfirmationStatus } from "~/domain-ui/confirmation-status";
-import { Text } from "~/components/ui/text";
-import { colors } from "~/theme/colors";
+import { Text } from "~/ui/text";
+import { colors } from "~/ui/colors";
 import { formatGradeShort, type Grade, type GradeType, isGradeConfirmed } from "@/compat/mobile-v0";
-import { useRequiredAuthenticatedSession } from "~/app-shell/session/session";
+import { useRequiredAuthenticatedSession } from "~/infra/session/session";
 
 const TYPE_MAP = {
   MASTER: "Aktuelle Gesamtnote",

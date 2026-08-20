@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import { getAbsenceRouteParams } from "~/routing/params";
+import { getAbsenceRouteParams } from "~/infra/routing/params";
 import { ExcuseScreen } from "~/features/absences";
 
 export default function ExcuseAbsencePage() {

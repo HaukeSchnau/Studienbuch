@@ -2,10 +2,10 @@ import { TanStackDevtools } from "@tanstack/react-devtools";
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
-import { getPublicConfig } from "#/lib/config/public-config.ts";
-import { ClientObservability } from "#/lib/observability/client-bootstrap.tsx";
+import { getPublicConfig } from "#/infra/config/public-config.ts";
+import { ClientObservability } from "#/infra/observability/client-bootstrap.tsx";
 
-import appCss from "../styles.css?url";
+import appCss from "#/styles.css?url";
 
 export const Route = createRootRoute({
   // Public runtime configuration is loaded once here and serialized into the SSR payload, so

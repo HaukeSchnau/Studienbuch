@@ -2,7 +2,7 @@ import { differenceInCalendarDays, format } from "date-fns";
 import { de } from "date-fns/locale/de";
 
 import type { Task } from "@/compat/mobile-v0";
-import { colors } from "~/theme/colors";
+import { colors } from "~/ui/colors";
 
 export interface TaskDetailModel {
   dueLabel: string;

@@ -3,21 +3,21 @@ import { de as localeDE } from "date-fns/locale/de";
 import { useMemo, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 
-import { Button, TextButton } from "~/components/ui/button";
-import { NativeCheckbox, NativeDateTimePicker, NativeHost } from "~/components/native/expo-ui";
-import { PressableSurface } from "~/components/feedback/pressable-surface";
-import { SheetCallout } from "~/components/layout/sheet-callout";
-import { SheetScaffold } from "~/components/layout/sheet-scaffold";
-import { SystemIcon } from "~/components/ui/system-icon";
-import { Text } from "~/components/ui/text";
-import { TextField } from "~/components/fields/text-field";
+import { Button, TextButton } from "~/ui/button";
+import { NativeCheckbox, NativeDateTimePicker, NativeHost } from "~/ui/native/expo-ui";
+import { PressableSurface } from "~/ui/feedback/pressable-surface";
+import { SheetCallout } from "~/ui/layout/sheet-callout";
+import { SheetScaffold } from "~/ui/layout/sheet-scaffold";
+import { SystemIcon } from "~/ui/system-icon";
+import { Text } from "~/ui/text";
+import { TextField } from "~/ui/fields/text-field";
 import { getEntriesForSchoolDay, getNextSchoolDay } from "~/domain-ui/school-day";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { subjectNameMap, type SubjectId, type TimetableEntry } from "@/compat/mobile-v0";
-import { useAbsences, useCourses, useScheduleData } from "~/data/hooks";
-import { haptics } from "~/platform/haptics";
-import { colors } from "~/theme/colors";
-import { nativeHostThemeProps } from "~/components/ui/native-theme";
+import { useAbsences, useCourses, useScheduleData } from "~/infra/data/hooks";
+import { haptics } from "~/infra/native/haptics";
+import { colors } from "~/ui/colors";
+import { nativeHostThemeProps } from "~/ui/native-theme";
 
 interface Props {
   onClose: () => void;

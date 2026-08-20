@@ -14,6 +14,12 @@ coerces strings back to `Date`; overriding the parsers there would silently brea
 refresh. Drizzle needs no such override — its `effect-postgres` codecs cast date and timestamp
 columns to text in SQL and decode them themselves.
 
+## Layout
+
+`index.ts` is the only entry point. Implementation is grouped by capability: `database/` holds the
+pooled client, the migration runner and the migration bookkeeping; `auth/` holds the Better Auth
+configuration next to the tables it must agree with.
+
 ## Authentication
 
 `Auth` builds Better Auth against the same pool. It lives here rather than in the web app because

@@ -4,10 +4,10 @@ This note records the SDK 56 platform work that is now part of `apps/mobile`.
 
 ## Native UI Boundaries
 
-- Expo UI imports live behind `apps/mobile/src/components/native/expo-ui.ts`.
-- Jetpack Compose button primitives live behind `apps/mobile/src/components/native/expo-ui-compose.ts`.
-- SwiftUI widget primitives live behind `apps/mobile/src/platform/widgets/expo-swift-ui.ts`.
-- Expo Router native tabs are isolated in `apps/mobile/src/app-shell/navigation/native-tabs.tsx`.
+- Expo UI imports live behind `apps/mobile/src/ui/native/expo-ui.ts`.
+- Jetpack Compose button primitives live behind `apps/mobile/src/ui/native/expo-ui-compose.ts`.
+- SwiftUI widget primitives live behind `apps/mobile/src/infra/widgets/expo-swift-ui.ts`.
+- Expo Router native tabs are isolated in `apps/mobile/src/ui/navigation/native-tabs.tsx`.
 
 Keep feature code importing these app-owned modules instead of reaching into unstable or community Expo paths directly.
 
@@ -52,8 +52,8 @@ The EAS workflow files in `apps/mobile/.eas/workflows` publish preview updates o
 - `StudienbuchSummaryWidget`
 - `StudienbuchStudySessionActivity`
 
-The widget module lives at `apps/mobile/src/platform/widgets/studienbuch-widget.tsx`.
+The widget module lives at `apps/mobile/src/features/widgets/studienbuch-widget.tsx`.
 
-The app publishes a real data-derived widget snapshot from `apps/mobile/src/app-shell/widgets/studienbuch-widget-publisher.tsx`. Today it includes open task count, the next due task, and a short status line. This should later be backed by the durable local-first store once the app has one instead of only the current mock runtime provider.
+The app publishes a real data-derived widget snapshot from `apps/mobile/src/features/widgets/studienbuch-widget-publisher.tsx`. Today it includes open task count, the next due task, and a short status line. This should later be backed by the durable local-first store once the app has one instead of only the current mock runtime provider.
 
 The Live Activity helper is intentionally not auto-started. Use `startStudienbuchStudySessionActivity` from a concrete session or lesson workflow when there is a user action that clearly starts time-sensitive work.

@@ -1,5 +1,5 @@
-import { NativeTabs } from "~/app-shell/navigation/native-tabs";
-import { colors } from "~/theme/colors";
+import { NativeTabs } from "~/ui/navigation/native-tabs";
+import { colors } from "~/ui/colors";
 
 export default function TabLayout() {
   return (
