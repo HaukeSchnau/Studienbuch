@@ -36,7 +36,7 @@ export interface CohortProgressionPolicy extends Schema.Schema.Type<
 > {}
 
 export class OverlappingAcademicTerms extends Schema.TaggedError<OverlappingAcademicTerms>()(
-  "OverlappingAcademicTerms",
+  "Organization.OverlappingAcademicTerms",
   {
     schoolId: SchoolId,
     firstTermId: AcademicTermId,
@@ -45,7 +45,7 @@ export class OverlappingAcademicTerms extends Schema.TaggedError<OverlappingAcad
 ) {}
 
 export class AcademicTermUnavailable extends Schema.TaggedError<AcademicTermUnavailable>()(
-  "AcademicTermUnavailable",
+  "Organization.AcademicTermUnavailable",
   {
     termId: AcademicTermId,
     reason: Schema.Literals(["Unknown", "WrongSchool", "BeforeCohortEntry"]),

@@ -13,13 +13,10 @@ import { AssessmentWeight, GradeValue } from "./grading";
 import { GradingPolicy } from "./grading-policy";
 import { AssessmentId } from "./identity";
 import type { ConfirmationRecordInput } from "./learner-acknowledgement";
-import type {
-  AssessmentAcknowledgementActorError,
-  AssessmentLegalStatusUnknownError,
-} from "./learner-acknowledgement";
+import type { AcknowledgementActor, LegalStatusUnknown } from "./learner-acknowledgement";
 import {
-  AssessmentAlreadyLearnerAcknowledgedError,
-  AssessmentAlreadyTeacherAttestedError,
+  AlreadyLearnerAcknowledged,
+  AlreadyTeacherAttested,
   authorizeLearnerAcknowledgement,
   makeAcknowledgement,
 } from "./learner-acknowledgement";
@@ -59,31 +56,31 @@ export const confirmedWritten = (
   assessments: ReadonlyArray<WrittenAssessment>,
 ): ReadonlyArray<WrittenAssessment> => assessments.filter(isWrittenConfirmed);
 
-export class ConcurrentWrittenAssessmentRevisionError extends Schema.TaggedError<ConcurrentWrittenAssessmentRevisionError>()(
+export class ConcurrentWrittenAssessmentRevision extends Schema.TaggedError<ConcurrentWrittenAssessmentRevision>()(
   "Assessment.ConcurrentWrittenAssessmentRevision",
   { expected: AggregateRevision.Schema, actual: AggregateRevision.Schema },
 ) {}
 
 export type AttestWrittenError =
-  | ConcurrentWrittenAssessmentRevisionError
-  | AssessmentAlreadyTeacherAttestedError
+  | ConcurrentWrittenAssessmentRevision
+  | AlreadyTeacherAttested
   | AggregateRevision.Exhausted
-  | GradingPolicy.InvalidGradeValueError
+  | GradingPolicy.InvalidGradeValue
   | AuthorityDenied;
 
 export type AcknowledgeWrittenError =
-  | ConcurrentWrittenAssessmentRevisionError
-  | AssessmentAlreadyLearnerAcknowledgedError
+  | ConcurrentWrittenAssessmentRevision
+  | AlreadyLearnerAcknowledged
   | AggregateRevision.Exhausted
-  | AssessmentAcknowledgementActorError
-  | AssessmentLegalStatusUnknownError
+  | AcknowledgementActor
+  | LegalStatusUnknown
   | AuthorityDenied;
 
 const checkRevision = (assessment: WrittenAssessment, expectedRevision: AggregateRevision.Type) =>
   assessment.revision === expectedRevision
     ? Effect.void
     : Effect.fail(
-        ConcurrentWrittenAssessmentRevisionError.make({
+        ConcurrentWrittenAssessmentRevision.make({
           expected: expectedRevision,
           actual: assessment.revision,
         }),
@@ -94,7 +91,7 @@ export const attestWritten = Effect.fn("Assessment.attestWrittenAssessment")(fun
 ) {
   yield* checkRevision(input.assessment, input.expectedRevision);
   if (input.assessment.teacherAttestation !== undefined) {
-    return yield* AssessmentAlreadyTeacherAttestedError.make({ target: "WrittenAssessment" });
+    return yield* AlreadyTeacherAttested.make({ target: "WrittenAssessment" });
   }
   const policy = yield* GradingPolicy.Service;
   yield* policy.validateValue(input.assessment.value);
@@ -128,7 +125,7 @@ export const acknowledgeWritten = Effect.fn("Assessment.acknowledgeWrittenAssess
 ) {
   yield* checkRevision(input.assessment, input.expectedRevision);
   if (input.assessment.learnerAcknowledgement !== undefined) {
-    return yield* AssessmentAlreadyLearnerAcknowledgedError.make({
+    return yield* AlreadyLearnerAcknowledged.make({
       target: "WrittenAssessment",
     });
   }

@@ -9,14 +9,14 @@ import { AuthorityDenied, Capability, authorize } from "../organization/authorit
 import type { LegalAgePolicy } from "../organization/person";
 import { Person, legalStatusOn } from "../organization/person";
 import type { AcknowledgementId } from "../organization/identity";
-import { AbsenceCase, ConcurrentAbsenceRevisionError } from "./absence-case";
+import { AbsenceCase, ConcurrentRevision } from "./absence-case";
 
-export class AbsenceAlreadyAcknowledgedError extends Schema.TaggedError<AbsenceAlreadyAcknowledgedError>()(
+export class AlreadyAcknowledged extends Schema.TaggedError<AlreadyAcknowledged>()(
   "Attendance.AlreadyAcknowledged",
   { absenceCaseId: AbsenceCase.fields.id },
 ) {}
 
-export class AcknowledgementActorError extends Schema.TaggedError<AcknowledgementActorError>()(
+export class AcknowledgementActor extends Schema.TaggedError<AcknowledgementActor>()(
   "Attendance.AcknowledgementActor",
   {
     actor: ActorRef,
@@ -24,16 +24,16 @@ export class AcknowledgementActorError extends Schema.TaggedError<Acknowledgemen
   },
 ) {}
 
-export class AbsenceStudentIdentityError extends Schema.TaggedError<AbsenceStudentIdentityError>()(
+export class StudentIdentity extends Schema.TaggedError<StudentIdentity>()(
   "Attendance.StudentIdentity",
   { absenceCaseId: AbsenceCase.fields.id, personId: Person.fields.id },
 ) {}
 
 export const AcknowledgeError = Schema.Union([
-  ConcurrentAbsenceRevisionError,
-  AbsenceAlreadyAcknowledgedError,
-  AcknowledgementActorError,
-  AbsenceStudentIdentityError,
+  ConcurrentRevision,
+  AlreadyAcknowledged,
+  AcknowledgementActor,
+  StudentIdentity,
   AggregateRevision.Exhausted,
   AuthorityDenied,
 ]);
@@ -43,7 +43,7 @@ const checkRevision = (absence: AbsenceCase, expectedRevision: AggregateRevision
   AggregateRevision.Equivalence(absence.revision, expectedRevision)
     ? Effect.void
     : Effect.fail(
-        ConcurrentAbsenceRevisionError.make({
+        ConcurrentRevision.make({
           expected: expectedRevision,
           actual: absence.revision,
         }),
@@ -54,14 +54,14 @@ export const acknowledge = Effect.fn("Attendance.acknowledge")(function* (
 ) {
   yield* checkRevision(input.absence, input.expectedRevision);
   if (input.absence.acknowledgement !== undefined) {
-    return yield* AbsenceAlreadyAcknowledgedError.make({ absenceCaseId: input.absence.id });
+    return yield* AlreadyAcknowledged.make({ absenceCaseId: input.absence.id });
   }
 
   const studentMembership = input.authority.memberships.find(
     (membership) => membership.id === input.absence.studentMembershipId,
   );
   if (studentMembership?.personId !== input.student.id) {
-    return yield* AbsenceStudentIdentityError.make({
+    return yield* StudentIdentity.make({
       absenceCaseId: input.absence.id,
       personId: input.student.id,
     });
@@ -69,7 +69,7 @@ export const acknowledge = Effect.fn("Attendance.acknowledge")(function* (
 
   const legalStatus = legalStatusOn(input.student, input.absence.date, input.legalAgePolicy);
   if (legalStatus === "Unknown") {
-    return yield* AcknowledgementActorError.make({
+    return yield* AcknowledgementActor.make({
       actor: input.actor,
       reason: "LegalStatusUnknown",
     });
@@ -78,13 +78,13 @@ export const acknowledge = Effect.fn("Attendance.acknowledge")(function* (
   const actorIsStudent = input.actor.personId === input.student.id;
 
   if (isAdult && !actorIsStudent) {
-    return yield* AcknowledgementActorError.make({
+    return yield* AcknowledgementActor.make({
       actor: input.actor,
       reason: "AdultMustAcknowledgeSelf",
     });
   }
   if (!isAdult && actorIsStudent) {
-    return yield* AcknowledgementActorError.make({
+    return yield* AcknowledgementActor.make({
       actor: input.actor,
       reason: "GuardianRequired",
     });

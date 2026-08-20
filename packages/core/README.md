@@ -46,14 +46,15 @@ Bundle-sensitive clients may import a named value namespace directly, for exampl
 `import { Artifact } from "@stu/core/foundation/artifact"`. This avoids making Temporal reachable
 when the client does not use calendar dates; prefer leaf subpaths for new mobile code.
 
-Substantial object-input operations keep their operation-specific types discoverable through
-type-only companion namespaces:
+Substantial object-input operations keep their input type discoverable through a type-only
+companion namespace:
 
 ```ts
 const acknowledge = (input: Attendance.acknowledge.Input) => Attendance.acknowledge(input);
-
-type AcknowledgeFailure = Attendance.acknowledge.Error;
 ```
+
+There is deliberately no companion `Error` type. `Effect.fn` already infers the error channel, so
+restating it is a second declaration to keep in sync for no gain.
 
 This follows Effect's namespace pattern: indexes project ordinary ESM modules as named namespaces,
 while declaration merging keeps an operation's types discoverable. Runtime TypeScript namespaces
@@ -63,6 +64,10 @@ implementation and namespace-facade files. Domain indexes only relay those estab
 
 ## Modeling conventions
 
+- A failure is a `Schema.TaggedError` whose tag is `Domain.ClassName`, and whose class name is
+  exactly the tag's local part: `class AlreadyTeacherAttested` tagged `"Assessment.AlreadyTeacherAttested"`.
+  No `Error` suffix; the error channel already says what it is. The namespace lives in the tag so a
+  log line is self-describing and two domains can both have an `AcknowledgementActor`.
 - Boundary and persisted values are Effect schemas. Decode them with `Schema.decodeEffect` or
   `Schema.decodeUnknownEffect`; schema issues remain in the Effect error channel.
 - Civil school dates use timezone-free Temporal plain-date values, and local lesson times use

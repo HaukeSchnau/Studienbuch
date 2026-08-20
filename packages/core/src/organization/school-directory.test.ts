@@ -70,7 +70,7 @@ describe("academic terms and cohort progression", () => {
           term("term-b", "2027-01-31", "2027-07-31"),
         ]),
       );
-      assert.strictEqual(error._tag, "OverlappingAcademicTerms");
+      assert.strictEqual(error._tag, "Organization.OverlappingAcademicTerms");
       assert.strictEqual(error.firstTermId, AcademicTermId.make("term-a"));
     }),
   );
@@ -173,7 +173,7 @@ describe("course choices and enrollments", () => {
         origin: EnrollmentOrigin.cases.Required.make({}),
       });
       const error = yield* Effect.flip(removeEnrollment([enrollment], enrollment.id, []));
-      assert.strictEqual(error._tag, "EnrollmentNotRemovable");
+      assert.strictEqual(error._tag, "Organization.EnrollmentNotRemovable");
       assert.strictEqual(error.reason, "Required");
     }),
   );
@@ -188,7 +188,7 @@ describe("course choices and enrollments", () => {
         origin: EnrollmentOrigin.cases.Choice.make({ choiceGroupId: group.id }),
       });
       const error = yield* removeEnrollment([enrollment], enrollment.id, [group]).pipe(Effect.flip);
-      assert.strictEqual(error._tag, "CourseChoiceViolation");
+      assert.strictEqual(error._tag, "Organization.CourseChoiceViolation");
       assert.strictEqual(error.reason, "BelowMinimum");
     }),
   );

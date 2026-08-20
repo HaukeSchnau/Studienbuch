@@ -22,29 +22,28 @@ export const Config = Schema.Struct({
 );
 export interface Config extends Schema.Schema.Type<typeof Config> {}
 
-export class InvalidGradeValueError extends Schema.TaggedError<InvalidGradeValueError>()(
+export class InvalidGradeValue extends Schema.TaggedError<InvalidGradeValue>()(
   "Assessment.InvalidGradeValue",
   { value: Schema.Finite, minimum: Schema.Finite, maximum: Schema.Finite },
 ) {}
 
-export class InvalidAssessmentScopeError extends Schema.TaggedError<InvalidAssessmentScopeError>()(
-  "Assessment.InvalidScope",
-  { reason: Schema.Literals(["MixedStudents", "MixedCourses"]) },
-) {}
+export class InvalidScope extends Schema.TaggedError<InvalidScope>()("Assessment.InvalidScope", {
+  reason: Schema.Literals(["MixedStudents", "MixedCourses"]),
+}) {}
 
-export class GradeAverageOverflowError extends Schema.TaggedError<GradeAverageOverflowError>()(
+export class GradeAverageOverflow extends Schema.TaggedError<GradeAverageOverflow>()(
   "Assessment.GradeAverageOverflow",
   {},
 ) {}
 
 export interface Interface {
   readonly config: Config;
-  readonly validateValue: (value: GradeValue) => Effect.Effect<void, InvalidGradeValueError>;
+  readonly validateValue: (value: GradeValue) => Effect.Effect<void, InvalidGradeValue>;
   readonly average: (
     assessments: ReadonlyArray<WrittenAssessment>,
   ) => Effect.Effect<
     Option.Option<GradeAverage>,
-    InvalidGradeValueError | InvalidAssessmentScopeError | GradeAverageOverflowError
+    InvalidGradeValue | InvalidScope | GradeAverageOverflow
   >;
 }
 
@@ -78,7 +77,7 @@ const isConfirmed = (assessment: WrittenAssessment): boolean =>
 export const make = (config: Config): Interface => {
   const validateValue = Effect.fn("GradingPolicy.validateValue")(function* (value: GradeValue) {
     if (value < config.minimum || value > config.maximum) {
-      return yield* InvalidGradeValueError.make({
+      return yield* InvalidGradeValue.make({
         value,
         minimum: config.minimum,
         maximum: config.maximum,
@@ -94,10 +93,10 @@ export const make = (config: Config): Interface => {
     if (
       assessments.some((assessment) => assessment.studentMembershipId !== first.studentMembershipId)
     ) {
-      return yield* InvalidAssessmentScopeError.make({ reason: "MixedStudents" });
+      return yield* InvalidScope.make({ reason: "MixedStudents" });
     }
     if (assessments.some((assessment) => assessment.courseOfferingId !== first.courseOfferingId)) {
-      return yield* InvalidAssessmentScopeError.make({ reason: "MixedCourses" });
+      return yield* InvalidScope.make({ reason: "MixedCourses" });
     }
 
     const included = config.inclusion === "All" ? assessments : assessments.filter(isConfirmed);
@@ -111,7 +110,7 @@ export const make = (config: Config): Interface => {
       weightedTotal += assessment.value * weight;
       totalWeight += weight;
       if (!Number.isFinite(weightedTotal) || !Number.isFinite(totalWeight)) {
-        return yield* GradeAverageOverflowError.make();
+        return yield* GradeAverageOverflow.make();
       }
     }
 

@@ -15,44 +15,44 @@ import type { AcknowledgementId } from "../organization/identity";
 import { LessonOccurrence } from "../schedule/lesson-occurrence";
 import {
   AbsenceCase,
-  ConcurrentAbsenceRevisionError,
+  ConcurrentRevision,
   MissedLesson,
   MissedLessonDecision,
 } from "./absence-case";
 import { MissedLessonId } from "./identity";
 
-export class MissedLessonNotFoundError extends Schema.TaggedError<MissedLessonNotFoundError>()(
+export class MissedLessonNotFound extends Schema.TaggedError<MissedLessonNotFound>()(
   "Attendance.MissedLessonNotFound",
   { missedLessonId: MissedLessonId },
 ) {}
 
-export class MissedLessonAlreadyDecidedError extends Schema.TaggedError<MissedLessonAlreadyDecidedError>()(
+export class MissedLessonAlreadyDecided extends Schema.TaggedError<MissedLessonAlreadyDecided>()(
   "Attendance.MissedLessonAlreadyDecided",
   { missedLessonId: MissedLessonId },
 ) {}
 
-export class AbsenceNotAcknowledgedError extends Schema.TaggedError<AbsenceNotAcknowledgedError>()(
+export class AbsenceNotAcknowledged extends Schema.TaggedError<AbsenceNotAcknowledged>()(
   "Attendance.AbsenceNotAcknowledged",
   { absenceCaseId: AbsenceCase.fields.id },
 ) {}
 
-export class MissedLessonOccurrenceMismatchError extends Schema.TaggedError<MissedLessonOccurrenceMismatchError>()(
+export class MissedLessonOccurrenceMismatch extends Schema.TaggedError<MissedLessonOccurrenceMismatch>()(
   "Attendance.MissedLessonOccurrenceMismatch",
   { missedLessonId: MissedLessonId, lessonOccurrenceId: LessonOccurrence.fields.id },
 ) {}
 
-export class StudentNotEnrolledError extends Schema.TaggedError<StudentNotEnrolledError>()(
+export class StudentNotEnrolled extends Schema.TaggedError<StudentNotEnrolled>()(
   "Attendance.StudentNotEnrolled",
   { missedLessonId: MissedLessonId },
 ) {}
 
 export const DecideMissedLessonError = Schema.Union([
-  ConcurrentAbsenceRevisionError,
-  MissedLessonNotFoundError,
-  MissedLessonAlreadyDecidedError,
-  AbsenceNotAcknowledgedError,
-  MissedLessonOccurrenceMismatchError,
-  StudentNotEnrolledError,
+  ConcurrentRevision,
+  MissedLessonNotFound,
+  MissedLessonAlreadyDecided,
+  AbsenceNotAcknowledged,
+  MissedLessonOccurrenceMismatch,
+  StudentNotEnrolled,
   AggregateRevision.Exhausted,
   AuthorityDenied,
 ]);
@@ -62,7 +62,7 @@ const checkRevision = (absence: AbsenceCase, expectedRevision: AggregateRevision
   AggregateRevision.Equivalence(absence.revision, expectedRevision)
     ? Effect.void
     : Effect.fail(
-        ConcurrentAbsenceRevisionError.make({
+        ConcurrentRevision.make({
           expected: expectedRevision,
           actual: absence.revision,
         }),
@@ -76,20 +76,20 @@ export const decideMissedLesson = Effect.fn("Attendance.decideMissedLesson")(fun
     (candidate) => candidate.id === input.missedLessonId,
   );
   if (lesson === undefined) {
-    return yield* MissedLessonNotFoundError.make({ missedLessonId: input.missedLessonId });
+    return yield* MissedLessonNotFound.make({ missedLessonId: input.missedLessonId });
   }
   if (lesson.decision._tag !== "Pending") {
-    return yield* MissedLessonAlreadyDecidedError.make({ missedLessonId: input.missedLessonId });
+    return yield* MissedLessonAlreadyDecided.make({ missedLessonId: input.missedLessonId });
   }
   if (input.absence.acknowledgement === undefined) {
-    return yield* AbsenceNotAcknowledgedError.make({ absenceCaseId: input.absence.id });
+    return yield* AbsenceNotAcknowledged.make({ absenceCaseId: input.absence.id });
   }
   if (
     lesson.lessonOccurrenceId !== input.occurrence.id ||
     lesson.courseOfferingId !== input.occurrence.courseOfferingId ||
     !PlainDate.equals(input.absence.date, input.occurrence.date)
   ) {
-    return yield* MissedLessonOccurrenceMismatchError.make({
+    return yield* MissedLessonOccurrenceMismatch.make({
       missedLessonId: lesson.id,
       lessonOccurrenceId: input.occurrence.id,
     });
@@ -102,7 +102,7 @@ export const decideMissedLesson = Effect.fn("Attendance.decideMissedLesson")(fun
         isEnrollmentEffectiveOn(enrollment, input.occurrence.date),
     )
   ) {
-    return yield* StudentNotEnrolledError.make({ missedLessonId: lesson.id });
+    return yield* StudentNotEnrolled.make({ missedLessonId: lesson.id });
   }
 
   yield* authorize(
