@@ -8,14 +8,12 @@ import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import type { ActorRef } from "../organization/acknowledgement";
 import { Acknowledgement } from "../organization/acknowledgement";
 import type { AuthoritySnapshot } from "../organization/authority";
-import type { AuthorityDenied } from "../organization/authority";
 import { Capability, authorize } from "../organization/authority";
 import type { LegalAgePolicy, Person } from "../organization/person";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import { GradingPolicy } from "./grading-policy";
 import { GradeValue } from "./grading";
 import { CourseStandingId, StandingRevisionId } from "./identity";
-import type { AcknowledgementActor, LegalStatusUnknown } from "./learner-acknowledgement";
 import {
   AlreadyLearnerAcknowledged,
   AlreadyTeacherAttested,
@@ -112,10 +110,8 @@ export const lastConfirmedStandingRevision = (
 ): Option.Option<StandingRevision> =>
   Array.findLast(standing.revisions, isStandingRevisionConfirmed);
 
-export class ConcurrentStandingRevision extends Schema.TaggedError<ConcurrentStandingRevision>()(
-  "Assessment.ConcurrentStandingRevision",
-  { expected: AggregateRevision.Schema, actual: AggregateRevision.Schema },
-) {}
+/** Names this aggregate in shared revision failures. */
+export const aggregateName = AggregateRevision.AggregateName.make("CourseStanding");
 
 export class StandingRevisionNotFound extends Schema.TaggedError<StandingRevisionNotFound>()(
   "Assessment.StandingRevisionNotFound",
@@ -137,49 +133,14 @@ export class StandingRevisionNotCurrent extends Schema.TaggedError<StandingRevis
   { revisionId: StandingRevisionId, currentRevisionId: StandingRevisionId },
 ) {}
 
-export type ReviseStandingError =
-  | ConcurrentStandingRevision
-  | StandingRevisionNotFound
-  | InvalidStandingSupersession
-  | StandingRevisionChronology
-  | AlreadyTeacherAttested
-  | AlreadyLearnerAcknowledged
-  | AggregateRevision.Exhausted
-  | GradingPolicy.InvalidGradeValue;
-
-export type AttestStandingError =
-  | ConcurrentStandingRevision
-  | StandingRevisionNotFound
-  | StandingRevisionNotCurrent
-  | AlreadyTeacherAttested
-  | AggregateRevision.Exhausted
-  | GradingPolicy.InvalidGradeValue
-  | AuthorityDenied;
-
-export type AcknowledgeStandingError =
-  | ConcurrentStandingRevision
-  | StandingRevisionNotFound
-  | StandingRevisionNotCurrent
-  | AlreadyLearnerAcknowledged
-  | AcknowledgementActor
-  | LegalStatusUnknown
-  | AggregateRevision.Exhausted
-  | AuthorityDenied;
-
-const checkRevision = (standing: CourseStanding, expectedRevision: AggregateRevision.Type) =>
-  standing.revision === expectedRevision
-    ? Effect.void
-    : Effect.fail(
-        ConcurrentStandingRevision.make({
-          expected: expectedRevision,
-          actual: standing.revision,
-        }),
-      );
-
 export const reviseStanding = Effect.fn("Assessment.addStandingRevision")(function* (
   input: reviseStanding.Input,
 ) {
-  yield* checkRevision(input.standing, input.expectedRevision);
+  yield* AggregateRevision.ensureCurrent(
+    aggregateName,
+    input.standing.revision,
+    input.expectedRevision,
+  );
   if (input.revision.teacherAttestation !== undefined) {
     return yield* AlreadyTeacherAttested.make({ target: "StandingRevision" });
   }
@@ -209,14 +170,7 @@ export const reviseStanding = Effect.fn("Assessment.addStandingRevision")(functi
   const policy = yield* GradingPolicy.Service;
   yield* policy.validateValue(input.revision.value);
 
-  const revision = yield* AggregateRevision.next(input.standing.revision);
-  return CourseStanding.make({
-    // `Schema.Struct` values are plain objects (Object.prototype), so spreading one keeps every
-    // property. The rule reads the merged `interface X extends Schema.Schema.Type<typeof X>`
-    // declaration as a class. Verified with a prototype assertion before suppressing.
-    // oxlint-disable-next-line typescript/no-misused-spread
-    ...input.standing,
-    revision,
+  return yield* AggregateRevision.revise(CourseStanding, input.standing, {
     currentRevisionId: input.revision.id,
     revisions: [...input.standing.revisions, input.revision],
   });
@@ -240,7 +194,11 @@ interface StandingConfirmationInput extends ConfirmationRecordInput {
 const currentTarget = Effect.fn("Assessment.currentStandingTarget")(function* (
   input: StandingConfirmationInput,
 ) {
-  yield* checkRevision(input.standing, input.expectedRevision);
+  yield* AggregateRevision.ensureCurrent(
+    aggregateName,
+    input.standing.revision,
+    input.expectedRevision,
+  );
   const target = input.standing.revisions.find((revision) => revision.id === input.revisionId);
   if (target === undefined) {
     return yield* StandingRevisionNotFound.make({ revisionId: input.revisionId });
@@ -259,14 +217,7 @@ const updateCurrentStanding = Effect.fn("Assessment.updateCurrentStanding")(func
   target: StandingRevision,
 ) {
   const update = (revision: StandingRevision) => (revision.id === target.id ? target : revision);
-  const revision = yield* AggregateRevision.next(input.standing.revision);
-  return CourseStanding.make({
-    // `Schema.Struct` values are plain objects (Object.prototype), so spreading one keeps every
-    // property. The rule reads the merged `interface X extends Schema.Schema.Type<typeof X>`
-    // declaration as a class. Verified with a prototype assertion before suppressing.
-    // oxlint-disable-next-line typescript/no-misused-spread
-    ...input.standing,
-    revision,
+  return yield* AggregateRevision.revise(CourseStanding, input.standing, {
     revisions: Array.map(input.standing.revisions, update),
   });
 });
@@ -339,13 +290,6 @@ export class StandingAlreadyConfirmed extends Schema.TaggedError<StandingAlready
   { standingId: CourseStandingId, revisionId: StandingRevisionId },
 ) {}
 
-export type RestoreStandingError =
-  | ConcurrentStandingRevision
-  | NoConfirmedStandingRevision
-  | StandingAlreadyConfirmed
-  | AggregateRevision.Exhausted
-  | AuthorityDenied;
-
 /**
  * Makes the most recent confirmed revision current again, when the current one is still unconfirmed.
  *
@@ -355,7 +299,11 @@ export type RestoreStandingError =
  */
 export const restoreLastConfirmedStanding = Effect.fn("Assessment.restoreLastConfirmedStanding")(
   function* (input: restoreLastConfirmedStanding.Input) {
-    yield* checkRevision(input.standing, input.expectedRevision);
+    yield* AggregateRevision.ensureCurrent(
+    aggregateName,
+    input.standing.revision,
+    input.expectedRevision,
+  );
 
     const current = currentStandingRevision(input.standing);
     if (isStandingRevisionConfirmed(current)) {
@@ -379,11 +327,7 @@ export const restoreLastConfirmedStanding = Effect.fn("Assessment.restoreLastCon
       input.authority,
     );
 
-    const revision = yield* AggregateRevision.next(input.standing.revision);
-    return CourseStanding.make({
-      // oxlint-disable-next-line typescript/no-misused-spread
-      ...input.standing,
-      revision,
+    return yield* AggregateRevision.revise(CourseStanding, input.standing, {
       currentRevisionId: confirmed.value.id,
     });
   },

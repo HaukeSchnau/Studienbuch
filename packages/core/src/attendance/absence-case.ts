@@ -93,10 +93,8 @@ export const AbsenceCase = Schema.Struct({
 );
 export interface AbsenceCase extends Schema.Schema.Type<typeof AbsenceCase> {}
 
-export class ConcurrentRevision extends Schema.TaggedError<ConcurrentRevision>()(
-  "Attendance.ConcurrentRevision",
-  { expected: AggregateRevision.Schema, actual: AggregateRevision.Schema },
-) {}
+/** Names this aggregate in shared revision failures. */
+export const aggregateName = AggregateRevision.AggregateName.make("AbsenceCase");
 
 const PositiveCount = Schema.Int.check(Schema.isGreaterThan(0));
 

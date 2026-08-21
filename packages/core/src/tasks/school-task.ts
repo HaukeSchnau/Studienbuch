@@ -7,7 +7,6 @@ import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { NonBlankText } from "../foundation/non-blank-text";
 import type { ActorRef } from "../organization/acknowledgement";
 import type { AuthoritySnapshot } from "../organization/authority";
-import type { AuthorityDenied } from "../organization/authority";
 import { Capability, authorize } from "../organization/authority";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import { SchoolTaskId } from "./identity";
@@ -59,20 +58,8 @@ export class TaskTransitionRefused extends Schema.TaggedError<TaskTransitionRefu
   }
 }
 
-export class ConcurrentRevision extends Schema.TaggedError<ConcurrentRevision>()(
-  "Tasks.ConcurrentRevision",
-  {
-    taskId: SchoolTaskId,
-    expected: AggregateRevision.Schema,
-    actual: AggregateRevision.Schema,
-  },
-) {}
-
-export type TransitionError =
-  | TaskTransitionRefused
-  | ConcurrentRevision
-  | AggregateRevision.Exhausted
-  | AuthorityDenied;
+/** Names this aggregate in shared revision failures. */
+export const aggregateName = AggregateRevision.AggregateName.make("SchoolTask");
 
 interface TransitionInput {
   readonly task: SchoolTask;
@@ -91,24 +78,16 @@ const refuse = (task: SchoolTask, transition: typeof TaskTransition.Type) =>
     }),
   );
 
-const withStatus = Effect.fn("SchoolTask.withStatus")(function* (
-  task: SchoolTask,
-  status: TaskStatus,
-) {
-  const revision = yield* AggregateRevision.next(task.revision);
-  // oxlint-disable-next-line typescript/no-misused-spread
-  return SchoolTask.make({ ...task, revision, status });
-});
+const withStatus = (task: SchoolTask, status: TaskStatus) =>
+  AggregateRevision.revise(SchoolTask, task, { status });
 
 const prepare = (input: TransitionInput) =>
   Effect.gen(function* () {
-    if (!AggregateRevision.Equivalence(input.task.revision, input.expectedRevision)) {
-      return yield* ConcurrentRevision.make({
-        taskId: input.task.id,
-        expected: input.expectedRevision,
-        actual: input.task.revision,
-      });
-    }
+    yield* AggregateRevision.ensureCurrent(
+      aggregateName,
+      input.task.revision,
+      input.expectedRevision,
+    );
     yield* authorize(
       input.actor,
       Capability.cases.ManageOwnNotebook.make({

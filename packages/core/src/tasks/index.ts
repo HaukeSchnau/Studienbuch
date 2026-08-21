@@ -1,5 +1,5 @@
 export {
-  ConcurrentRevision,
+  aggregateName as schoolTaskAggregateName,
   DueStatus,
   SchoolTask,
   TaskStatus,
@@ -22,7 +22,5 @@ export {
   selectWithoutCourse,
   sort,
 } from "./task-list";
-
-export type { TransitionError } from "./school-task";
 
 export * as Tasks from "./index";

@@ -184,7 +184,7 @@ describe("task lifecycle", () => {
         { ...transition(task), expectedRevision: AggregateRevision.Schema.make(1) },
         date("2026-03-29"),
       ).pipe(Effect.flip);
-      expect(failure).toMatchObject({ _tag: "Tasks.ConcurrentRevision", actual: 2, expected: 1 });
+      expect(failure).toMatchObject({ _tag: "AggregateRevision.Concurrent", actual: 2, expected: 1 });
     }),
   );
 

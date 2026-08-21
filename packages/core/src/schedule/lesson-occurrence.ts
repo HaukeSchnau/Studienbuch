@@ -70,9 +70,3 @@ export class InvalidInput extends Schema.TaggedError<InvalidInput>()("Schedule.I
   id: Schema.String.check(Schema.isMinLength(1)),
 }) {}
 
-export const ScheduleMaterializationError = Schema.Union([
-  UnresolvedException,
-  ConflictingExceptions,
-  InvalidInput,
-]);
-export type ScheduleMaterializationError = typeof ScheduleMaterializationError.Type;

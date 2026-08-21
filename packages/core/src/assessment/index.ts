@@ -9,9 +9,9 @@ export {
 } from "./learner-acknowledgement";
 export {
   AlreadyWithdrawn,
-  ConcurrentWrittenAssessmentRevision,
   WithdrawalLockedByAttestation,
   WrittenAssessment,
+  aggregateName as writtenAssessmentAggregateName,
   acknowledgeWritten,
   attestWritten,
   confirmedWritten,
@@ -20,7 +20,6 @@ export {
   withdrawWritten,
 } from "./written-assessment";
 export {
-  ConcurrentStandingRevision,
   CourseStanding,
   InvalidStandingSupersession,
   StandingKind,
@@ -28,6 +27,7 @@ export {
   StandingRevisionChronology,
   StandingRevisionNotCurrent,
   StandingRevisionNotFound,
+  aggregateName as courseStandingAggregateName,
   NoConfirmedStandingRevision,
   StandingAlreadyConfirmed,
   acknowledgeStanding,
@@ -37,14 +37,6 @@ export {
   isStandingRevisionConfirmed,
   lastConfirmedStandingRevision,
   reviseStanding,
-} from "./course-standing";
-
-export type { AcknowledgeWrittenError, AttestWrittenError } from "./written-assessment";
-export type {
-  AcknowledgeStandingError,
-  AttestStandingError,
-  RestoreStandingError,
-  ReviseStandingError,
 } from "./course-standing";
 
 export * as Assessment from "./index";

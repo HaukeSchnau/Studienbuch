@@ -5,11 +5,11 @@ import { AggregateRevision } from "../foundation/aggregate-revision";
 import type { Artifact } from "../foundation/artifact";
 import { ActorRef, makeAcknowledgement } from "../organization/acknowledgement";
 import type { AuthoritySnapshot } from "../organization/authority";
-import { AuthorityDenied, Capability, authorize } from "../organization/authority";
+import { Capability, authorize } from "../organization/authority";
 import type { LegalAgePolicy } from "../organization/person";
 import { Person, legalStatusOn } from "../organization/person";
 import type { AcknowledgementId } from "../organization/identity";
-import { AbsenceCase, ConcurrentRevision } from "./absence-case";
+import { AbsenceCase, aggregateName } from "./absence-case";
 
 export class AlreadyAcknowledged extends Schema.TaggedError<AlreadyAcknowledged>()(
   "Attendance.AlreadyAcknowledged",
@@ -29,30 +29,14 @@ export class StudentIdentity extends Schema.TaggedError<StudentIdentity>()(
   { absenceCaseId: AbsenceCase.fields.id, personId: Person.fields.id },
 ) {}
 
-export const AcknowledgeError = Schema.Union([
-  ConcurrentRevision,
-  AlreadyAcknowledged,
-  AcknowledgementActor,
-  StudentIdentity,
-  AggregateRevision.Exhausted,
-  AuthorityDenied,
-]);
-export type AcknowledgeError = typeof AcknowledgeError.Type;
-
-const checkRevision = (absence: AbsenceCase, expectedRevision: AggregateRevision.Type) =>
-  AggregateRevision.Equivalence(absence.revision, expectedRevision)
-    ? Effect.void
-    : Effect.fail(
-        ConcurrentRevision.make({
-          expected: expectedRevision,
-          actual: absence.revision,
-        }),
-      );
-
 export const acknowledge = Effect.fn("Attendance.acknowledge")(function* (
   input: acknowledge.Input,
 ) {
-  yield* checkRevision(input.absence, input.expectedRevision);
+  yield* AggregateRevision.ensureCurrent(
+    aggregateName,
+    input.absence.revision,
+    input.expectedRevision,
+  );
   if (input.absence.acknowledgement !== undefined) {
     return yield* AlreadyAcknowledged.make({ absenceCaseId: input.absence.id });
   }
@@ -111,17 +95,7 @@ export const acknowledge = Effect.fn("Attendance.acknowledge")(function* (
     artifact: input.artifact,
   });
 
-  const revision = yield* AggregateRevision.next(input.absence.revision);
-  return AbsenceCase.make({
-    id: input.absence.id,
-    studentMembershipId: input.absence.studentMembershipId,
-    date: input.absence.date,
-    reason: input.absence.reason,
-    detailsRevision: input.absence.detailsRevision,
-    revision,
-    acknowledgement,
-    missedLessons: input.absence.missedLessons,
-  });
+  return yield* AggregateRevision.revise(AbsenceCase, input.absence, { acknowledgement });
 });
 
 export declare namespace acknowledge {
