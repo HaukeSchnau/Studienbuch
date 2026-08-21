@@ -35,7 +35,7 @@ import { SystemIcon, type SystemIconName } from "~/ui/system-icon";
 import { Text } from "~/ui/text";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { haptics } from "~/infra/native/haptics";
-import { useCourses } from "~/infra/data/hooks";
+import { useCourses } from "~/features/courses";
 import { colors } from "~/ui/colors";
 import { fontNames } from "~/ui/text";
 import { TaskPhotoSourceSheet } from "../components/task-photo-source-sheet";

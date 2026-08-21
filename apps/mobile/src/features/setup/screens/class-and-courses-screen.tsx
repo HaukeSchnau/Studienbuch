@@ -6,7 +6,8 @@ import { Button } from "~/ui/button";
 import { SelectCourse } from "~/domain-ui/select-course";
 import { Text } from "~/ui/text";
 import { findCurrentSemester, type Course, type SubjectId } from "~/compat/mobile-v0";
-import { useCourses, useSchool } from "~/infra/data/hooks";
+import { useCourses } from "~/features/courses";
+import { useSchoolCatalog } from "~/features/organization";
 import { mainProfileRoute } from "~/infra/routing/params";
 
 interface ClassAndCoursesScreenProps {
@@ -21,7 +22,7 @@ export function ClassAndCoursesScreen({
   intro = "Bitte wähle deine Kurse aus. Du kannst diese später jederzeit ändern. Tippe auf die Fächer, um deine Kurse auszuwählen.",
 }: ClassAndCoursesScreenProps) {
   const { courses, getSemesterCourses, setSelectedCourses } = useCourses();
-  const { semesters } = useSchool();
+  const { semesters } = useSchoolCatalog();
   const currentSemester = findCurrentSemester(semesters);
   const currentCourses = currentSemester ? getSemesterCourses(currentSemester.id) : [];
   const [selection, setSelection] = useState<Partial<Record<SubjectId, Course>>>(() => {

@@ -6,7 +6,8 @@ import { Card } from "~/ui/card";
 import { Divider } from "~/ui/divider";
 import { Text } from "~/ui/text";
 import { subjectNameMap, Teacher } from "~/compat/mobile-v0";
-import { useCourses, useScheduleData } from "~/infra/data/hooks";
+import { useCourses } from "~/features/courses";
+import { useScheduleData } from "~/infra/data/hooks";
 
 const matchHolidayName = (name: string) => {
   const normalized = name.toLowerCase();

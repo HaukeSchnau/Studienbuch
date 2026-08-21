@@ -9,13 +9,14 @@ import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { Text } from "~/ui/text";
 import { useTransparentHeaderTopPadding } from "~/ui/use-transparent-header-top-padding";
 import { subjectNameMap, Teacher } from "~/compat/mobile-v0";
-import { useCourses, useSchool } from "~/infra/data/hooks";
+import { useSchoolCatalog } from "~/features/organization";
+import { useCourses } from "../use-courses";
 import { TasksSection } from "~/features/tasks";
 import { GradesOverviewCard } from "~/features/courses/grades";
 
 export const CourseScreen = ({ courseId }: { courseId: string }) => {
   const { getCourse } = useCourses();
-  const { semesters } = useSchool();
+  const { semesters } = useSchoolCatalog();
   const heroStyle = useTransparentHeaderTopPadding();
   const course = getCourse(courseId);
 

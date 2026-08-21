@@ -86,16 +86,16 @@ fixtures, SQLite, or synchronization. During the mock phase, writable atoms appl
 to registry-owned state. A later persistence adapter can replace those atom implementations with
 Effect-backed queries and commands without changing component imports.
 
-| Domain         | Owner                                           | Current source                       |
-| -------------- | ----------------------------------------------- | ------------------------------------ |
-| Tasks          | `features/tasks`                                | Effect Atom, seeded by mock fixtures |
-| Courses        | `features/courses`                              | Temporary fixture context            |
-| Grades         | `features/courses/grades`                       | Temporary fixture context            |
-| Schedule       | `features/schedule`                             | Temporary fixture context            |
-| Absences       | `features/absences`                             | Temporary fixture context            |
-| Profile        | `features/profile`                              | Temporary fixture context            |
-| Setup progress | `features/setup`                                | Temporary fixture context            |
-| School catalog | organization feature, to be named when migrated | Temporary fixture context            |
+| Domain         | Owner                     | Current source                       |
+| -------------- | ------------------------- | ------------------------------------ |
+| Tasks          | `features/tasks`          | Effect Atom, seeded by mock fixtures |
+| Courses        | `features/courses`        | Effect Atom, seeded by mock fixtures |
+| Grades         | `features/courses/grades` | Temporary fixture context            |
+| Schedule       | `features/schedule`       | Temporary fixture context            |
+| Absences       | `features/absences`       | Temporary fixture context            |
+| Profile        | `features/profile`        | Temporary fixture context            |
+| Setup progress | `features/setup`          | Derived from profile and Atom state  |
+| School catalog | `features/organization`   | Effect Atom, seeded by mock fixtures |
 
 Migrate one complete domain at a time. Move its read state, commands, hooks, and consumers together,
 then remove that domain from the fixture context. Do not create a replacement central data facade.
