@@ -2,7 +2,7 @@ import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision";
 import { PlainDateSchema } from "../foundation/plain-date";
 import { NonBlankText } from "../foundation/non-blank-text";
-import { Acknowledgement, ActorRef } from "../organization/acknowledgement";
+import { Acknowledgement, ActorRef, Withdrawal } from "../organization/acknowledgement";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import { LessonOccurrenceId } from "../schedule/identity";
 import { AbsenceCaseId, MissedLessonId } from "./identity";
@@ -48,6 +48,7 @@ export const AbsenceCase = Schema.Struct({
   detailsRevision: AggregateRevision.Schema,
   revision: AggregateRevision.Schema,
   acknowledgement: Schema.optionalKey(Acknowledgement),
+  withdrawal: Schema.optionalKey(Withdrawal),
   missedLessons: Schema.NonEmptyArray(MissedLesson),
 }).check(
   Schema.makeFilter(
@@ -100,6 +101,7 @@ export class ConcurrentRevision extends Schema.TaggedError<ConcurrentRevision>()
 const PositiveCount = Schema.Int.check(Schema.isGreaterThan(0));
 
 export const AbsenceStatus = Schema.TaggedUnion({
+  Withdrawn: {},
   AwaitingAcknowledgement: {},
   AwaitingLessonDecisions: { pending: PositiveCount },
   PartiallyResolved: {
@@ -122,7 +124,13 @@ export const excusedLessons = (absence: AbsenceCase): ReadonlyArray<MissedLesson
 export const rejectedLessons = (absence: AbsenceCase): ReadonlyArray<MissedLesson> =>
   absence.missedLessons.filter((lesson) => lesson.decision._tag === "Rejected");
 
+export const isAbsenceWithdrawn = (absence: AbsenceCase): boolean =>
+  absence.withdrawal !== undefined;
+
 export const status = (absence: AbsenceCase): AbsenceStatus => {
+  if (absence.withdrawal !== undefined) {
+    return { _tag: "Withdrawn" };
+  }
   if (absence.acknowledgement === undefined) {
     return { _tag: "AwaitingAcknowledgement" };
   }

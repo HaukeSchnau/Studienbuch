@@ -3,7 +3,8 @@ import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision";
 import { PlainDateSchema } from "../foundation/plain-date";
 import { NonBlankText } from "../foundation/non-blank-text";
-import { Acknowledgement } from "../organization/acknowledgement";
+import type { ActorRef } from "../organization/acknowledgement";
+import { Acknowledgement, Withdrawal } from "../organization/acknowledgement";
 import type { AuthoritySnapshot } from "../organization/authority";
 import type { AuthorityDenied } from "../organization/authority";
 import { Capability, authorize } from "../organization/authority";
@@ -32,6 +33,7 @@ export const WrittenAssessment = Schema.Struct({
   revision: AggregateRevision.Schema,
   teacherAttestation: Schema.optionalKey(Acknowledgement),
   learnerAcknowledgement: Schema.optionalKey(Acknowledgement),
+  withdrawal: Schema.optionalKey(Withdrawal),
 }).check(
   Schema.makeFilter(
     (assessment) => {
@@ -49,8 +51,14 @@ export const WrittenAssessment = Schema.Struct({
 );
 export interface WrittenAssessment extends Schema.Schema.Type<typeof WrittenAssessment> {}
 
+/** A withdrawn assessment is retracted evidence, so it can never be confirmed. */
+export const isWrittenWithdrawn = (assessment: WrittenAssessment): boolean =>
+  assessment.withdrawal !== undefined;
+
 export const isWrittenConfirmed = (assessment: WrittenAssessment): boolean =>
-  assessment.teacherAttestation !== undefined && assessment.learnerAcknowledgement !== undefined;
+  !isWrittenWithdrawn(assessment) &&
+  assessment.teacherAttestation !== undefined &&
+  assessment.learnerAcknowledgement !== undefined;
 
 export const confirmedWritten = (
   assessments: ReadonlyArray<WrittenAssessment>,
@@ -59,6 +67,17 @@ export const confirmedWritten = (
 export class ConcurrentWrittenAssessmentRevision extends Schema.TaggedError<ConcurrentWrittenAssessmentRevision>()(
   "Assessment.ConcurrentWrittenAssessmentRevision",
   { expected: AggregateRevision.Schema, actual: AggregateRevision.Schema },
+) {}
+
+export class AlreadyWithdrawn extends Schema.TaggedError<AlreadyWithdrawn>()(
+  "Assessment.AlreadyWithdrawn",
+  { target: Schema.Literals(["WrittenAssessment", "AbsenceCase"]) },
+) {}
+
+/** A teacher's attestation is the school's record, so the student can no longer retract it. */
+export class WithdrawalLockedByAttestation extends Schema.TaggedError<WithdrawalLockedByAttestation>()(
+  "Assessment.WithdrawalLockedByAttestation",
+  { assessmentId: AssessmentId },
 ) {}
 
 export type AttestWrittenError =
@@ -152,6 +171,60 @@ export declare namespace acknowledgeWritten {
     readonly expectedRevision: AggregateRevision.Type;
     readonly student: Person;
     readonly legalAgePolicy: LegalAgePolicy;
+    readonly authority: AuthoritySnapshot;
+  }
+}
+
+export type WithdrawWrittenError =
+  | ConcurrentWrittenAssessmentRevision
+  | AlreadyWithdrawn
+  | WithdrawalLockedByAttestation
+  | AggregateRevision.Exhausted
+  | AuthorityDenied;
+
+/**
+ * Retracts an assessment the student entered, while the teacher has not yet attested it.
+ *
+ * The record stays in the aggregate carrying its withdrawal evidence rather than being removed:
+ * a peer that has not seen a hard delete would resurrect it on the next sync.
+ */
+export const withdrawWritten = Effect.fn("Assessment.withdrawWrittenAssessment")(function* (
+  input: withdrawWritten.Input,
+) {
+  yield* checkRevision(input.assessment, input.expectedRevision);
+  if (input.assessment.withdrawal !== undefined) {
+    return yield* AlreadyWithdrawn.make({ target: "WrittenAssessment" });
+  }
+  if (input.assessment.teacherAttestation !== undefined) {
+    return yield* WithdrawalLockedByAttestation.make({ assessmentId: input.assessment.id });
+  }
+  yield* authorize(
+    input.actor,
+    Capability.cases.ManageOwnNotebook.make({
+      studentMembershipId: input.assessment.studentMembershipId,
+    }),
+    input.assessment.assessedOn,
+    input.authority,
+  );
+  const revision = yield* AggregateRevision.next(input.assessment.revision);
+  return WrittenAssessment.make({
+    // oxlint-disable-next-line typescript/no-misused-spread
+    ...input.assessment,
+    revision,
+    withdrawal: Withdrawal.make({
+      withdrawnBy: input.actor,
+      withdrawnAt: input.withdrawnAt,
+      revision: input.assessment.revision,
+    }),
+  });
+});
+
+export declare namespace withdrawWritten {
+  export interface Input {
+    readonly assessment: WrittenAssessment;
+    readonly expectedRevision: AggregateRevision.Type;
+    readonly actor: ActorRef;
+    readonly withdrawnAt: Acknowledgement["acknowledgedAt"];
     readonly authority: AuthoritySnapshot;
   }
 }

@@ -8,12 +8,16 @@ export {
   LegalStatusUnknown,
 } from "./learner-acknowledgement";
 export {
+  AlreadyWithdrawn,
   ConcurrentWrittenAssessmentRevision,
+  WithdrawalLockedByAttestation,
   WrittenAssessment,
   acknowledgeWritten,
   attestWritten,
   confirmedWritten,
   isWrittenConfirmed,
+  isWrittenWithdrawn,
+  withdrawWritten,
 } from "./written-assessment";
 export {
   ConcurrentStandingRevision,
@@ -24,8 +28,11 @@ export {
   StandingRevisionChronology,
   StandingRevisionNotCurrent,
   StandingRevisionNotFound,
+  NoConfirmedStandingRevision,
+  StandingAlreadyConfirmed,
   acknowledgeStanding,
   attestStanding,
+  restoreLastConfirmedStanding,
   currentStandingRevision,
   isStandingRevisionConfirmed,
   lastConfirmedStandingRevision,
@@ -36,6 +43,7 @@ export type { AcknowledgeWrittenError, AttestWrittenError } from "./written-asse
 export type {
   AcknowledgeStandingError,
   AttestStandingError,
+  RestoreStandingError,
   ReviseStandingError,
 } from "./course-standing";
 

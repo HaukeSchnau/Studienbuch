@@ -159,6 +159,61 @@ describe("grading policy", () => {
   );
 });
 
+describe("withdrawing a written assessment", () => {
+  it.effect("retracts an unattested grade as a tombstone the average ignores", () =>
+    Effect.gen(function* () {
+      const withdrawn = yield* Assessment.withdrawWritten({
+        assessment: written("to-withdraw", 12, false),
+        expectedRevision: AggregateRevision.Schema.make(0),
+        actor: studentActor,
+        withdrawnAt: at,
+        authority,
+      });
+
+      // The record stays: a peer that has not seen a hard delete would resurrect it on sync.
+      assert.isTrue(Assessment.isWrittenWithdrawn(withdrawn));
+      assert.isFalse(Assessment.isWrittenConfirmed(withdrawn));
+      assert.strictEqual(withdrawn.revision, 1);
+
+      const average = yield* Assessment.GradingPolicy.calculateAverage([
+        withdrawn,
+        written("kept", 10, true),
+      ]);
+      assert.isTrue(Option.isSome(average));
+      if (Option.isSome(average)) assert.strictEqual(average.value.value, 10);
+    }).pipe(Effect.provide(Assessment.GradingPolicy.defaultLayer)),
+  );
+
+  it.effect("refuses once a teacher has attested, and refuses twice over", () =>
+    Effect.gen(function* () {
+      const locked = yield* Assessment.withdrawWritten({
+        assessment: written("attested", 12, true),
+        expectedRevision: AggregateRevision.Schema.make(2),
+        actor: studentActor,
+        withdrawnAt: at,
+        authority,
+      }).pipe(Effect.flip);
+      assert.strictEqual(locked._tag, "Assessment.WithdrawalLockedByAttestation");
+
+      const once = yield* Assessment.withdrawWritten({
+        assessment: written("twice", 12, false),
+        expectedRevision: AggregateRevision.Schema.make(0),
+        actor: studentActor,
+        withdrawnAt: at,
+        authority,
+      });
+      const again = yield* Assessment.withdrawWritten({
+        assessment: once,
+        expectedRevision: AggregateRevision.Schema.make(1),
+        actor: studentActor,
+        withdrawnAt: at,
+        authority,
+      }).pipe(Effect.flip);
+      assert.strictEqual(again._tag, "Assessment.AlreadyWithdrawn");
+    }).pipe(Effect.provide(Assessment.GradingPolicy.defaultLayer)),
+  );
+});
+
 describe("written assessment confirmation", () => {
   it.effect("requires separate authorized, revision-safe teacher and learner records", () =>
     Effect.gen(function* () {
@@ -255,6 +310,47 @@ describe("standing revisions", () => {
     currentRevisionId: root.id,
     revisions: [root],
   });
+
+  it.effect("restores the last confirmed revision by moving the pointer, keeping history", () =>
+    Effect.gen(function* () {
+      const pending = Assessment.StandingRevision.make({
+        id: Assessment.StandingRevisionId.make("standing-r2"),
+        value: Assessment.GradeValue.make(7),
+        observedOn: date("2026-08-20"),
+        supersedes: root.id,
+      });
+      const revised = yield* Assessment.reviseStanding({
+        standing,
+        expectedRevision: AggregateRevision.Schema.make(2),
+        revision: pending,
+      });
+      assert.strictEqual(Assessment.currentStandingRevision(revised).id, pending.id);
+
+      const restored = yield* Assessment.restoreLastConfirmedStanding({
+        standing: revised,
+        expectedRevision: revised.revision,
+        actor: studentActor,
+        authority,
+      });
+
+      assert.strictEqual(Assessment.currentStandingRevision(restored).id, root.id);
+      // The abandoned revision is kept rather than deleted, so two devices can converge on it.
+      assert.strictEqual(restored.revisions.length, 2);
+      assert.isTrue(restored.revisions.some((entry) => entry.id === pending.id));
+    }).pipe(Effect.provide(Assessment.GradingPolicy.defaultLayer)),
+  );
+
+  it.effect("refuses to restore when the current revision is already confirmed", () =>
+    Effect.gen(function* () {
+      const failure = yield* Assessment.restoreLastConfirmedStanding({
+        standing,
+        expectedRevision: AggregateRevision.Schema.make(2),
+        actor: studentActor,
+        authority,
+      }).pipe(Effect.flip);
+      assert.strictEqual(failure._tag, "Assessment.StandingAlreadyConfirmed");
+    }).pipe(Effect.provide(Assessment.GradingPolicy.defaultLayer)),
+  );
 
   it.effect(
     "round-trips civil dates and nested acknowledgement revisions through the wire schema",

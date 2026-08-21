@@ -33,3 +33,16 @@ export const makeAcknowledgement = (input: AcknowledgementInput): Acknowledgemen
     ? Acknowledgement.make(fields)
     : Acknowledgement.make({ ...fields, artifact });
 };
+
+/**
+ * Evidence that an authorized actor retracted a record they had entered.
+ *
+ * Withdrawal is recorded rather than deleted. A peer that has not yet seen a hard delete would
+ * resurrect the row on the next sync, so the aggregate keeps a tombstone and projections skip it.
+ */
+export const Withdrawal = Schema.Struct({
+  withdrawnBy: ActorRef,
+  withdrawnAt: Schema.DateTimeUtcFromString,
+  revision: AggregateRevision.Schema,
+});
+export interface Withdrawal extends Schema.Schema.Type<typeof Withdrawal> {}

@@ -1,10 +1,11 @@
 import * as Array from "effect/Array";
 import * as Effect from "effect/Effect";
-import type * as Option from "effect/Option";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision";
 import { PlainDateSchema } from "../foundation/plain-date";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
+import type { ActorRef } from "../organization/acknowledgement";
 import { Acknowledgement } from "../organization/acknowledgement";
 import type { AuthoritySnapshot } from "../organization/authority";
 import type { AuthorityDenied } from "../organization/authority";
@@ -37,28 +38,37 @@ export const StandingRevision = Schema.Struct({
 export interface StandingRevision extends Schema.Schema.Type<typeof StandingRevision> {}
 
 /**
- * The chain must be append-only and unbranched: each revision supersedes exactly its predecessor,
- * observation dates never move backwards, evidence is unique and never claims a revision the
- * standing has not reached, and the last link is the current one.
+ * Revisions are immutable history and `currentRevisionId` is a movable pointer into it.
  *
- * One pass, because `Schema.make` re-runs this on every append.
+ * The chain was linear until restoring a confirmed grade needed a home. Legacy did that by deleting
+ * every revision newer than the confirmed one, which loses evidence and cannot converge when two
+ * devices truncate independently. Moving the pointer instead leaves the abandoned revision in place
+ * as an auditable dead branch, so the history is append-only and a later revision supersedes
+ * whatever was current when it was written.
+ *
+ * What must still hold: ids are unique, every revision supersedes an existing earlier one, the
+ * first supersedes nothing, dates never move backwards along a branch, evidence is unique and
+ * never claims a revision the standing has not reached, and the pointer names a real revision.
  */
 const hasValidRevisionChain = (standing: {
   readonly revision: AggregateRevision.Type;
   readonly currentRevisionId: StandingRevisionId;
   readonly revisions: readonly [StandingRevision, ...Array<StandingRevision>];
 }) => {
-  const seenRevisionIds = new Set<StandingRevisionId>();
+  const byId = new Map<StandingRevisionId, StandingRevision>();
   const seenEvidenceIds = new Set<Acknowledgement["id"]>();
-  let previous: StandingRevision | undefined;
 
-  for (const revision of standing.revisions) {
-    if (seenRevisionIds.has(revision.id)) return false;
-    seenRevisionIds.add(revision.id);
+  for (const [index, revision] of standing.revisions.entries()) {
+    if (byId.has(revision.id)) return false;
 
-    if (revision.supersedes !== previous?.id) return false;
-    if (previous !== undefined && PlainDate.compare(previous.observedOn, revision.observedOn) > 0) {
-      return false;
+    if (index === 0) {
+      if (revision.supersedes !== undefined) return false;
+    } else {
+      if (revision.supersedes === undefined) return false;
+      const parent = byId.get(revision.supersedes);
+      // Looking the parent up in what came before is what rules out cycles and forward references.
+      if (parent === undefined) return false;
+      if (PlainDate.compare(parent.observedOn, revision.observedOn) > 0) return false;
     }
 
     for (const evidence of [revision.teacherAttestation, revision.learnerAcknowledgement]) {
@@ -68,10 +78,10 @@ const hasValidRevisionChain = (standing: {
       seenEvidenceIds.add(evidence.id);
     }
 
-    previous = revision;
+    byId.set(revision.id, revision);
   }
 
-  return previous?.id === standing.currentRevisionId;
+  return byId.has(standing.currentRevisionId);
 };
 
 export const CourseStanding = Schema.Struct({
@@ -84,12 +94,14 @@ export const CourseStanding = Schema.Struct({
   revisions: Schema.NonEmptyArray(StandingRevision),
 }).check(
   Schema.makeFilter(hasValidRevisionChain, {
-    expected: "a non-branching standing revision chain ending at currentRevisionId",
+    expected: "an acyclic standing revision history whose currentRevisionId names a revision",
   }),
 );
 export interface CourseStanding extends Schema.Schema.Type<typeof CourseStanding> {}
 
+/** The revision the pointer names, which is not always the most recently written one. */
 export const currentStandingRevision = (standing: CourseStanding): StandingRevision =>
+  standing.revisions.find((revision) => revision.id === standing.currentRevisionId) ??
   Array.lastNonEmpty(standing.revisions);
 
 export const isStandingRevisionConfirmed = (revision: StandingRevision): boolean =>
@@ -313,5 +325,75 @@ export declare namespace acknowledgeStanding {
   export interface Input extends StandingConfirmationInput {
     readonly student: Person;
     readonly legalAgePolicy: LegalAgePolicy;
+  }
+}
+
+export class NoConfirmedStandingRevision extends Schema.TaggedError<NoConfirmedStandingRevision>()(
+  "Assessment.NoConfirmedStandingRevision",
+  { standingId: CourseStandingId },
+) {}
+
+/** Nothing to restore: the pointer already names a confirmed revision. */
+export class StandingAlreadyConfirmed extends Schema.TaggedError<StandingAlreadyConfirmed>()(
+  "Assessment.StandingAlreadyConfirmed",
+  { standingId: CourseStandingId, revisionId: StandingRevisionId },
+) {}
+
+export type RestoreStandingError =
+  | ConcurrentStandingRevision
+  | NoConfirmedStandingRevision
+  | StandingAlreadyConfirmed
+  | AggregateRevision.Exhausted
+  | AuthorityDenied;
+
+/**
+ * Makes the most recent confirmed revision current again, when the current one is still unconfirmed.
+ *
+ * The unconfirmed revision is kept, not deleted: it stays in the history as an abandoned branch,
+ * and the next revision will supersede whatever is current at that point. Legacy achieved the same
+ * outcome by deleting every later grade, which is not something two devices can agree on.
+ */
+export const restoreLastConfirmedStanding = Effect.fn("Assessment.restoreLastConfirmedStanding")(
+  function* (input: restoreLastConfirmedStanding.Input) {
+    yield* checkRevision(input.standing, input.expectedRevision);
+
+    const current = currentStandingRevision(input.standing);
+    if (isStandingRevisionConfirmed(current)) {
+      return yield* StandingAlreadyConfirmed.make({
+        standingId: input.standing.id,
+        revisionId: current.id,
+      });
+    }
+
+    const confirmed = Array.findLast(input.standing.revisions, isStandingRevisionConfirmed);
+    if (Option.isNone(confirmed)) {
+      return yield* NoConfirmedStandingRevision.make({ standingId: input.standing.id });
+    }
+
+    yield* authorize(
+      input.actor,
+      Capability.cases.ManageOwnNotebook.make({
+        studentMembershipId: input.standing.studentMembershipId,
+      }),
+      confirmed.value.observedOn,
+      input.authority,
+    );
+
+    const revision = yield* AggregateRevision.next(input.standing.revision);
+    return CourseStanding.make({
+      // oxlint-disable-next-line typescript/no-misused-spread
+      ...input.standing,
+      revision,
+      currentRevisionId: confirmed.value.id,
+    });
+  },
+);
+
+export declare namespace restoreLastConfirmedStanding {
+  export interface Input {
+    readonly standing: CourseStanding;
+    readonly expectedRevision: AggregateRevision.Type;
+    readonly actor: ActorRef;
+    readonly authority: AuthoritySnapshot;
   }
 }
