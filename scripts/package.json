@@ -1,6 +1,7 @@
 {
   "name": "@stu/scripts",
   "private": true,
+  "license": "BUSL-1.1",
   "type": "module",
   "dependencies": {
     "@effect/platform-node": "catalog:",

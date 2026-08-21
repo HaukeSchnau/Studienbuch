@@ -1,6 +1,7 @@
 {
   "name": "studienbuch",
   "private": true,
+  "license": "BUSL-1.1",
   "type": "module",
   "scripts": {
     "prepare": "effect-tsgo patch --oxlint && vp config --no-agent"

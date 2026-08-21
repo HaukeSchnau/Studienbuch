@@ -2,6 +2,7 @@
   "name": "@stu/mobile",
   "version": "1.0.0",
   "private": true,
+  "license": "BUSL-1.1",
   "main": "expo-router/entry",
   "scripts": {
     "clean": "rm -rf dist ios android .expo .expo-update-verify",
