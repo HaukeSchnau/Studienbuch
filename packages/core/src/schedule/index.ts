@@ -31,7 +31,6 @@ export {
   LessonOccurrenceRef,
   InvalidInput,
   ScheduleException,
-  ScheduleMaterializationError,
   UnresolvedException,
 } from "./lesson-occurrence";
 export {

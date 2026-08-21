@@ -22,8 +22,12 @@ lint:
 lint-fix:
     vp lint --report-unused-disable-directives --fix
 
+# Two invocations, not `vp run -r test`: with the whole workspace selected at once, Vite+ drops
+# @stu/web from the task graph whenever the packages it depends on are in the same selection, so
+# `-r` silently ran five of six packages and never the web app's tests.
 test:
-    vp run -r test
+    vp run --filter "./packages/*" test
+    vp run --filter "./apps/*" test
 
 db-generate:
     vp run --filter "@stu/server" db:generate

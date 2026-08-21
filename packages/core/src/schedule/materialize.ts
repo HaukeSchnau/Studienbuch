@@ -211,6 +211,4 @@ export declare namespace materializeSchoolDay {
     readonly meetings: ReadonlyArray<RecurringMeeting>;
     readonly exceptions: ReadonlyArray<ScheduleException>;
   }
-
-  export type Error = UnresolvedException | ConflictingExceptions | InvalidInput;
 }

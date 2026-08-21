@@ -5,9 +5,8 @@ import { AggregateRevision } from "../foundation/aggregate-revision";
 import type { ActorRef } from "../organization/acknowledgement";
 import { Withdrawal } from "../organization/acknowledgement";
 import type { AuthoritySnapshot } from "../organization/authority";
-import type { AuthorityDenied } from "../organization/authority";
 import { Capability, authorize } from "../organization/authority";
-import { AbsenceCase, ConcurrentRevision, pendingLessons } from "./absence-case";
+import { AbsenceCase, aggregateName, pendingLessons } from "./absence-case";
 
 export class AlreadyWithdrawn extends Schema.TaggedError<AlreadyWithdrawn>()(
   "Attendance.AlreadyWithdrawn",
@@ -23,13 +22,6 @@ export class WithdrawalLockedByDecision extends Schema.TaggedError<WithdrawalLoc
   { absenceCaseId: AbsenceCase.fields.id, decided: Schema.Natural },
 ) {}
 
-export type WithdrawAbsenceError =
-  | ConcurrentRevision
-  | AlreadyWithdrawn
-  | WithdrawalLockedByDecision
-  | AggregateRevision.Exhausted
-  | AuthorityDenied;
-
 /**
  * Retracts an absence report the student filed, while every missed lesson is still undecided.
  *
@@ -40,12 +32,11 @@ export type WithdrawAbsenceError =
 export const withdrawAbsence = Effect.fn("Attendance.withdrawAbsence")(function* (
   input: withdrawAbsence.Input,
 ) {
-  if (!AggregateRevision.Equivalence(input.absence.revision, input.expectedRevision)) {
-    return yield* ConcurrentRevision.make({
-      expected: input.expectedRevision,
-      actual: input.absence.revision,
-    });
-  }
+  yield* AggregateRevision.ensureCurrent(
+    aggregateName,
+    input.absence.revision,
+    input.expectedRevision,
+  );
   if (input.absence.withdrawal !== undefined) {
     return yield* AlreadyWithdrawn.make({ absenceCaseId: input.absence.id });
   }
@@ -64,11 +55,7 @@ export const withdrawAbsence = Effect.fn("Attendance.withdrawAbsence")(function*
     input.absence.date,
     input.authority,
   );
-  const revision = yield* AggregateRevision.next(input.absence.revision);
-  return AbsenceCase.make({
-    // oxlint-disable-next-line typescript/no-misused-spread
-    ...input.absence,
-    revision,
+  return yield* AggregateRevision.revise(AbsenceCase, input.absence, {
     withdrawal: Withdrawal.make({
       withdrawnBy: input.actor,
       withdrawnAt: input.withdrawnAt,

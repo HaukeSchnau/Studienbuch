@@ -239,7 +239,7 @@ describe("written assessment confirmation", () => {
           acknowledgedAt: at,
         }),
       );
-      assert.strictEqual(stale._tag, "Assessment.ConcurrentWrittenAssessmentRevision");
+      assert.strictEqual(stale._tag, "AggregateRevision.Concurrent");
 
       const confirmed = yield* Assessment.acknowledgeWritten({
         assessment: attested,
@@ -469,7 +469,7 @@ describe("standing revisions", () => {
           revision: invalid,
         }),
       );
-      assert.strictEqual(stale._tag, "Assessment.ConcurrentStandingRevision");
+      assert.strictEqual(stale._tag, "AggregateRevision.Concurrent");
 
       const injected = Assessment.StandingRevision.make({
         ...invalid,

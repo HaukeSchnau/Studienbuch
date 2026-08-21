@@ -141,6 +141,7 @@ const authority = AuthoritySnapshot.make({
   ),
   courseOfferings: offerings,
 });
+const minorPolicy = LegalAgePolicy.make({ ageOfMajority: 18, leapDayAnniversary: "March1" });
 const student = Person.make({
   id: studentPersonId,
   name: PersonName.make({ displayName: "Student", givenNames: [] }),
@@ -203,7 +204,7 @@ describe("withdrawing an absence report", () => {
         expectedRevision: AggregateRevision.initial,
         actor: guardianActor,
         student,
-        legalAgePolicy: LegalAgePolicy.make({ ageOfMajority: 18, leapDayAnniversary: "March1" }),
+        legalAgePolicy: minorPolicy,
         authority,
         acknowledgementId: AcknowledgementId.make("guardian-ack-withdraw"),
         acknowledgedAt: now,
@@ -233,6 +234,73 @@ describe("withdrawing an absence report", () => {
       assert.strictEqual(failure._tag, "Attendance.WithdrawalLockedByDecision");
     }),
   );
+
+  // A withdrawal is a tombstone, so no later transition may quietly drop it. Both of these
+  // rebuilt the case field by field and lost the field, which brought the absence back to life.
+  it.effect("survives a teacher deciding a lesson afterwards", () =>
+    Effect.gen(function* () {
+      const acknowledged = yield* Attendance.acknowledge({
+        absence,
+        expectedRevision: AggregateRevision.initial,
+        actor: guardianActor,
+        student,
+        legalAgePolicy: minorPolicy,
+        authority,
+        acknowledgementId: AcknowledgementId.make("guardian-ack-tombstone"),
+        acknowledgedAt: now,
+      });
+      const withdrawn = yield* Attendance.withdrawAbsence({
+        absence: acknowledged,
+        expectedRevision: acknowledged.revision,
+        actor: studentActor,
+        withdrawnAt: now,
+        authority,
+      });
+
+      const decided = yield* Attendance.decideMissedLesson({
+        absence: withdrawn,
+        expectedRevision: withdrawn.revision,
+        missedLessonId: lessonIds[0],
+        occurrence: occurrences[0],
+        enrollments,
+        actor: teacherActor,
+        authority,
+        decidedAt: now,
+        decision: {
+          _tag: "Excused",
+          acknowledgementId: AcknowledgementId.make("teacher-ack-tombstone"),
+        },
+      });
+
+      assert.isTrue(Attendance.isAbsenceWithdrawn(decided));
+      assert.deepEqual(Attendance.status(decided), { _tag: "Withdrawn" });
+    }),
+  );
+
+  it.effect("survives a guardian acknowledging afterwards", () =>
+    Effect.gen(function* () {
+      const withdrawn = yield* Attendance.withdrawAbsence({
+        absence,
+        expectedRevision: AggregateRevision.initial,
+        actor: studentActor,
+        withdrawnAt: now,
+        authority,
+      });
+      const acknowledged = yield* Attendance.acknowledge({
+        absence: withdrawn,
+        expectedRevision: withdrawn.revision,
+        actor: guardianActor,
+        student,
+        legalAgePolicy: minorPolicy,
+        authority,
+        acknowledgementId: AcknowledgementId.make("guardian-ack-after-withdrawal"),
+        acknowledgedAt: now,
+      });
+
+      assert.isTrue(Attendance.isAbsenceWithdrawn(acknowledged));
+      assert.deepEqual(Attendance.status(acknowledged), { _tag: "Withdrawn" });
+    }),
+  );
 });
 
 describe("attendance workflow", () => {
@@ -258,10 +326,7 @@ describe("attendance workflow", () => {
         expectedRevision: AggregateRevision.initial,
         actor: guardianActor,
         student,
-        legalAgePolicy: LegalAgePolicy.make({
-          ageOfMajority: 18,
-          leapDayAnniversary: "March1",
-        }),
+        legalAgePolicy: minorPolicy,
         authority,
         acknowledgementId: AcknowledgementId.make("guardian-ack"),
         acknowledgedAt: now,
@@ -334,16 +399,13 @@ describe("attendance workflow", () => {
           expectedRevision: AggregateRevision.Schema.make(1),
           actor: guardianActor,
           student,
-          legalAgePolicy: LegalAgePolicy.make({
-            ageOfMajority: 18,
-            leapDayAnniversary: "March1",
-          }),
+          legalAgePolicy: minorPolicy,
           authority,
           acknowledgementId: AcknowledgementId.make("stale-ack"),
           acknowledgedAt: now,
         }),
       );
-      assert.strictEqual(failure._tag, "Attendance.ConcurrentRevision");
+      assert.strictEqual(failure._tag, "AggregateRevision.Concurrent");
     }),
   );
 
@@ -363,10 +425,7 @@ describe("attendance workflow", () => {
           expectedRevision: AggregateRevision.initial,
           actor: guardianActor,
           student: unrelated,
-          legalAgePolicy: LegalAgePolicy.make({
-            ageOfMajority: 18,
-            leapDayAnniversary: "March1",
-          }),
+          legalAgePolicy: minorPolicy,
           authority,
           acknowledgementId: AcknowledgementId.make("forged-age-ack"),
           acknowledgedAt: now,
@@ -400,10 +459,7 @@ describe("attendance workflow", () => {
         expectedRevision: AggregateRevision.initial,
         actor: guardianActor,
         student,
-        legalAgePolicy: LegalAgePolicy.make({
-          ageOfMajority: 18,
-          leapDayAnniversary: "March1",
-        }),
+        legalAgePolicy: minorPolicy,
         authority,
         acknowledgementId: AcknowledgementId.make("guardian-ack-for-forgery-test"),
         acknowledgedAt: now,

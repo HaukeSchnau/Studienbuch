@@ -8,17 +8,12 @@ import type { NonBlankText } from "../foundation/non-blank-text";
 import type { ActorRef } from "../organization/acknowledgement";
 import { makeAcknowledgement } from "../organization/acknowledgement";
 import type { AuthoritySnapshot } from "../organization/authority";
-import { AuthorityDenied, Capability, authorize } from "../organization/authority";
+import { Capability, authorize } from "../organization/authority";
 import type { Enrollment } from "../organization/enrollment";
 import { isEnrollmentEffectiveOn } from "../organization/enrollment";
 import type { AcknowledgementId } from "../organization/identity";
 import { LessonOccurrence } from "../schedule/lesson-occurrence";
-import {
-  AbsenceCase,
-  ConcurrentRevision,
-  MissedLesson,
-  MissedLessonDecision,
-} from "./absence-case";
+import { AbsenceCase, aggregateName, MissedLesson, MissedLessonDecision } from "./absence-case";
 import { MissedLessonId } from "./identity";
 
 export class MissedLessonNotFound extends Schema.TaggedError<MissedLessonNotFound>()(
@@ -46,32 +41,14 @@ export class StudentNotEnrolled extends Schema.TaggedError<StudentNotEnrolled>()
   { missedLessonId: MissedLessonId },
 ) {}
 
-export const DecideMissedLessonError = Schema.Union([
-  ConcurrentRevision,
-  MissedLessonNotFound,
-  MissedLessonAlreadyDecided,
-  AbsenceNotAcknowledged,
-  MissedLessonOccurrenceMismatch,
-  StudentNotEnrolled,
-  AggregateRevision.Exhausted,
-  AuthorityDenied,
-]);
-export type DecideMissedLessonError = typeof DecideMissedLessonError.Type;
-
-const checkRevision = (absence: AbsenceCase, expectedRevision: AggregateRevision.Type) =>
-  AggregateRevision.Equivalence(absence.revision, expectedRevision)
-    ? Effect.void
-    : Effect.fail(
-        ConcurrentRevision.make({
-          expected: expectedRevision,
-          actual: absence.revision,
-        }),
-      );
-
 export const decideMissedLesson = Effect.fn("Attendance.decideMissedLesson")(function* (
   input: decideMissedLesson.Input,
 ) {
-  yield* checkRevision(input.absence, input.expectedRevision);
+  yield* AggregateRevision.ensureCurrent(
+    aggregateName,
+    input.absence.revision,
+    input.expectedRevision,
+  );
   const lesson = input.absence.missedLessons.find(
     (candidate) => candidate.id === input.missedLessonId,
   );
@@ -149,26 +126,12 @@ export const decideMissedLesson = Effect.fn("Attendance.decideMissedLesson")(fun
         })
       : candidate;
   const [firstLesson, ...remainingLessons] = input.absence.missedLessons;
-  const nextLessons: readonly [MissedLesson, ...Array<MissedLesson>] = [
+  const missedLessons: readonly [MissedLesson, ...Array<MissedLesson>] = [
     updateLesson(firstLesson),
     ...remainingLessons.map(updateLesson),
   ];
 
-  const nextAbsence = {
-    id: input.absence.id,
-    studentMembershipId: input.absence.studentMembershipId,
-    date: input.absence.date,
-    reason: input.absence.reason,
-    detailsRevision: input.absence.detailsRevision,
-    revision: nextRevision,
-    missedLessons: nextLessons,
-  };
-  return input.absence.acknowledgement === undefined
-    ? AbsenceCase.make(nextAbsence)
-    : AbsenceCase.make({
-        ...nextAbsence,
-        acknowledgement: input.absence.acknowledgement,
-      });
+  return yield* AggregateRevision.revise(AbsenceCase, input.absence, { missedLessons });
 });
 
 export declare namespace decideMissedLesson {

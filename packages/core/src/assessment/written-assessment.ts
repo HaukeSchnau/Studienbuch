@@ -6,7 +6,6 @@ import { NonBlankText } from "../foundation/non-blank-text";
 import type { ActorRef } from "../organization/acknowledgement";
 import { Acknowledgement, Withdrawal } from "../organization/acknowledgement";
 import type { AuthoritySnapshot } from "../organization/authority";
-import type { AuthorityDenied } from "../organization/authority";
 import { Capability, authorize } from "../organization/authority";
 import { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
 import type { LegalAgePolicy, Person } from "../organization/person";
@@ -14,7 +13,6 @@ import { AssessmentWeight, GradeValue } from "./grading";
 import { GradingPolicy } from "./grading-policy";
 import { AssessmentId } from "./identity";
 import type { ConfirmationRecordInput } from "./learner-acknowledgement";
-import type { AcknowledgementActor, LegalStatusUnknown } from "./learner-acknowledgement";
 import {
   AlreadyLearnerAcknowledged,
   AlreadyTeacherAttested,
@@ -64,14 +62,12 @@ export const confirmedWritten = (
   assessments: ReadonlyArray<WrittenAssessment>,
 ): ReadonlyArray<WrittenAssessment> => assessments.filter(isWrittenConfirmed);
 
-export class ConcurrentWrittenAssessmentRevision extends Schema.TaggedError<ConcurrentWrittenAssessmentRevision>()(
-  "Assessment.ConcurrentWrittenAssessmentRevision",
-  { expected: AggregateRevision.Schema, actual: AggregateRevision.Schema },
-) {}
+/** Names this aggregate in shared revision failures. */
+export const aggregateName = AggregateRevision.AggregateName.make("WrittenAssessment");
 
 export class AlreadyWithdrawn extends Schema.TaggedError<AlreadyWithdrawn>()(
   "Assessment.AlreadyWithdrawn",
-  { target: Schema.Literals(["WrittenAssessment", "AbsenceCase"]) },
+  { target: Schema.Literals(["WrittenAssessment"]) },
 ) {}
 
 /** A teacher's attestation is the school's record, so the student can no longer retract it. */
@@ -80,35 +76,14 @@ export class WithdrawalLockedByAttestation extends Schema.TaggedError<Withdrawal
   { assessmentId: AssessmentId },
 ) {}
 
-export type AttestWrittenError =
-  | ConcurrentWrittenAssessmentRevision
-  | AlreadyTeacherAttested
-  | AggregateRevision.Exhausted
-  | GradingPolicy.InvalidGradeValue
-  | AuthorityDenied;
-
-export type AcknowledgeWrittenError =
-  | ConcurrentWrittenAssessmentRevision
-  | AlreadyLearnerAcknowledged
-  | AggregateRevision.Exhausted
-  | AcknowledgementActor
-  | LegalStatusUnknown
-  | AuthorityDenied;
-
-const checkRevision = (assessment: WrittenAssessment, expectedRevision: AggregateRevision.Type) =>
-  assessment.revision === expectedRevision
-    ? Effect.void
-    : Effect.fail(
-        ConcurrentWrittenAssessmentRevision.make({
-          expected: expectedRevision,
-          actual: assessment.revision,
-        }),
-      );
-
 export const attestWritten = Effect.fn("Assessment.attestWrittenAssessment")(function* (
   input: attestWritten.Input,
 ) {
-  yield* checkRevision(input.assessment, input.expectedRevision);
+  yield* AggregateRevision.ensureCurrent(
+    aggregateName,
+    input.assessment.revision,
+    input.expectedRevision,
+  );
   if (input.assessment.teacherAttestation !== undefined) {
     return yield* AlreadyTeacherAttested.make({ target: "WrittenAssessment" });
   }
@@ -122,11 +97,7 @@ export const attestWritten = Effect.fn("Assessment.attestWrittenAssessment")(fun
     input.assessment.assessedOn,
     input.authority,
   );
-  const revision = yield* AggregateRevision.next(input.assessment.revision);
-  return WrittenAssessment.make({
-    // oxlint-disable-next-line typescript/no-misused-spread
-    ...input.assessment,
-    revision,
+  return yield* AggregateRevision.revise(WrittenAssessment, input.assessment, {
     teacherAttestation: makeAcknowledgement(input, input.assessment.revision),
   });
 });
@@ -142,7 +113,11 @@ export declare namespace attestWritten {
 export const acknowledgeWritten = Effect.fn("Assessment.acknowledgeWrittenAssessment")(function* (
   input: acknowledgeWritten.Input,
 ) {
-  yield* checkRevision(input.assessment, input.expectedRevision);
+  yield* AggregateRevision.ensureCurrent(
+    aggregateName,
+    input.assessment.revision,
+    input.expectedRevision,
+  );
   if (input.assessment.learnerAcknowledgement !== undefined) {
     return yield* AlreadyLearnerAcknowledged.make({
       target: "WrittenAssessment",
@@ -156,11 +131,7 @@ export const acknowledgeWritten = Effect.fn("Assessment.acknowledgeWrittenAssess
     legalAgePolicy: input.legalAgePolicy,
     authority: input.authority,
   });
-  const revision = yield* AggregateRevision.next(input.assessment.revision);
-  return WrittenAssessment.make({
-    // oxlint-disable-next-line typescript/no-misused-spread
-    ...input.assessment,
-    revision,
+  return yield* AggregateRevision.revise(WrittenAssessment, input.assessment, {
     learnerAcknowledgement: makeAcknowledgement(input, input.assessment.revision),
   });
 });
@@ -175,13 +146,6 @@ export declare namespace acknowledgeWritten {
   }
 }
 
-export type WithdrawWrittenError =
-  | ConcurrentWrittenAssessmentRevision
-  | AlreadyWithdrawn
-  | WithdrawalLockedByAttestation
-  | AggregateRevision.Exhausted
-  | AuthorityDenied;
-
 /**
  * Retracts an assessment the student entered, while the teacher has not yet attested it.
  *
@@ -191,7 +155,11 @@ export type WithdrawWrittenError =
 export const withdrawWritten = Effect.fn("Assessment.withdrawWrittenAssessment")(function* (
   input: withdrawWritten.Input,
 ) {
-  yield* checkRevision(input.assessment, input.expectedRevision);
+  yield* AggregateRevision.ensureCurrent(
+    aggregateName,
+    input.assessment.revision,
+    input.expectedRevision,
+  );
   if (input.assessment.withdrawal !== undefined) {
     return yield* AlreadyWithdrawn.make({ target: "WrittenAssessment" });
   }
@@ -206,11 +174,7 @@ export const withdrawWritten = Effect.fn("Assessment.withdrawWrittenAssessment")
     input.assessment.assessedOn,
     input.authority,
   );
-  const revision = yield* AggregateRevision.next(input.assessment.revision);
-  return WrittenAssessment.make({
-    // oxlint-disable-next-line typescript/no-misused-spread
-    ...input.assessment,
-    revision,
+  return yield* AggregateRevision.revise(WrittenAssessment, input.assessment, {
     withdrawal: Withdrawal.make({
       withdrawnBy: input.actor,
       withdrawnAt: input.withdrawnAt,
