@@ -15,6 +15,11 @@ Baseline verified at `29cb3e071`:
 
 Nothing below is a build break. One item is a correctness bug with a reproduction.
 
+**Revision, 2026-08-21.** Finding 9 (`exactOptionalPropertyTypes`) is withdrawn. It was written
+without checking the history, and the flag had been removed deliberately three days earlier. The
+finding is kept in place rather than deleted, because two of its supporting claims were wrong in
+ways that argue for the opposite change.
+
 ## The one correctness bug
 
 ### 1. A withdrawn absence is silently resurrected — high
@@ -179,44 +184,54 @@ same kind of thing. Pick one — type-only unless something actually decodes a f
 
 ## TypeScript strictness
 
-### 9. `exactOptionalPropertyTypes` is off, and it is the root cause of several items above
+### 9. ~~`exactOptionalPropertyTypes` is off~~ — withdrawn
 
-The root `tsconfig.json` sets a strong flag set — `noUncheckedIndexedAccess`, `noImplicitReturns`,
-`noUnusedLocals/Parameters`, `allowUnreachableCode: false`, `verbatimModuleSyntax` — but not
-`exactOptionalPropertyTypes`. Without it, `{ artifact: undefined }` is assignable to
-`{ artifact?: Reference }`, so the compiler cannot distinguish "absent" from "present and
-undefined". That distinction is load-bearing here: `Schema.optionalKey` is used on nearly every
-aggregate, and `.make()` will write the key when the value is `undefined`.
+**Withdrawn 2026-08-21, same day, after Hauke asked whether the removal had been deliberate. It
+had been, and I had not checked before recommending it.** `ec6b2d5c2` (2026-08-18) removes the flag:
+"after its absent-vs-undefined distinction produced disproportionate construction ceremony in React
+props and internal option objects". The 38 errors measured below are that same ceremony, rediscovered
+— `apps/mobile/src/ui/`, the web `Slider` root props, and the outbox options object are exactly the
+call sites that commit restored. The previous arrangement was root-on with
+`apps/mobile/tsconfig.json` opting out under a TODO, and that is what got scrapped.
 
-The workarounds this forces are already in the code:
-`organization/acknowledgement.ts:29` (`makeAcknowledgement` exists solely to strip a present-undefined
-optional), the four-branch `LessonOccurrence.make` in `schedule/materialize.ts`, and the two
-`Rejected.make` branches in `decide-missed-lesson.ts:151-158`.
+Two of the supporting claims were also wrong, which is worth recording because they pointed the
+wrong way:
 
-**Measured cost of turning it on** (enabled at the root, `tsc --noEmit` per project):
+- **It would not have caught finding 1.** `packages/core` measures zero errors with the flag on, and
+  the bug is in `packages/core`. Dropping `withdrawal` from a rebuilt struct is legal under both
+  settings, because `optionalKey` makes the field absent-legal by design.
+- **It does not remove the construction helpers; it mandates them.** `makeAcknowledgement`, the
+  four-branch `LessonOccurrence.make` and the two `Rejected.make` branches all exist to avoid
+  passing a present `undefined`. With the flag _on_, the compiler forces those branches to stay.
+  With it off, a runtime helper that strips `undefined` before `make` can collapse all of them into
+  one call. The flag being off is what makes finding 5 possible, not what makes it necessary.
 
-| Project                  | New errors |
-| ------------------------ | ---------- |
-| `packages/core`          | 0          |
-| `packages/server`        | 0          |
-| `apps/console`           | 0          |
-| `scripts`                | 0          |
-| `packages/observability` | 1          |
-| `apps/web`               | 6          |
-| `apps/mobile`            | 31         |
+The risk I attributed to the missing flag does not exist either: Effect Schema v4's `make` rejects a
+present `undefined` for an `optionalKey` field at runtime with `Schema validation failed` — verified
+with a probe. So the absent-vs-undefined distinction is already guarded at the boundary that matters
+in `packages/core`, and the flag would only move that failure from runtime to compile time, at the
+cost already judged too high.
 
-38 errors, all one mechanical shape (`Type 'number | undefined' is not assignable to type
-'number'` at an options object), concentrated in `apps/mobile/src/ui/`. The domain package and the
-server package are already clean. This is as cheap as this flag will ever be.
+Measurement retained as fact, since it is cheap and someone will ask again (root-enabled,
+`tsc --noEmit` per project): core 0, server 0, console 0, scripts 0, observability 1, web 6,
+mobile 31 — 38 total, all `Type 'number | undefined' is not assignable to type 'number'` at an
+options object.
+
+**What survives** is finding 5. A `revise`/`defined` helper in `foundation/` collapses the branching
+_and_ makes the dropped-field bug unrepresentable, and it works with the current setting rather than
+against it.
 
 ### 10. `apps/mobile` is pinned to a different TypeScript major
 
 `apps/mobile/package.json` declares `"typescript": "~6.0.3"`; the catalog pins `^7.0.2` and every
 other workspace member uses `catalog:`. `apps/mobile/node_modules/typescript` really is 6.0.3. The
 largest application in the repository is therefore checked by a different compiler than the
-`@effect/tsgo`-patched one the lint configuration is built around. Move it to `catalog:` unless Expo
-genuinely blocks it — and if it does, record why, because it silently weakens every strictness
-decision made at the root.
+`@effect/tsgo`-patched one the lint configuration is built around.
+
+Unlike finding 9, this one is not a decision: `~6.0.3` has been in the file unchanged since
+`357bd02c004c feat: add Expo mobile platform foundations`, which is where the Expo template put it.
+Move it to `catalog:` unless Expo genuinely blocks it — and if it does, record why, because it
+silently weakens every strictness decision made at the root.
 
 ### 11. Worth considering
 
@@ -426,13 +441,14 @@ them. That is a second DI mechanism beside Layers, in the package that defines t
 ## Suggested order
 
 1. Finding 1 (withdrawal tombstone) with a regression test. Small, and it is a real bug.
-2. Finding 9 (`exactOptionalPropertyTypes`) and finding 10 (mobile TypeScript version). Mechanical,
-   38 errors, and 9 removes the machinery that finding 5 has to work around.
+2. Finding 10 (mobile TypeScript version). One line, and it is template residue rather than a
+   choice. Finding 9 is withdrawn; do not re-open it.
 3. Findings 14 and 15 (web tests not running; no CI). Cheap, and everything after this is safer once
    `just qa` actually covers the repository and runs somewhere other than a laptop.
 4. Findings 4, 5 and 6 — the confirmation lifecycle, the `revise` helper, and structured errors for
    referential invariants. This is the largest piece and the one that pays off most as the domain
-   grows. Finding 1 becomes unrepresentable, finding 3 disappears.
+   grows. Finding 1 becomes unrepresentable, finding 3 disappears, and the `defined`-stripping half
+   of `revise` collapses the optional-field branching that finding 9 wrongly proposed to enforce.
 5. Findings 20, 21, 22 — aliases, directory names, things defined twice. Individually trivial,
    collectively what "clean organization" means once there are twenty features instead of eight.
 6. The vertical slice the previous audit called for (finding 18). Everything above makes it cheaper;
