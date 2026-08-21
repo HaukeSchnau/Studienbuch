@@ -111,6 +111,9 @@ importers:
       '@better-auth/expo':
         specifier: ^1.6.27
         version: 1.6.27(@better-auth/core@1.6.27(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.1)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.4.3))(jose@6.2.8)(kysely@0.29.5)(nanostores@1.4.2))(better-auth@1.6.27(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.168.47(@voidzero-dev/vite-plus-core@0.2.9(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(typescript@6.0.3)(yaml@2.9.0))(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(rolldown@1.2.3)(supports-color@8.1.1))(pg@8.23.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(solid-js@1.9.14)(vitest@4.1.10))(expo-constants@57.0.10)(expo-linking@57.0.5)(expo-network@57.0.1(expo@57.0.12)(react@19.2.3))(expo-web-browser@57.0.2(expo@57.0.12)(react-native@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1)))
+      '@effect/atom-react':
+        specifier: 4.0.0-rc.108
+        version: 4.0.0-rc.108(effect@4.0.0-rc.108)(react@19.2.3)(scheduler@0.27.0)
       '@expo-google-fonts/nunito':
         specifier: ^0.4.2
         version: 0.4.2
@@ -1046,6 +1049,13 @@ packages:
 
   '@drizzle-team/brocli@0.12.0':
     resolution: {integrity: sha512-mlUE+rZ8CatQekLhnaiN91Iemdd+e2gFKooGlnRB3oPTL3VghLfX24dx7HrzMNeC1JrIB/0kpsfyty3f5HNfxQ==}
+
+  '@effect/atom-react@4.0.0-rc.108':
+    resolution: {integrity: sha512-GNHQ4ildpnI00AdyL3cKRBo387aEpoY6tIIfwPrrZoNbMGCVNupiAIReoD6dBwWIgOEIASd/YLwx1DR42Jqx7g==}
+    peerDependencies:
+      effect: 4.0.0-rc.108
+      react: '>=19.2.7 <20.0.0'
+      scheduler: '>=0.27.0 <0.28.0'
 
   '@effect/platform-node-shared@4.0.0-rc.108':
     resolution: {integrity: sha512-g5dSRR+tHzFcWav5A6zbug78oV8WPJL5BJqgKlKtow0cQ2IpULcLZaP2xCYR3RJDvz5SETREmPCJ+BNONIsalw==}
@@ -10505,6 +10515,12 @@ snapshots:
   '@csstools/css-tokenizer@4.0.0': {}
 
   '@drizzle-team/brocli@0.12.0': {}
+
+  '@effect/atom-react@4.0.0-rc.108(effect@4.0.0-rc.108)(react@19.2.3)(scheduler@0.27.0)':
+    dependencies:
+      effect: 4.0.0-rc.108
+      react: 19.2.3
+      scheduler: 0.27.0
 
   '@effect/platform-node-shared@4.0.0-rc.108(effect@4.0.0-rc.108)':
     dependencies:

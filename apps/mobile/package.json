@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@better-auth/expo": "^1.6.27",
+    "@effect/atom-react": "catalog:",
     "@expo-google-fonts/nunito": "^0.4.2",
     "@expo/ui": "~57.0.10",
     "@legendapp/list": "^3.3.5",

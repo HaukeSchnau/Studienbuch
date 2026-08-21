@@ -13,7 +13,9 @@ src/
   domain-ui/    reusable school-domain presentation components
   ui/           generic UI, fields, feedback, layout, navigation chrome, tokens
   infra/        exists because of a technology choice, not the problem
-    data/         data facade and its current fixture implementation
+    effect-atom/  registry and provider wiring
+    data/         temporary fixture context for domains not yet using atoms
+    mock-data/    fixture-backed implementations and seed data
     native/       wrappers around native/device APIs
     observability/  telemetry ports and the Sentry adapter
     routing/      typed route params and path builders
@@ -38,12 +40,17 @@ lives in `features/setup` beside the rest of setup.
 - `src/app` owns filesystem routes. Route files parse params, configure route-level navigation, and
   render feature screens. They should stay thin.
 - `src/infra` owns everything that exists because of a technology choice rather than the problem:
-  providers, native wrappers, telemetry, routing helpers, session, and the data boundary. Swap a
-  technology and this is the directory that changes.
-- `src/infra/data` is the only app-facing data boundary. Features import data through public hooks
-  such as `useCourses`, `useTasks`, or `useSession`. The current implementation is fixture-backed
-  and lives under `src/infra/data/mock`; future persistence and sync should replace the
-  implementation behind the same facade.
+  providers, native wrappers, telemetry, routing helpers, persistence adapters, and sync
+  transports. Swap a technology and this is the directory that changes.
+- Each feature owns its atoms, queries, commands, and React hooks. For example, task state belongs
+  to `src/features/tasks` even though its implementation uses Effect Atom. The task problem owns
+  the state; Effect Atom is how the app makes it reactive.
+- `src/infra/effect-atom` owns only the shared registry and provider wiring. Mock fixtures seed that
+  registry while the app has no persistent data source.
+- `src/infra/mock-data` owns the current fixture-backed implementation. Features must not import it;
+  providers and future Effect Layers adapt it to feature-owned state.
+- `src/infra/data` is temporary. It still holds the React context for domains that have not moved
+  to feature-owned atoms. Delete it after the migration inventory below reaches zero.
 - `src/features` owns product workflows. Feature `model` files must be pure TypeScript and are the
   preferred home for non-trivial view-model logic. Feature screens may compose generic components,
   domain-ui components, data hooks, and public barrels from other features.
@@ -62,23 +69,51 @@ lives in `features/setup` beside the rest of setup.
 The intended dependency flow is:
 
 ```txt
-app -> features -> infra/data -> packages/core
+app -> features -> packages/core
                 -> domain-ui -> ui/assets
-                -> infra/*
+                -> infra adapters
+app providers -> infra/effect-atom -> feature atoms
 ```
 
 Cross-feature imports are allowed only through public feature barrels. If a feature needs another
 feature's private component, either promote that component to the imported feature's public API or
 move it to `domain-ui`.
 
+## Data and state migration
+
+The feature hook is the UI boundary. Components should not know whether its values come from mock
+fixtures, SQLite, or synchronization. During the mock phase, writable atoms apply commands directly
+to registry-owned state. A later persistence adapter can replace those atom implementations with
+Effect-backed queries and commands without changing component imports.
+
+| Domain         | Owner                                           | Current source                       |
+| -------------- | ----------------------------------------------- | ------------------------------------ |
+| Tasks          | `features/tasks`                                | Effect Atom, seeded by mock fixtures |
+| Courses        | `features/courses`                              | Temporary fixture context            |
+| Grades         | `features/courses/grades`                       | Temporary fixture context            |
+| Schedule       | `features/schedule`                             | Temporary fixture context            |
+| Absences       | `features/absences`                             | Temporary fixture context            |
+| Profile        | `features/profile`                              | Temporary fixture context            |
+| Setup progress | `features/setup`                                | Temporary fixture context            |
+| School catalog | organization feature, to be named when migrated | Temporary fixture context            |
+
+Migrate one complete domain at a time. Move its read state, commands, hooks, and consumers together,
+then remove that domain from the fixture context. Do not create a replacement central data facade.
+
+TODO: Effect Atom rc.108 declares React 19.2.7 as its minimum peer, while Expo 57 pins React 19.2.3.
+The rc.108 React bindings only call APIs available in 19.2.3, and the focused task tests pass, but
+the combination remains outside the package's declared range. Recheck this constraint when either
+Expo or Effect Atom changes. Do not upgrade React independently of Expo to silence the warning.
+
 ## Refactor Checklist
 
 Before adding new mobile code:
 
 1. Put pure domain rules in `packages/core`.
-2. Put app data access behind `src/infra/data`.
-3. Put screen-specific UI inside its feature.
-4. Put reusable domain presentation in `src/domain-ui`.
-5. Put reusable generic primitives in `src/ui`.
-6. Add or update tests for extracted model logic.
-7. Run `just qa`.
+2. Put reactive state, queries, commands, and hooks in the feature that owns them.
+3. Put persistence, sync, and device implementations in `src/infra`.
+4. Put screen-specific UI inside its feature.
+5. Put reusable domain presentation in `src/domain-ui`.
+6. Put reusable generic primitives in `src/ui`.
+7. Add or update focused tests for state transitions and extracted model logic.
+8. Run `just qa`.

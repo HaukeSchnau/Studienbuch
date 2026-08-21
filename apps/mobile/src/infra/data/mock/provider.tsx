@@ -2,7 +2,6 @@ import {
   findCurrentSemester,
   getActiveHoliday,
   getCourseGrades,
-  getCourseTasks,
   getRequiredSetupPath,
   getSelectedSemesterCourses,
   getVisibleTimetable,
@@ -14,8 +13,6 @@ import {
   type Holiday,
   type SchoolClass,
   type Semester,
-  type Task,
-  type TaskAttachment,
   type TimetableEntry,
   type UserProfile,
   type Year,
@@ -29,11 +26,10 @@ import {
   gradesSeed,
   holidaysSeed,
   semesters,
-  tasksSeed,
   timetableSeed,
   years,
 } from "./fixtures";
-import { createMockId } from "./mock-ids";
+import { createMockId } from "~/infra/mock-data/id";
 import { mockSignatureSvg } from "./mock-signatures";
 
 interface MockDataContextValue {
@@ -46,7 +42,6 @@ interface MockDataContextValue {
   timetable: TimetableEntry[];
   absences: Absence[];
   grades: Grade[];
-  tasks: Task[];
   getRequiredSetupPath: () =>
     | "/setup/license-key"
     | "/setup/name-and-year"
@@ -56,8 +51,6 @@ interface MockDataContextValue {
   getCourse: (courseId: string) => Course | undefined;
   getSemesterCourses: (semesterId: string) => Course[];
   getCourseGrades: (courseId: string) => Grade[];
-  getTask: (taskId: string) => Task | undefined;
-  getCourseTasks: (courseId?: string) => Task[];
   updateProfile: (patch: Partial<UserProfile>) => void;
   setSelectedCourses: (semesterId: string, courseIds: string[]) => void;
   addAbsence: (absence: { date: Date; courseIds: string[]; reason: string }) => void;
@@ -71,16 +64,6 @@ interface MockDataContextValue {
   }) => void;
   signGrade: (gradeId: string, signer: "parent" | "teacher") => void;
   restoreLatestConfirmedGrade: (courseId: string, type: GradeType) => void;
-  addTask: (payload: {
-    courseId: string;
-    title: string;
-    description: string;
-    dueDate: Date;
-    attachments?: TaskAttachment[];
-  }) => void;
-  addTaskAttachment: (taskId: string, attachment: TaskAttachment) => void;
-  toggleTaskDone: (taskId: string) => void;
-  deleteTask: (taskId: string) => void;
 }
 
 const currentSemester = findCurrentSemester(semesters);
@@ -110,14 +93,11 @@ const unavailableMockDataRuntime: MockDataContextValue = {
   timetable: [],
   absences: [],
   grades: [],
-  tasks: [],
   getRequiredSetupPath: () => "/setup/license-key",
   getActiveHoliday: () => undefined,
   getCourse: () => undefined,
   getSemesterCourses: () => [],
   getCourseGrades: () => [],
-  getTask: () => undefined,
-  getCourseTasks: () => [],
   updateProfile: () => undefined,
   setSelectedCourses: () => undefined,
   addAbsence: () => undefined,
@@ -126,10 +106,6 @@ const unavailableMockDataRuntime: MockDataContextValue = {
   upsertGrade: () => undefined,
   signGrade: () => undefined,
   restoreLatestConfirmedGrade: () => undefined,
-  addTask: () => undefined,
-  addTaskAttachment: () => undefined,
-  toggleTaskDone: () => undefined,
-  deleteTask: () => undefined,
 };
 
 const MockDataContext = createContext<MockDataContextValue>(unavailableMockDataRuntime);
@@ -144,7 +120,6 @@ export function MockDataProvider({ children }: PropsWithChildren) {
   });
   const [absences, setAbsences] = useState(absencesSeed);
   const [grades, setGrades] = useState(gradesSeed);
-  const [tasks, setTasks] = useState(tasksSeed);
 
   const getCourse = (courseId: string) => coursesSeed.find((course) => course.id === courseId);
 
@@ -158,7 +133,6 @@ export function MockDataProvider({ children }: PropsWithChildren) {
     timetable: getVisibleTimetable(timetableSeed, coursesSeed, selectedCourseIdsBySemester),
     absences,
     grades,
-    tasks,
     getRequiredSetupPath: () =>
       getRequiredSetupPath({ user, currentSemester, selectedCourseIdsBySemester }),
     getActiveHoliday: (date?: Date) => getActiveHoliday(holidaysSeed, date),
@@ -166,8 +140,6 @@ export function MockDataProvider({ children }: PropsWithChildren) {
     getSemesterCourses: (semesterId) =>
       getSelectedSemesterCourses(coursesSeed, semesterId, selectedCourseIdsBySemester),
     getCourseGrades: (courseId) => getCourseGrades(grades, courseId),
-    getTask: (taskId) => tasks.find((task) => task.id === taskId),
-    getCourseTasks: (courseId) => getCourseTasks(tasks, courseId),
     updateProfile: (patch) => {
       setUser((current) => ({ ...current, ...patch }));
     },
@@ -305,35 +277,6 @@ export function MockDataProvider({ children }: PropsWithChildren) {
             : grade,
         );
       });
-    },
-    addTask: ({ courseId, title, description, dueDate, attachments = [] }) => {
-      setTasks((current) => [
-        {
-          id: createMockId("task"),
-          courseId,
-          title,
-          description,
-          dueDate,
-          done: false,
-          attachments,
-        },
-        ...current,
-      ]);
-    },
-    addTaskAttachment: (taskId, attachment) => {
-      setTasks((current) =>
-        current.map((task) =>
-          task.id === taskId ? { ...task, attachments: [...task.attachments, attachment] } : task,
-        ),
-      );
-    },
-    toggleTaskDone: (taskId) => {
-      setTasks((current) =>
-        current.map((task) => (task.id === taskId ? { ...task, done: !task.done } : task)),
-      );
-    },
-    deleteTask: (taskId) => {
-      setTasks((current) => current.filter((task) => task.id !== taskId));
     },
   };
 
