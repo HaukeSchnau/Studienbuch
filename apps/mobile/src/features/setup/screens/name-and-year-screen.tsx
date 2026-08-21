@@ -8,7 +8,7 @@ import { SelectField } from "~/ui/fields/select-field";
 import { Text } from "~/ui/text";
 import { TextField } from "~/ui/fields/text-field";
 import { useSchoolCatalog } from "~/features/organization";
-import { useSessionData } from "~/infra/data/hooks";
+import { useProfile } from "~/features/profile";
 import { setupClassAndCoursesRoute } from "~/infra/routing/params";
 
 interface NameAndYearScreenProps {
@@ -22,7 +22,7 @@ export function NameAndYearScreen({
   intro = "Bitte gib deinen Namen und deinen Jahrgang an.",
   nextRoute = setupClassAndCoursesRoute,
 }: NameAndYearScreenProps) {
-  const { user, updateProfile } = useSessionData();
+  const { profile: user, updateProfile } = useProfile();
   const { years, classes } = useSchoolCatalog();
   const [name, setName] = useState(user.name);
   const [isOfAge, setIsOfAge] = useState(user.isOfAge);

@@ -3,13 +3,13 @@ import { ViewConfirmPageContent } from "~/domain-ui/confirm-page-content";
 import { PageScaffold } from "~/ui/navigation/page-scaffold";
 import { Text } from "~/ui/text";
 import { useAbsences } from "~/infra/data/hooks";
-import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { useProfile } from "~/features/profile";
 import { ExcuseParent } from "../excuse/excuse-parent";
 import { ExcuseTeacher } from "../excuse/excuse-teacher";
 
 export function ExcuseScreen({ date, courseIds }: { date: Date; courseIds: string[] }) {
   const { absences } = useAbsences();
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
   const absence = absences.find(
     (item) =>
       item.date.getTime() === date.getTime() && item.courseIds.join(";") === courseIds.join(";"),

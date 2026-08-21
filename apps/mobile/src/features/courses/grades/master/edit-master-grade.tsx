@@ -8,7 +8,7 @@ import { SheetScaffold } from "~/ui/layout/sheet-scaffold";
 import { TextField } from "~/ui/fields/text-field";
 import { isGradeConfirmed, type Grade } from "~/compat/mobile-v0";
 import { useGrades } from "~/infra/data/hooks";
-import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { useProfile } from "~/features/profile";
 import { haptics } from "~/infra/native/haptics";
 import { GradeCard } from "../grade-card";
 
@@ -21,7 +21,7 @@ export const EditMasterGrade = ({
   onClose: () => void;
   masterGrades: Grade[];
 }) => {
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
   const { upsertGrade, restoreLatestConfirmedGrade } = useGrades();
   const [points, setPoints] = useState("");
   const mostRecentConfirmedMasterGrade = useMemo(() => {

@@ -4,7 +4,7 @@ import { PortaledBottomSheet } from "~/ui/layout/bottom-sheet";
 import { IconButton } from "~/ui/icon-button";
 import { Text } from "~/ui/text";
 import { formatGrade, isGradeConfirmed, type Grade } from "~/compat/mobile-v0";
-import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { useProfile } from "~/features/profile";
 import { gradeRoute } from "~/infra/routing/params";
 import { GradeCard } from "./grade-card";
 import { AddWrittenGrade } from "./written/add-written-grade";
@@ -17,7 +17,7 @@ export const WrittenGradesRow = ({
   writtenGrades: Grade[];
   courseId: string;
 }) => {
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
   const [isAddVisible, setIsAddVisible] = useState(false);
   const averageWrittenGrade = useMemo(() => {
     const confirmedGrades = writtenGrades.filter((grade) => isGradeConfirmed(grade, user.isOfAge));

@@ -10,7 +10,7 @@ import { SystemIcon } from "~/ui/system-icon";
 import { Text } from "~/ui/text";
 import { colors } from "~/ui/colors";
 import { formatGrade, isGradeConfirmed, type Grade } from "~/compat/mobile-v0";
-import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { useProfile } from "~/features/profile";
 import { gradeRoute } from "~/infra/routing/params";
 import { EditMasterGrade } from "./master/edit-master-grade";
 
@@ -21,7 +21,7 @@ export const MasterGradeRow = ({
   masterGrades: Grade[];
   courseId: string;
 }) => {
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
   const [isEditVisible, setIsEditVisible] = useState(false);
   const currentMasterGrade = useMemo(() => masterGrades[0], [masterGrades]);
   const isConfirmed = currentMasterGrade

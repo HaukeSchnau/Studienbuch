@@ -1,12 +1,7 @@
-import { getVisibleTimetable } from "~/compat/mobile-v0";
+import { getVisibleTimetable, type GradeType } from "~/compat/mobile-v0";
 import { useCourses, useCourseSelection } from "~/features/courses/use-courses";
+import { useProfile } from "~/features/profile/use-profile";
 import { useMockDataRuntime } from "../mock/provider";
-
-export const useSessionData = () => {
-  const { user, updateProfile } = useMockDataRuntime();
-
-  return { user, updateProfile };
-};
 
 export const useScheduleData = () => {
   const { holidays, timetable, getActiveHoliday } = useMockDataRuntime();
@@ -29,6 +24,14 @@ export const useAbsences = () => {
 export const useGrades = () => {
   const { grades, getCourseGrades, upsertGrade, signGrade, restoreLatestConfirmedGrade } =
     useMockDataRuntime();
+  const { profile } = useProfile();
 
-  return { grades, getCourseGrades, upsertGrade, signGrade, restoreLatestConfirmedGrade };
+  return {
+    grades,
+    getCourseGrades,
+    upsertGrade,
+    signGrade,
+    restoreLatestConfirmedGrade: (courseId: string, type: GradeType) =>
+      restoreLatestConfirmedGrade(courseId, type, profile.isOfAge),
+  };
 };

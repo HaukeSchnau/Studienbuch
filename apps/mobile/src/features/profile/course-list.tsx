@@ -9,7 +9,8 @@ import { getProfileCoursesModel } from "./profile-model";
 import type { Course, Semester } from "~/compat/mobile-v0";
 import { subjectNameMap, Teacher } from "~/compat/mobile-v0";
 import { useCourses } from "~/features/courses";
-import { useGrades, useSessionData } from "~/infra/data/hooks";
+import { useGrades } from "~/infra/data/hooks";
+import { useProfile } from "./use-profile";
 import { useTasks } from "~/features/tasks";
 import { courseRoute } from "~/infra/routing/params";
 import { colors } from "~/ui/colors";
@@ -18,7 +19,7 @@ export const CourseList = ({ semester }: { semester: Semester }) => {
   const { getSemesterCourses } = useCourses();
   const { getCourseGrades } = useGrades();
   const { getCourseTasks } = useTasks();
-  const { user } = useSessionData();
+  const { profile: user } = useProfile();
   const courses = getSemesterCourses(semester.id);
   const router = useRouter();
   const model = getProfileCoursesModel({

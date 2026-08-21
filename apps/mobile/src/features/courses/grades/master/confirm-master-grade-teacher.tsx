@@ -5,12 +5,12 @@ import { PageScaffold } from "~/ui/navigation/page-scaffold";
 import { Text } from "~/ui/text";
 import { formatGrade, subjectNameMap, Teacher } from "~/compat/mobile-v0";
 import { useGrades } from "~/infra/data/hooks";
-import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { useProfile } from "~/features/profile";
 import type { ConfirmedResolvedGrade, ResolvedGrade } from "../grade.type";
 
 export const ConfirmMasterGradeTeacher = ({ grade }: { grade: ResolvedGrade }) => {
   const router = useRouter();
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
   const { signGrade } = useGrades();
   const teacher = grade.course.teachers[0];
 
@@ -46,7 +46,7 @@ export const MasterGradeTeacherConfirmationView = ({
 }: {
   grade: ConfirmedResolvedGrade;
 }) => {
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
   const teacher = grade.course.teachers[0];
 
   if (!teacher) {

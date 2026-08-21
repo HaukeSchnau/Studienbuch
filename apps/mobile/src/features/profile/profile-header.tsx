@@ -11,7 +11,7 @@ import { Text } from "~/ui/text";
 import { SystemIcon, type SystemIconName } from "~/ui/system-icon";
 import { formatClassName, getCurrentYearNum, type Semester } from "~/compat/mobile-v0";
 import { useSchoolCatalog } from "~/features/organization";
-import { useSessionData } from "~/infra/data/hooks";
+import { useProfile } from "./use-profile";
 import { profileEditRoute } from "~/infra/routing/params";
 import { SemesterSelector } from "./semester-selector";
 
@@ -25,7 +25,7 @@ export const Header = ({
   onSelectSemester: (semester: Semester) => void;
 }) => {
   const [isSheetVisible, setIsSheetVisible] = useState(false);
-  const { user } = useSessionData();
+  const { profile: user } = useProfile();
   const { classes, years } = useSchoolCatalog();
   const year = years.find((item) => item.id === user.yearId);
   const schoolClass = classes.find((item) => item.id === user.classId);

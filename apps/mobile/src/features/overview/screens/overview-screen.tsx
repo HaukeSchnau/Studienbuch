@@ -2,9 +2,9 @@ import { View } from "react-native";
 import { CoreLayout } from "~/ui/layout/core-layout";
 import { Text } from "~/ui/text";
 import { AbsencesOverviewCard } from "~/features/absences";
+import { useProfile } from "~/features/profile";
 import { Agenda } from "~/features/schedule";
 import { TasksSection } from "~/features/tasks";
-import { useRequiredAuthenticatedSession } from "~/infra/session/session";
 
 export const OverviewScreen = () => (
   <CoreLayout>
@@ -21,11 +21,11 @@ export const OverviewScreen = () => (
 );
 
 const Greeting = () => {
-  const session = useRequiredAuthenticatedSession();
+  const { profile } = useProfile();
 
   return (
     <Text className="text-4xl text-white" variant="heading">
-      Moin, {session.user.name}!
+      Moin, {profile.name}!
     </Text>
   );
 };

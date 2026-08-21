@@ -7,7 +7,6 @@ import {
   type GradeType,
   type Holiday,
   type TimetableEntry,
-  type UserProfile,
 } from "~/compat/mobile-v0";
 import type { PropsWithChildren } from "react";
 import { createContext, useContext, useState } from "react";
@@ -16,14 +15,12 @@ import { createMockId } from "~/infra/mock-data/id";
 import { mockSignatureSvg } from "./mock-signatures";
 
 interface MockDataContextValue {
-  user: UserProfile;
   holidays: Holiday[];
   timetable: TimetableEntry[];
   absences: Absence[];
   grades: Grade[];
   getActiveHoliday: (date?: Date) => Holiday | undefined;
   getCourseGrades: (courseId: string) => Grade[];
-  updateProfile: (patch: Partial<UserProfile>) => void;
   addAbsence: (absence: { date: Date; courseIds: string[]; reason: string }) => void;
   deleteAbsence: (absenceId: string) => void;
   signAbsence: (absenceId: string, signer: "parent" | "teacher") => void;
@@ -34,31 +31,18 @@ interface MockDataContextValue {
     date?: Date;
   }) => void;
   signGrade: (gradeId: string, signer: "parent" | "teacher") => void;
-  restoreLatestConfirmedGrade: (courseId: string, type: GradeType) => void;
+  restoreLatestConfirmedGrade: (courseId: string, type: GradeType, isOfAge: boolean) => void;
 }
-
-const initialLicenseKey =
-  process.env.EXPO_PUBLIC_E2E_SCENARIO === "startup" ? "" : "STUB-U123-2026-UI00";
-const initialUser: UserProfile = {
-  name: "Hauke",
-  isOfAge: false,
-  yearId: "y12",
-  classId: "c12a",
-  schoolName: "IGS Lilienthal",
-  licenseKey: initialLicenseKey,
-};
 
 // Missing providers degrade to an empty, read-only data source. The app shell installs the real
 // provider, but keeping the context total lets render code represent absence without exceptions.
 const unavailableMockDataRuntime: MockDataContextValue = {
-  user: initialUser,
   holidays: [],
   timetable: [],
   absences: [],
   grades: [],
   getActiveHoliday: () => undefined,
   getCourseGrades: () => [],
-  updateProfile: () => undefined,
   addAbsence: () => undefined,
   deleteAbsence: () => undefined,
   signAbsence: () => undefined,
@@ -70,21 +54,16 @@ const unavailableMockDataRuntime: MockDataContextValue = {
 const MockDataContext = createContext<MockDataContextValue>(unavailableMockDataRuntime);
 
 export function MockDataProvider({ children }: PropsWithChildren) {
-  const [user, setUser] = useState<UserProfile>(initialUser);
   const [absences, setAbsences] = useState(absencesSeed);
   const [grades, setGrades] = useState(gradesSeed);
 
   const value: MockDataContextValue = {
-    user,
     holidays: holidaysSeed,
     timetable: timetableSeed,
     absences,
     grades,
     getActiveHoliday: (date?: Date) => getActiveHoliday(holidaysSeed, date),
     getCourseGrades: (courseId) => getCourseGrades(grades, courseId),
-    updateProfile: (patch) => {
-      setUser((current) => ({ ...current, ...patch }));
-    },
     addAbsence: ({ date, courseIds, reason }) => {
       setAbsences((current) => [
         {
@@ -177,13 +156,11 @@ export function MockDataProvider({ children }: PropsWithChildren) {
         ),
       );
     },
-    restoreLatestConfirmedGrade: (courseId, type) => {
+    restoreLatestConfirmedGrade: (courseId, type, isOfAge) => {
       setGrades((current) => {
         const confirmedGrade = current.find(
           (grade) =>
-            grade.courseId === courseId &&
-            grade.type === type &&
-            isGradeConfirmed(grade, user.isOfAge),
+            grade.courseId === courseId && grade.type === type && isGradeConfirmed(grade, isOfAge),
         );
         const currentGrade = current.find(
           (grade) => grade.courseId === courseId && grade.type === type,
