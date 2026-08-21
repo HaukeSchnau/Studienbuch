@@ -2,8 +2,8 @@ import {
   TelemetryOutbox,
   decodeClientTelemetryAcknowledgement,
   memoryTelemetryStorage,
-  type ClientTelemetryEnvelopeType,
-  type ClientTelemetryRecordType,
+  type ClientTelemetryEnvelope,
+  type ClientTelemetryRecord,
   type DeploymentEnvironment,
   type TelemetryDelivery,
   type TelemetryPriority,
@@ -78,7 +78,7 @@ function browserDelivery(
     sendBeacon:
       environment.sendBeacon === undefined
         ? undefined
-        : (envelope: ClientTelemetryEnvelopeType) =>
+        : (envelope: ClientTelemetryEnvelope) =>
             environment.sendBeacon?.(
               endpoint,
               new Blob([JSON.stringify(envelope)], { type: "application/json" }),
@@ -120,7 +120,7 @@ export function createBrowserTelemetryClient(options: {
     }, flushDelayMillis);
   };
 
-  const enqueue = (record: ClientTelemetryRecordType, priority: TelemetryPriority) => {
+  const enqueue = (record: ClientTelemetryRecord, priority: TelemetryPriority) => {
     void outbox.enqueue(record, priority);
     scheduleFlush();
   };

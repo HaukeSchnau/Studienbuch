@@ -1,3 +1,4 @@
+import type * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Logger from "effect/Logger";
@@ -12,8 +13,9 @@ import {
   OtlpSerialization,
   OtlpTracer,
 } from "effect/unstable/observability";
-import type { ResourceIdentity } from "../shared/resource.ts";
+import type { ResourceIdentity, ServiceName } from "../shared/resource.ts";
 import { otlpResource } from "../shared/resource.ts";
+import { environmentConfig, serverConfig, serviceVersionConfig } from "./config.ts";
 
 export interface OtlpServerLayerOptions {
   readonly endpoint: string | URL;
@@ -75,5 +77,43 @@ export function productionJsonLayer(options?: {
     Logger.layer([Logger.consoleJson]),
     Layer.succeed(References.MinimumLogLevel, options?.logLevel ?? "Info"),
     Layer.succeed(References.MinimumTraceLevel, options?.traceLevel ?? "Info"),
+  );
+}
+
+/**
+ * The whole server-side observability layer for one service, assembled from the environment.
+ *
+ * `apps/web` and `apps/console` each built this themselves and had already drifted: the web app
+ * coerced the environment with a hand-written `Config.map` while the console decoded it through a
+ * literal schema, and the disabled branch used `OtlpExporter.layerFlusher` in one and a
+ * hand-written no-op `Flusher` in the other. Adding a third service should not mean writing it a
+ * third time.
+ */
+export function serverObservabilityLayer(options: {
+  readonly serviceName: ServiceName;
+}): Layer.Layer<OtlpExporter.Flusher, Config.ConfigError, HttpClient.HttpClient> {
+  return Layer.unwrap(
+    Effect.gen(function* () {
+      const config = yield* serverConfig;
+      const environment = yield* environmentConfig;
+      const serviceVersion = yield* serviceVersionConfig;
+
+      if (!config.enabled) {
+        const logger =
+          environment === "production"
+            ? productionJsonLayer({ logLevel: config.logLevel, traceLevel: config.traceLevel })
+            : developmentLayer({ logLevel: config.logLevel, traceLevel: config.traceLevel });
+        return Layer.mergeAll(logger, OtlpExporter.layerFlusher);
+      }
+
+      return otlpProtobufLayer({
+        endpoint: config.endpoint,
+        resource: { serviceName: options.serviceName, serviceVersion, environment },
+        logLevel: config.logLevel,
+        traceLevel: config.traceLevel,
+        exportInterval: config.exportInterval,
+        shutdownTimeout: config.shutdownTimeout,
+      });
+    }),
   );
 }

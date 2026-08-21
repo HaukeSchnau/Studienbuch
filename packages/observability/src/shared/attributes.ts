@@ -1,8 +1,18 @@
 import * as Cause from "effect/Cause";
 import * as Exit from "effect/Exit";
+import * as Schema from "effect/Schema";
 
 export type ObservabilityOutcome = "success" | "failure" | "interrupt";
-export type TelemetryPriority = "low" | "normal" | "high";
+
+/**
+ * Delivery priority carried on a telemetry record.
+ *
+ * A schema rather than a bare union because the outbox has to decode it back out of a persisted
+ * snapshot. It was previously written out three times -- twice as a union and once as a schema --
+ * which is three places to change when a level is added.
+ */
+export const TelemetryPriority = Schema.Literals(["low", "normal", "high"]);
+export type TelemetryPriority = typeof TelemetryPriority.Type;
 
 export interface SpanAttributes {
   readonly "app.operation"?: string;

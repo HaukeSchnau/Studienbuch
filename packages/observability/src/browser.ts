@@ -1,3 +1,4 @@
+export { TelemetryPriority } from "./shared/attributes.ts";
 export {
   ClientLog,
   ClientMetric,
@@ -12,8 +13,6 @@ export {
   type ClientMetricName,
   decodeClientTelemetryAcknowledgement,
   decodeClientTelemetryEnvelope,
-  type ClientTelemetryEnvelope as ClientTelemetryEnvelopeType,
-  type ClientTelemetryRecord as ClientTelemetryRecordType,
 } from "./client/envelope.ts";
 export {
   OUTBOX_MAX_AGE_MS,
@@ -26,7 +25,6 @@ export {
   type TelemetryDelivery,
   type TelemetryOutboxOptions,
   type TelemetryPlatform,
-  type TelemetryPriority,
   type TelemetryRandom,
   type TelemetryStorage,
 } from "./client/outbox.ts";

@@ -1,5 +1,6 @@
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
+import { TelemetryPriority } from "../shared/attributes.ts";
 import {
   ClientTelemetryRecord,
   type ClientTelemetryEnvelope,
@@ -13,7 +14,6 @@ export const OUTBOX_MAX_BYTES = 10 * 1024 * 1024;
 /** Records are sent at most this many per envelope, leaving room for the two self-report metrics. */
 const maximumRecordsPerFlush = 98;
 
-export type TelemetryPriority = "low" | "normal" | "high";
 export type TelemetryPlatform = "web" | "ios" | "android";
 
 export interface TelemetryClock {
@@ -114,10 +114,9 @@ const utf8Bytes = (value: string): number => {
 const snapshotBytes = (snapshot: Snapshot): number => utf8Bytes(JSON.stringify(snapshot));
 
 const SafeInteger = Schema.Finite.check(Schema.isInt());
-const TelemetryPrioritySchema = Schema.Literals(["low", "normal", "high"]);
 const StoredRecordSchema = Schema.Struct({
   id: Schema.String.check(Schema.isMaxLength(64)),
-  priority: TelemetryPrioritySchema,
+  priority: TelemetryPriority,
   enqueuedAt: SafeInteger,
   attempts: SafeInteger,
   nextAttemptAt: SafeInteger,
@@ -134,7 +133,7 @@ const decodeStoredRecord = Schema.decodeUnknownOption(StoredRecordSchema);
 const decodeSnapshotEnvelope = Schema.decodeUnknownOption(SnapshotEnvelopeSchema);
 const exactContract = { onExcessProperty: "error" } as const;
 
-const priorities = new Set<TelemetryPriority>(TelemetryPrioritySchema.literals);
+const priorities = new Set<TelemetryPriority>(TelemetryPriority.literals);
 
 const decodeSnapshot = (serialized: string | undefined): Snapshot => {
   if (serialized === undefined) return emptySnapshot();

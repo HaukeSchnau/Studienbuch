@@ -1,7 +1,7 @@
 import {
   clientMetricNames,
   type ClientMetricName,
-  type ClientTelemetryEnvelopeType,
+  type ClientTelemetryEnvelope,
 } from "@stu/observability/browser";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
@@ -37,7 +37,7 @@ export class ClientTelemetry extends Context.Service<ClientTelemetry>()(
   "@stu/web/infra/observability/client-telemetry.server/ClientTelemetry",
   {
     make: Effect.succeed({
-      ingest: Effect.fn("ClientTelemetry.ingest")((envelope: ClientTelemetryEnvelopeType) =>
+      ingest: Effect.fn("ClientTelemetry.ingest")((envelope: ClientTelemetryEnvelope) =>
         Effect.forEach(envelope.records, ingestRecord, { discard: true }).pipe(
           Effect.annotateLogs({
             client_service: envelope.serviceName,
@@ -83,7 +83,7 @@ const updatesByName = {
 } satisfies Record<ClientMetricName, MetricUpdate>;
 
 function metricForRecord(
-  record: Extract<ClientTelemetryEnvelopeType["records"][number], { readonly type: "metric" }>,
+  record: Extract<ClientTelemetryEnvelope["records"][number], { readonly type: "metric" }>,
 ) {
   return updatesByName[record.name](record.value, {
     ...record.attributes,
@@ -106,7 +106,7 @@ function logLevelForSeverity(
   }
 }
 
-function ingestRecord(record: ClientTelemetryEnvelopeType["records"][number]): Effect.Effect<void> {
+function ingestRecord(record: ClientTelemetryEnvelope["records"][number]): Effect.Effect<void> {
   const countAccepted = Metric.update(
     Metric.withAttributes(acceptedRecords, { record_type: record.type }),
     1,
