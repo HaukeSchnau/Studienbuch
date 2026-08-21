@@ -35,13 +35,14 @@ import { SystemIcon, type SystemIconName } from "~/ui/system-icon";
 import { Text } from "~/ui/text";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { haptics } from "~/infra/native/haptics";
-import { useCourses, useTasks } from "~/infra/data/hooks";
+import { useCourses } from "~/infra/data/hooks";
 import { colors } from "~/ui/colors";
 import { fontNames } from "~/ui/text";
 import { TaskPhotoSourceSheet } from "../components/task-photo-source-sheet";
 import { useTaskPhotoPicker } from "../components/use-task-photo-picker";
 import { createTaskAttachment } from "../model/task-attachments";
 import { getTaskDetailModel } from "../model/task-detail-model";
+import { useTasks } from "../use-tasks";
 
 const styles = StyleSheet.create({
   attachmentImage: {

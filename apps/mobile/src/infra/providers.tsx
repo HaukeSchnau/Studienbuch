@@ -5,22 +5,25 @@ import { ReanimatedScreenProvider } from "react-native-screens/reanimated";
 import { StatusBar } from "expo-status-bar";
 import { AppDataProvider } from "~/infra/data/app-data-provider";
 import { StudienbuchWidgetPublisher } from "~/features/widgets/studienbuch-widget-publisher";
+import { EffectAtomProvider } from "~/infra/effect-atom/provider";
 import { MobileTelemetryProvider } from "~/infra/observability/mobile-telemetry-provider";
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (
     <MobileTelemetryProvider>
-      <AppDataProvider>
-        <StudienbuchWidgetPublisher />
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <SafeAreaProvider>
-            <ReanimatedScreenProvider>
-              <StatusBar style="light" />
-              {children}
-            </ReanimatedScreenProvider>
-          </SafeAreaProvider>
-        </GestureHandlerRootView>
-      </AppDataProvider>
+      <EffectAtomProvider>
+        <AppDataProvider>
+          <StudienbuchWidgetPublisher />
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <SafeAreaProvider>
+              <ReanimatedScreenProvider>
+                <StatusBar style="light" />
+                {children}
+              </ReanimatedScreenProvider>
+            </SafeAreaProvider>
+          </GestureHandlerRootView>
+        </AppDataProvider>
+      </EffectAtomProvider>
     </MobileTelemetryProvider>
   );
 }

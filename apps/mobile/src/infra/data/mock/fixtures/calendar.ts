@@ -1,5 +1,5 @@
 import type { Holiday, TimetableEntry } from "~/compat/mobile-v0";
-import { makeMockWeekDate } from "../mock-clock";
+import { makeMockWeekDate } from "~/infra/mock-data/clock";
 
 export const timetableSeed: TimetableEntry[] = [
   { id: "tt1", courseId: "ma-1", start: makeMockWeekDate(0, 8, 0), duration: 80 },

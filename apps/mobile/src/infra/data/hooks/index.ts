@@ -42,18 +42,3 @@ export const useGrades = () => {
 
   return { grades, getCourseGrades, upsertGrade, signGrade, restoreLatestConfirmedGrade };
 };
-
-export const useTasks = () => {
-  const { tasks, getTask, getCourseTasks, addTask, addTaskAttachment, toggleTaskDone, deleteTask } =
-    useMockDataRuntime();
-
-  return {
-    tasks,
-    getTask,
-    getCourseTasks,
-    addTask,
-    addTaskAttachment,
-    toggleTaskDone,
-    deleteTask,
-  };
-};
