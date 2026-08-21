@@ -431,6 +431,50 @@ by code point, not by the runtime's locale"` are tests that would catch a real r
 
 ---
 
+## Outcome, same day
+
+Everything below landed. `§1`, `§2` and `§7` were taken by the concurrent session
+(`fix(core): validate non-blank text at construction, locate snapshot failures` and
+`refactor(core): share the aggregate revision protocol`); the rest is
+`refactor(core): stop restating what the code already says`. Net −124 lines across
+`packages/core`, no behaviour change, `just qa` green.
+
+| §                          | Outcome                                                                                                                                                                                                                                                      |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1 NonBlankText             | Fixed by the other session, and better than proposed: it derives the guard from the one `nonBlank` schema with `Schema.is`, because `typeof input === "string"` trips `anti-slop/no-runtime-typeof`. Three tests now cover construction, decode and spacing. |
+| 2 Error unions             | All thirteen deleted.                                                                                                                                                                                                                                        |
+| 3 `importing/` schemas     | Five constructors deleted, types kept. Hauke's call. `SourceObservation` now carries a comment saying where to put a schema back when import state is persisted.                                                                                             |
+| 4 Module idioms            | `Weekday` and `NonBlankText` moved to the `const`-and-`type` idiom. The rule is now written in the README.                                                                                                                                                   |
+| 5 `Order.Number`           | Three `compare`/`Equivalence`/`Order` triples reduced to one `compare` each; `compareText` replaced by `Order.String`.                                                                                                                                       |
+| 6 Spans                    | Renamed to `<DomainNamespace>.<exportedName>`; private helpers and `validateValue` are `fnUntraced`.                                                                                                                                                         |
+| 7 Structured filter issues | Taken by the other session.                                                                                                                                                                                                                                  |
+| 8 `Schema.optional`        | Adopted package-wide after Hauke chose one rule over two. See the correction below.                                                                                                                                                                          |
+| 9 Smaller items            | `isVisible`, `pairs()`, the duplicated `authorize` arms and `public-api.test.ts` all done.                                                                                                                                                                   |
+
+### Corrections to this note
+
+**§4's table was wrong about `AggregateRevision` by the time it was read.** It listed the
+module as having "3 operations, all reimplementations" and therefore not earning its
+namespace. The concurrent session's `revise`, `ensureCurrent`, `Concurrent` and
+`AggregateName` landed in that file in between, so it now clearly earns one under the very
+rule §4 proposes. It was left as a namespace module.
+
+**§9's "`nextSchoolDay` reimplements a max" was a weak finding and was not taken.**
+`Array.max` needs a `NonEmptyArray` and `PlainDate.compare` returns `number` rather than
+`Ordering`, so the replacement was longer and needed two more imports than the `reduce` it
+replaced. Only the redundant `PlainDate.equals(candidate, latestTermEnd)` break came out —
+the loop condition already covered it.
+
+**§8 carried a risk this note did not state, and the other session was right to raise it.**
+`Schema.optional` admits two in-memory representations of absence (`{k: undefined}` and
+`{}`), and a sync layer hashing an _encoded object_ structurally would see them differ even
+though `JSON.stringify` does not. The note only measured the JSON, which was not the whole
+question. It went to Hauke as a domain decision rather than a cleanup, and he chose one rule
+for the package; the constraint that follows is recorded in the README, so whatever
+canonicalizes values for sync has to normalize first.
+
+---
+
 ## Suggested order
 
 1. **§1, `NonBlankText`** — a real bug, a four-line fix, and a test for the make path. Independent
