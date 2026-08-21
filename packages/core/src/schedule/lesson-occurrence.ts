@@ -24,7 +24,7 @@ export const ScheduleException = Schema.TaggedUnion({
     date: PlainDateSchema,
     timeRange: LocalTimeRange.Schema,
   },
-  RoomChanged: { id: ScheduleExceptionId, target: LessonOccurrenceRef, room: NonBlankText.Schema },
+  RoomChanged: { id: ScheduleExceptionId, target: LessonOccurrenceRef, room: NonBlankText },
   TeacherChanged: {
     id: ScheduleExceptionId,
     target: LessonOccurrenceRef,
@@ -40,8 +40,8 @@ export const LessonOccurrence = Schema.Struct({
   scheduledDate: PlainDateSchema,
   date: PlainDateSchema,
   timeRange: LocalTimeRange.Schema,
-  bellPeriodId: Schema.optionalKey(BellPeriodId),
-  room: Schema.optionalKey(NonBlankText.Schema),
+  bellPeriodId: Schema.optional(BellPeriodId),
+  room: Schema.optional(NonBlankText),
   teacherIds: Schema.Array(PersonId),
   appliedExceptionIds: Schema.Array(ScheduleExceptionId),
 });

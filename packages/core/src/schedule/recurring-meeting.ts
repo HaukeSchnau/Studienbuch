@@ -17,12 +17,12 @@ export type RotationPattern = typeof RotationPattern.Type;
 export const RecurringMeeting = Schema.Struct({
   id: RecurringMeetingId,
   courseOfferingId: CourseOfferingId,
-  weekday: Weekday.Schema,
+  weekday: Weekday,
   timeRange: LocalTimeRange.Schema,
   rotation: RotationPattern,
   effectiveInterval: CalendarDateRange.Schema,
-  bellPeriodId: Schema.optionalKey(BellPeriodId),
-  room: Schema.optionalKey(NonBlankText.Schema),
+  bellPeriodId: Schema.optional(BellPeriodId),
+  room: Schema.optional(NonBlankText),
   teacherIds: Schema.Array(PersonId),
 });
 export interface RecurringMeeting extends Schema.Schema.Type<typeof RecurringMeeting> {}

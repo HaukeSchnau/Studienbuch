@@ -9,17 +9,17 @@ import { PersonId } from "./identity";
  * facts, never guessed by splitting the display name.
  */
 export const PersonName = Schema.Struct({
-  displayName: NonBlankText.Schema,
-  givenNames: Schema.Array(NonBlankText.Schema),
-  familyName: Schema.optionalKey(NonBlankText.Schema),
-  honorific: Schema.optionalKey(NonBlankText.Schema),
+  displayName: NonBlankText,
+  givenNames: Schema.Array(NonBlankText),
+  familyName: Schema.optional(NonBlankText),
+  honorific: Schema.optional(NonBlankText),
 });
 export interface PersonName extends Schema.Schema.Type<typeof PersonName> {}
 
 export const Person = Schema.Struct({
   id: PersonId,
   name: PersonName,
-  dateOfBirth: Schema.optionalKey(PlainDateSchema),
+  dateOfBirth: Schema.optional(PlainDateSchema),
 });
 export interface Person extends Schema.Schema.Type<typeof Person> {}
 

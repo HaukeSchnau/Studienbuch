@@ -2,26 +2,28 @@ export {
   applyOverride,
   effectiveValue,
   importedObservation,
-  ProvenancedValue,
   sourcedValue,
+} from "./provenanced-value";
+export type {
+  OverriddenValue,
+  ProvenancedValue,
+  SourcedValue,
   UserOverride,
-  type OverriddenValue,
-  type SourcedValue,
 } from "./provenanced-value";
 export { EntityLink, EntityLinkSet, SourceIdentity } from "./entity-link";
 export {
   FeedCompleteness,
-  IncomingReconciliationResult,
   overrideFrom,
   OverrideRelinquishmentRefused,
   reconcileIncoming,
   reconcileSourceDeletion,
   relinquishOverride,
   SourceDeletion,
-  SourceDeletionResult,
 } from "./reconciliation";
+export type { IncomingReconciliationResult, SourceDeletionResult } from "./reconciliation";
 export { DataSourceId, ExternalId, ImportId } from "./identity";
-export { DataSource, SourceObservation, SourceStamp } from "./source";
+export { DataSource, SourceStamp } from "./source";
+export type { SourceObservation } from "./source";
 export { SourceRevision } from "./source-revision";
 export { resolveSubject, SubjectInferenceRule, SubjectResolution } from "./subject-resolution";
 

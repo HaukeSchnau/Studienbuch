@@ -1,3 +1,4 @@
+import * as Order from "effect/Order";
 import * as Schema from "effect/Schema";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import type { CourseOfferingId, SchoolMembershipId } from "../organization/identity";
@@ -26,25 +27,17 @@ export const isArchived = (
   return PlainDate.diffDays(task.dueDate, today) > policy.archiveOpenTasksAfterOverdueDays;
 };
 
-export const isVisible = (
-  task: SchoolTask,
-  today: PlainDate.Record,
-  policy: VisibilityPolicy = defaultVisibilityPolicy,
-): boolean => !isArchived(task, today, policy);
-
 const statusOrder = {
   Open: 0,
   Completed: 1,
   Cancelled: 2,
 } as const;
 
-const compareText = (left: string, right: string) => (left < right ? -1 : left > right ? 1 : 0);
-
 const compare = (left: SchoolTask, right: SchoolTask) =>
   statusOrder[left.status._tag] - statusOrder[right.status._tag] ||
   PlainDate.compare(left.dueDate, right.dueDate) ||
-  compareText(left.title, right.title) ||
-  compareText(left.id, right.id);
+  Order.String(left.title, right.title) ||
+  Order.String(left.id, right.id);
 
 export const sort = (tasks: ReadonlyArray<SchoolTask>): ReadonlyArray<SchoolTask> =>
   [...tasks].sort(compare);

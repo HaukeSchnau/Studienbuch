@@ -1,30 +1,33 @@
-import * as Schema_ from "effect/Schema";
+import * as Schema from "effect/Schema";
 
-/** User- or provider-authored text with at least one non-whitespace character. */
-export type Type = `${string}${string & {}}`;
+/**
+ * The template literal, rather than a brand, is what lets `title: "Klausur 1"` be written directly:
+ * it accepts any non-empty string literal while still rejecting a plain `string`.
+ */
+type NonBlank = `${string}${string & {}}`;
 
 /**
  * The one predicate. It guards both the encoded side and the declared side, because a schema whose
  * `decode` rejects a value its `make` accepts is not a validated type: every aggregate in this
  * package is built with `make`, so a weaker guard there is the guard that matters.
  */
-const nonBlank = Schema_.String.check(
-  Schema_.makeFilter((value) => value.trim().length > 0, {
+const nonBlank = Schema.String.check(
+  Schema.makeFilter((value) => value.trim().length > 0, {
     expected: "text containing at least one non-whitespace character",
   }),
 );
 
-const isNonBlank = Schema_.is(nonBlank);
+const isNonBlank = Schema.is(nonBlank);
 
-const Declared = Schema_.declare<Type>((input): input is Type => isNonBlank(input), {
+const Declared = Schema.declare<NonBlank>((input): input is NonBlank => isNonBlank(input), {
   identifier: "NonBlankText",
 });
 
 /**
- * Accepts non-empty literals directly while retaining non-blank validation at runtime.
- * Author-provided spacing is intentionally preserved.
- * Dynamic strings must cross this schema boundary before they enter the domain model.
+ * User- or provider-authored text with at least one non-whitespace character.
+ *
+ * Author-provided spacing is intentionally preserved. Dynamic strings must cross this schema
+ * boundary before they enter the domain model.
  */
-export const Schema = nonBlank.pipe(Schema_.decodeTo(Declared));
-
-export * as NonBlankText from "./non-blank-text";
+export const NonBlankText = nonBlank.pipe(Schema.decodeTo(Declared));
+export type NonBlankText = typeof NonBlankText.Type;

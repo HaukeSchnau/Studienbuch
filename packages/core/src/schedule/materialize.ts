@@ -81,25 +81,18 @@ const applyExceptions = (
     }
   }
 
-  const fields = {
+  return LessonOccurrence.make({
     id: lessonOccurrenceId(target),
     meetingId: meeting.id,
     courseOfferingId: meeting.courseOfferingId,
     scheduledDate: target.scheduledDate,
     date,
     timeRange,
+    bellPeriodId: meeting.bellPeriodId,
+    room,
     teacherIds,
     appliedExceptionIds: ordered.map((exception) => exception.id),
-  };
-  if (meeting.bellPeriodId !== undefined && room !== undefined) {
-    return LessonOccurrence.make({ ...fields, bellPeriodId: meeting.bellPeriodId, room });
-  }
-  if (meeting.bellPeriodId !== undefined) {
-    return LessonOccurrence.make({ ...fields, bellPeriodId: meeting.bellPeriodId });
-  }
-  return room === undefined
-    ? LessonOccurrence.make(fields)
-    : LessonOccurrence.make({ ...fields, room });
+  });
 };
 
 export const materializeSchoolDay = Effect.fn("Schedule.materializeSchoolDay")(function* (

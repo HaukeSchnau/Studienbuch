@@ -22,18 +22,11 @@ export interface LessonOccurrenceCollision {
   readonly rightId: LessonOccurrenceId;
 }
 
-const pairs = <A>(values: ReadonlyArray<A>): ReadonlyArray<readonly [A, A]> => {
-  const result: Array<readonly [A, A]> = [];
-  for (let leftIndex = 0; leftIndex < values.length; leftIndex += 1) {
-    const left = values[leftIndex];
-    if (left === undefined) continue;
-    for (let rightIndex = leftIndex + 1; rightIndex < values.length; rightIndex += 1) {
-      const right = values[rightIndex];
-      if (right !== undefined) result.push([left, right]);
-    }
-  }
-  return result;
-};
+/** Every unordered pair, each once. Indexing through `entries` keeps both elements defined. */
+const pairs = <A>(values: ReadonlyArray<A>): ReadonlyArray<readonly [A, A]> =>
+  values.flatMap((left, index) =>
+    values.slice(index + 1).map((right): readonly [A, A] => [left, right]),
+  );
 
 const orderedPair = <Id extends string>(leftId: Id, rightId: Id) =>
   leftId < rightId ? { leftId, rightId } : { leftId: rightId, rightId: leftId };

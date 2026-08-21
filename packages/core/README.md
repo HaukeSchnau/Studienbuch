@@ -83,6 +83,25 @@ implementation and namespace-facade files. Domain indexes only relay those estab
 - Foundation values are imported directly (`PlainDateSchema`), never through a `Foundation` namespace.
 - Entity IDs live with their owning domain (`Organization.PersonId`, `Schedule.LessonOccurrenceId`),
   not in a global registry.
+- A value gets its own namespace module (`LocalTime.Schema`, `LocalTime.compare`) when it has
+  operations of its own. Otherwise it is a `const` and a `type` of the same name, the way
+  `GradeLevel` and `PersonId` are. The namespace is earned by behaviour, not applied by default:
+  `Weekday` is one literal union and reads better as `weekday: Weekday`.
+- Optional fields use `Schema.optional`, never `Schema.optionalKey`. Both encode identically —
+  `JSON.stringify` drops an `undefined` either way — but `optionalKey` rejects a present
+  `undefined` at `make`, which forces a construction branch per optional key and made a
+  four-branch `LessonOccurrence.make` out of two of them. Anything that hashes an encoded value
+  structurally must normalize first; the wire format does not distinguish the two.
+- A traced `Effect.fn` is named `<DomainNamespace>.<exportedName>` and nothing else, so the span
+  name is derivable from the export and cannot go stale. Module-private helpers and anything
+  called inside a loop use `Effect.fnUntraced`: a span per grade is noise, not signal.
+- Ordering on a branded `number` is `===` and `Order.Number`. Do not hand-write `compare`,
+  `Equivalence` and `Order` triples; Effect defines its own only for values like `Duration` that
+  have more than one representation.
+- Cross-entity invariants that belong to one schema stay in `Schema.makeFilter`, which returns
+  `{ path, issue }` and can therefore name the offending element. A separate validating function
+  is for invariants spanning collections that are not one schema — `validateSchoolDirectory` is
+  the example, and it is the exception.
 
 The civil-time representation and its bundle trade-off are recorded in
 [ADR 0001](./docs/adr/0001-model-civil-time-explicitly.md).

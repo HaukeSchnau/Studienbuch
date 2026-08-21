@@ -1,34 +1,13 @@
 import * as Effect from "effect/Effect";
 import * as Equal from "effect/Equal";
 import * as Schema from "effect/Schema";
-import type { UserOverride } from "./provenanced-value";
-import { ProvenancedValue, importedObservation, sourcedValue } from "./provenanced-value";
-import type { DataSource } from "./source";
-import { SourceObservation, SourceStamp } from "./source";
+import type { ProvenancedValue, UserOverride } from "./provenanced-value";
+import { importedObservation, sourcedValue } from "./provenanced-value";
+import type { SourceObservation } from "./source";
+import { SourceStamp } from "./source";
 import { SourceRevision } from "./source-revision";
 
-export const IncomingReconciliationResult = <Value extends Schema.Top>(value: Value) => {
-  const provenanced = ProvenancedValue(value);
-  const observation = SourceObservation(value);
-  return Schema.TaggedUnion({
-    Created: { value: provenanced },
-    SourceAttached: { value: provenanced },
-    Updated: {
-      value: provenanced,
-      previousObservation: observation,
-      overridePreserved: Schema.Boolean,
-      effectiveValueChanged: Schema.Boolean,
-    },
-    Duplicate: { value: provenanced, observation },
-    Stale: { value: provenanced, rejectedObservation: observation },
-    Conflict: {
-      value: provenanced,
-      incoming: observation,
-      reason: Schema.Literals(["DifferentSource", "RevisionCollision"]),
-    },
-  });
-};
-
+/** Every ordinary outcome of reconciling one observation, as data rather than as a failure. */
 export type IncomingReconciliationResult<Value> =
   | { readonly _tag: "Created"; readonly value: ProvenancedValue<Value> }
   | { readonly _tag: "SourceAttached"; readonly value: ProvenancedValue<Value> }
@@ -64,24 +43,6 @@ export const SourceDeletion = SourceStamp.pipe(
 );
 export interface SourceDeletion extends Schema.Schema.Type<typeof SourceDeletion> {}
 
-export const SourceDeletionResult = <Value extends Schema.Top>(value: Value) => {
-  const provenanced = ProvenancedValue(value);
-  const observation = SourceObservation(value);
-  return Schema.TaggedUnion({
-    Deleted: { previous: provenanced },
-    OverrideDetached: { value: provenanced, removedObservation: observation },
-    Retained: {
-      value: provenanced,
-      reason: Schema.Literals([
-        "PartialFeed",
-        "DifferentSource",
-        "NoSourcedObservation",
-        "DeletionNotNewer",
-      ]),
-    },
-  });
-};
-
 export type SourceDeletionResult<Value> =
   | { readonly _tag: "Deleted"; readonly previous: ProvenancedValue<Value> }
   | {
@@ -104,12 +65,8 @@ export class OverrideRelinquishmentRefused extends Schema.TaggedError<OverrideRe
   { reason: Schema.Literal("SourceNoLongerAvailable") },
 ) {}
 
-const sameDataSource = (left: DataSource, right: DataSource) => left.id === right.id;
-
 const sameSourceIdentity = (left: SourceStamp, right: SourceStamp) =>
-  sameDataSource(left.dataSource, right.dataSource) && left.externalId === right.externalId;
-
-const jsonEquals = (left: Schema.Json, right: Schema.Json) => Equal.equals(left, right);
+  left.dataSource.id === right.dataSource.id && left.externalId === right.externalId;
 
 const withImportedObservation = <Value>(
   current: ProvenancedValue<Value>,
@@ -145,7 +102,7 @@ export const reconcileIncoming = <Value>(
     return { _tag: "Stale", value: current, rejectedObservation: incoming };
   }
   if (revisionOrder === 0) {
-    return jsonEquals(previous.rawValue, incoming.rawValue) &&
+    return Equal.equals(previous.rawValue, incoming.rawValue) &&
       equivalent(previous.value, incoming.value)
       ? { _tag: "Duplicate", value: current, observation: incoming }
       : { _tag: "Conflict", value: current, incoming, reason: "RevisionCollision" };
@@ -197,8 +154,6 @@ export const relinquishOverride = Effect.fn("Importing.relinquishOverride")(func
   }
   return sourcedValue(current.source);
 });
-
-export declare namespace relinquishOverride {}
 
 export const overrideFrom = <Value>(
   value: Value,

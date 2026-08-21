@@ -81,7 +81,7 @@ const isConfirmed = (assessment: WrittenAssessment): boolean =>
   assessment.teacherAttestation !== undefined && assessment.learnerAcknowledgement !== undefined;
 
 export const make = (config: Config): Interface => {
-  const validateValue = Effect.fn("GradingPolicy.validateValue")(function* (value: GradeValue) {
+  const validateValue = Effect.fnUntraced(function* (value: GradeValue) {
     if (value < config.minimum || value > config.maximum) {
       return yield* InvalidGradeValue.make({
         value,
@@ -91,7 +91,7 @@ export const make = (config: Config): Interface => {
     }
   });
 
-  const average = Effect.fn("GradingPolicy.average")(function* (
+  const average = Effect.fn("Assessment.average")(function* (
     assessments: ReadonlyArray<WrittenAssessment>,
   ) {
     const first = assessments[0];

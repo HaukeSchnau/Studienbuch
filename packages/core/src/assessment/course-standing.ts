@@ -29,9 +29,9 @@ export const StandingRevision = Schema.Struct({
   id: StandingRevisionId,
   value: GradeValue,
   observedOn: PlainDateSchema,
-  supersedes: Schema.optionalKey(StandingRevisionId),
-  teacherAttestation: Schema.optionalKey(Acknowledgement),
-  learnerAcknowledgement: Schema.optionalKey(Acknowledgement),
+  supersedes: Schema.optional(StandingRevisionId),
+  teacherAttestation: Schema.optional(Acknowledgement),
+  learnerAcknowledgement: Schema.optional(Acknowledgement),
 });
 export interface StandingRevision extends Schema.Schema.Type<typeof StandingRevision> {}
 
@@ -133,7 +133,7 @@ export class StandingRevisionNotCurrent extends Schema.TaggedError<StandingRevis
   { revisionId: StandingRevisionId, currentRevisionId: StandingRevisionId },
 ) {}
 
-export const reviseStanding = Effect.fn("Assessment.addStandingRevision")(function* (
+export const reviseStanding = Effect.fn("Assessment.reviseStanding")(function* (
   input: reviseStanding.Input,
 ) {
   yield* AggregateRevision.ensureCurrent(
@@ -191,9 +191,7 @@ interface StandingConfirmationInput extends ConfirmationRecordInput {
   readonly authority: AuthoritySnapshot;
 }
 
-const currentTarget = Effect.fn("Assessment.currentStandingTarget")(function* (
-  input: StandingConfirmationInput,
-) {
+const currentTarget = Effect.fnUntraced(function* (input: StandingConfirmationInput) {
   yield* AggregateRevision.ensureCurrent(
     aggregateName,
     input.standing.revision,
@@ -212,7 +210,7 @@ const currentTarget = Effect.fn("Assessment.currentStandingTarget")(function* (
   return target;
 });
 
-const updateCurrentStanding = Effect.fn("Assessment.updateCurrentStanding")(function* (
+const updateCurrentStanding = Effect.fnUntraced(function* (
   input: StandingConfirmationInput,
   target: StandingRevision,
 ) {
@@ -222,7 +220,7 @@ const updateCurrentStanding = Effect.fn("Assessment.updateCurrentStanding")(func
   });
 });
 
-export const attestStanding = Effect.fn("Assessment.attestStandingRevision")(function* (
+export const attestStanding = Effect.fn("Assessment.attestStanding")(function* (
   input: attestStanding.Input,
 ) {
   const target = yield* currentTarget(input);
@@ -249,7 +247,7 @@ export declare namespace attestStanding {
   export interface Input extends StandingConfirmationInput {}
 }
 
-export const acknowledgeStanding = Effect.fn("Assessment.acknowledgeStandingRevision")(function* (
+export const acknowledgeStanding = Effect.fn("Assessment.acknowledgeStanding")(function* (
   input: acknowledgeStanding.Input,
 ) {
   const target = yield* currentTarget(input);

@@ -14,25 +14,9 @@ export const Acknowledgement = Schema.Struct({
   actor: ActorRef,
   acknowledgedAt: Schema.DateTimeUtcFromString,
   revision: AggregateRevision.Schema,
-  artifact: Schema.optionalKey(Artifact.Reference),
+  artifact: Schema.optional(Artifact.Reference),
 });
 export interface Acknowledgement extends Schema.Schema.Type<typeof Acknowledgement> {}
-
-export interface AcknowledgementInput {
-  readonly id: AcknowledgementId;
-  readonly actor: ActorRef;
-  readonly acknowledgedAt: Acknowledgement["acknowledgedAt"];
-  readonly revision: AggregateRevision.Type;
-  readonly artifact: Artifact.Reference | undefined;
-}
-
-/** Constructs acknowledgement evidence without admitting a present `undefined` optional field. */
-export const makeAcknowledgement = (input: AcknowledgementInput): Acknowledgement => {
-  const { artifact, ...fields } = input;
-  return artifact === undefined
-    ? Acknowledgement.make(fields)
-    : Acknowledgement.make({ ...fields, artifact });
-};
 
 /**
  * Evidence that an authorized actor retracted a record they had entered.

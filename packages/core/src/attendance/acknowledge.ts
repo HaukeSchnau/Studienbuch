@@ -3,7 +3,7 @@ import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { AggregateRevision } from "../foundation/aggregate-revision";
 import type { Artifact } from "../foundation/artifact";
-import { ActorRef, makeAcknowledgement } from "../organization/acknowledgement";
+import { Acknowledgement, ActorRef } from "../organization/acknowledgement";
 import type { AuthoritySnapshot } from "../organization/authority";
 import { Capability, authorize } from "../organization/authority";
 import type { LegalAgePolicy } from "../organization/person";
@@ -87,7 +87,7 @@ export const acknowledge = Effect.fn("Attendance.acknowledge")(function* (
     input.authority,
   );
 
-  const acknowledgement = makeAcknowledgement({
+  const acknowledgement = Acknowledgement.make({
     id: input.acknowledgementId,
     actor: input.actor,
     acknowledgedAt: input.acknowledgedAt,

@@ -11,7 +11,7 @@ export const AbsenceReason = Schema.TaggedUnion({
   Illness: {},
   Appointment: {},
   SchoolActivity: {},
-  Other: { description: NonBlankText.Schema },
+  Other: { description: NonBlankText },
 });
 export type AbsenceReason = typeof AbsenceReason.Type;
 
@@ -22,7 +22,7 @@ export const MissedLessonDecision = Schema.TaggedUnion({
     decidedBy: ActorRef,
     decidedAt: Schema.DateTimeUtcFromString,
     revision: AggregateRevision.Schema,
-    reason: Schema.optionalKey(NonBlankText.Schema),
+    reason: Schema.optional(NonBlankText),
   },
 });
 export type MissedLessonDecision = typeof MissedLessonDecision.Type;
@@ -47,8 +47,8 @@ export const AbsenceCase = Schema.Struct({
   reason: AbsenceReason,
   detailsRevision: AggregateRevision.Schema,
   revision: AggregateRevision.Schema,
-  acknowledgement: Schema.optionalKey(Acknowledgement),
-  withdrawal: Schema.optionalKey(Withdrawal),
+  acknowledgement: Schema.optional(Acknowledgement),
+  withdrawal: Schema.optional(Withdrawal),
   missedLessons: Schema.NonEmptyArray(MissedLesson),
 }).check(
   Schema.makeFilter(

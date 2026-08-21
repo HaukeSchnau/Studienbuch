@@ -80,7 +80,7 @@ describe("local schedule time", () => {
 
       const decoded = yield* Schema.decodeEffect(Schedule.LocalTime.Schema)(29_109_007);
       assert.equal(yield* Schema.encodeEffect(Schedule.LocalTime.Schema)(decoded), 29_109_007);
-      assert.isTrue(Schedule.LocalTime.Equivalence(decoded, time(8, 5, 9, 7)));
+      assert.strictEqual(decoded, time(8, 5, 9, 7));
     }),
   );
 

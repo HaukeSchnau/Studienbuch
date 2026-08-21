@@ -122,9 +122,9 @@ describe("subject resolution", () => {
   const schoolId = SchoolId.make("school-1");
   const subject = (
     id: string,
-    name: NonBlankText.Type,
-    code: NonBlankText.Type,
-    aliases: ReadonlyArray<NonBlankText.Type>,
+    name: NonBlankText,
+    code: NonBlankText,
+    aliases: ReadonlyArray<NonBlankText>,
   ) =>
     Subject.make({
       id: SubjectId.make(id),
