@@ -1,58 +1,29 @@
 import {
-  findCurrentSemester,
   getActiveHoliday,
   getCourseGrades,
-  getRequiredSetupPath,
-  getSelectedSemesterCourses,
-  getVisibleTimetable,
   isGradeConfirmed,
   type Absence,
-  type Course,
   type Grade,
   type GradeType,
   type Holiday,
-  type SchoolClass,
-  type Semester,
   type TimetableEntry,
   type UserProfile,
-  type Year,
 } from "~/compat/mobile-v0";
 import type { PropsWithChildren } from "react";
 import { createContext, useContext, useState } from "react";
-import {
-  absencesSeed,
-  classes,
-  coursesSeed,
-  gradesSeed,
-  holidaysSeed,
-  semesters,
-  timetableSeed,
-  years,
-} from "./fixtures";
+import { absencesSeed, gradesSeed, holidaysSeed, timetableSeed } from "./fixtures";
 import { createMockId } from "~/infra/mock-data/id";
 import { mockSignatureSvg } from "./mock-signatures";
 
 interface MockDataContextValue {
   user: UserProfile;
-  years: Year[];
-  classes: SchoolClass[];
-  semesters: Semester[];
-  courses: Course[];
   holidays: Holiday[];
   timetable: TimetableEntry[];
   absences: Absence[];
   grades: Grade[];
-  getRequiredSetupPath: () =>
-    | "/setup/license-key"
-    | "/setup/name-and-year"
-    | "/setup/class-and-courses"
-    | null;
   getActiveHoliday: (date?: Date) => Holiday | undefined;
-  getCourse: (courseId: string) => Course | undefined;
-  getSemesterCourses: (semesterId: string) => Course[];
   getCourseGrades: (courseId: string) => Grade[];
   updateProfile: (patch: Partial<UserProfile>) => void;
-  setSelectedCourses: (semesterId: string, courseIds: string[]) => void;
   addAbsence: (absence: { date: Date; courseIds: string[]; reason: string }) => void;
   deleteAbsence: (absenceId: string) => void;
   signAbsence: (absenceId: string, signer: "parent" | "teacher") => void;
@@ -66,10 +37,6 @@ interface MockDataContextValue {
   restoreLatestConfirmedGrade: (courseId: string, type: GradeType) => void;
 }
 
-const currentSemester = findCurrentSemester(semesters);
-const initialCourseIds = coursesSeed
-  .filter((course) => course.semesterId === currentSemester?.id)
-  .map((course) => course.id);
 const initialLicenseKey =
   process.env.EXPO_PUBLIC_E2E_SCENARIO === "startup" ? "" : "STUB-U123-2026-UI00";
 const initialUser: UserProfile = {
@@ -85,21 +52,13 @@ const initialUser: UserProfile = {
 // provider, but keeping the context total lets render code represent absence without exceptions.
 const unavailableMockDataRuntime: MockDataContextValue = {
   user: initialUser,
-  years: [],
-  classes: [],
-  semesters: [],
-  courses: [],
   holidays: [],
   timetable: [],
   absences: [],
   grades: [],
-  getRequiredSetupPath: () => "/setup/license-key",
   getActiveHoliday: () => undefined,
-  getCourse: () => undefined,
-  getSemesterCourses: () => [],
   getCourseGrades: () => [],
   updateProfile: () => undefined,
-  setSelectedCourses: () => undefined,
   addAbsence: () => undefined,
   deleteAbsence: () => undefined,
   signAbsence: () => undefined,
@@ -112,39 +71,19 @@ const MockDataContext = createContext<MockDataContextValue>(unavailableMockDataR
 
 export function MockDataProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<UserProfile>(initialUser);
-  const [selectedCourseIdsBySemester, setSelectedCourseIdsBySemester] = useState<
-    Record<string, string[]>
-  >({
-    s1: ["de-0", "ma-0", "en-0", "ge-0"],
-    s2: initialCourseIds,
-  });
   const [absences, setAbsences] = useState(absencesSeed);
   const [grades, setGrades] = useState(gradesSeed);
 
-  const getCourse = (courseId: string) => coursesSeed.find((course) => course.id === courseId);
-
   const value: MockDataContextValue = {
     user,
-    years,
-    classes,
-    semesters,
-    courses: coursesSeed,
     holidays: holidaysSeed,
-    timetable: getVisibleTimetable(timetableSeed, coursesSeed, selectedCourseIdsBySemester),
+    timetable: timetableSeed,
     absences,
     grades,
-    getRequiredSetupPath: () =>
-      getRequiredSetupPath({ user, currentSemester, selectedCourseIdsBySemester }),
     getActiveHoliday: (date?: Date) => getActiveHoliday(holidaysSeed, date),
-    getCourse,
-    getSemesterCourses: (semesterId) =>
-      getSelectedSemesterCourses(coursesSeed, semesterId, selectedCourseIdsBySemester),
     getCourseGrades: (courseId) => getCourseGrades(grades, courseId),
     updateProfile: (patch) => {
       setUser((current) => ({ ...current, ...patch }));
-    },
-    setSelectedCourses: (semesterId, courseIds) => {
-      setSelectedCourseIdsBySemester((current) => ({ ...current, [semesterId]: courseIds }));
     },
     addAbsence: ({ date, courseIds, reason }) => {
       setAbsences((current) => [

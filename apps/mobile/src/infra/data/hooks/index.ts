@@ -1,3 +1,5 @@
+import { getVisibleTimetable } from "~/compat/mobile-v0";
+import { useCourses, useCourseSelection } from "~/features/courses/use-courses";
 import { useMockDataRuntime } from "../mock/provider";
 
 export const useSessionData = () => {
@@ -6,28 +8,16 @@ export const useSessionData = () => {
   return { user, updateProfile };
 };
 
-export const useSchool = () => {
-  const { years, classes, semesters } = useMockDataRuntime();
-
-  return { years, classes, semesters };
-};
-
-export const useSetupProgress = () => {
-  const { getRequiredSetupPath } = useMockDataRuntime();
-
-  return { getRequiredSetupPath };
-};
-
-export const useCourses = () => {
-  const { courses, getCourse, getSemesterCourses, setSelectedCourses } = useMockDataRuntime();
-
-  return { courses, getCourse, getSemesterCourses, setSelectedCourses };
-};
-
 export const useScheduleData = () => {
   const { holidays, timetable, getActiveHoliday } = useMockDataRuntime();
+  const { courses } = useCourses();
+  const selectedCourseIdsBySemester = useCourseSelection();
 
-  return { holidays, timetable, getActiveHoliday };
+  return {
+    holidays,
+    timetable: getVisibleTimetable(timetable, courses, selectedCourseIdsBySemester),
+    getActiveHoliday,
+  };
 };
 
 export const useAbsences = () => {

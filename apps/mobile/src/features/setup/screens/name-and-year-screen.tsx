@@ -7,7 +7,8 @@ import { CheckboxRow } from "~/ui/fields/checkbox-row";
 import { SelectField } from "~/ui/fields/select-field";
 import { Text } from "~/ui/text";
 import { TextField } from "~/ui/fields/text-field";
-import { useSchool, useSessionData } from "~/infra/data/hooks";
+import { useSchoolCatalog } from "~/features/organization";
+import { useSessionData } from "~/infra/data/hooks";
 import { setupClassAndCoursesRoute } from "~/infra/routing/params";
 
 interface NameAndYearScreenProps {
@@ -22,7 +23,7 @@ export function NameAndYearScreen({
   nextRoute = setupClassAndCoursesRoute,
 }: NameAndYearScreenProps) {
   const { user, updateProfile } = useSessionData();
-  const { years, classes } = useSchool();
+  const { years, classes } = useSchoolCatalog();
   const [name, setName] = useState(user.name);
   const [isOfAge, setIsOfAge] = useState(user.isOfAge);
   const [yearId, setYearId] = useState(user.yearId);

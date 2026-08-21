@@ -5,7 +5,7 @@ import { PressableSurface } from "~/ui/feedback/pressable-surface";
 import { Text } from "~/ui/text";
 import { colors } from "~/ui/colors";
 import { isTaskArchived, type Task } from "~/compat/mobile-v0";
-import { useCourses } from "~/infra/data/hooks";
+import { useCourses } from "~/features/courses";
 import { taskRoute } from "~/infra/routing/params";
 
 export const TaskCard = ({ task }: { task: Task }) => {

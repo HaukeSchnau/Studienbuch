@@ -3,12 +3,12 @@ import { ScrollView, View } from "react-native";
 import { useMainTabBarPadding } from "~/ui/use-main-tab-bar-padding";
 import { Text } from "~/ui/text";
 import { findCurrentSemester } from "~/compat/mobile-v0";
-import { useSchool } from "~/infra/data/hooks";
+import { useSchoolCatalog } from "~/features/organization";
 import { CourseList } from "../course-list";
 import { Header } from "../profile-header";
 
 export const ProfileScreen = () => {
-  const { semesters } = useSchool();
+  const { semesters } = useSchoolCatalog();
   const [selectedSemester, setSelectedSemester] = useState(findCurrentSemester(semesters));
   const displayedSemester = selectedSemester ?? findCurrentSemester(semesters);
   const bottomPadding = useMainTabBarPadding(24);

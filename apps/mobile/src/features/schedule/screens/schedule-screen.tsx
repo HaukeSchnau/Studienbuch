@@ -33,7 +33,8 @@ import { Text } from "~/ui/text";
 import { useMainTabBarPadding } from "~/ui/use-main-tab-bar-padding";
 import { haptics } from "~/infra/native/haptics";
 import { subjectNameMap, type SubjectId } from "~/compat/mobile-v0";
-import { useCourses, useScheduleData } from "~/infra/data/hooks";
+import { useCourses } from "~/features/courses";
+import { useScheduleData } from "~/infra/data/hooks";
 import { courseRoute } from "~/infra/routing/params";
 import { colors } from "~/ui/colors";
 

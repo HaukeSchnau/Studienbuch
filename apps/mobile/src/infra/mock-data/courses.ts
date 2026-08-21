@@ -91,3 +91,8 @@ export const coursesSeed: Course[] = [
     examSlot: "P4",
   },
 ];
+
+export const selectedCourseIdsBySemesterSeed = {
+  s1: ["de-0", "ma-0", "en-0", "ge-0"],
+  s2: ["de-1", "ma-1", "en-1", "ge-1", "ph-1", "sp-1"],
+};
