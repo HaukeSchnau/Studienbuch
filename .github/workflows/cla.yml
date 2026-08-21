@@ -1,0 +1,45 @@
+name: CLA
+
+# The canonical repository is Forgejo at `git.schnau.dev`, and CI lives in `.gitea/workflows`.
+# This is the one workflow that has to run on the GitHub mirror instead: outside contributors reach
+# the project through GitHub, and the CLA bot needs the GitHub pull request API to record a
+# signature. Forgejo Actions ignores `.github/workflows` while `.gitea/workflows` exists, so this
+# file does not duplicate QA on the canonical remote.
+#
+# Signatures are stored in `.cla/signatures.json` on `main`, committed by the bot. The record is a
+# GitHub username, user ID, pull request number, and timestamp. No email address is stored.
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+  statuses: write
+
+jobs:
+  cla:
+    name: Check contributor licence agreement
+    runs-on: ubuntu-22.04
+    # `recheck` is how a maintainer re-runs the check after a signature is added out of band.
+    if: (github.event.issue.pull_request && github.event.comment.body == 'recheck') || github.event_name == 'pull_request_target'
+    steps:
+      - uses: contributor-assistant/github-action@v2.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          branch: main
+          path-to-signatures: .cla/signatures.json
+          path-to-document: https://github.com/HaukeSchnau/Studienbuch/blob/main/CLA.md
+          allowlist: HaukeSchnau,dependabot[bot],renovate[bot]
+          custom-notsigned-prcomment: >
+            Thanks for the pull request. Studienbuch is source-available under the Business Source
+            License and Urbs UG sells commercial licences for it, so every contributor signs the
+            [Contributor License Agreement](https://github.com/HaukeSchnau/Studienbuch/blob/main/CLA.md)
+            once. Please read it, then post the sentence below as a comment on this pull request.
+          custom-pr-sign-comment: I have read the Studienbuch CLA and I agree to it.
+          custom-allsigned-prcomment: CLA signed. Thanks.
