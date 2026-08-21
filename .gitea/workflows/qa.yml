@@ -23,6 +23,7 @@ jobs:
   qa:
     name: Format, lint, type-check, and test
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     steps:
       - name: Checkout exact revision
         uses: actions/checkout@v4
@@ -48,8 +49,8 @@ jobs:
       # type-check step to keep in sync with it.
       #
       # `@stu/server`'s integration test opts in through `DOCKER_HOST` and skips loudly without it.
-      # The Release smoke check in `nix/checks.nix` covers the same migration history against a
-      # real PostgreSQL, so this job does not need a container runtime.
+      # The host runners expose a Podman-compatible socket, so CI runs the suite against a real
+      # PostgreSQL. The Release smoke in `nix/checks.nix` independently covers migration history.
       - name: Run QA
         run: |
           set -euo pipefail
