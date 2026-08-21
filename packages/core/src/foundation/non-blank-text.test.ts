@@ -3,7 +3,7 @@ import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { NonBlankText } from "./non-blank-text";
 
-const Holder = Schema.Struct({ name: NonBlankText.Schema });
+const Holder = Schema.Struct({ name: NonBlankText });
 
 describe("NonBlankText", () => {
   // `make` is how every aggregate in this package is built, so it has to reject what `decode`

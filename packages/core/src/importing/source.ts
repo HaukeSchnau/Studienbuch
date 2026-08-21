@@ -6,7 +6,7 @@ import { SourceRevision } from "./source-revision";
 /** A configured provider feed. Its id distinguishes multiple feeds from the same provider. */
 export const DataSource = Schema.Struct({
   id: DataSourceId,
-  provider: NonBlankText.Schema,
+  provider: NonBlankText,
 });
 export interface DataSource extends Schema.Schema.Type<typeof DataSource> {}
 
@@ -23,9 +23,13 @@ export const SourceStamp = Schema.Struct({
 });
 export interface SourceStamp extends Schema.Schema.Type<typeof SourceStamp> {}
 
-export const SourceObservation = <Value extends Schema.Top>(value: Value) =>
-  Schema.Struct({ value, rawValue: Schema.Json, stamp: SourceStamp });
-
+/**
+ * One provider record as observed during an import.
+ *
+ * Deliberately a type and not a schema: reconciliation is in-memory, and every observation is
+ * built by the importer from values it already holds. Give it a schema when import state is
+ * actually persisted or synced, and derive this type from that schema rather than restating it.
+ */
 export interface SourceObservation<Value> {
   readonly value: Value;
   readonly rawValue: Schema.Json;

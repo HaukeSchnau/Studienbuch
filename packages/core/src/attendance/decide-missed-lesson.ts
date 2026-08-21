@@ -1,12 +1,13 @@
 import type * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
+import * as Struct from "effect/Struct";
 import { AggregateRevision } from "../foundation/aggregate-revision";
 import type { Artifact } from "../foundation/artifact";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import type { NonBlankText } from "../foundation/non-blank-text";
 import type { ActorRef } from "../organization/acknowledgement";
-import { makeAcknowledgement } from "../organization/acknowledgement";
+import { Acknowledgement } from "../organization/acknowledgement";
 import type { AuthoritySnapshot } from "../organization/authority";
 import { Capability, authorize } from "../organization/authority";
 import type { Enrollment } from "../organization/enrollment";
@@ -93,37 +94,27 @@ export const decideMissedLesson = Effect.fn("Attendance.decideMissedLesson")(fun
   );
 
   const nextRevision = yield* AggregateRevision.next(input.absence.revision);
-  let decision: MissedLessonDecision;
-  if (input.decision._tag === "Excused") {
-    decision = MissedLessonDecision.cases.Excused.make({
-      acknowledgement: makeAcknowledgement({
-        id: input.decision.acknowledgementId,
-        actor: input.actor,
-        acknowledgedAt: input.decidedAt,
-        revision: nextRevision,
-        artifact: input.decision.artifact,
-      }),
-    });
-  } else {
-    const fields = {
-      decidedBy: input.actor,
-      decidedAt: input.decidedAt,
-      revision: nextRevision,
-    };
-    decision =
-      input.decision.reason === undefined
-        ? MissedLessonDecision.cases.Rejected.make(fields)
-        : MissedLessonDecision.cases.Rejected.make({ ...fields, reason: input.decision.reason });
-  }
+  const decision: MissedLessonDecision =
+    input.decision._tag === "Excused"
+      ? MissedLessonDecision.cases.Excused.make({
+          acknowledgement: Acknowledgement.make({
+            id: input.decision.acknowledgementId,
+            actor: input.actor,
+            acknowledgedAt: input.decidedAt,
+            revision: nextRevision,
+            artifact: input.decision.artifact,
+          }),
+        })
+      : MissedLessonDecision.cases.Rejected.make({
+          decidedBy: input.actor,
+          decidedAt: input.decidedAt,
+          revision: nextRevision,
+          reason: input.decision.reason,
+        });
 
   const updateLesson = (candidate: MissedLesson) =>
     candidate.id === lesson.id
-      ? MissedLesson.make({
-          id: candidate.id,
-          lessonOccurrenceId: candidate.lessonOccurrenceId,
-          courseOfferingId: candidate.courseOfferingId,
-          decision,
-        })
+      ? MissedLesson.make(Struct.assign(candidate, { decision }))
       : candidate;
   const [firstLesson, ...remainingLessons] = input.absence.missedLessons;
   const missedLessons: readonly [MissedLesson, ...Array<MissedLesson>] = [
@@ -151,6 +142,6 @@ export declare namespace decideMissedLesson {
           readonly acknowledgementId: AcknowledgementId;
           readonly artifact?: Artifact.Reference;
         }
-      | { readonly _tag: "Rejected"; readonly reason?: NonBlankText.Type };
+      | { readonly _tag: "Rejected"; readonly reason?: NonBlankText };
   }
 }

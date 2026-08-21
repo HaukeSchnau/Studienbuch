@@ -8,14 +8,14 @@ import { SchoolId } from "../organization/identity";
 import { Weekday } from "./weekday";
 
 export const CalendarClosure = Schema.Struct({
-  name: NonBlankText.Schema,
+  name: NonBlankText,
   interval: CalendarDateRange.Schema,
 });
 export interface CalendarClosure extends Schema.Schema.Type<typeof CalendarClosure> {}
 
 export const AcademicCalendar = Schema.Struct({
   schoolId: SchoolId,
-  schoolDays: Schema.NonEmptyArray(Weekday.Schema),
+  schoolDays: Schema.NonEmptyArray(Weekday),
   terms: Schema.Array(AcademicTerm),
   closures: Schema.Array(CalendarClosure),
 }).check(
@@ -60,21 +60,18 @@ export const nextSchoolDay = (
   calendar: AcademicCalendar,
   date: PlainDate.Record,
 ): Option.Option<PlainDate.Record> => {
-  const latestTermEnd = calendar.terms.reduce<PlainDate.Record | undefined>(
+  const lastDay = calendar.terms.reduce<PlainDate.Record | undefined>(
     (latest, term) =>
       latest === undefined || PlainDate.compare(latest, term.interval.end) < 0
         ? term.interval.end
         : latest,
     undefined,
   );
-  if (latestTermEnd === undefined || PlainDate.compare(date, latestTermEnd) >= 0) {
-    return Option.none();
-  }
+  if (lastDay === undefined || PlainDate.compare(date, lastDay) >= 0) return Option.none();
 
   let candidate = PlainDate.addDays(date, 1);
-  while (PlainDate.compare(candidate, latestTermEnd) <= 0) {
+  while (PlainDate.compare(candidate, lastDay) <= 0) {
     if (isSchoolDay(calendar, candidate)) return Option.some(candidate);
-    if (PlainDate.equals(candidate, latestTermEnd)) break;
     candidate = PlainDate.addDays(candidate, 1);
   }
   return Option.none();

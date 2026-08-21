@@ -31,7 +31,7 @@ export interface SchoolMembership extends Schema.Schema.Type<typeof SchoolMember
 
 export const StudentMembership = Schema.Struct({
   membershipId: SchoolMembershipId,
-  cohortId: Schema.optionalKey(CohortId),
+  cohortId: Schema.optional(CohortId),
   classGroupIds: Schema.Array(ClassGroupId),
 });
 export interface StudentMembership extends Schema.Schema.Type<typeof StudentMembership> {}

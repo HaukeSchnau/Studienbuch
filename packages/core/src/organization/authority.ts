@@ -213,6 +213,14 @@ export const authorize = Effect.fn("Organization.authorize")(function* (
     snapshot.courseOfferings.find((candidate) => candidate.id === courseOfferingId);
   const isAdministratorFor = (schoolId: SchoolId) =>
     actorMembership.schoolId === schoolId && actorMembership.roles.includes("Administrator");
+  const teachesOffering = (courseOfferingId: CourseOfferingId) =>
+    actorMembership.roles.includes("Teacher") &&
+    snapshot.teachingAssignments.some(
+      (assignment) =>
+        assignment.teacherMembershipId === actorMembership.id &&
+        assignment.courseOfferingId === courseOfferingId &&
+        activeOn(assignment.effective, on),
+    );
 
   switch (capability._tag) {
     case "ManageSchoolDirectory":
@@ -257,15 +265,7 @@ export const authorize = Effect.fn("Organization.authorize")(function* (
         return yield* deny(actor, capability, "TargetOutsideSchool");
       }
       if (isAdministratorFor(target.schoolId)) return;
-      const assigned =
-        actorMembership.roles.includes("Teacher") &&
-        snapshot.teachingAssignments.some(
-          (assignment) =>
-            assignment.teacherMembershipId === actorMembership.id &&
-            assignment.courseOfferingId === target.id &&
-            activeOn(assignment.effective, on),
-        );
-      if (assigned) return;
+      if (teachesOffering(target.id)) return;
       return yield* deny(actor, capability, "TeacherNotAssigned");
     }
 
@@ -280,15 +280,7 @@ export const authorize = Effect.fn("Organization.authorize")(function* (
         return yield* deny(actor, capability, "TargetOutsideSchool");
       }
       if (isAdministratorFor(target.schoolId)) return;
-      const assigned =
-        actorMembership.roles.includes("Teacher") &&
-        snapshot.teachingAssignments.some(
-          (assignment) =>
-            assignment.teacherMembershipId === actorMembership.id &&
-            assignment.courseOfferingId === target.id &&
-            activeOn(assignment.effective, on),
-        );
-      if (assigned) return;
+      if (teachesOffering(target.id)) return;
       return yield* deny(actor, capability, "TeacherNotAssigned");
     }
   }

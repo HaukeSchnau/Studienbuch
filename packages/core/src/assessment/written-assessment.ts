@@ -24,14 +24,14 @@ export const WrittenAssessment = Schema.Struct({
   id: AssessmentId,
   studentMembershipId: SchoolMembershipId,
   courseOfferingId: CourseOfferingId,
-  title: Schema.optionalKey(NonBlankText.Schema),
+  title: Schema.optional(NonBlankText),
   assessedOn: PlainDateSchema,
   value: GradeValue,
   weight: AssessmentWeight,
   revision: AggregateRevision.Schema,
-  teacherAttestation: Schema.optionalKey(Acknowledgement),
-  learnerAcknowledgement: Schema.optionalKey(Acknowledgement),
-  withdrawal: Schema.optionalKey(Withdrawal),
+  teacherAttestation: Schema.optional(Acknowledgement),
+  learnerAcknowledgement: Schema.optional(Acknowledgement),
+  withdrawal: Schema.optional(Withdrawal),
 }).check(
   Schema.makeFilter(
     (assessment) => {
@@ -76,7 +76,7 @@ export class WithdrawalLockedByAttestation extends Schema.TaggedError<Withdrawal
   { assessmentId: AssessmentId },
 ) {}
 
-export const attestWritten = Effect.fn("Assessment.attestWrittenAssessment")(function* (
+export const attestWritten = Effect.fn("Assessment.attestWritten")(function* (
   input: attestWritten.Input,
 ) {
   yield* AggregateRevision.ensureCurrent(
@@ -110,7 +110,7 @@ export declare namespace attestWritten {
   }
 }
 
-export const acknowledgeWritten = Effect.fn("Assessment.acknowledgeWrittenAssessment")(function* (
+export const acknowledgeWritten = Effect.fn("Assessment.acknowledgeWritten")(function* (
   input: acknowledgeWritten.Input,
 ) {
   yield* AggregateRevision.ensureCurrent(
@@ -152,7 +152,7 @@ export declare namespace acknowledgeWritten {
  * The record stays in the aggregate carrying its withdrawal evidence rather than being removed:
  * a peer that has not seen a hard delete would resurrect it on the next sync.
  */
-export const withdrawWritten = Effect.fn("Assessment.withdrawWrittenAssessment")(function* (
+export const withdrawWritten = Effect.fn("Assessment.withdrawWritten")(function* (
   input: withdrawWritten.Input,
 ) {
   yield* AggregateRevision.ensureCurrent(

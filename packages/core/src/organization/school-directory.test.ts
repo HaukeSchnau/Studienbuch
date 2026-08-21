@@ -38,7 +38,7 @@ const date = (value: string) => PlainDate.fromString(value, Calendar.getBasic);
 const interval = (start: string, end: string) =>
   CalendarDateRange.Schema.make({ start: date(start), end: date(end) });
 const schoolId = SchoolId.make("school-1");
-const term = (id: NonBlankText.Type, start: string, end: string) =>
+const term = (id: NonBlankText, start: string, end: string) =>
   AcademicTerm.make({
     id: AcademicTermId.make(id),
     schoolId,

@@ -45,7 +45,7 @@ export const CourseChoiceGroup = Schema.Struct({
   id: CourseChoiceGroupId,
   schoolId: SchoolId,
   termId: AcademicTermId,
-  name: NonBlankText.Schema,
+  name: NonBlankText,
   offeringIds: Schema.NonEmptyArray(CourseOfferingId),
   cardinality: SelectionCardinality,
 }).check(

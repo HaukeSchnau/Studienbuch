@@ -16,7 +16,7 @@ export const TaskStatus = Schema.TaggedUnion({
   Completed: { completedOn: PlainDateSchema },
   Cancelled: {
     cancelledOn: PlainDateSchema,
-    reason: Schema.optionalKey(NonBlankText.Schema),
+    reason: Schema.optional(NonBlankText),
   },
 });
 export type TaskStatus = typeof TaskStatus.Type;
@@ -25,10 +25,10 @@ export const SchoolTask = Schema.Struct({
   id: SchoolTaskId,
   studentMembershipId: SchoolMembershipId,
   revision: AggregateRevision.Schema,
-  title: NonBlankText.Schema,
-  description: Schema.optionalKey(NonBlankText.Schema),
+  title: NonBlankText,
+  description: Schema.optional(NonBlankText),
   dueDate: PlainDateSchema,
-  courseOfferingId: Schema.optionalKey(CourseOfferingId),
+  courseOfferingId: Schema.optional(CourseOfferingId),
   attachments: Schema.Array(Artifact.Reference),
   status: TaskStatus,
 });
@@ -98,7 +98,7 @@ const prepare = (input: TransitionInput) =>
     );
   });
 
-export const complete = Effect.fn("SchoolTask.complete")(function* (
+export const complete = Effect.fn("Tasks.complete")(function* (
   input: complete.Input,
   completedOn: PlainDate.Record,
 ) {
@@ -112,7 +112,7 @@ export declare namespace complete {
   export type Input = TransitionInput;
 }
 
-export const reopen = Effect.fn("SchoolTask.reopen")(function* (input: reopen.Input) {
+export const reopen = Effect.fn("Tasks.reopen")(function* (input: reopen.Input) {
   yield* prepare(input);
   if (input.task.status._tag === "Open") return yield* refuse(input.task, "Reopen");
 
@@ -123,20 +123,15 @@ export declare namespace reopen {
   export type Input = TransitionInput;
 }
 
-export const cancel = Effect.fn("SchoolTask.cancel")(function* (
+export const cancel = Effect.fn("Tasks.cancel")(function* (
   input: cancel.Input,
   cancelledOn: PlainDate.Record,
-  reason?: NonBlankText.Type,
+  reason?: NonBlankText,
 ) {
   yield* prepare(input);
   if (input.task.status._tag !== "Open") return yield* refuse(input.task, "Cancel");
 
-  return yield* withStatus(
-    input.task,
-    reason === undefined
-      ? TaskStatus.cases.Cancelled.make({ cancelledOn })
-      : TaskStatus.cases.Cancelled.make({ cancelledOn, reason }),
-  );
+  return yield* withStatus(input.task, TaskStatus.cases.Cancelled.make({ cancelledOn, reason }));
 });
 
 export declare namespace cancel {

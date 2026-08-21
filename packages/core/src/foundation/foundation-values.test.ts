@@ -10,7 +10,7 @@ describe("AggregateRevision", () => {
     Effect.gen(function* () {
       const next = yield* AggregateRevision.next(AggregateRevision.initial);
       assert.strictEqual(AggregateRevision.compare(AggregateRevision.initial, next), -1);
-      assert.isTrue(AggregateRevision.Equivalence(next, AggregateRevision.Schema.make(1)));
+      assert.strictEqual(next, AggregateRevision.Schema.make(1));
       const exhausted = yield* Effect.flip(
         AggregateRevision.next(AggregateRevision.Schema.make(Number.MAX_SAFE_INTEGER)),
       );
@@ -21,37 +21,37 @@ describe("AggregateRevision", () => {
 
 describe("NonBlankText", () => {
   it("accepts non-empty literals without construction", () => {
-    const latin: NonBlankText.Type = "Untis";
-    const unicode: NonBlankText.Type = "数学";
+    const latin: NonBlankText = "Untis";
+    const unicode: NonBlankText = "数学";
 
     assert.strictEqual(latin, "Untis");
     assert.strictEqual(unicode, "数学");
 
     // @ts-expect-error An empty literal is not non-blank text.
-    const empty: NonBlankText.Type = "";
+    const empty: NonBlankText = "";
     // @ts-expect-error A dynamic string must be decoded because it may be blank.
-    const dynamic: NonBlankText.Type = String(Date.now());
+    const dynamic: NonBlankText = String(Date.now());
     void [empty, dynamic];
   });
 
   it.effect("validates non-blank text while preserving authored spacing", () =>
     Effect.gen(function* () {
-      const text = yield* Schema.decodeEffect(NonBlankText.Schema)("Lesson notes");
+      const text = yield* Schema.decodeEffect(NonBlankText)("Lesson notes");
       assert.strictEqual(text, "Lesson notes");
       for (const invalid of ["", "   "]) {
-        yield* Schema.decodeEffect(NonBlankText.Schema)(invalid).pipe(Effect.flip);
+        yield* Schema.decodeEffect(NonBlankText)(invalid).pipe(Effect.flip);
       }
-      assert.strictEqual(yield* Schema.decodeEffect(NonBlankText.Schema)(" padded "), " padded ");
+      assert.strictEqual(yield* Schema.decodeEffect(NonBlankText)(" padded "), " padded ");
     }),
   );
 
   it.effect("round-trips as an ordinary string", () =>
     Effect.gen(function* () {
-      const text: NonBlankText.Type = "Lesson notes";
-      const encoded = yield* Schema.encodeEffect(NonBlankText.Schema)(text);
+      const text: NonBlankText = "Lesson notes";
+      const encoded = yield* Schema.encodeEffect(NonBlankText)(text);
 
       assert.strictEqual(encoded, "Lesson notes");
-      assert.strictEqual(yield* Schema.decodeEffect(NonBlankText.Schema)(encoded), text);
+      assert.strictEqual(yield* Schema.decodeEffect(NonBlankText)(encoded), text);
     }),
   );
 });

@@ -41,7 +41,7 @@ export type ContentDigest = typeof ContentDigest.Type;
 export const Reference = Schema_.Struct({
   id: Id,
   mediaType: MediaType,
-  contentDigest: Schema_.optionalKey(ContentDigest),
+  contentDigest: Schema_.optional(ContentDigest),
 });
 export type Reference = typeof Reference.Type;
 

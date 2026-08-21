@@ -14,7 +14,6 @@ export {
   VisibilityPolicy,
   defaultVisibilityPolicy,
   isArchived,
-  isVisible,
   selectArchived,
   selectForCourse,
   selectForStudent,

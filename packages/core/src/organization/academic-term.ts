@@ -13,7 +13,7 @@ export type GradeLevel = typeof GradeLevel.Type;
 export const AcademicTerm = Schema.Struct({
   id: AcademicTermId,
   schoolId: SchoolId,
-  name: NonBlankText.Schema,
+  name: NonBlankText,
   interval: CalendarDateRange.Schema,
 });
 export interface AcademicTerm extends Schema.Schema.Type<typeof AcademicTerm> {}
@@ -21,7 +21,7 @@ export interface AcademicTerm extends Schema.Schema.Type<typeof AcademicTerm> {}
 export const Cohort = Schema.Struct({
   id: CohortId,
   schoolId: SchoolId,
-  name: NonBlankText.Schema,
+  name: NonBlankText,
   entryTermId: AcademicTermId,
   entryGradeLevel: GradeLevel,
 });

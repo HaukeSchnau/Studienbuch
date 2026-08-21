@@ -5,11 +5,7 @@ import type { AggregateRevision } from "../foundation/aggregate-revision";
 import type { Artifact } from "../foundation/artifact";
 import { PlainDateSchema } from "../foundation/plain-date";
 import type * as PlainDate from "temporal-polyfill/fns/PlainDate";
-import {
-  type Acknowledgement,
-  ActorRef,
-  makeAcknowledgement as makeOrganizationAcknowledgement,
-} from "../organization/acknowledgement";
+import { Acknowledgement, ActorRef } from "../organization/acknowledgement";
 import type { AuthoritySnapshot } from "../organization/authority";
 import { Capability, authorize } from "../organization/authority";
 import type { AcknowledgementId, SchoolMembershipId } from "../organization/identity";
@@ -52,11 +48,12 @@ export interface ConfirmationRecordInput {
   readonly artifact?: Artifact.Reference;
 }
 
+/** Reshapes a confirmation request into the evidence record the aggregate stores. */
 export const makeAcknowledgement = (
   input: ConfirmationRecordInput,
   revision: AggregateRevision.Type,
 ): Acknowledgement =>
-  makeOrganizationAcknowledgement({
+  Acknowledgement.make({
     id: input.acknowledgementId,
     actor: input.actor,
     acknowledgedAt: input.acknowledgedAt,

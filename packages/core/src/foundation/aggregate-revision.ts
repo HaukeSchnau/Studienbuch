@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
-import * as Equivalence_ from "effect/Equivalence";
 import * as Order_ from "effect/Order";
+import type { Ordering } from "effect/Ordering";
 import * as Schema_ from "effect/Schema";
 
 /** Monotonic version used for optimistic concurrency on an aggregate. */
@@ -69,11 +69,13 @@ export const revise = <A extends Revised>(
     schema.make({ ...aggregate, ...changes, revision }),
   );
 
-export const compare = (left: Type, right: Type): -1 | 0 | 1 =>
-  left < right ? -1 : left > right ? 1 : 0;
-
-export const Equivalence = Equivalence_.make<Type>((left, right) => compare(left, right) === 0);
-
-export const Order = Order_.make<Type>(compare);
+/**
+ * Numeric ordering, named for the domain so a comparison reads as one.
+ *
+ * `Equivalence` and `Order` are deliberately absent: this is a branded `number`, so equality is
+ * `===` and `Order.Number` is already the order. Effect defines its own only for values like
+ * `Duration` that have more than one representation.
+ */
+export const compare: (left: Type, right: Type) => Ordering = Order_.Number;
 
 export * as AggregateRevision from "./aggregate-revision";

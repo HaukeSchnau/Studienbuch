@@ -4,16 +4,16 @@ import { SchoolId, SubjectId } from "./identity";
 
 export const School = Schema.Struct({
   id: SchoolId,
-  name: NonBlankText.Schema,
+  name: NonBlankText,
 });
 export interface School extends Schema.Schema.Type<typeof School> {}
 
 export const Subject = Schema.Struct({
   id: SubjectId,
   schoolId: SchoolId,
-  name: NonBlankText.Schema,
-  code: Schema.optionalKey(NonBlankText.Schema),
-  aliases: Schema.Array(NonBlankText.Schema),
+  name: NonBlankText,
+  code: Schema.optional(NonBlankText),
+  aliases: Schema.Array(NonBlankText),
 });
 export interface Subject extends Schema.Schema.Type<typeof Subject> {}
 

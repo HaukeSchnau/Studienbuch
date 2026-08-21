@@ -1,35 +1,13 @@
-import * as Schema from "effect/Schema";
-import { ActorRef } from "../organization/acknowledgement";
+import type * as Schema from "effect/Schema";
+import type { ActorRef } from "../organization/acknowledgement";
 import type { SourceObservation } from "./source";
-import { SourceObservation as SourceObservationSchema } from "./source";
 
-export const UserOverride = <Value extends Schema.Top>(value: Value) =>
-  Schema.Struct({
-    value,
-    changedBy: ActorRef,
-    changedAt: Schema.DateTimeUtcFromString,
-  });
-
+/** An explicit user-owned replacement for a sourced value, held until relinquished. */
 export interface UserOverride<Value> {
   readonly value: Value;
   readonly changedBy: ActorRef;
   readonly changedAt: typeof Schema.DateTimeUtcFromString.Type;
 }
-
-/**
- * Field-level provenance. An override retains its imported backing value so later imports can be
- * accepted without replacing the effective user-owned value.
- */
-export const ProvenancedValue = <Value extends Schema.Top>(value: Value) => {
-  const observation = SourceObservationSchema(value);
-  return Schema.TaggedUnion({
-    Sourced: { source: observation },
-    Overridden: {
-      source: Schema.optionalKey(observation),
-      override: UserOverride(value),
-    },
-  });
-};
 
 export interface SourcedValue<Value> {
   readonly _tag: "Sourced";
@@ -42,6 +20,10 @@ export interface OverriddenValue<Value> {
   readonly override: UserOverride<Value>;
 }
 
+/**
+ * Field-level provenance. An override retains its imported backing value so later imports can be
+ * accepted without replacing the effective user-owned value.
+ */
 export type ProvenancedValue<Value> = SourcedValue<Value> | OverriddenValue<Value>;
 
 export const sourcedValue = <Value>(source: SourceObservation<Value>): SourcedValue<Value> => ({

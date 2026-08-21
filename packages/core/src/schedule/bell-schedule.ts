@@ -7,7 +7,7 @@ import { LocalTimeRange } from "./local-time-range";
 
 export const BellPeriod = Schema.Struct({
   id: BellPeriodId,
-  label: NonBlankText.Schema,
+  label: NonBlankText,
   timeRange: LocalTimeRange.Schema,
 });
 export interface BellPeriod extends Schema.Schema.Type<typeof BellPeriod> {}
