@@ -1,8 +1,14 @@
-export { serverConfig, type ServerConfig } from "./otlp/config.ts";
+export {
+  environmentConfig,
+  serverConfig,
+  serviceVersionConfig,
+  type ServerConfig,
+} from "./otlp/config.ts";
 export {
   developmentLayer,
   flushOtlp,
   otlpProtobufLayer,
   productionJsonLayer,
+  serverObservabilityLayer,
   type OtlpServerLayerOptions,
 } from "./otlp/layers.ts";

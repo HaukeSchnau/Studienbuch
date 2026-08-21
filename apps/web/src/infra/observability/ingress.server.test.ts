@@ -1,4 +1,4 @@
-import type { ClientTelemetryEnvelopeType } from "@stu/observability/browser";
+import type { ClientTelemetryEnvelope } from "@stu/observability/browser";
 import * as Effect from "effect/Effect";
 import * as OtlpExporter from "effect/unstable/observability/OtlpExporter";
 import { describe, expect, it, vi } from "vitest";
@@ -26,7 +26,7 @@ const validEnvelope = {
       attributes: { "telemetry.priority": "high" },
     },
   ],
-} satisfies ClientTelemetryEnvelopeType;
+} satisfies ClientTelemetryEnvelope;
 
 function request(body: BodyInit = JSON.stringify(validEnvelope), headers?: HeadersInit) {
   return new Request(`https://studienbuch.test${telemetryRoute}`, {
