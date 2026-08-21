@@ -10,28 +10,50 @@ import { migrateToLatest } from "./migrate.ts";
 import { migrationsSchema, migrationsTable } from "./migration-history.ts";
 import { users } from "../auth/schema.ts";
 
-let container: StartedPostgreSqlContainer;
+/**
+ * Testcontainers needs a Docker-compatible socket, and `DOCKER_HOST` is the contract for naming it:
+ * the flake development shell sets it when a usable rootless Podman socket exists, and CI must set
+ * it to opt in. A bare socket file is not enough of a signal -- `/var/run/docker.sock` can exist
+ * and still be unusable -- so this checks the variable and nothing else.
+ *
+ * Skipping is loud rather than silent: without this the suite failed with
+ * `Cannot read properties of undefined (reading 'stop')` from `afterAll`, which hid the real cause.
+ */
+const hasContainerRuntime =
+  process.env.DOCKER_HOST !== undefined && process.env.DOCKER_HOST.trim() !== "";
+
+if (!hasContainerRuntime) {
+  console.warn(
+    "[@stu/server] Skipping the database integration test: DOCKER_HOST is not set. " +
+      "Run inside `nix develop` on a host with a Podman or Docker socket to exercise it.",
+  );
+}
+
+let container: StartedPostgreSqlContainer | undefined;
+let connectionUri = "";
 
 beforeAll(async () => {
+  if (!hasContainerRuntime) return;
   container = await new PostgreSqlContainer("postgres:17-alpine").start();
+  connectionUri = container.getConnectionUri();
 }, 120_000);
 
+// Optional chaining, so a container that never started reports why `beforeAll` failed instead of
+// replacing it with `Cannot read properties of undefined (reading 'stop')`.
 afterAll(async () => {
-  await container.stop();
+  await container?.stop();
 });
 
 /** A migrated database on the shared container, rebuilt per test so pools never leak between them. */
 const migrated = Layer.unwrap(
   Effect.sync(() =>
     Layer.effectDiscard(migrateToLatest).pipe(
-      Layer.provideMerge(
-        Database.layer({ url: Redacted.make(container.getConnectionUri()), maxConnections: 2 }),
-      ),
+      Layer.provideMerge(Database.layer({ url: Redacted.make(connectionUri), maxConnections: 2 })),
     ),
   ),
 );
 
-it.live(
+it.live.runIf(hasContainerRuntime)(
   "applies the migration history and round-trips rows through the Effect Drizzle database",
   () =>
     Effect.gen(function* () {
@@ -60,7 +82,7 @@ it.live(
   { timeout: 60_000 },
 );
 
-it.live(
+it.live.runIf(hasContainerRuntime)(
   "hands native Date values to pool clients, as Better Auth's Kysely adapter requires",
   () =>
     Effect.gen(function* () {
@@ -87,7 +109,7 @@ it.live(
   { timeout: 60_000 },
 );
 
-it.live(
+it.live.runIf(hasContainerRuntime)(
   "records migrations where Drizzle Kit expects them and stays idempotent on re-runs",
   () =>
     Effect.gen(function* () {
@@ -115,7 +137,7 @@ it.live(
   { timeout: 60_000 },
 );
 
-it.live(
+it.live.runIf(hasContainerRuntime)(
   "signs a user up through the very schema Better Auth is mapped onto",
   () =>
     Effect.gen(function* () {

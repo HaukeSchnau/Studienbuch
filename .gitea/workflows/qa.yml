@@ -1,0 +1,56 @@
+name: QA
+
+# The Release workflow only runs after a push to `main` has already happened, and it gates on
+# `nix flake check`, which builds and smoke-tests the Release without ever running the formatter,
+# the linter, or the test suites. Those ran only in the local `.vite-hooks` pre-commit hook, which
+# is per-clone and bypassable, so a strict lint configuration had nothing enforcing it off one
+# machine. This runs the same `just qa` a developer runs.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NIX_CONFIG: experimental-features = nix-command flakes
+
+jobs:
+  qa:
+    name: Format, lint, type-check, and test
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+
+      - name: Add Nix to PATH
+        run: |
+          set -euo pipefail
+          if [ -x /run/current-system/sw/bin/nix ]; then
+            echo /run/current-system/sw/bin >> "$GITHUB_PATH"
+            export PATH="/run/current-system/sw/bin:$PATH"
+          fi
+          nix --version
+
+      # `--frozen-lockfile` so a workspace dependency that drifted from the lockfile fails here
+      # rather than resolving to something no one has run locally.
+      - name: Install workspace dependencies
+        run: |
+          set -euo pipefail
+          nix develop --command pnpm install --frozen-lockfile
+
+      # `just qa` is `fmt`, `lint`, `mobile-e2e-check` and `test`. `lint` is where type checking
+      # happens: Vite+ runs Oxlint with `typeCheck: true`, so there is deliberately no separate
+      # type-check step to keep in sync with it.
+      #
+      # `@stu/server`'s integration test opts in through `DOCKER_HOST` and skips loudly without it.
+      # The Release smoke check in `nix/checks.nix` covers the same migration history against a
+      # real PostgreSQL, so this job does not need a container runtime.
+      - name: Run QA
+        run: |
+          set -euo pipefail
+          nix develop --command just qa
