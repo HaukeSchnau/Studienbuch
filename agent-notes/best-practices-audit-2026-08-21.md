@@ -15,6 +15,10 @@ Baseline verified at `29cb3e071`:
 
 Nothing below is a build break. One item is a correctness bug with a reproduction.
 
+**Acted on, 2026-08-21.** Hauke approved the suggested order and the work landed in six commits;
+each finding below carries its own status line. What remains open is recorded there rather than
+deleted, so a later pass does not rediscover it.
+
 **Revision, 2026-08-21.** Finding 9 (`exactOptionalPropertyTypes`) is withdrawn. It was written
 without checking the history, and the flag had been removed deliberately three days earlier. The
 finding is kept in place rather than deleted, because two of its supporting claims were wrong in
@@ -23,6 +27,8 @@ ways that argue for the opposite change.
 ## The one correctness bug
 
 ### 1. A withdrawn absence is silently resurrected — high
+
+**Fixed 2026-08-21.** `AggregateRevision.revise` carries every untouched field; two regression tests cover both sequences.
 
 `Attendance.acknowledge` and `Attendance.decideMissedLesson` rebuild `AbsenceCase` field by field
 instead of spreading the input, and neither carries `withdrawal` across:
@@ -51,6 +57,8 @@ real fix is finding 4 — nothing should be hand-rebuilding an aggregate.
 
 ### 2. A failed first storage read permanently disables the telemetry outbox — medium
 
+**Open.**
+
 `packages/observability/src/client/outbox.ts:189-197`. The constructor assigns
 `#ready = this.#load()` and never attaches a rejection handler. `#load` awaits
 `storage.read()`, which on mobile is a filesystem call. If it rejects:
@@ -65,6 +73,8 @@ Wrapping the `read()` in a `catch` that falls back to `emptySnapshot()` restores
 
 ### 3. `Assessment.AlreadyWithdrawn` names a target it cannot produce
 
+**Fixed 2026-08-21.** The literal is now `["WrittenAssessment"]`.
+
 `assessment/written-assessment.ts:76-79` declares
 `target: Schema.Literals(["WrittenAssessment", "AbsenceCase"])`. Attendance has its own
 `Attendance.AlreadyWithdrawn` (`attendance/withdraw.ts:9`) and never constructs this one, so
@@ -78,6 +88,8 @@ follows is not about its quality; it is that one concept has been written down t
 copies have already drifted in ways that produced finding 1.
 
 ### 4. One confirmation lifecycle, three encodings
+
+**Partly fixed 2026-08-21.** One `AggregateRevision.Concurrent` replaces four names and four copies of the guard. The duplicated learner-acknowledgement decision and the two withdrawal implementations are still open.
 
 Written assessments, standing revisions and absence cases all implement the same aggregate
 protocol: check the expected revision, refuse if the step already happened, authorize, advance the
@@ -126,6 +138,8 @@ place the aggregate list lives, and finding 3 becomes impossible to write.
 
 ### 5. Aggregates are updated by hand, five different ways
 
+**Fixed 2026-08-21.** `AggregateRevision.revise` replaced all three idioms and deleted all eight `no-misused-spread` suppressions. The optional-key branching in `materialize.ts` is untouched; see the note on `Schema.optional` in `core-effect-idiom-audit-2026-08-21.md`.
+
 There is no `revise` helper, so every transition improvises:
 
 - spread + suppression: eight `// oxlint-disable-next-line typescript/no-misused-spread` sites
@@ -140,6 +154,8 @@ values before `make` — replaces all three patterns, deletes the eight suppress
 "forgot to carry a field" unrepresentable.
 
 ### 6. Two competing idioms for cross-entity invariants
+
+**Partly fixed 2026-08-21.** `AuthoritySnapshot` now returns located `{ path, issue }` failures, and `AcademicCalendar` shares `firstTermOverlap` with `validateAcademicTerms` instead of restating it. `absence-case.ts`, `course-standing.ts`, `written-assessment.ts` and `catalog.ts` still return bare booleans.
 
 `organization/directory.ts` is the good one: `validateSchoolDirectory` returns
 `InvalidSchoolDirectory` with `entity`, `entityId` and `reason`, so a caller can say what is wrong
@@ -165,6 +181,8 @@ terms — same rule, worse diagnostics, second copy.
 
 ### 7. Namespace ceremony that adds nothing
 
+**Open.**
+
 `export declare namespace f { interface Input }` is a real Effect-ecosystem idiom and it earns its
 keep where the input is genuinely per-function. It does not in `tasks/school-task.ts`, where
 `complete.Input`, `reopen.Input` and `cancel.Input` are each `export type Input = TransitionInput`
@@ -176,6 +194,8 @@ Related, smaller: `tasks/task-list.ts:32` `isVisible` is `!isArchived` and is us
 which `schedule/materialize.ts` already imports for the same job.
 
 ### 8. Error unions are declared two ways
+
+**Fixed 2026-08-21.** All thirteen aliases were removed; none had a consumer, and `packages/core/README.md:56` already forbade them.
 
 `attendance/acknowledge.ts:35` and `decide-missed-lesson.ts:50` build runtime schemas
 (`Schema.Union([...])`); `assessment/*` and `tasks/*` declare type-only unions
@@ -223,6 +243,8 @@ against it.
 
 ### 10. `apps/mobile` is pinned to a different TypeScript major
 
+**Open by decision, 2026-08-21.** Hauke: fine to ignore or upgrade opportunistically. Type checking runs through Oxlint, and there is no separate type-check job for the two compilers to disagree in.
+
 `apps/mobile/package.json` declares `"typescript": "~6.0.3"`; the catalog pins `^7.0.2` and every
 other workspace member uses `catalog:`. `apps/mobile/node_modules/typescript` really is 6.0.3. The
 largest application in the repository is therefore checked by a different compiler than the
@@ -246,6 +268,8 @@ anti-slop plugin, and every disabled rule carrying a written justification. Two 
 
 ### 12. The tsconfig diagnostic list has drifted from the oxlint presets
 
+**Open.**
+
 `vite.config.ts` derives its Effect rules programmatically from `correctness`, `antipattern` and
 `style`. `tsconfig.json` restates the same set as ~80 hand-written `diagnosticSeverity` entries. They
 have already diverged: `style` contains `effecttsgo/unnecessary-arrow-block`, and the tsconfig has no
@@ -254,6 +278,8 @@ the gap. Either generate the tsconfig block (`effect-tsgo config` exists) or dro
 be the single source.
 
 ### 13. The `effect-native` preset is applied by hand, half of it
+
+**Open.**
 
 `vite.config.ts` enables eleven `effecttsgo/*-in-effect` rules individually. The preset also carries
 `global-date`, `global-console`, `global-fetch`, `global-random`, `global-timers`, `process-env`,
@@ -266,6 +292,8 @@ defensible in React code; `prefer-schema-over-json` and `node-builtin-import` ar
 ## Build, test and CI
 
 ### 14. `just qa` never runs the web app's tests
+
+**Fixed 2026-08-21.** The Justfile runs two filtered invocations. Root cause confirmed: Vite+ drops `@stu/web` whenever the packages it depends on are in the same selection -- not the separate `vitest.config.ts`, which was the original guess.
 
 `vp run -r test` enumerates five packages and silently omits `@stu/web`:
 
@@ -284,6 +312,8 @@ Justfile's filter.
 
 ### 15. No CI runs lint or tests
 
+**Fixed 2026-08-21.** `.gitea/workflows/qa.yml` runs `just qa` on push and pull request. Written against the release workflow's runner and Nix bootstrap; not executed against the runner from here.
+
 `.gitea/workflows/release.yml` is the only workflow and it only publishes a Release on push to
 `main`. `nix/checks.nix` builds a genuinely good release smoke test, but nothing runs `just qa`.
 Quality gating rests entirely on the local `.vite-hooks` pre-commit hook, which is per-clone and
@@ -292,6 +322,8 @@ place the investment does not pay out. A `qa.yml` running `just qa` on push and 
 small and would also have caught finding 14 by making the missing project visible.
 
 ### 16. `"latest"` as a version specifier
+
+**Open.**
 
 `apps/web/package.json` uses `"latest"` for `@tanstack/react-router`, `react-start`,
 `react-devtools`, `react-router-devtools`, `react-form`, `react-table` and
@@ -302,6 +334,8 @@ majors without a diff. Give them real ranges, or a catalog entry like everything
 
 ### 17. A failing container start reports the wrong error
 
+**Fixed 2026-08-21.** `container?.stop()`, and the suite opts in through `DOCKER_HOST` and warns when it skips.
+
 `packages/server/src/database/database.integration.test.ts:19-21` — `afterAll` calls
 `container.stop()` unconditionally, so when `beforeAll` cannot reach a container runtime the visible
 failure is `TypeError: Cannot read properties of undefined (reading 'stop')` and the real cause is
@@ -310,6 +344,8 @@ gone. `await container?.stop()` restores it.
 ## Organization and duplication
 
 ### 18. `@stu/core` has no consumers
+
+**Open.**
 
 `grep` across the whole workspace: the only file importing `@stu/core` is
 `packages/core/src/public-api.test.ts`. `apps/mobile` declares it as a dependency and imports it
@@ -326,6 +362,8 @@ now depends on it. Each new screen makes the eventual swap larger.
 
 ### 19. The mobile tsconfig defeats ADR 0001's bundle guidance
 
+**Fixed 2026-08-21.** The `@stu/core` path mapping is gone.
+
 `apps/mobile/tsconfig.json` maps `"@stu/core": ["../../packages/core/src/index.ts"]`, collapsing the
 package's fifteen subpath exports to the root barrel. ADR 0001 closes with "bundle-sensitive mobile
 consumers should use the package's leaf exports rather than the coarse root namespace" — this
@@ -335,6 +373,8 @@ nothing; `resolve: { tsconfigPaths: true }` plus the workspace link already hand
 
 ### 20. Four alias conventions
 
+**Fixed 2026-08-21.** `~/*` in mobile, `#/*` in web, the unused duplicates deleted.
+
 `#/*` (web, also declared in `package.json` `imports`), `@/*` and `~/*` (mobile, both mapped to
 `./src/*`), plus relative imports. Mobile uses `~/` 350 times and `@/` 56 times, in the same files —
 `features/tasks/screens/task-screen.tsx` imports from both. `apps/web/tsconfig.json` also declares
@@ -342,6 +382,8 @@ nothing; `resolve: { tsconfigPaths: true }` plus the workspace link already hand
 real Node subpath import rather than a bundler-only fiction.
 
 ### 21. Directory names the project's own rule forbids
+
+**Fixed 2026-08-21.** `shared` → `opentelemetry`, `types` → `infra`, `lib` → `runner`. The vendored anti-slop copy keeps its upstream layout.
 
 `AGENTS.md` says `lib`, `utils`, `helpers`, `common`, `shared`, `misc` and `types` are not directory
 names. Present: `packages/observability/src/shared/`, `apps/mobile/src/types/`, `scripts/lib/`,
@@ -351,6 +393,8 @@ belonging elsewhere. `resource.ts` is service identity; `attributes.ts` is the s
 vocabulary; `trace-context.ts` is W3C propagation. Three names exist.
 
 ### 22. Things defined twice
+
+**Fixed 2026-08-21.** One `TelemetryPriority` schema, one `serverObservabilityLayer`, the `*Type` envelope aliases dropped, and a test that fails when the two mobile palettes contradict each other.
 
 - **`TelemetryPriority`** — three times: a hand-written union in
   `observability/src/shared/attributes.ts:5`, an identical one in `client/outbox.ts:16`, and a third
@@ -373,6 +417,8 @@ vocabulary; `trace-context.ts` is W3C propagation. Three names exist.
   unnecessary — `import { type X }` already works.
 
 ### 23. Effect is available and not used where it would shrink code
+
+**Open.**
 
 Two hand-rolled Promise state machines sit in a codebase whose lint configuration bans
 `globalDateInEffect`, `globalRandomInEffect` and `globalTimersInEffect`:
@@ -397,6 +443,8 @@ optional constructor parameters (`runtimeState`, `pingDatabase`, `run`) so tests
 them. That is a second DI mechanism beside Layers, in the package that defines the Layers.
 
 ### 24. Smaller items
+
+**Partly fixed 2026-08-21.** Dead `header-user.tsx`, the untagged mobile session mock, the stale `packages/server` paths and the missing anti-slop provenance are done. Route-parameter encoding, the `SCREAMING_SNAKE` constants, `.env.example` and the Better Auth settings are open.
 
 - `apps/web/src/features/auth/header-user.tsx` is rendered nowhere, default-exports a function whose
   name (`BetterAuthHeader`) matches neither the file nor the export, hardcodes Tailwind instead of
