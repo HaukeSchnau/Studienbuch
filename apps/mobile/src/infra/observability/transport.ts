@@ -1,6 +1,6 @@
 import {
   decodeClientTelemetryAcknowledgement,
-  type ClientTelemetryEnvelopeType,
+  type ClientTelemetryEnvelope,
   type TelemetryDelivery,
 } from "@stu/observability/browser";
 import { Option } from "effect";
@@ -23,7 +23,7 @@ export interface FetchTelemetryTransportOptions {
 export const makeFetchTelemetryTransport = (
   options: FetchTelemetryTransportOptions,
 ): TelemetryDelivery => ({
-  send: async (envelope: ClientTelemetryEnvelopeType) => {
+  send: async (envelope: ClientTelemetryEnvelope) => {
     const authorization = await options.authorization();
     if (
       authorization === undefined ||

@@ -2,8 +2,8 @@ import { useRouter } from "expo-router";
 import { ConfirmPageContent } from "~/domain-ui/confirm-page-content";
 import { PageScaffold } from "~/ui/navigation/page-scaffold";
 import { Text } from "~/ui/text";
-import type { Absence } from "@/compat/mobile-v0";
-import { Teacher } from "@/compat/mobile-v0";
+import type { Absence } from "~/compat/mobile-v0";
+import { Teacher } from "~/compat/mobile-v0";
 import { useAbsences, useCourses } from "~/infra/data/hooks";
 import { useRequiredAuthenticatedSession } from "~/infra/session/session";
 

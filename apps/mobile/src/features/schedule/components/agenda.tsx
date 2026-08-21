@@ -5,7 +5,7 @@ import { View } from "react-native";
 import { Card } from "~/ui/card";
 import { Divider } from "~/ui/divider";
 import { Text } from "~/ui/text";
-import { subjectNameMap, Teacher } from "@/compat/mobile-v0";
+import { subjectNameMap, Teacher } from "~/compat/mobile-v0";
 import { useCourses, useScheduleData } from "~/infra/data/hooks";
 
 const matchHolidayName = (name: string) => {

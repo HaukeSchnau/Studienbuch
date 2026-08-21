@@ -1,4 +1,4 @@
-import type { Grade } from "@/compat/mobile-v0";
+import type { Grade } from "~/compat/mobile-v0";
 import { describe, expect, it } from "vite-plus/test";
 import { getGradesOverviewModel } from "./grades-overview-model";
 

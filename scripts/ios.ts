@@ -7,7 +7,7 @@ import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 import * as Argument from "effect/unstable/cli/Argument";
 import * as Command from "effect/unstable/cli/Command";
-import * as Script from "./lib/script.ts";
+import * as Script from "./runner/script.ts";
 
 const defaultDevice = "539D7C55-85D6-50B1-BE9B-88293D4628C3";
 const defaultArtifactsDirectory = "/tmp/studienbuch-mobile-builds";

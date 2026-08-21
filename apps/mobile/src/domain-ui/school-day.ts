@@ -1,5 +1,5 @@
 import { compareAsc, isBefore, isSameDay, startOfDay } from "date-fns";
-import type { TimetableEntry } from "@/compat/mobile-v0";
+import type { TimetableEntry } from "~/compat/mobile-v0";
 
 export const getEntriesForSchoolDay = (timetable: TimetableEntry[], date: Date) =>
   timetable

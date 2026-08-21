@@ -1,5 +1,5 @@
-import type { SubjectId } from "@/compat/mobile-v0";
-import { subjectNameMap } from "@/compat/mobile-v0";
+import type { SubjectId } from "~/compat/mobile-v0";
+import { subjectNameMap } from "~/compat/mobile-v0";
 import { StyleSheet, View } from "react-native";
 import { NativeMenuView } from "~/ui/native/expo-ui";
 import { Text } from "~/ui/text";

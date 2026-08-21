@@ -1,4 +1,4 @@
-import type { Task } from "@/compat/mobile-v0";
+import type { Task } from "~/compat/mobile-v0";
 import { useEffect } from "react";
 import { useCourses, useTasks } from "~/infra/data/hooks";
 import {

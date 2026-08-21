@@ -17,7 +17,8 @@ traces, logs, and metrics; Sentry stays narrowly scoped to crash reporting.
 ## Layout
 
 `index.ts`, `server.ts`, `browser.ts` and `testing.ts` are the four package exports and hold nothing
-but re-exports. Implementation sits in `shared/` (identity and attributes, used everywhere),
+but re-exports. Implementation sits in `opentelemetry/` (resource identity, the span and
+metric attribute vocabulary, and W3C trace-context propagation -- the parts OpenTelemetry defines),
 `otlp/` (exporter layers, config, canary) and `client/` (the envelope contract and the outbox).
 
 ## The client telemetry channel

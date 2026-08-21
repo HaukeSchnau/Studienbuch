@@ -1,4 +1,4 @@
-import type { Course, TeacherInfo } from "@/compat/mobile-v0";
+import type { Course, TeacherInfo } from "~/compat/mobile-v0";
 
 const annaMeyer: TeacherInfo = { id: "t1", firstName: "Anna", lastName: "Meyer" };
 const tobiasKruse: TeacherInfo = { id: "t2", firstName: "Tobias", lastName: "Kruse" };

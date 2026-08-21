@@ -1,4 +1,4 @@
-import type { Course, TaskAttachment } from "@/compat/mobile-v0";
+import type { Course, TaskAttachment } from "~/compat/mobile-v0";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Stack } from "expo-router";

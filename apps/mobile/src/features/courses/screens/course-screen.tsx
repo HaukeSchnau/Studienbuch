@@ -8,7 +8,7 @@ import { CoreLayout } from "~/ui/layout/core-layout";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { Text } from "~/ui/text";
 import { useTransparentHeaderTopPadding } from "~/ui/use-transparent-header-top-padding";
-import { subjectNameMap, Teacher } from "@/compat/mobile-v0";
+import { subjectNameMap, Teacher } from "~/compat/mobile-v0";
 import { useCourses, useSchool } from "~/infra/data/hooks";
 import { TasksSection } from "~/features/tasks";
 import { GradesOverviewCard } from "~/features/courses/grades";
