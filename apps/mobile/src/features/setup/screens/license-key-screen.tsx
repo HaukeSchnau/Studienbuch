@@ -5,11 +5,11 @@ import { useMaskedInputProps } from "react-native-mask-input";
 import { Button } from "~/ui/button";
 import { Text } from "~/ui/text";
 import { TextField } from "~/ui/fields/text-field";
-import { useSessionData } from "~/infra/data/hooks";
+import { useProfile } from "~/features/profile";
 import { setupNameAndYearRoute } from "~/infra/routing/params";
 
 export function LicenseKeyScreen() {
-  const { user, updateProfile } = useSessionData();
+  const { profile: user, updateProfile } = useProfile();
   const [licenseKey, setLicenseKey] = useState(user.licenseKey);
   const maskedInputProps = useMaskedInputProps({
     mask: [

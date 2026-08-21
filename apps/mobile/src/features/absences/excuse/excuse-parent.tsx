@@ -4,12 +4,12 @@ import { PageScaffold } from "~/ui/navigation/page-scaffold";
 import { Text } from "~/ui/text";
 import type { Absence } from "~/compat/mobile-v0";
 import { useAbsences } from "~/infra/data/hooks";
-import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { useProfile } from "~/features/profile";
 
 export const ExcuseParent = ({ absence }: { absence: Absence }) => {
   const router = useRouter();
   const { signAbsence } = useAbsences();
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
 
   return (
     <PageScaffold

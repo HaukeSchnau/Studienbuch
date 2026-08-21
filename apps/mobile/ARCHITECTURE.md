@@ -19,7 +19,6 @@ src/
     native/       wrappers around native/device APIs
     observability/  telemetry ports and the Sentry adapter
     routing/      typed route params and path builders
-    session/      session state
     widgets/      the Expo SwiftUI binding
     providers.tsx app-wide provider composition
   compat/       temporary legacy mobile DTOs and policies
@@ -93,12 +92,16 @@ Effect-backed queries and commands without changing component imports.
 | Grades         | `features/courses/grades` | Temporary fixture context            |
 | Schedule       | `features/schedule`       | Temporary fixture context            |
 | Absences       | `features/absences`       | Temporary fixture context            |
-| Profile        | `features/profile`        | Temporary fixture context            |
+| Profile        | `features/profile`        | Effect Atom, seeded by mock fixtures |
 | Setup progress | `features/setup`          | Derived from profile and Atom state  |
 | School catalog | `features/organization`   | Effect Atom, seeded by mock fixtures |
 
 Migrate one complete domain at a time. Move its read state, commands, hooks, and consumers together,
 then remove that domain from the fixture context. Do not create a replacement central data facade.
+
+The mock app has profile state but no authenticated principal. Do not recreate the deleted synthetic
+session to carry profile fields. When Better Auth is connected, authentication state should represent
+the real principal and credentials, while the profile feature continues to own student details.
 
 TODO: Effect Atom rc.108 declares React 19.2.7 as its minimum peer, while Expo 57 pins React 19.2.3.
 The rc.108 React bindings only call APIs available in 19.2.3, and the focused task tests pass, but

@@ -8,7 +8,7 @@ import { ConfirmationStatus } from "~/domain-ui/confirmation-status";
 import { Text } from "~/ui/text";
 import { colors } from "~/ui/colors";
 import { formatGradeShort, type Grade, type GradeType, isGradeConfirmed } from "~/compat/mobile-v0";
-import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { useProfile } from "~/features/profile";
 
 const TYPE_MAP = {
   MASTER: "Aktuelle Gesamtnote",
@@ -34,7 +34,7 @@ export const GradeCard = ({
       )
     | null;
 }) => {
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
   const isConfirmed = isGradeConfirmed(grade, user.isOfAge);
   const actionColor = isConfirmed ? colors.primary.text : colors.danger.DEFAULT;
 

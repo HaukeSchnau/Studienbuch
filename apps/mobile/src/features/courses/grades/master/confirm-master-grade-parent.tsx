@@ -5,12 +5,12 @@ import { PageScaffold } from "~/ui/navigation/page-scaffold";
 import { Text } from "~/ui/text";
 import { formatGrade, subjectNameMap } from "~/compat/mobile-v0";
 import { useGrades } from "~/infra/data/hooks";
-import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { useProfile } from "~/features/profile";
 import type { ConfirmedResolvedGrade, ResolvedGrade } from "../grade.type";
 
 export const ConfirmMasterGradeParent = ({ grade }: { grade: ResolvedGrade }) => {
   const router = useRouter();
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
   const { signGrade } = useGrades();
 
   return (
@@ -40,7 +40,7 @@ export const MasterGradeParentConfirmationView = ({
 }: {
   grade: ConfirmedResolvedGrade & { parentSignature: string };
 }) => {
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
 
   return (
     <ViewConfirmPageContent

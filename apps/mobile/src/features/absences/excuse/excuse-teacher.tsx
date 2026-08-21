@@ -6,13 +6,13 @@ import type { Absence } from "~/compat/mobile-v0";
 import { Teacher } from "~/compat/mobile-v0";
 import { useCourses } from "~/features/courses";
 import { useAbsences } from "~/infra/data/hooks";
-import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { useProfile } from "~/features/profile";
 
 export const ExcuseTeacher = ({ absence }: { absence: Absence }) => {
   const router = useRouter();
   const { signAbsence } = useAbsences();
   const { getCourse } = useCourses();
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
   const firstCourse = absence.courseIds[0] ? getCourse(absence.courseIds[0]) : undefined;
   const teacher = firstCourse?.teachers[0];
 

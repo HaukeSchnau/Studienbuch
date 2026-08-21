@@ -4,7 +4,7 @@ import { Text } from "~/ui/text";
 import type { GradeType } from "~/compat/mobile-v0";
 import { useGrades } from "~/infra/data/hooks";
 import { useCourses } from "../../use-courses";
-import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { useProfile } from "~/features/profile";
 import {
   ConfirmMasterGradeParent,
   MasterGradeParentConfirmationView,
@@ -39,7 +39,7 @@ interface Props {
 export const GradeScreen = ({ date, courseId, type }: Props) => {
   const { getCourse } = useCourses();
   const { getCourseGrades } = useGrades();
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
   const grade = getCourseGrades(courseId).find(
     (item) => item.type === type && item.date.getTime() === date.getTime(),
   );

@@ -13,10 +13,10 @@ import { useCourses } from "~/features/courses";
 import { useAbsences } from "~/infra/data/hooks";
 import { absenceConfirmationRoute } from "~/infra/routing/params";
 import { colors } from "~/ui/colors";
-import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { useProfile } from "~/features/profile";
 
 export const AbsenceItem = ({ absence }: { absence: Absence }) => {
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
   const { deleteAbsence } = useAbsences();
   const { getCourse } = useCourses();
   const isExcused = isAbsenceConfirmed(absence, user.isOfAge);

@@ -8,7 +8,7 @@ import { ConfirmationStatus } from "~/domain-ui/confirmation-status";
 import { IconButton } from "~/ui/icon-button";
 import { Text } from "~/ui/text";
 import { formatGrade, isGradeConfirmed, type Grade } from "~/compat/mobile-v0";
-import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { useProfile } from "~/features/profile";
 import { gradeRoute } from "~/infra/routing/params";
 import { EditOralGrade } from "./oral/edit-oral-grade";
 import OralIcon from "./oral/oral.svg";
@@ -20,7 +20,7 @@ export const OralGradesRow = ({
   oralGrades: Grade[];
   courseId: string;
 }) => {
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
   const [isEditVisible, setIsEditVisible] = useState(false);
   const currentOralGrade = useMemo(() => oralGrades[0], [oralGrades]);
   const isConfirmed = currentOralGrade ? isGradeConfirmed(currentOralGrade, user.isOfAge) : false;

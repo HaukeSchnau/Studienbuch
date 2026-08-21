@@ -10,7 +10,7 @@ import { Text } from "~/ui/text";
 import { isAbsenceConfirmed } from "~/compat/mobile-v0";
 import { useAbsences } from "~/infra/data/hooks";
 import { absencesRoute } from "~/infra/routing/params";
-import { useRequiredAuthenticatedSession } from "~/infra/session/session";
+import { useProfile } from "~/features/profile";
 import { AddAbsence } from "./add-absence";
 import BigCheck from "../big-check.svg";
 import Warning from "../warning.svg";
@@ -18,7 +18,7 @@ import Warning from "../warning.svg";
 export const AbsencesOverviewCard = () => {
   const [isAddVisible, setIsAddVisible] = useState(false);
   const { absences } = useAbsences();
-  const { user } = useRequiredAuthenticatedSession();
+  const { profile: user } = useProfile();
   const unexcused = useMemo(
     () => absences.filter((absence) => !isAbsenceConfirmed(absence, user.isOfAge)),
     [absences, user.isOfAge],
