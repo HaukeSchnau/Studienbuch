@@ -13,7 +13,7 @@ import { Text } from "~/ui/text";
 import { TextField } from "~/ui/fields/text-field";
 import { getEntriesForSchoolDay, getNextSchoolDay } from "~/domain-ui/school-day";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
-import { subjectNameMap, type SubjectId, type TimetableEntry } from "@/compat/mobile-v0";
+import { subjectNameMap, type SubjectId, type TimetableEntry } from "~/compat/mobile-v0";
 import { useAbsences, useCourses, useScheduleData } from "~/infra/data/hooks";
 import { haptics } from "~/infra/native/haptics";
 import { colors } from "~/ui/colors";

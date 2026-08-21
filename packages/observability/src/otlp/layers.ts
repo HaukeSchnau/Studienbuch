@@ -13,8 +13,8 @@ import {
   OtlpSerialization,
   OtlpTracer,
 } from "effect/unstable/observability";
-import type { ResourceIdentity, ServiceName } from "../shared/resource.ts";
-import { otlpResource } from "../shared/resource.ts";
+import type { ResourceIdentity, ServiceName } from "../opentelemetry/resource.ts";
+import { otlpResource } from "../opentelemetry/resource.ts";
 import { environmentConfig, serverConfig, serviceVersionConfig } from "./config.ts";
 
 export interface OtlpServerLayerOptions {

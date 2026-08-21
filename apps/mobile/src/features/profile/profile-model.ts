@@ -6,7 +6,7 @@ import {
   type Grade,
   type GradeType,
   type Task,
-} from "@/compat/mobile-v0";
+} from "~/compat/mobile-v0";
 import { differenceInCalendarDays } from "date-fns";
 
 const examSlotOrder = {

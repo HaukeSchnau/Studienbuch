@@ -7,7 +7,7 @@ import { Button } from "~/ui/button";
 import { Card } from "~/ui/card";
 import { IconButton } from "~/ui/icon-button";
 import { Text } from "~/ui/text";
-import { isAbsenceConfirmed } from "@/compat/mobile-v0";
+import { isAbsenceConfirmed } from "~/compat/mobile-v0";
 import { useAbsences } from "~/infra/data/hooks";
 import { absencesRoute } from "~/infra/routing/params";
 import { useRequiredAuthenticatedSession } from "~/infra/session/session";

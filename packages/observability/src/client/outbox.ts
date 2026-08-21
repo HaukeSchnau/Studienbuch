@@ -1,6 +1,6 @@
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
-import { TelemetryPriority } from "../shared/attributes.ts";
+import { TelemetryPriority } from "../opentelemetry/attributes.ts";
 import {
   ClientTelemetryRecord,
   type ClientTelemetryEnvelope,

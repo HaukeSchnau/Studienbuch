@@ -1,5 +1,5 @@
 import * as Metric from "effect/Metric";
-import { metricAttributes } from "../shared/attributes.ts";
+import { metricAttributes } from "../opentelemetry/attributes.ts";
 
 export const canaryTotal = Metric.counter("studienbuch_observability_canary_total", {
   description: "Successful observability canary signal sets.",

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ScrollView, View } from "react-native";
 import { useMainTabBarPadding } from "~/ui/use-main-tab-bar-padding";
 import { Text } from "~/ui/text";
-import { findCurrentSemester } from "@/compat/mobile-v0";
+import { findCurrentSemester } from "~/compat/mobile-v0";
 import { useSchool } from "~/infra/data/hooks";
 import { CourseList } from "../course-list";
 import { Header } from "../profile-header";

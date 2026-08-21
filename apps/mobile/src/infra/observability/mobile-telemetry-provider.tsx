@@ -3,7 +3,7 @@ import { AppState, Platform } from "react-native";
 import { createContext, useContext, useEffect, useMemo, type PropsWithChildren } from "react";
 import {
   TelemetryOutbox,
-  type ClientTelemetryRecordType,
+  type ClientTelemetryRecord,
   type TelemetryPriority,
 } from "@stu/observability/browser";
 import { startTelemetryController } from "./controller";
@@ -12,7 +12,7 @@ import { makeFetchTelemetryTransport, type TelemetryAuthorization } from "./tran
 
 interface MobileTelemetry {
   readonly record: (
-    record: ClientTelemetryRecordType,
+    record: ClientTelemetryRecord,
     priority?: TelemetryPriority,
   ) => Promise<boolean>;
 }

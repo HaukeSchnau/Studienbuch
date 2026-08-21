@@ -1,4 +1,4 @@
-import type { SubjectId } from "@/compat/mobile-v0";
+import type { SubjectId } from "~/compat/mobile-v0";
 import type { ComponentType } from "react";
 import { View } from "react-native";
 import type { SvgProps } from "react-native-svg";

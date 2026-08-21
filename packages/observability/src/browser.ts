@@ -1,4 +1,4 @@
-export { TelemetryPriority } from "./shared/attributes.ts";
+export { TelemetryPriority } from "./opentelemetry/attributes.ts";
 export {
   ClientLog,
   ClientMetric,
@@ -32,5 +32,5 @@ export {
   externalSpanFromHeaders,
   propagationHeaders,
   withIncomingTraceContext,
-} from "./shared/trace-context.ts";
-export type { DeploymentEnvironment } from "./shared/resource.ts";
+} from "./opentelemetry/trace-context.ts";
+export type { DeploymentEnvironment } from "./opentelemetry/resource.ts";

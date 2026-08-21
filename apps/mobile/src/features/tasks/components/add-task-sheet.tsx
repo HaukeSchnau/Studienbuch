@@ -12,7 +12,7 @@ import { Text } from "~/ui/text";
 import { TextAreaField } from "~/ui/fields/text-area-field";
 import { TextField } from "~/ui/fields/text-field";
 import { getNextSchoolDay } from "~/domain-ui/school-day";
-import type { TaskAttachment } from "@/compat/mobile-v0";
+import type { TaskAttachment } from "~/compat/mobile-v0";
 import { useCourses, useScheduleData, useTasks } from "~/infra/data/hooks";
 import { haptics } from "~/infra/native/haptics";
 import { createTaskAttachment } from "../model/task-attachments";

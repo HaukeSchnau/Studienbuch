@@ -4,9 +4,10 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
+    // `#/*` only: it is a real Node subpath import, declared in package.json, rather than a
+    // bundler-only alias. The `@/*` duplicate had no importers.
     "paths": {
-      "#/*": ["./src/*"],
-      "@/*": ["./src/*"]
+      "#/*": ["./src/*"]
     },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite-plus/client"]

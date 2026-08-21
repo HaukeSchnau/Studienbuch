@@ -10,7 +10,7 @@ import { Database } from "../database/client.ts";
  *
  * Framework and client plugins belong to the app, not here: `tanstackStartCookies()` is a web
  * concern and `expo()` is a mobile one, and `@stu/server` has no business knowing about either.
- * Everything that has to agree with `schema/auth.ts` stays below, so the mapping and the tables
+ * Everything that has to agree with `auth/schema.ts` stays below, so the mapping and the tables
  * cannot drift apart.
  */
 export interface Options {
@@ -24,7 +24,7 @@ export interface Options {
  * Better Auth's Drizzle adapter expects a Promise-based instance and cannot consume
  * `EffectPgDatabase`, so it gets the raw pool and runs through its Kysely adapter instead. That is
  * a deliberate choice rather than a shortcut, and it carries one obligation: the model names below
- * and the tables in `schema/auth.ts` are checked by nothing but agreement, because `db:generate`
+ * and the tables in `auth/schema.ts` are checked by nothing but agreement, because `db:generate`
  * cannot see this file.
  *
  * `generateId: false` is what lets the database own identity through `defaultRandom()`.

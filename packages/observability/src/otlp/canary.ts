@@ -2,7 +2,7 @@ import * as Clock from "effect/Clock";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Metric from "effect/Metric";
-import { spanAttributes } from "../shared/attributes.ts";
+import { spanAttributes } from "../opentelemetry/attributes.ts";
 import { canaryDuration, canaryTotal } from "./metrics.ts";
 
 export interface CanaryResult {

@@ -1,4 +1,4 @@
-import { groupAbsencesByConfirmation, type Absence } from "@/compat/mobile-v0";
+import { groupAbsencesByConfirmation, type Absence } from "~/compat/mobile-v0";
 
 export const getAbsencesPageModel = ({
   absences,

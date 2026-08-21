@@ -5,7 +5,7 @@ import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
 import * as Option from "effect/Option";
 import * as Path from "effect/Path";
-import * as Script from "./lib/script.ts";
+import * as Script from "./runner/script.ts";
 
 const brandGreen = "#6DB868";
 const brandAccentGreen = "#6DB968";

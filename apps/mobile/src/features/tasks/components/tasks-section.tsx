@@ -6,7 +6,7 @@ import { IconButton } from "~/ui/icon-button";
 import { Text } from "~/ui/text";
 import { colors } from "~/ui/colors";
 import { useTasks } from "~/infra/data/hooks";
-import type { Task } from "@/compat/mobile-v0";
+import type { Task } from "~/compat/mobile-v0";
 import { getTaskOverviewModel, type TaskOverviewModel } from "../model/task-overview-model";
 import { AddTaskSheet } from "./add-task-sheet";
 import { TaskCard } from "./task-card";

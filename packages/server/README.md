@@ -23,7 +23,7 @@ configuration next to the tables it must agree with.
 ## Authentication
 
 `Auth` builds Better Auth against the same pool. It lives here rather than in the web app because
-everything it configures has to agree with `schema/auth.ts`: the model names, `generateId: false`
+everything it configures has to agree with `auth/schema.ts`: the model names, `generateId: false`
 (which lets PostgreSQL own identity through `defaultRandom()`), and the pool itself.
 
 Better Auth's Drizzle adapter expects a Promise-based instance and cannot consume
@@ -53,7 +53,7 @@ just db-migrate
 `just db-migrate` is a convenience for development. A deployed Release applies pending migrations
 as a staged pre-deploy task before the active artifact or web process changes.
 Both paths record their work in `public.studienbuch_migrations`; the table and schema names live in
-`src/migration-history.ts` so the two cannot drift.
+`src/database/migration-history.ts` so the two cannot drift.
 
 A bundled server has no workspace neighbours to resolve `drizzle/` against, so the Nix release
 copies the history beside the bundle and sets `STUDIENBUCH_MIGRATIONS_DIR`.
