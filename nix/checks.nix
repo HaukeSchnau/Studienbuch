@@ -10,6 +10,17 @@ let
     }:
     let
       releasePackage = projectRelease.package;
+      releaseClosure = pkgs.closureInfo {
+        rootPaths = [ releasePackage ];
+      };
+      releaseClosureCheck = pkgs.runCommand "studienbuch-release-closure" { } ''
+        if ${pkgs.gnugrep}/bin/grep -Eq -- '-python3?-[0-9]|-npm($|-[0-9])|-corepack($|-[0-9])' ${releaseClosure}/store-paths; then
+          echo "the production Release closure contains a development runtime" >&2
+          ${pkgs.gnugrep}/bin/grep -E -- '-python3?-[0-9]|-npm($|-[0-9])|-corepack($|-[0-9])' ${releaseClosure}/store-paths >&2
+          exit 1
+        fi
+        touch "$out"
+      '';
       releaseSmoke =
         pkgs.runCommand "studienbuch-release-smoke"
           {
@@ -247,6 +258,7 @@ let
         touch "$out"
       '';
       releaseInterface = projectRelease.checks.interface;
+      releaseClosure = releaseClosureCheck;
       inherit releasePackage releaseSmoke;
       inherit webApplication;
     };
