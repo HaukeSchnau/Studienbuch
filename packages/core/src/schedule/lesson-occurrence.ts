@@ -69,4 +69,3 @@ export class InvalidInput extends Schema.TaggedError<InvalidInput>()("Schedule.I
   reason: Schema.Literals(["DuplicateMeetingId", "DuplicateExceptionId"]),
   id: Schema.String.check(Schema.isMinLength(1)),
 }) {}
-

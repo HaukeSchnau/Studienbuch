@@ -3,7 +3,7 @@ import * as Schema from "effect/Schema";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { NonBlankText } from "../foundation/non-blank-text";
-import { AcademicTerm } from "../organization/academic-term";
+import { AcademicTerm, firstTermOverlap } from "../organization/academic-term";
 import { SchoolId } from "../organization/identity";
 import { Weekday } from "./weekday";
 
@@ -19,16 +19,26 @@ export const AcademicCalendar = Schema.Struct({
   terms: Schema.Array(AcademicTerm),
   closures: Schema.Array(CalendarClosure),
 }).check(
-  Schema.makeFilter(
-    ({ schoolId, terms }) =>
-      terms.every((term) => term.schoolId === schoolId) &&
-      terms.every((term, index) =>
-        terms
-          .slice(index + 1)
-          .every((other) => !CalendarDateRange.overlaps(term.interval, other.interval)),
-      ),
-    { expected: "a calendar containing only non-overlapping terms from its school" },
-  ),
+  Schema.makeFilter(({ schoolId, terms }): Schema.FilterOutput => {
+    for (const [index, term] of terms.entries()) {
+      if (term.schoolId !== schoolId) {
+        return {
+          path: ["terms", index, "schoolId"],
+          issue: `term belongs to school ${term.schoolId}`,
+        };
+      }
+    }
+    // Overlap is the same rule `Organization.validateAcademicTerms` enforces, reused rather than
+    // restated so the two cannot disagree about what a valid term sequence is.
+    const overlap = firstTermOverlap(terms);
+    if (overlap !== undefined) {
+      return {
+        path: ["terms", overlap.index, "interval"],
+        issue: `overlaps term ${overlap.otherId}`,
+      };
+    }
+    return true;
+  }),
 );
 export interface AcademicCalendar extends Schema.Schema.Type<typeof AcademicCalendar> {}
 

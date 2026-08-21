@@ -24,6 +24,27 @@ export const Capability = Schema.TaggedUnion({
 });
 export type Capability = typeof Capability.Type;
 
+const duplicateIssue = (
+  field: string,
+  items: ReadonlyArray<{ readonly id: string }>,
+): Schema.FilterOutput => {
+  const seen = new Set<string>();
+  for (const [index, item] of items.entries()) {
+    if (seen.has(item.id)) {
+      return { path: [field, index, "id"], issue: `duplicate ${field} id ${item.id}` };
+    }
+    seen.add(item.id);
+  }
+  return true;
+};
+
+/**
+ * A loaded authority slice, checked for referential coherence.
+ *
+ * Every branch reports which row failed and why. The whole check used to collapse into one
+ * message, which is unusable when the snapshot is assembled from database rows: knowing the
+ * snapshot is incoherent does not tell you which membership or relationship to look at.
+ */
 export const AuthoritySnapshot = Schema.Struct({
   memberships: Schema.Array(SchoolMembership),
   students: Schema.Array(StudentMembership),
@@ -31,63 +52,112 @@ export const AuthoritySnapshot = Schema.Struct({
   teachingAssignments: Schema.Array(TeachingAssignment),
   courseOfferings: Schema.Array(CourseOffering),
 }).check(
-  Schema.makeFilter(
-    (snapshot) => {
-      const unique = (values: ReadonlyArray<string>) => new Set(values).size === values.length;
-      if (
-        !unique(snapshot.memberships.map((item) => item.id)) ||
-        !unique(snapshot.students.map((item) => item.membershipId)) ||
-        !unique(snapshot.guardianRelationships.map((item) => item.id)) ||
-        !unique(snapshot.teachingAssignments.map((item) => item.id)) ||
-        !unique(snapshot.courseOfferings.map((item) => item.id))
-      ) {
-        return false;
+  Schema.makeFilter((snapshot): Schema.FilterOutput => {
+    for (const [field, items] of [
+      ["memberships", snapshot.memberships],
+      ["guardianRelationships", snapshot.guardianRelationships],
+      ["teachingAssignments", snapshot.teachingAssignments],
+      ["courseOfferings", snapshot.courseOfferings],
+    ] as const) {
+      const duplicate = duplicateIssue(field, items);
+      if (duplicate !== true) return duplicate;
+    }
+    const studentIds = new Set<SchoolMembershipId>();
+    for (const [index, student] of snapshot.students.entries()) {
+      if (studentIds.has(student.membershipId)) {
+        return {
+          path: ["students", index, "membershipId"],
+          issue: `duplicate student membership ${student.membershipId}`,
+        };
       }
-      const membershipById = new Map(snapshot.memberships.map((item) => [item.id, item]));
-      const offeringById = new Map(snapshot.courseOfferings.map((item) => [item.id, item]));
-      if (
-        snapshot.students.some((student) => {
-          const membership = membershipById.get(student.membershipId);
-          return membership === undefined || !membership.roles.includes("Student");
-        })
-      ) {
-        return false;
+      studentIds.add(student.membershipId);
+    }
+
+    const membershipById = new Map(snapshot.memberships.map((item) => [item.id, item]));
+    const offeringById = new Map(snapshot.courseOfferings.map((item) => [item.id, item]));
+
+    for (const [index, student] of snapshot.students.entries()) {
+      const membership = membershipById.get(student.membershipId);
+      if (membership === undefined) {
+        return {
+          path: ["students", index, "membershipId"],
+          issue: `no membership ${student.membershipId}`,
+        };
       }
-      if (
-        snapshot.guardianRelationships.some((relationship) => {
-          const student = membershipById.get(relationship.studentMembershipId);
-          const hasGuardianMembership = snapshot.memberships.some(
-            (membership) =>
-              membership.personId === relationship.guardianPersonId &&
-              membership.schoolId === relationship.schoolId &&
-              membership.roles.includes("Guardian") &&
-              CalendarDateRange.encloses(membership.effective, relationship.effective),
-          );
-          return (
-            student === undefined ||
-            !student.roles.includes("Student") ||
-            student.schoolId !== relationship.schoolId ||
-            !hasGuardianMembership ||
-            !CalendarDateRange.encloses(student.effective, relationship.effective)
-          );
-        })
-      ) {
-        return false;
+      if (!membership.roles.includes("Student")) {
+        return {
+          path: ["students", index, "membershipId"],
+          issue: `membership ${student.membershipId} does not hold the Student role`,
+        };
       }
-      return snapshot.teachingAssignments.every((assignment) => {
-        const teacher = membershipById.get(assignment.teacherMembershipId);
-        const offering = offeringById.get(assignment.courseOfferingId);
-        return (
-          teacher !== undefined &&
-          teacher.roles.includes("Teacher") &&
-          offering !== undefined &&
-          teacher.schoolId === offering.schoolId &&
-          CalendarDateRange.encloses(teacher.effective, assignment.effective)
-        );
-      });
-    },
-    { expected: "a coherent, uniquely identified authority snapshot" },
-  ),
+    }
+
+    for (const [index, relationship] of snapshot.guardianRelationships.entries()) {
+      const student = membershipById.get(relationship.studentMembershipId);
+      if (student === undefined || !student.roles.includes("Student")) {
+        return {
+          path: ["guardianRelationships", index, "studentMembershipId"],
+          issue: `no student membership ${relationship.studentMembershipId}`,
+        };
+      }
+      if (student.schoolId !== relationship.schoolId) {
+        return {
+          path: ["guardianRelationships", index, "schoolId"],
+          issue: `student ${student.id} belongs to school ${student.schoolId}`,
+        };
+      }
+      if (!CalendarDateRange.encloses(student.effective, relationship.effective)) {
+        return {
+          path: ["guardianRelationships", index, "effective"],
+          issue: `outside the student membership's effective range`,
+        };
+      }
+      const hasGuardianMembership = snapshot.memberships.some(
+        (membership) =>
+          membership.personId === relationship.guardianPersonId &&
+          membership.schoolId === relationship.schoolId &&
+          membership.roles.includes("Guardian") &&
+          CalendarDateRange.encloses(membership.effective, relationship.effective),
+      );
+      if (!hasGuardianMembership) {
+        return {
+          path: ["guardianRelationships", index, "guardianPersonId"],
+          issue: `no Guardian membership covering this relationship`,
+        };
+      }
+    }
+
+    for (const [index, assignment] of snapshot.teachingAssignments.entries()) {
+      const teacher = membershipById.get(assignment.teacherMembershipId);
+      if (teacher === undefined || !teacher.roles.includes("Teacher")) {
+        return {
+          path: ["teachingAssignments", index, "teacherMembershipId"],
+          issue: `no Teacher membership ${assignment.teacherMembershipId}`,
+        };
+      }
+      const offering = offeringById.get(assignment.courseOfferingId);
+      if (offering === undefined) {
+        return {
+          path: ["teachingAssignments", index, "courseOfferingId"],
+          issue: `no course offering ${assignment.courseOfferingId}`,
+        };
+      }
+      if (teacher.schoolId !== offering.schoolId) {
+        return {
+          path: ["teachingAssignments", index, "courseOfferingId"],
+          issue: `offering belongs to school ${offering.schoolId}, teacher to ${teacher.schoolId}`,
+        };
+      }
+      if (!CalendarDateRange.encloses(teacher.effective, assignment.effective)) {
+        return {
+          path: ["teachingAssignments", index, "effective"],
+          issue: `outside the teacher membership's effective range`,
+        };
+      }
+    }
+
+    return true;
+  }),
 );
 export interface AuthoritySnapshot extends Schema.Schema.Type<typeof AuthoritySnapshot> {}
 

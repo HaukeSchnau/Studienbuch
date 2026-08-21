@@ -46,9 +46,7 @@ export const ensureCurrent = (
   actual: Type,
   expected: Type,
 ): Effect.Effect<void, Concurrent> =>
-  actual === expected
-    ? Effect.void
-    : Effect.fail(Concurrent.make({ aggregate, expected, actual }));
+  actual === expected ? Effect.void : Effect.fail(Concurrent.make({ aggregate, expected, actual }));
 
 interface Revised {
   readonly revision: Type;
