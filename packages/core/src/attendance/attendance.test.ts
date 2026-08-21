@@ -60,6 +60,10 @@ const member = (
 const studentMember = member(studentMembershipId, studentPersonId, "Student");
 const guardianMember = member(guardianMembershipId, guardianPersonId, "Guardian");
 const teacherMember = member(teacherMembershipId, teacherPersonId, "Teacher");
+const studentActor = ActorRef.make({
+  personId: studentPersonId,
+  schoolMembershipId: studentMembershipId,
+});
 const guardianActor = ActorRef.make({
   personId: guardianPersonId,
   schoolMembershipId: guardianMembershipId,
@@ -163,6 +167,72 @@ const absence = Attendance.AbsenceCase.make({
       decision: Attendance.MissedLessonDecision.cases.Pending.make({}),
     }),
   ],
+});
+
+describe("withdrawing an absence report", () => {
+  it.effect("retracts a report while every lesson is undecided", () =>
+    Effect.gen(function* () {
+      const withdrawn = yield* Attendance.withdrawAbsence({
+        absence,
+        expectedRevision: AggregateRevision.initial,
+        actor: studentActor,
+        withdrawnAt: now,
+        authority,
+      });
+
+      // Kept as a tombstone: status is what projections read, so they never see the field.
+      assert.deepEqual(Attendance.status(withdrawn), { _tag: "Withdrawn" });
+      assert.isTrue(Attendance.isAbsenceWithdrawn(withdrawn));
+      assert.strictEqual(withdrawn.missedLessons.length, 2);
+
+      const again = yield* Attendance.withdrawAbsence({
+        absence: withdrawn,
+        expectedRevision: withdrawn.revision,
+        actor: studentActor,
+        withdrawnAt: now,
+        authority,
+      }).pipe(Effect.flip);
+      assert.strictEqual(again._tag, "Attendance.AlreadyWithdrawn");
+    }),
+  );
+
+  it.effect("refuses once a teacher has decided any missed lesson", () =>
+    Effect.gen(function* () {
+      const acknowledged = yield* Attendance.acknowledge({
+        absence,
+        expectedRevision: AggregateRevision.initial,
+        actor: guardianActor,
+        student,
+        legalAgePolicy: LegalAgePolicy.make({ ageOfMajority: 18, leapDayAnniversary: "March1" }),
+        authority,
+        acknowledgementId: AcknowledgementId.make("guardian-ack-withdraw"),
+        acknowledgedAt: now,
+      });
+      const decided = yield* Attendance.decideMissedLesson({
+        absence: acknowledged,
+        expectedRevision: acknowledged.revision,
+        missedLessonId: lessonIds[0],
+        occurrence: occurrences[0],
+        enrollments,
+        actor: teacherActor,
+        authority,
+        decidedAt: now,
+        decision: {
+          _tag: "Excused",
+          acknowledgementId: AcknowledgementId.make("teacher-ack-withdraw"),
+        },
+      });
+
+      const failure = yield* Attendance.withdrawAbsence({
+        absence: decided,
+        expectedRevision: decided.revision,
+        actor: studentActor,
+        withdrawnAt: now,
+        authority,
+      }).pipe(Effect.flip);
+      assert.strictEqual(failure._tag, "Attendance.WithdrawalLockedByDecision");
+    }),
+  );
 });
 
 describe("attendance workflow", () => {

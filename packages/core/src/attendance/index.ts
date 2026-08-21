@@ -6,6 +6,7 @@ export {
   MissedLesson,
   MissedLessonDecision,
   excusedLessons,
+  isAbsenceWithdrawn,
   pendingLessons,
   rejectedLessons,
   status,
@@ -26,6 +27,8 @@ export {
   StudentNotEnrolled,
   decideMissedLesson,
 } from "./decide-missed-lesson";
+export { AlreadyWithdrawn, WithdrawalLockedByDecision, withdrawAbsence } from "./withdraw";
+export type { WithdrawAbsenceError } from "./withdraw";
 export { AbsenceCaseId, MissedLessonId } from "./identity";
 
 export * as Attendance from "./index";

@@ -71,6 +71,12 @@ const round = (value: number, config: Config["rounding"]): number => {
   }
 };
 
+/**
+ * Checked inline rather than through `isWrittenWithdrawn` to keep this module free of a runtime
+ * import cycle with `written-assessment`, which depends on this policy.
+ */
+const isWithdrawn = (assessment: WrittenAssessment): boolean => assessment.withdrawal !== undefined;
+
 const isConfirmed = (assessment: WrittenAssessment): boolean =>
   assessment.teacherAttestation !== undefined && assessment.learnerAcknowledgement !== undefined;
 
@@ -99,7 +105,9 @@ export const make = (config: Config): Interface => {
       return yield* InvalidScope.make({ reason: "MixedCourses" });
     }
 
-    const included = config.inclusion === "All" ? assessments : assessments.filter(isConfirmed);
+    // A withdrawn assessment is retracted evidence and never counts, whatever the inclusion rule.
+    const available = assessments.filter((assessment) => !isWithdrawn(assessment));
+    const included = config.inclusion === "All" ? available : available.filter(isConfirmed);
     if (included.length === 0) return Option.none<GradeAverage>();
 
     let weightedTotal = 0;
