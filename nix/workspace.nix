@@ -1,7 +1,7 @@
 { pkgs, root }:
 let
   lib = pkgs.lib;
-  nodejs = pkgs.nodejs_24;
+  nodejs = pkgs.nodejs-slim_24;
   pnpm = pkgs.pnpm_11.override { nodejs-slim = nodejs; };
   workspaceSources = import ./lib/pnpm-workspace-source.nix {
     inherit lib root;
