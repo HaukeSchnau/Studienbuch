@@ -206,4 +206,22 @@ describe("contextual authority", () => {
       assert.strictEqual(error.reason, "GuardianRelationshipInactive");
     }),
   );
+
+  // The snapshot is assembled from database rows, so "incoherent" is not a usable answer:
+  // the failure has to name the row that is wrong.
+  it.effect("names the offending row when the snapshot is incoherent", () =>
+    Effect.gen(function* () {
+      const encoded = yield* Schema.encodeEffect(AuthoritySnapshot)(snapshot({}));
+      const encodedStudent = encoded.memberships[0];
+      assert.isDefined(encodedStudent);
+      const error = yield* Schema.decodeEffect(AuthoritySnapshot)({
+        ...encoded,
+        memberships: [encodedStudent, encodedStudent],
+      }).pipe(Effect.flip);
+
+      const report = String(error);
+      assert.include(report, "duplicate memberships id");
+      assert.include(report, "memberships");
+    }),
+  );
 });

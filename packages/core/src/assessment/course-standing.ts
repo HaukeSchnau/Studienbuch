@@ -300,10 +300,10 @@ export class StandingAlreadyConfirmed extends Schema.TaggedError<StandingAlready
 export const restoreLastConfirmedStanding = Effect.fn("Assessment.restoreLastConfirmedStanding")(
   function* (input: restoreLastConfirmedStanding.Input) {
     yield* AggregateRevision.ensureCurrent(
-    aggregateName,
-    input.standing.revision,
-    input.expectedRevision,
-  );
+      aggregateName,
+      input.standing.revision,
+      input.expectedRevision,
+    );
 
     const current = currentStandingRevision(input.standing);
     if (isStandingRevisionConfirmed(current)) {

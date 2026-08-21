@@ -52,9 +52,17 @@ export class AcademicTermUnavailable extends Schema.TaggedError<AcademicTermUnav
   },
 ) {}
 
-export const validateAcademicTerms = Effect.fn("Organization.validateAcademicTerms")(function* (
+/**
+ * The first pair of same-school terms whose intervals overlap, in start-date order.
+ *
+ * Both the `AcademicCalendar` schema and `validateAcademicTerms` need this rule; sharing the scan
+ * is what stops them disagreeing about which term sequences are valid.
+ */
+export const firstTermOverlap = (
   terms: ReadonlyArray<AcademicTerm>,
-) {
+):
+  | { readonly index: number; readonly term: AcademicTerm; readonly otherId: AcademicTermId }
+  | undefined => {
   const ordered = [...terms].sort((left, right) =>
     PlainDate.compare(left.interval.start, right.interval.start),
   );
@@ -64,15 +72,30 @@ export const validateAcademicTerms = Effect.fn("Organization.validateAcademicTer
         first.schoolId === second.schoolId &&
         CalendarDateRange.overlaps(first.interval, second.interval)
       ) {
-        return yield* OverlappingAcademicTerms.make({
-          schoolId: first.schoolId,
-          firstTermId: first.id,
-          secondTermId: second.id,
-        });
+        return { index, term: first, otherId: second.id };
       }
     }
   }
-  return ordered;
+  return undefined;
+};
+
+export const orderTermsByStart = (
+  terms: ReadonlyArray<AcademicTerm>,
+): ReadonlyArray<AcademicTerm> =>
+  [...terms].sort((left, right) => PlainDate.compare(left.interval.start, right.interval.start));
+
+export const validateAcademicTerms = Effect.fn("Organization.validateAcademicTerms")(function* (
+  terms: ReadonlyArray<AcademicTerm>,
+) {
+  const overlap = firstTermOverlap(terms);
+  if (overlap !== undefined) {
+    return yield* OverlappingAcademicTerms.make({
+      schoolId: overlap.term.schoolId,
+      firstTermId: overlap.term.id,
+      secondTermId: overlap.otherId,
+    });
+  }
+  return orderTermsByStart(terms);
 });
 
 export const gradeLevelAt = Effect.fn("Organization.gradeLevelAt")(function* (
