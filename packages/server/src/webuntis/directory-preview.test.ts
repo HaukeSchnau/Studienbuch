@@ -7,6 +7,7 @@ import type {
   TimetableResourceType,
 } from "webuntis-api";
 import { summarizeDirectoryInventory } from "./directory-preview.ts";
+import { makeDirectorySnapshot } from "./directory-snapshot.ts";
 
 const resource = (id: number, name: string): DisplayResource => ({
   id,
@@ -167,6 +168,32 @@ describe("WebUntis directory preview", () => {
     expect(preview.diagnostics.some((item) => item.code === "DuplicateExternalIdentity")).toBe(
       false,
     );
+  });
+
+  it("normalizes a stable, image-free observation generation", () => {
+    const inventory = baseInventory();
+    const first = makeDirectorySnapshot(inventory);
+    const reordered = makeDirectorySnapshot({
+      ...inventory,
+      teacherFilter: {
+        ...inventory.teacherFilter,
+        departments: [...inventory.teacherFilter.departments].reverse(),
+      },
+      studentFilter: {
+        ...inventory.studentFilter,
+        students: [...inventory.studentFilter.students].reverse(),
+      },
+    });
+
+    expect(first.observations).toHaveLength(12);
+    expect(first.contentHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(reordered.contentHash).toBe(first.contentHash);
+    expect(JSON.stringify(first.observations)).not.toContain("imageUrl");
+    expect(first.observations).toContainEqual({
+      _tag: "BellPeriod",
+      externalId: "2",
+      payload: { unitOfDay: 2, startTime: 825, endTime: 910 },
+    });
   });
 
   it("blocks apply readiness when source identities or references are inconsistent", () => {

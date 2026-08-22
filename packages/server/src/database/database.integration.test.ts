@@ -1,7 +1,8 @@
 import { afterAll, beforeAll, expect, it } from "@effect/vitest";
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from "@testcontainers/postgresql";
-import { eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import * as Redacted from "effect/Redacted";
 import { Auth } from "../auth/better-auth.ts";
@@ -9,6 +10,14 @@ import { Database } from "./client.ts";
 import { migrateToLatest } from "./migrate.ts";
 import { migrationsSchema, migrationsTable } from "./migration-history.ts";
 import { users } from "../auth/schema.ts";
+import { sourceImportRuns, sourceObservations } from "../importing/schema.ts";
+import { SourceObservationStore } from "../importing/source-observation-store.ts";
+import { DirectoryPreview } from "../webuntis/directory-preview.ts";
+import {
+  DirectoryObservation,
+  hashDirectoryObservations,
+  type DirectorySnapshot,
+} from "../webuntis/directory-snapshot.ts";
 
 /**
  * Testcontainers needs a Docker-compatible socket, and `DOCKER_HOST` is the contract for naming it:
@@ -53,6 +62,51 @@ const migrated = Layer.unwrap(
   ),
 );
 
+const directorySnapshot = (
+  dataSourceId: string,
+  schoolExternalId: string,
+  schoolName: string,
+): DirectorySnapshot => {
+  const observation = DirectoryObservation.make({
+    _tag: "School",
+    externalId: schoolExternalId,
+    payload: { name: schoolName, loginName: "school", hostName: null },
+  });
+  const observations = [observation];
+  return {
+    preview: DirectoryPreview.make({
+      dataSourceId,
+      provider: "WebUntis",
+      school: { externalId: schoolExternalId, name: schoolName, loginName: "school" },
+      academicYear: {
+        externalId: "10",
+        name: "2026/2027",
+        start: "2026-08-13",
+        end: "2027-07-07",
+      },
+      complete: true,
+      ready: true,
+      wouldImport: {
+        schools: 1,
+        academicYears: 0,
+        departments: 0,
+        buildings: 0,
+        rooms: 0,
+        classes: 0,
+        teachers: 0,
+        students: 0,
+        activities: 0,
+        holidays: 0,
+        bellPeriods: 0,
+      },
+      ignored: { studentImages: 0, teacherImages: 0, assignmentGroups: 0 },
+      diagnostics: [],
+    }),
+    contentHash: hashDirectoryObservations(observations),
+    observations,
+  };
+};
+
 it.live.runIf(hasContainerRuntime)(
   "applies the migration history and round-trips rows through the Effect Drizzle database",
   () =>
@@ -78,6 +132,85 @@ it.live.runIf(hasContainerRuntime)(
       // Drizzle's `timestamp` column decodes to a Date; a raw string here means the pool's type
       // parsers were overridden and every consumer of this pool sees strings instead.
       expect(selected[0]?.createdAt).toBeInstanceOf(Date);
+    }).pipe(Effect.provide(migrated)),
+  { timeout: 60_000 },
+);
+
+it.live.runIf(hasContainerRuntime)(
+  "stores immutable import generations and reuses an unchanged current snapshot",
+  () =>
+    Effect.gen(function* () {
+      const database = yield* Database.Service;
+      const firstSnapshot = directorySnapshot("webuntis:store-test", "school-1", "First name");
+
+      const concurrent = yield* Effect.all(
+        [
+          SourceObservationStore.persistDirectorySnapshot(firstSnapshot),
+          SourceObservationStore.persistDirectorySnapshot(firstSnapshot),
+        ],
+        { concurrency: 2 },
+      );
+      const first = concurrent.find((result) => result._tag === "Imported");
+      const repeated = concurrent.find((result) => result._tag === "Unchanged");
+      expect(first).toBeDefined();
+      expect(repeated).toBeDefined();
+      if (first === undefined || repeated === undefined) return;
+      const changed = yield* SourceObservationStore.persistDirectorySnapshot(
+        directorySnapshot("webuntis:store-test", "school-1", "Changed name"),
+      );
+
+      expect(first._tag).toBe("Imported");
+      expect(repeated).toMatchObject({ _tag: "Unchanged", runId: first.runId });
+      expect(changed).toMatchObject({ _tag: "Imported" });
+      expect(changed.runId).not.toBe(first.runId);
+
+      const runs = yield* database.drizzle
+        .select({ id: sourceImportRuns.id, isCurrent: sourceImportRuns.isCurrent })
+        .from(sourceImportRuns)
+        .where(eq(sourceImportRuns.dataSourceId, "webuntis:store-test"));
+      const observations = yield* database.drizzle
+        .select({ count: count() })
+        .from(sourceObservations)
+        .innerJoin(sourceImportRuns, eq(sourceImportRuns.id, sourceObservations.runId))
+        .where(eq(sourceImportRuns.dataSourceId, "webuntis:store-test"));
+
+      expect(runs).toHaveLength(2);
+      expect(runs.filter((run) => run.isCurrent)).toEqual([{ id: changed.runId, isCurrent: true }]);
+      expect(observations[0]?.count).toBe(2);
+    }).pipe(Effect.provide(migrated)),
+  { timeout: 60_000 },
+);
+
+it.live.runIf(hasContainerRuntime)(
+  "rolls the whole generation back when an observation insert fails",
+  () =>
+    Effect.gen(function* () {
+      const database = yield* Database.Service;
+      const valid = directorySnapshot("webuntis:rollback-test", "school-1", "Valid");
+      const imported = yield* SourceObservationStore.persistDirectorySnapshot(valid);
+      const duplicate = valid.observations[0];
+      expect(duplicate).toBeDefined();
+      if (duplicate === undefined) return;
+      const observations = [duplicate, duplicate];
+      const invalid: DirectorySnapshot = {
+        ...valid,
+        observations,
+        contentHash: hashDirectoryObservations(observations),
+      };
+
+      const exit = yield* Effect.exit(SourceObservationStore.persistDirectorySnapshot(invalid));
+      expect(Exit.isFailure(exit)).toBe(true);
+
+      const runs = yield* database.drizzle
+        .select({ id: sourceImportRuns.id, isCurrent: sourceImportRuns.isCurrent })
+        .from(sourceImportRuns)
+        .where(
+          and(
+            eq(sourceImportRuns.dataSourceId, "webuntis:rollback-test"),
+            eq(sourceImportRuns.dataset, "directory"),
+          ),
+        );
+      expect(runs).toEqual([{ id: imported.runId, isCurrent: true }]);
     }).pipe(Effect.provide(migrated)),
   { timeout: 60_000 },
 );
