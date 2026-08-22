@@ -7,6 +7,12 @@ import {
 } from "~/features/absences/absence-atoms";
 import { coursesAtom, selectedCourseIdsBySemesterAtom } from "~/features/courses/course-atoms";
 import {
+  gradeClockAtom,
+  gradeIdFactoryAtom,
+  gradesAtom,
+  gradeSignatureFactoryAtom,
+} from "~/features/courses/grades/grade-atoms";
+import {
   schoolClassesAtom,
   schoolYearsAtom,
   semestersAtom,
@@ -16,6 +22,7 @@ import { holidaysAtom, timetableAtom } from "~/features/schedule/schedule-atoms"
 import { taskIdFactoryAtom, tasksAtom } from "~/features/tasks/task-atoms";
 import { absencesSeed, createMockAbsenceSignature } from "~/infra/mock-data/absences";
 import { coursesSeed, selectedCourseIdsBySemesterSeed } from "~/infra/mock-data/courses";
+import { createMockGradeSignature, gradesSeed } from "~/infra/mock-data/grades";
 import { createMockId } from "~/infra/mock-data/id";
 import { profileSeed } from "~/infra/mock-data/profile";
 import { holidaysSeed, timetableSeed } from "~/infra/mock-data/schedule";
@@ -26,6 +33,10 @@ const initialValues = [
   [absencesAtom, absencesSeed],
   [absenceIdFactoryAtom, { create: () => createMockId("absence") }],
   [absenceSignatureFactoryAtom, { create: createMockAbsenceSignature }],
+  [gradesAtom, gradesSeed],
+  [gradeIdFactoryAtom, { create: () => createMockId("grade") }],
+  [gradeSignatureFactoryAtom, { create: createMockGradeSignature }],
+  [gradeClockAtom, { now: () => new Date() }],
   [schoolYearsAtom, years],
   [schoolClassesAtom, classes],
   [semestersAtom, semesters],

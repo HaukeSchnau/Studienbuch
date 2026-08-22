@@ -2,7 +2,7 @@ import { View } from "react-native";
 import { Card } from "~/ui/card";
 import { Divider } from "~/ui/divider";
 import { Text } from "~/ui/text";
-import { useGrades } from "~/infra/data/hooks";
+import { useGrades } from "./use-grades";
 import { getGradesOverviewModel } from "./grades-overview-model";
 import { MasterGradeRow } from "./master-grade-row";
 import { OralGradesRow } from "./oral-grades-row";
