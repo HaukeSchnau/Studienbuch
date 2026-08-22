@@ -3,8 +3,8 @@ import { ConfirmPageContent } from "~/domain-ui/confirm-page-content";
 import { PageScaffold } from "~/ui/navigation/page-scaffold";
 import { Text } from "~/ui/text";
 import type { Absence } from "~/compat/mobile-v0";
-import { useAbsences } from "~/infra/data/hooks";
 import { useProfile } from "~/features/profile";
+import { useAbsences } from "../use-absences";
 
 export const ExcuseParent = ({ absence }: { absence: Absence }) => {
   const router = useRouter();

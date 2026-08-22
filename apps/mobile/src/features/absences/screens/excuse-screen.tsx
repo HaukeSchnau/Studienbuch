@@ -2,10 +2,10 @@ import { View } from "react-native";
 import { ViewConfirmPageContent } from "~/domain-ui/confirm-page-content";
 import { PageScaffold } from "~/ui/navigation/page-scaffold";
 import { Text } from "~/ui/text";
-import { useAbsences } from "~/infra/data/hooks";
 import { useProfile } from "~/features/profile";
 import { ExcuseParent } from "../excuse/excuse-parent";
 import { ExcuseTeacher } from "../excuse/excuse-teacher";
+import { useAbsences } from "../use-absences";
 
 export function ExcuseScreen({ date, courseIds }: { date: Date; courseIds: string[] }) {
   const { absences } = useAbsences();

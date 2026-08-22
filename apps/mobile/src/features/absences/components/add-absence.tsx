@@ -16,10 +16,10 @@ import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { subjectNameMap, type SubjectId, type TimetableEntry } from "~/compat/mobile-v0";
 import { useCourses } from "~/features/courses";
 import { useSchedule } from "~/features/schedule";
-import { useAbsences } from "~/infra/data/hooks";
 import { haptics } from "~/infra/native/haptics";
 import { colors } from "~/ui/colors";
 import { nativeHostThemeProps } from "~/ui/native-theme";
+import { useAbsences } from "../use-absences";
 
 interface Props {
   onClose: () => void;

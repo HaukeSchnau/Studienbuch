@@ -1,7 +1,7 @@
-import type { Absence, Grade } from "~/compat/mobile-v0";
+import type { Grade } from "~/compat/mobile-v0";
 import { addDays } from "date-fns";
 import { mockNow } from "~/infra/mock-data/clock";
-import { mockSignatureSvg } from "../mock-signatures";
+import { mockSignatureSvg } from "~/infra/mock-data/signatures";
 
 export const gradesSeed: Grade[] = [
   {
@@ -147,24 +147,5 @@ export const gradesSeed: Grade[] = [
     date: addDays(mockNow, -21),
     teacherSignature: mockSignatureSvg("T. Kruse"),
     parentSignature: mockSignatureSvg("Erziehungsberechtigt"),
-  },
-];
-
-export const absencesSeed: Absence[] = [
-  {
-    id: "a1",
-    date: addDays(mockNow, -2),
-    courseIds: ["ma-1", "de-1"],
-    reason: "Arzttermin",
-    parentSignature: null,
-    teacherSignature: null,
-  },
-  {
-    id: "a2",
-    date: addDays(mockNow, -12),
-    courseIds: ["en-1"],
-    reason: "Erkältung",
-    parentSignature: mockSignatureSvg("Erziehungsberechtigt"),
-    teacherSignature: mockSignatureSvg("T. Kruse"),
   },
 ];
