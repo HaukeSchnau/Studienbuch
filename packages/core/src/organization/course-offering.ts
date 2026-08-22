@@ -2,6 +2,7 @@ import * as Schema from "effect/Schema";
 import { NonBlankText } from "../foundation/non-blank-text";
 import {
   AcademicTermId,
+  AcademicYearId,
   ClassGroupId,
   CohortId,
   CourseOfferingId,
@@ -12,7 +13,7 @@ import {
 export const ClassGroup = Schema.Struct({
   id: ClassGroupId,
   schoolId: SchoolId,
-  termId: AcademicTermId,
+  academicYearId: AcademicYearId,
   name: NonBlankText,
   cohortId: Schema.optional(CohortId),
 });

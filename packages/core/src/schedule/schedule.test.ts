@@ -6,7 +6,13 @@ import * as Schema from "effect/Schema";
 import * as Calendar from "temporal-polyfill/fns/Calendar";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
-import { AcademicTermId, CourseOfferingId, PersonId, SchoolId } from "../organization/identity";
+import {
+  AcademicTermId,
+  AcademicYearId,
+  CourseOfferingId,
+  PersonId,
+  SchoolId,
+} from "../organization/identity";
 import { Organization } from "../index.ts";
 import { Schedule } from "../index.ts";
 
@@ -22,6 +28,7 @@ const schoolId = SchoolId.make("school-1");
 const term = Organization.AcademicTerm.make({
   id: AcademicTermId.make("term-1"),
   schoolId,
+  academicYearId: AcademicYearId.make("year-1"),
   name: "First term",
   interval: interval("2022-12-01", "2023-02-28"),
 });

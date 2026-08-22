@@ -1,6 +1,6 @@
 import * as Schema from "effect/Schema";
 import { NonBlankText } from "../foundation/non-blank-text";
-import { DataSourceId, ExternalId, ImportId } from "./identity";
+import { DataSourceId, ExternalEntityKind, ExternalId, ImportId } from "./identity";
 import { SourceRevision } from "./source-revision";
 
 /** A configured provider feed. Its id distinguishes multiple feeds from the same provider. */
@@ -12,10 +12,12 @@ export interface DataSource extends Schema.Schema.Type<typeof DataSource> {}
 
 /**
  * Identifies one provider-owned record observation. Revisions are ordered only within the same
- * data source and external identity; observation time is diagnostic rather than authoritative.
+ * data source, entity kind, and external identity; observation time is diagnostic rather than
+ * authoritative.
  */
 export const SourceStamp = Schema.Struct({
   dataSource: DataSource,
+  entityKind: ExternalEntityKind,
   externalId: ExternalId,
   importId: ImportId,
   revision: SourceRevision.Schema,

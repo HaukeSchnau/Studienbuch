@@ -98,6 +98,9 @@ importers:
       '@stu/observability':
         specifier: workspace:*
         version: link:../../packages/observability
+      '@stu/server':
+        specifier: workspace:*
+        version: link:../../packages/server
       effect:
         specifier: 4.0.0-rc.108
         version: 4.0.0-rc.108
@@ -454,6 +457,9 @@ importers:
       pg:
         specifier: 'catalog:'
         version: 8.23.0
+      webuntis-api:
+        specifier: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.0.tgz
+        version: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.0.tgz(effect@4.0.0-rc.108)
     devDependencies:
       '@effect/vitest':
         specifier: 'catalog:'
@@ -9684,6 +9690,13 @@ packages:
 
   webpack-virtual-modules@0.6.2:
     resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
+
+  webuntis-api@https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.0.tgz:
+    resolution: {integrity: sha512-DsTEtAwCMFQuIUKnZXTg0wu4IBGdpLod+263Gow6FnYeKP6OODg5Eb/UFjMRMAQMH8SuLQP8HHiDWVwXD9pb+w==, tarball: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.0.tgz}
+    version: 0.2.0
+    engines: {node: '>=22.12.0'}
+    peerDependencies:
+      effect: 4.0.0-rc.108
 
   whatwg-fetch@3.6.20:
     resolution: {integrity: sha512-EqhiFU6daOA8kpjOWTL0olhVOF3i7OrFzSYiGsEMB8GcXS+RrzauAERX65xMeNWVqxA6HXH2m69Z9LaKKdisfg==}
@@ -20402,6 +20415,10 @@ snapshots:
   webidl-conversions@8.0.1: {}
 
   webpack-virtual-modules@0.6.2: {}
+
+  webuntis-api@https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.0.tgz(effect@4.0.0-rc.108):
+    dependencies:
+      effect: 4.0.0-rc.108
 
   whatwg-fetch@3.6.20: {}
 

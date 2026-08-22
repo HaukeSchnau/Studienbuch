@@ -7,6 +7,7 @@ import { CalendarDateRange } from "../foundation/calendar-date-range";
 import type { NonBlankText } from "../foundation/non-blank-text";
 import {
   AcademicTerm,
+  AcademicYear,
   Cohort,
   CohortProgressionPolicy,
   CourseChoiceGroup,
@@ -14,6 +15,7 @@ import {
   Enrollment,
   EnrollmentOrigin,
   GradeLevel,
+  Room,
   School,
   SchoolDirectory,
   Subject,
@@ -23,14 +25,18 @@ import {
   suggestEnrollmentContinuations,
   validateSchoolDirectory,
   validateAcademicTerms,
+  validateAcademicYears,
   validateCourseChoice,
   AcademicTermId,
+  AcademicYearId,
+  BuildingId,
   CohortId,
   CourseChoiceGroupId,
   CourseOfferingId,
   EnrollmentId,
   SchoolId,
   SchoolMembershipId,
+  RoomId,
   SubjectId,
 } from "./index.ts";
 
@@ -38,20 +44,34 @@ const date = (value: string) => PlainDate.fromString(value, Calendar.getBasic);
 const interval = (start: string, end: string) =>
   CalendarDateRange.Schema.make({ start: date(start), end: date(end) });
 const schoolId = SchoolId.make("school-1");
-const term = (id: NonBlankText, start: string, end: string) =>
-  AcademicTerm.make({
-    id: AcademicTermId.make(id),
+const academicYear = (id: NonBlankText, start: string, end: string) =>
+  AcademicYear.make({
+    id: AcademicYearId.make(id),
     schoolId,
     name: id,
     interval: interval(start, end),
   });
+const term = (
+  id: NonBlankText,
+  start: string,
+  end: string,
+  academicYearId = AcademicYearId.make("year-1"),
+) =>
+  AcademicTerm.make({
+    id: AcademicTermId.make(id),
+    schoolId,
+    academicYearId,
+    name: id,
+    interval: interval(start, end),
+  });
 
-describe("academic terms and cohort progression", () => {
+describe("academic years, terms, and cohort progression", () => {
   it.effect("round-trips its nested calendar-date range at the wire boundary", () =>
     Effect.gen(function* () {
       const encoded = {
         id: "term-a",
         schoolId: "school-1",
+        academicYearId: "year-1",
         name: "First term",
         interval: { start: "2026-08-01", end: "2027-01-31" },
       };
@@ -75,26 +95,37 @@ describe("academic terms and cohort progression", () => {
     }),
   );
 
-  it.effect("progresses from an explicit entry term without consulting the current date", () =>
+  it.effect("rejects overlapping academic years", () =>
     Effect.gen(function* () {
-      const firstTerm = term("t1", "2026-08-01", "2027-01-31");
-      const secondTerm = term("t2", "2027-02-01", "2027-07-31");
-      const thirdTerm = term("t3", "2027-08-01", "2028-01-31");
-      const terms = [firstTerm, secondTerm, thirdTerm];
+      const error = yield* Effect.flip(
+        validateAcademicYears([
+          academicYear("year-a", "2026-08-01", "2027-07-31"),
+          academicYear("year-b", "2027-07-31", "2028-07-31"),
+        ]),
+      );
+      assert.strictEqual(error._tag, "Organization.OverlappingAcademicYears");
+      assert.strictEqual(error.firstAcademicYearId, AcademicYearId.make("year-a"));
+    }),
+  );
+
+  it.effect("progresses from an explicit entry year without consulting the current date", () =>
+    Effect.gen(function* () {
+      const firstYear = academicYear("y1", "2026-08-01", "2027-07-31");
+      const secondYear = academicYear("y2", "2027-08-01", "2028-07-31");
+      const academicYears = [firstYear, secondYear];
       const cohort = Cohort.make({
         id: CohortId.make("cohort-1"),
         schoolId,
         name: "2026 intake",
-        entryTermId: firstTerm.id,
+        entryAcademicYearId: firstYear.id,
         entryGradeLevel: GradeLevel.make(5),
       });
       const policy = CohortProgressionPolicy.make({
-        termsPerGradeLevel: 2,
         maximumGradeLevel: GradeLevel.make(13),
       });
 
-      assert.strictEqual(yield* gradeLevelAt(cohort, policy, terms, secondTerm.id), 5);
-      assert.strictEqual(yield* gradeLevelAt(cohort, policy, terms, thirdTerm.id), 6);
+      assert.strictEqual(yield* gradeLevelAt(cohort, policy, academicYears, firstYear.id), 5);
+      assert.strictEqual(yield* gradeLevelAt(cohort, policy, academicYears, secondYear.id), 6);
     }),
   );
 });
@@ -102,7 +133,8 @@ describe("academic terms and cohort progression", () => {
 describe("school directory", () => {
   it.effect("rejects a foreign-school course offering", () =>
     Effect.gen(function* () {
-      const academicTerm = term("term-1", "2026-08-01", "2027-07-31");
+      const year = academicYear("year-1", "2026-08-01", "2027-07-31");
+      const academicTerm = term("term-1", "2026-08-01", "2027-07-31", year.id);
       const subject = Subject.make({
         id: SubjectId.make("mathematics"),
         schoolId,
@@ -120,8 +152,12 @@ describe("school directory", () => {
       const structure = SchoolDirectory.make({
         school: School.make({ id: schoolId, name: "School" }),
         subjectCatalog: SubjectCatalog.make({ schoolId, subjects: [subject] }),
+        academicYears: [year],
         terms: [academicTerm],
         cohorts: [],
+        departments: [],
+        buildings: [],
+        rooms: [],
         classGroups: [],
         courseOfferings: [offering],
         choiceGroups: [],
@@ -132,6 +168,66 @@ describe("school directory", () => {
         _tag: "Organization.InvalidSchoolDirectory",
         entity: "CourseOffering",
         reason: "WrongSchool",
+      });
+    }),
+  );
+
+  it.effect("rejects a term outside its academic year", () =>
+    Effect.gen(function* () {
+      const year = academicYear("year-1", "2026-08-01", "2027-07-31");
+      const academicTerm = term("term-1", "2026-07-31", "2027-01-31", year.id);
+      const structure = SchoolDirectory.make({
+        school: School.make({ id: schoolId, name: "School" }),
+        subjectCatalog: SubjectCatalog.make({ schoolId, subjects: [] }),
+        academicYears: [year],
+        terms: [academicTerm],
+        cohorts: [],
+        departments: [],
+        buildings: [],
+        rooms: [],
+        classGroups: [],
+        courseOfferings: [],
+        choiceGroups: [],
+        enrollments: [],
+      });
+
+      const failure = yield* validateSchoolDirectory(structure).pipe(Effect.flip);
+      assert.deepInclude(failure, {
+        entity: "AcademicTerm",
+        entityId: "term-1",
+        reason: "OutsideAcademicYear",
+      });
+    }),
+  );
+
+  it.effect("rejects a room whose building is absent from the directory", () =>
+    Effect.gen(function* () {
+      const room = Room.make({
+        id: RoomId.make("room-1"),
+        schoolId,
+        name: "A1",
+        buildingId: BuildingId.make("missing-building"),
+      });
+      const structure = SchoolDirectory.make({
+        school: School.make({ id: schoolId, name: "School" }),
+        subjectCatalog: SubjectCatalog.make({ schoolId, subjects: [] }),
+        academicYears: [],
+        terms: [],
+        cohorts: [],
+        departments: [],
+        buildings: [],
+        rooms: [room],
+        classGroups: [],
+        courseOfferings: [],
+        choiceGroups: [],
+        enrollments: [],
+      });
+
+      const failure = yield* validateSchoolDirectory(structure).pipe(Effect.flip);
+      assert.deepInclude(failure, {
+        entity: "Room",
+        entityId: "room-1",
+        reason: "UnknownReference",
       });
     }),
   );
