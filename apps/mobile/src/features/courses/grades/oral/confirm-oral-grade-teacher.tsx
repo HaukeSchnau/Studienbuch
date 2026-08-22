@@ -4,7 +4,7 @@ import { ConfirmPageContent, ViewConfirmPageContent } from "~/domain-ui/confirm-
 import { PageScaffold } from "~/ui/navigation/page-scaffold";
 import { Text } from "~/ui/text";
 import { formatGrade, subjectNameMap, Teacher } from "~/compat/mobile-v0";
-import { useGrades } from "~/infra/data/hooks";
+import { useGrades } from "../use-grades";
 import { useProfile } from "~/features/profile";
 import type { ConfirmedResolvedGrade, ResolvedGrade } from "../grade.type";
 

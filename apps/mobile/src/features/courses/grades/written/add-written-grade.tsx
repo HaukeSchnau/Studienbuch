@@ -7,7 +7,7 @@ import { DateField } from "~/ui/fields/date-field";
 import { SheetCallout } from "~/ui/layout/sheet-callout";
 import { SheetScaffold } from "~/ui/layout/sheet-scaffold";
 import { TextField } from "~/ui/fields/text-field";
-import { useGrades } from "~/infra/data/hooks";
+import { useGrades } from "../use-grades";
 import { haptics } from "~/infra/native/haptics";
 
 export const AddWrittenGrade = ({

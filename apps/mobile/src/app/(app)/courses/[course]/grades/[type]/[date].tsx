@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import { getGradeRouteParams } from "~/infra/routing/params";
-import { GradeScreen } from "~/features/courses/grades";
+import { GradeScreen } from "~/features/courses/grades/screens/grade-screen";
 
 export default function GradePageEntry() {
   const params = useLocalSearchParams<{

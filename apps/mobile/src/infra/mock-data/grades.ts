@@ -149,3 +149,6 @@ export const gradesSeed: Grade[] = [
     parentSignature: mockSignatureSvg("Erziehungsberechtigt"),
   },
 ];
+
+export const createMockGradeSignature = (signer: "parent" | "teacher") =>
+  mockSignatureSvg(signer === "parent" ? "Erziehungsberechtigt" : "Lehrkraft");

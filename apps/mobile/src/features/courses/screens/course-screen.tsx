@@ -12,7 +12,7 @@ import { subjectNameMap, Teacher } from "~/compat/mobile-v0";
 import { useSchoolCatalog } from "~/features/organization";
 import { useCourses } from "../use-courses";
 import { TasksSection } from "~/features/tasks";
-import { GradesOverviewCard } from "~/features/courses/grades";
+import { GradesOverviewCard } from "../grades/grades-overview-card";
 
 export const CourseScreen = ({ courseId }: { courseId: string }) => {
   const { getCourse } = useCourses();

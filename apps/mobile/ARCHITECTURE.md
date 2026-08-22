@@ -13,8 +13,8 @@ src/
   domain-ui/    reusable school-domain presentation components
   ui/           generic UI, fields, feedback, layout, navigation chrome, tokens
   infra/        exists because of a technology choice, not the problem
+    better-auth/ Better Auth client adapter
     effect-atom/  registry and provider wiring
-    data/         temporary fixture context for domains not yet using atoms
     mock-data/    fixture-backed implementations and seed data
     native/       wrappers around native/device APIs
     observability/  telemetry ports and the Sentry adapter
@@ -48,8 +48,6 @@ lives in `features/setup` beside the rest of setup.
   registry while the app has no persistent data source.
 - `src/infra/mock-data` owns the current fixture-backed implementation. Features must not import it;
   providers and future Effect Layers adapt it to feature-owned state.
-- `src/infra/data` is temporary. It still holds the React context for domains that have not moved
-  to feature-owned atoms. Delete it after the migration inventory below reaches zero.
 - `src/features` owns product workflows. Feature `model` files must be pure TypeScript and are the
   preferred home for non-trivial view-model logic. Feature screens may compose generic components,
   domain-ui components, data hooks, and public barrels from other features.
@@ -89,15 +87,15 @@ Effect-backed queries and commands without changing component imports.
 | -------------- | ------------------------- | ------------------------------------ |
 | Tasks          | `features/tasks`          | Effect Atom, seeded by mock fixtures |
 | Courses        | `features/courses`        | Effect Atom, seeded by mock fixtures |
-| Grades         | `features/courses/grades` | Temporary fixture context            |
+| Grades         | `features/courses/grades` | Effect Atom, seeded by mock fixtures |
 | Schedule       | `features/schedule`       | Effect Atom, seeded by mock fixtures |
 | Absences       | `features/absences`       | Effect Atom, seeded by mock fixtures |
 | Profile        | `features/profile`        | Effect Atom, seeded by mock fixtures |
 | Setup progress | `features/setup`          | Derived from profile and Atom state  |
 | School catalog | `features/organization`   | Effect Atom, seeded by mock fixtures |
 
-Migrate one complete domain at a time. Move its read state, commands, hooks, and consumers together,
-then remove that domain from the fixture context. Do not create a replacement central data facade.
+The initial migration is complete. Every mocked domain now enters the UI through feature-owned atoms.
+Keep new domains on that path and do not recreate a central data facade.
 
 The mock app has profile state but no authenticated principal. Do not recreate the deleted synthetic
 session to carry profile fields. When Better Auth is connected, authentication state should represent

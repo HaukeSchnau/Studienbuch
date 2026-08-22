@@ -7,7 +7,7 @@ import { SheetCallout } from "~/ui/layout/sheet-callout";
 import { SheetScaffold } from "~/ui/layout/sheet-scaffold";
 import { TextField } from "~/ui/fields/text-field";
 import { isGradeConfirmed, type Grade } from "~/compat/mobile-v0";
-import { useGrades } from "~/infra/data/hooks";
+import { useGrades } from "../use-grades";
 import { useProfile } from "~/features/profile";
 import { haptics } from "~/infra/native/haptics";
 import { GradeCard } from "../grade-card";
@@ -79,7 +79,7 @@ export const EditOralGrade = ({
               label: "Wiederherstellen",
               onClick: () => {
                 haptics.success();
-                restoreLatestConfirmedGrade(courseId, "ORAL");
+                restoreLatestConfirmedGrade(courseId, "ORAL", user.isOfAge);
                 onClose();
               },
             }}

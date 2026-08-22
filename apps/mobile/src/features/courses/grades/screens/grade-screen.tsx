@@ -2,7 +2,7 @@ import { View } from "react-native";
 import { PageScaffold } from "~/ui/navigation/page-scaffold";
 import { Text } from "~/ui/text";
 import type { GradeType } from "~/compat/mobile-v0";
-import { useGrades } from "~/infra/data/hooks";
+import { useGrades } from "../use-grades";
 import { useCourses } from "../../use-courses";
 import { useProfile } from "~/features/profile";
 import {
