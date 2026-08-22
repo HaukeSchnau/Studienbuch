@@ -17,6 +17,7 @@ const source = Importing.DataSource.make({
 const stamp = (revision: number, dataSource = source) =>
   Importing.SourceStamp.make({
     dataSource,
+    entityKind: "CourseOffering",
     externalId: Importing.ExternalId.make("course-42"),
     importId: Importing.ImportId.make(`import-${revision}`),
     revision: Importing.SourceRevision.Schema.make(revision),
@@ -58,6 +59,15 @@ describe("import reconciliation", () => {
       stamp: stamp(3, otherProvider),
     });
     expect(renamedProvider).toMatchObject({ _tag: "Updated" });
+
+    const reusedIdFromAnotherKind = Importing.reconcileIncoming(current, {
+      ...observation("Mathematics", 3),
+      stamp: { ...stamp(3), entityKind: "Subject" },
+    });
+    expect(reusedIdFromAnotherKind).toMatchObject({
+      _tag: "Conflict",
+      reason: "DifferentSource",
+    });
   });
 
   it.effect("preserves and relinquishes a field-level user override", () =>
@@ -192,10 +202,12 @@ describe("entity links", () => {
     const subjectId = SubjectId.make("mathematics");
     const firstSource = Importing.SourceIdentity.make({
       dataSourceId: Importing.DataSourceId.make("untis"),
+      entityKind: "Subject",
       externalId: Importing.ExternalId.make("subject-42"),
     });
     const secondSource = Importing.SourceIdentity.make({
       dataSourceId: Importing.DataSourceId.make("schild"),
+      entityKind: "Subject",
       externalId: Importing.ExternalId.make("math"),
     });
     const first = Importing.EntityLink.cases.Subject.make({ source: firstSource, subjectId });

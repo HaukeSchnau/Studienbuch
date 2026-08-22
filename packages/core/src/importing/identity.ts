@@ -1,3 +1,4 @@
+import * as Schema from "effect/Schema";
 import { entityId } from "../internal/entity-id";
 
 /** Identifies one configured provider feed. */
@@ -8,6 +9,27 @@ export type DataSourceId = typeof DataSourceId.Type;
 export const ImportId = entityId("ImportId");
 export type ImportId = typeof ImportId.Type;
 
-/** Identifies a provider-owned record within one data source. */
+/** Identifies a provider-owned record within one data source and entity kind. */
 export const ExternalId = entityId("ExternalId");
 export type ExternalId = typeof ExternalId.Type;
+
+/** Separates provider ID namespaces that often reuse the same numeric values. */
+export const ExternalEntityKind = Schema.Literals([
+  "School",
+  "AcademicYear",
+  "AcademicTerm",
+  "Department",
+  "Building",
+  "Room",
+  "ClassGroup",
+  "Teacher",
+  "Student",
+  "Subject",
+  "CourseOffering",
+  "TimetableOccurrence",
+  "Exam",
+  "Homework",
+  "Holiday",
+  "BellPeriod",
+]);
+export type ExternalEntityKind = typeof ExternalEntityKind.Type;

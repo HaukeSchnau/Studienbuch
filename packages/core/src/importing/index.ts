@@ -21,7 +21,7 @@ export {
   SourceDeletion,
 } from "./reconciliation";
 export type { IncomingReconciliationResult, SourceDeletionResult } from "./reconciliation";
-export { DataSourceId, ExternalId, ImportId } from "./identity";
+export { DataSourceId, ExternalEntityKind, ExternalId, ImportId } from "./identity";
 export { DataSource, SourceStamp } from "./source";
 export type { SourceObservation } from "./source";
 export { SourceRevision } from "./source-revision";

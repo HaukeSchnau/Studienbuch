@@ -6,6 +6,9 @@ export type SchoolId = typeof SchoolId.Type;
 export const SubjectId = entityId("SubjectId");
 export type SubjectId = typeof SubjectId.Type;
 
+export const AcademicYearId = entityId("AcademicYearId");
+export type AcademicYearId = typeof AcademicYearId.Type;
+
 export const AcademicTermId = entityId("AcademicTermId");
 export type AcademicTermId = typeof AcademicTermId.Type;
 
@@ -35,6 +38,15 @@ export type GuardianRelationshipId = typeof GuardianRelationshipId.Type;
 
 export const TeachingAssignmentId = entityId("TeachingAssignmentId");
 export type TeachingAssignmentId = typeof TeachingAssignmentId.Type;
+
+export const DepartmentId = entityId("DepartmentId");
+export type DepartmentId = typeof DepartmentId.Type;
+
+export const BuildingId = entityId("BuildingId");
+export type BuildingId = typeof BuildingId.Type;
+
+export const RoomId = entityId("RoomId");
+export type RoomId = typeof RoomId.Type;
 
 export const AcknowledgementId = entityId("AcknowledgementId");
 export type AcknowledgementId = typeof AcknowledgementId.Type;

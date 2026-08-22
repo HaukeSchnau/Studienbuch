@@ -66,7 +66,9 @@ export class OverrideRelinquishmentRefused extends Schema.TaggedError<OverrideRe
 ) {}
 
 const sameSourceIdentity = (left: SourceStamp, right: SourceStamp) =>
-  left.dataSource.id === right.dataSource.id && left.externalId === right.externalId;
+  left.dataSource.id === right.dataSource.id &&
+  left.entityKind === right.entityKind &&
+  left.externalId === right.externalId;
 
 const withImportedObservation = <Value>(
   current: ProvenancedValue<Value>,

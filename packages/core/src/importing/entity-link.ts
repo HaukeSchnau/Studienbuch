@@ -1,10 +1,23 @@
 import * as Schema from "effect/Schema";
-import { CourseOfferingId, SubjectId } from "../organization/identity";
-import { DataSourceId, ExternalId } from "./identity";
+import {
+  AcademicTermId,
+  AcademicYearId,
+  BuildingId,
+  ClassGroupId,
+  CourseOfferingId,
+  DepartmentId,
+  PersonId,
+  RoomId,
+  SchoolId,
+  SchoolMembershipId,
+  SubjectId,
+} from "../organization/identity";
+import { DataSourceId, ExternalEntityKind, ExternalId } from "./identity";
 
 /** Provider-scoped identity of one record, independent of any domain entity it maps to. */
 export const SourceIdentity = Schema.Struct({
   dataSourceId: DataSourceId,
+  entityKind: ExternalEntityKind,
   externalId: ExternalId,
 });
 export interface SourceIdentity extends Schema.Schema.Type<typeof SourceIdentity> {}
@@ -15,13 +28,22 @@ export interface SourceIdentity extends Schema.Schema.Type<typeof SourceIdentity
  * one entity of each kind.
  */
 export const EntityLink = Schema.TaggedUnion({
+  School: { source: SourceIdentity, schoolId: SchoolId },
+  AcademicYear: { source: SourceIdentity, academicYearId: AcademicYearId },
+  AcademicTerm: { source: SourceIdentity, academicTermId: AcademicTermId },
+  Department: { source: SourceIdentity, departmentId: DepartmentId },
+  Building: { source: SourceIdentity, buildingId: BuildingId },
+  Room: { source: SourceIdentity, roomId: RoomId },
+  ClassGroup: { source: SourceIdentity, classGroupId: ClassGroupId },
+  Person: { source: SourceIdentity, personId: PersonId },
+  SchoolMembership: { source: SourceIdentity, schoolMembershipId: SchoolMembershipId },
   Subject: { source: SourceIdentity, subjectId: SubjectId },
   CourseOffering: { source: SourceIdentity, courseOfferingId: CourseOfferingId },
 });
 export type EntityLink = typeof EntityLink.Type;
 
 const sourceKey = (link: EntityLink): string =>
-  `${link._tag}\u0000${link.source.dataSourceId}\u0000${link.source.externalId}`;
+  `${link._tag}\u0000${link.source.dataSourceId}\u0000${link.source.entityKind}\u0000${link.source.externalId}`;
 
 export const EntityLinkSet = Schema.Array(EntityLink).check(
   Schema.makeFilter((links) => new Set(links.map(sourceKey)).size === links.length, {

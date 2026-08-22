@@ -1,13 +1,14 @@
+export { AcademicTerm, OverlappingAcademicTerms, validateAcademicTerms } from "./academic-term";
 export {
-  AcademicTerm,
-  AcademicTermUnavailable,
+  AcademicYear,
+  AcademicYearUnavailable,
   Cohort,
   CohortProgressionPolicy,
   GradeLevel,
-  OverlappingAcademicTerms,
+  OverlappingAcademicYears,
   gradeLevelAt,
-  validateAcademicTerms,
-} from "./academic-term";
+  validateAcademicYears,
+} from "./academic-year";
 export { Acknowledgement, ActorRef, Withdrawal } from "./acknowledgement";
 export { AuthorityDenied, AuthoritySnapshot, Capability, authorize, may } from "./authority";
 export { School, Subject, SubjectCatalog, findSubject } from "./catalog";
@@ -16,13 +17,17 @@ export { InvalidSchoolDirectory, SchoolDirectory, validateSchoolDirectory } from
 export {
   AcknowledgementId,
   AcademicTermId,
+  AcademicYearId,
+  BuildingId,
   ClassGroupId,
   CohortId,
   CourseChoiceGroupId,
   CourseOfferingId,
+  DepartmentId,
   EnrollmentId,
   GuardianRelationshipId,
   PersonId,
+  RoomId,
   SchoolId,
   SchoolMembershipId,
   SubjectId,
@@ -49,6 +54,7 @@ export {
   StudentMembership,
   TeachingAssignment,
 } from "./membership";
+export { Building, Department, Room } from "./school-structure";
 export {
   LegalAgePolicy,
   LeapDayAnniversary,

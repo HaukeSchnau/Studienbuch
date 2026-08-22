@@ -31,7 +31,7 @@ _Avoid_: Identifier, normalized label
 ## Academic structure
 
 **School directory**:
-A school-scoped snapshot of terms, cohorts, class groups, course offerings, choices, and enrollment facts used to validate their relationships as a whole.
+A school-scoped snapshot of academic years, terms, cohorts, departments, buildings, rooms, class groups, course offerings, choices, and enrollment facts used to validate their relationships as a whole.
 _Avoid_: Academic structure, school configuration
 
 **Subject**:
@@ -51,16 +51,32 @@ A set of alternative course offerings governed by an explicit selection cardinal
 _Avoid_: Choosable subject
 
 **Cohort**:
-A group of students whose grade-level progression is calculated together.
+A group of students who entered in the same academic year and whose grade-level progression is calculated together.
 _Avoid_: Year
 
 **Class group**:
-An administrative or tutor grouping such as 8b.
+An academic-year-scoped administrative or tutor grouping such as 8b.
 _Avoid_: Class
 
+**Academic year**:
+A school-defined, closed interval that contains academic terms and advances cohort grade levels.
+_Avoid_: Academic term, calendar year
+
 **Academic term**:
-A school-defined, closed interval of academic dates.
+A school-defined, closed interval of academic dates within one academic year.
 _Avoid_: Semester when the institution does not use semesters
+
+**Department**:
+A school-owned organizational unit referenced by classes, rooms, teachers, or activities.
+_Avoid_: Provider filter
+
+**Building**:
+A named school facility that contains rooms.
+_Avoid_: Room group
+
+**Room**:
+A named teaching location, optionally assigned to a building and department.
+_Avoid_: Free-form meeting location
 
 ## Scheduling
 
@@ -149,7 +165,7 @@ _Avoid_: Homework when the item may represent other work
 ## Imported data
 
 **Source stamp**:
-The provider identity, source revision, external identity, and observation time attached to imported information.
+The provider identity, provider entity kind, source revision, external identity, and observation time attached to imported information.
 _Avoid_: Sync metadata
 
 **Source observation**:
@@ -161,11 +177,11 @@ A provider sequence used to order observations of one external record within one
 _Avoid_: Aggregate revision, global version
 
 **External identifier**:
-An identity assigned to a record by another system and interpreted only within its data source.
+An identity assigned to a record by another system and interpreted only within its data source and entity kind.
 _Avoid_: Domain identifier
 
 **Entity link**:
-A persistent correspondence from a provider-scoped external identity to an internal subject or course-offering identity. Several providers may identify the same internal entity.
+A persistent correspondence from a provider-scoped external identity to an internal organization identity. Several providers may identify the same internal entity.
 _Avoid_: Storing provider identifiers on organization entities
 
 **Override**:

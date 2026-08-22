@@ -13,6 +13,7 @@
   "dependencies": {
     "@effect/platform-node": "catalog:",
     "@stu/observability": "workspace:*",
+    "@stu/server": "workspace:*",
     "effect": "catalog:"
   },
   "devDependencies": {

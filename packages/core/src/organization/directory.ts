@@ -1,17 +1,23 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
-import { AcademicTerm, Cohort, validateAcademicTerms } from "./academic-term";
+import { AcademicTerm, validateAcademicTerms } from "./academic-term";
+import { AcademicYear, Cohort, validateAcademicYears } from "./academic-year";
 import { School, SubjectCatalog } from "./catalog";
 import { ClassGroup, CourseOffering } from "./course-offering";
 import { CourseChoiceGroup, Enrollment } from "./enrollment";
+import { Building, Department, Room } from "./school-structure";
 
 /** A complete academic school-directory slice suitable for cross-entity validation. */
 export const SchoolDirectory = Schema.Struct({
   school: School,
   subjectCatalog: SubjectCatalog,
+  academicYears: Schema.Array(AcademicYear),
   terms: Schema.Array(AcademicTerm),
   cohorts: Schema.Array(Cohort),
+  departments: Schema.Array(Department),
+  buildings: Schema.Array(Building),
+  rooms: Schema.Array(Room),
   classGroups: Schema.Array(ClassGroup),
   courseOfferings: Schema.Array(CourseOffering),
   choiceGroups: Schema.Array(CourseChoiceGroup),
@@ -24,8 +30,12 @@ export class InvalidSchoolDirectory extends Schema.TaggedError<InvalidSchoolDire
   {
     entity: Schema.Literals([
       "SubjectCatalog",
+      "AcademicYear",
       "AcademicTerm",
       "Cohort",
+      "Department",
+      "Building",
+      "Room",
       "ClassGroup",
       "CourseOffering",
       "CourseChoiceGroup",
@@ -38,6 +48,7 @@ export class InvalidSchoolDirectory extends Schema.TaggedError<InvalidSchoolDire
       "UnknownReference",
       "WrongTerm",
       "OutsideTerm",
+      "OutsideAcademicYear",
     ]),
   },
 ) {}
@@ -57,8 +68,12 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
     return yield* invalidDirectory("SubjectCatalog", schoolId, "WrongSchool");
   }
   const collections = [
+    ["AcademicYear", structure.academicYears],
     ["AcademicTerm", structure.terms],
     ["Cohort", structure.cohorts],
+    ["Department", structure.departments],
+    ["Building", structure.buildings],
+    ["Room", structure.rooms],
     ["ClassGroup", structure.classGroups],
     ["CourseOffering", structure.courseOfferings],
     ["CourseChoiceGroup", structure.choiceGroups],
@@ -70,31 +85,68 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
       return yield* invalidDirectory(entity, schoolId, "DuplicateId");
     }
   }
+  const academicYears = new Map(structure.academicYears.map((item) => [item.id, item]));
   const terms = new Map(structure.terms.map((item) => [item.id, item]));
   const subjects = new Map(structure.subjectCatalog.subjects.map((item) => [item.id, item]));
   const cohorts = new Map(structure.cohorts.map((item) => [item.id, item]));
   const classGroups = new Map(structure.classGroups.map((item) => [item.id, item]));
   const offerings = new Map(structure.courseOfferings.map((item) => [item.id, item]));
   const choiceGroups = new Map(structure.choiceGroups.map((item) => [item.id, item]));
+  const departments = new Map(structure.departments.map((item) => [item.id, item]));
+  const buildings = new Map(structure.buildings.map((item) => [item.id, item]));
+
+  for (const academicYear of structure.academicYears) {
+    if (academicYear.schoolId !== schoolId) {
+      return yield* invalidDirectory("AcademicYear", academicYear.id, "WrongSchool");
+    }
+  }
 
   for (const term of structure.terms) {
     if (term.schoolId !== schoolId) {
       return yield* invalidDirectory("AcademicTerm", term.id, "WrongSchool");
+    }
+    const academicYear = academicYears.get(term.academicYearId);
+    if (academicYear === undefined) {
+      return yield* invalidDirectory("AcademicTerm", term.id, "UnknownReference");
+    }
+    if (!CalendarDateRange.encloses(academicYear.interval, term.interval)) {
+      return yield* invalidDirectory("AcademicTerm", term.id, "OutsideAcademicYear");
     }
   }
   for (const cohort of structure.cohorts) {
     if (cohort.schoolId !== schoolId) {
       return yield* invalidDirectory("Cohort", cohort.id, "WrongSchool");
     }
-    if (terms.get(cohort.entryTermId)?.schoolId !== schoolId) {
+    if (academicYears.get(cohort.entryAcademicYearId)?.schoolId !== schoolId) {
       return yield* invalidDirectory("Cohort", cohort.id, "UnknownReference");
+    }
+  }
+  for (const department of structure.departments) {
+    if (department.schoolId !== schoolId) {
+      return yield* invalidDirectory("Department", department.id, "WrongSchool");
+    }
+  }
+  for (const building of structure.buildings) {
+    if (building.schoolId !== schoolId) {
+      return yield* invalidDirectory("Building", building.id, "WrongSchool");
+    }
+  }
+  for (const room of structure.rooms) {
+    if (room.schoolId !== schoolId) {
+      return yield* invalidDirectory("Room", room.id, "WrongSchool");
+    }
+    if (
+      (room.departmentId !== undefined && !departments.has(room.departmentId)) ||
+      (room.buildingId !== undefined && !buildings.has(room.buildingId))
+    ) {
+      return yield* invalidDirectory("Room", room.id, "UnknownReference");
     }
   }
   for (const group of structure.classGroups) {
     if (group.schoolId !== schoolId) {
       return yield* invalidDirectory("ClassGroup", group.id, "WrongSchool");
     }
-    if (terms.get(group.termId)?.schoolId !== schoolId) {
+    if (academicYears.get(group.academicYearId)?.schoolId !== schoolId) {
       return yield* invalidDirectory("ClassGroup", group.id, "UnknownReference");
     }
     if (group.cohortId !== undefined && cohorts.get(group.cohortId)?.schoolId !== schoolId) {
@@ -114,7 +166,10 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
     if (
       offering.classGroupIds.some((id) => {
         const group = classGroups.get(id);
-        return group === undefined || group.termId !== offering.termId;
+        const term = terms.get(offering.termId);
+        return (
+          group === undefined || term === undefined || group.academicYearId !== term.academicYearId
+        );
       })
     ) {
       return yield* invalidDirectory("CourseOffering", offering.id, "WrongTerm");
@@ -144,6 +199,7 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
       }
     }
   }
+  yield* validateAcademicYears(structure.academicYears);
   yield* validateAcademicTerms(structure.terms);
   return structure;
 });
