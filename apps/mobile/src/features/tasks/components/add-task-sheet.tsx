@@ -14,7 +14,7 @@ import { TextField } from "~/ui/fields/text-field";
 import { getNextSchoolDay } from "~/domain-ui/school-day";
 import type { TaskAttachment } from "~/compat/mobile-v0";
 import { useCourses } from "~/features/courses";
-import { useScheduleData } from "~/infra/data/hooks";
+import { useSchedule } from "~/features/schedule";
 import { useTasks } from "../use-tasks";
 import { haptics } from "~/infra/native/haptics";
 import { createTaskAttachment } from "../model/task-attachments";
@@ -22,7 +22,7 @@ import { useTaskPhotoPicker } from "./use-task-photo-picker";
 
 export const AddTaskSheet = ({ courseId, onClose }: { courseId?: string; onClose: () => void }) => {
   const { courses } = useCourses();
-  const { timetable } = useScheduleData();
+  const { timetable } = useSchedule();
   const { getCourseTasks, addTask } = useTasks();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

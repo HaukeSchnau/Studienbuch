@@ -1,19 +1,6 @@
-import { getVisibleTimetable, type GradeType } from "~/compat/mobile-v0";
-import { useCourses, useCourseSelection } from "~/features/courses/use-courses";
+import type { GradeType } from "~/compat/mobile-v0";
 import { useProfile } from "~/features/profile/use-profile";
 import { useMockDataRuntime } from "../mock/provider";
-
-export const useScheduleData = () => {
-  const { holidays, timetable, getActiveHoliday } = useMockDataRuntime();
-  const { courses } = useCourses();
-  const selectedCourseIdsBySemester = useCourseSelection();
-
-  return {
-    holidays,
-    timetable: getVisibleTimetable(timetable, courses, selectedCourseIdsBySemester),
-    getActiveHoliday,
-  };
-};
 
 export const useAbsences = () => {
   const { absences, addAbsence, deleteAbsence, signAbsence } = useMockDataRuntime();

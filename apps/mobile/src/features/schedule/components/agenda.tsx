@@ -7,7 +7,7 @@ import { Divider } from "~/ui/divider";
 import { Text } from "~/ui/text";
 import { subjectNameMap, Teacher } from "~/compat/mobile-v0";
 import { useCourses } from "~/features/courses";
-import { useScheduleData } from "~/infra/data/hooks";
+import { useSchedule } from "../use-schedule";
 
 const matchHolidayName = (name: string) => {
   const normalized = name.toLowerCase();
@@ -22,7 +22,7 @@ const matchHolidayName = (name: string) => {
 
 export const Agenda = () => {
   const { getCourse } = useCourses();
-  const { getActiveHoliday, timetable } = useScheduleData();
+  const { getActiveHoliday, timetable } = useSchedule();
   const now = useMemo(() => new Date(), []);
 
   const nextEntry = timetable
