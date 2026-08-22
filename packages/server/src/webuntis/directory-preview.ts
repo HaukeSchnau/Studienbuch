@@ -92,6 +92,18 @@ export interface DirectoryInventory {
   readonly teacherFilter: TimetableFilter;
 }
 
+export interface DirectoryResources {
+  readonly departments: ReturnType<typeof mergeResources>;
+  readonly buildings: ReturnType<typeof mergeResources>;
+  readonly classes: TimetableFilter["classes"];
+  readonly rooms: TimetableFilter["rooms"];
+  readonly students: TimetableFilter["students"];
+  readonly activities: TimetableFilter["subjects"];
+  readonly teachers: TimetableFilter["teachers"];
+  readonly holidays: AppData["holidays"];
+  readonly bellPeriods: NonNullable<AppData["currentSchoolYear"]>["timeGrid"]["units"];
+}
+
 const sameResource = (left: DisplayResource, right: DisplayResource) =>
   left.id === right.id &&
   left.shortName === right.shortName &&
@@ -121,8 +133,8 @@ const addDiagnostic = (
 const overlapsYear = (item: { readonly start: string; readonly end: string }, year: Schoolyear) =>
   item.start <= year.dateRange.end && year.dateRange.start <= item.end;
 
-/** Builds the PII-free plan printed by the console before any persistence work begins. */
-export const summarizeDirectoryInventory = (inventory: DirectoryInventory): DirectoryPreview => {
+/** Collects the deduplicated records shared by previewing and persistence. */
+export const collectDirectoryResources = (inventory: DirectoryInventory): DirectoryResources => {
   const {
     appData,
     academicYear,
@@ -132,27 +144,45 @@ export const summarizeDirectoryInventory = (inventory: DirectoryInventory): Dire
     subjectFilter,
     teacherFilter,
   } = inventory;
+  return {
+    departments: mergeResources([
+      ...classFilter.departments,
+      ...roomFilter.departments,
+      ...studentFilter.departments,
+      ...subjectFilter.departments,
+      ...teacherFilter.departments,
+    ]),
+    buildings: mergeResources(
+      roomFilter.rooms.flatMap((item) => (item.building === null ? [] : [item.building])),
+    ),
+    classes: classFilter.classes,
+    rooms: roomFilter.rooms,
+    students: studentFilter.students,
+    activities: subjectFilter.subjects,
+    teachers: teacherFilter.teachers,
+    holidays: appData.holidays.filter((holiday) => overlapsYear(holiday, academicYear)),
+    bellPeriods:
+      appData.currentSchoolYear?.id === academicYear.id
+        ? appData.currentSchoolYear.timeGrid.units
+        : [],
+  };
+};
+
+/** Builds the PII-free plan printed by the console before any persistence work begins. */
+export const summarizeDirectoryInventory = (inventory: DirectoryInventory): DirectoryPreview => {
+  const { appData, academicYear } = inventory;
   const dataSourceId = `webuntis:${appData.tenant.id}`;
-  const departments = mergeResources([
-    ...classFilter.departments,
-    ...roomFilter.departments,
-    ...studentFilter.departments,
-    ...subjectFilter.departments,
-    ...teacherFilter.departments,
-  ]);
-  const buildings = mergeResources(
-    roomFilter.rooms.flatMap((item) => (item.building === null ? [] : [item.building])),
-  );
-  const classes = classFilter.classes;
-  const rooms = roomFilter.rooms;
-  const students = studentFilter.students;
-  const activities = subjectFilter.subjects;
-  const teachers = teacherFilter.teachers;
-  const holidays = appData.holidays.filter((holiday) => overlapsYear(holiday, academicYear));
-  const bellPeriods =
-    appData.currentSchoolYear?.id === academicYear.id
-      ? appData.currentSchoolYear.timeGrid.units.length
-      : 0;
+  const {
+    departments,
+    buildings,
+    classes,
+    rooms,
+    students,
+    activities,
+    teachers,
+    holidays,
+    bellPeriods,
+  } = collectDirectoryResources(inventory);
 
   const classIds = new Set(classes.map((item) => item.class.id));
   const teacherIds = new Set(teachers.map((item) => item.teacher.id));
@@ -182,7 +212,7 @@ export const summarizeDirectoryInventory = (inventory: DirectoryInventory): Dire
     ...students.map((item) => sourceKey("Student", item.student.id)),
     ...activities.map((item) => sourceKey("Subject", item.subject.id)),
     ...holidays.map((item) => sourceKey("Holiday", item.id)),
-    ...Array.from({ length: bellPeriods }, (_, index) => sourceKey("BellPeriod", index + 1)),
+    ...bellPeriods.map((item) => sourceKey("BellPeriod", item.unitOfDay)),
   ];
   const duplicateExternalIdentities = sourceKeys.length - new Set(sourceKeys).size;
   const unknownClassReferences = studentClasses.filter(
@@ -224,7 +254,12 @@ export const summarizeDirectoryInventory = (inventory: DirectoryInventory): Dire
   addDiagnostic(diagnostics, "Error", "UnknownClassReference", unknownClassReferences);
   addDiagnostic(diagnostics, "Error", "UnknownTeacherReference", unknownTeacherReferences);
   addDiagnostic(diagnostics, "Error", "UnknownDepartmentReference", unknownDepartmentReferences);
-  addDiagnostic(diagnostics, "Warning", "BellScheduleUnavailable", bellPeriods === 0 ? 1 : 0);
+  addDiagnostic(
+    diagnostics,
+    "Warning",
+    "BellScheduleUnavailable",
+    bellPeriods.length === 0 ? 1 : 0,
+  );
 
   return DirectoryPreview.make({
     dataSourceId,
@@ -253,7 +288,7 @@ export const summarizeDirectoryInventory = (inventory: DirectoryInventory): Dire
       students: students.length,
       activities: activities.length,
       holidays: holidays.length,
-      bellPeriods,
+      bellPeriods: bellPeriods.length,
     }),
     ignored,
     diagnostics,
@@ -261,7 +296,7 @@ export const summarizeDirectoryInventory = (inventory: DirectoryInventory): Dire
 };
 
 /** Reads one complete school-year directory slice. It never writes Studienbuch state. */
-export const fetchDirectoryPreview = Effect.fn("WebUntis.fetchDirectoryPreview")(function* (
+export const fetchDirectoryInventory = Effect.fn("WebUntis.fetchDirectoryInventory")(function* (
   requestedSchoolYear: string,
 ) {
   const app = yield* AppClient;
@@ -291,7 +326,14 @@ export const fetchDirectoryPreview = Effect.fn("WebUntis.fetchDirectoryPreview")
     { concurrency: 3 },
   ).pipe(withSchoolYear(academicYear.id));
 
-  return summarizeDirectoryInventory({ appData, academicYear, ...filters });
+  return { appData, academicYear, ...filters } satisfies DirectoryInventory;
+});
+
+/** Reads and summarizes one complete school-year directory slice without writing it. */
+export const fetchDirectoryPreview = Effect.fn("WebUntis.fetchDirectoryPreview")(function* (
+  requestedSchoolYear: string,
+) {
+  return summarizeDirectoryInventory(yield* fetchDirectoryInventory(requestedSchoolYear));
 });
 
 /** Production WebUntis client wiring. It reads credentials from the Effect config provider. */

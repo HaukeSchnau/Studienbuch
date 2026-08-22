@@ -7,6 +7,7 @@ PostgreSQL persistence seam:
 - an Effect-native Drizzle client backed by that same pool
 - a single migration history under `drizzle/`, applied in process at server start
 - Better Auth's current-state tables as the initial schema
+- immutable source-import generations for provider observations
 
 The pool deliberately keeps node-postgres' default type parsers. Better Auth queries this same pool
 through its Kysely adapter, which is configured with `supportsDates: true` and therefore never
@@ -16,9 +17,10 @@ columns to text in SQL and decode them themselves.
 
 ## Layout
 
-`index.ts` is the only entry point. Implementation is grouped by capability: `database/` holds the
-pooled client, the migration runner and the migration bookkeeping; `auth/` holds the Better Auth
-configuration next to the tables it must agree with.
+`index.ts` is the only entry point. Implementation is grouped by capability. `database/` holds the
+pooled client, migration runner and migration bookkeeping. `auth/` holds the Better Auth
+configuration next to the tables it must agree with. `importing/` owns durable provider
+observations, while `webuntis/` fetches and normalizes that provider's data.
 
 ## Authentication
 
@@ -37,9 +39,25 @@ Applications supply their own plugins and trusted origins. `tanstackStartCookies
 concern and `expo()` a mobile one, and neither belongs in a package that only knows about the
 database.
 
-There is deliberately no generic repository, domain schema, sync protocol, or event log yet. Add a
-domain table with the first server use case that needs it, and keep the workflow behind a narrow
-Effect module rather than exposing Drizzle queries to route handlers.
+There is deliberately no generic repository, domain projection schema, sync protocol, or event log
+yet. The import store records what a provider said without pretending that every WebUntis activity
+is already a Studienbuch subject or course. Add domain tables with the first projection that needs
+them, and keep the workflow behind a narrow Effect module rather than exposing Drizzle queries to
+route handlers.
+
+## WebUntis directory imports
+
+The console previews by default and only opens PostgreSQL when `--apply` is explicit:
+
+```bash
+just console webuntis-directory --school-year 2026/2027
+just console webuntis-directory --school-year 2026/2027 --apply
+```
+
+An applied snapshot becomes an immutable source-import generation. A transaction-scoped advisory
+lock serializes imports for the same data source, dataset and academic year. The transaction writes
+all observations before it changes the current-generation pointer. Equal snapshots reuse the
+current run, while changed snapshots retain the previous generation.
 
 ## Commands
 
