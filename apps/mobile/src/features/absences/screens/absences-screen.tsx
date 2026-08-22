@@ -6,11 +6,11 @@ import { PageScaffold } from "~/ui/navigation/page-scaffold";
 import { Text } from "~/ui/text";
 import { colors } from "~/ui/colors";
 import type { Absence } from "~/compat/mobile-v0";
-import { useAbsences } from "~/infra/data/hooks";
 import { useProfile } from "~/features/profile";
 import { AddAbsence } from "../components/add-absence";
 import { AbsenceItem } from "../components/absence-item";
 import { getAbsencesPageModel } from "../model/absences-page-model";
+import { useAbsences } from "../use-absences";
 
 export const AbsencesScreen = () => {
   const [isAddVisible, setIsAddVisible] = useState(false);

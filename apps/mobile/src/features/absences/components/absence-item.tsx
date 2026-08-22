@@ -10,10 +10,10 @@ import { Text } from "~/ui/text";
 import { haptics } from "~/infra/native/haptics";
 import { isAbsenceConfirmed, subjectNameMap, type Absence } from "~/compat/mobile-v0";
 import { useCourses } from "~/features/courses";
-import { useAbsences } from "~/infra/data/hooks";
 import { absenceConfirmationRoute } from "~/infra/routing/params";
 import { colors } from "~/ui/colors";
 import { useProfile } from "~/features/profile";
+import { useAbsences } from "../use-absences";
 
 export const AbsenceItem = ({ absence }: { absence: Absence }) => {
   const { profile: user } = useProfile();

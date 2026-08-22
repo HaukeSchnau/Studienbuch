@@ -8,12 +8,12 @@ import { Card } from "~/ui/card";
 import { IconButton } from "~/ui/icon-button";
 import { Text } from "~/ui/text";
 import { isAbsenceConfirmed } from "~/compat/mobile-v0";
-import { useAbsences } from "~/infra/data/hooks";
 import { absencesRoute } from "~/infra/routing/params";
 import { useProfile } from "~/features/profile";
 import { AddAbsence } from "./add-absence";
 import BigCheck from "../big-check.svg";
 import Warning from "../warning.svg";
+import { useAbsences } from "../use-absences";
 
 export const AbsencesOverviewCard = () => {
   const [isAddVisible, setIsAddVisible] = useState(false);
