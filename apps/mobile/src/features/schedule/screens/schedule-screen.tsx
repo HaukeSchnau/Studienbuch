@@ -34,7 +34,7 @@ import { useMainTabBarPadding } from "~/ui/use-main-tab-bar-padding";
 import { haptics } from "~/infra/native/haptics";
 import { subjectNameMap, type SubjectId } from "~/compat/mobile-v0";
 import { useCourses } from "~/features/courses";
-import { useScheduleData } from "~/infra/data/hooks";
+import { useSchedule } from "../use-schedule";
 import { courseRoute } from "~/infra/routing/params";
 import { colors } from "~/ui/colors";
 
@@ -130,7 +130,7 @@ const EmptyWeekState = () => (
 
 export const ScheduleScreen = () => {
   const { getCourse } = useCourses();
-  const { timetable } = useScheduleData();
+  const { timetable } = useSchedule();
   const [weekOffset, setWeekOffset] = useState(0);
   const [gridHeight, setGridHeight] = useState(0);
   const [gridWidth, setGridWidth] = useState(0);

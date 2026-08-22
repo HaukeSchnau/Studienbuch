@@ -1,25 +1,19 @@
 import {
-  getActiveHoliday,
   getCourseGrades,
   isGradeConfirmed,
   type Absence,
   type Grade,
   type GradeType,
-  type Holiday,
-  type TimetableEntry,
 } from "~/compat/mobile-v0";
 import type { PropsWithChildren } from "react";
 import { createContext, useContext, useState } from "react";
-import { absencesSeed, gradesSeed, holidaysSeed, timetableSeed } from "./fixtures";
+import { absencesSeed, gradesSeed } from "./fixtures";
 import { createMockId } from "~/infra/mock-data/id";
 import { mockSignatureSvg } from "./mock-signatures";
 
 interface MockDataContextValue {
-  holidays: Holiday[];
-  timetable: TimetableEntry[];
   absences: Absence[];
   grades: Grade[];
-  getActiveHoliday: (date?: Date) => Holiday | undefined;
   getCourseGrades: (courseId: string) => Grade[];
   addAbsence: (absence: { date: Date; courseIds: string[]; reason: string }) => void;
   deleteAbsence: (absenceId: string) => void;
@@ -37,11 +31,8 @@ interface MockDataContextValue {
 // Missing providers degrade to an empty, read-only data source. The app shell installs the real
 // provider, but keeping the context total lets render code represent absence without exceptions.
 const unavailableMockDataRuntime: MockDataContextValue = {
-  holidays: [],
-  timetable: [],
   absences: [],
   grades: [],
-  getActiveHoliday: () => undefined,
   getCourseGrades: () => [],
   addAbsence: () => undefined,
   deleteAbsence: () => undefined,
@@ -58,11 +49,8 @@ export function MockDataProvider({ children }: PropsWithChildren) {
   const [grades, setGrades] = useState(gradesSeed);
 
   const value: MockDataContextValue = {
-    holidays: holidaysSeed,
-    timetable: timetableSeed,
     absences,
     grades,
-    getActiveHoliday: (date?: Date) => getActiveHoliday(holidaysSeed, date),
     getCourseGrades: (courseId) => getCourseGrades(grades, courseId),
     addAbsence: ({ date, courseIds, reason }) => {
       setAbsences((current) => [

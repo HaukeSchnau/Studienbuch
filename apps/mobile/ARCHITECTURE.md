@@ -90,7 +90,7 @@ Effect-backed queries and commands without changing component imports.
 | Tasks          | `features/tasks`          | Effect Atom, seeded by mock fixtures |
 | Courses        | `features/courses`        | Effect Atom, seeded by mock fixtures |
 | Grades         | `features/courses/grades` | Temporary fixture context            |
-| Schedule       | `features/schedule`       | Temporary fixture context            |
+| Schedule       | `features/schedule`       | Effect Atom, seeded by mock fixtures |
 | Absences       | `features/absences`       | Temporary fixture context            |
 | Profile        | `features/profile`        | Effect Atom, seeded by mock fixtures |
 | Setup progress | `features/setup`          | Derived from profile and Atom state  |

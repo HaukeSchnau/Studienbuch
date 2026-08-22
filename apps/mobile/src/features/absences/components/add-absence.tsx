@@ -15,7 +15,8 @@ import { getEntriesForSchoolDay, getNextSchoolDay } from "~/domain-ui/school-day
 import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { subjectNameMap, type SubjectId, type TimetableEntry } from "~/compat/mobile-v0";
 import { useCourses } from "~/features/courses";
-import { useAbsences, useScheduleData } from "~/infra/data/hooks";
+import { useSchedule } from "~/features/schedule";
+import { useAbsences } from "~/infra/data/hooks";
 import { haptics } from "~/infra/native/haptics";
 import { colors } from "~/ui/colors";
 import { nativeHostThemeProps } from "~/ui/native-theme";
@@ -27,7 +28,7 @@ interface Props {
 export const AddAbsence = ({ onClose }: Props) => {
   const { addAbsence } = useAbsences();
   const { getCourse } = useCourses();
-  const { timetable } = useScheduleData();
+  const { timetable } = useSchedule();
   const initialDate = useMemo(() => getNextSchoolDay(timetable), [timetable]);
   const [date, setDate] = useState(initialDate);
   const [reason, setReason] = useState("");

@@ -1,2 +1,2 @@
-export { CourseScreen } from "./screens/course-screen";
+export { coursesAtom, selectedCourseIdsBySemesterAtom } from "./course-atoms";
 export { useCourses, useCourseSelection } from "./use-courses";
