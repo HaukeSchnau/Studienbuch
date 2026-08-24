@@ -1,10 +1,7 @@
-name: QA
+name: CI
 
-# The Release workflow only runs after a push to `main` has already happened, and it gates on
-# `nix flake check`, which builds and smoke-tests the Release without ever running the formatter,
-# the linter, or the test suites. Those ran only in the local `.vite-hooks` pre-commit hook, which
-# is per-clone and bypassable, so a strict lint configuration had nothing enforcing it off one
-# machine. This runs the same `just qa` a developer runs.
+# Pull requests stop after QA. Pushes to `main` and manual runs publish only after this job succeeds,
+# so the same `just qa` a developer runs is the gate in front of the immutable Release workflow.
 
 on:
   push:
@@ -44,9 +41,9 @@ jobs:
           set -euo pipefail
           nix develop --command pnpm install --frozen-lockfile
 
-      # `just qa` is `fmt`, `lint`, `mobile-e2e-check` and `test`. `lint` is where type checking
-      # happens: Vite+ runs Oxlint with `typeCheck: true`, so there is deliberately no separate
-      # type-check step to keep in sync with it.
+      # `just qa` is `fmt-check`, `lint`, `mobile-e2e-check` and `test`. `lint` is where type
+      # checking happens: Vite+ runs Oxlint with `typeCheck: true`, so there is deliberately no
+      # separate type-check step to keep in sync with it.
       #
       # `@stu/server`'s integration test opts in through `DOCKER_HOST` and skips loudly without it.
       # The host runners expose a Podman-compatible socket, so CI runs the suite against a real
@@ -55,3 +52,9 @@ jobs:
         run: |
           set -euo pipefail
           nix develop --command just qa
+
+  release:
+    name: Release
+    if: github.event_name != 'pull_request'
+    needs: qa
+    uses: schnau/nix-infra-modules/.gitea/workflows/project-release.yml@main

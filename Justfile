@@ -4,7 +4,7 @@ set lists
 [parallel]
 qa-tasks: lint mobile-e2e-check test
 
-qa: fmt qa-tasks
+qa: fmt-check qa-tasks
 fix: fmt lint-fix
 
 doctor:
