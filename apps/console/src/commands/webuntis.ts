@@ -9,6 +9,7 @@ import {
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import { Command, Flag } from "effect/unstable/cli";
 
 const schoolYear = Flag.string("school-year").pipe(
@@ -24,6 +25,30 @@ const apply = Flag.boolean("apply").pipe(
 const start = Flag.string("start").pipe(Flag.withDescription("First timetable date, YYYY-MM-DD"));
 
 const end = Flag.string("end").pipe(Flag.withDescription("Last timetable date, YYYY-MM-DD"));
+
+const courseAuditRange = Flag.string("range").pipe(
+  Flag.withDescription("Repeatable SCHOOL_YEAR,START,END timetable audit range"),
+  Flag.filterMap(
+    (value) => {
+      const [schoolYear, start, end, ...rest] = value.split(",");
+      if (
+        rest.length > 0 ||
+        schoolYear === undefined ||
+        start === undefined ||
+        end === undefined ||
+        schoolYear.length === 0 ||
+        start.length === 0 ||
+        end.length === 0
+      ) {
+        return Option.none();
+      }
+      return Option.some({ schoolYear, start, end });
+    },
+    () => "Expected SCHOOL_YEAR,START,END, for example 2026/2027,2026-08-24,2026-09-20",
+  ),
+);
+
+const courseAuditRanges = Flag.atLeast(courseAuditRange, 1);
 
 export const runWebUntisDirectoryPreview = Effect.fn("Console.webUntisDirectoryPreview")(function* (
   requestedSchoolYear: string,
@@ -116,3 +141,22 @@ export const webUntisTimetableCommand = Command.make(
           Effect.provide(WebUntisTimetable.layer),
         ),
 ).pipe(Command.withDescription("Preview or persist identity-bearing WebUntis timetable views"));
+
+export const runWebUntisCourseIdentityAudit = Effect.fn("Console.webUntisCourseIdentityAudit")(
+  function* (ranges: ReadonlyArray<WebUntisTimetable.CourseIdentityAuditRange>) {
+    const audit = yield* WebUntisTimetable.fetchCourseIdentityAudit(ranges);
+    yield* Console.log(JSON.stringify(audit, null, 2));
+    return audit;
+  },
+);
+
+export const webUntisCourseIdentityAuditCommand = Command.make(
+  "webuntis-course-audit",
+  { ranges: courseAuditRanges },
+  ({ ranges }) =>
+    runWebUntisCourseIdentityAudit(ranges).pipe(Effect.provide(WebUntisTimetable.layer)),
+).pipe(
+  Command.withDescription(
+    "Audit live WebUntis occurrence and course identity evidence without persistence",
+  ),
+);

@@ -84,6 +84,11 @@ const inventory = (
   overrides: Partial<TimetableInventory> = {},
 ): TimetableInventory => ({
   dataSourceId: "webuntis:school-1",
+  school: {
+    externalId: "school-1",
+    name: "Test School",
+    loginName: "test-school",
+  },
   academicYear: {
     id: 10,
     name: "2026/2027",
@@ -197,6 +202,19 @@ describe("WebUntis timetable import", () => {
     expect(
       plan.snapshots[0]?.observations.map((observation) => observation.payload.location).sort(),
     ).toEqual(["Back", "Day", "Grid"]);
+  });
+
+  it("preserves a null primary position from historical timetable entries", () => {
+    const plan = makeTimetableImportPlan(
+      inventory([
+        response([
+          timetableDay(classOne, [timetableEntry({ position1: null })]),
+          timetableDay(classTwo, []),
+        ]),
+      ]),
+    );
+
+    expect(plan.snapshots[0]?.observations[0]?.payload.entry.position1).toBeNull();
   });
 
   it("makes missing, denied, and response-error dates partial so absence cannot delete records", () => {
