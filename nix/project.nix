@@ -40,6 +40,17 @@ let
         inherit pkgs workspace;
       };
 
+      # TODO: remove this override once the Mermaid cardinality fix is released by Atlas and
+      # available in nixpkgs. The patch matches the upstream contribution linked from the README.
+      atlas = pkgs.atlas.overrideAttrs (old: {
+        patches = (old.patches or [ ]) ++ [ ./atlas-mermaid-required-cardinality.patch ];
+        # The upstream derivation otherwise builds and tests every package in the repository.
+        # This shell only consumes the CLI; the patched cmdlog tests run in the upstream change.
+        subPackages = [ "." ];
+        doCheck = false;
+        enableParallelBuilding = true;
+      });
+
       projectRuntime = nix-infra-modules.lib.projectRuntime.mkDevelopment {
         inherit pkgs descriptorPath;
         actions = {
@@ -59,6 +70,10 @@ let
         pkgs.just
         pkgs.python3
         pkgs.stdenv.cc
+      ];
+      diagramPackages = [
+        atlas
+        pkgs.mermaid-cli
       ];
       developmentShellHook = ''
         export PATH="$PWD/node_modules/.bin:$PATH"
@@ -126,7 +141,7 @@ let
         default = pkgs.mkShellNoCC (
           mobile.devShell.environment
           // {
-            packages = developmentPackages ++ mobile.devShell.packages;
+            packages = developmentPackages ++ diagramPackages ++ mobile.devShell.packages;
             shellHook = developmentShellHook;
           }
         );

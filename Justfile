@@ -35,6 +35,28 @@ db-generate:
 db-migrate:
     vp run --filter "@stu/server" db:migrate
 
+db-diagram:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    diagram_tmp="$(mktemp -d)"
+    trap 'rm -rf "$diagram_tmp"' EXIT
+    atlas_format='{''{ mermaid . }''}'
+
+    cd packages/server
+    DATABASE_URL="${DATABASE_URL:-postgresql://diagram:diagram@diagram.invalid/diagram}" \
+        pnpm exec drizzle-kit export --config=drizzle.config.ts > "$diagram_tmp/schema.sql"
+    atlas schema inspect \
+        --url "file://$diagram_tmp/schema.sql" \
+        --dev-url "docker://postgres/17/dev?search_path=public" \
+        --format "$atlas_format" > "$diagram_tmp/schema.mmd"
+    mmdc \
+        --input "$diagram_tmp/schema.mmd" \
+        --output "$diagram_tmp/schema.svg" \
+        --backgroundColor transparent
+
+    install -m 0644 "$diagram_tmp/schema.mmd" ../../docs/database-schema.mmd
+    install -m 0644 "$diagram_tmp/schema.svg" ../../docs/database-schema.svg
+
 icons:
     node scripts/generate-icons.ts
 
