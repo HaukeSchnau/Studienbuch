@@ -115,4 +115,4 @@ export const webUntisTimetableCommand = Command.make(
       : runWebUntisTimetablePreview(schoolYear, start, end).pipe(
           Effect.provide(WebUntisTimetable.layer),
         ),
-).pipe(Command.withDescription("Preview or persist WebUntis class timetable views"));
+).pipe(Command.withDescription("Preview or persist identity-bearing WebUntis timetable views"));

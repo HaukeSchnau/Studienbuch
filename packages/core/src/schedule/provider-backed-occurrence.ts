@@ -83,12 +83,12 @@ export const ProviderOccurrenceClaim = Schema.Struct({
   type: Schema.String,
   status: Schema.String,
   resources: Schema.Array(ProviderOccurrenceResourcePosition),
-  notes: Schema.String,
+  notes: Schema.NullOr(Schema.String),
   icons: Schema.Array(Schema.String),
   texts: Schema.Array(ProviderOccurrenceText),
-  lessonText: Schema.String,
+  lessonText: Schema.NullOr(Schema.String),
   lessonInfo: Schema.optional(Schema.String),
-  substitutionText: Schema.String,
+  substitutionText: Schema.NullOr(Schema.String),
   presentation: Schema.Struct({
     color: Schema.String,
     layoutStartPosition: Schema.Int,
@@ -145,7 +145,7 @@ export interface ProviderBackedOccurrence extends Schema.Schema.Type<
   typeof ProviderBackedOccurrence
 > {}
 
-/** Derives one stable id without depending on provider response or class-view ordering. */
+/** Derives one stable id without depending on provider response or resource-view ordering. */
 export const providerBackedOccurrenceId = (input: {
   readonly dataSourceId: DataSourceId;
   readonly date: PlainDate.Record;

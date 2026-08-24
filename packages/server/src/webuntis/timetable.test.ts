@@ -91,7 +91,12 @@ const inventory = (
   },
   requestedRange: { start: "2026-08-24", end: "2026-08-24" },
   requestedDates: ["2026-08-24"],
-  classes: [classOne, classTwo],
+  resources: {
+    CLASS: [classOne, classTwo],
+    SUBJECT: [],
+    TEACHER: [],
+    ROOM: [],
+  },
   responses,
   ...overrides,
 });
@@ -124,7 +129,7 @@ describe("WebUntis timetable import", () => {
     );
 
     expect(first.preview).toMatchObject({
-      classCount: 2,
+      resourceCounts: { CLASS: 2, SUBJECT: 0, TEACHER: 0, ROOM: 0 },
       completeDays: 1,
       partialDays: 0,
       wouldImport: { occurrenceViews: 2 },
@@ -155,8 +160,8 @@ describe("WebUntis timetable import", () => {
 
     expect(plan.preview.days[0]).toMatchObject({
       completeness: "Complete",
-      expectedClassRows: 2,
-      returnedClassRows: 2,
+      expectedResourceRows: 2,
+      returnedResourceRows: 2,
       occurrenceViews: 0,
       dayStatuses: { NO_DATA: 2 },
     });
@@ -232,7 +237,7 @@ describe("WebUntis timetable import", () => {
     });
   });
 
-  it.effect("merges class views into one occurrence without choosing between their claims", () =>
+  it.effect("merges resource views into one occurrence without choosing between their claims", () =>
     Effect.gen(function* () {
       const removedTeacher = positionResource("TEACHER", "REMOVED", "Teacher old");
       const addedTeacher = positionResource("TEACHER", "ADDED", "Teacher new");
@@ -254,10 +259,34 @@ describe("WebUntis timetable import", () => {
         duration: { start: "09:00", end: "09:45" },
         status: "CANCELLED",
       });
+      const subject = resource(3, "Math");
+      const teacher = resource(4, "Teacher new");
+      const room = resource(5, "Room 2");
+      const nullableRoomView = timetableEntry({
+        notesAll: null,
+        lessonText: null,
+        substitutionText: null,
+      });
       const plan = makeTimetableImportPlan(
-        inventory([
-          response([timetableDay(classTwo, [secondView]), timetableDay(classOne, [firstView])]),
-        ]),
+        inventory(
+          [
+            response([
+              timetableDay(classTwo, [secondView]),
+              timetableDay(classOne, [firstView]),
+              timetableDay(subject, [timetableEntry()], { resourceType: "SUBJECT" }),
+              timetableDay(teacher, [timetableEntry()], { resourceType: "TEACHER" }),
+              timetableDay(room, [nullableRoomView], { resourceType: "ROOM" }),
+            ]),
+          ],
+          {
+            resources: {
+              CLASS: [classOne, classTwo],
+              SUBJECT: [subject],
+              TEACHER: [teacher],
+              ROOM: [room],
+            },
+          },
+        ),
       );
       const dataSourceId = Importing.DataSourceId.make(plan.preview.dataSourceId);
       const academicYearSource = Importing.SourceIdentity.make({
@@ -270,6 +299,16 @@ describe("WebUntis timetable import", () => {
         entityKind: "ClassGroup",
         externalId: Importing.ExternalId.make("1"),
       });
+      const teacherSource = Importing.SourceIdentity.make({
+        dataSourceId,
+        entityKind: "Teacher",
+        externalId: Importing.ExternalId.make("4"),
+      });
+      const roomSource = Importing.SourceIdentity.make({
+        dataSourceId,
+        entityKind: "Room",
+        externalId: Importing.ExternalId.make("5"),
+      });
       const entityLinks = [
         Importing.EntityLink.cases.AcademicYear.make({
           source: academicYearSource,
@@ -278,6 +317,14 @@ describe("WebUntis timetable import", () => {
         Importing.EntityLink.cases.ClassGroup.make({
           source: classSource,
           classGroupId: Organization.ClassGroupId.make("paula-1"),
+        }),
+        Importing.EntityLink.cases.SchoolMembership.make({
+          source: teacherSource,
+          schoolMembershipId: Organization.SchoolMembershipId.make("teacher-4"),
+        }),
+        Importing.EntityLink.cases.Room.make({
+          source: roomSource,
+          roomId: Organization.RoomId.make("room-5"),
         }),
       ];
       const occurrences = yield* projectTimetableOccurrences({
@@ -294,10 +341,17 @@ describe("WebUntis timetable import", () => {
       expect(occurrences).toHaveLength(1);
       expect(occurrences[0]?.id).toBe(reordered[0]?.id);
       expect(occurrences[0]?.providerEntryIds).toEqual(["101", "102"]);
-      expect(occurrences[0]?.claims.map((claim) => claim.status)).toEqual(["CHANGED", "CANCELLED"]);
+      expect(occurrences[0]?.claims).toHaveLength(5);
+      expect(occurrences[0]?.claims.map((claim) => claim.status)).toEqual([
+        "CHANGED",
+        "CANCELLED",
+        "REGULAR",
+        "REGULAR",
+        "REGULAR",
+      ]);
       expect(
         occurrences[0]?.claims.map((claim) => Schedule.LocalTime.hour(claim.timeRange.start)),
-      ).toEqual([8, 9]);
+      ).toEqual([8, 9, 8, 8, 8]);
       expect(occurrences[0]?.claims[0]).toMatchObject({
         source: { entityKind: "TimetableOccurrence" },
         academicYear: {
@@ -320,6 +374,25 @@ describe("WebUntis timetable import", () => {
         ],
       });
       expect(occurrences[0]?.claims[1]?.viewedResource.entityLink).toBeUndefined();
+      expect(
+        Object.fromEntries(
+          occurrences[0]?.claims.map((claim) => [
+            claim.viewedResource.type,
+            {
+              sourceKind: claim.viewedResource.source?.entityKind,
+              linkTag: claim.viewedResource.entityLink?._tag,
+            },
+          ]) ?? [],
+        ),
+      ).toMatchObject({
+        CLASS: { sourceKind: "ClassGroup" },
+        SUBJECT: { sourceKind: "Subject", linkTag: undefined },
+        TEACHER: { sourceKind: "Teacher", linkTag: "SchoolMembership" },
+        ROOM: { sourceKind: "Room", linkTag: "Room" },
+      });
+      expect(
+        occurrences[0]?.claims.find((claim) => claim.viewedResource.type === "ROOM"),
+      ).toMatchObject({ notes: null, lessonText: null, substitutionText: null });
     }),
   );
 
@@ -339,6 +412,30 @@ describe("WebUntis timetable import", () => {
         field: "StartTime",
         value: "tomorrow",
       });
+    }),
+  );
+
+  it.effect("accepts WebUntis local date-time strings without discarding their raw form", () =>
+    Effect.gen(function* () {
+      const dated = timetableEntry({
+        duration: { start: "2026-08-24T08:00", end: "2026-08-24T09:30" },
+      });
+      const plan = makeTimetableImportPlan(
+        inventory([response([timetableDay(classOne, [dated]), timetableDay(classTwo, [])])]),
+      );
+      const occurrences = yield* projectTimetableOccurrences({
+        dataSourceId: Importing.DataSourceId.make(plan.preview.dataSourceId),
+        observations: plan.snapshots.flatMap((snapshot) => snapshot.observations),
+      });
+
+      expect(
+        occurrences.map((occurrence) =>
+          Schedule.LocalTime.hour(occurrence.claims[0].timeRange.start),
+        ),
+      ).toEqual([8]);
+      expect(plan.snapshots[0]?.observations[0]?.payload.entry.duration.start).toBe(
+        "2026-08-24T08:00",
+      );
     }),
   );
 });

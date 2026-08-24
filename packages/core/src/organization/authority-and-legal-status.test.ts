@@ -7,6 +7,7 @@ import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { CourseOffering } from "./course-offering.ts";
 import {
   AcademicTermId,
+  AcademicYearId,
   CourseOfferingId,
   GuardianRelationshipId,
   PersonId,
@@ -64,6 +65,7 @@ const studentDetails = StudentMembership.make({ membershipId: student.id });
 const offering = CourseOffering.make({
   id: courseOfferingId,
   schoolId,
+  academicYearId: AcademicYearId.make("year-1"),
   termId: AcademicTermId.make("term-1"),
   subjectId: SubjectId.make("mathematics"),
   name: "Mathematics",

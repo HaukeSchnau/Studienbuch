@@ -202,6 +202,7 @@ describe("school directory", () => {
       const offering = CourseOffering.make({
         id: CourseOfferingId.make("foreign-offering"),
         schoolId: SchoolId.make("other-school"),
+        academicYearId: year.id,
         termId: academicTerm.id,
         subjectId: subject.id,
         name: "Mathematics",
@@ -310,6 +311,54 @@ describe("school directory", () => {
       });
     }),
   );
+
+  it.effect(
+    "accepts an academic-year offering before its provider activity resolves to a subject",
+    () =>
+      Effect.gen(function* () {
+        const year = academicYear("year-1", "2026-08-01", "2027-07-31");
+        const classGroup = ClassGroup.make({
+          id: ClassGroupId.make("class-1"),
+          schoolId,
+        });
+        const offering = CourseOffering.make({
+          id: CourseOfferingId.make("provider-course-1"),
+          schoolId,
+          academicYearId: year.id,
+          name: "Provider activity",
+          classGroupIds: [classGroup.id],
+        });
+        const structure = SchoolDirectory.make({
+          school: School.make({ id: schoolId, name: "School" }),
+          subjectCatalog: SubjectCatalog.make({ schoolId, subjects: [] }),
+          academicYears: [year],
+          terms: [],
+          cohorts: [],
+          departments: [],
+          buildings: [],
+          rooms: [],
+          people: [],
+          memberships: [],
+          students: [],
+          studentClassAssignments: [],
+          classTeacherAssignments: [],
+          departmentAssignments: [],
+          classGroups: [classGroup],
+          classGroupAcademicYears: [
+            ClassGroupAcademicYear.make({
+              classGroupId: classGroup.id,
+              academicYearId: year.id,
+              name: "5.1",
+            }),
+          ],
+          courseOfferings: [offering],
+          choiceGroups: [],
+          enrollments: [],
+        });
+
+        expect((yield* validateSchoolDirectory(structure)).courseOfferings).toEqual([offering]);
+      }),
+  );
 });
 
 describe("course choices and enrollments", () => {
@@ -373,6 +422,7 @@ describe("course choices and enrollments", () => {
     const previous = CourseOffering.make({
       id: firstOffering,
       schoolId,
+      academicYearId: AcademicYearId.make("year-1"),
       termId: AcademicTermId.make("term-1"),
       subjectId,
       name: "Mathematics 8a",

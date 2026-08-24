@@ -84,12 +84,14 @@ const resourcePosition = (
   return Schedule.ProviderOccurrenceResourcePosition.make({ _tag: "Empty", position });
 };
 
-const providerTimePattern = /^(?<hour>\d{2}):(?<minute>\d{2})(?::(?<second>\d{2}))?$/;
+const providerTimePattern =
+  /^(?:(?<date>\d{4}-\d{2}-\d{2})T)?(?<hour>\d{2}):(?<minute>\d{2})(?::(?<second>\d{2}))?$/;
 
 const parseProviderTime = Effect.fnUntraced(function* (
   sourceExternalId: string,
   field: "StartTime" | "EndTime",
   value: string,
+  expectedDate: string,
 ) {
   const groups = providerTimePattern.exec(value)?.groups;
   const hour = Number(groups?.hour);
@@ -97,6 +99,7 @@ const parseProviderTime = Effect.fnUntraced(function* (
   const second = groups?.second === undefined ? 0 : Number(groups.second);
   if (
     groups === undefined ||
+    (groups.date !== undefined && groups.date !== expectedDate) ||
     !Number.isInteger(hour) ||
     !Number.isInteger(minute) ||
     !Number.isInteger(second) ||
@@ -128,8 +131,18 @@ const projectClaim = Effect.fnUntraced(function* (
 ) {
   const { entry, resource: viewedResource } = observation.payload;
   const [start, end] = yield* Effect.all([
-    parseProviderTime(observation.externalId, "StartTime", entry.duration.start),
-    parseProviderTime(observation.externalId, "EndTime", entry.duration.end),
+    parseProviderTime(
+      observation.externalId,
+      "StartTime",
+      entry.duration.start,
+      observation.payload.date,
+    ),
+    parseProviderTime(
+      observation.externalId,
+      "EndTime",
+      entry.duration.end,
+      observation.payload.date,
+    ),
   ]);
   const timeRange = yield* Schedule.LocalTimeRange.Schema.makeEffect({ start, end }).pipe(
     Effect.mapError(() =>
@@ -146,9 +159,21 @@ const projectClaim = Effect.fnUntraced(function* (
     "AcademicYear",
     observation.payload.academicYearExternalId,
   );
+  const [viewedResourceKind, viewedResourceLinkTag] = (() => {
+    switch (observation.payload.resourceType) {
+      case "CLASS":
+        return ["ClassGroup", "ClassGroup"] as const;
+      case "SUBJECT":
+        return ["Subject", "Subject"] as const;
+      case "TEACHER":
+        return ["Teacher", "SchoolMembership"] as const;
+      case "ROOM":
+        return ["Room", "Room"] as const;
+    }
+  })();
   const viewedResourceSource = sourceIdentity(
     dataSourceId,
-    "ClassGroup",
+    viewedResourceKind,
     viewedResource.externalId,
   );
 
@@ -160,7 +185,7 @@ const projectClaim = Effect.fnUntraced(function* (
     },
     viewedResource: {
       source: viewedResourceSource,
-      entityLink: linkedEntity(entityLinks, "ClassGroup", viewedResourceSource),
+      entityLink: linkedEntity(entityLinks, viewedResourceLinkTag, viewedResourceSource),
       type: observation.payload.resourceType,
       shortName: viewedResource.shortName,
       longName: viewedResource.longName,
@@ -225,7 +250,7 @@ const occurrenceKey = (projected: ProjectedClaim) =>
     projected.providerEntryIds,
   ]);
 
-/** Groups lossless class-view claims into provider-backed dated occurrences. */
+/** Groups lossless resource-view claims into provider-backed dated occurrences. */
 export const projectTimetableOccurrences = Effect.fn("WebUntis.projectTimetableOccurrences")(
   function* (input: ProjectTimetableOccurrencesInput) {
     const entityLinks = new Map(
