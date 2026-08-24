@@ -91,7 +91,7 @@ load the resulting PostgreSQL schema in a disposable development database, and u
 [`docs/database-schema.svg`](../../docs/database-schema.svg). The Mermaid source is the reviewable
 schema artifact; the SVG is its rendered form. Atlas 1.3.0 treats every foreign key as optional in
 Mermaid output, so the Nix package temporarily applies
-[the proposed upstream fix](https://github.com/HaukeSchnau/atlas/commit/d1473c52a58401c383cd8f83b60470960c50f1c5)
+[the proposed upstream fix](https://github.com/HaukeSchnau/atlas/commit/c8b54962d4e5efad46e9f434ccb1e028047cce43)
 until it is available in a release.
 
 `just db-migrate` is a convenience for development. A deployed Release applies pending migrations
