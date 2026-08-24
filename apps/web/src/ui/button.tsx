@@ -15,16 +15,9 @@ const buttonVariants = cva(
         secondary: "bg-neutral-200 text-neutral-950 hover:bg-neutral-300",
         ghost: "hover:bg-neutral-100",
         link: "text-neutral-950 underline-offset-4 hover:underline",
-        // The app's own call to action: a blue pill, the colour Flutter fills ElevatedButton with.
-        brand: "bg-accent text-white shadow-float hover:bg-accent-sec focus-visible:ring-accent/40",
-      },
-      radius: {
-        default: "",
-        pill: "rounded-full",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        xl: "h-12 px-7 text-base has-[>svg]:px-6",
         xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
         lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
@@ -36,7 +29,6 @@ const buttonVariants = cva(
     },
     defaultVariants: {
       variant: "default",
-      radius: "default",
       size: "default",
     },
   },
@@ -45,7 +37,6 @@ const buttonVariants = cva(
 function Button({
   className,
   variant = "default",
-  radius = "default",
   size = "default",
   asChild = false,
   ...props
@@ -59,9 +50,8 @@ function Button({
     <Comp
       data-slot="button"
       data-variant={variant}
-      data-radius={radius}
       data-size={size}
-      className={cn(buttonVariants({ variant, radius, size, className }))}
+      className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
   );
