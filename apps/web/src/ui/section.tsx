@@ -41,7 +41,7 @@ export const Section = ({
 export const SectionHeading = ({ lead, title }: { lead?: ReactNode; title: ReactNode }) => (
   <div className="flex max-w-2xl flex-col gap-5">
     <h2 className="text-3xl/snug text-primary-text text-balance sm:text-4xl/snug">{title}</h2>
-    {lead ? <p className="text-lg/relaxed text-ink-soft text-pretty">{lead}</p> : null}
+    {lead ? <p className="text-xl/relaxed text-ink-soft text-pretty">{lead}</p> : null}
   </div>
 );
 
