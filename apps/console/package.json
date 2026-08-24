@@ -4,7 +4,7 @@
   "license": "BUSL-1.1",
   "type": "module",
   "scripts": {
-    "dev": "node src/index.ts",
+    "dev": "tsx src/index.ts",
     "build": "vp pack",
     "clean": "rm -rf dist",
     "start": "node dist/index.mjs",
@@ -17,6 +17,7 @@
     "effect": "catalog:"
   },
   "devDependencies": {
+    "tsx": "^4.23.12",
     "vite-plus": "catalog:"
   }
 }
