@@ -204,31 +204,73 @@ the resulting class set into the course ID. That correctly recognizes that one c
 several classes or cohorts, but makes identity depend on the import window and its observed class
 set.
 
-The four-week live comparison makes the provider boundary more precise. All 305 subject resources
-have distinct exact label triples, but their numeric IDs identify activities rather than courses:
-154 appeared in the measured timetable, and the single `Deutsch` activity was used by 40 classes.
-Conversely, none of 9,937 individual entry IDs recurred on another date. Subject-view claims now
-preserve the activity ID and class claims preserve the exact co-participating classes. Activities
-therefore remain lossless `ProviderActivity` entities while the course projector derives offerings
-from evidence accumulated across daily scopes; it does not treat either an activity ID or a dated
-entry ID as a course ID.
+The four-week live comparison makes the provider boundary more precise. Numeric subject-resource
+IDs identify activities, not courses. Only 154 of the 305 directory activities appeared in 5,648
+dated occurrences. Generic activities such as `IGL`, `Präsenz` and `WPK` apply across many
+independent groups. Conversely, none of 9,937 individual entry IDs recurred on another date.
+Subject-view claims therefore preserve activity identity, but neither activity IDs nor dated entry
+IDs become course IDs.
 
-Core course offerings are now scoped to an academic year with an optional narrower term. Their
-subject is optional until a provider activity resolves, so the importer can retain a real offering
-without inventing a term or discarding it because the subject catalog is incomplete.
+Course identity is stable and opaque. A semester or academic-year boundary does not replace it.
+The planned Core shape mirrors lasting classes: `CourseOffering` owns the durable identity, while a
+`CourseOfferingAcademicYear` record holds that year's name, subject resolution and participating
+classes. Positive evidence may connect adjacent annual records; the boundary itself proves neither
+continuity nor separation.
 
-The initial IGS policy groups one activity's class-bearing occurrences by connected,
-co-participating lasting classes. Separate class courses stay separate; one cross-class course is
-not split into one offering per class. Occurrences without class identity use teacher membership as
-a fallback, which covers the classless upper school. A deterministic school-profile anchor gives
-the component its identity, so adding later occurrences or higher-sorted participants does not
-replace the offering. A durable reconciliation step will preserve the old identity if genuinely
-new evidence later introduces an earlier anchor or changes component boundaries.
+The first experimental projector grouped one activity's occurrences by connected class overlap and
+used teachers for classless entries. Its four-week result contained 743 candidates. The live
+identity audit disproved the grouping invariant, so those candidates are diagnostic output only and
+must not be persisted. One shared class can connect distinct level groups, and a generic activity
+can create a transitive component across otherwise unrelated courses.
 
-Against the live four-week window, 5,648 occurrences yielded 743 inferred academic-year offerings:
-493 class-anchored, 242 teacher-anchored and eight explicitly unassigned. The largest observed
-components span seven lasting classes. All 743 retain unresolved subject status. Another 504
-occurrences have no subject claim and remain diagnosed instead of being forced into an offering.
+### Course identity audit
+
+`webuntis-course-audit` reconstructs provider occurrences and reports evidence without resolving or
+persisting course identity. It separates regular teaching from cancellations, additions and other
+operational events. Output examples are bounded and contain provider IDs rather than teacher names.
+The report is deterministic under reordered periods and observations.
+
+The 2026-08-24 through 2026-09-20 audit found:
+
+| Evidence                                                              |     Count |
+| --------------------------------------------------------------------- | --------: |
+| Provider-backed occurrences                                           |     5,648 |
+| Resource-view claims                                                  |    22,425 |
+| Occurrences with all four imported views                              |     3,534 |
+| Occurrences without an activity claim                                 |       504 |
+| Occurrences with several activity claims                              |         0 |
+| Occurrences whose views disagree on time, type or status              |         0 |
+| Annual provider activities observed                                   |       154 |
+| Different activities with a shared name and lasting class             | 184 pairs |
+| Activities with more than one exact class signature                   |        82 |
+| Activities containing a one-class overlap between signatures          |         9 |
+| Activities whose overlap graph transitively joins disjoint signatures |         2 |
+| Overlapping occurrence pairs for one teacher                          |        49 |
+| Overlapping teacher pairs with the same activity                      |        42 |
+| Overlapping teacher pairs with different activities                   |         7 |
+| Overlapping occurrence pairs for one room                             |       197 |
+
+These observations support a narrower physical invariant. One teacher cannot perform two
+independent teaching events at the same time, so overlapping rows identify a joint event candidate
+or invalid provider data. They do not prove permanent course equality. WebUntis assigns distinct
+entry IDs to these rows, including seven teacher overlaps with different activities. One dated
+occurrence may therefore link several durable courses.
+
+The audit treats these as hard requirements for the reconciler:
+
+- teacher, room, timetable slot, semester and academic year are not identity;
+- student and class membership are evidence, not identity;
+- one shared class cannot merge courses;
+- exceptional occurrences cannot redefine regular course structure;
+- conflicting strong evidence remains unresolved;
+- reconciliation is deterministic and independent of import order;
+- missing observations do not prove a split or removal;
+- every automatic decision retains its source evidence.
+
+The attempted historical audit also found seven older entries with `position1: null`.
+`webuntis-api` 0.2.2 accepts that shape, and source normalization retains the distinction between
+`null` and an empty position array. The four-year continuity comparison still needs a successful
+rerun after the provider stopped accepting new TLS connections during the probe.
 
 ### Provider-backed occurrence projection
 
@@ -236,15 +278,16 @@ Core now models a provider-backed dated occurrence without requiring a recurring
 offering or bell period. Those domain links are explicit and optional. The occurrence contains a
 non-empty set of provider entry IDs and a non-empty set of source claims.
 
-Each resource-view claim retains its academic year, outer resource, day status, entry location, local
-time range, provider type and status, all four resource positions, current and removed resources,
-notes, icons, typed texts, lesson and substitution text, and WebUntis presentation fields. Claims
-remain separate when views disagree. The projection does not pick a convenient status or
-time and discard the others.
+Each resource-view claim retains its academic year, outer resource, day status, entry location,
+local time range, provider type and status, supplied resource positions, current and removed
+resources, notes, icons, typed texts, lesson and substitution text, and WebUntis presentation
+fields. Claims remain separate when views disagree. The projection does not pick a convenient
+status or time and discard the others. Raw source records retain whether each provider position was
+`null`, empty or populated.
 
 Subject, teacher and room claims carry their real provider identities and resolve through typed
 entity links where a domain entity exists. The live API uses `null`, not an empty string, for some
-teacher- and room-view notes, lesson text and substitution text. `webuntis-api` 0.2.1 and Core both
+teacher- and room-view notes, lesson text and substitution text. `webuntis-api` 0.2.2 and Core both
 preserve that distinction.
 
 Every claim retains its provider identity. The durable server projection links that claim to the
@@ -332,14 +375,26 @@ denied resource statuses, entries without provider IDs, conflicting identities a
 make that date partial. A partial date preserves useful additions and updates but cannot remove an
 older record.
 
+Run an identity audit over one or several periods without opening PostgreSQL:
+
+```bash
+just console webuntis-course-audit \
+  --range 2025/2026,2025-09-01,2025-09-28 \
+  --range 2026/2027,2026-08-24,2026-09-20
+```
+
 ## Next implementation slice
 
-1. Persist the inferred course-offering projection across all current daily scopes, reconcile
-   component changes against existing anchors, and attach the resulting IDs to dated occurrences.
-2. Define role-specific timetable and directory contracts and turn projection transitions into authorized,
-   ordered client changes. Keep raw source records and unrestricted projection payloads server-only.
-3. Add student views only if a concrete feature needs their identity; do not duplicate the school
+1. Complete the adjacent-year identity audit, replace the connected-class experiment with explicit
+   evidence and conflict decisions, and add durable course identity plus annual representations to
+   Core.
+2. Persist only resolved course decisions across current daily scopes and attach their IDs to dated
+   occurrences. Retain compatible and ambiguous candidates without forcing a merge.
+3. Define role-specific timetable and directory contracts and turn projection transitions into
+   authorized, ordered client changes. Keep raw source records and unrestricted projection payloads
+   server-only.
+4. Add student views only if a concrete feature needs their identity; do not duplicate the school
    timetable per student by default.
-4. Add the agreed polling policy with jitter, one active execution per source and observable
+5. Add the agreed polling policy with jitter, one active execution per source and observable
    failures that never advance source state.
-5. Add the server-only exams importer before designing its role-specific client projection.
+6. Add the server-only exams importer before designing its role-specific client projection.

@@ -2,7 +2,11 @@ import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import { Command } from "effect/unstable/cli";
 import { observabilityCommand } from "./commands/observability.ts";
 import { pullCommand } from "./commands/pull.ts";
-import { webUntisDirectoryCommand, webUntisTimetableCommand } from "./commands/webuntis.ts";
+import {
+  webUntisCourseIdentityAuditCommand,
+  webUntisDirectoryCommand,
+  webUntisTimetableCommand,
+} from "./commands/webuntis.ts";
 import { withConsoleRuntime } from "./runtime.ts";
 
 export const consoleCommand = Command.make("console").pipe(
@@ -11,6 +15,7 @@ export const consoleCommand = Command.make("console").pipe(
     observabilityCommand,
     webUntisDirectoryCommand,
     webUntisTimetableCommand,
+    webUntisCourseIdentityAuditCommand,
   ]),
 );
 

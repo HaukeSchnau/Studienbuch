@@ -1,3 +1,4 @@
+import { Importing } from "@stu/core";
 import * as EffectArray from "effect/Array";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -20,7 +21,13 @@ import {
 } from "webuntis-api";
 import { TimetableEntrySchema } from "webuntis-api/schemas";
 import { hashSourceObservations, type SourceSnapshot } from "../importing/source-snapshot.ts";
+import {
+  makeCourseIdentityAudit,
+  type CourseIdentityAuditPeriod,
+} from "./course-identity-audit.ts";
 import { SchoolYearUnavailable } from "./directory-preview.ts";
+import { findSchoolProfile } from "./school-profile.ts";
+import { projectTimetableOccurrences } from "./timetable-projection.ts";
 
 const timetableBatchSize = 500;
 
@@ -87,6 +94,11 @@ export interface TimetableDayPreview {
 export interface TimetablePreview {
   readonly dataSourceId: string;
   readonly provider: "WebUntis";
+  readonly school: {
+    readonly externalId: string;
+    readonly name: string;
+    readonly loginName: string;
+  };
   readonly academicYear: {
     readonly externalId: string;
     readonly name: string;
@@ -107,6 +119,7 @@ export interface TimetablePreview {
 
 export interface TimetableInventory {
   readonly dataSourceId: string;
+  readonly school: TimetablePreview["school"];
   readonly academicYear: Schoolyear;
   readonly requestedRange: { readonly start: string; readonly end: string };
   readonly requestedDates: ReadonlyArray<string>;
@@ -219,7 +232,7 @@ const normalizeEntry = (entry: TimetableEntry): TimetableEntry => ({
   ...entry,
   ids: [...entry.ids].sort((left, right) => left - right),
   icons: [...entry.icons].sort(),
-  position1: normalizePositions(entry.position1) ?? [],
+  position1: normalizePositions(entry.position1),
   position2: normalizePositions(entry.position2),
   position3: normalizePositions(entry.position3),
   position4: normalizePositions(entry.position4),
@@ -410,6 +423,7 @@ export const makeTimetableImportPlan = (inventory: TimetableInventory): Timetabl
     preview: {
       dataSourceId: inventory.dataSourceId,
       provider: "WebUntis",
+      school: inventory.school,
       academicYear: {
         externalId: academicYearExternalId,
         name: inventory.academicYear.name,
@@ -519,11 +533,67 @@ export const fetchTimetableImportPlan = Effect.fn("WebUntis.fetchTimetableImport
 
   return makeTimetableImportPlan({
     dataSourceId: `webuntis:${appData.tenant.id}`,
+    school: {
+      externalId: appData.tenant.id,
+      name: appData.tenant.displayName,
+      loginName: appData.tenant.name,
+    },
     academicYear,
     requestedRange: { start, end },
     requestedDates: dates,
     resources,
     responses,
+  });
+});
+
+export interface CourseIdentityAuditRange {
+  readonly schoolYear: string;
+  readonly start: string;
+  readonly end: string;
+}
+
+/** Fetches one or more timetable periods and audits identity evidence without persistence. */
+export const fetchCourseIdentityAudit = Effect.fn("WebUntis.fetchCourseIdentityAudit")(function* (
+  ranges: ReadonlyArray<CourseIdentityAuditRange>,
+) {
+  const plans = yield* Effect.forEach(
+    ranges,
+    (range) => fetchTimetableImportPlan(range.schoolYear, range.start, range.end),
+    { concurrency: 2 },
+  );
+  const periods = yield* Effect.forEach(plans, (plan) =>
+    projectTimetableOccurrences({
+      dataSourceId: Importing.DataSourceId.make(plan.preview.dataSourceId),
+      observations: plan.snapshots.flatMap((snapshot) => snapshot.observations),
+    }).pipe(
+      Effect.map(
+        (occurrences) =>
+          ({
+            academicYear: plan.preview.academicYear,
+            occurrences,
+          }) satisfies CourseIdentityAuditPeriod,
+      ),
+    ),
+  );
+  const school = plans[0]?.preview.school;
+  const profile = school === undefined ? undefined : findSchoolProfile(school);
+
+  return makeCourseIdentityAudit({
+    periods,
+    lastingClassIdentity:
+      profile === undefined
+        ? undefined
+        : ({ academicYearStart, shortName }) => {
+            const resolution = profile.resolveClass({ academicYearStart, shortName });
+            switch (resolution._tag) {
+              case "ClassGroup":
+                return `ClassGroup:${resolution.classGroupId}`;
+              case "Cohort":
+                return `CohortEntry:${resolution.cohortEntryAcademicYearStart}`;
+              case "Collection":
+                return undefined;
+            }
+          },
   });
 });
 
@@ -542,5 +612,10 @@ export {
   type CourseOfferingProjection,
   type ProjectCourseOfferingsInput,
 } from "./course-offering-projection.ts";
+export {
+  makeCourseIdentityAudit,
+  type CourseIdentityAuditInput,
+  type CourseIdentityAuditPeriod,
+} from "./course-identity-audit.ts";
 
 export * as WebUntisTimetable from "./timetable.ts";
