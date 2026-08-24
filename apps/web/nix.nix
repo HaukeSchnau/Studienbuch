@@ -24,7 +24,7 @@ let
   # Update with the `got:` hash reported by:
   #   nix build .#webApplication
   # after regenerating pnpm-lock.yaml for all workspace manifest changes.
-  pnpmDependencyHash = "sha256-hLy/q4PReuU3FeWv2MTubyrjlaNNTigTQ/qghKgkMrI=";
+  pnpmDependencyHash = "sha256-xmBiWabmUO6EOINAvI2IJfMN1BzockXJ3TDTvrYRtUM=";
 
   pnpmDeps = pkgs.fetchPnpmDeps {
     pname = "studienbuch-web-dependencies";

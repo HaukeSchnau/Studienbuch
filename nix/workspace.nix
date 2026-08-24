@@ -44,7 +44,8 @@ let
       # The Release applies migrations in-process, so the history must reach the web build.
       test -d ${webSource}/packages/server/drizzle
       test ! -e ${webSource}/apps/mobile/src
-      test ! -e ${webSource}/packages/core/src
+      # @stu/server depends on @stu/core, so the production source must contain the core package.
+      test -d ${webSource}/packages/core/src
       test -d ${webSource}/packages/observability/src
 
       test -f ${mobileSource}/apps/mobile/package.json
