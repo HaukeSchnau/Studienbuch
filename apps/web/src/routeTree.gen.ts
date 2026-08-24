@@ -10,6 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as VBlobsRouteImport } from './routes/v.blobs'
+import { Route as VNotebookRouteImport } from './routes/v.notebook'
+import { Route as VSwooshRouteImport } from './routes/v.swoosh'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiHealthLiveRouteImport } from './routes/api/health/live'
 import { Route as ApiHealthReadyRouteImport } from './routes/api/health/ready'
@@ -19,6 +22,21 @@ import { Route as ApiObservabilityV1TelemetryRouteImport } from './routes/api/ob
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VBlobsRoute = VBlobsRouteImport.update({
+  id: '/v/blobs',
+  path: '/v/blobs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VNotebookRoute = VNotebookRouteImport.update({
+  id: '/v/notebook',
+  path: '/v/notebook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VSwooshRoute = VSwooshRouteImport.update({
+  id: '/v/swoosh',
+  path: '/v/swoosh',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -51,6 +69,9 @@ const ApiObservabilityV1TelemetryRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/v/blobs': typeof VBlobsRoute
+  '/v/notebook': typeof VNotebookRoute
+  '/v/swoosh': typeof VSwooshRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -59,6 +80,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/v/blobs': typeof VBlobsRoute
+  '/v/notebook': typeof VNotebookRoute
+  '/v/swoosh': typeof VSwooshRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -68,6 +92,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/v/blobs': typeof VBlobsRoute
+  '/v/notebook': typeof VNotebookRoute
+  '/v/swoosh': typeof VSwooshRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -78,6 +105,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/v/blobs'
+    | '/v/notebook'
+    | '/v/swoosh'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -86,6 +116,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/v/blobs'
+    | '/v/notebook'
+    | '/v/swoosh'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -94,6 +127,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/v/blobs'
+    | '/v/notebook'
+    | '/v/swoosh'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -103,6 +139,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  VBlobsRoute: typeof VBlobsRoute
+  VNotebookRoute: typeof VNotebookRoute
+  VSwooshRoute: typeof VSwooshRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiHealthLiveRoute: typeof ApiHealthLiveRoute
   ApiHealthReadyRoute: typeof ApiHealthReadyRoute
@@ -117,6 +156,27 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/v/blobs': {
+      id: '/v/blobs'
+      path: '/v/blobs'
+      fullPath: '/v/blobs'
+      preLoaderRoute: typeof VBlobsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/v/notebook': {
+      id: '/v/notebook'
+      path: '/v/notebook'
+      fullPath: '/v/notebook'
+      preLoaderRoute: typeof VNotebookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/v/swoosh': {
+      id: '/v/swoosh'
+      path: '/v/swoosh'
+      fullPath: '/v/swoosh'
+      preLoaderRoute: typeof VSwooshRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -159,6 +219,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  VBlobsRoute: VBlobsRoute,
+  VNotebookRoute: VNotebookRoute,
+  VSwooshRoute: VSwooshRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiHealthLiveRoute: ApiHealthLiveRoute,
   ApiHealthReadyRoute: ApiHealthReadyRoute,

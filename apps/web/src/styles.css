@@ -1,9 +1,66 @@
 @import "tailwindcss";
+@import "@fontsource-variable/nunito";
 @plugin '@tailwindcss/typography';
 
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
+
+/*
+ * Studienbuch brand tokens.
+ *
+ * These mirror `apps/mobile/src/ui/colors.ts`, which is the source the native app renders from.
+ * Keep the two in sync when a colour changes.
+ * TODO: extract the palette into a shared brand package once a third surface needs it, so the
+ * native and web themes stop being hand-copied.
+ */
+@theme {
+  --color-primary: #33a42b;
+  --color-primary-pale: #6db868;
+  --color-primary-des: #eef5ed;
+  --color-primary-punch: #3cc233;
+  --color-primary-text: #098a00;
+  --color-accent: #3b7fd9;
+  --color-accent-sec: #4d75a8;
+  --color-accent-pale: #76a6e5;
+  --color-accent-des: #ebf0f7;
+  --color-accent-card: #203755;
+  --color-danger: #a42b33;
+  --color-danger-pale: #e96868;
+  --color-danger-sec: #8a0000;
+  --color-danger-des: #ecd4d6;
+  --color-alert: #dcab3c;
+  --color-alert-des: #f2e9d8;
+  --color-neutral: #666666;
+  --color-neutral-sec: #e5e5e5;
+  --color-surface: #ffffff;
+  --color-background: #f9f9f9;
+
+  /*
+   * The notebook cover from `branding/logo/app-icon.svg`. It is the only dark surface in the brand
+   * and the one place the palette has something to anchor against.
+   */
+  --color-notebook: #3f3d56;
+
+  /*
+   * The app casts its shadows in this deep blue rather than black, which is what keeps the white
+   * cards feeling warm instead of grey. It doubles as the body-text colour on the web, where full
+   * black reads harsher than it does on a phone.
+   */
+  --color-ink: #203755;
+  --color-ink-soft: #5b6b80;
+
+  --font-sans: "Nunito Variable", "Avenir Next", Avenir, "Segoe UI", sans-serif;
+
+  --radius-card: 1.25rem;
+  --radius-card-lg: 1.75rem;
+
+  /* Ported from `apps/mobile/src/ui/styles/shadow.ts`. */
+  --shadow-card: 0 6px 16px rgba(32, 55, 85, 0.06);
+  --shadow-card-lg: 0 18px 48px rgba(32, 55, 85, 0.1);
+  --shadow-float: 0 10px 30px rgba(32, 55, 85, 0.12);
+  --shadow-device: 0 40px 80px -20px rgba(32, 55, 85, 0.35);
+}
 
 html,
 body,
@@ -16,4 +73,78 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background-color: var(--color-surface);
+}
+
+/*
+ * Nunito Bold at normal tracking, the way the app and the legacy site set it. Nunito is a rounded,
+ * open face — the tight tracking and extra weight that suit a grotesk make it look cramped and
+ * corporate, which is the opposite of this brand.
+ */
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  letter-spacing: normal;
+}
+
+/*
+ * Scroll-driven reveals.
+ *
+ * Only browsers with `animation-timeline` get the animation at all, so anywhere else — Firefox
+ * today — the element renders at its resting state instead of staying stuck at `opacity: 0`. That
+ * is why the `from` state lives inside the `@supports` block rather than on the element.
+ */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal linear both;
+      animation-timeline: view();
+      /*
+       * Finish as soon as the element has fully entered. Ranges that run past `entry 100%` leave
+       * anything already on screen at page load stuck part-way through the animation.
+       */
+      animation-range: entry 0% entry 100%;
+    }
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(2rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* A slow drift for decorative shapes, so the page is never completely static. */
+@media (prefers-reduced-motion: no-preference) {
+  .drift {
+    animation: drift 18s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  to {
+    transform: translate3d(0, -1.5rem, 0) rotate(-2deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

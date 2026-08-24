@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@better-auth/expo": "^1.6.27",
+    "@fontsource-variable/nunito": "^5.2.14",
     "@sentry/tanstackstart-react": "^10.70.0",
     "@stu/observability": "workspace:*",
     "@stu/server": "workspace:*",

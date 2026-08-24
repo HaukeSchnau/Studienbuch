@@ -23,6 +23,10 @@ export const Route = createRootRoute({
       {
         title: "Studienbuch",
       },
+      {
+        name: "theme-color",
+        content: "#33a42b",
+      },
     ],
     links: [
       {
