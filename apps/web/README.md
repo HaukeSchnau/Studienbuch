@@ -84,19 +84,6 @@ just db-migrate
 Better Auth uses the server runtime's scoped PostgreSQL pool. Its tables live in the same migration
 history as future application tables; do not run Better Auth's independent migration command.
 
-## Working without PostgreSQL
-
-The Nitro `effect-runtime` plugin terminates the server when the application runtime fails to start,
-so `vp dev` crash-loops if PostgreSQL is unreachable. The public marketing pages under
-`src/routes/_public.*` use no service, so set `STUDIENBUCH_WEB_SKIP_RUNTIME=1` to drop the plugin
-and work on them without a database:
-
-```bash
-STUDIENBUCH_WEB_SKIP_RUNTIME=1 vp dev
-```
-
-The flag is ignored when `NODE_ENV=production`, so it cannot disable the runtime in a release.
-
 ## Client observability configuration
 
 Sentry is configured from the **server's** environment, not from a `VITE_` build variable. The root

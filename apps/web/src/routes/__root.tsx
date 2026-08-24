@@ -23,45 +23,11 @@ export const Route = createRootRoute({
       {
         title: "Studienbuch",
       },
-      // Colours the browser chrome on Android to match the app's green header.
-      {
-        name: "theme-color",
-        content: "#33A42B",
-      },
-      {
-        property: "og:site_name",
-        content: "Studienbuch",
-      },
-      {
-        property: "og:type",
-        content: "website",
-      },
-      {
-        property: "og:locale",
-        content: "de_DE",
-      },
-      {
-        name: "twitter:card",
-        content: "summary_large_image",
-      },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
-      },
-      {
-        rel: "icon",
-        href: "/brand/icon-512.png",
-        type: "image/png",
-      },
-      {
-        rel: "apple-touch-icon",
-        href: "/brand/icon-512.png",
-      },
-      {
-        rel: "manifest",
-        href: "/manifest.json",
       },
     ],
   }),
