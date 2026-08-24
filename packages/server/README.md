@@ -80,9 +80,19 @@ that poll may add or update records but cannot delete records previously observe
 Set `DATABASE_URL`, then run:
 
 ```bash
+just db-diagram
 just db-generate
 just db-migrate
 ```
+
+`just db-diagram` evaluates the configured Drizzle schemas through `drizzle-kit export`, lets Atlas
+load the resulting PostgreSQL schema in a disposable development database, and updates
+[`docs/database-schema.mmd`](../../docs/database-schema.mmd) and
+[`docs/database-schema.svg`](../../docs/database-schema.svg). The Mermaid source is the reviewable
+schema artifact; the SVG is its rendered form. Atlas 1.3.0 treats every foreign key as optional in
+Mermaid output, so the Nix package temporarily applies
+[the proposed upstream fix](https://github.com/HaukeSchnau/atlas/commit/d1473c52a58401c383cd8f83b60470960c50f1c5)
+until it is available in a release.
 
 `just db-migrate` is a convenience for development. A deployed Release applies pending migrations
 as a staged pre-deploy task before the active artifact or web process changes.

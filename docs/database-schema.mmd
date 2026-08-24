@@ -1,0 +1,103 @@
+erDiagram
+    accounts {
+      uuid id PK
+      uuid userId FK
+      text accountId
+      text providerId
+      text accessToken
+      text refreshToken
+      timestamptz accessTokenExpiresAt
+      timestamptz refreshTokenExpiresAt
+      text scope
+      text idToken
+      text password
+      timestamptz createdAt
+      timestamptz updatedAt
+    }
+    accounts }o--|| users : accounts_userId_users_id_fkey
+    sessions {
+      uuid id PK
+      uuid userId FK
+      text token
+      timestamptz expiresAt
+      text ipAddress
+      text userAgent
+      timestamptz createdAt
+      timestamptz updatedAt
+    }
+    sessions }o--|| users : sessions_userId_users_id_fkey
+    source_changes {
+      uuid runId PK,FK
+      text entityKind PK
+      text externalId PK
+      text changeType
+      uuid beforeVersionId FK
+      uuid afterVersionId FK
+    }
+    source_changes }o--o| source_record_versions : source_changes_afterVersionId_source_record_versions_id_fkey
+    source_changes }o--o| source_record_versions : source_changes_beforeVersionId_source_record_versions_id_fkey
+    source_changes }o--|| source_import_runs : source_changes_runId_source_import_runs_id_fkey
+    source_import_runs {
+      uuid id PK
+      text provider
+      text dataSourceId
+      text dataset
+      text scope
+      text contentHash
+      text completeness
+      text outcome
+      integer observationCount
+      integer addedCount
+      integer updatedCount
+      integer removedCount
+      integer reactivatedCount
+      jsonb counts
+      jsonb diagnostics
+      boolean isCurrent
+      timestamptz observedAt
+    }
+    source_record_versions {
+      uuid id PK
+      text dataSourceId
+      text dataset
+      text scope
+      text entityKind
+      text externalId
+      text contentHash
+      jsonb payload
+      uuid firstObservedInRunId FK
+      timestamptz observedAt
+    }
+    source_record_versions }o--|| source_import_runs : source_record_versions_QIvVd3c22OXq_fkey
+    source_records {
+      text dataSourceId PK
+      text dataset PK
+      text scope PK
+      text entityKind PK
+      text externalId PK
+      uuid currentVersionId FK
+      boolean active
+      uuid firstSeenInRunId FK
+      uuid lastChangedInRunId FK
+      timestamptz updatedAt
+    }
+    source_records }o--|| source_record_versions : source_records_currentVersionId_source_record_versions_id_fkey
+    source_records }o--|| source_import_runs : source_records_firstSeenInRunId_source_import_runs_id_fkey
+    source_records }o--|| source_import_runs : source_records_lastChangedInRunId_source_import_runs_id_fkey
+    users {
+      uuid id PK
+      text name
+      text email
+      boolean emailVerified
+      text image
+      timestamptz createdAt
+      timestamptz updatedAt
+    }
+    verifications {
+      uuid id PK
+      text identifier
+      text value
+      timestamptz expiresAt
+      timestamptz createdAt
+      timestamptz updatedAt
+    }
