@@ -1,4 +1,4 @@
-import { Importing, Schedule } from "@stu/core";
+import { Importing, Organization, Schedule } from "@stu/core";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import type {
@@ -260,13 +260,35 @@ describe("WebUntis timetable import", () => {
         ]),
       );
       const dataSourceId = Importing.DataSourceId.make(plan.preview.dataSourceId);
+      const academicYearSource = Importing.SourceIdentity.make({
+        dataSourceId,
+        entityKind: "AcademicYear",
+        externalId: Importing.ExternalId.make("10"),
+      });
+      const classSource = Importing.SourceIdentity.make({
+        dataSourceId,
+        entityKind: "ClassGroup",
+        externalId: Importing.ExternalId.make("1"),
+      });
+      const entityLinks = [
+        Importing.EntityLink.cases.AcademicYear.make({
+          source: academicYearSource,
+          academicYearId: Organization.AcademicYearId.make("year-2026"),
+        }),
+        Importing.EntityLink.cases.ClassGroup.make({
+          source: classSource,
+          classGroupId: Organization.ClassGroupId.make("paula-1"),
+        }),
+      ];
       const occurrences = yield* projectTimetableOccurrences({
         dataSourceId,
         observations: plan.snapshots.flatMap((snapshot) => snapshot.observations),
+        entityLinks,
       });
       const reordered = yield* projectTimetableOccurrences({
         dataSourceId,
         observations: plan.snapshots.flatMap((snapshot) => [...snapshot.observations].reverse()),
+        entityLinks,
       });
 
       expect(occurrences).toHaveLength(1);
@@ -278,9 +300,13 @@ describe("WebUntis timetable import", () => {
       ).toEqual([8, 9]);
       expect(occurrences[0]?.claims[0]).toMatchObject({
         source: { entityKind: "TimetableOccurrence" },
-        academicYear: { entityKind: "AcademicYear", externalId: "10" },
+        academicYear: {
+          source: { entityKind: "AcademicYear", externalId: "10" },
+          entityLink: { _tag: "AcademicYear", academicYearId: "year-2026" },
+        },
         viewedResource: {
           source: { entityKind: "ClassGroup", externalId: "1" },
+          entityLink: { _tag: "ClassGroup", classGroupId: "paula-1" },
           type: "CLASS",
         },
         notes: "Bring the workbook",
@@ -293,6 +319,7 @@ describe("WebUntis timetable import", () => {
           { _tag: "Empty", position: 4 },
         ],
       });
+      expect(occurrences[0]?.claims[1]?.viewedResource.entityLink).toBeUndefined();
     }),
   );
 

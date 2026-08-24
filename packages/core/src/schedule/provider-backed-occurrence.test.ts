@@ -17,11 +17,13 @@ const source = (externalId: string) =>
 const claim = (externalId: string) =>
   Schedule.ProviderOccurrenceClaim.make({
     source: source(externalId),
-    academicYear: Importing.SourceIdentity.make({
-      dataSourceId,
-      entityKind: "AcademicYear",
-      externalId: Importing.ExternalId.make("10"),
-    }),
+    academicYear: {
+      source: Importing.SourceIdentity.make({
+        dataSourceId,
+        entityKind: "AcademicYear",
+        externalId: Importing.ExternalId.make("10"),
+      }),
+    },
     viewedResource: {
       source: Importing.SourceIdentity.make({
         dataSourceId,

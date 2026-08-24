@@ -13,11 +13,17 @@ import {
 export const ClassGroup = Schema.Struct({
   id: ClassGroupId,
   schoolId: SchoolId,
-  academicYearId: AcademicYearId,
-  name: NonBlankText,
   cohortId: Schema.optional(CohortId),
 });
 export interface ClassGroup extends Schema.Schema.Type<typeof ClassGroup> {}
+
+/** The school-year name of one lasting class, such as `5.2` before it becomes `6.2`. */
+export const ClassGroupAcademicYear = Schema.Struct({
+  classGroupId: ClassGroupId,
+  academicYearId: AcademicYearId,
+  name: NonBlankText,
+});
+export interface ClassGroupAcademicYear extends Schema.Schema.Type<typeof ClassGroupAcademicYear> {}
 
 export const CourseOffering = Schema.Struct({
   id: CourseOfferingId,

@@ -15,6 +15,15 @@ erDiagram
       timestamptz updatedAt
     }
     accounts }o--|| users : accounts_userId_users_id_fkey
+    entity_links {
+      text dataSourceId PK
+      text entityKind PK
+      text externalId PK
+      text domainEntityKind PK
+      text domainEntityId
+      timestamptz createdAt
+      timestamptz updatedAt
+    }
     sessions {
       uuid id PK
       uuid userId FK
@@ -84,6 +93,44 @@ erDiagram
     source_records }o--|| source_record_versions : source_records_currentVersionId_source_record_versions_id_fkey
     source_records }o--|| source_import_runs : source_records_firstSeenInRunId_source_import_runs_id_fkey
     source_records }o--|| source_import_runs : source_records_lastChangedInRunId_source_import_runs_id_fkey
+    timetable_occurrence_sources {
+      text occurrenceId PK,FK
+      uuid sourceRecordVersionId PK,FK
+    }
+    timetable_occurrence_sources }o--|| timetable_occurrences : timetable_occurrence_sources_L2c5ZCeW184q_fkey
+    timetable_occurrence_sources }o--|| source_record_versions : timetable_occurrence_sources_PUqSR1EPm9CE_fkey
+    timetable_occurrences {
+      text id PK
+      text dataSourceId
+      text scope
+      text date
+      text contentHash
+      jsonb payload
+      timestamptz createdAt
+      timestamptz updatedAt
+    }
+    timetable_projection_changes {
+      uuid projectionRunId PK,FK
+      text occurrenceId PK
+      text changeType
+      text beforeContentHash
+      text afterContentHash
+    }
+    timetable_projection_changes }o--|| timetable_projection_runs : timetable_projection_changes_pbKMLm2ONMG4_fkey
+    timetable_projection_runs {
+      uuid id PK
+      text dataSourceId
+      text scope
+      uuid sourceRunId FK
+      text outcome
+      integer occurrenceCount
+      integer addedCount
+      integer updatedCount
+      integer removedCount
+      integer relinkedCount
+      timestamptz projectedAt
+    }
+    timetable_projection_runs }o--|| source_import_runs : timetable_projection_runs_EGAv55i0DEr5_fkey
     users {
       uuid id PK
       text name

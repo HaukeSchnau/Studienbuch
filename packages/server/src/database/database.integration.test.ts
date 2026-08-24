@@ -1,3 +1,4 @@
+import { Importing, Organization } from "@stu/core";
 import { afterAll, beforeAll, expect, it } from "@effect/vitest";
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from "@testcontainers/postgresql";
 import { and, count, eq } from "drizzle-orm";
@@ -16,14 +17,23 @@ import {
   sourceRecords,
   sourceRecordVersions,
 } from "../importing/schema.ts";
+import { EntityLinks as EntityLinkStore } from "../importing/entity-links.ts";
 import { SourceObservationStore } from "../importing/source-observation-store.ts";
-import type { SourceSnapshot } from "../importing/source-snapshot.ts";
+import { hashSourceObservations, type SourceSnapshot } from "../importing/source-snapshot.ts";
+import {
+  timetableOccurrences,
+  timetableOccurrenceSources,
+  timetableProjectionChanges,
+  timetableProjectionRuns,
+} from "../schedule/schema.ts";
+import { TimetableProjectionStore } from "../schedule/timetable-projection-store.ts";
 import { DirectoryPreview } from "../webuntis/directory-preview.ts";
 import {
   DirectoryObservation,
   hashDirectoryObservations,
   type DirectorySnapshot,
 } from "../webuntis/directory-snapshot.ts";
+import { TimetableObservation } from "../webuntis/timetable.ts";
 
 /**
  * Testcontainers needs a Docker-compatible socket, and `DOCKER_HOST` is the contract for naming it:
@@ -135,6 +145,61 @@ const schoolObservation = (externalId: string, name: string) =>
     externalId,
     payload: { name, loginName: name.toLowerCase(), hostName: null },
   });
+
+const timetableScope = "academic-year:10/resource-type:CLASS/date:2026-08-24";
+
+const timetableObservation = (status: string) =>
+  TimetableObservation.make({
+    externalId: "CLASS:1:2026-08-24:101",
+    payload: {
+      academicYearExternalId: "10",
+      date: "2026-08-24",
+      resourceType: "CLASS",
+      resource: {
+        externalId: "1",
+        shortName: "5.2",
+        longName: "Klasse 5.2",
+        displayName: "5.2",
+      },
+      dayStatus: "REGULAR",
+      location: "Grid",
+      entry: {
+        ids: [101],
+        duration: { start: "08:00", end: "08:45" },
+        type: "NORMAL_TEACHING_PERIOD",
+        status,
+        layoutStartPosition: 0,
+        layoutWidth: 1,
+        layoutGroup: 0,
+        color: "#ffffff",
+        notesAll: "",
+        icons: [],
+        position1: [],
+        position2: [],
+        position3: [],
+        position4: [],
+        texts: [],
+        lessonText: "",
+        lessonInfo: null,
+        substitutionText: "",
+      },
+    },
+  });
+
+const timetableSnapshot = (
+  dataSourceId: string,
+  observations: ReadonlyArray<TimetableObservation>,
+): SourceSnapshot<TimetableObservation> => ({
+  provider: "WebUntis",
+  dataSourceId,
+  dataset: "timetable",
+  scope: timetableScope,
+  contentHash: hashSourceObservations(observations),
+  completeness: "Complete",
+  observations,
+  counts: { occurrenceViews: observations.length },
+  diagnostics: [],
+});
 
 it.live.runIf(hasContainerRuntime)(
   "applies the migration history and round-trips rows through the Effect Drizzle database",
@@ -261,6 +326,141 @@ it.live.runIf(hasContainerRuntime)(
         "Reactivated",
         "Removed",
       ]);
+    }).pipe(Effect.provide(migrated)),
+  { timeout: 60_000 },
+);
+
+it.live.runIf(hasContainerRuntime)(
+  "replays current timetable records into a linked projection and removes only the affected scope",
+  () =>
+    Effect.gen(function* () {
+      const database = yield* Database.Service;
+      const rawDataSourceId = "webuntis:timetable-projection-test";
+      const dataSourceId = Importing.DataSourceId.make(rawDataSourceId);
+      const academicYearSource = Importing.SourceIdentity.make({
+        dataSourceId,
+        entityKind: "AcademicYear",
+        externalId: Importing.ExternalId.make("10"),
+      });
+      const classSource = Importing.SourceIdentity.make({
+        dataSourceId,
+        entityKind: "ClassGroup",
+        externalId: Importing.ExternalId.make("1"),
+      });
+      yield* Effect.all(
+        [
+          EntityLinkStore.put(
+            Importing.EntityLink.cases.AcademicYear.make({
+              source: academicYearSource,
+              academicYearId: Organization.AcademicYearId.make("2026-2027"),
+            }),
+          ),
+          EntityLinkStore.put(
+            Importing.EntityLink.cases.ClassGroup.make({
+              source: classSource,
+              classGroupId: Organization.ClassGroupId.make("paula-2"),
+            }),
+          ),
+        ],
+        { concurrency: 2 },
+      );
+
+      yield* SourceObservationStore.persistSourceSnapshot(
+        timetableSnapshot(rawDataSourceId, [timetableObservation("REGULAR")]),
+      );
+      const added = yield* TimetableProjectionStore.projectCurrentScope({
+        dataSourceId: rawDataSourceId,
+        scope: timetableScope,
+      });
+      const unchanged = yield* TimetableProjectionStore.projectCurrentScope({
+        dataSourceId: rawDataSourceId,
+        scope: timetableScope,
+      });
+      const projected = yield* TimetableProjectionStore.readCurrent({ dataSourceId });
+
+      expect(added).toMatchObject({
+        _tag: "Projected",
+        occurrenceCount: 1,
+        changes: { added: 1, updated: 0, removed: 0, relinked: 0 },
+      });
+      expect(unchanged).toMatchObject({ _tag: "Unchanged" });
+      expect(projected[0]?.claims[0]).toMatchObject({
+        academicYear: {
+          source: { externalId: "10" },
+          entityLink: { _tag: "AcademicYear", academicYearId: "2026-2027" },
+        },
+        viewedResource: {
+          source: { externalId: "1" },
+          entityLink: { _tag: "ClassGroup", classGroupId: "paula-2" },
+        },
+        status: "REGULAR",
+      });
+
+      yield* SourceObservationStore.persistSourceSnapshot(
+        timetableSnapshot(rawDataSourceId, [timetableObservation("CHANGED")]),
+      );
+      const updated = yield* TimetableProjectionStore.projectCurrentScope({
+        dataSourceId: rawDataSourceId,
+        scope: timetableScope,
+      });
+      expect(updated).toMatchObject({ changes: { added: 0, updated: 1, removed: 0 } });
+
+      const currentRecord = yield* database.drizzle
+        .select({ currentVersionId: sourceRecords.currentVersionId })
+        .from(sourceRecords)
+        .where(
+          and(
+            eq(sourceRecords.dataSourceId, rawDataSourceId),
+            eq(sourceRecords.dataset, "timetable"),
+            eq(sourceRecords.scope, timetableScope),
+          ),
+        );
+      const projectedSources = yield* database.drizzle
+        .select({ sourceRecordVersionId: timetableOccurrenceSources.sourceRecordVersionId })
+        .from(timetableOccurrenceSources)
+        .innerJoin(
+          timetableOccurrences,
+          eq(timetableOccurrences.id, timetableOccurrenceSources.occurrenceId),
+        )
+        .where(eq(timetableOccurrences.dataSourceId, rawDataSourceId));
+      expect(projectedSources).toEqual([
+        { sourceRecordVersionId: currentRecord[0]?.currentVersionId },
+      ]);
+
+      yield* SourceObservationStore.persistSourceSnapshot(timetableSnapshot(rawDataSourceId, []));
+      const removed = yield* TimetableProjectionStore.projectCurrentScope({
+        dataSourceId: rawDataSourceId,
+        scope: timetableScope,
+      });
+      expect(removed).toMatchObject({
+        occurrenceCount: 0,
+        changes: { added: 0, updated: 0, removed: 1 },
+      });
+      expect(yield* TimetableProjectionStore.readCurrent({ dataSourceId })).toEqual([]);
+
+      const occurrenceRows = yield* database.drizzle
+        .select({ count: count() })
+        .from(timetableOccurrences)
+        .where(eq(timetableOccurrences.dataSourceId, rawDataSourceId));
+      const projectionRuns = yield* database.drizzle
+        .select({ id: timetableProjectionRuns.id })
+        .from(timetableProjectionRuns)
+        .where(eq(timetableProjectionRuns.dataSourceId, rawDataSourceId));
+      const projectionChanges = yield* database.drizzle
+        .select({ changeType: timetableProjectionChanges.changeType })
+        .from(timetableProjectionChanges)
+        .innerJoin(
+          timetableProjectionRuns,
+          eq(timetableProjectionRuns.id, timetableProjectionChanges.projectionRunId),
+        )
+        .where(eq(timetableProjectionRuns.dataSourceId, rawDataSourceId));
+
+      expect(occurrenceRows[0]?.count).toBe(0);
+      expect(projectionRuns).toHaveLength(4);
+      expect(projectionChanges).toHaveLength(3);
+      expect(projectionChanges.map((change) => change.changeType)).toEqual(
+        expect.arrayContaining(["Added", "Updated", "Removed"]),
+      );
     }).pipe(Effect.provide(migrated)),
   { timeout: 60_000 },
 );

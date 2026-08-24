@@ -10,6 +10,8 @@ import {
   AcademicYear,
   Cohort,
   CohortProgressionPolicy,
+  ClassGroup,
+  ClassGroupAcademicYear,
   CourseChoiceGroup,
   CourseOffering,
   Enrollment,
@@ -30,6 +32,7 @@ import {
   AcademicTermId,
   AcademicYearId,
   BuildingId,
+  ClassGroupId,
   CohortId,
   CourseChoiceGroupId,
   CourseOfferingId,
@@ -131,6 +134,55 @@ describe("academic years, terms, and cohort progression", () => {
 });
 
 describe("school directory", () => {
+  it.effect("keeps a class identity while its school-year name advances", () =>
+    Effect.gen(function* () {
+      const firstYear = academicYear("year-5", "2026-08-01", "2027-07-31");
+      const secondYear = academicYear("year-6", "2027-08-01", "2028-07-31");
+      const cohort = Cohort.make({
+        id: CohortId.make("paula"),
+        schoolId,
+        name: "Paula",
+        entryAcademicYearId: firstYear.id,
+        entryGradeLevel: GradeLevel.make(5),
+      });
+      const classGroup = ClassGroup.make({
+        id: ClassGroupId.make("paula-2"),
+        schoolId,
+        cohortId: cohort.id,
+      });
+      const structure = SchoolDirectory.make({
+        school: School.make({ id: schoolId, name: "School" }),
+        subjectCatalog: SubjectCatalog.make({ schoolId, subjects: [] }),
+        academicYears: [firstYear, secondYear],
+        terms: [],
+        cohorts: [cohort],
+        departments: [],
+        buildings: [],
+        rooms: [],
+        classGroups: [classGroup],
+        classGroupAcademicYears: [
+          ClassGroupAcademicYear.make({
+            classGroupId: classGroup.id,
+            academicYearId: firstYear.id,
+            name: "5.2",
+          }),
+          ClassGroupAcademicYear.make({
+            classGroupId: classGroup.id,
+            academicYearId: secondYear.id,
+            name: "6.2",
+          }),
+        ],
+        courseOfferings: [],
+        choiceGroups: [],
+        enrollments: [],
+      });
+
+      const validated = yield* validateSchoolDirectory(structure);
+      expect(validated.classGroups).toEqual([classGroup]);
+      expect(validated.classGroupAcademicYears.map((item) => item.name)).toEqual(["5.2", "6.2"]);
+    }),
+  );
+
   it.effect("rejects a foreign-school course offering", () =>
     Effect.gen(function* () {
       const year = academicYear("year-1", "2026-08-01", "2027-07-31");
@@ -159,6 +211,7 @@ describe("school directory", () => {
         buildings: [],
         rooms: [],
         classGroups: [],
+        classGroupAcademicYears: [],
         courseOfferings: [offering],
         choiceGroups: [],
         enrollments: [],
@@ -186,6 +239,7 @@ describe("school directory", () => {
         buildings: [],
         rooms: [],
         classGroups: [],
+        classGroupAcademicYears: [],
         courseOfferings: [],
         choiceGroups: [],
         enrollments: [],
@@ -218,6 +272,7 @@ describe("school directory", () => {
         buildings: [],
         rooms: [room],
         classGroups: [],
+        classGroupAcademicYears: [],
         courseOfferings: [],
         choiceGroups: [],
         enrollments: [],

@@ -16,11 +16,8 @@ import {
   type TimetableEntryDay,
   type TimetableEntryPosition,
 } from "webuntis-api";
-import {
-  hashSourceObservations,
-  type SourceRecordObservation,
-  type SourceSnapshot,
-} from "../importing/source-snapshot.ts";
+import { TimetableEntrySchema } from "webuntis-api/schemas";
+import { hashSourceObservations, type SourceSnapshot } from "../importing/source-snapshot.ts";
 import { SchoolYearUnavailable } from "./directory-preview.ts";
 
 const timetableBatchSize = 10;
@@ -99,25 +96,24 @@ export interface TimetableInventory {
 
 type TimetableEntryLocation = "Back" | "Day" | "Grid";
 
-type TimetableOccurrencePayload = {
-  readonly academicYearExternalId: string;
-  readonly date: string;
-  readonly resourceType: "CLASS";
-  readonly resource: {
-    readonly externalId: string;
-    readonly shortName: string;
-    readonly longName: string;
-    readonly displayName: string;
-  };
-  readonly dayStatus: TimetableEntryDay["status"];
-  readonly location: TimetableEntryLocation;
-  readonly entry: TimetableEntry;
-};
-
-export interface TimetableObservation extends SourceRecordObservation {
-  readonly _tag: "TimetableOccurrence";
-  readonly payload: TimetableOccurrencePayload;
-}
+export const TimetableObservation = Schema.TaggedStruct("TimetableOccurrence", {
+  externalId: Schema.String,
+  payload: Schema.Struct({
+    academicYearExternalId: Schema.String,
+    date: Schema.String,
+    resourceType: Schema.Literal("CLASS"),
+    resource: Schema.Struct({
+      externalId: Schema.String,
+      shortName: Schema.String,
+      longName: Schema.String,
+      displayName: Schema.String,
+    }),
+    dayStatus: Schema.String,
+    location: Schema.Literals(["Back", "Day", "Grid"]),
+    entry: TimetableEntrySchema,
+  }),
+});
+export type TimetableObservation = typeof TimetableObservation.Type;
 
 export interface TimetableImportPlan {
   readonly preview: TimetablePreview;

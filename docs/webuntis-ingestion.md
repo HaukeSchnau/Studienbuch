@@ -19,8 +19,9 @@ decode failures do not create successful runs and cannot mutate current state. A
 advisory lock serializes concurrent imports of the same source, dataset and scope.
 
 This is source truth, not the Studienbuch domain model and not the client sync event log. Domain
-projection may combine several source records, attach user overrides and emit application events
-without weakening ingestion provenance.
+projection may combine several source records and emit application changes without weakening
+ingestion provenance. Provider corrections belong in the importer. There is no timetable override
+model until a concrete user-owned feature needs one.
 
 ## IGS directory
 
@@ -118,7 +119,7 @@ with these defaults:
 - directory: daily and on demand;
 - timetable from today through 14 days ahead: every 10 minutes;
 - timetable from 15 through 56 days ahead: hourly;
-- recently elapsed timetable days: refresh for a short grace period, then stop polling;
+- recently elapsed timetable days: refresh for 48 hours, then stop polling;
 - exams for the active academic year: hourly.
 
 Add jitter and prevent overlapping executions for one data source. Retry failed provider requests
@@ -156,6 +157,21 @@ separate tables keyed by start time and course. Both are useful UI references, b
 WebUntis provenance and changes such as simultaneous teacher, room and class-position updates. They
 should not constrain the new source or domain model.
 
+### Cohorts and lasting classes
+
+A cohort is a German `Jahrgang`, such as `Paula`. It enters the school in one academic year and
+progresses through grade levels. Classes are lasting subdivisions of that cohort: the class shown
+as `5.2` in one year normally becomes `6.2` in the next. Students and class teachers may change
+without replacing the class identity. The classes end after grade 11 at IGS Lilienthal, while the
+cohort continues through grades 12 and 13 without classes.
+
+Core therefore separates `ClassGroup` from `ClassGroupAcademicYear`. The first has the stable
+identity and optional cohort link. The second records its academic year and name, such as `5.2`.
+WebUntis annual class records link to the stable class through `entity_links`. Never infer that
+continuity from the numeric suffix alone; a split, merge or reorganization must remain unresolved
+until other evidence or an explicit mapping establishes it. Cohort names are operational names
+such as `Paula`; namesake metadata is outside the domain.
+
 ### Provider-backed occurrence projection
 
 Core now models a provider-backed dated occurrence without requiring a recurring meeting, course
@@ -168,19 +184,46 @@ notes, icons, typed texts, lesson and substitution text, and WebUntis presentati
 remain separate when class views disagree. The projection does not pick a convenient status or
 time and discard the others.
 
-Every claim links to the immutable source record that produced it. Unknown provider fields remain
-in that raw server record rather than leaking into Core as an untyped JSON field. This keeps the
-provider boundary explicit while retaining a path back to the complete decoded response.
+Every claim retains its provider identity. The durable server projection links that claim to the
+exact immutable source-record version that produced it. Unknown provider fields remain in the raw
+server record rather than leaking into Core as an untyped JSON field. This keeps the provider
+boundary explicit while retaining a path back to the complete decoded response.
 
 The WebUntis adapter parses dates and local times through Effect schemas. Invalid provider values
 fail in the Effect error channel as `WebUntis.InvalidTimetableOccurrence`; they do not throw from a
 pure grouping function or create a partially populated occurrence.
 
+### Durable server projection
+
+`timetable_occurrences` is the current server-side read model. Projection replays one daily source
+scope under the same advisory lock used by ingestion, validates every stored payload again, groups
+class claims deterministically and reconciles only occurrences in that scope. Empty complete
+scopes remove their previous occurrences. Partial source scopes retain records that absence cannot
+prove removed, then project the retained current state.
+
+`timetable_occurrence_sources` records the exact immutable source-record versions behind every
+current occurrence. A raw version change that does not change the domain payload still refreshes
+that provenance. `timetable_projection_runs` and `timetable_projection_changes` record small
+per-scope manifests and transitions. They are server audit data, not authorized client events and
+not a global generation of school state.
+
+`entity_links` stores typed correspondences between provider identities and stable domain entities.
+The timetable projector currently resolves academic-year and outer-class references when those
+links exist. A retained source without a link is explicitly unresolved. Inner timetable resources
+such as teachers, rooms and subjects do not carry provider IDs in the observed endpoint, so the
+projector preserves their names and statuses without guessing an identity.
+
+This boundary follows the useful common ground between Groundswell and LiveStore: PostgreSQL owns
+canonical server state, while clients can later rebuild local SQLite state from ordered,
+authorized changes. The projection transition log is not that client stream. Authorization,
+recipient topics and delivery state belong in the next layer.
+
 ## Current implementation
 
 The `webuntis-timetable` console command now fetches all class resources in batches of ten, builds
 one source snapshot per requested calendar date, and previews without opening PostgreSQL unless
-`--apply` is present:
+`--apply` is present. Applying a snapshot persists its source records and immediately replays its
+daily domain projection:
 
 ```bash
 just console webuntis-timetable \
@@ -207,10 +250,11 @@ scopes point at the unchanged runs.
 
 ## Next implementation slice
 
-1. Read current source records into a durable domain projection and expose only authorized
-   timetable fields to each client role.
-2. Resolve provider academic years, classes, teachers, rooms and activities through entity links;
-   leave unresolved links visible instead of dropping their claims.
+1. Project the directory into canonical schools, academic years, cohorts, lasting classes, annual
+   class representations, people, rooms and activities. Populate entity links and retain uncertain
+   cohort or class continuity as unresolved evidence.
+2. Define role-specific timetable contracts and turn projection transitions into authorized,
+   ordered client changes. Keep raw source records and unrestricted projection payloads server-only.
 3. Compare teacher, room and student views against class views with PII-free field and identity
    summaries. Add only the view types that contribute otherwise unavailable data.
 4. Add the agreed polling policy with jitter, one active execution per source and observable

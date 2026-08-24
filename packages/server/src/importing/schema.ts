@@ -1,4 +1,4 @@
-import type { ExternalEntityKind } from "@stu/core/importing";
+import type { EntityLink, ExternalEntityKind } from "@stu/core/importing";
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -127,5 +127,25 @@ export const sourceChanges = pgTable(
   (table) => [
     primaryKey({ columns: [table.runId, table.entityKind, table.externalId] }),
     index("source_changes_after_version_idx").on(table.afterVersionId),
+  ],
+);
+
+/** Durable correspondence between a provider identity and a stable Studienbuch entity. */
+export const entityLinks = pgTable(
+  "entity_links",
+  {
+    dataSourceId: text("dataSourceId").notNull(),
+    entityKind: text("entityKind").$type<ExternalEntityKind>().notNull(),
+    externalId: text("externalId").notNull(),
+    domainEntityKind: text("domainEntityKind").$type<EntityLink["_tag"]>().notNull(),
+    domainEntityId: text("domainEntityId").notNull(),
+    createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.dataSourceId, table.entityKind, table.externalId, table.domainEntityKind],
+    }),
+    index("entity_links_domain_idx").on(table.domainEntityKind, table.domainEntityId),
   ],
 );
