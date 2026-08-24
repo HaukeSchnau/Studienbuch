@@ -73,6 +73,9 @@ let
     runtimeInputs = [
       pkgs.coreutils
       pkgs.findutils
+      pkgs.gcc
+      pkgs.gnumake
+      pkgs.python3
       pnpm
     ];
     text = ''

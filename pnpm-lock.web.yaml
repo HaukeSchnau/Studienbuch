@@ -160,9 +160,6 @@ importers:
       vite:
         specifier: npm:@voidzero-dev/vite-plus-core@0.2.9
         version: '@voidzero-dev/vite-plus-core@0.2.9(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(typescript@7.0.2)(yaml@2.9.0)'
-      vite-plus:
-        specifier: 'catalog:'
-        version: 0.2.9(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(jsdom@30.0.1(@noble/hashes@2.3.0))(typescript@7.0.2)(yaml@2.9.0)
     devDependencies:
       '@storybook/react-vite':
         specifier: ^10.5.7
@@ -194,6 +191,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
+      vite-plus:
+        specifier: 'catalog:'
+        version: 0.2.9(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(jsdom@30.0.1(@noble/hashes@2.3.0))(typescript@7.0.2)(yaml@2.9.0)
       vitest:
         specifier: 4.1.10
         version: 4.1.10(@opentelemetry/api@1.9.1)(@types/node@26.2.0)(@vitest/browser-preview@4.1.10)(@voidzero-dev/vite-plus-core@0.2.9(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(typescript@7.0.2)(yaml@2.9.0))(jsdom@30.0.1(@noble/hashes@2.3.0))
