@@ -33,6 +33,8 @@ const domainEntityId = (link: Importing.EntityLink): string => {
       return link.buildingId;
     case "Room":
       return link.roomId;
+    case "Cohort":
+      return link.cohortId;
     case "ClassGroup":
       return link.classGroupId;
     case "Person":
@@ -45,6 +47,15 @@ const domainEntityId = (link: Importing.EntityLink): string => {
       return link.courseOfferingId;
   }
 };
+
+/** Encodes a validated domain link for stores that reconcile links in their own transaction. */
+export const entityLinkRow = (link: Importing.EntityLink) => ({
+  dataSourceId: link.source.dataSourceId,
+  entityKind: link.source.entityKind,
+  externalId: link.source.externalId,
+  domainEntityKind: link._tag,
+  domainEntityId: domainEntityId(link),
+});
 
 const rawLinkFromRow = (row: EntityLinkRow) => {
   const source = {
@@ -65,6 +76,8 @@ const rawLinkFromRow = (row: EntityLinkRow) => {
       return { _tag: "Building", source, buildingId: row.domainEntityId };
     case "Room":
       return { _tag: "Room", source, roomId: row.domainEntityId };
+    case "Cohort":
+      return { _tag: "Cohort", source, cohortId: row.domainEntityId };
     case "ClassGroup":
       return { _tag: "ClassGroup", source, classGroupId: row.domainEntityId };
     case "Person":
@@ -107,13 +120,7 @@ export const put = Effect.fn("Importing.putEntityLink")(function* (link: Importi
   const database = yield* Database.Service;
   yield* database.drizzle
     .insert(entityLinks)
-    .values({
-      dataSourceId: link.source.dataSourceId,
-      entityKind: link.source.entityKind,
-      externalId: link.source.externalId,
-      domainEntityKind: link._tag,
-      domainEntityId: domainEntityId(link),
-    })
+    .values(entityLinkRow(link))
     .onConflictDoUpdate({
       target: [
         entityLinks.dataSourceId,

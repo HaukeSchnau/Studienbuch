@@ -22,7 +22,8 @@ export const Cohort = Schema.Struct({
   id: CohortId,
   schoolId: SchoolId,
   name: NonBlankText,
-  entryAcademicYearId: AcademicYearId,
+  /** Calendar year in which the cohort's first academic year began. */
+  entryAcademicYearStart: Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 9999 })),
   entryGradeLevel: GradeLevel,
 });
 export interface Cohort extends Schema.Schema.Type<typeof Cohort> {}
@@ -106,9 +107,6 @@ export const gradeLevelAt = Effect.fn("Organization.gradeLevelAt")(function* (
 ) {
   const ordered = yield* validateAcademicYears(academicYears);
   const schoolYears = ordered.filter((academicYear) => academicYear.schoolId === cohort.schoolId);
-  const entryIndex = schoolYears.findIndex(
-    (academicYear) => academicYear.id === cohort.entryAcademicYearId,
-  );
   const targetIndex = schoolYears.findIndex(
     (academicYear) => academicYear.id === targetAcademicYearId,
   );
@@ -119,19 +117,21 @@ export const gradeLevelAt = Effect.fn("Organization.gradeLevelAt")(function* (
       reason: target === undefined ? "Unknown" : "WrongSchool",
     });
   }
-  if (entryIndex < 0) {
+  const target = schoolYears[targetIndex];
+  if (target === undefined) {
     return yield* AcademicYearUnavailable.make({
-      academicYearId: cohort.entryAcademicYearId,
+      academicYearId: targetAcademicYearId,
       reason: "Unknown",
     });
   }
-  if (targetIndex < entryIndex) {
+  const yearsSinceEntry = target.interval.start.year - cohort.entryAcademicYearStart;
+  if (yearsSinceEntry < 0) {
     return yield* AcademicYearUnavailable.make({
       academicYearId: targetAcademicYearId,
       reason: "BeforeCohortEntry",
     });
   }
   return GradeLevel.make(
-    Math.min(cohort.entryGradeLevel + targetIndex - entryIndex, policy.maximumGradeLevel),
+    Math.min(cohort.entryGradeLevel + yearsSinceEntry, policy.maximumGradeLevel),
   );
 });

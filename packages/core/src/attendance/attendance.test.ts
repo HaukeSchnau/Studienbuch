@@ -120,7 +120,7 @@ const enrollments = courseIds.map((courseOfferingId, index) =>
 );
 const authority = AuthoritySnapshot.make({
   memberships: [studentMember, guardianMember, teacherMember],
-  students: [StudentMembership.make({ membershipId: studentMembershipId, classGroupIds: [] })],
+  students: [StudentMembership.make({ membershipId: studentMembershipId })],
   guardianRelationships: [
     GuardianRelationship.make({
       id: GuardianRelationshipId.make("relationship"),

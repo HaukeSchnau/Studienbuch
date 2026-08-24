@@ -15,6 +15,51 @@ erDiagram
       timestamptz updatedAt
     }
     accounts }o--|| users : accounts_userId_users_id_fkey
+    directory_entities {
+      text key PK
+      text dataSourceId
+      text entityKind
+      text entityId
+      text schoolId
+      text contentHash
+      jsonb payload
+      timestamptz createdAt
+      timestamptz updatedAt
+    }
+    directory_entity_sources {
+      text entityKey PK,FK
+      uuid sourceRecordVersionId PK,FK
+    }
+    directory_entity_sources }o--|| directory_entities : directory_entity_sources_entityKey_directory_entities_key_fkey
+    directory_entity_sources }o--|| source_record_versions : directory_entity_sources_tkFs5ZTDxd4u_fkey
+    directory_projection_changes {
+      uuid projectionRunId PK,FK
+      text entityKey PK
+      text entityKind
+      text entityId
+      text changeType
+      text beforeContentHash
+      text afterContentHash
+    }
+    directory_projection_changes }o--|| directory_projection_runs : directory_projection_changes_AxpC8rkV8ak4_fkey
+    directory_projection_run_sources {
+      uuid projectionRunId PK,FK
+      uuid sourceRunId PK,FK
+    }
+    directory_projection_run_sources }o--|| source_import_runs : directory_projection_run_sources_v9n5BG7K2tbL_fkey
+    directory_projection_run_sources }o--|| directory_projection_runs : directory_projection_run_sources_w3Zm998VQEoj_fkey
+    directory_projection_runs {
+      uuid id PK
+      text dataSourceId
+      text outcome
+      integer entityCount
+      integer addedCount
+      integer updatedCount
+      integer removedCount
+      integer relinkedCount
+      jsonb diagnostics
+      timestamptz projectedAt
+    }
     entity_links {
       text dataSourceId PK
       text entityKind PK

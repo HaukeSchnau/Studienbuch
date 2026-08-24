@@ -1,5 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
+import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { AcademicTerm, validateAcademicTerms } from "./academic-term";
 import { AcademicYear, Cohort, validateAcademicYears } from "./academic-year";
@@ -7,6 +8,14 @@ import { School, SubjectCatalog } from "./catalog";
 import { ClassGroup, ClassGroupAcademicYear, CourseOffering } from "./course-offering";
 import { CourseChoiceGroup, Enrollment } from "./enrollment";
 import { Building, Department, Room } from "./school-structure";
+import {
+  ClassTeacherAssignment,
+  DepartmentAssignment,
+  SchoolMembership,
+  StudentClassAssignment,
+  StudentMembership,
+} from "./membership";
+import { Person } from "./person";
 
 /** A complete academic school-directory slice suitable for cross-entity validation. */
 export const SchoolDirectory = Schema.Struct({
@@ -18,6 +27,12 @@ export const SchoolDirectory = Schema.Struct({
   departments: Schema.Array(Department),
   buildings: Schema.Array(Building),
   rooms: Schema.Array(Room),
+  people: Schema.Array(Person),
+  memberships: Schema.Array(SchoolMembership),
+  students: Schema.Array(StudentMembership),
+  studentClassAssignments: Schema.Array(StudentClassAssignment),
+  classTeacherAssignments: Schema.Array(ClassTeacherAssignment),
+  departmentAssignments: Schema.Array(DepartmentAssignment),
   classGroups: Schema.Array(ClassGroup),
   classGroupAcademicYears: Schema.Array(ClassGroupAcademicYear),
   courseOfferings: Schema.Array(CourseOffering),
@@ -37,6 +52,12 @@ export class InvalidSchoolDirectory extends Schema.TaggedError<InvalidSchoolDire
       "Department",
       "Building",
       "Room",
+      "Person",
+      "SchoolMembership",
+      "StudentMembership",
+      "StudentClassAssignment",
+      "ClassTeacherAssignment",
+      "DepartmentAssignment",
       "ClassGroup",
       "ClassGroupAcademicYear",
       "CourseOffering",
@@ -51,6 +72,8 @@ export class InvalidSchoolDirectory extends Schema.TaggedError<InvalidSchoolDire
       "WrongTerm",
       "OutsideTerm",
       "OutsideAcademicYear",
+      "OutsideMembership",
+      "WrongRole",
     ]),
   },
 ) {}
@@ -76,6 +99,8 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
     ["Department", structure.departments],
     ["Building", structure.buildings],
     ["Room", structure.rooms],
+    ["Person", structure.people],
+    ["SchoolMembership", structure.memberships],
     ["ClassGroup", structure.classGroups],
     ["CourseOffering", structure.courseOfferings],
     ["CourseChoiceGroup", structure.choiceGroups],
@@ -92,6 +117,8 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
   const subjects = new Map(structure.subjectCatalog.subjects.map((item) => [item.id, item]));
   const cohorts = new Map(structure.cohorts.map((item) => [item.id, item]));
   const classGroups = new Map(structure.classGroups.map((item) => [item.id, item]));
+  const people = new Map(structure.people.map((item) => [item.id, item]));
+  const memberships = new Map(structure.memberships.map((item) => [item.id, item]));
   const classGroupAcademicYearKeys = structure.classGroupAcademicYears.map(
     (item) => `${item.classGroupId}\u0000${item.academicYearId}`,
   );
@@ -103,6 +130,31 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
   const choiceGroups = new Map(structure.choiceGroups.map((item) => [item.id, item]));
   const departments = new Map(structure.departments.map((item) => [item.id, item]));
   const buildings = new Map(structure.buildings.map((item) => [item.id, item]));
+
+  const studentIds = structure.students.map((item) => item.membershipId);
+  if (new Set(studentIds).size !== studentIds.length) {
+    return yield* invalidDirectory("StudentMembership", schoolId, "DuplicateId");
+  }
+  const studentAssignmentKeys = structure.studentClassAssignments.map(
+    (item) =>
+      `${item.studentMembershipId}\u0000${item.classGroupId}\u0000${PlainDate.toString(item.effective.start)}\u0000${PlainDate.toString(item.effective.end)}`,
+  );
+  if (new Set(studentAssignmentKeys).size !== studentAssignmentKeys.length) {
+    return yield* invalidDirectory("StudentClassAssignment", schoolId, "DuplicateId");
+  }
+  const classTeacherKeys = structure.classTeacherAssignments.map(
+    (item) =>
+      `${item.teacherMembershipId}\u0000${item.classGroupId}\u0000${item.academicYearId}\u0000${item.position}`,
+  );
+  if (new Set(classTeacherKeys).size !== classTeacherKeys.length) {
+    return yield* invalidDirectory("ClassTeacherAssignment", schoolId, "DuplicateId");
+  }
+  const departmentAssignmentKeys = structure.departmentAssignments.map(
+    (item) => `${item.schoolMembershipId}\u0000${item.departmentId}\u0000${item.academicYearId}`,
+  );
+  if (new Set(departmentAssignmentKeys).size !== departmentAssignmentKeys.length) {
+    return yield* invalidDirectory("DepartmentAssignment", schoolId, "DuplicateId");
+  }
 
   for (const academicYear of structure.academicYears) {
     if (academicYear.schoolId !== schoolId) {
@@ -126,9 +178,6 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
     if (cohort.schoolId !== schoolId) {
       return yield* invalidDirectory("Cohort", cohort.id, "WrongSchool");
     }
-    if (academicYears.get(cohort.entryAcademicYearId)?.schoolId !== schoolId) {
-      return yield* invalidDirectory("Cohort", cohort.id, "UnknownReference");
-    }
   }
   for (const department of structure.departments) {
     if (department.schoolId !== schoolId) {
@@ -151,6 +200,26 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
       return yield* invalidDirectory("Room", room.id, "UnknownReference");
     }
   }
+  for (const membership of structure.memberships) {
+    if (membership.schoolId !== schoolId) {
+      return yield* invalidDirectory("SchoolMembership", membership.id, "WrongSchool");
+    }
+    if (!people.has(membership.personId)) {
+      return yield* invalidDirectory("SchoolMembership", membership.id, "UnknownReference");
+    }
+  }
+  for (const student of structure.students) {
+    const membership = memberships.get(student.membershipId);
+    if (membership === undefined) {
+      return yield* invalidDirectory("StudentMembership", student.membershipId, "UnknownReference");
+    }
+    if (!membership.roles.includes("Student")) {
+      return yield* invalidDirectory("StudentMembership", student.membershipId, "WrongRole");
+    }
+    if (student.cohortId !== undefined && !cohorts.has(student.cohortId)) {
+      return yield* invalidDirectory("StudentMembership", student.membershipId, "UnknownReference");
+    }
+  }
   for (const group of structure.classGroups) {
     if (group.schoolId !== schoolId) {
       return yield* invalidDirectory("ClassGroup", group.id, "WrongSchool");
@@ -163,9 +232,47 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
     const entityId = `${placement.classGroupId}/${placement.academicYearId}`;
     if (
       classGroups.get(placement.classGroupId)?.schoolId !== schoolId ||
-      academicYears.get(placement.academicYearId)?.schoolId !== schoolId
+      academicYears.get(placement.academicYearId)?.schoolId !== schoolId ||
+      (placement.departmentId !== undefined && !departments.has(placement.departmentId))
     ) {
       return yield* invalidDirectory("ClassGroupAcademicYear", entityId, "UnknownReference");
+    }
+  }
+  for (const assignment of structure.studentClassAssignments) {
+    const membership = memberships.get(assignment.studentMembershipId);
+    const entityId = `${assignment.studentMembershipId}/${assignment.classGroupId}`;
+    if (membership === undefined || !classGroups.has(assignment.classGroupId)) {
+      return yield* invalidDirectory("StudentClassAssignment", entityId, "UnknownReference");
+    }
+    if (!membership.roles.includes("Student")) {
+      return yield* invalidDirectory("StudentClassAssignment", entityId, "WrongRole");
+    }
+    if (!CalendarDateRange.encloses(membership.effective, assignment.effective)) {
+      return yield* invalidDirectory("StudentClassAssignment", entityId, "OutsideMembership");
+    }
+  }
+  for (const assignment of structure.classTeacherAssignments) {
+    const membership = memberships.get(assignment.teacherMembershipId);
+    const entityId = `${assignment.teacherMembershipId}/${assignment.classGroupId}/${assignment.academicYearId}`;
+    if (
+      membership === undefined ||
+      !classGroupAcademicYears.has(`${assignment.classGroupId}\u0000${assignment.academicYearId}`)
+    ) {
+      return yield* invalidDirectory("ClassTeacherAssignment", entityId, "UnknownReference");
+    }
+    if (!membership.roles.includes("Teacher")) {
+      return yield* invalidDirectory("ClassTeacherAssignment", entityId, "WrongRole");
+    }
+  }
+  for (const assignment of structure.departmentAssignments) {
+    const membership = memberships.get(assignment.schoolMembershipId);
+    const entityId = `${assignment.schoolMembershipId}/${assignment.departmentId}/${assignment.academicYearId}`;
+    if (
+      membership === undefined ||
+      !departments.has(assignment.departmentId) ||
+      !academicYears.has(assignment.academicYearId)
+    ) {
+      return yield* invalidDirectory("DepartmentAssignment", entityId, "UnknownReference");
     }
   }
   for (const offering of structure.courseOfferings) {
