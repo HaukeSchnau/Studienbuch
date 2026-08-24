@@ -9,35 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as VBlobsRouteImport } from './routes/v.blobs'
-import { Route as VNotebookRouteImport } from './routes/v.notebook'
-import { Route as VSwooshRouteImport } from './routes/v.swoosh'
+import { Route as PublicRouteImport } from './routes/_public'
+import { Route as PublicIndexRouteImport } from './routes/_public.index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiHealthLiveRouteImport } from './routes/api/health/live'
 import { Route as ApiHealthReadyRouteImport } from './routes/api/health/ready'
 import { Route as ApiObservabilityV1CanaryRouteImport } from './routes/api/observability/v1/canary'
 import { Route as ApiObservabilityV1TelemetryRouteImport } from './routes/api/observability/v1/telemetry'
 
-const IndexRoute = IndexRouteImport.update({
+const PublicRoute = PublicRouteImport.update({
+  id: '/_public',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicIndexRoute = PublicIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VBlobsRoute = VBlobsRouteImport.update({
-  id: '/v/blobs',
-  path: '/v/blobs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VNotebookRoute = VNotebookRouteImport.update({
-  id: '/v/notebook',
-  path: '/v/notebook',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VSwooshRoute = VSwooshRouteImport.update({
-  id: '/v/swoosh',
-  path: '/v/swoosh',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => PublicRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -68,10 +55,7 @@ const ApiObservabilityV1TelemetryRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/v/blobs': typeof VBlobsRoute
-  '/v/notebook': typeof VNotebookRoute
-  '/v/swoosh': typeof VSwooshRoute
+  '/': typeof PublicIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -79,10 +63,7 @@ export interface FileRoutesByFullPath {
   '/api/observability/v1/telemetry': typeof ApiObservabilityV1TelemetryRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/v/blobs': typeof VBlobsRoute
-  '/v/notebook': typeof VNotebookRoute
-  '/v/swoosh': typeof VSwooshRoute
+  '/': typeof PublicIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -91,10 +72,8 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/v/blobs': typeof VBlobsRoute
-  '/v/notebook': typeof VNotebookRoute
-  '/v/swoosh': typeof VSwooshRoute
+  '/_public': typeof PublicRouteWithChildren
+  '/_public/': typeof PublicIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -105,9 +84,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/v/blobs'
-    | '/v/notebook'
-    | '/v/swoosh'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -116,9 +92,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/v/blobs'
-    | '/v/notebook'
-    | '/v/swoosh'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -126,10 +99,8 @@ export interface FileRouteTypes {
     | '/api/observability/v1/telemetry'
   id:
     | '__root__'
-    | '/'
-    | '/v/blobs'
-    | '/v/notebook'
-    | '/v/swoosh'
+    | '/_public'
+    | '/_public/'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -138,10 +109,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  VBlobsRoute: typeof VBlobsRoute
-  VNotebookRoute: typeof VNotebookRoute
-  VSwooshRoute: typeof VSwooshRoute
+  PublicRoute: typeof PublicRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiHealthLiveRoute: typeof ApiHealthLiveRoute
   ApiHealthReadyRoute: typeof ApiHealthReadyRoute
@@ -151,33 +119,19 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_public': {
+      id: '/_public'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_public/': {
+      id: '/_public/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/v/blobs': {
-      id: '/v/blobs'
-      path: '/v/blobs'
-      fullPath: '/v/blobs'
-      preLoaderRoute: typeof VBlobsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/v/notebook': {
-      id: '/v/notebook'
-      path: '/v/notebook'
-      fullPath: '/v/notebook'
-      preLoaderRoute: typeof VNotebookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/v/swoosh': {
-      id: '/v/swoosh'
-      path: '/v/swoosh'
-      fullPath: '/v/swoosh'
-      preLoaderRoute: typeof VSwooshRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof PublicIndexRouteImport
+      parentRoute: typeof PublicRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -217,11 +171,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface PublicRouteChildren {
+  PublicIndexRoute: typeof PublicIndexRoute
+}
+
+const PublicRouteChildren: PublicRouteChildren = {
+  PublicIndexRoute: PublicIndexRoute,
+}
+
+const PublicRouteWithChildren =
+  PublicRoute._addFileChildren(PublicRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  VBlobsRoute: VBlobsRoute,
-  VNotebookRoute: VNotebookRoute,
-  VSwooshRoute: VSwooshRoute,
+  PublicRoute: PublicRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiHealthLiveRoute: ApiHealthLiveRoute,
   ApiHealthReadyRoute: ApiHealthReadyRoute,

@@ -1,4 +1,5 @@
-export { landingHead } from "#/features/marketing/head.ts";
-export { BlobsLanding } from "#/features/marketing/variants/blobs/page.tsx";
-export { NotebookLanding } from "#/features/marketing/variants/notebook/page.tsx";
-export { SwooshLanding } from "#/features/marketing/variants/swoosh/page.tsx";
+export { Capabilities } from "./capabilities.tsx";
+export { ForSchools } from "./for-schools.tsx";
+export { GetTheApp } from "./get-the-app.tsx";
+export { Hero } from "./hero.tsx";
+export { SubjectStrip } from "./subject-strip.tsx";

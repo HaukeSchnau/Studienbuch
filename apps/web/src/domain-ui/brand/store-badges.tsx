@@ -1,27 +1,41 @@
-import { storeLinks } from "#/domain-ui/brand/links.ts";
 import { cn } from "#/ui/cn.ts";
 
+import { externalLinks } from "./links.ts";
+
 /**
- * The two official store badges. Both vendors ship them at a fixed aspect ratio and forbid
- * redrawing them, so the row sizes by height and lets each badge keep its own width.
+ * Apple and Google both require their supplied badge artwork, so these are images rather than
+ * styled buttons. Both assets are trimmed to the button itself, so matching their heights is enough
+ * to make them look like a pair.
  */
 export const StoreBadges = ({ className }: { className?: string }) => (
-  <div className={cn("flex h-11 items-center gap-4 sm:h-14", className)}>
+  <div className={cn("flex flex-wrap items-center gap-3", className)}>
     <a
-      className="h-full transition-transform hover:scale-105 focus-visible:scale-105"
-      href={storeLinks.android}
+      className="rounded-lg transition-transform hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-white/70 focus-visible:outline-none"
+      href={externalLinks.appStore}
       rel="noreferrer"
       target="_blank"
     >
-      <img alt="Jetzt bei Google Play" className="h-full" src="/brand/google-play-badge.png" />
+      <img
+        alt="Laden im App Store"
+        className="h-11 w-auto"
+        height={40}
+        src="/brand/app-store-badge.svg"
+        width={120}
+      />
     </a>
     <a
-      className="h-full transition-transform hover:scale-105 focus-visible:scale-105"
-      href={storeLinks.ios}
+      className="rounded-lg transition-transform hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-white/70 focus-visible:outline-none"
+      href={externalLinks.playStore}
       rel="noreferrer"
       target="_blank"
     >
-      <img alt="Laden im App Store" className="h-full" src="/brand/app-store-badge.svg" />
+      <img
+        alt="Jetzt bei Google Play"
+        className="h-11 w-auto"
+        height={192}
+        src="/brand/google-play-badge.png"
+        width={646}
+      />
     </a>
   </div>
 );
