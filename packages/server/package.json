@@ -19,6 +19,7 @@
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "pg": "catalog:",
+    "temporal-polyfill": "catalog:",
     "webuntis-api": "https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.0.tgz"
   },
   "devDependencies": {

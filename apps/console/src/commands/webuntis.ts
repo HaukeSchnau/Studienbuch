@@ -1,4 +1,9 @@
-import { Database, SourceObservationStore, WebUntisDirectory } from "@stu/server";
+import {
+  Database,
+  SourceObservationStore,
+  WebUntisDirectory,
+  WebUntisTimetable,
+} from "@stu/server";
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -10,9 +15,13 @@ const schoolYear = Flag.string("school-year").pipe(
 );
 
 const apply = Flag.boolean("apply").pipe(
-  Flag.withDescription("Persist and activate the complete directory snapshot"),
+  Flag.withDescription("Persist the decoded WebUntis data"),
   Flag.withDefault(false),
 );
+
+const start = Flag.string("start").pipe(Flag.withDescription("First timetable date, YYYY-MM-DD"));
+
+const end = Flag.string("end").pipe(Flag.withDescription("Last timetable date, YYYY-MM-DD"));
 
 export const runWebUntisDirectoryPreview = Effect.fn("Console.webUntisDirectoryPreview")(function* (
   requestedSchoolYear: string,
@@ -42,3 +51,57 @@ export const webUntisDirectoryCommand = Command.make(
         )
       : runWebUntisDirectoryPreview(schoolYear).pipe(Effect.provide(WebUntisDirectory.layer)),
 ).pipe(Command.withDescription("Preview or persist a complete WebUntis school directory"));
+
+export const runWebUntisTimetablePreview = Effect.fn("Console.webUntisTimetablePreview")(function* (
+  requestedSchoolYear: string,
+  requestedStart: string,
+  requestedEnd: string,
+) {
+  const plan = yield* WebUntisTimetable.fetchTimetableImportPlan(
+    requestedSchoolYear,
+    requestedStart,
+    requestedEnd,
+  );
+  yield* Console.log(JSON.stringify(plan.preview, null, 2));
+  return plan.preview;
+});
+
+export const runWebUntisTimetableImport = Effect.fn("Console.webUntisTimetableImport")(function* (
+  requestedSchoolYear: string,
+  requestedStart: string,
+  requestedEnd: string,
+) {
+  const plan = yield* WebUntisTimetable.fetchTimetableImportPlan(
+    requestedSchoolYear,
+    requestedStart,
+    requestedEnd,
+  );
+  const runs = yield* Effect.forEach(
+    plan.snapshots,
+    (snapshot) =>
+      SourceObservationStore.persistSourceSnapshot(snapshot).pipe(
+        Effect.map((result) => ({
+          scope: snapshot.scope,
+          completeness: snapshot.completeness,
+          ...result,
+        })),
+      ),
+    { concurrency: 3 },
+  );
+  const output = { preview: plan.preview, runs };
+  yield* Console.log(JSON.stringify(output, null, 2));
+  return output;
+});
+
+export const webUntisTimetableCommand = Command.make(
+  "webuntis-timetable",
+  { schoolYear, start, end, apply },
+  ({ schoolYear, start, end, apply }) =>
+    apply
+      ? runWebUntisTimetableImport(schoolYear, start, end).pipe(
+          Effect.provide(Layer.merge(WebUntisTimetable.layer, Database.layerConfig)),
+        )
+      : runWebUntisTimetablePreview(schoolYear, start, end).pipe(
+          Effect.provide(WebUntisTimetable.layer),
+        ),
+).pipe(Command.withDescription("Preview or persist WebUntis class timetable views"));

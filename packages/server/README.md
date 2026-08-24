@@ -53,6 +53,8 @@ The console previews by default and only opens PostgreSQL when `--apply` is expl
 ```bash
 just console webuntis-directory --school-year 2026/2027
 just console webuntis-directory --school-year 2026/2027 --apply
+just console webuntis-timetable --school-year 2026/2027 --start 2026-08-24 --end 2026-08-28
+just console webuntis-timetable --school-year 2026/2027 --start 2026-08-24 --end 2026-08-28 --apply
 ```
 
 Every successful applied poll gets a small immutable run record, including its completeness,
@@ -68,6 +70,10 @@ If an old payload reappears, its immutable version is reused. This keeps frequen
 substitution polling cheap without losing provenance or the ability to project only actual changes.
 The observed IGS payloads, reconciliation scopes and proposed polling policy are recorded in
 [`docs/webuntis-ingestion.md`](../../docs/webuntis-ingestion.md).
+
+The timetable command fetches all class views in batches of ten and splits the requested range into
+daily scopes. Missing, denied, conflicting or provider-error rows make the affected day partial, so
+that poll may add or update records but cannot delete records previously observed for the day.
 
 ## Commands
 
