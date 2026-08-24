@@ -4,18 +4,17 @@ import { SwooshPanel } from "#/domain-ui/brand/swoosh.tsx";
 import { Container } from "#/ui/section.tsx";
 
 /**
- * Closes the page on the same green the hero opened with. The store listings still carry the name
- * of the school the app launched at, which is why the note below the badges exists.
+ * The page's only green band, and the only place the swoosh appears outside the screenshots — the
+ * app's own header signing the site off. Nothing here is dimmed or under 20px: white on the brand
+ * green is 3.2:1, which clears WCAG AA as large text and nothing else.
  */
 export const GetTheApp = () => (
-  <section className="isolate" id={sectionIds.app}>
+  <section id={sectionIds.app}>
     <SwooshPanel>
-      <Container className="flex flex-col items-center gap-8 pt-20 pb-28 text-center sm:pt-28 sm:pb-40">
-        <h2 className="max-w-2xl text-3xl text-white text-balance sm:text-5xl">
+      <Container className="flex flex-col items-center gap-7 pt-20 pb-28 text-center sm:pt-24 sm:pb-36">
+        <h2 className="max-w-2xl text-3xl/snug text-white text-balance sm:text-5xl/snug">
           Hol dir dein Studienbuch
         </h2>
-        {/* See the note in `hero.tsx`: white on the brand green only passes AA as large text, so
-            nothing on this band is dimmed and the lead stays at 20px or more. */}
         <p className="max-w-xl text-xl/relaxed text-white text-pretty">
           Kostenlos für Android und iOS. Zum Einrichten brauchst du den Lizenzschlüssel deiner
           Schule.

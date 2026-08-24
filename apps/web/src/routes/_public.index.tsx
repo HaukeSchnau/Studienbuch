@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { Capabilities, ForSchools, GetTheApp, Hero, LocalFirst } from "#/features/marketing";
+import { Capabilities, ForSchools, GetTheApp, Hero } from "#/features/marketing";
 
 export const Route = createFileRoute("/_public/")({
   component: LandingPage,
@@ -21,7 +21,6 @@ function LandingPage() {
     <>
       <Hero />
       <Capabilities />
-      <LocalFirst />
       <ForSchools />
       <GetTheApp />
     </>
