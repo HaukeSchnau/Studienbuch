@@ -42,8 +42,8 @@ export const Capabilities = () => (
               <span className="flex size-12 items-center justify-center rounded-2xl bg-primary-des text-primary-text">
                 <Icon aria-hidden className="size-6" strokeWidth={2.25} />
               </span>
-              <h3 className="text-xl text-primary-text">{title}</h3>
-              <p className="text-ink-soft text-pretty">{body}</p>
+              <h3 className="text-2xl text-primary-text">{title}</h3>
+              <p className="text-lg/relaxed text-ink-soft text-pretty">{body}</p>
             </Card>
           </li>
         ))}
@@ -51,13 +51,13 @@ export const Capabilities = () => (
         {/* Offline is the one thing paper and most school apps cannot do, so it gets the full width
             rather than a band of its own. */}
         <li className="sm:col-span-2">
-          <Card className="flex flex-col gap-5 bg-primary-des sm:flex-row sm:items-center sm:gap-8">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-surface text-primary-text">
-              <WifiOff aria-hidden className="size-6" strokeWidth={2.25} />
+          <Card className="flex flex-col gap-5 bg-primary-des sm:flex-row sm:gap-8">
+            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-surface text-primary-text">
+              <WifiOff aria-hidden className="size-7" strokeWidth={2.25} />
             </span>
-            <div className="flex flex-col gap-2">
-              <h3 className="text-xl text-primary-text">Funktioniert auch ohne Empfang</h3>
-              <p className="text-ink-soft text-pretty">
+            <div className="flex max-w-2xl flex-col gap-3">
+              <h3 className="text-2xl text-primary-text">Funktioniert auch ohne Empfang</h3>
+              <p className="text-lg/relaxed text-ink-soft text-pretty">
                 Studienbuch speichert zuerst auf dem Gerät und gleicht ab, sobald wieder Netz da
                 ist. Die App öffnet sich mit deinen Daten statt mit einem Ladebalken, und was du im
                 Fachraum einträgst, geht nicht verloren.

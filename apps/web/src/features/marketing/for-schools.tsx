@@ -30,8 +30,8 @@ export const ForSchools = () => (
       <ul className="grid gap-x-10 gap-y-8 sm:grid-cols-3">
         {points.map(({ body, title }) => (
           <li className="flex flex-col gap-2 border-t-2 border-primary-des pt-5" key={title}>
-            <h3 className="text-lg text-primary-text">{title}</h3>
-            <p className="text-ink-soft text-pretty">{body}</p>
+            <h3 className="text-xl text-primary-text">{title}</h3>
+            <p className="text-lg/relaxed text-ink-soft text-pretty">{body}</p>
           </li>
         ))}
       </ul>
