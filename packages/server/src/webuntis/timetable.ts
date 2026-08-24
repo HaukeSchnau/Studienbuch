@@ -455,4 +455,10 @@ export const fetchTimetableImportPlan = Effect.fn("WebUntis.fetchTimetableImport
 
 export const layer = webUntisLayer;
 
+export {
+  InvalidTimetableOccurrence,
+  projectTimetableOccurrences,
+  type ProjectTimetableOccurrencesInput,
+} from "./timetable-projection.ts";
+
 export * as WebUntisTimetable from "./timetable.ts";

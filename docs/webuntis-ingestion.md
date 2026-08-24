@@ -156,6 +156,26 @@ separate tables keyed by start time and course. Both are useful UI references, b
 WebUntis provenance and changes such as simultaneous teacher, room and class-position updates. They
 should not constrain the new source or domain model.
 
+### Provider-backed occurrence projection
+
+Core now models a provider-backed dated occurrence without requiring a recurring meeting, course
+offering or bell period. Those domain links are explicit and optional. The occurrence contains a
+non-empty set of provider entry IDs and a non-empty set of source claims.
+
+Each class-view claim retains its academic year, outer class, day status, entry location, local
+time range, provider type and status, all four resource positions, current and removed resources,
+notes, icons, typed texts, lesson and substitution text, and WebUntis presentation fields. Claims
+remain separate when class views disagree. The projection does not pick a convenient status or
+time and discard the others.
+
+Every claim links to the immutable source record that produced it. Unknown provider fields remain
+in that raw server record rather than leaking into Core as an untyped JSON field. This keeps the
+provider boundary explicit while retaining a path back to the complete decoded response.
+
+The WebUntis adapter parses dates and local times through Effect schemas. Invalid provider values
+fail in the Effect error channel as `WebUntis.InvalidTimetableOccurrence`; they do not throw from a
+pure grouping function or create a partially populated occurrence.
+
 ## Current implementation
 
 The `webuntis-timetable` console command now fetches all class resources in batches of ten, builds
@@ -187,9 +207,12 @@ scopes point at the unchanged runs.
 
 ## Next implementation slice
 
-1. Add a provider-backed dated occurrence to Core with an optional recurring-meeting link.
-2. Project raw class views into authorized timetable occurrences without exposing source payloads.
+1. Read current source records into a durable domain projection and expose only authorized
+   timetable fields to each client role.
+2. Resolve provider academic years, classes, teachers, rooms and activities through entity links;
+   leave unresolved links visible instead of dropping their claims.
 3. Compare teacher, room and student views against class views with PII-free field and identity
    summaries. Add only the view types that contribute otherwise unavailable data.
 4. Add the agreed polling policy with jitter, one active execution per source and observable
    failures that never advance source state.
+5. Add the server-only exams importer before designing its role-specific client projection.

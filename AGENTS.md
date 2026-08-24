@@ -69,6 +69,15 @@ question, and there are no technical buckets.
 - Comments describe how a thing is used, and move when the code moves. To be used mostly to describe functions, not to annotate every line of behavior.
 - If a rule here fights the task in front of you, say so loudly and get a human sign-off before breaking it.
 
+## Effect
+
+- Before designing Effect-heavy code, inspect the source for the locked Effect version and the
+  official Effect docs. Check whether Effect already supplies the schema, error, concurrency,
+  lifecycle, scheduling, or testing abstraction the problem needs.
+- Do not assume an API from memory or from another Effect release. The local package source is the
+  authority for exact behavior; `/home/haukeschnau/context/effect-ts-effect` and
+  `/home/haukeschnau/context/effect-ts-website` hold the canonical upstream source and docs.
+
 ## Paired Mobile E2E Evaluation
 
 - Argent and agent-device are both first-class mobile E2E runners while their evaluation is in
