@@ -1,34 +1,47 @@
-import { copy } from "#/features/marketing/copy.ts";
-import { cn } from "#/ui/cn.ts";
+import { externalLinks, sectionIds } from "#/domain-ui/brand/links.ts";
+import { Wordmark } from "#/domain-ui/brand/wordmark.tsx";
+import { Container } from "#/ui/section.tsx";
 
 /**
- * The legacy footer, kept almost word for word. "Eine Hauke Schnau Produktion" is the line that
- * tells you a person built this rather than a company, and it is worth more than a feature bullet.
+ * TODO: German commercial sites need an Impressum (§5 DDG) and a Datenschutzerklärung. Link both
+ * here once those routes exist; until then this footer deliberately points only at live pages.
  */
-export const SiteFooter = ({
-  className,
-  tone = "ink",
-}: {
-  className?: string;
-  tone?: "ink" | "light";
-}) => (
-  <footer
-    className={cn(
-      "flex flex-col items-center gap-2 py-12",
-      tone === "light" ? "text-white" : "text-ink",
-      className,
-    )}
-  >
-    <p className="opacity-80">{copy.footer.credit}</p>
+export const SiteFooter = () => (
+  <footer className="border-t border-neutral-sec bg-background py-12">
+    <Container className="flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2">
+        <Wordmark />
+        <p className="text-sm text-ink-soft">Ein Produkt der Urbs UG (haftungsbeschränkt).</p>
+      </div>
 
-    <ul className="flex gap-4 text-sm opacity-60">
-      {copy.footer.legal.map(({ href, label }) => (
-        <li key={href}>
-          <a className="hover:underline" href={href}>
-            {label}
-          </a>
-        </li>
-      ))}
-    </ul>
+      <nav aria-label="Fußzeile">
+        <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-semibold text-ink-soft">
+          <li>
+            <a
+              className="transition-colors hover:text-primary-text"
+              href={`#${sectionIds.capabilities}`}
+            >
+              Funktionen
+            </a>
+          </li>
+          <li>
+            <a
+              className="transition-colors hover:text-primary-text"
+              href={`#${sectionIds.schools}`}
+            >
+              Für Schulen
+            </a>
+          </li>
+          <li>
+            <a
+              className="transition-colors hover:text-primary-text"
+              href={externalLinks.schoolContact}
+            >
+              Kontakt
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </Container>
   </footer>
 );

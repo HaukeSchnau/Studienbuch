@@ -1,20 +1,19 @@
 /**
- * Every off-page destination the marketing pages link to, in one place so the three landing-page
- * variants cannot drift apart on where a button goes.
+ * Every off-site destination the public pages point at, in one place so the header, the download
+ * section and the footer cannot drift apart.
  *
- * TODO: the store links still point at the shipping legacy app (`de.haukeschnau.class_mate` /
- * `id6449227364`). Repoint them at `dev.schnau.studienbuch` once the Expo app is published.
+ * The store listings still carry the school-specific name of the production Flutter app that this
+ * rewrite supersedes; the listings themselves are current.
  */
-export const storeLinks = {
-  android: "https://play.google.com/store/apps/details?id=de.haukeschnau.class_mate",
-  ios: "https://apps.apple.com/de/app/igs-lilienthal/id6449227364",
+export const externalLinks = {
+  appStore: "https://apps.apple.com/de/app/igs-lilienthal/id6449227364",
+  playStore: "https://play.google.com/store/apps/details?id=dev.schnau.studienbuch",
+  schoolContact: "mailto:info@urbs.one?subject=Studienbuch%20f%C3%BCr%20unsere%20Schule",
 } as const;
 
-/** Anchor targets used by the in-page navigation. */
+/** In-page anchors used by the header nav. */
 export const sectionIds = {
-  features: "funktionen",
-  offline: "offline",
-  schools: "schulen",
+  capabilities: "funktionen",
+  schools: "fuer-schulen",
+  app: "app",
 } as const;
-
-export const contactEmail = "hallo@studienbuch.app";
