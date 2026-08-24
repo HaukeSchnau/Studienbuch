@@ -16,6 +16,7 @@ let
   applicationPath = "${application.installRoot}/${application.relativePath}";
   pnpmWorkspaces = [
     application.workspaceName
+    "@stu/core"
     "@stu/observability"
     "@stu/server"
   ];
