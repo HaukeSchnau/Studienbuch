@@ -47,10 +47,13 @@ export {
   validateCourseChoice,
 } from "./enrollment";
 export {
+  ClassTeacherAssignment,
+  DepartmentAssignment,
   GuardianAuthority,
   GuardianRelationship,
   SchoolMembership,
   SchoolRole,
+  StudentClassAssignment,
   StudentMembership,
   TeachingAssignment,
 } from "./membership";

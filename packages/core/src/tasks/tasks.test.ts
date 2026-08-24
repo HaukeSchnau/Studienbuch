@@ -38,7 +38,7 @@ const authority = AuthoritySnapshot.make({
       effective,
     }),
   ],
-  students: [StudentMembership.make({ membershipId: studentMembershipId, classGroupIds: [] })],
+  students: [StudentMembership.make({ membershipId: studentMembershipId })],
   guardianRelationships: [],
   teachingAssignments: [],
   courseOfferings: [],

@@ -44,7 +44,7 @@ db-diagram:
 
     cd packages/server
     DATABASE_URL="${DATABASE_URL:-postgresql://diagram:diagram@diagram.invalid/diagram}" \
-        pnpm exec drizzle-kit export --config=drizzle.config.ts > "$diagram_tmp/schema.sql"
+        pnpm --silent exec drizzle-kit export --config=drizzle.config.ts > "$diagram_tmp/schema.sql"
     atlas schema inspect \
         --url "file://$diagram_tmp/schema.sql" \
         --dev-url "docker://postgres/17/dev?search_path=public" \

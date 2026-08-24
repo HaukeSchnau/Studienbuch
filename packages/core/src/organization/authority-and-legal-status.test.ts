@@ -60,7 +60,7 @@ const guardianMembershipId = SchoolMembershipId.make("guardian-membership");
 const student = membership(studentMembershipId, studentPersonId, ["Student"]);
 const teacher = membership(teacherMembershipId, teacherPersonId, ["Teacher"]);
 const guardian = membership(guardianMembershipId, guardianPersonId, ["Guardian"]);
-const studentDetails = StudentMembership.make({ membershipId: student.id, classGroupIds: [] });
+const studentDetails = StudentMembership.make({ membershipId: student.id });
 const offering = CourseOffering.make({
   id: courseOfferingId,
   schoolId,

@@ -1,5 +1,6 @@
 import {
   Database,
+  DirectoryProjectionStore,
   SourceObservationStore,
   TimetableProjectionStore,
   WebUntisDirectory,
@@ -36,8 +37,11 @@ export const runWebUntisDirectoryImport = Effect.fn("Console.webUntisDirectoryIm
   requestedSchoolYear: string,
 ) {
   const snapshot = yield* WebUntisDirectory.fetchDirectorySnapshot(requestedSchoolYear);
-  const result = yield* SourceObservationStore.persistDirectorySnapshot(snapshot);
-  const output = { ...result, preview: snapshot.preview };
+  const source = yield* SourceObservationStore.persistDirectorySnapshot(snapshot);
+  const projection = yield* DirectoryProjectionStore.projectCurrent({
+    dataSourceId: snapshot.preview.dataSourceId,
+  });
+  const output = { source, projection, preview: snapshot.preview };
   yield* Console.log(JSON.stringify(output, null, 2));
   return output;
 });

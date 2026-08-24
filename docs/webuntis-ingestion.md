@@ -25,7 +25,7 @@ model until a concrete user-owned feature needs one.
 
 ## IGS directory
 
-The complete 2026/2027 directory (`academic-year:10`) currently contains 1,939 normalized records:
+The complete 2026/2027 directory (`academic-year:10`) currently contains 1,940 normalized records:
 
 | Kind          | Count |
 | ------------- | ----: |
@@ -36,7 +36,7 @@ The complete 2026/2027 directory (`academic-year:10`) currently contains 1,939 n
 | Rooms         |   148 |
 | Classes       |    45 |
 | Teachers      |   125 |
-| Students      | 1,286 |
+| Students      | 1,287 |
 | Activities    |   305 |
 | Holidays      |    11 |
 | Bell periods  |    13 |
@@ -48,6 +48,18 @@ these are diagnostics, not reasons to reject an otherwise complete import.
 
 The directory is slow-moving. Poll it daily and on demand rather than on the high-frequency
 timetable cadence.
+
+The live tenant currently offers four academic years: 2023/2024 (`4`), 2024/2025 (`6`),
+2025/2026 (`7`) and 2026/2027 (`10`). Numeric class IDs change every year. The annual names and
+teacher history nevertheless show the expected progressions, for example `5.2` (`133`) to `6.2`
+(`264`) to `7.2` (`413`) to `8.2` (`565`). Grade-wide resources such as `8`, `9` and `10` are
+WebUntis timetable collections, not administrative classes. Resources `12` and `13` represent the
+cohort directly because IGS no longer has classes in those grades.
+
+A 2026-08-24 replay of all four live snapshots projected 8,468 normalized source records into
+9,564 canonical entities and 3,723 provider links. The result includes 55 lasting classes from 152
+annual class records, nine configured cohorts, 1,703 people and 3,705 dated student-class
+assignments. The only cohort-name gaps are the three entry years 2024 through 2026.
 
 ## IGS timetable
 
@@ -166,11 +178,24 @@ without replacing the class identity. The classes end after grade 11 at IGS Lili
 cohort continues through grades 12 and 13 without classes.
 
 Core therefore separates `ClassGroup` from `ClassGroupAcademicYear`. The first has the stable
-identity and optional cohort link. The second records its academic year and name, such as `5.2`.
-WebUntis annual class records link to the stable class through `entity_links`. Never infer that
-continuity from the numeric suffix alone; a split, merge or reorganization must remain unresolved
-until other evidence or an explicit mapping establishes it. Cohort names are operational names
-such as `Paula`; namesake metadata is outside the domain.
+identity and optional cohort link. The second records its academic year, grade, department and
+name, such as `5.2`.
+WebUntis annual class records link to the stable class through `entity_links`. The IGS profile uses
+the school's current convention: for grades 5 through 11, entry year plus subdivision is the stable
+identity. Thus `5.2` becomes `6.2`, while a newly appearing `.4` is a new class. We do not model
+splits, merges or predecessor graphs without a feature that needs them. This convention lives in a
+replaceable school profile because another tenant may assign class identities differently.
+
+Cohort names are explicit IGS configuration, not guessed from WebUntis. The legacy applications
+confirm names through entry year 2023 (`Emmy`); later names remain unresolved until configured.
+Operational names such as `Paula` are canonical, while namesake metadata is outside the domain.
+
+The legacy Expo importer grouped equal course names when teacher and time also matched, then hashed
+the resulting class set into the course ID. That correctly recognizes that one course may span
+several classes or cohorts, but makes identity depend on the import window and its observed class
+set. Activities therefore remain lossless `ProviderActivity` entities for now. Subject and course
+offering projection will get its own evidence-based identity policy rather than inheriting that
+unstable hash.
 
 ### Provider-backed occurrence projection
 
@@ -194,6 +219,21 @@ fail in the Effect error channel as `WebUntis.InvalidTimetableOccurrence`; they 
 pure grouping function or create a partially populated occurrence.
 
 ### Durable server projection
+
+`directory_entities` is the current canonical, server-only school directory. Every import replays
+all current academic-year scopes together, so stable classes, memberships and cohort progression
+can use multi-year evidence. `directory_entity_sources` points each entity to the exact immutable
+records supporting it. `directory_projection_runs` references every current source run used by the
+replay, and `directory_projection_changes` stores only added, updated, removed or provenance-only
+transitions. Repeated imports do not create a new copy of the whole directory.
+
+The canonical projection contains the school, academic years, cohorts, departments, buildings,
+rooms, lasting classes and annual class representations, people, school memberships, student class
+assignments, class-teacher assignments and department assignments. WebUntis activities are kept as
+server-only provider entities until their subject and course identities can be resolved. Raw
+holidays and bell periods remain in source storage pending their calendar projections. The import
+also writes typed `entity_links`, including the correspondence from each annual WebUntis class ID
+to its lasting class or cohort.
 
 `timetable_occurrences` is the current server-side read model. Projection replays one daily source
 scope under the same advisory lock used by ingestion, validates every stored payload again, groups
@@ -219,6 +259,17 @@ authorized changes. The projection transition log is not that client stream. Aut
 recipient topics and delivery state belong in the next layer.
 
 ## Current implementation
+
+Applying `webuntis-directory` first persists the complete academic-year source snapshot and then
+replays all current directory scopes into the canonical projection:
+
+```bash
+just console webuntis-directory --school-year 2026/2027 --apply
+```
+
+Import the four available school years once to establish the current multi-year directory. Routine
+daily imports only need the active year; replay still includes the other current scopes already in
+source storage.
 
 The `webuntis-timetable` console command now fetches all class resources in batches of ten, builds
 one source snapshot per requested calendar date, and previews without opening PostgreSQL unless
@@ -250,11 +301,10 @@ scopes point at the unchanged runs.
 
 ## Next implementation slice
 
-1. Project the directory into canonical schools, academic years, cohorts, lasting classes, annual
-   class representations, people, rooms and activities. Populate entity links and retain uncertain
-   cohort or class continuity as unresolved evidence.
-2. Define role-specific timetable contracts and turn projection transitions into authorized,
+1. Define role-specific timetable and directory contracts and turn projection transitions into authorized,
    ordered client changes. Keep raw source records and unrestricted projection payloads server-only.
+2. Specify stable subject and course-offering identity using live timetable evidence and the useful
+   parts of the legacy cross-class grouping behavior.
 3. Compare teacher, room and student views against class views with PII-free field and identity
    summaries. Add only the view types that contribute otherwise unavailable data.
 4. Add the agreed polling policy with jitter, one active execution per source and observable

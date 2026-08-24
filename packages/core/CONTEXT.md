@@ -31,7 +31,7 @@ _Avoid_: Identifier, normalized label
 ## Academic structure
 
 **School directory**:
-A school-scoped snapshot of academic years, terms, cohorts, departments, buildings, rooms, class groups, course offerings, choices, and enrollment facts used to validate their relationships as a whole.
+A school-scoped snapshot of academic years, terms, cohorts, departments, buildings, rooms, people, memberships, lasting class groups and their annual representations, course offerings, choices, and enrollment facts used to validate their relationships as a whole.
 _Avoid_: Academic structure, school configuration
 
 **Subject**:
@@ -51,11 +51,11 @@ A set of alternative course offerings governed by an explicit selection cardinal
 _Avoid_: Choosable subject
 
 **Cohort**:
-A group of students who entered in the same academic year and whose grade-level progression is calculated together.
+A group of students who entered in the same academic-year start year and whose grade-level progression is calculated together.
 _Avoid_: Year
 
 **Class group**:
-An academic-year-scoped administrative or tutor grouping such as 8b.
+A lasting administrative or tutor grouping whose annual name and placement, such as 8b, may change with the academic year.
 _Avoid_: Class
 
 **Academic year**:

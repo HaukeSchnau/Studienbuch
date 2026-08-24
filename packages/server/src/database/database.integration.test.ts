@@ -20,6 +20,14 @@ import {
 import { EntityLinks as EntityLinkStore } from "../importing/entity-links.ts";
 import { SourceObservationStore } from "../importing/source-observation-store.ts";
 import { hashSourceObservations, type SourceSnapshot } from "../importing/source-snapshot.ts";
+import { DirectoryProjectionStore } from "../organization/directory-projection-store.ts";
+import {
+  directoryEntities,
+  directoryEntitySources,
+  directoryProjectionChanges,
+  directoryProjectionRuns,
+  directoryProjectionRunSources,
+} from "../organization/schema.ts";
 import {
   timetableOccurrences,
   timetableOccurrenceSources,
@@ -138,6 +146,73 @@ const sourceSnapshot = (
   counts: { observations: observations.length },
   diagnostics: [],
 });
+
+const projectableDirectorySnapshot = (
+  schoolName: string,
+  includeClass = true,
+): DirectorySnapshot => {
+  const className = "5.2";
+  const observations = [
+    DirectoryObservation.make({
+      _tag: "School",
+      externalId: "tenant-igs",
+      payload: { name: schoolName, loginName: "igs-lilienthal", hostName: null },
+    }),
+    DirectoryObservation.make({
+      _tag: "AcademicYear",
+      externalId: "10",
+      payload: { name: "2026/2027", start: "2026-08-13", end: "2027-07-07" },
+    }),
+    ...(!includeClass
+      ? []
+      : [
+          DirectoryObservation.make({
+            _tag: "ClassGroup",
+            externalId: "565",
+            payload: {
+              shortName: className,
+              longName: `Klasse ${className}`,
+              displayName: className,
+              academicYearExternalId: "10",
+              departmentExternalId: null,
+              classTeachers: { firstExternalId: null, secondExternalId: null },
+            },
+          }),
+        ]),
+  ];
+  return {
+    preview: DirectoryPreview.make({
+      dataSourceId: "webuntis:directory-projection-test",
+      provider: "WebUntis",
+      school: { externalId: "tenant-igs", name: schoolName, loginName: "igs-lilienthal" },
+      academicYear: {
+        externalId: "10",
+        name: "2026/2027",
+        start: "2026-08-13",
+        end: "2027-07-07",
+      },
+      complete: true,
+      ready: true,
+      wouldImport: {
+        schools: 1,
+        academicYears: 1,
+        departments: 0,
+        buildings: 0,
+        rooms: 0,
+        classes: includeClass ? 1 : 0,
+        teachers: 0,
+        students: 0,
+        activities: 0,
+        holidays: 0,
+        bellPeriods: 0,
+      },
+      ignored: { studentImages: 0, teacherImages: 0, assignmentGroups: 0 },
+      diagnostics: [],
+    }),
+    observations,
+    contentHash: hashDirectoryObservations(observations),
+  };
+};
 
 const schoolObservation = (externalId: string, name: string) =>
   DirectoryObservation.make({
@@ -326,6 +401,99 @@ it.live.runIf(hasContainerRuntime)(
         "Reactivated",
         "Removed",
       ]);
+    }).pipe(Effect.provide(migrated)),
+  { timeout: 60_000 },
+);
+
+it.live.runIf(hasContainerRuntime)(
+  "replays all current directory scopes into canonical entities with exact provenance",
+  () =>
+    Effect.gen(function* () {
+      const database = yield* Database.Service;
+      const rawDataSourceId = "webuntis:directory-projection-test";
+      const dataSourceId = Importing.DataSourceId.make(rawDataSourceId);
+
+      yield* SourceObservationStore.persistDirectorySnapshot(
+        projectableDirectorySnapshot("IGS Lilienthal"),
+      );
+      const added = yield* DirectoryProjectionStore.projectCurrent({
+        dataSourceId: rawDataSourceId,
+      });
+      const unchanged = yield* DirectoryProjectionStore.projectCurrent({
+        dataSourceId: rawDataSourceId,
+      });
+
+      expect(added).toMatchObject({
+        _tag: "Projected",
+        schoolId: "igs-lilienthal",
+        entityCount: 4,
+        changes: { added: 4, updated: 0, removed: 0, relinked: 0 },
+      });
+      expect(unchanged).toMatchObject({ _tag: "Unchanged" });
+      const initial = yield* DirectoryProjectionStore.readCurrent({ dataSourceId });
+      expect(initial.map((entity) => entity._tag)).toEqual([
+        "AcademicYear",
+        "ClassGroup",
+        "ClassGroupAcademicYear",
+        "School",
+      ]);
+
+      yield* SourceObservationStore.persistDirectorySnapshot(
+        projectableDirectorySnapshot("IGS Lilienthal Schule"),
+      );
+      const updated = yield* DirectoryProjectionStore.projectCurrent({
+        dataSourceId: rawDataSourceId,
+      });
+      expect(updated).toMatchObject({ changes: { added: 0, updated: 1, removed: 0 } });
+
+      yield* SourceObservationStore.persistDirectorySnapshot(
+        projectableDirectorySnapshot("IGS Lilienthal Schule", false),
+      );
+      const removed = yield* DirectoryProjectionStore.projectCurrent({
+        dataSourceId: rawDataSourceId,
+      });
+      expect(removed).toMatchObject({
+        entityCount: 2,
+        changes: { added: 0, updated: 0, removed: 2, relinked: 0 },
+      });
+
+      const entityRows = yield* database.drizzle
+        .select({ count: count() })
+        .from(directoryEntities)
+        .where(eq(directoryEntities.dataSourceId, rawDataSourceId));
+      const sourceRows = yield* database.drizzle
+        .select({ count: count() })
+        .from(directoryEntitySources)
+        .innerJoin(directoryEntities, eq(directoryEntities.key, directoryEntitySources.entityKey))
+        .where(eq(directoryEntities.dataSourceId, rawDataSourceId));
+      const projectionRuns = yield* database.drizzle
+        .select({ id: directoryProjectionRuns.id })
+        .from(directoryProjectionRuns)
+        .where(eq(directoryProjectionRuns.dataSourceId, rawDataSourceId));
+      const runSources = yield* database.drizzle
+        .select({ count: count() })
+        .from(directoryProjectionRunSources)
+        .innerJoin(
+          directoryProjectionRuns,
+          eq(directoryProjectionRuns.id, directoryProjectionRunSources.projectionRunId),
+        )
+        .where(eq(directoryProjectionRuns.dataSourceId, rawDataSourceId));
+      const changes = yield* database.drizzle
+        .select({ changeType: directoryProjectionChanges.changeType })
+        .from(directoryProjectionChanges)
+        .innerJoin(
+          directoryProjectionRuns,
+          eq(directoryProjectionRuns.id, directoryProjectionChanges.projectionRunId),
+        )
+        .where(eq(directoryProjectionRuns.dataSourceId, rawDataSourceId));
+
+      expect(entityRows[0]?.count).toBe(2);
+      expect(sourceRows[0]?.count).toBe(2);
+      expect(projectionRuns).toHaveLength(4);
+      expect(runSources[0]?.count).toBe(4);
+      expect(changes.map((change) => change.changeType)).toEqual(
+        expect.arrayContaining(["Added", "Updated", "Removed"]),
+      );
     }).pipe(Effect.provide(migrated)),
   { timeout: 60_000 },
 );

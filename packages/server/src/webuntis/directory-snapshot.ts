@@ -48,7 +48,10 @@ export const DirectoryObservation = Schema.TaggedUnion({
       ...ResourceFields,
       academicYearExternalId: Schema.String,
       departmentExternalId: Schema.NullOr(Schema.String),
-      teacherExternalIds: Schema.Array(Schema.String),
+      classTeachers: Schema.Struct({
+        firstExternalId: Schema.NullOr(Schema.String),
+        secondExternalId: Schema.NullOr(Schema.String),
+      }),
     }),
   },
   Teacher: {
@@ -223,9 +226,10 @@ export const makeDirectorySnapshot = (inventory: DirectoryInventory): DirectoryS
             ...resourceFields(item.class),
             academicYearExternalId,
             departmentExternalId: item.department === null ? null : String(item.department.id),
-            teacherExternalIds: [item.classTeacher1, item.classTeacher2]
-              .flatMap((teacher) => (teacher === null ? [] : [String(teacher.id)]))
-              .sort(),
+            classTeachers: {
+              firstExternalId: item.classTeacher1 === null ? null : String(item.classTeacher1.id),
+              secondExternalId: item.classTeacher2 === null ? null : String(item.classTeacher2.id),
+            },
           },
         }),
       ),
