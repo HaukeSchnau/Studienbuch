@@ -71,9 +71,10 @@ substitution polling cheap without losing provenance or the ability to project o
 The observed IGS payloads, reconciliation scopes and proposed polling policy are recorded in
 [`docs/webuntis-ingestion.md`](../../docs/webuntis-ingestion.md).
 
-The timetable command fetches all class views in batches of ten and splits the requested range into
-daily scopes. Missing, denied, conflicting or provider-error rows make the affected day partial, so
-that poll may add or update records but cannot delete records previously observed for the day.
+The timetable command fetches class, subject, teacher and room views in batches of up to 500 and
+splits the requested range into daily scopes. Missing, denied, conflicting or provider-error rows
+make the affected day partial, so that poll may add or update records but cannot delete records
+previously observed for the day.
 
 ## Commands
 

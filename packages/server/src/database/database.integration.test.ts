@@ -221,7 +221,7 @@ const schoolObservation = (externalId: string, name: string) =>
     payload: { name, loginName: name.toLowerCase(), hostName: null },
   });
 
-const timetableScope = "academic-year:10/resource-type:CLASS/date:2026-08-24";
+const timetableScope = "academic-year:10/resource-types:CLASS,SUBJECT,TEACHER,ROOM/date:2026-08-24";
 
 const timetableObservation = (status: string) =>
   TimetableObservation.make({

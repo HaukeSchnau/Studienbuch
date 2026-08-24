@@ -176,7 +176,7 @@ export const suggestEnrollmentContinuations = (
   const previousById = new Map(input.previousOfferings.map((offering) => [offering.id, offering]));
   return input.previousEnrollments.flatMap((enrollment) => {
     const previous = previousById.get(enrollment.courseOfferingId);
-    if (previous === undefined) return [];
+    if (previous?.subjectId === undefined) return [];
     const candidates = input.targetOfferings.filter(
       (offering) =>
         offering.termId === input.targetTermId &&

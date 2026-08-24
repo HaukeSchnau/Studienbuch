@@ -65,7 +65,9 @@ assignments. The only cohort-name gaps are the three entry years 2024 through 20
 
 The modern REST endpoint exposes timetable resource views for classes, students, teachers,
 subjects and rooms. `STANDARD` already includes substitutions and cancellations; IGS does not need
-a second substitution feed.
+a second substitution feed. Class, subject, teacher and room views are imported together. Student
+views remain excluded because they repeat school-timetable data once per student and cross the
+privacy boundary without contributing a school-level identity we currently need.
 
 A complete class-timetable query for 2026-08-24 through 2026-08-28 returned all 45 classes with no
 response errors:
@@ -86,42 +88,48 @@ room resources. That is enough to represent teacher substitutions and room chang
 and homework are signaled too, but their authored text requires the same privacy treatment as other
 school content.
 
+The live multi-view importer needs one entries request per resource type for IGS. On 2026-08-24 it
+covered 45 classes, 305 subjects, 125 teachers and 148 rooms in four responses. All 623 advertised
+resource rows were present; the complete daily snapshot contained 1,279 claims: 504 class, 268
+subject, 276 teacher and 231 room views.
+
 ### Raw identity
 
 An entry has a date, a non-empty set of numeric WebUntis IDs, a time range and resource positions.
-The same real occurrence is repeated in every affected class view. Grouping only by date and sorted
-ID set reduced 1,881 views to 1,115 groups, but 219 groups had legitimately different view payloads
-(primarily layout and class-position data), with up to seven views for one occurrence.
+The same real occurrence is repeated in every affected resource view. Grouping only by date and
+sorted ID set reduced 1,881 class views to 1,115 groups, but 219 groups had legitimately different
+view payloads (primarily layout and class-position data), with up to seven class views for one
+occurrence.
 
 The lossless source identity is therefore:
 
 ```text
-CLASS:<outer class resource id>:<date>:<sorted WebUntis entry ids>
+<resource type>:<outer resource id>:<date>:<sorted WebUntis entry ids>
 ```
 
-It was unique for all 1,881 observed views. The raw payload should also retain the outer day
+It was unique for all observed views. The raw payload also retains the outer day
 resource and day status; the entry body alone does not say which resource view produced it.
 Projection may later merge views by date and sorted ID set into a domain occurrence. That merge does
 not belong in source ingestion.
 
 ### Reconciliation scopes
 
-Use one complete scope per academic year, resource type and calendar date:
+Use one complete scope per academic year and calendar date, containing all imported resource types:
 
 ```text
-academic-year:10/resource-type:CLASS/date:2026-08-24
+academic-year:10/resource-types:CLASS,SUBJECT,TEACHER,ROOM/date:2026-08-24
 ```
 
-The importer may fetch a wider window and class IDs in bounded batches, then normalize and persist
-one daily snapshot at a time. A daily scope is complete only when every expected class resource was
+The importer may fetch a wider window and resource IDs in bounded batches, then normalize and
+persist one daily snapshot at a time. A daily scope is complete only when every expected resource was
 requested, every response decoded, no response-level error applies to the date, and duplicate raw
 identities agree. Empty complete days are meaningful and remove entries previously observed for
 that day. Partial results may be retained for diagnostics but must not remove anything.
 
-Class views are the first imported feed because they cover the school timetable without importing
-the same data once per student or exposing a user's personalized menu as school truth. Add teacher,
-room or student views when a live comparison proves that they contain data which class views omit,
-or when a product query cannot be projected from class views.
+The additional outer views contribute the numeric subject, teacher and room identities that class
+entry positions omit. They therefore remain separate source claims even where their display data
+overlaps. This costs four entries requests per IGS window because all currently advertised IDs fit
+inside the tested batch size of 500.
 
 ### Polling policy
 
@@ -187,15 +195,40 @@ splits, merges or predecessor graphs without a feature that needs them. This con
 replaceable school profile because another tenant may assign class identities differently.
 
 Cohort names are explicit IGS configuration, not guessed from WebUntis. The legacy applications
+and the [official 2023 enrollment post](https://igs-lilienthal.de/einschulung-des-jahrgangs-emmy/)
 confirm names through entry year 2023 (`Emmy`); later names remain unresolved until configured.
 Operational names such as `Paula` are canonical, while namesake metadata is outside the domain.
 
 The legacy Expo importer grouped equal course names when teacher and time also matched, then hashed
 the resulting class set into the course ID. That correctly recognizes that one course may span
 several classes or cohorts, but makes identity depend on the import window and its observed class
-set. Activities therefore remain lossless `ProviderActivity` entities for now. Subject and course
-offering projection will get its own evidence-based identity policy rather than inheriting that
-unstable hash.
+set.
+
+The four-week live comparison makes the provider boundary more precise. All 305 subject resources
+have distinct exact label triples, but their numeric IDs identify activities rather than courses:
+154 appeared in the measured timetable, and the single `Deutsch` activity was used by 40 classes.
+Conversely, none of 9,937 individual entry IDs recurred on another date. Subject-view claims now
+preserve the activity ID and class claims preserve the exact co-participating classes. Activities
+therefore remain lossless `ProviderActivity` entities while the course projector derives offerings
+from evidence accumulated across daily scopes; it does not treat either an activity ID or a dated
+entry ID as a course ID.
+
+Core course offerings are now scoped to an academic year with an optional narrower term. Their
+subject is optional until a provider activity resolves, so the importer can retain a real offering
+without inventing a term or discarding it because the subject catalog is incomplete.
+
+The initial IGS policy groups one activity's class-bearing occurrences by connected,
+co-participating lasting classes. Separate class courses stay separate; one cross-class course is
+not split into one offering per class. Occurrences without class identity use teacher membership as
+a fallback, which covers the classless upper school. A deterministic school-profile anchor gives
+the component its identity, so adding later occurrences or higher-sorted participants does not
+replace the offering. A durable reconciliation step will preserve the old identity if genuinely
+new evidence later introduces an earlier anchor or changes component boundaries.
+
+Against the live four-week window, 5,648 occurrences yielded 743 inferred academic-year offerings:
+493 class-anchored, 242 teacher-anchored and eight explicitly unassigned. The largest observed
+components span seven lasting classes. All 743 retain unresolved subject status. Another 504
+occurrences have no subject claim and remain diagnosed instead of being forced into an offering.
 
 ### Provider-backed occurrence projection
 
@@ -203,11 +236,16 @@ Core now models a provider-backed dated occurrence without requiring a recurring
 offering or bell period. Those domain links are explicit and optional. The occurrence contains a
 non-empty set of provider entry IDs and a non-empty set of source claims.
 
-Each class-view claim retains its academic year, outer class, day status, entry location, local
+Each resource-view claim retains its academic year, outer resource, day status, entry location, local
 time range, provider type and status, all four resource positions, current and removed resources,
 notes, icons, typed texts, lesson and substitution text, and WebUntis presentation fields. Claims
-remain separate when class views disagree. The projection does not pick a convenient status or
+remain separate when views disagree. The projection does not pick a convenient status or
 time and discard the others.
+
+Subject, teacher and room claims carry their real provider identities and resolve through typed
+entity links where a domain entity exists. The live API uses `null`, not an empty string, for some
+teacher- and room-view notes, lesson text and substitution text. `webuntis-api` 0.2.1 and Core both
+preserve that distinction.
 
 Every claim retains its provider identity. The durable server projection links that claim to the
 exact immutable source-record version that produced it. Unknown provider fields remain in the raw
@@ -237,7 +275,7 @@ to its lasting class or cohort.
 
 `timetable_occurrences` is the current server-side read model. Projection replays one daily source
 scope under the same advisory lock used by ingestion, validates every stored payload again, groups
-class claims deterministically and reconciles only occurrences in that scope. Empty complete
+all resource claims deterministically and reconciles only occurrences in that scope. Empty complete
 scopes remove their previous occurrences. Partial source scopes retain records that absence cannot
 prove removed, then project the retained current state.
 
@@ -248,10 +286,10 @@ per-scope manifests and transitions. They are server audit data, not authorized 
 not a global generation of school state.
 
 `entity_links` stores typed correspondences between provider identities and stable domain entities.
-The timetable projector currently resolves academic-year and outer-class references when those
-links exist. A retained source without a link is explicitly unresolved. Inner timetable resources
-such as teachers, rooms and subjects do not carry provider IDs in the observed endpoint, so the
-projector preserves their names and statuses without guessing an identity.
+The timetable projector resolves academic-year, class, teacher and room references when those
+links exist. Subject claims retain their provider source while canonical subject resolution remains
+pending. Inner position resources still do not carry provider IDs, so their names and statuses are
+preserved without guessing; the matching outer claims carry the authoritative identity.
 
 This boundary follows the useful common ground between Groundswell and LiveStore: PostgreSQL owns
 canonical server state, while clients can later rebuild local SQLite state from ordered,
@@ -271,10 +309,10 @@ Import the four available school years once to establish the current multi-year 
 daily imports only need the active year; replay still includes the other current scopes already in
 source storage.
 
-The `webuntis-timetable` console command now fetches all class resources in batches of ten, builds
-one source snapshot per requested calendar date, and previews without opening PostgreSQL unless
-`--apply` is present. Applying a snapshot persists its source records and immediately replays its
-daily domain projection:
+The `webuntis-timetable` console command fetches class, subject, teacher and room views in batches
+of up to 500, builds one source snapshot per requested calendar date, and previews without opening
+PostgreSQL unless `--apply` is present. Applying a snapshot persists its source records and
+immediately replays its daily domain projection:
 
 ```bash
 just console webuntis-timetable \
@@ -289,24 +327,19 @@ just console webuntis-timetable \
   --apply
 ```
 
-The normalizer requires one decoded row per expected class and date. Missing or duplicate rows,
+The normalizer requires one decoded row per expected resource and date. Missing or duplicate rows,
 denied resource statuses, entries without provider IDs, conflicting identities and response errors
 make that date partial. A partial date preserves useful additions and updates but cannot remove an
 older record.
 
-Two consecutive live imports of the five school days beginning 2026-08-24 proved the storage
-behavior in the isolated development database. The first created five changed runs and 1,881 record
-versions. The second created five unchanged runs and no versions or changes. Five current daily
-scopes point at the unchanged runs.
-
 ## Next implementation slice
 
-1. Define role-specific timetable and directory contracts and turn projection transitions into authorized,
+1. Persist the inferred course-offering projection across all current daily scopes, reconcile
+   component changes against existing anchors, and attach the resulting IDs to dated occurrences.
+2. Define role-specific timetable and directory contracts and turn projection transitions into authorized,
    ordered client changes. Keep raw source records and unrestricted projection payloads server-only.
-2. Specify stable subject and course-offering identity using live timetable evidence and the useful
-   parts of the legacy cross-class grouping behavior.
-3. Compare teacher, room and student views against class views with PII-free field and identity
-   summaries. Add only the view types that contribute otherwise unavailable data.
+3. Add student views only if a concrete feature needs their identity; do not duplicate the school
+   timetable per student by default.
 4. Add the agreed polling policy with jitter, one active execution per source and observable
    failures that never advance source state.
 5. Add the server-only exams importer before designing its role-specific client projection.

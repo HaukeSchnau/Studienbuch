@@ -15,12 +15,32 @@ import {
   type TimetableEntry,
   type TimetableEntryDay,
   type TimetableEntryPosition,
+  type TimetableFilter,
+  type TimetableResourceType,
 } from "webuntis-api";
 import { TimetableEntrySchema } from "webuntis-api/schemas";
 import { hashSourceObservations, type SourceSnapshot } from "../importing/source-snapshot.ts";
 import { SchoolYearUnavailable } from "./directory-preview.ts";
 
-const timetableBatchSize = 10;
+const timetableBatchSize = 500;
+
+export const importedTimetableResourceTypes = ["CLASS", "SUBJECT", "TEACHER", "ROOM"] as const;
+export type ImportedTimetableResourceType = (typeof importedTimetableResourceTypes)[number];
+
+const isImportedTimetableDay = (
+  day: TimetableEntryDay,
+): day is TimetableEntryDay & { readonly resourceType: ImportedTimetableResourceType } => {
+  switch (day.resourceType) {
+    case "CLASS":
+    case "SUBJECT":
+    case "TEACHER":
+    case "ROOM":
+      return true;
+    case "RESOURCE":
+    case "STUDENT":
+      return false;
+  }
+};
 
 export class InvalidTimetableRange extends Schema.TaggedError<InvalidTimetableRange>()(
   "WebUntis.InvalidTimetableRange",
@@ -50,8 +70,8 @@ export type TimetableDiagnostic = {
 export interface TimetableDayPreview {
   readonly date: string;
   readonly completeness: "Complete" | "Partial";
-  readonly expectedClassRows: number;
-  readonly returnedClassRows: number;
+  readonly expectedResourceRows: number;
+  readonly returnedResourceRows: number;
   readonly occurrenceViews: number;
   readonly dayStatuses: Readonly<Record<string, number>>;
   readonly entryStatuses: Readonly<Record<string, number>>;
@@ -74,8 +94,8 @@ export interface TimetablePreview {
     readonly end: string;
   };
   readonly requestedRange: { readonly start: string; readonly end: string };
-  readonly resourceType: "CLASS";
-  readonly classCount: number;
+  readonly resourceTypes: ReadonlyArray<ImportedTimetableResourceType>;
+  readonly resourceCounts: Readonly<Record<ImportedTimetableResourceType, number>>;
   readonly responseCount: number;
   readonly responseErrorCount: number;
   readonly completeDays: number;
@@ -90,7 +110,9 @@ export interface TimetableInventory {
   readonly academicYear: Schoolyear;
   readonly requestedRange: { readonly start: string; readonly end: string };
   readonly requestedDates: ReadonlyArray<string>;
-  readonly classes: ReadonlyArray<DisplayResource>;
+  readonly resources: Readonly<
+    Record<ImportedTimetableResourceType, ReadonlyArray<DisplayResource>>
+  >;
   readonly responses: ReadonlyArray<TimetableEntries>;
 }
 
@@ -101,7 +123,7 @@ export const TimetableObservation = Schema.TaggedStruct("TimetableOccurrence", {
   payload: Schema.Struct({
     academicYearExternalId: Schema.String,
     date: Schema.String,
-    resourceType: Schema.Literal("CLASS"),
+    resourceType: Schema.Literals(importedTimetableResourceTypes),
     resource: Schema.Struct({
       externalId: Schema.String,
       shortName: Schema.String,
@@ -122,7 +144,7 @@ export interface TimetableImportPlan {
 
 interface DayState {
   readonly date: string;
-  readonly resourceRowCounts: Map<number, number>;
+  readonly resourceRowCounts: Map<string, number>;
   readonly observations: Map<string, TimetableObservation>;
   readonly conflictingIdentities: Set<string>;
   readonly dayStatuses: Map<string, number>;
@@ -212,7 +234,7 @@ const resourceReference = (resource: DisplayResource) => ({
 });
 
 const externalIdOf = (day: TimetableEntryDay, entry: TimetableEntry) =>
-  `CLASS:${day.resource.id}:${day.date}:${entry.ids.join(",")}`;
+  `${day.resourceType}:${day.resource.id}:${day.date}:${entry.ids.join(",")}`;
 
 const diagnosticRows = (
   diagnostics: Map<TimetableDiagnosticCode, number>,
@@ -242,7 +264,7 @@ const emptyDayState = (date: string): DayState => ({
 const addEntries = (
   state: DayState,
   academicYearExternalId: string,
-  day: TimetableEntryDay,
+  day: TimetableEntryDay & { readonly resourceType: ImportedTimetableResourceType },
   location: TimetableEntryLocation,
   entries: ReadonlyArray<TimetableEntry>,
 ) => {
@@ -274,7 +296,7 @@ const addEntries = (
       payload: {
         academicYearExternalId,
         date: day.date,
-        resourceType: "CLASS",
+        resourceType: day.resourceType,
         resource: resourceReference(day.resource),
         dayStatus: day.status,
         location,
@@ -292,10 +314,17 @@ const addEntries = (
   }
 };
 
-/** Converts decoded class timetable views into independently reconcilable daily snapshots. */
+const resourceKey = (resourceType: TimetableResourceType, resourceId: number) =>
+  `${resourceType}:${resourceId}`;
+
+/** Converts decoded timetable views into independently reconcilable daily snapshots. */
 export const makeTimetableImportPlan = (inventory: TimetableInventory): TimetableImportPlan => {
   const academicYearExternalId = String(inventory.academicYear.id);
-  const expectedClassIds = new Set(inventory.classes.map((resource) => resource.id));
+  const expectedResourceKeys = new Set(
+    importedTimetableResourceTypes.flatMap((resourceType) =>
+      inventory.resources[resourceType].map((resource) => resourceKey(resourceType, resource.id)),
+    ),
+  );
   const days = new Map(inventory.requestedDates.map((date) => [date, emptyDayState(date)]));
   const overallDiagnostics = new Map<TimetableDiagnosticCode, number>();
   const responseErrorCount = inventory.responses.reduce(
@@ -308,17 +337,15 @@ export const makeTimetableImportPlan = (inventory: TimetableInventory): Timetabl
       const state = days.get(day.date);
       if (
         state === undefined ||
-        day.resourceType !== "CLASS" ||
-        !expectedClassIds.has(day.resource.id)
+        !isImportedTimetableDay(day) ||
+        !expectedResourceKeys.has(resourceKey(day.resourceType, day.resource.id))
       ) {
         incrementDiagnostic(overallDiagnostics, "UnexpectedResourceDay");
         continue;
       }
 
-      state.resourceRowCounts.set(
-        day.resource.id,
-        (state.resourceRowCounts.get(day.resource.id) ?? 0) + 1,
-      );
+      const key = resourceKey(day.resourceType, day.resource.id);
+      state.resourceRowCounts.set(key, (state.resourceRowCounts.get(key) ?? 0) + 1);
       increment(state.dayStatuses, day.status);
       if (day.status === "NOT_ALLOWED" || day.status === "NOT_ALLOWED_FOR_RESOURCE") {
         incrementDiagnostic(state.diagnostics, "NotAllowedResourceDay");
@@ -332,8 +359,8 @@ export const makeTimetableImportPlan = (inventory: TimetableInventory): Timetabl
   const snapshots: Array<SourceSnapshot<TimetableObservation>> = [];
   const dayPreviews: Array<TimetableDayPreview> = [];
   for (const state of days.values()) {
-    const missingRows = [...expectedClassIds].filter(
-      (classId) => !state.resourceRowCounts.has(classId),
+    const missingRows = [...expectedResourceKeys].filter(
+      (key) => !state.resourceRowCounts.has(key),
     ).length;
     const duplicateRows = [...state.resourceRowCounts.values()].filter((count) => count > 1).length;
     incrementDiagnostic(state.diagnostics, "MissingResourceDay", missingRows);
@@ -346,8 +373,8 @@ export const makeTimetableImportPlan = (inventory: TimetableInventory): Timetabl
     const completeness = state.diagnostics.size === 0 ? "Complete" : "Partial";
     const diagnostics = diagnosticRows(state.diagnostics, state.date);
     const counts = {
-      expectedClassRows: expectedClassIds.size,
-      returnedClassRows: state.resourceRowCounts.size,
+      expectedResourceRows: expectedResourceKeys.size,
+      returnedResourceRows: state.resourceRowCounts.size,
       occurrenceViews: observations.length,
       dayStatuses: sortedCounts(state.dayStatuses),
       entryStatuses: sortedCounts(state.entryStatuses),
@@ -358,7 +385,7 @@ export const makeTimetableImportPlan = (inventory: TimetableInventory): Timetabl
       provider: "WebUntis",
       dataSourceId: inventory.dataSourceId,
       dataset: "timetable",
-      scope: `academic-year:${academicYearExternalId}/resource-type:CLASS/date:${state.date}`,
+      scope: `academic-year:${academicYearExternalId}/resource-types:${importedTimetableResourceTypes.join(",")}/date:${state.date}`,
       contentHash: hashSourceObservations(observations),
       completeness,
       observations,
@@ -368,8 +395,8 @@ export const makeTimetableImportPlan = (inventory: TimetableInventory): Timetabl
     dayPreviews.push({
       date: state.date,
       completeness,
-      expectedClassRows: expectedClassIds.size,
-      returnedClassRows: state.resourceRowCounts.size,
+      expectedResourceRows: expectedResourceKeys.size,
+      returnedResourceRows: state.resourceRowCounts.size,
       occurrenceViews: observations.length,
       dayStatuses: counts.dayStatuses,
       entryStatuses: counts.entryStatuses,
@@ -390,8 +417,13 @@ export const makeTimetableImportPlan = (inventory: TimetableInventory): Timetabl
         end: inventory.academicYear.dateRange.end,
       },
       requestedRange: inventory.requestedRange,
-      resourceType: "CLASS",
-      classCount: expectedClassIds.size,
+      resourceTypes: importedTimetableResourceTypes,
+      resourceCounts: {
+        CLASS: inventory.resources.CLASS.length,
+        SUBJECT: inventory.resources.SUBJECT.length,
+        TEACHER: inventory.resources.TEACHER.length,
+        ROOM: inventory.resources.ROOM.length,
+      },
       responseCount: inventory.responses.length,
       responseErrorCount,
       completeDays: dayPreviews.filter((day) => day.completeness === "Complete").length,
@@ -406,7 +438,23 @@ export const makeTimetableImportPlan = (inventory: TimetableInventory): Timetabl
   };
 };
 
-/** Fetches class timetable views in bounded batches and performs no persistence. */
+const resourcesFor = (
+  resourceType: ImportedTimetableResourceType,
+  filter: TimetableFilter,
+): ReadonlyArray<DisplayResource> => {
+  switch (resourceType) {
+    case "CLASS":
+      return filter.classes.map((item) => item.class);
+    case "SUBJECT":
+      return filter.subjects.map((item) => item.subject);
+    case "TEACHER":
+      return filter.teachers.map((item) => item.teacher);
+    case "ROOM":
+      return filter.rooms.map((item) => item.room);
+  }
+};
+
+/** Fetches identity-bearing timetable views in bounded batches and performs no persistence. */
 export const fetchTimetableImportPlan = Effect.fn("WebUntis.fetchTimetableImportPlan")(function* (
   requestedSchoolYear: string,
   start: string,
@@ -424,19 +472,49 @@ export const fetchTimetableImportPlan = Effect.fn("WebUntis.fetchTimetableImport
     });
   }
   const dates = yield* requestedDates(start, end, academicYear);
-  const request = { start, end, resourceType: "CLASS", timetableType: "STANDARD" } as const;
-  const filter = yield* timetable.getFilter(request).pipe(withSchoolYear(academicYear.id));
-  const classes = filter.classes
-    .map((item) => item.class)
-    .sort((left, right) => left.id - right.id);
-  const responses = yield* Effect.all(
+  const filteredResources = yield* Effect.forEach(
+    importedTimetableResourceTypes,
+    (resourceType) => {
+      const request = { start, end, resourceType, timetableType: "STANDARD" } as const;
+      return timetable.getFilter(request).pipe(
+        withSchoolYear(academicYear.id),
+        Effect.map(
+          (filter) =>
+            [
+              resourceType,
+              [...resourcesFor(resourceType, filter)].sort((left, right) => left.id - right.id),
+            ] as const,
+        ),
+      );
+    },
+    { concurrency: 4 },
+  );
+  const resourceMap = new Map(filteredResources);
+  const resources: TimetableInventory["resources"] = {
+    CLASS: resourceMap.get("CLASS") ?? [],
+    SUBJECT: resourceMap.get("SUBJECT") ?? [],
+    TEACHER: resourceMap.get("TEACHER") ?? [],
+    ROOM: resourceMap.get("ROOM") ?? [],
+  };
+  const entryRequests = importedTimetableResourceTypes.flatMap((resourceType) =>
     EffectArray.chunksOf(
-      classes.map((resource) => resource.id),
+      resources[resourceType].map((resource) => resource.id),
       timetableBatchSize,
-    ).map((resources) =>
-      timetable.getEntries({ ...request, resources }).pipe(withSchoolYear(academicYear.id)),
-    ),
-    { concurrency: 3 },
+    ).map((resourceIds) => ({ resourceType, resourceIds })),
+  );
+  const responses = yield* Effect.forEach(
+    entryRequests,
+    ({ resourceType, resourceIds }) =>
+      timetable
+        .getEntries({
+          start,
+          end,
+          resourceType,
+          resources: resourceIds,
+          timetableType: "STANDARD",
+        })
+        .pipe(withSchoolYear(academicYear.id)),
+    { concurrency: 4 },
   );
 
   return makeTimetableImportPlan({
@@ -444,7 +522,7 @@ export const fetchTimetableImportPlan = Effect.fn("WebUntis.fetchTimetableImport
     academicYear,
     requestedRange: { start, end },
     requestedDates: dates,
-    classes,
+    resources,
     responses,
   });
 });
@@ -456,5 +534,13 @@ export {
   projectTimetableOccurrences,
   type ProjectTimetableOccurrencesInput,
 } from "./timetable-projection.ts";
+export {
+  InvalidCourseOfferingProjection,
+  projectCourseOfferings,
+  type CourseOfferingEvidence,
+  type CourseOfferingIdentityInput,
+  type CourseOfferingProjection,
+  type ProjectCourseOfferingsInput,
+} from "./course-offering-projection.ts";
 
 export * as WebUntisTimetable from "./timetable.ts";

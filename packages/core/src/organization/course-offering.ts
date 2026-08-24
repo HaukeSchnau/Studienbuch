@@ -32,8 +32,9 @@ export interface ClassGroupAcademicYear extends Schema.Schema.Type<typeof ClassG
 export const CourseOffering = Schema.Struct({
   id: CourseOfferingId,
   schoolId: SchoolId,
-  termId: AcademicTermId,
-  subjectId: SubjectId,
+  academicYearId: AcademicYearId,
+  termId: Schema.optional(AcademicTermId),
+  subjectId: Schema.optional(SubjectId),
   name: NonBlankText,
   classGroupIds: Schema.Array(ClassGroupId),
 });

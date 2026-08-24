@@ -279,20 +279,24 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
     if (offering.schoolId !== schoolId) {
       return yield* invalidDirectory("CourseOffering", offering.id, "WrongSchool");
     }
+    const academicYear = academicYears.get(offering.academicYearId);
+    const offeringTerm = offering.termId === undefined ? undefined : terms.get(offering.termId);
     if (
-      terms.get(offering.termId)?.schoolId !== schoolId ||
-      subjects.get(offering.subjectId) === undefined
+      academicYear?.schoolId !== schoolId ||
+      (offering.termId !== undefined && offeringTerm === undefined) ||
+      (offering.subjectId !== undefined && subjects.get(offering.subjectId) === undefined)
     ) {
       return yield* invalidDirectory("CourseOffering", offering.id, "UnknownReference");
+    }
+    if (offeringTerm !== undefined && offeringTerm.academicYearId !== academicYear.id) {
+      return yield* invalidDirectory("CourseOffering", offering.id, "WrongTerm");
     }
     if (
       offering.classGroupIds.some((id) => {
         const group = classGroups.get(id);
-        const term = terms.get(offering.termId);
         return (
           group === undefined ||
-          term === undefined ||
-          !classGroupAcademicYears.has(`${group.id}\u0000${term.academicYearId}`)
+          !classGroupAcademicYears.has(`${group.id}\u0000${offering.academicYearId}`)
         );
       })
     ) {
@@ -312,9 +316,15 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
     if (offering === undefined) {
       return yield* invalidDirectory("Enrollment", enrollment.id, "UnknownReference");
     }
-    const term = terms.get(offering.termId);
-    if (term === undefined || !CalendarDateRange.encloses(term.interval, enrollment.effective)) {
-      return yield* invalidDirectory("Enrollment", enrollment.id, "OutsideTerm");
+    const academicYear = academicYears.get(offering.academicYearId);
+    const term = offering.termId === undefined ? undefined : terms.get(offering.termId);
+    const interval = term?.interval ?? academicYear?.interval;
+    if (interval === undefined || !CalendarDateRange.encloses(interval, enrollment.effective)) {
+      return yield* invalidDirectory(
+        "Enrollment",
+        enrollment.id,
+        offering.termId === undefined ? "OutsideAcademicYear" : "OutsideTerm",
+      );
     }
     if (enrollment.origin._tag === "Choice") {
       const choice = choiceGroups.get(enrollment.origin.choiceGroupId);

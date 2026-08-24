@@ -467,8 +467,8 @@ importers:
         specifier: 'catalog:'
         version: 1.0.4
       webuntis-api:
-        specifier: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.0.tgz
-        version: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.0.tgz(effect@4.0.0-rc.108)
+        specifier: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.1.tgz
+        version: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.1.tgz(effect@4.0.0-rc.108)
     devDependencies:
       '@effect/vitest':
         specifier: 'catalog:'
@@ -9708,9 +9708,9 @@ packages:
   webpack-virtual-modules@0.6.2:
     resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
 
-  webuntis-api@https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.0.tgz:
-    resolution: {integrity: sha512-DsTEtAwCMFQuIUKnZXTg0wu4IBGdpLod+263Gow6FnYeKP6OODg5Eb/UFjMRMAQMH8SuLQP8HHiDWVwXD9pb+w==, tarball: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.0.tgz}
-    version: 0.2.0
+  webuntis-api@https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.1.tgz:
+    resolution: {integrity: sha512-addmtEqY8U9v+QngdyhfdulVddilMeIuPL+gh2GeK87CkFwHY/ouKCX6bqlEZOLhh3Ln+Jmn8VVCIOC5xO3gSw==, tarball: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.1.tgz}
+    version: 0.2.1
     engines: {node: '>=22.12.0'}
     peerDependencies:
       effect: 4.0.0-rc.108
@@ -20440,7 +20440,7 @@ snapshots:
 
   webpack-virtual-modules@0.6.2: {}
 
-  webuntis-api@https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.0.tgz(effect@4.0.0-rc.108):
+  webuntis-api@https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.1.tgz(effect@4.0.0-rc.108):
     dependencies:
       effect: 4.0.0-rc.108
 
