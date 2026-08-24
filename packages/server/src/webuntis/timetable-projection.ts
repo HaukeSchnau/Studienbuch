@@ -20,6 +20,7 @@ export class InvalidTimetableOccurrence extends Schema.TaggedError<InvalidTimeta
 export interface ProjectTimetableOccurrencesInput {
   readonly dataSourceId: Importing.DataSourceId;
   readonly observations: ReadonlyArray<TimetableObservation>;
+  readonly entityLinks?: ReadonlyArray<Importing.EntityLink>;
 }
 
 const sourceIdentity = (
@@ -32,6 +33,18 @@ const sourceIdentity = (
     entityKind,
     externalId: Importing.ExternalId.make(externalId),
   });
+
+const entityLinkKey = (link: Importing.EntityLink) =>
+  `${link._tag}\u0000${link.source.dataSourceId}\u0000${link.source.entityKind}\u0000${link.source.externalId}`;
+
+const linkedEntity = (
+  links: ReadonlyMap<string, Importing.EntityLink>,
+  tag: Importing.EntityLink["_tag"],
+  source: Importing.SourceIdentity,
+) =>
+  links.get(
+    `${tag}\u0000${source.dataSourceId}\u0000${source.entityKind}\u0000${source.externalId}`,
+  );
 
 const resource = (value: TimetableEntryPositionResource) => ({
   type: value.type,
@@ -111,6 +124,7 @@ const parseProviderDate = Effect.fnUntraced(function* (sourceExternalId: string,
 const projectClaim = Effect.fnUntraced(function* (
   dataSourceId: Importing.DataSourceId,
   observation: TimetableObservation,
+  entityLinks: ReadonlyMap<string, Importing.EntityLink>,
 ) {
   const { entry, resource: viewedResource } = observation.payload;
   const [start, end] = yield* Effect.all([
@@ -127,16 +141,26 @@ const projectClaim = Effect.fnUntraced(function* (
     ),
   );
   const positions = [entry.position1, entry.position2, entry.position3, entry.position4] as const;
+  const academicYearSource = sourceIdentity(
+    dataSourceId,
+    "AcademicYear",
+    observation.payload.academicYearExternalId,
+  );
+  const viewedResourceSource = sourceIdentity(
+    dataSourceId,
+    "ClassGroup",
+    viewedResource.externalId,
+  );
 
   return Schedule.ProviderOccurrenceClaim.make({
     source: sourceIdentity(dataSourceId, "TimetableOccurrence", observation.externalId),
-    academicYear: sourceIdentity(
-      dataSourceId,
-      "AcademicYear",
-      observation.payload.academicYearExternalId,
-    ),
+    academicYear: {
+      source: academicYearSource,
+      entityLink: linkedEntity(entityLinks, "AcademicYear", academicYearSource),
+    },
     viewedResource: {
-      source: sourceIdentity(dataSourceId, "ClassGroup", viewedResource.externalId),
+      source: viewedResourceSource,
+      entityLink: linkedEntity(entityLinks, "ClassGroup", viewedResourceSource),
       type: observation.payload.resourceType,
       shortName: viewedResource.shortName,
       longName: viewedResource.longName,
@@ -174,6 +198,7 @@ interface ProjectedClaim {
 const projectObservation = Effect.fnUntraced(function* (
   dataSourceId: Importing.DataSourceId,
   observation: TimetableObservation,
+  entityLinks: ReadonlyMap<string, Importing.EntityLink>,
 ): Effect.fn.Return<ProjectedClaim, InvalidTimetableOccurrence> {
   const date = yield* parseProviderDate(observation.externalId, observation.payload.date);
   const firstId = observation.payload.entry.ids[0];
@@ -189,7 +214,7 @@ const projectObservation = Effect.fnUntraced(function* (
     ...observation.payload.entry.ids.slice(1).map((id) => Importing.ExternalId.make(String(id))),
   ];
   providerEntryIds.sort(Order.String);
-  const claim = yield* projectClaim(dataSourceId, observation);
+  const claim = yield* projectClaim(dataSourceId, observation, entityLinks);
   return { date, providerEntryIds, claim };
 });
 
@@ -203,8 +228,11 @@ const occurrenceKey = (projected: ProjectedClaim) =>
 /** Groups lossless class-view claims into provider-backed dated occurrences. */
 export const projectTimetableOccurrences = Effect.fn("WebUntis.projectTimetableOccurrences")(
   function* (input: ProjectTimetableOccurrencesInput) {
+    const entityLinks = new Map(
+      (input.entityLinks ?? []).map((link) => [entityLinkKey(link), link]),
+    );
     const projected = yield* Effect.forEach(input.observations, (observation) =>
-      projectObservation(input.dataSourceId, observation),
+      projectObservation(input.dataSourceId, observation, entityLinks),
     );
     const groups = new Map<string, Array<ProjectedClaim>>();
     for (const item of projected) {

@@ -4,7 +4,7 @@ import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { AcademicTerm, validateAcademicTerms } from "./academic-term";
 import { AcademicYear, Cohort, validateAcademicYears } from "./academic-year";
 import { School, SubjectCatalog } from "./catalog";
-import { ClassGroup, CourseOffering } from "./course-offering";
+import { ClassGroup, ClassGroupAcademicYear, CourseOffering } from "./course-offering";
 import { CourseChoiceGroup, Enrollment } from "./enrollment";
 import { Building, Department, Room } from "./school-structure";
 
@@ -19,6 +19,7 @@ export const SchoolDirectory = Schema.Struct({
   buildings: Schema.Array(Building),
   rooms: Schema.Array(Room),
   classGroups: Schema.Array(ClassGroup),
+  classGroupAcademicYears: Schema.Array(ClassGroupAcademicYear),
   courseOfferings: Schema.Array(CourseOffering),
   choiceGroups: Schema.Array(CourseChoiceGroup),
   enrollments: Schema.Array(Enrollment),
@@ -37,6 +38,7 @@ export class InvalidSchoolDirectory extends Schema.TaggedError<InvalidSchoolDire
       "Building",
       "Room",
       "ClassGroup",
+      "ClassGroupAcademicYear",
       "CourseOffering",
       "CourseChoiceGroup",
       "Enrollment",
@@ -90,6 +92,13 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
   const subjects = new Map(structure.subjectCatalog.subjects.map((item) => [item.id, item]));
   const cohorts = new Map(structure.cohorts.map((item) => [item.id, item]));
   const classGroups = new Map(structure.classGroups.map((item) => [item.id, item]));
+  const classGroupAcademicYearKeys = structure.classGroupAcademicYears.map(
+    (item) => `${item.classGroupId}\u0000${item.academicYearId}`,
+  );
+  const classGroupAcademicYears = new Set(classGroupAcademicYearKeys);
+  if (classGroupAcademicYears.size !== classGroupAcademicYearKeys.length) {
+    return yield* invalidDirectory("ClassGroupAcademicYear", schoolId, "DuplicateId");
+  }
   const offerings = new Map(structure.courseOfferings.map((item) => [item.id, item]));
   const choiceGroups = new Map(structure.choiceGroups.map((item) => [item.id, item]));
   const departments = new Map(structure.departments.map((item) => [item.id, item]));
@@ -146,11 +155,17 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
     if (group.schoolId !== schoolId) {
       return yield* invalidDirectory("ClassGroup", group.id, "WrongSchool");
     }
-    if (academicYears.get(group.academicYearId)?.schoolId !== schoolId) {
-      return yield* invalidDirectory("ClassGroup", group.id, "UnknownReference");
-    }
     if (group.cohortId !== undefined && cohorts.get(group.cohortId)?.schoolId !== schoolId) {
       return yield* invalidDirectory("ClassGroup", group.id, "UnknownReference");
+    }
+  }
+  for (const placement of structure.classGroupAcademicYears) {
+    const entityId = `${placement.classGroupId}/${placement.academicYearId}`;
+    if (
+      classGroups.get(placement.classGroupId)?.schoolId !== schoolId ||
+      academicYears.get(placement.academicYearId)?.schoolId !== schoolId
+    ) {
+      return yield* invalidDirectory("ClassGroupAcademicYear", entityId, "UnknownReference");
     }
   }
   for (const offering of structure.courseOfferings) {
@@ -168,7 +183,9 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
         const group = classGroups.get(id);
         const term = terms.get(offering.termId);
         return (
-          group === undefined || term === undefined || group.academicYearId !== term.academicYearId
+          group === undefined ||
+          term === undefined ||
+          !classGroupAcademicYears.has(`${group.id}\u0000${term.academicYearId}`)
         );
       })
     ) {

@@ -1,6 +1,7 @@
 import {
   Database,
   SourceObservationStore,
+  TimetableProjectionStore,
   WebUntisDirectory,
   WebUntisTimetable,
 } from "@stu/server";
@@ -79,13 +80,19 @@ export const runWebUntisTimetableImport = Effect.fn("Console.webUntisTimetableIm
   const runs = yield* Effect.forEach(
     plan.snapshots,
     (snapshot) =>
-      SourceObservationStore.persistSourceSnapshot(snapshot).pipe(
-        Effect.map((result) => ({
+      Effect.gen(function* () {
+        const source = yield* SourceObservationStore.persistSourceSnapshot(snapshot);
+        const projection = yield* TimetableProjectionStore.projectCurrentScope({
+          dataSourceId: snapshot.dataSourceId,
+          scope: snapshot.scope,
+        });
+        return {
           scope: snapshot.scope,
           completeness: snapshot.completeness,
-          ...result,
-        })),
-      ),
+          source,
+          projection,
+        };
+      }),
     { concurrency: 3 },
   );
   const output = { preview: plan.preview, runs };

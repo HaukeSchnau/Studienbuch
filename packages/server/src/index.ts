@@ -1,7 +1,9 @@
 export { Auth } from "./auth/better-auth.ts";
 export { Database } from "./database/client.ts";
 export { SourceObservationStore } from "./importing/source-observation-store.ts";
+export { EntityLinks } from "./importing/entity-links.ts";
 export { Migrate } from "./database/migrate.ts";
+export { TimetableProjectionStore } from "./schedule/timetable-projection-store.ts";
 export * as WebUntisDirectory from "./webuntis/directory.ts";
 export * as WebUntisTimetable from "./webuntis/timetable.ts";
 export * as schema from "./auth/schema.ts";

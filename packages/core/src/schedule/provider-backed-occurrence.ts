@@ -2,21 +2,32 @@ import * as Order from "effect/Order";
 import * as Schema from "effect/Schema";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { PlainDateSchema } from "../foundation/plain-date";
-import { SourceIdentity } from "../importing/entity-link";
+import { EntityLink, SourceIdentity } from "../importing/entity-link";
 import { type DataSourceId, ExternalId } from "../importing/identity";
 import { CourseOfferingId } from "../organization/identity";
 import { BellPeriodId, DatedOccurrenceId, RecurringMeetingId } from "./identity";
 import { LocalTimeRange } from "./local-time-range";
 
+const sourceIdentityKey = (source: SourceIdentity) =>
+  `${source.dataSourceId}\u0000${source.entityKind}\u0000${source.externalId}`;
+
 export const ProviderOccurrenceResource = Schema.Struct({
   source: Schema.optional(SourceIdentity),
+  entityLink: Schema.optional(EntityLink),
   type: Schema.String,
   status: Schema.optional(Schema.String),
   shortName: Schema.String,
   longName: Schema.String,
   displayName: Schema.String,
   displayNameLabel: Schema.optional(Schema.String),
-});
+}).check(
+  Schema.makeFilter(
+    ({ source, entityLink }) =>
+      entityLink === undefined ||
+      (source !== undefined && sourceIdentityKey(source) === sourceIdentityKey(entityLink.source)),
+    { expected: "a resource entity link for its provider source" },
+  ),
+);
 export interface ProviderOccurrenceResource extends Schema.Schema.Type<
   typeof ProviderOccurrenceResource
 > {}
@@ -45,9 +56,26 @@ export const ProviderOccurrenceText = Schema.Struct({
 });
 export interface ProviderOccurrenceText extends Schema.Schema.Type<typeof ProviderOccurrenceText> {}
 
+/** A source is always retained; an absent link means domain resolution has not succeeded yet. */
+export const ProviderOccurrenceAcademicYear = Schema.Struct({
+  source: SourceIdentity,
+  entityLink: Schema.optional(EntityLink),
+}).check(
+  Schema.makeFilter(
+    ({ source, entityLink }) =>
+      entityLink === undefined ||
+      (entityLink._tag === "AcademicYear" &&
+        sourceIdentityKey(source) === sourceIdentityKey(entityLink.source)),
+    { expected: "an academic-year entity link for its provider source" },
+  ),
+);
+export interface ProviderOccurrenceAcademicYear extends Schema.Schema.Type<
+  typeof ProviderOccurrenceAcademicYear
+> {}
+
 export const ProviderOccurrenceClaim = Schema.Struct({
   source: SourceIdentity,
-  academicYear: SourceIdentity,
+  academicYear: ProviderOccurrenceAcademicYear,
   viewedResource: ProviderOccurrenceResource,
   dayStatus: Schema.String,
   location: Schema.Literals(["Day", "Grid", "Back"]),
@@ -72,15 +100,12 @@ export interface ProviderOccurrenceClaim extends Schema.Schema.Type<
   typeof ProviderOccurrenceClaim
 > {}
 
-const sourceIdentityKey = (source: SourceIdentity) =>
-  `${source.dataSourceId}\u0000${source.entityKind}\u0000${source.externalId}`;
-
 /**
  * A dated occurrence asserted by one or more provider records.
  *
  * Claims stay separate because two resource views can disagree without either view being corrupt.
- * The source identities keep every claim connected to its immutable raw record. Domain links can
- * be added later without rewriting provider facts.
+ * Source identities preserve provider provenance. Server persistence can attach the exact raw
+ * record version without making Core depend on storage identifiers.
  */
 export const ProviderBackedOccurrence = Schema.Struct({
   id: DatedOccurrenceId,
@@ -110,7 +135,7 @@ export const ProviderBackedOccurrence = Schema.Struct({
       claims.every(
         (claim) =>
           claim.source.dataSourceId === dataSourceId &&
-          claim.academicYear.dataSourceId === dataSourceId &&
+          claim.academicYear.source.dataSourceId === dataSourceId &&
           claim.viewedResource.source?.dataSourceId === dataSourceId,
       ),
     { expected: "provider claims from the occurrence data source" },
