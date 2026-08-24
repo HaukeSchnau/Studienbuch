@@ -24,6 +24,7 @@ describe("public API", () => {
     expect(Importing.reconcileIncoming).toBeTypeOf("function");
     expect(Organization.authorize).toBeTypeOf("function");
     expect(Schedule.materializeSchoolDay).toBeTypeOf("function");
+    expect(Schedule.ProviderBackedOccurrence).toBeDefined();
     expect(Tasks.complete).toBeTypeOf("function");
   });
 

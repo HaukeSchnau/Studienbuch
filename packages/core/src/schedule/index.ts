@@ -9,6 +9,7 @@ export { BellPeriod, BellSchedule } from "./bell-schedule";
 export {
   BellPeriodId,
   BellScheduleId,
+  DatedOccurrenceId,
   LessonOccurrenceId,
   RecurringMeetingId,
   ScheduleExceptionId,
@@ -33,6 +34,14 @@ export {
   ScheduleException,
   UnresolvedException,
 } from "./lesson-occurrence";
+export {
+  providerBackedOccurrenceId,
+  ProviderBackedOccurrence,
+  ProviderOccurrenceClaim,
+  ProviderOccurrenceResource,
+  ProviderOccurrenceResourcePosition,
+  ProviderOccurrenceText,
+} from "./provider-backed-occurrence";
 export {
   meetingOccursOn,
   RecurringMeeting,

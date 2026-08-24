@@ -16,6 +16,10 @@ export type RecurringMeetingId = typeof RecurringMeetingId.Type;
 export const LessonOccurrenceId = entityId("LessonOccurrenceId");
 export type LessonOccurrenceId = typeof LessonOccurrenceId.Type;
 
+/** Identifies one authoritative dated occurrence before it necessarily resolves to a lesson. */
+export const DatedOccurrenceId = entityId("DatedOccurrenceId");
+export type DatedOccurrenceId = typeof DatedOccurrenceId.Type;
+
 /** Identifies a change applied to a particular scheduled occurrence. */
 export const ScheduleExceptionId = entityId("ScheduleExceptionId");
 export type ScheduleExceptionId = typeof ScheduleExceptionId.Type;

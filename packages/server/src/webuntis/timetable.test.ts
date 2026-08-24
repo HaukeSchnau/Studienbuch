@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vite-plus/test";
+import { Importing, Schedule } from "@stu/core";
+import { describe, expect, it } from "@effect/vitest";
+import * as Effect from "effect/Effect";
 import type {
   DisplayResource,
   TimetableEntries,
@@ -6,7 +8,11 @@ import type {
   TimetableEntryDay,
   TimetableEntryPositionResource,
 } from "webuntis-api";
-import { makeTimetableImportPlan, type TimetableInventory } from "./timetable.ts";
+import {
+  makeTimetableImportPlan,
+  projectTimetableOccurrences,
+  type TimetableInventory,
+} from "./timetable.ts";
 
 const resource = (id: number, name: string): DisplayResource => ({
   id,
@@ -225,4 +231,87 @@ describe("WebUntis timetable import", () => {
       date: "2026-08-24",
     });
   });
+
+  it.effect("merges class views into one occurrence without choosing between their claims", () =>
+    Effect.gen(function* () {
+      const removedTeacher = positionResource("TEACHER", "REMOVED", "Teacher old");
+      const addedTeacher = positionResource("TEACHER", "ADDED", "Teacher new");
+      const firstView = timetableEntry({
+        status: "CHANGED",
+        notesAll: "Bring the workbook",
+        icons: ["NOTES"],
+        position1: [{ current: addedTeacher, removed: removedTeacher }],
+        position2: [{ current: positionResource("SUBJECT", "REGULAR", "Math"), removed: null }],
+        position3: [{ current: null, removed: positionResource("ROOM", "REMOVED", "Room 1") }],
+        position4: [{ current: null, removed: null }],
+        texts: [{ type: "INFO", text: "Room moved" }],
+        lessonText: "Chapter 4",
+        lessonInfo: "Internal lesson info",
+        substitutionText: "Replacement teacher",
+      });
+      const secondView = timetableEntry({
+        ids: [101, 102],
+        duration: { start: "09:00", end: "09:45" },
+        status: "CANCELLED",
+      });
+      const plan = makeTimetableImportPlan(
+        inventory([
+          response([timetableDay(classTwo, [secondView]), timetableDay(classOne, [firstView])]),
+        ]),
+      );
+      const dataSourceId = Importing.DataSourceId.make(plan.preview.dataSourceId);
+      const occurrences = yield* projectTimetableOccurrences({
+        dataSourceId,
+        observations: plan.snapshots.flatMap((snapshot) => snapshot.observations),
+      });
+      const reordered = yield* projectTimetableOccurrences({
+        dataSourceId,
+        observations: plan.snapshots.flatMap((snapshot) => [...snapshot.observations].reverse()),
+      });
+
+      expect(occurrences).toHaveLength(1);
+      expect(occurrences[0]?.id).toBe(reordered[0]?.id);
+      expect(occurrences[0]?.providerEntryIds).toEqual(["101", "102"]);
+      expect(occurrences[0]?.claims.map((claim) => claim.status)).toEqual(["CHANGED", "CANCELLED"]);
+      expect(
+        occurrences[0]?.claims.map((claim) => Schedule.LocalTime.hour(claim.timeRange.start)),
+      ).toEqual([8, 9]);
+      expect(occurrences[0]?.claims[0]).toMatchObject({
+        source: { entityKind: "TimetableOccurrence" },
+        academicYear: { entityKind: "AcademicYear", externalId: "10" },
+        viewedResource: {
+          source: { entityKind: "ClassGroup", externalId: "1" },
+          type: "CLASS",
+        },
+        notes: "Bring the workbook",
+        texts: [{ type: "INFO", text: "Room moved" }],
+        lessonInfo: "Internal lesson info",
+        resources: [
+          { _tag: "Replaced", position: 1 },
+          { _tag: "Current", position: 2 },
+          { _tag: "Removed", position: 3 },
+          { _tag: "Empty", position: 4 },
+        ],
+      });
+    }),
+  );
+
+  it.effect("reports invalid provider times in the Effect error channel", () =>
+    Effect.gen(function* () {
+      const invalid = timetableEntry({ duration: { start: "tomorrow", end: "09:30" } });
+      const plan = makeTimetableImportPlan(
+        inventory([response([timetableDay(classOne, [invalid]), timetableDay(classTwo, [])])]),
+      );
+      const failure = yield* projectTimetableOccurrences({
+        dataSourceId: Importing.DataSourceId.make(plan.preview.dataSourceId),
+        observations: plan.snapshots.flatMap((snapshot) => snapshot.observations),
+      }).pipe(Effect.flip);
+
+      expect(failure).toMatchObject({
+        _tag: "WebUntis.InvalidTimetableOccurrence",
+        field: "StartTime",
+        value: "tomorrow",
+      });
+    }),
+  );
 });

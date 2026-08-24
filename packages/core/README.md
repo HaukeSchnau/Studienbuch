@@ -70,6 +70,8 @@ implementation and namespace-facade files. Domain indexes only relay those estab
   log line is self-describing and two domains can both have an `AcknowledgementActor`.
 - Boundary and persisted values are Effect schemas. Decode them with `Schema.decodeEffect` or
   `Schema.decodeUnknownEffect`; schema issues remain in the Effect error channel.
+- Provider-backed schedule occurrences keep every provider claim and its raw source identity.
+  They do not invent a recurring meeting or resolved course when neither link exists yet.
 - Civil school dates use timezone-free Temporal plain-date values, and local lesson times use
   milliseconds since midnight. Neither is a JavaScript `Date`; absolute audit timestamps use
   Effect's UTC date-time value and elapsed time uses Effect `Duration`.
