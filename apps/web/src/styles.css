@@ -68,12 +68,16 @@ body {
   background-color: var(--color-surface);
 }
 
-/* Headings carry the brand weight; Nunito below ~600 loses the app's friendliness. */
+/*
+ * Nunito Bold with normal tracking, the way the app and the legacy site set it. Nunito is a
+ * rounded, open face — the tight tracking and extra weight that suit a grotesk make it look
+ * cramped and corporate, which is the opposite of this brand.
+ */
 h1,
 h2,
 h3 {
-  font-weight: 800;
-  letter-spacing: -0.015em;
+  font-weight: 700;
+  letter-spacing: normal;
 }
 
 @media (prefers-reduced-motion: reduce) {

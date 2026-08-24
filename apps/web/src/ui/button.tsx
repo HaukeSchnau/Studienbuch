@@ -15,15 +15,8 @@ const buttonVariants = cva(
         secondary: "bg-neutral-200 text-neutral-950 hover:bg-neutral-300",
         ghost: "hover:bg-neutral-100",
         link: "text-neutral-950 underline-offset-4 hover:underline",
-        // The app's own call to action: a blue pill on white, or a white pill on the green band.
+        // The app's own call to action: a blue pill, the colour Flutter fills ElevatedButton with.
         brand: "bg-accent text-white shadow-float hover:bg-accent-sec focus-visible:ring-accent/40",
-        "on-primary":
-          "bg-white text-primary-text shadow-float hover:bg-primary-des focus-visible:ring-white/60",
-        // Secondary action on the green band. Filled with the brand's deep blue rather than
-        // outlined in white, because white on the brand green is only 3.2:1 — fine for a headline,
-        // not for a 16px button label.
-        "on-primary-secondary":
-          "bg-ink text-white shadow-float hover:bg-accent-sec focus-visible:ring-white/60",
       },
       radius: {
         default: "",

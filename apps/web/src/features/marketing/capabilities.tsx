@@ -1,4 +1,4 @@
-import { CalendarDays, ClipboardCheck, GraduationCap, ListChecks } from "lucide-react";
+import { CalendarDays, ClipboardCheck, GraduationCap, ListChecks, WifiOff } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { sectionIds } from "#/domain-ui/brand/links.ts";
@@ -29,15 +29,13 @@ const capabilities: ReadonlyArray<{ body: string; icon: LucideIcon; title: strin
 
 export const Capabilities = () => (
   <Section id={sectionIds.capabilities} tone="background">
-    <Container className="flex flex-col gap-14">
+    <Container className="flex flex-col gap-12">
       <SectionHeading
-        align="center"
-        eyebrow="Für Schülerinnen und Schüler"
         lead="Das Papier-Studienbuch kann eine Sache sehr gut: alles an einem Ort sammeln. Genau das macht die App — nur dass sie mitdenkt."
         title="Der Schulalltag, auf einem Blick"
       />
 
-      <ul className="grid gap-6 sm:grid-cols-2">
+      <ul className="grid gap-5 sm:grid-cols-2">
         {capabilities.map(({ body, icon: Icon, title }) => (
           <li key={title}>
             <Card className="flex h-full flex-col gap-4">
@@ -49,6 +47,24 @@ export const Capabilities = () => (
             </Card>
           </li>
         ))}
+
+        {/* Offline is the one thing paper and most school apps cannot do, so it gets the full width
+            rather than a band of its own. */}
+        <li className="sm:col-span-2">
+          <Card className="flex flex-col gap-5 bg-primary-des sm:flex-row sm:items-center sm:gap-8">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-surface text-primary-text">
+              <WifiOff aria-hidden className="size-6" strokeWidth={2.25} />
+            </span>
+            <div className="flex flex-col gap-2">
+              <h3 className="text-xl text-primary-text">Funktioniert auch ohne Empfang</h3>
+              <p className="text-ink-soft text-pretty">
+                Studienbuch speichert zuerst auf dem Gerät und gleicht ab, sobald wieder Netz da
+                ist. Die App öffnet sich mit deinen Daten statt mit einem Ladebalken, und was du im
+                Fachraum einträgst, geht nicht verloren.
+              </p>
+            </div>
+          </Card>
+        </li>
       </ul>
     </Container>
   </Section>

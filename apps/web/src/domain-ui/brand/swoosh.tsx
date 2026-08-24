@@ -6,20 +6,13 @@ import { cn } from "#/ui/cn.ts";
  * The green band with a blue line trailing out of it is Studienbuch's one load-bearing shape: it
  * caps every screen of the native app (`apps/mobile/src/assets/images/home-bg.svg`). This is the
  * wide-viewport reading of it — the same sweep and the same overshooting blue stroke, redrawn for
- * a full-bleed header instead of a 430pt phone.
+ * a full-bleed band instead of a 430pt phone.
  *
- * Draw the `band` variant directly below a green area so the fill at the top of the viewBox
- * continues it; `line` keeps only the blue stroke, for use as a rule on another surface.
+ * Draw it directly below a green area so the fill at the top of the viewBox continues it.
  * `preserveAspectRatio="none"` lets the curve stretch to any width, and `non-scaling-stroke` keeps
  * the blue line an even weight while it does.
  */
-export const SwooshEdge = ({
-  className,
-  variant = "band",
-}: {
-  className?: string;
-  variant?: "band" | "line";
-}) => (
+export const SwooshEdge = ({ className }: { className?: string }) => (
   <svg
     aria-hidden
     className={cn("block w-full", className)}
@@ -27,12 +20,10 @@ export const SwooshEdge = ({
     viewBox="0 0 1440 180"
     xmlns="http://www.w3.org/2000/svg"
   >
-    {variant === "band" ? (
-      <path
-        d="M0 0h1440v42c-262 2-486 34-724 78C489 158 246 172 0 175Z"
-        fill="var(--color-primary)"
-      />
-    ) : null}
+    <path
+      d="M0 0h1440v42c-262 2-486 34-724 78C489 158 246 172 0 175Z"
+      fill="var(--color-primary)"
+    />
     <path
       d="M-60 190C214 186 466 170 716 126 966 82 1188 52 1500 50"
       fill="none"

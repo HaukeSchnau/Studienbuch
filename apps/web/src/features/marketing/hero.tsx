@@ -1,43 +1,55 @@
-import { externalLinks, sectionIds } from "#/domain-ui/brand/links.ts";
-import { SwooshPanel } from "#/domain-ui/brand/swoosh.tsx";
-import { Button } from "#/ui/button.tsx";
+import { StoreBadges } from "#/domain-ui/brand/store-badges.tsx";
 import { Container } from "#/ui/section.tsx";
 
-import { PhoneShowcase } from "./phone-showcase.tsx";
-
 /**
- * Green band, white headline, phones riding across the curve — the same composition the app opens
- * with. The top padding clears the fixed pill nav, which floats over this green.
+ * The legacy site's composition, kept: app icon and a big green headline on the left, one oversized
+ * device render running off the right edge, all on white. The page's confidence comes from the
+ * screenshot being allowed to be huge and from the space around the type — not from a coloured band.
  */
 export const Hero = () => (
-  <section className="relative">
-    <SwooshPanel>
-      <Container className="pt-32 pb-28 text-center sm:pt-40 sm:pb-40">
-        <h1 className="mx-auto max-w-4xl text-4xl text-white text-balance sm:text-6xl lg:text-7xl">
-          Das digitale Studienbuch.
-        </h1>
-        {/* Full white and at least 20px: white on the brand green is 3.2:1, which only clears
-            WCAG AA as large text. Anything smaller or dimmed here would fail. */}
-        <p className="mx-auto mt-6 max-w-3xl text-xl/relaxed text-white text-pretty sm:text-2xl/relaxed">
+  <section className="overflow-x-clip bg-surface">
+    <Container
+      className="grid items-center gap-14 pt-14 pb-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-10 lg:pt-20 lg:pb-24"
+      width="wide"
+    >
+      <div className="flex flex-col">
+        <div className="flex items-center gap-5 sm:gap-8">
+          <img
+            alt=""
+            className="aspect-square w-24 shrink-0 rounded-[1.5rem] shadow-card-lg sm:w-32 sm:rounded-[2rem] lg:w-40"
+            height={512}
+            src="/brand/icon-512.png"
+            width={512}
+          />
+          <h1 className="text-4xl/[1.35] text-primary-text sm:text-5xl/[1.35] lg:text-6xl/[1.35]">
+            Das digitale
+            <br />
+            Studienbuch
+          </h1>
+        </div>
+
+        <p className="mt-8 max-w-lg text-lg/relaxed text-ink-soft text-pretty sm:text-xl/relaxed">
           Stundenplan, Vertretungen, Noten, Fehlzeiten und Hausaufgaben — an einem Ort, in der
           Hosentasche, auch ohne Empfang.
         </p>
 
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-          <Button asChild radius="pill" size="xl" variant="on-primary">
-            <a href={`#${sectionIds.app}`}>App laden</a>
-          </Button>
-          <Button asChild radius="pill" size="xl" variant="on-primary-secondary">
-            <a href={externalLinks.schoolContact}>Für Schulen</a>
-          </Button>
-        </div>
-      </Container>
-    </SwooshPanel>
+        <p className="mt-10 text-xl text-ink sm:text-2xl">
+          Jetzt als Download für Android und iOS:
+        </p>
+        <StoreBadges className="mt-5" />
+      </div>
 
-    {/* `relative` is load-bearing: SwooshPanel is positioned, and a positioned box always paints
-        above a static sibling regardless of DOM order, so without it the green covers the phones. */}
-    <Container className="relative -mt-24 pb-20 sm:-mt-36 sm:pb-28">
-      <PhoneShowcase />
+      {/* Runs off the right edge the way the legacy render did, and stays oversized rather than
+          being politely fitted into its column. */}
+      <div className="lg:-mr-[14vw] xl:-mr-[10vw]">
+        <img
+          alt="Die Übersicht mit dem Tagesplan und die Kursseite mit den Noten, nebeneinander."
+          className="w-full max-w-xl lg:max-w-none"
+          height={1469}
+          src="/screenshots/showcase.png"
+          width={1282}
+        />
+      </div>
     </Container>
   </section>
 );

@@ -2,9 +2,23 @@ import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "#/ui/cn.ts";
 
+const containerWidths = {
+  default: "max-w-6xl",
+  // The legacy site used percentage margins and no maximum, which is where its generous, airy
+  // feeling came from. `wide` is the closest bounded equivalent, for the hero.
+  wide: "max-w-7xl",
+} as const;
+
 /** The page's single horizontal rhythm. Every band of content is measured against this. */
-export const Container = ({ className, ...props }: ComponentProps<"div">) => (
-  <div className={cn("mx-auto w-full max-w-6xl px-6 sm:px-8", className)} {...props} />
+export const Container = ({
+  className,
+  width = "default",
+  ...props
+}: ComponentProps<"div"> & { width?: keyof typeof containerWidths }) => (
+  <div
+    className={cn("mx-auto w-full px-6 sm:px-10", containerWidths[width], className)}
+    {...props}
+  />
 );
 
 /** A vertical band of the page. `tone` picks the surface; spacing is deliberately uniform. */
@@ -15,7 +29,7 @@ export const Section = ({
 }: ComponentProps<"section"> & { tone?: "surface" | "background" }) => (
   <section
     className={cn(
-      "py-20 sm:py-28",
+      "py-20 sm:py-24",
       tone === "background" ? "bg-background" : "bg-surface",
       className,
     )}
@@ -23,60 +37,15 @@ export const Section = ({
   />
 );
 
-/**
- * Section eyebrow, heading and lead paragraph. Green headings on white are the app's own
- * convention, so the default `tone` reproduces it; `on-primary` is for headings inside the band.
- */
-export const SectionHeading = ({
-  align = "start",
-  eyebrow,
-  lead,
-  title,
-  tone = "brand",
-}: {
-  align?: "start" | "center";
-  eyebrow?: string;
-  lead?: ReactNode;
-  title: ReactNode;
-  tone?: "brand" | "on-primary";
-}) => (
-  <div
-    className={cn(
-      "flex max-w-2xl flex-col gap-4",
-      align === "center" && "mx-auto items-center text-center",
-    )}
-  >
-    {eyebrow ? (
-      <span
-        className={cn(
-          // `accent-sec`, not `accent`: the brand blue only reaches 4.0:1 on the light surfaces,
-          // which fails AA at this size. The desaturated blue clears it at 4.5:1.
-          "text-sm font-bold tracking-[0.14em] uppercase",
-          tone === "on-primary" ? "text-white/70" : "text-accent-sec",
-        )}
-      >
-        {eyebrow}
-      </span>
-    ) : null}
-    <h2
-      className={cn(
-        "text-3xl text-balance sm:text-4xl",
-        tone === "on-primary" ? "text-white" : "text-primary-text",
-      )}
-    >
-      {title}
-    </h2>
-    {lead ? (
-      <p
-        className={cn("text-lg/relaxed", tone === "on-primary" ? "text-white/85" : "text-ink-soft")}
-      >
-        {lead}
-      </p>
-    ) : null}
+/** Section heading and lead. Green headings on white are the app's and the legacy site's own convention. */
+export const SectionHeading = ({ lead, title }: { lead?: ReactNode; title: ReactNode }) => (
+  <div className="flex max-w-2xl flex-col gap-5">
+    <h2 className="text-3xl/snug text-primary-text text-balance sm:text-4xl/snug">{title}</h2>
+    {lead ? <p className="text-lg/relaxed text-ink-soft text-pretty">{lead}</p> : null}
   </div>
 );
 
 /** The app's white card: generous radius, soft blue-tinted shadow, no border. */
 export const Card = ({ className, ...props }: ComponentProps<"div">) => (
-  <div className={cn("rounded-card bg-surface p-7 shadow-card", className)} {...props} />
+  <div className={cn("rounded-card-lg bg-surface p-8 shadow-card", className)} {...props} />
 );
