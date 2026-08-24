@@ -6,6 +6,10 @@ let
   workspaceSources = import ./lib/pnpm-workspace-source.nix {
     inherit lib root;
     name = "studienbuch-workspace";
+    additionalDependencyFiles = [
+      "nix/web-pnpmfile.cjs"
+      "pnpm-lock.web.yaml"
+    ];
     additionalPackageFiles = lib.optional (builtins.pathExists (
       root + "/tsconfig.json"
     )) "tsconfig.json";
@@ -34,6 +38,8 @@ let
     in
     pkgs.runCommand "studienbuch-workspace-source-check" { } ''
       test -f ${dependencySource}/apps/web/package.json
+      test -f ${dependencySource}/pnpm-lock.web.yaml
+      test -f ${dependencySource}/nix/web-pnpmfile.cjs
       test -f ${dependencySource}/apps/mobile/package.json
       test -f ${dependencySource}/packages/core/package.json
       test -f ${dependencySource}/packages/observability/package.json
@@ -41,6 +47,8 @@ let
       test ! -e ${dependencySource}/apps/web/src
 
       test -f ${webSource}/apps/web/package.json
+      test -f ${webSource}/pnpm-lock.web.yaml
+      test -f ${webSource}/nix/web-pnpmfile.cjs
       # The Release applies migrations in-process, so the history must reach the web build.
       test -d ${webSource}/packages/server/drizzle
       test ! -e ${webSource}/apps/mobile/src

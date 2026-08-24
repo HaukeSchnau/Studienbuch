@@ -2,6 +2,7 @@
   lib,
   root,
   name ? "pnpm-workspace",
+  additionalDependencyFiles ? [ ],
   additionalPackageFiles ? [ ],
   patchDirectory ? null,
   ignoredDirectories ? [
@@ -187,6 +188,7 @@ assert
 
   dependencySource = mkSource {
     name = "${name}-dependencies";
+    additionalRootFiles = additionalDependencyFiles;
   };
 
   sourceFor =
@@ -198,6 +200,6 @@ assert
     mkSource {
       name = "${name}-${sourceName}-source";
       packageDirectories = map (packageName: packagesByName.${packageName}.relativePath) closure;
-      additionalRootFiles = additionalPackageFiles;
+      additionalRootFiles = additionalDependencyFiles ++ additionalPackageFiles;
     };
 }

@@ -2,7 +2,7 @@ set unstable
 set lists
 
 [parallel]
-qa-tasks: lint mobile-e2e-check test
+qa-tasks: lint mobile-e2e-check test web-lock-check
 
 qa: fmt-check qa-tasks
 fix: fmt lint-fix
@@ -88,6 +88,12 @@ mobile-e2e platform="android" scenario="":
 
 mobile-e2e-check:
     node scripts/mobile-e2e.ts --check
+
+web-lock:
+    node scripts/web-production-lock.ts --write
+
+web-lock-check:
+    node scripts/web-production-lock.ts --check
 
 mobile-e2e-agent-device platform="android" scenario="":
     MOBILE_E2E_RUNNER=agent-device node scripts/mobile-e2e.ts {{ platform }} {{ scenario }}
