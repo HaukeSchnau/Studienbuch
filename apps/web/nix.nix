@@ -20,12 +20,31 @@ let
     "@stu/observability"
     "@stu/server"
   ];
+  isProductionPlatform = pkgs.stdenv.hostPlatform.system == "aarch64-linux";
+  pnpmInstallFlags = [ "--prod" ];
+  # fetchPnpmDeps puts caller flags after its own --force. The actual deployment target can opt
+  # back into pnpm's native platform selection instead of fetching every OS/CPU binary package.
+  pnpmFetchFlags = pnpmInstallFlags ++ lib.optional isProductionPlatform "--no-force";
   source = workspace.sources.sourceFor application.workspaceName;
+  prepareProductionWorkspace = ''
+    cp pnpm-lock.web.yaml pnpm-lock.yaml
+    cp nix/web-pnpmfile.cjs .pnpmfile.cjs
+    yq -y -i \
+      '.packages = ["apps/web", "packages/core", "packages/observability", "packages/server"]
+       | .autoInstallPeers = false
+       | .resolvePeersFromWorkspaceRoot = false' \
+      pnpm-workspace.yaml
+  '';
 
   # Update with the `got:` hash reported by:
   #   nix build .#webApplication
-  # after regenerating pnpm-lock.yaml for all workspace manifest changes.
-  pnpmDependencyHash = "sha256-xmBiWabmUO6EOINAvI2IJfMN1BzockXJ3TDTvrYRtUM=";
+  # after running `just web-lock` for relevant workspace manifest or primary lock changes.
+  pnpmDependencyHash =
+    if isProductionPlatform then
+      "sha256-M48x70TGtpvg0jn1WV3HnhhDPC1gPC/enIsWRf7OELY="
+    else
+      # Nixpkgs' forced fetch is platform-independent; keep it for supported development systems.
+      "sha256-LfN7K17U2K7gjsEM1pV/KjY4fDHChW+YJDjohBx7uxs=";
 
   pnpmDeps = pkgs.fetchPnpmDeps {
     pname = "studienbuch-web-dependencies";
@@ -33,6 +52,8 @@ let
     src = dependencySource;
     inherit pnpm;
     inherit pnpmWorkspaces;
+    pnpmInstallFlags = pnpmFetchFlags;
+    postPatch = prepareProductionWorkspace;
     fetcherVersion = 4;
     hash = pnpmDependencyHash;
   };
@@ -47,12 +68,14 @@ let
       nodejs
       pnpm
       pkgs.pnpmConfigHook
+      pkgs.yq
     ];
-    inherit pnpmDeps pnpmWorkspaces;
+    inherit pnpmDeps pnpmInstallFlags pnpmWorkspaces;
+    postPatch = prepareProductionWorkspace;
 
     buildPhase = ''
       runHook preBuild
-      "$PWD/node_modules/.bin/vp" run --filter ${application.workspaceName} build
+      pnpm --filter ${application.workspaceName} run build
       esbuild ${application.relativePath}/instrument.server.mjs \
         --bundle \
         --format=cjs \

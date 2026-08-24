@@ -38,6 +38,19 @@ sync or event sourcing.
 - Complete: Argent 0.20.0 and agent-device 0.20.8 install from the project lockfile; the paired
   comparison harness validates implementation parity before running either tool
 
+## Production web dependency graph
+
+- `pnpm-lock.web.yaml` is a generated, deployment-specific graph for the web app and its three
+  internal runtime workspaces. Regenerate it with `just web-lock`; `just qa` checks it with the
+  pinned CI toolchain.
+- The release graph remains subordinate to `pnpm-lock.yaml`: generation seeds resolution from the
+  primary lock, and validation rejects package versions that do not exist in it.
+- `nix/web-pnpmfile.cjs` removes the optional native Expo peers exposed by `@better-auth/expo` from
+  this server-only graph. Mobile still uses the package's unmodified metadata and dependencies.
+- On the `aarch64-linux` deployment target, pnpm fetches only native packages for that target. The
+  resulting fixed-output dependency store is 154.8 MiB, down from roughly 1.7 GiB; the release
+  runtime closure is 259.2 MiB.
+
 ## Follow-up tasks
 
 - Supply `databaseUrl` alongside `betterAuthSecret` in each deployed project runtime.

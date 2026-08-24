@@ -5,6 +5,7 @@
   "type": "module",
   "dependencies": {
     "@effect/platform-node": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "yaml": "2.9.0"
   }
 }
