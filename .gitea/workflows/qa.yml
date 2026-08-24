@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: studienbuch-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   NIX_CONFIG: experimental-features = nix-command flakes
 
@@ -39,7 +43,7 @@ jobs:
       - name: Install workspace dependencies
         run: |
           set -euo pipefail
-          nix develop --command pnpm install --frozen-lockfile
+          nix develop .#ci --command pnpm install --frozen-lockfile
 
       # `just qa` is `fmt-check`, `lint`, `mobile-e2e-check` and `test`. `lint` is where type
       # checking happens: Vite+ runs Oxlint with `typeCheck: true`, so there is deliberately no
@@ -51,7 +55,7 @@ jobs:
       - name: Run QA
         run: |
           set -euo pipefail
-          nix develop --command just qa
+          nix develop .#ci --command just qa
 
   release:
     name: Release
