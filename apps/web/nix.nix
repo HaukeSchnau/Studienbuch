@@ -73,9 +73,27 @@ let
     inherit pnpmDeps pnpmInstallFlags pnpmWorkspaces;
     postPatch = prepareProductionWorkspace;
 
+    # The extracted pnpm store and workspace share the Nix build filesystem. Dependencies remain
+    # untouched, so hard links avoid cloning hundreds of package trees into this ephemeral build.
+    prePnpmInstall = ''
+      pnpm config set package-import-method hardlink
+    '';
+
+    # pnpmConfigHook recursively rewrites every executable in node_modules. This build only needs
+    # Vite Plus' JavaScript entry point, which is called with Nix's Node below, so the scan and the
+    # generated shell shims are unnecessary.
+    preConfigure = ''
+      patchShebangs() { :; }
+    '';
+    dontPatchShebangs = true;
+
     buildPhase = ''
       runHook preBuild
-      pnpm --filter ${application.workspaceName} run build
+      (
+        cd ${application.relativePath}
+        node node_modules/vite-plus/bin/vp build
+        cp instrument.server.mjs .output/server
+      )
       esbuild ${application.relativePath}/instrument.server.mjs \
         --bundle \
         --format=cjs \

@@ -50,6 +50,15 @@ sync or event sourcing.
 - On the `aarch64-linux` deployment target, pnpm fetches only native packages for that target. The
   resulting fixed-output dependency store is 154.8 MiB, down from roughly 1.7 GiB; the release
   runtime closure is 259.2 MiB.
+- The production build imports packages from the extracted pnpm store with hard links. Both paths
+  live on the Nix build filesystem, and the build treats dependency files as immutable.
+- The Nixpkgs pnpm hook's recursive shebang rewrite is disabled for this build. It scanned the
+  entire installed tree even though the build only executes Vite Plus; the build now calls that
+  JavaScript entry point with Nix's Node directly. On `srv-1`, pnpm installation fell from roughly
+  12–13 seconds to 8.3 seconds, and the roughly six-second shebang scan disappeared.
+- Persisting the prepared `node_modules` tree as a separate derivation was measured and rejected.
+  It would avoid installation after source-only changes, but its output alone had a 609 MiB NAR and
+  a 973 MiB closure, undoing much of the deployment-store optimization for CI caches and builders.
 
 ## Follow-up tasks
 
