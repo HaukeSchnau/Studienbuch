@@ -41,10 +41,10 @@ let
   # after running `just web-lock` for relevant workspace manifest or primary lock changes.
   pnpmDependencyHash =
     if isProductionPlatform then
-      "sha256-M48x70TGtpvg0jn1WV3HnhhDPC1gPC/enIsWRf7OELY="
+      "sha256-nfUiEZx3XfoVESdoSkemw0b/aTrndCF/qpUWTdSOQNQ="
     else
       # Nixpkgs' forced fetch is platform-independent; keep it for supported development systems.
-      "sha256-LfN7K17U2K7gjsEM1pV/KjY4fDHChW+YJDjohBx7uxs=";
+      "sha256-GoqNpFIh8vhQ9nJ/QaKe9aCLxYSZ/e8KamZgBdcOymI=";
 
   pnpmDeps = pkgs.fetchPnpmDeps {
     pname = "studienbuch-web-dependencies";
@@ -79,9 +79,8 @@ let
       pnpm config set package-import-method hardlink
     '';
 
-    # pnpmConfigHook recursively rewrites every executable in node_modules. This build only needs
-    # Vite Plus' JavaScript entry point, which is called with Nix's Node below, so the scan and the
-    # generated shell shims are unnecessary.
+    # pnpmConfigHook recursively rewrites every executable in node_modules. This build calls the
+    # Vite JavaScript API with Nix's Node, so the scan and generated shell shims are unnecessary.
     preConfigure = ''
       patchShebangs() { :; }
     '';
@@ -91,7 +90,8 @@ let
       runHook preBuild
       (
         cd ${application.relativePath}
-        node node_modules/vite-plus/bin/vp build
+        node --input-type=module --eval \
+          'import { createBuilder } from "vite"; const builder = await createBuilder(); await builder.buildApp(); await builder.runDevTools();'
         cp instrument.server.mjs .output/server
       )
       esbuild ${application.relativePath}/instrument.server.mjs \
@@ -143,7 +143,7 @@ let
       export NODE_OPTIONS="--import ./instrument.server.mjs''${NODE_OPTIONS:+ $NODE_OPTIONS}"
 
       cd "$checkout/${application.relativePath}"
-      exec "$checkout/node_modules/.bin/vp" dev \
+      exec node "$checkout/${application.relativePath}/node_modules/vite/dist/vite/node/cli.js" \
         --host "$web_host" \
         --port "$web_port" \
         --strictPort
