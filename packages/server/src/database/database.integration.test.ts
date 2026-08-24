@@ -10,8 +10,14 @@ import { Database } from "./client.ts";
 import { migrateToLatest } from "./migrate.ts";
 import { migrationsSchema, migrationsTable } from "./migration-history.ts";
 import { users } from "../auth/schema.ts";
-import { sourceImportRuns, sourceObservations } from "../importing/schema.ts";
+import {
+  sourceChanges,
+  sourceImportRuns,
+  sourceRecords,
+  sourceRecordVersions,
+} from "../importing/schema.ts";
 import { SourceObservationStore } from "../importing/source-observation-store.ts";
+import type { SourceSnapshot } from "../importing/source-snapshot.ts";
 import { DirectoryPreview } from "../webuntis/directory-preview.ts";
 import {
   DirectoryObservation,
@@ -107,6 +113,29 @@ const directorySnapshot = (
   };
 };
 
+const sourceSnapshot = (
+  dataSourceId: string,
+  observations: ReadonlyArray<DirectoryObservation>,
+  completeness: "Complete" | "Partial" = "Complete",
+): SourceSnapshot<DirectoryObservation> => ({
+  provider: "WebUntis",
+  dataSourceId,
+  dataset: "test-records",
+  scope: "scope-1",
+  contentHash: hashDirectoryObservations(observations),
+  completeness,
+  observations,
+  counts: { observations: observations.length },
+  diagnostics: [],
+});
+
+const schoolObservation = (externalId: string, name: string) =>
+  DirectoryObservation.make({
+    _tag: "School",
+    externalId,
+    payload: { name, loginName: name.toLowerCase(), hostName: null },
+  });
+
 it.live.runIf(hasContainerRuntime)(
   "applies the migration history and round-trips rows through the Effect Drizzle database",
   () =>
@@ -137,7 +166,7 @@ it.live.runIf(hasContainerRuntime)(
 );
 
 it.live.runIf(hasContainerRuntime)(
-  "stores immutable import generations and reuses an unchanged current snapshot",
+  "stores only changed record versions across concurrent and repeated imports",
   () =>
     Effect.gen(function* () {
       const database = yield* Database.Service;
@@ -159,47 +188,114 @@ it.live.runIf(hasContainerRuntime)(
         directorySnapshot("webuntis:store-test", "school-1", "Changed name"),
       );
 
-      expect(first._tag).toBe("Imported");
-      expect(repeated).toMatchObject({ _tag: "Unchanged", runId: first.runId });
-      expect(changed).toMatchObject({ _tag: "Imported" });
+      expect(first).toMatchObject({ _tag: "Imported", changes: { added: 1 } });
+      expect(repeated).toMatchObject({ _tag: "Unchanged" });
+      expect(repeated.runId).not.toBe(first.runId);
+      expect(changed).toMatchObject({ _tag: "Imported", changes: { updated: 1 } });
       expect(changed.runId).not.toBe(first.runId);
 
       const runs = yield* database.drizzle
         .select({ id: sourceImportRuns.id, isCurrent: sourceImportRuns.isCurrent })
         .from(sourceImportRuns)
         .where(eq(sourceImportRuns.dataSourceId, "webuntis:store-test"));
-      const observations = yield* database.drizzle
+      const versions = yield* database.drizzle
         .select({ count: count() })
-        .from(sourceObservations)
-        .innerJoin(sourceImportRuns, eq(sourceImportRuns.id, sourceObservations.runId))
+        .from(sourceRecordVersions)
+        .where(eq(sourceRecordVersions.dataSourceId, "webuntis:store-test"));
+      const changes = yield* database.drizzle
+        .select({ count: count() })
+        .from(sourceChanges)
+        .innerJoin(sourceImportRuns, eq(sourceImportRuns.id, sourceChanges.runId))
         .where(eq(sourceImportRuns.dataSourceId, "webuntis:store-test"));
 
-      expect(runs).toHaveLength(2);
+      expect(runs).toHaveLength(3);
       expect(runs.filter((run) => run.isCurrent)).toEqual([{ id: changed.runId, isCurrent: true }]);
-      expect(observations[0]?.count).toBe(2);
+      expect(versions[0]?.count).toBe(2);
+      expect(changes[0]?.count).toBe(2);
     }).pipe(Effect.provide(migrated)),
   { timeout: 60_000 },
 );
 
 it.live.runIf(hasContainerRuntime)(
-  "rolls the whole generation back when an observation insert fails",
+  "removes records only from complete scopes and reactivates old versions without copying them",
+  () =>
+    Effect.gen(function* () {
+      const database = yield* Database.Service;
+      const firstSchool = schoolObservation("school-1", "First");
+      const secondSchool = schoolObservation("school-2", "Second");
+      const initial = sourceSnapshot("webuntis:lifecycle-test", [firstSchool, secondSchool]);
+
+      const added = yield* SourceObservationStore.persistSourceSnapshot(initial);
+      const partial = yield* SourceObservationStore.persistSourceSnapshot(
+        sourceSnapshot("webuntis:lifecycle-test", [firstSchool], "Partial"),
+      );
+      const removed = yield* SourceObservationStore.persistSourceSnapshot(
+        sourceSnapshot("webuntis:lifecycle-test", [firstSchool]),
+      );
+      const reactivated = yield* SourceObservationStore.persistSourceSnapshot(initial);
+
+      expect(added.changes).toMatchObject({ added: 2 });
+      expect(partial.changes).toMatchObject({ removed: 0 });
+      expect(removed.changes).toMatchObject({ removed: 1 });
+      expect(reactivated.changes).toMatchObject({ reactivated: 1 });
+
+      const versions = yield* database.drizzle
+        .select({ count: count() })
+        .from(sourceRecordVersions)
+        .where(eq(sourceRecordVersions.dataSourceId, "webuntis:lifecycle-test"));
+      const records = yield* database.drizzle
+        .select({ active: sourceRecords.active })
+        .from(sourceRecords)
+        .where(eq(sourceRecords.dataSourceId, "webuntis:lifecycle-test"));
+      const changes = yield* database.drizzle
+        .select({ changeType: sourceChanges.changeType })
+        .from(sourceChanges)
+        .innerJoin(sourceImportRuns, eq(sourceImportRuns.id, sourceChanges.runId))
+        .where(eq(sourceImportRuns.dataSourceId, "webuntis:lifecycle-test"));
+
+      expect(versions[0]?.count).toBe(2);
+      expect(records).toEqual([{ active: true }, { active: true }]);
+      expect(changes.map((change) => change.changeType).sort()).toEqual([
+        "Added",
+        "Added",
+        "Reactivated",
+        "Removed",
+      ]);
+    }).pipe(Effect.provide(migrated)),
+  { timeout: 60_000 },
+);
+
+it.live.runIf(hasContainerRuntime)(
+  "rolls back the run, version, record and change when a transition write fails",
   () =>
     Effect.gen(function* () {
       const database = yield* Database.Service;
       const valid = directorySnapshot("webuntis:rollback-test", "school-1", "Valid");
       const imported = yield* SourceObservationStore.persistDirectorySnapshot(valid);
-      const duplicate = valid.observations[0];
-      expect(duplicate).toBeDefined();
-      if (duplicate === undefined) return;
-      const observations = [duplicate, duplicate];
-      const invalid: DirectorySnapshot = {
-        ...valid,
-        observations,
-        contentHash: hashDirectoryObservations(observations),
-      };
+      yield* Effect.promise(() =>
+        database.pool.query(`
+          create function fail_source_change() returns trigger language plpgsql as $$
+          begin
+            raise exception 'intentional source change failure';
+          end
+          $$;
+          create trigger fail_source_change before insert on source_changes
+          for each row execute function fail_source_change();
+        `),
+      );
 
-      const exit = yield* Effect.exit(SourceObservationStore.persistDirectorySnapshot(invalid));
+      const exit = yield* Effect.exit(
+        SourceObservationStore.persistDirectorySnapshot(
+          directorySnapshot("webuntis:rollback-test", "school-1", "Changed"),
+        ),
+      );
       expect(Exit.isFailure(exit)).toBe(true);
+      yield* Effect.promise(() =>
+        database.pool.query(`
+          drop trigger fail_source_change on source_changes;
+          drop function fail_source_change();
+        `),
+      );
 
       const runs = yield* database.drizzle
         .select({ id: sourceImportRuns.id, isCurrent: sourceImportRuns.isCurrent })
@@ -211,6 +307,11 @@ it.live.runIf(hasContainerRuntime)(
           ),
         );
       expect(runs).toEqual([{ id: imported.runId, isCurrent: true }]);
+      const versions = yield* database.drizzle
+        .select({ count: count() })
+        .from(sourceRecordVersions)
+        .where(eq(sourceRecordVersions.dataSourceId, "webuntis:rollback-test"));
+      expect(versions[0]?.count).toBe(1);
     }).pipe(Effect.provide(migrated)),
   { timeout: 60_000 },
 );
