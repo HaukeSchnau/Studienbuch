@@ -105,13 +105,14 @@ requested, every response decoded, no response-level error applies to the date, 
 identities agree. Empty complete days are meaningful and remove entries previously observed for
 that day. Partial results may be retained for diagnostics but must not remove anything.
 
-Start with class views because they cover the school timetable without importing the same data once
-per student or exposing a user's personalized menu as school truth. Add teacher, room or student
-views only when a concrete product query cannot be projected from class views.
+Class views are the first imported feed because they cover the school timetable without importing
+the same data once per student or exposing a user's personalized menu as school truth. Add teacher,
+room or student views when a live comparison proves that they contain data which class views omit,
+or when a product query cannot be projected from class views.
 
 ### Polling policy
 
-The storage layer does not encode a schedule. A first production policy should be configuration,
+The storage layer does not encode a schedule. The agreed first production policy is configuration
 with these defaults:
 
 - directory: daily and on demand;
@@ -155,14 +156,40 @@ separate tables keyed by start time and course. Both are useful UI references, b
 WebUntis provenance and changes such as simultaneous teacher, room and class-position updates. They
 should not constrain the new source or domain model.
 
+## Current implementation
+
+The `webuntis-timetable` console command now fetches all class resources in batches of ten, builds
+one source snapshot per requested calendar date, and previews without opening PostgreSQL unless
+`--apply` is present:
+
+```bash
+just console webuntis-timetable \
+  --school-year 2026/2027 \
+  --start 2026-08-24 \
+  --end 2026-08-28
+
+just console webuntis-timetable \
+  --school-year 2026/2027 \
+  --start 2026-08-24 \
+  --end 2026-08-28 \
+  --apply
+```
+
+The normalizer requires one decoded row per expected class and date. Missing or duplicate rows,
+denied resource statuses, entries without provider IDs, conflicting identities and response errors
+make that date partial. A partial date preserves useful additions and updates but cannot remove an
+older record.
+
+Two consecutive live imports of the five school days beginning 2026-08-24 proved the storage
+behavior in the isolated development database. The first created five changed runs and 1,881 record
+versions. The second created five unchanged runs and no versions or changes. Five current daily
+scopes point at the unchanged runs.
+
 ## Next implementation slice
 
-1. Normalize a decoded class timetable response into per-day source snapshots with the lossless raw
-   identity above.
-2. Reject conflicting duplicates and downgrade incomplete dates to partial snapshots.
-3. Add a PII-free console preview, then an explicit `--apply` path through the generic source store.
-4. Test cancellation, substitution, room change, additional period, empty complete day, chunked
-   deduplication and no-op re-poll behavior with captured synthetic fixtures.
-5. Run two live polls against the isolated development database and confirm the second adds runs but
-   no versions or changes.
-6. Add scheduling only after this one-shot importer is deterministic and observable.
+1. Add a provider-backed dated occurrence to Core with an optional recurring-meeting link.
+2. Project raw class views into authorized timetable occurrences without exposing source payloads.
+3. Compare teacher, room and student views against class views with PII-free field and identity
+   summaries. Add only the view types that contribute otherwise unavailable data.
+4. Add the agreed polling policy with jitter, one active execution per source and observable
+   failures that never advance source state.

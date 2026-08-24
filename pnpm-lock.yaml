@@ -460,6 +460,9 @@ importers:
       pg:
         specifier: 'catalog:'
         version: 8.23.0
+      temporal-polyfill:
+        specifier: 'catalog:'
+        version: 1.0.4
       webuntis-api:
         specifier: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.0.tgz
         version: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.0.tgz(effect@4.0.0-rc.108)
