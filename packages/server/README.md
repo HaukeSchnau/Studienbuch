@@ -7,7 +7,7 @@ PostgreSQL persistence seam:
 - an Effect-native Drizzle client backed by that same pool
 - a single migration history under `drizzle/`, applied in process at server start
 - Better Auth's current-state tables as the initial schema
-- immutable source-import generations for provider observations
+- incremental provider records with immutable payload versions and per-poll change manifests
 
 The pool deliberately keeps node-postgres' default type parsers. Better Auth queries this same pool
 through its Kysely adapter, which is configured with `supportsDates: true` and therefore never
@@ -39,11 +39,12 @@ Applications supply their own plugins and trusted origins. `tanstackStartCookies
 concern and `expo()` a mobile one, and neither belongs in a package that only knows about the
 database.
 
-There is deliberately no generic repository, domain projection schema, sync protocol, or event log
-yet. The import store records what a provider said without pretending that every WebUntis activity
-is already a Studienbuch subject or course. Add domain tables with the first projection that needs
-them, and keep the workflow behind a narrow Effect module rather than exposing Drizzle queries to
-route handlers.
+There is deliberately no generic repository, domain projection schema, sync protocol, or domain
+event log yet. The import store records what a provider said without pretending that every
+WebUntis activity is already a Studienbuch subject or course. Its source changes are an ingestion
+manifest, not application events. Add domain tables with the first projection that needs them, and
+keep the workflow behind a narrow Effect module rather than exposing Drizzle queries to route
+handlers.
 
 ## WebUntis directory imports
 
@@ -54,10 +55,19 @@ just console webuntis-directory --school-year 2026/2027
 just console webuntis-directory --school-year 2026/2027 --apply
 ```
 
-An applied snapshot becomes an immutable source-import generation. A transaction-scoped advisory
-lock serializes imports for the same data source, dataset and academic year. The transaction writes
-all observations before it changes the current-generation pointer. Equal snapshots reuse the
-current run, while changed snapshots retain the previous generation.
+Every successful applied poll gets a small immutable run record, including its completeness,
+diagnostics and record-level change counts. A transaction-scoped advisory lock serializes imports
+for the same data source, dataset and academic year. Within that transaction, `source_records`
+tracks the current provider identity and `source_record_versions` stores a payload only when its
+hash is new. `source_changes` names added, updated, removed and reactivated identities for the run.
+The current-run pointer moves only after all transitions succeed.
+
+An unchanged poll therefore adds one run but no payload versions or change rows. A complete poll
+may remove identities it no longer contains; a partial poll never interprets absence as deletion.
+If an old payload reappears, its immutable version is reused. This keeps frequent timetable and
+substitution polling cheap without losing provenance or the ability to project only actual changes.
+The observed IGS payloads, reconciliation scopes and proposed polling policy are recorded in
+[`docs/webuntis-ingestion.md`](../../docs/webuntis-ingestion.md).
 
 ## Commands
 

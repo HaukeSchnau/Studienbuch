@@ -1,7 +1,7 @@
-import { createHash } from "node:crypto";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import type { DisplayResource } from "webuntis-api";
+import { hashSourceObservations } from "../importing/source-snapshot.ts";
 import {
   collectDirectoryResources,
   type DirectoryInventory,
@@ -150,7 +150,7 @@ const byClassMembership = (
 /** The snapshot hash is a source revision over normalized, identity-sorted provider records. */
 export const hashDirectoryObservations = (
   observations: ReadonlyArray<DirectoryObservation>,
-): string => createHash("sha256").update(JSON.stringify(observations)).digest("hex");
+): string => hashSourceObservations(observations);
 
 /** Converts a decoded WebUntis response into stable records suitable for durable storage. */
 export const makeDirectorySnapshot = (inventory: DirectoryInventory): DirectorySnapshot => {

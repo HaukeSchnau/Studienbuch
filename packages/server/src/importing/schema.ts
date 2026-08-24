@@ -14,7 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 import type * as Schema from "effect/Schema";
 
-/** One immutable, complete provider snapshot. Older runs remain available for rollback and audit. */
+/** One successful provider poll. The current run is the latest state transition for its scope. */
 export const sourceImportRuns = pgTable(
   "source_import_runs",
   {
@@ -24,8 +24,13 @@ export const sourceImportRuns = pgTable(
     dataset: text("dataset").notNull(),
     scope: text("scope").notNull(),
     contentHash: text("contentHash").notNull(),
-    completeness: text("completeness").$type<"Complete">().default("Complete").notNull(),
+    completeness: text("completeness").$type<"Complete" | "Partial">().notNull(),
+    outcome: text("outcome").$type<"Changed" | "Unchanged" | "Migrated">().notNull(),
     observationCount: integer("observationCount").notNull(),
+    addedCount: integer("addedCount").default(0).notNull(),
+    updatedCount: integer("updatedCount").default(0).notNull(),
+    removedCount: integer("removedCount").default(0).notNull(),
+    reactivatedCount: integer("reactivatedCount").default(0).notNull(),
     counts: jsonb("counts").$type<Schema.Json>().notNull(),
     diagnostics: jsonb("diagnostics").$type<Schema.Json>().notNull(),
     isCurrent: boolean("isCurrent").default(false).notNull(),
@@ -39,20 +44,88 @@ export const sourceImportRuns = pgTable(
   ],
 );
 
-/** One provider-owned record as it appeared in an import generation. */
-export const sourceObservations = pgTable(
-  "source_observations",
+/** One immutable payload for a provider identity. Equal payload hashes share one version. */
+export const sourceRecordVersions = pgTable(
+  "source_record_versions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    dataSourceId: text("dataSourceId").notNull(),
+    dataset: text("dataset").notNull(),
+    scope: text("scope").notNull(),
+    entityKind: text("entityKind").$type<ExternalEntityKind>().notNull(),
+    externalId: text("externalId").notNull(),
+    contentHash: text("contentHash").notNull(),
+    payload: jsonb("payload").$type<Schema.Json>().notNull(),
+    firstObservedInRunId: uuid("firstObservedInRunId")
+      .notNull()
+      .references(() => sourceImportRuns.id),
+    observedAt: timestamp("observedAt", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("source_record_versions_identity_hash_unique").on(
+      table.dataSourceId,
+      table.dataset,
+      table.scope,
+      table.entityKind,
+      table.externalId,
+      table.contentHash,
+    ),
+    index("source_record_versions_identity_idx").on(
+      table.dataSourceId,
+      table.dataset,
+      table.scope,
+      table.entityKind,
+      table.externalId,
+    ),
+  ],
+);
+
+/** Current state of one provider identity within one independently reconciled scope. */
+export const sourceRecords = pgTable(
+  "source_records",
+  {
+    dataSourceId: text("dataSourceId").notNull(),
+    dataset: text("dataset").notNull(),
+    scope: text("scope").notNull(),
+    entityKind: text("entityKind").$type<ExternalEntityKind>().notNull(),
+    externalId: text("externalId").notNull(),
+    currentVersionId: uuid("currentVersionId")
+      .notNull()
+      .references(() => sourceRecordVersions.id),
+    active: boolean("active").notNull(),
+    firstSeenInRunId: uuid("firstSeenInRunId")
+      .notNull()
+      .references(() => sourceImportRuns.id),
+    lastChangedInRunId: uuid("lastChangedInRunId")
+      .notNull()
+      .references(() => sourceImportRuns.id),
+    updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.dataSourceId, table.dataset, table.scope, table.entityKind, table.externalId],
+    }),
+    index("source_records_current_version_idx").on(table.currentVersionId),
+  ],
+);
+
+export type SourceChangeType = "Added" | "Updated" | "Removed" | "Reactivated";
+
+/** A record-level transition emitted by one successful import run. */
+export const sourceChanges = pgTable(
+  "source_changes",
   {
     runId: uuid("runId")
       .notNull()
       .references(() => sourceImportRuns.id, { onDelete: "cascade" }),
     entityKind: text("entityKind").$type<ExternalEntityKind>().notNull(),
     externalId: text("externalId").notNull(),
-    contentHash: text("contentHash").notNull(),
-    payload: jsonb("payload").$type<Schema.Json>().notNull(),
+    changeType: text("changeType").$type<SourceChangeType>().notNull(),
+    beforeVersionId: uuid("beforeVersionId").references(() => sourceRecordVersions.id),
+    afterVersionId: uuid("afterVersionId").references(() => sourceRecordVersions.id),
   },
   (table) => [
     primaryKey({ columns: [table.runId, table.entityKind, table.externalId] }),
-    index("source_observations_identity_idx").on(table.entityKind, table.externalId),
+    index("source_changes_after_version_idx").on(table.afterVersionId),
   ],
 );
