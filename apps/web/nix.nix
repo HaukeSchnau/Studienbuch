@@ -41,10 +41,10 @@ let
   # after running `just web-lock` for relevant workspace manifest or primary lock changes.
   pnpmDependencyHash =
     if isProductionPlatform then
-      "sha256-nfUiEZx3XfoVESdoSkemw0b/aTrndCF/qpUWTdSOQNQ="
+      "sha256-UHxlw7Mo3JY/ek/uFVW5AQEC1wl4Gniptz0Z8mMviDc="
     else
       # Nixpkgs' forced fetch is platform-independent; keep it for supported development systems.
-      "sha256-GoqNpFIh8vhQ9nJ/QaKe9aCLxYSZ/e8KamZgBdcOymI=";
+      "sha256-wGzD/VwKpg78VDWeulAjY5dfdIS/d6Xs5dqLatCPxrs=";
 
   pnpmDeps = pkgs.fetchPnpmDeps {
     pname = "studienbuch-web-dependencies";
@@ -54,6 +54,12 @@ let
     inherit pnpmWorkspaces;
     pnpmInstallFlags = pnpmFetchFlags;
     postPatch = prepareProductionWorkspace;
+    # pnpm installs direct tarball dependencies into the project but does not retain their tarball
+    # in the content-addressed store exported by fetchPnpmDeps. Populate it explicitly while this
+    # fixed-output derivation still has network access so the application build remains offline.
+    postInstall = ''
+      pnpm store add https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.1.tgz
+    '';
     fetcherVersion = 4;
     hash = pnpmDependencyHash;
   };
