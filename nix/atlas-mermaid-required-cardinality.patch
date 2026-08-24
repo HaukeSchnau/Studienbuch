@@ -1,0 +1,25 @@
+diff --git a/cmd/atlas/internal/cmdlog/cmdlog.go b/cmd/atlas/internal/cmdlog/cmdlog.go
+index 7bb2f4cf..dca52548 100644
+--- a/cmd/atlas/internal/cmdlog/cmdlog.go
++++ b/cmd/atlas/internal/cmdlog/cmdlog.go
+@@ -1077,7 +1077,7 @@ func mermaid(i *SchemaInspect, _ ...string) (string, error) {
+ 							})
+ 						})
+ 					}
+-					from, to = "}", "{"
++					from, to, toMin = "}", "{", "o"
+ 				)
+ 				if hasU(fk.Table, fk.Columns) {
+ 					from = "|"
+@@ -1085,7 +1085,10 @@ func mermaid(i *SchemaInspect, _ ...string) (string, error) {
+ 				if hasU(fk.RefTable, fk.RefColumns) {
+ 					to = "|"
+ 				}
+-				return fmt.Sprintf("%so--o%s", from, to)
++				if !slices.ContainsFunc(fk.Columns, func(c *schema.Column) bool { return c.Type.Null }) {
++					toMin = "|"
++				}
++				return fmt.Sprintf("%so--%s%s", from, toMin, to)
+ 			},
+ 		}
+ 		t = template.Must(template.New("mermaid").
