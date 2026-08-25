@@ -19,7 +19,13 @@ import { EdgeBlob } from "./decor.tsx";
  */
 export const GetTheApp = () => (
   <Section className="relative isolate" id={sectionIds.app}>
-    <EdgeBlob className="top-10 hidden h-[26rem] w-[12rem] xl:block" side="right" tone="blue" />
+    <EdgeBlob
+      className="top-6 hidden h-[26rem] w-[10rem] xl:block"
+      flip
+      silhouette="lobe"
+      side="right"
+      tone="blue"
+    />
 
     <Container>
       <div className="relative overflow-hidden rounded-[2.5rem] bg-primary px-6 pt-14 pb-14 sm:rounded-[3.5rem] sm:px-12 sm:pt-20 sm:pb-20 lg:pb-0">

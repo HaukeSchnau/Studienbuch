@@ -55,7 +55,12 @@ export const Capabilities = () => (
   <Section className="relative isolate" id={sectionIds.capabilities} tone="background">
     {/* Hidden below xl: the content column runs close to the edge on narrower viewports and a
         blob would sit behind body text instead of in the margin. */}
-    <EdgeBlob className="top-24 hidden h-[30rem] w-[13rem] xl:block" side="right" tone="blue" />
+    <EdgeBlob
+      className="top-40 hidden h-[30rem] w-[11rem] xl:block"
+      silhouette="notch"
+      side="right"
+      tone="blue"
+    />
 
     <Container className="flex flex-col gap-12">
       <SectionHeading

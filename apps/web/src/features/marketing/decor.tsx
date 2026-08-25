@@ -1,17 +1,39 @@
 import { cn } from "#/ui/cn.ts";
 
 /**
- * The legacy site's colour blobs.
+ * The legacy site's colour blobs, as a small family rather than one silhouette used twice.
  *
- * The silhouettes are the originals, kept because their asymmetry is what makes them read as blobs
- * rather than as ellipses. What changed is how they close. The originals were drawn to bleed past
- * their own viewBox, so bounding them anywhere sliced them along a straight line; here the run back
- * to the edge of the page is a curve, leaving exactly one straight edge — the one that meets the
- * side of the viewport and is meant to look cut.
+ * Every silhouette is drawn left-anchored and closed the same way: an opening cubic, then `S`
+ * segments, which reflect the previous control point and so guarantee a smooth join at every seam.
+ * The only straight edge is the one at x=0, where the silhouette meets the side of the page and is meant
+ * to look cut. Hand-writing the return curve instead is what produced the kink in the last version.
  *
- * The original shipped them as PNG backgrounds swapped at a media query, pinning them to a fixed
- * size per breakpoint. As inline SVG they scale with whatever box they are given.
+ * A silhouette is mirrored onto the right-hand side and flipped vertically with CSS rather than being
+ * redrawn, so four paths cover sixteen placements.
  */
+
+const silhouettes = {
+  /** Round and bottom-heavy, closest to the legacy green blob. */
+  lobe: {
+    viewBox: "0 0 340 600",
+    d: "M0 20C60 8 150 40 210 120S340 300 300 420S140 600 0 570Z",
+  },
+  /** A teardrop, widest near the top and tapering away. */
+  crest: {
+    viewBox: "0 0 400 520",
+    d: "M0 10C160 0 320 60 356 170S300 380 170 440S60 520 0 500Z",
+  },
+  /** Two lobes with a pinch between them — the one with real personality. */
+  notch: {
+    viewBox: "0 0 340 580",
+    d: "M0 24C130 10 254 64 300 158S236 250 206 300S300 400 262 470S110 580 0 548Z",
+  },
+  /** Narrow and tall, for edges with little room to spare. */
+  sliver: {
+    viewBox: "0 0 220 620",
+    d: "M0 30C70 16 150 70 176 170S200 400 130 500S50 610 0 590Z",
+  },
+} as const;
 
 const tones = {
   green: "var(--color-primary-pale)",
@@ -19,68 +41,54 @@ const tones = {
 } as const;
 
 /**
- * Presses in from the left. The outward sweep is the legacy green blob; only the return along the
- * bottom, which the original left as a straight line, is now a curve.
- */
-const LeftBlob = ({ tone }: { tone: keyof typeof tones }) => (
-  <svg
-    aria-hidden
-    className="h-full w-full"
-    preserveAspectRatio="none"
-    viewBox="-21 0 351 512"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M-21 0C15.25 9.43 96.79 42.97 132.91 101.69 178.05 175.08 148.64 246.7 262.87 282.95 354.26 311.96 328.31 407.04 303.91 450.96 250 488 120 508 -21 502Z"
-      fill={tones[tone]}
-    />
-  </svg>
-);
-
-/**
- * Presses in from the right. This is the legacy blue blob, whose straight edge already ran down the
- * side of the page; the viewBox is widened so nothing is cropped.
- */
-const RightBlob = ({ tone }: { tone: keyof typeof tones }) => (
-  <svg
-    aria-hidden
-    className="h-full w-full"
-    preserveAspectRatio="none"
-    viewBox="-12 -52 629 1094"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M617 -40.1C438.74 -51 68.96 -45.58 15.96 63.26-50.3 199.32 105.43 273.53 196.27 239.96 287.11 206.39 373.85 221.4 279.6 489.09 204.19 703.24 453.08 937.59 586.95 1028L617 -40.1Z"
-      fill={tones[tone]}
-    />
-  </svg>
-);
-
-/**
- * One blob, anchored to a side of the page. Callers position and size it; the shape stretches to
- * fill whatever box it is given, so keep the box roughly in the viewBox's proportions or the
- * silhouette flattens.
+ * One blob, anchored to a side of the page. Callers position and size it; keep the box roughly in
+ * the silhouette's own proportions or the silhouette flattens.
  *
  * The host section needs `relative isolate`, so the negative layer stays inside it instead of
- * dropping behind the page background.
+ * dropping behind the page background — and the blob must fit inside that section's box, because
+ * anything that overhangs is cut off square where the next section's background starts.
  */
 export const EdgeBlob = ({
   className,
+  flip = false,
+  silhouette,
   side,
   tone,
 }: {
   className?: string;
+  /** Mirror vertically, so the same silhouette can lead with its other end. */
+  flip?: boolean;
+  silhouette: keyof typeof silhouettes;
   side: "left" | "right";
   tone: keyof typeof tones;
-}) => (
-  <div
-    aria-hidden
-    className={cn(
-      "drift pointer-events-none absolute -z-10 opacity-45",
-      side === "left" ? "left-0" : "right-0",
-      className,
-    )}
-  >
-    {side === "left" ? <LeftBlob tone={tone} /> : <RightBlob tone={tone} />}
-  </div>
-);
+}) => {
+  const { d, viewBox } = silhouettes[silhouette];
+
+  return (
+    // The drift animation owns the outer element's transform, so mirroring has to happen on an
+    // inner one or the two overwrite each other.
+    <div
+      aria-hidden
+      className={cn(
+        "drift pointer-events-none absolute -z-10 opacity-45",
+        side === "left" ? "left-0" : "right-0",
+        className,
+      )}
+    >
+      <div
+        className="h-full w-full"
+        style={{ transform: `scale(${side === "right" ? -1 : 1}, ${flip ? -1 : 1})` }}
+      >
+        <svg
+          aria-hidden
+          className="h-full w-full"
+          preserveAspectRatio="none"
+          viewBox={viewBox}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d={d} fill={tones[tone]} />
+        </svg>
+      </div>
+    </div>
+  );
+};
