@@ -4,6 +4,8 @@ import { externalLinks, sectionIds } from "#/domain-ui/brand/links.ts";
 import { Button } from "#/ui/button.tsx";
 import { Container, Section, SectionHeading } from "#/ui/section.tsx";
 
+import { EdgeBlob } from "./decor.tsx";
+
 const points: ReadonlyArray<{ body: string; title: string }> = [
   {
     title: "Import statt Doppelpflege",
@@ -25,7 +27,9 @@ const points: ReadonlyArray<{ body: string; title: string }> = [
  * list, which is what a school reading this page is asking.
  */
 export const ForSchools = () => (
-  <Section id={sectionIds.schools}>
+  <Section className="relative isolate" id={sectionIds.schools}>
+    <EdgeBlob className="top-12 hidden h-[30rem] w-[14rem] xl:block" side="left" tone="green" />
+
     <Container className="flex flex-col gap-12">
       <SectionHeading
         lead="Studienbuch ersetzt das Papier-Studienbuch für eine ganze Schule. Die Einführung beginnt mit einem Gespräch, nicht mit einem Vertrag."
