@@ -37,7 +37,7 @@ export const ForSchools = () => (
           <li className="flex flex-col gap-3" key={title}>
             <span
               aria-hidden
-              className="text-5xl leading-none font-bold text-primary-des tabular-nums"
+              className="text-5xl leading-none font-bold text-primary-pale tabular-nums"
             >
               {String(index + 1).padStart(2, "0")}
             </span>
