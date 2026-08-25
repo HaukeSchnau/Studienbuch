@@ -1,10 +1,9 @@
-import { ArrowRight } from "lucide-react";
-
-import { externalLinks, sectionIds } from "#/domain-ui/brand/links.ts";
-import { Button } from "#/ui/button.tsx";
+import { sectionIds } from "#/domain-ui/brand/links.ts";
 import { Container, Section, SectionHeading } from "#/ui/section.tsx";
 
 import { EdgeBlob } from "#/domain-ui/brand/blobs.tsx";
+
+import { EnquiryForm } from "./enquiry-form.tsx";
 
 const points: ReadonlyArray<{ body: string; title: string }> = [
   {
@@ -69,14 +68,7 @@ export const ForSchools = () => (
         ))}
       </ol>
 
-      <div>
-        <Button asChild radius="pill" size="xl" variant="brand">
-          <a href={externalLinks.schoolContact}>
-            Gespräch anfragen
-            <ArrowRight aria-hidden />
-          </a>
-        </Button>
-      </div>
+      <EnquiryForm />
     </Container>
   </Section>
 );

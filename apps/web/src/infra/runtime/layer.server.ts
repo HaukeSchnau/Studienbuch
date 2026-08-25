@@ -1,5 +1,5 @@
 import { serverObservabilityLayer } from "@stu/observability/server";
-import { Auth, Database } from "@stu/server";
+import { Auth, Database, EnquiryNotifier } from "@stu/server";
 import * as Layer from "effect/Layer";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { authOptions } from "#/infra/auth/better-auth.ts";
@@ -17,6 +17,7 @@ const authLayer = Auth.layer(authOptions).pipe(Layer.provide(databaseLayer));
 
 export const WebApplicationLive = Layer.mergeAll(
   ClientTelemetry.layer,
+  EnquiryNotifier.layer,
   authLayer,
   databaseLayer,
 ).pipe(Layer.provideMerge(telemetryLayer));
