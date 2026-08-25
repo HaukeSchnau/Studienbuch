@@ -29,7 +29,7 @@ import { SchoolYearUnavailable } from "./directory-preview.ts";
 import { findSchoolProfile } from "./school-profile.ts";
 import { projectTimetableOccurrences } from "./timetable-projection.ts";
 
-const timetableBatchSize = 500;
+export const timetableResourceBatchSize = 500;
 
 export const importedTimetableResourceTypes = ["CLASS", "SUBJECT", "TEACHER", "ROOM"] as const;
 export type ImportedTimetableResourceType = (typeof importedTimetableResourceTypes)[number];
@@ -178,7 +178,7 @@ const parsePlainDate = Effect.fn("WebUntis.parseTimetableDate")(function* (
   });
 });
 
-const requestedDates = Effect.fn("WebUntis.requestedTimetableDates")(function* (
+export const requestedTimetableDates = Effect.fn("WebUntis.requestedTimetableDates")(function* (
   start: string,
   end: string,
   academicYear: Schoolyear,
@@ -228,7 +228,7 @@ const normalizePositions = (
 ): ReadonlyArray<TimetableEntryPosition> | null =>
   positions === null ? null : [...positions].sort(compareJson);
 
-const normalizeEntry = (entry: TimetableEntry): TimetableEntry => ({
+export const normalizeTimetableEntry = (entry: TimetableEntry): TimetableEntry => ({
   ...entry,
   ids: [...entry.ids].sort((left, right) => left - right),
   icons: [...entry.icons].sort(),
@@ -239,14 +239,14 @@ const normalizeEntry = (entry: TimetableEntry): TimetableEntry => ({
   texts: [...entry.texts].sort(compareJson),
 });
 
-const resourceReference = (resource: DisplayResource) => ({
+export const timetableResourceReference = (resource: DisplayResource) => ({
   externalId: String(resource.id),
   shortName: resource.shortName,
   longName: resource.longName,
   displayName: resource.displayName,
 });
 
-const externalIdOf = (day: TimetableEntryDay, entry: TimetableEntry) =>
+export const timetableEntryExternalId = (day: TimetableEntryDay, entry: TimetableEntry) =>
   `${day.resourceType}:${day.resource.id}:${day.date}:${entry.ids.join(",")}`;
 
 const diagnosticRows = (
@@ -300,8 +300,8 @@ const addEntries = (
       continue;
     }
 
-    const entry = normalizeEntry(rawEntry);
-    const externalId = externalIdOf(day, entry);
+    const entry = normalizeTimetableEntry(rawEntry);
+    const externalId = timetableEntryExternalId(day, entry);
     if (state.conflictingIdentities.has(externalId)) continue;
     const observation: TimetableObservation = {
       _tag: "TimetableOccurrence",
@@ -310,7 +310,7 @@ const addEntries = (
         academicYearExternalId,
         date: day.date,
         resourceType: day.resourceType,
-        resource: resourceReference(day.resource),
+        resource: timetableResourceReference(day.resource),
         dayStatus: day.status,
         location,
         entry,
@@ -485,7 +485,7 @@ export const fetchTimetableImportPlan = Effect.fn("WebUntis.fetchTimetableImport
       available: availableSchoolYears.map((year) => year.name),
     });
   }
-  const dates = yield* requestedDates(start, end, academicYear);
+  const dates = yield* requestedTimetableDates(start, end, academicYear);
   const filteredResources = yield* Effect.forEach(
     importedTimetableResourceTypes,
     (resourceType) => {
@@ -513,7 +513,7 @@ export const fetchTimetableImportPlan = Effect.fn("WebUntis.fetchTimetableImport
   const entryRequests = importedTimetableResourceTypes.flatMap((resourceType) =>
     EffectArray.chunksOf(
       resources[resourceType].map((resource) => resource.id),
-      timetableBatchSize,
+      timetableResourceBatchSize,
     ).map((resourceIds) => ({ resourceType, resourceIds })),
   );
   const responses = yield* Effect.forEach(
