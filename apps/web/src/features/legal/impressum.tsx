@@ -13,7 +13,7 @@ import { DetailBlock, LegalPage } from "./legal-page.tsx";
  */
 export const Impressum = () => (
   <LegalPage title="Impressum">
-    <h2>Angaben gemäß § 5 DDG</h2>
+    <h2>Angaben gemäß §&nbsp;5 DDG</h2>
 
     <DetailBlock label="Anbieterin">
       {entity.legalName}
@@ -39,13 +39,13 @@ export const Impressum = () => (
       Registernummer: {entity.registerNumber}
     </DetailBlock>
 
-    <DetailBlock label="Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG">
+    <DetailBlock label="Umsatzsteuer-Identifikationsnummer gemäß §&nbsp;27a UStG">
       {entity.vatId}
     </DetailBlock>
 
     <h2>Kleinunternehmerregelung</h2>
     <p>
-      Als Kleinunternehmerin im Sinne von § 19 UStG wird keine Umsatzsteuer berechnet und
+      Als Kleinunternehmerin im Sinne von §&nbsp;19 UStG wird keine Umsatzsteuer berechnet und
       dementsprechend keine Umsatzsteuer ausgewiesen.
     </p>
 

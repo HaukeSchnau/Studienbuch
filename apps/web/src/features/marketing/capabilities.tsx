@@ -73,7 +73,7 @@ export const Capabilities = () => (
           <li key={title}>
             <article
               className={cn(
-                "flex h-full flex-col gap-6 rounded-card-lg p-8 transition-transform duration-300 hover:-translate-y-1",
+                "reveal flex h-full flex-col gap-6 rounded-card-lg p-8 transition-transform duration-300 hover:-translate-y-1",
                 tint,
               )}
             >
@@ -91,7 +91,7 @@ export const Capabilities = () => (
         {/* Offline is the one thing paper and most school apps cannot do, so it takes the full
             width rather than a band of its own. */}
         <li className="sm:col-span-2">
-          <article className="flex flex-col gap-6 rounded-card-lg bg-primary p-8 text-white sm:flex-row sm:items-center sm:gap-10 sm:p-10">
+          <article className="reveal flex flex-col gap-6 rounded-card-lg bg-primary p-8 text-white sm:flex-row sm:items-center sm:gap-10 sm:p-10">
             <div className="flex max-w-xl flex-col gap-3">
               <h3 className="text-2xl text-white sm:text-3xl">Funktioniert auch ohne Empfang</h3>
               {/* 20px minimum: white on the brand green is 3.2:1, which only clears AA as large

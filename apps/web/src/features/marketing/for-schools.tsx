@@ -56,7 +56,7 @@ export const ForSchools = () => (
 
       <ol className="grid gap-x-10 gap-y-10 sm:grid-cols-3">
         {points.map(({ body, title }, index) => (
-          <li className="flex flex-col gap-3" key={title}>
+          <li className="reveal flex flex-col gap-3" key={title}>
             <span
               aria-hidden
               className="text-5xl leading-none font-bold text-primary-pale tabular-nums"

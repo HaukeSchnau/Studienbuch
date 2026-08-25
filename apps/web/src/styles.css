@@ -113,6 +113,96 @@ h3 {
   }
 }
 
+/*
+ * Scroll-driven motion. Timer-based movement reads as decoration; movement tied to the reader's
+ * own scrolling reads as craft, and `animation-timeline` does it with no JavaScript at all.
+ *
+ * Everything is nested inside `@supports`, so a browser without scroll-driven animations renders
+ * the content at rest rather than stuck at `opacity: 0` — the failure mode that makes this
+ * technique dangerous.
+ */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal linear both;
+      animation-timeline: view();
+      /* Finishes well before the element is centred, so reading is never chasing the animation. */
+      animation-range: entry 5% cover 28%;
+    }
+
+    /* A slower rate of travel than the text beside it, which is all parallax needs to be. */
+    .parallax {
+      animation: parallax linear both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(1.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes parallax {
+  from {
+    transform: translateY(-1.5rem);
+  }
+  to {
+    transform: translateY(1.5rem);
+  }
+}
+
+/*
+ * Schools print the legal pages — a Datenschutzerklärung goes into a file, and increasingly into a
+ * procurement pack. Printing the site as-is would waste ink on decoration and drop every link
+ * target, so links spell themselves out and everything ornamental is removed.
+ */
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 11pt;
+  }
+
+  .drift,
+  nav[aria-label="Hauptnavigation"],
+  nav[aria-label="Fußzeile"] {
+    display: none !important;
+  }
+
+  main a[href^="http"]::after,
+  main a[href^="mailto:"]::after {
+    content: " (" attr(href) ")";
+    font-size: 9pt;
+    word-break: break-all;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+    color: #000;
+  }
+
+  p,
+  li {
+    color: #000;
+    orphans: 3;
+    widows: 3;
+  }
+
+  section {
+    padding: 0 !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

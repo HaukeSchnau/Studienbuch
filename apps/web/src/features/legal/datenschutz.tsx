@@ -40,7 +40,7 @@ export const Datenschutz = () => (
       DSGVO). Näheres unter Abschnitt 3.
     </p>
     <p>
-      Eine Datenschutzbeauftragte oder einen Datenschutzbeauftragten müssen wir nach Artikel 37
+      Eine Datenschutzbeauftragte oder einen Datenschutzbeauftragten müssen wir nach Artikel&nbsp;37
       DSGVO nicht benennen. Fragen zum Datenschutz richten Sie bitte an die oben genannte
       E-Mail-Adresse.
     </p>
@@ -64,7 +64,7 @@ export const Datenschutz = () => (
     <p>
       Diese Website setzt keine Cookies und bindet keine Werbe- oder Analysedienste ein. Es findet
       keine Reichweitenmessung und kein geräteübergreifendes Wiedererkennen statt. Eine Einwilligung
-      nach § 25 TDDDG ist deshalb nicht erforderlich.
+      nach §&nbsp;25 TDDDG ist deshalb nicht erforderlich.
     </p>
 
     <h3>Schriftarten</h3>
@@ -100,8 +100,8 @@ export const Datenschutz = () => (
     <p>
       Die App wird von Schulen lizenziert. Die Schule entscheidet, welche Daten verarbeitet werden
       und wer Zugang erhält, und ist damit datenschutzrechtlich verantwortlich. Wir stellen die
-      technische Verarbeitung bereit und handeln als Auftragsverarbeiterin nach Artikel 28 DSGVO.
-      Grundlage ist ein Vertrag zur Auftragsverarbeitung mit der jeweiligen Schule.
+      technische Verarbeitung bereit und handeln als Auftragsverarbeiterin nach Artikel&nbsp;28
+      DSGVO. Grundlage ist ein Vertrag zur Auftragsverarbeitung mit der jeweiligen Schule.
     </p>
     <p>
       Anfragen zu Ihren Daten in der App richten Sie deshalb bitte zuerst an Ihre Schule. Wenn Sie
@@ -180,12 +180,14 @@ export const Datenschutz = () => (
     <h2>6. Ihre Rechte</h2>
     <p>Sie haben nach der DSGVO das Recht auf</p>
     <ul>
-      <li>Auskunft über die zu Ihnen gespeicherten Daten (Artikel 15)</li>
-      <li>Berichtigung unrichtiger Daten (Artikel 16)</li>
-      <li>Löschung (Artikel 17)</li>
-      <li>Einschränkung der Verarbeitung (Artikel 18)</li>
-      <li>Datenübertragbarkeit (Artikel 20)</li>
-      <li>Widerspruch gegen Verarbeitungen auf Grundlage berechtigter Interessen (Artikel 21)</li>
+      <li>Auskunft über die zu Ihnen gespeicherten Daten (Artikel&nbsp;15)</li>
+      <li>Berichtigung unrichtiger Daten (Artikel&nbsp;16)</li>
+      <li>Löschung (Artikel&nbsp;17)</li>
+      <li>Einschränkung der Verarbeitung (Artikel&nbsp;18)</li>
+      <li>Datenübertragbarkeit (Artikel&nbsp;20)</li>
+      <li>
+        Widerspruch gegen Verarbeitungen auf Grundlage berechtigter Interessen (Artikel&nbsp;21)
+      </li>
     </ul>
     <p>
       Soweit eine Verarbeitung auf einer Einwilligung beruht, können Sie diese jederzeit mit Wirkung
@@ -194,7 +196,7 @@ export const Datenschutz = () => (
 
     <h2>7. Beschwerderecht</h2>
     <p>
-      Sie können sich jederzeit bei einer Datenschutz-Aufsichtsbehörde beschweren (Artikel 77
+      Sie können sich jederzeit bei einer Datenschutz-Aufsichtsbehörde beschweren (Artikel&nbsp;77
       DSGVO). Für uns zuständig ist:
     </p>
     <DetailBlock label="Aufsichtsbehörde">
