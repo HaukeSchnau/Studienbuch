@@ -20,9 +20,9 @@ export const GetTheApp = () => (
   <Section className="relative isolate" id={sectionIds.app}>
     <EdgeBlob
       blob="pinch"
-      className="-left-44 top-24 hidden size-[20rem] xl:block"
+      className="-left-52 top-24 hidden size-[20rem] min-[1440px]:block"
       rotate={-26}
-      tone="green"
+      tone="blue"
     />
 
     <Container>
