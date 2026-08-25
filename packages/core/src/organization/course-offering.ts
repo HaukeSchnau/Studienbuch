@@ -2,7 +2,6 @@ import * as Schema from "effect/Schema";
 import { NonBlankText } from "../foundation/non-blank-text";
 import { GradeLevel } from "./academic-year";
 import {
-  AcademicTermId,
   AcademicYearId,
   ClassGroupId,
   CohortId,
@@ -32,10 +31,18 @@ export interface ClassGroupAcademicYear extends Schema.Schema.Type<typeof ClassG
 export const CourseOffering = Schema.Struct({
   id: CourseOfferingId,
   schoolId: SchoolId,
-  academicYearId: AcademicYearId,
-  termId: Schema.optional(AcademicTermId),
-  subjectId: Schema.optional(SubjectId),
-  name: NonBlankText,
-  classGroupIds: Schema.Array(ClassGroupId),
 });
 export interface CourseOffering extends Schema.Schema.Type<typeof CourseOffering> {}
+
+/** The school-year representation of a course whose identity may continue into later years. */
+export const CourseOfferingAcademicYear = Schema.Struct({
+  courseOfferingId: CourseOfferingId,
+  academicYearId: AcademicYearId,
+  subjectId: Schema.optional(SubjectId),
+  name: NonBlankText,
+  cohortIds: Schema.Array(CohortId),
+  classGroupIds: Schema.Array(ClassGroupId),
+});
+export interface CourseOfferingAcademicYear extends Schema.Schema.Type<
+  typeof CourseOfferingAcademicYear
+> {}

@@ -12,7 +12,12 @@ export {
 export { Acknowledgement, ActorRef, Withdrawal } from "./acknowledgement";
 export { AuthorityDenied, AuthoritySnapshot, Capability, authorize, may } from "./authority";
 export { School, Subject, SubjectCatalog, findSubject } from "./catalog";
-export { ClassGroup, ClassGroupAcademicYear, CourseOffering } from "./course-offering";
+export {
+  ClassGroup,
+  ClassGroupAcademicYear,
+  CourseOffering,
+  CourseOfferingAcademicYear,
+} from "./course-offering";
 export { InvalidSchoolDirectory, SchoolDirectory, validateSchoolDirectory } from "./directory";
 export {
   AcknowledgementId,
@@ -39,11 +44,9 @@ export {
   Enrollment,
   EnrollmentNotRemovable,
   EnrollmentOrigin,
-  EnrollmentSuggestion,
   SelectionCardinality,
   isEnrollmentEffectiveOn,
   removeEnrollment,
-  suggestEnrollmentContinuations,
   validateCourseChoice,
 } from "./enrollment";
 export {

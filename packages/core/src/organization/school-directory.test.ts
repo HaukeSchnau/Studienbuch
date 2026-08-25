@@ -14,6 +14,7 @@ import {
   ClassGroupAcademicYear,
   CourseChoiceGroup,
   CourseOffering,
+  CourseOfferingAcademicYear,
   Enrollment,
   EnrollmentOrigin,
   GradeLevel,
@@ -24,7 +25,6 @@ import {
   SubjectCatalog,
   gradeLevelAt,
   removeEnrollment,
-  suggestEnrollmentContinuations,
   validateSchoolDirectory,
   validateAcademicTerms,
   validateAcademicYears,
@@ -179,6 +179,7 @@ describe("school directory", () => {
           }),
         ],
         courseOfferings: [],
+        courseOfferingAcademicYears: [],
         choiceGroups: [],
         enrollments: [],
       });
@@ -202,11 +203,6 @@ describe("school directory", () => {
       const offering = CourseOffering.make({
         id: CourseOfferingId.make("foreign-offering"),
         schoolId: SchoolId.make("other-school"),
-        academicYearId: year.id,
-        termId: academicTerm.id,
-        subjectId: subject.id,
-        name: "Mathematics",
-        classGroupIds: [],
       });
       const structure = SchoolDirectory.make({
         school: School.make({ id: schoolId, name: "School" }),
@@ -226,6 +222,7 @@ describe("school directory", () => {
         classGroups: [],
         classGroupAcademicYears: [],
         courseOfferings: [offering],
+        courseOfferingAcademicYears: [],
         choiceGroups: [],
         enrollments: [],
       });
@@ -260,6 +257,7 @@ describe("school directory", () => {
         classGroups: [],
         classGroupAcademicYears: [],
         courseOfferings: [],
+        courseOfferingAcademicYears: [],
         choiceGroups: [],
         enrollments: [],
       });
@@ -299,6 +297,7 @@ describe("school directory", () => {
         classGroups: [],
         classGroupAcademicYears: [],
         courseOfferings: [],
+        courseOfferingAcademicYears: [],
         choiceGroups: [],
         enrollments: [],
       });
@@ -324,8 +323,12 @@ describe("school directory", () => {
         const offering = CourseOffering.make({
           id: CourseOfferingId.make("provider-course-1"),
           schoolId,
+        });
+        const representation = CourseOfferingAcademicYear.make({
+          courseOfferingId: offering.id,
           academicYearId: year.id,
           name: "Provider activity",
+          cohortIds: [],
           classGroupIds: [classGroup.id],
         });
         const structure = SchoolDirectory.make({
@@ -352,11 +355,14 @@ describe("school directory", () => {
             }),
           ],
           courseOfferings: [offering],
+          courseOfferingAcademicYears: [representation],
           choiceGroups: [],
           enrollments: [],
         });
 
-        expect((yield* validateSchoolDirectory(structure)).courseOfferings).toEqual([offering]);
+        const validated = yield* validateSchoolDirectory(structure);
+        expect(validated.courseOfferings).toEqual([offering]);
+        expect(validated.courseOfferingAcademicYears).toEqual([representation]);
       }),
   );
 });
@@ -416,49 +422,49 @@ describe("course choices and enrollments", () => {
       assert.strictEqual(error.reason, "BelowMinimum");
     }),
   );
+});
 
-  it("suggests a continuation only when the next-term subject match is unambiguous", () => {
-    const subjectId = SubjectId.make("mathematics");
-    const previous = CourseOffering.make({
-      id: firstOffering,
+describe("course offering identity", () => {
+  const offeringId = CourseOfferingId.make("course-a");
+
+  it("keeps one opaque course identity while annual facts change", () => {
+    const offering = CourseOffering.make({
+      id: offeringId,
       schoolId,
+    });
+    const firstYear = CourseOfferingAcademicYear.make({
+      courseOfferingId: offering.id,
       academicYearId: AcademicYearId.make("year-1"),
-      termId: AcademicTermId.make("term-1"),
-      subjectId,
-      name: "Mathematics 8a",
+      subjectId: SubjectId.make("mathematics"),
+      name: "MA-E",
+      cohortIds: [CohortId.make("cohort-a")],
+      classGroupIds: [ClassGroupId.make("cohort-a-1"), ClassGroupId.make("cohort-a-3")],
+    });
+    const secondYear = CourseOfferingAcademicYear.make({
+      courseOfferingId: offering.id,
+      academicYearId: AcademicYearId.make("year-2"),
+      subjectId: SubjectId.make("mathematics"),
+      name: "Mathematik E",
+      cohortIds: [CohortId.make("cohort-a")],
+      classGroupIds: [ClassGroupId.make("cohort-a-1"), ClassGroupId.make("cohort-a-2")],
+    });
+
+    expect(firstYear.courseOfferingId).toBe(secondYear.courseOfferingId);
+    expect(firstYear.name).not.toBe(secondYear.name);
+    expect(firstYear.classGroupIds).not.toEqual(secondYear.classGroupIds);
+  });
+
+  it("represents an upper-school course spanning cohorts without inventing classes", () => {
+    const representation = CourseOfferingAcademicYear.make({
+      courseOfferingId: offeringId,
+      academicYearId: AcademicYearId.make("year-1"),
+      subjectId: SubjectId.make("mathematics"),
+      name: "MA23",
+      cohortIds: [CohortId.make("udo"), CohortId.make("lisel")],
       classGroupIds: [],
     });
-    const enrollment = Enrollment.make({
-      id: EnrollmentId.make("enrollment-1"),
-      studentMembershipId: SchoolMembershipId.make("student-1"),
-      courseOfferingId: previous.id,
-      effective: interval("2026-08-01", "2027-01-31"),
-      origin: EnrollmentOrigin.cases.Optional.make({}),
-    });
-    const nextTermId = AcademicTermId.make("term-2");
-    const next = (id: string) =>
-      CourseOffering.make({
-        ...previous,
-        id: CourseOfferingId.make(id),
-        termId: nextTermId,
-      });
 
-    expect(
-      suggestEnrollmentContinuations({
-        previousEnrollments: [enrollment],
-        previousOfferings: [previous],
-        targetOfferings: [next("next-a"), next("next-b")],
-        targetTermId: nextTermId,
-      }),
-    ).toEqual([]);
-
-    expect(
-      suggestEnrollmentContinuations({
-        previousEnrollments: [enrollment],
-        previousOfferings: [previous],
-        targetOfferings: [next("next-a")],
-        targetTermId: nextTermId,
-      }).map((suggestion) => suggestion.suggestedOfferingId),
-    ).toEqual([CourseOfferingId.make("next-a")]);
+    expect(representation.cohortIds).toEqual([CohortId.make("udo"), CohortId.make("lisel")]);
+    expect(representation.classGroupIds).toEqual([]);
   });
 });

@@ -12,14 +12,11 @@ import { Acknowledgement, ActorRef } from "../organization/acknowledgement.ts";
 import { AuthoritySnapshot } from "../organization/authority.ts";
 import { CourseOffering } from "../organization/course-offering.ts";
 import {
-  AcademicTermId,
-  AcademicYearId,
   AcknowledgementId,
   CourseOfferingId,
   PersonId,
   SchoolId,
   SchoolMembershipId,
-  SubjectId,
 } from "../organization/identity.ts";
 import { SchoolMembership, StudentMembership } from "../organization/membership.ts";
 import { LegalAgePolicy, Person, PersonName } from "../organization/person.ts";
@@ -52,11 +49,6 @@ const student = Person.make({
 const courseOffering = CourseOffering.make({
   id: courseOfferingId,
   schoolId,
-  academicYearId: AcademicYearId.make("year"),
-  termId: AcademicTermId.make("term"),
-  subjectId: SubjectId.make("subject"),
-  name: "Mathematics",
-  classGroupIds: [],
 });
 const authority = AuthoritySnapshot.make({
   memberships: [

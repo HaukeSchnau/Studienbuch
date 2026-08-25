@@ -566,6 +566,7 @@ export const projectDirectory = Effect.fn("WebUntis.projectDirectory")(function*
     classGroups: [...classGroups.values()],
     classGroupAcademicYears,
     courseOfferings: [],
+    courseOfferingAcademicYears: [],
     choiceGroups: [],
     enrollments: [],
   });
