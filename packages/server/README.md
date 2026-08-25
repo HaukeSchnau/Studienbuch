@@ -46,7 +46,7 @@ manifest, not application events. Add domain tables with the first projection th
 keep the workflow behind a narrow Effect module rather than exposing Drizzle queries to route
 handlers.
 
-## WebUntis directory imports
+## WebUntis imports
 
 The console previews by default and only opens PostgreSQL when `--apply` is explicit:
 
@@ -55,6 +55,8 @@ just console webuntis-directory --school-year 2026/2027
 just console webuntis-directory --school-year 2026/2027 --apply
 just console webuntis-timetable --school-year 2026/2027 --start 2026-08-24 --end 2026-08-28
 just console webuntis-timetable --school-year 2026/2027 --start 2026-08-24 --end 2026-08-28 --apply
+just console webuntis-course-rosters --school-year 2026/2027 --start 2026-08-24 --end 2026-09-20
+just console webuntis-course-rosters --school-year 2026/2027 --start 2026-08-24 --end 2026-09-20 --apply
 ```
 
 Every successful applied poll gets a small immutable run record, including its completeness,
@@ -75,6 +77,20 @@ The timetable command fetches class, subject, teacher and room views in batches 
 splits the requested range into daily scopes. Missing, denied, conflicting or provider-error rows
 make the affected day partial, so that poll may add or update records but cannot delete records
 previously observed for the day.
+
+`@stu/worker` runs the same application imports continuously in a process separate from the web
+server:
+
+```bash
+just dev worker
+```
+
+It imports the directory daily, the previous two timetable days through 14 days ahead every ten
+minutes, days 15 through 56 hourly, and a private course-roster window daily. Every job also runs at
+startup. Effect schedules provide jittered fixed cadences and bounded exponential retry; Effect
+semaphores prevent local overlap. A session-level PostgreSQL advisory lock around each whole import
+prevents overlap with another worker or an applied console command. See the ingestion note for the
+range, failure and privacy contract. No production service is created merely by running the build.
 
 ## Commands
 

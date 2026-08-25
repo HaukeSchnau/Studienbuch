@@ -3,6 +3,7 @@ export const serviceNamespace = "studienbuch" as const;
 export const serviceNames = [
   "studienbuch-server",
   "studienbuch-console",
+  "studienbuch-worker",
   "studienbuch-web-client",
   "studienbuch-mobile",
 ] as const;

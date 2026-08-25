@@ -1,0 +1,23 @@
+{
+  "name": "@stu/worker",
+  "private": true,
+  "license": "BUSL-1.1",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "vp pack",
+    "clean": "rm -rf dist",
+    "start": "node dist/index.mjs",
+    "test": "vp test run --passWithNoTests"
+  },
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "@stu/observability": "workspace:*",
+    "@stu/server": "workspace:*",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.12",
+    "vite-plus": "catalog:"
+  }
+}
