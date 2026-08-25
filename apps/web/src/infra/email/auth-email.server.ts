@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import nodemailer from "nodemailer";
 
 type AuthEmail = {
@@ -8,6 +9,16 @@ type AuthEmail = {
 
 let transporter: ReturnType<typeof nodemailer.createTransport> | undefined;
 
+const readSmtpUrl = async () => {
+  const directValue = process.env.STUDIENBUCH_SMTP_URL?.trim();
+  if (directValue !== undefined && directValue !== "") return directValue;
+
+  const file = process.env.STUDIENBUCH_SMTP_URL_FILE?.trim();
+  if (file === undefined || file === "") return undefined;
+  const fileValue = (await readFile(file, "utf8")).trim();
+  return fileValue === "" ? undefined : fileValue;
+};
+
 const deliver = async (email: AuthEmail) => {
   const mode = process.env.STUDIENBUCH_AUTH_EMAIL_MODE?.trim();
   const useConsole =
@@ -17,12 +28,12 @@ const deliver = async (email: AuthEmail) => {
     return;
   }
 
-  const smtpUrl = process.env.STUDIENBUCH_SMTP_URL?.trim();
+  const smtpUrl = await readSmtpUrl();
   const from = process.env.STUDIENBUCH_EMAIL_FROM?.trim();
   if (smtpUrl === undefined || smtpUrl === "" || from === undefined || from === "") {
     // oxlint-disable-next-line anti-slop/no-throwing-errors -- Nodemailer's callback contract reports delivery failure by rejecting its promise.
     throw new Error(
-      "STUDIENBUCH_SMTP_URL and STUDIENBUCH_EMAIL_FROM are required to deliver auth email",
+      "STUDIENBUCH_SMTP_URL or STUDIENBUCH_SMTP_URL_FILE and STUDIENBUCH_EMAIL_FROM are required to deliver auth email",
     );
   }
   transporter ??= nodemailer.createTransport(smtpUrl);

@@ -15,6 +15,7 @@ let
   };
   applicationPath = "${application.installRoot}/${application.relativePath}";
   pnpmWorkspaces = [
+    "@stu/console"
     application.workspaceName
     "@stu/core"
     "@stu/observability"
@@ -25,12 +26,15 @@ let
   # fetchPnpmDeps puts caller flags after its own --force. The actual deployment target can opt
   # back into pnpm's native platform selection instead of fetching every OS/CPU binary package.
   pnpmFetchFlags = pnpmInstallFlags ++ lib.optional isProductionPlatform "--no-force";
-  source = workspace.sources.sourceFor application.workspaceName;
+  source = workspace.sources.sourceForPackages [
+    application.workspaceName
+    "@stu/console"
+  ];
   prepareProductionWorkspace = ''
     cp pnpm-lock.web.yaml pnpm-lock.yaml
     cp nix/web-pnpmfile.cjs .pnpmfile.cjs
     yq -y -i \
-      '.packages = ["apps/web", "packages/core", "packages/observability", "packages/server"]
+      '.packages = ["apps/console", "apps/web", "packages/core", "packages/observability", "packages/server"]
        | .autoInstallPeers = false
        | .resolvePeersFromWorkspaceRoot = false' \
       pnpm-workspace.yaml
@@ -41,7 +45,7 @@ let
   # after running `just web-lock` for relevant workspace manifest or primary lock changes.
   pnpmDependencyHash =
     if isProductionPlatform then
-      "sha256-GVIV2svQsyHPAX+48S5Ny6b/m+wwTUglBJonFXgVFks="
+      "sha256-o1GaA8witSmoraKlwoirZwtFF2t8gJwho7QAZ08u87U="
     else
       # Nixpkgs' forced fetch is platform-independent; keep it for supported development systems.
       "sha256-6PaVJIdZn4NTtFVrN/CFtrLXT5msU7amWKSus01gBmc=";
@@ -58,7 +62,7 @@ let
     # in the content-addressed store exported by fetchPnpmDeps. Populate it explicitly while this
     # fixed-output derivation still has network access so the application build remains offline.
     postInstall = ''
-      pnpm store add https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.1.tgz
+      pnpm store add https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.2.tgz
     '';
     fetcherVersion = 4;
     hash = pnpmDependencyHash;
@@ -111,6 +115,12 @@ let
         --platform=node \
         --banner:js='import { createRequire } from "node:module"; const require = createRequire(import.meta.url);' \
         --outfile=${application.relativePath}/.output/server/migrate.mjs
+      esbuild apps/console/src/index.ts \
+        --bundle \
+        --format=esm \
+        --platform=node \
+        --banner:js='import { createRequire } from "node:module"; const require = createRequire(import.meta.url);' \
+        --outfile=${application.relativePath}/.output/server/console.mjs
       rm ${application.relativePath}/.output/server/instrument.server.mjs
       runHook postBuild
     '';
@@ -180,6 +190,12 @@ let
       BETTER_AUTH_SECRET="$(<"$better_auth_secret_file")"
       export BETTER_AUTH_SECRET
 
+      STUDIENBUCH_SMTP_URL_FILE="$(project-context secret-file smtpUrl --required)"
+      export STUDIENBUCH_SMTP_URL_FILE
+      STUDIENBUCH_EMAIL_FROM="$(project-context parameter authEmailFrom)"
+      STUDIENBUCH_PASSKEY_RP_ID="$(project-context parameter passkeyRpId)"
+      export STUDIENBUCH_EMAIL_FROM STUDIENBUCH_PASSKEY_RP_ID
+
       DATABASE_URL="$(project-context parameter databaseUrl)"
       export DATABASE_URL
       # STUDIENBUCH_SENTRY_DSN is read from the deployment environment and inherited by the server
@@ -203,6 +219,21 @@ let
       exec node ${webApplication}/${applicationPath}/.output/server/migrate.mjs
     '';
   };
+
+  consoleApplication = pkgs.writeShellApplication {
+    name = "studienbuch-console";
+    runtimeInputs = [
+      nodejs
+      pkgs.jq
+    ];
+    text = ''
+      runtime_file="''${PROJECT_RUNTIME_FILE:-/var/lib/app-deployments/studienbuch/project-runtime.json}"
+      DATABASE_URL="$(jq --exit-status --raw-output '.parameters.databaseUrl' "$runtime_file")"
+      export DATABASE_URL
+
+      exec node ${webApplication}/${applicationPath}/.output/server/console.mjs "$@"
+    '';
+  };
 in
 {
   development.action = developmentAction;
@@ -210,5 +241,6 @@ in
     action = releaseAction;
     migrationAction = migrationAction;
     payload = webApplication;
+    console = consoleApplication;
   };
 }

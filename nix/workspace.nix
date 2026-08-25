@@ -34,6 +34,10 @@ let
     let
       inherit (workspaceSources) dependencySource;
       webSource = workspaceSources.sourceFor "@stu/web";
+      webReleaseSource = workspaceSources.sourceForPackages [
+        "@stu/web"
+        "@stu/console"
+      ];
       mobileSource = workspaceSources.sourceFor "@stu/mobile";
     in
     pkgs.runCommand "studienbuch-workspace-source-check" { } ''
@@ -55,6 +59,11 @@ let
       # @stu/server depends on @stu/core, so the production source must contain the core package.
       test -d ${webSource}/packages/core/src
       test -d ${webSource}/packages/observability/src
+
+      test -f ${webReleaseSource}/apps/web/package.json
+      test -f ${webReleaseSource}/apps/console/package.json
+      test -d ${webReleaseSource}/apps/console/src
+      test -d ${webReleaseSource}/packages/server/src
 
       test -f ${mobileSource}/apps/mobile/package.json
       test -f ${mobileSource}/packages/core/package.json
@@ -113,7 +122,7 @@ in
   checks.workspaceSource = sourceCheck;
   preparation.action = prepareAction;
   sources = {
-    inherit (workspaceSources) dependencySource sourceFor;
+    inherit (workspaceSources) dependencySource sourceFor sourceForPackages;
   };
   toolchain = { inherit nodejs pnpm; };
 }

@@ -11,6 +11,11 @@ Regular users authenticate with a verified email address and password. They may 
 signing in. Platform operators use passkeys only. The console creates an operator account and a
 short-lived setup token; it never creates an operator password.
 
+Production uses `studienbuch.app` as its WebAuthn relying-party ID. A passkey registered on
+`beta.studienbuch.app` therefore remains usable if the application later moves to another
+`studienbuch.app` origin. Development derives its own relying-party ID from its URL and stays
+cryptographically separate.
+
 Public registration is closed. A regular user starts with an unassigned, one-time school access
 code. The code names only a school and an access kind, currently `Student` or `Teacher`. It does not
 name a person, email address, class, or cohort. An administrator can print a batch and let the school
@@ -68,6 +73,8 @@ receive a code-to-account or code-to-email mapping.
 - Require WebAuthn user verification for passkey registration and authentication.
 - Never automatically link accounts that happen to use the same email address at different identity
   providers.
+- Read production SMTP credentials from a root-managed credential file, never from a checked-in
+  environment file or build input.
 - Record operator grants independently of school access.
 - Revoke school access without deleting the global account or its other notebooks.
 

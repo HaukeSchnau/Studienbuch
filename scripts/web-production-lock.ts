@@ -20,6 +20,7 @@ import { parse as parseYaml } from "yaml";
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const productionLockfile = join(repositoryRoot, "pnpm-lock.web.yaml");
 const workspacePackages = [
+  "apps/console",
   "apps/web",
   "packages/core",
   "packages/observability",
@@ -205,6 +206,30 @@ const findSpecifierLine = (
   return specifierLine < 0 ? undefined : specifierLine;
 };
 
+const packageKeyFromLine = (line: string): string | undefined => {
+  const match = /^  (.+):$/.exec(line);
+  if (match?.[1] === undefined) return undefined;
+  const key = match[1];
+  return key.startsWith("'") && key.endsWith("'") ? key.slice(1, -1) : key;
+};
+const findPackageResolutionLine = (
+  lines: ReadonlyArray<string>,
+  packageKey: string,
+): number | undefined => {
+  const packageStart = lines.findIndex((line) => packageKeyFromLine(line) === packageKey);
+  if (packageStart < 0) return undefined;
+  const packageEnd = lines.findIndex(
+    (line, index) => index > packageStart && packageKeyFromLine(line) !== undefined,
+  );
+  const resolutionLine = lines.findIndex(
+    (line, index) =>
+      index > packageStart &&
+      (packageEnd < 0 || index < packageEnd) &&
+      line.startsWith("    resolution:"),
+  );
+  return resolutionLine < 0 ? undefined : resolutionLine;
+};
+
 if (mode === "--write") {
   const primaryLines = readFileSync(primaryLockPath, "utf8").split("\n");
   const productionLines = readFileSync(join(temporaryRoot, "pnpm-lock.yaml"), "utf8").split("\n");
@@ -226,6 +251,23 @@ if (mode === "--write") {
           productionLines[productionLine] = primarySpecifier;
         }
       }
+    }
+  }
+
+  // pnpm can omit integrity when it regenerates a direct-tarball package in the isolated
+  // workspace. Preserve the primary lock's verified resolution instead of producing a Release
+  // lock that the offline Nix install must reject.
+  for (const packageKey of Object.keys(primaryLock.packages)) {
+    const primaryLine = findPackageResolutionLine(primaryLines, packageKey);
+    const productionLine = findPackageResolutionLine(productionLines, packageKey);
+    if (primaryLine === undefined || productionLine === undefined) continue;
+    const primaryResolution = primaryLines[primaryLine];
+    const productionResolution = productionLines[productionLine];
+    if (
+      primaryResolution?.includes("integrity:") === true &&
+      productionResolution?.includes("integrity:") === false
+    ) {
+      productionLines[productionLine] = primaryResolution;
     }
   }
   writeFileSync(join(temporaryRoot, "pnpm-lock.yaml"), productionLines.join("\n"));

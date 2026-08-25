@@ -202,4 +202,18 @@ assert
       packageDirectories = map (packageName: packagesByName.${packageName}.relativePath) closure;
       additionalRootFiles = additionalDependencyFiles ++ additionalPackageFiles;
     };
+
+  sourceForPackages =
+    packageNames:
+    let
+      closure = lib.unique (lib.concatMap packageClosure packageNames);
+      sourceName = lib.concatStringsSep "-" (
+        map (lib.replaceStrings [ "@" "/" ] [ "" "-" ]) packageNames
+      );
+    in
+    mkSource {
+      name = "${name}-${sourceName}-source";
+      packageDirectories = map (packageName: packagesByName.${packageName}.relativePath) closure;
+      additionalRootFiles = additionalDependencyFiles ++ additionalPackageFiles;
+    };
 }

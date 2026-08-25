@@ -30,6 +30,12 @@ export const processors = [
     purpose: "Empfang technischer Fehlerberichte",
     location: "EU-Region (de.sentry.io), Rechenzentren in der Europäischen Union",
   },
+  {
+    name: "Scaleway SAS",
+    address: "8 rue de la Ville-l’Évêque, 75008 Paris, Frankreich",
+    purpose: "Versand von Bestätigungs- und Wiederherstellungs-E-Mails",
+    location: "Frankreich (Europäische Union)",
+  },
 ] as const;
 
 /** The competent supervisory authority, determined by the company's seat. */
