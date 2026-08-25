@@ -50,8 +50,10 @@ jobs:
       # The host runner has a persistent pnpm content-addressable store, but a disposable checkout
       # still spent about 20 seconds cloning 1,535 packages into node_modules. Keep one ordinary
       # pnpm workspace per runner architecture instead. rsync replaces all source with the exact
-      # checkout while protecting node_modules; frozen pnpm then repairs and prunes that tree before
-      # QA. The lock covers the whole operation so concurrent refs cannot observe each other's tree.
+      # checkout while protecting node_modules. A fingerprint of every dependency input and the
+      # Node/pnpm toolchain skips pnpm only when the installed tree is known to match; changed inputs
+      # still get a frozen install. The lock covers the whole operation so concurrent refs cannot
+      # observe each other's tree.
       - name: Install dependencies and run QA
         run: |
           set -euo pipefail
@@ -68,7 +70,31 @@ jobs:
               "$source_workspace/" "$qa_workspace/"
             cd "$qa_workspace"
             export PATH="$PWD/node_modules/.bin:$PATH"
-            pnpm install --frozen-lockfile
+            install_fingerprint="$(
+              {
+                printf 'node=%s\npnpm=%s\n' "$(node --version)" "$(pnpm --version)"
+                find . \
+                  \( -path './.git' -o -path './node_modules' \) -prune -o \
+                  -type f \
+                  \( -name package.json \
+                    -o -name pnpm-lock.yaml \
+                    -o -name pnpm-workspace.yaml \
+                    -o -name .npmrc \
+                    -o -name .pnpmfile.cjs \
+                    -o -name pnpmfile.cjs \
+                    -o -path './patches/*' \
+                  \) -print0 \
+                  | sort -z \
+                  | xargs -0 sha256sum
+              } | sha256sum | cut -d' ' -f1
+            )"
+            install_stamp="$cache_root/install-$install_fingerprint"
+            if [ ! -f "$install_stamp" ] || [ ! -f node_modules/.modules.yaml ]; then
+              pnpm install --frozen-lockfile
+              touch "$install_stamp"
+            else
+              echo "Dependencies match the persistent install ($install_fingerprint)"
+            fi
             just qa
           BASH
 
