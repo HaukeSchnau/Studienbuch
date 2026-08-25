@@ -1,13 +1,10 @@
 import { EnquiryStore } from "@stu/server";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
-import { exitFailureResponse, jsonResponse } from "#/infra/http/response.server.ts";
+import { exitFailureResponse, jsonResponse, readJsonBody } from "#/infra/http/response.server.ts";
 import { runRouteEffect } from "#/infra/runtime/request.server.ts";
 
 export const enquiryRoute = "/api/enquiry";
-
-/** Comfortably above a long message and far below anything worth storing. */
-const maximumBodyBytes = 16 * 1_024;
 
 /**
  * The shortest time a person plausibly needs to fill in four fields. Scripts post instantly.
@@ -16,23 +13,6 @@ const maximumBodyBytes = 16 * 1_024;
  * filter for unsophisticated bots, and it costs an honest visitor nothing.
  */
 const minimumFillMillis = 3_000;
-
-/** Returns the parsed JSON body, or `undefined` if it is the wrong type, too large or malformed. */
-async function readBody(request: Request): Promise<unknown> {
-  const contentType = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
-  if (contentType !== "application/json") {
-    return undefined;
-  }
-  const raw = await request.text();
-  if (raw.length > maximumBodyBytes) {
-    return undefined;
-  }
-  try {
-    return JSON.parse(raw) as unknown;
-  } catch {
-    return undefined;
-  }
-}
 
 /**
  * Accepts a school's enquiry.
@@ -50,7 +30,7 @@ async function readBody(request: Request): Promise<unknown> {
  */
 export function handleEnquiry(request: Request): Promise<Response> {
   return (async () => {
-    const body = await readBody(request);
+    const body = await readJsonBody(request);
 
     const decoded = EnquiryStore.decodeEnquirySubmission(body);
     if (Exit.isFailure(decoded)) {

@@ -104,6 +104,13 @@ export const SiteHeader = () => {
           </span>
           <Underline className="nav-underline -bottom-1.5" />
         </a>
+        <a className={linkClass} href="/anmelden">
+          <span className="nav-label">Anmelden</span>
+          <span aria-hidden className="nav-sizer">
+            Anmelden
+          </span>
+          <Underline className="nav-underline -bottom-1.5" />
+        </a>
       </nav>
     </header>
   );

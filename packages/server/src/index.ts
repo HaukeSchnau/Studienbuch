@@ -1,4 +1,6 @@
 export { Auth } from "./auth/better-auth.ts";
+export { Operator } from "./access/operator.ts";
+export { SchoolAccess } from "./access/school-access.ts";
 export { Database } from "./database/client.ts";
 export { EnquiryNotifier } from "./enquiry/enquiry-notifier.ts";
 export { EnquiryStore } from "./enquiry/enquiry-store.ts";

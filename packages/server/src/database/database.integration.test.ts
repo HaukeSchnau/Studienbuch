@@ -7,6 +7,9 @@ import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import * as Redacted from "effect/Redacted";
 import { Auth } from "../auth/better-auth.ts";
+import { Operator } from "../access/operator.ts";
+import { SchoolAccess } from "../access/school-access.ts";
+import { schoolAccessCodes } from "../access/schema.ts";
 import { Database } from "./client.ts";
 import { migrateToLatest } from "./migrate.ts";
 import { migrationsSchema, migrationsTable } from "./migration-history.ts";
@@ -1031,10 +1034,21 @@ it.live.runIf(hasContainerRuntime)(
     Effect.gen(function* () {
       const auth = yield* Auth.Service;
       const database = yield* Database.Service;
+      const operator = yield* Operator.bootstrap("Test operator");
+      const [code] = yield* SchoolAccess.generateCodes({
+        schoolId: "auth-test-school",
+        schoolName: "Auth Test School",
+        kind: "Student",
+        count: 1,
+        createdByUserId: operator.userId,
+      });
+      if (code === undefined) return yield* Effect.die("Access-code generation returned no code");
+      const reservation = yield* SchoolAccess.reserve(code);
 
       const result = yield* Effect.promise(() =>
         auth.api.signUpEmail({
           body: { email: "ada-auth@example.test", password: "correct-horse-battery", name: "Ada" },
+          headers: new Headers({ "x-studienbuch-registration": reservation.token }),
         }),
       );
       expect(result.user.email).toBe("ada-auth@example.test");
@@ -1056,6 +1070,79 @@ it.live.runIf(hasContainerRuntime)(
         database.pool.query(`select "expiresAt" from sessions`),
       );
       expect(sessions.rowCount).toBeGreaterThanOrEqual(0);
-    }).pipe(Effect.provide(Layer.provideMerge(Auth.layer(), migrated))),
+    }).pipe(
+      Effect.provide(
+        Layer.provideMerge(
+          Auth.layer({ emailVerification: { sendVerificationEmail: async () => undefined } }),
+          migrated,
+        ),
+      ),
+    ),
+  { timeout: 60_000 },
+);
+
+it.live.runIf(hasContainerRuntime)(
+  "reserves an unassigned code once and redeems it only for a verified account",
+  () =>
+    Effect.gen(function* () {
+      const database = yield* Database.Service;
+      const operator = yield* Operator.bootstrap("Enrollment operator");
+      const [code] = yield* SchoolAccess.generateCodes({
+        schoolId: "enrollment-test-school",
+        schoolName: "Enrollment Test School",
+        kind: "Student",
+        count: 1,
+        createdByUserId: operator.userId,
+      });
+      if (code === undefined) return yield* Effect.die("Access-code generation returned no code");
+      expect(code).toMatch(/^[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/);
+
+      const reservation = yield* SchoolAccess.reserve(code.toLowerCase());
+      const secondReservation = yield* Effect.flip(SchoolAccess.reserve(code));
+      expect(secondReservation._tag).toBe("SchoolAccess.CodeUnavailable");
+
+      const [user] = yield* database.drizzle
+        .insert(users)
+        .values({ name: "Student", email: "student-access@example.test" })
+        .returning({ id: users.id });
+      if (user === undefined) return yield* Effect.die("User insert returned no row");
+
+      const unverified = yield* Effect.flip(
+        SchoolAccess.completeReservation(user.id, reservation.token),
+      );
+      expect(unverified._tag).toBe("SchoolAccess.EmailNotVerified");
+      yield* database.drizzle
+        .update(users)
+        .set({ emailVerified: true })
+        .where(eq(users.id, user.id));
+      const access = yield* SchoolAccess.completeReservation(user.id, reservation.token);
+      expect(access).toMatchObject({
+        school: { id: "enrollment-test-school", name: "Enrollment Test School" },
+        kind: "Student",
+      });
+      const retriedAccess = yield* SchoolAccess.completeReservation(user.id, reservation.token);
+      expect(retriedAccess.id).toBe(access.id);
+      expect(
+        yield* Effect.promise(() =>
+          SchoolAccess.registrationTokenIsActive(database.pool, reservation.token),
+        ),
+      ).toBe(false);
+      yield* SchoolAccess.saveProfile(user.id, {
+        schoolAccessId: access.id,
+        displayName: "Alex",
+        cohort: "8",
+        className: "8a",
+      });
+      const listed = yield* SchoolAccess.listForUser(user.id);
+      expect(listed).toMatchObject([
+        { displayName: "Alex", cohort: "8", className: "8a", kind: "Student" },
+      ]);
+
+      const stored = yield* database.drizzle
+        .select({ secretHash: schoolAccessCodes.secretHash })
+        .from(schoolAccessCodes)
+        .where(eq(schoolAccessCodes.schoolId, "enrollment-test-school"));
+      expect(stored.map((row) => row.secretHash)).not.toContain(code);
+    }).pipe(Effect.provide(migrated)),
   { timeout: 60_000 },
 );

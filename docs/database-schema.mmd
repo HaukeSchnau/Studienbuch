@@ -164,6 +164,79 @@ erDiagram
       timestamptz createdAt
       timestamptz updatedAt
     }
+    notebook_profiles {
+      uuid schoolAccessId PK,FK
+      text displayName
+      text cohort
+      text className
+      timestamptz createdAt
+      timestamptz updatedAt
+    }
+    notebook_profiles |o--|| school_accesses : notebook_profiles_schoolAccessId_school_accesses_id_fkey
+    operator_grants {
+      uuid userId PK,FK
+      timestamptz revokedAt
+      timestamptz createdAt
+    }
+    operator_grants |o--|| users : operator_grants_userId_users_id_fkey
+    operator_setup_tokens {
+      uuid id PK
+      uuid userId FK
+      text tokenHash
+      timestamptz expiresAt
+      timestamptz usedAt
+      timestamptz createdAt
+    }
+    operator_setup_tokens }o--|| users : operator_setup_tokens_userId_users_id_fkey
+    passkey {
+      uuid id PK
+      text name
+      text publicKey
+      uuid userId FK
+      text credentialID
+      integer counter
+      text deviceType
+      boolean backedUp
+      text transports
+      timestamptz createdAt
+      text aaguid
+    }
+    passkey }o--|| users : passkey_userId_users_id_fkey
+    school_access_codes {
+      uuid id PK
+      text schoolId FK
+      text kind
+      text secretHash
+      uuid createdByUserId FK
+      timestamptz expiresAt
+      timestamptz revokedAt
+      timestamptz createdAt
+      timestamptz updatedAt
+    }
+    school_access_codes }o--|| users : school_access_codes_createdByUserId_users_id_fkey
+    school_access_codes }o--|| schools : school_access_codes_schoolId_schools_id_fkey
+    school_access_reservations {
+      uuid id PK
+      uuid accessCodeId FK
+      text tokenHash
+      timestamptz expiresAt
+      timestamptz createdAt
+      timestamptz updatedAt
+    }
+    school_access_reservations |o--|| school_access_codes : school_access_reservations_2cU8fbpxvoUd_fkey
+    school_accesses {
+      uuid id PK
+      uuid userId FK
+      text schoolId FK
+      text kind
+      uuid sourceCodeId FK
+      timestamptz revokedAt
+      timestamptz createdAt
+      timestamptz updatedAt
+    }
+    school_accesses }o--|| schools : school_accesses_schoolId_schools_id_fkey
+    school_accesses |o--|| school_access_codes : school_accesses_sourceCodeId_school_access_codes_id_fkey
+    school_accesses }o--|| users : school_accesses_userId_users_id_fkey
     school_enquiries {
       uuid id PK
       text schoolName
@@ -172,6 +245,12 @@ erDiagram
       text message
       timestamptz receivedAt
       timestamptz notifiedAt
+    }
+    schools {
+      text id PK
+      text name
+      timestamptz createdAt
+      timestamptz updatedAt
     }
     sessions {
       uuid id PK

@@ -1,6 +1,11 @@
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import { Command } from "effect/unstable/cli";
 import { observabilityCommand } from "./commands/observability.ts";
+import {
+  accessCodesCommand,
+  operatorBootstrapCommand,
+  operatorRecoverCommand,
+} from "./commands/auth.ts";
 import { pullCommand } from "./commands/pull.ts";
 import {
   webUntisCourseIdentityAuditCommand,
@@ -13,6 +18,9 @@ import { withConsoleRuntime } from "./runtime.ts";
 export const consoleCommand = Command.make("console").pipe(
   Command.withSubcommands([
     pullCommand,
+    operatorBootstrapCommand,
+    operatorRecoverCommand,
+    accessCodesCommand,
     observabilityCommand,
     webUntisDirectoryCommand,
     webUntisTimetableCommand,

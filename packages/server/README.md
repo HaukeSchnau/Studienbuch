@@ -39,6 +39,17 @@ Applications supply their own plugins and trusted origins. `tanstackStartCookies
 concern and `expo()` a mobile one, and neither belongs in a package that only knows about the
 database.
 
+School signup is closed by default. A platform operator created through the console generates
+unassigned, one-time access codes for one school and either the student or teacher role. A regular
+account must reserve a code, verify its email address, and redeem that reservation before it gets a
+school-scoped notebook profile. The account, the self-authored school profile, and imported
+directory identities remain separate. See
+[`docs/authentication.md`](../../docs/authentication.md) for the full contract.
+
+Operator accounts have no password. `operator-bootstrap` creates the first grant and a short-lived
+URL for registering a passkey; `operator-recover` creates another setup URL for an existing operator
+when recovery is needed. The console is the trusted recovery boundary.
+
 There is deliberately no generic repository, domain projection schema, sync protocol, or domain
 event log yet. The import store records what a provider said without pretending that every
 WebUntis activity is already a Studienbuch subject or course. Its source changes are an ingestion

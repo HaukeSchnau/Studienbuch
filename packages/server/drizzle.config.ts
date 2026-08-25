@@ -11,6 +11,7 @@ if (databaseUrl === undefined || databaseUrl.trim() === "") {
 export default defineConfig({
   dialect: "postgresql",
   schema: [
+    "./src/access/schema.ts",
     "./src/auth/schema.ts",
     "./src/enquiry/schema.ts",
     "./src/importing/schema.ts",
