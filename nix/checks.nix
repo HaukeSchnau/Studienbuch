@@ -233,34 +233,48 @@ let
             done
             touch "$out"
           '';
+      releaseChecks = {
+        projectDescriptor = pkgs.runCommand "studienbuch-project-descriptor-check" { } ''
+          ${pkgs.jq}/bin/jq -e '
+            .schemaVersion == 2 and
+            .project == "studienbuch" and
+            (.development.endpoints | keys) == ["database", "mobile", "web"] and
+            (.development.workloads | keys) == ["database", "migrate", "mobile", "web"] and
+            .development.workloads.migrate.kind == "task" and
+            .development.workloads.migrate.dependsOn == ["database"] and
+            .development.workloads.web.dependsOn == ["migrate"] and
+            .development.workloads.web.secrets == ["betterAuthSecret"] and
+            (.development.workloads.mobile.secrets // []) == [] and
+            (.parameters | keys) == ["databaseUrl"] and
+            .release.action == "web" and
+            .release.preDeployTasks == {migrate: {timeoutSec: 300}} and
+            .release.health.paths == ["/api/health/live", "/api/health/ready"] and
+            .release.health.startupTimeoutSec == 60 and
+            .release.health.intervalSec == 2 and
+            .release.health.requestTimeoutSec == 2
+          ' ${descriptorPath} >/dev/null
+          cmp ${descriptorPath} ${releasePackage}/share/project/descriptor.json
+          touch "$out"
+        '';
+        releaseInterface = projectRelease.checks.interface;
+        releaseClosure = releaseClosureCheck;
+        inherit releasePackage releaseSmoke;
+        inherit webApplication;
+      };
     in
-    {
-      projectDescriptor = pkgs.runCommand "studienbuch-project-descriptor-check" { } ''
-        ${pkgs.jq}/bin/jq -e '
-          .schemaVersion == 2 and
-          .project == "studienbuch" and
-          (.development.endpoints | keys) == ["database", "mobile", "web"] and
-          (.development.workloads | keys) == ["database", "migrate", "mobile", "web"] and
-          .development.workloads.migrate.kind == "task" and
-          .development.workloads.migrate.dependsOn == ["database"] and
-          .development.workloads.web.dependsOn == ["migrate"] and
-          .development.workloads.web.secrets == ["betterAuthSecret"] and
-          (.development.workloads.mobile.secrets // []) == [] and
-          (.parameters | keys) == ["databaseUrl"] and
-          .release.action == "web" and
-          .release.preDeployTasks == {migrate: {timeoutSec: 300}} and
-          .release.health.paths == ["/api/health/live", "/api/health/ready"] and
-          .release.health.startupTimeoutSec == 60 and
-          .release.health.intervalSec == 2 and
-          .release.health.requestTimeoutSec == 2
-        ' ${descriptorPath} >/dev/null
-        cmp ${descriptorPath} ${releasePackage}/share/project/descriptor.json
-        touch "$out"
-      '';
-      releaseInterface = projectRelease.checks.interface;
-      releaseClosure = releaseClosureCheck;
-      inherit releasePackage releaseSmoke;
-      inherit webApplication;
+    releaseChecks
+    // {
+      projectReleaseGate =
+        pkgs.runCommand "studienbuch-project-release-gate"
+          {
+            releaseChecks = builtins.attrValues releaseChecks;
+          }
+          ''
+            for check in $releaseChecks; do
+              test -e "$check"
+            done
+            touch "$out"
+          '';
     };
 in
 {
