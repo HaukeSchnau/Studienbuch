@@ -21,12 +21,15 @@ import { EdgeBlob } from "./decor.tsx";
 export const Hero = () => (
   <section className="relative isolate overflow-x-clip">
     <EdgeBlob
-      className="top-1/3 h-[15rem] w-[7rem] sm:h-[34rem] sm:w-[22rem]"
+      className="top-[26%] h-[16rem] w-[9rem] sm:h-[40rem] sm:w-[23rem]"
+      silhouette="lobe"
       side="left"
       tone="green"
     />
     <EdgeBlob
-      className="top-0 h-[19rem] w-[8rem] sm:h-[44rem] sm:w-[26rem]"
+      className="top-0 h-[19rem] w-[15rem] sm:h-[42rem] sm:w-[32rem]"
+      flip
+      silhouette="crest"
       side="right"
       tone="blue"
     />
