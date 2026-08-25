@@ -12,7 +12,10 @@ export const Underline = ({ className }: { className?: string }) => (
     // Offsets are in `em` so the stroke keeps the same relationship to the baseline at every
     // headline size. Anchoring to the element box instead would drop it into the line's descender
     // space, where it reads as a horizontal rule rather than a mark over the word.
-    className={cn("absolute inset-x-0 bottom-[0.22em] h-[0.16em] w-full", className)}
+    className={cn(
+      "enter-underline absolute inset-x-0 bottom-[0.22em] h-[0.16em] w-full",
+      className,
+    )}
     preserveAspectRatio="none"
     viewBox="0 0 300 12"
     xmlns="http://www.w3.org/2000/svg"

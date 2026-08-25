@@ -57,6 +57,8 @@ export const Capabilities = () => (
         blob would sit behind body text instead of in the margin. */}
     <EdgeBlob
       blob="kidney"
+      duration={24}
+      offset={0.6}
       className="-right-52 top-36 hidden size-[24rem] min-[1440px]:block"
       rotate={-18}
       tone="green"
@@ -68,7 +70,7 @@ export const Capabilities = () => (
         title="Der Schulalltag, auf einem Blick"
       />
 
-      <ul className="grid gap-6 sm:grid-cols-2">
+      <ul className="stagger grid gap-6 sm:grid-cols-2">
         {capabilities.map(({ body, preview, tint, title }) => (
           <li key={title}>
             <article
