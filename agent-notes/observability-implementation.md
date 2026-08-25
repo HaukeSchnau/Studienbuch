@@ -1,6 +1,6 @@
 # Observability implementation
 
-Updated: 2026-08-12
+Updated: 2026-08-26
 
 ## Goal
 
@@ -62,6 +62,12 @@ Only the root integration agent performs Jujutsu operations and production deplo
 - The public-client relay rejected missing and cross-origin requests with `403`, rejected a body above 64 KiB with `413`, and accepted a valid same-origin allowlisted batch with `202`. Its canary log and `studienbuch_client_canary_total` metric reached storage with server-owned production resource identity.
 - A controlled systemd restart stopped the Effect runtime cleanly, restored readiness, and delivered post-restart trace `40d1446e0e610552a2fc4c2c015004b8`. Collector queues drained to zero, refusal counters remained zero, and `just verify-host srv-2` passed.
 - Native mobile document persistence still requires signed-device testing, and first-party mobile sending remains disabled pending a short-lived user authority.
+
+## Privacy follow-up: 2026-08-26
+
+- A production audit found that the enquiry notification log annotated its opaque row id together with the submitter's school, name, and email address. The collector's generic redaction list did not recognize those application-specific keys.
+- The notifier now emits only `enquiry_id`; contact details remain authoritative in the stored row. A logger-level regression test sends sentinel personal data through the real Effect formatter and proves it is absent from the telemetry record.
+- The fleet collector also deletes the three legacy enquiry attribute names as defense in depth. New application telemetry fields still need an explicit privacy review at their producer boundary.
 
 ## Known risks and mitigations
 

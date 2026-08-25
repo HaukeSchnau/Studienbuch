@@ -27,14 +27,11 @@ export class EnquiryNotifier extends Context.Service<EnquiryNotifier>()(
   {
     make: Effect.succeed({
       announce: (enquiry: EnquiryAnnouncement) =>
-        // The message body is deliberately absent: it is free text from a stranger, and operational
-        // logs are the wrong place for it. Everything needed to find the row is here.
+        // The stored row is the authority for contact details. Operational telemetry only carries
+        // the opaque id needed to find it, never names, schools, email addresses, or message text.
         Effect.logWarning("School enquiry received").pipe(
           Effect.annotateLogs({
             enquiry_id: enquiry.id,
-            enquiry_school: enquiry.schoolName,
-            enquiry_contact: enquiry.contactName,
-            enquiry_email: enquiry.email,
           }),
         ),
     }),
