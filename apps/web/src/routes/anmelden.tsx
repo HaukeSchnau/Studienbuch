@@ -3,11 +3,14 @@ import * as Schema from "effect/Schema";
 import { useState } from "react";
 import {
   AuthError,
+  AuthHeading,
   AuthNote,
   authNoteLinkClass,
   AuthShell,
   Field,
   invalidWhen,
+  submitState,
+  Working,
 } from "#/features/auth/auth-shell.tsx";
 import { betterAuthMessage } from "#/features/auth/messages.ts";
 import { authClient } from "#/infra/auth/client.ts";
@@ -75,7 +78,7 @@ function SignInPage() {
 
   return (
     <AuthShell>
-      <h1 className="text-center text-3xl text-primary-text">Anmelden</h1>
+      <AuthHeading>Anmelden</AuthHeading>
       <form className="mt-7 grid gap-4" onSubmit={submit}>
         <Field label="E-Mail-Adresse">
           <Input
@@ -99,18 +102,17 @@ function SignInPage() {
         </Field>
         {error === undefined ? null : <AuthError>{error}</AuthError>}
         <Button
-          aria-busy={busy}
-          disabled={busy}
           radius="pill"
           size="xl"
           type="submit"
           variant="brand"
+          {...submitState({ busy, error })}
         >
-          {busy ? "Anmeldung läuft ..." : "Anmelden"}
+          {busy ? <Working>Anmeldung läuft ...</Working> : "Anmelden"}
         </Button>
       </form>
       <Link
-        className="mt-4 block text-center text-sm font-semibold text-accent hover:underline"
+        className="press mt-4 block text-center text-sm font-semibold text-accent hover:underline"
         to="/passwort-vergessen"
       >
         Passwort vergessen?

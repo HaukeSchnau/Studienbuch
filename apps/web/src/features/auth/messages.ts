@@ -1,5 +1,5 @@
 import type { ApiFailure } from "./access.ts";
-import { accessErrorCodes, type AccessErrorCode } from "./access-contract.ts";
+import { accessErrorCodes, type AccessErrorCode } from "./access.ts";
 
 /**
  * German for every reason a request can be refused, in one place.

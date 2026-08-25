@@ -1,21 +1,32 @@
-import * as Exit from "effect/Exit";
+import { AccessApi } from "@stu/api";
+import { Organization } from "@stu/core";
+import * as Effect from "effect/Effect";
+import * as Either from "effect/Either";
+import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
-import {
-  AccountView as AccountViewSchema,
-  ProfileSaved,
-  ReservationCreated,
-  ReservationView as ReservationViewSchema,
-  SchoolAccessCreated,
-  accessErrorCodes,
-  accessRoutes,
-  decodeAccessFailure,
-  type AccessErrorCode,
-  type SchoolAccessView as SchoolAccessViewSchema,
-} from "./access-contract.ts";
+import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
+import { AtomRpc } from "effect/unstable/reactivity";
+import { RpcClient, RpcSerialization } from "effect/unstable/rpc";
 
-export type ReservationView = typeof ReservationViewSchema.Type;
-export type SchoolAccessView = typeof SchoolAccessViewSchema.Type;
-export type AccountView = typeof AccountViewSchema.Type;
+export type ReservationView = AccessApi.ReservationView;
+export type SchoolAccessView = AccessApi.SchoolAccessView;
+export type AccountView = AccessApi.AccountView;
+
+export const accessErrorCodes = {
+  codeUnavailable: "code_unavailable",
+  reservationUnavailable: "reservation_unavailable",
+  emailVerificationRequired: "email_verification_required",
+  accessAlreadyExists: "access_already_exists",
+  profileUnavailable: "profile_unavailable",
+  invalidRequest: "invalid_request",
+  invalidOrigin: "invalid_origin",
+  authenticationRequired: "authentication_required",
+  rateLimited: "rate_limited",
+  requestCancelled: "request_cancelled",
+  internalError: "internal_error",
+} as const;
+
+export type AccessErrorCode = (typeof accessErrorCodes)[keyof typeof accessErrorCodes];
 
 export interface ApiFailure {
   readonly _tag: "ApiFailure";
@@ -27,92 +38,94 @@ export type ApiResult<Value> =
   | { readonly ok: true; readonly value: Value }
   | { readonly ok: false; readonly error: ApiFailure };
 
-type JsonInput =
-  | string
-  | number
-  | boolean
-  | null
-  | ReadonlyArray<JsonInput>
-  | {
-      readonly [key: string]: JsonInput | undefined;
-    };
+const failureCodes = {
+  "SchoolAccess.CodeUnavailable": accessErrorCodes.codeUnavailable,
+  "SchoolAccess.ReservationUnavailable": accessErrorCodes.reservationUnavailable,
+  "SchoolAccess.EmailNotVerified": accessErrorCodes.emailVerificationRequired,
+  "SchoolAccess.AccessAlreadyExists": accessErrorCodes.accessAlreadyExists,
+  "SchoolAccess.ProfileUnavailable": accessErrorCodes.profileUnavailable,
+  "AccessApi.InvalidOrigin": accessErrorCodes.invalidOrigin,
+  "AccessApi.AuthenticationRequired": accessErrorCodes.authenticationRequired,
+  "AccessApi.RateLimited": accessErrorCodes.rateLimited,
+} satisfies Readonly<Record<string, AccessErrorCode>>;
 
-const failed = (code: AccessErrorCode, status: number) => ({
-  ok: false as const,
-  error: { _tag: "ApiFailure" as const, code, status },
+const failed = (code: AccessErrorCode, status = 0): ApiResult<never> => ({
+  ok: false,
+  error: { _tag: "ApiFailure", code, status },
 });
 
-/**
- * One of the access routes, as a result rather than as an exception.
- *
- * Nothing here throws. A route that is down answers with an HTML error page from a proxy, and a
- * caller that has to wrap every request in `try` to survive that will eventually forget one — so
- * the network failing, the body not being JSON, and the body not being what was promised all
- * arrive the same way as a refusal the server meant to send.
- */
-const request = async <Response extends Schema.ConstraintDecoder<unknown>>(
-  response: Response,
-  url: string,
-  init?: RequestInit,
-): Promise<ApiResult<Response["Type"]>> => {
-  const headers = new Headers(init?.headers);
-  if (init?.body !== undefined) headers.set("content-type", "application/json");
-  const received = await fetch(url, { credentials: "same-origin", ...init, headers }).catch(
-    () => undefined,
-  );
-  if (received === undefined) return failed(accessErrorCodes.internalError, 0);
+const browserProtocol = RpcClient.layerProtocolHttp({ url: AccessApi.rpcPath }).pipe(
+  // Browser fetch keeps same-origin credentials and propagates the request's Origin header.
+  // Both are consumed by the server middleware rather than repeated in each RPC handler.
+  Layer.provide([FetchHttpClient.layer, RpcSerialization.layerJson]),
+);
 
-  const body: unknown = await received.json().catch(() => undefined);
-  if (!received.ok) {
-    const refusal = decodeAccessFailure(body);
+const makeClient = RpcClient.make(AccessApi.Rpcs);
+type Client = Effect.Effect.Success<typeof makeClient>;
+
+const withClient = <A, E>(use: (client: Client) => Effect.Effect<A, E>) =>
+  Effect.scoped(makeClient.pipe(Effect.flatMap(use), Effect.provide(browserProtocol)));
+
+const run = async <A, E extends { readonly _tag?: string }>(
+  effect: Effect.Effect<A, E>,
+): Promise<ApiResult<A>> => {
+  try {
+    const result = await Effect.runPromise(Effect.either(effect));
+    if (Either.isRight(result)) return { ok: true, value: result.right };
+    const tag = result.left._tag;
     return failed(
-      Exit.isSuccess(refusal) ? refusal.value.error : accessErrorCodes.internalError,
-      received.status,
+      tag === undefined
+        ? accessErrorCodes.internalError
+        : (failureCodes[tag] ?? accessErrorCodes.internalError),
     );
+  } catch {
+    return failed(accessErrorCodes.internalError);
   }
-
-  const decoded = Schema.decodeUnknownExit(response)(body);
-  return Exit.isSuccess(decoded)
-    ? { ok: true, value: decoded.value }
-    : failed(accessErrorCodes.internalError, received.status);
 };
-
-const post = <Response extends Schema.ConstraintDecoder<unknown>>(
-  response: Response,
-  url: string,
-  body: JsonInput,
-) => request(response, url, { method: "POST", body: JSON.stringify(body) });
 
 export const reserveAccess = (code: string) =>
-  post(ReservationCreated, accessRoutes.reserve, { code });
+  run(withClient((client) => client["Access.Reserve"]({ code })));
 
 export const inspectReservation = (token: string) =>
-  post(ReservationViewSchema, accessRoutes.reservation, { token });
+  run(
+    Schema.decodeUnknownEffect(Organization.SchoolAccessReservationToken)(token).pipe(
+      Effect.flatMap((reservationToken) =>
+        withClient((client) => client["Access.InspectReservation"]({ token: reservationToken })),
+      ),
+    ),
+  );
 
 export const completeReservation = (token: string) =>
-  post(SchoolAccessCreated, accessRoutes.complete, { token });
+  run(
+    Schema.decodeUnknownEffect(Organization.SchoolAccessReservationToken)(token).pipe(
+      Effect.flatMap((reservationToken) =>
+        withClient((client) => client["Access.CompleteReservation"]({ token: reservationToken })),
+      ),
+    ),
+  );
 
-/** An optional field the user left blank is absent rather than empty. */
-const trimmedOrAbsent = (value: string) => {
-  const trimmed = value.trim();
-  return trimmed === "" ? undefined : trimmed;
-};
-
-/**
- * Trimming happens here rather than in the schema so that a trailing space is corrected instead of
- * refused: the difference is invisible on screen, so an error about it could not be acted on.
- */
 export const saveProfile = (input: {
   readonly schoolAccessId: string;
   readonly displayName: string;
   readonly cohort: string;
   readonly className: string;
 }) =>
-  post(ProfileSaved, accessRoutes.profile, {
-    schoolAccessId: input.schoolAccessId,
-    displayName: input.displayName.trim(),
-    cohort: trimmedOrAbsent(input.cohort),
-    className: trimmedOrAbsent(input.className),
-  });
+  run(
+    Schema.decodeUnknownEffect(Organization.NotebookProfileInput)({
+      ...input,
+      cohort: input.cohort,
+      className: input.className,
+    }).pipe(
+      Effect.flatMap((profile) => withClient((client) => client["Access.SaveProfile"](profile))),
+    ),
+  );
 
-export const loadAccount = () => request(AccountViewSchema, accessRoutes.me);
+export const AccessAtoms = AtomRpc.Service()("@stu/web/auth/AccessAtoms", {
+  group: AccessApi.Rpcs,
+  protocol: browserProtocol,
+});
+
+export const accountAtom = AccessAtoms.query("Access.GetAccount", undefined, {
+  serializationKey: "current-account",
+  timeToLive: "30 seconds",
+});

@@ -106,7 +106,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ClientObservability config={config} />
-        {children}
+        <RegistryProvider>{children}</RegistryProvider>
         <TanStackDevtools
           config={{
             position: "bottom-right",
@@ -123,3 +123,4 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     </html>
   );
 }
+import { RegistryProvider } from "@effect/atom-react";

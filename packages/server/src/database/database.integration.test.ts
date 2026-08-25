@@ -1,4 +1,5 @@
 import { Importing, Organization } from "@stu/core";
+import * as NodeCrypto from "@effect/platform-node/NodeCrypto";
 import { afterAll, beforeAll, expect, it } from "@effect/vitest";
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from "@testcontainers/postgresql";
 import { and, count, eq } from "drizzle-orm";
@@ -90,8 +91,13 @@ afterAll(async () => {
 /** A migrated database on the shared container, rebuilt per test so pools never leak between them. */
 const migrated = Layer.unwrap(
   Effect.sync(() =>
-    Layer.effectDiscard(migrateToLatest).pipe(
-      Layer.provideMerge(Database.layer({ url: Redacted.make(connectionUri), maxConnections: 2 })),
+    Layer.mergeAll(
+      NodeCrypto.layer,
+      Layer.effectDiscard(migrateToLatest).pipe(
+        Layer.provideMerge(
+          Database.layer({ url: Redacted.make(connectionUri), maxConnections: 2 }),
+        ),
+      ),
     ),
   ),
 );
@@ -1097,31 +1103,17 @@ it.live.runIf(hasContainerRuntime)(
       if (code === undefined) return yield* Effect.die("Access-code generation returned no code");
       const reservation = yield* SchoolAccess.reserve(code);
 
-      // A mistyped address has to be correctable, so the budget is more than one...
-      for (let spent = 0; spent < SchoolAccess.reservationSignupBudget; spent += 1) {
-        expect(
-          yield* Effect.promise(() =>
-            SchoolAccess.registrationSignupAllowed(database.pool, reservation.token),
-          ),
-        ).toBe(true);
-        expect(
-          yield* Effect.promise(() =>
-            SchoolAccess.spendRegistrationSignup(database.pool, reservation.token),
-          ),
-        ).toBe(true);
-      }
+      const claims = yield* Effect.all(
+        Array.from({ length: SchoolAccess.reservationSignupBudget * 4 }, () =>
+          SchoolAccess.claimRegistrationSignup(reservation.token),
+        ),
+        { concurrency: "unbounded" },
+      );
+      expect(claims.filter(Boolean)).toHaveLength(SchoolAccess.reservationSignupBudget);
 
-      // ...and finite, so a leaked code cannot become a source of accounts and verification mail.
-      expect(
-        yield* Effect.promise(() =>
-          SchoolAccess.registrationSignupAllowed(database.pool, reservation.token),
-        ),
-      ).toBe(false);
-      expect(
-        yield* Effect.promise(() =>
-          SchoolAccess.spendRegistrationSignup(database.pool, reservation.token),
-        ),
-      ).toBe(false);
+      expect(yield* SchoolAccess.claimRegistrationSignup(reservation.token)).toBe(false);
+      expect(yield* SchoolAccess.releaseRegistrationSignup(reservation.token)).toBe(true);
+      expect(yield* SchoolAccess.claimRegistrationSignup(reservation.token)).toBe(true);
     }).pipe(Effect.provide(migrated)),
   { timeout: 60_000 },
 );
@@ -1167,11 +1159,7 @@ it.live.runIf(hasContainerRuntime)(
       });
       const retriedAccess = yield* SchoolAccess.completeReservation(user.id, reservation.token);
       expect(retriedAccess.id).toBe(access.id);
-      expect(
-        yield* Effect.promise(() =>
-          SchoolAccess.registrationSignupAllowed(database.pool, reservation.token),
-        ),
-      ).toBe(false);
+      expect(yield* SchoolAccess.claimRegistrationSignup(reservation.token)).toBe(false);
       yield* SchoolAccess.saveProfile(user.id, {
         schoolAccessId: access.id,
         displayName: "Alex",

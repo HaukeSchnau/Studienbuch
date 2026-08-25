@@ -4,11 +4,15 @@ import { useState } from "react";
 import { reserveAccess } from "#/features/auth/access.ts";
 import {
   AuthError,
+  AuthHeading,
   AuthNote,
   authNoteLinkClass,
   AuthShell,
+  AuthTick,
   Field,
   invalidWhen,
+  submitState,
+  Working,
 } from "#/features/auth/auth-shell.tsx";
 import { accessMessage } from "#/features/auth/messages.ts";
 import { Button } from "#/ui/button.tsx";
@@ -48,8 +52,8 @@ function ActivatePage() {
 
   return (
     <AuthShell>
-      <h1 className="text-center text-3xl text-primary-text">Willkommen!</h1>
-      <p className="mt-3 text-center text-ink-soft">
+      <AuthHeading>Willkommen!</AuthHeading>
+      <p className="enter-later mt-4 text-center text-ink-soft">
         Gib den Zugangscode ein, den du von deiner Schule bekommen hast.
       </p>
       <form className="mt-7 grid gap-5" onSubmit={submit}>
@@ -57,35 +61,47 @@ function ActivatePage() {
           hint="Gross- und Kleinschreibung sind egal, die Bindestriche setzen wir selbst."
           label="Zugangscode"
         >
-          <Input
-            autoCapitalize="characters"
-            autoComplete="off"
-            autoCorrect="off"
-            className="text-center font-mono tracking-[0.2em]"
-            inputMode="text"
-            maxLength={formattedCodeLength}
-            onChange={(event) =>
-              setCode(
-                Organization.formatAccessCode(Organization.repairAccessCode(event.target.value)),
-              )
-            }
-            placeholder="XXXX-XXXX-XXXX-XXXX"
-            required
-            spellCheck={false}
-            value={code}
-            {...invalidWhen(error)}
-          />
+          {/*
+            The one moment in the whole enrollment worth marking. Sixteen characters copied off
+            paper is the most error-prone thing Studienbuch ever asks anyone to do, and the tick is
+            how the field says "that is a whole code" without waiting for the server to say it.
+          */}
+          <span className="relative block">
+            <Input
+              autoCapitalize="characters"
+              autoComplete="off"
+              autoCorrect="off"
+              className="pr-12 text-center font-mono tracking-[0.2em]"
+              inputMode="text"
+              maxLength={formattedCodeLength}
+              onChange={(event) =>
+                setCode(
+                  Organization.formatAccessCode(Organization.repairAccessCode(event.target.value)),
+                )
+              }
+              placeholder="XXXX-XXXX-XXXX-XXXX"
+              required
+              spellCheck={false}
+              value={code}
+              {...invalidWhen(error)}
+            />
+            {complete ? (
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                <AuthTick className="size-6" />
+              </span>
+            ) : null}
+          </span>
         </Field>
         {error === undefined ? null : <AuthError>{error}</AuthError>}
         <Button
-          aria-busy={busy}
-          disabled={busy || !complete}
           radius="pill"
           size="xl"
           type="submit"
           variant="brand"
+          {...submitState({ busy, error })}
+          disabled={busy || !complete}
         >
-          {busy ? "Wird geprüft ..." : "Weiter"}
+          {busy ? <Working>Wird geprüft ...</Working> : "Weiter"}
         </Button>
       </form>
       <AuthNote>

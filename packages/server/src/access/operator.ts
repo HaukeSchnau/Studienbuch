@@ -1,9 +1,9 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
+import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as DateTime from "effect/DateTime";
+import * as Encoding from "effect/Encoding";
 import * as Schema from "effect/Schema";
-import { randomBytes, randomUUID } from "node:crypto";
-import type { Pool } from "pg";
 import { users } from "../auth/schema.ts";
 import { Database } from "../database/client.ts";
 import { digestSecret } from "./school-access.ts";
@@ -16,13 +16,20 @@ export class OperatorUnavailable extends Schema.TaggedError<OperatorUnavailable>
   {},
 ) {}
 
+const makeSetupToken = Effect.gen(function* () {
+  const crypto = yield* Crypto.Crypto;
+  const token = Encoding.encodeBase64Url(yield* crypto.randomBytes(32).pipe(Effect.orDie));
+  const now = yield* DateTime.now;
+  return {
+    token,
+    tokenHash: yield* digestSecret(token),
+    expiresAt: DateTime.toDateUtc(DateTime.add(now, { milliseconds: setupLifetimeMilliseconds })),
+  } as const;
+});
+
 const issueToken = Effect.fn("Operator.issueToken")(function* (userId: string) {
   const database = yield* Database.Service;
-  const token = randomBytes(32).toString("base64url");
-  const now = yield* DateTime.now;
-  const expiresAt = DateTime.toDateUtc(
-    DateTime.add(now, { milliseconds: setupLifetimeMilliseconds }),
-  );
+  const setup = yield* makeSetupToken;
   yield* database.drizzle.transaction((transaction) =>
     Effect.gen(function* () {
       const [operator] = yield* transaction
@@ -37,19 +44,21 @@ const issueToken = Effect.fn("Operator.issueToken")(function* (userId: string) {
         .where(and(eq(operatorSetupTokens.userId, userId), isNull(operatorSetupTokens.usedAt)));
       yield* transaction.insert(operatorSetupTokens).values({
         userId,
-        tokenHash: digestSecret(token),
-        expiresAt,
+        tokenHash: setup.tokenHash,
+        expiresAt: setup.expiresAt,
       });
     }),
   );
-  return { token, expiresAt, userId } as const;
+  return { token: setup.token, expiresAt: setup.expiresAt, userId } as const;
 });
 
 export const bootstrap = Effect.fn("Operator.bootstrap")(function* (nameInput: string) {
   const name = nameInput.trim().slice(0, 120);
   if (name.length === 0) return yield* OperatorUnavailable.make();
   const database = yield* Database.Service;
-  const userId = randomUUID();
+  const crypto = yield* Crypto.Crypto;
+  const userId = yield* crypto.randomUUIDv4.pipe(Effect.orDie);
+  const setup = yield* makeSetupToken;
   yield* database.drizzle.transaction((transaction) =>
     Effect.gen(function* () {
       yield* transaction.insert(users).values({
@@ -59,17 +68,28 @@ export const bootstrap = Effect.fn("Operator.bootstrap")(function* (nameInput: s
         emailVerified: true,
       });
       yield* transaction.insert(operatorGrants).values({ userId });
+      yield* transaction.insert(operatorSetupTokens).values({
+        userId,
+        tokenHash: setup.tokenHash,
+        expiresAt: setup.expiresAt,
+      });
     }),
   );
-  return yield* issueToken(userId);
+  return { token: setup.token, expiresAt: setup.expiresAt, userId } as const;
 });
 
 export const recover = issueToken;
 
-export const resolveSetupUser = async (pool: Pool, token: string | null) => {
+export const resolveSetupUser = Effect.fn("Operator.resolveSetupUser")(function* (
+  token: string | null,
+) {
   if (token === null || token.length < 32) return null;
-  const result = await pool.query<{ id: string; name: string }>(
-    `select users."id", users."name"
+  const database = yield* Database.Service;
+  const tokenHash = yield* digestSecret(token);
+  const result = yield* Effect.tryPromise({
+    try: () =>
+      database.pool.query<{ id: string; name: string }>(
+        `select users."id", users."name"
        from operator_setup_tokens setup
        join users on users."id" = setup."userId"
        join operator_grants grant_row on grant_row."userId" = users."id"
@@ -78,24 +98,34 @@ export const resolveSetupUser = async (pool: Pool, token: string | null) => {
         and setup."usedAt" is null
         and grant_row."revokedAt" is null
       limit 1`,
-    [digestSecret(token)],
-  );
+        [tokenHash],
+      ),
+    catch: (cause) =>
+      Database.Unavailable.make({ reason: cause instanceof Error ? cause.message : String(cause) }),
+  });
   const user = result.rows[0];
   return user === undefined ? null : { id: user.id, name: user.name, displayName: user.name };
-};
+});
 
-export const consumeSetupToken = async (pool: Pool, token: string) => {
-  const result = await pool.query<{ userId: string }>(
-    `update operator_setup_tokens
+export const consumeSetupToken = Effect.fn("Operator.consumeSetupToken")(function* (token: string) {
+  const database = yield* Database.Service;
+  const tokenHash = yield* digestSecret(token);
+  const result = yield* Effect.tryPromise({
+    try: () =>
+      database.pool.query<{ userId: string }>(
+        `update operator_setup_tokens
         set "usedAt" = now()
       where "tokenHash" = $1
         and "expiresAt" > now()
         and "usedAt" is null
       returning "userId"`,
-    [digestSecret(token)],
-  );
+        [tokenHash],
+      ),
+    catch: (cause) =>
+      Database.Unavailable.make({ reason: cause instanceof Error ? cause.message : String(cause) }),
+  });
   return result.rows[0]?.userId;
-};
+});
 
 export const isActive = Effect.fn("Operator.isActive")(function* (userId: string) {
   const database = yield* Database.Service;

@@ -1,6 +1,17 @@
 export { AcademicTerm, OverlappingAcademicTerms, validateAcademicTerms } from "./academic-term";
 export {
+  AccessAlreadyExists,
+  AccountId,
+  CodeUnavailable,
+  EmailNotVerified,
+  NotebookProfileInput,
+  OptionalProfileField,
+  ProfileUnavailable,
+  RequiredProfileField,
+  ReservationUnavailable,
+  SchoolAccessId,
   SchoolAccessKind,
+  SchoolAccessReservationToken,
   accessCodeAlphabet,
   accessCodeLength,
   formatAccessCode,

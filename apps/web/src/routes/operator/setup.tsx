@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import * as Schema from "effect/Schema";
 import { useState } from "react";
-import { AuthError, AuthShell } from "#/features/auth/auth-shell.tsx";
+import { AuthError, AuthHeading, AuthShell, Working } from "#/features/auth/auth-shell.tsx";
 import { authClient } from "#/infra/auth/client.ts";
 import { Button } from "#/ui/button.tsx";
 
@@ -50,8 +50,8 @@ function OperatorSetupPage() {
 
   return (
     <AuthShell>
-      <h1 className="text-center text-3xl text-primary-text">Operator einrichten</h1>
-      <p className="mt-4 text-center text-ink-soft">
+      <AuthHeading>Operator einrichten</AuthHeading>
+      <p className="enter-later mt-4 text-center text-ink-soft">
         {progress === "registered"
           ? "Der Passkey für dieses Operator-Konto ist eingerichtet."
           : "Erstelle jetzt den Passkey für dieses Operator-Konto."}
@@ -77,7 +77,7 @@ function OperatorSetupPage() {
           size="xl"
           variant="brand"
         >
-          {progress === "busy" ? "Passkey wird erstellt ..." : "Passkey erstellen"}
+          {progress === "busy" ? <Working>Passkey wird erstellt ...</Working> : "Passkey erstellen"}
         </Button>
       )}
     </AuthShell>

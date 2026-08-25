@@ -1,3 +1,8 @@
+import * as Clock from "effect/Clock";
+import * as Context from "effect/Context";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import * as Ref from "effect/Ref";
 import { jsonResponse } from "#/infra/http/response.server.ts";
 
 /** What a limiter says when a principal has spent its window. */
@@ -75,6 +80,64 @@ export function makeFixedWindowLimiter(options?: {
  */
 export const forwardedClientPrincipal = (request: Request) =>
   request.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim() ?? "unknown";
+
+export const forwardedPrincipalFromHeaders = (headers: Readonly<Record<string, string>>) =>
+  headers["x-forwarded-for"]?.split(",", 1)[0]?.trim() ?? "unknown";
+
+export class EnrollmentRateLimiter extends Context.Service<
+  EnrollmentRateLimiter,
+  {
+    readonly check: (principal: string) => Effect.Effect<RateLimitDecision>;
+  }
+>()("@stu/web/http/EnrollmentRateLimiter") {
+  static readonly layer = Layer.effect(
+    EnrollmentRateLimiter,
+    Effect.gen(function* () {
+      const windows = yield* Ref.make(
+        new Map<string, { readonly startedAt: number; readonly accepted: number }>(),
+      );
+      return EnrollmentRateLimiter.of({
+        check: (principal) =>
+          Effect.gen(function* () {
+            const currentTime = yield* Clock.currentTimeMillis;
+            return yield* Ref.modify(windows, (current) => {
+              const next = new Map(current);
+              for (const [key, window] of next) {
+                if (currentTime - window.startedAt >= 60_000) next.delete(key);
+              }
+              while (next.size >= 10_000 && !next.has(principal)) {
+                const oldest = next.keys().next();
+                if (oldest.done) break;
+                next.delete(oldest.value);
+              }
+
+              const window = next.get(principal);
+              if (window === undefined || currentTime - window.startedAt >= 60_000) {
+                next.set(principal, { startedAt: currentTime, accepted: 1 });
+                return [{ allowed: true } as const, next];
+              }
+              if (window.accepted >= 20) {
+                return [
+                  {
+                    allowed: false,
+                    status: 429,
+                    error: "rate_limited",
+                    retryAfterSeconds: Math.max(
+                      1,
+                      Math.ceil((window.startedAt + 60_000 - currentTime) / 1_000),
+                    ),
+                  } as const,
+                  next,
+                ];
+              }
+              next.set(principal, { ...window, accepted: window.accepted + 1 });
+              return [{ allowed: true } as const, next];
+            });
+          }),
+      });
+    }),
+  );
+}
 
 /** The rejection as a client sees it, including when it is worth trying again. */
 export const rateLimitedResponse = (rejection: RateLimitRejection) => {
