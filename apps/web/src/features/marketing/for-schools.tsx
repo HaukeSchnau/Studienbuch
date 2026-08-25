@@ -17,7 +17,12 @@ const points: ReadonlyArray<{ body: string; title: string }> = [
   },
   {
     title: "Datensparsam gebaut",
-    body: "Schuldaten liegen auf dem Gerät und auf dem Server der Schule, nicht bei Werbenetzwerken. Es ist bewusst kein Analyse-SDK verbaut.",
+    // Deliberately a claim about the shape of the telemetry channel, not a promise never to
+    // measure anything. `packages/observability` defines client records as a closed union with
+    // literal attribute values and no free-text field, decoded with `onExcessProperty: "error"`,
+    // so student data cannot travel through it — and that stays true if a product-analytics tool
+    // is added later.
+    body: "Schuldaten liegen zuerst auf dem Gerät, dann auf unseren Servern — nie bei Werbenetzwerken. Telemetrie folgt einem festen Feldschema ohne Freitext, in das Namen oder Noten gar nicht hineinpassen.",
   },
 ];
 
