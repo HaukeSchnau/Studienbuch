@@ -43,14 +43,17 @@ const GreenBlob = () => (
 );
 
 /**
- * Both blobs, sized to the first screenful and clipped to it. They decorate the hero rather than
- * the whole document: stretched down a long page they would drift behind the content and read as
- * stray colour instead of framing.
+ * Both blobs, sized to the first screenful. They decorate the hero rather than the whole document:
+ * run down a long page they stop framing anything and just read as stray colour.
+ *
+ * Bounding them to one screen would otherwise slice their silhouettes off along a straight
+ * horizontal edge, which is far more conspicuous than the blobs themselves. The gradient mask
+ * dissolves them into the page instead, so the boundary is never a line.
  */
 export const PageDecor = () => (
   <div
     aria-hidden
-    className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-screen overflow-hidden opacity-50"
+    className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-screen overflow-hidden opacity-50 [mask-image:linear-gradient(to_bottom,black_45%,transparent_88%)]"
   >
     <BlueBlob />
     <GreenBlob />
