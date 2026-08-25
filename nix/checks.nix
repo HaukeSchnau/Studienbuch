@@ -245,6 +245,7 @@ let
             .development.workloads.web.dependsOn == ["migrate"] and
             .development.workloads.web.secrets == ["betterAuthSecret"] and
             (.development.workloads.mobile.secrets // []) == [] and
+            .development.endpoints.web.health.paths == ["/api/health/ready"] and
             (.parameters | keys) == ["databaseUrl"] and
             .release.action == "web" and
             .release.preDeployTasks == {migrate: {timeoutSec: 300}} and

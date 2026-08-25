@@ -40,7 +40,11 @@
         "protocol": "tcp",
         "workload": "database"
       },
-      "web": {},
+      "web": {
+        "health": {
+          "paths": ["/api/health/ready"]
+        }
+      },
       "mobile": {
         "health": {
           "paths": ["/status"]

@@ -22,14 +22,10 @@ if (process.env.BETTER_AUTH_URL !== undefined) {
 const skipRuntimePlugin =
   process.env.NODE_ENV !== "production" && process.env.STUDIENBUCH_WEB_SKIP_RUNTIME === "1";
 
-const config = defineConfig({
+const config = defineConfig(({ command }) => ({
   resolve: { tsconfigPaths: true },
   server: {
     allowedHosts: [...allowedHosts],
-    warmup: {
-      clientFiles: ["./src/router.tsx", "./src/routes/__root.tsx", "./src/routes/index.tsx"],
-      ssrFiles: ["./src/router.tsx", "./src/routes/__root.tsx", "./src/routes/index.tsx"],
-    },
   },
   plugins: [
     devtools(),
@@ -38,8 +34,10 @@ const config = defineConfig({
     }),
     tailwindcss(),
     tanstackStart(),
-    viteReact({ compiler: { target: "19" } }),
+    // React Compiler is a production optimization. Running it in development added 3-5 seconds
+    // to a cold readiness probe; the production build in CI still compiles every component.
+    viteReact({ compiler: command === "build" ? { target: "19" } : false }),
   ],
-});
+}));
 
 export default config;
