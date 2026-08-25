@@ -50,9 +50,11 @@ export const Route = createRootRoute({
         rel: "stylesheet",
         href: appCss,
       },
+      // Rounded artwork for the browser tab, square for iOS: Apple masks the touch icon itself, so
+      // a pre-rounded one would be rounded twice and show its corners.
       {
         rel: "icon",
-        href: "/brand/icon-512.png",
+        href: "/brand/favicon-512.png",
         type: "image/png",
       },
       {
