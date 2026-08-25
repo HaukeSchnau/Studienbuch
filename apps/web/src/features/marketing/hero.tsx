@@ -1,6 +1,7 @@
 import { StoreBadges } from "#/domain-ui/brand/store-badges.tsx";
 import { Underlined } from "#/domain-ui/brand/underline.tsx";
 import { AppIcon } from "#/domain-ui/brand/wordmark.tsx";
+import { Picture } from "#/ui/picture.tsx";
 import { Container } from "#/ui/section.tsx";
 
 import { EdgeBlob } from "#/domain-ui/brand/blobs.tsx";
@@ -59,11 +60,12 @@ export const Hero = () => (
       {/* The negative margin sets how much bigger than its column the render gets to be; the
           translate then pushes it past the viewport edge without resizing it again. */}
       <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:-mr-[8vw] lg:translate-x-[5vw]">
-        <img
+        <Picture
           alt="Die Übersicht mit dem Tagesplan und die Kursseite mit den Noten, nebeneinander."
           className="parallax w-full"
           height={1469}
-          src="/screenshots/showcase.png"
+          priority
+          source="/screenshots/showcase"
           width={1282}
         />
       </div>

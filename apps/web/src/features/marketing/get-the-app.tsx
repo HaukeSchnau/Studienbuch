@@ -1,6 +1,7 @@
 import { sectionIds } from "#/domain-ui/brand/links.ts";
 import { EdgeBlob } from "#/domain-ui/brand/blobs.tsx";
 import { StoreBadges } from "#/domain-ui/brand/store-badges.tsx";
+import { Picture } from "#/ui/picture.tsx";
 import { Container, Section } from "#/ui/section.tsx";
 
 /**
@@ -46,11 +47,11 @@ export const GetTheApp = () => (
                 edge cuts it deliberately rather than grazing it. */}
             <div className="mx-auto -mb-28 w-64 translate-y-6 rotate-[5deg]">
               <div className="overflow-hidden rounded-[2.25rem] bg-black p-1.5 shadow-card-lg">
-                <img
+                <Picture
                   alt="Die Übersicht mit dem Tagesplan und den offenen Fehlzeiten."
                   className="block w-full rounded-[1.85rem]"
                   height={696}
-                  src="/screenshots/overview.png"
+                  source="/screenshots/overview"
                   width={392}
                 />
               </div>
