@@ -21,13 +21,13 @@ import { EdgeBlob } from "#/domain-ui/brand/blobs.tsx";
 export const Hero = () => (
   <section className="relative isolate overflow-x-clip">
     <EdgeBlob
-      blob="boulder"
+      blob="kidney"
       className="-left-32 top-[22%] size-[17rem] sm:-left-48 sm:size-[36rem]"
       rotate={-12}
       tone="green"
     />
     <EdgeBlob
-      blob="bean"
+      blob="twin"
       className="-right-28 top-2 size-[19rem] sm:-right-52 sm:size-[40rem]"
       rotate={24}
       tone="blue"
