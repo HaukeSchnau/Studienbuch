@@ -12,7 +12,6 @@ import {
   SchoolId,
   SchoolMembershipId,
 } from "./identity";
-import type { CourseOffering } from "./course-offering";
 
 export const EnrollmentOrigin = Schema.TaggedUnion({
   InheritedFromClass: { classGroupId: ClassGroupId },
@@ -59,14 +58,6 @@ export const CourseChoiceGroup = Schema.Struct({
   ),
 );
 export interface CourseChoiceGroup extends Schema.Schema.Type<typeof CourseChoiceGroup> {}
-
-export const EnrollmentSuggestion = Schema.Struct({
-  previousEnrollmentId: EnrollmentId,
-  previousOfferingId: CourseOfferingId,
-  suggestedOfferingId: CourseOfferingId,
-  reason: Schema.Literal("SameSubjectInNextTerm"),
-});
-export interface EnrollmentSuggestion extends Schema.Schema.Type<typeof EnrollmentSuggestion> {}
 
 export class CourseChoiceViolation extends Schema.TaggedError<CourseChoiceViolation>()(
   "Organization.CourseChoiceViolation",
@@ -165,42 +156,3 @@ export const removeEnrollment = Effect.fn("Organization.removeEnrollment")(funct
   }
   return remaining;
 });
-
-/**
- * Suggests only unambiguous continuations. Ambiguous or missing subject matches deliberately
- * produce no suggestion so an application can ask the student instead of guessing.
- */
-export const suggestEnrollmentContinuations = (
-  input: suggestEnrollmentContinuations.Input,
-): ReadonlyArray<EnrollmentSuggestion> => {
-  const previousById = new Map(input.previousOfferings.map((offering) => [offering.id, offering]));
-  return input.previousEnrollments.flatMap((enrollment) => {
-    const previous = previousById.get(enrollment.courseOfferingId);
-    if (previous?.subjectId === undefined) return [];
-    const candidates = input.targetOfferings.filter(
-      (offering) =>
-        offering.termId === input.targetTermId &&
-        offering.schoolId === previous.schoolId &&
-        offering.subjectId === previous.subjectId,
-    );
-    const candidate = candidates.length === 1 ? candidates[0] : undefined;
-    if (candidate === undefined) return [];
-    return [
-      EnrollmentSuggestion.make({
-        previousEnrollmentId: enrollment.id,
-        previousOfferingId: previous.id,
-        suggestedOfferingId: candidate.id,
-        reason: "SameSubjectInNextTerm",
-      }),
-    ];
-  });
-};
-
-export declare namespace suggestEnrollmentContinuations {
-  export interface Input {
-    readonly previousEnrollments: ReadonlyArray<Enrollment>;
-    readonly previousOfferings: ReadonlyArray<CourseOffering>;
-    readonly targetOfferings: ReadonlyArray<CourseOffering>;
-    readonly targetTermId: AcademicTermId;
-  }
-}

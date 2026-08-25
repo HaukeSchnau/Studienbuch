@@ -1,5 +1,4 @@
 import { Organization } from "@stu/core";
-import type { CourseOfferingIdentityInput } from "./course-offering-projection.ts";
 
 export interface WebUntisSchoolIdentity {
   readonly externalId: string;
@@ -31,7 +30,6 @@ export interface WebUntisSchoolProfile {
     readonly academicYearStart: number;
     readonly shortName: string;
   }) => WebUntisClassResolution;
-  readonly courseOfferingId: (input: CourseOfferingIdentityInput) => Organization.CourseOfferingId;
   readonly entityId: (kind: string, externalId: string) => string;
 }
 
@@ -105,20 +103,6 @@ export const igsLilienthalProfile: WebUntisSchoolProfile = {
       reason: `IGS timetable collection ${JSON.stringify(shortName)}`,
     };
   },
-  courseOfferingId: ({ dataSourceId, academicYearId, providerActivityExternalId, anchor }) =>
-    Organization.CourseOfferingId.make(
-      `igs-lilienthal/course-offering/${JSON.stringify([
-        dataSourceId,
-        academicYearId,
-        providerActivityExternalId,
-        anchor._tag,
-        anchor._tag === "ClassGroup"
-          ? anchor.classGroupId
-          : anchor._tag === "Teacher"
-            ? anchor.teacherMembershipId
-            : null,
-      ])}`,
-    ),
   entityId: (kind, externalId) => `igs-lilienthal/${kind}/${externalId}`,
 };
 

@@ -212,10 +212,11 @@ Subject-view claims therefore preserve activity identity, but neither activity I
 IDs become course IDs.
 
 Course identity is stable and opaque. A semester or academic-year boundary does not replace it.
-The planned Core shape mirrors lasting classes: `CourseOffering` owns the durable identity, while a
+Core mirrors lasting classes: `CourseOffering` owns the durable identity, while a
 `CourseOfferingAcademicYear` record holds that year's name, subject resolution and participating
-classes. Positive evidence may connect adjacent annual records; the boundary itself proves neither
-continuity nor separation.
+cohorts and classes. Positive evidence may connect adjacent annual records; the boundary itself
+proves neither continuity nor separation. Unresolved provider observations do not receive a durable
+course ID.
 
 The first experimental projector grouped one activity's occurrences by connected class overlap and
 used teachers for classless entries. Its four-week result contained 743 candidates. The live
@@ -267,10 +268,63 @@ The audit treats these as hard requirements for the reconciler:
 - missing observations do not prove a split or removal;
 - every automatic decision retains its source evidence.
 
-The attempted historical audit also found seven older entries with `position1: null`.
+The adjacent 2025/2026 and 2026/2027 audit covered 11,031 dated occurrences and 44,128 resource-view
+claims. It found 582 possible cross-year activity matches, 157 of which competed with another match.
+Provider activity, name, class and teacher evidence therefore cannot resolve cross-year identity by
+themselves.
+
+### Student-view roster evidence
+
+Student timetable views add information that class, subject, teacher and room views do not provide:
+the planned student roster of each dated entry. This is server-only identity evidence, not a reason
+to duplicate every student's timetable into ordinary client projections.
+
+A four-week 2026/2027 probe of regular `MA-E`, `MA-G` and `MA23` teaching found 1,893 student-entry
+claims for 99 dated events. Those events had only 14 distinct rosters. Twelve rosters recurred on
+several dates, usually seven to eleven times. The exact rosters distinguish parallel level courses
+whose class signatures overlap and whose activity or teacher evidence is identical.
+
+The adjacent-year comparison found four `MA-E` groups whose roster overlap remained between 0.769
+and 0.880 as their classes advanced from grade 9 to grade 10. One retained 20 of 22 observed
+students despite a teacher change. This is direct evidence that annual course continuity can survive
+changes to teacher, timetable slots and class labels.
+
+`MA23` demonstrates the cross-cohort case. In 2025/2026 WebUntis emitted two distinct regular rows at
+the same time with the same teacher and activity, one labelled for grade 12 and one for grade 13.
+The two rows carried rosters of eight and seven students and recurred together twelve times. In
+2026/2027, six students from the former grade-12 roster appeared in the seven-student successor
+roster. The name is useful IGS-specific evidence, but is not sufficient on its own.
+
+Course reconciliation should therefore work in two stages:
+
+1. Build regular annual course observations from repeated dated roster observations. Exact repeated
+   rosters are strong evidence. Near-equal rosters remain compatible because students can join or
+   leave. Provider activity, normalized label, class participation and teacher assignment support
+   the decision but never determine it alone.
+2. Reconcile annual observations across years. Compare student rosters within their cohort or class
+   progression, so a graduating grade-13 partition does not count against the continuation of the
+   grade-12 partition. Require a unique compatible match and corroborating school-specific evidence.
+   Weak or competing matches remain unresolved.
+
+Repeated simultaneous rows need a separate event rule. The same teacher cannot teach independent
+events at the same instant. When rows with a compatible IGS course code recur together throughout
+regular teaching, their roster partitions may belong to one course, as with `MA23`. An occasional
+joint lesson instead links its dated event to several existing courses and does not merge them.
+
+There should be no universal roster-overlap threshold. The reconciler records counts and overlap as
+evidence, while the school profile decides which combinations are strong enough. IGS naming rules
+may recognize codes such as `MA23`; generic level labels such as `MA-E` and `MA-G` classify a course
+but do not identify one.
+
+Student views should use a separate, slower server-only import scope. Course rosters change far less
+often than substitutions, and importing every student claim every ten minutes would add substantial
+private data without improving the client timetable. A daily reconciliation window, plus a refresh
+after directory changes, is the current default.
+
+The historical audit also found seven older entries with `position1: null`.
 `webuntis-api` 0.2.2 accepts that shape, and source normalization retains the distinction between
-`null` and an empty position array. The four-year continuity comparison still needs a successful
-rerun after the provider stopped accepting new TLS connections during the probe.
+`null` and an empty position array. The provider connection recovered and the adjacent-year audit
+completed; a broader four-year comparison is not required for the current model.
 
 ### Provider-backed occurrence projection
 
@@ -385,9 +439,9 @@ just console webuntis-course-audit \
 
 ## Next implementation slice
 
-1. Complete the adjacent-year identity audit, replace the connected-class experiment with explicit
-   evidence and conflict decisions, and add durable course identity plus annual representations to
-   Core.
+1. Add server-only student-view observations and implement explicit `Same`, `Different`,
+   `Compatible` and `Ambiguous` decisions with retained evidence. Start with the live `MA-E`, `MA-G`
+   and `MA23` cases as fixtures.
 2. Persist only resolved course decisions across current daily scopes and attach their IDs to dated
    occurrences. Retain compatible and ambiguous candidates without forcing a merge.
 3. Define role-specific timetable and directory contracts and turn projection transitions into

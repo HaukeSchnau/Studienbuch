@@ -5,7 +5,12 @@ import { CalendarDateRange } from "../foundation/calendar-date-range";
 import { AcademicTerm, validateAcademicTerms } from "./academic-term";
 import { AcademicYear, Cohort, validateAcademicYears } from "./academic-year";
 import { School, SubjectCatalog } from "./catalog";
-import { ClassGroup, ClassGroupAcademicYear, CourseOffering } from "./course-offering";
+import {
+  ClassGroup,
+  ClassGroupAcademicYear,
+  CourseOffering,
+  CourseOfferingAcademicYear,
+} from "./course-offering";
 import { CourseChoiceGroup, Enrollment } from "./enrollment";
 import { Building, Department, Room } from "./school-structure";
 import {
@@ -36,6 +41,7 @@ export const SchoolDirectory = Schema.Struct({
   classGroups: Schema.Array(ClassGroup),
   classGroupAcademicYears: Schema.Array(ClassGroupAcademicYear),
   courseOfferings: Schema.Array(CourseOffering),
+  courseOfferingAcademicYears: Schema.Array(CourseOfferingAcademicYear),
   choiceGroups: Schema.Array(CourseChoiceGroup),
   enrollments: Schema.Array(Enrollment),
 });
@@ -61,6 +67,7 @@ export class InvalidSchoolDirectory extends Schema.TaggedError<InvalidSchoolDire
       "ClassGroup",
       "ClassGroupAcademicYear",
       "CourseOffering",
+      "CourseOfferingAcademicYear",
       "CourseChoiceGroup",
       "Enrollment",
     ]),
@@ -70,6 +77,7 @@ export class InvalidSchoolDirectory extends Schema.TaggedError<InvalidSchoolDire
       "WrongSchool",
       "UnknownReference",
       "WrongTerm",
+      "WrongAcademicYear",
       "OutsideTerm",
       "OutsideAcademicYear",
       "OutsideMembership",
@@ -84,7 +92,7 @@ const invalidDirectory = (
   reason: InvalidSchoolDirectory["reason"],
 ) => InvalidSchoolDirectory.make({ entity, entityId, reason });
 
-/** Validates references and school/term scope after every constituent schema has decoded. */
+/** Validates references and school-year scope after every constituent schema has decoded. */
 export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDirectory")(function* (
   structure: SchoolDirectory,
 ) {
@@ -127,6 +135,13 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
     return yield* invalidDirectory("ClassGroupAcademicYear", schoolId, "DuplicateId");
   }
   const offerings = new Map(structure.courseOfferings.map((item) => [item.id, item]));
+  const courseOfferingAcademicYearKeys = structure.courseOfferingAcademicYears.map(
+    (item) => `${item.courseOfferingId}\u0000${item.academicYearId}`,
+  );
+  const courseOfferingAcademicYears = new Set(courseOfferingAcademicYearKeys);
+  if (courseOfferingAcademicYears.size !== courseOfferingAcademicYearKeys.length) {
+    return yield* invalidDirectory("CourseOfferingAcademicYear", schoolId, "DuplicateId");
+  }
   const choiceGroups = new Map(structure.choiceGroups.map((item) => [item.id, item]));
   const departments = new Map(structure.departments.map((item) => [item.id, item]));
   const buildings = new Map(structure.buildings.map((item) => [item.id, item]));
@@ -279,35 +294,45 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
     if (offering.schoolId !== schoolId) {
       return yield* invalidDirectory("CourseOffering", offering.id, "WrongSchool");
     }
-    const academicYear = academicYears.get(offering.academicYearId);
-    const offeringTerm = offering.termId === undefined ? undefined : terms.get(offering.termId);
+  }
+  for (const representation of structure.courseOfferingAcademicYears) {
+    const entityId = `${representation.courseOfferingId}/${representation.academicYearId}`;
+    const offering = offerings.get(representation.courseOfferingId);
+    const academicYear = academicYears.get(representation.academicYearId);
     if (
+      offering?.schoolId !== schoolId ||
       academicYear?.schoolId !== schoolId ||
-      (offering.termId !== undefined && offeringTerm === undefined) ||
-      (offering.subjectId !== undefined && subjects.get(offering.subjectId) === undefined)
+      (representation.subjectId !== undefined &&
+        subjects.get(representation.subjectId) === undefined) ||
+      representation.cohortIds.some((id) => cohorts.get(id)?.schoolId !== schoolId)
     ) {
-      return yield* invalidDirectory("CourseOffering", offering.id, "UnknownReference");
-    }
-    if (offeringTerm !== undefined && offeringTerm.academicYearId !== academicYear.id) {
-      return yield* invalidDirectory("CourseOffering", offering.id, "WrongTerm");
+      return yield* invalidDirectory("CourseOfferingAcademicYear", entityId, "UnknownReference");
     }
     if (
-      offering.classGroupIds.some((id) => {
+      representation.classGroupIds.some((id) => {
         const group = classGroups.get(id);
         return (
           group === undefined ||
-          !classGroupAcademicYears.has(`${group.id}\u0000${offering.academicYearId}`)
+          !classGroupAcademicYears.has(`${group.id}\u0000${representation.academicYearId}`)
         );
       })
     ) {
-      return yield* invalidDirectory("CourseOffering", offering.id, "WrongTerm");
+      return yield* invalidDirectory("CourseOfferingAcademicYear", entityId, "WrongAcademicYear");
     }
   }
   for (const group of structure.choiceGroups) {
     if (group.schoolId !== schoolId || terms.get(group.termId)?.schoolId !== schoolId) {
       return yield* invalidDirectory("CourseChoiceGroup", group.id, "WrongSchool");
     }
-    if (group.offeringIds.some((id) => offerings.get(id)?.termId !== group.termId)) {
+    const academicYearId = terms.get(group.termId)?.academicYearId;
+    if (
+      academicYearId === undefined ||
+      group.offeringIds.some(
+        (id) =>
+          offerings.get(id)?.schoolId !== schoolId ||
+          !courseOfferingAcademicYears.has(`${id}\u0000${academicYearId}`),
+      )
+    ) {
       return yield* invalidDirectory("CourseChoiceGroup", group.id, "WrongTerm");
     }
   }
@@ -316,15 +341,18 @@ export const validateSchoolDirectory = Effect.fn("Organization.validateSchoolDir
     if (offering === undefined) {
       return yield* invalidDirectory("Enrollment", enrollment.id, "UnknownReference");
     }
-    const academicYear = academicYears.get(offering.academicYearId);
-    const term = offering.termId === undefined ? undefined : terms.get(offering.termId);
-    const interval = term?.interval ?? academicYear?.interval;
-    if (interval === undefined || !CalendarDateRange.encloses(interval, enrollment.effective)) {
-      return yield* invalidDirectory(
-        "Enrollment",
-        enrollment.id,
-        offering.termId === undefined ? "OutsideAcademicYear" : "OutsideTerm",
-      );
+    const representedYears = structure.courseOfferingAcademicYears
+      .filter((item) => item.courseOfferingId === offering.id)
+      .flatMap((item) => {
+        const academicYear = academicYears.get(item.academicYearId);
+        return academicYear === undefined ? [] : [academicYear];
+      });
+    if (
+      !representedYears.some((academicYear) =>
+        CalendarDateRange.encloses(academicYear.interval, enrollment.effective),
+      )
+    ) {
+      return yield* invalidDirectory("Enrollment", enrollment.id, "OutsideAcademicYear");
     }
     if (enrollment.origin._tag === "Choice") {
       const choice = choiceGroups.get(enrollment.origin.choiceGroupId);

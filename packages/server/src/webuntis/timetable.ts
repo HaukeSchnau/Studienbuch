@@ -605,14 +605,6 @@ export {
   type ProjectTimetableOccurrencesInput,
 } from "./timetable-projection.ts";
 export {
-  InvalidCourseOfferingProjection,
-  projectCourseOfferings,
-  type CourseOfferingEvidence,
-  type CourseOfferingIdentityInput,
-  type CourseOfferingProjection,
-  type ProjectCourseOfferingsInput,
-} from "./course-offering-projection.ts";
-export {
   makeCourseIdentityAudit,
   type CourseIdentityAuditInput,
   type CourseIdentityAuditPeriod,

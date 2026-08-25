@@ -12,8 +12,6 @@ import { AuthoritySnapshot } from "../organization/authority";
 import { CourseOffering } from "../organization/course-offering";
 import { Enrollment, EnrollmentOrigin } from "../organization/enrollment";
 import {
-  AcademicTermId,
-  AcademicYearId,
   AcknowledgementId,
   CourseOfferingId,
   EnrollmentId,
@@ -21,7 +19,6 @@ import {
   PersonId,
   SchoolId,
   SchoolMembershipId,
-  SubjectId,
   TeachingAssignmentId,
 } from "../organization/identity";
 import {
@@ -104,11 +101,6 @@ const offerings = courseIds.map((id) =>
   CourseOffering.make({
     id,
     schoolId,
-    academicYearId: AcademicYearId.make("year"),
-    termId: AcademicTermId.make("term"),
-    subjectId: SubjectId.make(`subject-${id}`),
-    name: `Course ${id}`,
-    classGroupIds: [],
   }),
 );
 const enrollments = courseIds.map((courseOfferingId, index) =>
