@@ -153,6 +153,7 @@ export const EnquiryForm = () => {
 
       <div className="flex flex-wrap items-center gap-4">
         <Button
+          className={status === "failed" ? "nudge" : undefined}
           disabled={status === "sending"}
           radius="pill"
           size="xl"
@@ -171,12 +172,23 @@ export const EnquiryForm = () => {
         <p className="text-sm text-ink-soft">Wir melden uns innerhalb von zwei Werktagen.</p>
       </div>
 
-      {/* Announced rather than merely shown, because the submit button does not move focus. */}
-      <p aria-live="polite" className="text-sm text-danger">
-        {status === "failed"
-          ? "Das hat leider nicht geklappt. Bitte versuchen Sie es noch einmal oder schreiben Sie uns direkt an info@urbs.one."
-          : ""}
-      </p>
+      {/*
+        Announced as well as shown, because the submit button does not move focus and a message that
+        merely appears below it is easy to miss while the eye is still on the button. The live region
+        is always in the tree so the announcement is reliable; only the message inside it changes.
+      */}
+      <div aria-live="polite">
+        {status === "failed" ? (
+          <p className="error-in text-sm text-danger">
+            Das hat leider nicht geklappt. Bitte versuchen Sie es noch einmal oder schreiben Sie uns
+            direkt an{" "}
+            <a className="font-bold underline" href={externalLinks.schoolContact}>
+              info@urbs.one
+            </a>
+            .
+          </p>
+        ) : null}
+      </div>
     </form>
   );
 };

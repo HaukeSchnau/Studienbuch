@@ -75,7 +75,7 @@ export const Capabilities = () => (
           <li key={title}>
             <article
               className={cn(
-                "reveal flex h-full flex-col gap-6 rounded-card-lg p-8 transition-transform duration-300 hover:-translate-y-1",
+                "reveal weight-hover flex h-full flex-col gap-6 rounded-card-lg p-8 transition-transform duration-300 hover:-translate-y-1",
                 tint,
               )}
             >
