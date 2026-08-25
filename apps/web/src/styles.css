@@ -84,7 +84,6 @@ html {
 
 body {
   margin: 0;
-  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-family: var(--font-sans);
@@ -204,6 +203,19 @@ h3 {
 }
 
 /*
+ * Uncovers a finished stroke from left to right. See `underline.tsx` for why this is a clip rather
+ * than a dash: a dashed path and a non-uniformly scaled viewBox disagree about path length.
+ */
+@keyframes draw-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 -2% 0 0);
+  }
+}
+
+/*
  * Reveals a stroke along its own length. Scaling the SVG instead stretches the curve as it grows,
  * which reads as a line being pulled rather than drawn; dashing the path leaves the geometry alone
  * and only uncovers more of it. The path declares `pathLength="1"`, so the offset is a fraction and
@@ -312,7 +324,7 @@ h3 {
   }
 
   .enter-underline {
-    animation: draw-line 560ms cubic-bezier(0.65, 0, 0.35, 1) 640ms both;
+    animation: draw-wipe 560ms cubic-bezier(0.65, 0, 0.35, 1) 640ms both;
   }
 }
 
@@ -353,15 +365,15 @@ h3 {
  * being read — the same stroke and the same technique as the headline, so the nav is not carrying a
  * second visual idea.
  */
-.nav-underline path {
-  stroke-dashoffset: 1;
-  transition: stroke-dashoffset 340ms cubic-bezier(0.65, 0, 0.35, 1);
+.nav-underline {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 340ms cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-.nav-link:hover .nav-underline path,
-.nav-link:focus-visible .nav-underline path,
-.nav-link[data-active="true"] .nav-underline path {
-  stroke-dashoffset: 0;
+.nav-link:hover .nav-underline,
+.nav-link:focus-visible .nav-underline,
+.nav-link[data-active="true"] .nav-underline {
+  clip-path: inset(0 -2% 0 0);
 }
 
 /*

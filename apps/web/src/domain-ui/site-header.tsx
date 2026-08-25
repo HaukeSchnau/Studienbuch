@@ -62,7 +62,7 @@ function useActiveSection(ids: ReadonlyArray<string>): string | undefined {
 }
 
 const linkClass =
-  "nav-link relative rounded-sm pb-1 text-sm font-bold whitespace-nowrap focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none sm:text-base";
+  "nav-link relative rounded-sm text-sm font-bold whitespace-nowrap focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none sm:text-base";
 
 /**
  * The legacy site's chrome: a single green pill, only as wide as its links, floating centred above
@@ -77,7 +77,7 @@ export const SiteHeader = () => {
   const active = useActiveSection(navItems.map((item) => item.id));
 
   return (
-    <header className="flex justify-center px-6 pt-6 sm:pt-8">
+    <header className="sticky top-0 z-50 flex justify-center px-6 pt-6 sm:pt-8">
       <nav
         aria-label="Hauptnavigation"
         className="flex w-fit items-center gap-5 rounded-full bg-primary-text px-6 py-3.5 text-white shadow-float sm:gap-8 sm:px-8"
@@ -91,12 +91,12 @@ export const SiteHeader = () => {
             key={item.id}
           >
             {item.label}
-            <Underline className="nav-underline" />
+            <Underline className="nav-underline -bottom-1.5" />
           </a>
         ))}
         <a className={`${linkClass} hidden sm:inline`} href={externalLinks.schoolContact}>
           Kontakt
-          <Underline className="nav-underline" />
+          <Underline className="nav-underline -bottom-1.5" />
         </a>
       </nav>
     </header>

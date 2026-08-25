@@ -6,9 +6,12 @@ import { cn } from "#/ui/cn.ts";
  * The swoosh reduced to a single stroke, for underlining a word. It is the same gesture the app
  * draws under its header, so a headline can carry the brand without a coloured band behind it.
  *
- * The stroke is normalised to `pathLength="1"` and fully dashed, which is what lets it be *drawn*:
- * animating `stroke-dashoffset` uncovers more of a curve that never moves, where scaling the SVG
- * stretches the curve as it grows and reads as a line being pulled rather than written.
+ * It is drawn by wiping a `clip-path` across it, not by scaling it and not by dashing it. Scaling
+ * stretches the curve as it grows and reads as a line being pulled. Dashing looks right in
+ * isolation but breaks here: the box is stretched by `preserveAspectRatio="none"` while
+ * `non-scaling-stroke` keeps the stroke in screen units, and the two disagree about how long the
+ * path is — which is what put a gap in the middle of the stroke. A clip wipe asks no such question,
+ * because it reveals a finished stroke rather than constructing one.
  *
  * It inherits `currentColor`, so the nav can draw the same mark in white without a second copy.
  * Stretches to whatever it is placed under; `non-scaling-stroke` keeps the weight even as it does.
@@ -24,9 +27,7 @@ export const Underline = ({ className }: { className?: string }) => (
     <path
       d="M2 9C54 2 128 1 298 4"
       fill="none"
-      pathLength={1}
       stroke="currentColor"
-      strokeDasharray={1}
       strokeLinecap="round"
       strokeWidth="5"
       vectorEffect="non-scaling-stroke"
