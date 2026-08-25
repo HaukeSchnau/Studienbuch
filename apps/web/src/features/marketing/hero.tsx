@@ -1,6 +1,6 @@
 import { StoreBadges } from "#/domain-ui/brand/store-badges.tsx";
 import { Underlined } from "#/domain-ui/brand/underline.tsx";
-import { Mark } from "#/domain-ui/brand/wordmark.tsx";
+import { AppIcon } from "#/domain-ui/brand/wordmark.tsx";
 import { Container } from "#/ui/section.tsx";
 
 /**
@@ -17,14 +17,14 @@ import { Container } from "#/ui/section.tsx";
  * the next, so the two converge instead of drifting apart across the height of the render.
  */
 export const Hero = () => (
-  <section className="overflow-x-clip bg-surface">
+  <section className="overflow-x-clip">
     <Container
       className="grid items-center gap-y-12 pt-12 pb-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-x-12 lg:pt-16 lg:pb-20"
       width="wide"
     >
       <div className="lg:col-start-1 lg:row-start-1 lg:self-end">
         <div className="flex items-center gap-5 sm:gap-8">
-          <Mark size="lg" />
+          <AppIcon size="lg" />
           <div>
             <p className="text-xl font-bold text-primary sm:text-2xl">Moin!</p>
             <h1 className="mt-1 text-4xl/[1.35] text-primary-text sm:text-5xl/[1.35] lg:text-6xl/[1.35]">
@@ -35,7 +35,7 @@ export const Hero = () => (
           </div>
         </div>
 
-        <p className="mt-8 max-w-lg text-lg/relaxed text-ink-soft text-pretty sm:text-xl/relaxed">
+        <p className="mt-8 max-w-lg text-lg/relaxed text-ink text-pretty sm:text-xl/relaxed">
           Stundenplan, Vertretungen, Noten, Fehlzeiten und Hausaufgaben — an einem Ort, in der
           Hosentasche, auch ohne Empfang.
         </p>

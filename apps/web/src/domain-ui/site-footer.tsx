@@ -11,7 +11,7 @@ export const SiteFooter = () => (
     <Container className="flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-col gap-2">
         <Wordmark />
-        <p className="text-sm text-ink-soft">Ein Produkt der Urbs UG (haftungsbeschränkt).</p>
+        <p className="text-sm text-ink-soft">Eine Hauke Schnau Produktion</p>
       </div>
 
       <nav aria-label="Fußzeile">

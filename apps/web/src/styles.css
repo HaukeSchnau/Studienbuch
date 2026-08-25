@@ -97,6 +97,22 @@ h3 {
   letter-spacing: normal;
 }
 
+/* A slow drift for the decorative blobs, so the page is never completely static. */
+@media (prefers-reduced-motion: no-preference) {
+  .drift {
+    animation: drift 18s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  to {
+    transform: translate3d(0, -1.5rem, 0) rotate(-2deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
