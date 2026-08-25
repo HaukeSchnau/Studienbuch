@@ -62,7 +62,7 @@ function useActiveSection(ids: ReadonlyArray<string>): string | undefined {
 }
 
 const linkClass =
-  "nav-link relative rounded-sm text-sm font-bold whitespace-nowrap focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none sm:text-base";
+  "nav-link press relative rounded-sm text-sm whitespace-nowrap focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none sm:text-base";
 
 /**
  * The legacy site's chrome: a single green pill, only as wide as its links, floating centred above
@@ -90,12 +90,18 @@ export const SiteHeader = () => {
             href={sectionHref(item.id)}
             key={item.id}
           >
-            {item.label}
+            <span className="nav-label">{item.label}</span>
+            <span aria-hidden className="nav-sizer">
+              {item.label}
+            </span>
             <Underline className="nav-underline -bottom-1.5" />
           </a>
         ))}
         <a className={`${linkClass} hidden sm:inline`} href={externalLinks.schoolContact}>
-          Kontakt
+          <span className="nav-label">Kontakt</span>
+          <span aria-hidden className="nav-sizer">
+            Kontakt
+          </span>
           <Underline className="nav-underline -bottom-1.5" />
         </a>
       </nav>

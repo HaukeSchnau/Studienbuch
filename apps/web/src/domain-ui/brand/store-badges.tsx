@@ -10,7 +10,7 @@ import { externalLinks } from "./links.ts";
 export const StoreBadges = ({ className }: { className?: string }) => (
   <div className={cn("flex flex-wrap items-center gap-3", className)}>
     <a
-      className="rounded-lg transition-transform hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-white/70 focus-visible:outline-none"
+      className="press rounded-lg hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-white/70 focus-visible:outline-none"
       href={externalLinks.appStore}
       rel="noreferrer"
       target="_blank"
@@ -24,7 +24,7 @@ export const StoreBadges = ({ className }: { className?: string }) => (
       />
     </a>
     <a
-      className="rounded-lg transition-transform hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-white/70 focus-visible:outline-none"
+      className="press rounded-lg hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-white/70 focus-visible:outline-none"
       href={externalLinks.playStore}
       rel="noreferrer"
       target="_blank"

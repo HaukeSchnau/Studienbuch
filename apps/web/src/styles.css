@@ -279,6 +279,19 @@ h3 {
   }
 }
 
+@keyframes reveal-weight {
+  from {
+    font-weight: 350;
+    opacity: 0;
+    transform: translateY(3.5rem);
+  }
+  to {
+    font-weight: 700;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @keyframes reveal {
   from {
     opacity: 0;
@@ -319,12 +332,140 @@ h3 {
     animation: reveal 620ms cubic-bezier(0.2, 0.8, 0.3, 1) 110ms both;
   }
 
+  /*
+   * The headline gains weight as it arrives.
+   *
+   * Nunito is loaded as a variable font spanning 200–1000 and the page had been using two values of
+   * it. Weight is a dimension nobody expects to move, which is why a few hundred units of it reads
+   * as craft rather than as another thing sliding in — and it costs nothing, because the axis is
+   * already in the file being downloaded.
+   */
+  .enter-heading {
+    animation: reveal-weight 720ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+
+  .enter-heading-late {
+    animation: reveal-weight 720ms cubic-bezier(0.2, 0.8, 0.3, 1) 130ms both;
+  }
+
   .enter-later {
     animation: reveal 620ms cubic-bezier(0.2, 0.8, 0.3, 1) 220ms both;
   }
 
   .enter-underline {
     animation: draw-wipe 560ms cubic-bezier(0.65, 0, 0.35, 1) 640ms both;
+  }
+}
+
+/*
+ * Press feedback.
+ *
+ * Nothing on the page had an `:active` state: everything responded to a pointer arriving and
+ * nothing responded to being pressed. This is also the only motion here that a touch visitor gets,
+ * since tilt, spotlight and every hover state need a pointer a finger does not provide.
+ */
+.press {
+  transition:
+    transform 140ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    box-shadow 140ms ease;
+}
+
+.press:active {
+  transform: scale(0.965);
+}
+
+/*
+ * The failure counterpart to the confirmation. A message that simply appears is easy to miss when
+ * the eye is still on the button that was just pressed, so the button flinches and the message
+ * arrives from under it.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .nudge {
+    animation: nudge 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+
+  .error-in {
+    animation: error-in 320ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+}
+
+@keyframes nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  22% {
+    transform: translateX(-0.4rem);
+  }
+  44% {
+    transform: translateX(0.32rem);
+  }
+  66% {
+    transform: translateX(-0.18rem);
+  }
+  84% {
+    transform: translateX(0.08rem);
+  }
+}
+
+@keyframes error-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.4rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * A highlight passing over the device render, so a flat raster reads as lit rather than pasted on.
+ *
+ * The sweep is masked by the artwork's own alpha, because the render is a transparent PNG of two
+ * floating phones: an unmasked band would slide across the empty space around them and look like a
+ * pane of glass over the page. `image-set` lets the mask resolve to whichever encoding the browser
+ * already chose for the image itself, so it costs no second download — and the whole thing sits
+ * behind `@supports`, because a browser that cannot mask it should show no sweep at all rather than
+ * a rectangle.
+ */
+@supports (mask-image: image-set(url("/screenshots/showcase.avif") type("image/avif"))) {
+  @media (prefers-reduced-motion: no-preference) {
+    .gloss {
+      position: relative;
+    }
+
+    .gloss::after {
+      background: linear-gradient(
+        105deg,
+        transparent 42%,
+        rgba(255, 255, 255, 0.5) 50%,
+        transparent 58%
+      );
+      content: "";
+      inset: 0;
+      mask-image: image-set(
+        url("/screenshots/showcase.avif") type("image/avif"),
+        url("/screenshots/showcase.webp") type("image/webp")
+      );
+      mask-position: center;
+      mask-repeat: no-repeat;
+      mask-size: contain;
+      pointer-events: none;
+      position: absolute;
+      /* Long gap, short pass: a sheen that comes round often stops reading as light. */
+      animation: gloss 9s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes gloss {
+  0%,
+  82% {
+    transform: translateX(-115%);
+  }
+  100% {
+    transform: translateX(115%);
   }
 }
 
@@ -365,6 +506,46 @@ h3 {
  * being read — the same stroke and the same technique as the headline, so the nav is not carrying a
  * second visual idea.
  */
+/*
+ * The nav's label sits on top of an invisible copy of itself set at the heaviest weight, both in
+ * the same grid cell. The cell is therefore always as wide as the boldest state, so thickening the
+ * active link cannot widen it — without this the pill would resize and every other link would
+ * shuffle sideways as you scrolled past a section boundary.
+ */
+.nav-link {
+  display: inline-grid;
+}
+
+.nav-link > .nav-label,
+.nav-link > .nav-sizer {
+  grid-area: 1 / 1;
+}
+
+.nav-sizer {
+  font-weight: 900;
+  visibility: hidden;
+}
+
+.nav-label {
+  font-weight: 700;
+  transition: font-weight 320ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.nav-link:hover .nav-label,
+.nav-link:focus-visible .nav-label,
+.nav-link[data-active="true"] .nav-label {
+  font-weight: 900;
+}
+
+/* Card headings firm up under the pointer, on the same axis and for the same reason. */
+.weight-hover h3 {
+  transition: font-weight 260ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.weight-hover:hover h3 {
+  font-weight: 900;
+}
+
 .nav-underline {
   clip-path: inset(0 100% 0 0);
   transition: clip-path 340ms cubic-bezier(0.65, 0, 0.35, 1);

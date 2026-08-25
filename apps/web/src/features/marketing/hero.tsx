@@ -47,8 +47,8 @@ export const Hero = () => (
           <AppIcon size="lg" />
           <div>
             <h1 className="text-4xl/[1.35] text-primary-text sm:text-5xl/[1.35] lg:text-6xl/[1.35]">
-              <span className="enter block">Das digitale</span>
-              <span className="enter-late block">
+              <span className="enter-heading block">Das digitale</span>
+              <span className="enter-heading-late block">
                 <Underlined>Studienbuch</Underlined>
               </span>
             </h1>
@@ -65,14 +65,16 @@ export const Hero = () => (
           translate then pushes it past the viewport edge without resizing it again. */}
       <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:-mr-[8vw] lg:translate-x-[5vw]">
         <PointerTilt>
-          <Picture
-            alt="Die Übersicht mit dem Tagesplan und die Kursseite mit den Noten, nebeneinander."
-            className="parallax w-full"
-            height={1469}
-            priority
-            source="/screenshots/showcase"
-            width={1282}
-          />
+          <div className="gloss">
+            <Picture
+              alt="Die Übersicht mit dem Tagesplan und die Kursseite mit den Noten, nebeneinander."
+              className="parallax w-full"
+              height={1469}
+              priority
+              source="/screenshots/showcase"
+              width={1282}
+            />
+          </div>
         </PointerTilt>
       </div>
 
