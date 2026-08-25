@@ -1,33 +1,31 @@
 import { cn } from "#/ui/cn.ts";
 
-const markSizes = {
+const iconSizes = {
   sm: "size-8 rounded-[0.5rem]",
-  md: "size-11 rounded-[0.65rem]",
   lg: "size-24 rounded-[1.4rem] sm:size-32 sm:rounded-[1.9rem] lg:size-40 lg:rounded-[2.35rem]",
 } as const;
 
 /**
- * The product mark: the app's green cover over a white page with the blue line trailing the curve.
- * It is a single SVG in `public/brand/mark.svg` so the favicon, the manifest icons and the page all
- * come from one file.
+ * The product icon, taken straight from the app: `apps/mobile/assets/images/icon.png`, the same
+ * file Expo ships to the home screen. It is a square artwork, so the rounding is applied here.
  */
-export const Mark = ({
+export const AppIcon = ({
   className,
-  size = "md",
+  size = "sm",
 }: {
   className?: string;
-  size?: keyof typeof markSizes;
+  size?: keyof typeof iconSizes;
 }) => (
   <img
     alt=""
-    className={cn("shrink-0 shadow-card", markSizes[size], className)}
-    height={64}
-    src="/brand/mark.svg"
-    width={64}
+    className={cn("shrink-0 shadow-card", iconSizes[size], className)}
+    height={512}
+    src="/brand/icon-512.png"
+    width={512}
   />
 );
 
-/** Mark plus name. `tone` picks the text colour for the surface it sits on. */
+/** Icon plus name. `tone` picks the text colour for the surface it sits on. */
 export const Wordmark = ({
   className,
   tone = "brand",
@@ -36,7 +34,7 @@ export const Wordmark = ({
   tone?: "brand" | "on-primary";
 }) => (
   <span className={cn("inline-flex items-center gap-2.5", className)}>
-    <Mark size="sm" />
+    <AppIcon />
     <span
       className={cn(
         "text-lg font-bold",

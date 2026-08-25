@@ -5,17 +5,12 @@
   "lang": "de",
   "icons": [
     {
-      "src": "brand/mark.svg",
-      "type": "image/svg+xml",
-      "sizes": "any"
-    },
-    {
-      "src": "brand/mark-192.png",
+      "src": "brand/icon-192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "brand/mark-512.png",
+      "src": "brand/icon-512.png",
       "type": "image/png",
       "sizes": "512x512"
     }
