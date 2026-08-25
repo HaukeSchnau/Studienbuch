@@ -1,7 +1,15 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import * as Schema from "effect/Schema";
 import { useState } from "react";
-import { AuthError, AuthShell, Field } from "#/features/auth/auth-shell.tsx";
+import {
+  AuthError,
+  AuthNote,
+  authNoteLinkClass,
+  AuthShell,
+  Field,
+  invalidWhen,
+} from "#/features/auth/auth-shell.tsx";
+import { betterAuthMessage } from "#/features/auth/messages.ts";
 import { authClient } from "#/infra/auth/client.ts";
 import { Button } from "#/ui/button.tsx";
 import { Input } from "#/ui/input.tsx";
@@ -22,15 +30,22 @@ function SignInPage() {
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
 
-  const destination =
+  /** Where a successful sign-in lands: back into an activation in progress, or the account. */
+  const arrive = () =>
     reservation === undefined
-      ? "/app"
-      : `/aktivieren/abschliessen?reservation=${encodeURIComponent(reservation)}`;
+      ? navigate({ to: "/app", replace: true })
+      : navigate({ to: "/aktivieren/abschliessen", search: { reservation }, replace: true });
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setBusy(true);
     setError(undefined);
+    // The callback matters for the unverified case: Better Auth resends the verification mail, and
+    // its link has to come back to the activation rather than to the front page.
+    const destination =
+      reservation === undefined
+        ? "/app"
+        : `/aktivieren/abschliessen?reservation=${encodeURIComponent(reservation)}`;
     const result = await authClient.signIn.email({
       email,
       password,
@@ -45,20 +60,17 @@ function SignInPage() {
       );
       return;
     }
-    window.location.assign(destination);
+    await arrive();
   };
 
   const signInWithPasskey = async () => {
     setError(undefined);
     const result = await authClient.signIn.passkey();
     if (result.error !== null) {
-      setError("Der Passkey konnte nicht verwendet werden.");
+      setError(betterAuthMessage(result.error, "Der Passkey konnte nicht verwendet werden."));
       return;
     }
-    await navigate({
-      to: reservation === undefined ? "/app" : "/aktivieren/abschliessen",
-      search: reservation === undefined ? {} : { reservation },
-    });
+    await arrive();
   };
 
   return (
@@ -72,6 +84,7 @@ function SignInPage() {
             required
             type="email"
             value={email}
+            {...invalidWhen(error)}
           />
         </Field>
         <Field label="Passwort">
@@ -81,19 +94,27 @@ function SignInPage() {
             required
             type="password"
             value={password}
+            {...invalidWhen(error)}
           />
         </Field>
         {error === undefined ? null : <AuthError>{error}</AuthError>}
-        <Button disabled={busy} radius="pill" size="xl" type="submit" variant="brand">
+        <Button
+          aria-busy={busy}
+          disabled={busy}
+          radius="pill"
+          size="xl"
+          type="submit"
+          variant="brand"
+        >
           {busy ? "Anmeldung läuft ..." : "Anmelden"}
         </Button>
       </form>
-      <a
+      <Link
         className="mt-4 block text-center text-sm font-semibold text-accent hover:underline"
-        href="/passwort-vergessen"
+        to="/passwort-vergessen"
       >
         Passwort vergessen?
-      </a>
+      </Link>
       <div className="my-5 flex items-center gap-3 text-xs text-ink-soft">
         <span className="h-px grow bg-neutral-sec" />
         oder
@@ -109,6 +130,14 @@ function SignInPage() {
       >
         Mit Passkey anmelden
       </Button>
+      {/* The way in for someone holding a printed code. Without it the school's own instructions
+          are the only route to activation, and the header offers sign-in alone. */}
+      <AuthNote>
+        Zugangscode von deiner Schule?{" "}
+        <Link className={authNoteLinkClass} to="/aktivieren">
+          Zugang aktivieren
+        </Link>
+      </AuthNote>
     </AuthShell>
   );
 }

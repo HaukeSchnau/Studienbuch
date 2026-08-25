@@ -59,10 +59,10 @@ export class ProfileUnavailable extends Schema.TaggedError<ProfileUnavailable>()
   {},
 ) {}
 
-const cleanOptional = (value: string | undefined, maximum: number) => {
+const cleanOptional = (value: string | undefined) => {
   const cleaned = value?.trim();
   if (cleaned === undefined || cleaned === "") return undefined;
-  return cleaned.slice(0, maximum);
+  return cleaned.slice(0, Organization.profileFieldMaxLength);
 };
 
 export const generateCodes = Effect.fn("SchoolAccess.generateCodes")(function* (input: {
@@ -365,7 +365,7 @@ export const saveProfile = Effect.fn("SchoolAccess.saveProfile")(function* (
     readonly className?: string;
   },
 ) {
-  const displayName = input.displayName.trim().slice(0, 120);
+  const displayName = input.displayName.trim().slice(0, Organization.profileFieldMaxLength);
   if (displayName.length < 1) return yield* ProfileUnavailable.make();
   const database = yield* Database.Service;
   const [access] = yield* database.drizzle
@@ -383,8 +383,8 @@ export const saveProfile = Effect.fn("SchoolAccess.saveProfile")(function* (
 
   const profile = {
     displayName,
-    cohort: cleanOptional(input.cohort, 80),
-    className: cleanOptional(input.className, 80),
+    cohort: cleanOptional(input.cohort),
+    className: cleanOptional(input.className),
   };
   yield* database.drizzle
     .insert(notebookProfiles)
@@ -396,24 +396,69 @@ export const saveProfile = Effect.fn("SchoolAccess.saveProfile")(function* (
   return profile;
 });
 
-export const registrationTokenIsActive = async (pool: Pool, token: string | null) => {
+/**
+ * How many accounts one reservation may create.
+ *
+ * Signup does not consume the reservation — redemption does, and it needs a verified address, which
+ * arrives long after the signup request returns. Without a budget the reservation would instead
+ * authorise every signup made in its lifetime, so one code would buy two hours of account creation
+ * and verification mail. Three lets someone who mistyped their own address try again twice.
+ */
+export const reservationSignupBudget = 3;
+
+/**
+ * The reservation a signup token names, if it is still usable and has signups left.
+ *
+ * Both functions below run on the raw pool rather than through Drizzle: Better Auth's hooks are
+ * Promise-based callbacks outside the Effect runtime.
+ */
+const usableReservationPredicate = `reservation."expiresAt" > now()
+        and reservation."signupCount" < $2
+        and exists (
+          select 1
+          from school_access_codes code
+          where code."id" = reservation."accessCodeId"
+            and code."revokedAt" is null
+            and (code."expiresAt" is null or code."expiresAt" > now())
+            and not exists (
+              select 1 from school_accesses access where access."sourceCodeId" = code."id"
+            )
+        )`;
+
+/** Whether a signup may proceed at all. Read-only, so a rejected request costs nothing. */
+export const registrationSignupAllowed = async (pool: Pool, token: string | null) => {
   if (token === null || token.length < 32) return false;
-  const result = await pool.query<{ active: boolean }>(
+  const result = await pool.query<{ allowed: boolean }>(
     `select exists (
        select 1
        from school_access_reservations reservation
-       join school_access_codes code on code."id" = reservation."accessCodeId"
        where reservation."tokenHash" = $1
-         and reservation."expiresAt" > now()
-         and code."revokedAt" is null
-         and (code."expiresAt" is null or code."expiresAt" > now())
-         and not exists (
-           select 1 from school_accesses access where access."sourceCodeId" = code."id"
-         )
-     ) as active`,
-    [digestSecret(token)],
+        and ${usableReservationPredicate}
+     ) as allowed`,
+    [digestSecret(token), reservationSignupBudget],
   );
-  return result.rows[0]?.active === true;
+  return result.rows[0]?.allowed === true;
+};
+
+/**
+ * Spends one signup from a reservation's budget, or reports that there was none to spend.
+ *
+ * A single conditional `update` so the check and the spend cannot be interleaved: PostgreSQL
+ * evaluates the predicate against the row it locks. Requests already in flight when the budget runs
+ * out can still overshoot it by their own number, which is the concurrency the caller allows rather
+ * than anything this reservation grants.
+ */
+export const spendRegistrationSignup = async (pool: Pool, token: string | null) => {
+  if (token === null || token.length < 32) return false;
+  const result = await pool.query(
+    `update school_access_reservations reservation
+        set "signupCount" = reservation."signupCount" + 1,
+            "updatedAt" = now()
+      where reservation."tokenHash" = $1
+        and ${usableReservationPredicate}`,
+    [digestSecret(token), reservationSignupBudget],
+  );
+  return result.rowCount === 1;
 };
 
 export * as SchoolAccess from "./school-access.ts";

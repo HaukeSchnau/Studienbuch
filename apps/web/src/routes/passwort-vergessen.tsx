@@ -1,6 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { AuthError, AuthShell, Field } from "#/features/auth/auth-shell.tsx";
+import {
+  AuthError,
+  AuthNote,
+  authNoteLinkClass,
+  AuthShell,
+  Field,
+  invalidWhen,
+} from "#/features/auth/auth-shell.tsx";
 import { authClient } from "#/infra/auth/client.ts";
 import { Button } from "#/ui/button.tsx";
 import { Input } from "#/ui/input.tsx";
@@ -48,14 +55,27 @@ function ForgotPasswordPage() {
               required
               type="email"
               value={email}
+              {...invalidWhen(error)}
             />
           </Field>
           {error === undefined ? null : <AuthError>{error}</AuthError>}
-          <Button disabled={busy} radius="pill" size="xl" type="submit" variant="brand">
-            Link senden
+          <Button
+            aria-busy={busy}
+            disabled={busy}
+            radius="pill"
+            size="xl"
+            type="submit"
+            variant="brand"
+          >
+            {busy ? "Wird gesendet ..." : "Link senden"}
           </Button>
         </form>
       )}
+      <AuthNote>
+        <Link className={authNoteLinkClass} search={{}} to="/anmelden">
+          Zurück zur Anmeldung
+        </Link>
+      </AuthNote>
     </AuthShell>
   );
 }

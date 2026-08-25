@@ -1082,6 +1082,51 @@ it.live.runIf(hasContainerRuntime)(
 );
 
 it.live.runIf(hasContainerRuntime)(
+  "lets one reservation create a bounded number of accounts",
+  () =>
+    Effect.gen(function* () {
+      const database = yield* Database.Service;
+      const operator = yield* Operator.bootstrap("Budget operator");
+      const [code] = yield* SchoolAccess.generateCodes({
+        schoolId: "budget-test-school",
+        schoolName: "Budget Test School",
+        kind: "Student",
+        count: 1,
+        createdByUserId: operator.userId,
+      });
+      if (code === undefined) return yield* Effect.die("Access-code generation returned no code");
+      const reservation = yield* SchoolAccess.reserve(code);
+
+      // A mistyped address has to be correctable, so the budget is more than one...
+      for (let spent = 0; spent < SchoolAccess.reservationSignupBudget; spent += 1) {
+        expect(
+          yield* Effect.promise(() =>
+            SchoolAccess.registrationSignupAllowed(database.pool, reservation.token),
+          ),
+        ).toBe(true);
+        expect(
+          yield* Effect.promise(() =>
+            SchoolAccess.spendRegistrationSignup(database.pool, reservation.token),
+          ),
+        ).toBe(true);
+      }
+
+      // ...and finite, so a leaked code cannot become a source of accounts and verification mail.
+      expect(
+        yield* Effect.promise(() =>
+          SchoolAccess.registrationSignupAllowed(database.pool, reservation.token),
+        ),
+      ).toBe(false);
+      expect(
+        yield* Effect.promise(() =>
+          SchoolAccess.spendRegistrationSignup(database.pool, reservation.token),
+        ),
+      ).toBe(false);
+    }).pipe(Effect.provide(migrated)),
+  { timeout: 60_000 },
+);
+
+it.live.runIf(hasContainerRuntime)(
   "reserves an unassigned code once and redeems it only for a verified account",
   () =>
     Effect.gen(function* () {
@@ -1124,7 +1169,7 @@ it.live.runIf(hasContainerRuntime)(
       expect(retriedAccess.id).toBe(access.id);
       expect(
         yield* Effect.promise(() =>
-          SchoolAccess.registrationTokenIsActive(database.pool, reservation.token),
+          SchoolAccess.registrationSignupAllowed(database.pool, reservation.token),
         ),
       ).toBe(false);
       yield* SchoolAccess.saveProfile(user.id, {

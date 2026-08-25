@@ -1,8 +1,17 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Organization } from "@stu/core/organization";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import * as Schema from "effect/Schema";
 import { useEffect, useState } from "react";
 import { inspectReservation, type ReservationView } from "#/features/auth/access.ts";
-import { AuthError, AuthShell, Field } from "#/features/auth/auth-shell.tsx";
+import {
+  AuthError,
+  AuthNote,
+  authNoteLinkClass,
+  AuthShell,
+  Field,
+  invalidWhen,
+} from "#/features/auth/auth-shell.tsx";
+import { accessMessage, betterAuthMessage } from "#/features/auth/messages.ts";
 import { authClient } from "#/infra/auth/client.ts";
 import { Button } from "#/ui/button.tsx";
 import { Input } from "#/ui/input.tsx";
@@ -15,23 +24,34 @@ export const Route = createFileRoute("/registrieren")({
   head: () => ({ meta: [{ title: "Konto erstellen | Studienbuch" }] }),
 });
 
+/** What the page knows about the reservation it was sent here with. */
+type Reservation =
+  | { readonly state: "pending" }
+  | { readonly state: "ready"; readonly view: ReservationView }
+  | { readonly state: "unavailable"; readonly message: string };
+
 function RegisterPage() {
   const { reservation } = Route.useSearch();
-  const navigate = useNavigate();
-  const [view, setView] = useState<ReservationView>();
+  const [claim, setClaim] = useState<Reservation>({ state: "pending" });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string>();
-  const [sent, setSent] = useState(false);
+  const [sentTo, setSentTo] = useState<string>();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    void inspectReservation(reservation)
-      .then((result) => {
-        if (result.ok) setView(result.value);
-        else setError("Diese Reservierung ist abgelaufen.");
-      })
-      .catch(() => setError("Diese Reservierung ist abgelaufen."));
+    let current = true;
+    void inspectReservation(reservation).then((result) => {
+      if (!current) return;
+      setClaim(
+        result.ok
+          ? { state: "ready", view: result.value }
+          : { state: "unavailable", message: accessMessage(result.error) },
+      );
+    });
+    return () => {
+      current = false;
+    };
   }, [reservation]);
 
   const submit = async (event: React.FormEvent) => {
@@ -39,9 +59,11 @@ function RegisterPage() {
     setBusy(true);
     setError(undefined);
     const callbackPath = `/aktivieren/abschliessen?reservation=${encodeURIComponent(reservation)}`;
+    // Sent because the endpoint requires it, and overwritten by the server with this same value:
+    // a person's real name belongs to the school profile they author, never to the global account.
     const result = await authClient.signUp.email(
       {
-        name: "Studienbuch-Konto",
+        name: Organization.neutralAccountName,
         email,
         password,
         callbackURL: `${window.location.origin}${callbackPath}`,
@@ -51,20 +73,58 @@ function RegisterPage() {
     setBusy(false);
     if (result.error !== null) {
       setError(
-        "Das Konto konnte nicht erstellt werden. Prüfe deine Angaben und versuche es erneut.",
+        betterAuthMessage(
+          result.error,
+          "Das Konto konnte nicht erstellt werden. Versuche es gleich noch einmal.",
+        ),
       );
       return;
     }
-    setSent(true);
+    setSentTo(email);
   };
 
-  if (sent) {
+  if (sentTo !== undefined) {
     return (
       <AuthShell>
         <h1 className="text-center text-3xl text-primary-text">Schau in dein Postfach</h1>
         <p className="mt-4 text-center text-ink-soft">
-          Wir haben dir einen Bestätigungslink geschickt. Danach schließen wir die Aktivierung ab.
+          Wir haben einen Bestätigungslink an <span className="text-ink">{sentTo}</span> geschickt.
+          Danach schließen wir die Aktivierung ab.
         </p>
+        {/* The address is worth being able to correct: a link sent to a mistyped address never
+            arrives, and nothing else on this screen would ever tell the user why. */}
+        <Button
+          className="mt-7 w-full"
+          onClick={() => {
+            setSentTo(undefined);
+          }}
+          radius="pill"
+          size="lg"
+          type="button"
+          variant="outline"
+        >
+          Andere E-Mail-Adresse verwenden
+        </Button>
+      </AuthShell>
+    );
+  }
+
+  if (claim.state === "unavailable") {
+    return (
+      <AuthShell>
+        <h1 className="text-center text-3xl text-primary-text">
+          Zugangscode nicht mehr vorgemerkt
+        </h1>
+        <p className="mt-4 text-center text-ink-soft">{claim.message}</p>
+        <Button asChild className="mt-7 w-full" radius="pill" size="xl" variant="brand">
+          <Link to="/aktivieren">Zugangscode eingeben</Link>
+        </Button>
+        <AuthNote>
+          Schon ein Konto?{" "}
+          <Link className={authNoteLinkClass} search={{}} to="/anmelden">
+            Anmelden
+          </Link>
+        </AuthNote>
       </AuthShell>
     );
   }
@@ -72,11 +132,11 @@ function RegisterPage() {
   return (
     <AuthShell>
       <h1 className="text-center text-3xl text-primary-text">Konto erstellen</h1>
-      {view === undefined ? null : (
-        <p className="mt-3 text-center text-ink-soft">
-          {view.school.name}, {view.kind === "Student" ? "Schülerzugang" : "Lehrerzugang"}
-        </p>
-      )}
+      <p aria-live="polite" className="mt-3 text-center text-ink-soft">
+        {claim.state === "pending"
+          ? "Wir prüfen deinen Zugangscode ..."
+          : `${claim.view.school.name}, ${claim.view.kind === "Student" ? "Schülerzugang" : "Lehrerzugang"}`}
+      </p>
       <form className="mt-7 grid gap-4" onSubmit={submit}>
         <Field label="E-Mail-Adresse">
           <Input
@@ -85,9 +145,10 @@ function RegisterPage() {
             required
             type="email"
             value={email}
+            {...invalidWhen(error)}
           />
         </Field>
-        <Field label="Passwort">
+        <Field hint="Mindestens acht Zeichen." label="Passwort">
           <Input
             autoComplete="new-password"
             minLength={8}
@@ -95,11 +156,13 @@ function RegisterPage() {
             required
             type="password"
             value={password}
+            {...invalidWhen(error)}
           />
         </Field>
         {error === undefined ? null : <AuthError>{error}</AuthError>}
         <Button
-          disabled={busy || view === undefined}
+          aria-busy={busy}
+          disabled={busy || claim.state === "pending"}
           radius="pill"
           size="xl"
           type="submit"
@@ -108,16 +171,12 @@ function RegisterPage() {
           {busy ? "Konto wird erstellt ..." : "Konto erstellen"}
         </Button>
       </form>
-      <p className="mt-6 text-center text-sm text-ink-soft">
+      <AuthNote>
         Schon ein Konto?{" "}
-        <button
-          className="font-semibold text-accent hover:underline"
-          onClick={() => void navigate({ to: "/anmelden", search: { reservation } })}
-          type="button"
-        >
+        <Link className={authNoteLinkClass} search={{ reservation }} to="/anmelden">
           Anmelden
-        </button>
-      </p>
+        </Link>
+      </AuthNote>
     </AuthShell>
   );
 }

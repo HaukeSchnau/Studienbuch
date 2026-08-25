@@ -1,4 +1,9 @@
 import { getAuth } from "#/infra/auth/better-auth.ts";
+import {
+  forwardedClientPrincipal,
+  makeFixedWindowLimiter,
+  type RateLimitRejection,
+} from "#/infra/http/rate-limit.server.ts";
 
 export interface TelemetryAdmission {
   readonly check: (request: Request) => Promise<AdmissionDecision>;
@@ -8,12 +13,9 @@ export type AdmissionDecision =
   | { readonly allowed: true; readonly principal: string }
   | AdmissionRejection;
 
-export interface AdmissionRejection {
-  readonly allowed: false;
-  readonly status: 403 | 429;
-  readonly error: "admission_denied" | "rate_limited";
-  readonly retryAfterSeconds?: number;
-}
+export type AdmissionRejection =
+  | RateLimitRejection
+  | { readonly allowed: false; readonly status: 403; readonly error: "admission_denied" };
 
 /**
  * Who may post client telemetry.
@@ -37,62 +39,7 @@ function sameOriginPrincipal(request: Request): string | undefined {
   if (origin === null || origin !== new URL(request.url).origin) return undefined;
   // Browsers on one origin are indistinguishable to us without a session, so they share a bucket
   // keyed by the forwarded client address where a proxy supplies one.
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim();
-  return `origin:${origin}:${forwarded ?? "unknown"}`;
-}
-
-/**
- * A fixed-window limiter keyed per principal, holding at most `maxPrincipals` buckets.
- *
- * The window lives in process memory, so N instances permit N times the configured rate. That is
- * accepted here: the real bounds on this route are the 64 KiB body cap and the allowlisted record
- * schema, and this limiter exists to stop one client from monopolising ingestion — which the
- * previous single global window could not do, since one noisy client starved every other.
- */
-export function makeFixedWindowLimiter(options?: {
-  readonly limit?: number;
-  readonly windowMillis?: number;
-  readonly maxPrincipals?: number;
-  readonly now?: () => number;
-}) {
-  const limit = options?.limit ?? 60;
-  const windowMillis = options?.windowMillis ?? 60_000;
-  const maxPrincipals = options?.maxPrincipals ?? 10_000;
-  const now = options?.now ?? Date.now;
-  const windows = new Map<string, { startedAt: number; accepted: number }>();
-
-  return (principal: string): { readonly allowed: true } | AdmissionRejection => {
-    const currentTime = now();
-    if (windows.size > maxPrincipals) {
-      for (const [key, window] of windows) {
-        if (currentTime - window.startedAt >= windowMillis) windows.delete(key);
-      }
-      // Still full of live windows: shed the oldest rather than growing without bound.
-      if (windows.size > maxPrincipals) {
-        const oldest = windows.keys().next();
-        if (!oldest.done) windows.delete(oldest.value);
-      }
-    }
-
-    const window = windows.get(principal);
-    if (window === undefined || currentTime - window.startedAt >= windowMillis) {
-      windows.set(principal, { startedAt: currentTime, accepted: 1 });
-      return { allowed: true };
-    }
-    if (window.accepted >= limit) {
-      return {
-        allowed: false,
-        status: 429,
-        error: "rate_limited",
-        retryAfterSeconds: Math.max(
-          1,
-          Math.ceil((window.startedAt + windowMillis - currentTime) / 1_000),
-        ),
-      };
-    }
-    window.accepted += 1;
-    return { allowed: true };
-  };
+  return `origin:${origin}:${forwardedClientPrincipal(request)}`;
 }
 
 export function makeTelemetryAdmission(options?: {

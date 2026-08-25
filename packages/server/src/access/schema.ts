@@ -53,6 +53,12 @@ export const schoolAccessCodes = pgTable(
 /**
  * A short-lived claim which removes one code from circulation while signup is in progress.
  * Redeemed claims remain as a token-to-code receipt so completion is safe to retry.
+ *
+ * `signupCount` is what stops one reservation from opening a two-hour signup window rather than
+ * authorising a signup. Every account the token creates costs one of a small budget, so a mistyped
+ * address can be corrected but a leaked code cannot be turned into an unbounded source of accounts
+ * and verification mail. A budget rather than a single claim because the cost of the alternative
+ * falls on the one user who typed their own address wrong.
  */
 export const schoolAccessReservations = pgTable(
   "school_access_reservations",
@@ -63,6 +69,7 @@ export const schoolAccessReservations = pgTable(
       .references(() => schoolAccessCodes.id, { onDelete: "cascade" }),
     tokenHash: text("tokenHash").notNull(),
     expiresAt: timestamp("expiresAt", { withTimezone: true }).notNull(),
+    signupCount: integer("signupCount").notNull().default(0),
     ...timestamps,
   },
   (table) => [

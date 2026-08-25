@@ -302,6 +302,9 @@ importers:
       '@sentry/tanstackstart-react':
         specifier: ^10.70.0
         version: 10.70.0(@opentelemetry/core@2.10.0(@opentelemetry/api@1.9.1))(react@19.2.8)(supports-color@8.1.1)
+      '@stu/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@stu/observability':
         specifier: workspace:*
         version: link:../../packages/observability

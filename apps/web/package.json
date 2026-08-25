@@ -21,6 +21,7 @@
     "@better-auth/passkey": "1.6.27",
     "@fontsource-variable/nunito": "^5.3.0",
     "@sentry/tanstackstart-react": "^10.70.0",
+    "@stu/core": "workspace:*",
     "@stu/observability": "workspace:*",
     "@stu/server": "workspace:*",
     "@tailwindcss/typography": "^0.5.20",
