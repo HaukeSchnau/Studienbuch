@@ -17,3 +17,9 @@ export const sectionIds = {
   schools: "fuer-schulen",
   app: "app",
 } as const;
+
+/**
+ * Section anchors are absolute rather than bare fragments, so the header and footer keep working
+ * from the Impressum and the Datenschutzerklärung instead of jumping to nothing.
+ */
+export const sectionHref = (id: (typeof sectionIds)[keyof typeof sectionIds]) => `/#${id}`;

@@ -1,9 +1,9 @@
-import { externalLinks, sectionIds } from "#/domain-ui/brand/links.ts";
+import { externalLinks, sectionHref, sectionIds } from "#/domain-ui/brand/links.ts";
 
 const navItems = [
-  { href: `#${sectionIds.capabilities}`, label: "Funktionen" },
-  { href: `#${sectionIds.schools}`, label: "Für Schulen" },
-  { href: `#${sectionIds.app}`, label: "App laden" },
+  { href: sectionHref(sectionIds.capabilities), label: "Funktionen" },
+  { href: sectionHref(sectionIds.schools), label: "Für Schulen" },
+  { href: sectionHref(sectionIds.app), label: "App laden" },
 ] as const;
 
 /**
