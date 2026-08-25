@@ -22,6 +22,7 @@ const productionLockfile = join(repositoryRoot, "pnpm-lock.web.yaml");
 const workspacePackages = [
   "apps/console",
   "apps/web",
+  "packages/api",
   "packages/core",
   "packages/observability",
   "packages/server",

@@ -15,53 +15,57 @@ import {
 const sameOrigin = (headers: Readonly<Record<string, string>>) => {
   const origin = headers.origin;
   const host = headers["x-forwarded-host"] ?? headers.host;
-  if (origin === undefined || host === undefined) return Effect.succeed(false);
-  return Effect.try({
-    try: () => new URL(origin).host === host,
-    catch: () => false,
-  });
+  // Browsers identify cross-site POSTs with Origin/Sec-Fetch-Site. Native Expo requests have
+  // neither, and do not expose ambient browser cookies to an attacking site.
+  if (origin === undefined) return Effect.succeed(headers["sec-fetch-site"] === undefined);
+  if (host === undefined) return Effect.succeed(false);
+  return Effect.try(() => new URL(origin).host === host).pipe(Effect.orElseSucceed(() => false));
 };
 
-const admissionLayer = Layer.succeed(
+const admissionLayer = Layer.effect(
   AccessApi.EnrollmentAdmission,
-  AccessApi.EnrollmentAdmission.of((effect, { headers }) =>
-    Effect.gen(function* () {
-      if (!(yield* sameOrigin(headers))) return yield* AccessApi.InvalidOrigin.make();
-      const limiter = yield* EnrollmentRateLimiter;
-      const decision = yield* limiter.check(forwardedPrincipalFromHeaders(headers));
-      if (!decision.allowed) {
-        return yield* AccessApi.RateLimited.make({
-          retryAfterSeconds: decision.retryAfterSeconds,
-        });
-      }
-      return yield* effect;
-    }),
-  ),
+  Effect.gen(function* () {
+    const limiter = yield* EnrollmentRateLimiter;
+    return AccessApi.EnrollmentAdmission.of((effect, { headers }) =>
+      Effect.gen(function* () {
+        if (!(yield* sameOrigin(headers))) return yield* AccessApi.InvalidOrigin.make();
+        const decision = yield* limiter.check(forwardedPrincipalFromHeaders(headers));
+        if (!decision.allowed) {
+          return yield* AccessApi.RateLimited.make({
+            retryAfterSeconds: decision.retryAfterSeconds,
+          });
+        }
+        return yield* effect;
+      }),
+    );
+  }),
 );
 
-const authenticatedLayer = Layer.succeed(
+const authenticatedLayer = Layer.effect(
   AccessApi.Authenticated,
-  AccessApi.Authenticated.of((effect, { headers }) =>
-    Effect.gen(function* () {
-      const auth = yield* Auth.Service;
-      const session = yield* Effect.tryPromise({
-        try: () => auth.api.getSession({ headers: new globalThis.Headers(headers) }),
-        catch: () => AccessApi.AuthenticationRequired.make(),
-      });
-      if (session?.user === undefined) return yield* AccessApi.AuthenticationRequired.make();
-      return yield* effect.pipe(
-        Effect.provideService(
-          AccessApi.AuthenticatedUser,
-          AccessApi.AuthenticatedUser.of({
-            id: Organization.AccountId.make(session.user.id),
-            name: session.user.name,
-            email: session.user.email,
-            emailVerified: session.user.emailVerified,
-          }),
-        ),
-      );
-    }),
-  ),
+  Effect.gen(function* () {
+    const auth = yield* Auth.Service;
+    return AccessApi.Authenticated.of((effect, { headers }) =>
+      Effect.gen(function* () {
+        const session = yield* Effect.tryPromise({
+          try: () => auth.api.getSession({ headers: new globalThis.Headers(headers) }),
+          catch: () => AccessApi.AuthenticationRequired.make(),
+        });
+        if (session?.user === undefined) return yield* AccessApi.AuthenticationRequired.make();
+        return yield* effect.pipe(
+          Effect.provideService(
+            AccessApi.AuthenticatedUser,
+            AccessApi.AuthenticatedUser.of({
+              id: Organization.AccountId.make(session.user.id),
+              name: session.user.name,
+              email: session.user.email,
+              emailVerified: session.user.emailVerified,
+            }),
+          ),
+        );
+      }),
+    );
+  }),
 );
 
 const school = (value: { readonly id: string; readonly name: string }) => ({
@@ -78,6 +82,10 @@ const handlers = AccessApi.Rpcs.toLayer({
         school: school(reservation.school),
         kind: reservation.kind,
       })),
+      Effect.catchTags({
+        EffectDrizzleQueryError: (error) => Effect.die(error),
+        SqlError: (error) => Effect.die(error),
+      }),
     ),
   "Access.InspectReservation": ({ token }) =>
     SchoolAccess.inspectReservation(token).pipe(
@@ -86,6 +94,7 @@ const handlers = AccessApi.Rpcs.toLayer({
         school: school(reservation.school),
         kind: reservation.kind,
       })),
+      Effect.catchTag("EffectDrizzleQueryError", (error) => Effect.die(error)),
     ),
   "Access.CompleteReservation": ({ token }) =>
     Effect.gen(function* () {
@@ -97,7 +106,12 @@ const handlers = AccessApi.Rpcs.toLayer({
         school: school(access.school),
         kind: access.kind,
       };
-    }),
+    }).pipe(
+      Effect.catchTags({
+        EffectDrizzleQueryError: (error) => Effect.die(error),
+        SqlError: (error) => Effect.die(error),
+      }),
+    ),
   "Access.SaveProfile": (input) =>
     Effect.gen(function* () {
       const user = yield* AccessApi.AuthenticatedUser;
@@ -115,7 +129,7 @@ const handlers = AccessApi.Rpcs.toLayer({
               : Organization.OptionalProfileField.make(profile.className),
         },
       };
-    }),
+    }).pipe(Effect.catchTag("EffectDrizzleQueryError", (error) => Effect.die(error))),
   "Access.GetAccount": () =>
     Effect.gen(function* () {
       const user = yield* AccessApi.AuthenticatedUser;
@@ -140,14 +154,14 @@ const handlers = AccessApi.Rpcs.toLayer({
           className: access.className,
         })),
       };
-    }),
+    }).pipe(Effect.catchTag("EffectDrizzleQueryError", (error) => Effect.die(error))),
 });
 
 export class AccessRpcEndpoint extends Context.Service<
   AccessRpcEndpoint,
   (request: Request) => Promise<Response>
->()("@stu/web/auth/AccessRpcEndpoint") {
-  static readonly layer = Layer.scoped(
+>()("@stu/web/features/auth/rpc.server/AccessRpcEndpoint") {
+  static readonly layer = Layer.effect(
     AccessRpcEndpoint,
     Effect.gen(function* () {
       const httpEffect = yield* RpcServer.toHttpEffect(AccessApi.Rpcs).pipe(

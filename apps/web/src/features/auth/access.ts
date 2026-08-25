@@ -1,8 +1,8 @@
 import { AccessApi } from "@stu/api";
 import { Organization } from "@stu/core";
 import * as Effect from "effect/Effect";
-import * as Either from "effect/Either";
 import * as Layer from "effect/Layer";
+import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { AtomRpc } from "effect/unstable/reactivity";
@@ -38,16 +38,16 @@ export type ApiResult<Value> =
   | { readonly ok: true; readonly value: Value }
   | { readonly ok: false; readonly error: ApiFailure };
 
-const failureCodes = {
-  "SchoolAccess.CodeUnavailable": accessErrorCodes.codeUnavailable,
-  "SchoolAccess.ReservationUnavailable": accessErrorCodes.reservationUnavailable,
-  "SchoolAccess.EmailNotVerified": accessErrorCodes.emailVerificationRequired,
-  "SchoolAccess.AccessAlreadyExists": accessErrorCodes.accessAlreadyExists,
-  "SchoolAccess.ProfileUnavailable": accessErrorCodes.profileUnavailable,
-  "AccessApi.InvalidOrigin": accessErrorCodes.invalidOrigin,
-  "AccessApi.AuthenticationRequired": accessErrorCodes.authenticationRequired,
-  "AccessApi.RateLimited": accessErrorCodes.rateLimited,
-} satisfies Readonly<Record<string, AccessErrorCode>>;
+const failureCodes = new Map<string, AccessErrorCode>([
+  ["SchoolAccess.CodeUnavailable", accessErrorCodes.codeUnavailable],
+  ["SchoolAccess.ReservationUnavailable", accessErrorCodes.reservationUnavailable],
+  ["SchoolAccess.EmailNotVerified", accessErrorCodes.emailVerificationRequired],
+  ["SchoolAccess.AccessAlreadyExists", accessErrorCodes.accessAlreadyExists],
+  ["SchoolAccess.ProfileUnavailable", accessErrorCodes.profileUnavailable],
+  ["AccessApi.InvalidOrigin", accessErrorCodes.invalidOrigin],
+  ["AccessApi.AuthenticationRequired", accessErrorCodes.authenticationRequired],
+  ["AccessApi.RateLimited", accessErrorCodes.rateLimited],
+]);
 
 const failed = (code: AccessErrorCode, status = 0): ApiResult<never> => ({
   ok: false,
@@ -61,23 +61,18 @@ const browserProtocol = RpcClient.layerProtocolHttp({ url: AccessApi.rpcPath }).
 );
 
 const makeClient = RpcClient.make(AccessApi.Rpcs);
-type Client = Effect.Effect.Success<typeof makeClient>;
+type Client = Effect.Success<typeof makeClient>;
 
 const withClient = <A, E>(use: (client: Client) => Effect.Effect<A, E>) =>
   Effect.scoped(makeClient.pipe(Effect.flatMap(use), Effect.provide(browserProtocol)));
 
-const run = async <A, E extends { readonly _tag?: string }>(
+const run = async <A, E extends { readonly _tag: string }>(
   effect: Effect.Effect<A, E>,
 ): Promise<ApiResult<A>> => {
   try {
-    const result = await Effect.runPromise(Effect.either(effect));
-    if (Either.isRight(result)) return { ok: true, value: result.right };
-    const tag = result.left._tag;
-    return failed(
-      tag === undefined
-        ? accessErrorCodes.internalError
-        : (failureCodes[tag] ?? accessErrorCodes.internalError),
-    );
+    const result = await Effect.runPromise(effect.pipe(Effect.result));
+    if (Result.isSuccess(result)) return { ok: true, value: result.success };
+    return failed(failureCodes.get(result.failure._tag) ?? accessErrorCodes.internalError);
   } catch {
     return failed(accessErrorCodes.internalError);
   }
@@ -88,7 +83,7 @@ export const reserveAccess = (code: string) =>
 
 export const inspectReservation = (token: string) =>
   run(
-    Schema.decodeUnknownEffect(Organization.SchoolAccessReservationToken)(token).pipe(
+    Schema.decodeEffect(Organization.SchoolAccessReservationToken)(token).pipe(
       Effect.flatMap((reservationToken) =>
         withClient((client) => client["Access.InspectReservation"]({ token: reservationToken })),
       ),
@@ -97,7 +92,7 @@ export const inspectReservation = (token: string) =>
 
 export const completeReservation = (token: string) =>
   run(
-    Schema.decodeUnknownEffect(Organization.SchoolAccessReservationToken)(token).pipe(
+    Schema.decodeEffect(Organization.SchoolAccessReservationToken)(token).pipe(
       Effect.flatMap((reservationToken) =>
         withClient((client) => client["Access.CompleteReservation"]({ token: reservationToken })),
       ),
@@ -111,7 +106,7 @@ export const saveProfile = (input: {
   readonly className: string;
 }) =>
   run(
-    Schema.decodeUnknownEffect(Organization.NotebookProfileInput)({
+    Schema.decodeEffect(Organization.NotebookProfileInput)({
       ...input,
       cohort: input.cohort,
       className: input.className,

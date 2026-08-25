@@ -40,6 +40,24 @@ their own address can correct it. Signing up with an address Studienbuch already
 a success rather than an error, so that signup cannot be used to test whether an address is
 registered, and that response spends from the budget like any other.
 
+The budget is claimed atomically before Better Auth starts signup. A request Better Auth rejects
+returns that claim; a response describing either a new or deliberately masked existing account
+keeps it. A read followed by a later increment is not sufficient here, because parallel requests
+could all pass the read before any one of them increments the counter.
+
+## Application boundary
+
+Better Auth continues to own its standard `/api/auth/*` HTTP endpoints. Studienbuch's first-party
+web and mobile clients use the shared Effect RPC group in `@stu/api` for product operations. The
+group owns payload, success, and expected-error schemas; the server supplies handlers and
+middleware, while each client supplies its transport. The web client currently uses JSON over
+`/api/rpc`, and its account read is an `AtomRpc` query.
+
+This is deliberately not a promise that every future endpoint is RPC. Public webhooks, downloads,
+redirects, third-party integrations, and any API whose HTTP/OpenAPI surface is itself a product
+belong in Effect HTTP API. The authentication provider's protocol also remains HTTP rather than
+being wrapped in a private RPC facade.
+
 ## Stored meaning
 
 A school access record means only that an account redeemed a code issued for a school. It does not
@@ -77,8 +95,8 @@ receive a code-to-account or code-to-email mapping.
 - Make access codes revocable and optionally expiring. Codes do not expire by default because
   schools may distribute printed batches over a long period.
 - Allow only one active reservation per code. Expired reservations no longer block a code.
-- Bound the number of accounts one reservation may create, and spend from that bound only for a
-  response that describes an account, so that a rejected request costs the user nothing.
+- Bound the number of accounts one reservation may create. Claim from that bound atomically before
+  signup, then return the claim when Better Auth rejects the request.
 - Rate-limit the enrollment routes per client. Not for entropy — 80 bits is ample — but so that one
   client cannot churn reservations or the work behind them.
 - Check an operator setup token against the account a passkey ceremony is actually for before

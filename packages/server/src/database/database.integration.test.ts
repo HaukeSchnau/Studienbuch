@@ -1079,7 +1079,7 @@ it.live.runIf(hasContainerRuntime)(
     }).pipe(
       Effect.provide(
         Layer.provideMerge(
-          Auth.layer({ emailVerification: { sendVerificationEmail: async () => undefined } }),
+          Auth.layer({ emailVerification: { sendVerificationEmail: () => Effect.void } }),
           migrated,
         ),
       ),
@@ -1091,7 +1091,6 @@ it.live.runIf(hasContainerRuntime)(
   "lets one reservation create a bounded number of accounts",
   () =>
     Effect.gen(function* () {
-      const database = yield* Database.Service;
       const operator = yield* Operator.bootstrap("Budget operator");
       const [code] = yield* SchoolAccess.generateCodes({
         schoolId: "budget-test-school",
@@ -1161,7 +1160,7 @@ it.live.runIf(hasContainerRuntime)(
       expect(retriedAccess.id).toBe(access.id);
       expect(yield* SchoolAccess.claimRegistrationSignup(reservation.token)).toBe(false);
       yield* SchoolAccess.saveProfile(user.id, {
-        schoolAccessId: access.id,
+        schoolAccessId: Organization.SchoolAccessId.make(access.id),
         displayName: "Alex",
         cohort: "8",
         className: "8a",
