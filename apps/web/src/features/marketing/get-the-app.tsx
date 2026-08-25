@@ -2,6 +2,7 @@ import { sectionIds } from "#/domain-ui/brand/links.ts";
 import { EdgeBlob } from "#/domain-ui/brand/blobs.tsx";
 import { StoreBadges } from "#/domain-ui/brand/store-badges.tsx";
 import { Picture } from "#/ui/picture.tsx";
+import { PointerSpot } from "#/ui/pointer-spot.tsx";
 import { Container, Section } from "#/ui/section.tsx";
 
 /**
@@ -29,7 +30,7 @@ export const GetTheApp = () => (
     />
 
     <Container>
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-primary px-6 pt-14 pb-14 sm:rounded-[3.5rem] sm:px-12 sm:pt-20 sm:pb-20 lg:pb-0">
+      <PointerSpot className="relative overflow-hidden rounded-[2.5rem] bg-primary px-6 pt-14 pb-14 sm:rounded-[3.5rem] sm:px-12 sm:pt-20 sm:pb-20 lg:pb-0">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
           <div className="flex flex-col items-center gap-7 text-center lg:items-start lg:pb-20 lg:text-left">
             <h2 className="max-w-xl text-3xl/snug text-white text-balance sm:text-5xl/snug">
@@ -60,7 +61,7 @@ export const GetTheApp = () => (
             </div>
           </div>
         </div>
-      </div>
+      </PointerSpot>
     </Container>
   </Section>
 );

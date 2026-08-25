@@ -1,39 +1,104 @@
+import { useEffect, useState } from "react";
+
 import { externalLinks, sectionHref, sectionIds } from "#/domain-ui/brand/links.ts";
+import { Underline } from "#/domain-ui/brand/underline.tsx";
 
 const navItems = [
-  { href: sectionHref(sectionIds.capabilities), label: "Funktionen" },
-  { href: sectionHref(sectionIds.schools), label: "Für Schulen" },
-  { href: sectionHref(sectionIds.app), label: "App laden" },
+  { id: sectionIds.capabilities, label: "Funktionen" },
+  { id: sectionIds.schools, label: "Für Schulen" },
+  { id: sectionIds.app, label: "App laden" },
 ] as const;
 
 /**
- * The legacy site's chrome was a single green pill, only as wide as its links, floating centred
- * above a white page. That silhouette is the site's signature, so it is kept exactly.
+ * Which of the linked sections is currently being read.
  *
- * It is filled with `primary-text` rather than the lighter greens the legacy pill used: white on
- * those is under 3:1, which nav links at this size cannot carry.
+ * An IntersectionObserver rather than a scroll handler: the browser does the geometry itself and
+ * only calls back when something actually crosses, where a scroll listener would run on every
+ * frame of every scroll to compute the same answer.
+ *
+ * The band is the middle of the viewport rather than its top, so the highlight follows what is
+ * being looked at instead of whatever happens to be touching the top edge.
  */
-export const SiteHeader = () => (
-  <header className="flex justify-center px-6 pt-6 sm:pt-8">
-    <nav
-      aria-label="Hauptnavigation"
-      className="flex w-fit items-center gap-5 rounded-full bg-primary-text px-6 py-3.5 text-white shadow-float sm:gap-8 sm:px-8"
-    >
-      {navItems.map((item) => (
-        <a
-          className="rounded-sm text-sm font-bold whitespace-nowrap transition-opacity hover:opacity-75 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none sm:text-base"
-          href={item.href}
-          key={item.href}
-        >
-          {item.label}
-        </a>
-      ))}
-      <a
-        className="hidden rounded-sm text-sm font-bold whitespace-nowrap transition-opacity hover:opacity-75 focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none sm:inline sm:text-base"
-        href={externalLinks.schoolContact}
+function useActiveSection(ids: ReadonlyArray<string>): string | undefined {
+  const [active, setActive] = useState<string>();
+
+  useEffect(() => {
+    const visible = new Set<string>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            visible.add(entry.target.id);
+          } else {
+            visible.delete(entry.target.id);
+          }
+        }
+        // Walked in document order and kept, so crossing a boundary while two sections overlap
+        // always resolves to the later one. `findLast` would say this in a line but is ES2023, and
+        // this file is not worth raising the library target for.
+        let latest: string | undefined;
+        for (const id of ids) {
+          if (visible.has(id)) {
+            latest = id;
+          }
+        }
+        setActive(latest);
+      },
+      { rootMargin: "-45% 0px -45% 0px" },
+    );
+
+    for (const id of ids) {
+      const element = document.getElementById(id);
+      if (element !== null) {
+        observer.observe(element);
+      }
+    }
+    return () => {
+      observer.disconnect();
+    };
+  }, [ids]);
+
+  return active;
+}
+
+const linkClass =
+  "nav-link relative rounded-sm pb-1 text-sm font-bold whitespace-nowrap focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none sm:text-base";
+
+/**
+ * The legacy site's chrome: a single green pill, only as wide as its links, floating centred above
+ * a white page.
+ *
+ * The current section is marked with the brand's own swoosh rather than a sliding indicator or a
+ * colour change. It reuses the gesture already under the headline, needs no measuring of link
+ * positions, and survives a resize or a late font swap without recalculating anything — and the
+ * same stroke draws on hover, so pointing at a link previews what arriving there will look like.
+ */
+export const SiteHeader = () => {
+  const active = useActiveSection(navItems.map((item) => item.id));
+
+  return (
+    <header className="flex justify-center px-6 pt-6 sm:pt-8">
+      <nav
+        aria-label="Hauptnavigation"
+        className="flex w-fit items-center gap-5 rounded-full bg-primary-text px-6 py-3.5 text-white shadow-float sm:gap-8 sm:px-8"
       >
-        Kontakt
-      </a>
-    </nav>
-  </header>
-);
+        {navItems.map((item) => (
+          <a
+            aria-current={active === item.id ? "true" : undefined}
+            className={linkClass}
+            data-active={active === item.id ? "true" : "false"}
+            href={sectionHref(item.id)}
+            key={item.id}
+          >
+            {item.label}
+            <Underline className="nav-underline" />
+          </a>
+        ))}
+        <a className={`${linkClass} hidden sm:inline`} href={externalLinks.schoolContact}>
+          Kontakt
+          <Underline className="nav-underline" />
+        </a>
+      </nav>
+    </header>
+  );
+};

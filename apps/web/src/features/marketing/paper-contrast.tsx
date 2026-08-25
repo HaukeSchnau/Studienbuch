@@ -13,7 +13,7 @@ import { AbsencePreview } from "./app-previews.tsx";
 const PaperPage = () => (
   <div
     aria-hidden
-    className="relative w-full max-w-xs -rotate-2 overflow-hidden rounded-sm bg-[#fdfcf7] p-5 shadow-card-lg ring-1 ring-black/5"
+    className="paper-lift relative w-full max-w-xs overflow-hidden rounded-sm bg-[#fdfcf7] p-5 shadow-card-lg ring-1 ring-black/5"
   >
     {/* Ruled lines and the red margin rule of a school exercise book. */}
     <div
@@ -56,7 +56,7 @@ export const PaperContrast = () => (
           →
         </p>
 
-        <div className="reveal flex flex-col items-center gap-5">
+        <div className="reveal card-settle flex flex-col items-center gap-5">
           <p className="text-sm font-bold tracking-[0.14em] text-primary-text uppercase">Nachher</p>
           <div className="w-full max-w-xs">
             <AbsencePreview />

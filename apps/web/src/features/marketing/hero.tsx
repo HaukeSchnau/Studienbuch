@@ -48,10 +48,11 @@ export const Hero = () => (
           <AppIcon size="lg" />
           <div>
             <p className="enter text-xl font-bold text-primary sm:text-2xl">Moin!</p>
-            <h1 className="enter-late mt-1 text-4xl/[1.35] text-primary-text sm:text-5xl/[1.35] lg:text-6xl/[1.35]">
-              Das digitale
-              <br />
-              <Underlined>Studienbuch</Underlined>
+            <h1 className="mt-1 text-4xl/[1.35] text-primary-text sm:text-5xl/[1.35] lg:text-6xl/[1.35]">
+              <span className="enter-late block">Das digitale</span>
+              <span className="enter-later block">
+                <Underlined>Studienbuch</Underlined>
+              </span>
             </h1>
           </div>
         </div>
