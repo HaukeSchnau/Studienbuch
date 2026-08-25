@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as PublicIndexRouteImport } from './routes/_public.index'
+import { Route as PublicDatenschutzRouteImport } from './routes/_public.datenschutz'
+import { Route as PublicImpressumRouteImport } from './routes/_public.impressum'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiHealthLiveRouteImport } from './routes/api/health/live'
 import { Route as ApiHealthReadyRouteImport } from './routes/api/health/ready'
@@ -24,6 +26,16 @@ const PublicRoute = PublicRouteImport.update({
 const PublicIndexRoute = PublicIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicDatenschutzRoute = PublicDatenschutzRouteImport.update({
+  id: '/datenschutz',
+  path: '/datenschutz',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicImpressumRoute = PublicImpressumRouteImport.update({
+  id: '/impressum',
+  path: '/impressum',
   getParentRoute: () => PublicRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -56,6 +68,8 @@ const ApiObservabilityV1TelemetryRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
+  '/datenschutz': typeof PublicDatenschutzRoute
+  '/impressum': typeof PublicImpressumRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -63,6 +77,8 @@ export interface FileRoutesByFullPath {
   '/api/observability/v1/telemetry': typeof ApiObservabilityV1TelemetryRoute
 }
 export interface FileRoutesByTo {
+  '/datenschutz': typeof PublicDatenschutzRoute
+  '/impressum': typeof PublicImpressumRoute
   '/': typeof PublicIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
@@ -73,6 +89,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_public': typeof PublicRouteWithChildren
+  '/_public/datenschutz': typeof PublicDatenschutzRoute
+  '/_public/impressum': typeof PublicImpressumRoute
   '/_public/': typeof PublicIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
@@ -84,6 +102,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/datenschutz'
+    | '/impressum'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -91,6 +111,8 @@ export interface FileRouteTypes {
     | '/api/observability/v1/telemetry'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/datenschutz'
+    | '/impressum'
     | '/'
     | '/api/auth/$'
     | '/api/health/live'
@@ -100,6 +122,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_public'
+    | '/_public/datenschutz'
+    | '/_public/impressum'
     | '/_public/'
     | '/api/auth/$'
     | '/api/health/live'
@@ -131,6 +155,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof PublicIndexRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/datenschutz': {
+      id: '/_public/datenschutz'
+      path: '/datenschutz'
+      fullPath: '/datenschutz'
+      preLoaderRoute: typeof PublicDatenschutzRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/impressum': {
+      id: '/_public/impressum'
+      path: '/impressum'
+      fullPath: '/impressum'
+      preLoaderRoute: typeof PublicImpressumRouteImport
       parentRoute: typeof PublicRoute
     }
     '/api/auth/$': {
@@ -172,10 +210,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface PublicRouteChildren {
+  PublicDatenschutzRoute: typeof PublicDatenschutzRoute
+  PublicImpressumRoute: typeof PublicImpressumRoute
   PublicIndexRoute: typeof PublicIndexRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
+  PublicDatenschutzRoute: PublicDatenschutzRoute,
+  PublicImpressumRoute: PublicImpressumRoute,
   PublicIndexRoute: PublicIndexRoute,
 }
 
