@@ -21,4 +21,20 @@
       stroke-linecap="round"
     />
   </g>
+  <!--
+    The lower half of the tile is white, so on a white or near-white surface the mark would lose its
+    outline and read as a floating green blob. This hairline keeps the tile a tile everywhere.
+  -->
+  <rect
+    x="0.6"
+    y="0.6"
+    width="62.8"
+    height="62.8"
+    rx="14.4"
+    ry="14.4"
+    fill="none"
+    stroke="#203755"
+    stroke-opacity="0.12"
+    stroke-width="1.2"
+  />
 </svg>

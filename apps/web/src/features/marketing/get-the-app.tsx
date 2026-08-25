@@ -1,7 +1,6 @@
 import { sectionIds } from "#/domain-ui/brand/links.ts";
 import { StoreBadges } from "#/domain-ui/brand/store-badges.tsx";
 import { SwooshPanel } from "#/domain-ui/brand/swoosh.tsx";
-import { Mark } from "#/domain-ui/brand/wordmark.tsx";
 import { Container } from "#/ui/section.tsx";
 
 /**
@@ -13,7 +12,6 @@ export const GetTheApp = () => (
   <section id={sectionIds.app}>
     <SwooshPanel>
       <Container className="flex flex-col items-center gap-7 pt-20 pb-28 text-center sm:pt-24 sm:pb-36">
-        <Mark className="size-16 rounded-[1rem] shadow-float sm:size-20 sm:rounded-[1.25rem]" />
         <h2 className="max-w-2xl text-3xl/snug text-white text-balance sm:text-5xl/snug">
           Bis gleich in der App
         </h2>

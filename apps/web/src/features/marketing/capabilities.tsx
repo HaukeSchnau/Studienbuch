@@ -83,7 +83,9 @@ export const Capabilities = () => (
           <article className="flex flex-col gap-6 rounded-card-lg bg-primary p-8 text-white sm:flex-row sm:items-center sm:gap-10 sm:p-10">
             <div className="flex max-w-xl flex-col gap-3">
               <h3 className="text-2xl text-white sm:text-3xl">Funktioniert auch ohne Empfang</h3>
-              <p className="text-lg/relaxed text-white text-pretty">
+              {/* 20px minimum: white on the brand green is 3.2:1, which only clears AA as large
+                  text. Nothing on a green surface may be smaller or dimmed. */}
+              <p className="text-xl/relaxed text-white text-pretty">
                 Studienbuch speichert zuerst auf dem Gerät und gleicht ab, sobald wieder Netz da
                 ist. Die App öffnet sich mit deinen Daten statt mit einem Ladebalken, und was du im
                 Fachraum einträgst, geht nicht verloren.

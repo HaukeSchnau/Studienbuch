@@ -117,8 +117,10 @@ export const OfflinePreview = () => (
       <WifiOff className="size-4" strokeWidth={2.5} />
       Kein Netz
     </span>
-    <span className="text-xl font-bold text-primary-text">→</span>
-    <span className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-bold text-white shadow-card">
+    <span className="text-xl font-bold text-white">→</span>
+    {/* Deep ink, not the brand green: this chip sits on a green card, and white on that green is
+        3.2:1 — invisible as a fill and unreadable as a label. */}
+    <span className="flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-bold text-white shadow-card">
       <Check className="size-4" strokeWidth={3} />
       Stundenplan trotzdem da
     </span>
