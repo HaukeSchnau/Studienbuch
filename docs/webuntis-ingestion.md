@@ -16,7 +16,9 @@ An unchanged poll therefore adds one small run and no payload version or change 
 
 Only a complete scope may interpret an absent identity as removed. Authentication, transport or
 decode failures do not create successful runs and cannot mutate current state. A transaction-scoped
-advisory lock serializes concurrent imports of the same source, dataset and scope.
+advisory lock serializes reconciliation of the same source, dataset and scope. The application also
+holds one session-level advisory lock across the provider fetch, source writes and projection for a
+school and dataset, so a worker and a manual console import cannot overlap.
 
 This is source truth, not the Studienbuch domain model and not the client sync event log. Domain
 projection may combine several source records and emit application changes without weakening
@@ -133,19 +135,30 @@ inside the tested batch size of 500.
 
 ### Polling policy
 
-The storage layer does not encode a schedule. The agreed first production policy is configuration
-with these defaults:
+The storage layer does not encode a schedule. The dedicated worker owns the schedule and uses these
+defaults:
 
-- directory: daily and on demand;
-- timetable from today through 14 days ahead: every 10 minutes;
-- timetable from 15 through 56 days ahead: hourly;
-- recently elapsed timetable days: refresh for 48 hours, then stop polling;
-- exams for the active academic year: hourly.
+- directory: at startup, daily and on demand;
+- timetable from two days ago through 14 days ahead: at startup and every 10 minutes;
+- timetable from 15 through 56 days ahead: at startup and hourly;
+- private course-roster evidence from 28 days ago through 28 days ahead: at startup, daily and
+  immediately after a directory projection changes;
+- exams for the active academic year: hourly after the exams importer is added.
 
-Add jitter and prevent overlapping executions for one data source. Retry failed provider requests
-without advancing current state. Retention can later compact old unchanged run manifests; record
-versions and change-bearing runs should remain until their audit and projection requirements are
-known.
+Every range is clipped to the current WebUntis academic year. The two timetable windows are
+disjoint, including when the worker runs near the start or end of an academic year.
+
+Production cadences are jittered. Each attempt retries twice with jittered exponential delays
+starting at five seconds. Exhausted retries are logged and traced, then the job waits for its normal
+next cadence; the worker process stays alive. Failed fetches never create a source run or advance
+current state.
+
+The directory, timetable and course-roster sources each permit one in-process execution. The hot
+and warm timetable loops share the same permit. A PostgreSQL advisory lock keyed by school and
+dataset extends this guarantee across worker processes and manual imports. If another process owns
+the lock, the attempt is skipped through the same typed failure and retry path. Retention can later
+compact old unchanged run manifests; record versions and change-bearing runs should remain until
+their audit and projection requirements are known.
 
 ## IGS exams
 
@@ -521,6 +534,22 @@ just console webuntis-course-rosters \
   --apply
 ```
 
+Run the continuous importer as a dedicated process:
+
+```bash
+just dev worker
+```
+
+It requires `DATABASE_URL` and the same `WEBUNTIS_*` configuration as the manual commands. It runs
+the directory, both timetable windows and the private course-roster window immediately before
+entering their independent schedules. Its structured logs and spans use the
+`studienbuch-worker` service identity.
+
+The worker is a separate application rather than a background fiber in the web server. Web request
+lifecycle, replica count and restarts therefore cannot silently multiply or terminate import loops.
+The application is buildable and runnable from the workspace; production service wiring is still a
+deployment decision and this change does not start an unattended importer.
+
 ## Next implementation slice
 
 1. Define role-specific timetable, directory and course contracts and turn projection transitions into
@@ -528,6 +557,5 @@ just console webuntis-course-rosters \
    server-only.
 2. Add student timetable data to client contracts only if a concrete feature needs it. Course
    reconciliation alone does not justify duplicating the school timetable per student.
-3. Add the agreed polling policy with jitter, one active execution per source and observable
-   failures that never advance source state.
-4. Add the server-only exams importer before designing its role-specific client projection.
+3. Add the server-only exams importer before designing its role-specific client projection, then
+   attach it to the worker's hourly cadence.

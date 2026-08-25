@@ -12,4 +12,7 @@ export * as WebUntisDirectory from "./webuntis/directory.ts";
 export * as WebUntisTimetable from "./webuntis/timetable.ts";
 export * as WebUntisCourseRosters from "./webuntis/student-timetable.ts";
 export * as WebUntisCourseReconciliation from "./webuntis/course-reconciliation.ts";
+export * as WebUntisImporter from "./webuntis/importer.ts";
+export * as WebUntisPollingPolicy from "./webuntis/polling-policy.ts";
+export * as WebUntisPolling from "./webuntis/polling.ts";
 export * as schema from "./auth/schema.ts";

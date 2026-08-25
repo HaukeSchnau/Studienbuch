@@ -1,11 +1,8 @@
 import {
-  CourseProjectionStore,
   Database,
-  DirectoryProjectionStore,
-  SourceObservationStore,
-  TimetableProjectionStore,
   WebUntisCourseRosters,
   WebUntisDirectory,
+  WebUntisImporter,
   WebUntisTimetable,
 } from "@stu/server";
 import * as Console from "effect/Console";
@@ -63,12 +60,7 @@ export const runWebUntisDirectoryPreview = Effect.fn("Console.webUntisDirectoryP
 export const runWebUntisDirectoryImport = Effect.fn("Console.webUntisDirectoryImport")(function* (
   requestedSchoolYear: string,
 ) {
-  const snapshot = yield* WebUntisDirectory.fetchDirectorySnapshot(requestedSchoolYear);
-  const source = yield* SourceObservationStore.persistDirectorySnapshot(snapshot);
-  const projection = yield* DirectoryProjectionStore.projectCurrent({
-    dataSourceId: snapshot.preview.dataSourceId,
-  });
-  const output = { source, projection, preview: snapshot.preview };
+  const output = yield* WebUntisImporter.importDirectory(requestedSchoolYear);
   yield* Console.log(JSON.stringify(output, null, 2));
   return output;
 });
@@ -103,30 +95,11 @@ export const runWebUntisTimetableImport = Effect.fn("Console.webUntisTimetableIm
   requestedStart: string,
   requestedEnd: string,
 ) {
-  const plan = yield* WebUntisTimetable.fetchTimetableImportPlan(
+  const output = yield* WebUntisImporter.importTimetable(
     requestedSchoolYear,
     requestedStart,
     requestedEnd,
   );
-  const runs = yield* Effect.forEach(
-    plan.snapshots,
-    (snapshot) =>
-      Effect.gen(function* () {
-        const source = yield* SourceObservationStore.persistSourceSnapshot(snapshot);
-        const projection = yield* TimetableProjectionStore.projectCurrentScope({
-          dataSourceId: snapshot.dataSourceId,
-          scope: snapshot.scope,
-        });
-        return {
-          scope: snapshot.scope,
-          completeness: snapshot.completeness,
-          source,
-          projection,
-        };
-      }),
-    { concurrency: 3 },
-  );
-  const output = { preview: plan.preview, runs };
   yield* Console.log(JSON.stringify(output, null, 2));
   return output;
 });
@@ -158,20 +131,11 @@ export const runWebUntisCourseRosterPreview = Effect.fn("Console.webUntisCourseR
 
 export const runWebUntisCourseRosterImport = Effect.fn("Console.webUntisCourseRosterImport")(
   function* (requestedSchoolYear: string, requestedStart: string, requestedEnd: string) {
-    const plan = yield* WebUntisCourseRosters.fetchStudentTimetableImportPlan(
+    const output = yield* WebUntisImporter.importCourseRosters(
       requestedSchoolYear,
       requestedStart,
       requestedEnd,
     );
-    const runs = yield* Effect.forEach(
-      plan.snapshots,
-      (snapshot) => SourceObservationStore.persistSourceSnapshot(snapshot),
-      { concurrency: 3 },
-    );
-    const projection = yield* CourseProjectionStore.projectCurrent({
-      dataSourceId: plan.preview.dataSourceId,
-    });
-    const output = { preview: plan.preview, runs, projection };
     yield* Console.log(JSON.stringify(output, null, 2));
     return output;
   },
