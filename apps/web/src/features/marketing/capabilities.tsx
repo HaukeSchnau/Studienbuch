@@ -4,7 +4,7 @@ import { sectionIds } from "#/domain-ui/brand/links.ts";
 import { cn } from "#/ui/cn.ts";
 import { Container, Section, SectionHeading } from "#/ui/section.tsx";
 
-import { EdgeBlob } from "./decor.tsx";
+import { EdgeBlob } from "#/domain-ui/brand/blobs.tsx";
 
 import {
   AbsencePreview,
@@ -56,9 +56,9 @@ export const Capabilities = () => (
     {/* Hidden below xl: the content column runs close to the edge on narrower viewports and a
         blob would sit behind body text instead of in the margin. */}
     <EdgeBlob
-      className="top-40 hidden h-[30rem] w-[11rem] xl:block"
-      silhouette="notch"
-      side="right"
+      blob="pebble"
+      className="-right-40 top-36 hidden size-[24rem] xl:block"
+      rotate={-18}
       tone="blue"
     />
 

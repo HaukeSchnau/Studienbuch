@@ -3,7 +3,7 @@ import { Underlined } from "#/domain-ui/brand/underline.tsx";
 import { AppIcon } from "#/domain-ui/brand/wordmark.tsx";
 import { Container } from "#/ui/section.tsx";
 
-import { EdgeBlob } from "./decor.tsx";
+import { EdgeBlob } from "#/domain-ui/brand/blobs.tsx";
 
 /**
  * The legacy site's composition: the mark and a big green headline, one oversized device render
@@ -21,16 +21,15 @@ import { EdgeBlob } from "./decor.tsx";
 export const Hero = () => (
   <section className="relative isolate overflow-x-clip">
     <EdgeBlob
-      className="top-[26%] h-[16rem] w-[9rem] sm:h-[40rem] sm:w-[23rem]"
-      silhouette="lobe"
-      side="left"
+      blob="boulder"
+      className="-left-32 top-[22%] size-[17rem] sm:-left-48 sm:size-[36rem]"
+      rotate={-12}
       tone="green"
     />
     <EdgeBlob
-      className="top-0 h-[19rem] w-[15rem] sm:h-[42rem] sm:w-[32rem]"
-      flip
-      silhouette="crest"
-      side="right"
+      blob="bean"
+      className="-right-28 top-2 size-[19rem] sm:-right-52 sm:size-[40rem]"
+      rotate={24}
       tone="blue"
     />
 
