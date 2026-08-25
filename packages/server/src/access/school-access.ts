@@ -71,8 +71,12 @@ export const generateCodes = Effect.fn("SchoolAccess.generateCodes")(function* (
     Array.from({ length: count }, () => generatePlaintextAccessCode),
     { concurrency: "unbounded" },
   );
-  const secretHashes = yield* Effect.all(
-    plaintextCodes.map((code) => digestSecret(Organization.normalizeAccessCode(code))),
+  const codeRecords = yield* Effect.all(
+    plaintextCodes.map((code) =>
+      digestSecret(Organization.normalizeAccessCode(code)).pipe(
+        Effect.map((secretHash) => ({ code, secretHash })),
+      ),
+    ),
     { concurrency: "unbounded" },
   );
   yield* database.drizzle.transaction((transaction) =>
@@ -85,10 +89,10 @@ export const generateCodes = Effect.fn("SchoolAccess.generateCodes")(function* (
           set: { name: schoolName, updatedAt: sql`now()` },
         });
       yield* transaction.insert(schoolAccessCodes).values(
-        plaintextCodes.map((_, index) => ({
+        codeRecords.map(({ secretHash }) => ({
           schoolId,
           kind: input.kind,
-          secretHash: secretHashes[index]!,
+          secretHash,
           createdByUserId: input.createdByUserId,
           expiresAt: input.expiresAt,
         })),

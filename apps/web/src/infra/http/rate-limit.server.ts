@@ -89,7 +89,7 @@ export class EnrollmentRateLimiter extends Context.Service<
   {
     readonly check: (principal: string) => Effect.Effect<RateLimitDecision>;
   }
->()("@stu/web/http/EnrollmentRateLimiter") {
+>()("@stu/web/infra/http/rate-limit.server/EnrollmentRateLimiter") {
   static readonly layer = Layer.effect(
     EnrollmentRateLimiter,
     Effect.gen(function* () {
@@ -100,39 +100,47 @@ export class EnrollmentRateLimiter extends Context.Service<
         check: (principal) =>
           Effect.gen(function* () {
             const currentTime = yield* Clock.currentTimeMillis;
-            return yield* Ref.modify(windows, (current) => {
-              const next = new Map(current);
-              for (const [key, window] of next) {
-                if (currentTime - window.startedAt >= 60_000) next.delete(key);
-              }
-              while (next.size >= 10_000 && !next.has(principal)) {
-                const oldest = next.keys().next();
-                if (oldest.done) break;
-                next.delete(oldest.value);
-              }
+            return yield* Ref.modify(
+              windows,
+              (
+                current,
+              ): readonly [
+                RateLimitDecision,
+                Map<string, { readonly startedAt: number; readonly accepted: number }>,
+              ] => {
+                const next = new Map(current);
+                for (const [key, window] of next) {
+                  if (currentTime - window.startedAt >= 60_000) next.delete(key);
+                }
+                while (next.size >= 10_000 && !next.has(principal)) {
+                  const oldest = next.keys().next();
+                  if (oldest.done) break;
+                  next.delete(oldest.value);
+                }
 
-              const window = next.get(principal);
-              if (window === undefined || currentTime - window.startedAt >= 60_000) {
-                next.set(principal, { startedAt: currentTime, accepted: 1 });
+                const window = next.get(principal);
+                if (window === undefined || currentTime - window.startedAt >= 60_000) {
+                  next.set(principal, { startedAt: currentTime, accepted: 1 });
+                  return [{ allowed: true } as const, next];
+                }
+                if (window.accepted >= 20) {
+                  return [
+                    {
+                      allowed: false,
+                      status: 429,
+                      error: "rate_limited",
+                      retryAfterSeconds: Math.max(
+                        1,
+                        Math.ceil((window.startedAt + 60_000 - currentTime) / 1_000),
+                      ),
+                    } as const,
+                    next,
+                  ];
+                }
+                next.set(principal, { ...window, accepted: window.accepted + 1 });
                 return [{ allowed: true } as const, next];
-              }
-              if (window.accepted >= 20) {
-                return [
-                  {
-                    allowed: false,
-                    status: 429,
-                    error: "rate_limited",
-                    retryAfterSeconds: Math.max(
-                      1,
-                      Math.ceil((window.startedAt + 60_000 - currentTime) / 1_000),
-                    ),
-                  } as const,
-                  next,
-                ];
-              }
-              next.set(principal, { ...window, accepted: window.accepted + 1 });
-              return [{ allowed: true } as const, next];
-            });
+              },
+            );
           }),
       });
     }),

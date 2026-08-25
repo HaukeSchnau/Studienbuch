@@ -3,11 +3,14 @@ import * as Schema from "effect/Schema";
 import { useState } from "react";
 import {
   AuthError,
+  AuthHeading,
   AuthNote,
   authNoteLinkClass,
   AuthShell,
   Field,
   invalidWhen,
+  submitState,
+  Working,
 } from "#/features/auth/auth-shell.tsx";
 import { betterAuthMessage } from "#/features/auth/messages.ts";
 import { authClient } from "#/infra/auth/client.ts";
@@ -54,7 +57,7 @@ function ResetPasswordPage() {
   if (!usable) {
     return (
       <AuthShell>
-        <h1 className="text-center text-3xl text-primary-text">Neues Passwort</h1>
+        <AuthHeading>Neues Passwort</AuthHeading>
         <div className="mt-6">
           <AuthError>Der Link ist ungültig oder abgelaufen.</AuthError>
         </div>
@@ -67,7 +70,7 @@ function ResetPasswordPage() {
 
   return (
     <AuthShell>
-      <h1 className="text-center text-3xl text-primary-text">Neues Passwort</h1>
+      <AuthHeading>Neues Passwort</AuthHeading>
       <form className="mt-7 grid gap-4" onSubmit={submit}>
         <Field hint="Mindestens acht Zeichen." label="Neues Passwort">
           <Input
@@ -82,14 +85,13 @@ function ResetPasswordPage() {
         </Field>
         {error === undefined ? null : <AuthError>{error}</AuthError>}
         <Button
-          aria-busy={busy}
-          disabled={busy}
           radius="pill"
           size="xl"
           type="submit"
           variant="brand"
+          {...submitState({ busy, error })}
         >
-          {busy ? "Wird gespeichert ..." : "Passwort speichern"}
+          {busy ? <Working>Wird gespeichert ...</Working> : "Passwort speichern"}
         </Button>
       </form>
       <AuthNote>

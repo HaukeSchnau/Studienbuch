@@ -1,61 +1,94 @@
-import { readFile } from "node:fs/promises";
 import nodemailer from "nodemailer";
+import * as Config from "effect/Config";
+import * as Context from "effect/Context";
+import * as Effect from "effect/Effect";
+import * as FileSystem from "effect/FileSystem";
+import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
+import * as Redacted from "effect/Redacted";
+import * as Schema from "effect/Schema";
 
-type AuthEmail = {
+interface Message {
   readonly to: string;
   readonly subject: string;
   readonly text: string;
-};
+}
 
-let transporter: ReturnType<typeof nodemailer.createTransport> | undefined;
+export class DeliveryUnavailable extends Schema.TaggedError<DeliveryUnavailable>()(
+  "AuthEmail.DeliveryUnavailable",
+  { reason: Schema.String },
+) {}
 
-const readSmtpUrl = async () => {
-  const directValue = process.env.STUDIENBUCH_SMTP_URL?.trim();
-  if (directValue !== undefined && directValue !== "") return directValue;
-
-  const file = process.env.STUDIENBUCH_SMTP_URL_FILE?.trim();
-  if (file === undefined || file === "") return undefined;
-  const fileValue = (await readFile(file, "utf8")).trim();
-  return fileValue === "" ? undefined : fileValue;
-};
-
-const deliver = async (email: AuthEmail) => {
-  const mode = process.env.STUDIENBUCH_AUTH_EMAIL_MODE?.trim();
-  const useConsole =
-    mode === "console" || (mode === undefined && process.env.NODE_ENV !== "production");
-  if (useConsole) {
-    console.info(`[auth-email] To: ${email.to}\nSubject: ${email.subject}\n\n${email.text}`);
-    return;
+export class AuthEmail extends Context.Service<
+  AuthEmail,
+  {
+    readonly sendVerificationEmail: (data: {
+      readonly user: { readonly email: string };
+      readonly url: string;
+    }) => Effect.Effect<void, DeliveryUnavailable>;
+    readonly sendPasswordResetEmail: (data: {
+      readonly user: { readonly email: string };
+      readonly url: string;
+    }) => Effect.Effect<void, DeliveryUnavailable>;
   }
+>()("@stu/web/infra/email/auth-email.server/AuthEmail") {
+  static readonly layer = Layer.effect(
+    AuthEmail,
+    Effect.gen(function* () {
+      const nodeEnvironment = yield* Config.string("NODE_ENV").pipe(
+        Config.withDefault("development"),
+      );
+      const mode = yield* Config.string("STUDIENBUCH_AUTH_EMAIL_MODE").pipe(
+        Config.withDefault(nodeEnvironment === "production" ? "smtp" : "console"),
+      );
+      const deliver =
+        mode === "console"
+          ? (message: Message) =>
+              Effect.logInfo("auth-email.console", {
+                to: message.to,
+                subject: message.subject,
+                text: message.text,
+              })
+          : yield* makeSmtpDelivery;
 
-  const smtpUrl = await readSmtpUrl();
-  const from = process.env.STUDIENBUCH_EMAIL_FROM?.trim();
-  if (smtpUrl === undefined || smtpUrl === "" || from === undefined || from === "") {
-    // oxlint-disable-next-line anti-slop/no-throwing-errors -- Nodemailer's callback contract reports delivery failure by rejecting its promise.
-    throw new Error(
-      "STUDIENBUCH_SMTP_URL or STUDIENBUCH_SMTP_URL_FILE and STUDIENBUCH_EMAIL_FROM are required to deliver auth email",
-    );
-  }
-  transporter ??= nodemailer.createTransport(smtpUrl);
-  await transporter.sendMail({ from, ...email });
-};
+      return AuthEmail.of({
+        sendVerificationEmail: (data) =>
+          deliver({
+            to: data.user.email,
+            subject: "E-Mail-Adresse für Studienbuch bestätigen",
+            text: `Bestätige deine E-Mail-Adresse über diesen Link:\n\n${data.url}\n\nDer Link ist eine Stunde gültig. Wenn du dich nicht bei Studienbuch angemeldet hast, kannst du diese Nachricht ignorieren.`,
+          }),
+        sendPasswordResetEmail: (data) =>
+          deliver({
+            to: data.user.email,
+            subject: "Studienbuch-Passwort zurücksetzen",
+            text: `Setze dein Studienbuch-Passwort über diesen Link zurück:\n\n${data.url}\n\nDer Link ist eine Stunde gültig. Wenn du das nicht angefordert hast, kannst du diese Nachricht ignorieren.`,
+          }),
+      });
+    }),
+  );
+}
 
-export const sendVerificationEmail = async (data: {
-  readonly user: { readonly email: string };
-  readonly url: string;
-}) =>
-  deliver({
-    to: data.user.email,
-    subject: "E-Mail-Adresse für Studienbuch bestätigen",
-    text: `Bestätige deine E-Mail-Adresse über diesen Link:\n\n${data.url}\n\nDer Link ist eine Stunde gültig. Wenn du dich nicht bei Studienbuch angemeldet hast, kannst du diese Nachricht ignorieren.`,
-  });
-
-export const sendPasswordResetEmail = async (data: {
-  readonly user: { readonly email: string };
-  readonly url: string;
-}) =>
-  deliver({
-    to: data.user.email,
-    subject: "Studienbuch-Passwort zurücksetzen",
-    text: `Setze dein Studienbuch-Passwort über diesen Link zurück:\n\n${data.url}\n\nDer Link ist eine Stunde gültig. Wenn du das nicht angefordert hast, kannst du diese Nachricht ignorieren.`,
-  });
+const makeSmtpDelivery = Effect.gen(function* () {
+  const directUrl = yield* Config.redacted("STUDIENBUCH_SMTP_URL").pipe(Config.option);
+  const urlFile = yield* Config.string("STUDIENBUCH_SMTP_URL_FILE").pipe(Config.option);
+  const from = yield* Config.string("STUDIENBUCH_EMAIL_FROM");
+  const fileSystem = yield* FileSystem.FileSystem;
+  const smtpUrl = Option.isSome(directUrl)
+    ? directUrl.value
+    : Option.isSome(urlFile)
+      ? Redacted.make((yield* fileSystem.readFileString(urlFile.value)).trim())
+      : yield* Config.redacted("STUDIENBUCH_SMTP_URL");
+  const transporter = yield* Effect.acquireRelease(
+    Effect.sync(() => nodemailer.createTransport(Redacted.value(smtpUrl))),
+    (transport) => Effect.sync(() => transport.close()),
+  );
+  return (message: Message) =>
+    Effect.tryPromise({
+      try: () => transporter.sendMail({ from, ...message }),
+      catch: (cause) =>
+        DeliveryUnavailable.make({
+          reason: cause instanceof Error ? cause.message : String(cause),
+        }),
+    }).pipe(Effect.asVoid);
+});

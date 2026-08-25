@@ -70,7 +70,7 @@ export class InvalidOrigin extends Schema.TaggedError<InvalidOrigin>()(
 ) {}
 
 export class RateLimited extends Schema.TaggedError<RateLimited>()("AccessApi.RateLimited", {
-  retryAfterSeconds: Schema.Number,
+  retryAfterSeconds: Schema.Finite,
 }) {}
 
 export class AuthenticationRequired extends Schema.TaggedError<AuthenticationRequired>()(

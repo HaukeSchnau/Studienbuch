@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import * as Schema from "effect/Schema";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { completeReservation } from "#/features/auth/access.ts";
-import { accessErrorCodes, type AccessErrorCode } from "#/features/auth/access-contract.ts";
+import { accessErrorCodes, type AccessErrorCode } from "#/features/auth/access.ts";
 import {
   AuthError,
   AuthHeading,

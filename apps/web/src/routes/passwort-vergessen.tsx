@@ -1,12 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
+  AuthDone,
   AuthError,
+  AuthHeading,
   AuthNote,
   authNoteLinkClass,
   AuthShell,
   Field,
   invalidWhen,
+  submitState,
+  Working,
 } from "#/features/auth/auth-shell.tsx";
 import { authClient } from "#/infra/auth/client.ts";
 import { Button } from "#/ui/button.tsx";
@@ -41,35 +45,36 @@ function ForgotPasswordPage() {
 
   return (
     <AuthShell>
-      <h1 className="text-center text-3xl text-primary-text">Passwort zurücksetzen</h1>
       {sent ? (
-        <p className="mt-4 text-center text-ink-soft">
+        <AuthDone title="Unterwegs zu dir">
           Falls ein Konto zu dieser Adresse gehört, haben wir einen Link geschickt.
-        </p>
+        </AuthDone>
       ) : (
-        <form className="mt-7 grid gap-4" onSubmit={submit}>
-          <Field label="E-Mail-Adresse">
-            <Input
-              autoComplete="email"
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              type="email"
-              value={email}
-              {...invalidWhen(error)}
-            />
-          </Field>
-          {error === undefined ? null : <AuthError>{error}</AuthError>}
-          <Button
-            aria-busy={busy}
-            disabled={busy}
-            radius="pill"
-            size="xl"
-            type="submit"
-            variant="brand"
-          >
-            {busy ? "Wird gesendet ..." : "Link senden"}
-          </Button>
-        </form>
+        <>
+          <AuthHeading>Passwort vergessen?</AuthHeading>
+          <form className="mt-7 grid gap-4" onSubmit={submit}>
+            <Field label="E-Mail-Adresse">
+              <Input
+                autoComplete="email"
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                type="email"
+                value={email}
+                {...invalidWhen(error)}
+              />
+            </Field>
+            {error === undefined ? null : <AuthError>{error}</AuthError>}
+            <Button
+              radius="pill"
+              size="xl"
+              type="submit"
+              variant="brand"
+              {...submitState({ busy, error })}
+            >
+              {busy ? <Working>Wird gesendet ...</Working> : "Link senden"}
+            </Button>
+          </form>
+        </>
       )}
       <AuthNote>
         <Link className={authNoteLinkClass} search={{}} to="/anmelden">

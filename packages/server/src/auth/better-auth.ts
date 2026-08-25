@@ -4,7 +4,7 @@ import { betterAuth } from "better-auth";
 import type { BetterAuthOptions } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import * as Context from "effect/Context";
-import * as Crypto from "effect/Crypto";
+import type * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
@@ -21,12 +21,25 @@ import { claimRegistrationSignup, releaseRegistrationSignup } from "../access/sc
  * Everything that has to agree with `auth/schema.ts` stays below, so the mapping and the tables
  * cannot drift apart.
  */
+type VerificationSender = NonNullable<
+  NonNullable<BetterAuthOptions["emailVerification"]>["sendVerificationEmail"]
+>;
+
+type ResetSender = NonNullable<
+  NonNullable<BetterAuthOptions["emailAndPassword"]>["sendResetPassword"]
+>;
+
 export interface Options {
-  readonly emailVerification?: BetterAuthOptions["emailVerification"];
+  readonly emailVerification?: Omit<
+    NonNullable<BetterAuthOptions["emailVerification"]>,
+    "sendVerificationEmail"
+  > & {
+    readonly sendVerificationEmail: (
+      data: Parameters<VerificationSender>[0],
+    ) => Effect.Effect<void, object>;
+  };
   readonly passkeyRpID?: string;
-  readonly sendResetPassword?: NonNullable<
-    BetterAuthOptions["emailAndPassword"]
-  >["sendResetPassword"];
+  readonly sendResetPassword?: (data: Parameters<ResetSender>[0]) => Effect.Effect<void, object>;
   readonly plugins?: BetterAuthOptions["plugins"];
   readonly trustedOrigins?: BetterAuthOptions["trustedOrigins"];
 }
@@ -60,14 +73,23 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
   make: (options: Options = {}) =>
     Effect.gen(function* () {
       const database = yield* Database.Service;
-      const crypto = yield* Crypto.Crypto;
+      const callbackContext = yield* Effect.context<Crypto.Crypto | Database.Service>();
       const runCallback = <A, E>(effect: Effect.Effect<A, E, Crypto.Crypto | Database.Service>) =>
-        Effect.runPromise(
-          effect.pipe(
-            Effect.provideService(Database.Service, database),
-            Effect.provideService(Crypto.Crypto, crypto),
-          ),
-        );
+        Effect.runPromiseWith(callbackContext)(effect);
+      const verificationOption = options.emailVerification;
+      const emailVerification =
+        verificationOption === undefined
+          ? undefined
+          : {
+              ...verificationOption,
+              sendVerificationEmail: (data: Parameters<VerificationSender>[0]) =>
+                runCallback(verificationOption.sendVerificationEmail(data)),
+            };
+      const resetOption = options.sendResetPassword;
+      const sendResetPassword =
+        resetOption === undefined
+          ? undefined
+          : (data: Parameters<ResetSender>[0]) => runCallback(resetOption(data));
       return betterAuth({
         database: database.pool,
         advanced: {
@@ -79,13 +101,13 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
         session: { modelName: "sessions" },
         account: { modelName: "accounts" },
         verification: { modelName: "verifications" },
-        emailVerification: options.emailVerification,
+        emailVerification,
         emailAndPassword: {
           enabled: true,
           autoSignIn: false,
           requireEmailVerification: true,
           revokeSessionsOnPasswordReset: true,
-          sendResetPassword: options.sendResetPassword,
+          sendResetPassword,
         },
         hooks: {
           before: createAuthMiddleware(async (context) => {
