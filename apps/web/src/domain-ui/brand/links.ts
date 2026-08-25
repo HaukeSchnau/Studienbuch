@@ -5,6 +5,12 @@
  * The store listings still carry the school-specific name of the production Flutter app that this
  * rewrite supersedes; the listings themselves are current.
  */
+/**
+ * Canonical public origin. Open Graph requires absolute URLs, so preview cards cannot be built
+ * from a relative path. Keep this in step with where the site is actually deployed.
+ */
+export const siteUrl = "https://studienbuch.app";
+
 export const externalLinks = {
   appStore: "https://apps.apple.com/de/app/igs-lilienthal/id6449227364",
   playStore: "https://play.google.com/store/apps/details?id=dev.schnau.studienbuch",

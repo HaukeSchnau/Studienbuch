@@ -131,7 +131,7 @@ export const OfflinePreview = () => (
 export const TaskPreview = () => (
   <div aria-hidden className="flex flex-col gap-2">
     {[
-      { done: true, subject: "Mathe", text: "S. 84, Nr. 3–7" },
+      { done: true, subject: "Mathe", text: "S.\u00a084, Nr.\u00a03–7" },
       { done: false, subject: "Englisch", text: "Vokabeln Unit 6" },
     ].map((task) => (
       <div

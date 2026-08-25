@@ -2,7 +2,7 @@ import { subjectSamples } from "#/domain-ui/brand/subjects.ts";
 
 const SubjectTile = ({ color, icon, label }: (typeof subjectSamples)[number]) => (
   <div
-    className="mr-4 flex shrink-0 items-center gap-3 rounded-2xl px-5 py-3.5 text-white shadow-card"
+    className="mr-4 flex shrink-0 items-center gap-3 rounded-2xl px-5 py-3.5 text-white shadow-card transition-transform duration-200 hover:-translate-y-1"
     style={{ backgroundColor: color }}
   >
     <img alt="" className="size-7 shrink-0" height={28} src={`/subjects/${icon}.svg`} width={28} />
@@ -20,9 +20,11 @@ const SubjectTile = ({ color, icon, label }: (typeof subjectSamples)[number]) =>
  * technology. `prefers-reduced-motion` stops it via the global rule in `styles.css`.
  */
 export const SubjectStrip = () => (
-  <div aria-hidden className="overflow-hidden bg-surface py-10">
+  // Reaching for a tile stops the row. Chasing a moving target is irritating; stopping for the
+  // pointer turns the strip from decoration into something you can actually look at.
+  <div aria-hidden className="group overflow-hidden bg-surface py-10">
     <div className="-mx-[6%] w-[112%] -rotate-[1.5deg]">
-      <div className="flex w-max animate-subject-drift">
+      <div className="flex w-max animate-subject-drift group-hover:[animation-play-state:paused]">
         {[0, 1].map((copy) =>
           subjectSamples.map((subject) => (
             <SubjectTile key={`${copy}-${subject.label}`} {...subject} />

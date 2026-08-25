@@ -61,7 +61,7 @@ export const Hero = () => (
       <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:-mr-[8vw] lg:translate-x-[5vw]">
         <img
           alt="Die Übersicht mit dem Tagesplan und die Kursseite mit den Noten, nebeneinander."
-          className="w-full"
+          className="parallax w-full"
           height={1469}
           src="/screenshots/showcase.png"
           width={1282}
@@ -71,6 +71,9 @@ export const Hero = () => (
       <div className="lg:col-start-1 lg:row-start-2 lg:self-start">
         <p className="text-xl text-ink sm:text-2xl">Jetzt als Download für Android und iOS:</p>
         <StoreBadges className="mt-5" />
+        {/* The strongest credibility signal on the page, and true: the production Flutter app
+            has been in daily use at a school since 2023. Deliberately understated. */}
+        <p className="mt-5 text-sm text-ink-soft">Seit 2023 im täglichen Einsatz.</p>
       </div>
     </Container>
   </section>

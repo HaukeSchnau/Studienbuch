@@ -2,6 +2,8 @@ import { TanStackDevtools } from "@tanstack/react-devtools";
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
+import { siteUrl } from "#/domain-ui/brand/links.ts";
+import { ErrorState, NotFound } from "#/features/errors/error-states.tsx";
 import { getPublicConfig } from "#/infra/config/public-config.ts";
 import { ClientObservability } from "#/infra/observability/client-bootstrap.tsx";
 
@@ -11,6 +13,9 @@ export const Route = createRootRoute({
   // Public runtime configuration is loaded once here and serialized into the SSR payload, so
   // client credentials never have to be inlined into the bundle at build time.
   loader: () => getPublicConfig(),
+  // The public site should never fall back to the framework's bare error text.
+  errorComponent: ({ reset }) => <ErrorState reset={reset} />,
+  notFoundComponent: () => <NotFound />,
   head: () => ({
     meta: [
       {
@@ -43,6 +48,27 @@ export const Route = createRootRoute({
       {
         name: "twitter:card",
         content: "summary_large_image",
+      },
+      // Without these a link pasted into a staff e-mail or a class chat renders as bare text.
+      {
+        property: "og:image",
+        content: `${siteUrl}/brand/og-image.png`,
+      },
+      {
+        property: "og:image:width",
+        content: "1200",
+      },
+      {
+        property: "og:image:height",
+        content: "630",
+      },
+      {
+        property: "og:image:alt",
+        content: "Das digitale Studienbuch",
+      },
+      {
+        name: "twitter:image",
+        content: `${siteUrl}/brand/og-image.png`,
       },
     ],
     links: [
