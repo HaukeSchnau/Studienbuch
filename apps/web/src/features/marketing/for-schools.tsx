@@ -30,9 +30,16 @@ export const ForSchools = () => (
   <Section className="relative isolate" id={sectionIds.schools}>
     <EdgeBlob
       blob="twin"
-      className="-left-36 top-12 hidden size-[22rem] xl:block"
+      className="-left-48 top-12 hidden size-[22rem] min-[1440px]:block"
       rotate={38}
       tone="blue"
+    />
+
+    <EdgeBlob
+      blob="notch"
+      className="-right-48 top-52 hidden size-[20rem] min-[1440px]:block"
+      rotate={-12}
+      tone="green"
     />
 
     <Container className="flex flex-col gap-12">

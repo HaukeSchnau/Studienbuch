@@ -57,7 +57,7 @@ export const Capabilities = () => (
         blob would sit behind body text instead of in the margin. */}
     <EdgeBlob
       blob="kidney"
-      className="-right-40 top-36 hidden size-[24rem] xl:block"
+      className="-right-52 top-36 hidden size-[24rem] min-[1440px]:block"
       rotate={-18}
       tone="green"
     />
