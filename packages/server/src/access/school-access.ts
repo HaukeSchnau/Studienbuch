@@ -1,10 +1,10 @@
 import { Organization } from "@stu/core";
 import { and, eq, gt, isNull, lt, or, sql } from "drizzle-orm";
+import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as DateTime from "effect/DateTime";
+import * as Encoding from "effect/Encoding";
 import * as Schema from "effect/Schema";
-import { createHash, randomBytes } from "node:crypto";
-import type { Pool } from "pg";
 import { users } from "../auth/schema.ts";
 import { Database } from "../database/client.ts";
 import {
@@ -18,52 +18,30 @@ import {
 
 const reservationLifetimeMilliseconds = 2 * 60 * 60 * 1_000;
 
-export const digestSecret = (secret: string) =>
-  createHash("sha256").update(secret, "utf8").digest("hex");
+const textEncoder = new TextEncoder();
 
-const randomToken = () => randomBytes(32).toString("base64url");
+export const digestSecret = Effect.fn("SchoolAccess.digestSecret")(function* (secret: string) {
+  const crypto = yield* Crypto.Crypto;
+  const digest = yield* crypto.digest("SHA-256", textEncoder.encode(secret)).pipe(Effect.orDie);
+  return Encoding.encodeHex(digest);
+});
 
-export const generatePlaintextAccessCode = () => {
-  const bytes = randomBytes(Organization.accessCodeLength);
+const randomToken = Effect.gen(function* () {
+  const crypto = yield* Crypto.Crypto;
+  return Encoding.encodeBase64Url(yield* crypto.randomBytes(32).pipe(Effect.orDie));
+});
+
+export const generatePlaintextAccessCode = Effect.gen(function* () {
+  const crypto = yield* Crypto.Crypto;
+  const bytes = yield* crypto.randomBytes(Organization.accessCodeLength).pipe(Effect.orDie);
   const characters = [...bytes].map((byte) => Organization.accessCodeAlphabet[byte & 31] ?? "");
   return Organization.formatAccessCode(characters.join(""));
-};
-
-export class CodeUnavailable extends Schema.TaggedError<CodeUnavailable>()(
-  "SchoolAccess.CodeUnavailable",
-  {},
-) {}
-
-export class ReservationUnavailable extends Schema.TaggedError<ReservationUnavailable>()(
-  "SchoolAccess.ReservationUnavailable",
-  {},
-) {}
-
-export class EmailNotVerified extends Schema.TaggedError<EmailNotVerified>()(
-  "SchoolAccess.EmailNotVerified",
-  {},
-) {}
-
-export class AccessAlreadyExists extends Schema.TaggedError<AccessAlreadyExists>()(
-  "SchoolAccess.AccessAlreadyExists",
-  {},
-) {}
+});
 
 export class OperatorRequired extends Schema.TaggedError<OperatorRequired>()(
   "SchoolAccess.OperatorRequired",
   {},
 ) {}
-
-export class ProfileUnavailable extends Schema.TaggedError<ProfileUnavailable>()(
-  "SchoolAccess.ProfileUnavailable",
-  {},
-) {}
-
-const cleanOptional = (value: string | undefined) => {
-  const cleaned = value?.trim();
-  if (cleaned === undefined || cleaned === "") return undefined;
-  return cleaned.slice(0, Organization.profileFieldMaxLength);
-};
 
 export const generateCodes = Effect.fn("SchoolAccess.generateCodes")(function* (input: {
   readonly schoolId: string;
@@ -79,7 +57,7 @@ export const generateCodes = Effect.fn("SchoolAccess.generateCodes")(function* (
   const count = Math.floor(input.count);
 
   if (schoolId.length === 0 || schoolName.length === 0 || count < 1 || count > 1_000) {
-    return yield* CodeUnavailable.make();
+    return yield* Organization.CodeUnavailable.make();
   }
 
   const [operator] = yield* database.drizzle
@@ -89,7 +67,14 @@ export const generateCodes = Effect.fn("SchoolAccess.generateCodes")(function* (
     .limit(1);
   if (operator === undefined) return yield* OperatorRequired.make();
 
-  const plaintextCodes = Array.from({ length: count }, generatePlaintextAccessCode);
+  const plaintextCodes = yield* Effect.all(
+    Array.from({ length: count }, () => generatePlaintextAccessCode),
+    { concurrency: "unbounded" },
+  );
+  const secretHashes = yield* Effect.all(
+    plaintextCodes.map((code) => digestSecret(Organization.normalizeAccessCode(code))),
+    { concurrency: "unbounded" },
+  );
   yield* database.drizzle.transaction((transaction) =>
     Effect.gen(function* () {
       yield* transaction
@@ -100,10 +85,10 @@ export const generateCodes = Effect.fn("SchoolAccess.generateCodes")(function* (
           set: { name: schoolName, updatedAt: sql`now()` },
         });
       yield* transaction.insert(schoolAccessCodes).values(
-        plaintextCodes.map((code) => ({
+        plaintextCodes.map((_, index) => ({
           schoolId,
           kind: input.kind,
-          secretHash: digestSecret(Organization.normalizeAccessCode(code)),
+          secretHash: secretHashes[index]!,
           createdByUserId: input.createdByUserId,
           expiresAt: input.expiresAt,
         })),
@@ -117,13 +102,13 @@ export const generateCodes = Effect.fn("SchoolAccess.generateCodes")(function* (
 export const reserve = Effect.fn("SchoolAccess.reserve")(function* (plaintextCode: string) {
   const normalized = Organization.normalizeAccessCode(plaintextCode);
   if (!Organization.isAccessCode(normalized)) {
-    return yield* CodeUnavailable.make();
+    return yield* Organization.CodeUnavailable.make();
   }
 
   const database = yield* Database.Service;
-  const secretHash = digestSecret(normalized);
-  const token = randomToken();
-  const tokenHash = digestSecret(token);
+  const secretHash = yield* digestSecret(normalized);
+  const token = yield* randomToken;
+  const tokenHash = yield* digestSecret(token);
   const now = yield* DateTime.now;
   const nowDate = DateTime.toDateUtc(now);
   const expiresAt = DateTime.toDateUtc(
@@ -153,7 +138,7 @@ export const reserve = Effect.fn("SchoolAccess.reserve")(function* (plaintextCod
         code.revokedAt !== null ||
         (code.expiresAt !== null && code.expiresAt <= nowDate)
       ) {
-        return yield* CodeUnavailable.make();
+        return yield* Organization.CodeUnavailable.make();
       }
 
       const [redeemed] = yield* transaction
@@ -161,7 +146,7 @@ export const reserve = Effect.fn("SchoolAccess.reserve")(function* (plaintextCod
         .from(schoolAccesses)
         .where(eq(schoolAccesses.sourceCodeId, code.id))
         .limit(1);
-      if (redeemed !== undefined) return yield* CodeUnavailable.make();
+      if (redeemed !== undefined) return yield* Organization.CodeUnavailable.make();
 
       yield* transaction
         .delete(schoolAccessReservations)
@@ -176,7 +161,7 @@ export const reserve = Effect.fn("SchoolAccess.reserve")(function* (plaintextCod
         .from(schoolAccessReservations)
         .where(eq(schoolAccessReservations.accessCodeId, code.id))
         .limit(1);
-      if (activeReservation !== undefined) return yield* CodeUnavailable.make();
+      if (activeReservation !== undefined) return yield* Organization.CodeUnavailable.make();
 
       yield* transaction.insert(schoolAccessReservations).values({
         accessCodeId: code.id,
@@ -199,6 +184,7 @@ export const inspectReservation = Effect.fn("SchoolAccess.inspectReservation")(f
 ) {
   const database = yield* Database.Service;
   const now = DateTime.toDateUtc(yield* DateTime.now);
+  const tokenHash = yield* digestSecret(token);
   const [reservation] = yield* database.drizzle
     .select({
       expiresAt: schoolAccessReservations.expiresAt,
@@ -212,7 +198,7 @@ export const inspectReservation = Effect.fn("SchoolAccess.inspectReservation")(f
     .leftJoin(schoolAccesses, eq(schoolAccesses.sourceCodeId, schoolAccessCodes.id))
     .where(
       and(
-        eq(schoolAccessReservations.tokenHash, digestSecret(token)),
+        eq(schoolAccessReservations.tokenHash, tokenHash),
         gt(schoolAccessReservations.expiresAt, now),
         isNull(schoolAccessCodes.revokedAt),
         or(isNull(schoolAccessCodes.expiresAt), gt(schoolAccessCodes.expiresAt, now)),
@@ -220,7 +206,7 @@ export const inspectReservation = Effect.fn("SchoolAccess.inspectReservation")(f
       ),
     )
     .limit(1);
-  if (reservation === undefined) return yield* ReservationUnavailable.make();
+  if (reservation === undefined) return yield* Organization.ReservationUnavailable.make();
   return {
     expiresAt: reservation.expiresAt,
     school: { id: reservation.schoolId, name: reservation.schoolName },
@@ -233,7 +219,7 @@ export const completeReservation = Effect.fn("SchoolAccess.completeReservation")
   token: string,
 ) {
   const database = yield* Database.Service;
-  const tokenHash = digestSecret(token);
+  const tokenHash = yield* digestSecret(token);
   return yield* database.drizzle.transaction((transaction) =>
     Effect.gen(function* () {
       const now = DateTime.toDateUtc(yield* DateTime.now);
@@ -245,7 +231,7 @@ export const completeReservation = Effect.fn("SchoolAccess.completeReservation")
         .from(users)
         .where(eq(users.id, userId))
         .limit(1);
-      if (user?.emailVerified !== true) return yield* EmailNotVerified.make();
+      if (user?.emailVerified !== true) return yield* Organization.EmailNotVerified.make();
 
       const [reservation] = yield* transaction
         .select({
@@ -266,7 +252,7 @@ export const completeReservation = Effect.fn("SchoolAccess.completeReservation")
         .innerJoin(schools, eq(schools.id, schoolAccessCodes.schoolId))
         .where(eq(schoolAccessReservations.tokenHash, tokenHash))
         .limit(1);
-      if (reservation === undefined) return yield* ReservationUnavailable.make();
+      if (reservation === undefined) return yield* Organization.ReservationUnavailable.make();
 
       const [redeemed] = yield* transaction
         .select({
@@ -280,7 +266,7 @@ export const completeReservation = Effect.fn("SchoolAccess.completeReservation")
         .limit(1);
       if (redeemed !== undefined) {
         if (redeemed.userId !== userId || redeemed.revokedAt !== null) {
-          return yield* ReservationUnavailable.make();
+          return yield* Organization.ReservationUnavailable.make();
         }
         return {
           id: redeemed.id,
@@ -295,7 +281,7 @@ export const completeReservation = Effect.fn("SchoolAccess.completeReservation")
         reservation.codeRevokedAt !== null ||
         (reservation.codeExpiresAt !== null && reservation.codeExpiresAt <= now)
       ) {
-        return yield* ReservationUnavailable.make();
+        return yield* Organization.ReservationUnavailable.make();
       }
 
       const [existing] = yield* transaction
@@ -314,7 +300,7 @@ export const completeReservation = Effect.fn("SchoolAccess.completeReservation")
         yield* transaction
           .delete(schoolAccessReservations)
           .where(eq(schoolAccessReservations.id, reservation.id));
-        return yield* AccessAlreadyExists.make();
+        return yield* Organization.AccessAlreadyExists.make();
       }
 
       const [access] = yield* transaction
@@ -358,15 +344,8 @@ export const listForUser = Effect.fn("SchoolAccess.listForUser")(function* (user
 
 export const saveProfile = Effect.fn("SchoolAccess.saveProfile")(function* (
   userId: string,
-  input: {
-    readonly schoolAccessId: string;
-    readonly displayName: string;
-    readonly cohort?: string;
-    readonly className?: string;
-  },
+  input: Organization.NotebookProfileInput,
 ) {
-  const displayName = input.displayName.trim().slice(0, Organization.profileFieldMaxLength);
-  if (displayName.length < 1) return yield* ProfileUnavailable.make();
   const database = yield* Database.Service;
   const [access] = yield* database.drizzle
     .select({ id: schoolAccesses.id })
@@ -379,12 +358,12 @@ export const saveProfile = Effect.fn("SchoolAccess.saveProfile")(function* (
       ),
     )
     .limit(1);
-  if (access === undefined) return yield* ProfileUnavailable.make();
+  if (access === undefined) return yield* Organization.ProfileUnavailable.make();
 
   const profile = {
-    displayName,
-    cohort: cleanOptional(input.cohort),
-    className: cleanOptional(input.className),
+    displayName: input.displayName,
+    cohort: input.cohort === "" ? undefined : input.cohort,
+    className: input.className === "" ? undefined : input.className,
   };
   yield* database.drizzle
     .insert(notebookProfiles)
@@ -408,9 +387,6 @@ export const reservationSignupBudget = 3;
 
 /**
  * The reservation a signup token names, if it is still usable and has signups left.
- *
- * Both functions below run on the raw pool rather than through Drizzle: Better Auth's hooks are
- * Promise-based callbacks outside the Effect runtime.
  */
 const usableReservationPredicate = `reservation."expiresAt" > now()
         and reservation."signupCount" < $2
@@ -425,40 +401,62 @@ const usableReservationPredicate = `reservation."expiresAt" > now()
             )
         )`;
 
-/** Whether a signup may proceed at all. Read-only, so a rejected request costs nothing. */
-export const registrationSignupAllowed = async (pool: Pool, token: string | null) => {
+/** Atomically claims one signup attempt before Better Auth starts creating the account. */
+export const claimRegistrationSignup = Effect.fn("SchoolAccess.claimRegistrationSignup")(function* (
+  token: string | null,
+) {
   if (token === null || token.length < 32) return false;
-  const result = await pool.query<{ allowed: boolean }>(
-    `select exists (
-       select 1
-       from school_access_reservations reservation
-       where reservation."tokenHash" = $1
-        and ${usableReservationPredicate}
-     ) as allowed`,
-    [digestSecret(token), reservationSignupBudget],
-  );
-  return result.rows[0]?.allowed === true;
-};
+  const database = yield* Database.Service;
+  const tokenHash = yield* digestSecret(token);
+  const result = yield* Effect.tryPromise({
+    try: () =>
+      database.pool.query(
+        `update school_access_reservations reservation
+              set "signupCount" = reservation."signupCount" + 1,
+                  "updatedAt" = now()
+            where reservation."tokenHash" = $1
+              and ${usableReservationPredicate}`,
+        [tokenHash, reservationSignupBudget],
+      ),
+    catch: (cause) =>
+      Database.Unavailable.make({ reason: cause instanceof Error ? cause.message : String(cause) }),
+  });
+  return result.rowCount === 1;
+});
 
 /**
- * Spends one signup from a reservation's budget, or reports that there was none to spend.
- *
- * A single conditional `update` so the check and the spend cannot be interleaved: PostgreSQL
- * evaluates the predicate against the row it locks. Requests already in flight when the budget runs
- * out can still overshoot it by their own number, which is the concurrency the caller allows rather
- * than anything this reservation grants.
+ * Returns a claimed attempt when Better Auth rejects it before it creates or masks an account.
  */
-export const spendRegistrationSignup = async (pool: Pool, token: string | null) => {
-  if (token === null || token.length < 32) return false;
-  const result = await pool.query(
-    `update school_access_reservations reservation
-        set "signupCount" = reservation."signupCount" + 1,
-            "updatedAt" = now()
-      where reservation."tokenHash" = $1
-        and ${usableReservationPredicate}`,
-    [digestSecret(token), reservationSignupBudget],
-  );
-  return result.rowCount === 1;
-};
+export const releaseRegistrationSignup = Effect.fn("SchoolAccess.releaseRegistrationSignup")(
+  function* (token: string | null) {
+    if (token === null || token.length < 32) return false;
+    const database = yield* Database.Service;
+    const tokenHash = yield* digestSecret(token);
+    const result = yield* Effect.tryPromise({
+      try: () =>
+        database.pool.query(
+          `update school_access_reservations
+              set "signupCount" = "signupCount" - 1,
+                  "updatedAt" = now()
+            where "tokenHash" = $1
+              and "signupCount" > 0`,
+          [tokenHash],
+        ),
+      catch: (cause) =>
+        Database.Unavailable.make({
+          reason: cause instanceof Error ? cause.message : String(cause),
+        }),
+    });
+    return result.rowCount === 1;
+  },
+);
+
+export {
+  AccessAlreadyExists,
+  CodeUnavailable,
+  EmailNotVerified,
+  ProfileUnavailable,
+  ReservationUnavailable,
+} from "@stu/core/organization";
 
 export * as SchoolAccess from "./school-access.ts";

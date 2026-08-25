@@ -3,7 +3,15 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import * as Schema from "effect/Schema";
 import { useState } from "react";
 import { saveProfile } from "#/features/auth/access.ts";
-import { AuthError, AuthShell, Field, invalidWhen } from "#/features/auth/auth-shell.tsx";
+import {
+  AuthError,
+  AuthHeading,
+  AuthShell,
+  Field,
+  invalidWhen,
+  submitState,
+  Working,
+} from "#/features/auth/auth-shell.tsx";
 import { accessMessage } from "#/features/auth/messages.ts";
 import { Button } from "#/ui/button.tsx";
 import { Input } from "#/ui/input.tsx";
@@ -40,9 +48,9 @@ function SetupPage() {
 
   return (
     <AuthShell>
-      <h1 className="text-center text-3xl text-primary-text">Dein Studienbuch</h1>
-      <p className="mt-3 text-center text-ink-soft">
-        Diese Angaben bestimmst nur du. Du kannst sie später ändern.
+      <AuthHeading>Fast fertig</AuthHeading>
+      <p className="enter-later mt-4 text-center text-ink-soft">
+        Wie sollen wir dich nennen? Das bestimmst nur du, und du kannst es später ändern.
       </p>
       <form className="mt-7 grid gap-4" onSubmit={submit}>
         <Field label="Name">
@@ -75,14 +83,13 @@ function SetupPage() {
         </Field>
         {error === undefined ? null : <AuthError>{error}</AuthError>}
         <Button
-          aria-busy={busy}
-          disabled={busy}
           radius="pill"
           size="xl"
           type="submit"
           variant="brand"
+          {...submitState({ busy, error })}
         >
-          {busy ? "Wird gespeichert ..." : "Fertig"}
+          {busy ? <Working>Wird gespeichert ...</Working> : "Los geht's"}
         </Button>
       </form>
     </AuthShell>

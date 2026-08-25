@@ -3,7 +3,13 @@ import * as Schema from "effect/Schema";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { completeReservation } from "#/features/auth/access.ts";
 import { accessErrorCodes, type AccessErrorCode } from "#/features/auth/access-contract.ts";
-import { AuthError, AuthNote, authNoteLinkClass, AuthShell } from "#/features/auth/auth-shell.tsx";
+import {
+  AuthError,
+  AuthHeading,
+  AuthNote,
+  authNoteLinkClass,
+  AuthShell,
+} from "#/features/auth/auth-shell.tsx";
 import { accessMessage } from "#/features/auth/messages.ts";
 import { authClient } from "#/infra/auth/client.ts";
 import { Button } from "#/ui/button.tsx";
@@ -72,8 +78,8 @@ function CompleteActivationPage() {
   if (!session.isPending && session.data === null) {
     return (
       <AuthShell>
-        <h1 className="text-center text-3xl text-primary-text">Fast geschafft</h1>
-        <p className="mt-4 text-center text-ink-soft">
+        <AuthHeading>Fast geschafft</AuthHeading>
+        <p className="enter-later mt-4 text-center text-ink-soft">
           Melde dich an, um den Schulzugang zu übernehmen.
         </p>
         <Button asChild className="mt-7 w-full" radius="pill" size="xl" variant="brand">
@@ -88,7 +94,7 @@ function CompleteActivationPage() {
   if (failure !== undefined) {
     return (
       <AuthShell>
-        <h1 className="text-center text-3xl text-primary-text">Das hat nicht geklappt</h1>
+        <AuthHeading>Das hat nicht geklappt</AuthHeading>
         <div className="mt-6">
           <AuthError>{failure.message}</AuthError>
         </div>
@@ -121,9 +127,9 @@ function CompleteActivationPage() {
 
   return (
     <AuthShell>
-      <h1 className="text-center text-3xl text-primary-text">Zugang wird aktiviert</h1>
-      <p aria-live="polite" className="mt-4 text-center text-ink-soft">
-        Einen kleinen Moment noch.
+      <AuthHeading>Gleich geschafft</AuthHeading>
+      <p aria-live="polite" className="enter-later mt-4 text-center text-ink-soft">
+        <span className="working">Wir schalten deinen Schulzugang frei ...</span>
       </p>
     </AuthShell>
   );

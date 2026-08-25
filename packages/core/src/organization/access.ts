@@ -1,4 +1,5 @@
 import * as Schema from "effect/Schema";
+import { entityId } from "../internal/entity-id";
 
 export const SchoolAccessKind = Schema.Literals(["Student", "Teacher"]);
 export type SchoolAccessKind = typeof SchoolAccessKind.Type;
@@ -63,6 +64,59 @@ export const formatAccessCode = (value: string) => {
  * being accepted and silently shortened.
  */
 export const profileFieldMaxLength = 80;
+
+export const AccountId = entityId("AccountId");
+export type AccountId = typeof AccountId.Type;
+
+export const SchoolAccessId = entityId("SchoolAccessId");
+export type SchoolAccessId = typeof SchoolAccessId.Type;
+
+export const SchoolAccessReservationToken = Schema.String.check(
+  Schema.isMinLength(32),
+  Schema.isMaxLength(256),
+).pipe(Schema.brand("SchoolAccessReservationToken"));
+export type SchoolAccessReservationToken = typeof SchoolAccessReservationToken.Type;
+
+const profileField = Schema.Trim.pipe(Schema.check(Schema.isMaxLength(profileFieldMaxLength)));
+
+export const RequiredProfileField = profileField.pipe(Schema.check(Schema.isNonEmpty()));
+export type RequiredProfileField = typeof RequiredProfileField.Type;
+
+export const OptionalProfileField = profileField;
+export type OptionalProfileField = typeof OptionalProfileField.Type;
+
+export const NotebookProfileInput = Schema.Struct({
+  schoolAccessId: SchoolAccessId,
+  displayName: RequiredProfileField,
+  cohort: Schema.optional(OptionalProfileField),
+  className: Schema.optional(OptionalProfileField),
+});
+export type NotebookProfileInput = typeof NotebookProfileInput.Type;
+
+export class CodeUnavailable extends Schema.TaggedError<CodeUnavailable>()(
+  "SchoolAccess.CodeUnavailable",
+  {},
+) {}
+
+export class ReservationUnavailable extends Schema.TaggedError<ReservationUnavailable>()(
+  "SchoolAccess.ReservationUnavailable",
+  {},
+) {}
+
+export class EmailNotVerified extends Schema.TaggedError<EmailNotVerified>()(
+  "SchoolAccess.EmailNotVerified",
+  {},
+) {}
+
+export class AccessAlreadyExists extends Schema.TaggedError<AccessAlreadyExists>()(
+  "SchoolAccess.AccessAlreadyExists",
+  {},
+) {}
+
+export class ProfileUnavailable extends Schema.TaggedError<ProfileUnavailable>()(
+  "SchoolAccess.ProfileUnavailable",
+  {},
+) {}
 
 /**
  * The name a Studienbuch account carries.

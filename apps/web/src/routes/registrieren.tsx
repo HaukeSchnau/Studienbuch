@@ -4,12 +4,16 @@ import * as Schema from "effect/Schema";
 import { useEffect, useState } from "react";
 import { inspectReservation, type ReservationView } from "#/features/auth/access.ts";
 import {
+  AuthDone,
   AuthError,
+  AuthHeading,
   AuthNote,
   authNoteLinkClass,
   AuthShell,
   Field,
   invalidWhen,
+  submitState,
+  Working,
 } from "#/features/auth/auth-shell.tsx";
 import { accessMessage, betterAuthMessage } from "#/features/auth/messages.ts";
 import { authClient } from "#/infra/auth/client.ts";
@@ -86,11 +90,10 @@ function RegisterPage() {
   if (sentTo !== undefined) {
     return (
       <AuthShell>
-        <h1 className="text-center text-3xl text-primary-text">Schau in dein Postfach</h1>
-        <p className="mt-4 text-center text-ink-soft">
+        <AuthDone title="Schau in dein Postfach">
           Wir haben einen Bestätigungslink an <span className="text-ink">{sentTo}</span> geschickt.
           Danach schließen wir die Aktivierung ab.
-        </p>
+        </AuthDone>
         {/* The address is worth being able to correct: a link sent to a mistyped address never
             arrives, and nothing else on this screen would ever tell the user why. */}
         <Button
@@ -112,10 +115,8 @@ function RegisterPage() {
   if (claim.state === "unavailable") {
     return (
       <AuthShell>
-        <h1 className="text-center text-3xl text-primary-text">
-          Zugangscode nicht mehr vorgemerkt
-        </h1>
-        <p className="mt-4 text-center text-ink-soft">{claim.message}</p>
+        <AuthHeading>Nicht mehr vorgemerkt</AuthHeading>
+        <p className="enter-later mt-4 text-center text-ink-soft">{claim.message}</p>
         <Button asChild className="mt-7 w-full" radius="pill" size="xl" variant="brand">
           <Link to="/aktivieren">Zugangscode eingeben</Link>
         </Button>
@@ -131,8 +132,8 @@ function RegisterPage() {
 
   return (
     <AuthShell>
-      <h1 className="text-center text-3xl text-primary-text">Konto erstellen</h1>
-      <p aria-live="polite" className="mt-3 text-center text-ink-soft">
+      <AuthHeading>Konto erstellen</AuthHeading>
+      <p aria-live="polite" className="enter-later mt-4 text-center text-ink-soft">
         {claim.state === "pending"
           ? "Wir prüfen deinen Zugangscode ..."
           : `${claim.view.school.name}, ${claim.view.kind === "Student" ? "Schülerzugang" : "Lehrerzugang"}`}
@@ -161,14 +162,14 @@ function RegisterPage() {
         </Field>
         {error === undefined ? null : <AuthError>{error}</AuthError>}
         <Button
-          aria-busy={busy}
-          disabled={busy || claim.state === "pending"}
           radius="pill"
           size="xl"
           type="submit"
           variant="brand"
+          {...submitState({ busy, error })}
+          disabled={busy || claim.state === "pending"}
         >
-          {busy ? "Konto wird erstellt ..." : "Konto erstellen"}
+          {busy ? <Working>Konto wird erstellt ...</Working> : "Konto erstellen"}
         </Button>
       </form>
       <AuthNote>

@@ -1,8 +1,11 @@
 import { serverObservabilityLayer } from "@stu/observability/server";
+import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Auth, Database, EnquiryNotifier } from "@stu/server";
 import * as Layer from "effect/Layer";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { authOptions } from "#/infra/auth/better-auth.ts";
+import { AccessRpcEndpoint } from "#/features/auth/rpc.server.ts";
+import { EnrollmentRateLimiter } from "#/infra/http/rate-limit.server.ts";
 import { ClientTelemetry } from "#/infra/observability/client-telemetry.server.ts";
 
 const telemetryLayer = serverObservabilityLayer({ serviceName: "studienbuch-server" }).pipe(
@@ -15,9 +18,15 @@ const databaseLayer = Database.layerConfig;
 /** Better Auth, sharing the database and receiving this application's framework plugins. */
 const authLayer = Auth.layer(authOptions).pipe(Layer.provide(databaseLayer));
 
+const accessRpcLayer = AccessRpcEndpoint.layer.pipe(
+  Layer.provide([EnrollmentRateLimiter.layer, authLayer, databaseLayer, NodeServices.layer]),
+);
+
 export const WebApplicationLive = Layer.mergeAll(
+  NodeServices.layer,
   ClientTelemetry.layer,
   EnquiryNotifier.layer,
   authLayer,
+  accessRpcLayer,
   databaseLayer,
 ).pipe(Layer.provideMerge(telemetryLayer));

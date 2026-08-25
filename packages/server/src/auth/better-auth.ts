@@ -4,13 +4,14 @@ import { betterAuth } from "better-auth";
 import type { BetterAuthOptions } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import * as Context from "effect/Context";
+import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
 import { Database } from "../database/client.ts";
 import { consumeSetupToken, resolveSetupUser } from "../access/operator.ts";
-import { registrationSignupAllowed, spendRegistrationSignup } from "../access/school-access.ts";
+import { claimRegistrationSignup, releaseRegistrationSignup } from "../access/school-access.ts";
 
 /**
  * What the calling application contributes.
@@ -59,6 +60,14 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
   make: (options: Options = {}) =>
     Effect.gen(function* () {
       const database = yield* Database.Service;
+      const crypto = yield* Crypto.Crypto;
+      const runCallback = <A, E>(effect: Effect.Effect<A, E, Crypto.Crypto | Database.Service>) =>
+        Effect.runPromise(
+          effect.pipe(
+            Effect.provideService(Database.Service, database),
+            Effect.provideService(Crypto.Crypto, crypto),
+          ),
+        );
       return betterAuth({
         database: database.pool,
         advanced: {
@@ -81,7 +90,7 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
         hooks: {
           before: createAuthMiddleware(async (context) => {
             if (context.path !== "/sign-up/email") return;
-            if (!(await registrationSignupAllowed(database.pool, registrationToken(context)))) {
+            if (!(await runCallback(claimRegistrationSignup(registrationToken(context))))) {
               // oxlint-disable-next-line anti-slop/no-throwing-errors -- Better Auth middleware aborts requests through APIError.
               throw new APIError("BAD_REQUEST", {
                 code: "SCHOOL_ACCESS_RESERVATION_REQUIRED",
@@ -96,12 +105,11 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
             };
           }),
           /**
-           * Charges a signup to the reservation that authorised it.
+           * Returns a signup claim when Better Auth rejects the request before producing an account.
            *
-           * Here rather than in the `before` hook because Better Auth validates the body inside the
-           * endpoint: a password two characters short would otherwise spend a signup the user never
-           * got. After-hooks run for failed calls too, so the response is what decides — an account
-           * was created exactly when one came back.
+           * The claim happens in `before`, atomically with its budget check, so parallel requests
+           * cannot all pass a read-only check and overshoot the budget. After-hooks run for failed
+           * endpoint calls too, which lets an invalid body return its claim.
            *
            * Better Auth answers a signup for an address it already knows with a synthetic account
            * rather than an error, so that no one can use signup to test whether an address is
@@ -109,8 +117,8 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
            */
           after: createAuthMiddleware(async (context) => {
             if (context.path !== "/sign-up/email") return;
-            if (Exit.isFailure(decodeSignUpResult(context.context.returned))) return;
-            await spendRegistrationSignup(database.pool, registrationToken(context));
+            if (Exit.isSuccess(decodeSignUpResult(context.context.returned))) return;
+            await runCallback(releaseRegistrationSignup(registrationToken(context)));
           }),
         },
         trustedOrigins: options.trustedOrigins,
@@ -125,7 +133,7 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
             registration: {
               requireSession: false,
               resolveUser: async ({ context }) => {
-                const user = await resolveSetupUser(database.pool, context ?? null);
+                const user = await runCallback(resolveSetupUser(context ?? null));
                 if (user !== null) return user;
                 // oxlint-disable-next-line anti-slop/no-throwing-errors -- Better Auth's callback has no typed failure return.
                 throw new APIError("UNAUTHORIZED", {
@@ -141,10 +149,10 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
                */
               afterVerification: async ({ context, user }) => {
                 if (context === null || context === undefined) return;
-                const setupUser = await resolveSetupUser(database.pool, context);
+                const setupUser = await runCallback(resolveSetupUser(context));
                 const consumedForUserId =
                   setupUser?.id === user.id
-                    ? await consumeSetupToken(database.pool, context)
+                    ? await runCallback(consumeSetupToken(context))
                     : undefined;
                 if (consumedForUserId !== user.id) {
                   // oxlint-disable-next-line anti-slop/no-throwing-errors -- Better Auth's callback has no typed failure return.
@@ -162,7 +170,9 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
     }),
 }) {}
 
-export const layer = (options?: Options): Layer.Layer<Service, never, Database.Service> =>
+export const layer = (
+  options?: Options,
+): Layer.Layer<Service, never, Crypto.Crypto | Database.Service> =>
   Layer.effect(Service, Service.make(options));
 
 export * as Auth from "./better-auth.ts";

@@ -22,12 +22,8 @@ import { Route as PublicDatenschutzRouteImport } from './routes/_public.datensch
 import { Route as PublicImpressumRouteImport } from './routes/_public.impressum'
 import { Route as AktivierenAbschliessenRouteImport } from './routes/aktivieren_.abschliessen'
 import { Route as ApiEnquiryRouteImport } from './routes/api/enquiry'
+import { Route as ApiRpcRouteImport } from './routes/api/rpc'
 import { Route as OperatorSetupRouteImport } from './routes/operator/setup'
-import { Route as ApiAccessCompleteRouteImport } from './routes/api/access/complete'
-import { Route as ApiAccessMeRouteImport } from './routes/api/access/me'
-import { Route as ApiAccessProfileRouteImport } from './routes/api/access/profile'
-import { Route as ApiAccessReservationRouteImport } from './routes/api/access/reservation'
-import { Route as ApiAccessReserveRouteImport } from './routes/api/access/reserve'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiHealthLiveRouteImport } from './routes/api/health/live'
 import { Route as ApiHealthReadyRouteImport } from './routes/api/health/ready'
@@ -98,34 +94,14 @@ const ApiEnquiryRoute = ApiEnquiryRouteImport.update({
   path: '/api/enquiry',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRpcRoute = ApiRpcRouteImport.update({
+  id: '/api/rpc',
+  path: '/api/rpc',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OperatorSetupRoute = OperatorSetupRouteImport.update({
   id: '/operator/setup',
   path: '/operator/setup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAccessCompleteRoute = ApiAccessCompleteRouteImport.update({
-  id: '/api/access/complete',
-  path: '/api/access/complete',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAccessMeRoute = ApiAccessMeRouteImport.update({
-  id: '/api/access/me',
-  path: '/api/access/me',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAccessProfileRoute = ApiAccessProfileRouteImport.update({
-  id: '/api/access/profile',
-  path: '/api/access/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAccessReservationRoute = ApiAccessReservationRouteImport.update({
-  id: '/api/access/reservation',
-  path: '/api/access/reservation',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAccessReserveRoute = ApiAccessReserveRouteImport.update({
-  id: '/api/access/reserve',
-  path: '/api/access/reserve',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -169,12 +145,8 @@ export interface FileRoutesByFullPath {
   '/impressum': typeof PublicImpressumRoute
   '/aktivieren/abschliessen': typeof AktivierenAbschliessenRoute
   '/api/enquiry': typeof ApiEnquiryRoute
+  '/api/rpc': typeof ApiRpcRoute
   '/operator/setup': typeof OperatorSetupRoute
-  '/api/access/complete': typeof ApiAccessCompleteRoute
-  '/api/access/me': typeof ApiAccessMeRoute
-  '/api/access/profile': typeof ApiAccessProfileRoute
-  '/api/access/reservation': typeof ApiAccessReservationRoute
-  '/api/access/reserve': typeof ApiAccessReserveRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -193,13 +165,9 @@ export interface FileRoutesByTo {
   '/impressum': typeof PublicImpressumRoute
   '/aktivieren/abschliessen': typeof AktivierenAbschliessenRoute
   '/api/enquiry': typeof ApiEnquiryRoute
+  '/api/rpc': typeof ApiRpcRoute
   '/operator/setup': typeof OperatorSetupRoute
   '/': typeof PublicIndexRoute
-  '/api/access/complete': typeof ApiAccessCompleteRoute
-  '/api/access/me': typeof ApiAccessMeRoute
-  '/api/access/profile': typeof ApiAccessProfileRoute
-  '/api/access/reservation': typeof ApiAccessReservationRoute
-  '/api/access/reserve': typeof ApiAccessReserveRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -220,13 +188,9 @@ export interface FileRoutesById {
   '/_public/impressum': typeof PublicImpressumRoute
   '/aktivieren_/abschliessen': typeof AktivierenAbschliessenRoute
   '/api/enquiry': typeof ApiEnquiryRoute
+  '/api/rpc': typeof ApiRpcRoute
   '/operator/setup': typeof OperatorSetupRoute
   '/_public/': typeof PublicIndexRoute
-  '/api/access/complete': typeof ApiAccessCompleteRoute
-  '/api/access/me': typeof ApiAccessMeRoute
-  '/api/access/profile': typeof ApiAccessProfileRoute
-  '/api/access/reservation': typeof ApiAccessReservationRoute
-  '/api/access/reserve': typeof ApiAccessReserveRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -248,12 +212,8 @@ export interface FileRouteTypes {
     | '/impressum'
     | '/aktivieren/abschliessen'
     | '/api/enquiry'
+    | '/api/rpc'
     | '/operator/setup'
-    | '/api/access/complete'
-    | '/api/access/me'
-    | '/api/access/profile'
-    | '/api/access/reservation'
-    | '/api/access/reserve'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -272,13 +232,9 @@ export interface FileRouteTypes {
     | '/impressum'
     | '/aktivieren/abschliessen'
     | '/api/enquiry'
+    | '/api/rpc'
     | '/operator/setup'
     | '/'
-    | '/api/access/complete'
-    | '/api/access/me'
-    | '/api/access/profile'
-    | '/api/access/reservation'
-    | '/api/access/reserve'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -298,13 +254,9 @@ export interface FileRouteTypes {
     | '/_public/impressum'
     | '/aktivieren_/abschliessen'
     | '/api/enquiry'
+    | '/api/rpc'
     | '/operator/setup'
     | '/_public/'
-    | '/api/access/complete'
-    | '/api/access/me'
-    | '/api/access/profile'
-    | '/api/access/reservation'
-    | '/api/access/reserve'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -323,12 +275,8 @@ export interface RootRouteChildren {
   RegistrierenRoute: typeof RegistrierenRoute
   AktivierenAbschliessenRoute: typeof AktivierenAbschliessenRoute
   ApiEnquiryRoute: typeof ApiEnquiryRoute
+  ApiRpcRoute: typeof ApiRpcRoute
   OperatorSetupRoute: typeof OperatorSetupRoute
-  ApiAccessCompleteRoute: typeof ApiAccessCompleteRoute
-  ApiAccessMeRoute: typeof ApiAccessMeRoute
-  ApiAccessProfileRoute: typeof ApiAccessProfileRoute
-  ApiAccessReservationRoute: typeof ApiAccessReservationRoute
-  ApiAccessReserveRoute: typeof ApiAccessReserveRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiHealthLiveRoute: typeof ApiHealthLiveRoute
   ApiHealthReadyRoute: typeof ApiHealthReadyRoute
@@ -429,46 +377,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiEnquiryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/rpc': {
+      id: '/api/rpc'
+      path: '/api/rpc'
+      fullPath: '/api/rpc'
+      preLoaderRoute: typeof ApiRpcRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/operator/setup': {
       id: '/operator/setup'
       path: '/operator/setup'
       fullPath: '/operator/setup'
       preLoaderRoute: typeof OperatorSetupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/access/complete': {
-      id: '/api/access/complete'
-      path: '/api/access/complete'
-      fullPath: '/api/access/complete'
-      preLoaderRoute: typeof ApiAccessCompleteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/access/me': {
-      id: '/api/access/me'
-      path: '/api/access/me'
-      fullPath: '/api/access/me'
-      preLoaderRoute: typeof ApiAccessMeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/access/profile': {
-      id: '/api/access/profile'
-      path: '/api/access/profile'
-      fullPath: '/api/access/profile'
-      preLoaderRoute: typeof ApiAccessProfileRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/access/reservation': {
-      id: '/api/access/reservation'
-      path: '/api/access/reservation'
-      fullPath: '/api/access/reservation'
-      preLoaderRoute: typeof ApiAccessReservationRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/access/reserve': {
-      id: '/api/access/reserve'
-      path: '/api/access/reserve'
-      fullPath: '/api/access/reserve'
-      preLoaderRoute: typeof ApiAccessReserveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -535,12 +455,8 @@ const rootRouteChildren: RootRouteChildren = {
   RegistrierenRoute: RegistrierenRoute,
   AktivierenAbschliessenRoute: AktivierenAbschliessenRoute,
   ApiEnquiryRoute: ApiEnquiryRoute,
+  ApiRpcRoute: ApiRpcRoute,
   OperatorSetupRoute: OperatorSetupRoute,
-  ApiAccessCompleteRoute: ApiAccessCompleteRoute,
-  ApiAccessMeRoute: ApiAccessMeRoute,
-  ApiAccessProfileRoute: ApiAccessProfileRoute,
-  ApiAccessReservationRoute: ApiAccessReservationRoute,
-  ApiAccessReserveRoute: ApiAccessReserveRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiHealthLiveRoute: ApiHealthLiveRoute,
   ApiHealthReadyRoute: ApiHealthReadyRoute,

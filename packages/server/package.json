@@ -24,6 +24,7 @@
     "webuntis-api": "https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.2.tgz"
   },
   "devDependencies": {
+    "@effect/platform-node": "catalog:",
     "@effect/vitest": "catalog:",
     "@testcontainers/postgresql": "^12.1.0",
     "@types/pg": "catalog:",
