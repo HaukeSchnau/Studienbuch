@@ -56,10 +56,10 @@ export const Capabilities = () => (
     {/* Hidden below xl: the content column runs close to the edge on narrower viewports and a
         blob would sit behind body text instead of in the margin. */}
     <EdgeBlob
-      blob="pinch"
+      blob="kidney"
       className="-right-40 top-36 hidden size-[24rem] xl:block"
       rotate={-18}
-      tone="blue"
+      tone="green"
     />
 
     <Container className="flex flex-col gap-12">

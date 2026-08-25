@@ -19,7 +19,7 @@ import { Container, Section } from "#/ui/section.tsx";
 export const GetTheApp = () => (
   <Section className="relative isolate" id={sectionIds.app}>
     <EdgeBlob
-      blob="swell"
+      blob="pinch"
       className="-left-44 top-24 hidden size-[20rem] xl:block"
       rotate={-26}
       tone="green"
