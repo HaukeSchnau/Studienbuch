@@ -358,8 +358,34 @@ profile, not the generic reconciler.
 Every pair receives a schema-backed `Same`, `Different`, `Compatible` or `Ambiguous` decision.
 `Same` requires strong roster progression, course-code or activity corroboration, and a unique
 match in both directions. Competing strong matches are `Ambiguous`. The decision records the rule
-version, observation IDs, overlap counts and corroborating provider IDs. It does not allocate or
-persist a permanent `CourseOfferingId` yet.
+version, observation IDs, overlap counts and corroborating provider IDs.
+
+The durable projector replays every current private roster scope for one data source in one
+transaction. A mature unique component receives one random UUID. An exact observation keeps its
+stored UUID, and every uniquely connected `Same` observation reuses it in either chronological
+direction. A same-year observation that shares students and compatible course evidence with
+another pattern remains unresolved, as do missing course codes and components that already contain
+conflicting stored identities. Import order therefore cannot independently allocate two IDs to an
+adjacent-year `Same` pair.
+
+Annual observations retain their private payload and exact raw source-record versions. Current
+`Same`, `Compatible` and `Ambiguous` decisions retain their name-free evidence. `Different` pairs
+are counted but not stored because they carry no resolution or ambiguity and dominate the Cartesian
+comparison. Permanent offerings and their school-year representations are separate from provider
+observations. Missing observations become inactive but do not delete an offering or prove that it
+ended.
+
+Resolved dated observations create a durable occurrence-to-offering overlay. The projector updates
+the current occurrence payload, while the ordinary timetable projector reapplies the overlay on
+every later source refresh. An unchanged course replay writes only its run and source manifest; it
+does not allocate another UUID or rewrite evidence.
+
+The live two-year private replay covered four weeks in both 2025/26 and 2026/27. It read 187,970
+student occurrence views, reconstructed 8,469 dated rosters and accepted 1,092 annual observations,
+including nine repeated `*23` joint observations. The resolution produced 39 unique `Same`
+decisions, 929 new-identity plans and 128 unresolved annual observations. It also classified 2,452
+ambiguous and 23,909 compatible adjacent-year pairs, so retaining uncertainty is a material part of
+the design rather than an edge case.
 
 The historical audit also found seven older entries with `position1: null`.
 `webuntis-api` 0.2.2 accepts that shape, and source normalization retains the distinction between
@@ -478,8 +504,9 @@ just console webuntis-course-audit \
 ```
 
 Fetch the private student view for a bounded reconciliation window. The default command prints only
-the name-free preview. `--apply` persists the daily raw scopes but still does not allocate course
-identities:
+the name-free preview. `--apply` persists the daily raw scopes and then replays all current roster
+years into the durable course projection. Import the matching directory and ordinary timetable
+scopes first so annual representations and dated occurrence links can be created:
 
 ```bash
 just console webuntis-course-rosters \
@@ -496,14 +523,11 @@ just console webuntis-course-rosters \
 
 ## Next implementation slice
 
-1. Replay current private roster scopes into annual observations, persist only resolved course
-   decisions and attach their IDs to dated
-   occurrences. Retain compatible and ambiguous candidates without forcing a merge.
-2. Define role-specific timetable and directory contracts and turn projection transitions into
+1. Define role-specific timetable, directory and course contracts and turn projection transitions into
    authorized, ordered client changes. Keep raw source records and unrestricted projection payloads
    server-only.
-3. Add student timetable data to client contracts only if a concrete feature needs it. Course
+2. Add student timetable data to client contracts only if a concrete feature needs it. Course
    reconciliation alone does not justify duplicating the school timetable per student.
-4. Add the agreed polling policy with jitter, one active execution per source and observable
+3. Add the agreed polling policy with jitter, one active execution per source and observable
    failures that never advance source state.
-5. Add the server-only exams importer before designing its role-specific client projection.
+4. Add the server-only exams importer before designing its role-specific client projection.

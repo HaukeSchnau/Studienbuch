@@ -6,6 +6,7 @@ export { SourceObservationStore } from "./importing/source-observation-store.ts"
 export { EntityLinks } from "./importing/entity-links.ts";
 export { Migrate } from "./database/migrate.ts";
 export { DirectoryProjectionStore } from "./organization/directory-projection-store.ts";
+export { CourseProjectionStore } from "./organization/course-projection-store.ts";
 export { TimetableProjectionStore } from "./schedule/timetable-projection-store.ts";
 export * as WebUntisDirectory from "./webuntis/directory.ts";
 export * as WebUntisTimetable from "./webuntis/timetable.ts";

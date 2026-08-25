@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { Importing, Schedule } from "@stu/core";
+import { Importing, Organization, Schedule } from "@stu/core";
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
@@ -7,6 +7,7 @@ import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { Database } from "../database/client.ts";
 import { EntityLinks } from "../importing/entity-links.ts";
 import { sourceImportRuns, sourceRecords, sourceRecordVersions } from "../importing/schema.ts";
+import { courseOccurrenceAssignments } from "../organization/course-schema.ts";
 import { projectTimetableOccurrences } from "../webuntis/timetable-projection.ts";
 import { TimetableObservation } from "../webuntis/timetable.ts";
 import {
@@ -138,6 +139,7 @@ const prepareOccurrences = Effect.fnUntraced(function* (
     readonly payload: Schema.Json;
   }>,
   entityLinks: ReadonlyArray<Importing.EntityLink>,
+  courseOfferingIdsByOccurrence: ReadonlyMap<string, ReadonlyArray<string>>,
 ) {
   const observations = yield* Effect.forEach(rows, decodeSourceRecord);
   const occurrences = yield* projectTimetableOccurrences({
@@ -147,8 +149,20 @@ const prepareOccurrences = Effect.fnUntraced(function* (
   });
   const versionByExternalId = new Map(rows.map((row) => [row.externalId, row.currentVersionId]));
 
-  return yield* Effect.forEach(occurrences, (occurrence) =>
+  return yield* Effect.forEach(occurrences, (projectedOccurrence) =>
     Effect.gen(function* () {
+      const occurrence = Schedule.ProviderBackedOccurrence.make({
+        id: projectedOccurrence.id,
+        dataSourceId: projectedOccurrence.dataSourceId,
+        date: projectedOccurrence.date,
+        providerEntryIds: projectedOccurrence.providerEntryIds,
+        recurringMeetingId: projectedOccurrence.recurringMeetingId,
+        courseOfferingIds: (courseOfferingIdsByOccurrence.get(projectedOccurrence.id) ?? []).map(
+          (id) => Organization.CourseOfferingId.make(id),
+        ),
+        bellPeriodId: projectedOccurrence.bellPeriodId,
+        claims: projectedOccurrence.claims,
+      });
       const sourceRecordVersionIds: Array<string> = [];
       for (const claim of occurrence.claims) {
         const sourceRecordVersionId = versionByExternalId.get(claim.source.externalId);
@@ -224,7 +238,26 @@ export const projectCurrentScope = Effect.fn("Schedule.projectCurrentTimetableSc
             eq(sourceRecords.active, true),
           ),
         );
-      const incoming = yield* prepareOccurrences(dataSourceId, sourceRows, entityLinks);
+      const courseAssignmentRows = yield* transaction
+        .select({
+          occurrenceId: courseOccurrenceAssignments.occurrenceId,
+          courseOfferingId: courseOccurrenceAssignments.courseOfferingId,
+        })
+        .from(courseOccurrenceAssignments)
+        .where(eq(courseOccurrenceAssignments.dataSourceId, dataSourceId));
+      const courseOfferingIdsByOccurrence = new Map<string, Array<string>>();
+      for (const row of courseAssignmentRows) {
+        const ids = courseOfferingIdsByOccurrence.get(row.occurrenceId) ?? [];
+        ids.push(row.courseOfferingId);
+        courseOfferingIdsByOccurrence.set(row.occurrenceId, ids);
+      }
+      for (const ids of courseOfferingIdsByOccurrence.values()) ids.sort();
+      const incoming = yield* prepareOccurrences(
+        dataSourceId,
+        sourceRows,
+        entityLinks,
+        courseOfferingIdsByOccurrence,
+      );
 
       const currentRows = yield* transaction
         .select({ id: timetableOccurrences.id, contentHash: timetableOccurrences.contentHash })

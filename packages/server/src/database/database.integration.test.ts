@@ -21,6 +21,12 @@ import { EntityLinks as EntityLinkStore } from "../importing/entity-links.ts";
 import { SourceObservationStore } from "../importing/source-observation-store.ts";
 import { hashSourceObservations, type SourceSnapshot } from "../importing/source-snapshot.ts";
 import { DirectoryProjectionStore } from "../organization/directory-projection-store.ts";
+import { CourseProjectionStore } from "../organization/course-projection-store.ts";
+import {
+  courseAnnualObservations,
+  courseOfferings,
+  courseProjectionRuns,
+} from "../organization/course-schema.ts";
 import {
   directoryEntities,
   directoryEntitySources,
@@ -42,6 +48,7 @@ import {
   type DirectorySnapshot,
 } from "../webuntis/directory-snapshot.ts";
 import { TimetableObservation } from "../webuntis/timetable.ts";
+import { StudentTimetableObservation } from "../webuntis/student-timetable.ts";
 
 /**
  * Testcontainers needs a Docker-compatible socket, and `DOCKER_HOST` is the contract for naming it:
@@ -275,6 +282,165 @@ const timetableSnapshot = (
   counts: { occurrenceViews: observations.length },
   diagnostics: [],
 });
+
+const courseRosterObservation = (input: {
+  readonly date: string;
+  readonly entryId: number;
+  readonly studentId: number;
+  readonly courseCode: string;
+}) => {
+  const studentName = `Student ${input.studentId}`;
+  return StudentTimetableObservation.make({
+    _tag: "TimetableOccurrence",
+    externalId: `STUDENT:${input.studentId}:${input.date}:${input.entryId}`,
+    payload: {
+      academicYearExternalId: "10",
+      date: input.date,
+      resource: {
+        externalId: String(input.studentId),
+        shortName: studentName,
+        longName: studentName,
+        displayName: studentName,
+      },
+      student: {
+        student: {
+          id: input.studentId,
+          shortName: studentName,
+          longName: studentName,
+          displayName: studentName,
+        },
+        classes: [
+          {
+            class: {
+              id: 565,
+              shortName: "5.2",
+              longName: "Klasse 5.2",
+              displayName: "5.2",
+            },
+            dateRange: { start: "2026-08-13", end: "2027-07-07" },
+            department: null,
+          },
+        ],
+        assignmentGroups: [],
+        imageUrl: null,
+      },
+      dayStatus: "REGULAR",
+      location: "Grid",
+      entry: {
+        ids: [input.entryId],
+        duration: { start: "08:00", end: "08:45" },
+        type: "NORMAL_TEACHING_PERIOD",
+        status: "REGULAR",
+        layoutStartPosition: 0,
+        layoutWidth: 1,
+        layoutGroup: 0,
+        color: "#ffffff",
+        notesAll: "",
+        icons: [],
+        position1: [
+          {
+            current: {
+              type: "SUBJECT",
+              status: "REGULAR",
+              shortName: input.courseCode,
+              longName: input.courseCode,
+              displayName: input.courseCode,
+              displayNameLabel: null,
+            },
+            removed: null,
+          },
+        ],
+        position2: [],
+        position3: [],
+        position4: [],
+        texts: [],
+        lessonText: "",
+        lessonInfo: null,
+        substitutionText: "",
+      },
+    },
+  });
+};
+
+const courseRosterSnapshot = (date: string, entryId: number, courseCode = "MA-E") => {
+  const observations = [1, 2, 3, 4, 5].map((studentId) =>
+    courseRosterObservation({ date, entryId, studentId, courseCode }),
+  );
+  return {
+    provider: "WebUntis",
+    dataSourceId: "webuntis:directory-projection-test",
+    dataset: "course-rosters",
+    scope: `academic-year:10/resource-type:STUDENT/date:${date}`,
+    contentHash: hashSourceObservations(observations),
+    completeness: "Complete",
+    observations,
+    counts: { privateOccurrenceViews: observations.length },
+    diagnostics: [],
+  } satisfies SourceSnapshot<StudentTimetableObservation>;
+};
+
+const courseTimetableSnapshot = (date: string, entryId: number) => {
+  const observation = TimetableObservation.make({
+    externalId: `CLASS:565:${date}:${entryId}`,
+    payload: {
+      academicYearExternalId: "10",
+      date,
+      resourceType: "CLASS",
+      resource: {
+        externalId: "565",
+        shortName: "5.2",
+        longName: "Klasse 5.2",
+        displayName: "5.2",
+      },
+      dayStatus: "REGULAR",
+      location: "Grid",
+      entry: {
+        ids: [entryId],
+        duration: { start: "08:00", end: "08:45" },
+        type: "NORMAL_TEACHING_PERIOD",
+        status: "REGULAR",
+        layoutStartPosition: 0,
+        layoutWidth: 1,
+        layoutGroup: 0,
+        color: "#ffffff",
+        notesAll: "",
+        icons: [],
+        position1: [
+          {
+            current: {
+              type: "SUBJECT",
+              status: "REGULAR",
+              shortName: "MA-E",
+              longName: "MA-E",
+              displayName: "MA-E",
+              displayNameLabel: null,
+            },
+            removed: null,
+          },
+        ],
+        position2: [],
+        position3: [],
+        position4: [],
+        texts: [],
+        lessonText: "",
+        lessonInfo: null,
+        substitutionText: "",
+      },
+    },
+  });
+  const observations = [observation];
+  return {
+    provider: "WebUntis",
+    dataSourceId: "webuntis:directory-projection-test",
+    dataset: "timetable",
+    scope: `academic-year:10/resource-types:CLASS,SUBJECT,TEACHER,ROOM/date:${date}`,
+    contentHash: hashSourceObservations(observations),
+    completeness: "Complete",
+    observations,
+    counts: { occurrenceViews: observations.length },
+    diagnostics: [],
+  } satisfies SourceSnapshot<TimetableObservation>;
+};
 
 it.live.runIf(hasContainerRuntime)(
   "applies the migration history and round-trips rows through the Effect Drizzle database",
@@ -629,6 +795,126 @@ it.live.runIf(hasContainerRuntime)(
       expect(projectionChanges.map((change) => change.changeType)).toEqual(
         expect.arrayContaining(["Added", "Updated", "Removed"]),
       );
+    }).pipe(Effect.provide(migrated)),
+  { timeout: 60_000 },
+);
+
+it.live.runIf(hasContainerRuntime)(
+  "allocates course identities once and restores them after source evidence changes",
+  () =>
+    Effect.gen(function* () {
+      const database = yield* Database.Service;
+      const rawDataSourceId = "webuntis:directory-projection-test";
+      yield* SourceObservationStore.persistDirectorySnapshot(
+        projectableDirectorySnapshot("IGS Lilienthal"),
+      );
+      yield* DirectoryProjectionStore.projectCurrent({ dataSourceId: rawDataSourceId });
+
+      const days = [
+        ["2026-08-24", 101],
+        ["2026-08-31", 102],
+        ["2026-09-07", 103],
+      ] as const;
+      yield* Effect.forEach(days, ([date, entryId]) =>
+        Effect.gen(function* () {
+          const snapshot = courseTimetableSnapshot(date, entryId);
+          yield* SourceObservationStore.persistSourceSnapshot(snapshot);
+          yield* TimetableProjectionStore.projectCurrentScope({
+            dataSourceId: rawDataSourceId,
+            scope: snapshot.scope,
+          });
+        }),
+      );
+      yield* Effect.forEach(days, ([date, entryId]) =>
+        SourceObservationStore.persistSourceSnapshot(courseRosterSnapshot(date, entryId)),
+      );
+
+      const added = yield* CourseProjectionStore.projectCurrent({ dataSourceId: rawDataSourceId });
+      const unchanged = yield* CourseProjectionStore.projectCurrent({
+        dataSourceId: rawDataSourceId,
+      });
+      const initial = yield* CourseProjectionStore.readCurrent({ dataSourceId: rawDataSourceId });
+      const initialOfferingId = initial.offerings[0]?.id;
+
+      expect(added).toMatchObject({
+        _tag: "Projected",
+        annualObservationCount: 1,
+        resolvedObservationCount: 1,
+        createdOfferingCount: 1,
+        occurrenceAssignmentCount: 3,
+      });
+      expect(unchanged).toMatchObject({
+        _tag: "Unchanged",
+        annualObservationCount: 1,
+        createdOfferingCount: 0,
+        changedCount: 0,
+      });
+      expect(initial.offerings).toHaveLength(1);
+      expect(initial.academicYears).toMatchObject([
+        { name: "MA-E", classGroupIds: ["igs-lilienthal/class/2026/2"] },
+      ]);
+      const linkedBeforeTimetableReplay = yield* TimetableProjectionStore.readCurrent({
+        dataSourceId: Importing.DataSourceId.make(rawDataSourceId),
+      });
+      expect(linkedBeforeTimetableReplay).toHaveLength(3);
+      expect(
+        linkedBeforeTimetableReplay.every(
+          (occurrence) => occurrence.courseOfferingIds[0] === initialOfferingId,
+        ),
+      ).toBe(true);
+      const replayedScope = yield* TimetableProjectionStore.projectCurrentScope({
+        dataSourceId: rawDataSourceId,
+        scope: courseTimetableSnapshot("2026-08-24", 101).scope,
+      });
+      expect(replayedScope).toMatchObject({ _tag: "Unchanged" });
+
+      yield* SourceObservationStore.persistSourceSnapshot(
+        courseRosterSnapshot("2026-09-07", 103, "MA-G"),
+      );
+      const evidenceChanged = yield* CourseProjectionStore.projectCurrent({
+        dataSourceId: rawDataSourceId,
+      });
+      expect(evidenceChanged).toMatchObject({
+        _tag: "Projected",
+        annualObservationCount: 0,
+        createdOfferingCount: 0,
+      });
+
+      yield* SourceObservationStore.persistSourceSnapshot(courseRosterSnapshot("2026-09-07", 103));
+      const restored = yield* CourseProjectionStore.projectCurrent({
+        dataSourceId: rawDataSourceId,
+      });
+      const current = yield* CourseProjectionStore.readCurrent({ dataSourceId: rawDataSourceId });
+      expect(restored).toMatchObject({
+        _tag: "Projected",
+        annualObservationCount: 1,
+        resolvedObservationCount: 1,
+        createdOfferingCount: 0,
+      });
+      expect(current.offerings.map((offering) => offering.id)).toEqual([initialOfferingId]);
+
+      const [offeringCount, activeObservationCount, projectionRunCount] = yield* Effect.all([
+        database.drizzle
+          .select({ count: count() })
+          .from(courseOfferings)
+          .where(eq(courseOfferings.dataSourceId, rawDataSourceId)),
+        database.drizzle
+          .select({ count: count() })
+          .from(courseAnnualObservations)
+          .where(
+            and(
+              eq(courseAnnualObservations.dataSourceId, rawDataSourceId),
+              eq(courseAnnualObservations.active, true),
+            ),
+          ),
+        database.drizzle
+          .select({ count: count() })
+          .from(courseProjectionRuns)
+          .where(eq(courseProjectionRuns.dataSourceId, rawDataSourceId)),
+      ]);
+      expect(offeringCount[0]?.count).toBe(1);
+      expect(activeObservationCount[0]?.count).toBe(1);
+      expect(projectionRunCount[0]?.count).toBe(4);
     }).pipe(Effect.provide(migrated)),
   { timeout: 60_000 },
 );
