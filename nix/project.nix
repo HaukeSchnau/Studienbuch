@@ -71,6 +71,10 @@ let
         pkgs.python3
         pkgs.stdenv.cc
       ];
+      ciPackages = developmentPackages ++ lib.optionals isLinux [
+        pkgs.rsync
+        pkgs.util-linux
+      ];
       diagramPackages = [
         atlas
         pkgs.mermaid-cli
@@ -134,7 +138,7 @@ let
       devShells = {
         # CI needs the project toolchain, not the Android SDK, NDK, JDKs, Gradle, or Watchman.
         ci = pkgs.mkShellNoCC {
-          packages = developmentPackages;
+          packages = ciPackages;
           shellHook = developmentShellHook;
         };
 

@@ -28,6 +28,8 @@ jobs:
     steps:
       - name: Checkout exact revision
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Add Nix to PATH
         run: |
@@ -38,13 +40,6 @@ jobs:
           fi
           nix --version
 
-      # `--frozen-lockfile` so a workspace dependency that drifted from the lockfile fails here
-      # rather than resolving to something no one has run locally.
-      - name: Install workspace dependencies
-        run: |
-          set -euo pipefail
-          nix develop .#ci --command pnpm install --frozen-lockfile
-
       # `just qa` is `fmt-check`, `lint`, `mobile-e2e-check` and `test`. `lint` is where type
       # checking happens: Vite+ runs Oxlint with `typeCheck: true`, so there is deliberately no
       # separate type-check step to keep in sync with it.
@@ -52,10 +47,30 @@ jobs:
       # `@stu/server`'s integration test opts in through `DOCKER_HOST` and skips loudly without it.
       # The host runners expose a Podman-compatible socket, so CI runs the suite against a real
       # PostgreSQL. The Release smoke in `nix/checks.nix` independently covers migration history.
-      - name: Run QA
+      # The host runner has a persistent pnpm content-addressable store, but a disposable checkout
+      # still spent about 20 seconds cloning 1,535 packages into node_modules. Keep one ordinary
+      # pnpm workspace per runner architecture instead. rsync replaces all source with the exact
+      # checkout while protecting node_modules; frozen pnpm then repairs and prunes that tree before
+      # QA. The lock covers the whole operation so concurrent refs cannot observe each other's tree.
+      - name: Install dependencies and run QA
         run: |
           set -euo pipefail
-          nix develop .#ci --command just qa
+          source_workspace="$GITHUB_WORKSPACE"
+          nix develop .#ci --command bash -s -- "$source_workspace" <<'BASH'
+            set -euo pipefail
+            source_workspace="$1"
+            cache_root="${XDG_CACHE_HOME:-$HOME/.cache}/studienbuch-ci/$(uname -m)"
+            qa_workspace="$cache_root/workspace"
+            install -d "$qa_workspace"
+            exec 9>"$cache_root/workspace.lock"
+            flock 9
+            rsync -a --delete --exclude node_modules --exclude .jj \
+              "$source_workspace/" "$qa_workspace/"
+            cd "$qa_workspace"
+            export PATH="$PWD/node_modules/.bin:$PATH"
+            pnpm install --frozen-lockfile
+            just qa
+          BASH
 
   release:
     name: Release

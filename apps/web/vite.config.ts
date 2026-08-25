@@ -24,7 +24,13 @@ const skipRuntimePlugin =
 
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
-  server: { allowedHosts: [...allowedHosts] },
+  server: {
+    allowedHosts: [...allowedHosts],
+    warmup: {
+      clientFiles: ["./src/router.tsx", "./src/routes/__root.tsx", "./src/routes/index.tsx"],
+      ssrFiles: ["./src/router.tsx", "./src/routes/__root.tsx", "./src/routes/index.tsx"],
+    },
+  },
   plugins: [
     devtools(),
     nitro({
