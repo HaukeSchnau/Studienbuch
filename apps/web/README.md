@@ -84,6 +84,29 @@ just db-migrate
 Better Auth uses the server runtime's scoped PostgreSQL pool. Its tables live in the same migration
 history as future application tables; do not run Better Auth's independent migration command.
 
+Regular signup is available only after reserving a school access code. Verification and password
+reset messages use SMTP in production:
+
+```bash
+STUDIENBUCH_SMTP_URL=smtps://user:password@mail.example.com:465
+STUDIENBUCH_EMAIL_FROM='Studienbuch <no-reply@example.com>'
+```
+
+Development defaults to `STUDIENBUCH_AUTH_EMAIL_MODE=console` and prints the message and link to the
+server log. Production never falls back to console delivery; missing SMTP configuration makes the
+send fail visibly instead of silently creating an unreachable account.
+
+Create the platform operator and printable school codes through the console:
+
+```bash
+just console operator-bootstrap --name "Hauke Schnau" --base-url https://studienbuch.app
+just console access-codes --school-id igs-lilienthal --school-name "IGS Lilienthal" \
+  --kind student --count 100 --operator-user-id <operator-user-id>
+```
+
+The first command prints a short-lived passkey setup URL. The second prints every access code once;
+only hashes are stored. See [`docs/authentication.md`](../../docs/authentication.md).
+
 ## Working without PostgreSQL
 
 The Nitro `effect-runtime` plugin terminates the server when the application runtime fails to start,

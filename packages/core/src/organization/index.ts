@@ -1,5 +1,13 @@
 export { AcademicTerm, OverlappingAcademicTerms, validateAcademicTerms } from "./academic-term";
 export {
+  SchoolAccessKind,
+  accessCodeAlphabet,
+  accessCodeLength,
+  formatAccessCode,
+  isAccessCode,
+  normalizeAccessCode,
+} from "./access";
+export {
   AcademicYear,
   AcademicYearUnavailable,
   Cohort,

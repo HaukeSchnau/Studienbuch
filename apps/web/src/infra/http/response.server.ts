@@ -1,6 +1,19 @@
 import * as Cause from "effect/Cause";
 import * as Exit from "effect/Exit";
 
+/** Parses a small JSON request without letting an endpoint become an upload sink. */
+export async function readJsonBody(request: Request, maximumBodyBytes = 16 * 1_024) {
+  const contentType = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
+  if (contentType !== "application/json") return undefined;
+  const raw = await request.text();
+  if (raw.length > maximumBodyBytes) return undefined;
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return undefined;
+  }
+}
+
 /** A value that survives `JSON.stringify` unchanged. */
 type JsonValue = string | number | boolean | null | JsonObject | ReadonlyArray<JsonValue>;
 interface JsonObject {

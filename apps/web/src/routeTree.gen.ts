@@ -10,10 +10,24 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PublicRouteImport } from './routes/_public'
+import { Route as AktivierenRouteImport } from './routes/aktivieren'
+import { Route as AnmeldenRouteImport } from './routes/anmelden'
+import { Route as AppRouteImport } from './routes/app'
+import { Route as EinrichtenRouteImport } from './routes/einrichten'
+import { Route as PasswortVergessenRouteImport } from './routes/passwort-vergessen'
+import { Route as PasswortZuruecksetzenRouteImport } from './routes/passwort-zuruecksetzen'
+import { Route as RegistrierenRouteImport } from './routes/registrieren'
 import { Route as PublicIndexRouteImport } from './routes/_public.index'
 import { Route as PublicDatenschutzRouteImport } from './routes/_public.datenschutz'
 import { Route as PublicImpressumRouteImport } from './routes/_public.impressum'
+import { Route as AktivierenAbschliessenRouteImport } from './routes/aktivieren_.abschliessen'
 import { Route as ApiEnquiryRouteImport } from './routes/api/enquiry'
+import { Route as OperatorSetupRouteImport } from './routes/operator/setup'
+import { Route as ApiAccessCompleteRouteImport } from './routes/api/access/complete'
+import { Route as ApiAccessMeRouteImport } from './routes/api/access/me'
+import { Route as ApiAccessProfileRouteImport } from './routes/api/access/profile'
+import { Route as ApiAccessReservationRouteImport } from './routes/api/access/reservation'
+import { Route as ApiAccessReserveRouteImport } from './routes/api/access/reserve'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiHealthLiveRouteImport } from './routes/api/health/live'
 import { Route as ApiHealthReadyRouteImport } from './routes/api/health/ready'
@@ -22,6 +36,41 @@ import { Route as ApiObservabilityV1TelemetryRouteImport } from './routes/api/ob
 
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AktivierenRoute = AktivierenRouteImport.update({
+  id: '/aktivieren',
+  path: '/aktivieren',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnmeldenRoute = AnmeldenRouteImport.update({
+  id: '/anmelden',
+  path: '/anmelden',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EinrichtenRoute = EinrichtenRouteImport.update({
+  id: '/einrichten',
+  path: '/einrichten',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PasswortVergessenRoute = PasswortVergessenRouteImport.update({
+  id: '/passwort-vergessen',
+  path: '/passwort-vergessen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PasswortZuruecksetzenRoute = PasswortZuruecksetzenRouteImport.update({
+  id: '/passwort-zuruecksetzen',
+  path: '/passwort-zuruecksetzen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegistrierenRoute = RegistrierenRouteImport.update({
+  id: '/registrieren',
+  path: '/registrieren',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PublicIndexRoute = PublicIndexRouteImport.update({
@@ -39,9 +88,44 @@ const PublicImpressumRoute = PublicImpressumRouteImport.update({
   path: '/impressum',
   getParentRoute: () => PublicRoute,
 } as any)
+const AktivierenAbschliessenRoute = AktivierenAbschliessenRouteImport.update({
+  id: '/aktivieren_/abschliessen',
+  path: '/aktivieren/abschliessen',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiEnquiryRoute = ApiEnquiryRouteImport.update({
   id: '/api/enquiry',
   path: '/api/enquiry',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperatorSetupRoute = OperatorSetupRouteImport.update({
+  id: '/operator/setup',
+  path: '/operator/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAccessCompleteRoute = ApiAccessCompleteRouteImport.update({
+  id: '/api/access/complete',
+  path: '/api/access/complete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAccessMeRoute = ApiAccessMeRouteImport.update({
+  id: '/api/access/me',
+  path: '/api/access/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAccessProfileRoute = ApiAccessProfileRouteImport.update({
+  id: '/api/access/profile',
+  path: '/api/access/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAccessReservationRoute = ApiAccessReservationRouteImport.update({
+  id: '/api/access/reservation',
+  path: '/api/access/reservation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAccessReserveRoute = ApiAccessReserveRouteImport.update({
+  id: '/api/access/reserve',
+  path: '/api/access/reserve',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -74,9 +158,23 @@ const ApiObservabilityV1TelemetryRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
+  '/aktivieren': typeof AktivierenRoute
+  '/anmelden': typeof AnmeldenRoute
+  '/app': typeof AppRoute
+  '/einrichten': typeof EinrichtenRoute
+  '/passwort-vergessen': typeof PasswortVergessenRoute
+  '/passwort-zuruecksetzen': typeof PasswortZuruecksetzenRoute
+  '/registrieren': typeof RegistrierenRoute
   '/datenschutz': typeof PublicDatenschutzRoute
   '/impressum': typeof PublicImpressumRoute
+  '/aktivieren/abschliessen': typeof AktivierenAbschliessenRoute
   '/api/enquiry': typeof ApiEnquiryRoute
+  '/operator/setup': typeof OperatorSetupRoute
+  '/api/access/complete': typeof ApiAccessCompleteRoute
+  '/api/access/me': typeof ApiAccessMeRoute
+  '/api/access/profile': typeof ApiAccessProfileRoute
+  '/api/access/reservation': typeof ApiAccessReservationRoute
+  '/api/access/reserve': typeof ApiAccessReserveRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -84,10 +182,24 @@ export interface FileRoutesByFullPath {
   '/api/observability/v1/telemetry': typeof ApiObservabilityV1TelemetryRoute
 }
 export interface FileRoutesByTo {
+  '/aktivieren': typeof AktivierenRoute
+  '/anmelden': typeof AnmeldenRoute
+  '/app': typeof AppRoute
+  '/einrichten': typeof EinrichtenRoute
+  '/passwort-vergessen': typeof PasswortVergessenRoute
+  '/passwort-zuruecksetzen': typeof PasswortZuruecksetzenRoute
+  '/registrieren': typeof RegistrierenRoute
   '/datenschutz': typeof PublicDatenschutzRoute
   '/impressum': typeof PublicImpressumRoute
+  '/aktivieren/abschliessen': typeof AktivierenAbschliessenRoute
   '/api/enquiry': typeof ApiEnquiryRoute
+  '/operator/setup': typeof OperatorSetupRoute
   '/': typeof PublicIndexRoute
+  '/api/access/complete': typeof ApiAccessCompleteRoute
+  '/api/access/me': typeof ApiAccessMeRoute
+  '/api/access/profile': typeof ApiAccessProfileRoute
+  '/api/access/reservation': typeof ApiAccessReservationRoute
+  '/api/access/reserve': typeof ApiAccessReserveRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -97,10 +209,24 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_public': typeof PublicRouteWithChildren
+  '/aktivieren': typeof AktivierenRoute
+  '/anmelden': typeof AnmeldenRoute
+  '/app': typeof AppRoute
+  '/einrichten': typeof EinrichtenRoute
+  '/passwort-vergessen': typeof PasswortVergessenRoute
+  '/passwort-zuruecksetzen': typeof PasswortZuruecksetzenRoute
+  '/registrieren': typeof RegistrierenRoute
   '/_public/datenschutz': typeof PublicDatenschutzRoute
   '/_public/impressum': typeof PublicImpressumRoute
+  '/aktivieren_/abschliessen': typeof AktivierenAbschliessenRoute
   '/api/enquiry': typeof ApiEnquiryRoute
+  '/operator/setup': typeof OperatorSetupRoute
   '/_public/': typeof PublicIndexRoute
+  '/api/access/complete': typeof ApiAccessCompleteRoute
+  '/api/access/me': typeof ApiAccessMeRoute
+  '/api/access/profile': typeof ApiAccessProfileRoute
+  '/api/access/reservation': typeof ApiAccessReservationRoute
+  '/api/access/reserve': typeof ApiAccessReserveRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -111,9 +237,23 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/aktivieren'
+    | '/anmelden'
+    | '/app'
+    | '/einrichten'
+    | '/passwort-vergessen'
+    | '/passwort-zuruecksetzen'
+    | '/registrieren'
     | '/datenschutz'
     | '/impressum'
+    | '/aktivieren/abschliessen'
     | '/api/enquiry'
+    | '/operator/setup'
+    | '/api/access/complete'
+    | '/api/access/me'
+    | '/api/access/profile'
+    | '/api/access/reservation'
+    | '/api/access/reserve'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -121,10 +261,24 @@ export interface FileRouteTypes {
     | '/api/observability/v1/telemetry'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/aktivieren'
+    | '/anmelden'
+    | '/app'
+    | '/einrichten'
+    | '/passwort-vergessen'
+    | '/passwort-zuruecksetzen'
+    | '/registrieren'
     | '/datenschutz'
     | '/impressum'
+    | '/aktivieren/abschliessen'
     | '/api/enquiry'
+    | '/operator/setup'
     | '/'
+    | '/api/access/complete'
+    | '/api/access/me'
+    | '/api/access/profile'
+    | '/api/access/reservation'
+    | '/api/access/reserve'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -133,10 +287,24 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_public'
+    | '/aktivieren'
+    | '/anmelden'
+    | '/app'
+    | '/einrichten'
+    | '/passwort-vergessen'
+    | '/passwort-zuruecksetzen'
+    | '/registrieren'
     | '/_public/datenschutz'
     | '/_public/impressum'
+    | '/aktivieren_/abschliessen'
     | '/api/enquiry'
+    | '/operator/setup'
     | '/_public/'
+    | '/api/access/complete'
+    | '/api/access/me'
+    | '/api/access/profile'
+    | '/api/access/reservation'
+    | '/api/access/reserve'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -146,7 +314,21 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   PublicRoute: typeof PublicRouteWithChildren
+  AktivierenRoute: typeof AktivierenRoute
+  AnmeldenRoute: typeof AnmeldenRoute
+  AppRoute: typeof AppRoute
+  EinrichtenRoute: typeof EinrichtenRoute
+  PasswortVergessenRoute: typeof PasswortVergessenRoute
+  PasswortZuruecksetzenRoute: typeof PasswortZuruecksetzenRoute
+  RegistrierenRoute: typeof RegistrierenRoute
+  AktivierenAbschliessenRoute: typeof AktivierenAbschliessenRoute
   ApiEnquiryRoute: typeof ApiEnquiryRoute
+  OperatorSetupRoute: typeof OperatorSetupRoute
+  ApiAccessCompleteRoute: typeof ApiAccessCompleteRoute
+  ApiAccessMeRoute: typeof ApiAccessMeRoute
+  ApiAccessProfileRoute: typeof ApiAccessProfileRoute
+  ApiAccessReservationRoute: typeof ApiAccessReservationRoute
+  ApiAccessReserveRoute: typeof ApiAccessReserveRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiHealthLiveRoute: typeof ApiHealthLiveRoute
   ApiHealthReadyRoute: typeof ApiHealthReadyRoute
@@ -161,6 +343,55 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/aktivieren': {
+      id: '/aktivieren'
+      path: '/aktivieren'
+      fullPath: '/aktivieren'
+      preLoaderRoute: typeof AktivierenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/anmelden': {
+      id: '/anmelden'
+      path: '/anmelden'
+      fullPath: '/anmelden'
+      preLoaderRoute: typeof AnmeldenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/einrichten': {
+      id: '/einrichten'
+      path: '/einrichten'
+      fullPath: '/einrichten'
+      preLoaderRoute: typeof EinrichtenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/passwort-vergessen': {
+      id: '/passwort-vergessen'
+      path: '/passwort-vergessen'
+      fullPath: '/passwort-vergessen'
+      preLoaderRoute: typeof PasswortVergessenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/passwort-zuruecksetzen': {
+      id: '/passwort-zuruecksetzen'
+      path: '/passwort-zuruecksetzen'
+      fullPath: '/passwort-zuruecksetzen'
+      preLoaderRoute: typeof PasswortZuruecksetzenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/registrieren': {
+      id: '/registrieren'
+      path: '/registrieren'
+      fullPath: '/registrieren'
+      preLoaderRoute: typeof RegistrierenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_public/': {
@@ -184,11 +415,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicImpressumRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/aktivieren_/abschliessen': {
+      id: '/aktivieren_/abschliessen'
+      path: '/aktivieren/abschliessen'
+      fullPath: '/aktivieren/abschliessen'
+      preLoaderRoute: typeof AktivierenAbschliessenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/enquiry': {
       id: '/api/enquiry'
       path: '/api/enquiry'
       fullPath: '/api/enquiry'
       preLoaderRoute: typeof ApiEnquiryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operator/setup': {
+      id: '/operator/setup'
+      path: '/operator/setup'
+      fullPath: '/operator/setup'
+      preLoaderRoute: typeof OperatorSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/access/complete': {
+      id: '/api/access/complete'
+      path: '/api/access/complete'
+      fullPath: '/api/access/complete'
+      preLoaderRoute: typeof ApiAccessCompleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/access/me': {
+      id: '/api/access/me'
+      path: '/api/access/me'
+      fullPath: '/api/access/me'
+      preLoaderRoute: typeof ApiAccessMeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/access/profile': {
+      id: '/api/access/profile'
+      path: '/api/access/profile'
+      fullPath: '/api/access/profile'
+      preLoaderRoute: typeof ApiAccessProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/access/reservation': {
+      id: '/api/access/reservation'
+      path: '/api/access/reservation'
+      fullPath: '/api/access/reservation'
+      preLoaderRoute: typeof ApiAccessReservationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/access/reserve': {
+      id: '/api/access/reserve'
+      path: '/api/access/reserve'
+      fullPath: '/api/access/reserve'
+      preLoaderRoute: typeof ApiAccessReserveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -246,7 +526,21 @@ const PublicRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   PublicRoute: PublicRouteWithChildren,
+  AktivierenRoute: AktivierenRoute,
+  AnmeldenRoute: AnmeldenRoute,
+  AppRoute: AppRoute,
+  EinrichtenRoute: EinrichtenRoute,
+  PasswortVergessenRoute: PasswortVergessenRoute,
+  PasswortZuruecksetzenRoute: PasswortZuruecksetzenRoute,
+  RegistrierenRoute: RegistrierenRoute,
+  AktivierenAbschliessenRoute: AktivierenAbschliessenRoute,
   ApiEnquiryRoute: ApiEnquiryRoute,
+  OperatorSetupRoute: OperatorSetupRoute,
+  ApiAccessCompleteRoute: ApiAccessCompleteRoute,
+  ApiAccessMeRoute: ApiAccessMeRoute,
+  ApiAccessProfileRoute: ApiAccessProfileRoute,
+  ApiAccessReservationRoute: ApiAccessReservationRoute,
+  ApiAccessReserveRoute: ApiAccessReserveRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiHealthLiveRoute: ApiHealthLiveRoute,
   ApiHealthReadyRoute: ApiHealthReadyRoute,

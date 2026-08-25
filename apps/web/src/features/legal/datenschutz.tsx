@@ -60,11 +60,17 @@ export const Datenschutz = () => (
       Eine Zusammenführung mit anderen Daten findet nicht statt.
     </p>
 
-    <h3>Keine Cookies, keine Reichweitenmessung</h3>
+    <h3>Technisch notwendige Sitzung</h3>
     <p>
-      Diese Website setzt keine Cookies und bindet keine Werbe- oder Analysedienste ein. Es findet
-      keine Reichweitenmessung und kein geräteübergreifendes Wiedererkennen statt. Eine Einwilligung
-      nach §&nbsp;25 TDDDG ist deshalb nicht erforderlich.
+      Wenn Sie sich registrieren oder anmelden, speichert Studienbuch ein technisch notwendiges
+      Sitzungscookie. Es hält Ihre Anmeldung aufrecht und schützt den Zugang zu Ihrem Konto. Das
+      Cookie wird nicht für Werbung, Reichweitenmessung oder ein geräteübergreifendes Wiedererkennen
+      verwendet. Es ist für den von Ihnen angeforderten Dienst erforderlich; Rechtsgrundlage für den
+      Zugriff auf Ihr Endgerät ist §&nbsp;25 Absatz&nbsp;2 Nummer&nbsp;2 TDDDG.
+    </p>
+    <p>
+      Auf den rein informativen Seiten wird kein Sitzungscookie gesetzt. Wir binden keine Werbe-
+      oder Analysedienste ein.
     </p>
 
     <h3>Schriftarten</h3>
@@ -111,13 +117,44 @@ export const Datenschutz = () => (
 
     <h3>Verarbeitete Daten</h3>
     <ul>
-      <li>Stammdaten des Profils, etwa Name, Schuljahr, Klasse und belegte Kurse</li>
+      <li>
+        Kontodaten: E-Mail-Adresse, Bestätigungsstatus und ein nicht rückrechenbarer Hash des
+        Passworts
+      </li>
+      <li>
+        bei Verwendung eines Passkeys dessen öffentliche Schlüsseldaten und technische Angaben zum
+        Authenticator; biometrische Merkmale verlassen Ihr Gerät nicht und werden von uns nicht
+        gespeichert
+      </li>
+      <li>
+        Sitzungsdaten wie Ablaufzeit, IP-Adresse und Browserkennung sowie kurzlebige Bestätigungs-
+        und Wiederherstellungstoken
+      </li>
+      <li>
+        Schulzugang, Zugangsart und Status des eingelösten Zugangscodes; der Code selbst wird nur
+        als kryptografischer Hash gespeichert
+      </li>
+      <li>selbst gewählte Profildaten, etwa Anzeigename, Schuljahr, Klasse und belegte Kurse</li>
       <li>Stundenplan, Vertretungen und Kursinformationen</li>
       <li>Noten und die dazugehörigen Bestätigungen, einschließlich erfasster Unterschriften</li>
       <li>Fehlzeiten mit Datum, Grund und Entschuldigungsstand</li>
       <li>Aufgaben mit Fälligkeit sowie von Ihnen hinzugefügte Fotos</li>
       <li>Der von der Schule ausgegebene Lizenzschlüssel und technische Gerätekennungen</li>
     </ul>
+
+    <h3>Konto und Schulzugang</h3>
+    <p>
+      Ein Konto kann länger bestehen als ein einzelner Schulzugang. Die E-Mail-Adresse dient nur der
+      Anmeldung, Bestätigung und Wiederherstellung. Sie wird nicht in das Schulprofil kopiert und
+      nicht als Nachweis einer Schulzugehörigkeit verwendet. Die Schule erhält von uns keine
+      Zuordnung zwischen Zugangscode und Konto oder E-Mail-Adresse.
+    </p>
+    <p>
+      Zugangscodes enthalten nur die Schule und die Zugangsart „Schülerin oder Schüler“ oder
+      „Lehrkraft“. Sie enthalten keinen Namen und keine Klasse. Anzeigename, Jahrgang und Klasse
+      trägt die nutzende Person anschließend selbst ein. Automatisch importierte Schuldaten werden
+      nicht allein aufgrund gleicher Namen oder E-Mail-Adressen mit diesem Profil verknüpft.
+    </p>
 
     <h3>Speicherung auf dem Gerät</h3>
     <p>
@@ -146,8 +183,10 @@ export const Datenschutz = () => (
     <p>
       Die App richtet sich an Schülerinnen und Schüler und wird überwiegend von Minderjährigen
       genutzt. Die Verarbeitung erfolgt nicht auf Grundlage einer Einwilligung der Nutzenden,
-      sondern im Auftrag und auf Grundlage der Schule. Bestätigungen, die eine Zustimmung der Eltern
-      erfordern, bildet die App als solche ab.
+      sondern für den von der Schule bereitgestellten Zugang und in ihrem Auftrag. Die Schule gibt
+      ausschließlich unpersönliche Zugangscodes aus; die nutzende Person entscheidet selbst, welche
+      zulässige E-Mail-Adresse und welche Profildaten sie verwendet. Bestätigungen, die eine
+      Zustimmung der Eltern erfordern, bildet die App als solche ab.
     </p>
 
     <h2>4. Empfänger und Auftragsverarbeiter</h2>
@@ -175,6 +214,12 @@ export const Datenschutz = () => (
       ihren Weisungen gelöscht oder zurückgegeben. Daten auf dem Gerät werden mit der Deinstallation
       der App entfernt. Gesetzliche Aufbewahrungspflichten, etwa aus Handels- und Steuerrecht,
       bleiben unberührt.
+    </p>
+    <p>
+      Konten und die zugehörigen Zugangsdaten speichern wir, solange das Konto besteht. Abgelaufene
+      Sitzungen sowie Bestätigungs-, Wiederherstellungs- und Reservierungstoken werden gelöscht,
+      sobald sie für ihren jeweiligen Sicherheitszweck nicht mehr benötigt werden. Die Löschung
+      eines Kontos kann über die oben genannte E-Mail-Adresse verlangt werden.
     </p>
 
     <h2>6. Ihre Rechte</h2>

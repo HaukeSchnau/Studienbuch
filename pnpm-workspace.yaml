@@ -4,6 +4,7 @@ packages:
   - scripts
 
 patchedDependencies:
+  "@better-auth/passkey@1.6.27": patches/@better-auth__passkey@1.6.27.patch
   tree-sitter@0.21.1: patches/tree-sitter@0.21.1.patch
 
 allowBuilds:
@@ -55,6 +56,7 @@ minimumReleaseAgeExclude:
   - "@better-auth/kysely-adapter@1.6.27"
   - "@better-auth/memory-adapter@1.6.27"
   - "@better-auth/mongo-adapter@1.6.27"
+  - "@better-auth/passkey@1.6.27"
   - "@better-auth/prisma-adapter@1.6.27"
   - "@better-auth/telemetry@1.6.27"
   - "better-auth@1.6.27"

@@ -41,10 +41,10 @@ let
   # after running `just web-lock` for relevant workspace manifest or primary lock changes.
   pnpmDependencyHash =
     if isProductionPlatform then
-      "sha256-0WRXzecOPzP48AtnFOsJsSJcYBfHDwtQde0JNyem3ik="
+      "sha256-GVIV2svQsyHPAX+48S5Ny6b/m+wwTUglBJonFXgVFks="
     else
       # Nixpkgs' forced fetch is platform-independent; keep it for supported development systems.
-      "sha256-wGzD/VwKpg78VDWeulAjY5dfdIS/d6Xs5dqLatCPxrs=";
+      "sha256-6PaVJIdZn4NTtFVrN/CFtrLXT5msU7amWKSus01gBmc=";
 
   pnpmDeps = pkgs.fetchPnpmDeps {
     pname = "studienbuch-web-dependencies";
