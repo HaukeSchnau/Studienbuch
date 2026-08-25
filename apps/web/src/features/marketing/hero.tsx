@@ -2,6 +2,7 @@ import { StoreBadges } from "#/domain-ui/brand/store-badges.tsx";
 import { Underlined } from "#/domain-ui/brand/underline.tsx";
 import { AppIcon } from "#/domain-ui/brand/wordmark.tsx";
 import { Picture } from "#/ui/picture.tsx";
+import { PointerTilt } from "#/ui/pointer-tilt.tsx";
 import { Container } from "#/ui/section.tsx";
 
 import { EdgeBlob } from "#/domain-ui/brand/blobs.tsx";
@@ -23,12 +24,16 @@ export const Hero = () => (
   <section className="relative isolate overflow-x-clip">
     <EdgeBlob
       blob="legacyGreen"
+      duration={26}
+      offset={0.0}
       className="-left-16 top-[22%] h-[18rem] w-[12rem] sm:-left-20 sm:h-[40rem] sm:w-[26rem]"
       rotate={0}
       tone="green"
     />
     <EdgeBlob
       blob="legacyBlue"
+      duration={31}
+      offset={0.35}
       className="-right-14 top-0 h-[20rem] w-[12rem] sm:-right-20 sm:h-[46rem] sm:w-[27rem]"
       rotate={0}
       tone="blue"
@@ -42,8 +47,8 @@ export const Hero = () => (
         <div className="flex items-center gap-5 sm:gap-8">
           <AppIcon size="lg" />
           <div>
-            <p className="text-xl font-bold text-primary sm:text-2xl">Moin!</p>
-            <h1 className="mt-1 text-4xl/[1.35] text-primary-text sm:text-5xl/[1.35] lg:text-6xl/[1.35]">
+            <p className="enter text-xl font-bold text-primary sm:text-2xl">Moin!</p>
+            <h1 className="enter-late mt-1 text-4xl/[1.35] text-primary-text sm:text-5xl/[1.35] lg:text-6xl/[1.35]">
               Das digitale
               <br />
               <Underlined>Studienbuch</Underlined>
@@ -60,14 +65,16 @@ export const Hero = () => (
       {/* The negative margin sets how much bigger than its column the render gets to be; the
           translate then pushes it past the viewport edge without resizing it again. */}
       <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:-mr-[8vw] lg:translate-x-[5vw]">
-        <Picture
-          alt="Die Übersicht mit dem Tagesplan und die Kursseite mit den Noten, nebeneinander."
-          className="parallax w-full"
-          height={1469}
-          priority
-          source="/screenshots/showcase"
-          width={1282}
-        />
+        <PointerTilt>
+          <Picture
+            alt="Die Übersicht mit dem Tagesplan und die Kursseite mit den Noten, nebeneinander."
+            className="parallax w-full"
+            height={1469}
+            priority
+            source="/screenshots/showcase"
+            width={1282}
+          />
+        </PointerTilt>
       </div>
 
       <div className="lg:col-start-1 lg:row-start-2 lg:self-start">

@@ -106,10 +106,10 @@ h3 {
 
 @keyframes drift {
   from {
-    transform: translate3d(0, 0, 0) rotate(0deg);
+    transform: translate3d(0, 0.75rem, 0) rotate(1.5deg) scale(0.98);
   }
   to {
-    transform: translate3d(0, -1.5rem, 0) rotate(-2deg);
+    transform: translate3d(0, -2.5rem, 0) rotate(-3deg) scale(1.03);
   }
 }
 
@@ -123,11 +123,37 @@ h3 {
  */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
+    /*
+     * The first calibration of this finished at `cover 28%` and travelled 28px, which meant a
+     * normal wheel-sized scroll landed past the range entirely: the card was already at rest before
+     * the eye arrived. It now travels far enough to register and finishes nearer the middle of the
+     * viewport, where it is actually being looked at.
+     */
     .reveal {
       animation: reveal linear both;
       animation-timeline: view();
-      /* Finishes well before the element is centred, so reading is never chasing the animation. */
-      animation-range: entry 5% cover 28%;
+      animation-range: entry 15% cover 42%;
+    }
+
+    /*
+     * Siblings arrive in sequence rather than as a slab. Offsetting each child's range is the
+     * scroll-driven equivalent of `animation-delay`, which has no meaning on a scroll timeline —
+     * progress is a position, not a clock, so a stagger has to be a shift in range.
+     */
+    .stagger > *:nth-child(2) {
+      animation-range: entry 21% cover 49%;
+    }
+
+    .stagger > *:nth-child(3) {
+      animation-range: entry 27% cover 56%;
+    }
+
+    .stagger > *:nth-child(4) {
+      animation-range: entry 33% cover 63%;
+    }
+
+    .stagger > *:nth-child(5) {
+      animation-range: entry 39% cover 70%;
     }
 
     /* A slower rate of travel than the text beside it, which is all parallax needs to be. */
@@ -147,7 +173,7 @@ h3 {
     .draw-strike {
       animation: draw-strike linear both;
       animation-timeline: view();
-      animation-range: entry 18% cover 34%;
+      animation-range: entry 30% cover 52%;
     }
 
     /*
@@ -159,13 +185,13 @@ h3 {
     .tick-in {
       animation: tick-in cubic-bezier(0.34, 1.56, 0.64, 1) both;
       animation-timeline: view();
-      animation-range: entry 20% cover 34%;
+      animation-range: entry 26% cover 48%;
     }
 
     .fade-late {
       animation: fade-late linear both;
       animation-timeline: view();
-      animation-range: entry 26% cover 38%;
+      animation-range: entry 42% cover 58%;
     }
   }
 }
@@ -202,7 +228,7 @@ h3 {
 @keyframes reveal {
   from {
     opacity: 0;
-    transform: translateY(1.75rem);
+    transform: translateY(3.5rem);
   }
   to {
     opacity: 1;
@@ -212,11 +238,54 @@ h3 {
 
 @keyframes parallax {
   from {
-    transform: translateY(-1.5rem);
+    transform: translateY(-3.5rem) rotate(-1.2deg);
   }
   to {
-    transform: translateY(1.5rem);
+    transform: translateY(3.5rem) rotate(1.2deg);
   }
+}
+
+/*
+ * The hero's one-time entrance.
+ *
+ * On a clock rather than the scroll timeline, because the hero is already in view when the page
+ * loads — there is no scroll to drive it. Only opacity and transform are animated, so this can
+ * neither shift layout nor delay the largest paint; the headline is painted immediately and simply
+ * arrives from slightly below.
+ *
+ * The underline is last on purpose. It reads as the sentence being finished rather than as another
+ * thing sliding in.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .enter {
+    animation: reveal 620ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+
+  .enter-late {
+    animation: reveal 620ms cubic-bezier(0.2, 0.8, 0.3, 1) 110ms both;
+  }
+
+  .enter-underline {
+    animation: draw-strike 520ms cubic-bezier(0.65, 0, 0.35, 1) 640ms both;
+    transform-origin: left center;
+  }
+}
+
+/*
+ * The lean towards the pointer, set by `PointerTilt`.
+ *
+ * Perspective lives on the wrapper and the rotation on the child, because a rotation without a
+ * perspective ancestor is a flat skew rather than a tilt. The transition smooths the gap between
+ * frames so the movement trails the pointer slightly instead of snapping to it.
+ */
+.pointer-tilt {
+  perspective: 1200px;
+}
+
+.pointer-tilt > * {
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 320ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
 /*

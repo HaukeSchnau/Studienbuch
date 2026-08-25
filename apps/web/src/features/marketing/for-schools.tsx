@@ -35,6 +35,8 @@ export const ForSchools = () => (
   <Section className="relative isolate" id={sectionIds.schools}>
     <EdgeBlob
       blob="twin"
+      duration={29}
+      offset={0.15}
       className="-left-48 top-12 hidden size-[22rem] min-[1440px]:block"
       rotate={38}
       tone="blue"
@@ -42,6 +44,8 @@ export const ForSchools = () => (
 
     <EdgeBlob
       blob="notch"
+      duration={22}
+      offset={0.75}
       className="-right-48 top-52 hidden size-[20rem] min-[1440px]:block"
       rotate={-12}
       tone="green"
@@ -53,7 +57,7 @@ export const ForSchools = () => (
         title="Studienbuch an deine Schule holen"
       />
 
-      <ol className="grid gap-x-10 gap-y-10 sm:grid-cols-3">
+      <ol className="stagger grid gap-x-10 gap-y-10 sm:grid-cols-3">
         {points.map(({ body, title }, index) => (
           <li className="reveal flex flex-col gap-3" key={title}>
             <span

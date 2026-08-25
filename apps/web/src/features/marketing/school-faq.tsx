@@ -54,7 +54,7 @@ export const SchoolFaq = () => (
           title="Wie es losgeht"
         />
 
-        <ol className="grid gap-8 sm:grid-cols-3">
+        <ol className="stagger grid gap-8 sm:grid-cols-3">
           {steps.map(({ body, title }, index) => (
             <li className="reveal flex flex-col gap-3" key={title}>
               <span

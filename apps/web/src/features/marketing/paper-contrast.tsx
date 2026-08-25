@@ -46,7 +46,7 @@ export const PaperContrast = () => (
       {/* Both sides show the same record — a day of absences — so this is a comparison rather than
           two unrelated screenshots. Labels sit above so they line up across columns of different
           heights. */}
-      <div className="grid items-start gap-10 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+      <div className="stagger grid items-start gap-10 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
         <div className="reveal flex flex-col items-center gap-5">
           <p className="text-sm font-bold tracking-[0.14em] text-neutral uppercase">Vorher</p>
           <PaperPage />
