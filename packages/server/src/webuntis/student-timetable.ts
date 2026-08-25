@@ -370,7 +370,7 @@ export interface ProjectCourseRosterObservationsInput {
   readonly occurrences?: ReadonlyArray<Schedule.ProviderBackedOccurrence> | undefined;
 }
 
-const occurrenceKey = (date: string, providerEntryIds: ReadonlyArray<string>) =>
+export const courseRosterOccurrenceKey = (date: string, providerEntryIds: ReadonlyArray<string>) =>
   `${date}\u0000${providerEntryIds.join(",")}`;
 
 const occurrenceFacts = (occurrences: ReadonlyArray<Schedule.ProviderBackedOccurrence>) =>
@@ -384,7 +384,7 @@ const occurrenceFacts = (occurrences: ReadonlyArray<Schedule.ProviderBackedOccur
             : [];
         });
       return [
-        occurrenceKey(PlainDate.toString(occurrence.date), occurrence.providerEntryIds),
+        courseRosterOccurrenceKey(PlainDate.toString(occurrence.date), occurrence.providerEntryIds),
         {
           activities: resources("SUBJECT"),
           teacherExternalIds: resources("TEACHER").map((item) => item.externalId),
@@ -402,7 +402,7 @@ export const projectCourseRosterObservations = (
   const grouped = new Map<string, Array<StudentTimetableObservation>>();
   for (const observation of input.observations) {
     const ids = observation.payload.entry.ids.map(String).sort(Order.String);
-    const key = occurrenceKey(observation.payload.date, ids);
+    const key = courseRosterOccurrenceKey(observation.payload.date, ids);
     const group = grouped.get(key) ?? [];
     group.push(observation);
     grouped.set(key, group);

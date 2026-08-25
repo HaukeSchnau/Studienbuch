@@ -14,6 +14,7 @@ export default defineConfig({
     "./src/auth/schema.ts",
     "./src/enquiry/schema.ts",
     "./src/importing/schema.ts",
+    "./src/organization/course-schema.ts",
     "./src/organization/schema.ts",
     "./src/schedule/schema.ts",
   ],

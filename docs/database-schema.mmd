@@ -15,6 +15,101 @@ erDiagram
       timestamptz updatedAt
     }
     accounts }o--|| users : accounts_userId_users_id_fkey
+    course_annual_observation_sources {
+      text annualObservationKey PK,FK
+      uuid sourceRecordVersionId PK,FK
+    }
+    course_annual_observation_sources }o--|| source_record_versions : course_annual_observation_sources_EqTFSHoepjFl_fkey
+    course_annual_observation_sources }o--|| course_annual_observations : course_annual_observation_sources_lx64Ns3KJKs2_fkey
+    course_annual_observations {
+      text key PK
+      text dataSourceId
+      text observationId
+      text academicYearExternalId
+      text contentHash
+      jsonb payload
+      boolean active
+      uuid courseOfferingId FK
+      text resolutionReason
+      uuid firstProjectedInRunId FK
+      uuid lastProjectedInRunId FK
+      uuid resolvedInRunId FK
+      timestamptz createdAt
+      timestamptz updatedAt
+    }
+    course_annual_observations }o--|| course_projection_runs : course_annual_observations_3I7xPJkWeN4O_fkey
+    course_annual_observations }o--o| course_offerings : course_annual_observations_6ZWnRluby9UW_fkey
+    course_annual_observations }o--|| course_projection_runs : course_annual_observations_F0yxOTVxMdW6_fkey
+    course_annual_observations }o--o| course_projection_runs : course_annual_observations_dSpRGzHze6AW_fkey
+    course_identity_decisions {
+      text key PK
+      text dataSourceId
+      text leftObservationKey FK
+      text rightObservationKey FK
+      text ruleId
+      text outcome
+      text contentHash
+      jsonb payload
+      boolean active
+      uuid firstEvaluatedInRunId FK
+      uuid lastEvaluatedInRunId FK
+      timestamptz createdAt
+      timestamptz updatedAt
+    }
+    course_identity_decisions }o--|| course_annual_observations : course_identity_decisions_eBvJg3BcULAe_fkey
+    course_identity_decisions }o--|| course_projection_runs : course_identity_decisions_gDRGnZnZozyS_fkey
+    course_identity_decisions }o--|| course_projection_runs : course_identity_decisions_klUsNHbUvUQW_fkey
+    course_identity_decisions }o--|| course_annual_observations : course_identity_decisions_vsH4AdSni8VR_fkey
+    course_occurrence_assignments {
+      text dataSourceId PK
+      text occurrenceId PK
+      uuid courseOfferingId PK,FK
+      text annualObservationKey FK
+      uuid assignedInRunId FK
+      timestamptz createdAt
+    }
+    course_occurrence_assignments }o--|| course_annual_observations : course_occurrence_assignments_5mqrtLDX9j3b_fkey
+    course_occurrence_assignments }o--|| course_offerings : course_occurrence_assignments_bIYyliF9bUSR_fkey
+    course_occurrence_assignments }o--|| course_projection_runs : course_occurrence_assignments_bjYstDNo33Zd_fkey
+    course_offering_academic_years {
+      uuid courseOfferingId PK,FK
+      text academicYearId PK
+      text contentHash
+      jsonb payload
+      uuid updatedInRunId FK
+      timestamptz createdAt
+      timestamptz updatedAt
+    }
+    course_offering_academic_years }o--|| course_offerings : course_offering_academic_years_XOfr2wwOCjFw_fkey
+    course_offering_academic_years }o--|| course_projection_runs : course_offering_academic_years_bDFKce9SsVVP_fkey
+    course_offerings {
+      uuid id PK
+      text dataSourceId
+      text schoolId
+      uuid createdInRunId FK
+      timestamptz createdAt
+    }
+    course_offerings }o--|| course_projection_runs : course_offerings_createdInRunId_course_projection_runs_id_fkey
+    course_projection_run_sources {
+      uuid projectionRunId PK,FK
+      uuid sourceRunId PK,FK
+    }
+    course_projection_run_sources }o--|| source_import_runs : course_projection_run_sources_hWmw7wfNePFf_fkey
+    course_projection_run_sources }o--|| course_projection_runs : course_projection_run_sources_t2wMO9vCimoL_fkey
+    course_projection_runs {
+      uuid id PK
+      text dataSourceId
+      text ruleId
+      text outcome
+      integer annualObservationCount
+      integer decisionCount
+      integer resolvedObservationCount
+      integer unresolvedObservationCount
+      integer createdOfferingCount
+      integer occurrenceAssignmentCount
+      integer changedCount
+      timestamptz projectedAt
+    }
     directory_entities {
       text key PK
       text dataSourceId
@@ -68,6 +163,15 @@ erDiagram
       text domainEntityId
       timestamptz createdAt
       timestamptz updatedAt
+    }
+    school_enquiries {
+      uuid id PK
+      text schoolName
+      text contactName
+      text email
+      text message
+      timestamptz receivedAt
+      timestamptz notifiedAt
     }
     sessions {
       uuid id PK

@@ -1,4 +1,5 @@
 import {
+  CourseProjectionStore,
   Database,
   DirectoryProjectionStore,
   SourceObservationStore,
@@ -167,7 +168,10 @@ export const runWebUntisCourseRosterImport = Effect.fn("Console.webUntisCourseRo
       (snapshot) => SourceObservationStore.persistSourceSnapshot(snapshot),
       { concurrency: 3 },
     );
-    const output = { preview: plan.preview, runs };
+    const projection = yield* CourseProjectionStore.projectCurrent({
+      dataSourceId: plan.preview.dataSourceId,
+    });
+    const output = { preview: plan.preview, runs, projection };
     yield* Console.log(JSON.stringify(output, null, 2));
     return output;
   },
