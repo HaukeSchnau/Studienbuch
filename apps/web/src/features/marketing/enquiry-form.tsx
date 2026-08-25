@@ -1,0 +1,157 @@
+import { ArrowRight } from "lucide-react";
+import { useRef, useState } from "react";
+
+import { externalLinks } from "#/domain-ui/brand/links.ts";
+import { Button } from "#/ui/button.tsx";
+import { Input } from "#/ui/input.tsx";
+import { Label } from "#/ui/label.tsx";
+import { Textarea } from "#/ui/textarea.tsx";
+
+type Status = "idle" | "sending" | "sent" | "failed";
+
+const fieldClass = "flex flex-col gap-2";
+
+/**
+ * The enquiry form.
+ *
+ * It replaces a `mailto:`, which asked a head teacher to open a mail client, face an empty compose
+ * window and invent an opening line. Four fields and a button is a much smaller ask.
+ *
+ * Spam is handled with a hidden field and a fill-time check rather than a captcha. A captcha would
+ * mean a third-party script, a consent banner and an accessibility tax, which is disproportionate
+ * for a form this quiet — and the server enforces the same rules regardless of what the browser
+ * sends.
+ */
+export const EnquiryForm = () => {
+  const [status, setStatus] = useState<Status>("idle");
+  // Set on first render rather than on mount, so it is already in place if the visitor is fast.
+  const startedAt = useRef(Date.now());
+
+  if (status === "sent") {
+    return (
+      <div className="rounded-card-lg bg-primary-des p-8">
+        <h3 className="text-2xl text-primary-text">Danke, das ist angekommen.</h3>
+        <p className="mt-3 text-lg/relaxed text-ink-soft text-pretty">
+          Wir melden uns in der Regel innerhalb von zwei Werktagen. Wenn es eilig ist, erreichen Sie
+          uns direkt unter{" "}
+          <a className="font-bold text-accent-sec" href={externalLinks.schoolContact}>
+            info@urbs.one
+          </a>
+          .
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      className="flex flex-col gap-5"
+      noValidate={false}
+      onSubmit={(event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const data = new FormData(form);
+        setStatus("sending");
+
+        void fetch("/api/enquiry", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            schoolName: data.get("schoolName"),
+            contactName: data.get("contactName"),
+            email: data.get("email"),
+            message: data.get("message"),
+            trap: data.get("trap"),
+            startedAt: startedAt.current,
+          }),
+        })
+          .then((response) => {
+            setStatus(response.ok ? "sent" : "failed");
+          })
+          .catch(() => {
+            setStatus("failed");
+          });
+      }}
+    >
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className={fieldClass}>
+          <Label htmlFor="enquiry-school">Schule</Label>
+          <Input
+            autoComplete="organization"
+            id="enquiry-school"
+            maxLength={120}
+            minLength={2}
+            name="schoolName"
+            placeholder="IGS Musterstadt"
+            required
+          />
+        </div>
+        <div className={fieldClass}>
+          <Label htmlFor="enquiry-name">Ihr Name</Label>
+          <Input
+            autoComplete="name"
+            id="enquiry-name"
+            maxLength={120}
+            minLength={2}
+            name="contactName"
+            placeholder="Vor- und Nachname"
+            required
+          />
+        </div>
+      </div>
+
+      <div className={fieldClass}>
+        <Label htmlFor="enquiry-email">E-Mail</Label>
+        <Input
+          autoComplete="email"
+          id="enquiry-email"
+          maxLength={254}
+          name="email"
+          placeholder="name@schule.de"
+          required
+          type="email"
+        />
+      </div>
+
+      <div className={fieldClass}>
+        <Label htmlFor="enquiry-message">Nachricht</Label>
+        <Textarea
+          id="enquiry-message"
+          maxLength={4000}
+          minLength={10}
+          name="message"
+          placeholder="Worum geht es? Wie viele Schülerinnen und Schüler hat Ihre Schule?"
+          required
+        />
+      </div>
+
+      {/* The honeypot. Hidden from sight and from assistive technology, and skipped by tabbing, so
+          only something filling in fields blindly will touch it. */}
+      <div aria-hidden className="hidden">
+        <label htmlFor="enquiry-trap">Bitte leer lassen</label>
+        <input autoComplete="off" id="enquiry-trap" name="trap" tabIndex={-1} type="text" />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        <Button
+          disabled={status === "sending"}
+          radius="pill"
+          size="xl"
+          type="submit"
+          variant="brand"
+        >
+          {status === "sending" ? "Wird gesendet …" : "Anfrage senden"}
+          {status === "sending" ? null : <ArrowRight aria-hidden />}
+        </Button>
+        <p className="text-sm text-ink-soft">Wir melden uns innerhalb von zwei Werktagen.</p>
+      </div>
+
+      {/* Announced rather than merely shown, because the submit button does not move focus. */}
+      <p aria-live="polite" className="text-sm text-danger">
+        {status === "failed"
+          ? "Das hat leider nicht geklappt. Bitte versuchen Sie es noch einmal oder schreiben Sie uns direkt an info@urbs.one."
+          : ""}
+      </p>
+    </form>
+  );
+};

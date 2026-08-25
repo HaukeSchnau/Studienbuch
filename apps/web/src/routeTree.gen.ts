@@ -13,6 +13,7 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as PublicIndexRouteImport } from './routes/_public.index'
 import { Route as PublicDatenschutzRouteImport } from './routes/_public.datenschutz'
 import { Route as PublicImpressumRouteImport } from './routes/_public.impressum'
+import { Route as ApiEnquiryRouteImport } from './routes/api/enquiry'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiHealthLiveRouteImport } from './routes/api/health/live'
 import { Route as ApiHealthReadyRouteImport } from './routes/api/health/ready'
@@ -37,6 +38,11 @@ const PublicImpressumRoute = PublicImpressumRouteImport.update({
   id: '/impressum',
   path: '/impressum',
   getParentRoute: () => PublicRoute,
+} as any)
+const ApiEnquiryRoute = ApiEnquiryRouteImport.update({
+  id: '/api/enquiry',
+  path: '/api/enquiry',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/datenschutz': typeof PublicDatenschutzRoute
   '/impressum': typeof PublicImpressumRoute
+  '/api/enquiry': typeof ApiEnquiryRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/datenschutz': typeof PublicDatenschutzRoute
   '/impressum': typeof PublicImpressumRoute
+  '/api/enquiry': typeof ApiEnquiryRoute
   '/': typeof PublicIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   '/_public': typeof PublicRouteWithChildren
   '/_public/datenschutz': typeof PublicDatenschutzRoute
   '/_public/impressum': typeof PublicImpressumRoute
+  '/api/enquiry': typeof ApiEnquiryRoute
   '/_public/': typeof PublicIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/'
     | '/datenschutz'
     | '/impressum'
+    | '/api/enquiry'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
   to:
     | '/datenschutz'
     | '/impressum'
+    | '/api/enquiry'
     | '/'
     | '/api/auth/$'
     | '/api/health/live'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '/_public'
     | '/_public/datenschutz'
     | '/_public/impressum'
+    | '/api/enquiry'
     | '/_public/'
     | '/api/auth/$'
     | '/api/health/live'
@@ -134,6 +146,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   PublicRoute: typeof PublicRouteWithChildren
+  ApiEnquiryRoute: typeof ApiEnquiryRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiHealthLiveRoute: typeof ApiHealthLiveRoute
   ApiHealthReadyRoute: typeof ApiHealthReadyRoute
@@ -170,6 +183,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/impressum'
       preLoaderRoute: typeof PublicImpressumRouteImport
       parentRoute: typeof PublicRoute
+    }
+    '/api/enquiry': {
+      id: '/api/enquiry'
+      path: '/api/enquiry'
+      fullPath: '/api/enquiry'
+      preLoaderRoute: typeof ApiEnquiryRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -226,6 +246,7 @@ const PublicRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   PublicRoute: PublicRouteWithChildren,
+  ApiEnquiryRoute: ApiEnquiryRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiHealthLiveRoute: ApiHealthLiveRoute,
   ApiHealthReadyRoute: ApiHealthReadyRoute,

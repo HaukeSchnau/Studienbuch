@@ -8,7 +8,7 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Option from "effect/Option";
 import { ClientTelemetry } from "#/infra/observability/client-telemetry.server.ts";
-import { runRouteEffect } from "#/infra/runtime/request.server.ts";
+import { runRouteEffect, type RouteEffectRunner } from "#/infra/runtime/request.server.ts";
 import { jsonResponse } from "#/infra/http/response.server.ts";
 import { telemetryAdmission, type TelemetryAdmission } from "./admission.server.ts";
 
@@ -85,7 +85,7 @@ async function readBoundedBody(request: Request): Promise<BodyResult> {
 
 export function makeTelemetryIngressHandler(options?: {
   readonly admission?: TelemetryAdmission;
-  readonly run?: typeof runRouteEffect;
+  readonly run?: RouteEffectRunner;
 }) {
   const admission = options?.admission ?? telemetryAdmission;
   const run = options?.run ?? runRouteEffect;
