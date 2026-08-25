@@ -4,7 +4,7 @@ import { externalLinks, sectionIds } from "#/domain-ui/brand/links.ts";
 import { Button } from "#/ui/button.tsx";
 import { Container, Section, SectionHeading } from "#/ui/section.tsx";
 
-import { EdgeBlob } from "./decor.tsx";
+import { EdgeBlob } from "#/domain-ui/brand/blobs.tsx";
 
 const points: ReadonlyArray<{ body: string; title: string }> = [
   {
@@ -29,10 +29,9 @@ const points: ReadonlyArray<{ body: string; title: string }> = [
 export const ForSchools = () => (
   <Section className="relative isolate" id={sectionIds.schools}>
     <EdgeBlob
-      className="top-16 hidden h-[34rem] w-[9rem] xl:block"
-      flip
-      silhouette="sliver"
-      side="left"
+      blob="drift"
+      className="-left-36 top-12 hidden size-[22rem] xl:block"
+      rotate={38}
       tone="green"
     />
 

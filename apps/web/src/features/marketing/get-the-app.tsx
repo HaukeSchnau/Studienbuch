@@ -1,8 +1,7 @@
 import { sectionIds } from "#/domain-ui/brand/links.ts";
+import { EdgeBlob } from "#/domain-ui/brand/blobs.tsx";
 import { StoreBadges } from "#/domain-ui/brand/store-badges.tsx";
 import { Container, Section } from "#/ui/section.tsx";
-
-import { EdgeBlob } from "./decor.tsx";
 
 /**
  * The closing call to action: a deeply rounded green panel with a phone rising out of its bottom
@@ -20,11 +19,10 @@ import { EdgeBlob } from "./decor.tsx";
 export const GetTheApp = () => (
   <Section className="relative isolate" id={sectionIds.app}>
     <EdgeBlob
-      className="top-6 hidden h-[26rem] w-[10rem] xl:block"
-      flip
-      silhouette="lobe"
-      side="right"
-      tone="blue"
+      blob="drift"
+      className="-left-44 top-24 hidden size-[20rem] xl:block"
+      rotate={-26}
+      tone="green"
     />
 
     <Container>
