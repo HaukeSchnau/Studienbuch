@@ -48,8 +48,7 @@ let
       done
       pg_isready --quiet --host="$database_host" --port="$database_port"
 
-      cd "$checkout/packages/server"
-      exec node "$checkout/packages/server/node_modules/drizzle-kit/bin.cjs" migrate
+      exec node "$checkout/packages/server/src/database/migrate.cli.ts"
     '';
   };
 in
