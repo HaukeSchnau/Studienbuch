@@ -436,12 +436,14 @@ h3 {
     }
 
     .gloss::after {
-      background: linear-gradient(
+      background-image: linear-gradient(
         105deg,
-        transparent 42%,
-        rgba(255, 255, 255, 0.5) 50%,
-        transparent 58%
+        transparent 44%,
+        rgba(255, 255, 255, 0.42) 50%,
+        transparent 56%
       );
+      background-repeat: no-repeat;
+      background-size: 260% 100%;
       content: "";
       inset: 0;
       mask-image: image-set(
@@ -459,13 +461,22 @@ h3 {
   }
 }
 
+/*
+ * The highlight travels by moving its own background, not by moving the element.
+ *
+ * Translating the element was the obvious way to write this and was wrong twice over: the box is
+ * absolutely positioned and nothing clipped it, so a 115% shift carried the sweep clean off the
+ * render and across the headline beside it — and the mask, being positioned against that same box,
+ * travelled with it and stopped covering the artwork at all. Sliding the background leaves the box
+ * and its mask exactly where they belong.
+ */
 @keyframes gloss {
   0%,
   82% {
-    transform: translateX(-115%);
+    background-position: 165% 0;
   }
   100% {
-    transform: translateX(115%);
+    background-position: -65% 0;
   }
 }
 
