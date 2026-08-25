@@ -1,61 +1,86 @@
+import { cn } from "#/ui/cn.ts";
+
 /**
- * The legacy site's two colour blobs, redrawn.
+ * The legacy site's colour blobs.
  *
- * The original shipped them as four SVGs (`blob-blue.svg`, `blob-blue-md.svg` and the two green
- * ones) used as CSS `background` images and swapped at a media query, which pinned them to a fixed
- * pixel size at each breakpoint. These are the same paths as inline SVG, so they scale with the
- * viewport instead of stepping between two sizes.
+ * The silhouettes are the originals, kept because their asymmetry is what makes them read as blobs
+ * rather than as ellipses. What changed is how they close. The originals were drawn to bleed past
+ * their own viewBox, so bounding them anywhere sliced them along a straight line; here the run back
+ * to the edge of the page is a curve, leaving exactly one straight edge — the one that meets the
+ * side of the viewport and is meant to look cut.
  *
- * They are what gives the white page its character, and they belong behind everything: {@link
- * PageDecor} is positioned once by the public layout.
+ * The original shipped them as PNG backgrounds swapped at a media query, pinning them to a fixed
+ * size per breakpoint. As inline SVG they scale with whatever box they are given.
  */
 
-/** Bleeds out of the top-right corner. */
-const BlueBlob = () => (
-  <svg
-    aria-hidden
-    className="drift absolute -top-24 right-0 h-[70vh] max-h-[900px] w-auto"
-    fill="none"
-    viewBox="0 0 580 1024"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M279.596 489.091C204.192 703.241 453.079 937.593 586.948 1028L617 -40.0997C438.736 -50.9957 68.9572 -45.5772 15.956 63.2647C-50.2955 199.317 105.43 273.528 196.269 239.956C287.109 206.385 373.85 221.404 279.596 489.091Z"
-      fill="var(--color-accent-pale)"
-    />
-  </svg>
-);
+const tones = {
+  green: "var(--color-primary-pale)",
+  blue: "var(--color-accent-pale)",
+} as const;
 
-/** Bleeds out of the bottom-left corner of the first screen. */
-const GreenBlob = () => (
+/**
+ * Presses in from the left. The outward sweep is the legacy green blob; only the return along the
+ * bottom, which the original left as a straight line, is now a curve.
+ */
+const LeftBlob = ({ tone }: { tone: keyof typeof tones }) => (
   <svg
     aria-hidden
-    className="drift absolute bottom-0 left-0 h-[45vh] max-h-[560px] w-auto"
-    fill="none"
-    viewBox="0 0 327 443"
+    className="h-full w-full"
+    preserveAspectRatio="none"
+    viewBox="-21 0 351 512"
     xmlns="http://www.w3.org/2000/svg"
   >
     <path
-      d="M262.872 282.953C354.258 311.956 328.31 407.04 303.913 450.956L-21 527L-21 2.17035e-05C15.2535 9.43179 96.7897 42.9735 132.906 101.686C178.052 175.077 148.639 246.7 262.872 282.953Z"
-      fill="var(--color-primary-pale)"
+      d="M-21 0C15.25 9.43 96.79 42.97 132.91 101.69 178.05 175.08 148.64 246.7 262.87 282.95 354.26 311.96 328.31 407.04 303.91 450.96 250 488 120 508 -21 502Z"
+      fill={tones[tone]}
     />
   </svg>
 );
 
 /**
- * Both blobs, sized to the first screenful. They decorate the hero rather than the whole document:
- * run down a long page they stop framing anything and just read as stray colour.
- *
- * Bounding them to one screen would otherwise slice their silhouettes off along a straight
- * horizontal edge, which is far more conspicuous than the blobs themselves. The gradient mask
- * dissolves them into the page instead, so the boundary is never a line.
+ * Presses in from the right. This is the legacy blue blob, whose straight edge already ran down the
+ * side of the page; the viewBox is widened so nothing is cropped.
  */
-export const PageDecor = () => (
+const RightBlob = ({ tone }: { tone: keyof typeof tones }) => (
+  <svg
+    aria-hidden
+    className="h-full w-full"
+    preserveAspectRatio="none"
+    viewBox="-12 -52 629 1094"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M617 -40.1C438.74 -51 68.96 -45.58 15.96 63.26-50.3 199.32 105.43 273.53 196.27 239.96 287.11 206.39 373.85 221.4 279.6 489.09 204.19 703.24 453.08 937.59 586.95 1028L617 -40.1Z"
+      fill={tones[tone]}
+    />
+  </svg>
+);
+
+/**
+ * One blob, anchored to a side of the page. Callers position and size it; the shape stretches to
+ * fill whatever box it is given, so keep the box roughly in the viewBox's proportions or the
+ * silhouette flattens.
+ *
+ * The host section needs `relative isolate`, so the negative layer stays inside it instead of
+ * dropping behind the page background.
+ */
+export const EdgeBlob = ({
+  className,
+  side,
+  tone,
+}: {
+  className?: string;
+  side: "left" | "right";
+  tone: keyof typeof tones;
+}) => (
   <div
     aria-hidden
-    className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-screen overflow-hidden opacity-50 [mask-image:linear-gradient(to_bottom,black_45%,transparent_88%)]"
+    className={cn(
+      "drift pointer-events-none absolute -z-10 opacity-45",
+      side === "left" ? "left-0" : "right-0",
+      className,
+    )}
   >
-    <BlueBlob />
-    <GreenBlob />
+    {side === "left" ? <LeftBlob tone={tone} /> : <RightBlob tone={tone} />}
   </div>
 );

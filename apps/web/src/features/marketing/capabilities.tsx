@@ -4,6 +4,8 @@ import { sectionIds } from "#/domain-ui/brand/links.ts";
 import { cn } from "#/ui/cn.ts";
 import { Container, Section, SectionHeading } from "#/ui/section.tsx";
 
+import { EdgeBlob } from "./decor.tsx";
+
 import {
   AbsencePreview,
   GradePreview,
@@ -50,7 +52,11 @@ const capabilities: ReadonlyArray<{
 ];
 
 export const Capabilities = () => (
-  <Section id={sectionIds.capabilities} tone="background">
+  <Section className="relative isolate" id={sectionIds.capabilities} tone="background">
+    {/* Hidden below xl: the content column runs close to the edge on narrower viewports and a
+        blob would sit behind body text instead of in the margin. */}
+    <EdgeBlob className="top-24 hidden h-[30rem] w-[13rem] xl:block" side="right" tone="blue" />
+
     <Container className="flex flex-col gap-12">
       <SectionHeading
         lead="Das Papier-Studienbuch kann eine Sache sehr gut: alles an einem Ort sammeln. Genau das macht die App — nur dass sie mitdenkt."

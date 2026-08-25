@@ -3,6 +3,8 @@ import { Underlined } from "#/domain-ui/brand/underline.tsx";
 import { AppIcon } from "#/domain-ui/brand/wordmark.tsx";
 import { Container } from "#/ui/section.tsx";
 
+import { EdgeBlob } from "./decor.tsx";
+
 /**
  * The legacy site's composition: the mark and a big green headline, one oversized device render
  * running off the right edge, all on white. The page's confidence comes from the screenshot being
@@ -17,7 +19,18 @@ import { Container } from "#/ui/section.tsx";
  * the next, so the two converge instead of drifting apart across the height of the render.
  */
 export const Hero = () => (
-  <section className="overflow-x-clip">
+  <section className="relative isolate overflow-x-clip">
+    <EdgeBlob
+      className="top-1/3 h-[15rem] w-[7rem] sm:h-[34rem] sm:w-[22rem]"
+      side="left"
+      tone="green"
+    />
+    <EdgeBlob
+      className="top-0 h-[19rem] w-[8rem] sm:h-[44rem] sm:w-[26rem]"
+      side="right"
+      tone="blue"
+    />
+
     <Container
       className="grid items-center gap-y-12 pt-12 pb-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-x-12 lg:pt-16 lg:pb-20"
       width="wide"

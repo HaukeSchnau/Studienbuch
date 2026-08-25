@@ -2,6 +2,8 @@ import { sectionIds } from "#/domain-ui/brand/links.ts";
 import { StoreBadges } from "#/domain-ui/brand/store-badges.tsx";
 import { Container, Section } from "#/ui/section.tsx";
 
+import { EdgeBlob } from "./decor.tsx";
+
 /**
  * The closing call to action: a deeply rounded green panel with a phone rising out of its bottom
  * edge, cropped by the panel itself. The crop is the point — the device reads as sitting inside the
@@ -16,7 +18,9 @@ import { Container, Section } from "#/ui/section.tsx";
  * large text and nothing smaller.
  */
 export const GetTheApp = () => (
-  <Section id={sectionIds.app}>
+  <Section className="relative isolate" id={sectionIds.app}>
+    <EdgeBlob className="top-10 hidden h-[26rem] w-[12rem] xl:block" side="right" tone="blue" />
+
     <Container>
       <div className="relative overflow-hidden rounded-[2.5rem] bg-primary px-6 pt-14 pb-14 sm:rounded-[3.5rem] sm:px-12 sm:pt-20 sm:pb-20 lg:pb-0">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
