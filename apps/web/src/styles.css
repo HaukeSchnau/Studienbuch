@@ -136,6 +136,87 @@ h3 {
       animation-timeline: view();
       animation-range: cover;
     }
+
+    /*
+     * The small motions inside the feature previews.
+     *
+     * Each animates *towards* the resting styles declared below, never away from them, so a browser
+     * without scroll-driven animations shows the finished state — a ticked box, a struck-out lesson,
+     * the full number. The animation is the only thing that is ever missing.
+     */
+    .draw-strike {
+      animation: draw-strike linear both;
+      animation-timeline: view();
+      animation-range: entry 18% cover 34%;
+    }
+
+    .tick-in {
+      animation: tick-in cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      animation-timeline: view();
+      animation-range: entry 20% cover 34%;
+    }
+
+    .fade-late {
+      animation: fade-late linear both;
+      animation-timeline: view();
+      animation-range: entry 26% cover 38%;
+    }
+
+    .count-up {
+      animation: count-up linear both;
+      animation-timeline: view();
+      animation-range: entry 12% cover 34%;
+    }
+  }
+}
+
+/*
+ * A registered custom property is what makes the number countable: an unregistered one is a string
+ * to the animation engine and would jump straight to its final value.
+ */
+@property --counted {
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
+}
+
+.count-up::after {
+  content: counter(counted);
+  counter-reset: counted var(--counted);
+}
+
+@keyframes draw-strike {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes tick-in {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-late {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes count-up {
+  from {
+    --counted: 0;
   }
 }
 

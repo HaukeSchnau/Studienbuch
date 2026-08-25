@@ -1,3 +1,4 @@
+import type { EnquiryStore } from "@stu/server";
 import { describe, expect, it } from "vitest";
 import { handleEnquiry } from "./enquiry.server.ts";
 
@@ -11,7 +12,7 @@ const valid = {
 /** Old enough to clear the fill-time check. */
 const longEnough = () => Date.now() - 30_000;
 
-const post = (body: unknown, contentType = "application/json") =>
+const post = (body: Partial<EnquiryStore.EnquirySubmission>, contentType = "application/json") =>
   handleEnquiry(
     new Request("https://studienbuch.test/api/enquiry", {
       method: "POST",

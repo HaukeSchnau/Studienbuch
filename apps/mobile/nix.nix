@@ -49,7 +49,7 @@ in
       echo "Studienbuch Dev Client: studienbuch://expo-development-client/?url=$encoded_mobile_url"
 
       cd "$checkout/apps/mobile"
-      exec "$checkout/node_modules/.bin/vp" exec expo start \
+      exec node "$checkout/apps/mobile/node_modules/expo/bin/cli" start \
         --dev-client \
         --scheme studienbuch \
         --localhost \
