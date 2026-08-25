@@ -26,7 +26,7 @@ const questions: ReadonlyArray<{ answer: string; question: string }> = [
   {
     question: "Was kostet das?",
     answer:
-      "Abgerechnet wird pro Schülerin und Schüler und Schuljahr, im niedrigen einstelligen Euro-Bereich. Was am Ende dabei herauskommt, hängt von der Größe der Schule und dem Umfang ab — deshalb nennen wir die Zahl lieber im Gespräch als in einer Tabelle.",
+      "Abgerechnet wird pro Schülerin und Schüler und Schuljahr. Was das für Ihre Schule bedeutet, hängt von ihrer Größe und vom Umfang ab — die Zahl klären wir im Gespräch.",
   },
   {
     question: "Was passiert am Ende des Schuljahres mit den Daten?",
