@@ -29,7 +29,26 @@ export const EnquiryForm = () => {
 
   if (status === "sent") {
     return (
-      <div className="rounded-card-lg bg-primary-des p-8">
+      <div className="confirm-in rounded-card-lg bg-primary-des p-8">
+        {/* Drawn with the same dash technique as the headline's swoosh, so the one moment of
+            reassurance on this page is written in the brand's own hand. */}
+        <svg
+          aria-hidden
+          className="confirm-tick mb-4 size-10 text-primary"
+          fill="none"
+          viewBox="0 0 32 32"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M6 17l6.5 6.5L26 10"
+            pathLength={1}
+            stroke="currentColor"
+            strokeDasharray={1}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="3.5"
+          />
+        </svg>
         <h3 className="text-2xl text-primary-text">Danke, das ist angekommen.</h3>
         <p className="mt-3 text-lg/relaxed text-ink-soft text-pretty">
           Wir melden uns in der Regel innerhalb von zwei Werktagen. Wenn es eilig ist, erreichen Sie
@@ -140,8 +159,14 @@ export const EnquiryForm = () => {
           type="submit"
           variant="brand"
         >
-          {status === "sending" ? "Wird gesendet …" : "Anfrage senden"}
-          {status === "sending" ? null : <ArrowRight aria-hidden />}
+          {status === "sending" ? (
+            <span className="working">Wird gesendet …</span>
+          ) : (
+            <>
+              Anfrage senden
+              <ArrowRight aria-hidden />
+            </>
+          )}
         </Button>
         <p className="text-sm text-ink-soft">Wir melden uns innerhalb von zwei Werktagen.</p>
       </div>

@@ -3,10 +3,16 @@ import { useEffect, useRef } from "react";
 import { subjectSamples } from "#/domain-ui/brand/subjects.ts";
 import { useMotionAllowed } from "#/ui/use-motion.ts";
 
-const SubjectTile = ({ color, icon, label }: (typeof subjectSamples)[number]) => (
+const SubjectTile = ({
+  color,
+  icon,
+  index,
+  label,
+}: (typeof subjectSamples)[number] & { index: number }) => (
   <div
-    className="mr-4 flex shrink-0 items-center gap-3 rounded-2xl px-5 py-3.5 text-white shadow-card transition-transform duration-200 hover:-translate-y-1"
-    style={{ backgroundColor: color }}
+    className="bob mr-4 flex shrink-0 items-center gap-3 rounded-2xl px-5 py-3.5 text-white shadow-card transition-transform duration-200 hover:-translate-y-1"
+    // Each tile is a little further through the same bob, so the row undulates instead of pumping.
+    style={{ animationDelay: `${String(index * -0.28)}s`, backgroundColor: color }}
   >
     <img alt="" className="size-7 shrink-0" height={28} src={`/subjects/${icon}.svg`} width={28} />
     <span className="text-lg font-bold whitespace-nowrap">{label}</span>
@@ -81,8 +87,8 @@ export const SubjectStrip = () => {
           ref={track}
         >
           {[0, 1].map((copy) =>
-            subjectSamples.map((subject) => (
-              <SubjectTile key={`${copy}-${subject.label}`} {...subject} />
+            subjectSamples.map((subject, index) => (
+              <SubjectTile index={index} key={`${copy}-${subject.label}`} {...subject} />
             )),
           )}
         </div>

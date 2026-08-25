@@ -75,6 +75,13 @@ body,
   min-height: 100%;
 }
 
+html {
+  /* The reduced-motion override for this existed long before the behaviour did. */
+  scroll-behavior: smooth;
+  /* Sections land clear of the floating nav rather than jammed underneath it. */
+  scroll-padding-top: 6rem;
+}
+
 body {
   margin: 0;
   overflow-x: hidden;
@@ -196,6 +203,41 @@ h3 {
   }
 }
 
+/*
+ * Reveals a stroke along its own length. Scaling the SVG instead stretches the curve as it grows,
+ * which reads as a line being pulled rather than drawn; dashing the path leaves the geometry alone
+ * and only uncovers more of it. The path declares `pathLength="1"`, so the offset is a fraction and
+ * this works whatever the real length is.
+ */
+@keyframes paper-lift {
+  from {
+    filter: saturate(1);
+    transform: rotate(-2deg) translateY(0) scale(1);
+  }
+  to {
+    filter: saturate(0.55);
+    transform: rotate(-7deg) translateY(-1.25rem) scale(0.96);
+  }
+}
+
+@keyframes card-settle {
+  from {
+    transform: translateY(2.5rem) scale(0.97);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes draw-line {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 @keyframes draw-strike {
   from {
     transform: scaleX(0);
@@ -265,9 +307,124 @@ h3 {
     animation: reveal 620ms cubic-bezier(0.2, 0.8, 0.3, 1) 110ms both;
   }
 
+  .enter-later {
+    animation: reveal 620ms cubic-bezier(0.2, 0.8, 0.3, 1) 220ms both;
+  }
+
   .enter-underline {
-    animation: draw-strike 520ms cubic-bezier(0.65, 0, 0.35, 1) 640ms both;
-    transform-origin: left center;
+    animation: draw-line 560ms cubic-bezier(0.65, 0, 0.35, 1) 640ms both;
+  }
+}
+
+/*
+ * The enquiry form's confirmation.
+ *
+ * Motion here is feedback rather than decoration: the panel replaces a form the visitor has just
+ * spent a minute on, and arriving with a tick that draws itself says "received" far more directly
+ * than the same words appearing instantly would.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .confirm-in {
+    animation: reveal 480ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  }
+
+  .confirm-tick path {
+    animation: draw-line 520ms cubic-bezier(0.65, 0, 0.35, 1) 180ms both;
+  }
+
+  /* The button reads as working rather than merely disabled. */
+  .working {
+    animation: working 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes working {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.62;
+  }
+}
+
+/*
+ * The nav's swoosh. Hidden by default, drawn when a link is hovered, focused, or marks the section
+ * being read — the same stroke and the same technique as the headline, so the nav is not carrying a
+ * second visual idea.
+ */
+.nav-underline path {
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 340ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.nav-link:hover .nav-underline path,
+.nav-link:focus-visible .nav-underline path,
+.nav-link[data-active="true"] .nav-underline path {
+  stroke-dashoffset: 0;
+}
+
+/*
+ * FAQ answers open by height rather than appearing. `interpolate-size` is what makes `height: auto`
+ * animatable at all; without it there is no number to interpolate towards. Browsers lacking either
+ * this or `::details-content` simply open instantly, which is the behaviour being improved on.
+ */
+@supports (interpolate-size: allow-keywords) and selector(details::details-content) {
+  @media (prefers-reduced-motion: no-preference) {
+    :root {
+      interpolate-size: allow-keywords;
+    }
+
+    details::details-content {
+      block-size: 0;
+      overflow: hidden;
+      transition:
+        block-size 300ms cubic-bezier(0.2, 0.8, 0.3, 1),
+        content-visibility 300ms allow-discrete;
+    }
+
+    details[open]::details-content {
+      block-size: auto;
+    }
+  }
+}
+
+/*
+ * A soft light that follows the pointer across the closing panel. The gradient is painted into a
+ * pseudo-element rather than the panel's own background so it can sit above the green and below the
+ * text, and it fades in only once the pointer has actually been somewhere.
+ */
+.spotlight::before {
+  background: radial-gradient(
+    22rem circle at var(--spot-x, 50%) var(--spot-y, 50%),
+    rgba(255, 255, 255, 0.16),
+    transparent 65%
+  );
+  border-radius: inherit;
+  content: "";
+  inset: 0;
+  opacity: var(--spot-on, 0);
+  pointer-events: none;
+  position: absolute;
+  transition: opacity 400ms ease;
+}
+
+/*
+ * The subject tiles float rather than sliding as one rigid bar. Each is offset by its position in
+ * the row, so no two rise together.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .bob {
+    animation: bob 3.4s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes bob {
+  from {
+    transform: translateY(0.35rem);
+  }
+  to {
+    transform: translateY(-0.35rem);
   }
 }
 
@@ -283,6 +440,9 @@ h3 {
 }
 
 .pointer-tilt > * {
+  /* `display: block` is load-bearing. The child here is a <picture>, which is a non-replaced
+     inline box, and transforms simply do not apply to those — the lean silently did nothing. */
+  display: block;
   transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
   transform-style: preserve-3d;
   transition: transform 320ms cubic-bezier(0.2, 0.8, 0.3, 1);
