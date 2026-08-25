@@ -4,6 +4,7 @@ import { observabilityCommand } from "./commands/observability.ts";
 import { pullCommand } from "./commands/pull.ts";
 import {
   webUntisCourseIdentityAuditCommand,
+  webUntisCourseRosterCommand,
   webUntisDirectoryCommand,
   webUntisTimetableCommand,
 } from "./commands/webuntis.ts";
@@ -15,6 +16,7 @@ export const consoleCommand = Command.make("console").pipe(
     observabilityCommand,
     webUntisDirectoryCommand,
     webUntisTimetableCommand,
+    webUntisCourseRosterCommand,
     webUntisCourseIdentityAuditCommand,
   ]),
 );

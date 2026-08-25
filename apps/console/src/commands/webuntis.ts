@@ -3,6 +3,7 @@ import {
   DirectoryProjectionStore,
   SourceObservationStore,
   TimetableProjectionStore,
+  WebUntisCourseRosters,
   WebUntisDirectory,
   WebUntisTimetable,
 } from "@stu/server";
@@ -141,6 +142,49 @@ export const webUntisTimetableCommand = Command.make(
           Effect.provide(WebUntisTimetable.layer),
         ),
 ).pipe(Command.withDescription("Preview or persist identity-bearing WebUntis timetable views"));
+
+export const runWebUntisCourseRosterPreview = Effect.fn("Console.webUntisCourseRosterPreview")(
+  function* (requestedSchoolYear: string, requestedStart: string, requestedEnd: string) {
+    const plan = yield* WebUntisCourseRosters.fetchStudentTimetableImportPlan(
+      requestedSchoolYear,
+      requestedStart,
+      requestedEnd,
+    );
+    yield* Console.log(JSON.stringify(plan.preview, null, 2));
+    return plan.preview;
+  },
+);
+
+export const runWebUntisCourseRosterImport = Effect.fn("Console.webUntisCourseRosterImport")(
+  function* (requestedSchoolYear: string, requestedStart: string, requestedEnd: string) {
+    const plan = yield* WebUntisCourseRosters.fetchStudentTimetableImportPlan(
+      requestedSchoolYear,
+      requestedStart,
+      requestedEnd,
+    );
+    const runs = yield* Effect.forEach(
+      plan.snapshots,
+      (snapshot) => SourceObservationStore.persistSourceSnapshot(snapshot),
+      { concurrency: 3 },
+    );
+    const output = { preview: plan.preview, runs };
+    yield* Console.log(JSON.stringify(output, null, 2));
+    return output;
+  },
+);
+
+export const webUntisCourseRosterCommand = Command.make(
+  "webuntis-course-rosters",
+  { schoolYear, start, end, apply },
+  ({ schoolYear, start, end, apply }) =>
+    apply
+      ? runWebUntisCourseRosterImport(schoolYear, start, end).pipe(
+          Effect.provide(Layer.merge(WebUntisCourseRosters.layer, Database.layerConfig)),
+        )
+      : runWebUntisCourseRosterPreview(schoolYear, start, end).pipe(
+          Effect.provide(WebUntisCourseRosters.layer),
+        ),
+).pipe(Command.withDescription("Preview or persist private WebUntis course-roster evidence"));
 
 export const runWebUntisCourseIdentityAudit = Effect.fn("Console.webUntisCourseIdentityAudit")(
   function* (ranges: ReadonlyArray<WebUntisTimetable.CourseIdentityAuditRange>) {

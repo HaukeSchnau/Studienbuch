@@ -66,8 +66,8 @@ assignments. The only cohort-name gaps are the three entry years 2024 through 20
 The modern REST endpoint exposes timetable resource views for classes, students, teachers,
 subjects and rooms. `STANDARD` already includes substitutions and cancellations; IGS does not need
 a second substitution feed. Class, subject, teacher and room views are imported together. Student
-views remain excluded because they repeat school-timetable data once per student and cross the
-privacy boundary without contributing a school-level identity we currently need.
+views use a separate private dataset and slower schedule. They supply course-roster evidence but do
+not become ordinary timetable claims or client timetable data.
 
 A complete class-timetable query for 2026-08-24 through 2026-08-28 returned all 45 classes with no
 response errors:
@@ -321,6 +321,46 @@ often than substitutions, and importing every student claim every ten minutes wo
 private data without improving the client timetable. A daily reconciliation window, plus a refresh
 after directory changes, is the current default.
 
+The private source scope is one complete academic year and date:
+
+```text
+academic-year:10/resource-type:STUDENT/date:2026-08-24
+```
+
+It expects one decoded row per advertised student. Missing rows, duplicate rows, denied access,
+response errors and conflicting raw identities make the date partial. The raw record retains the
+student filter item, including dated class assignments and fields that the provider may add to its
+assignment groups. Preview and reconciliation diagnostics contain counts and provider IDs, never
+student names.
+
+The live 2026-08-24 preview fetched 1,282 students in three batches. WebUntis returned every
+expected student row with no response errors, producing 5,212 private occurrence views and one
+complete daily scope.
+
+Projection groups student views by date and sorted provider entry IDs. It removes names while
+retaining student provider IDs, dated class assignments, IGS class or cohort progression keys,
+course codes and corroborating activity, teacher and class IDs from the ordinary timetable view.
+The result remains server-only.
+
+The first IGS reconciliation policy requires three regular observations before a roster becomes an
+annual course observation. It may combine two disjoint roster partitions only when a code ending in
+`23` recurs at least three times with the same teacher and time. This is the observed `MA23`
+convention. `MA-E` and `MA-G` do not satisfy that rule, so parallel level groups remain separate even
+when they share a teacher, activity, class or timetable slot. One-off joint lessons remain dated
+evidence and cannot create an annual merge.
+
+Adjacent-year comparison measures roster continuity only across shared stable class or cohort
+keys. This prevents a graduating grade-13 partition from weakening the continuing grade-12 part of
+`MA23`. The IGS v1 rule treats at least three shared students, two-thirds Jaccard overlap and
+two-thirds retention on both sides as strong roster evidence. Those numbers belong to the school
+profile, not the generic reconciler.
+
+Every pair receives a schema-backed `Same`, `Different`, `Compatible` or `Ambiguous` decision.
+`Same` requires strong roster progression, course-code or activity corroboration, and a unique
+match in both directions. Competing strong matches are `Ambiguous`. The decision records the rule
+version, observation IDs, overlap counts and corroborating provider IDs. It does not allocate or
+persist a permanent `CourseOfferingId` yet.
+
 The historical audit also found seven older entries with `position1: null`.
 `webuntis-api` 0.2.2 accepts that shape, and source normalization retains the distinction between
 `null` and an empty position array. The provider connection recovered and the adjacent-year audit
@@ -437,18 +477,33 @@ just console webuntis-course-audit \
   --range 2026/2027,2026-08-24,2026-09-20
 ```
 
+Fetch the private student view for a bounded reconciliation window. The default command prints only
+the name-free preview. `--apply` persists the daily raw scopes but still does not allocate course
+identities:
+
+```bash
+just console webuntis-course-rosters \
+  --school-year 2026/2027 \
+  --start 2026-08-24 \
+  --end 2026-09-20
+
+just console webuntis-course-rosters \
+  --school-year 2026/2027 \
+  --start 2026-08-24 \
+  --end 2026-09-20 \
+  --apply
+```
+
 ## Next implementation slice
 
-1. Add server-only student-view observations and implement explicit `Same`, `Different`,
-   `Compatible` and `Ambiguous` decisions with retained evidence. Start with the live `MA-E`, `MA-G`
-   and `MA23` cases as fixtures.
-2. Persist only resolved course decisions across current daily scopes and attach their IDs to dated
+1. Replay current private roster scopes into annual observations, persist only resolved course
+   decisions and attach their IDs to dated
    occurrences. Retain compatible and ambiguous candidates without forcing a merge.
-3. Define role-specific timetable and directory contracts and turn projection transitions into
+2. Define role-specific timetable and directory contracts and turn projection transitions into
    authorized, ordered client changes. Keep raw source records and unrestricted projection payloads
    server-only.
-4. Add student views only if a concrete feature needs their identity; do not duplicate the school
-   timetable per student by default.
-5. Add the agreed polling policy with jitter, one active execution per source and observable
+3. Add student timetable data to client contracts only if a concrete feature needs it. Course
+   reconciliation alone does not justify duplicating the school timetable per student.
+4. Add the agreed polling policy with jitter, one active execution per source and observable
    failures that never advance source state.
-6. Add the server-only exams importer before designing its role-specific client projection.
+5. Add the server-only exams importer before designing its role-specific client projection.

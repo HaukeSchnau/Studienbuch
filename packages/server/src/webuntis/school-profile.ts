@@ -1,4 +1,5 @@
 import { Organization } from "@stu/core";
+import type { CourseReconciliationPolicy } from "./course-reconciliation.ts";
 
 export interface WebUntisSchoolIdentity {
   readonly externalId: string;
@@ -31,6 +32,7 @@ export interface WebUntisSchoolProfile {
     readonly shortName: string;
   }) => WebUntisClassResolution;
   readonly entityId: (kind: string, externalId: string) => string;
+  readonly courseReconciliation: CourseReconciliationPolicy;
 }
 
 const igsLilienthalCohortEntries = [
@@ -67,6 +69,20 @@ const igsLilienthalCohort = (entryAcademicYearStart: number) => {
 };
 
 const igsLilienthalClass = /^(?<grade>\d{1,2})\.(?<subdivision>\d+)$/;
+const igsLilienthalJointCourse = /^[A-ZÄÖÜ]+23$/;
+
+const igsLilienthalCourseReconciliation: CourseReconciliationPolicy = {
+  ruleId: "igs-lilienthal/course-identity/v1",
+  minimumRegularOccurrences: 3,
+  minimumRepeatedJointOccurrences: 3,
+  isJointCourseCode: (code) => igsLilienthalJointCourse.test(code),
+  codesCompatible: (left, right) => left.some((code) => right.includes(code)),
+  isStrongRosterContinuity: (measurement) =>
+    measurement.sharedStudents >= 3 &&
+    measurement.jaccard >= 2 / 3 &&
+    measurement.retainedFromLeft >= 2 / 3 &&
+    measurement.retainedFromRight >= 2 / 3,
+};
 
 export const igsLilienthalProfile: WebUntisSchoolProfile = {
   schoolId: igsLilienthalSchoolId,
@@ -104,6 +120,7 @@ export const igsLilienthalProfile: WebUntisSchoolProfile = {
     };
   },
   entityId: (kind, externalId) => `igs-lilienthal/${kind}/${externalId}`,
+  courseReconciliation: igsLilienthalCourseReconciliation,
 };
 
 const profiles: ReadonlyArray<WebUntisSchoolProfile> = [igsLilienthalProfile];
