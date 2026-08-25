@@ -19,6 +19,7 @@ import { registrationTokenIsActive } from "../access/school-access.ts";
  */
 export interface Options {
   readonly emailVerification?: BetterAuthOptions["emailVerification"];
+  readonly passkeyRpID?: string;
   readonly sendResetPassword?: NonNullable<
     BetterAuthOptions["emailAndPassword"]
   >["sendResetPassword"];
@@ -81,6 +82,7 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
         trustedOrigins: options.trustedOrigins,
         plugins: [
           passkey({
+            rpID: options.passkeyRpID,
             rpName: "Studienbuch",
             authenticatorSelection: {
               residentKey: "required",

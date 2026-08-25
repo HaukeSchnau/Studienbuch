@@ -92,6 +92,11 @@ STUDIENBUCH_SMTP_URL=smtps://user:password@mail.example.com:465
 STUDIENBUCH_EMAIL_FROM='Studienbuch <no-reply@example.com>'
 ```
 
+The managed Release supplies the SMTP URL as `STUDIENBUCH_SMTP_URL_FILE`, backed by a systemd
+credential. Keep the direct variable for local development only; it puts the credential in the
+process environment. Production also sets `STUDIENBUCH_PASSKEY_RP_ID=studienbuch.app`, allowing a
+passkey registered on `beta.studienbuch.app` to remain valid on future subdomains and the apex.
+
 Development defaults to `STUDIENBUCH_AUTH_EMAIL_MODE=console` and prints the message and link to the
 server log. Production never falls back to console delivery; missing SMTP configuration makes the
 send fail visibly instead of silently creating an unreachable account.
@@ -102,6 +107,15 @@ Create the platform operator and printable school codes through the console:
 just console operator-bootstrap --name "Hauke Schnau" --base-url https://studienbuch.app
 just console access-codes --school-id igs-lilienthal --school-name "IGS Lilienthal" \
   --kind student --count 100 --operator-user-id <operator-user-id>
+```
+
+On the production host, use the console bundled with the active Release so its schema and command
+implementation always match the deployed application:
+
+```bash
+sudo -u app-studienbuch \
+  /var/lib/app-deployments/studienbuch/current/bin/studienbuch-console \
+  operator-bootstrap --name "Hauke Schnau" --base-url https://beta.studienbuch.app
 ```
 
 The first command prints a short-lived passkey setup URL. The second prints every access code once;

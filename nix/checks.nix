@@ -41,6 +41,7 @@ let
             secrets="$root/secrets"
             mkdir -p "$state" "$runtime" "$secrets"
             printf '%s\n' 'release-smoke-secret-with-sufficient-length' > "$secrets/better-auth-secret"
+            printf '%s\n' 'smtp://localhost:2525' > "$secrets/smtp-url"
             postgres_root="$root/postgres"
             postgres_socket="$root/postgres-socket"
             mkdir -p "$postgres_socket"
@@ -95,6 +96,7 @@ let
               --arg state "$state" \
               --arg runtime "$runtime" \
               --arg databaseUrl "$database_url" \
+              --arg authEmailFrom 'Studienbuch <konto@studienbuch.app>' \
               '{
                 schemaVersion: 2,
                 project: "studienbuch",
@@ -109,9 +111,14 @@ let
                     visibility: "local"
                   }
                 },
-                parameters: {databaseUrl: $databaseUrl},
+                parameters: {
+                  databaseUrl: $databaseUrl,
+                  authEmailFrom: $authEmailFrom,
+                  passkeyRpId: "example.test"
+                },
                 secrets: {
-                  betterAuthSecret: "better-auth-secret"
+                  betterAuthSecret: "better-auth-secret",
+                  smtpUrl: "smtp-url"
                 }
               }' > "$root/manifest.json"
 
@@ -119,6 +126,12 @@ let
               PROJECT_SECRETS_DIR="$secrets" \
               ${releasePackage}/bin/project-release-runtime migrate \
               > "$root/migrate.log" 2>&1
+
+            PROJECT_RUNTIME_FILE="$root/manifest.json" \
+              STUDIENBUCH_OTEL_ENABLED=false \
+              ${releasePackage}/bin/studienbuch-console --help \
+              > "$root/console-help.txt" 2>&1
+            grep -q operator-bootstrap "$root/console-help.txt"
 
             PROJECT_RUNTIME_FILE="$root/manifest.json" \
               PROJECT_SECRETS_DIR="$secrets" \
@@ -246,7 +259,8 @@ let
             .development.workloads.web.secrets == ["betterAuthSecret"] and
             (.development.workloads.mobile.secrets // []) == [] and
             .development.endpoints.web.health.paths == ["/api/health/ready"] and
-            (.parameters | keys) == ["databaseUrl"] and
+            (.parameters | keys) == ["authEmailFrom", "databaseUrl", "passkeyRpId"] and
+            (.secrets | keys) == ["betterAuthSecret", "smtpUrl"] and
             .release.action == "web" and
             .release.preDeployTasks == {migrate: {timeoutSec: 300}} and
             .release.health.paths == ["/api/health/live", "/api/health/ready"] and
@@ -255,6 +269,7 @@ let
             .release.health.requestTimeoutSec == 2
           ' ${descriptorPath} >/dev/null
           cmp ${descriptorPath} ${releasePackage}/share/project/descriptor.json
+          test -x ${releasePackage}/bin/studienbuch-console
           touch "$out"
         '';
         releaseInterface = projectRelease.checks.interface;

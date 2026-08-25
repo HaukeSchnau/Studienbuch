@@ -131,6 +131,10 @@ export const Datenschutz = () => (
         und Wiederherstellungstoken
       </li>
       <li>
+        beim Versand von Konto-E-Mails die Empfängeradresse, der Nachrichteninhalt und technische
+        Zustellinformationen
+      </li>
+      <li>
         Schulzugang, Zugangsart und Status des eingelösten Zugangscodes; der Code selbst wird nur
         als kryptografischer Hash gespeichert
       </li>

@@ -19,6 +19,7 @@ export const authOptions: Auth.Options = {
     autoSignInAfterVerification: true,
   },
   sendResetPassword: sendPasswordResetEmail,
+  passkeyRpID: process.env.STUDIENBUCH_PASSKEY_RP_ID?.trim() || undefined,
   plugins: [expo(), tanstackStartCookies()],
   trustedOrigins: ["studienbuch://", "studienbuch://*"],
 };

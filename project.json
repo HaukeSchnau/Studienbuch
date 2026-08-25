@@ -5,12 +5,23 @@
   "secrets": {
     "betterAuthSecret": {
       "description": "Secret used to sign Better Auth sessions"
+    },
+    "smtpUrl": {
+      "description": "SMTP connection URL used to deliver authentication email"
     }
   },
   "parameters": {
     "databaseUrl": {
       "description": "PostgreSQL connection URL used by the Release runtime",
       "default": "postgresql:///studienbuch?host=/run/postgresql"
+    },
+    "authEmailFrom": {
+      "description": "Sender shown on authentication email",
+      "default": "Studienbuch <konto@studienbuch.app>"
+    },
+    "passkeyRpId": {
+      "description": "WebAuthn relying-party ID shared by production origins",
+      "default": "studienbuch.app"
     }
   },
   "development": {
