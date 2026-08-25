@@ -17,12 +17,13 @@ const points: ReadonlyArray<{ body: string; title: string }> = [
   },
   {
     title: "Datensparsam gebaut",
-    // Deliberately a claim about the shape of the telemetry channel, not a promise never to
-    // measure anything. `packages/observability` defines client records as a closed union with
-    // literal attribute values and no free-text field, decoded with `onExcessProperty: "error"`,
-    // so student data cannot travel through it — and that stays true if a product-analytics tool
-    // is added later.
-    body: "Schuldaten liegen zuerst auf dem Gerät, dann auf unseren Servern — nie bei Werbenetzwerken. Telemetrie folgt einem festen Feldschema ohne Freitext, in das Namen oder Noten gar nicht hineinpassen.",
+    // "Keinen Platz" is the plain-German version of a real guarantee, for an audience of head
+    // teachers rather than developers: `packages/observability` defines client records as a closed
+    // union with literal attribute values and no free-text field, decoded with
+    // `onExcessProperty: "error"`, so student data cannot travel through it. Phrasing it as a
+    // property of the channel rather than as a list of tools we avoid keeps it true if a
+    // product-analytics platform is added later.
+    body: "Schuldaten liegen zuerst auf dem Gerät, dann auf Servern in Deutschland bei einem deutschen Anbieter — nie bei Werbenetzwerken. Was die App zur Fehlersuche meldet, hat für Namen oder Noten keinen Platz.",
   },
 ];
 
