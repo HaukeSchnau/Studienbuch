@@ -29,7 +29,7 @@ const points: ReadonlyArray<{ body: string; title: string }> = [
 export const ForSchools = () => (
   <Section className="relative isolate" id={sectionIds.schools}>
     <EdgeBlob
-      blob="drift"
+      blob="notch"
       className="-left-36 top-12 hidden size-[22rem] xl:block"
       rotate={38}
       tone="green"
