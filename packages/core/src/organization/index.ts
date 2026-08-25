@@ -5,7 +5,10 @@ export {
   accessCodeLength,
   formatAccessCode,
   isAccessCode,
+  neutralAccountName,
   normalizeAccessCode,
+  profileFieldMaxLength,
+  repairAccessCode,
 } from "./access";
 export {
   AcademicYear,

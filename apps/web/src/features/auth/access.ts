@@ -1,40 +1,25 @@
-import { accessRoutes } from "./access-contract.ts";
+import * as Exit from "effect/Exit";
+import * as Schema from "effect/Schema";
+import {
+  AccountView as AccountViewSchema,
+  ProfileSaved,
+  ReservationCreated,
+  ReservationView as ReservationViewSchema,
+  SchoolAccessCreated,
+  accessErrorCodes,
+  accessRoutes,
+  decodeAccessFailure,
+  type AccessErrorCode,
+  type SchoolAccessView as SchoolAccessViewSchema,
+} from "./access-contract.ts";
 
-export interface ReservationView {
-  readonly expiresAt: string;
-  readonly school: { readonly id: string; readonly name: string };
-  readonly kind: "Student" | "Teacher";
-}
-
-export interface ReservationCreated extends ReservationView {
-  readonly token: string;
-}
-
-export interface SchoolAccessView {
-  readonly id: string;
-  readonly kind: "Student" | "Teacher";
-  readonly createdAt: string;
-  readonly schoolId: string;
-  readonly schoolName: string;
-  readonly displayName: string | null;
-  readonly cohort: string | null;
-  readonly className: string | null;
-}
-
-export interface AccountView {
-  readonly user: {
-    readonly id: string;
-    readonly name: string;
-    readonly email: string | null;
-    readonly emailVerified: boolean;
-  };
-  readonly operator: boolean;
-  readonly accesses: ReadonlyArray<SchoolAccessView>;
-}
+export type ReservationView = typeof ReservationViewSchema.Type;
+export type SchoolAccessView = typeof SchoolAccessViewSchema.Type;
+export type AccountView = typeof AccountViewSchema.Type;
 
 export interface ApiFailure {
   readonly _tag: "ApiFailure";
-  readonly code: string;
+  readonly code: AccessErrorCode;
   readonly status: number;
 }
 
@@ -52,48 +37,82 @@ type JsonInput =
       readonly [key: string]: JsonInput | undefined;
     };
 
-const request = async <ResponseBody>(
+const failed = (code: AccessErrorCode, status: number) => ({
+  ok: false as const,
+  error: { _tag: "ApiFailure" as const, code, status },
+});
+
+/**
+ * One of the access routes, as a result rather than as an exception.
+ *
+ * Nothing here throws. A route that is down answers with an HTML error page from a proxy, and a
+ * caller that has to wrap every request in `try` to survive that will eventually forget one — so
+ * the network failing, the body not being JSON, and the body not being what was promised all
+ * arrive the same way as a refusal the server meant to send.
+ */
+const request = async <Response extends Schema.ConstraintDecoder<unknown>>(
+  response: Response,
   url: string,
   init?: RequestInit,
-): Promise<ApiResult<ResponseBody>> => {
+): Promise<ApiResult<Response["Type"]>> => {
   const headers = new Headers(init?.headers);
-  headers.set("content-type", "application/json");
-  const response = await fetch(url, {
-    credentials: "same-origin",
-    ...init,
-    headers,
-  });
-  const body: ResponseBody & { readonly error?: string } = await response.json();
-  if (!response.ok) {
-    return {
-      ok: false,
-      error: {
-        _tag: "ApiFailure",
-        code: body.error ?? "request_failed",
-        status: response.status,
-      },
-    };
+  if (init?.body !== undefined) headers.set("content-type", "application/json");
+  const received = await fetch(url, { credentials: "same-origin", ...init, headers }).catch(
+    () => undefined,
+  );
+  if (received === undefined) return failed(accessErrorCodes.internalError, 0);
+
+  const body: unknown = await received.json().catch(() => undefined);
+  if (!received.ok) {
+    const refusal = decodeAccessFailure(body);
+    return failed(
+      Exit.isSuccess(refusal) ? refusal.value.error : accessErrorCodes.internalError,
+      received.status,
+    );
   }
-  return { ok: true, value: body };
+
+  const decoded = Schema.decodeUnknownExit(response)(body);
+  return Exit.isSuccess(decoded)
+    ? { ok: true, value: decoded.value }
+    : failed(accessErrorCodes.internalError, received.status);
 };
 
-const post = <ResponseBody>(url: string, body: JsonInput) =>
-  request<ResponseBody>(url, { method: "POST", body: JSON.stringify(body) });
+const post = <Response extends Schema.ConstraintDecoder<unknown>>(
+  response: Response,
+  url: string,
+  body: JsonInput,
+) => request(response, url, { method: "POST", body: JSON.stringify(body) });
 
 export const reserveAccess = (code: string) =>
-  post<ReservationCreated>(accessRoutes.reserve, { code });
+  post(ReservationCreated, accessRoutes.reserve, { code });
 
 export const inspectReservation = (token: string) =>
-  post<ReservationView>(accessRoutes.reservation, { token });
+  post(ReservationViewSchema, accessRoutes.reservation, { token });
 
 export const completeReservation = (token: string) =>
-  post<{ readonly id: string } & ReservationView>(accessRoutes.complete, { token });
+  post(SchoolAccessCreated, accessRoutes.complete, { token });
 
+/** An optional field the user left blank is absent rather than empty. */
+const trimmedOrAbsent = (value: string) => {
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
+};
+
+/**
+ * Trimming happens here rather than in the schema so that a trailing space is corrected instead of
+ * refused: the difference is invisible on screen, so an error about it could not be acted on.
+ */
 export const saveProfile = (input: {
   readonly schoolAccessId: string;
   readonly displayName: string;
-  readonly cohort?: string;
-  readonly className?: string;
-}) => post<{ readonly profile: object }>(accessRoutes.profile, input);
+  readonly cohort: string;
+  readonly className: string;
+}) =>
+  post(ProfileSaved, accessRoutes.profile, {
+    schoolAccessId: input.schoolAccessId,
+    displayName: input.displayName.trim(),
+    cohort: trimmedOrAbsent(input.cohort),
+    className: trimmedOrAbsent(input.className),
+  });
 
-export const loadAccount = () => request<AccountView>(accessRoutes.me);
+export const loadAccount = () => request(AccountViewSchema, accessRoutes.me);

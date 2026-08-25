@@ -1,13 +1,16 @@
 import { passkey } from "@better-auth/passkey";
+import { Organization } from "@stu/core/organization";
 import { betterAuth } from "better-auth";
 import type { BetterAuthOptions } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
+import * as Schema from "effect/Schema";
 import { Database } from "../database/client.ts";
 import { consumeSetupToken, resolveSetupUser } from "../access/operator.ts";
-import { registrationTokenIsActive } from "../access/school-access.ts";
+import { registrationSignupAllowed, spendRegistrationSignup } from "../access/school-access.ts";
 
 /**
  * What the calling application contributes.
@@ -26,6 +29,20 @@ export interface Options {
   readonly plugins?: BetterAuthOptions["plugins"];
   readonly trustedOrigins?: BetterAuthOptions["trustedOrigins"];
 }
+
+/** The reservation a registration request presents, as a header so it never lands in a log line. */
+const registrationToken = (context: { readonly headers?: Headers }) =>
+  context.headers?.get("x-studienbuch-registration") ?? null;
+
+/**
+ * A `/sign-up/email` response that describes an account.
+ *
+ * After-hooks also run for a call the endpoint rejected, where `returned` is the error instead, so
+ * this is what tells the two apart.
+ */
+const decodeSignUpResult = Schema.decodeUnknownExit(
+  Schema.Struct({ user: Schema.Struct({ id: Schema.String }) }),
+);
 
 /**
  * Better Auth, wired to the same pool as Drizzle.
@@ -64,8 +81,7 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
         hooks: {
           before: createAuthMiddleware(async (context) => {
             if (context.path !== "/sign-up/email") return;
-            const token = context.headers?.get("x-studienbuch-registration") ?? null;
-            if (!(await registrationTokenIsActive(database.pool, token))) {
+            if (!(await registrationSignupAllowed(database.pool, registrationToken(context)))) {
               // oxlint-disable-next-line anti-slop/no-throwing-errors -- Better Auth middleware aborts requests through APIError.
               throw new APIError("BAD_REQUEST", {
                 code: "SCHOOL_ACCESS_RESERVATION_REQUIRED",
@@ -73,10 +89,28 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
               });
             }
 
-            // Better Auth requires a name on every account. School users choose their identity in
-            // the school-scoped notebook profile instead, so the global account deliberately keeps
-            // a neutral value rather than collecting the same name twice.
-            return { context: { body: { ...context.body, name: "Studienbuch-Konto" } } };
+            // Set here rather than trusted from the request: the placeholder is what keeps a
+            // person's name out of the global account, so a client must not be able to choose it.
+            return {
+              context: { body: { ...context.body, name: Organization.neutralAccountName } },
+            };
+          }),
+          /**
+           * Charges a signup to the reservation that authorised it.
+           *
+           * Here rather than in the `before` hook because Better Auth validates the body inside the
+           * endpoint: a password two characters short would otherwise spend a signup the user never
+           * got. After-hooks run for failed calls too, so the response is what decides — an account
+           * was created exactly when one came back.
+           *
+           * Better Auth answers a signup for an address it already knows with a synthetic account
+           * rather than an error, so that no one can use signup to test whether an address is
+           * registered. Charging for that response as well is what keeps the two indistinguishable.
+           */
+          after: createAuthMiddleware(async (context) => {
+            if (context.path !== "/sign-up/email") return;
+            if (Exit.isFailure(decodeSignUpResult(context.context.returned))) return;
+            await spendRegistrationSignup(database.pool, registrationToken(context));
           }),
         },
         trustedOrigins: options.trustedOrigins,
@@ -99,9 +133,19 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
                   message: "The operator setup token is no longer valid",
                 });
               },
+              /**
+               * A visitor who is already signed in registers a passkey for themselves, whatever
+               * `context` says, because a session outranks `resolveUser` above. So the token is
+               * checked against the account this ceremony is actually for, and only spent once it
+               * matches — otherwise presenting an operator's setup link would be enough to burn it.
+               */
               afterVerification: async ({ context, user }) => {
                 if (context === null || context === undefined) return;
-                const consumedForUserId = await consumeSetupToken(database.pool, context);
+                const setupUser = await resolveSetupUser(database.pool, context);
+                const consumedForUserId =
+                  setupUser?.id === user.id
+                    ? await consumeSetupToken(database.pool, context)
+                    : undefined;
                 if (consumedForUserId !== user.id) {
                   // oxlint-disable-next-line anti-slop/no-throwing-errors -- Better Auth's callback has no typed failure return.
                   throw new APIError("UNAUTHORIZED", {

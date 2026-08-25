@@ -10,6 +10,7 @@ import * as Option from "effect/Option";
 import { ClientTelemetry } from "#/infra/observability/client-telemetry.server.ts";
 import { runRouteEffect, type RouteEffectRunner } from "#/infra/runtime/request.server.ts";
 import { jsonResponse } from "#/infra/http/response.server.ts";
+import { rateLimitedResponse } from "#/infra/http/rate-limit.server.ts";
 import { telemetryAdmission, type TelemetryAdmission } from "./admission.server.ts";
 
 export const telemetryRoute = "/api/observability/v1/telemetry";
@@ -93,11 +94,9 @@ export function makeTelemetryIngressHandler(options?: {
   return async (request: Request): Promise<Response> => {
     const decision = await admission.check(request);
     if (!decision.allowed) {
-      const response = jsonResponse({ error: decision.error }, decision.status);
-      if (decision.retryAfterSeconds !== undefined) {
-        response.headers.set("retry-after", String(decision.retryAfterSeconds));
-      }
-      return response;
+      return decision.error === "rate_limited"
+        ? rateLimitedResponse(decision)
+        : jsonResponse({ error: decision.error }, decision.status);
     }
 
     const body = await readBoundedBody(request);

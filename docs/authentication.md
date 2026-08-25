@@ -32,6 +32,14 @@ The flow is:
 A reservation prevents two registrations from racing for one code without permanently consuming a
 code when someone closes the signup page. Reservations expire. Redemption is atomic and final.
 
+A reservation authorises a small, fixed number of signups rather than every signup made during its
+lifetime. Redemption is what consumes it, and redemption needs a verified address, which arrives
+long after the signup request returns; without a budget in between, one code would buy two hours of
+account creation and verification mail. The budget is larger than one so that someone who mistyped
+their own address can correct it. Signing up with an address Studienbuch already knows answers with
+a success rather than an error, so that signup cannot be used to test whether an address is
+registered, and that response spends from the budget like any other.
+
 ## Stored meaning
 
 A school access record means only that an account redeemed a code issued for a school. It does not
@@ -69,6 +77,12 @@ receive a code-to-account or code-to-email mapping.
 - Make access codes revocable and optionally expiring. Codes do not expire by default because
   schools may distribute printed batches over a long period.
 - Allow only one active reservation per code. Expired reservations no longer block a code.
+- Bound the number of accounts one reservation may create, and spend from that bound only for a
+  response that describes an account, so that a rejected request costs the user nothing.
+- Rate-limit the enrollment routes per client. Not for entropy — 80 bits is ample — but so that one
+  client cannot churn reservations or the work behind them.
+- Check an operator setup token against the account a passkey ceremony is actually for before
+  spending it. A signed-in visitor registers a passkey for themselves whatever token they present.
 - Require a verified email before a regular user can redeem a reservation or enter the app.
 - Require WebAuthn user verification for passkey registration and authentication.
 - Never automatically link accounts that happen to use the same email address at different identity

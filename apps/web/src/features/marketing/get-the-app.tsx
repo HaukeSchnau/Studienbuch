@@ -37,10 +37,21 @@ export const GetTheApp = () => (
               Bis gleich in der App
             </h2>
             <p className="max-w-md text-xl/relaxed text-white text-pretty">
-              Kostenlos für Android und iOS. Zum Einrichten brauchst du den Lizenzschlüssel deiner
+              Kostenlos für Android und iOS. Zum Einrichten brauchst du den Zugangscode deiner
               Schule.
             </p>
             <StoreBadges />
+            {/*
+              Where the person holding a printed code is already standing, which is why the link
+              lives here rather than in the header: the nav pill is only as wide as its links, and a
+              sixth one stops it floating well before a phone is anywhere near it.
+            */}
+            <a
+              className="press rounded-full bg-white px-6 py-3 text-base font-semibold text-primary-text shadow-float focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
+              href="/aktivieren"
+            >
+              Zugangscode einlösen
+            </a>
           </div>
 
           {/* Hidden below `lg`: there is no room for the device to be cropped by the panel rather

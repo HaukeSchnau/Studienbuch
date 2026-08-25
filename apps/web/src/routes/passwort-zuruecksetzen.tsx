@@ -1,7 +1,15 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import * as Schema from "effect/Schema";
 import { useState } from "react";
-import { AuthError, AuthShell, Field } from "#/features/auth/auth-shell.tsx";
+import {
+  AuthError,
+  AuthNote,
+  authNoteLinkClass,
+  AuthShell,
+  Field,
+  invalidWhen,
+} from "#/features/auth/auth-shell.tsx";
+import { betterAuthMessage } from "#/features/auth/messages.ts";
 import { authClient } from "#/infra/auth/client.ts";
 import { Button } from "#/ui/button.tsx";
 import { Input } from "#/ui/input.tsx";
@@ -24,44 +32,71 @@ function ResetPasswordPage() {
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
 
+  const token = search.token;
+  const usable = token !== undefined && search.error === undefined;
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (search.token === undefined) return;
+    if (token === undefined) return;
     setBusy(true);
     setError(undefined);
-    const result = await authClient.resetPassword({ newPassword: password, token: search.token });
+    const result = await authClient.resetPassword({ newPassword: password, token });
     setBusy(false);
     if (result.error !== null) {
-      setError("Der Link ist abgelaufen oder wurde bereits verwendet.");
+      setError(
+        betterAuthMessage(result.error, "Der Link ist abgelaufen oder wurde bereits verwendet."),
+      );
       return;
     }
     await navigate({ to: "/anmelden", search: {}, replace: true });
   };
 
-  const invalid = search.token === undefined || search.error !== undefined;
+  if (!usable) {
+    return (
+      <AuthShell>
+        <h1 className="text-center text-3xl text-primary-text">Neues Passwort</h1>
+        <div className="mt-6">
+          <AuthError>Der Link ist ungültig oder abgelaufen.</AuthError>
+        </div>
+        <Button asChild className="mt-7 w-full" radius="pill" size="xl" variant="brand">
+          <Link to="/passwort-vergessen">Neuen Link anfordern</Link>
+        </Button>
+      </AuthShell>
+    );
+  }
+
   return (
     <AuthShell>
       <h1 className="text-center text-3xl text-primary-text">Neues Passwort</h1>
-      {invalid ? (
-        <AuthError>Der Link ist ungültig oder abgelaufen.</AuthError>
-      ) : (
-        <form className="mt-7 grid gap-4" onSubmit={submit}>
-          <Field label="Neues Passwort">
-            <Input
-              autoComplete="new-password"
-              minLength={8}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              type="password"
-              value={password}
-            />
-          </Field>
-          {error === undefined ? null : <AuthError>{error}</AuthError>}
-          <Button disabled={busy} radius="pill" size="xl" type="submit" variant="brand">
-            Passwort speichern
-          </Button>
-        </form>
-      )}
+      <form className="mt-7 grid gap-4" onSubmit={submit}>
+        <Field hint="Mindestens acht Zeichen." label="Neues Passwort">
+          <Input
+            autoComplete="new-password"
+            minLength={8}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            type="password"
+            value={password}
+            {...invalidWhen(error)}
+          />
+        </Field>
+        {error === undefined ? null : <AuthError>{error}</AuthError>}
+        <Button
+          aria-busy={busy}
+          disabled={busy}
+          radius="pill"
+          size="xl"
+          type="submit"
+          variant="brand"
+        >
+          {busy ? "Wird gespeichert ..." : "Passwort speichern"}
+        </Button>
+      </form>
+      <AuthNote>
+        <Link className={authNoteLinkClass} search={{}} to="/anmelden">
+          Zurück zur Anmeldung
+        </Link>
+      </AuthNote>
     </AuthShell>
   );
 }
