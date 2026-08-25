@@ -150,6 +150,12 @@ h3 {
       animation-range: entry 18% cover 34%;
     }
 
+    /*
+     * Used for the ticks and for the grade figure. An earlier version counted the figure up from
+     * zero with an animated registered property; it rendered a permanent "0", because
+     * `counter-reset` will not take a `var()` here. A number that can display the wrong value on a
+     * public page is not worth the trick, so it pops in at its real value instead.
+     */
     .tick-in {
       animation: tick-in cubic-bezier(0.34, 1.56, 0.64, 1) both;
       animation-timeline: view();
@@ -161,28 +167,7 @@ h3 {
       animation-timeline: view();
       animation-range: entry 26% cover 38%;
     }
-
-    .count-up {
-      animation: count-up linear both;
-      animation-timeline: view();
-      animation-range: entry 12% cover 34%;
-    }
   }
-}
-
-/*
- * A registered custom property is what makes the number countable: an unregistered one is a string
- * to the animation engine and would jump straight to its final value.
- */
-@property --counted {
-  syntax: "<integer>";
-  initial-value: 0;
-  inherits: false;
-}
-
-.count-up::after {
-  content: counter(counted);
-  counter-reset: counted var(--counted);
 }
 
 @keyframes draw-strike {
@@ -214,12 +199,6 @@ h3 {
   }
 }
 
-@keyframes count-up {
-  from {
-    --counted: 0;
-  }
-}
-
 @keyframes reveal {
   from {
     opacity: 0;
@@ -241,11 +220,50 @@ h3 {
 }
 
 /*
+ * A barely-there grain over the whole page.
+ *
+ * Large flat white areas photograph as *empty*; the same areas with a trace of texture read as
+ * *spacious*. At 3.5% opacity it is invisible until you take it away. The turbulence is generated
+ * by the browser, so it costs no request and no bytes beyond this rule.
+ */
+body::after {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  content: "";
+  inset: 0;
+  opacity: 0.035;
+  pointer-events: none;
+  position: fixed;
+  z-index: 100;
+}
+
+/*
+ * Cross-document view transitions between the marketing page and the legal pages. Browsers without
+ * it simply navigate, which is the behaviour this replaces.
+ */
+@view-transition {
+  navigation: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: fade-late 120ms linear reverse;
+  }
+
+  ::view-transition-new(root) {
+    animation: fade-late 180ms linear;
+  }
+}
+
+/*
  * Schools print the legal pages — a Datenschutzerklärung goes into a file, and increasingly into a
  * procurement pack. Printing the site as-is would waste ink on decoration and drop every link
  * target, so links spell themselves out and everything ornamental is removed.
  */
 @media print {
+  body::after {
+    display: none !important;
+  }
+
   body {
     background: #fff;
     color: #000;

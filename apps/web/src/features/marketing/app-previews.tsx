@@ -1,7 +1,5 @@
 import { Check, WifiOff } from "lucide-react";
 
-import { subjectSamples } from "#/domain-ui/brand/subjects.ts";
-
 /**
  * Small rebuilds of the app's own surfaces, used instead of icons on the feature cards.
  *
@@ -9,67 +7,45 @@ import { subjectSamples } from "#/domain-ui/brand/subjects.ts";
  * and can be read by nobody — each is decorative, and the card's prose carries the meaning.
  */
 
-/** A week grid: coloured lesson blocks, one free period, one cancelled lesson struck through. */
+/**
+ * The day's agenda, with the middle lesson cancelled.
+ *
+ * This replaced an abstract grid of coloured blocks. The grid looked like a timetable but could not
+ * say the one thing this card is about — that you learn first period is off before you leave the
+ * house. A lesson striking itself out as "(Entfall)" arrives can.
+ */
 export const SchedulePreview = () => {
-  // Column-major, so each entry is one weekday. A null subject is a free period.
-  const week = [
-    {
-      day: "monday",
-      slots: [
-        { period: "one", subject: 0 },
-        { period: "two", subject: 4 },
-        { period: "three", subject: 1 },
-      ],
-    },
-    {
-      day: "tuesday",
-      slots: [
-        { period: "one", subject: 2 },
-        { period: "two", subject: 1 },
-        { period: "three", subject: null },
-      ],
-    },
-    {
-      day: "wednesday",
-      slots: [
-        { period: "one", subject: 5 },
-        { period: "two", subject: null },
-        { period: "three", subject: 3 },
-      ],
-    },
-    {
-      day: "thursday",
-      slots: [
-        { period: "one", subject: 0 },
-        { period: "two", subject: 3 },
-        { period: "three", subject: 4 },
-      ],
-    },
-    {
-      day: "friday",
-      slots: [
-        { period: "one", subject: null },
-        { period: "two", subject: 2 },
-        { period: "three", subject: 5 },
-      ],
-    },
+  const agenda = [
+    { time: "09:45", subject: "Englisch", teacher: "RUD", cancelled: false },
+    { time: "11:30", subject: "Deutsch", teacher: "Frau Bembenek", cancelled: true },
+    { time: "13:50", subject: "Seminarfach", teacher: "KLÄ", cancelled: false },
   ] as const;
 
   return (
-    <div aria-hidden className="grid grid-cols-5 gap-1.5">
-      {week.map((day) => (
-        <div className="flex flex-col gap-1.5" key={day.day}>
-          {day.slots.map((slot) =>
-            slot.subject === null ? (
-              <div className="h-9 rounded-lg bg-neutral-sec/60" key={slot.period} />
-            ) : (
-              <div
-                className="h-9 rounded-lg"
-                key={slot.period}
-                style={{ backgroundColor: subjectSamples[slot.subject]?.color }}
-              />
-            ),
-          )}
+    <div aria-hidden className="flex w-full flex-col gap-1 rounded-2xl bg-surface p-4 shadow-card">
+      {agenda.map((lesson) => (
+        <div className="flex items-baseline gap-3 py-1.5" key={lesson.time}>
+          <span className="w-12 shrink-0 text-xs text-neutral tabular-nums">{lesson.time}</span>
+          <span className="min-w-0 flex-1">
+            <span className="relative inline-block">
+              <span
+                className={
+                  lesson.cancelled ? "font-bold text-danger" : "font-bold text-primary-text"
+                }
+              >
+                {lesson.subject}
+              </span>
+              {lesson.cancelled ? (
+                // Its own element rather than `line-through`, because a text decoration cannot be
+                // drawn across; a scaled bar can.
+                <span className="draw-strike absolute inset-x-0 top-1/2 h-0.5 origin-left bg-danger" />
+              ) : null}
+            </span>
+            {lesson.cancelled ? (
+              <span className="fade-late ml-2 text-sm font-bold text-danger">(Entfall)</span>
+            ) : null}
+            <span className="block text-xs text-ink-soft">{lesson.teacher}</span>
+          </span>
         </div>
       ))}
     </div>
@@ -80,12 +56,12 @@ export const SchedulePreview = () => {
 export const GradePreview = () => (
   <div aria-hidden className="rounded-2xl bg-surface p-5 shadow-card">
     <div className="flex items-baseline gap-2">
-      <span className="text-4xl font-bold text-ink">12</span>
+      <span className="tick-in inline-block text-4xl font-bold text-ink tabular-nums">12</span>
       <span className="text-xl font-bold text-ink-soft">Punkte</span>
     </div>
     <p className="mt-0.5 text-sm text-ink-soft">mündlich · Stand 16.05.</p>
     <p className="mt-3 flex items-center gap-1.5 text-sm font-bold text-primary-text">
-      <span className="grid size-4 place-items-center rounded-full bg-primary text-[0.6rem] text-white">
+      <span className="tick-in grid size-4 place-items-center rounded-full bg-primary text-[0.6rem] text-white">
         ✓
       </span>
       Bestätigt
@@ -141,7 +117,7 @@ export const TaskPreview = () => (
         <span
           className={
             task.done
-              ? "grid size-5 shrink-0 place-items-center rounded-md bg-primary text-[0.65rem] text-white"
+              ? "tick-in grid size-5 shrink-0 place-items-center rounded-md bg-primary text-[0.65rem] text-white"
               : "size-5 shrink-0 rounded-md border-2 border-neutral-sec"
           }
         >
@@ -149,7 +125,15 @@ export const TaskPreview = () => (
         </span>
         <span className="min-w-0 flex-1 text-sm">
           <span className="font-bold text-primary-text">{task.subject}</span>
-          <span className={task.done ? "text-neutral line-through" : "text-ink"}> {task.text}</span>
+          {task.done ? (
+            <span className="relative inline-block text-neutral">
+              {" "}
+              {task.text}
+              <span className="draw-strike absolute inset-x-0 top-1/2 h-px origin-left bg-neutral" />
+            </span>
+          ) : (
+            <span className="text-ink"> {task.text}</span>
+          )}
         </span>
       </div>
     ))}
