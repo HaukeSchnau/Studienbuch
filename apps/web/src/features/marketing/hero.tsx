@@ -12,9 +12,8 @@ import { EdgeBlob } from "#/domain-ui/brand/blobs.tsx";
  * running off the right edge, all on white. The page's confidence comes from the screenshot being
  * allowed to be huge and from the space around the type — not from a coloured band.
  *
- * The greeting and the underline are the two additions. "Moin!" is how the app opens every day, so
- * the site opens the same way; the underline is the swoosh reduced to a single stroke, which lets
- * the headline carry the brand without a band behind it.
+ * The underline is the addition: the swoosh reduced to a single stroke, which lets the headline
+ * carry the brand without a coloured band behind it.
  *
  * The explicit row/column placement reproduces the legacy grid areas, including the detail that
  * makes them work: the headline sits at the bottom of its row and the download prompt at the top of
@@ -47,10 +46,9 @@ export const Hero = () => (
         <div className="flex items-center gap-5 sm:gap-8">
           <AppIcon size="lg" />
           <div>
-            <p className="enter text-xl font-bold text-primary sm:text-2xl">Moin!</p>
-            <h1 className="mt-1 text-4xl/[1.35] text-primary-text sm:text-5xl/[1.35] lg:text-6xl/[1.35]">
-              <span className="enter-late block">Das digitale</span>
-              <span className="enter-later block">
+            <h1 className="text-4xl/[1.35] text-primary-text sm:text-5xl/[1.35] lg:text-6xl/[1.35]">
+              <span className="enter block">Das digitale</span>
+              <span className="enter-late block">
                 <Underlined>Studienbuch</Underlined>
               </span>
             </h1>
