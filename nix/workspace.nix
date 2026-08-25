@@ -73,9 +73,6 @@ let
     runtimeInputs = [
       pkgs.coreutils
       pkgs.findutils
-      pkgs.gcc
-      pkgs.gnumake
-      pkgs.python3
       pnpm
     ];
     text = ''
@@ -87,6 +84,7 @@ let
 
       dependency_key=$(
         {
+          printf '%s\n' development-runtime-v2
           sha256sum flake.lock ${lib.escapeShellArgs workspaceSources.dependencyInputPaths}
           if [[ -d patches ]]; then
             find patches -type f -print0 \
@@ -102,7 +100,9 @@ let
         exit 0
       fi
 
-      pnpm install --frozen-lockfile
+      # Development invokes the app CLIs directly. Package lifecycle programs belong to the full
+      # developer/CI install and include QA-only native builds that the running apps do not use.
+      pnpm install --frozen-lockfile --ignore-scripts
       install -d -m 0700 "$preparation_state"
       printf '%s\n' "$dependency_key" > "$stamp_file.next"
       mv "$stamp_file.next" "$stamp_file"

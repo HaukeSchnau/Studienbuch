@@ -1,6 +1,6 @@
 { pkgs, workspace }:
 let
-  inherit (workspace.toolchain) pnpm;
+  inherit (workspace.toolchain) nodejs;
 
   databaseAction = pkgs.writeShellApplication {
     name = "studienbuch-database-action";
@@ -32,7 +32,7 @@ let
     runtimeInputs = [
       pkgs.coreutils
       pkgs.postgresql_17
-      pnpm
+      nodejs
     ];
     text = ''
       checkout="$(project-context path checkout)"
@@ -49,7 +49,7 @@ let
       pg_isready --quiet --host="$database_host" --port="$database_port"
 
       cd "$checkout/packages/server"
-      exec "$checkout/node_modules/.bin/vp" run db:migrate
+      exec node "$checkout/packages/server/node_modules/drizzle-kit/bin.cjs" migrate
     '';
   };
 in
