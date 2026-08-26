@@ -15,8 +15,11 @@ import {
   type TimetableEntry,
   type TimetableEntryDay,
   type TimetableFilter,
-} from "webuntis-api";
-import { TimetableEntrySchema, TimetableStudentFilterItemSchema } from "webuntis-api/schemas";
+} from "@schnau/webuntis-api";
+import {
+  TimetableEntrySchema,
+  TimetableStudentFilterItemSchema,
+} from "@schnau/webuntis-api/schemas";
 import { hashSourceObservations, type SourceSnapshot } from "../importing/source-snapshot.ts";
 import { SchoolYearUnavailable } from "./directory-preview.ts";
 import type { WebUntisSchoolProfile } from "./school-profile.ts";

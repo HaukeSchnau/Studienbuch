@@ -520,6 +520,9 @@ importers:
       '@effect/sql-pg':
         specifier: 'catalog:'
         version: 4.0.0-rc.108(effect@4.0.0-rc.108)
+      '@schnau/webuntis-api':
+        specifier: 0.2.3
+        version: 0.2.3(effect@4.0.0-rc.108)
       '@stu/api':
         specifier: workspace:*
         version: link:../api
@@ -544,9 +547,6 @@ importers:
       temporal-polyfill:
         specifier: 'catalog:'
         version: 1.0.4
-      webuntis-api:
-        specifier: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.2.tgz
-        version: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.2.tgz(effect@4.0.0-rc.108)
     devDependencies:
       '@effect/platform-node':
         specifier: 4.0.0-rc.108
@@ -4195,6 +4195,12 @@ packages:
     peerDependenciesMeta:
       rollup:
         optional: true
+
+  '@schnau/webuntis-api@0.2.3':
+    resolution: {integrity: sha512-0GhRPV6kwng+hdMwEBZ3cwVzOmcMF1W3D80wEv+I8lZ1wgdZ/3aTLTcHmz6LGPunpoBMZUIgjloJmyLk/ch4RA==}
+    engines: {node: '>=22.12.0'}
+    peerDependencies:
+      effect: 4.0.0-rc.108
 
   '@sentry-internal/browser-utils@10.37.0':
     resolution: {integrity: sha512-rqdESYaVio9Ktz55lhUhtBsBUCF3wvvJuWia5YqoHDd+egyIfwWxITTAa0TSEyZl7283A4WNHNl0hyeEMblmfA==}
@@ -9894,13 +9900,6 @@ packages:
   webpack-virtual-modules@0.6.2:
     resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
 
-  webuntis-api@https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.2.tgz:
-    resolution: {integrity: sha512-Brn37RHPv213L+F6PnBEgt3o1nJ9JajFDilKtMSQqhviLLOHdgsT7Nx4HYG0RltWDvyHSXTsrw0DbbehdB9iSQ==, tarball: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.2.tgz}
-    version: 0.2.2
-    engines: {node: '>=22.12.0'}
-    peerDependencies:
-      effect: 4.0.0-rc.108
-
   whatwg-fetch@3.6.20:
     resolution: {integrity: sha512-EqhiFU6daOA8kpjOWTL0olhVOF3i7OrFzSYiGsEMB8GcXS+RrzauAERX65xMeNWVqxA6HXH2m69Z9LaKKdisfg==}
 
@@ -13903,6 +13902,10 @@ snapshots:
       '@types/estree': 1.0.9
       estree-walker: 2.0.2
       picomatch: 4.0.5
+
+  '@schnau/webuntis-api@0.2.3(effect@4.0.0-rc.108)':
+    dependencies:
+      effect: 4.0.0-rc.108
 
   '@sentry-internal/browser-utils@10.37.0':
     dependencies:
@@ -20800,10 +20803,6 @@ snapshots:
   webidl-conversions@8.0.1: {}
 
   webpack-virtual-modules@0.6.2: {}
-
-  webuntis-api@https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.2.tgz(effect@4.0.0-rc.108):
-    dependencies:
-      effect: 4.0.0-rc.108
 
   whatwg-fetch@3.6.20: {}
 

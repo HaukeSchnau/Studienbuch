@@ -403,8 +403,8 @@ ambiguous and 23,909 compatible adjacent-year pairs, so retaining uncertainty is
 the design rather than an edge case.
 
 The historical audit also found seven older entries with `position1: null`.
-`webuntis-api` 0.2.2 accepts that shape, and source normalization retains the distinction between
-`null` and an empty position array. The provider connection recovered and the adjacent-year audit
+`@schnau/webuntis-api` 0.2.3 accepts that shape, and source normalization retains the distinction
+between `null` and an empty position array. The provider connection recovered and the adjacent-year audit
 completed; a broader four-year comparison is not required for the current model.
 
 ### Provider-backed occurrence projection
@@ -422,8 +422,8 @@ status or time and discard the others. Raw source records retain whether each pr
 
 Subject, teacher and room claims carry their real provider identities and resolve through typed
 entity links where a domain entity exists. The live API uses `null`, not an empty string, for some
-teacher- and room-view notes, lesson text and substitution text. `webuntis-api` 0.2.2 and Core both
-preserve that distinction.
+teacher- and room-view notes, lesson text and substitution text. `@schnau/webuntis-api` 0.2.3 and
+Core both preserve that distinction.
 
 Every claim retains its provider identity. The durable server projection links that claim to the
 exact immutable source-record version that produced it. Unknown provider fields remain in the raw

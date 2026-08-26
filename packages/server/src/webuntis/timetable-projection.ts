@@ -4,7 +4,7 @@ import * as Effect from "effect/Effect";
 import * as Order from "effect/Order";
 import * as Schema from "effect/Schema";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
-import type { TimetableEntryPosition, TimetableEntryPositionResource } from "webuntis-api";
+import type { TimetableEntryPosition, TimetableEntryPositionResource } from "@schnau/webuntis-api";
 import { PlainDateSchema } from "@stu/core/foundation/plain-date";
 import type { TimetableObservation } from "./timetable.ts";
 

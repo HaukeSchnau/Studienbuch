@@ -9,7 +9,7 @@ import {
   type SchoolyearsClient,
   type TimetableClient,
   type Schoolyear,
-} from "webuntis-api";
+} from "@schnau/webuntis-api";
 import { Database } from "../database/client.ts";
 import { SourceObservationStore } from "../importing/source-observation-store.ts";
 import { CourseProjectionStore } from "../organization/course-projection-store.ts";

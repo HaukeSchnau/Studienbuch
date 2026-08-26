@@ -8,7 +8,7 @@ import type {
   TimetableEntry,
   TimetableEntryDay,
   TimetableEntryPositionResource,
-} from "webuntis-api";
+} from "@schnau/webuntis-api";
 import {
   makeTimetableImportPlan,
   projectTimetableOccurrences,

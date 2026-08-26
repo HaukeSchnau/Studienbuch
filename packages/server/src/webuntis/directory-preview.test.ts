@@ -6,7 +6,7 @@ import type {
   Schoolyear,
   TimetableFilter,
   TimetableResourceType,
-} from "webuntis-api";
+} from "@schnau/webuntis-api";
 import { summarizeDirectoryInventory } from "./directory-preview.ts";
 import { makeDirectorySnapshot } from "./directory-snapshot.ts";
 

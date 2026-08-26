@@ -1,6 +1,6 @@
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
-import type { DisplayResource } from "webuntis-api";
+import type { DisplayResource } from "@schnau/webuntis-api";
 import { hashSourceObservations } from "../importing/source-snapshot.ts";
 import {
   collectDirectoryResources,

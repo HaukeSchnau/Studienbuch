@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import * as Duration from "effect/Duration";
-import type { Schoolyear } from "webuntis-api";
+import type { Schoolyear } from "@schnau/webuntis-api";
 import { defaultPolicy, pollingWindows, type Policy } from "./polling-policy.ts";
 
 const academicYear: Schoolyear = {

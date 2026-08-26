@@ -18,8 +18,8 @@ import {
   type TimetableEntryPosition,
   type TimetableFilter,
   type TimetableResourceType,
-} from "webuntis-api";
-import { TimetableEntrySchema } from "webuntis-api/schemas";
+} from "@schnau/webuntis-api";
+import { TimetableEntrySchema } from "@schnau/webuntis-api/schemas";
 import { hashSourceObservations, type SourceSnapshot } from "../importing/source-snapshot.ts";
 import {
   makeCourseIdentityAudit,

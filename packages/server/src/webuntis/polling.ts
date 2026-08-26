@@ -9,7 +9,7 @@ import * as Metric from "effect/Metric";
 import * as Ref from "effect/Ref";
 import * as Schedule from "effect/Schedule";
 import * as Semaphore from "effect/Semaphore";
-import type { Schoolyear } from "webuntis-api";
+import type { Schoolyear } from "@schnau/webuntis-api";
 import { WebUntisImporter } from "./importer.ts";
 import { defaultPolicy, pollingWindows, type Policy, type PollingRange } from "./polling-policy.ts";
 
