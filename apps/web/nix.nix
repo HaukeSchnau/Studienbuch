@@ -15,6 +15,7 @@ let
   };
   applicationPath = "${application.installRoot}/${application.relativePath}";
   pnpmWorkspaces = [
+    "@stu/api"
     "@stu/console"
     application.workspaceName
     "@stu/core"
@@ -34,7 +35,7 @@ let
     cp pnpm-lock.web.yaml pnpm-lock.yaml
     cp nix/web-pnpmfile.cjs .pnpmfile.cjs
     yq -y -i \
-      '.packages = ["apps/console", "apps/web", "packages/core", "packages/observability", "packages/server"]
+      '.packages = ["apps/console", "apps/web", "packages/api", "packages/core", "packages/observability", "packages/server"]
        | .autoInstallPeers = false
        | .resolvePeersFromWorkspaceRoot = false' \
       pnpm-workspace.yaml
@@ -45,7 +46,7 @@ let
   # after running `just web-lock` for relevant workspace manifest or primary lock changes.
   pnpmDependencyHash =
     if isProductionPlatform then
-      "sha256-o1GaA8witSmoraKlwoirZwtFF2t8gJwho7QAZ08u87U="
+      "sha256-BHEv5MKR4oPTTxK75Ti4mV11w5oiZjrLtwx3woRjsAI="
     else
       # Nixpkgs' forced fetch is platform-independent; keep it for supported development systems.
       "sha256-6PaVJIdZn4NTtFVrN/CFtrLXT5msU7amWKSus01gBmc=";

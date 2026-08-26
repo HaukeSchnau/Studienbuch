@@ -4,7 +4,7 @@ import { Auth, Database, EnquiryNotifier } from "@stu/server";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
-import { authOptions } from "#/infra/auth/better-auth.ts";
+import { authOptions } from "#/infra/auth/options.server.ts";
 import { AuthEmail } from "#/infra/email/auth-email.server.ts";
 import { AccessRpcEndpoint } from "#/features/auth/rpc.server.ts";
 import { EnrollmentRateLimiter } from "#/infra/http/rate-limit.server.ts";

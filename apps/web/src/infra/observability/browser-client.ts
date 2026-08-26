@@ -12,6 +12,9 @@ import {
   screenNames,
 } from "@stu/observability/browser";
 import * as Option from "effect/Option";
+import { installBrowserTelemetryFetch, type BrowserFetch } from "./browser-fetch.ts";
+
+export type { BrowserFetch } from "./browser-fetch.ts";
 
 const telemetryPath = "/api/observability/v1/telemetry";
 const defaultMaximumRecords = 48;
@@ -25,8 +28,6 @@ interface KnownRouteAttribute {
 interface ScreenAttribute {
   readonly "screen.name"?: (typeof screenNames)[number];
 }
-
-export type BrowserFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
 export interface BrowserTelemetryEnvironment {
   readonly origin: string;
@@ -377,6 +378,7 @@ export function browserTelemetry(identity: {
 
 export function installBrowserTelemetryLifecycle(client: BrowserTelemetryClient): () => void {
   if (lifecycleGlobal[lifecycleKey] !== undefined) return () => undefined;
+  const removeTelemetryFetch = installBrowserTelemetryFetch(client.fetch);
   const flushWithBeacon = () => void client.flush({ preferBeacon: true });
   const onVisibilityChange = () => {
     if (document.visibilityState === "hidden") flushWithBeacon();
@@ -389,6 +391,7 @@ export function installBrowserTelemetryLifecycle(client: BrowserTelemetryClient)
     window.removeEventListener("pagehide", flushWithBeacon);
     window.removeEventListener("online", onOnline);
     document.removeEventListener("visibilitychange", onVisibilityChange);
+    removeTelemetryFetch();
     if (lifecycleGlobal[lifecycleKey] === remove) delete lifecycleGlobal[lifecycleKey];
   };
   lifecycleGlobal[lifecycleKey] = remove;
