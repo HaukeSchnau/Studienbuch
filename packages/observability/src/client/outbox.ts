@@ -245,7 +245,13 @@ export const makeTelemetryOutbox = (
     const clock = yield* Clock.Clock;
     const random = yield* Random.Random;
     const serialized = yield* Semaphore.make(1);
-    const stored = yield* storage.read;
+    const stored = yield* storage.read.pipe(
+      Effect.catchTag("TelemetryStorageError", (error) =>
+        Effect.logWarning(
+          "Telemetry storage could not be read; starting with an empty outbox",
+        ).pipe(Effect.annotateLogs({ operation: error.operation }), Effect.as(undefined)),
+      ),
+    );
     const now = yield* clock.currentTimeMillis;
     const loaded = pruneExpired(decodeSnapshot(stored), now, options.maxAgeMs ?? OUTBOX_MAX_AGE_MS);
     if (loaded.changed || (stored !== undefined && stored !== JSON.stringify(loaded.snapshot))) {

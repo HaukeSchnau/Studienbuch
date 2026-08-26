@@ -1,8 +1,16 @@
+import { useAtom } from "@effect/atom-react";
+import { Organization } from "@stu/core/organization";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import * as Cause from "effect/Cause";
+import * as Exit from "effect/Exit";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { completeReservation } from "#/features/auth/access.ts";
-import { accessErrorCodes, type AccessErrorCode } from "#/features/auth/access.ts";
+import {
+  accountReactivity,
+  completeReservationMutation,
+  reservationReactivity,
+} from "#/features/auth/access.ts";
 import {
   AuthError,
   AuthHeading,
@@ -10,13 +18,13 @@ import {
   authNoteLinkClass,
   AuthShell,
 } from "#/features/auth/auth-shell.tsx";
-import { accessMessage } from "#/features/auth/messages.ts";
+import { accessMessage, type AccessFailure } from "#/features/auth/messages.ts";
 import { authClient } from "#/infra/auth/client.ts";
 import { Button } from "#/ui/button.tsx";
 
-const Search = Schema.Struct({ reservation: Schema.String });
+const Search = Schema.Struct({ reservation: Organization.SchoolAccessReservationToken });
 
-export const Route = createFileRoute("/aktivieren_/abschliessen")({
+export const Route = createFileRoute("/_client/aktivieren_/abschliessen")({
   validateSearch: Schema.decodeUnknownSync(Search),
   component: CompleteActivationPage,
   head: () => ({ meta: [{ title: "Zugang wird aktiviert | Studienbuch" }] }),
@@ -29,11 +37,10 @@ export const Route = createFileRoute("/aktivieren_/abschliessen")({
  * unverified address is here because verifying it happens in another tab: coming back and pressing
  * the button is exactly the right thing to do.
  */
-const retryableCodes = new Set<AccessErrorCode>([
-  accessErrorCodes.internalError,
-  accessErrorCodes.rateLimited,
-  accessErrorCodes.requestCancelled,
-  accessErrorCodes.emailVerificationRequired,
+const retryableTags: ReadonlySet<AccessFailure["_tag"]> = new Set([
+  "RpcClientError",
+  "AccessApi.RateLimited",
+  "SchoolAccess.EmailNotVerified",
 ]);
 
 /** What went wrong, and what the person can do about it. */
@@ -47,27 +54,37 @@ function CompleteActivationPage() {
   const { reservation } = Route.useSearch();
   const navigate = useNavigate();
   const session = authClient.useSession();
+  const [completionResult, completeReservation] = useAtom(completeReservationMutation, {
+    mode: "promiseExit",
+  });
   const attempted = useRef(false);
   const [failure, setFailure] = useState<Failure>();
 
   const redeem = useCallback(async () => {
     setFailure(undefined);
-    const result = await completeReservation(reservation);
-    if (result.ok) {
+    const result = await completeReservation({
+      payload: { token: reservation },
+      reactivityKeys: {
+        ...accountReactivity,
+        ...reservationReactivity(reservation),
+      },
+    });
+    if (Exit.isSuccess(result)) {
       await navigate({ to: "/einrichten", search: { access: result.value.id }, replace: true });
       return;
     }
+    const error = result.cause.pipe(Cause.findErrorOption, Option.getOrUndefined);
     // An access the account already holds is a success from the person's point of view: they are
     // enrolled, which is what they came here for, so send them on rather than showing an error.
-    if (result.error.code === accessErrorCodes.accessAlreadyExists) {
+    if (error?._tag === "SchoolAccess.AccessAlreadyExists") {
       await navigate({ to: "/app", replace: true });
       return;
     }
     setFailure({
-      message: accessMessage(result.error),
-      retryable: retryableCodes.has(result.error.code),
+      message: accessMessage(error),
+      retryable: error === undefined || retryableTags.has(error._tag),
     });
-  }, [navigate, reservation]);
+  }, [completeReservation, navigate, reservation]);
 
   useEffect(() => {
     if (session.isPending || session.data === null || attempted.current) return;
@@ -100,14 +117,16 @@ function CompleteActivationPage() {
         </div>
         {failure.retryable ? (
           <Button
+            aria-busy={completionResult.waiting}
             className="mt-7 w-full"
+            disabled={completionResult.waiting}
             onClick={() => void redeem()}
             radius="pill"
             size="xl"
             type="button"
             variant="brand"
           >
-            Erneut versuchen
+            {completionResult.waiting ? "Wird erneut versucht ..." : "Erneut versuchen"}
           </Button>
         ) : (
           <Button asChild className="mt-7 w-full" radius="pill" size="xl" variant="brand">

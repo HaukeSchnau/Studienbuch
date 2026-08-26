@@ -27,8 +27,8 @@ locked release.
 - Effect HTTP owns first-party client telemetry delivery. Web and mobile share request construction,
   status handling, and schema decoding while layers provide platform fetch and authentication.
   Browser teardown still uses `sendBeacon`, and the telemetry outbox remains the sole retry owner.
-- `AtomRpc` is for server-derived client state that benefits from caching, invalidation, retention,
-  or hydration. Account state is the first use. Local form fields stay in component/form state.
+- `AtomRpc` is the web app's only first-party server-state cache and mutation runtime. Local form
+  fields stay in component or form state.
 - Drizzle's Effect PostgreSQL adapter remains the persistence boundary. Raw `pg` access is limited
   to adapters whose upstream API is Promise-only or where a single conditional SQL statement is
   the actual concurrency primitive.
@@ -65,3 +65,41 @@ At React boundaries, use atoms for durable server-derived state and mutations th
 Keep ephemeral input, focus, disclosure, and animation state local. On mobile, the same rule applies
 alongside the local database: synchronized projections belong in the local-first data layer, not in
 a growing collection of remote query atoms.
+
+## Web Router and Atom lifecycle
+
+Each TanStack Router instance creates one `AtomRegistry`; React and route context receive that same
+instance. This is important for server isolation and cache identity. A route loader and its component
+must never create separate registries or parallel request caches.
+
+Route responsibilities are deliberately narrow:
+
+1. `beforeLoad` performs authentication and authorization and throws Router redirects before render.
+2. `loaderDeps` reduces validated search or path input to the identity of the requested data.
+3. `loader` awaits the relevant async atom through `AtomRegistry.getResult`. Router cancellation is
+   passed to `Effect.runPromise`, so abandoned navigation interrupts acquisition.
+4. The component reads the same atom with `useAtomSuspense`; the loader has already warmed it.
+5. `AtomRpc` mutations declare reactivity keys for every query whose server-derived answer changed.
+
+The registry's five-minute idle TTL controls disposal after an atom loses its last subscriber. It is
+not a freshness interval and does not poll. Freshness comes from successful mutations and explicit
+authorization refreshes. Named reactivity domains such as `account` and `reservation` describe what
+changed; request payloads and atom-family arguments continue to define query identity.
+
+Authentication and product routes live under the pathless `_client` route and have SSR disabled.
+Public marketing and legal routes retain SSR. This avoids running session-bound application reads on
+the server while preserving useful server-rendered documents.
+
+Use `useEffect` only when React must synchronize with something outside React and no dedicated
+subscription primitive exists. Browser stores use `useSyncExternalStore`; route acquisition and
+redirects use Router lifecycle; values computable from props, state, or constants are derived during
+render.
+
+The remaining web effects each synchronize with an external lifecycle:
+
+- the site header observes section intersection;
+- pointer spot, pointer tilt, and the subject strip subscribe to browser animation or input;
+- client observability owns Sentry loading and telemetry subscriptions;
+- the app shell persists the selected context to browser storage;
+- access completion redeems only after an authenticated component mounts, keeping mutations out of
+  Router's intent-preload lifecycle.

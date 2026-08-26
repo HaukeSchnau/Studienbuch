@@ -1,8 +1,9 @@
+import { useAtomSuspense } from "@effect/atom-react";
 import { Organization } from "@stu/core/organization";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, type ErrorComponentProps } from "@tanstack/react-router";
 import * as Schema from "effect/Schema";
-import { useEffect, useState } from "react";
-import { inspectReservation, type ReservationView } from "#/features/auth/access.ts";
+import { useState } from "react";
+import { reservationAtom } from "#/features/auth/access.ts";
 import {
   AuthDone,
   AuthError,
@@ -15,56 +16,72 @@ import {
   submitState,
   Working,
 } from "#/features/auth/auth-shell.tsx";
-import { accessMessage, betterAuthMessage } from "#/features/auth/messages.ts";
+import { accessMessage, betterAuthMessage, isAccessFailure } from "#/features/auth/messages.ts";
+import { ErrorState } from "#/features/errors/error-states.tsx";
 import { authClient } from "#/infra/auth/client.ts";
+import { getAtomResult } from "#/infra/effect-atom/loader.ts";
 import { Button } from "#/ui/button.tsx";
 import { Input } from "#/ui/input.tsx";
 
-const Search = Schema.Struct({ reservation: Schema.String });
+const Search = Schema.Struct({ reservation: Organization.SchoolAccessReservationToken });
+const validateSearch = Schema.decodeUnknownSync(Search);
 
-export const Route = createFileRoute("/registrieren")({
-  validateSearch: Schema.decodeUnknownSync(Search),
+export const Route = createFileRoute("/_client/registrieren")({
+  validateSearch,
+  loaderDeps: ({ search }) => ({ reservation: search.reservation }),
+  loader: async ({ context, deps, abortController }) => {
+    await getAtomResult(
+      context.atomRegistry,
+      reservationAtom(deps.reservation),
+      abortController.signal,
+    );
+  },
   component: RegisterPage,
+  errorComponent: RegistrationError,
   head: () => ({ meta: [{ title: "Konto erstellen | Studienbuch" }] }),
 });
 
-/** What the page knows about the reservation it was sent here with. */
-type Reservation =
-  | { readonly state: "pending" }
-  | { readonly state: "ready"; readonly view: ReservationView }
-  | { readonly state: "unavailable"; readonly message: string };
+function RegistrationError({ error, reset }: ErrorComponentProps) {
+  if (!isAccessFailure(error) || error._tag === "RpcClientError") {
+    return <ErrorState reset={reset} />;
+  }
+
+  return (
+    <AuthShell>
+      <AuthHeading>
+        {error._tag === "SchoolAccess.ReservationUnavailable"
+          ? "Nicht mehr vorgemerkt"
+          : "Das hat nicht geklappt"}
+      </AuthHeading>
+      <p className="enter-later mt-4 text-center text-ink-soft">{accessMessage(error)}</p>
+      <Button asChild className="mt-7 w-full" radius="pill" size="xl" variant="brand">
+        <Link to="/aktivieren">Zugangscode eingeben</Link>
+      </Button>
+      <AuthNote>
+        Schon ein Konto?{" "}
+        <Link className={authNoteLinkClass} search={{}} to="/anmelden">
+          Anmelden
+        </Link>
+      </AuthNote>
+    </AuthShell>
+  );
+}
 
 function RegisterPage() {
   const { reservation } = Route.useSearch();
-  const [claim, setClaim] = useState<Reservation>({ state: "pending" });
+  const claim = useAtomSuspense(reservationAtom(reservation)).value;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string>();
   const [sentTo, setSentTo] = useState<string>();
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    let current = true;
-    void inspectReservation(reservation).then((result) => {
-      if (!current) return;
-      setClaim(
-        result.ok
-          ? { state: "ready", view: result.value }
-          : { state: "unavailable", message: accessMessage(result.error) },
-      );
-    });
-    return () => {
-      current = false;
-    };
-  }, [reservation]);
-
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setBusy(true);
     setError(undefined);
     const callbackPath = `/aktivieren/abschliessen?reservation=${encodeURIComponent(reservation)}`;
-    // Sent because the endpoint requires it, and overwritten by the server with this same value:
-    // a person's real name belongs to the school profile they author, never to the global account.
+    // Better Auth requires a global name. The school profile remains the only user-authored name.
     const result = await authClient.signUp.email(
       {
         name: Organization.neutralAccountName,
@@ -94,8 +111,6 @@ function RegisterPage() {
           Wir haben einen Bestätigungslink an <span className="text-ink">{sentTo}</span> geschickt.
           Danach schließen wir die Aktivierung ab.
         </AuthDone>
-        {/* The address is worth being able to correct: a link sent to a mistyped address never
-            arrives, and nothing else on this screen would ever tell the user why. */}
         <Button
           className="mt-7 w-full"
           onClick={() => {
@@ -112,31 +127,11 @@ function RegisterPage() {
     );
   }
 
-  if (claim.state === "unavailable") {
-    return (
-      <AuthShell>
-        <AuthHeading>Nicht mehr vorgemerkt</AuthHeading>
-        <p className="enter-later mt-4 text-center text-ink-soft">{claim.message}</p>
-        <Button asChild className="mt-7 w-full" radius="pill" size="xl" variant="brand">
-          <Link to="/aktivieren">Zugangscode eingeben</Link>
-        </Button>
-        <AuthNote>
-          Schon ein Konto?{" "}
-          <Link className={authNoteLinkClass} search={{}} to="/anmelden">
-            Anmelden
-          </Link>
-        </AuthNote>
-      </AuthShell>
-    );
-  }
-
   return (
     <AuthShell>
       <AuthHeading>Konto erstellen</AuthHeading>
-      <p aria-live="polite" className="enter-later mt-4 text-center text-ink-soft">
-        {claim.state === "pending"
-          ? "Wir prüfen deinen Zugangscode ..."
-          : `${claim.view.school.name}, ${claim.view.kind === "Student" ? "Schülerzugang" : "Lehrerzugang"}`}
+      <p className="enter-later mt-4 text-center text-ink-soft">
+        {claim.school.name}, {claim.kind === "Student" ? "Schülerzugang" : "Lehrerzugang"}
       </p>
       <form className="mt-7 grid gap-4" onSubmit={submit}>
         <Field label="E-Mail-Adresse">
@@ -167,7 +162,6 @@ function RegisterPage() {
           type="submit"
           variant="brand"
           {...submitState({ busy, error })}
-          disabled={busy || claim.state === "pending"}
         >
           {busy ? <Working>Konto wird erstellt ...</Working> : "Konto erstellen"}
         </Button>

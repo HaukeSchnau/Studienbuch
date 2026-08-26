@@ -22,7 +22,7 @@ const Search = Schema.Struct({
   error: Schema.optional(Schema.String),
 });
 
-export const Route = createFileRoute("/passwort-zuruecksetzen")({
+export const Route = createFileRoute("/_client/passwort-zuruecksetzen")({
   validateSearch: Schema.decodeUnknownSync(Search),
   component: ResetPasswordPage,
   head: () => ({ meta: [{ title: "Neues Passwort | Studienbuch" }] }),

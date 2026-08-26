@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { getRandomBytes } from "expo-crypto";
 import * as Network from "expo-network";
 import { AppState, Platform } from "react-native";
 import {
@@ -161,9 +162,9 @@ function makeTelemetryRuntime(endpoint: string, sessionCookie: TelemetrySessionC
 }
 
 function randomHex(byteLength: number): string {
-  return Array.from({ length: byteLength * 2 }, () =>
-    Math.floor(Math.random() * 16).toString(16),
-  ).join("");
+  return Array.from(getRandomBytes(byteLength), (byte) => byte.toString(16).padStart(2, "0")).join(
+    "",
+  );
 }
 
 function enqueueCanary(runtime: ReturnType<typeof makeTelemetryRuntime>) {

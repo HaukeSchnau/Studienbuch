@@ -16,7 +16,7 @@ import { authClient } from "#/infra/auth/client.ts";
 import { Button } from "#/ui/button.tsx";
 import { Input } from "#/ui/input.tsx";
 
-export const Route = createFileRoute("/passwort-vergessen")({
+export const Route = createFileRoute("/_client/passwort-vergessen")({
   component: ForgotPasswordPage,
   head: () => ({ meta: [{ title: "Passwort vergessen | Studienbuch" }] }),
 });

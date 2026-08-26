@@ -62,3 +62,9 @@ export const findContext = (
     ? undefined
     : contexts.find((context) => Organization.sameContext(context.ref, ref));
 };
+
+/** Chooses the remembered context when it is still valid, then the stable first context. */
+export const defaultContext = (
+  contexts: ReadonlyArray<ShellContext>,
+  rememberedSegments: ReadonlyArray<string>,
+) => findContext(contexts, rememberedSegments) ?? contexts.at(0);

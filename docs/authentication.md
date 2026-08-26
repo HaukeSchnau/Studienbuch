@@ -50,8 +50,11 @@ could all pass the read before any one of them increments the counter.
 Better Auth continues to own its standard `/api/auth/*` HTTP endpoints. Studienbuch's first-party
 web and mobile clients use the shared Effect RPC group in `@stu/api` for product operations. The
 group owns payload, success, and expected-error schemas; the server supplies handlers and
-middleware, while each client supplies its transport. The web client currently uses JSON over
-`/api/rpc`, and its account read is an `AtomRpc` query.
+middleware, while each client supplies its transport. The web client uses JSON over `/api/rpc`.
+Account and reservation reads are `AtomRpc` queries; enrollment and enquiry writes are `AtomRpc`
+mutations. Authentication and authorization checks run in TanStack Router `beforeLoad`, while route
+loaders warm the same registry read by React. Successful Better Auth session changes refresh the
+account atom and invalidate Router so guards are evaluated against the new identity.
 
 This is deliberately not a promise that every future endpoint is RPC. Public webhooks, downloads,
 redirects, third-party integrations, and any API whose HTTP/OpenAPI surface is itself a product

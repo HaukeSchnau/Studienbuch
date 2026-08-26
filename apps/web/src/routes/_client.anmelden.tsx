@@ -1,3 +1,4 @@
+import { Organization } from "@stu/core/organization";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import * as Schema from "effect/Schema";
 import { useState } from "react";
@@ -13,13 +14,16 @@ import {
   Working,
 } from "#/features/auth/auth-shell.tsx";
 import { betterAuthMessage } from "#/features/auth/messages.ts";
+import { useRefreshAuthorization } from "#/features/auth/use-refresh-authorization.ts";
 import { authClient } from "#/infra/auth/client.ts";
 import { Button } from "#/ui/button.tsx";
 import { Input } from "#/ui/input.tsx";
 
-const Search = Schema.Struct({ reservation: Schema.optional(Schema.String) });
+const Search = Schema.Struct({
+  reservation: Schema.optional(Organization.SchoolAccessReservationToken),
+});
 
-export const Route = createFileRoute("/anmelden")({
+export const Route = createFileRoute("/_client/anmelden")({
   validateSearch: Schema.decodeUnknownSync(Search),
   component: SignInPage,
   head: () => ({ meta: [{ title: "Anmelden | Studienbuch" }] }),
@@ -28,6 +32,7 @@ export const Route = createFileRoute("/anmelden")({
 function SignInPage() {
   const { reservation } = Route.useSearch();
   const navigate = useNavigate();
+  const refreshAuthorization = useRefreshAuthorization();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string>();
@@ -63,6 +68,7 @@ function SignInPage() {
       );
       return;
     }
+    await refreshAuthorization();
     await arrive();
   };
 
@@ -73,6 +79,7 @@ function SignInPage() {
       setError(betterAuthMessage(result.error, "Der Passkey konnte nicht verwendet werden."));
       return;
     }
+    await refreshAuthorization();
     await arrive();
   };
 

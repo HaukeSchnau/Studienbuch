@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { DestinationPage, NothingHereYet } from "#/domain-ui/shell/destination-page.tsx";
 
-export const Route = createFileRoute("/app/operator/schulen")({
+export const Route = createFileRoute("/_client/app/operator/schulen")({
   component: SchoolsPage,
   head: () => ({ meta: [{ title: "Schulen | Studienbuch" }] }),
 });

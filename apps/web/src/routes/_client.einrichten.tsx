@@ -1,8 +1,12 @@
+import { useAtom } from "@effect/atom-react";
 import { Organization } from "@stu/core/organization";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import * as Cause from "effect/Cause";
+import * as Exit from "effect/Exit";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import { useState } from "react";
-import { saveProfile } from "#/features/auth/access.ts";
+import { accountReactivity, saveProfileMutation } from "#/features/auth/access.ts";
 import {
   AuthError,
   AuthHeading,
@@ -16,9 +20,9 @@ import { accessMessage } from "#/features/auth/messages.ts";
 import { Button } from "#/ui/button.tsx";
 import { Input } from "#/ui/input.tsx";
 
-const Search = Schema.Struct({ access: Schema.String });
+const Search = Schema.Struct({ access: Organization.SchoolAccessId });
 
-export const Route = createFileRoute("/einrichten")({
+export const Route = createFileRoute("/_client/einrichten")({
   validateSearch: Schema.decodeUnknownSync(Search),
   component: SetupPage,
   head: () => ({ meta: [{ title: "Profil einrichten | Studienbuch" }] }),
@@ -27,20 +31,33 @@ export const Route = createFileRoute("/einrichten")({
 function SetupPage() {
   const { access } = Route.useSearch();
   const navigate = useNavigate();
+  const [saveResult, saveProfile] = useAtom(saveProfileMutation, { mode: "promiseExit" });
   const [displayName, setDisplayName] = useState("");
   const [cohort, setCohort] = useState("");
   const [className, setClassName] = useState("");
   const [error, setError] = useState<string>();
-  const [busy, setBusy] = useState(false);
+  const busy = saveResult.waiting;
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setBusy(true);
     setError(undefined);
-    const saved = await saveProfile({ schoolAccessId: access, displayName, cohort, className });
-    if (!saved.ok) {
-      setError(accessMessage(saved.error));
-      setBusy(false);
+    const profile = Schema.decodeExit(Organization.NotebookProfileInput)({
+      schoolAccessId: access,
+      displayName,
+      cohort,
+      className,
+    });
+    if (Exit.isFailure(profile)) {
+      setError("Diese Angaben konnten wir nicht lesen. Prüfe sie noch einmal.");
+      return;
+    }
+
+    const saved = await saveProfile({
+      payload: profile.value,
+      reactivityKeys: accountReactivity,
+    });
+    if (Exit.isFailure(saved)) {
+      setError(accessMessage(saved.cause.pipe(Cause.findErrorOption, Option.getOrUndefined)));
       return;
     }
     await navigate({ to: "/app", replace: true });
