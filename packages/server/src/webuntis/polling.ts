@@ -8,6 +8,7 @@ import * as Option from "effect/Option";
 import * as Metric from "effect/Metric";
 import * as Ref from "effect/Ref";
 import * as Schedule from "effect/Schedule";
+import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
 import type { Schoolyear } from "@schnau/webuntis-api";
 import { WebUntisImporter } from "./importer.ts";
@@ -15,6 +16,14 @@ import { defaultPolicy, pollingWindows, type Policy, type PollingRange } from ".
 
 type Trigger = "startup" | "schedule" | "directory-change" | "one-shot";
 export type Job = "directory" | "recent-and-near-timetable" | "far-timetable" | "course-rosters";
+
+const isImportAlreadyRunning = Schema.is(WebUntisImporter.ImportAlreadyRunning);
+
+const isImportAlreadyRunningCause = <E>(cause: Cause.Cause<E>) =>
+  cause.reasons.length > 0 &&
+  cause.reasons.every(
+    (reason) => Cause.isFailReason(reason) && isImportAlreadyRunning(reason.error),
+  );
 
 export const jobs = [
   "directory",
@@ -52,6 +61,7 @@ const withRetries = <A, E, R>(
     Effect.retry({
       times: policy.retryCount,
       schedule: retrySchedule(job, policy),
+      while: (error) => !isImportAlreadyRunning(error),
     }),
   );
 
@@ -61,7 +71,11 @@ const runJob = <A extends object, E, R>(
   policy: Policy,
   effect: Effect.Effect<A, E, R>,
 ): Effect.Effect<A, E, R> => {
-  const metric = (outcome: "success" | "failure", durationMillis: number, nowMillis: number) => {
+  const metric = (
+    outcome: "success" | "failure" | "skipped",
+    durationMillis: number,
+    nowMillis: number,
+  ) => {
     const attributes = { job, trigger, outcome };
     return Effect.all([
       Metric.update(Metric.withAttributes(workerJobs, attributes), 1),
@@ -91,7 +105,11 @@ const runJob = <A extends object, E, R>(
         Clock.currentTimeMillis.pipe(
           Effect.flatMap((endedAt) =>
             metric(
-              exit._tag === "Success" ? "success" : "failure",
+              exit._tag === "Success"
+                ? "success"
+                : isImportAlreadyRunningCause(exit.cause)
+                  ? "skipped"
+                  : "failure",
               Math.max(0, endedAt - startedAt),
               endedAt,
             ),
@@ -99,12 +117,19 @@ const runJob = <A extends object, E, R>(
         ),
       ),
       Effect.tapCause((cause) =>
-        Effect.logError("webuntis.poll.failed", {
-          event: "webuntis.poll.failed",
-          job,
-          trigger,
-          error_type: Cause.hasInterruptsOnly(cause) ? "interrupt" : "failure",
-        }),
+        isImportAlreadyRunningCause(cause)
+          ? Effect.logInfo("webuntis.poll.skipped", {
+              event: "webuntis.poll.skipped",
+              job,
+              trigger,
+              reason: "import-already-running",
+            })
+          : Effect.logError("webuntis.poll.failed", {
+              event: "webuntis.poll.failed",
+              job,
+              trigger,
+              error_type: Cause.hasInterruptsOnly(cause) ? "interrupt" : "failure",
+            }),
       ),
     );
   }).pipe(
@@ -239,6 +264,20 @@ export const runOnceWithPolicy = Effect.fn("WebUntis.runPollingOnceWithPolicy")(
 /** Runs one bounded polling job with the production policy and preserves failures. */
 export const runOnce = Effect.fn("WebUntis.runPollingOnce")(function* (job: Job) {
   return yield* runOnceWithPolicy(job, defaultPolicy);
+});
+
+/** Runs a scheduled one-shot and coalesces a job when another process owns its dataset lock. */
+export const runScheduledOnceWithPolicy = Effect.fn("WebUntis.runScheduledPollingOnceWithPolicy")(
+  function* (job: Job, policy: Policy) {
+    return yield* runOnceWithPolicy(job, policy).pipe(
+      Effect.catchTag("WebUntis.ImportAlreadyRunning", () => Effect.succeed(Option.none())),
+    );
+  },
+);
+
+/** Runs a scheduled one-shot with the production policy. */
+export const runScheduledOnce = Effect.fn("WebUntis.runScheduledPollingOnce")(function* (job: Job) {
+  return yield* runScheduledOnceWithPolicy(job, defaultPolicy);
 });
 
 /** Runs all current WebUntis sources now, then keeps each source on its own cadence. */

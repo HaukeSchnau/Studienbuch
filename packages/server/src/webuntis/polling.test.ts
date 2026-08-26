@@ -5,8 +5,9 @@ import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
 import { TestClock } from "effect/testing";
 import type { SchoolyearWithTimeGrid } from "@schnau/webuntis-api";
+import { Database } from "../database/client.ts";
 import { WebUntisImporter } from "./importer.ts";
-import { run, runOnce, runOnceWithPolicy } from "./polling.ts";
+import { run, runOnce, runOnceWithPolicy, runScheduledOnceWithPolicy } from "./polling.ts";
 import { defaultPolicy, type Policy } from "./polling-policy.ts";
 
 const academicYear: SchoolyearWithTimeGrid = {
@@ -134,6 +135,21 @@ describe("WebUntis polling worker", () => {
     }),
   );
 
+  it.effect("coalesces an overlapping scheduled one-shot", () =>
+    Effect.gen(function* () {
+      yield* TestClock.setTime(Date.parse("2026-08-25T10:00:00Z"));
+      const calls: Array<ImportCall> = [];
+      const timetable: WebUntisImporter.Service["Service"]["importTimetable"] = () =>
+        Effect.fail(WebUntisImporter.ImportAlreadyRunning.make({ dataset: "timetable" }));
+
+      const result = yield* runScheduledOnceWithPolicy("recent-and-near-timetable", policy).pipe(
+        Effect.provideService(WebUntisImporter.Service, service(calls, timetable)),
+      );
+
+      expect(result._tag).toBe("None");
+    }),
+  );
+
   it.effect("uses the production policy when passed directly as an Effect callback", () =>
     Effect.gen(function* () {
       yield* TestClock.setTime(Date.parse("2026-08-25T10:00:00Z"));
@@ -237,9 +253,7 @@ describe("WebUntis polling worker", () => {
         Effect.suspend(() => {
           calls.push({ dataset: "timetable", schoolYear, start, end });
           if (start === "2026-08-23" && nearAttempts++ < 2) {
-            return Effect.fail(
-              WebUntisImporter.ImportAlreadyRunning.make({ dataset: "timetable" }),
-            );
+            return Effect.fail(Database.Unavailable.make({ reason: "temporary" }));
           }
           return Effect.succeed(timetableSummary);
         });

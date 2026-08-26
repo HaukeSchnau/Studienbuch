@@ -11,6 +11,7 @@ import {
   webUntisLayer,
   withSchoolYear,
   type Schoolyear,
+  type TimetableBackEntry,
   type TimetableEntries,
   type TimetableEntry,
   type TimetableEntryDay,
@@ -24,6 +25,7 @@ import { hashSourceObservations, type SourceSnapshot } from "../importing/source
 import { SchoolYearUnavailable } from "./directory-preview.ts";
 import type { WebUntisSchoolProfile } from "./school-profile.ts";
 import {
+  classifyTimetableEntry,
   normalizeTimetableEntry,
   requestedTimetableDates,
   timetableEntryExternalId,
@@ -168,14 +170,15 @@ const addEntries = (
   day: TimetableEntryDay & { readonly resourceType: "STUDENT" },
   student: StudentFilterItem,
   location: TimetableEntryLocation,
-  entries: ReadonlyArray<TimetableEntry>,
+  entries: ReadonlyArray<TimetableEntry | TimetableBackEntry>,
 ) => {
   for (const rawEntry of entries) {
-    if (rawEntry.ids.length === 0) {
-      incrementDiagnostic(state.diagnostics, "EntryWithoutId");
+    const classified = classifyTimetableEntry(rawEntry);
+    if (classified._tag !== "Complete") {
+      incrementDiagnostic(state.diagnostics, classified._tag);
       continue;
     }
-    const entry = normalizeTimetableEntry(rawEntry);
+    const entry = normalizeTimetableEntry(classified.entry);
     const externalId = timetableEntryExternalId(day, entry);
     if (state.conflictingIdentities.has(externalId)) continue;
     const observation = StudentTimetableObservation.make({

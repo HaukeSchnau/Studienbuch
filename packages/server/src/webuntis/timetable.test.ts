@@ -176,6 +176,37 @@ describe("WebUntis timetable import", () => {
     expect(plan.snapshots[0]).toMatchObject({ completeness: "Complete", observations: [] });
   });
 
+  it("retains sparse background rows as diagnostics instead of inventing occurrences", () => {
+    const plan = makePlan(
+      inventory([
+        response([
+          timetableDay(classOne, [], {
+            backEntries: [
+              {
+                duration: { start: "08:00", end: "08:45" },
+                type: "BACKGROUND",
+                status: "REGULAR",
+                layoutStartPosition: 0,
+                layoutWidth: 1,
+                color: "#ffffff",
+                notesAll: null,
+              },
+            ],
+          }),
+          timetableDay(classTwo, [], { status: "NO_DATA" }),
+        ]),
+      ]),
+    );
+
+    expect(plan.preview.days[0]).toMatchObject({
+      completeness: "Partial",
+      occurrenceViews: 0,
+      entryLocations: { back: 1, day: 0, grid: 0 },
+      diagnostics: [{ code: "EntryWithoutId", count: 1 }],
+    });
+    expect(plan.snapshots[0]?.observations).toEqual([]);
+  });
+
   it("keeps cancellations, additional periods, and response locations in the raw payload", () => {
     const plan = makePlan(
       inventory([

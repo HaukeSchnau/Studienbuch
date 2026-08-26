@@ -7,7 +7,7 @@ import { ImporterLive, withWorkerRuntime } from "./runtime.ts";
 const PollingJob = Schema.Literals(WebUntisPolling.jobs);
 
 Schema.decodeUnknownEffect(PollingJob)(process.argv[2]).pipe(
-  Effect.flatMap(WebUntisPolling.runOnce),
+  Effect.flatMap(WebUntisPolling.runScheduledOnce),
   Effect.provide(ImporterLive),
   withWorkerRuntime,
   NodeRuntime.runMain,
