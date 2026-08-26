@@ -6,6 +6,7 @@ import * as Schema from "effect/Schema";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { describe, expect, it } from "vite-plus/test";
 import { runCanary } from "./index.ts";
+import { makeDatabaseSpanSampler } from "./otlp/layers.ts";
 import { flushOtlp, otlpProtobufLayer } from "./server.ts";
 import { otlpJsonTestLayer } from "./testing.ts";
 
@@ -86,6 +87,16 @@ const resource = {
 } as const;
 
 describe("Effect OTLP integration", () => {
+  it("keeps one representative Drizzle operation per sampling window", () => {
+    const shouldSample = makeDatabaseSpanSampler(3);
+
+    expect(shouldSample("WebUntis.poll.directory")).toBe(true);
+    expect(shouldSample("drizzle.operation")).toBe(true);
+    expect(shouldSample("drizzle.operation")).toBe(false);
+    expect(shouldSample("drizzle.operation")).toBe(false);
+    expect(shouldSample("drizzle.operation")).toBe(true);
+  });
+
   it("explicitly flushes correlated traces, logs, and metrics", async () => {
     const receiver = await startReceiver();
     expect(receiver).toBeDefined();

@@ -20,6 +20,11 @@ mobile delivery attaches the current Better Auth session cookie for each send. B
 bounded envelope and Effect HTTP delivery contract, and the relay admits only authenticated mobile
 requests or browser requests with a valid same-origin authority.
 
+Business spans are exported without sampling. Imports can execute thousands of row-oriented
+Drizzle operations, so the telemetry boundary retains one representative `drizzle.operation` and
+its child `sql.execute` span per 100 operations. Direct SQL spans remain complete. This keeps query
+shape and latency examples available without letting database mechanics hide the import workflow.
+
 ## Deployment health
 
 The release descriptor checks both application-owned endpoints:
