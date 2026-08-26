@@ -158,6 +158,12 @@ let
       export DATABASE_URL
       export NODE_OPTIONS="--import ./instrument.server.mjs''${NODE_OPTIONS:+ $NODE_OPTIONS}"
 
+      # Development telemetry stays in the local viewer unless a wrapper such as with-motel
+      # selects another OTLP sink.
+      export STUDIENBUCH_OTEL_ENABLED="''${STUDIENBUCH_OTEL_ENABLED:-true}"
+      export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:24318}"
+      export STUDIENBUCH_ENVIRONMENT="''${STUDIENBUCH_ENVIRONMENT:-development}"
+
       cd "$checkout/${application.relativePath}"
       exec node "$checkout/${application.relativePath}/node_modules/vite/dist/vite/node/cli.js" \
         --host "$web_host" \
