@@ -12,7 +12,9 @@ export const Route = createFileRoute("/_public")({ component: PublicLayout });
  */
 function PublicLayout() {
   return (
-    <div className="flex min-h-screen flex-col overflow-x-clip">
+    // `public-page` is what `styles.css` looks for to give the document the marketing page's
+    // anchor-scrolling behaviour, which the application must not inherit.
+    <div className="public-page flex min-h-screen flex-col overflow-x-clip">
       <SiteHeader />
       <main className="grow">
         <Outlet />

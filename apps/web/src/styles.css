@@ -75,7 +75,19 @@ body,
   min-height: 100%;
 }
 
-html {
+/*
+ * Scrolling behaviour belongs to the marketing pages, not to the whole document.
+ *
+ * Both rules exist for the landing page's anchor navigation: the smooth glide is the point of
+ * clicking a section link, and the padding keeps the destination clear of the floating nav pill.
+ * Applied to `html` unconditionally they also reached the application, where there is no pill to
+ * clear and where smooth scrolling only makes moving between screens feel slower than it is.
+ *
+ * Still set on `html` rather than on the layout itself, because both properties belong to the
+ * scroll container: `scroll-padding-top` on an inner element governs nothing. `:has()` is what lets
+ * the document take them only while a public page is the one mounted.
+ */
+html:has(.public-page) {
   /* The reduced-motion override for this existed long before the behaviour did. */
   scroll-behavior: smooth;
   /* Sections land clear of the floating nav rather than jammed underneath it. */

@@ -40,16 +40,19 @@ export const AuthShell = ({ children }: { readonly children: ReactNode }) => (
       <section className="enter-late rounded-card-lg bg-white p-7 shadow-card-lg sm:p-9">
         {children}
       </section>
+      {/* New tabs, because these pages live in the marketing chrome: following one in place would
+          strand somebody in the middle of the landing page with a half-typed password behind them
+          and no route back to the form. */}
       <nav
         className="enter-later mt-6 flex justify-center gap-5 text-sm text-ink-soft"
         aria-label="Rechtliches"
       >
-        <Link className="press hover:text-ink" to="/impressum">
+        <a className="press hover:text-ink" href="/impressum" rel="noopener" target="_blank">
           Impressum
-        </Link>
-        <Link className="press hover:text-ink" to="/datenschutz">
+        </a>
+        <a className="press hover:text-ink" href="/datenschutz" rel="noopener" target="_blank">
           Datenschutz
-        </Link>
+        </a>
       </nav>
     </div>
   </main>

@@ -3,13 +3,20 @@ import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/rea
 import { AsyncResult } from "effect/unstable/reactivity";
 import { useEffect, useMemo } from "react";
 import { accountAtom } from "#/features/auth/access.ts";
+import { AppErrorState, AppNotFound } from "#/domain-ui/shell/app-error-states.tsx";
 import { AppShell } from "#/domain-ui/shell/app-shell.tsx";
 import { contextsFor, findContext } from "#/domain-ui/shell/contexts.ts";
 import { ShellProvider } from "#/domain-ui/shell/shell-state.tsx";
 import { rememberContext, rememberedContext } from "#/domain-ui/shell/remembered-context.ts";
 import { Wordmark } from "#/domain-ui/brand/wordmark.tsx";
 
-export const Route = createFileRoute("/app")({ component: AppLayout });
+export const Route = createFileRoute("/app")({
+  component: AppLayout,
+  // The public site's error pages send people to the landing page, which is the wrong destination
+  // for someone already signed in. Everything below `/app` gets its own, inside the shell.
+  errorComponent: ({ reset }) => <AppErrorState reset={reset} />,
+  notFoundComponent: () => <AppNotFound />,
+});
 
 /**
  * The signed-in layout.

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { externalLinks, sectionHref, sectionIds } from "#/domain-ui/brand/links.ts";
 import { Underline } from "#/domain-ui/brand/underline.tsx";
+import { authClient } from "#/infra/auth/client.ts";
 
 const navItems = [
   { id: sectionIds.capabilities, label: "Funktionen" },
@@ -65,6 +66,30 @@ const linkClass =
   "nav-link press relative rounded-sm text-sm whitespace-nowrap focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none sm:text-base";
 
 /**
+ * The way into the product, which is a different way depending on who is looking.
+ *
+ * Someone with a live session is not a prospect: inviting them to sign in again on the page they
+ * land on from a bookmark is the most likely single moment for this header to be wrong. The session
+ * is only known after hydration, so the sizer holds the wider of the two labels and the pill keeps
+ * its width while the answer arrives — the same trick the active-link weight uses.
+ */
+const AccountLink = () => {
+  const session = authClient.useSession();
+  const signedIn = !session.isPending && session.data !== null;
+  const label = signedIn ? "Mein Studienbuch" : "Anmelden";
+
+  return (
+    <a className={linkClass} href={signedIn ? "/app" : "/anmelden"}>
+      <span className="nav-label">{label}</span>
+      <span aria-hidden className="nav-sizer">
+        Mein Studienbuch
+      </span>
+      <Underline className="nav-underline -bottom-1.5" />
+    </a>
+  );
+};
+
+/**
  * The legacy site's chrome: a single green pill, only as wide as its links, floating centred above
  * a white page.
  *
@@ -104,13 +129,7 @@ export const SiteHeader = () => {
           </span>
           <Underline className="nav-underline -bottom-1.5" />
         </a>
-        <a className={linkClass} href="/anmelden">
-          <span className="nav-label">Anmelden</span>
-          <span aria-hidden className="nav-sizer">
-            Anmelden
-          </span>
-          <Underline className="nav-underline -bottom-1.5" />
-        </a>
+        <AccountLink />
       </nav>
     </header>
   );
