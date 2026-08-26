@@ -36,7 +36,22 @@ export const sessionAuthority: AdmissionAuthority = async (request) => {
 
 function sameOriginPrincipal(request: Request): string | undefined {
   const origin = request.headers.get("origin");
-  if (origin === null || origin !== new URL(request.url).origin) return undefined;
+  if (origin === null) return undefined;
+
+  const requestUrl = new URL(request.url);
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",", 1)[0]?.trim();
+  const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",", 1)[0]?.trim();
+  const host = forwardedHost ?? request.headers.get("host") ?? requestUrl.host;
+  const protocol = forwardedProtocol ?? requestUrl.protocol.slice(0, -1);
+  if (protocol !== "http" && protocol !== "https") return undefined;
+
+  let publicOrigin: string;
+  try {
+    publicOrigin = new URL(`${protocol}://${host}`).origin;
+  } catch {
+    return undefined;
+  }
+  if (origin !== publicOrigin) return undefined;
   // Browsers on one origin are indistinguishable to us without a session, so they share a bucket
   // keyed by the forwarded client address where a proxy supplies one.
   return `origin:${origin}:${forwardedClientPrincipal(request)}`;

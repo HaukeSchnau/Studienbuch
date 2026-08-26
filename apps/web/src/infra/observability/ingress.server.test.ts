@@ -78,6 +78,44 @@ describe("public telemetry ingress", () => {
     expect(ingest).toHaveBeenCalledOnce();
   });
 
+  it("accepts the public browser origin when a trusted proxy terminates TLS", async () => {
+    const { handler, ingest } = fixture();
+    const proxiedRequest = new Request(`http://127.0.0.1:18204${telemetryRoute}`, {
+      method: "POST",
+      body: JSON.stringify(validEnvelope),
+      headers: {
+        origin: "https://studienbuch.test",
+        "content-type": "application/json",
+        "x-forwarded-host": "studienbuch.test",
+        "x-forwarded-proto": "https",
+      },
+    });
+
+    const response = await handler(proxiedRequest);
+
+    expect(response.status).toBe(202);
+    expect(ingest).toHaveBeenCalledOnce();
+  });
+
+  it("rejects a browser origin that does not match the proxy-facing origin", async () => {
+    const { handler, ingest } = fixture();
+    const proxiedRequest = new Request(`http://127.0.0.1:18204${telemetryRoute}`, {
+      method: "POST",
+      body: JSON.stringify(validEnvelope),
+      headers: {
+        origin: "https://attacker.test",
+        "content-type": "application/json",
+        "x-forwarded-host": "studienbuch.test",
+        "x-forwarded-proto": "https",
+      },
+    });
+
+    const response = await handler(proxiedRequest);
+
+    expect(response.status).toBe(403);
+    expect(ingest).not.toHaveBeenCalled();
+  });
+
   it("admits a native client on its session, which sends no Origin header", async () => {
     const { handler, ingest } = fixture({ userId: "user-1" });
     const response = await handler(nativeRequest());
