@@ -11,6 +11,7 @@ import { igsLilienthalProfile } from "./school-profile.ts";
 import {
   makeStudentTimetableImportPlan,
   projectCourseRosterObservations,
+  studentTimetableEntryRequests,
   type StudentTimetableInventory,
 } from "./student-timetable.ts";
 
@@ -109,6 +110,29 @@ const inventory = (responses: ReadonlyArray<TimetableEntries>): StudentTimetable
 });
 
 describe("WebUntis student timetable import", () => {
+  it("bounds entry requests by students and dates", () => {
+    const studentIds = Array.from({ length: 1_001 }, (_, index) => index + 1);
+    const dates = Array.from(
+      { length: 15 },
+      (_, index) => `2026-09-${String(index + 1).padStart(2, "0")}`,
+    );
+
+    const requests = studentTimetableEntryRequests(studentIds, dates);
+
+    expect(requests).toHaveLength(9);
+    expect(requests.map(({ start, end, resources }) => [start, end, resources.length])).toEqual([
+      ["2026-09-01", "2026-09-07", 500],
+      ["2026-09-01", "2026-09-07", 500],
+      ["2026-09-01", "2026-09-07", 1],
+      ["2026-09-08", "2026-09-14", 500],
+      ["2026-09-08", "2026-09-14", 500],
+      ["2026-09-08", "2026-09-14", 1],
+      ["2026-09-15", "2026-09-15", 500],
+      ["2026-09-15", "2026-09-15", 500],
+      ["2026-09-15", "2026-09-15", 1],
+    ]);
+  });
+
   it("stores complete private views but keeps names out of the preview", () => {
     const first = makePlan(
       inventory([response([day(bob.student, [102, 101]), day(alice.student, [102, 101])])]),
