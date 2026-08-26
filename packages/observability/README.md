@@ -48,12 +48,18 @@ type means editing this file and nothing else.
 delivery services; `Ref`, `Semaphore`, `Clock`, and `Random` own its state, serialization, time, and
 retry jitter. Platform differences stay at the layer boundary rather than producing queue copies:
 
-| Service             | Browser                            | Mobile                  |
-| ------------------- | ---------------------------------- | ----------------------- |
-| `TelemetryStorage`  | `memoryTelemetryStorage()`         | Expo document directory |
-| `TelemetryDelivery` | same-origin `fetch` + `sendBeacon` | authenticated `fetch`   |
-| Effect `Clock`      | browser clock adapter              | runtime clock           |
-| Effect `Random`     | browser randomness adapter         | runtime randomness      |
+| Service             | Browser                                    | Mobile                          |
+| ------------------- | ------------------------------------------ | ------------------------------- |
+| `TelemetryStorage`  | `memoryTelemetryStorage()`                 | Expo document directory         |
+| `TelemetryDelivery` | Effect `FetchHttpClient` plus `sendBeacon` | Effect `FetchHttpClient` + auth |
+| Effect `Clock`      | browser clock adapter                      | runtime clock                   |
+| Effect `Random`     | browser randomness adapter                 | runtime randomness              |
+
+Both clients share `makeTelemetryHttpDelivery`, which owns request construction, status handling,
+and acknowledgement decoding through Effect HTTP and `Schema`. Layers supply the platform fetch
+implementation and defaults. The browser keeps `sendBeacon` as a narrow lifecycle exception because
+page teardown cannot wait for an Effect program to finish. Retries remain exclusively in the outbox;
+the HTTP client does not retry underneath it.
 
 It guarantees: bounded memory by bytes and optionally by record count, oldest-low-priority-first
 eviction so failures survive a full queue, per-record jittered exponential backoff, age expiry,

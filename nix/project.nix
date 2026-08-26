@@ -36,6 +36,9 @@ let
       web = import ../apps/web/nix.nix {
         inherit pkgs workspace;
       };
+      worker = import ../apps/worker/nix.nix {
+        inherit pkgs workspace;
+      };
       database = import ./database.nix {
         inherit pkgs workspace;
       };
@@ -59,6 +62,8 @@ let
           migrate = database.migrationAction;
           web = web.development.action;
           mobile = mobile.development.action;
+          console = web.console.developmentAction;
+          worker = worker.development.action;
         };
       };
       projectChecks = import ./checks.nix {
@@ -71,10 +76,12 @@ let
         pkgs.python3
         pkgs.stdenv.cc
       ];
-      ciPackages = developmentPackages ++ lib.optionals isLinux [
-        pkgs.rsync
-        pkgs.util-linux
-      ];
+      ciPackages =
+        developmentPackages
+        ++ lib.optionals isLinux [
+          pkgs.rsync
+          pkgs.util-linux
+        ];
       diagramPackages = [
         atlas
         pkgs.mermaid-cli
@@ -101,12 +108,13 @@ let
               inherit pkgs descriptorPath;
               payloads = [
                 web.release.payload
-                web.release.console
               ];
               actions = {
                 web = web.release.action;
                 migrate = web.release.migrationAction;
-              };
+                console = web.console.releaseAction;
+              }
+              // web.release.maintenanceActions;
             };
           in
           {

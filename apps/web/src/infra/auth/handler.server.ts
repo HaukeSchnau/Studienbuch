@@ -1,6 +1,7 @@
-import { spanAttributes } from "@stu/observability";
+import { authRequests, spanAttributes } from "@stu/observability";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
+import * as Metric from "effect/Metric";
 import { exitFailureResponse, jsonResponse } from "#/infra/http/response.server.ts";
 import { runRouteEffect, type RouteEffectRunner } from "#/infra/runtime/request.server.ts";
 
@@ -8,11 +9,19 @@ export const authRoute = "/api/auth/*";
 
 type AuthOperation =
   | "auth.other"
+  | "auth.password_reset.complete"
+  | "auth.password_reset.request"
   | "auth.session.get"
+  | "auth.sign_out"
   | "auth.sign_in.email"
   | "auth.sign_in.passkey.challenge"
   | "auth.sign_in.passkey.verify"
-  | "auth.sign_up.email";
+  | "auth.sign_up.email"
+  | "auth.verify_email"
+  | "auth.passkey.register.challenge"
+  | "auth.passkey.register.verify"
+  | "auth.passkey.list"
+  | "auth.passkey.delete";
 
 interface AuthHandler {
   readonly handler: (request: Request) => Promise<Response>;
@@ -30,6 +39,22 @@ export function authOperation(request: Request): AuthOperation {
       return "auth.sign_in.passkey.verify";
     case "/api/auth/sign-up/email":
       return "auth.sign_up.email";
+    case "/api/auth/sign-out":
+      return "auth.sign_out";
+    case "/api/auth/request-password-reset":
+      return "auth.password_reset.request";
+    case "/api/auth/reset-password":
+      return "auth.password_reset.complete";
+    case "/api/auth/verify-email":
+      return "auth.verify_email";
+    case "/api/auth/passkey/generate-register-options":
+      return "auth.passkey.register.challenge";
+    case "/api/auth/passkey/verify-registration":
+      return "auth.passkey.register.verify";
+    case "/api/auth/passkey/list-user-passkeys":
+      return "auth.passkey.list";
+    case "/api/auth/passkey/delete-passkey":
+      return "auth.passkey.delete";
     default:
       return "auth.other";
   }
@@ -57,6 +82,13 @@ export function makeAuthRequestHandler(options?: {
         const outcome = response.ok ? "success" : "failure";
         return Effect.all([
           Effect.annotateCurrentSpan(spanAttributes({ "app.operation": operation, outcome })),
+          Metric.update(
+            Metric.withAttributes(authRequests, [
+              ["auth.operation", operation],
+              ["outcome", outcome],
+            ]),
+            1,
+          ),
           request.method === "POST"
             ? Effect.logInfo("auth.request.completed", {
                 auth_operation: operation,
@@ -68,11 +100,20 @@ export function makeAuthRequestHandler(options?: {
         ]);
       }),
       Effect.tapError(() =>
-        Effect.logError("auth.request.failed", {
-          auth_operation: operation,
-          event: "auth.request.failed",
-          outcome: "failure",
-        }),
+        Effect.all([
+          Metric.update(
+            Metric.withAttributes(authRequests, [
+              ["auth.operation", operation],
+              ["outcome", "failure"],
+            ]),
+            1,
+          ),
+          Effect.logError("auth.request.failed", {
+            auth_operation: operation,
+            event: "auth.request.failed",
+            outcome: "failure",
+          }),
+        ]),
       ),
     );
     const exit = await run(program, { request, route: authRoute });

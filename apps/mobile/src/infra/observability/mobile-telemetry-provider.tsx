@@ -10,11 +10,12 @@ import {
   type PropsWithChildren,
 } from "react";
 import {
-  TelemetryDelivery,
   TelemetryOutbox,
   TelemetryStorage,
+  clientMetricNames,
   telemetryOutboxLayer,
   type ClientTelemetryRecord,
+  type screenNames,
   type TelemetryPriority,
 } from "@stu/observability/browser";
 import * as Effect from "effect/Effect";
@@ -22,24 +23,42 @@ import * as Layer from "effect/Layer";
 import * as ManagedRuntime from "effect/ManagedRuntime";
 import { runTelemetryController, TelemetryConnectivity, TelemetryLifecycle } from "./controller";
 import { makeTelemetryFileStorage } from "./file-storage";
-import { makeFetchTelemetryTransport, type TelemetryAuthorization } from "./transport";
+import { mobileApiBaseUrl } from "~/infra/better-auth/client";
+import { telemetryTransportLayer, type TelemetrySessionCookie } from "./transport";
+
+type ScreenName = (typeof screenNames)[number];
 
 interface MobileTelemetry {
   readonly record: (
     record: ClientTelemetryRecord,
     priority?: TelemetryPriority,
   ) => Promise<boolean>;
+  readonly recordNavigation: (screen: ScreenName) => void;
+  readonly recordRender: (durationMillis: number, screen: ScreenName) => void;
 }
 
-const disabledTelemetry: MobileTelemetry = { record: async () => false };
+const disabledTelemetry: MobileTelemetry = {
+  record: async () => false,
+  recordNavigation: () => undefined,
+  recordRender: () => undefined,
+};
 const MobileTelemetryContext = createContext<MobileTelemetry>(disabledTelemetry);
 
 export interface MobileTelemetryProviderProps extends PropsWithChildren {
-  /** Must return a short-lived, user-scoped Authorization header value. */
-  readonly authorization?: TelemetryAuthorization;
+  /** Must return the current user-scoped Better Auth cookie for each delivery attempt. */
+  readonly sessionCookie?: TelemetrySessionCookie;
 }
 
-const endpoint = process.env.EXPO_PUBLIC_TELEMETRY_ENDPOINT?.trim();
+const configuredEndpoint = process.env.EXPO_PUBLIC_TELEMETRY_ENDPOINT?.trim();
+const endpoint = (() => {
+  if (configuredEndpoint && configuredEndpoint.length > 0) return configuredEndpoint;
+  if (mobileApiBaseUrl === undefined) return undefined;
+  try {
+    return new URL("/api/observability/v1/telemetry", mobileApiBaseUrl).href;
+  } catch {
+    return undefined;
+  }
+})();
 const isAllowedEndpoint = (value: string | undefined): value is string => {
   if (value === undefined || value.length === 0) return false;
   try {
@@ -56,21 +75,22 @@ const isAllowedEndpoint = (value: string | undefined): value is string => {
   }
 };
 
-export function MobileTelemetryProvider({ authorization, children }: MobileTelemetryProviderProps) {
+export function MobileTelemetryProvider({ sessionCookie, children }: MobileTelemetryProviderProps) {
   const runtime = useRef<ReturnType<typeof makeTelemetryRuntime> | undefined>(undefined);
 
   useEffect(() => {
-    // Never fall back to a public/static credential. Until the app owns an
-    // authenticated session authority, the first-party channel stays off.
-    if (!isAllowedEndpoint(endpoint) || authorization === undefined) return;
-    const activeRuntime = makeTelemetryRuntime(endpoint, authorization);
+    // Never fall back to a public/static credential. Delivery fails closed until Better Auth owns
+    // an authenticated session; the bounded queue may still retain useful pre-session startup data.
+    if (!isAllowedEndpoint(endpoint) || sessionCookie === undefined) return;
+    const activeRuntime = makeTelemetryRuntime(endpoint, sessionCookie);
     runtime.current = activeRuntime;
+    enqueueCanary(activeRuntime);
     void activeRuntime.runPromise(runTelemetryController()).catch(() => undefined);
     return () => {
       if (runtime.current === activeRuntime) runtime.current = undefined;
       void activeRuntime.dispose();
     };
-  }, [authorization]);
+  }, [sessionCookie]);
 
   const value = useMemo<MobileTelemetry>(
     () =>
@@ -83,6 +103,10 @@ export function MobileTelemetryProvider({ authorization, children }: MobileTelem
                 Effect.flatMap(TelemetryOutbox, (outbox) => outbox.enqueue(record, priority)),
               );
         },
+        recordNavigation: (screen) =>
+          enqueueTimedSpan(runtime.current, "client.navigation", "navigation", 0, screen),
+        recordRender: (durationMillis, screen) =>
+          enqueueTimedSpan(runtime.current, "client.render", "render", durationMillis, screen),
       }) satisfies MobileTelemetry,
     [],
   );
@@ -114,7 +138,7 @@ const connectivity = TelemetryConnectivity.of({
   }),
 });
 
-function makeTelemetryRuntime(endpoint: string, authorization: TelemetryAuthorization) {
+function makeTelemetryRuntime(endpoint: string, sessionCookie: TelemetrySessionCookie) {
   return ManagedRuntime.make(
     telemetryOutboxLayer({
       serviceName: "studienbuch-mobile",
@@ -124,13 +148,87 @@ function makeTelemetryRuntime(endpoint: string, authorization: TelemetryAuthoriz
     }).pipe(
       Layer.provide([
         Layer.succeed(TelemetryStorage, makeTelemetryFileStorage()),
-        Layer.succeed(TelemetryDelivery, makeFetchTelemetryTransport({ endpoint, authorization })),
+        telemetryTransportLayer({ endpoint, sessionCookie }),
       ]),
       Layer.provideMerge(
         Layer.mergeAll(
           Layer.succeed(TelemetryLifecycle, appLifecycle),
           Layer.succeed(TelemetryConnectivity, connectivity),
         ),
+      ),
+    ),
+  );
+}
+
+function randomHex(byteLength: number): string {
+  return Array.from({ length: byteLength * 2 }, () =>
+    Math.floor(Math.random() * 16).toString(16),
+  ).join("");
+}
+
+function enqueueCanary(runtime: ReturnType<typeof makeTelemetryRuntime>) {
+  const recordedAtUnixMillis = Date.now();
+  void runtime.runPromise(
+    Effect.flatMap(TelemetryOutbox, (outbox) =>
+      Effect.all([
+        outbox.enqueue(
+          {
+            type: "log",
+            event: "client.telemetry.canary",
+            severity: "info",
+            occurredAtUnixMillis: recordedAtUnixMillis,
+            attributes: { "telemetry.priority": "low" },
+          },
+          "low",
+        ),
+        outbox.enqueue(
+          {
+            type: "metric",
+            name: clientMetricNames.canaryTotal,
+            kind: "counter",
+            value: 1,
+            recordedAtUnixMillis,
+            attributes: {
+              platform:
+                Platform.OS === "android" ? "android" : Platform.OS === "web" ? "web" : "ios",
+              signal: "all",
+            },
+          },
+          "low",
+        ),
+      ]).pipe(Effect.asVoid),
+    ),
+  );
+}
+
+function enqueueTimedSpan(
+  runtime: ReturnType<typeof makeTelemetryRuntime> | undefined,
+  name: "client.navigation" | "client.render",
+  operation: "navigation" | "render",
+  durationMillis: number,
+  screen: ScreenName,
+) {
+  if (runtime === undefined) return;
+  const endedAt = Date.now();
+  void runtime.runPromise(
+    Effect.flatMap(TelemetryOutbox, (outbox) =>
+      outbox.enqueue(
+        {
+          type: "span",
+          name,
+          traceId: randomHex(16),
+          spanId: randomHex(8),
+          startedAtUnixMillis: Math.max(0, endedAt - durationMillis),
+          durationMillis: Math.max(0, durationMillis),
+          status: "ok",
+          attributes: {
+            "app.operation": operation,
+            "screen.name": screen,
+            outcome: "success",
+            "telemetry.priority": "normal",
+          },
+        },
+        "normal",
       ),
     ),
   );

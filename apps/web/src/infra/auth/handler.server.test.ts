@@ -1,5 +1,7 @@
 import * as Effect from "effect/Effect";
 import * as Logger from "effect/Logger";
+import * as Layer from "effect/Layer";
+import * as Metric from "effect/Metric";
 import { describe, expect, it, vi } from "vitest";
 import type { RouteEffectOptions, RouteEffectRunner } from "#/infra/runtime/request.server.ts";
 import { authOperation, authRoute, makeAuthRequestHandler } from "./handler.server.ts";
@@ -12,7 +14,13 @@ function fixture(response = new Response(null, { status: 204 })) {
   const calls: Array<RouteEffectOptions> = [];
   const run: RouteEffectRunner<never> = (effect, options) => {
     calls.push(options);
-    return Effect.runPromiseExit(effect.pipe(Effect.provide(Logger.layer([logger]))));
+    return Effect.runPromiseExit(
+      effect.pipe(
+        Effect.provide(
+          Layer.merge(Logger.layer([logger]), Layer.succeed(Metric.MetricRegistry, new Map())),
+        ),
+      ),
+    );
   };
   const auth = { handler: vi.fn(async () => response) };
   const handler = makeAuthRequestHandler({ resolveAuth: async () => auth, run });
@@ -26,7 +34,14 @@ describe("Better Auth telemetry boundary", () => {
     ["/api/auth/passkey/generate-authenticate-options", "auth.sign_in.passkey.challenge"],
     ["/api/auth/passkey/verify-authentication", "auth.sign_in.passkey.verify"],
     ["/api/auth/sign-up/email", "auth.sign_up.email"],
-    ["/api/auth/sign-out", "auth.other"],
+    ["/api/auth/sign-out", "auth.sign_out"],
+    ["/api/auth/request-password-reset", "auth.password_reset.request"],
+    ["/api/auth/reset-password", "auth.password_reset.complete"],
+    ["/api/auth/verify-email", "auth.verify_email"],
+    ["/api/auth/passkey/generate-register-options", "auth.passkey.register.challenge"],
+    ["/api/auth/passkey/verify-registration", "auth.passkey.register.verify"],
+    ["/api/auth/passkey/list-user-passkeys", "auth.passkey.list"],
+    ["/api/auth/passkey/delete-passkey", "auth.passkey.delete"],
   ])("normalizes %s", (pathname, operation) => {
     const request = new Request(`https://studienbuch.test${pathname}?secret=query`);
     expect(authOperation(request)).toBe(operation);

@@ -92,36 +92,29 @@ export function makeTelemetryIngressHandler(options?: {
   const run = options?.run ?? runRouteEffect;
 
   return async (request: Request): Promise<Response> => {
-    const decision = await admission.check(request);
-    if (!decision.allowed) {
-      return decision.error === "rate_limited"
-        ? rateLimitedResponse(decision)
-        : jsonResponse({ error: decision.error }, decision.status);
-    }
-
-    const body = await readBoundedBody(request);
-    if (!body.ok) {
-      return jsonResponse({ error: body.error }, body.status);
-    }
-
     const program = Effect.gen(function* () {
+      const decision = yield* Effect.promise(() => admission.check(request));
+      if (!decision.allowed) {
+        return decision.error === "rate_limited"
+          ? rateLimitedResponse(decision)
+          : jsonResponse({ error: decision.error }, decision.status);
+      }
+
+      const body = yield* Effect.promise(() => readBoundedBody(request));
+      if (!body.ok) return jsonResponse({ error: body.error }, body.status);
+
       const envelope = yield* decodeClientTelemetryEnvelope(body.value).pipe(
         Effect.mapError(() => new InvalidTelemetryEnvelope()),
       );
       const telemetry = yield* ClientTelemetry;
       yield* telemetry.ingest(envelope);
-      return envelope.records.length;
-    });
-    const exit = await run(program, { request, route: telemetryRoute });
-    if (Exit.isSuccess(exit)) {
-      // Ingestion is all-or-nothing today, so every accepted envelope acknowledges in full. The
-      // count is still reported because clients decode it to decide what to retry, and a future
-      // partial path must not need a protocol change.
       return jsonResponse(
-        { acceptedRecords: exit.value } satisfies ClientTelemetryAcknowledgement,
+        { acceptedRecords: envelope.records.length } satisfies ClientTelemetryAcknowledgement,
         202,
       );
-    }
+    });
+    const exit = await run(program, { request, route: telemetryRoute });
+    if (Exit.isSuccess(exit)) return exit.value;
 
     const failure = Cause.findErrorOption(exit.cause);
     return Option.isSome(failure) && failure.value instanceof InvalidTelemetryEnvelope

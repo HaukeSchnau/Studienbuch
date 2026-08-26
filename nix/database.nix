@@ -39,6 +39,9 @@ let
       database_host="$(project-context endpoint database listen-host)"
       database_port="$(project-context endpoint database listen-port)"
       export DATABASE_URL="postgresql://postgres@$database_host:$database_port/postgres"
+      export STUDIENBUCH_OTEL_ENABLED="''${STUDIENBUCH_OTEL_ENABLED:-true}"
+      export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:24318}"
+      export STUDIENBUCH_ENVIRONMENT="''${STUDIENBUCH_ENVIRONMENT:-development}"
 
       for _ in {1..60}; do
         if pg_isready --quiet --host="$database_host" --port="$database_port"; then
@@ -48,7 +51,7 @@ let
       done
       pg_isready --quiet --host="$database_host" --port="$database_port"
 
-      exec node "$checkout/packages/server/src/database/migrate.cli.ts"
+      exec node --import tsx "$checkout/apps/console/src/migrate.ts"
     '';
   };
 in

@@ -2,7 +2,7 @@ import {
   TelemetryOutbox,
   TelemetryDelivery,
   TelemetryStorage,
-  decodeClientTelemetryAcknowledgement,
+  makeTelemetryHttpDelivery,
   memoryTelemetryStorage,
   type ClientTelemetryEnvelope,
   type ClientTelemetryRecord,
@@ -18,8 +18,8 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as ManagedRuntime from "effect/ManagedRuntime";
-import * as Option from "effect/Option";
 import * as Random from "effect/Random";
+import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { installBrowserTelemetryFetch, type BrowserFetch } from "./browser-fetch.ts";
 
 export type { BrowserFetch } from "./browser-fetch.ts";
@@ -61,47 +61,30 @@ export interface BrowserTelemetryClient {
  * Delivers an envelope to the same-origin ingress, decoding the shared acknowledgement so partial
  * acceptance leaves the remainder queued rather than dropping it.
  */
-function browserDelivery(
-  environment: BrowserTelemetryEnvironment,
-  endpoint: string,
-): TelemetryDelivery["Service"] {
-  return TelemetryDelivery.of({
-    send: (envelope) =>
-      Effect.tryPromise(async () => {
-        const response = await environment.fetch(endpoint, {
-          method: "POST",
-          body: JSON.stringify(envelope),
-          credentials: "same-origin",
-          keepalive: true,
-          headers: { "content-type": "application/json" },
-        });
-        if (!response.ok) {
-          return {
-            status: "failed" as const,
-            reason: `ingress rejected the batch (${response.status})`,
-          };
-        }
-        const body: unknown = await response.json().catch(() => undefined);
-        const acknowledgement = decodeClientTelemetryAcknowledgement(body, {
-          onExcessProperty: "error",
-        });
-        return Option.isSome(acknowledgement)
-          ? { status: "sent" as const, accepted: acknowledgement.value.acceptedRecords }
-          : { status: "failed" as const, reason: "ingress returned an invalid acknowledgement" };
-      }).pipe(
-        Effect.catchCause(() =>
-          Effect.succeed({ status: "failed" as const, reason: "telemetry delivery failed" }),
-        ),
-      ),
-    sendBeacon:
-      environment.sendBeacon === undefined
-        ? undefined
-        : (envelope: ClientTelemetryEnvelope) =>
-            environment.sendBeacon?.(
-              endpoint,
-              new Blob([JSON.stringify(envelope)], { type: "application/json" }),
-            ) ?? false,
-  });
+function browserDeliveryLayer(environment: BrowserTelemetryEnvironment, endpoint: string) {
+  const fetchLayer = FetchHttpClient.layer.pipe(
+    Layer.provide([
+      Layer.succeed(FetchHttpClient.Fetch, environment.fetch),
+      Layer.succeed(FetchHttpClient.RequestInit, {
+        credentials: "same-origin",
+        keepalive: true,
+      }),
+    ]),
+  );
+  return Layer.effect(
+    TelemetryDelivery,
+    makeTelemetryHttpDelivery({
+      endpoint,
+      sendBeacon:
+        environment.sendBeacon === undefined
+          ? undefined
+          : (envelope: ClientTelemetryEnvelope) =>
+              environment.sendBeacon?.(
+                endpoint,
+                new Blob([JSON.stringify(envelope)], { type: "application/json" }),
+              ) ?? false,
+    }),
+  ).pipe(Layer.provide(fetchLayer));
 }
 
 export function createBrowserTelemetryClient(options: {
@@ -147,7 +130,7 @@ export function createBrowserTelemetryClient(options: {
           nextIntUnsafe: () => Math.floor(environment.random() * Number.MAX_SAFE_INTEGER),
         }),
         Layer.succeed(TelemetryStorage, memoryTelemetryStorage()),
-        Layer.succeed(TelemetryDelivery, browserDelivery(environment, endpoint)),
+        browserDeliveryLayer(environment, endpoint),
       ]),
     ),
   );
@@ -267,12 +250,15 @@ export function createBrowserTelemetryClient(options: {
       return environment.fetch(input, init);
     }
 
-    const traceId = randomHex(environment, 16);
-    const spanId = randomHex(environment, 8);
     const startedAt = environment.now();
     const headers = new Headers(input instanceof Request ? input.headers : undefined);
     new Headers(init?.headers).forEach((value, key) => headers.set(key, value));
-    headers.set("traceparent", `00-${traceId}-${spanId}-01`);
+    const incomingContext = parseTraceparent(headers.get("traceparent"));
+    const traceId = incomingContext?.traceId ?? randomHex(environment, 16);
+    const spanId = incomingContext?.spanId ?? randomHex(environment, 8);
+    if (incomingContext === undefined) {
+      headers.set("traceparent", `00-${traceId}-${spanId}-01`);
+    }
 
     const request = environment.fetch(input, { ...init, headers });
     void request.catch(() => {
@@ -373,6 +359,14 @@ function requestUrl(input: RequestInfo | URL, origin: string): URL {
 function requestMethod(input: RequestInfo | URL, init?: RequestInit): "GET" | "POST" | "other" {
   const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
   return method === "GET" || method === "POST" ? method : "other";
+}
+
+function parseTraceparent(
+  value: string | null,
+): { readonly traceId: string; readonly spanId: string } | undefined {
+  const match = /^00-([0-9a-f]{32})-([0-9a-f]{16})-[0-9a-f]{2}$/.exec(value ?? "");
+  if (match === null || match[1] === undefined || match[2] === undefined) return undefined;
+  return { traceId: match[1], spanId: match[2] };
 }
 
 /**

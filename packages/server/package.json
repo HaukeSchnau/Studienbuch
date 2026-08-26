@@ -17,6 +17,7 @@
     "@effect/sql-pg": "catalog:",
     "@stu/api": "workspace:*",
     "@stu/core": "workspace:*",
+    "@stu/observability": "workspace:*",
     "better-auth": "^1.6.27",
     "drizzle-orm": "catalog:",
     "effect": "catalog:",

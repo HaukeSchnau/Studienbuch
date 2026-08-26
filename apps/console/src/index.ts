@@ -11,6 +11,7 @@ import {
   webUntisCourseIdentityAuditCommand,
   webUntisCourseRosterCommand,
   webUntisDirectoryCommand,
+  webUntisPollCommand,
   webUntisTimetableCommand,
 } from "./commands/webuntis.ts";
 import { withConsoleRuntime } from "./runtime.ts";
@@ -26,6 +27,7 @@ export const consoleCommand = Command.make("console").pipe(
     webUntisTimetableCommand,
     webUntisCourseRosterCommand,
     webUntisCourseIdentityAuditCommand,
+    webUntisPollCommand,
   ]),
 );
 

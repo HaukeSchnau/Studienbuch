@@ -21,6 +21,7 @@ const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const productionLockfile = join(repositoryRoot, "pnpm-lock.web.yaml");
 const workspacePackages = [
   "apps/console",
+  "apps/worker",
   "apps/web",
   "packages/api",
   "packages/core",

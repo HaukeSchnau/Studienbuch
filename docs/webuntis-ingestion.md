@@ -135,7 +135,8 @@ inside the tested batch size of 500.
 
 ### Polling policy
 
-The storage layer does not encode a schedule. The dedicated worker owns the schedule and uses these
+The storage layer does not encode a schedule. Managed Development runs one continuous worker per
+registered checkout. Production systemd timers invoke bounded Release jobs. Both use these policy
 defaults:
 
 - directory: at startup, daily and on demand;
@@ -148,10 +149,11 @@ defaults:
 Every range is clipped to the current WebUntis academic year. The two timetable windows are
 disjoint, including when the worker runs near the start or end of an academic year.
 
-Production cadences are jittered. Each attempt retries twice with jittered exponential delays
-starting at five seconds. Exhausted retries are logged and traced, then the job waits for its normal
-next cadence; the worker process stays alive. Failed fetches never create a source run or advance
-current state.
+Production timers add host-level randomized delay. Each attempt retries twice with jittered
+exponential delays starting at five seconds. Exhausted retries are logged and traced. The
+continuous worker then waits for its normal next cadence, while a bounded production job exits
+non-zero so systemd records the failure. Failed fetches never create a source run or advance current
+state.
 
 The directory, timetable and course-roster sources each permit one in-process execution. The hot
 and warm timetable loops share the same permit. A PostgreSQL advisory lock keyed by school and
