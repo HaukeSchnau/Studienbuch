@@ -336,7 +336,7 @@ often than substitutions, and importing every student claim every ten minutes wo
 private data without improving the client timetable. A daily reconciliation window, plus a refresh
 after directory changes, is the current default.
 
-Student entry requests combine at most 500 students with seven calendar dates. The daily source
+Student entry requests combine at most 500 students with three calendar dates. The daily source
 scopes merge those responses after all batches return. This keeps the roster window intact without
 asking WebUntis to calculate every student's whole window in one request.
 
