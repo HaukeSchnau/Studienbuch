@@ -15,6 +15,8 @@ export interface PollingWindows {
   readonly courseRosters: PollingRange | undefined;
 }
 
+export type Cadence = "fixed" | "spaced";
+
 export interface Policy {
   readonly timeZone: string;
   readonly recentTimetableDays: number;
@@ -23,9 +25,13 @@ export interface Policy {
   readonly courseRosterPastDays: number;
   readonly courseRosterFutureDays: number;
   readonly directoryInterval: Duration.Duration;
+  readonly directoryCadence: Cadence;
   readonly recentAndNearTimetableInterval: Duration.Duration;
+  readonly recentAndNearTimetableCadence: Cadence;
   readonly farTimetableInterval: Duration.Duration;
+  readonly farTimetableCadence: Cadence;
   readonly courseRosterInterval: Duration.Duration;
+  readonly courseRosterCadence: Cadence;
   readonly retryBaseDelay: Duration.Duration;
   readonly retryCount: number;
   readonly jitter: boolean;
@@ -39,9 +45,13 @@ export const defaultPolicy: Policy = {
   courseRosterPastDays: 28,
   courseRosterFutureDays: 28,
   directoryInterval: Duration.days(1),
+  directoryCadence: "spaced",
   recentAndNearTimetableInterval: Duration.minutes(10),
+  recentAndNearTimetableCadence: "fixed",
   farTimetableInterval: Duration.hours(1),
+  farTimetableCadence: "fixed",
   courseRosterInterval: Duration.days(1),
+  courseRosterCadence: "spaced",
   retryBaseDelay: Duration.seconds(5),
   retryCount: 2,
   jitter: true,
