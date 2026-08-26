@@ -520,6 +520,9 @@ importers:
       '@effect/sql-pg':
         specifier: 'catalog:'
         version: 4.0.0-rc.108(effect@4.0.0-rc.108)
+      '@stu/api':
+        specifier: workspace:*
+        version: link:../api
       '@stu/core':
         specifier: workspace:*
         version: link:../core
