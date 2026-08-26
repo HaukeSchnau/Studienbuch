@@ -7,6 +7,7 @@ let
   inherit (workspace.sources) dependencySource;
   inherit (workspace.toolchain) nodejs pnpm;
   manifest = lib.importJSON ./package.json;
+  webUntisEnvironment = import ../../nix/webuntis-environment.nix;
   application = {
     workspaceName = manifest.name;
     relativePath = "apps/web";
@@ -17,6 +18,7 @@ let
   pnpmWorkspaces = [
     "@stu/api"
     "@stu/console"
+    "@stu/worker"
     application.workspaceName
     "@stu/core"
     "@stu/observability"
@@ -30,12 +32,13 @@ let
   source = workspace.sources.sourceForPackages [
     application.workspaceName
     "@stu/console"
+    "@stu/worker"
   ];
   prepareProductionWorkspace = ''
     cp pnpm-lock.web.yaml pnpm-lock.yaml
     cp nix/web-pnpmfile.cjs .pnpmfile.cjs
     yq -y -i \
-      '.packages = ["apps/console", "apps/web", "packages/api", "packages/core", "packages/observability", "packages/server"]
+      '.packages = ["apps/console", "apps/web", "apps/worker", "packages/api", "packages/core", "packages/observability", "packages/server"]
        | .autoInstallPeers = false
        | .resolvePeersFromWorkspaceRoot = false' \
       pnpm-workspace.yaml
@@ -110,7 +113,7 @@ let
         --format=cjs \
         --platform=node \
         --outfile=${application.relativePath}/.output/server/instrument.server.cjs
-      esbuild packages/server/src/database/migrate.cli.ts \
+      esbuild apps/console/src/migrate.ts \
         --bundle \
         --format=esm \
         --platform=node \
@@ -122,6 +125,12 @@ let
         --platform=node \
         --banner:js='import { createRequire } from "node:module"; const require = createRequire(import.meta.url);' \
         --outfile=${application.relativePath}/.output/server/console.mjs
+      esbuild apps/worker/src/once.ts \
+        --bundle \
+        --format=esm \
+        --platform=node \
+        --banner:js='import { createRequire } from "node:module"; const require = createRequire(import.meta.url);' \
+        --outfile=${application.relativePath}/.output/server/worker-once.mjs
       rm ${application.relativePath}/.output/server/instrument.server.mjs
       runHook postBuild
     '';
@@ -222,32 +231,91 @@ let
       DATABASE_URL="$(project-context parameter databaseUrl)"
       export DATABASE_URL
       export STUDIENBUCH_MIGRATIONS_DIR=${webApplication}/${applicationPath}/drizzle
+      export STUDIENBUCH_OTEL_ENABLED=true
+      export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
+      export STUDIENBUCH_ENVIRONMENT=production
+      export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
 
       exec node ${webApplication}/${applicationPath}/.output/server/migrate.mjs
     '';
   };
 
-  consoleApplication = pkgs.writeShellApplication {
-    name = "studienbuch-console";
-    runtimeInputs = [
-      nodejs
-      pkgs.jq
-    ];
+  developmentConsoleAction = pkgs.writeShellApplication {
+    name = "studienbuch-development-console-action";
+    runtimeInputs = [ nodejs ];
     text = ''
-      runtime_file="''${PROJECT_RUNTIME_FILE:-/var/lib/app-deployments/studienbuch/project-runtime.json}"
-      DATABASE_URL="$(jq --exit-status --raw-output '.parameters.databaseUrl' "$runtime_file")"
-      export DATABASE_URL
+      web_url="$(project-context endpoint web url)"
+      database_host="$(project-context endpoint database listen-host)"
+      database_port="$(project-context endpoint database listen-port)"
+
+      export BETTER_AUTH_URL="$web_url"
+      export DATABASE_URL="postgresql://postgres@$database_host:$database_port/postgres"
+      export STUDIENBUCH_ENVIRONMENT="''${STUDIENBUCH_ENVIRONMENT:-development}"
+      export STUDIENBUCH_OTEL_ENABLED="''${STUDIENBUCH_OTEL_ENABLED:-true}"
+      export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:24318}"
 
       exec node ${webApplication}/${applicationPath}/.output/server/console.mjs "$@"
     '';
   };
+
+  releaseConsoleAction = pkgs.writeShellApplication {
+    name = "studienbuch-release-console-action";
+    runtimeInputs = [ nodejs ];
+    text = ''
+      BETTER_AUTH_URL="$(project-context endpoint web url)"
+      DATABASE_URL="$(project-context parameter databaseUrl)"
+      export BETTER_AUTH_URL DATABASE_URL
+      export STUDIENBUCH_ENVIRONMENT=production
+      export STUDIENBUCH_OTEL_ENABLED=true
+      export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
+      export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
+
+      exec node ${webApplication}/${applicationPath}/.output/server/console.mjs "$@"
+    '';
+  };
+
+  maintenanceAction =
+    name: job:
+    lib.nameValuePair name (
+      pkgs.writeShellApplication {
+        name = "studienbuch-release-${name}-action";
+        runtimeInputs = [ nodejs ];
+        text = ''
+          ${webUntisEnvironment {
+            requiredSecrets = true;
+            database = ''
+              DATABASE_URL="$(project-context parameter databaseUrl)"
+              export DATABASE_URL
+            '';
+          }}
+
+          export NODE_ENV=production
+          export STUDIENBUCH_OTEL_ENABLED=true
+          export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
+          export STUDIENBUCH_ENVIRONMENT=production
+          export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
+
+          exec node ${webApplication}/${applicationPath}/.output/server/worker-once.mjs \
+            ${lib.escapeShellArg job}
+        '';
+      }
+    );
 in
 {
   development.action = developmentAction;
+  console = {
+    developmentAction = developmentConsoleAction;
+    releaseAction = releaseConsoleAction;
+  };
   release = {
     action = releaseAction;
     migrationAction = migrationAction;
     payload = webApplication;
-    console = consoleApplication;
+    maintenanceActions = builtins.listToAttrs [
+      (maintenanceAction "webuntis-directory" "directory")
+      (maintenanceAction "webuntis-timetable-hot" "recent-and-near-timetable")
+      (maintenanceAction "webuntis-timetable-warm" "far-timetable")
+      (maintenanceAction "webuntis-course-rosters" "course-rosters")
+    ];
   };
 }

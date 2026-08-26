@@ -31,6 +31,10 @@ export {
   type TelemetryPlatform,
 } from "./client/outbox.ts";
 export {
+  makeTelemetryHttpDelivery,
+  type TelemetryHttpDeliveryOptions,
+} from "./client/http-delivery.ts";
+export {
   externalSpanFromHeaders,
   propagationHeaders,
   withIncomingTraceContext,

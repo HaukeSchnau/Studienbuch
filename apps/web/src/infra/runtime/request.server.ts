@@ -1,7 +1,14 @@
-import { spanAttributes } from "@stu/observability";
+import {
+  outcomeFromExit,
+  serverHttpRequestDuration,
+  serverHttpRequests,
+  spanAttributes,
+} from "@stu/observability";
+import * as Clock from "effect/Clock";
 import { withIncomingTraceContext } from "@stu/observability/browser";
 import * as Effect from "effect/Effect";
 import type * as Exit from "effect/Exit";
+import * as Metric from "effect/Metric";
 import type { OtlpExporter } from "effect/unstable/observability";
 import type { Database } from "@stu/server";
 import type { ClientTelemetry } from "#/infra/observability/client-telemetry.server.ts";
@@ -31,7 +38,33 @@ export interface RouteEffectRunner<R = ClientTelemetry | OtlpExporter.Flusher> {
  * cannot be built, so handlers never see a half-constructed runtime here.
  */
 export const runRouteEffect: RouteEffectRunner<RuntimeServices> = (effect, options) => {
-  const traced = effect.pipe(
+  const traced = Effect.gen(function* () {
+    const startedAt = yield* Clock.currentTimeMillis;
+    return yield* effect.pipe(
+      Effect.onExit((exit) => {
+        const outcome =
+          exit._tag === "Success" && exit.value instanceof Response && !exit.value.ok
+            ? "failure"
+            : outcomeFromExit(exit);
+        const attributes = {
+          "http.method": options.request.method,
+          "http.route": options.route,
+          outcome,
+        };
+        return Effect.all([
+          Metric.update(Metric.withAttributes(serverHttpRequests, attributes), 1),
+          Clock.currentTimeMillis.pipe(
+            Effect.flatMap((endedAt) =>
+              Metric.update(
+                Metric.withAttributes(serverHttpRequestDuration, attributes),
+                Math.max(0, endedAt - startedAt),
+              ),
+            ),
+          ),
+        ]).pipe(Effect.asVoid);
+      }),
+    );
+  }).pipe(
     Effect.withSpan(
       `http ${options.request.method} ${options.route}`,
       {

@@ -6,24 +6,23 @@ records. Effect/OpenTelemetry remains the server instrumentation system.
 
 The queue itself is the `TelemetryOutbox` Effect service from `@stu/observability/browser`, shared
 with the web client. This module supplies the native layers: durable Expo document storage,
-authenticated delivery, Expo Network reachability, and React Native app lifecycle. The controller
-is one cancellable Effect program rather than a second timer/subscription state machine. See that
-package's README for the channel contract and queue guarantees.
+authenticated Effect HTTP delivery, Expo Network reachability, and React Native app lifecycle. The
+controller is one cancellable Effect program rather than a second timer/subscription state machine.
+The transport obtains a fresh Better Auth session cookie for each send, then delegates request and
+response handling to the shared `makeTelemetryHttpDelivery` adapter. See that package's README for
+the channel contract and queue guarantees.
 
 ## Activation
 
-`EXPO_PUBLIC_TELEMETRY_ENDPOINT` is optional. Missing configuration disables
-the channel. An endpoint alone is insufficient: `MobileTelemetryProvider` also
-requires an `authorization` function returning a short-lived, user-scoped
-Authorization header. The current application has no mobile session authority,
-so its provider is deliberately disabled. Do not replace this with a static
-public token or an unauthenticated ingestion route.
+`EXPO_PUBLIC_TELEMETRY_ENDPOINT` is optional and defaults to the telemetry route on
+`EXPO_PUBLIC_API_URL` (or `https://studienbuch.app` in production). An endpoint alone is
+insufficient: delivery obtains a fresh user-scoped Better Auth cookie for every attempt and fails
+closed while there is no session. Do not replace this with a static public token or an
+unauthenticated ingestion route.
 
 The server side is ready: the ingress admits native clients on a resolvable Better Auth session,
-having previously refused them for lacking an `Origin` header. What is still missing is only the
-app's own session, so once mobile authentication exists, pass that authority from the session owner
-to `MobileTelemetryProvider`. The endpoint must be the Studienbuch server relay, never the fleet
-collector directly.
+having previously refused them for lacking an `Origin` header. The endpoint is always the
+Studienbuch server relay, never the fleet collector directly.
 
 Once enabled, the controller flushes after foregrounding, restored Expo Network reachability, and a
 30-second fallback cadence. Failed sends remain durable and use the shared per-record backoff.

@@ -51,8 +51,9 @@ The build output is a self-contained Node server under `.output/`.
 
 The repository's Nix flake exposes this production server as
 `packages.projectRelease`. Its embedded Project descriptor pairs the immutable
-web Release with the mutable Vite and Expo Development workloads. Deployment
-infrastructure supplies the public URL, listener, Better Auth credential, and PostgreSQL URL;
+web Release and bounded WebUntis jobs with the mutable Vite, Expo, and continuous-import
+Development workloads. Deployment infrastructure supplies the public URL, listener, credentials,
+job schedules, and PostgreSQL URL;
 the repository runtime derives `BETTER_AUTH_URL`, `DATABASE_URL`, `HOST`, and `PORT` from that
 generic context. The Release intentionally contains no Metro server or embedded database.
 
@@ -104,19 +105,21 @@ send fail visibly instead of silently creating an unreachable account.
 Create the platform operator and printable school codes through the console:
 
 ```bash
-just console operator-bootstrap --name "Hauke Schnau" --base-url https://studienbuch.app
-just console access-codes --school-id igs-lilienthal --school-name "IGS Lilienthal" \
+project dev console operator-bootstrap --name "Hauke Schnau"
+project dev console access-codes --school-id igs-lilienthal --school-name "IGS Lilienthal" \
   --kind student --count 100 --operator-user-id <operator-user-id>
 ```
 
-On the production host, use the console bundled with the active Release so its schema and command
-implementation always match the deployed application:
+On the production host, select the active Release explicitly:
 
 ```bash
-sudo -u app-studienbuch \
-  /var/lib/app-deployments/studienbuch/current/bin/studienbuch-console \
-  operator-bootstrap --name "Hauke Schnau" --base-url https://beta.studienbuch.app
+project prod console operator-bootstrap --name "Hauke Schnau"
 ```
+
+From outside a managed checkout, add `-p studienbuch`. The Project adapter supplies the database
+and public URL for the selected environment, starts declared Development dependencies, and runs
+production commands through the active Release user and runtime context. `just console` remains a
+short alias for `project dev console`.
 
 The first command prints a short-lived passkey setup URL. The second prints every access code once;
 only hashes are stored. See [`docs/authentication.md`](../../docs/authentication.md).

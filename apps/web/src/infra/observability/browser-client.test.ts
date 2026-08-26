@@ -65,7 +65,7 @@ async function envelopeFromFetch(fetchMock: BrowserTelemetryEnvironment["fetch"]
   const mock = vi.mocked(fetchMock);
   const [, init] = mock.mock.calls[call] ?? [];
   const body = init?.body;
-  expect(body).toBeTypeOf("string");
+  expect(body).toBeDefined();
   const parsed: unknown = JSON.parse(await new Response(body).text());
   return Effect.runPromise(decodeClientTelemetryEnvelope(parsed));
 }
@@ -91,7 +91,8 @@ describe("browser operational telemetry", () => {
     await expect(client.flush()).resolves.toBe(true);
     expect(fetchMock).toHaveBeenCalledOnce();
     const [url, init] = vi.mocked(fetchMock).mock.calls[0] ?? [];
-    expect(url).toBe("https://studienbuch.test/api/observability/v1/telemetry");
+    const requestedUrl = url instanceof URL ? url.href : url instanceof Request ? url.url : url;
+    expect(requestedUrl).toBe("https://studienbuch.test/api/observability/v1/telemetry");
     expect(init).toMatchObject({ credentials: "same-origin", keepalive: true, method: "POST" });
     const envelope = await envelopeFromFetch(fetchMock);
     expect(envelope.serviceName).toBe("studienbuch-web-client");
@@ -142,6 +143,20 @@ describe("browser operational telemetry", () => {
     await client.fetch("https://example.test/api", { method: "GET" });
     const crossOriginHeaders = new Headers(vi.mocked(requestFetch).mock.calls[1]?.[1]?.headers);
     expect(crossOriginHeaders.has("traceparent")).toBe(false);
+  });
+
+  it("preserves Effect HTTP context so RPC client and server spans stay in one trace", async () => {
+    const requestFetch = vi.fn<BrowserFetch>(async () => new Response(null, { status: 200 }));
+    const { client } = fixture({ fetch: requestFetch });
+    const traceparent = "00-0123456789abcdef0123456789abcdef-0123456789abcdef-01";
+
+    await client.fetch("https://studienbuch.test/api/rpc", {
+      method: "POST",
+      headers: { traceparent },
+    });
+
+    const headers = new Headers(vi.mocked(requestFetch).mock.calls[0]?.[1]?.headers);
+    expect(headers.get("traceparent")).toBe(traceparent);
   });
 
   it("bounds memory and reports drops without leaking the paths that caused them", async () => {

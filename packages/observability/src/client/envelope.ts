@@ -12,7 +12,12 @@ export const screenNames = [
   "profile",
   "setup",
 ] as const;
-export const httpRoutes = ["/", "/api/auth/*", "/api/observability/v1/telemetry"] as const;
+export const httpRoutes = [
+  "/",
+  "/api/auth/*",
+  "/api/observability/v1/telemetry",
+  "/api/rpc",
+] as const;
 
 /**
  * Metric names a client may report. The envelope accepts no others, the outbox emits two of them,

@@ -3,6 +3,7 @@ import {
   WebUntisCourseRosters,
   WebUntisDirectory,
   WebUntisImporter,
+  WebUntisPolling,
   WebUntisTimetable,
 } from "@stu/server";
 import * as Console from "effect/Console";
@@ -48,6 +49,18 @@ const courseAuditRange = Flag.string("range").pipe(
 );
 
 const courseAuditRanges = Flag.atLeast(courseAuditRange, 1);
+
+const pollingJob = Flag.choice("job", WebUntisPolling.jobs).pipe(
+  Flag.withDescription("Bounded WebUntis polling job"),
+);
+
+const importerLayer = WebUntisImporter.layer.pipe(
+  Layer.provide(Layer.merge(WebUntisDirectory.layer, Database.layerConfig)),
+);
+
+export const webUntisPollCommand = Command.make("webuntis-poll", { job: pollingJob }, ({ job }) =>
+  WebUntisPolling.runOnce(job).pipe(Effect.provide(importerLayer)),
+).pipe(Command.withDescription("Run one policy-derived WebUntis import job"));
 
 export const runWebUntisDirectoryPreview = Effect.fn("Console.webUntisDirectoryPreview")(function* (
   requestedSchoolYear: string,

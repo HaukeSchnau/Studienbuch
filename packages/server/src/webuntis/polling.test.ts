@@ -1,11 +1,12 @@
 import { describe, expect, it } from "@effect/vitest";
 import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
 import { TestClock } from "effect/testing";
 import type { SchoolyearWithTimeGrid } from "webuntis-api";
 import { WebUntisImporter } from "./importer.ts";
-import { run } from "./polling.ts";
+import { run, runOnce } from "./polling.ts";
 import { defaultPolicy, type Policy } from "./polling-policy.ts";
 
 const academicYear: SchoolyearWithTimeGrid = {
@@ -93,6 +94,46 @@ const awaitCalls = (calls: ReadonlyArray<ImportCall>, count: number) =>
   });
 
 describe("WebUntis polling worker", () => {
+  it.effect("runs one bounded job and refreshes roster evidence after a directory change", () =>
+    Effect.gen(function* () {
+      yield* TestClock.setTime(Date.parse("2026-08-25T10:00:00Z"));
+      const calls: Array<ImportCall> = [];
+
+      yield* runOnce("directory", policy).pipe(
+        Effect.provideService(WebUntisImporter.Service, service(calls)),
+      );
+
+      expect(calls).toEqual([
+        { dataset: "directory", schoolYear: "2026/2027" },
+        {
+          dataset: "course-rosters",
+          schoolYear: "2026/2027",
+          start: "2026-08-13",
+          end: "2026-09-22",
+        },
+      ]);
+    }),
+  );
+
+  it.effect("preserves a bounded job failure for the process exit status", () =>
+    Effect.gen(function* () {
+      yield* TestClock.setTime(Date.parse("2026-08-25T10:00:00Z"));
+      const calls: Array<ImportCall> = [];
+      const timetable: WebUntisImporter.Service["Service"]["importTimetable"] = () =>
+        Effect.fail(WebUntisImporter.ImportAlreadyRunning.make({ dataset: "timetable" }));
+
+      const exit = yield* runOnce("recent-and-near-timetable", {
+        ...policy,
+        retryCount: 0,
+      }).pipe(
+        Effect.provideService(WebUntisImporter.Service, service(calls, timetable)),
+        Effect.exit,
+      );
+
+      expect(Exit.isFailure(exit)).toBe(true);
+    }),
+  );
+
   it.effect("runs every source at startup and then follows its own cadence", () =>
     Effect.gen(function* () {
       yield* TestClock.setTime(Date.parse("2026-08-25T10:00:00Z"));

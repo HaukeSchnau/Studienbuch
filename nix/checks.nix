@@ -39,9 +39,21 @@ let
             state="$root/state"
             runtime="$root/run"
             secrets="$root/secrets"
+            free_port() {
+              python - <<'PY'
+            import socket
+            with socket.socket() as listener:
+                listener.bind(("127.0.0.1", 0))
+                print(listener.getsockname()[1])
+            PY
+            }
+            collector_port="$(free_port)"
+            web_port="$(free_port)"
             mkdir -p "$state" "$runtime" "$secrets"
             printf '%s\n' 'release-smoke-secret-with-sufficient-length' > "$secrets/better-auth-secret"
             printf '%s\n' 'smtp://localhost:2525' > "$secrets/smtp-url"
+            printf '%s\n' 'webuntis-smoke-user' > "$secrets/webuntis-username"
+            printf '%s\n' 'webuntis-smoke-password' > "$secrets/webuntis-password"
             postgres_root="$root/postgres"
             postgres_socket="$root/postgres-socket"
             mkdir -p "$postgres_socket"
@@ -65,7 +77,7 @@ let
             }
             trap cleanup EXIT
 
-            ${pkgs.python3}/bin/python - "$root/otlp-paths" "$root/otlp-bodies" <<'PY' &
+            ${pkgs.python3}/bin/python - "$root/otlp-paths" "$root/otlp-bodies" "$collector_port" <<'PY' &
             import http.server
             import pathlib
             import sys
@@ -88,7 +100,7 @@ let
                 def log_message(self, _format, *_args):
                     pass
 
-            http.server.ThreadingHTTPServer(("127.0.0.1", 24318), Collector).serve_forever()
+            http.server.ThreadingHTTPServer(("127.0.0.1", int(sys.argv[3])), Collector).serve_forever()
             PY
             collector_pid="$!"
 
@@ -97,6 +109,7 @@ let
               --arg runtime "$runtime" \
               --arg databaseUrl "$database_url" \
               --arg authEmailFrom 'Studienbuch <konto@studienbuch.app>' \
+              --argjson webPort "$web_port" \
               '{
                 schemaVersion: 2,
                 project: "studienbuch",
@@ -105,8 +118,8 @@ let
                 endpoints: {
                   web: {
                     protocol: "http",
-                    url: "http://127.0.0.1:32117",
-                    listen: {host: "127.0.0.1", port: 32117},
+                    url: ("http://127.0.0.1:" + ($webPort | tostring)),
+                    listen: {host: "127.0.0.1", port: $webPort},
                     hostNames: ["studienbuch.example.test"],
                     visibility: "local"
                   }
@@ -114,11 +127,17 @@ let
                 parameters: {
                   databaseUrl: $databaseUrl,
                   authEmailFrom: $authEmailFrom,
-                  passkeyRpId: "example.test"
+                  passkeyRpId: "example.test",
+                  webUntisSchoolName: "IGS Lilienthal",
+                  webUntisSchoolLoginName: "igs-lilienthal",
+                  webUntisServerUrl: "https://igs-lilienthal.webuntis.com",
+                  webUntisTenantId: "6603700"
                 },
                 secrets: {
                   betterAuthSecret: "better-auth-secret",
-                  smtpUrl: "smtp-url"
+                  smtpUrl: "smtp-url",
+                  webUntisUsername: "webuntis-username",
+                  webUntisPassword: "webuntis-password"
                 }
               }' > "$root/manifest.json"
 
@@ -129,22 +148,28 @@ let
 
             PROJECT_RUNTIME_FILE="$root/manifest.json" \
               STUDIENBUCH_OTEL_ENABLED=false \
-              ${releasePackage}/bin/studienbuch-console --help \
+              ${releasePackage}/bin/project-release-runtime console --help \
               > "$root/console-help.txt" 2>&1
             grep -q operator-bootstrap "$root/console-help.txt"
 
             PROJECT_RUNTIME_FILE="$root/manifest.json" \
+              STUDIENBUCH_OTEL_ENABLED=false \
+              ${releasePackage}/bin/project-release-runtime console webuntis-poll --help \
+              > "$root/webuntis-poll-help.txt" 2>&1
+            grep -q recent-and-near-timetable "$root/webuntis-poll-help.txt"
+
+            PROJECT_RUNTIME_FILE="$root/manifest.json" \
               PROJECT_SECRETS_DIR="$secrets" \
-              OTEL_EXPORTER_OTLP_ENDPOINT="http://127.0.0.1:24318" \
+              OTEL_EXPORTER_OTLP_ENDPOINT="http://127.0.0.1:$collector_port" \
               ${releasePackage}/bin/project-release-runtime \
               > "$root/server.log" 2>&1 &
             server_pid="$!"
 
             for _ in $(seq 1 60); do
               if curl --fail --silent --show-error \
-                http://127.0.0.1:32117/api/health/live > "$root/live.json" \
+                "http://127.0.0.1:$web_port/api/health/live" > "$root/live.json" \
                 && curl --fail --silent --show-error \
-                  http://127.0.0.1:32117/api/health/ready > "$root/ready.json"; then
+                  "http://127.0.0.1:$web_port/api/health/ready" > "$root/ready.json"; then
                 break
               fi
               if ! kill -0 "$server_pid" 2>/dev/null; then
@@ -166,7 +191,7 @@ let
               > "$root/schema.txt"
             grep -qx t "$root/schema.txt"
             curl --fail --silent --show-error \
-              http://127.0.0.1:32117/api/observability/v1/canary > "$root/canary.json"
+              "http://127.0.0.1:$web_port/api/observability/v1/canary" > "$root/canary.json"
             jq -e '.status == "ok"' "$root/canary.json" >/dev/null
 
             for _ in $(seq 1 40); do
@@ -198,9 +223,9 @@ let
 
             curl --fail --silent --show-error \
               --header 'content-type: application/json' \
-              --header 'origin: http://127.0.0.1:32117' \
+              --header "origin: http://127.0.0.1:$web_port" \
               --data @"$root/envelope.json" \
-              http://127.0.0.1:32117/api/observability/v1/telemetry > "$root/ingest.json"
+              "http://127.0.0.1:$web_port/api/observability/v1/telemetry" > "$root/ingest.json"
             jq -e '.acceptedRecords == 1' "$root/ingest.json" >/dev/null
 
             # An envelope posted with no Origin and no session must be refused, or the route is an
@@ -208,13 +233,13 @@ let
             anonymous_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
               --header 'content-type: application/json' \
               --data @"$root/envelope.json" \
-              http://127.0.0.1:32117/api/observability/v1/telemetry)"
+              "http://127.0.0.1:$web_port/api/observability/v1/telemetry")"
             test "$anonymous_status" = 403
 
             # Force an export cycle, then look for the ingress marker the server annotates onto
             # every client-sourced record.
             curl --fail --silent --show-error \
-              http://127.0.0.1:32117/api/observability/v1/canary > /dev/null
+              "http://127.0.0.1:$web_port/api/observability/v1/canary" > /dev/null
 
             for _ in $(seq 1 60); do
               if grep -qa 'public-client-ingress' "$root/otlp-bodies" 2>/dev/null; then
@@ -249,27 +274,34 @@ let
       releaseChecks = {
         projectDescriptor = pkgs.runCommand "studienbuch-project-descriptor-check" { } ''
           ${pkgs.jq}/bin/jq -e '
-            .schemaVersion == 2 and
+            .schemaVersion == 3 and
             .project == "studienbuch" and
             (.development.endpoints | keys) == ["database", "mobile", "web"] and
-            (.development.workloads | keys) == ["database", "migrate", "mobile", "web"] and
+            (.development.workloads | keys) == ["database", "importer", "migrate", "mobile", "web"] and
+            .development.workloads.importer.lifecycle == "background" and
+            .development.workloads.importer.dependsOn == ["migrate"] and
+            .development.workloads.importer.secrets == ["webUntisUsername", "webUntisPassword"] and
+            .development.commands.console == {action: "console", dependsOn: ["migrate"]} and
             .development.workloads.migrate.kind == "task" and
             .development.workloads.migrate.dependsOn == ["database"] and
             .development.workloads.web.dependsOn == ["migrate"] and
             .development.workloads.web.secrets == ["betterAuthSecret"] and
             (.development.workloads.mobile.secrets // []) == [] and
             .development.endpoints.web.health.paths == ["/api/health/ready"] and
-            (.parameters | keys) == ["authEmailFrom", "databaseUrl", "passkeyRpId"] and
-            (.secrets | keys) == ["betterAuthSecret", "smtpUrl"] and
+            (.parameters | keys) == ["authEmailFrom", "databaseUrl", "passkeyRpId", "webUntisSchoolLoginName", "webUntisSchoolName", "webUntisServerUrl", "webUntisTenantId"] and
+            (.secrets | keys) == ["betterAuthSecret", "smtpUrl", "webUntisPassword", "webUntisUsername"] and
             .release.action == "web" and
+            .release.commands.console == {action: "console"} and
             .release.preDeployTasks == {migrate: {timeoutSec: 300}} and
+            (.release.maintenanceJobs | keys) == ["webuntis-course-rosters", "webuntis-directory", "webuntis-timetable-hot", "webuntis-timetable-warm"] and
             .release.health.paths == ["/api/health/live", "/api/health/ready"] and
             .release.health.startupTimeoutSec == 60 and
             .release.health.intervalSec == 2 and
             .release.health.requestTimeoutSec == 2
           ' ${descriptorPath} >/dev/null
           cmp ${descriptorPath} ${releasePackage}/share/project/descriptor.json
-          test -x ${releasePackage}/bin/studienbuch-console
+          test -x ${releasePackage}/bin/project-release-runtime
+          test ! -e ${releasePackage}/bin/studienbuch-console
           touch "$out"
         '';
         releaseInterface = projectRelease.checks.interface;

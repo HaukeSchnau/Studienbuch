@@ -51,6 +51,7 @@ minimumReleaseAgeExclude:
   - "effect@4.0.0-rc.108"
   - "drizzle-kit@1.0.0-rc.5-ab785fc"
   - "drizzle-orm@1.0.0-rc.5-169397b"
+  - "webuntis-api@0.2.2"
   - "@better-auth/core@1.6.27"
   - "@better-auth/drizzle-adapter@1.6.27"
   - "@better-auth/kysely-adapter@1.6.27"

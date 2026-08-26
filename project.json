@@ -1,6 +1,6 @@
 {
-  "$schema": "https://raw.githubusercontent.com/HaukeSchnau/nix-infra-modules/main/schemas/project-descriptor/v2.json",
-  "schemaVersion": 2,
+  "$schema": "https://raw.githubusercontent.com/HaukeSchnau/nix-infra-modules/main/schemas/project-descriptor/v3.json",
+  "schemaVersion": 3,
   "project": "studienbuch",
   "secrets": {
     "betterAuthSecret": {
@@ -8,6 +8,12 @@
     },
     "smtpUrl": {
       "description": "SMTP connection URL used to deliver authentication email"
+    },
+    "webUntisUsername": {
+      "description": "WebUntis account used for school data imports"
+    },
+    "webUntisPassword": {
+      "description": "Password for the WebUntis import account"
     }
   },
   "parameters": {
@@ -22,6 +28,22 @@
     "passkeyRpId": {
       "description": "WebAuthn relying-party ID shared by production origins",
       "default": "studienbuch.app"
+    },
+    "webUntisSchoolName": {
+      "description": "Display name used to discover the WebUntis school",
+      "default": "IGS Lilienthal"
+    },
+    "webUntisSchoolLoginName": {
+      "description": "Operational WebUntis school login name",
+      "default": "igs-lilienthal"
+    },
+    "webUntisServerUrl": {
+      "description": "Pinned WebUntis server URL",
+      "default": "https://igs-lilienthal.webuntis.com"
+    },
+    "webUntisTenantId": {
+      "description": "Pinned WebUntis tenant identity",
+      "default": "6603700"
     }
   },
   "development": {
@@ -44,6 +66,19 @@
       },
       "mobile": {
         "action": "mobile"
+      },
+      "importer": {
+        "action": "worker",
+        "kind": "service",
+        "lifecycle": "background",
+        "dependsOn": ["migrate"],
+        "secrets": ["webUntisUsername", "webUntisPassword"]
+      }
+    },
+    "commands": {
+      "console": {
+        "action": "console",
+        "dependsOn": ["migrate"]
       }
     },
     "endpoints": {
@@ -65,9 +100,28 @@
   },
   "release": {
     "action": "web",
+    "commands": {
+      "console": {
+        "action": "console"
+      }
+    },
     "preDeployTasks": {
       "migrate": {
         "timeoutSec": 300
+      }
+    },
+    "maintenanceJobs": {
+      "webuntis-directory": {
+        "secrets": ["webUntisUsername", "webUntisPassword"]
+      },
+      "webuntis-timetable-hot": {
+        "secrets": ["webUntisUsername", "webUntisPassword"]
+      },
+      "webuntis-timetable-warm": {
+        "secrets": ["webUntisUsername", "webUntisPassword"]
+      },
+      "webuntis-course-rosters": {
+        "secrets": ["webUntisUsername", "webUntisPassword"]
       }
     },
     "health": {

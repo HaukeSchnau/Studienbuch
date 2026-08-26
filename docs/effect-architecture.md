@@ -24,6 +24,9 @@ locked release.
 - Effect RPC is the default first-party application boundary. `@stu/api` owns RPC groups and their
   schemas; apps own HTTP, WebSocket, Expo, or test transports. Better Auth and genuinely HTTP-shaped
   integrations remain ordinary HTTP.
+- Effect HTTP owns first-party client telemetry delivery. Web and mobile share request construction,
+  status handling, and schema decoding while layers provide platform fetch and authentication.
+  Browser teardown still uses `sendBeacon`, and the telemetry outbox remains the sole retry owner.
 - `AtomRpc` is for server-derived client state that benefits from caching, invalidation, retention,
   or hydration. Account state is the first use. Local form fields stay in component/form state.
 - Drizzle's Effect PostgreSQL adapter remains the persistence boundary. Raw `pg` access is limited

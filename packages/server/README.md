@@ -89,8 +89,9 @@ splits the requested range into daily scopes. Missing, denied, conflicting or pr
 make the affected day partial, so that poll may add or update records but cannot delete records
 previously observed for the day.
 
-`@stu/worker` runs the same application imports continuously in a process separate from the web
-server:
+`@stu/worker` runs the imports continuously in a process separate from the web server. Managed
+Development starts it for the canonical checkout and every registered worktree after migrations;
+there is no manual start step. The command below remains useful outside managed Development:
 
 ```bash
 just dev worker
@@ -100,8 +101,14 @@ It imports the directory daily, the previous two timetable days through 14 days 
 minutes, days 15 through 56 hourly, and a private course-roster window daily. Every job also runs at
 startup. Effect schedules provide jittered fixed cadences and bounded exponential retry; Effect
 semaphores prevent local overlap. A session-level PostgreSQL advisory lock around each whole import
-prevents overlap with another worker or an applied console command. See the ingestion note for the
-range, failure and privacy contract. No production service is created merely by running the build.
+prevents overlap with another worker or an applied console command.
+
+Production uses four bounded Project Release jobs instead of a permanently running worker. Host
+systemd timers invoke `webuntis-directory`, `webuntis-timetable-hot`,
+`webuntis-timetable-warm`, and `webuntis-course-rosters`. Each action derives its date range from the
+same policy as the continuous worker and exits non-zero after exhausted retries. A changed directory
+job immediately refreshes course-roster evidence. See the ingestion note for the range, failure and
+privacy contract.
 
 ## Commands
 
