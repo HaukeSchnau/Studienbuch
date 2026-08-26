@@ -36,7 +36,7 @@ import {
 type StudentFilterItem = TimetableFilter["students"][number];
 type TimetableEntryLocation = "Back" | "Day" | "Grid";
 
-export const studentTimetableDateBatchSize = 7;
+export const studentTimetableDateBatchSize = 3;
 
 export const studentTimetableEntryRequests = (
   studentIds: ReadonlyArray<number>,
