@@ -12,6 +12,7 @@ import * as Metric from "effect/Metric";
 import type { OtlpExporter } from "effect/unstable/observability";
 import type { Database } from "@stu/server";
 import type { ClientTelemetry } from "#/infra/observability/client-telemetry.server.ts";
+import { httpAvailabilityOutcome } from "./http-outcome.ts";
 import { applicationRuntime } from "./lifecycle.server.ts";
 
 export interface RouteEffectOptions {
@@ -46,7 +47,14 @@ export const runRouteEffect: RouteEffectRunner<RuntimeServices> = (effect, optio
           exit._tag === "Success" && exit.value instanceof Response && !exit.value.ok
             ? "failure"
             : outcomeFromExit(exit);
+        const availabilityOutcome =
+          exit._tag === "Success" && exit.value instanceof Response
+            ? httpAvailabilityOutcome(exit.value)
+            : outcomeFromExit(exit) === "success"
+              ? "success"
+              : "failure";
         const attributes = {
+          "availability.outcome": availabilityOutcome,
           "http.method": options.request.method,
           "http.route": options.route,
           outcome,

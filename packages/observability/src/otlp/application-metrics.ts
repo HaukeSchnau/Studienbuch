@@ -4,7 +4,8 @@ import { metricNames } from "../contract.ts";
 const durationBoundariesMillis = [5, 10, 25, 50, 100, 250, 500, 1_000, 2_500, 5_000, 10_000];
 
 export const serverHttpRequests = Metric.counter(metricNames.serverHttpRequests, {
-  description: "First-party HTTP requests handled by stable route, method, and outcome.",
+  description:
+    "First-party HTTP requests handled by stable route, method, request outcome, and availability outcome.",
 });
 
 export const serverHttpRequestDuration = Metric.histogram(metricNames.serverHttpRequestDuration, {
