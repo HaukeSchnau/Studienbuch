@@ -3,7 +3,7 @@ import { withIncomingTraceContext } from "@stu/observability/browser";
 import * as Effect from "effect/Effect";
 import type * as Exit from "effect/Exit";
 import type { OtlpExporter } from "effect/unstable/observability";
-import type { Database, EnquiryNotifier } from "@stu/server";
+import type { Database } from "@stu/server";
 import type { ClientTelemetry } from "#/infra/observability/client-telemetry.server.ts";
 import { applicationRuntime } from "./lifecycle.server.ts";
 
@@ -16,7 +16,7 @@ export interface RouteEffectOptions {
  * Everything `WebApplicationLive` provides. A handler may require any of it; the runtime is built
  * once at start-up and the process exits if it cannot be, so nothing here is optional at runtime.
  */
-type RuntimeServices = ClientTelemetry | Database.Service | EnquiryNotifier | OtlpExporter.Flusher;
+type RuntimeServices = ClientTelemetry | Database.Service | OtlpExporter.Flusher;
 
 export interface RouteEffectRunner<R = ClientTelemetry | OtlpExporter.Flusher> {
   <A, E>(

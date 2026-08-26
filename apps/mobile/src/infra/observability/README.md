@@ -4,10 +4,11 @@ This module is the first-party operational telemetry channel. It complements EAS
 Sentry: Sentry owns deployed crash/error reporting, while this channel owns allowlisted operational
 records. Effect/OpenTelemetry remains the server instrumentation system.
 
-The queue itself is `TelemetryOutbox` from `@stu/observability/browser`, shared with the web client.
-This module supplies only the native ports: the durable Expo document-storage adapter, the
-authenticated transport, and the app-lifecycle controller. See that package's README for the
-channel contract and the queue's guarantees.
+The queue itself is the `TelemetryOutbox` Effect service from `@stu/observability/browser`, shared
+with the web client. This module supplies the native layers: durable Expo document storage,
+authenticated delivery, Expo Network reachability, and React Native app lifecycle. The controller
+is one cancellable Effect program rather than a second timer/subscription state machine. See that
+package's README for the channel contract and queue guarantees.
 
 ## Activation
 
@@ -24,9 +25,8 @@ app's own session, so once mobile authentication exists, pass that authority fro
 to `MobileTelemetryProvider`. The endpoint must be the Studienbuch server relay, never the fleet
 collector directly.
 
-`expo-network` is installed for Better Auth's Expo client and is the preferred native reachability
-source when the telemetry provider is connected to authenticated sessions. Until then, send results,
-bounded retries, and foreground transitions remain the telemetry channel's only signals.
+Once enabled, the controller flushes after foregrounding, restored Expo Network reachability, and a
+30-second fallback cadence. Failed sends remain durable and use the shared per-record backoff.
 
 ## Sentry
 

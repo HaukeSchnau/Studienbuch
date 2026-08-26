@@ -331,7 +331,7 @@ const resourceKey = (resourceType: TimetableResourceType, resourceId: number) =>
   `${resourceType}:${resourceId}`;
 
 /** Converts decoded timetable views into independently reconcilable daily snapshots. */
-export const makeTimetableImportPlan = (inventory: TimetableInventory): TimetableImportPlan => {
+export const makeTimetableImportPlan = Effect.fnUntraced(function* (inventory: TimetableInventory) {
   const academicYearExternalId = String(inventory.academicYear.id);
   const expectedResourceKeys = new Set(
     importedTimetableResourceTypes.flatMap((resourceType) =>
@@ -399,7 +399,7 @@ export const makeTimetableImportPlan = (inventory: TimetableInventory): Timetabl
       dataSourceId: inventory.dataSourceId,
       dataset: "timetable",
       scope: `academic-year:${academicYearExternalId}/resource-types:${importedTimetableResourceTypes.join(",")}/date:${state.date}`,
-      contentHash: hashSourceObservations(observations),
+      contentHash: yield* hashSourceObservations(observations),
       completeness,
       observations,
       counts,
@@ -450,7 +450,7 @@ export const makeTimetableImportPlan = (inventory: TimetableInventory): Timetabl
     },
     snapshots,
   };
-};
+});
 
 const resourcesFor = (
   resourceType: ImportedTimetableResourceType,
@@ -531,7 +531,7 @@ export const fetchTimetableImportPlan = Effect.fn("WebUntis.fetchTimetableImport
     { concurrency: 4 },
   );
 
-  return makeTimetableImportPlan({
+  return yield* makeTimetableImportPlan({
     dataSourceId: `webuntis:${appData.tenant.id}`,
     school: {
       externalId: appData.tenant.id,

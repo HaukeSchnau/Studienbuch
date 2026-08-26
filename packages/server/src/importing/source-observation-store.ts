@@ -125,9 +125,9 @@ const recordIdentityCondition = (
     eq(sourceRecords.externalId, externalId),
   );
 
-const prepareObservations = <Observation extends SourceRecordObservation>(
-  snapshot: SourceSnapshot<Observation>,
-) => {
+const prepareObservations = Effect.fnUntraced(function* <
+  Observation extends SourceRecordObservation,
+>(snapshot: SourceSnapshot<Observation>) {
   const byIdentity = new Map<string, PreparedObservation>();
   for (const observation of snapshot.observations) {
     const key = identityKey(observation._tag, observation.externalId);
@@ -143,11 +143,11 @@ const prepareObservations = <Observation extends SourceRecordObservation>(
     byIdentity.set(key, {
       observation,
       identityKey: key,
-      contentHash: hashSourceObservation(observation),
+      contentHash: yield* hashSourceObservation(observation),
     });
   }
   return byIdentity;
-};
+});
 
 /**
  * Reconciles one provider scope without copying unchanged payloads.
@@ -158,7 +158,7 @@ const prepareObservations = <Observation extends SourceRecordObservation>(
 export const persistSourceSnapshot = Effect.fn("Importing.persistSourceSnapshot")(function* <
   Observation extends SourceRecordObservation,
 >(snapshot: SourceSnapshot<Observation>) {
-  const prepared = prepareObservations(snapshot);
+  const prepared = yield* prepareObservations(snapshot);
   if (!(prepared instanceof Map)) return yield* prepared;
 
   const database = yield* Database.Service;

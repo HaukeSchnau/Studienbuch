@@ -56,8 +56,9 @@ lives in `features/setup` beside the rest of setup.
   `domain-ui`.
 - `src/domain-ui` owns reusable presentation components that know about school concepts such as
   subjects, courses, signatures, and confirmation state. These components should not fetch app data.
-- `src/infra/native` owns native/device wrappers such as haptics. Features should depend on these
-  small wrappers instead of importing native modules directly.
+- `src/infra/native` owns native/device adapters. Fallible operations with permissions or returned
+  data, such as image picking, are Effect services with typed errors; presentation-only feedback
+  such as haptics stays a small best-effort wrapper. Features do not import Expo modules directly.
 - `src/infra/routing` owns route parameter parsing and route path construction. Avoid scattering
   route string templates through feature components.
 

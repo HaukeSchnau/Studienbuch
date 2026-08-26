@@ -6,6 +6,7 @@ import { Button } from "#/ui/button.tsx";
 import { Input } from "#/ui/input.tsx";
 import { Label } from "#/ui/label.tsx";
 import { Textarea } from "#/ui/textarea.tsx";
+import { submitEnquiry } from "./enquiry.ts";
 
 type Status = "idle" | "sending" | "sent" | "failed";
 
@@ -72,24 +73,9 @@ export const EnquiryForm = () => {
         const data = new FormData(form);
         setStatus("sending");
 
-        void fetch("/api/enquiry", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            schoolName: data.get("schoolName"),
-            contactName: data.get("contactName"),
-            email: data.get("email"),
-            message: data.get("message"),
-            trap: data.get("trap"),
-            startedAt: startedAt.current,
-          }),
-        })
-          .then((response) => {
-            setStatus(response.ok ? "sent" : "failed");
-          })
-          .catch(() => {
-            setStatus("failed");
-          });
+        void submitEnquiry(data, startedAt.current).then((accepted) =>
+          setStatus(accepted ? "sent" : "failed"),
+        );
       }}
     >
       <div className="grid gap-5 sm:grid-cols-2">

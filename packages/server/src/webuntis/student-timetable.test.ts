@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { runCrypto } from "../cryptography/testing.ts";
 import type {
   DisplayResource,
   TimetableEntries,
@@ -12,6 +13,9 @@ import {
   projectCourseRosterObservations,
   type StudentTimetableInventory,
 } from "./student-timetable.ts";
+
+const makePlan = (input: StudentTimetableInventory) =>
+  runCrypto(makeStudentTimetableImportPlan(input));
 
 const resource = (id: number, name: string): DisplayResource => ({
   id,
@@ -106,10 +110,10 @@ const inventory = (responses: ReadonlyArray<TimetableEntries>): StudentTimetable
 
 describe("WebUntis student timetable import", () => {
   it("stores complete private views but keeps names out of the preview", () => {
-    const first = makeStudentTimetableImportPlan(
+    const first = makePlan(
       inventory([response([day(bob.student, [102, 101]), day(alice.student, [102, 101])])]),
     );
-    const reordered = makeStudentTimetableImportPlan(
+    const reordered = makePlan(
       inventory([response([day(alice.student, [101, 102]), day(bob.student, [101, 102])])]),
     );
 
@@ -128,7 +132,7 @@ describe("WebUntis student timetable import", () => {
   });
 
   it("projects a name-free roster with stable IGS class progression keys", () => {
-    const plan = makeStudentTimetableImportPlan(
+    const plan = makePlan(
       inventory([response([day(alice.student, [101]), day(bob.student, [101])])]),
     );
     const rosters = projectCourseRosterObservations({
@@ -151,7 +155,7 @@ describe("WebUntis student timetable import", () => {
   });
 
   it("makes a date partial when a student row is missing", () => {
-    const plan = makeStudentTimetableImportPlan(inventory([response([day(alice.student, [101])])]));
+    const plan = makePlan(inventory([response([day(alice.student, [101])])]));
 
     expect(plan.preview.days[0]).toMatchObject({
       completeness: "Partial",

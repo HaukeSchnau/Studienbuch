@@ -1,6 +1,7 @@
 import { Importing, Organization, Schedule } from "@stu/core";
 import { describe, expect, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
+import { runCrypto } from "../cryptography/testing.ts";
 import type {
   DisplayResource,
   TimetableEntries,
@@ -13,6 +14,8 @@ import {
   projectTimetableOccurrences,
   type TimetableInventory,
 } from "./timetable.ts";
+
+const makePlan = (input: TimetableInventory) => runCrypto(makeTimetableImportPlan(input));
 
 const resource = (id: number, name: string): DisplayResource => ({
   id,
@@ -122,12 +125,12 @@ describe("WebUntis timetable import", () => {
       position1: [{ current: addedTeacher, removed: removedTeacher }],
       position4: [{ current: positionResource("CLASS", "REGULAR", "Class 2"), removed: null }],
     });
-    const first = makeTimetableImportPlan(
+    const first = makePlan(
       inventory([
         response([timetableDay(classTwo, [otherView]), timetableDay(classOne, [changed])]),
       ]),
     );
-    const reordered = makeTimetableImportPlan(
+    const reordered = makePlan(
       inventory([
         response([timetableDay(classOne, [changed]), timetableDay(classTwo, [otherView])]),
       ]),
@@ -154,7 +157,7 @@ describe("WebUntis timetable import", () => {
   });
 
   it("treats an empty response as complete when every class has an explicit no-data row", () => {
-    const plan = makeTimetableImportPlan(
+    const plan = makePlan(
       inventory([
         response([
           timetableDay(classOne, [], { status: "NO_DATA" }),
@@ -174,7 +177,7 @@ describe("WebUntis timetable import", () => {
   });
 
   it("keeps cancellations, additional periods, and response locations in the raw payload", () => {
-    const plan = makeTimetableImportPlan(
+    const plan = makePlan(
       inventory([
         response([
           timetableDay(classOne, [timetableEntry({ ids: [201], status: "CANCELLED" })], {
@@ -205,7 +208,7 @@ describe("WebUntis timetable import", () => {
   });
 
   it("preserves a null primary position from historical timetable entries", () => {
-    const plan = makeTimetableImportPlan(
+    const plan = makePlan(
       inventory([
         response([
           timetableDay(classOne, [timetableEntry({ position1: null })]),
@@ -218,7 +221,7 @@ describe("WebUntis timetable import", () => {
   });
 
   it("makes missing, denied, and response-error dates partial so absence cannot delete records", () => {
-    const plan = makeTimetableImportPlan(
+    const plan = makePlan(
       inventory([
         response(
           [timetableDay(classOne, [], { status: "NOT_ALLOWED_FOR_RESOURCE" })],
@@ -240,7 +243,7 @@ describe("WebUntis timetable import", () => {
   it("omits a conflicting raw identity and marks its date partial", () => {
     const regular = timetableEntry();
     const conflicting = timetableEntry({ status: "CANCELLED" });
-    const plan = makeTimetableImportPlan(
+    const plan = makePlan(
       inventory([
         response([timetableDay(classOne, [regular, conflicting]), timetableDay(classTwo, [])]),
       ]),
@@ -285,7 +288,7 @@ describe("WebUntis timetable import", () => {
         lessonText: null,
         substitutionText: null,
       });
-      const plan = makeTimetableImportPlan(
+      const plan = makePlan(
         inventory(
           [
             response([
@@ -417,7 +420,7 @@ describe("WebUntis timetable import", () => {
   it.effect("reports invalid provider times in the Effect error channel", () =>
     Effect.gen(function* () {
       const invalid = timetableEntry({ duration: { start: "tomorrow", end: "09:30" } });
-      const plan = makeTimetableImportPlan(
+      const plan = makePlan(
         inventory([response([timetableDay(classOne, [invalid]), timetableDay(classTwo, [])])]),
       );
       const failure = yield* projectTimetableOccurrences({
@@ -438,7 +441,7 @@ describe("WebUntis timetable import", () => {
       const dated = timetableEntry({
         duration: { start: "2026-08-24T08:00", end: "2026-08-24T09:30" },
       });
-      const plan = makeTimetableImportPlan(
+      const plan = makePlan(
         inventory([response([timetableDay(classOne, [dated]), timetableDay(classTwo, [])])]),
       );
       const occurrences = yield* projectTimetableOccurrences({

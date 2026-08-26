@@ -186,9 +186,9 @@ const addEntries = (
 };
 
 /** Builds private daily snapshots. The preview contains counts and provider IDs, never student names. */
-export const makeStudentTimetableImportPlan = (
+export const makeStudentTimetableImportPlan = Effect.fnUntraced(function* (
   inventory: StudentTimetableInventory,
-): StudentTimetableImportPlan => {
+) {
   const academicYearExternalId = String(inventory.academicYear.id);
   const studentsById = new Map(inventory.students.map((item) => [item.student.id, item]));
   const expectedStudentKeys = new Set(
@@ -256,7 +256,7 @@ export const makeStudentTimetableImportPlan = (
       dataSourceId: inventory.dataSourceId,
       dataset: "course-rosters",
       scope: `academic-year:${academicYearExternalId}/resource-type:STUDENT/date:${state.date}`,
-      contentHash: hashSourceObservations(observations),
+      contentHash: yield* hashSourceObservations(observations),
       completeness,
       observations,
       counts,
@@ -297,7 +297,7 @@ export const makeStudentTimetableImportPlan = (
     },
     snapshots,
   };
-};
+});
 
 const isEffectiveOn = (
   date: string,
@@ -531,7 +531,7 @@ export const fetchStudentTimetableImportPlan = Effect.fn(
     { concurrency: 3 },
   );
 
-  return makeStudentTimetableImportPlan({
+  return yield* makeStudentTimetableImportPlan({
     dataSourceId: `webuntis:${appData.tenant.id}`,
     school: {
       externalId: appData.tenant.id,

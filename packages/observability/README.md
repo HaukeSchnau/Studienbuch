@@ -44,14 +44,16 @@ type means editing this file and nothing else.
 
 ### One queue
 
-`TelemetryOutbox` is the only client-side queue. Platform differences are ports, not copies:
+`TelemetryOutbox` is the only client-side queue. It is an Effect service built from storage and
+delivery services; `Ref`, `Semaphore`, `Clock`, and `Random` own its state, serialization, time, and
+retry jitter. Platform differences stay at the layer boundary rather than producing queue copies:
 
-| Port       | Browser                            | Mobile                  |
-| ---------- | ---------------------------------- | ----------------------- |
-| `storage`  | `memoryTelemetryStorage()`         | Expo document directory |
-| `delivery` | same-origin `fetch` + `sendBeacon` | authenticated `fetch`   |
-| `clock`    | `Date.now`                         | `Date.now`              |
-| `random`   | `Math.random`                      | `Math.random`           |
+| Service             | Browser                            | Mobile                  |
+| ------------------- | ---------------------------------- | ----------------------- |
+| `TelemetryStorage`  | `memoryTelemetryStorage()`         | Expo document directory |
+| `TelemetryDelivery` | same-origin `fetch` + `sendBeacon` | authenticated `fetch`   |
+| Effect `Clock`      | browser clock adapter              | runtime clock           |
+| Effect `Random`     | browser randomness adapter         | runtime randomness      |
 
 It guarantees: bounded memory by bytes and optionally by record count, oldest-low-priority-first
 eviction so failures survive a full queue, per-record jittered exponential backoff, age expiry,
