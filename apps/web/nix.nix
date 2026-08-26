@@ -113,7 +113,7 @@ let
   # after running `just web-lock` for relevant workspace manifest or primary lock changes.
   pnpmDependencyHash =
     if isProductionPlatform then
-      "sha256-C6rA0UNUNC20kimQD/xbd33U7eRTeyqPstzLYEDXs24="
+      "sha256-Wd0yV6eMc4WAobwcMhjVIwmgbUNNO51UtWftA1Q3zjs="
     else
       # Nixpkgs' forced fetch is platform-independent; keep it for supported development systems.
       "sha256-6PaVJIdZn4NTtFVrN/CFtrLXT5msU7amWKSus01gBmc=";
