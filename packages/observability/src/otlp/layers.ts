@@ -4,6 +4,7 @@ import * as Layer from "effect/Layer";
 import * as Logger from "effect/Logger";
 import type * as LogLevel from "effect/LogLevel";
 import * as References from "effect/References";
+import * as Tracer from "effect/Tracer";
 import type * as Duration from "effect/Duration";
 import type * as HttpClient from "effect/unstable/http/HttpClient";
 import {
@@ -30,6 +31,20 @@ export interface OtlpServerLayerOptions {
   readonly traceLevel?: LogLevel.LogLevel;
   readonly exportInterval?: Duration.Input;
   readonly shutdownTimeout?: Duration.Input;
+  readonly databaseSpanSampleEvery?: number;
+}
+
+const drizzleOperationSpan = "drizzle.operation";
+
+/**
+ * Keeps representative database detail without letting row-oriented import work dominate a trace.
+ * `sql.execute` is a child of Drizzle's operation span, so Effect propagates the sampling decision
+ * to the actual database span and preserves both halves of every retained sample.
+ */
+export function makeDatabaseSpanSampler(sampleEvery = 100): (spanName: string) => boolean {
+  let operation = 0;
+  return (spanName) =>
+    spanName !== drizzleOperationSpan || operation++ % Math.max(1, sampleEvery) === 0;
 }
 
 export function otlpProtobufLayer(
@@ -45,6 +60,22 @@ export function otlpProtobufLayer(
     exportInterval: options.exportInterval ?? "5 seconds",
     shutdownTimeout: options.shutdownTimeout ?? "3 seconds",
   } as const;
+  const tracer = Layer.effect(
+    Tracer.Tracer,
+    Effect.gen(function* () {
+      const delegate = yield* OtlpTracer.make({ ...common, url: `${baseUrl}/v1/traces` });
+      const shouldSample = makeDatabaseSpanSampler(options.databaseSpanSampleEvery);
+      return Tracer.make({
+        span(spanOptions) {
+          return delegate.span({
+            ...spanOptions,
+            sampled: spanOptions.sampled && shouldSample(spanOptions.name),
+          });
+        },
+        context: delegate.context,
+      });
+    }),
+  ).pipe(Layer.provideMerge(OtlpExporter.layerFlusher));
   const exporter = Layer.mergeAll(
     OtlpLogger.layer({
       ...common,
@@ -53,7 +84,7 @@ export function otlpProtobufLayer(
       mergeWithExisting: false,
     }),
     OtlpMetrics.layer({ ...common, url: `${baseUrl}/v1/metrics` }),
-    OtlpTracer.layer({ ...common, url: `${baseUrl}/v1/traces` }),
+    tracer,
   ).pipe(Layer.provide(OtlpSerialization.layerProtobuf));
 
   return Layer.mergeAll(references, exporter);
