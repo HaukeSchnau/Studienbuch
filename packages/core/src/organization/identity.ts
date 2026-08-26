@@ -1,6 +1,33 @@
+import * as Schema from "effect/Schema";
 import { entityId } from "../internal/entity-id";
 
-export const SchoolId = entityId("SchoolId");
+/**
+ * The one school identifier no school may take.
+ *
+ * The application shell spells a person's context as a path: `/app/{schoolId}/{kind}` for a school,
+ * `/app/operator` for the platform operator. Without this reservation `/app/operator/schueler` reads
+ * equally well as "a school called operator", and the two contexts become impossible to tell apart
+ * from a link alone.
+ */
+export const reservedSchoolId = "operator";
+
+/**
+ * A school's stable identifier, which is also a path segment.
+ *
+ * An operator chooses it when generating a school's first code batch, and it then appears in every
+ * link into that school — so it has to survive being typed, shared and read aloud. A slug is the
+ * constraint that makes that true.
+ */
+export const SchoolId = entityId("SchoolId").pipe(
+  Schema.check(
+    Schema.isPattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    Schema.makeFilter((value): Schema.FilterOutput =>
+      value === reservedSchoolId
+        ? `${reservedSchoolId} is reserved for the operator context`
+        : true,
+    ),
+  ),
+);
 export type SchoolId = typeof SchoolId.Type;
 
 export const SubjectId = entityId("SubjectId");

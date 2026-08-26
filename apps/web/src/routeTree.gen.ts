@@ -22,12 +22,24 @@ import { Route as PublicDatenschutzRouteImport } from './routes/_public.datensch
 import { Route as PublicImpressumRouteImport } from './routes/_public.impressum'
 import { Route as AktivierenAbschliessenRouteImport } from './routes/aktivieren_.abschliessen'
 import { Route as ApiRpcRouteImport } from './routes/api/rpc'
+import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppKontoRouteImport } from './routes/app.konto'
+import { Route as AppOperatorRouteImport } from './routes/app.operator'
 import { Route as OperatorSetupRouteImport } from './routes/operator/setup'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiHealthLiveRouteImport } from './routes/api/health/live'
 import { Route as ApiHealthReadyRouteImport } from './routes/api/health/ready'
+import { Route as AppSchoolRolleRouteImport } from './routes/app.$school.$rolle'
+import { Route as AppOperatorIndexRouteImport } from './routes/app.operator.index'
+import { Route as AppOperatorSchulenRouteImport } from './routes/app.operator.schulen'
+import { Route as AppOperatorZugangscodesRouteImport } from './routes/app.operator.zugangscodes'
 import { Route as ApiObservabilityV1CanaryRouteImport } from './routes/api/observability/v1/canary'
 import { Route as ApiObservabilityV1TelemetryRouteImport } from './routes/api/observability/v1/telemetry'
+import { Route as AppSchoolRolleIndexRouteImport } from './routes/app.$school.$rolle.index'
+import { Route as AppSchoolRolleBestaetigungenRouteImport } from './routes/app.$school.$rolle.bestaetigungen'
+import { Route as AppSchoolRolleHeuteRouteImport } from './routes/app.$school.$rolle.heute'
+import { Route as AppSchoolRolleKurseRouteImport } from './routes/app.$school.$rolle.kurse'
+import { Route as AppSchoolRolleWocheRouteImport } from './routes/app.$school.$rolle.woche'
 
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
@@ -93,6 +105,21 @@ const ApiRpcRoute = ApiRpcRouteImport.update({
   path: '/api/rpc',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppKontoRoute = AppKontoRouteImport.update({
+  id: '/konto',
+  path: '/konto',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOperatorRoute = AppOperatorRouteImport.update({
+  id: '/operator',
+  path: '/operator',
+  getParentRoute: () => AppRoute,
+} as any)
 const OperatorSetupRoute = OperatorSetupRouteImport.update({
   id: '/operator/setup',
   path: '/operator/setup',
@@ -113,6 +140,26 @@ const ApiHealthReadyRoute = ApiHealthReadyRouteImport.update({
   path: '/api/health/ready',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppSchoolRolleRoute = AppSchoolRolleRouteImport.update({
+  id: '/$school/$rolle',
+  path: '/$school/$rolle',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOperatorIndexRoute = AppOperatorIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppOperatorRoute,
+} as any)
+const AppOperatorSchulenRoute = AppOperatorSchulenRouteImport.update({
+  id: '/schulen',
+  path: '/schulen',
+  getParentRoute: () => AppOperatorRoute,
+} as any)
+const AppOperatorZugangscodesRoute = AppOperatorZugangscodesRouteImport.update({
+  id: '/zugangscodes',
+  path: '/zugangscodes',
+  getParentRoute: () => AppOperatorRoute,
+} as any)
 const ApiObservabilityV1CanaryRoute =
   ApiObservabilityV1CanaryRouteImport.update({
     id: '/api/observability/v1/canary',
@@ -125,12 +172,38 @@ const ApiObservabilityV1TelemetryRoute =
     path: '/api/observability/v1/telemetry',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AppSchoolRolleIndexRoute = AppSchoolRolleIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppSchoolRolleRoute,
+} as any)
+const AppSchoolRolleBestaetigungenRoute =
+  AppSchoolRolleBestaetigungenRouteImport.update({
+    id: '/bestaetigungen',
+    path: '/bestaetigungen',
+    getParentRoute: () => AppSchoolRolleRoute,
+  } as any)
+const AppSchoolRolleHeuteRoute = AppSchoolRolleHeuteRouteImport.update({
+  id: '/heute',
+  path: '/heute',
+  getParentRoute: () => AppSchoolRolleRoute,
+} as any)
+const AppSchoolRolleKurseRoute = AppSchoolRolleKurseRouteImport.update({
+  id: '/kurse',
+  path: '/kurse',
+  getParentRoute: () => AppSchoolRolleRoute,
+} as any)
+const AppSchoolRolleWocheRoute = AppSchoolRolleWocheRouteImport.update({
+  id: '/woche',
+  path: '/woche',
+  getParentRoute: () => AppSchoolRolleRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/aktivieren': typeof AktivierenRoute
   '/anmelden': typeof AnmeldenRoute
-  '/app': typeof AppRoute
+  '/app': typeof AppRouteWithChildren
   '/einrichten': typeof EinrichtenRoute
   '/passwort-vergessen': typeof PasswortVergessenRoute
   '/passwort-zuruecksetzen': typeof PasswortZuruecksetzenRoute
@@ -139,17 +212,28 @@ export interface FileRoutesByFullPath {
   '/impressum': typeof PublicImpressumRoute
   '/aktivieren/abschliessen': typeof AktivierenAbschliessenRoute
   '/api/rpc': typeof ApiRpcRoute
+  '/app/konto': typeof AppKontoRoute
+  '/app/operator': typeof AppOperatorRouteWithChildren
   '/operator/setup': typeof OperatorSetupRoute
+  '/app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
+  '/app/$school/$rolle': typeof AppSchoolRolleRouteWithChildren
+  '/app/operator/schulen': typeof AppOperatorSchulenRoute
+  '/app/operator/zugangscodes': typeof AppOperatorZugangscodesRoute
+  '/app/operator/': typeof AppOperatorIndexRoute
   '/api/observability/v1/canary': typeof ApiObservabilityV1CanaryRoute
   '/api/observability/v1/telemetry': typeof ApiObservabilityV1TelemetryRoute
+  '/app/$school/$rolle/bestaetigungen': typeof AppSchoolRolleBestaetigungenRoute
+  '/app/$school/$rolle/heute': typeof AppSchoolRolleHeuteRoute
+  '/app/$school/$rolle/kurse': typeof AppSchoolRolleKurseRoute
+  '/app/$school/$rolle/woche': typeof AppSchoolRolleWocheRoute
+  '/app/$school/$rolle/': typeof AppSchoolRolleIndexRoute
 }
 export interface FileRoutesByTo {
   '/aktivieren': typeof AktivierenRoute
   '/anmelden': typeof AnmeldenRoute
-  '/app': typeof AppRoute
   '/einrichten': typeof EinrichtenRoute
   '/passwort-vergessen': typeof PasswortVergessenRoute
   '/passwort-zuruecksetzen': typeof PasswortZuruecksetzenRoute
@@ -158,20 +242,30 @@ export interface FileRoutesByTo {
   '/impressum': typeof PublicImpressumRoute
   '/aktivieren/abschliessen': typeof AktivierenAbschliessenRoute
   '/api/rpc': typeof ApiRpcRoute
+  '/app/konto': typeof AppKontoRoute
   '/operator/setup': typeof OperatorSetupRoute
   '/': typeof PublicIndexRoute
+  '/app': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
+  '/app/operator/schulen': typeof AppOperatorSchulenRoute
+  '/app/operator/zugangscodes': typeof AppOperatorZugangscodesRoute
+  '/app/operator': typeof AppOperatorIndexRoute
   '/api/observability/v1/canary': typeof ApiObservabilityV1CanaryRoute
   '/api/observability/v1/telemetry': typeof ApiObservabilityV1TelemetryRoute
+  '/app/$school/$rolle/bestaetigungen': typeof AppSchoolRolleBestaetigungenRoute
+  '/app/$school/$rolle/heute': typeof AppSchoolRolleHeuteRoute
+  '/app/$school/$rolle/kurse': typeof AppSchoolRolleKurseRoute
+  '/app/$school/$rolle/woche': typeof AppSchoolRolleWocheRoute
+  '/app/$school/$rolle': typeof AppSchoolRolleIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_public': typeof PublicRouteWithChildren
   '/aktivieren': typeof AktivierenRoute
   '/anmelden': typeof AnmeldenRoute
-  '/app': typeof AppRoute
+  '/app': typeof AppRouteWithChildren
   '/einrichten': typeof EinrichtenRoute
   '/passwort-vergessen': typeof PasswortVergessenRoute
   '/passwort-zuruecksetzen': typeof PasswortZuruecksetzenRoute
@@ -180,13 +274,25 @@ export interface FileRoutesById {
   '/_public/impressum': typeof PublicImpressumRoute
   '/aktivieren_/abschliessen': typeof AktivierenAbschliessenRoute
   '/api/rpc': typeof ApiRpcRoute
+  '/app/konto': typeof AppKontoRoute
+  '/app/operator': typeof AppOperatorRouteWithChildren
   '/operator/setup': typeof OperatorSetupRoute
   '/_public/': typeof PublicIndexRoute
+  '/app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
+  '/app/$school/$rolle': typeof AppSchoolRolleRouteWithChildren
+  '/app/operator/schulen': typeof AppOperatorSchulenRoute
+  '/app/operator/zugangscodes': typeof AppOperatorZugangscodesRoute
+  '/app/operator/': typeof AppOperatorIndexRoute
   '/api/observability/v1/canary': typeof ApiObservabilityV1CanaryRoute
   '/api/observability/v1/telemetry': typeof ApiObservabilityV1TelemetryRoute
+  '/app/$school/$rolle/bestaetigungen': typeof AppSchoolRolleBestaetigungenRoute
+  '/app/$school/$rolle/heute': typeof AppSchoolRolleHeuteRoute
+  '/app/$school/$rolle/kurse': typeof AppSchoolRolleKurseRoute
+  '/app/$school/$rolle/woche': typeof AppSchoolRolleWocheRoute
+  '/app/$school/$rolle/': typeof AppSchoolRolleIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -203,17 +309,28 @@ export interface FileRouteTypes {
     | '/impressum'
     | '/aktivieren/abschliessen'
     | '/api/rpc'
+    | '/app/konto'
+    | '/app/operator'
     | '/operator/setup'
+    | '/app/'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
+    | '/app/$school/$rolle'
+    | '/app/operator/schulen'
+    | '/app/operator/zugangscodes'
+    | '/app/operator/'
     | '/api/observability/v1/canary'
     | '/api/observability/v1/telemetry'
+    | '/app/$school/$rolle/bestaetigungen'
+    | '/app/$school/$rolle/heute'
+    | '/app/$school/$rolle/kurse'
+    | '/app/$school/$rolle/woche'
+    | '/app/$school/$rolle/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/aktivieren'
     | '/anmelden'
-    | '/app'
     | '/einrichten'
     | '/passwort-vergessen'
     | '/passwort-zuruecksetzen'
@@ -222,13 +339,23 @@ export interface FileRouteTypes {
     | '/impressum'
     | '/aktivieren/abschliessen'
     | '/api/rpc'
+    | '/app/konto'
     | '/operator/setup'
     | '/'
+    | '/app'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
+    | '/app/operator/schulen'
+    | '/app/operator/zugangscodes'
+    | '/app/operator'
     | '/api/observability/v1/canary'
     | '/api/observability/v1/telemetry'
+    | '/app/$school/$rolle/bestaetigungen'
+    | '/app/$school/$rolle/heute'
+    | '/app/$school/$rolle/kurse'
+    | '/app/$school/$rolle/woche'
+    | '/app/$school/$rolle'
   id:
     | '__root__'
     | '/_public'
@@ -243,20 +370,32 @@ export interface FileRouteTypes {
     | '/_public/impressum'
     | '/aktivieren_/abschliessen'
     | '/api/rpc'
+    | '/app/konto'
+    | '/app/operator'
     | '/operator/setup'
     | '/_public/'
+    | '/app/'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
+    | '/app/$school/$rolle'
+    | '/app/operator/schulen'
+    | '/app/operator/zugangscodes'
+    | '/app/operator/'
     | '/api/observability/v1/canary'
     | '/api/observability/v1/telemetry'
+    | '/app/$school/$rolle/bestaetigungen'
+    | '/app/$school/$rolle/heute'
+    | '/app/$school/$rolle/kurse'
+    | '/app/$school/$rolle/woche'
+    | '/app/$school/$rolle/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   PublicRoute: typeof PublicRouteWithChildren
   AktivierenRoute: typeof AktivierenRoute
   AnmeldenRoute: typeof AnmeldenRoute
-  AppRoute: typeof AppRoute
+  AppRoute: typeof AppRouteWithChildren
   EinrichtenRoute: typeof EinrichtenRoute
   PasswortVergessenRoute: typeof PasswortVergessenRoute
   PasswortZuruecksetzenRoute: typeof PasswortZuruecksetzenRoute
@@ -364,6 +503,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRpcRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/konto': {
+      id: '/app/konto'
+      path: '/konto'
+      fullPath: '/app/konto'
+      preLoaderRoute: typeof AppKontoRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/operator': {
+      id: '/app/operator'
+      path: '/operator'
+      fullPath: '/app/operator'
+      preLoaderRoute: typeof AppOperatorRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/operator/setup': {
       id: '/operator/setup'
       path: '/operator/setup'
@@ -392,6 +552,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthReadyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/$school/$rolle': {
+      id: '/app/$school/$rolle'
+      path: '/$school/$rolle'
+      fullPath: '/app/$school/$rolle'
+      preLoaderRoute: typeof AppSchoolRolleRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/operator/': {
+      id: '/app/operator/'
+      path: '/'
+      fullPath: '/app/operator/'
+      preLoaderRoute: typeof AppOperatorIndexRouteImport
+      parentRoute: typeof AppOperatorRoute
+    }
+    '/app/operator/schulen': {
+      id: '/app/operator/schulen'
+      path: '/schulen'
+      fullPath: '/app/operator/schulen'
+      preLoaderRoute: typeof AppOperatorSchulenRouteImport
+      parentRoute: typeof AppOperatorRoute
+    }
+    '/app/operator/zugangscodes': {
+      id: '/app/operator/zugangscodes'
+      path: '/zugangscodes'
+      fullPath: '/app/operator/zugangscodes'
+      preLoaderRoute: typeof AppOperatorZugangscodesRouteImport
+      parentRoute: typeof AppOperatorRoute
+    }
     '/api/observability/v1/canary': {
       id: '/api/observability/v1/canary'
       path: '/api/observability/v1/canary'
@@ -405,6 +593,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/observability/v1/telemetry'
       preLoaderRoute: typeof ApiObservabilityV1TelemetryRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/app/$school/$rolle/': {
+      id: '/app/$school/$rolle/'
+      path: '/'
+      fullPath: '/app/$school/$rolle/'
+      preLoaderRoute: typeof AppSchoolRolleIndexRouteImport
+      parentRoute: typeof AppSchoolRolleRoute
+    }
+    '/app/$school/$rolle/bestaetigungen': {
+      id: '/app/$school/$rolle/bestaetigungen'
+      path: '/bestaetigungen'
+      fullPath: '/app/$school/$rolle/bestaetigungen'
+      preLoaderRoute: typeof AppSchoolRolleBestaetigungenRouteImport
+      parentRoute: typeof AppSchoolRolleRoute
+    }
+    '/app/$school/$rolle/heute': {
+      id: '/app/$school/$rolle/heute'
+      path: '/heute'
+      fullPath: '/app/$school/$rolle/heute'
+      preLoaderRoute: typeof AppSchoolRolleHeuteRouteImport
+      parentRoute: typeof AppSchoolRolleRoute
+    }
+    '/app/$school/$rolle/kurse': {
+      id: '/app/$school/$rolle/kurse'
+      path: '/kurse'
+      fullPath: '/app/$school/$rolle/kurse'
+      preLoaderRoute: typeof AppSchoolRolleKurseRouteImport
+      parentRoute: typeof AppSchoolRolleRoute
+    }
+    '/app/$school/$rolle/woche': {
+      id: '/app/$school/$rolle/woche'
+      path: '/woche'
+      fullPath: '/app/$school/$rolle/woche'
+      preLoaderRoute: typeof AppSchoolRolleWocheRouteImport
+      parentRoute: typeof AppSchoolRolleRoute
     }
   }
 }
@@ -424,11 +647,63 @@ const PublicRouteChildren: PublicRouteChildren = {
 const PublicRouteWithChildren =
   PublicRoute._addFileChildren(PublicRouteChildren)
 
+interface AppOperatorRouteChildren {
+  AppOperatorSchulenRoute: typeof AppOperatorSchulenRoute
+  AppOperatorZugangscodesRoute: typeof AppOperatorZugangscodesRoute
+  AppOperatorIndexRoute: typeof AppOperatorIndexRoute
+}
+
+const AppOperatorRouteChildren: AppOperatorRouteChildren = {
+  AppOperatorSchulenRoute: AppOperatorSchulenRoute,
+  AppOperatorZugangscodesRoute: AppOperatorZugangscodesRoute,
+  AppOperatorIndexRoute: AppOperatorIndexRoute,
+}
+
+const AppOperatorRouteWithChildren = AppOperatorRoute._addFileChildren(
+  AppOperatorRouteChildren,
+)
+
+interface AppSchoolRolleRouteChildren {
+  AppSchoolRolleBestaetigungenRoute: typeof AppSchoolRolleBestaetigungenRoute
+  AppSchoolRolleHeuteRoute: typeof AppSchoolRolleHeuteRoute
+  AppSchoolRolleKurseRoute: typeof AppSchoolRolleKurseRoute
+  AppSchoolRolleWocheRoute: typeof AppSchoolRolleWocheRoute
+  AppSchoolRolleIndexRoute: typeof AppSchoolRolleIndexRoute
+}
+
+const AppSchoolRolleRouteChildren: AppSchoolRolleRouteChildren = {
+  AppSchoolRolleBestaetigungenRoute: AppSchoolRolleBestaetigungenRoute,
+  AppSchoolRolleHeuteRoute: AppSchoolRolleHeuteRoute,
+  AppSchoolRolleKurseRoute: AppSchoolRolleKurseRoute,
+  AppSchoolRolleWocheRoute: AppSchoolRolleWocheRoute,
+  AppSchoolRolleIndexRoute: AppSchoolRolleIndexRoute,
+}
+
+const AppSchoolRolleRouteWithChildren = AppSchoolRolleRoute._addFileChildren(
+  AppSchoolRolleRouteChildren,
+)
+
+interface AppRouteChildren {
+  AppKontoRoute: typeof AppKontoRoute
+  AppOperatorRoute: typeof AppOperatorRouteWithChildren
+  AppIndexRoute: typeof AppIndexRoute
+  AppSchoolRolleRoute: typeof AppSchoolRolleRouteWithChildren
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppKontoRoute: AppKontoRoute,
+  AppOperatorRoute: AppOperatorRouteWithChildren,
+  AppIndexRoute: AppIndexRoute,
+  AppSchoolRolleRoute: AppSchoolRolleRouteWithChildren,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   PublicRoute: PublicRouteWithChildren,
   AktivierenRoute: AktivierenRoute,
   AnmeldenRoute: AnmeldenRoute,
-  AppRoute: AppRoute,
+  AppRoute: AppRouteWithChildren,
   EinrichtenRoute: EinrichtenRoute,
   PasswortVergessenRoute: PasswortVergessenRoute,
   PasswortZuruecksetzenRoute: PasswortZuruecksetzenRoute,
