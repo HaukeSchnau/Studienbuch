@@ -336,6 +336,10 @@ often than substitutions, and importing every student claim every ten minutes wo
 private data without improving the client timetable. A daily reconciliation window, plus a refresh
 after directory changes, is the current default.
 
+Student entry requests combine at most 500 students with seven calendar dates. The daily source
+scopes merge those responses after all batches return. This keeps the roster window intact without
+asking WebUntis to calculate every student's whole window in one request.
+
 The private source scope is one complete academic year and date:
 
 ```text
@@ -549,8 +553,8 @@ entering their independent schedules. Its structured logs and spans use the
 
 The worker is a separate application rather than a background fiber in the web server. Web request
 lifecycle, replica count and restarts therefore cannot silently multiply or terminate import loops.
-The application is buildable and runnable from the workspace; production service wiring is still a
-deployment decision and this change does not start an unattended importer.
+Managed Development starts one worker for every registered checkout. Production runs the four
+bounded Release jobs through the host timers described above.
 
 ## Next implementation slice
 

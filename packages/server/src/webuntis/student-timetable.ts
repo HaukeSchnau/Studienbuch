@@ -36,6 +36,20 @@ import {
 type StudentFilterItem = TimetableFilter["students"][number];
 type TimetableEntryLocation = "Back" | "Day" | "Grid";
 
+export const studentTimetableDateBatchSize = 7;
+
+export const studentTimetableEntryRequests = (
+  studentIds: ReadonlyArray<number>,
+  requestedDates: ReadonlyArray<string>,
+) =>
+  EffectArray.chunksOf(requestedDates, studentTimetableDateBatchSize).flatMap((dates) =>
+    EffectArray.chunksOf(studentIds, timetableResourceBatchSize).map((resources) => ({
+      start: EffectArray.headNonEmpty(dates),
+      end: EffectArray.lastNonEmpty(dates),
+      resources,
+    })),
+  );
+
 export const StudentTimetableObservation = Schema.TaggedStruct("TimetableOccurrence", {
   externalId: Schema.String,
   payload: Schema.Struct({
@@ -515,19 +529,19 @@ export const fetchStudentTimetableImportPlan = Effect.fn(
     .getFilter({ start, end, resourceType: "STUDENT", timetableType: "STANDARD" })
     .pipe(withSchoolYear(academicYear.id));
   const students = [...filter.students].sort((left, right) => left.student.id - right.student.id);
-  const batches = EffectArray.chunksOf(
+  const entryRequests = studentTimetableEntryRequests(
     students.map((item) => item.student.id),
-    timetableResourceBatchSize,
+    requestedDates,
   );
   const responses = yield* Effect.forEach(
-    batches,
-    (resources) =>
+    entryRequests,
+    (request) =>
       timetable
         .getEntries({
-          start,
-          end,
+          start: request.start,
+          end: request.end,
           resourceType: "STUDENT",
-          resources,
+          resources: request.resources,
           timetableType: "STANDARD",
         })
         .pipe(withSchoolYear(academicYear.id)),
