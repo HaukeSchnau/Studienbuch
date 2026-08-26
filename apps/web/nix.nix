@@ -245,11 +245,17 @@ let
     runtimeInputs = [ nodejs ];
     text = ''
       web_url="$(project-context endpoint web url)"
-      database_host="$(project-context endpoint database listen-host)"
-      database_port="$(project-context endpoint database listen-port)"
 
       export BETTER_AUTH_URL="$web_url"
-      export DATABASE_URL="postgresql://postgres@$database_host:$database_port/postgres"
+      ${webUntisEnvironment {
+        requiredSecrets = false;
+        database = ''
+          database_host="$(project-context endpoint database listen-host)"
+          database_port="$(project-context endpoint database listen-port)"
+          DATABASE_URL="postgresql://postgres@$database_host:$database_port/postgres"
+          export DATABASE_URL
+        '';
+      }}
       export STUDIENBUCH_ENVIRONMENT="''${STUDIENBUCH_ENVIRONMENT:-development}"
       export STUDIENBUCH_OTEL_ENABLED="''${STUDIENBUCH_OTEL_ENABLED:-true}"
       export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:24318}"
@@ -263,8 +269,14 @@ let
     runtimeInputs = [ nodejs ];
     text = ''
       BETTER_AUTH_URL="$(project-context endpoint web url)"
-      DATABASE_URL="$(project-context parameter databaseUrl)"
-      export BETTER_AUTH_URL DATABASE_URL
+      export BETTER_AUTH_URL
+      ${webUntisEnvironment {
+        requiredSecrets = true;
+        database = ''
+          DATABASE_URL="$(project-context parameter databaseUrl)"
+          export DATABASE_URL
+        '';
+      }}
       export STUDIENBUCH_ENVIRONMENT=production
       export STUDIENBUCH_OTEL_ENABLED=true
       export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
