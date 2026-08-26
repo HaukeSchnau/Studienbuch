@@ -51,7 +51,8 @@ let
       done
       pg_isready --quiet --host="$database_host" --port="$database_port"
 
-      exec node --import tsx "$checkout/apps/console/src/migrate.ts"
+      exec node "$checkout/apps/console/node_modules/tsx/dist/cli.mjs" \
+        "$checkout/apps/console/src/migrate.ts"
     '';
   };
 in
