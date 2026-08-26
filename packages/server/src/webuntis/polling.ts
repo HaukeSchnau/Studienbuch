@@ -18,13 +18,21 @@ import * as Schedule from "effect/Schedule";
 import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
 import type { Schoolyear } from "@schnau/webuntis-api";
+import { Database } from "../database/client.ts";
 import { WebUntisImporter } from "./importer.ts";
-import { defaultPolicy, pollingWindows, type Policy, type PollingRange } from "./polling-policy.ts";
+import {
+  defaultPolicy,
+  pollingWindows,
+  type Cadence,
+  type Policy,
+  type PollingRange,
+} from "./polling-policy.ts";
 
 type Trigger = "startup" | "schedule" | "directory-change" | "one-shot";
 export type Job = "directory" | "recent-and-near-timetable" | "far-timetable" | "course-rosters";
 
 const isImportAlreadyRunning = Schema.is(WebUntisImporter.ImportAlreadyRunning);
+const isRetryableJobError = Schema.is(Database.Unavailable);
 
 const isImportAlreadyRunningCause = <E>(cause: Cause.Cause<E>) =>
   cause.reasons.length > 0 &&
@@ -39,8 +47,8 @@ export const jobs = [
   "course-rosters",
 ] as const satisfies ReadonlyArray<Job>;
 
-const cadence = (duration: Duration.Duration, jitter: boolean) => {
-  const schedule = Schedule.fixed(duration);
+const cadence = (duration: Duration.Duration, mode: Cadence, jitter: boolean) => {
+  const schedule = mode === "fixed" ? Schedule.fixed(duration) : Schedule.spaced(duration);
   return jitter ? Schedule.jittered(schedule) : schedule;
 };
 
@@ -67,7 +75,7 @@ const withRetries = <A, E, R>(
     Effect.retry({
       times: policy.retryCount,
       schedule: retrySchedule(job, policy),
-      while: (error) => !isImportAlreadyRunning(error),
+      while: isRetryableJobError,
     }),
   );
 
@@ -238,7 +246,7 @@ const makeRunner = Effect.fn("WebUntis.makePollingRunner")(function* (
 });
 
 const tolerateFailure = <A, E, R>(effect: Effect.Effect<Option.Option<A>, E, R>) =>
-  effect.pipe(Effect.catchCause(() => Effect.succeed(Option.none<A>())));
+  effect.pipe(Effect.orElseSucceed(() => Option.none<A>()));
 
 export const runOnceWithPolicy = Effect.fn("WebUntis.runPollingOnceWithPolicy")(function* (
   job: Job,
@@ -308,19 +316,23 @@ export const run = Effect.fn("WebUntis.runPolling")(function* (policy: Policy = 
     [
       Effect.schedule(
         runDirectoryAndRefreshCourseRosters(),
-        cadence(policy.directoryInterval, policy.jitter),
+        cadence(policy.directoryInterval, policy.directoryCadence, policy.jitter),
       ),
       Effect.schedule(
         tolerateFailure(runner.runTimetable("recent-and-near-timetable", "schedule")),
-        cadence(policy.recentAndNearTimetableInterval, policy.jitter),
+        cadence(
+          policy.recentAndNearTimetableInterval,
+          policy.recentAndNearTimetableCadence,
+          policy.jitter,
+        ),
       ),
       Effect.schedule(
         tolerateFailure(runner.runTimetable("far-timetable", "schedule")),
-        cadence(policy.farTimetableInterval, policy.jitter),
+        cadence(policy.farTimetableInterval, policy.farTimetableCadence, policy.jitter),
       ),
       Effect.schedule(
         tolerateFailure(runner.runCourseRosters("schedule")),
-        cadence(policy.courseRosterInterval, policy.jitter),
+        cadence(policy.courseRosterInterval, policy.courseRosterCadence, policy.jitter),
       ),
     ],
     { concurrency: "unbounded", discard: true },

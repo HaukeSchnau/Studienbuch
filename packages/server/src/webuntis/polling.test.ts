@@ -4,7 +4,7 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
 import { TestClock } from "effect/testing";
-import type { SchoolyearWithTimeGrid } from "@schnau/webuntis-api";
+import { DecodeError, type SchoolyearWithTimeGrid } from "@schnau/webuntis-api";
 import { Database } from "../database/client.ts";
 import { WebUntisImporter } from "./importer.ts";
 import { run, runOnce, runOnceWithPolicy, runScheduledOnceWithPolicy } from "./polling.ts";
@@ -150,6 +150,30 @@ describe("WebUntis polling worker", () => {
     }),
   );
 
+  it.effect("does not retry permanent provider failures", () =>
+    Effect.gen(function* () {
+      yield* TestClock.setTime(Date.parse("2026-08-25T10:00:00Z"));
+      const calls: Array<ImportCall> = [];
+      let attempts = 0;
+      const timetable: WebUntisImporter.Service["Service"]["importTimetable"] = () => {
+        attempts += 1;
+        return Effect.fail(
+          DecodeError.make({
+            path: "/api/public/timetable/weekly/data",
+            message: "unsupported provider payload",
+          }),
+        );
+      };
+
+      yield* runOnceWithPolicy("recent-and-near-timetable", policy).pipe(
+        Effect.provideService(WebUntisImporter.Service, service(calls, timetable)),
+        Effect.exit,
+      );
+
+      expect(attempts).toBe(1);
+    }),
+  );
+
   it.effect("uses the production policy when passed directly as an Effect callback", () =>
     Effect.gen(function* () {
       yield* TestClock.setTime(Date.parse("2026-08-25T10:00:00Z"));
@@ -271,6 +295,25 @@ describe("WebUntis polling worker", () => {
       yield* awaitCalls(calls, 6);
       expect(nearAttempts).toBe(3);
       yield* Fiber.interrupt(fiber);
+    }),
+  );
+
+  it.effect("does not turn worker defects into successful polling cycles", () =>
+    Effect.gen(function* () {
+      yield* TestClock.setTime(Date.parse("2026-08-25T10:00:00Z"));
+      const calls: Array<ImportCall> = [];
+      const timetable: WebUntisImporter.Service["Service"]["importTimetable"] = () =>
+        Effect.die("unexpected importer defect");
+
+      const exit = yield* run(policy).pipe(
+        Effect.provideService(WebUntisImporter.Service, service(calls, timetable)),
+        Effect.exit,
+      );
+
+      expect(Exit.isFailure(exit)).toBe(true);
+      if (Exit.isFailure(exit)) {
+        expect(exit.cause.reasons.some((reason) => reason._tag === "Die")).toBe(true);
+      }
     }),
   );
 });

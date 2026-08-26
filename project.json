@@ -118,15 +118,29 @@
     },
     "maintenanceJobs": {
       "webuntis-directory": {
+        "schedule": {
+          "calendar": "*-*-* 03:15:00"
+        },
         "secrets": ["webUntisUsername", "webUntisPassword"]
       },
       "webuntis-timetable-hot": {
+        "schedule": {
+          "interval": "10min",
+          "cadence": "fixed"
+        },
         "secrets": ["webUntisUsername", "webUntisPassword"]
       },
       "webuntis-timetable-warm": {
+        "schedule": {
+          "interval": "1h",
+          "cadence": "fixed"
+        },
         "secrets": ["webUntisUsername", "webUntisPassword"]
       },
       "webuntis-course-rosters": {
+        "schedule": {
+          "calendar": "*-*-* 04:00:00"
+        },
         "secrets": ["webUntisUsername", "webUntisPassword"]
       }
     },
