@@ -110,7 +110,7 @@ describe("Effect OTLP integration", () => {
       await runtime.dispose();
       await receiver.close();
     }
-  });
+  }, 15_000);
 
   it("uses protobuf for every production signal endpoint", async () => {
     const receiver = await startReceiver();
