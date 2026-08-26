@@ -43,6 +43,64 @@ let
        | .resolvePeersFromWorkspaceRoot = false' \
       pnpm-workspace.yaml
   '';
+  consoleContextEnvironment =
+    {
+      databaseAssignments,
+      databaseDefaults,
+      databaseEnvironment,
+      requiredSecrets,
+    }:
+    let
+      credentials =
+        if requiredSecrets then
+          ''
+            if [ ! -s "$webuntis_username_file" ] || [ ! -s "$webuntis_password_file" ]; then
+              echo "Studienbuch console: required WebUntis credentials are unavailable" >&2
+              exit 66
+            fi
+            WEBUNTIS_USERNAME="$(<"$webuntis_username_file")"
+            WEBUNTIS_PASSWORD="$(<"$webuntis_password_file")"
+            export WEBUNTIS_USERNAME WEBUNTIS_PASSWORD
+          ''
+        else
+          ''
+            if [ -s "$webuntis_username_file" ]; then
+              WEBUNTIS_USERNAME="$(<"$webuntis_username_file")"
+              export WEBUNTIS_USERNAME
+            fi
+            if [ -s "$webuntis_password_file" ]; then
+              WEBUNTIS_PASSWORD="$(<"$webuntis_password_file")"
+              export WEBUNTIS_PASSWORD
+            fi
+          '';
+    in
+    ''
+      BETTER_AUTH_URL=
+      WEBUNTIS_SCHOOL_NAME=
+      WEBUNTIS_SCHOOL_LOGIN_NAME=
+      WEBUNTIS_SERVER_URL=
+      WEBUNTIS_TENANT_ID=
+      webuntis_username_file=
+      webuntis_password_file=
+      ${databaseDefaults}
+      context_snapshot="$(project-context snapshot)"
+      eval "$(${lib.getExe pkgs.jq} --raw-output '
+        @sh "BETTER_AUTH_URL=\(.endpoints.web.url)",
+        @sh "WEBUNTIS_SCHOOL_NAME=\(.parameters.webUntisSchoolName)",
+        @sh "WEBUNTIS_SCHOOL_LOGIN_NAME=\(.parameters.webUntisSchoolLoginName)",
+        @sh "WEBUNTIS_SERVER_URL=\(.parameters.webUntisServerUrl)",
+        @sh "WEBUNTIS_TENANT_ID=\(.parameters.webUntisTenantId)",
+        @sh "webuntis_username_file=\(.secretFiles.webUntisUsername // "")",
+        @sh "webuntis_password_file=\(.secretFiles.webUntisPassword // "")",
+        ${databaseAssignments}
+      ' <<<"$context_snapshot")"
+      unset context_snapshot
+      export BETTER_AUTH_URL
+      export WEBUNTIS_SCHOOL_NAME WEBUNTIS_SCHOOL_LOGIN_NAME WEBUNTIS_SERVER_URL WEBUNTIS_TENANT_ID
+
+      ${credentials}
+      ${databaseEnvironment}
+    '';
 
   # Update with the `got:` hash reported by:
   #   nix build .#webApplication
@@ -238,14 +296,17 @@ let
     name = "studienbuch-development-console-action";
     runtimeInputs = [ nodejs ];
     text = ''
-      web_url="$(project-context endpoint web url)"
-
-      export BETTER_AUTH_URL="$web_url"
-      ${webUntisEnvironment {
+      ${consoleContextEnvironment {
+        databaseAssignments = ''
+          @sh "database_host=\(.endpoints.database.listen.host)",
+          @sh "database_port=\(.endpoints.database.listen.port)"
+        '';
+        databaseDefaults = ''
+          database_host=
+          database_port=
+        '';
         requiredSecrets = false;
-        database = ''
-          database_host="$(project-context endpoint database listen-host)"
-          database_port="$(project-context endpoint database listen-port)"
+        databaseEnvironment = ''
           DATABASE_URL="postgresql://postgres@$database_host:$database_port/postgres"
           export DATABASE_URL
         '';
@@ -262,12 +323,15 @@ let
     name = "studienbuch-release-console-action";
     runtimeInputs = [ nodejs ];
     text = ''
-      BETTER_AUTH_URL="$(project-context endpoint web url)"
-      export BETTER_AUTH_URL
-      ${webUntisEnvironment {
+      ${consoleContextEnvironment {
+        databaseAssignments = ''
+          @sh "DATABASE_URL=\(.parameters.databaseUrl)"
+        '';
+        databaseDefaults = ''
+          DATABASE_URL=
+        '';
         requiredSecrets = true;
-        database = ''
-          DATABASE_URL="$(project-context parameter databaseUrl)"
+        databaseEnvironment = ''
           export DATABASE_URL
         '';
       }}
