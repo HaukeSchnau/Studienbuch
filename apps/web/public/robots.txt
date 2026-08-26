@@ -1,3 +1,18 @@
 # https://www.robotstxt.org/robotstxt.html
+#
+# The marketing pages and the legal pages are the site. Everything else is the application: pages
+# behind a session, or steps of an enrollment that only mean anything to the person holding a code.
+# None of it has anything to offer a search result, and an indexed /einrichten is a support ticket
+# waiting to happen.
 User-agent: *
-Disallow:
+Disallow: /app
+Disallow: /anmelden
+Disallow: /registrieren
+Disallow: /aktivieren
+Disallow: /einrichten
+Disallow: /operator
+Disallow: /passwort-vergessen
+Disallow: /passwort-zuruecksetzen
+Disallow: /api/
+
+Sitemap: https://studienbuch.app/sitemap.xml

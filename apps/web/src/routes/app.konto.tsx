@@ -47,14 +47,14 @@ function AccountPage() {
         </div>
       )}
 
-      <h2 className="mt-8 text-xl">Meine Schulzugänge</h2>
-      <section className="mt-4 grid gap-5 sm:grid-cols-2">
+      <h2 className="mt-7 text-lg">Meine Schulzugänge</h2>
+      <section className="mt-4 grid gap-4 sm:grid-cols-2">
         {account.accesses.map((access) => (
           <SchoolCard access={access} key={access.id} />
         ))}
 
-        <article className="rounded-card border-2 border-dashed border-primary-pale bg-white/50 p-6">
-          <h3 className="text-xl">Noch eine Schule?</h3>
+        <article className="rounded-card border-2 border-dashed border-primary-pale bg-white/50 p-5">
+          <h3 className="text-lg">Noch eine Schule?</h3>
           <p className="mt-2 text-sm text-ink-soft">
             Ein Konto kann die Zugangscodes mehrerer Schulen einlösen.
           </p>
@@ -68,7 +68,7 @@ function AccountPage() {
 
       <PasskeySection onError={setError} />
 
-      <Button className="mt-8" onClick={() => void signOut()} radius="pill" variant="outline">
+      <Button className="mt-7" onClick={() => void signOut()} radius="pill" variant="outline">
         <LogOut /> Abmelden
       </Button>
     </DestinationPage>
@@ -86,7 +86,7 @@ function SchoolCard({ access }: { readonly access: SchoolAccessView }) {
   const displayName = access.displayName;
 
   return (
-    <article className="weight-hover press rounded-card bg-white p-6 shadow-card hover:shadow-card-lg">
+    <article className="rounded-card bg-white p-5 shadow-card">
       <div className="flex items-start gap-4">
         <span
           aria-hidden
@@ -95,7 +95,7 @@ function SchoolCard({ access }: { readonly access: SchoolAccessView }) {
           {displayName === null ? "?" : initials(displayName)}
         </span>
         <div className="min-w-0">
-          <h3 className="truncate text-xl text-primary-text">{access.schoolName}</h3>
+          <h3 className="truncate text-lg text-primary-text">{access.schoolName}</h3>
           <p className="mt-1 inline-flex rounded-full bg-primary-des px-3 py-1 text-xs font-semibold text-primary-text">
             {kindLabel(access.kind)}
           </p>
@@ -158,10 +158,10 @@ function PasskeySection({ onError }: { readonly onError: (message?: string) => v
   const items = passkeys.data ?? [];
 
   return (
-    <section className="mt-8 rounded-card bg-white p-6 shadow-card">
+    <section className="mt-7 rounded-card bg-white p-5 shadow-card">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl">Passkeys</h2>
+          <h2 className="text-lg">Passkeys</h2>
           <p className="mt-1 text-sm text-ink-soft">
             Mit Fingerabdruck oder Gesicht anmelden, ganz ohne Passwort.
           </p>
