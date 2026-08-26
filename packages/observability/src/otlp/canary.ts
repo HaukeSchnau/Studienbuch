@@ -3,6 +3,7 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Metric from "effect/Metric";
 import { spanAttributes } from "../opentelemetry/attributes.ts";
+import { logInfoEvent } from "../opentelemetry/log-events.ts";
 import { canaryDuration, canaryTotal } from "./metrics.ts";
 
 export interface CanaryResult {
@@ -15,10 +16,7 @@ export const runCanary = Effect.fn("Observability.canary")(
     const startedAt = yield* Clock.currentTimeNanos;
     const span = yield* Effect.currentSpan;
 
-    yield* Effect.logInfo("observability.canary", {
-      event: "observability.canary",
-      signal: "all",
-    });
+    yield* logInfoEvent("observability.canary", { signal: "all" });
     yield* Metric.update(canaryTotal, 1);
 
     const endedAt = yield* Clock.currentTimeNanos;

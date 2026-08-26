@@ -1,4 +1,11 @@
-import { workerJobDuration, workerJobs, workerLastSuccess } from "@stu/observability";
+import {
+  logErrorEvent,
+  logInfoEvent,
+  logWarningEvent,
+  workerJobDuration,
+  workerJobs,
+  workerLastSuccess,
+} from "@stu/observability";
 import * as Cause from "effect/Cause";
 import * as Clock from "effect/Clock";
 import * as DateTime from "effect/DateTime";
@@ -42,8 +49,7 @@ const retrySchedule = (job: Job | "school-year", policy: Policy) => {
   const delayed = policy.jitter ? Schedule.jittered(exponential) : exponential;
   return delayed.pipe(
     Schedule.tap(({ attempt, duration }) =>
-      Effect.logWarning("webuntis.poll.retry", {
-        event: "webuntis.poll.retry",
+      logWarningEvent("webuntis.poll.retry", {
         job,
         attempt,
         delay_ms: Duration.toMillis(duration),
@@ -88,15 +94,13 @@ const runJob = <A extends object, E, R>(
 
   return Effect.gen(function* () {
     const startedAt = yield* Clock.currentTimeMillis;
-    yield* Effect.logInfo("webuntis.poll.started", {
-      event: "webuntis.poll.started",
+    yield* logInfoEvent("webuntis.poll.started", {
       job,
       trigger,
     });
     return yield* withRetries(job, policy, effect).pipe(
       Effect.tap(() =>
-        Effect.logInfo("webuntis.poll.completed", {
-          event: "webuntis.poll.completed",
+        logInfoEvent("webuntis.poll.completed", {
           job,
           trigger,
         }),
@@ -118,14 +122,12 @@ const runJob = <A extends object, E, R>(
       ),
       Effect.tapCause((cause) =>
         isImportAlreadyRunningCause(cause)
-          ? Effect.logInfo("webuntis.poll.skipped", {
-              event: "webuntis.poll.skipped",
+          ? logInfoEvent("webuntis.poll.skipped", {
               job,
               trigger,
               reason: "import-already-running",
             })
-          : Effect.logError("webuntis.poll.failed", {
-              event: "webuntis.poll.failed",
+          : logErrorEvent("webuntis.poll.failed", {
               job,
               trigger,
               error_type: Cause.hasInterruptsOnly(cause) ? "interrupt" : "failure",
@@ -141,8 +143,7 @@ const runJob = <A extends object, E, R>(
 };
 
 const logSkippedRange = (job: Job, trigger: Trigger, schoolYear: string) =>
-  Effect.logInfo("webuntis.poll.skipped", {
-    event: "webuntis.poll.skipped",
+  logInfoEvent("webuntis.poll.skipped", {
     job,
     trigger,
     school_year: schoolYear,
@@ -293,8 +294,7 @@ export const run = Effect.fn("WebUntis.runPolling")(function* (policy: Policy = 
     }
   });
 
-  yield* Effect.logInfo("webuntis.worker.started", {
-    event: "webuntis.worker.started",
+  yield* logInfoEvent("webuntis.worker.started", {
     school_year: runner.initialSchoolYear.name,
     time_zone: policy.timeZone,
   });

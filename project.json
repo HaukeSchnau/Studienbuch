@@ -44,6 +44,10 @@
     "webUntisTenantId": {
       "description": "Pinned WebUntis tenant identity",
       "default": "6603700"
+    },
+    "observabilityOtlpEndpoint": {
+      "description": "OpenTelemetry Protocol HTTP endpoint selected by the runtime",
+      "default": "http://127.0.0.1:4318"
     }
   },
   "development": {

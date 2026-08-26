@@ -1,4 +1,9 @@
-import { smtpDeliveries, smtpDeliveryDuration, spanAttributes } from "@stu/observability";
+import {
+  logErrorEvent,
+  smtpDeliveries,
+  smtpDeliveryDuration,
+  spanAttributes,
+} from "@stu/observability";
 import nodemailer from "nodemailer";
 import * as Clock from "effect/Clock";
 import * as Config from "effect/Config";
@@ -119,9 +124,8 @@ const makeSmtpDelivery = Effect.gen(function* () {
           ]).pipe(Effect.asVoid);
         }),
         Effect.tapError(() =>
-          Effect.logError("auth-email.smtp.failed", {
+          logErrorEvent("auth-email.smtp.failed", {
             email_kind: message.kind,
-            event: "auth-email.smtp.failed",
             outcome: "failure",
           }),
         ),

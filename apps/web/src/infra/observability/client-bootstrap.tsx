@@ -30,6 +30,7 @@ export function ClientObservability({ config }: { readonly config: PublicConfig 
         if (disposed) return;
         const telemetry = browserTelemetry({
           serviceVersion: config.version,
+          instanceId: config.instanceId,
           deploymentEnvironment: config.environment,
         });
         if (telemetry === undefined) return;
@@ -68,7 +69,7 @@ export function ClientObservability({ config }: { readonly config: PublicConfig 
       disposed = true;
       dispose?.();
     };
-  }, [config.environment, config.version, router]);
+  }, [config.environment, config.instanceId, config.version, router]);
 
   return null;
 }

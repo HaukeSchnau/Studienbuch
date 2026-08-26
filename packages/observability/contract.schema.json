@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://studienbuch.app/schemas/observability-contract/v1.json",
+  "title": "Studienbuch observability contract",
+  "type": "object",
+  "required": ["schemaVersion", "namespace", "services", "metrics", "objectives"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "namespace": { "const": "studienbuch" },
+    "services": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^studienbuch-[a-z-]+$" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "metrics": {
+      "type": "object",
+      "propertyNames": { "pattern": "^[a-z][A-Za-z]+$" },
+      "additionalProperties": { "type": "string", "pattern": "^studienbuch_[a-z0-9_]+$" }
+    },
+    "objectives": {
+      "type": "object",
+      "required": ["httpAvailability", "traceSpansPer15Minutes"],
+      "properties": {
+        "httpAvailability": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "traceSpansPer15Minutes": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -82,6 +82,7 @@ const resource = {
   serviceName: "studienbuch-server",
   serviceVersion: "test-release",
   environment: "test",
+  instanceId: "test-instance",
 } as const;
 
 describe("Effect OTLP integration", () => {
@@ -103,6 +104,8 @@ describe("Effect OTLP integration", () => {
       const byPath = new Map(receiver.received.map((request) => [request.path, request]));
       expect([...byPath.keys()].sort()).toEqual(["/v1/logs", "/v1/metrics", "/v1/traces"]);
       expect(byPath.get("/v1/traces")?.body).toContain(canary.traceId);
+      expect(byPath.get("/v1/traces")?.body).toContain("service.instance.id");
+      expect(byPath.get("/v1/traces")?.body).toContain("test-instance");
       expect(byPath.get("/v1/logs")?.body).toContain(canary.traceId);
       expect(byPath.get("/v1/logs")?.body).toContain(canary.spanId);
       expect(byPath.get("/v1/metrics")?.body).toContain("studienbuch_observability_canary_total");

@@ -55,6 +55,7 @@ function fixture(options?: {
   const client = createBrowserTelemetryClient({
     environment,
     serviceVersion: "test-version",
+    instanceId: "test-instance",
     deploymentEnvironment: "test",
     maximumRecords: options?.maximumRecords,
     maximumBytes: options?.maximumBytes,
@@ -105,6 +106,7 @@ describe("browser operational telemetry", () => {
     const envelope = await envelopeFromFetch(fetchMock);
     expect(envelope.serviceName).toBe("studienbuch-web-client");
     expect(envelope.serviceVersion).toBe("test-version");
+    expect(envelope.instanceId).toBe("test-instance");
     expect(JSON.stringify(envelope)).not.toContain("4318");
   });
 
