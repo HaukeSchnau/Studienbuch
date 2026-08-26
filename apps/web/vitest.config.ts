@@ -7,6 +7,10 @@ import { defineConfig } from "vite-plus";
  */
 export default defineConfig({
   test: {
+    // CI runs application, package, integration, lint, and mobile checks concurrently. Bounding
+    // this pool keeps fork startup responsive on the shared ARM runner without serializing the
+    // otherwise independent browser and server projects.
+    maxWorkers: 2,
     projects: [
       {
         test: {
