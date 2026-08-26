@@ -9889,7 +9889,7 @@ packages:
     resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
 
   webuntis-api@https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.2.tgz:
-    resolution: {tarball: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.2.tgz}
+    resolution: {integrity: sha512-Brn37RHPv213L+F6PnBEgt3o1nJ9JajFDilKtMSQqhviLLOHdgsT7Nx4HYG0RltWDvyHSXTsrw0DbbehdB9iSQ==, tarball: https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.2.tgz}
     version: 0.2.2
     engines: {node: '>=22.12.0'}
     peerDependencies:
