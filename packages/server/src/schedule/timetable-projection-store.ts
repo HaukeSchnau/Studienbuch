@@ -1,10 +1,10 @@
-import { createHash } from "node:crypto";
 import { Importing, Organization, Schedule } from "@stu/core";
 import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { Database } from "../database/client.ts";
+import { sha256Json } from "../cryptography/content-hash.ts";
 import { EntityLinks } from "../importing/entity-links.ts";
 import { sourceImportRuns, sourceRecords, sourceRecordVersions } from "../importing/schema.ts";
 import { courseOccurrenceAssignments } from "../organization/course-schema.ts";
@@ -109,9 +109,6 @@ const planProjection = (
   };
 };
 
-const hashOccurrence = (payload: Schema.Json) =>
-  createHash("sha256").update(JSON.stringify(payload)).digest("hex");
-
 const decodeSourceRecord = (row: {
   readonly externalId: string;
   readonly currentVersionId: string;
@@ -179,7 +176,7 @@ const prepareOccurrences = Effect.fnUntraced(function* (
       return {
         occurrence,
         payload,
-        contentHash: hashOccurrence(payload),
+        contentHash: yield* sha256Json(payload),
         sourceRecordVersionIds,
       } satisfies PreparedOccurrence;
     }),

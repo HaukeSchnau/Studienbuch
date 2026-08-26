@@ -1,9 +1,9 @@
-import { createHash } from "node:crypto";
 import { Importing } from "@stu/core";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import { Database } from "../database/client.ts";
+import { sha256Json } from "../cryptography/content-hash.ts";
 import { entityLinkRow } from "../importing/entity-links.ts";
 import {
   entityLinks,
@@ -61,9 +61,6 @@ interface CurrentEntity {
 const sameStrings = (left: ReadonlyArray<string>, right: ReadonlyArray<string>) =>
   left.length === right.length && left.every((value, index) => value === right[index]);
 
-const hashPayload = (payload: Schema.Json) =>
-  createHash("sha256").update(JSON.stringify(payload)).digest("hex");
-
 const decodeSourceRecord = (row: {
   readonly scope: string;
   readonly entityKind: string;
@@ -107,7 +104,7 @@ const prepareEntities = Effect.fnUntraced(function* (projection: DirectoryProjec
         key,
         entity,
         payload,
-        contentHash: hashPayload(payload),
+        contentHash: yield* sha256Json(payload),
         sourceRecordVersionIds: sourcesByKey.get(key) ?? [],
       } satisfies PreparedEntity;
     }),

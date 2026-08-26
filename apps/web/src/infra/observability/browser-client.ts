@@ -1,17 +1,25 @@
 import {
   TelemetryOutbox,
+  TelemetryDelivery,
+  TelemetryStorage,
   decodeClientTelemetryAcknowledgement,
   memoryTelemetryStorage,
   type ClientTelemetryEnvelope,
   type ClientTelemetryRecord,
   type DeploymentEnvironment,
-  type TelemetryDelivery,
   type TelemetryPriority,
+  telemetryOutboxLayer,
   clientMetricNames,
   httpRoutes,
   screenNames,
 } from "@stu/observability/browser";
+import * as Clock from "effect/Clock";
+import * as Duration from "effect/Duration";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import * as ManagedRuntime from "effect/ManagedRuntime";
 import * as Option from "effect/Option";
+import * as Random from "effect/Random";
 import { installBrowserTelemetryFetch, type BrowserFetch } from "./browser-fetch.ts";
 
 export type { BrowserFetch } from "./browser-fetch.ts";
@@ -46,6 +54,7 @@ export interface BrowserTelemetryClient {
   readonly recordRender: (durationMillis: number, pathname: string) => void;
   readonly fetch: BrowserFetch;
   readonly flush: (options?: { readonly preferBeacon?: boolean }) => Promise<boolean>;
+  readonly dispose: () => Promise<void>;
 }
 
 /**
@@ -55,27 +64,35 @@ export interface BrowserTelemetryClient {
 function browserDelivery(
   environment: BrowserTelemetryEnvironment,
   endpoint: string,
-): TelemetryDelivery {
-  return {
-    send: async (envelope) => {
-      const response = await environment.fetch(endpoint, {
-        method: "POST",
-        body: JSON.stringify(envelope),
-        credentials: "same-origin",
-        keepalive: true,
-        headers: { "content-type": "application/json" },
-      });
-      if (!response.ok) {
-        return { status: "failed", reason: `ingress rejected the batch (${response.status})` };
-      }
-      const body: unknown = await response.json().catch(() => undefined);
-      const acknowledgement = decodeClientTelemetryAcknowledgement(body, {
-        onExcessProperty: "error",
-      });
-      return Option.isSome(acknowledgement)
-        ? { status: "sent", accepted: acknowledgement.value.acceptedRecords }
-        : { status: "failed", reason: "ingress returned an invalid acknowledgement" };
-    },
+): TelemetryDelivery["Service"] {
+  return TelemetryDelivery.of({
+    send: (envelope) =>
+      Effect.tryPromise(async () => {
+        const response = await environment.fetch(endpoint, {
+          method: "POST",
+          body: JSON.stringify(envelope),
+          credentials: "same-origin",
+          keepalive: true,
+          headers: { "content-type": "application/json" },
+        });
+        if (!response.ok) {
+          return {
+            status: "failed" as const,
+            reason: `ingress rejected the batch (${response.status})`,
+          };
+        }
+        const body: unknown = await response.json().catch(() => undefined);
+        const acknowledgement = decodeClientTelemetryAcknowledgement(body, {
+          onExcessProperty: "error",
+        });
+        return Option.isSome(acknowledgement)
+          ? { status: "sent" as const, accepted: acknowledgement.value.acceptedRecords }
+          : { status: "failed" as const, reason: "ingress returned an invalid acknowledgement" };
+      }).pipe(
+        Effect.catchCause(() =>
+          Effect.succeed({ status: "failed" as const, reason: "telemetry delivery failed" }),
+        ),
+      ),
     sendBeacon:
       environment.sendBeacon === undefined
         ? undefined
@@ -84,7 +101,7 @@ function browserDelivery(
               endpoint,
               new Blob([JSON.stringify(envelope)], { type: "application/json" }),
             ) ?? false,
-  };
+  });
 }
 
 export function createBrowserTelemetryClient(options: {
@@ -98,18 +115,44 @@ export function createBrowserTelemetryClient(options: {
   const environment = options.environment;
   const endpoint = new URL(telemetryPath, environment.origin).href;
   const flushDelayMillis = options.flushDelayMillis ?? defaultFlushDelayMillis;
-  const outbox = new TelemetryOutbox({
-    storage: memoryTelemetryStorage(),
-    delivery: browserDelivery(environment, endpoint),
-    clock: { now: environment.now },
-    random: { next: environment.random },
-    serviceName: "studienbuch-web-client",
-    serviceVersion: normalizeServiceVersion(options.serviceVersion),
-    environment: options.deploymentEnvironment,
-    platform: "web",
-    maxRecords: options.maximumRecords ?? defaultMaximumRecords,
-    maxBytes: options.maximumBytes ?? defaultMaximumBytes,
-  });
+  const clock: Clock.Clock = {
+    currentTimeMillisUnsafe: environment.now,
+    currentTimeMillis: Effect.sync(environment.now),
+    currentTimeNanosUnsafe: () => BigInt(environment.now()) * 1_000_000n,
+    currentTimeNanos: Effect.sync(() => BigInt(environment.now()) * 1_000_000n),
+    monotonicTimeNanosUnsafe: () => BigInt(environment.now()) * 1_000_000n,
+    monotonicTimeNanos: Effect.sync(() => BigInt(environment.now()) * 1_000_000n),
+    sleep: (duration) =>
+      Effect.callback<void>((resume) => {
+        const timer = environment.setTimeout(
+          () => resume(Effect.void),
+          Duration.toMillis(duration),
+        );
+        return Effect.sync(() => environment.clearTimeout(timer));
+      }),
+  };
+  const outboxRuntime = ManagedRuntime.make(
+    telemetryOutboxLayer({
+      serviceName: "studienbuch-web-client",
+      serviceVersion: normalizeServiceVersion(options.serviceVersion),
+      environment: options.deploymentEnvironment,
+      platform: "web",
+      maxRecords: options.maximumRecords ?? defaultMaximumRecords,
+      maxBytes: options.maximumBytes ?? defaultMaximumBytes,
+    }).pipe(
+      Layer.provide([
+        Layer.succeed(Clock.Clock, clock),
+        Layer.succeed(Random.Random, {
+          nextDoubleUnsafe: environment.random,
+          nextIntUnsafe: () => Math.floor(environment.random() * Number.MAX_SAFE_INTEGER),
+        }),
+        Layer.succeed(TelemetryStorage, memoryTelemetryStorage()),
+        Layer.succeed(TelemetryDelivery, browserDelivery(environment, endpoint)),
+      ]),
+    ),
+  );
+  const runOutbox = <A, E>(use: (outbox: TelemetryOutbox["Service"]) => Effect.Effect<A, E>) =>
+    outboxRuntime.runPromise(Effect.flatMap(TelemetryOutbox, use));
 
   let scheduledFlush: number | undefined;
 
@@ -122,7 +165,7 @@ export function createBrowserTelemetryClient(options: {
   };
 
   const enqueue = (record: ClientTelemetryRecord, priority: TelemetryPriority) => {
-    void outbox.enqueue(record, priority);
+    void runOutbox((outbox) => outbox.enqueue(record, priority));
     scheduleFlush();
   };
 
@@ -131,9 +174,19 @@ export function createBrowserTelemetryClient(options: {
       environment.clearTimeout(scheduledFlush);
       scheduledFlush = undefined;
     }
-    const result = await outbox.flush({ preferBeacon: flushOptions?.preferBeacon });
+    const result = await runOutbox((outbox) =>
+      outbox.flush({ preferBeacon: flushOptions?.preferBeacon }),
+    );
     if (result.status === "failed") scheduleFlush();
     return result.status === "sent" || result.status === "empty";
+  };
+
+  const dispose = async () => {
+    if (scheduledFlush !== undefined) {
+      environment.clearTimeout(scheduledFlush);
+      scheduledFlush = undefined;
+    }
+    await outboxRuntime.dispose();
   };
 
   const enqueueRequestSpan = (
@@ -297,6 +350,7 @@ export function createBrowserTelemetryClient(options: {
       timedSpan("client.render", "render", durationMillis, pathname),
     fetch: observedFetch,
     flush,
+    dispose,
   };
 }
 
@@ -392,6 +446,8 @@ export function installBrowserTelemetryLifecycle(client: BrowserTelemetryClient)
     window.removeEventListener("online", onOnline);
     document.removeEventListener("visibilitychange", onVisibilityChange);
     removeTelemetryFetch();
+    void client.dispose();
+    if (browserGlobal[clientKey] === client) delete browserGlobal[clientKey];
     if (lifecycleGlobal[lifecycleKey] === remove) delete lifecycleGlobal[lifecycleKey];
   };
   lifecycleGlobal[lifecycleKey] = remove;

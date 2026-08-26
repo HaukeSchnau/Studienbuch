@@ -1,5 +1,12 @@
+import * as Clock from "effect/Clock";
+import * as Context from "effect/Context";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Random from "effect/Random";
+import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
+import * as Semaphore from "effect/Semaphore";
 import { TelemetryPriority } from "../opentelemetry/attributes.ts";
 import {
   ClientTelemetryRecord,
@@ -11,41 +18,39 @@ import {
 export const OUTBOX_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1_000;
 export const OUTBOX_MAX_BYTES = 10 * 1024 * 1024;
 
-/** Records are sent at most this many per envelope, leaving room for the two self-report metrics. */
+/** Leaves room for the two self-report metrics added to every envelope. */
 const maximumRecordsPerFlush = 98;
 
 export type TelemetryPlatform = "web" | "ios" | "android";
 
-export interface TelemetryClock {
-  readonly now: () => number;
-}
+export class TelemetryStorageError extends Schema.TaggedError<TelemetryStorageError>()(
+  "TelemetryStorageError",
+  {
+    operation: Schema.Literals(["read", "write"]),
+    reason: Schema.String,
+  },
+) {}
 
-export interface TelemetryRandom {
-  readonly next: () => number;
-}
+export class TelemetryStorage extends Context.Service<
+  TelemetryStorage,
+  {
+    readonly read: Effect.Effect<string | undefined, TelemetryStorageError>;
+    readonly write: (snapshot: string) => Effect.Effect<void, TelemetryStorageError>;
+  }
+>()("@stu/observability/client/outbox/TelemetryStorage") {}
 
-/**
- * Where the queue survives between runs. Mobile persists to the document directory; the browser
- * uses `memoryTelemetryStorage`, which keeps the same contract without durability.
- */
-export interface TelemetryStorage {
-  readonly read: () => Promise<string | undefined>;
-  readonly write: (snapshot: string) => Promise<void>;
-}
+export type TelemetryDeliveryResult =
+  | { readonly status: "sent"; readonly accepted: number }
+  | { readonly status: "failed"; readonly reason: string };
 
-export interface TelemetryDelivery {
-  readonly send: (
-    envelope: ClientTelemetryEnvelope,
-  ) => Promise<
-    | { readonly status: "sent"; readonly accepted: number }
-    | { readonly status: "failed"; readonly reason: string }
-  >;
-  /**
-   * Best-effort delivery for page teardown, where no response can be read. Returning `true` counts
-   * the whole batch as accepted, because the browser gives us nothing better to go on.
-   */
-  readonly sendBeacon?: (envelope: ClientTelemetryEnvelope) => boolean;
-}
+export class TelemetryDelivery extends Context.Service<
+  TelemetryDelivery,
+  {
+    readonly send: (envelope: ClientTelemetryEnvelope) => Effect.Effect<TelemetryDeliveryResult>;
+    /** Page teardown can report only whether the browser accepted the beacon. */
+    readonly sendBeacon?: (envelope: ClientTelemetryEnvelope) => boolean;
+  }
+>()("@stu/observability/client/outbox/TelemetryDelivery") {}
 
 interface StoredRecord {
   readonly id: string;
@@ -76,10 +81,6 @@ export interface FlushResult {
 }
 
 export interface TelemetryOutboxOptions {
-  readonly storage: TelemetryStorage;
-  readonly delivery: TelemetryDelivery;
-  readonly clock: TelemetryClock;
-  readonly random: TelemetryRandom;
   readonly serviceName: ServiceName;
   readonly serviceVersion: string;
   readonly environment: "development" | "test" | "staging" | "production";
@@ -89,15 +90,31 @@ export interface TelemetryOutboxOptions {
   readonly maxRecords?: number;
 }
 
-/** Non-durable storage for clients that have nowhere to persist, such as a browser tab. */
-export function memoryTelemetryStorage(): TelemetryStorage {
+export class TelemetryOutbox extends Context.Service<
+  TelemetryOutbox,
+  {
+    readonly enqueue: (
+      record: ClientTelemetryRecord,
+      priority?: TelemetryPriority,
+    ) => Effect.Effect<boolean, TelemetryStorageError>;
+    readonly stats: Effect.Effect<OutboxStats, TelemetryStorageError>;
+    readonly flush: (options?: {
+      readonly online?: boolean;
+      readonly preferBeacon?: boolean;
+    }) => Effect.Effect<FlushResult, TelemetryStorageError>;
+  }
+>()("@stu/observability/client/outbox/TelemetryOutbox") {}
+
+/** Non-durable storage for a browser tab or a focused test. */
+export function memoryTelemetryStorage(): TelemetryStorage["Service"] {
   let contents: string | undefined;
-  return {
-    read: async () => contents,
-    write: async (snapshot) => {
-      contents = snapshot;
-    },
-  };
+  return TelemetryStorage.of({
+    read: Effect.sync(() => contents),
+    write: (snapshot) =>
+      Effect.sync(() => {
+        contents = snapshot;
+      }),
+  });
 }
 
 const emptySnapshot = (): Snapshot => ({ version: 1, sequence: 0, records: [], dropped: 0 });
@@ -132,25 +149,20 @@ const decodeTelemetryRecord = Schema.decodeUnknownOption(ClientTelemetryRecord);
 const decodeStoredRecord = Schema.decodeUnknownOption(StoredRecordSchema);
 const decodeSnapshotEnvelope = Schema.decodeUnknownOption(SnapshotEnvelopeSchema);
 const exactContract = { onExcessProperty: "error" } as const;
-
 const priorities = new Set<TelemetryPriority>(TelemetryPriority.literals);
 
 const decodeSnapshot = (serialized: string | undefined): Snapshot => {
   if (serialized === undefined) return emptySnapshot();
   try {
     const decoded = decodeSnapshotEnvelope(JSON.parse(serialized), exactContract);
-    if (Option.isNone(decoded)) {
-      return emptySnapshot();
-    }
+    if (Option.isNone(decoded)) return emptySnapshot();
+
     const records: StoredRecord[] = [];
     let invalidRecords = 0;
     for (const persistedRecord of decoded.value.records) {
       const record = decodeStoredRecord(persistedRecord, exactContract);
-      if (Option.isSome(record)) {
-        records.push(record.value);
-      } else {
-        invalidRecords += 1;
-      }
+      if (Option.isSome(record)) records.push(record.value);
+      else invalidRecords += 1;
     }
     return {
       version: 1,
@@ -171,236 +183,232 @@ const retryDelay = (attempt: number, random: number): number => {
 
 const evictionOrder: ReadonlyArray<TelemetryPriority> = ["low", "normal", "high"];
 
-/**
- * The one client telemetry queue.
- *
- * Web and mobile previously each had their own, with different eviction rules and backoff curves,
- * so every change to record types or retry policy had to be made and verified twice. Platform
- * differences belong in the ports — storage, delivery, clock, random — not in a second copy of the
- * queue.
- */
-export class TelemetryOutbox {
-  readonly #options: TelemetryOutboxOptions;
-  #snapshot = emptySnapshot();
-  #ready: Promise<void>;
-  #operation: Promise<void> = Promise.resolve();
+const pruneExpired = (snapshot: Snapshot, now: number, maxAgeMs: number) => {
+  const retained = snapshot.records.filter((entry) => entry.enqueuedAt >= now - maxAgeMs);
+  const removed = snapshot.records.length - retained.length;
+  return removed === 0
+    ? { changed: false as const, snapshot }
+    : {
+        changed: true as const,
+        snapshot: { ...snapshot, records: retained, dropped: snapshot.dropped + removed },
+      };
+};
 
-  constructor(options: TelemetryOutboxOptions) {
-    this.#options = options;
-    this.#ready = this.#load();
-  }
+const enforceCapacity = (
+  initial: Snapshot,
+  options: Pick<TelemetryOutboxOptions, "maxBytes" | "maxRecords">,
+): Snapshot => {
+  const overCapacity = (snapshot: Snapshot) =>
+    snapshotBytes(snapshot) > (options.maxBytes ?? OUTBOX_MAX_BYTES) ||
+    (options.maxRecords !== undefined && snapshot.records.length > options.maxRecords);
+  const evict = (snapshot: Snapshot, priorityIndex: number): Snapshot => {
+    if (!overCapacity(snapshot) || priorityIndex >= evictionOrder.length) return snapshot;
+    const priority = evictionOrder[priorityIndex];
+    const index = snapshot.records.findIndex((entry) => entry.priority === priority);
+    if (index === -1) return evict(snapshot, priorityIndex + 1);
+    const records = snapshot.records.filter((_, recordIndex) => recordIndex !== index);
+    return evict({ ...snapshot, records, dropped: snapshot.dropped + 1 }, priorityIndex);
+  };
+  return evict(initial, 0);
+};
 
-  async #load(): Promise<void> {
-    const stored = await this.#options.storage.read();
-    this.#snapshot = decodeSnapshot(stored);
-    const changed = this.#pruneExpired();
-    if (changed || (stored !== undefined && stored !== JSON.stringify(this.#snapshot))) {
-      await this.#persist();
+const markAttempts = (
+  snapshot: Snapshot,
+  attemptedIds: ReadonlySet<string>,
+  now: number,
+  random: (typeof Random.Random)["Service"],
+): Effect.Effect<Snapshot> =>
+  Effect.forEach(snapshot.records, (entry) =>
+    attemptedIds.has(entry.id)
+      ? Effect.sync(() => random.nextDoubleUnsafe()).pipe(
+          Effect.map((random) => ({
+            ...entry,
+            attempts: entry.attempts + 1,
+            nextAttemptAt: now + retryDelay(entry.attempts + 1, random),
+          })),
+        )
+      : Effect.succeed(entry),
+  ).pipe(Effect.map((records) => ({ ...snapshot, records })));
+
+/** Builds the shared outbox with Effect-owned state, time, randomness and serialization. */
+export const makeTelemetryOutbox = (
+  options: TelemetryOutboxOptions,
+): Effect.Effect<
+  TelemetryOutbox["Service"],
+  TelemetryStorageError,
+  TelemetryDelivery | TelemetryStorage
+> =>
+  Effect.gen(function* () {
+    const storage = yield* TelemetryStorage;
+    const delivery = yield* TelemetryDelivery;
+    const clock = yield* Clock.Clock;
+    const random = yield* Random.Random;
+    const serialized = yield* Semaphore.make(1);
+    const stored = yield* storage.read;
+    const now = yield* clock.currentTimeMillis;
+    const loaded = pruneExpired(decodeSnapshot(stored), now, options.maxAgeMs ?? OUTBOX_MAX_AGE_MS);
+    if (loaded.changed || (stored !== undefined && stored !== JSON.stringify(loaded.snapshot))) {
+      yield* storage.write(JSON.stringify(loaded.snapshot));
     }
-  }
+    const state = yield* Ref.make(loaded.snapshot);
 
-  #serial<T>(operation: () => Promise<T>): Promise<T> {
-    const result = this.#operation.then(async () => {
-      await this.#ready;
-      return operation();
+    const commit = (snapshot: Snapshot) =>
+      storage.write(JSON.stringify(snapshot)).pipe(Effect.andThen(Ref.set(state, snapshot)));
+
+    const withLock = <A>(effect: Effect.Effect<A, TelemetryStorageError>) =>
+      serialized.withPermits(1)(effect);
+
+    const pruneCurrent = Effect.gen(function* () {
+      const current = yield* Ref.get(state);
+      const currentTime = yield* clock.currentTimeMillis;
+      const pruned = pruneExpired(current, currentTime, options.maxAgeMs ?? OUTBOX_MAX_AGE_MS);
+      if (pruned.changed) yield* commit(pruned.snapshot);
+      return pruned.snapshot;
     });
-    this.#operation = result.then(
-      () => undefined,
-      () => undefined,
-    );
-    return result;
-  }
 
-  #pruneExpired(): boolean {
-    const cutoff = this.#options.clock.now() - (this.#options.maxAgeMs ?? OUTBOX_MAX_AGE_MS);
-    const retained = this.#snapshot.records.filter((entry) => entry.enqueuedAt >= cutoff);
-    const removed = this.#snapshot.records.length - retained.length;
-    if (removed === 0) return false;
-    this.#snapshot = {
-      ...this.#snapshot,
-      records: retained,
-      dropped: this.#snapshot.dropped + removed,
-    };
-    return true;
-  }
+    const recordFailedAttempt = (
+      snapshot: Snapshot,
+      eligible: ReadonlyArray<StoredRecord>,
+      failedAt: number,
+    ) =>
+      markAttempts(snapshot, new Set(eligible.map((entry) => entry.id)), failedAt, random).pipe(
+        Effect.tap(commit),
+        Effect.map((next) => ({
+          status: "failed" as const,
+          accepted: 0,
+          remaining: next.records.length,
+        })),
+      );
 
-  #overCapacity(): boolean {
-    const maxRecords = this.#options.maxRecords;
-    return (
-      snapshotBytes(this.#snapshot) > (this.#options.maxBytes ?? OUTBOX_MAX_BYTES) ||
-      (maxRecords !== undefined && this.#snapshot.records.length > maxRecords)
-    );
-  }
-
-  /** Sheds the oldest low-priority records first, so a full queue still reports its failures. */
-  #enforceCapacity(): void {
-    for (const priority of evictionOrder) {
-      while (this.#overCapacity()) {
-        const index = this.#snapshot.records.findIndex((entry) => entry.priority === priority);
-        if (index === -1) break;
-        const records = [...this.#snapshot.records];
-        records.splice(index, 1);
-        this.#snapshot = { ...this.#snapshot, records, dropped: this.#snapshot.dropped + 1 };
-      }
-    }
-  }
-
-  #persist(): Promise<void> {
-    return this.#options.storage.write(JSON.stringify(this.#snapshot));
-  }
-
-  enqueue(record: ClientTelemetryRecord, priority: TelemetryPriority = "normal"): Promise<boolean> {
-    return this.#serial(async () => {
-      if (
-        Option.isNone(decodeTelemetryRecord(record, exactContract)) ||
-        !priorities.has(priority)
-      ) {
-        return false;
-      }
-      this.#pruneExpired();
-      const sequence = this.#snapshot.sequence + 1;
-      const now = this.#options.clock.now();
-      this.#snapshot = {
-        ...this.#snapshot,
-        sequence,
-        records: [
-          ...this.#snapshot.records,
-          {
-            id: `${now.toString(36)}-${sequence.toString(36)}`,
-            priority,
-            enqueuedAt: now,
-            attempts: 0,
-            nextAttemptAt: now,
-            record,
-          },
-        ],
-      };
-      this.#enforceCapacity();
-      await this.#persist();
-      return true;
-    });
-  }
-
-  stats(): Promise<OutboxStats> {
-    return this.#serial(async () => {
-      const changed = this.#pruneExpired();
-      if (changed) await this.#persist();
-      return {
-        depth: this.#snapshot.records.length,
-        bytes: snapshotBytes(this.#snapshot),
-        dropped: this.#snapshot.dropped,
-      };
-    });
-  }
-
-  flush(options?: {
-    readonly online?: boolean;
-    readonly preferBeacon?: boolean;
-  }): Promise<FlushResult> {
-    const online = options?.online ?? true;
-    const preferBeacon = options?.preferBeacon ?? false;
-    return this.#serial(async () => {
-      const pruned = this.#pruneExpired();
-      if (pruned) await this.#persist();
-      if (!online) {
-        return { status: "offline", accepted: 0, remaining: this.#snapshot.records.length };
-      }
-      if (this.#snapshot.records.length === 0) {
-        return { status: "empty", accepted: 0, remaining: 0 };
-      }
-
-      const now = this.#options.clock.now();
-      // Page teardown gets one last chance regardless of backoff; there is no later attempt.
-      const eligible = this.#snapshot.records
-        .filter((entry) => preferBeacon || entry.nextAttemptAt <= now)
-        .slice(0, maximumRecordsPerFlush);
-      if (eligible.length === 0) {
-        return { status: "backoff", accepted: 0, remaining: this.#snapshot.records.length };
-      }
-
-      const records: ClientTelemetryRecord[] = [
-        ...eligible.map((entry) => entry.record),
-        {
-          type: "metric",
-          name: clientMetricNames.outboxDepth,
-          kind: "gauge",
-          value: this.#snapshot.records.length,
-          recordedAtUnixMillis: now,
-          attributes: { platform: this.#options.platform, signal: "all" },
-        },
-        {
-          type: "metric",
-          name: clientMetricNames.outboxDropped,
-          kind: "counter",
-          value: this.#snapshot.dropped,
-          recordedAtUnixMillis: now,
-          attributes: { platform: this.#options.platform, signal: "all" },
-        },
-      ];
-      const envelope: ClientTelemetryEnvelope = {
-        schemaVersion: 1,
-        serviceName: this.#options.serviceName,
-        serviceVersion: this.#options.serviceVersion,
-        environment: this.#options.environment,
-        sentAtUnixMillis: now,
-        records,
-      };
-
-      try {
-        const beacon = preferBeacon ? this.#options.delivery.sendBeacon : undefined;
-        const delivery =
-          beacon === undefined
-            ? await this.#options.delivery.send(envelope)
-            : beacon(envelope)
-              ? ({ status: "sent", accepted: records.length } as const)
-              : ({ status: "failed", reason: "beacon rejected" } as const);
-        if (delivery.status === "failed") return this.#recordFailedAttempt(eligible, now);
-        const acceptedTotal = Math.max(0, Math.min(records.length, delivery.accepted));
-        const accepted = Math.min(eligible.length, acceptedTotal);
-        const acceptedIds = new Set(eligible.slice(0, accepted).map((entry) => entry.id));
-        const attemptedIds = new Set(eligible.slice(accepted).map((entry) => entry.id));
-        const nextRecords = this.#snapshot.records
-          .filter((entry) => !acceptedIds.has(entry.id))
-          .map((entry) =>
-            attemptedIds.has(entry.id)
-              ? {
-                  ...entry,
-                  attempts: entry.attempts + 1,
-                  nextAttemptAt: now + retryDelay(entry.attempts + 1, this.#options.random.next()),
-                }
-              : entry,
-          );
-        this.#snapshot = {
-          ...this.#snapshot,
-          records: nextRecords,
-          dropped: acceptedTotal === records.length ? 0 : this.#snapshot.dropped,
-        };
-        await this.#persist();
-        return { status: "sent", accepted, remaining: nextRecords.length };
-      } catch {
-        return this.#recordFailedAttempt(eligible, now);
-      }
-    });
-  }
-
-  async #recordFailedAttempt(
-    eligible: ReadonlyArray<StoredRecord>,
-    now: number,
-  ): Promise<FlushResult> {
-    const attemptedIds = new Set(eligible.map((entry) => entry.id));
-    this.#snapshot = {
-      ...this.#snapshot,
-      records: this.#snapshot.records.map((entry) =>
-        attemptedIds.has(entry.id)
-          ? {
-              ...entry,
-              attempts: entry.attempts + 1,
-              nextAttemptAt: now + retryDelay(entry.attempts + 1, this.#options.random.next()),
+    return TelemetryOutbox.of({
+      enqueue: (record, priority = "normal") =>
+        withLock(
+          Effect.gen(function* () {
+            if (
+              Option.isNone(decodeTelemetryRecord(record, exactContract)) ||
+              !priorities.has(priority)
+            ) {
+              return false;
             }
-          : entry,
+            const current = yield* pruneCurrent;
+            const enqueuedAt = yield* clock.currentTimeMillis;
+            const sequence = current.sequence + 1;
+            const next = enforceCapacity(
+              {
+                ...current,
+                sequence,
+                records: [
+                  ...current.records,
+                  {
+                    id: `${enqueuedAt.toString(36)}-${sequence.toString(36)}`,
+                    priority,
+                    enqueuedAt,
+                    attempts: 0,
+                    nextAttemptAt: enqueuedAt,
+                    record,
+                  },
+                ],
+              },
+              options,
+            );
+            yield* commit(next);
+            return true;
+          }),
+        ),
+      stats: withLock(
+        pruneCurrent.pipe(
+          Effect.map((snapshot) => ({
+            depth: snapshot.records.length,
+            bytes: snapshotBytes(snapshot),
+            dropped: snapshot.dropped,
+          })),
+        ),
       ),
-    };
-    await this.#persist();
-    return { status: "failed", accepted: 0, remaining: this.#snapshot.records.length };
-  }
-}
+      flush: (flushOptions) =>
+        withLock(
+          Effect.gen(function* () {
+            const snapshot = yield* pruneCurrent;
+            if (flushOptions?.online === false) {
+              return {
+                status: "offline" as const,
+                accepted: 0,
+                remaining: snapshot.records.length,
+              };
+            }
+            if (snapshot.records.length === 0) {
+              return { status: "empty" as const, accepted: 0, remaining: 0 };
+            }
+
+            const attemptedAt = yield* clock.currentTimeMillis;
+            const preferBeacon = flushOptions?.preferBeacon ?? false;
+            const eligible = snapshot.records
+              .filter((entry) => preferBeacon || entry.nextAttemptAt <= attemptedAt)
+              .slice(0, maximumRecordsPerFlush);
+            if (eligible.length === 0) {
+              return {
+                status: "backoff" as const,
+                accepted: 0,
+                remaining: snapshot.records.length,
+              };
+            }
+
+            const records: ClientTelemetryRecord[] = [
+              ...eligible.map((entry) => entry.record),
+              {
+                type: "metric",
+                name: clientMetricNames.outboxDepth,
+                kind: "gauge",
+                value: snapshot.records.length,
+                recordedAtUnixMillis: attemptedAt,
+                attributes: { platform: options.platform, signal: "all" },
+              },
+              {
+                type: "metric",
+                name: clientMetricNames.outboxDropped,
+                kind: "counter",
+                value: snapshot.dropped,
+                recordedAtUnixMillis: attemptedAt,
+                attributes: { platform: options.platform, signal: "all" },
+              },
+            ];
+            const envelope: ClientTelemetryEnvelope = {
+              schemaVersion: 1,
+              serviceName: options.serviceName,
+              serviceVersion: options.serviceVersion,
+              environment: options.environment,
+              sentAtUnixMillis: attemptedAt,
+              records,
+            };
+
+            const beacon = preferBeacon ? delivery.sendBeacon : undefined;
+            const result =
+              beacon === undefined
+                ? yield* delivery.send(envelope)
+                : beacon(envelope)
+                  ? ({ status: "sent", accepted: records.length } as const)
+                  : ({ status: "failed", reason: "beacon rejected" } as const);
+            if (result.status === "failed") {
+              return yield* recordFailedAttempt(snapshot, eligible, attemptedAt);
+            }
+
+            const acceptedTotal = Math.max(0, Math.min(records.length, result.accepted));
+            const accepted = Math.min(eligible.length, acceptedTotal);
+            const acceptedIds = new Set(eligible.slice(0, accepted).map((entry) => entry.id));
+            const unacceptedIds = new Set(eligible.slice(accepted).map((entry) => entry.id));
+            const retained = {
+              ...snapshot,
+              records: snapshot.records.filter((entry) => !acceptedIds.has(entry.id)),
+              dropped: acceptedTotal === records.length ? 0 : snapshot.dropped,
+            };
+            const next = yield* markAttempts(retained, unacceptedIds, attemptedAt, random);
+            yield* commit(next);
+            return { status: "sent" as const, accepted, remaining: next.records.length };
+          }),
+        ),
+    });
+  });
+
+export const telemetryOutboxLayer = (
+  options: TelemetryOutboxOptions,
+): Layer.Layer<TelemetryOutbox, TelemetryStorageError, TelemetryDelivery | TelemetryStorage> =>
+  Layer.effect(TelemetryOutbox, makeTelemetryOutbox(options));

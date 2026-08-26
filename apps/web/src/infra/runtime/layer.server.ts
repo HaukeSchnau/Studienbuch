@@ -6,9 +6,9 @@ import * as Layer from "effect/Layer";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { authOptions } from "#/infra/auth/options.server.ts";
 import { AuthEmail } from "#/infra/email/auth-email.server.ts";
-import { AccessRpcEndpoint } from "#/features/auth/rpc.server.ts";
 import { EnrollmentRateLimiter } from "#/infra/http/rate-limit.server.ts";
 import { ClientTelemetry } from "#/infra/observability/client-telemetry.server.ts";
+import { ApplicationRpcEndpoint } from "#/infra/rpc/endpoint.server.ts";
 
 const telemetryLayer = serverObservabilityLayer({ serviceName: "studienbuch-server" }).pipe(
   Layer.provide(FetchHttpClient.layer),
@@ -24,15 +24,20 @@ const authLayer = Layer.unwrap(authOptions.pipe(Effect.map(Auth.layer))).pipe(
   Layer.provide([authEmailLayer, databaseLayer, NodeServices.layer]),
 );
 
-const accessRpcLayer = AccessRpcEndpoint.layer.pipe(
-  Layer.provide([EnrollmentRateLimiter.layer, authLayer, databaseLayer, NodeServices.layer]),
+const applicationRpcLayer = ApplicationRpcEndpoint.layer.pipe(
+  Layer.provide([
+    EnrollmentRateLimiter.layer,
+    EnquiryNotifier.layer,
+    authLayer,
+    databaseLayer,
+    NodeServices.layer,
+  ]),
 );
 
 export const WebApplicationLive = Layer.mergeAll(
   NodeServices.layer,
   ClientTelemetry.layer,
-  EnquiryNotifier.layer,
   authLayer,
-  accessRpcLayer,
+  applicationRpcLayer,
   databaseLayer,
 ).pipe(Layer.provideMerge(telemetryLayer));

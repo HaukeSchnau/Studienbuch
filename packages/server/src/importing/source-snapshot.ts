@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto";
 import type { ExternalEntityKind } from "@stu/core/importing";
 import type * as Schema from "effect/Schema";
+import { sha256Text } from "../cryptography/content-hash.ts";
 
 export interface SourceRecordObservation {
   readonly _tag: ExternalEntityKind;
@@ -20,9 +20,8 @@ export interface SourceSnapshot<Observation extends SourceRecordObservation> {
   readonly diagnostics: Schema.Json;
 }
 
-export const hashSourceObservations = (
-  observations: ReadonlyArray<SourceRecordObservation>,
-): string => createHash("sha256").update(JSON.stringify(observations)).digest("hex");
+export const hashSourceObservations = (observations: ReadonlyArray<SourceRecordObservation>) =>
+  sha256Text(JSON.stringify(observations));
 
-export const hashSourceObservation = (observation: SourceRecordObservation): string =>
+export const hashSourceObservation = (observation: SourceRecordObservation) =>
   hashSourceObservations([observation]);

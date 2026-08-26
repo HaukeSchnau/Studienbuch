@@ -1,13 +1,21 @@
 import { describe, expect, it } from "@effect/vitest";
+import { runCrypto } from "../cryptography/testing.ts";
 import {
   AnnualCourseObservation,
-  buildAnnualCourseObservations,
+  buildAnnualCourseObservations as buildAnnualCourseObservationsEffect,
+  type AnnualCourseObservationBuild,
+  type CourseReconciliationPolicy,
   reconcileAnnualCourseObservations,
 } from "./course-reconciliation.ts";
 import { igsLilienthalProfile } from "./school-profile.ts";
 import { CourseRosterMember, CourseRosterObservation } from "./student-timetable.ts";
 
 const policy = igsLilienthalProfile.courseReconciliation;
+const buildAnnualCourseObservations = (
+  observations: ReadonlyArray<CourseRosterObservation>,
+  reconciliationPolicy: CourseReconciliationPolicy,
+): AnnualCourseObservationBuild =>
+  runCrypto(buildAnnualCourseObservationsEffect(observations, reconciliationPolicy));
 
 const roster = (input: {
   readonly year: string;

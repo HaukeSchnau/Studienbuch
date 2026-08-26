@@ -1,12 +1,26 @@
 import Constants from "expo-constants";
+import * as Network from "expo-network";
 import { AppState, Platform } from "react-native";
-import { createContext, useContext, useEffect, useMemo, type PropsWithChildren } from "react";
 import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  type PropsWithChildren,
+} from "react";
+import {
+  TelemetryDelivery,
   TelemetryOutbox,
+  TelemetryStorage,
+  telemetryOutboxLayer,
   type ClientTelemetryRecord,
   type TelemetryPriority,
 } from "@stu/observability/browser";
-import { startTelemetryController } from "./controller";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import * as ManagedRuntime from "effect/ManagedRuntime";
+import { runTelemetryController, TelemetryConnectivity, TelemetryLifecycle } from "./controller";
 import { makeTelemetryFileStorage } from "./file-storage";
 import { makeFetchTelemetryTransport, type TelemetryAuthorization } from "./transport";
 
@@ -43,64 +57,81 @@ const isAllowedEndpoint = (value: string | undefined): value is string => {
 };
 
 export function MobileTelemetryProvider({ authorization, children }: MobileTelemetryProviderProps) {
-  const outbox = useMemo(() => {
-    // Never fall back to a public/static credential. Until the app owns an
-    // authenticated session authority, the first-party channel stays off.
-    if (!isAllowedEndpoint(endpoint) || authorization === undefined) {
-      return undefined;
-    }
-    return new TelemetryOutbox({
-      storage: makeTelemetryFileStorage(),
-      delivery: makeFetchTelemetryTransport({ endpoint, authorization }),
-      clock: { now: Date.now },
-      random: { next: Math.random },
-      serviceName: "studienbuch-mobile",
-      serviceVersion: Constants.expoConfig?.version ?? "unknown",
-      environment: __DEV__ ? "development" : "production",
-      platform: Platform.OS === "android" ? "android" : Platform.OS === "web" ? "web" : "ios",
-    });
-  }, [authorization]);
+  const runtime = useRef<ReturnType<typeof makeTelemetryRuntime> | undefined>(undefined);
 
   useEffect(() => {
-    if (outbox === undefined) return;
-    return startTelemetryController({
-      outbox,
-      lifecycle: {
-        isActive: () => AppState.currentState === "active",
-        subscribe: (onActive) => {
-          const subscription = AppState.addEventListener("change", (state) => {
-            if (state === "active") onActive();
-          });
-          return () => subscription.remove();
-        },
-      },
-      connectivity: {
-        // Native has no already-pinned reachability module. Failed sends remain
-        // durable and back off; foregrounding and the timer provide recovery.
-        isOnline: () => globalThis.navigator?.onLine ?? true,
-        subscribe: (onOnline) => {
-          if (Platform.OS !== "web") return () => undefined;
-          globalThis.addEventListener?.("online", onOnline);
-          return () => globalThis.removeEventListener?.("online", onOnline);
-        },
-      },
-      scheduler: {
-        every: (milliseconds, task) => {
-          const timer = setInterval(task, milliseconds);
-          return () => clearInterval(timer);
-        },
-      },
-    });
-  }, [outbox]);
+    // Never fall back to a public/static credential. Until the app owns an
+    // authenticated session authority, the first-party channel stays off.
+    if (!isAllowedEndpoint(endpoint) || authorization === undefined) return;
+    const activeRuntime = makeTelemetryRuntime(endpoint, authorization);
+    runtime.current = activeRuntime;
+    void activeRuntime.runPromise(runTelemetryController()).catch(() => undefined);
+    return () => {
+      if (runtime.current === activeRuntime) runtime.current = undefined;
+      void activeRuntime.dispose();
+    };
+  }, [authorization]);
 
   const value = useMemo<MobileTelemetry>(
     () =>
-      outbox === undefined
-        ? disabledTelemetry
-        : { record: (record, priority) => outbox.enqueue(record, priority) },
-    [outbox],
+      ({
+        record: (record, priority) => {
+          const activeRuntime = runtime.current;
+          return activeRuntime === undefined
+            ? Promise.resolve(false)
+            : activeRuntime.runPromise(
+                Effect.flatMap(TelemetryOutbox, (outbox) => outbox.enqueue(record, priority)),
+              );
+        },
+      }) satisfies MobileTelemetry,
+    [],
   );
   return <MobileTelemetryContext value={value}>{children}</MobileTelemetryContext>;
 }
 
 export const useMobileTelemetry = (): MobileTelemetry => useContext(MobileTelemetryContext);
+
+const appLifecycle = TelemetryLifecycle.of({
+  isActive: Effect.sync(() => AppState.currentState === "active"),
+  whenActive: Effect.callback<void>((resume) => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") resume(Effect.void);
+    });
+    return Effect.sync(() => subscription.remove());
+  }),
+});
+
+const connectivity = TelemetryConnectivity.of({
+  isOnline: Effect.tryPromise(() => Network.getNetworkStateAsync()).pipe(
+    Effect.map((state) => state.isInternetReachable ?? state.isConnected ?? true),
+    Effect.orElseSucceed(() => true),
+  ),
+  whenOnline: Effect.callback<void>((resume) => {
+    const subscription = Network.addNetworkStateListener((state) => {
+      if (state.isInternetReachable ?? state.isConnected ?? false) resume(Effect.void);
+    });
+    return Effect.sync(() => subscription.remove());
+  }),
+});
+
+function makeTelemetryRuntime(endpoint: string, authorization: TelemetryAuthorization) {
+  return ManagedRuntime.make(
+    telemetryOutboxLayer({
+      serviceName: "studienbuch-mobile",
+      serviceVersion: Constants.expoConfig?.version ?? "unknown",
+      environment: __DEV__ ? "development" : "production",
+      platform: Platform.OS === "android" ? "android" : Platform.OS === "web" ? "web" : "ios",
+    }).pipe(
+      Layer.provide([
+        Layer.succeed(TelemetryStorage, makeTelemetryFileStorage()),
+        Layer.succeed(TelemetryDelivery, makeFetchTelemetryTransport({ endpoint, authorization })),
+      ]),
+      Layer.provideMerge(
+        Layer.mergeAll(
+          Layer.succeed(TelemetryLifecycle, appLifecycle),
+          Layer.succeed(TelemetryConnectivity, connectivity),
+        ),
+      ),
+    ),
+  );
+}

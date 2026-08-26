@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { runCrypto } from "../cryptography/testing.ts";
 import type {
   AppData,
   DisplayResource,
@@ -172,18 +173,20 @@ describe("WebUntis directory preview", () => {
 
   it("normalizes a stable, image-free observation generation", () => {
     const inventory = baseInventory();
-    const first = makeDirectorySnapshot(inventory);
-    const reordered = makeDirectorySnapshot({
-      ...inventory,
-      teacherFilter: {
-        ...inventory.teacherFilter,
-        departments: [...inventory.teacherFilter.departments].reverse(),
-      },
-      studentFilter: {
-        ...inventory.studentFilter,
-        students: [...inventory.studentFilter.students].reverse(),
-      },
-    });
+    const first = runCrypto(makeDirectorySnapshot(inventory));
+    const reordered = runCrypto(
+      makeDirectorySnapshot({
+        ...inventory,
+        teacherFilter: {
+          ...inventory.teacherFilter,
+          departments: [...inventory.teacherFilter.departments].reverse(),
+        },
+        studentFilter: {
+          ...inventory.studentFilter,
+          students: [...inventory.studentFilter.students].reverse(),
+        },
+      }),
+    );
 
     expect(first.observations).toHaveLength(12);
     expect(first.contentHash).toMatch(/^[0-9a-f]{64}$/);

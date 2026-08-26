@@ -15,6 +15,7 @@
   "dependencies": {
     "@better-auth/passkey": "1.6.27",
     "@effect/sql-pg": "catalog:",
+    "@stu/api": "workspace:*",
     "@stu/core": "workspace:*",
     "better-auth": "^1.6.27",
     "drizzle-orm": "catalog:",

@@ -1,12 +1,13 @@
-import { createHash, randomUUID } from "node:crypto";
 import { Importing, NonBlankText, Organization, Schedule } from "@stu/core";
 import { and, eq, inArray, sql } from "drizzle-orm";
+import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Order from "effect/Order";
 import * as Schema from "effect/Schema";
 import * as Calendar from "temporal-polyfill/fns/Calendar";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
 import { Database } from "../database/client.ts";
+import { sha256Json } from "../cryptography/content-hash.ts";
 import { entityLinks } from "../importing/schema.ts";
 import { sourceImportRuns, sourceRecords, sourceRecordVersions } from "../importing/schema.ts";
 import { timetableOccurrences, timetableOccurrenceSources } from "../schedule/schema.ts";
@@ -57,9 +58,6 @@ export class InvalidCourseProjectionRecord extends Schema.TaggedError<InvalidCou
 export interface ProjectCurrentCoursesInput {
   readonly dataSourceId: string;
 }
-
-const hashJson = (payload: Schema.Json) =>
-  createHash("sha256").update(JSON.stringify(payload)).digest("hex");
 
 const annualKey = (dataSourceId: string, observationId: string) =>
   JSON.stringify([dataSourceId, observationId]);
@@ -280,19 +278,20 @@ export const projectCurrent = Effect.fn("Organization.projectCurrentCourses")(fu
         }),
       );
       const datedById = new Map(dated.map((observation) => [observation.id, observation]));
-      const annualPeriods = academicYears.map((academicYear) => {
-        const built = buildAnnualCourseObservations(
+      const annualPeriods = yield* Effect.forEach(academicYears, (academicYear) =>
+        buildAnnualCourseObservations(
           dated.filter(
             (observation) => observation.academicYearExternalId === academicYear.externalId,
           ),
           profile.courseReconciliation,
-        );
-        return {
-          academicYearExternalId: academicYear.externalId,
-          startsOn: academicYear.payload.start,
-          observations: built.observations,
-        };
-      });
+        ).pipe(
+          Effect.map((built) => ({
+            academicYearExternalId: academicYear.externalId,
+            startsOn: academicYear.payload.start,
+            observations: built.observations,
+          })),
+        ),
+      );
       const annual = annualPeriods.flatMap((period) => period.observations);
       const currentAnnualRows = yield* transaction
         .select()
@@ -344,7 +343,13 @@ export const projectCurrent = Effect.fn("Organization.projectCurrentCourses")(fu
       }
 
       const startPlans = resolution.assignments.filter((item) => item._tag === "Start");
-      const allocated = startPlans.map((plan) => ({ plan, id: randomUUID() }));
+      const crypto = yield* Crypto.Crypto;
+      const allocated = yield* Effect.forEach(startPlans, (plan) =>
+        crypto.randomUUIDv4.pipe(
+          Effect.orDie,
+          Effect.map((id) => ({ plan, id })),
+        ),
+      );
       if (allocated.length > 0) {
         yield* transaction.insert(courseOfferings).values(
           allocated.map((item) => ({
@@ -400,12 +405,13 @@ export const projectCurrent = Effect.fn("Organization.projectCurrentCourses")(fu
 
       for (const observation of annual) {
         const payload = yield* encodeAnnualObservation(observation);
+        const contentHash = yield* sha256Json(payload);
         const existing = existingAnnualById.get(observation.id);
         const courseOfferingId = offeringByObservationId.get(observation.id) ?? null;
         const resolutionReason = resolutionReasonByObservationId.get(observation.id) ?? null;
         const changed =
           existing === undefined ||
-          existing.contentHash !== hashJson(payload) ||
+          existing.contentHash !== contentHash ||
           !existing.active ||
           existing.courseOfferingId !== courseOfferingId ||
           existing.resolutionReason !== resolutionReason;
@@ -418,7 +424,7 @@ export const projectCurrent = Effect.fn("Organization.projectCurrentCourses")(fu
             dataSourceId,
             observationId: observation.id,
             academicYearExternalId: observation.academicYearExternalId,
-            contentHash: hashJson(payload),
+            contentHash,
             payload,
             active: true,
             courseOfferingId,
@@ -431,7 +437,7 @@ export const projectCurrent = Effect.fn("Organization.projectCurrentCourses")(fu
             target: courseAnnualObservations.key,
             set: {
               academicYearExternalId: observation.academicYearExternalId,
-              contentHash: hashJson(payload),
+              contentHash,
               payload,
               active: true,
               courseOfferingId,
@@ -533,7 +539,7 @@ export const projectCurrent = Effect.fn("Organization.projectCurrentCourses")(fu
           decision.rightObservationId,
         );
         const payload = yield* encodeDecision(decision);
-        const contentHash = hashJson(payload);
+        const contentHash = yield* sha256Json(payload);
         const existing = currentDecisionByKey.get(key);
         if (existing?.active && existing.contentHash === contentHash) continue;
         changedCount += 1;
@@ -662,7 +668,7 @@ export const projectCurrent = Effect.fn("Organization.projectCurrentCourses")(fu
           classGroupIds,
         });
         const payload = yield* encodeAcademicYearRepresentation(value);
-        const contentHash = hashJson(payload);
+        const contentHash = yield* sha256Json(payload);
         const current = yield* transaction
           .select({ contentHash: courseOfferingAcademicYears.contentHash })
           .from(courseOfferingAcademicYears)
@@ -827,9 +833,10 @@ export const projectCurrent = Effect.fn("Organization.projectCurrentCourses")(fu
           claims: occurrence.claims,
         });
         const payload = yield* encodeOccurrence(updated);
+        const contentHash = yield* sha256Json(payload);
         yield* transaction
           .update(timetableOccurrences)
-          .set({ payload, contentHash: hashJson(payload), updatedAt: sql`now()` })
+          .set({ payload, contentHash, updatedAt: sql`now()` })
           .where(eq(timetableOccurrences.id, row.id));
         changedCount += 1;
       }

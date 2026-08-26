@@ -7,7 +7,8 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./access": "./src/access.ts"
+    "./access": "./src/access.ts",
+    "./marketing": "./src/marketing.ts"
   },
   "scripts": {
     "test": "vp test run --passWithNoTests"

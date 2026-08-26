@@ -1,12 +1,11 @@
 import { AccessApi } from "@stu/api";
 import { Organization } from "@stu/core";
 import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
-import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { AtomRpc } from "effect/unstable/reactivity";
-import { RpcClient, RpcSerialization } from "effect/unstable/rpc";
+import { RpcClient } from "effect/unstable/rpc";
+import { browserRpcProtocol } from "#/infra/rpc/protocol.ts";
 
 export type ReservationView = AccessApi.ReservationView;
 export type SchoolAccessView = AccessApi.SchoolAccessView;
@@ -54,17 +53,11 @@ const failed = (code: AccessErrorCode, status = 0): ApiResult<never> => ({
   error: { _tag: "ApiFailure", code, status },
 });
 
-const browserProtocol = RpcClient.layerProtocolHttp({ url: AccessApi.rpcPath }).pipe(
-  // Browser fetch keeps same-origin credentials and propagates the request's Origin header.
-  // Both are consumed by the server middleware rather than repeated in each RPC handler.
-  Layer.provide([FetchHttpClient.layer, RpcSerialization.layerJson]),
-);
-
 const makeClient = RpcClient.make(AccessApi.Rpcs);
 type Client = Effect.Success<typeof makeClient>;
 
 const withClient = <A, E>(use: (client: Client) => Effect.Effect<A, E>) =>
-  Effect.scoped(makeClient.pipe(Effect.flatMap(use), Effect.provide(browserProtocol)));
+  Effect.scoped(makeClient.pipe(Effect.flatMap(use), Effect.provide(browserRpcProtocol)));
 
 const run = async <A, E extends { readonly _tag: string }>(
   effect: Effect.Effect<A, E>,
@@ -117,7 +110,7 @@ export const saveProfile = (input: {
 
 export const AccessAtoms = AtomRpc.Service()("@stu/web/auth/AccessAtoms", {
   group: AccessApi.Rpcs,
-  protocol: browserProtocol,
+  protocol: browserRpcProtocol,
 });
 
 export const accountAtom = AccessAtoms.query("Access.GetAccount", undefined, {

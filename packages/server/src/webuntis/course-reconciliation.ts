@@ -1,6 +1,7 @@
-import { createHash } from "node:crypto";
+import * as Effect from "effect/Effect";
 import * as Order from "effect/Order";
 import * as Schema from "effect/Schema";
+import { sha256Text } from "../cryptography/content-hash.ts";
 import type { CourseRosterObservation } from "./student-timetable.ts";
 
 export interface RosterContinuityMeasurement {
@@ -93,7 +94,7 @@ const patternKey = (observation: CourseRosterObservation) => {
 };
 
 const patternFingerprint = (observation: CourseRosterObservation) =>
-  createHash("sha256").update(patternKey(observation)).digest("hex");
+  sha256Text(patternKey(observation));
 
 const partitionsOf = (observations: ReadonlyArray<CourseRosterObservation>) => {
   const studentsByGroup = new Map<string, Set<string>>();
@@ -122,9 +123,9 @@ const partitionsOf = (observations: ReadonlyArray<CourseRosterObservation>) => {
     .sort((left, right) => Order.String(left.schoolGroupKey, right.schoolGroupKey));
 };
 
-const makePattern = (
+const makePattern = Effect.fnUntraced(function* (
   observations: ReadonlyArray<CourseRosterObservation>,
-): AnnualPattern | undefined => {
+) {
   const first = observations[0];
   if (first === undefined) return undefined;
   const students = uniqueSorted(observations.flatMap(studentIds));
@@ -132,7 +133,7 @@ const makePattern = (
   const datedObservationIds = observations.map((item) => item.id).sort(Order.String);
   const firstDatedObservationId = datedObservationIds[0];
   if (firstStudent === undefined || firstDatedObservationId === undefined) return undefined;
-  const id = `annual:${first.academicYearExternalId}/roster:${patternFingerprint(first)}`;
+  const id = `annual:${first.academicYearExternalId}/roster:${yield* patternFingerprint(first)}`;
   return {
     id,
     observations,
@@ -152,7 +153,7 @@ const makePattern = (
       }),
     }),
   };
-};
+});
 
 const simultaneousOccurrenceCount = (left: AnnualPattern, right: AnnualPattern) => {
   const meetings = new Set<string>();
@@ -241,10 +242,10 @@ const combineJointPatterns = (
 };
 
 /** Finds repeated annual patterns without allocating permanent course identities. */
-export const buildAnnualCourseObservations = (
+export const buildAnnualCourseObservations = Effect.fnUntraced(function* (
   datedObservations: ReadonlyArray<CourseRosterObservation>,
   policy: CourseReconciliationPolicy,
-): AnnualCourseObservationBuild => {
+) {
   const groups = new Map<string, Array<CourseRosterObservation>>();
   const unresolvedDatedObservationIds: Array<string> = [];
   for (const observation of [...datedObservations].sort((left, right) =>
@@ -267,7 +268,7 @@ export const buildAnnualCourseObservations = (
       unresolvedDatedObservationIds.push(...group.map((item) => item.id));
       continue;
     }
-    const pattern = makePattern(group);
+    const pattern = yield* makePattern(group);
     if (pattern !== undefined) accepted.push(pattern);
   }
   accepted.sort((left, right) => Order.String(left.id, right.id));
@@ -310,7 +311,7 @@ export const buildAnnualCourseObservations = (
     observations: annual.sort((left, right) => Order.String(left.id, right.id)),
     unresolvedDatedObservationIds: uniqueSorted(unresolvedDatedObservationIds),
   };
-};
+});
 
 export const CoursePairEvidence = Schema.Struct({
   sharedCourseCodes: Schema.Array(Schema.String),

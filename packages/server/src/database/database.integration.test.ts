@@ -23,7 +23,12 @@ import {
 } from "../importing/schema.ts";
 import { EntityLinks as EntityLinkStore } from "../importing/entity-links.ts";
 import { SourceObservationStore } from "../importing/source-observation-store.ts";
-import { hashSourceObservations, type SourceSnapshot } from "../importing/source-snapshot.ts";
+import {
+  hashSourceObservations as hashSourceObservationsEffect,
+  type SourceRecordObservation,
+  type SourceSnapshot,
+} from "../importing/source-snapshot.ts";
+import { runCrypto } from "../cryptography/testing.ts";
 import { DirectoryProjectionStore } from "../organization/directory-projection-store.ts";
 import { CourseProjectionStore } from "../organization/course-projection-store.ts";
 import {
@@ -48,11 +53,16 @@ import { TimetableProjectionStore } from "../schedule/timetable-projection-store
 import { DirectoryPreview } from "../webuntis/directory-preview.ts";
 import {
   DirectoryObservation,
-  hashDirectoryObservations,
+  hashDirectoryObservations as hashDirectoryObservationsEffect,
   type DirectorySnapshot,
 } from "../webuntis/directory-snapshot.ts";
 import { TimetableObservation } from "../webuntis/timetable.ts";
 import { StudentTimetableObservation } from "../webuntis/student-timetable.ts";
+
+const hashSourceObservations = (observations: ReadonlyArray<SourceRecordObservation>) =>
+  runCrypto(hashSourceObservationsEffect(observations));
+const hashDirectoryObservations = (observations: ReadonlyArray<DirectoryObservation>) =>
+  runCrypto(hashDirectoryObservationsEffect(observations));
 
 /**
  * Testcontainers needs a Docker-compatible socket, and `DOCKER_HOST` is the contract for naming it:

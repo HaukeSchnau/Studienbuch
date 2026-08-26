@@ -1,5 +1,6 @@
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
+import type * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
@@ -245,7 +246,12 @@ const courseRosterSummary = (
   changedCount: result.projection.changedCount,
 });
 
-type ImporterRequirements = AppClient | SchoolyearsClient | TimetableClient | Database.Service;
+type ImporterRequirements =
+  | AppClient
+  | SchoolyearsClient
+  | TimetableClient
+  | Database.Service
+  | Crypto.Crypto;
 
 /** Captures the live adapter context once so the worker can be tested through one focused seam. */
 export class Service extends Context.Service<Service>()("@stu/server/webuntis/importer/Service", {

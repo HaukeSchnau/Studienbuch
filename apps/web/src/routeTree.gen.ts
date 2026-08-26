@@ -21,7 +21,6 @@ import { Route as PublicIndexRouteImport } from './routes/_public.index'
 import { Route as PublicDatenschutzRouteImport } from './routes/_public.datenschutz'
 import { Route as PublicImpressumRouteImport } from './routes/_public.impressum'
 import { Route as AktivierenAbschliessenRouteImport } from './routes/aktivieren_.abschliessen'
-import { Route as ApiEnquiryRouteImport } from './routes/api/enquiry'
 import { Route as ApiRpcRouteImport } from './routes/api/rpc'
 import { Route as OperatorSetupRouteImport } from './routes/operator/setup'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -89,11 +88,6 @@ const AktivierenAbschliessenRoute = AktivierenAbschliessenRouteImport.update({
   path: '/aktivieren/abschliessen',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiEnquiryRoute = ApiEnquiryRouteImport.update({
-  id: '/api/enquiry',
-  path: '/api/enquiry',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiRpcRoute = ApiRpcRouteImport.update({
   id: '/api/rpc',
   path: '/api/rpc',
@@ -144,7 +138,6 @@ export interface FileRoutesByFullPath {
   '/datenschutz': typeof PublicDatenschutzRoute
   '/impressum': typeof PublicImpressumRoute
   '/aktivieren/abschliessen': typeof AktivierenAbschliessenRoute
-  '/api/enquiry': typeof ApiEnquiryRoute
   '/api/rpc': typeof ApiRpcRoute
   '/operator/setup': typeof OperatorSetupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -164,7 +157,6 @@ export interface FileRoutesByTo {
   '/datenschutz': typeof PublicDatenschutzRoute
   '/impressum': typeof PublicImpressumRoute
   '/aktivieren/abschliessen': typeof AktivierenAbschliessenRoute
-  '/api/enquiry': typeof ApiEnquiryRoute
   '/api/rpc': typeof ApiRpcRoute
   '/operator/setup': typeof OperatorSetupRoute
   '/': typeof PublicIndexRoute
@@ -187,7 +179,6 @@ export interface FileRoutesById {
   '/_public/datenschutz': typeof PublicDatenschutzRoute
   '/_public/impressum': typeof PublicImpressumRoute
   '/aktivieren_/abschliessen': typeof AktivierenAbschliessenRoute
-  '/api/enquiry': typeof ApiEnquiryRoute
   '/api/rpc': typeof ApiRpcRoute
   '/operator/setup': typeof OperatorSetupRoute
   '/_public/': typeof PublicIndexRoute
@@ -211,7 +202,6 @@ export interface FileRouteTypes {
     | '/datenschutz'
     | '/impressum'
     | '/aktivieren/abschliessen'
-    | '/api/enquiry'
     | '/api/rpc'
     | '/operator/setup'
     | '/api/auth/$'
@@ -231,7 +221,6 @@ export interface FileRouteTypes {
     | '/datenschutz'
     | '/impressum'
     | '/aktivieren/abschliessen'
-    | '/api/enquiry'
     | '/api/rpc'
     | '/operator/setup'
     | '/'
@@ -253,7 +242,6 @@ export interface FileRouteTypes {
     | '/_public/datenschutz'
     | '/_public/impressum'
     | '/aktivieren_/abschliessen'
-    | '/api/enquiry'
     | '/api/rpc'
     | '/operator/setup'
     | '/_public/'
@@ -274,7 +262,6 @@ export interface RootRouteChildren {
   PasswortZuruecksetzenRoute: typeof PasswortZuruecksetzenRoute
   RegistrierenRoute: typeof RegistrierenRoute
   AktivierenAbschliessenRoute: typeof AktivierenAbschliessenRoute
-  ApiEnquiryRoute: typeof ApiEnquiryRoute
   ApiRpcRoute: typeof ApiRpcRoute
   OperatorSetupRoute: typeof OperatorSetupRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -370,13 +357,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AktivierenAbschliessenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/enquiry': {
-      id: '/api/enquiry'
-      path: '/api/enquiry'
-      fullPath: '/api/enquiry'
-      preLoaderRoute: typeof ApiEnquiryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/rpc': {
       id: '/api/rpc'
       path: '/api/rpc'
@@ -454,7 +434,6 @@ const rootRouteChildren: RootRouteChildren = {
   PasswortZuruecksetzenRoute: PasswortZuruecksetzenRoute,
   RegistrierenRoute: RegistrierenRoute,
   AktivierenAbschliessenRoute: AktivierenAbschliessenRoute,
-  ApiEnquiryRoute: ApiEnquiryRoute,
   ApiRpcRoute: ApiRpcRoute,
   OperatorSetupRoute: OperatorSetupRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

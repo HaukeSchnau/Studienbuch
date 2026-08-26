@@ -1,7 +1,11 @@
-import * as ImagePicker from "expo-image-picker";
+import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
+import * as Result from "effect/Result";
+import type * as ImagePicker from "expo-image-picker";
 import { Alert } from "react-native";
 
 import { haptics } from "~/infra/native/haptics";
+import { MediaPicker, type MediaSource } from "~/infra/native/media-picker";
 
 const showAttachmentError = (source: "camera" | "library") => {
   haptics.warning();
@@ -16,49 +20,30 @@ export const useTaskPhotoPicker = ({
 }: {
   onAssetPicked: (asset: ImagePicker.ImagePickerAsset) => void;
 }) => {
-  const takePhoto = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (!permission.granted) {
-      haptics.warning();
-      Alert.alert(
-        "Kamera nicht freigegeben",
-        "Du kannst die Berechtigung später in den Systemeinstellungen ändern.",
-      );
+  const select = async (source: MediaSource) => {
+    const result = await MediaPicker.pipe(
+      Effect.flatMap((picker) => (source === "camera" ? picker.takePhoto : picker.pickFromLibrary)),
+      Effect.provide(MediaPicker.layer),
+      Effect.result,
+      Effect.runPromise,
+    );
+    if (Result.isFailure(result)) {
+      if (result.failure._tag === "MediaPermissionDenied") {
+        haptics.warning();
+        Alert.alert(
+          "Kamera nicht freigegeben",
+          "Du kannst die Berechtigung später in den Systemeinstellungen ändern.",
+        );
+      } else {
+        showAttachmentError(source);
+      }
       return;
     }
-
-    try {
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: false,
-        mediaTypes: ["images"],
-        quality: 0.82,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        onAssetPicked(result.assets[0]);
-      }
-    } catch {
-      showAttachmentError("camera");
-    }
+    Option.match(result.success, { onNone: () => undefined, onSome: onAssetPicked });
   };
 
-  const pickFromLibrary = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        allowsMultipleSelection: false,
-        mediaTypes: ["images"],
-        presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
-        quality: 0.82,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        onAssetPicked(result.assets[0]);
-      }
-    } catch {
-      showAttachmentError("library");
-    }
+  return {
+    pickFromLibrary: () => select("library"),
+    takePhoto: () => select("camera"),
   };
-
-  return { pickFromLibrary, takePhoto };
 };

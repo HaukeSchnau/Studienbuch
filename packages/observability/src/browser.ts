@@ -17,16 +17,18 @@ export {
 export {
   OUTBOX_MAX_AGE_MS,
   OUTBOX_MAX_BYTES,
+  TelemetryDelivery,
   TelemetryOutbox,
+  TelemetryStorage,
+  TelemetryStorageError,
+  makeTelemetryOutbox,
   memoryTelemetryStorage,
+  telemetryOutboxLayer,
   type FlushResult,
   type OutboxStats,
-  type TelemetryClock,
-  type TelemetryDelivery,
+  type TelemetryDeliveryResult,
   type TelemetryOutboxOptions,
   type TelemetryPlatform,
-  type TelemetryRandom,
-  type TelemetryStorage,
 } from "./client/outbox.ts";
 export {
   externalSpanFromHeaders,

@@ -1,19 +1,35 @@
 import { describe, expect, it } from "vite-plus/test";
+import * as Clock from "effect/Clock";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import * as ManagedRuntime from "effect/ManagedRuntime";
+import * as Random from "effect/Random";
 import type { ClientTelemetryEnvelope, ClientTelemetryRecord } from "./envelope.ts";
 import {
   OUTBOX_MAX_AGE_MS,
+  TelemetryDelivery,
   TelemetryOutbox,
+  TelemetryStorage,
   memoryTelemetryStorage,
-  type TelemetryDelivery,
-  type TelemetryStorage,
+  telemetryOutboxLayer,
+  type TelemetryDeliveryResult,
 } from "./outbox.ts";
 
-class MemoryStorage implements TelemetryStorage {
+class MemoryStorage {
   value: string | undefined;
-  read = async () => this.value;
-  write = async (value: string) => {
-    this.value = value;
-  };
+
+  readonly service = TelemetryStorage.of({
+    read: Effect.sync(() => this.value),
+    write: (value) =>
+      Effect.sync(() => {
+        this.value = value;
+      }),
+  });
+}
+
+interface TestDelivery {
+  readonly send: (envelope: ClientTelemetryEnvelope) => Promise<TelemetryDeliveryResult>;
+  readonly sendBeacon?: (envelope: ClientTelemetryEnvelope) => boolean;
 }
 
 const metric = (value: number, recordedAtUnixMillis: number): ClientTelemetryRecord => ({
@@ -26,13 +42,15 @@ const metric = (value: number, recordedAtUnixMillis: number): ClientTelemetryRec
 });
 
 const setup = (overrides?: {
-  storage?: MemoryStorage;
-  delivery?: TelemetryDelivery;
+  storage?: MemoryStorage | TelemetryStorage["Service"];
+  delivery?: TestDelivery;
+  initialNow?: number;
   maxBytes?: number;
   maxRecords?: number;
 }) => {
-  let now = 1_800_000_000_000;
+  let now = overrides?.initialNow ?? 1_800_000_000_000;
   const storage = overrides?.storage ?? new MemoryStorage();
+  const storageService = storage instanceof MemoryStorage ? storage.service : storage;
   const envelopes: ClientTelemetryEnvelope[] = [];
   const delivery =
     overrides?.delivery ??
@@ -41,19 +59,48 @@ const setup = (overrides?: {
         envelopes.push(envelope);
         return { status: "sent", accepted: envelope.records.length } as const;
       },
-    } satisfies TelemetryDelivery);
-  const outbox = new TelemetryOutbox({
-    storage,
-    delivery,
-    clock: { now: () => now },
-    random: { next: () => 0.5 },
-    serviceName: "studienbuch-mobile",
-    serviceVersion: "test",
-    environment: "test",
-    platform: "ios",
-    maxBytes: overrides?.maxBytes,
-    maxRecords: overrides?.maxRecords,
-  });
+    } satisfies TestDelivery);
+  const clock: Clock.Clock = {
+    currentTimeMillisUnsafe: () => now,
+    currentTimeMillis: Effect.sync(() => now),
+    currentTimeNanosUnsafe: () => BigInt(now) * 1_000_000n,
+    currentTimeNanos: Effect.sync(() => BigInt(now) * 1_000_000n),
+    monotonicTimeNanosUnsafe: () => BigInt(now) * 1_000_000n,
+    monotonicTimeNanos: Effect.sync(() => BigInt(now) * 1_000_000n),
+    sleep: () => Effect.void,
+  };
+  const runtime = ManagedRuntime.make(
+    telemetryOutboxLayer({
+      serviceName: "studienbuch-mobile",
+      serviceVersion: "test",
+      environment: "test",
+      platform: "ios",
+      maxBytes: overrides?.maxBytes,
+      maxRecords: overrides?.maxRecords,
+    }).pipe(
+      Layer.provide([
+        Layer.succeed(Clock.Clock, clock),
+        Layer.succeed(Random.Random, { nextDoubleUnsafe: () => 0.5, nextIntUnsafe: () => 1 }),
+        Layer.succeed(TelemetryStorage, storageService),
+        Layer.succeed(
+          TelemetryDelivery,
+          TelemetryDelivery.of({
+            send: (envelope) => Effect.promise(() => delivery.send(envelope)),
+            sendBeacon: delivery.sendBeacon,
+          }),
+        ),
+      ]),
+    ),
+  );
+  const run = <A, E>(use: (service: TelemetryOutbox["Service"]) => Effect.Effect<A, E>) =>
+    runtime.runPromise(Effect.flatMap(TelemetryOutbox, use));
+  const outbox = {
+    enqueue: (record: ClientTelemetryRecord, priority?: "low" | "normal" | "high") =>
+      run((service) => service.enqueue(record, priority)),
+    stats: () => run((service) => service.stats),
+    flush: (options?: { readonly online?: boolean; readonly preferBeacon?: boolean }) =>
+      run((service) => service.flush(options)),
+  };
   return {
     outbox,
     storage,
@@ -146,17 +193,8 @@ describe("TelemetryOutbox", () => {
     await first.outbox.enqueue(metric(1, first.now()));
     first.advance(OUTBOX_MAX_AGE_MS + 1);
 
-    const restarted = new TelemetryOutbox({
-      storage: first.storage,
-      delivery: { send: async () => ({ status: "sent", accepted: 0 }) },
-      clock: { now: first.now },
-      random: { next: () => 0.5 },
-      serviceName: "studienbuch-mobile",
-      serviceVersion: "test",
-      environment: "test",
-      platform: "ios",
-    });
-    expect(await restarted.stats()).toMatchObject({ depth: 0, dropped: 1 });
+    const restarted = setup({ storage: first.storage, initialNow: first.now() });
+    expect(await restarted.outbox.stats()).toMatchObject({ depth: 0, dropped: 1 });
   });
 
   it("evicts oldest low-priority records before high-priority records", async () => {
@@ -270,18 +308,12 @@ describe("TelemetryOutbox", () => {
   });
 
   it("keeps non-durable storage behind the same contract", async () => {
-    const outbox = new TelemetryOutbox({
+    const test = setup({
       storage: memoryTelemetryStorage(),
       delivery: { send: async () => ({ status: "sent", accepted: 3 }) },
-      clock: { now: () => 1_800_000_000_000 },
-      random: { next: () => 0.5 },
-      serviceName: "studienbuch-web-client",
-      serviceVersion: "test",
-      environment: "test",
-      platform: "web",
     });
-    await outbox.enqueue(metric(1, 1_800_000_000_000));
+    await test.outbox.enqueue(metric(1, 1_800_000_000_000));
 
-    expect(await outbox.flush()).toMatchObject({ status: "sent", remaining: 0 });
+    expect(await test.outbox.flush()).toMatchObject({ status: "sent", remaining: 0 });
   });
 });

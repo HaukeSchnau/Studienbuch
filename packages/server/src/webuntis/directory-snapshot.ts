@@ -151,12 +151,11 @@ const byClassMembership = (
 };
 
 /** The snapshot hash is a source revision over normalized, identity-sorted provider records. */
-export const hashDirectoryObservations = (
-  observations: ReadonlyArray<DirectoryObservation>,
-): string => hashSourceObservations(observations);
+export const hashDirectoryObservations = (observations: ReadonlyArray<DirectoryObservation>) =>
+  hashSourceObservations(observations);
 
 /** Converts a decoded WebUntis response into stable records suitable for durable storage. */
-export const makeDirectorySnapshot = (inventory: DirectoryInventory): DirectorySnapshot => {
+export const makeDirectorySnapshot = Effect.fnUntraced(function* (inventory: DirectoryInventory) {
   const preview = summarizeDirectoryInventory(inventory);
   const { appData, academicYear } = inventory;
   const {
@@ -296,13 +295,13 @@ export const makeDirectorySnapshot = (inventory: DirectoryInventory): DirectoryS
   return {
     preview,
     observations,
-    contentHash: hashDirectoryObservations(observations),
+    contentHash: yield* hashDirectoryObservations(observations),
   };
-};
+});
 
 /** Fetches one complete directory snapshot. It still performs no persistence. */
 export const fetchDirectorySnapshot = Effect.fn("WebUntis.fetchDirectorySnapshot")(function* (
   requestedSchoolYear: string,
 ) {
-  return makeDirectorySnapshot(yield* fetchDirectoryInventory(requestedSchoolYear));
+  return yield* makeDirectorySnapshot(yield* fetchDirectoryInventory(requestedSchoolYear));
 });

@@ -1,9 +1,10 @@
 import {
   decodeClientTelemetryAcknowledgement,
+  TelemetryDelivery,
   type ClientTelemetryEnvelope,
-  type TelemetryDelivery,
 } from "@stu/observability/browser";
-import { Option } from "effect";
+import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 
 export type TelemetryAuthorization = () => Promise<string | undefined>;
 
@@ -22,40 +23,52 @@ export interface FetchTelemetryTransportOptions {
  */
 export const makeFetchTelemetryTransport = (
   options: FetchTelemetryTransportOptions,
-): TelemetryDelivery => ({
-  send: async (envelope: ClientTelemetryEnvelope) => {
-    const authorization = await options.authorization();
-    if (
-      authorization === undefined ||
-      !authorization.startsWith("Bearer ") ||
-      authorization.length <= "Bearer ".length ||
-      authorization.length > 4_096 ||
-      authorization.includes("\r") ||
-      authorization.includes("\n")
-    ) {
-      return { status: "failed", reason: "Authenticated telemetry authority is unavailable" };
-    }
-    const response = await (options.fetch ?? globalThis.fetch)(options.endpoint, {
-      method: "POST",
-      headers: {
-        authorization,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(envelope),
-    });
-    if (!response.ok) {
-      return {
-        status: "failed",
-        reason: `Telemetry relay rejected the batch (${response.status})`,
-      };
-    }
-    const body: unknown = await response.json().catch(() => undefined);
-    const acknowledgement = decodeClientTelemetryAcknowledgement(body, {
-      onExcessProperty: "error",
-    });
-    return Option.isSome(acknowledgement) &&
-      acknowledgement.value.acceptedRecords <= envelope.records.length
-      ? { status: "sent", accepted: acknowledgement.value.acceptedRecords }
-      : { status: "failed", reason: "Telemetry relay returned an invalid acknowledgement" };
-  },
-});
+): TelemetryDelivery["Service"] =>
+  TelemetryDelivery.of({
+    send: (envelope: ClientTelemetryEnvelope) =>
+      Effect.tryPromise(async () => {
+        const authorization = await options.authorization();
+        if (
+          authorization === undefined ||
+          !authorization.startsWith("Bearer ") ||
+          authorization.length <= "Bearer ".length ||
+          authorization.length > 4_096 ||
+          authorization.includes("\r") ||
+          authorization.includes("\n")
+        ) {
+          return {
+            status: "failed" as const,
+            reason: "Authenticated telemetry authority is unavailable",
+          };
+        }
+        const response = await (options.fetch ?? globalThis.fetch)(options.endpoint, {
+          method: "POST",
+          headers: {
+            authorization,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(envelope),
+        });
+        if (!response.ok) {
+          return {
+            status: "failed" as const,
+            reason: `Telemetry relay rejected the batch (${response.status})`,
+          };
+        }
+        const body: unknown = await response.json().catch(() => undefined);
+        const acknowledgement = decodeClientTelemetryAcknowledgement(body, {
+          onExcessProperty: "error",
+        });
+        return Option.isSome(acknowledgement) &&
+          acknowledgement.value.acceptedRecords <= envelope.records.length
+          ? { status: "sent" as const, accepted: acknowledgement.value.acceptedRecords }
+          : {
+              status: "failed" as const,
+              reason: "Telemetry relay returned an invalid acknowledgement",
+            };
+      }).pipe(
+        Effect.catchCause(() =>
+          Effect.succeed({ status: "failed" as const, reason: "Telemetry delivery failed" }),
+        ),
+      ),
+  });
