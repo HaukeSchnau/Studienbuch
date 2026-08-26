@@ -158,9 +158,10 @@ state.
 The directory, timetable and course-roster sources each permit one in-process execution. The hot
 and warm timetable loops share the same permit. A PostgreSQL advisory lock keyed by school and
 dataset extends this guarantee across worker processes and manual imports. If another process owns
-the lock, the attempt is skipped through the same typed failure and retry path. Retention can later
-compact old unchanged run manifests; record versions and change-bearing runs should remain until
-their audit and projection requirements are known.
+the lock, scheduled workers treat the typed collision as a successful skip without retrying. Manual
+imports still receive the typed error. Retention can later compact old unchanged run manifests;
+record versions and change-bearing runs should remain until their audit and projection requirements
+are known.
 
 ## IGS exams
 
