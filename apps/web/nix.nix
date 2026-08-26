@@ -101,6 +101,12 @@ let
       ${credentials}
       ${databaseEnvironment}
     '';
+  releaseRevisionEnvironment = ''
+    STUDIENBUCH_REVISION="$(project-context revision 2>/dev/null || true)"
+    if [[ -n "$STUDIENBUCH_REVISION" ]]; then
+      export STUDIENBUCH_REVISION
+    fi
+  '';
 
   # Update with the `got:` hash reported by:
   #   nix build .#webApplication
@@ -251,6 +257,7 @@ let
       export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
       export STUDIENBUCH_ENVIRONMENT=production
       export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
+      ${releaseRevisionEnvironment}
       export STUDIENBUCH_OTEL_EXPORT_INTERVAL="5 seconds"
       export STUDIENBUCH_OTEL_SHUTDOWN_TIMEOUT="3 seconds"
 
@@ -287,6 +294,7 @@ let
       export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
       export STUDIENBUCH_ENVIRONMENT=production
       export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
+      ${releaseRevisionEnvironment}
 
       exec node ${webApplication}/${applicationPath}/.output/server/migrate.mjs
     '';
@@ -339,6 +347,7 @@ let
       export STUDIENBUCH_OTEL_ENABLED=true
       export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
       export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
+      ${releaseRevisionEnvironment}
 
       exec node ${webApplication}/${applicationPath}/.output/server/console.mjs "$@"
     '';
@@ -364,6 +373,7 @@ let
           export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
           export STUDIENBUCH_ENVIRONMENT=production
           export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
+          ${releaseRevisionEnvironment}
 
           exec node ${webApplication}/${applicationPath}/.output/server/worker-once.mjs \
             ${lib.escapeShellArg job}

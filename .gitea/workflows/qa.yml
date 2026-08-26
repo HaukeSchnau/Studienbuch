@@ -105,3 +105,4 @@ jobs:
     uses: schnau/nix-infra-modules/.gitea/workflows/project-release.yml@main
     with:
       verification_check: projectReleaseGate
+      readiness_url: https://beta.studienbuch.app/api/health/ready

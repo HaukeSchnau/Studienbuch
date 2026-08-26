@@ -35,10 +35,12 @@ export function makeHealthHandlers(options?: {
   readonly runtimeState?: () => RuntimeState;
   readonly pingDatabase?: () => Promise<boolean>;
   readonly run?: typeof runRouteEffect;
+  readonly revision?: string;
 }) {
   const runtimeState = options?.runtimeState ?? applicationRuntimeState;
   const ping = options?.pingDatabase ?? pingDatabase;
   const run = options?.run ?? runRouteEffect;
+  const revision = options?.revision ?? (process.env.STUDIENBUCH_REVISION?.trim() || undefined);
 
   return {
     /**
@@ -54,9 +56,12 @@ export function makeHealthHandlers(options?: {
       if (state.status !== "ready") {
         return jsonResponse({ status: "not_ready", runtime: state.status }, 503);
       }
-      return (await ping())
+      if (!(await ping())) {
+        return jsonResponse({ status: "not_ready", runtime: "database_unavailable" }, 503);
+      }
+      return revision === undefined
         ? jsonResponse({ status: "ready" })
-        : jsonResponse({ status: "not_ready", runtime: "database_unavailable" }, 503);
+        : jsonResponse({ status: "ready", revision });
     },
 
     canary: async (request: Request): Promise<Response> => {

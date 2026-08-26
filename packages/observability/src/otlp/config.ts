@@ -1,4 +1,5 @@
 import * as Config from "effect/Config";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 
 export const serverConfig = Config.all({
@@ -42,4 +43,9 @@ export const environmentConfig = Config.schema(
 
 export const serviceVersionConfig = Config.string("STUDIENBUCH_VERSION").pipe(
   Config.withDefault("development"),
+);
+
+export const revisionConfig = Config.string("STUDIENBUCH_REVISION").pipe(
+  Config.option,
+  Config.map(Option.getOrUndefined),
 );

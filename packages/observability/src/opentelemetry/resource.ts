@@ -20,6 +20,7 @@ export interface ResourceIdentity {
   readonly serviceVersion: string;
   readonly environment: DeploymentEnvironment;
   readonly instanceId?: string;
+  readonly revision?: string;
 }
 
 interface ResourceAttributes extends Record<string, string> {
@@ -35,6 +36,9 @@ export function resourceAttributes(identity: ResourceIdentity): Readonly<Resourc
 
   if (identity.instanceId !== undefined) {
     attributes["service.instance.id"] = identity.instanceId;
+  }
+  if (identity.revision !== undefined) {
+    attributes["vcs.revision"] = identity.revision;
   }
 
   return attributes;
