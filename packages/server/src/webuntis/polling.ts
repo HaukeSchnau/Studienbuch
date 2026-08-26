@@ -214,10 +214,9 @@ const makeRunner = Effect.fn("WebUntis.makePollingRunner")(function* (
 const tolerateFailure = <A, E, R>(effect: Effect.Effect<Option.Option<A>, E, R>) =>
   effect.pipe(Effect.catchCause(() => Effect.succeed(Option.none<A>())));
 
-/** Runs one bounded polling job and preserves failures for the process exit status. */
-export const runOnce = Effect.fn("WebUntis.runPollingOnce")(function* (
+export const runOnceWithPolicy = Effect.fn("WebUntis.runPollingOnceWithPolicy")(function* (
   job: Job,
-  policy: Policy = defaultPolicy,
+  policy: Policy,
 ) {
   const runner = yield* makeRunner(policy);
   switch (job) {
@@ -235,6 +234,11 @@ export const runOnce = Effect.fn("WebUntis.runPollingOnce")(function* (
     case "course-rosters":
       return yield* runner.runCourseRosters("one-shot");
   }
+});
+
+/** Runs one bounded polling job with the production policy and preserves failures. */
+export const runOnce = Effect.fn("WebUntis.runPollingOnce")(function* (job: Job) {
+  return yield* runOnceWithPolicy(job, defaultPolicy);
 });
 
 /** Runs all current WebUntis sources now, then keeps each source on its own cadence. */

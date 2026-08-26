@@ -6,7 +6,7 @@ import * as Fiber from "effect/Fiber";
 import { TestClock } from "effect/testing";
 import type { SchoolyearWithTimeGrid } from "@schnau/webuntis-api";
 import { WebUntisImporter } from "./importer.ts";
-import { run, runOnce } from "./polling.ts";
+import { run, runOnce, runOnceWithPolicy } from "./polling.ts";
 import { defaultPolicy, type Policy } from "./polling-policy.ts";
 
 const academicYear: SchoolyearWithTimeGrid = {
@@ -99,7 +99,7 @@ describe("WebUntis polling worker", () => {
       yield* TestClock.setTime(Date.parse("2026-08-25T10:00:00Z"));
       const calls: Array<ImportCall> = [];
 
-      yield* runOnce("directory", policy).pipe(
+      yield* runOnceWithPolicy("directory", policy).pipe(
         Effect.provideService(WebUntisImporter.Service, service(calls)),
       );
 
@@ -122,7 +122,7 @@ describe("WebUntis polling worker", () => {
       const timetable: WebUntisImporter.Service["Service"]["importTimetable"] = () =>
         Effect.fail(WebUntisImporter.ImportAlreadyRunning.make({ dataset: "timetable" }));
 
-      const exit = yield* runOnce("recent-and-near-timetable", {
+      const exit = yield* runOnceWithPolicy("recent-and-near-timetable", {
         ...policy,
         retryCount: 0,
       }).pipe(
@@ -131,6 +131,27 @@ describe("WebUntis polling worker", () => {
       );
 
       expect(Exit.isFailure(exit)).toBe(true);
+    }),
+  );
+
+  it.effect("uses the production policy when passed directly as an Effect callback", () =>
+    Effect.gen(function* () {
+      yield* TestClock.setTime(Date.parse("2026-08-25T10:00:00Z"));
+      const calls: Array<ImportCall> = [];
+
+      yield* Effect.succeed("recent-and-near-timetable" as const).pipe(
+        Effect.flatMap(runOnce),
+        Effect.provideService(WebUntisImporter.Service, service(calls)),
+      );
+
+      expect(calls).toEqual([
+        {
+          dataset: "timetable",
+          schoolYear: "2026/2027",
+          start: "2026-08-23",
+          end: "2026-09-08",
+        },
+      ]);
     }),
   );
 
