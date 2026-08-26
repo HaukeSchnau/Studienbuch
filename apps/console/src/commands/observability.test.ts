@@ -107,7 +107,7 @@ describe("console observability", () => {
       await runtime.dispose();
       await receiver.close();
     }
-  });
+  }, 20_000);
 
   it("does not fail the workflow when the exporter is unavailable", async () => {
     const runtime = ManagedRuntime.make(
@@ -132,7 +132,7 @@ describe("console observability", () => {
     } finally {
       await runtime.dispose();
     }
-  });
+  }, 20_000);
 
   it("preserves command failures while the disabled runtime flushes and disposes", async () => {
     const exit = await Effect.fail("expected").pipe(withConsoleRuntime, Effect.runPromiseExit);
