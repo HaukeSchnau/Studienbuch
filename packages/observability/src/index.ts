@@ -7,6 +7,13 @@ export {
   type SpanAttributes,
   type TelemetryPriority,
 } from "./opentelemetry/attributes.ts";
+export { metricNames, observabilityContract } from "./contract.ts";
+export {
+  logErrorEvent,
+  logInfoEvent,
+  logWarningEvent,
+  type LogEventAttributes,
+} from "./opentelemetry/log-events.ts";
 export { runCanary, type CanaryResult } from "./otlp/canary.ts";
 export { canaryDuration, canaryTotal } from "./otlp/metrics.ts";
 export {

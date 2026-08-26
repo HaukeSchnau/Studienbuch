@@ -90,6 +90,7 @@ function browserDeliveryLayer(environment: BrowserTelemetryEnvironment, endpoint
 export function createBrowserTelemetryClient(options: {
   readonly environment: BrowserTelemetryEnvironment;
   readonly serviceVersion: string;
+  readonly instanceId?: string;
   readonly deploymentEnvironment: DeploymentEnvironment;
   readonly maximumRecords?: number;
   readonly maximumBytes?: number;
@@ -118,6 +119,7 @@ export function createBrowserTelemetryClient(options: {
     telemetryOutboxLayer({
       serviceName: "studienbuch-web-client",
       serviceVersion: normalizeServiceVersion(options.serviceVersion),
+      instanceId: options.instanceId,
       environment: options.deploymentEnvironment,
       platform: "web",
       maxRecords: options.maximumRecords ?? defaultMaximumRecords,
@@ -414,12 +416,14 @@ const lifecycleGlobal = globalThis as typeof globalThis & { [lifecycleKey]?: () 
  */
 export function browserTelemetry(identity: {
   readonly serviceVersion: string;
+  readonly instanceId?: string;
   readonly deploymentEnvironment: DeploymentEnvironment;
 }): BrowserTelemetryClient | undefined {
   if (globalThis.window === undefined) return undefined;
   return (browserGlobal[clientKey] ??= createBrowserTelemetryClient({
     environment: browserEnvironment(),
     serviceVersion: identity.serviceVersion,
+    instanceId: identity.instanceId,
     deploymentEnvironment: identity.deploymentEnvironment,
   }));
 }

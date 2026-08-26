@@ -39,9 +39,13 @@ let
       database_host="$(project-context endpoint database listen-host)"
       database_port="$(project-context endpoint database listen-port)"
       export DATABASE_URL="postgresql://postgres@$database_host:$database_port/postgres"
+      configured_otlp_endpoint="$(project-context parameter observabilityOtlpEndpoint)"
       export STUDIENBUCH_OTEL_ENABLED="''${STUDIENBUCH_OTEL_ENABLED:-true}"
-      export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:24318}"
+      export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-$configured_otlp_endpoint}"
+      unset configured_otlp_endpoint
       export STUDIENBUCH_ENVIRONMENT="''${STUDIENBUCH_ENVIRONMENT:-development}"
+      STUDIENBUCH_INSTANCE_ID="$(project-context instance-id 2>/dev/null || true)"
+      export STUDIENBUCH_INSTANCE_ID
 
       for _ in {1..60}; do
         if pg_isready --quiet --host="$database_host" --port="$database_port"; then

@@ -2,6 +2,7 @@ export {
   environmentConfig,
   revisionConfig,
   serverConfig,
+  serviceInstanceIdConfig,
   serviceVersionConfig,
   type ServerConfig,
 } from "./otlp/config.ts";

@@ -83,6 +83,7 @@ export interface FlushResult {
 export interface TelemetryOutboxOptions {
   readonly serviceName: ServiceName;
   readonly serviceVersion: string;
+  readonly instanceId?: string;
   readonly environment: "development" | "test" | "staging" | "production";
   readonly platform: TelemetryPlatform;
   readonly maxAgeMs?: number;
@@ -375,6 +376,7 @@ export const makeTelemetryOutbox = (
               schemaVersion: 1,
               serviceName: options.serviceName,
               serviceVersion: options.serviceVersion,
+              instanceId: options.instanceId,
               environment: options.environment,
               sentAtUnixMillis: attemptedAt,
               records,

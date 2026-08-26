@@ -290,7 +290,7 @@ let
             .development.workloads.web.secrets == ["betterAuthSecret"] and
             (.development.workloads.mobile.secrets // []) == [] and
             .development.endpoints.web.health.paths == ["/api/health/ready"] and
-            (.parameters | keys) == ["authEmailFrom", "databaseUrl", "passkeyRpId", "webUntisSchoolLoginName", "webUntisSchoolName", "webUntisServerUrl", "webUntisTenantId"] and
+            (.parameters | keys) == ["authEmailFrom", "databaseUrl", "observabilityOtlpEndpoint", "passkeyRpId", "webUntisSchoolLoginName", "webUntisSchoolName", "webUntisServerUrl", "webUntisTenantId"] and
             (.secrets | keys) == ["betterAuthSecret", "smtpUrl", "webUntisPassword", "webUntisUsername"] and
             .release.action == "web" and
             .release.commands.console == {action: "console", secrets: ["webUntisUsername", "webUntisPassword"]} and

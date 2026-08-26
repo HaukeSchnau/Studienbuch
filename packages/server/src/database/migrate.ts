@@ -1,4 +1,5 @@
 import { migrate } from "drizzle-orm/effect-postgres/migrator";
+import { logInfoEvent } from "@stu/observability";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import { fileURLToPath } from "node:url";
@@ -23,9 +24,9 @@ export const migrationsFolder = Config.string("STUDIENBUCH_MIGRATIONS_DIR").pipe
 export const migrateToLatest = Effect.gen(function* () {
   const database = yield* Database.Service;
   const folder = yield* migrationsFolder;
-  yield* Effect.logInfo("database.migrate.started", { event: "database.migrate.started" });
+  yield* logInfoEvent("database.migrate.started");
   yield* migrate(database.drizzle, { migrationsFolder: folder, migrationsSchema, migrationsTable });
-  yield* Effect.logInfo("database.migrate.completed", { event: "database.migrate.completed" });
+  yield* logInfoEvent("database.migrate.completed");
 }).pipe(Effect.withSpan("Database.migrateToLatest"));
 
 export * as Migrate from "./migrate.ts";

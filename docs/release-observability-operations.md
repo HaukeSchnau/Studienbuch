@@ -1,11 +1,12 @@
 # Release observability operations
 
-The production web release exports its Effect telemetry to the host-local OTLP
-agent at `http://127.0.0.1:4318`. The Nix release action owns the environment
-translation:
+The production web release exports its Effect telemetry to the OTLP endpoint selected by the
+Project Runtime. The release descriptor declares an `observabilityOtlpEndpoint` parameter, while
+the private deployment owns its concrete host-local value. The Nix release action translates that
+runtime context into the application environment:
 
 - `STUDIENBUCH_OTEL_ENABLED=true`
-- `OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318`
+- `OTEL_EXPORTER_OTLP_ENDPOINT=<runtime-selected endpoint>`
 - `STUDIENBUCH_ENVIRONMENT=production`
 - `STUDIENBUCH_VERSION=<immutable Nix web-application output identity>`
 - `STUDIENBUCH_REVISION=<promoted immutable Git revision>`

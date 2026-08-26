@@ -13,6 +13,7 @@ import { createServerFn } from "@tanstack/react-start";
 export interface PublicConfig {
   readonly sentryDsn: string | undefined;
   readonly environment: DeploymentEnvironment;
+  readonly instanceId: string | undefined;
   readonly version: string;
 }
 
@@ -28,5 +29,6 @@ function deploymentEnvironment(value: string | undefined): DeploymentEnvironment
 export const getPublicConfig = createServerFn({ method: "GET" }).handler((): PublicConfig => ({
   sentryDsn: optionalText(process.env.STUDIENBUCH_SENTRY_DSN),
   environment: deploymentEnvironment(process.env.STUDIENBUCH_ENVIRONMENT ?? process.env.NODE_ENV),
+  instanceId: optionalText(process.env.STUDIENBUCH_INSTANCE_ID),
   version: optionalText(process.env.STUDIENBUCH_VERSION) ?? "development",
 }));

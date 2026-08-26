@@ -21,6 +21,19 @@ but re-exports. Implementation sits in `opentelemetry/` (resource identity, the 
 metric attribute vocabulary, and W3C trace-context propagation -- the parts OpenTelemetry defines),
 `otlp/` (exporter layers, config, canary) and `client/` (the envelope contract and the outbox).
 
+## Infrastructure contract
+
+`contract.json` is the machine-readable seam between Studienbuch and its deployment. Studienbuch
+owns service names, metric names, and objectives. It does not own collector ports, storage products,
+dashboards, or alert delivery. The adjacent JSON Schema and `src/contract.test.ts` keep the external
+contract and the TypeScript vocabulary in sync.
+
+The Project Runtime supplies deployment context through environment variables. In particular,
+`OTEL_EXPORTER_OTLP_ENDPOINT` selects the collector and `STUDIENBUCH_INSTANCE_ID` distinguishes one
+development checkout from another. The application exports standard OTLP and remains unaware of
+whether the receiver is the desktop viewer, an OpenTelemetry Collector, or another compatible
+backend.
+
 ## The client telemetry channel
 
 Web and mobile report a narrow, allowlisted set of operational records to the Studienbuch server,

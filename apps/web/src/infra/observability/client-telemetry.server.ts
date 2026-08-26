@@ -4,6 +4,7 @@ import {
   type ClientTelemetryEnvelope,
 } from "@stu/observability/browser";
 import * as Context from "effect/Context";
+import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Metric from "effect/Metric";
@@ -33,6 +34,8 @@ const clientOutboxDropped = Metric.counter(clientMetricNames.outboxDropped, {
   incremental: true,
 });
 
+class ClientReportedSpanFailure extends Data.TaggedError("ClientReportedSpanFailure") {}
+
 export class ClientTelemetry extends Context.Service<ClientTelemetry>()(
   "@stu/web/infra/observability/client-telemetry.server/ClientTelemetry",
   {
@@ -41,6 +44,7 @@ export class ClientTelemetry extends Context.Service<ClientTelemetry>()(
         Effect.forEach(envelope.records, ingestRecord, { discard: true }).pipe(
           Effect.annotateLogs({
             client_service: envelope.serviceName,
+            client_instance_id: envelope.instanceId,
             record_count: envelope.records.length,
           }),
           Effect.withSpan(
@@ -48,6 +52,7 @@ export class ClientTelemetry extends Context.Service<ClientTelemetry>()(
             {
               attributes: {
                 "client.service.name": envelope.serviceName,
+                "client.service.instance.id": envelope.instanceId,
                 "telemetry.record.count": envelope.records.length,
               },
             },
@@ -136,10 +141,12 @@ function ingestRecord(record: ClientTelemetryEnvelope["records"][number]): Effec
         spanId: record.spanId,
         sampled: true,
       });
+      const reportedSpan: Effect.Effect<void, ClientReportedSpanFailure> =
+        record.status === "error" ? Effect.fail(new ClientReportedSpanFailure()) : Effect.void;
       return Effect.all(
         [
           countAccepted,
-          Effect.void.pipe(
+          reportedSpan.pipe(
             Effect.withSpan(
               record.name,
               {
@@ -154,6 +161,8 @@ function ingestRecord(record: ClientTelemetryEnvelope["records"][number]): Effec
               },
               { captureStackTrace: false },
             ),
+            Effect.exit,
+            Effect.asVoid,
           ),
         ],
         { discard: true },

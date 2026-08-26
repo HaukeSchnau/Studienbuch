@@ -139,9 +139,11 @@ The flag is ignored when `NODE_ENV=production`, so it cannot disable the runtime
 
 ## Local observability
 
-The Nix development action enables OTLP and sends server traces, logs, and metrics to the local
-desktop viewer at `http://127.0.0.1:24318`. Open `https://otel-viewer.schnau.dev` from any device on
-the Tailnet and select `studienbuch-server`.
+The Nix development action enables OTLP and sends server traces, logs, and metrics to the receiver
+selected by the Project Runtime. From the repository, `project obs status` summarizes all three
+signals, `project obs traces` and `project obs logs` show recent records, and `project obs open`
+prints the explorable viewer URL. Every managed development checkout gets a stable
+`service.instance.id`, and `project obs` selects the current checkout automatically.
 
 Authentication requests appear as `http GET /api/auth/*` or `http POST /api/auth/*` traces. Email
 and passkey sign-in POSTs also emit a correlated `auth.request.completed` log with only the
@@ -149,9 +151,9 @@ normalized operation, outcome, and HTTP status. URLs, queries, headers, credenti
 bodies are deliberately excluded. Browser-initiated auth requests share one trace with the server
 span after the client telemetry bootstrap has loaded.
 
-An explicit `OTEL_EXPORTER_OTLP_ENDPOINT` takes precedence, so `with-motel` can select the terminal
-viewer without changing the application. Set `STUDIENBUCH_OTEL_ENABLED=false` to disable OTLP for
-one run.
+An explicit `OTEL_EXPORTER_OTLP_ENDPOINT` takes precedence over the runtime-selected receiver, so a
+standard OTLP tool can be used without changing the application. Set
+`STUDIENBUCH_OTEL_ENABLED=false` to disable OTLP for one run.
 
 ## Client observability configuration
 

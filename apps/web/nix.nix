@@ -107,6 +107,17 @@ let
       export STUDIENBUCH_REVISION
     fi
   '';
+  observabilityEnvironment = environment: ''
+    export STUDIENBUCH_OTEL_ENABLED="''${STUDIENBUCH_OTEL_ENABLED:-true}"
+    configured_otlp_endpoint="$(project-context parameter observabilityOtlpEndpoint)"
+    export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-$configured_otlp_endpoint}"
+    unset configured_otlp_endpoint
+    export STUDIENBUCH_ENVIRONMENT="''${STUDIENBUCH_ENVIRONMENT:-${environment}}"
+    STUDIENBUCH_INSTANCE_ID="$(project-context instance-id 2>/dev/null || true)"
+    if [[ -n "$STUDIENBUCH_INSTANCE_ID" ]]; then
+      export STUDIENBUCH_INSTANCE_ID
+    fi
+  '';
 
   # Update with the `got:` hash reported by:
   #   nix build .#webApplication
@@ -226,11 +237,7 @@ let
       export DATABASE_URL
       export NODE_OPTIONS="--import ./instrument.server.mjs''${NODE_OPTIONS:+ $NODE_OPTIONS}"
 
-      # Development telemetry stays in the local viewer unless a wrapper such as with-motel
-      # selects another OTLP sink.
-      export STUDIENBUCH_OTEL_ENABLED="''${STUDIENBUCH_OTEL_ENABLED:-true}"
-      export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:24318}"
-      export STUDIENBUCH_ENVIRONMENT="''${STUDIENBUCH_ENVIRONMENT:-development}"
+      ${observabilityEnvironment "development"}
 
       cd "$checkout/${application.relativePath}"
       exec node "$checkout/${application.relativePath}/node_modules/vite/dist/vite/node/cli.js" \
@@ -253,9 +260,7 @@ let
 
       # The collector is deliberately local to the host. OTLP exporter
       # failures must never prevent the application from serving requests.
-      export STUDIENBUCH_OTEL_ENABLED=true
-      export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
-      export STUDIENBUCH_ENVIRONMENT=production
+      ${observabilityEnvironment "production"}
       export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
       ${releaseRevisionEnvironment}
       export STUDIENBUCH_OTEL_EXPORT_INTERVAL="5 seconds"
@@ -290,9 +295,7 @@ let
       DATABASE_URL="$(project-context parameter databaseUrl)"
       export DATABASE_URL
       export STUDIENBUCH_MIGRATIONS_DIR=${webApplication}/${applicationPath}/drizzle
-      export STUDIENBUCH_OTEL_ENABLED=true
-      export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
-      export STUDIENBUCH_ENVIRONMENT=production
+      ${observabilityEnvironment "production"}
       export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
       ${releaseRevisionEnvironment}
 
@@ -319,9 +322,7 @@ let
           export DATABASE_URL
         '';
       }}
-      export STUDIENBUCH_ENVIRONMENT="''${STUDIENBUCH_ENVIRONMENT:-development}"
-      export STUDIENBUCH_OTEL_ENABLED="''${STUDIENBUCH_OTEL_ENABLED:-true}"
-      export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:24318}"
+      ${observabilityEnvironment "development"}
 
       exec node ${webApplication}/${applicationPath}/.output/server/console.mjs "$@"
     '';
@@ -343,9 +344,7 @@ let
           export DATABASE_URL
         '';
       }}
-      export STUDIENBUCH_ENVIRONMENT=production
-      export STUDIENBUCH_OTEL_ENABLED=true
-      export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
+      ${observabilityEnvironment "production"}
       export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
       ${releaseRevisionEnvironment}
 
@@ -369,9 +368,7 @@ let
           }}
 
           export NODE_ENV=production
-          export STUDIENBUCH_OTEL_ENABLED=true
-          export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
-          export STUDIENBUCH_ENVIRONMENT=production
+          ${observabilityEnvironment "production"}
           export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
           ${releaseRevisionEnvironment}
 

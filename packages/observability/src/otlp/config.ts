@@ -45,6 +45,11 @@ export const serviceVersionConfig = Config.string("STUDIENBUCH_VERSION").pipe(
   Config.withDefault("development"),
 );
 
+export const serviceInstanceIdConfig = Config.string("STUDIENBUCH_INSTANCE_ID").pipe(
+  Config.option,
+  Config.map(Option.getOrUndefined),
+);
+
 export const revisionConfig = Config.string("STUDIENBUCH_REVISION").pipe(
   Config.option,
   Config.map(Option.getOrUndefined),

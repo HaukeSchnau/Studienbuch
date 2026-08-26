@@ -1,4 +1,5 @@
 import * as Schema from "effect/Schema";
+import { metricNames } from "../contract.ts";
 
 /**
  * Screens and routes a client may name. Allowlists rather than free strings: that is what
@@ -24,10 +25,10 @@ export const httpRoutes = [
  * and the server ingress maps every one onto an instrument. All three read this.
  */
 export const clientMetricNames = {
-  canaryTotal: "studienbuch_client_canary_total",
-  requestDuration: "studienbuch_client_request_duration_ms",
-  outboxDepth: "studienbuch_client_outbox_depth",
-  outboxDropped: "studienbuch_client_outbox_dropped_total",
+  canaryTotal: metricNames.clientCanary,
+  requestDuration: metricNames.clientRequestDuration,
+  outboxDepth: metricNames.clientOutboxDepth,
+  outboxDropped: metricNames.clientOutboxDropped,
 } as const;
 
 export type ClientMetricName = (typeof clientMetricNames)[keyof typeof clientMetricNames];
@@ -121,6 +122,7 @@ export const ClientTelemetryEnvelope = Schema.Struct({
   schemaVersion: Schema.Literal(1),
   serviceName: ServiceName,
   serviceVersion: ShortString,
+  instanceId: Schema.optionalKey(ShortString),
   environment: Schema.Literals(["development", "test", "staging", "production"]),
   sentAtUnixMillis: UnixMillis,
   records: Schema.Array(ClientTelemetryRecord).check(

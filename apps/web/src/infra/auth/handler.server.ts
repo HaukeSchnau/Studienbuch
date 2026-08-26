@@ -1,4 +1,5 @@
-import { authRequests, spanAttributes } from "@stu/observability";
+import { authRequests, logErrorEvent, logInfoEvent, spanAttributes } from "@stu/observability";
+import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Metric from "effect/Metric";
@@ -26,6 +27,10 @@ type AuthOperation =
 interface AuthHandler {
   readonly handler: (request: Request) => Promise<Response>;
 }
+
+class AuthResponseFailure extends Data.TaggedError("AuthResponseFailure")<{
+  readonly response: Response;
+}> {}
 
 export function authOperation(request: Request): AuthOperation {
   switch (new URL(request.url).pathname) {
@@ -75,7 +80,7 @@ export function makeAuthRequestHandler(options?: {
 
   return async (request: Request): Promise<Response> => {
     const operation = authOperation(request);
-    const program = Effect.tryPromise(() =>
+    const authOperationSpan = Effect.tryPromise(() =>
       resolveAuth().then((auth) => auth.handler(request)),
     ).pipe(
       Effect.tap((response) => {
@@ -90,9 +95,8 @@ export function makeAuthRequestHandler(options?: {
             1,
           ),
           request.method === "POST"
-            ? Effect.logInfo("auth.request.completed", {
+            ? logInfoEvent("auth.request.completed", {
                 auth_operation: operation,
-                event: "auth.request.completed",
                 http_status: response.status,
                 outcome,
               })
@@ -108,13 +112,19 @@ export function makeAuthRequestHandler(options?: {
             ]),
             1,
           ),
-          Effect.logError("auth.request.failed", {
+          logErrorEvent("auth.request.failed", {
             auth_operation: operation,
-            event: "auth.request.failed",
             outcome: "failure",
           }),
         ]),
       ),
+      Effect.flatMap((response) =>
+        response.ok ? Effect.succeed(response) : Effect.fail(new AuthResponseFailure({ response })),
+      ),
+      Effect.withSpan(operation, {}, { captureStackTrace: false }),
+    );
+    const program = authOperationSpan.pipe(
+      Effect.catchTag("AuthResponseFailure", ({ response }) => Effect.succeed(response)),
     );
     const exit = await run(program, { request, route: authRoute });
     const failure = exitFailureResponse(exit);
