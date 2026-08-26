@@ -147,12 +147,14 @@ let
               > "$root/migrate.log" 2>&1
 
             PROJECT_RUNTIME_FILE="$root/manifest.json" \
+              PROJECT_SECRETS_DIR="$secrets" \
               STUDIENBUCH_OTEL_ENABLED=false \
               ${releasePackage}/bin/project-release-runtime console --help \
               > "$root/console-help.txt" 2>&1
             grep -q operator-bootstrap "$root/console-help.txt"
 
             PROJECT_RUNTIME_FILE="$root/manifest.json" \
+              PROJECT_SECRETS_DIR="$secrets" \
               STUDIENBUCH_OTEL_ENABLED=false \
               ${releasePackage}/bin/project-release-runtime console webuntis-poll --help \
               > "$root/webuntis-poll-help.txt" 2>&1
@@ -281,7 +283,7 @@ let
             .development.workloads.importer.lifecycle == "background" and
             .development.workloads.importer.dependsOn == ["migrate"] and
             .development.workloads.importer.secrets == ["webUntisUsername", "webUntisPassword"] and
-            .development.commands.console == {action: "console", dependsOn: ["migrate"]} and
+            .development.commands.console == {action: "console", dependsOn: ["migrate"], secrets: ["webUntisUsername", "webUntisPassword"]} and
             .development.workloads.migrate.kind == "task" and
             .development.workloads.migrate.dependsOn == ["database"] and
             .development.workloads.web.dependsOn == ["migrate"] and
@@ -291,7 +293,7 @@ let
             (.parameters | keys) == ["authEmailFrom", "databaseUrl", "passkeyRpId", "webUntisSchoolLoginName", "webUntisSchoolName", "webUntisServerUrl", "webUntisTenantId"] and
             (.secrets | keys) == ["betterAuthSecret", "smtpUrl", "webUntisPassword", "webUntisUsername"] and
             .release.action == "web" and
-            .release.commands.console == {action: "console"} and
+            .release.commands.console == {action: "console", secrets: ["webUntisUsername", "webUntisPassword"]} and
             .release.preDeployTasks == {migrate: {timeoutSec: 300}} and
             (.release.maintenanceJobs | keys) == ["webuntis-course-rosters", "webuntis-directory", "webuntis-timetable-hot", "webuntis-timetable-warm"] and
             .release.health.paths == ["/api/health/live", "/api/health/ready"] and

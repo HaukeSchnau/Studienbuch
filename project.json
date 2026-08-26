@@ -78,7 +78,8 @@
     "commands": {
       "console": {
         "action": "console",
-        "dependsOn": ["migrate"]
+        "dependsOn": ["migrate"],
+        "secrets": ["webUntisUsername", "webUntisPassword"]
       }
     },
     "endpoints": {
@@ -102,7 +103,8 @@
     "action": "web",
     "commands": {
       "console": {
-        "action": "console"
+        "action": "console",
+        "secrets": ["webUntisUsername", "webUntisPassword"]
       }
     },
     "preDeployTasks": {
