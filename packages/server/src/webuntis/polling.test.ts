@@ -4,7 +4,7 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as Fiber from "effect/Fiber";
 import { TestClock } from "effect/testing";
-import type { SchoolyearWithTimeGrid } from "webuntis-api";
+import type { SchoolyearWithTimeGrid } from "@schnau/webuntis-api";
 import { WebUntisImporter } from "./importer.ts";
 import { run, runOnce } from "./polling.ts";
 import { defaultPolicy, type Policy } from "./polling-policy.ts";

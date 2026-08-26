@@ -15,6 +15,7 @@
   "dependencies": {
     "@better-auth/passkey": "1.6.27",
     "@effect/sql-pg": "catalog:",
+    "@schnau/webuntis-api": "0.2.3",
     "@stu/api": "workspace:*",
     "@stu/core": "workspace:*",
     "@stu/observability": "workspace:*",
@@ -22,8 +23,7 @@
     "drizzle-orm": "catalog:",
     "effect": "catalog:",
     "pg": "catalog:",
-    "temporal-polyfill": "catalog:",
-    "webuntis-api": "https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.2.tgz"
+    "temporal-polyfill": "catalog:"
   },
   "devDependencies": {
     "@effect/platform-node": "catalog:",

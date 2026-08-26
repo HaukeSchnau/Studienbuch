@@ -1,7 +1,7 @@
 import * as Duration from "effect/Duration";
 import * as Calendar from "temporal-polyfill/fns/Calendar";
 import * as PlainDate from "temporal-polyfill/fns/PlainDate";
-import type { Schoolyear } from "webuntis-api";
+import type { Schoolyear } from "@schnau/webuntis-api";
 
 export interface PollingRange {
   readonly schoolYear: string;

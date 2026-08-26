@@ -49,7 +49,7 @@ let
   # after running `just web-lock` for relevant workspace manifest or primary lock changes.
   pnpmDependencyHash =
     if isProductionPlatform then
-      "sha256-BHEv5MKR4oPTTxK75Ti4mV11w5oiZjrLtwx3woRjsAI="
+      "sha256-C6rA0UNUNC20kimQD/xbd33U7eRTeyqPstzLYEDXs24="
     else
       # Nixpkgs' forced fetch is platform-independent; keep it for supported development systems.
       "sha256-6PaVJIdZn4NTtFVrN/CFtrLXT5msU7amWKSus01gBmc=";
@@ -62,12 +62,6 @@ let
     inherit pnpmWorkspaces;
     pnpmInstallFlags = pnpmFetchFlags;
     postPatch = prepareProductionWorkspace;
-    # pnpm installs direct tarball dependencies into the project but does not retain their tarball
-    # in the content-addressed store exported by fetchPnpmDeps. Populate it explicitly while this
-    # fixed-output derivation still has network access so the application build remains offline.
-    postInstall = ''
-      pnpm store add https://npm.schnau.dev/webuntis-api/-/webuntis-api-0.2.2.tgz
-    '';
     fetcherVersion = 4;
     hash = pnpmDependencyHash;
   };

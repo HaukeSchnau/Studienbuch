@@ -10,7 +10,7 @@ import {
   type DisplayResource,
   type Schoolyear,
   type TimetableFilter,
-} from "webuntis-api";
+} from "@schnau/webuntis-api";
 
 export const DirectoryDiagnostic = Schema.Struct({
   severity: Schema.Literals(["Info", "Warning", "Error"]),

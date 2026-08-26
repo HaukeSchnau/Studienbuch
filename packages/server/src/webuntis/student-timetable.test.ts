@@ -6,7 +6,7 @@ import type {
   TimetableEntry,
   TimetableEntryDay,
   TimetableStudentFilterItem,
-} from "webuntis-api";
+} from "@schnau/webuntis-api";
 import { igsLilienthalProfile } from "./school-profile.ts";
 import {
   makeStudentTimetableImportPlan,
