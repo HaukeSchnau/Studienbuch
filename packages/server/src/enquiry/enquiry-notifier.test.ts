@@ -18,11 +18,7 @@ describe("EnquiryNotifier", () => {
         contactName: "PII contact sentinel",
         email: "pii-sentinel@example.invalid",
       });
-    }).pipe(
-      Effect.provide(EnquiryNotifier.layer),
-      Effect.provide(Logger.layer([logger])),
-      Effect.runPromise,
-    );
+    }).pipe(Effect.provide([EnquiryNotifier.layer, Logger.layer([logger])]), Effect.runPromise);
 
     expect(output).toHaveLength(1);
     expect(output[0]).toContain("enquiry-safe-id");
