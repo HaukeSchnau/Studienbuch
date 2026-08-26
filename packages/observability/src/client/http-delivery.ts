@@ -55,7 +55,10 @@ export const makeTelemetryHttpDelivery = (
         const decoded = yield* HttpClientResponse.schemaBodyJson(ClientTelemetryAcknowledgement, {
           onExcessProperty: "error",
         })(response).pipe(Effect.result);
-        if (Result.isFailure(decoded)) {
+        if (
+          Result.isFailure(decoded) ||
+          decoded.success.acceptedRecords > envelope.records.length
+        ) {
           return {
             status: "failed" as const,
             reason: "Telemetry ingress returned an invalid acknowledgement",

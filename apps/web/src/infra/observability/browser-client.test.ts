@@ -13,6 +13,14 @@ const accepted = (count: number) =>
     headers: { "content-type": "application/json" },
   });
 
+const acceptAll: BrowserFetch = async (_input, init) => {
+  const body = init?.body;
+  if (body === undefined || body === null) return accepted(0);
+  const parsed: unknown = JSON.parse(await new Response(body).text());
+  const envelope = await Effect.runPromise(decodeClientTelemetryEnvelope(parsed));
+  return accepted(envelope.records.length);
+};
+
 function fixture(options?: {
   readonly fetch?: BrowserTelemetryEnvironment["fetch"];
   readonly maximumRecords?: number;
@@ -22,7 +30,7 @@ function fixture(options?: {
   let randomValue = 1;
   const timers = new Map<number, () => void>();
   let timerId = 0;
-  const fetchMock = options?.fetch ?? vi.fn<BrowserFetch>(async () => accepted(100));
+  const fetchMock = options?.fetch ?? vi.fn<BrowserFetch>(acceptAll);
   const sendBeacon = vi.fn<(url: string, data: Blob) => boolean>(() => true);
   const environment: BrowserTelemetryEnvironment = {
     origin: "https://studienbuch.test",
@@ -104,7 +112,7 @@ describe("browser operational telemetry", () => {
     const unacknowledged = vi
       .fn<BrowserFetch>()
       .mockResolvedValueOnce(new Response(null, { status: 202 }))
-      .mockResolvedValue(accepted(100));
+      .mockImplementation(acceptAll);
     const { client, advanceBy } = fixture({ fetch: unacknowledged });
     client.recordCanary();
 
@@ -116,11 +124,19 @@ describe("browser operational telemetry", () => {
     await expect(client.flush()).resolves.toBe(true);
   });
 
+  it("rejects an acknowledgement larger than the submitted batch", async () => {
+    const overacknowledged = vi.fn<BrowserFetch>(async () => accepted(101));
+    const { client } = fixture({ fetch: overacknowledged });
+    client.recordCanary();
+
+    await expect(client.flush()).resolves.toBe(false);
+  });
+
   it("retries only the unacknowledged remainder of a partially accepted batch", async () => {
     const partial = vi
       .fn<BrowserFetch>()
       .mockResolvedValueOnce(accepted(1))
-      .mockResolvedValue(accepted(100));
+      .mockImplementation(acceptAll);
     const { client, advanceBy } = fixture({ fetch: partial });
     client.recordCanary();
 
