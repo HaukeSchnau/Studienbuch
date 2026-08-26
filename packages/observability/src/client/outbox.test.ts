@@ -10,6 +10,7 @@ import {
   TelemetryDelivery,
   TelemetryOutbox,
   TelemetryStorage,
+  TelemetryStorageError,
   memoryTelemetryStorage,
   telemetryOutboxLayer,
   type TelemetryDeliveryResult,
@@ -113,6 +114,49 @@ const setup = (overrides?: {
 };
 
 describe("TelemetryOutbox", () => {
+  it("starts empty when the initial storage read fails", async () => {
+    let contents: string | undefined;
+    let reads = 0;
+    const storage = TelemetryStorage.of({
+      read: Effect.suspend(() => {
+        reads += 1;
+        return reads === 1
+          ? Effect.fail(
+              TelemetryStorageError.make({
+                operation: "read",
+                reason: "temporarily unavailable",
+              }),
+            )
+          : Effect.succeed(contents);
+      }),
+      write: (snapshot) =>
+        Effect.sync(() => {
+          contents = snapshot;
+        }),
+    });
+    const test = setup({ storage });
+
+    expect(await test.outbox.stats()).toMatchObject({ depth: 0, dropped: 0 });
+    expect(await test.outbox.enqueue(metric(1, test.now()))).toBe(true);
+    expect(await test.outbox.stats()).toMatchObject({ depth: 1, dropped: 0 });
+    expect(reads).toBe(1);
+  });
+
+  it("keeps storage write failures typed after startup", async () => {
+    const empty: string | undefined = undefined;
+    const failure = TelemetryStorageError.make({
+      operation: "write",
+      reason: "disk full",
+    });
+    const storage = TelemetryStorage.of({
+      read: Effect.succeed(empty),
+      write: () => Effect.fail(failure),
+    });
+    const test = setup({ storage });
+
+    await expect(test.outbox.enqueue(metric(1, test.now()))).rejects.toBe(failure);
+  });
+
   it("survives a process restart", async () => {
     const first = setup();
     await first.outbox.enqueue(metric(1, first.now()));

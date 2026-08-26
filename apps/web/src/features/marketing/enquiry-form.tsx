@@ -1,3 +1,5 @@
+import { useAtom } from "@effect/atom-react";
+import * as Exit from "effect/Exit";
 import { ArrowRight } from "lucide-react";
 import { useRef, useState } from "react";
 
@@ -6,9 +8,9 @@ import { Button } from "#/ui/button.tsx";
 import { Input } from "#/ui/input.tsx";
 import { Label } from "#/ui/label.tsx";
 import { Textarea } from "#/ui/textarea.tsx";
-import { submitEnquiry } from "./enquiry.ts";
+import { decodeEnquiry, submitEnquiryMutation } from "./enquiry.ts";
 
-type Status = "idle" | "sending" | "sent" | "failed";
+type Status = "idle" | "sent" | "failed";
 
 const fieldClass = "flex flex-col gap-2";
 
@@ -24,9 +26,25 @@ const fieldClass = "flex flex-col gap-2";
  * sends.
  */
 export const EnquiryForm = () => {
+  const [submissionResult, submitEnquiry] = useAtom(submitEnquiryMutation, {
+    mode: "promiseExit",
+  });
   const [status, setStatus] = useState<Status>("idle");
   // Set on first render rather than on mount, so it is already in place if the visitor is fast.
   const startedAt = useRef(Date.now());
+  const sending = submissionResult.waiting;
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const submission = decodeEnquiry(new FormData(event.currentTarget), startedAt.current);
+    if (Exit.isFailure(submission)) {
+      setStatus("failed");
+      return;
+    }
+
+    const result = await submitEnquiry({ payload: submission.value });
+    setStatus(Exit.isSuccess(result) ? "sent" : "failed");
+  };
 
   if (status === "sent") {
     return (
@@ -67,16 +85,7 @@ export const EnquiryForm = () => {
     <form
       className="flex flex-col gap-5"
       noValidate={false}
-      onSubmit={(event) => {
-        event.preventDefault();
-        const form = event.currentTarget;
-        const data = new FormData(form);
-        setStatus("sending");
-
-        void submitEnquiry(data, startedAt.current).then((accepted) =>
-          setStatus(accepted ? "sent" : "failed"),
-        );
-      }}
+      onSubmit={(event) => void submit(event)}
     >
       <div className="grid gap-5 sm:grid-cols-2">
         <div className={fieldClass}>
@@ -140,13 +149,13 @@ export const EnquiryForm = () => {
       <div className="flex flex-wrap items-center gap-4">
         <Button
           className={status === "failed" ? "nudge" : undefined}
-          disabled={status === "sending"}
+          disabled={sending}
           radius="pill"
           size="xl"
           type="submit"
           variant="brand"
         >
-          {status === "sending" ? (
+          {sending ? (
             <span className="working">Wird gesendet …</span>
           ) : (
             <>

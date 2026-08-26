@@ -1,49 +1,53 @@
-import type { ApiFailure } from "./access.ts";
-import { accessErrorCodes, type AccessErrorCode } from "./access.ts";
+import { AccessApi } from "@stu/api";
+import { Organization } from "@stu/core";
+import * as Schema from "effect/Schema";
+import { RpcClientError } from "effect/unstable/rpc";
 
-/**
- * German for every reason a request can be refused, in one place.
- *
- * The point is that the reasons already exist: the routes distinguish an expired reservation from
- * an unverified address from an access the account already holds, and a page that collapses them
- * into one sentence tells two thirds of its users something untrue. Keeping the wording here also
- * keeps it consistent between the four screens that can hit the same failure.
- *
- * `codeUnavailable` is the deliberate exception. Naming which of unknown, spent, or reserved a code
- * is would turn the form into an oracle for testing codes, so it stays vague on purpose.
- */
-const accessMessages = {
-  [accessErrorCodes.codeUnavailable]:
-    "Dieser Zugangscode passt nicht. Er ist entweder unbekannt, schon eingelöst oder gerade in Benutzung.",
-  [accessErrorCodes.reservationUnavailable]:
-    "Dieser Zugangscode ist nicht mehr vorgemerkt. Gib ihn noch einmal ein, um weiterzumachen.",
-  [accessErrorCodes.emailVerificationRequired]:
-    "Bestätige zuerst deine E-Mail-Adresse. Den Link haben wir dir geschickt.",
-  [accessErrorCodes.accessAlreadyExists]:
-    "Diesen Schulzugang hast du schon. Du findest ihn in deinem Konto.",
-  [accessErrorCodes.profileUnavailable]:
-    "Diese Angaben passen nicht zu deinem Schulzugang. Lade die Seite neu und versuche es erneut.",
-  [accessErrorCodes.invalidRequest]:
-    "Diese Angaben konnten wir nicht lesen. Prüfe sie noch einmal.",
-  [accessErrorCodes.invalidOrigin]:
-    "Diese Anfrage kam nicht von Studienbuch. Lade die Seite neu und versuche es erneut.",
-  [accessErrorCodes.authenticationRequired]: "Melde dich an, um hier weiterzumachen.",
-  [accessErrorCodes.rateLimited]:
-    "Das waren zu viele Versuche hintereinander. Warte einen Moment und versuche es dann noch einmal.",
-  [accessErrorCodes.requestCancelled]: "Die Anfrage wurde abgebrochen. Versuche es noch einmal.",
-  [accessErrorCodes.internalError]:
-    "Da ist bei uns etwas schiefgegangen. Versuche es gleich noch einmal.",
-} satisfies Record<AccessErrorCode, string>;
+const AccessFailure = Schema.Union([
+  Organization.CodeUnavailable,
+  Organization.ReservationUnavailable,
+  Organization.EmailNotVerified,
+  Organization.AccessAlreadyExists,
+  Organization.ProfileUnavailable,
+  AccessApi.InvalidOrigin,
+  AccessApi.AuthenticationRequired,
+  AccessApi.RateLimited,
+  RpcClientError.RpcClientError,
+]);
 
-export const accessMessage = (failure: ApiFailure) => accessMessages[failure.code];
+export type AccessFailure = typeof AccessFailure.Type;
+export const isAccessFailure = Schema.is(AccessFailure);
 
-/**
- * German for the Better Auth failures a visitor can actually cause.
- *
- * Short by design. Better Auth answers a signup for an address it already knows with a success
- * rather than an error, so that signup cannot be used to test whether an address is registered —
- * there is no "already registered" message to write, and adding one would mean giving that up.
- */
+/** German for every typed access failure, with a safe fallback for defects and unknown errors. */
+export const accessMessage = (failure: AccessFailure | Error | undefined): string => {
+  if (failure === undefined || !isAccessFailure(failure)) {
+    return "Da ist bei uns etwas schiefgegangen. Versuche es gleich noch einmal.";
+  }
+
+  switch (failure._tag) {
+    case "SchoolAccess.CodeUnavailable":
+      // Do not reveal whether a code is unknown, spent, or held by another reservation.
+      return "Dieser Zugangscode passt nicht. Er ist entweder unbekannt, schon eingelöst oder gerade in Benutzung.";
+    case "SchoolAccess.ReservationUnavailable":
+      return "Dieser Zugangscode ist nicht mehr vorgemerkt. Gib ihn noch einmal ein, um weiterzumachen.";
+    case "SchoolAccess.EmailNotVerified":
+      return "Bestätige zuerst deine E-Mail-Adresse. Den Link haben wir dir geschickt.";
+    case "SchoolAccess.AccessAlreadyExists":
+      return "Diesen Schulzugang hast du schon. Du findest ihn in deinem Konto.";
+    case "SchoolAccess.ProfileUnavailable":
+      return "Diese Angaben passen nicht zu deinem Schulzugang. Lade die Seite neu und versuche es erneut.";
+    case "AccessApi.InvalidOrigin":
+      return "Diese Anfrage kam nicht von Studienbuch. Lade die Seite neu und versuche es erneut.";
+    case "AccessApi.AuthenticationRequired":
+      return "Melde dich an, um hier weiterzumachen.";
+    case "AccessApi.RateLimited":
+      return "Das waren zu viele Versuche hintereinander. Warte einen Moment und versuche es dann noch einmal.";
+    case "RpcClientError":
+      return "Da ist bei uns etwas schiefgegangen. Versuche es gleich noch einmal.";
+  }
+};
+
+/** German for the Better Auth failures a visitor can cause. */
 const betterAuthMessages = new Map([
   ["PASSWORD_TOO_SHORT", "Das Passwort ist zu kurz. Nimm mindestens acht Zeichen."],
   ["PASSWORD_TOO_LONG", "Das Passwort ist zu lang."],
@@ -54,15 +58,8 @@ const betterAuthMessages = new Map([
   ],
 ]);
 
-/**
- * A Better Auth error turned into a sentence, falling back to the caller's own wording.
- *
- * The fallback is a parameter rather than a constant because these errors arrive from four
- * different ceremonies, and "that did not work" means something different in each.
- */
+/** Maps the stable Better Auth error code and lets each ceremony choose its fallback wording. */
 export const betterAuthMessage = (
-  // Better Auth's error union carries `code` on some members only, so `status` is what every one of
-  // them has in common and what makes this parameter assignable from all of them.
   error: { readonly code?: string | undefined; readonly status: number } | null | undefined,
   fallback: string,
 ) => (error?.code === undefined ? fallback : (betterAuthMessages.get(error.code) ?? fallback));

@@ -2,12 +2,13 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import * as Schema from "effect/Schema";
 import { useState } from "react";
 import { AuthError, AuthHeading, AuthShell, Working } from "#/features/auth/auth-shell.tsx";
+import { useRefreshAuthorization } from "#/features/auth/use-refresh-authorization.ts";
 import { authClient } from "#/infra/auth/client.ts";
 import { Button } from "#/ui/button.tsx";
 
 const Search = Schema.Struct({ token: Schema.String });
 
-export const Route = createFileRoute("/operator/setup")({
+export const Route = createFileRoute("/_client/operator/setup")({
   validateSearch: Schema.decodeUnknownSync(Search),
   component: OperatorSetupPage,
   head: () => ({ meta: [{ title: "Operator einrichten | Studienbuch" }] }),
@@ -25,6 +26,7 @@ type Progress = "ready" | "busy" | "registered";
 function OperatorSetupPage() {
   const { token } = Route.useSearch();
   const navigate = useNavigate();
+  const refreshAuthorization = useRefreshAuthorization();
   const [progress, setProgress] = useState<Progress>("ready");
   const [error, setError] = useState<string>();
 
@@ -45,6 +47,7 @@ function OperatorSetupPage() {
       setProgress("registered");
       return;
     }
+    await refreshAuthorization();
     await navigate({ to: "/app", replace: true });
   };
 

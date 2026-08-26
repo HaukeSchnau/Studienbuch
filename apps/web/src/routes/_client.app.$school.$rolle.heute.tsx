@@ -3,7 +3,7 @@ import { shortName } from "#/domain-ui/person-name.ts";
 import { NothingHereYet } from "#/domain-ui/shell/destination-page.tsx";
 import { useShell } from "#/domain-ui/shell/shell-state.tsx";
 
-export const Route = createFileRoute("/app/$school/$rolle/heute")({
+export const Route = createFileRoute("/_client/app/$school/$rolle/heute")({
   component: OverviewPage,
   head: () => ({ meta: [{ title: "Übersicht | Studienbuch" }] }),
 });

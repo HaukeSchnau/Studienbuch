@@ -1,7 +1,11 @@
+import { useAtom } from "@effect/atom-react";
 import { Organization } from "@stu/core/organization";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import * as Cause from "effect/Cause";
+import * as Exit from "effect/Exit";
+import * as Option from "effect/Option";
 import { useState } from "react";
-import { reserveAccess } from "#/features/auth/access.ts";
+import { reserveAccessMutation } from "#/features/auth/access.ts";
 import {
   AuthError,
   AuthHeading,
@@ -18,7 +22,7 @@ import { accessMessage } from "#/features/auth/messages.ts";
 import { Button } from "#/ui/button.tsx";
 import { Input } from "#/ui/input.tsx";
 
-export const Route = createFileRoute("/aktivieren")({
+export const Route = createFileRoute("/_client/aktivieren")({
   component: ActivatePage,
   head: () => ({ meta: [{ title: "Zugang aktivieren | Studienbuch" }] }),
 });
@@ -28,9 +32,12 @@ const formattedCodeLength = Organization.accessCodeLength + 3;
 
 function ActivatePage() {
   const navigate = useNavigate();
+  const [reservationResult, reserveAccess] = useAtom(reserveAccessMutation, {
+    mode: "promiseExit",
+  });
   const [code, setCode] = useState("");
   const [error, setError] = useState<string>();
-  const [busy, setBusy] = useState(false);
+  const busy = reservationResult.waiting;
 
   // Held in the printed form, so the field always shows what is on the paper. `repairAccessCode`
   // has already resolved the characters the alphabet leaves ambiguous and dropped anything it
@@ -39,12 +46,10 @@ function ActivatePage() {
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setBusy(true);
     setError(undefined);
-    const reservation = await reserveAccess(code);
-    setBusy(false);
-    if (!reservation.ok) {
-      setError(accessMessage(reservation.error));
+    const reservation = await reserveAccess({ payload: { code } });
+    if (Exit.isFailure(reservation)) {
+      setError(accessMessage(reservation.cause.pipe(Cause.findErrorOption, Option.getOrUndefined)));
       return;
     }
     await navigate({ to: "/registrieren", search: { reservation: reservation.value.token } });

@@ -1,15 +1,17 @@
+import { RegistryContext } from "@effect/atom-react";
 import { TanStackDevtools } from "@tanstack/react-devtools";
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
+import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
 import { siteUrl } from "#/domain-ui/brand/links.ts";
 import { ErrorState, NotFound } from "#/features/errors/error-states.tsx";
 import { getPublicConfig } from "#/infra/config/public-config.ts";
+import type { RouterContext } from "#/infra/effect-atom/router-context.ts";
 import { ClientObservability } from "#/infra/observability/client-bootstrap.tsx";
 
 import appCss from "#/styles.css?url";
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<RouterContext>()({
   // Public runtime configuration is loaded once here and serialized into the SSR payload, so
   // client credentials never have to be inlined into the bundle at build time.
   loader: () => getPublicConfig(),
@@ -98,6 +100,7 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const config = Route.useLoaderData();
+  const { atomRegistry } = Route.useRouteContext();
 
   return (
     <html lang="de">
@@ -106,7 +109,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <ClientObservability config={config} />
-        <RegistryProvider>{children}</RegistryProvider>
+        <RegistryContext.Provider value={atomRegistry}>{children}</RegistryContext.Provider>
         <TanStackDevtools
           config={{
             position: "bottom-right",
@@ -123,4 +126,3 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     </html>
   );
 }
-import { RegistryProvider } from "@effect/atom-react";

@@ -4,13 +4,14 @@ import { useCallback, useState } from "react";
 import type { SchoolAccessView } from "#/features/auth/access.ts";
 import { AuthError } from "#/features/auth/auth-shell.tsx";
 import { betterAuthMessage } from "#/features/auth/messages.ts";
+import { useRefreshAuthorization } from "#/features/auth/use-refresh-authorization.ts";
 import { initials } from "#/domain-ui/person-name.ts";
 import { DestinationPage } from "#/domain-ui/shell/destination-page.tsx";
 import { authClient } from "#/infra/auth/client.ts";
 import { Button } from "#/ui/button.tsx";
 import { useShell } from "#/domain-ui/shell/shell-state.tsx";
 
-export const Route = createFileRoute("/app/konto")({
+export const Route = createFileRoute("/_client/app/konto")({
   component: AccountPage,
   head: () => ({ meta: [{ title: "Mein Konto | Studienbuch" }] }),
 });
@@ -28,10 +29,12 @@ const kindLabel = (kind: SchoolAccessView["kind"]) =>
 function AccountPage() {
   const { account } = useShell();
   const navigate = useNavigate();
+  const refreshAuthorization = useRefreshAuthorization();
   const [error, setError] = useState<string>();
 
   const signOut = async () => {
     await authClient.signOut();
+    await refreshAuthorization();
     await navigate({ to: "/anmelden", search: {}, replace: true });
   };
 

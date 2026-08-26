@@ -9,76 +9,82 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ClientRouteImport } from './routes/_client'
 import { Route as PublicRouteImport } from './routes/_public'
-import { Route as AktivierenRouteImport } from './routes/aktivieren'
-import { Route as AnmeldenRouteImport } from './routes/anmelden'
-import { Route as AppRouteImport } from './routes/app'
-import { Route as EinrichtenRouteImport } from './routes/einrichten'
-import { Route as PasswortVergessenRouteImport } from './routes/passwort-vergessen'
-import { Route as PasswortZuruecksetzenRouteImport } from './routes/passwort-zuruecksetzen'
-import { Route as RegistrierenRouteImport } from './routes/registrieren'
+import { Route as ClientAktivierenRouteImport } from './routes/_client.aktivieren'
+import { Route as ClientAnmeldenRouteImport } from './routes/_client.anmelden'
+import { Route as ClientAppRouteImport } from './routes/_client.app'
+import { Route as ClientEinrichtenRouteImport } from './routes/_client.einrichten'
+import { Route as ClientPasswortVergessenRouteImport } from './routes/_client.passwort-vergessen'
+import { Route as ClientPasswortZuruecksetzenRouteImport } from './routes/_client.passwort-zuruecksetzen'
+import { Route as ClientRegistrierenRouteImport } from './routes/_client.registrieren'
 import { Route as PublicIndexRouteImport } from './routes/_public.index'
 import { Route as PublicDatenschutzRouteImport } from './routes/_public.datenschutz'
 import { Route as PublicImpressumRouteImport } from './routes/_public.impressum'
-import { Route as AktivierenAbschliessenRouteImport } from './routes/aktivieren_.abschliessen'
 import { Route as ApiRpcRouteImport } from './routes/api/rpc'
-import { Route as AppIndexRouteImport } from './routes/app.index'
-import { Route as AppKontoRouteImport } from './routes/app.konto'
-import { Route as AppOperatorRouteImport } from './routes/app.operator'
-import { Route as OperatorSetupRouteImport } from './routes/operator/setup'
+import { Route as ClientAktivierenAbschliessenRouteImport } from './routes/_client.aktivieren_.abschliessen'
+import { Route as ClientAppIndexRouteImport } from './routes/_client.app.index'
+import { Route as ClientAppKontoRouteImport } from './routes/_client.app.konto'
+import { Route as ClientAppOperatorRouteImport } from './routes/_client.app.operator'
+import { Route as ClientOperatorSetupRouteImport } from './routes/_client.operator.setup'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiHealthLiveRouteImport } from './routes/api/health/live'
 import { Route as ApiHealthReadyRouteImport } from './routes/api/health/ready'
-import { Route as AppSchoolRolleRouteImport } from './routes/app.$school.$rolle'
-import { Route as AppOperatorIndexRouteImport } from './routes/app.operator.index'
-import { Route as AppOperatorSchulenRouteImport } from './routes/app.operator.schulen'
-import { Route as AppOperatorZugangscodesRouteImport } from './routes/app.operator.zugangscodes'
+import { Route as ClientAppSchoolRolleRouteImport } from './routes/_client.app.$school.$rolle'
+import { Route as ClientAppOperatorIndexRouteImport } from './routes/_client.app.operator.index'
+import { Route as ClientAppOperatorSchulenRouteImport } from './routes/_client.app.operator.schulen'
+import { Route as ClientAppOperatorZugangscodesRouteImport } from './routes/_client.app.operator.zugangscodes'
 import { Route as ApiObservabilityV1CanaryRouteImport } from './routes/api/observability/v1/canary'
 import { Route as ApiObservabilityV1TelemetryRouteImport } from './routes/api/observability/v1/telemetry'
-import { Route as AppSchoolRolleIndexRouteImport } from './routes/app.$school.$rolle.index'
-import { Route as AppSchoolRolleBestaetigungenRouteImport } from './routes/app.$school.$rolle.bestaetigungen'
-import { Route as AppSchoolRolleHeuteRouteImport } from './routes/app.$school.$rolle.heute'
-import { Route as AppSchoolRolleKurseRouteImport } from './routes/app.$school.$rolle.kurse'
-import { Route as AppSchoolRolleWocheRouteImport } from './routes/app.$school.$rolle.woche'
+import { Route as ClientAppSchoolRolleIndexRouteImport } from './routes/_client.app.$school.$rolle.index'
+import { Route as ClientAppSchoolRolleBestaetigungenRouteImport } from './routes/_client.app.$school.$rolle.bestaetigungen'
+import { Route as ClientAppSchoolRolleHeuteRouteImport } from './routes/_client.app.$school.$rolle.heute'
+import { Route as ClientAppSchoolRolleKurseRouteImport } from './routes/_client.app.$school.$rolle.kurse'
+import { Route as ClientAppSchoolRolleWocheRouteImport } from './routes/_client.app.$school.$rolle.woche'
 
+const ClientRoute = ClientRouteImport.update({
+  id: '/_client',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AktivierenRoute = AktivierenRouteImport.update({
+const ClientAktivierenRoute = ClientAktivierenRouteImport.update({
   id: '/aktivieren',
   path: '/aktivieren',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => ClientRoute,
 } as any)
-const AnmeldenRoute = AnmeldenRouteImport.update({
+const ClientAnmeldenRoute = ClientAnmeldenRouteImport.update({
   id: '/anmelden',
   path: '/anmelden',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => ClientRoute,
 } as any)
-const AppRoute = AppRouteImport.update({
+const ClientAppRoute = ClientAppRouteImport.update({
   id: '/app',
   path: '/app',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => ClientRoute,
 } as any)
-const EinrichtenRoute = EinrichtenRouteImport.update({
+const ClientEinrichtenRoute = ClientEinrichtenRouteImport.update({
   id: '/einrichten',
   path: '/einrichten',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => ClientRoute,
 } as any)
-const PasswortVergessenRoute = PasswortVergessenRouteImport.update({
+const ClientPasswortVergessenRoute = ClientPasswortVergessenRouteImport.update({
   id: '/passwort-vergessen',
   path: '/passwort-vergessen',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => ClientRoute,
 } as any)
-const PasswortZuruecksetzenRoute = PasswortZuruecksetzenRouteImport.update({
-  id: '/passwort-zuruecksetzen',
-  path: '/passwort-zuruecksetzen',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RegistrierenRoute = RegistrierenRouteImport.update({
+const ClientPasswortZuruecksetzenRoute =
+  ClientPasswortZuruecksetzenRouteImport.update({
+    id: '/passwort-zuruecksetzen',
+    path: '/passwort-zuruecksetzen',
+    getParentRoute: () => ClientRoute,
+  } as any)
+const ClientRegistrierenRoute = ClientRegistrierenRouteImport.update({
   id: '/registrieren',
   path: '/registrieren',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => ClientRoute,
 } as any)
 const PublicIndexRoute = PublicIndexRouteImport.update({
   id: '/',
@@ -95,35 +101,36 @@ const PublicImpressumRoute = PublicImpressumRouteImport.update({
   path: '/impressum',
   getParentRoute: () => PublicRoute,
 } as any)
-const AktivierenAbschliessenRoute = AktivierenAbschliessenRouteImport.update({
-  id: '/aktivieren_/abschliessen',
-  path: '/aktivieren/abschliessen',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiRpcRoute = ApiRpcRouteImport.update({
   id: '/api/rpc',
   path: '/api/rpc',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppIndexRoute = AppIndexRouteImport.update({
+const ClientAktivierenAbschliessenRoute =
+  ClientAktivierenAbschliessenRouteImport.update({
+    id: '/aktivieren_/abschliessen',
+    path: '/aktivieren/abschliessen',
+    getParentRoute: () => ClientRoute,
+  } as any)
+const ClientAppIndexRoute = ClientAppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => ClientAppRoute,
 } as any)
-const AppKontoRoute = AppKontoRouteImport.update({
+const ClientAppKontoRoute = ClientAppKontoRouteImport.update({
   id: '/konto',
   path: '/konto',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => ClientAppRoute,
 } as any)
-const AppOperatorRoute = AppOperatorRouteImport.update({
+const ClientAppOperatorRoute = ClientAppOperatorRouteImport.update({
   id: '/operator',
   path: '/operator',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => ClientAppRoute,
 } as any)
-const OperatorSetupRoute = OperatorSetupRouteImport.update({
+const ClientOperatorSetupRoute = ClientOperatorSetupRouteImport.update({
   id: '/operator/setup',
   path: '/operator/setup',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => ClientRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -140,26 +147,28 @@ const ApiHealthReadyRoute = ApiHealthReadyRouteImport.update({
   path: '/api/health/ready',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppSchoolRolleRoute = AppSchoolRolleRouteImport.update({
+const ClientAppSchoolRolleRoute = ClientAppSchoolRolleRouteImport.update({
   id: '/$school/$rolle',
   path: '/$school/$rolle',
-  getParentRoute: () => AppRoute,
+  getParentRoute: () => ClientAppRoute,
 } as any)
-const AppOperatorIndexRoute = AppOperatorIndexRouteImport.update({
+const ClientAppOperatorIndexRoute = ClientAppOperatorIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AppOperatorRoute,
+  getParentRoute: () => ClientAppOperatorRoute,
 } as any)
-const AppOperatorSchulenRoute = AppOperatorSchulenRouteImport.update({
-  id: '/schulen',
-  path: '/schulen',
-  getParentRoute: () => AppOperatorRoute,
-} as any)
-const AppOperatorZugangscodesRoute = AppOperatorZugangscodesRouteImport.update({
-  id: '/zugangscodes',
-  path: '/zugangscodes',
-  getParentRoute: () => AppOperatorRoute,
-} as any)
+const ClientAppOperatorSchulenRoute =
+  ClientAppOperatorSchulenRouteImport.update({
+    id: '/schulen',
+    path: '/schulen',
+    getParentRoute: () => ClientAppOperatorRoute,
+  } as any)
+const ClientAppOperatorZugangscodesRoute =
+  ClientAppOperatorZugangscodesRouteImport.update({
+    id: '/zugangscodes',
+    path: '/zugangscodes',
+    getParentRoute: () => ClientAppOperatorRoute,
+  } as any)
 const ApiObservabilityV1CanaryRoute =
   ApiObservabilityV1CanaryRouteImport.update({
     id: '/api/observability/v1/canary',
@@ -172,127 +181,132 @@ const ApiObservabilityV1TelemetryRoute =
     path: '/api/observability/v1/telemetry',
     getParentRoute: () => rootRouteImport,
   } as any)
-const AppSchoolRolleIndexRoute = AppSchoolRolleIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AppSchoolRolleRoute,
-} as any)
-const AppSchoolRolleBestaetigungenRoute =
-  AppSchoolRolleBestaetigungenRouteImport.update({
+const ClientAppSchoolRolleIndexRoute =
+  ClientAppSchoolRolleIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ClientAppSchoolRolleRoute,
+  } as any)
+const ClientAppSchoolRolleBestaetigungenRoute =
+  ClientAppSchoolRolleBestaetigungenRouteImport.update({
     id: '/bestaetigungen',
     path: '/bestaetigungen',
-    getParentRoute: () => AppSchoolRolleRoute,
+    getParentRoute: () => ClientAppSchoolRolleRoute,
   } as any)
-const AppSchoolRolleHeuteRoute = AppSchoolRolleHeuteRouteImport.update({
-  id: '/heute',
-  path: '/heute',
-  getParentRoute: () => AppSchoolRolleRoute,
-} as any)
-const AppSchoolRolleKurseRoute = AppSchoolRolleKurseRouteImport.update({
-  id: '/kurse',
-  path: '/kurse',
-  getParentRoute: () => AppSchoolRolleRoute,
-} as any)
-const AppSchoolRolleWocheRoute = AppSchoolRolleWocheRouteImport.update({
-  id: '/woche',
-  path: '/woche',
-  getParentRoute: () => AppSchoolRolleRoute,
-} as any)
+const ClientAppSchoolRolleHeuteRoute =
+  ClientAppSchoolRolleHeuteRouteImport.update({
+    id: '/heute',
+    path: '/heute',
+    getParentRoute: () => ClientAppSchoolRolleRoute,
+  } as any)
+const ClientAppSchoolRolleKurseRoute =
+  ClientAppSchoolRolleKurseRouteImport.update({
+    id: '/kurse',
+    path: '/kurse',
+    getParentRoute: () => ClientAppSchoolRolleRoute,
+  } as any)
+const ClientAppSchoolRolleWocheRoute =
+  ClientAppSchoolRolleWocheRouteImport.update({
+    id: '/woche',
+    path: '/woche',
+    getParentRoute: () => ClientAppSchoolRolleRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
-  '/aktivieren': typeof AktivierenRoute
-  '/anmelden': typeof AnmeldenRoute
-  '/app': typeof AppRouteWithChildren
-  '/einrichten': typeof EinrichtenRoute
-  '/passwort-vergessen': typeof PasswortVergessenRoute
-  '/passwort-zuruecksetzen': typeof PasswortZuruecksetzenRoute
-  '/registrieren': typeof RegistrierenRoute
+  '/aktivieren': typeof ClientAktivierenRoute
+  '/anmelden': typeof ClientAnmeldenRoute
+  '/app': typeof ClientAppRouteWithChildren
+  '/einrichten': typeof ClientEinrichtenRoute
+  '/passwort-vergessen': typeof ClientPasswortVergessenRoute
+  '/passwort-zuruecksetzen': typeof ClientPasswortZuruecksetzenRoute
+  '/registrieren': typeof ClientRegistrierenRoute
   '/datenschutz': typeof PublicDatenschutzRoute
   '/impressum': typeof PublicImpressumRoute
-  '/aktivieren/abschliessen': typeof AktivierenAbschliessenRoute
   '/api/rpc': typeof ApiRpcRoute
-  '/app/konto': typeof AppKontoRoute
-  '/app/operator': typeof AppOperatorRouteWithChildren
-  '/operator/setup': typeof OperatorSetupRoute
-  '/app/': typeof AppIndexRoute
+  '/aktivieren/abschliessen': typeof ClientAktivierenAbschliessenRoute
+  '/app/konto': typeof ClientAppKontoRoute
+  '/app/operator': typeof ClientAppOperatorRouteWithChildren
+  '/operator/setup': typeof ClientOperatorSetupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
-  '/app/$school/$rolle': typeof AppSchoolRolleRouteWithChildren
-  '/app/operator/schulen': typeof AppOperatorSchulenRoute
-  '/app/operator/zugangscodes': typeof AppOperatorZugangscodesRoute
-  '/app/operator/': typeof AppOperatorIndexRoute
+  '/app/': typeof ClientAppIndexRoute
+  '/app/$school/$rolle': typeof ClientAppSchoolRolleRouteWithChildren
+  '/app/operator/schulen': typeof ClientAppOperatorSchulenRoute
+  '/app/operator/zugangscodes': typeof ClientAppOperatorZugangscodesRoute
   '/api/observability/v1/canary': typeof ApiObservabilityV1CanaryRoute
   '/api/observability/v1/telemetry': typeof ApiObservabilityV1TelemetryRoute
-  '/app/$school/$rolle/bestaetigungen': typeof AppSchoolRolleBestaetigungenRoute
-  '/app/$school/$rolle/heute': typeof AppSchoolRolleHeuteRoute
-  '/app/$school/$rolle/kurse': typeof AppSchoolRolleKurseRoute
-  '/app/$school/$rolle/woche': typeof AppSchoolRolleWocheRoute
-  '/app/$school/$rolle/': typeof AppSchoolRolleIndexRoute
+  '/app/operator/': typeof ClientAppOperatorIndexRoute
+  '/app/$school/$rolle/bestaetigungen': typeof ClientAppSchoolRolleBestaetigungenRoute
+  '/app/$school/$rolle/heute': typeof ClientAppSchoolRolleHeuteRoute
+  '/app/$school/$rolle/kurse': typeof ClientAppSchoolRolleKurseRoute
+  '/app/$school/$rolle/woche': typeof ClientAppSchoolRolleWocheRoute
+  '/app/$school/$rolle/': typeof ClientAppSchoolRolleIndexRoute
 }
 export interface FileRoutesByTo {
-  '/aktivieren': typeof AktivierenRoute
-  '/anmelden': typeof AnmeldenRoute
-  '/einrichten': typeof EinrichtenRoute
-  '/passwort-vergessen': typeof PasswortVergessenRoute
-  '/passwort-zuruecksetzen': typeof PasswortZuruecksetzenRoute
-  '/registrieren': typeof RegistrierenRoute
+  '/': typeof PublicIndexRoute
+  '/aktivieren': typeof ClientAktivierenRoute
+  '/anmelden': typeof ClientAnmeldenRoute
+  '/einrichten': typeof ClientEinrichtenRoute
+  '/passwort-vergessen': typeof ClientPasswortVergessenRoute
+  '/passwort-zuruecksetzen': typeof ClientPasswortZuruecksetzenRoute
+  '/registrieren': typeof ClientRegistrierenRoute
   '/datenschutz': typeof PublicDatenschutzRoute
   '/impressum': typeof PublicImpressumRoute
-  '/aktivieren/abschliessen': typeof AktivierenAbschliessenRoute
   '/api/rpc': typeof ApiRpcRoute
-  '/app/konto': typeof AppKontoRoute
-  '/operator/setup': typeof OperatorSetupRoute
-  '/': typeof PublicIndexRoute
-  '/app': typeof AppIndexRoute
+  '/aktivieren/abschliessen': typeof ClientAktivierenAbschliessenRoute
+  '/app/konto': typeof ClientAppKontoRoute
+  '/operator/setup': typeof ClientOperatorSetupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
-  '/app/operator/schulen': typeof AppOperatorSchulenRoute
-  '/app/operator/zugangscodes': typeof AppOperatorZugangscodesRoute
-  '/app/operator': typeof AppOperatorIndexRoute
+  '/app': typeof ClientAppIndexRoute
+  '/app/operator/schulen': typeof ClientAppOperatorSchulenRoute
+  '/app/operator/zugangscodes': typeof ClientAppOperatorZugangscodesRoute
   '/api/observability/v1/canary': typeof ApiObservabilityV1CanaryRoute
   '/api/observability/v1/telemetry': typeof ApiObservabilityV1TelemetryRoute
-  '/app/$school/$rolle/bestaetigungen': typeof AppSchoolRolleBestaetigungenRoute
-  '/app/$school/$rolle/heute': typeof AppSchoolRolleHeuteRoute
-  '/app/$school/$rolle/kurse': typeof AppSchoolRolleKurseRoute
-  '/app/$school/$rolle/woche': typeof AppSchoolRolleWocheRoute
-  '/app/$school/$rolle': typeof AppSchoolRolleIndexRoute
+  '/app/operator': typeof ClientAppOperatorIndexRoute
+  '/app/$school/$rolle/bestaetigungen': typeof ClientAppSchoolRolleBestaetigungenRoute
+  '/app/$school/$rolle/heute': typeof ClientAppSchoolRolleHeuteRoute
+  '/app/$school/$rolle/kurse': typeof ClientAppSchoolRolleKurseRoute
+  '/app/$school/$rolle/woche': typeof ClientAppSchoolRolleWocheRoute
+  '/app/$school/$rolle': typeof ClientAppSchoolRolleIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_client': typeof ClientRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
-  '/aktivieren': typeof AktivierenRoute
-  '/anmelden': typeof AnmeldenRoute
-  '/app': typeof AppRouteWithChildren
-  '/einrichten': typeof EinrichtenRoute
-  '/passwort-vergessen': typeof PasswortVergessenRoute
-  '/passwort-zuruecksetzen': typeof PasswortZuruecksetzenRoute
-  '/registrieren': typeof RegistrierenRoute
+  '/_client/aktivieren': typeof ClientAktivierenRoute
+  '/_client/anmelden': typeof ClientAnmeldenRoute
+  '/_client/app': typeof ClientAppRouteWithChildren
+  '/_client/einrichten': typeof ClientEinrichtenRoute
+  '/_client/passwort-vergessen': typeof ClientPasswortVergessenRoute
+  '/_client/passwort-zuruecksetzen': typeof ClientPasswortZuruecksetzenRoute
+  '/_client/registrieren': typeof ClientRegistrierenRoute
   '/_public/datenschutz': typeof PublicDatenschutzRoute
   '/_public/impressum': typeof PublicImpressumRoute
-  '/aktivieren_/abschliessen': typeof AktivierenAbschliessenRoute
   '/api/rpc': typeof ApiRpcRoute
-  '/app/konto': typeof AppKontoRoute
-  '/app/operator': typeof AppOperatorRouteWithChildren
-  '/operator/setup': typeof OperatorSetupRoute
   '/_public/': typeof PublicIndexRoute
-  '/app/': typeof AppIndexRoute
+  '/_client/aktivieren_/abschliessen': typeof ClientAktivierenAbschliessenRoute
+  '/_client/app/konto': typeof ClientAppKontoRoute
+  '/_client/app/operator': typeof ClientAppOperatorRouteWithChildren
+  '/_client/operator/setup': typeof ClientOperatorSetupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
-  '/app/$school/$rolle': typeof AppSchoolRolleRouteWithChildren
-  '/app/operator/schulen': typeof AppOperatorSchulenRoute
-  '/app/operator/zugangscodes': typeof AppOperatorZugangscodesRoute
-  '/app/operator/': typeof AppOperatorIndexRoute
+  '/_client/app/': typeof ClientAppIndexRoute
+  '/_client/app/$school/$rolle': typeof ClientAppSchoolRolleRouteWithChildren
+  '/_client/app/operator/schulen': typeof ClientAppOperatorSchulenRoute
+  '/_client/app/operator/zugangscodes': typeof ClientAppOperatorZugangscodesRoute
   '/api/observability/v1/canary': typeof ApiObservabilityV1CanaryRoute
   '/api/observability/v1/telemetry': typeof ApiObservabilityV1TelemetryRoute
-  '/app/$school/$rolle/bestaetigungen': typeof AppSchoolRolleBestaetigungenRoute
-  '/app/$school/$rolle/heute': typeof AppSchoolRolleHeuteRoute
-  '/app/$school/$rolle/kurse': typeof AppSchoolRolleKurseRoute
-  '/app/$school/$rolle/woche': typeof AppSchoolRolleWocheRoute
-  '/app/$school/$rolle/': typeof AppSchoolRolleIndexRoute
+  '/_client/app/operator/': typeof ClientAppOperatorIndexRoute
+  '/_client/app/$school/$rolle/bestaetigungen': typeof ClientAppSchoolRolleBestaetigungenRoute
+  '/_client/app/$school/$rolle/heute': typeof ClientAppSchoolRolleHeuteRoute
+  '/_client/app/$school/$rolle/kurse': typeof ClientAppSchoolRolleKurseRoute
+  '/_client/app/$school/$rolle/woche': typeof ClientAppSchoolRolleWocheRoute
+  '/_client/app/$school/$rolle/': typeof ClientAppSchoolRolleIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -307,21 +321,21 @@ export interface FileRouteTypes {
     | '/registrieren'
     | '/datenschutz'
     | '/impressum'
-    | '/aktivieren/abschliessen'
     | '/api/rpc'
+    | '/aktivieren/abschliessen'
     | '/app/konto'
     | '/app/operator'
     | '/operator/setup'
-    | '/app/'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
+    | '/app/'
     | '/app/$school/$rolle'
     | '/app/operator/schulen'
     | '/app/operator/zugangscodes'
-    | '/app/operator/'
     | '/api/observability/v1/canary'
     | '/api/observability/v1/telemetry'
+    | '/app/operator/'
     | '/app/$school/$rolle/bestaetigungen'
     | '/app/$school/$rolle/heute'
     | '/app/$school/$rolle/kurse'
@@ -329,6 +343,7 @@ export interface FileRouteTypes {
     | '/app/$school/$rolle/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/aktivieren'
     | '/anmelden'
     | '/einrichten'
@@ -337,20 +352,19 @@ export interface FileRouteTypes {
     | '/registrieren'
     | '/datenschutz'
     | '/impressum'
-    | '/aktivieren/abschliessen'
     | '/api/rpc'
+    | '/aktivieren/abschliessen'
     | '/app/konto'
     | '/operator/setup'
-    | '/'
-    | '/app'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
+    | '/app'
     | '/app/operator/schulen'
     | '/app/operator/zugangscodes'
-    | '/app/operator'
     | '/api/observability/v1/canary'
     | '/api/observability/v1/telemetry'
+    | '/app/operator'
     | '/app/$school/$rolle/bestaetigungen'
     | '/app/$school/$rolle/heute'
     | '/app/$school/$rolle/kurse'
@@ -358,51 +372,44 @@ export interface FileRouteTypes {
     | '/app/$school/$rolle'
   id:
     | '__root__'
+    | '/_client'
     | '/_public'
-    | '/aktivieren'
-    | '/anmelden'
-    | '/app'
-    | '/einrichten'
-    | '/passwort-vergessen'
-    | '/passwort-zuruecksetzen'
-    | '/registrieren'
+    | '/_client/aktivieren'
+    | '/_client/anmelden'
+    | '/_client/app'
+    | '/_client/einrichten'
+    | '/_client/passwort-vergessen'
+    | '/_client/passwort-zuruecksetzen'
+    | '/_client/registrieren'
     | '/_public/datenschutz'
     | '/_public/impressum'
-    | '/aktivieren_/abschliessen'
     | '/api/rpc'
-    | '/app/konto'
-    | '/app/operator'
-    | '/operator/setup'
     | '/_public/'
-    | '/app/'
+    | '/_client/aktivieren_/abschliessen'
+    | '/_client/app/konto'
+    | '/_client/app/operator'
+    | '/_client/operator/setup'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
-    | '/app/$school/$rolle'
-    | '/app/operator/schulen'
-    | '/app/operator/zugangscodes'
-    | '/app/operator/'
+    | '/_client/app/'
+    | '/_client/app/$school/$rolle'
+    | '/_client/app/operator/schulen'
+    | '/_client/app/operator/zugangscodes'
     | '/api/observability/v1/canary'
     | '/api/observability/v1/telemetry'
-    | '/app/$school/$rolle/bestaetigungen'
-    | '/app/$school/$rolle/heute'
-    | '/app/$school/$rolle/kurse'
-    | '/app/$school/$rolle/woche'
-    | '/app/$school/$rolle/'
+    | '/_client/app/operator/'
+    | '/_client/app/$school/$rolle/bestaetigungen'
+    | '/_client/app/$school/$rolle/heute'
+    | '/_client/app/$school/$rolle/kurse'
+    | '/_client/app/$school/$rolle/woche'
+    | '/_client/app/$school/$rolle/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  ClientRoute: typeof ClientRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
-  AktivierenRoute: typeof AktivierenRoute
-  AnmeldenRoute: typeof AnmeldenRoute
-  AppRoute: typeof AppRouteWithChildren
-  EinrichtenRoute: typeof EinrichtenRoute
-  PasswortVergessenRoute: typeof PasswortVergessenRoute
-  PasswortZuruecksetzenRoute: typeof PasswortZuruecksetzenRoute
-  RegistrierenRoute: typeof RegistrierenRoute
-  AktivierenAbschliessenRoute: typeof AktivierenAbschliessenRoute
   ApiRpcRoute: typeof ApiRpcRoute
-  OperatorSetupRoute: typeof OperatorSetupRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiHealthLiveRoute: typeof ApiHealthLiveRoute
   ApiHealthReadyRoute: typeof ApiHealthReadyRoute
@@ -412,6 +419,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_client': {
+      id: '/_client'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ClientRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_public': {
       id: '/_public'
       path: ''
@@ -419,54 +433,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/aktivieren': {
-      id: '/aktivieren'
+    '/_client/aktivieren': {
+      id: '/_client/aktivieren'
       path: '/aktivieren'
       fullPath: '/aktivieren'
-      preLoaderRoute: typeof AktivierenRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof ClientAktivierenRouteImport
+      parentRoute: typeof ClientRoute
     }
-    '/anmelden': {
-      id: '/anmelden'
+    '/_client/anmelden': {
+      id: '/_client/anmelden'
       path: '/anmelden'
       fullPath: '/anmelden'
-      preLoaderRoute: typeof AnmeldenRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof ClientAnmeldenRouteImport
+      parentRoute: typeof ClientRoute
     }
-    '/app': {
-      id: '/app'
+    '/_client/app': {
+      id: '/_client/app'
       path: '/app'
       fullPath: '/app'
-      preLoaderRoute: typeof AppRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof ClientAppRouteImport
+      parentRoute: typeof ClientRoute
     }
-    '/einrichten': {
-      id: '/einrichten'
+    '/_client/einrichten': {
+      id: '/_client/einrichten'
       path: '/einrichten'
       fullPath: '/einrichten'
-      preLoaderRoute: typeof EinrichtenRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof ClientEinrichtenRouteImport
+      parentRoute: typeof ClientRoute
     }
-    '/passwort-vergessen': {
-      id: '/passwort-vergessen'
+    '/_client/passwort-vergessen': {
+      id: '/_client/passwort-vergessen'
       path: '/passwort-vergessen'
       fullPath: '/passwort-vergessen'
-      preLoaderRoute: typeof PasswortVergessenRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof ClientPasswortVergessenRouteImport
+      parentRoute: typeof ClientRoute
     }
-    '/passwort-zuruecksetzen': {
-      id: '/passwort-zuruecksetzen'
+    '/_client/passwort-zuruecksetzen': {
+      id: '/_client/passwort-zuruecksetzen'
       path: '/passwort-zuruecksetzen'
       fullPath: '/passwort-zuruecksetzen'
-      preLoaderRoute: typeof PasswortZuruecksetzenRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof ClientPasswortZuruecksetzenRouteImport
+      parentRoute: typeof ClientRoute
     }
-    '/registrieren': {
-      id: '/registrieren'
+    '/_client/registrieren': {
+      id: '/_client/registrieren'
       path: '/registrieren'
       fullPath: '/registrieren'
-      preLoaderRoute: typeof RegistrierenRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof ClientRegistrierenRouteImport
+      parentRoute: typeof ClientRoute
     }
     '/_public/': {
       id: '/_public/'
@@ -489,13 +503,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicImpressumRouteImport
       parentRoute: typeof PublicRoute
     }
-    '/aktivieren_/abschliessen': {
-      id: '/aktivieren_/abschliessen'
-      path: '/aktivieren/abschliessen'
-      fullPath: '/aktivieren/abschliessen'
-      preLoaderRoute: typeof AktivierenAbschliessenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/rpc': {
       id: '/api/rpc'
       path: '/api/rpc'
@@ -503,33 +510,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRpcRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/app/': {
-      id: '/app/'
+    '/_client/aktivieren_/abschliessen': {
+      id: '/_client/aktivieren_/abschliessen'
+      path: '/aktivieren/abschliessen'
+      fullPath: '/aktivieren/abschliessen'
+      preLoaderRoute: typeof ClientAktivierenAbschliessenRouteImport
+      parentRoute: typeof ClientRoute
+    }
+    '/_client/app/': {
+      id: '/_client/app/'
       path: '/'
       fullPath: '/app/'
-      preLoaderRoute: typeof AppIndexRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof ClientAppIndexRouteImport
+      parentRoute: typeof ClientAppRoute
     }
-    '/app/konto': {
-      id: '/app/konto'
+    '/_client/app/konto': {
+      id: '/_client/app/konto'
       path: '/konto'
       fullPath: '/app/konto'
-      preLoaderRoute: typeof AppKontoRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof ClientAppKontoRouteImport
+      parentRoute: typeof ClientAppRoute
     }
-    '/app/operator': {
-      id: '/app/operator'
+    '/_client/app/operator': {
+      id: '/_client/app/operator'
       path: '/operator'
       fullPath: '/app/operator'
-      preLoaderRoute: typeof AppOperatorRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof ClientAppOperatorRouteImport
+      parentRoute: typeof ClientAppRoute
     }
-    '/operator/setup': {
-      id: '/operator/setup'
+    '/_client/operator/setup': {
+      id: '/_client/operator/setup'
       path: '/operator/setup'
       fullPath: '/operator/setup'
-      preLoaderRoute: typeof OperatorSetupRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof ClientOperatorSetupRouteImport
+      parentRoute: typeof ClientRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -552,33 +566,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiHealthReadyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/app/$school/$rolle': {
-      id: '/app/$school/$rolle'
+    '/_client/app/$school/$rolle': {
+      id: '/_client/app/$school/$rolle'
       path: '/$school/$rolle'
       fullPath: '/app/$school/$rolle'
-      preLoaderRoute: typeof AppSchoolRolleRouteImport
-      parentRoute: typeof AppRoute
+      preLoaderRoute: typeof ClientAppSchoolRolleRouteImport
+      parentRoute: typeof ClientAppRoute
     }
-    '/app/operator/': {
-      id: '/app/operator/'
+    '/_client/app/operator/': {
+      id: '/_client/app/operator/'
       path: '/'
       fullPath: '/app/operator/'
-      preLoaderRoute: typeof AppOperatorIndexRouteImport
-      parentRoute: typeof AppOperatorRoute
+      preLoaderRoute: typeof ClientAppOperatorIndexRouteImport
+      parentRoute: typeof ClientAppOperatorRoute
     }
-    '/app/operator/schulen': {
-      id: '/app/operator/schulen'
+    '/_client/app/operator/schulen': {
+      id: '/_client/app/operator/schulen'
       path: '/schulen'
       fullPath: '/app/operator/schulen'
-      preLoaderRoute: typeof AppOperatorSchulenRouteImport
-      parentRoute: typeof AppOperatorRoute
+      preLoaderRoute: typeof ClientAppOperatorSchulenRouteImport
+      parentRoute: typeof ClientAppOperatorRoute
     }
-    '/app/operator/zugangscodes': {
-      id: '/app/operator/zugangscodes'
+    '/_client/app/operator/zugangscodes': {
+      id: '/_client/app/operator/zugangscodes'
       path: '/zugangscodes'
       fullPath: '/app/operator/zugangscodes'
-      preLoaderRoute: typeof AppOperatorZugangscodesRouteImport
-      parentRoute: typeof AppOperatorRoute
+      preLoaderRoute: typeof ClientAppOperatorZugangscodesRouteImport
+      parentRoute: typeof ClientAppOperatorRoute
     }
     '/api/observability/v1/canary': {
       id: '/api/observability/v1/canary'
@@ -594,43 +608,123 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiObservabilityV1TelemetryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/app/$school/$rolle/': {
-      id: '/app/$school/$rolle/'
+    '/_client/app/$school/$rolle/': {
+      id: '/_client/app/$school/$rolle/'
       path: '/'
       fullPath: '/app/$school/$rolle/'
-      preLoaderRoute: typeof AppSchoolRolleIndexRouteImport
-      parentRoute: typeof AppSchoolRolleRoute
+      preLoaderRoute: typeof ClientAppSchoolRolleIndexRouteImport
+      parentRoute: typeof ClientAppSchoolRolleRoute
     }
-    '/app/$school/$rolle/bestaetigungen': {
-      id: '/app/$school/$rolle/bestaetigungen'
+    '/_client/app/$school/$rolle/bestaetigungen': {
+      id: '/_client/app/$school/$rolle/bestaetigungen'
       path: '/bestaetigungen'
       fullPath: '/app/$school/$rolle/bestaetigungen'
-      preLoaderRoute: typeof AppSchoolRolleBestaetigungenRouteImport
-      parentRoute: typeof AppSchoolRolleRoute
+      preLoaderRoute: typeof ClientAppSchoolRolleBestaetigungenRouteImport
+      parentRoute: typeof ClientAppSchoolRolleRoute
     }
-    '/app/$school/$rolle/heute': {
-      id: '/app/$school/$rolle/heute'
+    '/_client/app/$school/$rolle/heute': {
+      id: '/_client/app/$school/$rolle/heute'
       path: '/heute'
       fullPath: '/app/$school/$rolle/heute'
-      preLoaderRoute: typeof AppSchoolRolleHeuteRouteImport
-      parentRoute: typeof AppSchoolRolleRoute
+      preLoaderRoute: typeof ClientAppSchoolRolleHeuteRouteImport
+      parentRoute: typeof ClientAppSchoolRolleRoute
     }
-    '/app/$school/$rolle/kurse': {
-      id: '/app/$school/$rolle/kurse'
+    '/_client/app/$school/$rolle/kurse': {
+      id: '/_client/app/$school/$rolle/kurse'
       path: '/kurse'
       fullPath: '/app/$school/$rolle/kurse'
-      preLoaderRoute: typeof AppSchoolRolleKurseRouteImport
-      parentRoute: typeof AppSchoolRolleRoute
+      preLoaderRoute: typeof ClientAppSchoolRolleKurseRouteImport
+      parentRoute: typeof ClientAppSchoolRolleRoute
     }
-    '/app/$school/$rolle/woche': {
-      id: '/app/$school/$rolle/woche'
+    '/_client/app/$school/$rolle/woche': {
+      id: '/_client/app/$school/$rolle/woche'
       path: '/woche'
       fullPath: '/app/$school/$rolle/woche'
-      preLoaderRoute: typeof AppSchoolRolleWocheRouteImport
-      parentRoute: typeof AppSchoolRolleRoute
+      preLoaderRoute: typeof ClientAppSchoolRolleWocheRouteImport
+      parentRoute: typeof ClientAppSchoolRolleRoute
     }
   }
 }
+
+interface ClientAppOperatorRouteChildren {
+  ClientAppOperatorSchulenRoute: typeof ClientAppOperatorSchulenRoute
+  ClientAppOperatorZugangscodesRoute: typeof ClientAppOperatorZugangscodesRoute
+  ClientAppOperatorIndexRoute: typeof ClientAppOperatorIndexRoute
+}
+
+const ClientAppOperatorRouteChildren: ClientAppOperatorRouteChildren = {
+  ClientAppOperatorSchulenRoute: ClientAppOperatorSchulenRoute,
+  ClientAppOperatorZugangscodesRoute: ClientAppOperatorZugangscodesRoute,
+  ClientAppOperatorIndexRoute: ClientAppOperatorIndexRoute,
+}
+
+const ClientAppOperatorRouteWithChildren =
+  ClientAppOperatorRoute._addFileChildren(ClientAppOperatorRouteChildren)
+
+interface ClientAppSchoolRolleRouteChildren {
+  ClientAppSchoolRolleBestaetigungenRoute: typeof ClientAppSchoolRolleBestaetigungenRoute
+  ClientAppSchoolRolleHeuteRoute: typeof ClientAppSchoolRolleHeuteRoute
+  ClientAppSchoolRolleKurseRoute: typeof ClientAppSchoolRolleKurseRoute
+  ClientAppSchoolRolleWocheRoute: typeof ClientAppSchoolRolleWocheRoute
+  ClientAppSchoolRolleIndexRoute: typeof ClientAppSchoolRolleIndexRoute
+}
+
+const ClientAppSchoolRolleRouteChildren: ClientAppSchoolRolleRouteChildren = {
+  ClientAppSchoolRolleBestaetigungenRoute:
+    ClientAppSchoolRolleBestaetigungenRoute,
+  ClientAppSchoolRolleHeuteRoute: ClientAppSchoolRolleHeuteRoute,
+  ClientAppSchoolRolleKurseRoute: ClientAppSchoolRolleKurseRoute,
+  ClientAppSchoolRolleWocheRoute: ClientAppSchoolRolleWocheRoute,
+  ClientAppSchoolRolleIndexRoute: ClientAppSchoolRolleIndexRoute,
+}
+
+const ClientAppSchoolRolleRouteWithChildren =
+  ClientAppSchoolRolleRoute._addFileChildren(ClientAppSchoolRolleRouteChildren)
+
+interface ClientAppRouteChildren {
+  ClientAppKontoRoute: typeof ClientAppKontoRoute
+  ClientAppOperatorRoute: typeof ClientAppOperatorRouteWithChildren
+  ClientAppIndexRoute: typeof ClientAppIndexRoute
+  ClientAppSchoolRolleRoute: typeof ClientAppSchoolRolleRouteWithChildren
+}
+
+const ClientAppRouteChildren: ClientAppRouteChildren = {
+  ClientAppKontoRoute: ClientAppKontoRoute,
+  ClientAppOperatorRoute: ClientAppOperatorRouteWithChildren,
+  ClientAppIndexRoute: ClientAppIndexRoute,
+  ClientAppSchoolRolleRoute: ClientAppSchoolRolleRouteWithChildren,
+}
+
+const ClientAppRouteWithChildren = ClientAppRoute._addFileChildren(
+  ClientAppRouteChildren,
+)
+
+interface ClientRouteChildren {
+  ClientAktivierenRoute: typeof ClientAktivierenRoute
+  ClientAnmeldenRoute: typeof ClientAnmeldenRoute
+  ClientAppRoute: typeof ClientAppRouteWithChildren
+  ClientEinrichtenRoute: typeof ClientEinrichtenRoute
+  ClientPasswortVergessenRoute: typeof ClientPasswortVergessenRoute
+  ClientPasswortZuruecksetzenRoute: typeof ClientPasswortZuruecksetzenRoute
+  ClientRegistrierenRoute: typeof ClientRegistrierenRoute
+  ClientAktivierenAbschliessenRoute: typeof ClientAktivierenAbschliessenRoute
+  ClientOperatorSetupRoute: typeof ClientOperatorSetupRoute
+}
+
+const ClientRouteChildren: ClientRouteChildren = {
+  ClientAktivierenRoute: ClientAktivierenRoute,
+  ClientAnmeldenRoute: ClientAnmeldenRoute,
+  ClientAppRoute: ClientAppRouteWithChildren,
+  ClientEinrichtenRoute: ClientEinrichtenRoute,
+  ClientPasswortVergessenRoute: ClientPasswortVergessenRoute,
+  ClientPasswortZuruecksetzenRoute: ClientPasswortZuruecksetzenRoute,
+  ClientRegistrierenRoute: ClientRegistrierenRoute,
+  ClientAktivierenAbschliessenRoute: ClientAktivierenAbschliessenRoute,
+  ClientOperatorSetupRoute: ClientOperatorSetupRoute,
+}
+
+const ClientRouteWithChildren =
+  ClientRoute._addFileChildren(ClientRouteChildren)
 
 interface PublicRouteChildren {
   PublicDatenschutzRoute: typeof PublicDatenschutzRoute
@@ -647,70 +741,10 @@ const PublicRouteChildren: PublicRouteChildren = {
 const PublicRouteWithChildren =
   PublicRoute._addFileChildren(PublicRouteChildren)
 
-interface AppOperatorRouteChildren {
-  AppOperatorSchulenRoute: typeof AppOperatorSchulenRoute
-  AppOperatorZugangscodesRoute: typeof AppOperatorZugangscodesRoute
-  AppOperatorIndexRoute: typeof AppOperatorIndexRoute
-}
-
-const AppOperatorRouteChildren: AppOperatorRouteChildren = {
-  AppOperatorSchulenRoute: AppOperatorSchulenRoute,
-  AppOperatorZugangscodesRoute: AppOperatorZugangscodesRoute,
-  AppOperatorIndexRoute: AppOperatorIndexRoute,
-}
-
-const AppOperatorRouteWithChildren = AppOperatorRoute._addFileChildren(
-  AppOperatorRouteChildren,
-)
-
-interface AppSchoolRolleRouteChildren {
-  AppSchoolRolleBestaetigungenRoute: typeof AppSchoolRolleBestaetigungenRoute
-  AppSchoolRolleHeuteRoute: typeof AppSchoolRolleHeuteRoute
-  AppSchoolRolleKurseRoute: typeof AppSchoolRolleKurseRoute
-  AppSchoolRolleWocheRoute: typeof AppSchoolRolleWocheRoute
-  AppSchoolRolleIndexRoute: typeof AppSchoolRolleIndexRoute
-}
-
-const AppSchoolRolleRouteChildren: AppSchoolRolleRouteChildren = {
-  AppSchoolRolleBestaetigungenRoute: AppSchoolRolleBestaetigungenRoute,
-  AppSchoolRolleHeuteRoute: AppSchoolRolleHeuteRoute,
-  AppSchoolRolleKurseRoute: AppSchoolRolleKurseRoute,
-  AppSchoolRolleWocheRoute: AppSchoolRolleWocheRoute,
-  AppSchoolRolleIndexRoute: AppSchoolRolleIndexRoute,
-}
-
-const AppSchoolRolleRouteWithChildren = AppSchoolRolleRoute._addFileChildren(
-  AppSchoolRolleRouteChildren,
-)
-
-interface AppRouteChildren {
-  AppKontoRoute: typeof AppKontoRoute
-  AppOperatorRoute: typeof AppOperatorRouteWithChildren
-  AppIndexRoute: typeof AppIndexRoute
-  AppSchoolRolleRoute: typeof AppSchoolRolleRouteWithChildren
-}
-
-const AppRouteChildren: AppRouteChildren = {
-  AppKontoRoute: AppKontoRoute,
-  AppOperatorRoute: AppOperatorRouteWithChildren,
-  AppIndexRoute: AppIndexRoute,
-  AppSchoolRolleRoute: AppSchoolRolleRouteWithChildren,
-}
-
-const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
+  ClientRoute: ClientRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
-  AktivierenRoute: AktivierenRoute,
-  AnmeldenRoute: AnmeldenRoute,
-  AppRoute: AppRouteWithChildren,
-  EinrichtenRoute: EinrichtenRoute,
-  PasswortVergessenRoute: PasswortVergessenRoute,
-  PasswortZuruecksetzenRoute: PasswortZuruecksetzenRoute,
-  RegistrierenRoute: RegistrierenRoute,
-  AktivierenAbschliessenRoute: AktivierenAbschliessenRoute,
   ApiRpcRoute: ApiRpcRoute,
-  OperatorSetupRoute: OperatorSetupRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiHealthLiveRoute: ApiHealthLiveRoute,
   ApiHealthReadyRoute: ApiHealthReadyRoute,

@@ -9,6 +9,7 @@ const navItems = [
   { id: sectionIds.schools, label: "Für Schulen" },
   { id: sectionIds.app, label: "App laden" },
 ] as const;
+const observedSectionIds = navItems.map((item) => item.id);
 
 /**
  * Which of the linked sections is currently being read.
@@ -99,7 +100,7 @@ const AccountLink = () => {
  * same stroke draws on hover, so pointing at a link previews what arriving there will look like.
  */
 export const SiteHeader = () => {
-  const active = useActiveSection(navItems.map((item) => item.id));
+  const active = useActiveSection(observedSectionIds);
 
   return (
     <header className="sticky top-0 z-50 flex justify-center px-6 pt-6 sm:pt-8">

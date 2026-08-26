@@ -15,9 +15,13 @@ export function ClientObservability({ config }: { readonly config: PublicConfig 
   useEffect(() => {
     const dsn = config.sentryDsn;
     if (dsn === undefined) return;
+    let disposed = false;
     void import("./sentry-client.ts").then(({ initializeSentryClient }) => {
-      initializeSentryClient(dsn);
+      if (!disposed) initializeSentryClient(dsn);
     });
+    return () => {
+      disposed = true;
+    };
   }, [config.sentryDsn]);
 
   useEffect(() => {

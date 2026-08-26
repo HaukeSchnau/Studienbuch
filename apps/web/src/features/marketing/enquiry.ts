@@ -1,29 +1,16 @@
 import { MarketingApi } from "@stu/api";
-import * as Effect from "effect/Effect";
-import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
-import { RpcClient } from "effect/unstable/rpc";
-import { browserRpcProtocol } from "#/infra/rpc/protocol.ts";
+import { WebRpc } from "#/infra/rpc/atoms.ts";
 
-const makeClient = RpcClient.make(MarketingApi.Rpcs);
+export const submitEnquiryMutation = WebRpc.mutation("Marketing.SubmitEnquiry");
 
-export const submitEnquiry = (form: FormData, startedAt: number): Promise<boolean> =>
-  Effect.scoped(
-    Schema.decodeUnknownEffect(MarketingApi.EnquirySubmission)({
-      schoolName: form.get("schoolName"),
-      contactName: form.get("contactName"),
-      email: form.get("email"),
-      message: form.get("message"),
-      trap: form.get("trap") ?? undefined,
-      startedAt,
-    }).pipe(
-      Effect.flatMap((submission) =>
-        makeClient.pipe(
-          Effect.flatMap((client) => client["Marketing.SubmitEnquiry"](submission)),
-          Effect.provide(browserRpcProtocol),
-        ),
-      ),
-      Effect.result,
-      Effect.map(Result.isSuccess),
-    ),
-  ).pipe(Effect.runPromise);
+/** Decodes uncontrolled browser form data into the RPC contract. */
+export const decodeEnquiry = (form: FormData, startedAt: number) =>
+  Schema.decodeUnknownExit(MarketingApi.EnquirySubmission)({
+    schoolName: form.get("schoolName"),
+    contactName: form.get("contactName"),
+    email: form.get("email"),
+    message: form.get("message"),
+    trap: form.get("trap") ?? undefined,
+    startedAt,
+  });

@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Check, WifiOff } from "lucide-react";
 
 /**
@@ -9,24 +8,6 @@ import { Check, WifiOff } from "lucide-react";
  */
 
 /**
- * Today's weekday in German, or "Heute" until the browser has told us.
- *
- * Resolved in an effect rather than during render: the server renders once, possibly in a different
- * timezone and possibly hours earlier if the response is cached, and a hydration mismatch over a
- * decorative label is not a trade worth making. The fallback is a real word, so nothing flickers
- * from empty to filled.
- */
-function useWeekday(): string {
-  const [weekday, setWeekday] = useState("Heute");
-
-  useEffect(() => {
-    setWeekday(new Date().toLocaleDateString("de-DE", { weekday: "long" }));
-  }, []);
-
-  return weekday;
-}
-
-/**
  * The day's agenda, with the middle lesson cancelled.
  *
  * This replaced an abstract grid of coloured blocks. The grid looked like a timetable but could not
@@ -34,7 +15,6 @@ function useWeekday(): string {
  * house. A lesson striking itself out as "(Entfall)" arrives can.
  */
 export const SchedulePreview = () => {
-  const weekday = useWeekday();
   const agenda = [
     { time: "09:45", subject: "Englisch", teacher: "RUD", cancelled: false },
     { time: "11:30", subject: "Deutsch", teacher: "Frau Bembenek", cancelled: true },
@@ -43,7 +23,7 @@ export const SchedulePreview = () => {
 
   return (
     <div aria-hidden className="flex w-full flex-col gap-1 rounded-2xl bg-surface p-4 shadow-card">
-      <p className="px-0 pb-1 text-xs font-bold text-neutral">{weekday}</p>
+      <p className="px-0 pb-1 text-xs font-bold text-neutral">Heute</p>
       {agenda.map((lesson) => (
         <div className="flex items-baseline gap-3 py-1.5" key={lesson.time}>
           <span className="w-12 shrink-0 text-xs text-neutral tabular-nums">{lesson.time}</span>
