@@ -12,6 +12,7 @@ import {
   withSchoolYear,
   type DisplayResource,
   type Schoolyear,
+  type TimetableBackEntry,
   type TimetableEntries,
   type TimetableEntry,
   type TimetableEntryDay,
@@ -62,6 +63,7 @@ export type TimetableDiagnosticCode =
   | "ConflictingEntryIdentity"
   | "DuplicateResourceDay"
   | "EntryWithoutId"
+  | "IncompleteEntry"
   | "MissingResourceDay"
   | "NotAllowedResourceDay"
   | "ResponseError"
@@ -228,6 +230,18 @@ const normalizePositions = (
 ): ReadonlyArray<TimetableEntryPosition> | null =>
   positions === null ? null : [...positions].sort(compareJson);
 
+const isTimetableEntry = Schema.is(TimetableEntrySchema);
+
+export const classifyTimetableEntry = (
+  entry: TimetableEntry | TimetableBackEntry,
+):
+  | { readonly _tag: "Complete"; readonly entry: TimetableEntry }
+  | { readonly _tag: "EntryWithoutId" }
+  | { readonly _tag: "IncompleteEntry" } => {
+  if (entry.ids === undefined || entry.ids.length === 0) return { _tag: "EntryWithoutId" };
+  return isTimetableEntry(entry) ? { _tag: "Complete", entry } : { _tag: "IncompleteEntry" };
+};
+
 export const normalizeTimetableEntry = (entry: TimetableEntry): TimetableEntry => ({
   ...entry,
   ids: [...entry.ids].sort((left, right) => left - right),
@@ -279,7 +293,7 @@ const addEntries = (
   academicYearExternalId: string,
   day: TimetableEntryDay & { readonly resourceType: ImportedTimetableResourceType },
   location: TimetableEntryLocation,
-  entries: ReadonlyArray<TimetableEntry>,
+  entries: ReadonlyArray<TimetableEntry | TimetableBackEntry>,
 ) => {
   switch (location) {
     case "Back":
@@ -295,12 +309,13 @@ const addEntries = (
   for (const rawEntry of entries) {
     increment(state.entryStatuses, rawEntry.status);
     increment(state.entryTypes, rawEntry.type);
-    if (rawEntry.ids.length === 0) {
-      incrementDiagnostic(state.diagnostics, "EntryWithoutId");
+    const classified = classifyTimetableEntry(rawEntry);
+    if (classified._tag !== "Complete") {
+      incrementDiagnostic(state.diagnostics, classified._tag);
       continue;
     }
 
-    const entry = normalizeTimetableEntry(rawEntry);
+    const entry = normalizeTimetableEntry(classified.entry);
     const externalId = timetableEntryExternalId(day, entry);
     if (state.conflictingIdentities.has(externalId)) continue;
     const observation: TimetableObservation = {
