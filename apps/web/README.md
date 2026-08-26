@@ -140,6 +140,12 @@ The Nix development action enables OTLP and sends server traces, logs, and metri
 desktop viewer at `http://127.0.0.1:24318`. Open `https://otel-viewer.schnau.dev` from any device on
 the Tailnet and select `studienbuch-server`.
 
+Authentication requests appear as `http GET /api/auth/*` or `http POST /api/auth/*` traces. Email
+and passkey sign-in POSTs also emit a correlated `auth.request.completed` log with only the
+normalized operation, outcome, and HTTP status. URLs, queries, headers, credentials, and request
+bodies are deliberately excluded. Browser-initiated auth requests share one trace with the server
+span after the client telemetry bootstrap has loaded.
+
 An explicit `OTEL_EXPORTER_OTLP_ENDPOINT` takes precedence, so `with-motel` can select the terminal
 viewer without changing the application. Set `STUDIENBUCH_OTEL_ENABLED=false` to disable OTLP for
 one run.
