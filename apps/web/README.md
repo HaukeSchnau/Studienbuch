@@ -134,6 +134,16 @@ STUDIENBUCH_WEB_SKIP_RUNTIME=1 vp dev
 
 The flag is ignored when `NODE_ENV=production`, so it cannot disable the runtime in a release.
 
+## Local observability
+
+The Nix development action enables OTLP and sends server traces, logs, and metrics to the local
+desktop viewer at `http://127.0.0.1:24318`. Open `https://otel-viewer.schnau.dev` from any device on
+the Tailnet and select `studienbuch-server`.
+
+An explicit `OTEL_EXPORTER_OTLP_ENDPOINT` takes precedence, so `with-motel` can select the terminal
+viewer without changing the application. Set `STUDIENBUCH_OTEL_ENABLED=false` to disable OTLP for
+one run.
+
 ## Client observability configuration
 
 Sentry is configured from the **server's** environment, not from a `VITE_` build variable. The root
