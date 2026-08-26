@@ -1,5 +1,6 @@
 export {
   environmentConfig,
+  revisionConfig,
   serverConfig,
   serviceVersionConfig,
   type ServerConfig,

@@ -87,11 +87,13 @@ describe("resource and trace policy", () => {
         serviceVersion: "release-1",
         environment: "production",
         instanceId: "instance-1",
+        revision: "0123456789abcdef0123456789abcdef01234567",
       }),
     ).toEqual({
       "service.namespace": "studienbuch",
       "deployment.environment.name": "production",
       "service.instance.id": "instance-1",
+      "vcs.revision": "0123456789abcdef0123456789abcdef01234567",
     });
     expect(
       resourceAttributes({

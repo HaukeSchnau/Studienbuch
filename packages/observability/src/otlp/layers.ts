@@ -15,7 +15,7 @@ import {
 } from "effect/unstable/observability";
 import type { ResourceIdentity, ServiceName } from "../opentelemetry/resource.ts";
 import { otlpResource } from "../opentelemetry/resource.ts";
-import { environmentConfig, serverConfig, serviceVersionConfig } from "./config.ts";
+import { environmentConfig, revisionConfig, serverConfig, serviceVersionConfig } from "./config.ts";
 
 export interface OtlpServerLayerOptions {
   readonly endpoint: string | URL;
@@ -97,6 +97,7 @@ export function serverObservabilityLayer(options: {
       const config = yield* serverConfig;
       const environment = yield* environmentConfig;
       const serviceVersion = yield* serviceVersionConfig;
+      const revision = yield* revisionConfig;
 
       if (!config.enabled) {
         const logger =
@@ -108,7 +109,7 @@ export function serverObservabilityLayer(options: {
 
       return otlpProtobufLayer({
         endpoint: config.endpoint,
-        resource: { serviceName: options.serviceName, serviceVersion, environment },
+        resource: { serviceName: options.serviceName, serviceVersion, environment, revision },
         logLevel: config.logLevel,
         traceLevel: config.traceLevel,
         exportInterval: config.exportInterval,

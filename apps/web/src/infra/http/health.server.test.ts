@@ -37,6 +37,19 @@ describe("health adapters", () => {
     expect(pingDatabase).toHaveBeenCalledOnce();
   });
 
+  it("reports the immutable release revision when the host provides it", async () => {
+    const handlers = makeHealthHandlers({
+      runtimeState: () => ({ status: "ready" }),
+      pingDatabase: async () => true,
+      revision: "0123456789abcdef0123456789abcdef01234567",
+    });
+
+    await expect((await handlers.readiness()).json()).resolves.toEqual({
+      status: "ready",
+      revision: "0123456789abcdef0123456789abcdef01234567",
+    });
+  });
+
   it("does not claim readiness before the runtime is warm", async () => {
     const { handlers, pingDatabase } = fixture({ state: { status: "starting" } });
 
