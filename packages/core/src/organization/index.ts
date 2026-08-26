@@ -32,6 +32,19 @@ export {
   validateAcademicYears,
 } from "./academic-year";
 export { Acknowledgement, ActorRef, Withdrawal } from "./acknowledgement";
+export {
+  ContextCapability,
+  ContextRef,
+  capabilitiesFor,
+  contextPath,
+  contextSegments,
+  hasCapability,
+  operatorContext,
+  operatorSegment,
+  parseContextSegments,
+  sameContext,
+  schoolContext,
+} from "./context";
 export { AuthorityDenied, AuthoritySnapshot, Capability, authorize, may } from "./authority";
 export { School, Subject, SubjectCatalog, findSubject } from "./catalog";
 export {
