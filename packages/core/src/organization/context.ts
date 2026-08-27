@@ -13,6 +13,15 @@ import { reservedSchoolId, SchoolId } from "./identity.ts";
  * These are the questions a shell asks. Everything finer stays with `authorize`.
  */
 export const ContextCapability = Schema.Literals([
+  /**
+   * See one's own day at this school: what is on, what moved, what was cancelled.
+   *
+   * Separate from {@link KeepNotebook} because a teacher has a school day and does not have a
+   * student's notebook. Folding the two together would have given teachers a grade book they cannot
+   * use, and keeping them apart would have left them with no "today" at all — which is the one
+   * screen anybody at a school opens every morning.
+   */
+  "SeeOwnDay",
   /** Keep one's own notebook: timetable, grades, absences, tasks. */
   "KeepNotebook",
   /** Teach: one's own courses, and the confirmations that belong to them. */
@@ -64,7 +73,7 @@ export const capabilitiesFor = (ref: ContextRef): ReadonlyArray<ContextCapabilit
     case "Operator":
       return ["OperatePlatform"];
     case "SchoolAccess":
-      return ref.kind === "Student" ? ["KeepNotebook"] : ["TeachCourses"];
+      return ref.kind === "Student" ? ["SeeOwnDay", "KeepNotebook"] : ["SeeOwnDay", "TeachCourses"];
   }
 };
 

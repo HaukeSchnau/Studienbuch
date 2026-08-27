@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Wordmark } from "#/domain-ui/brand/wordmark.tsx";
 import { AccountMenu } from "./account-menu.tsx";
+import { ConnectionState } from "./connection-state.tsx";
 import { DestinationLink } from "./destination-link.tsx";
 import { destinationsFor } from "./destinations.ts";
 import { useShell } from "./shell-state.tsx";
@@ -100,6 +101,7 @@ export const AppShell = ({ children }: { readonly children: ReactNode }) => {
           </Link>
           <AccountMenu compact />
         </header>
+        <ConnectionState />
         <div id="hauptinhalt" tabIndex={-1}>
           {children}
         </div>

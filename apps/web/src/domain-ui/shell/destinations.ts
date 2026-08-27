@@ -75,7 +75,7 @@ export const destinations: ReadonlyArray<Destination> = [
     label: "Übersicht",
     icon: House,
     placement: "school",
-    capability: "KeepNotebook",
+    capability: "SeeOwnDay",
     to: "/app/$school/$rolle/heute",
   },
   {
