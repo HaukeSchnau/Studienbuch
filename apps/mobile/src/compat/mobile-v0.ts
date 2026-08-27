@@ -182,9 +182,6 @@ export const groupGradesByType = (grades: Grade[]) => ({
   writtenGrades: grades.filter((grade) => grade.type === "WRITTEN"),
 });
 
-export const getMostRecentGradeOfType = (grades: Grade[], type: GradeType) =>
-  grades.find((grade) => grade.type === type);
-
 export const formatGrade = (result: number) => `${result.toFixed(1).replace(".", ",")} P`;
 export const formatGradeShort = (result: number) => `${Math.round(result)}`;
 
@@ -214,8 +211,6 @@ export const getVisibleTimetable = (
 export const getActiveHoliday = (holidays: Holiday[], date = new Date()) =>
   holidays.find((holiday) => date >= holiday.start && date <= holiday.end);
 
-export const getCurrentYearNum = (year: Year) => year.classLevel;
-export const formatYear = (year: Year) => year.name;
 export const formatClassName = (schoolClass: SchoolClass, year: Year) =>
   `${year.name} ${schoolClass.identifierInYear}`;
 export const findCurrentSemester = (semesters: Semester[]) => semesters.at(-1) ?? semesters[0];

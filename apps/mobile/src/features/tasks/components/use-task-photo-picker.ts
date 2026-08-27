@@ -39,7 +39,9 @@ export const useTaskPhotoPicker = ({
       }
       return;
     }
-    Option.match(result.success, { onNone: () => undefined, onSome: onAssetPicked });
+    if (Option.isSome(result.success)) {
+      onAssetPicked(result.success.value);
+    }
   };
 
   return {

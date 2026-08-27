@@ -7,26 +7,25 @@ import {
   signGradeAtom,
   upsertGradeAtom,
   type GradeSigner,
-  type UpsertGradeInput,
 } from "./grade-atoms";
 
 export function useGrades() {
   const grades = useAtomValue(gradesAtom);
-  const upsert = useAtomSet(upsertGradeAtom);
-  const sign = useAtomSet(signGradeAtom);
-  const restore = useAtomSet(restoreLatestConfirmedGradeAtom);
+  const upsertGrade = useAtomSet(upsertGradeAtom);
+  const writeSignGrade = useAtomSet(signGradeAtom);
+  const writeRestoreLatestConfirmedGrade = useAtomSet(restoreLatestConfirmedGradeAtom);
   const getCourseGrades = useCallback(
     (courseId: string) => selectCourseGrades(grades, courseId),
     [grades],
   );
-  const upsertGrade = useCallback((input: UpsertGradeInput) => upsert(input), [upsert]);
   const signGrade = useCallback(
-    (gradeId: string, signer: GradeSigner) => sign({ gradeId, signer }),
-    [sign],
+    (gradeId: string, signer: GradeSigner) => writeSignGrade({ gradeId, signer }),
+    [writeSignGrade],
   );
   const restoreLatestConfirmedGrade = useCallback(
-    (courseId: string, type: GradeType, isOfAge: boolean) => restore({ courseId, type, isOfAge }),
-    [restore],
+    (courseId: string, type: GradeType, isOfAge: boolean) =>
+      writeRestoreLatestConfirmedGrade({ courseId, type, isOfAge }),
+    [writeRestoreLatestConfirmedGrade],
   );
 
   return { grades, getCourseGrades, upsertGrade, signGrade, restoreLatestConfirmedGrade };

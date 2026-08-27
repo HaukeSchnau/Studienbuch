@@ -11,7 +11,7 @@ import { SystemIcon } from "~/ui/system-icon";
 import { Text } from "~/ui/text";
 import { TextAreaField } from "~/ui/fields/text-area-field";
 import { TextField } from "~/ui/fields/text-field";
-import { getNextSchoolDay } from "~/domain-ui/school-day";
+import { getNextSchoolDay } from "~/features/schedule";
 import type { TaskAttachment } from "~/compat/mobile-v0";
 import { useCourses } from "~/features/courses";
 import { useSchedule } from "~/features/schedule";

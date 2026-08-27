@@ -44,10 +44,8 @@ export function resourceAttributes(identity: ResourceIdentity): Readonly<Resourc
   return attributes;
 }
 
-export function otlpResource(identity: ResourceIdentity) {
-  return {
-    serviceName: identity.serviceName,
-    serviceVersion: identity.serviceVersion,
-    attributes: resourceAttributes(identity),
-  };
-}
+export const otlpResource = (identity: ResourceIdentity) => ({
+  serviceName: identity.serviceName,
+  serviceVersion: identity.serviceVersion,
+  attributes: resourceAttributes(identity),
+});
