@@ -69,21 +69,20 @@ const linkClass =
 /**
  * The way into the product, which is a different way depending on who is looking.
  *
- * Someone with a live session is not a prospect: inviting them to sign in again on the page they
- * land on from a bookmark is the most likely single moment for this header to be wrong. The session
- * is only known after hydration, so the sizer holds the wider of the two labels and the pill keeps
- * its width while the answer arrives — the same trick the active-link weight uses.
+ * Cookie presence gives SSR a synchronous initial hint, while the client session remains the
+ * authority once it has loaded. This avoids a database lookup on the public page and avoids briefly
+ * inviting a signed-in person to sign in again.
  */
-const AccountLink = () => {
+const AccountLink = ({ hasSessionCookie }: { readonly hasSessionCookie: boolean }) => {
   const session = authClient.useSession();
-  const signedIn = !session.isPending && session.data !== null;
+  const signedIn = session.isPending ? hasSessionCookie : session.data !== null;
   const label = signedIn ? "Mein Studienbuch" : "Anmelden";
 
   return (
     <a className={linkClass} href={signedIn ? "/app" : "/anmelden"}>
       <span className="nav-label">{label}</span>
       <span aria-hidden className="nav-sizer">
-        Mein Studienbuch
+        {label}
       </span>
       <Underline className="nav-underline -bottom-1.5" />
     </a>
@@ -99,7 +98,7 @@ const AccountLink = () => {
  * positions, and survives a resize or a late font swap without recalculating anything — and the
  * same stroke draws on hover, so pointing at a link previews what arriving there will look like.
  */
-export const SiteHeader = () => {
+export const SiteHeader = ({ hasSessionCookie }: { readonly hasSessionCookie: boolean }) => {
   const active = useActiveSection(observedSectionIds);
 
   return (
@@ -130,7 +129,7 @@ export const SiteHeader = () => {
           </span>
           <Underline className="nav-underline -bottom-1.5" />
         </a>
-        <AccountLink />
+        <AccountLink hasSessionCookie={hasSessionCookie} />
       </nav>
     </header>
   );
