@@ -1,11 +1,9 @@
-import { useAtomSuspense } from "@effect/atom-react";
 import { createFileRoute, Navigate, Outlet, redirect, useLocation } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { accountAtom } from "#/features/auth/access.ts";
 import { requireAccount } from "#/features/auth/account-loader.ts";
 import { AppErrorState, AppNotFound } from "#/domain-ui/shell/app-error-states.tsx";
 import { AppShell } from "#/domain-ui/shell/app-shell.tsx";
-import { contextsFor, findContext } from "#/domain-ui/shell/contexts.ts";
+import { contextsFor, findContext, findRouteContext } from "#/domain-ui/shell/contexts.ts";
 import { ShellProvider } from "#/domain-ui/shell/shell-state.tsx";
 import { rememberContext, rememberedContext } from "#/domain-ui/shell/remembered-context.ts";
 
@@ -35,8 +33,7 @@ export const Route = createFileRoute("/_client/app")({
  */
 function AppLayout() {
   const { pathname } = useLocation();
-  const account = useAtomSuspense(accountAtom).value;
-  const contexts = contextsFor(account);
+  const { account, contexts } = Route.useRouteContext();
 
   /**
    * The active context, in order of authority: what the address bar says, then what this person
@@ -47,7 +44,7 @@ function AppLayout() {
     .replace(/^\/app\/?/, "")
     .split("/")
     .filter(Boolean);
-  const requestedContext = findContext(contexts, segments);
+  const requestedContext = findRouteContext(contexts, segments);
   const hasContextPath = segments[0] === "operator" || segments.length >= 2;
   const context = requestedContext ?? findContext(contexts, rememberedContext()) ?? contexts.at(0);
 

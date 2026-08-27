@@ -63,6 +63,12 @@ export const findContext = (
     : contexts.find((context) => Organization.sameContext(context.ref, ref));
 };
 
+/** The context named by the prefix of an application route, before its destination segments. */
+export const findRouteContext = (
+  contexts: ReadonlyArray<ShellContext>,
+  segments: ReadonlyArray<string>,
+) => findContext(contexts, segments.slice(0, segments[0] === Organization.operatorSegment ? 1 : 2));
+
 /** Chooses the remembered context when it is still valid, then the stable first context. */
 export const defaultContext = (
   contexts: ReadonlyArray<ShellContext>,
