@@ -17,9 +17,16 @@ const teacher = schoolContext(igs, "Teacher");
 
 describe("what a context entitles someone to", () => {
   it("gives a student their notebook and a teacher their courses", () => {
-    expect(capabilitiesFor(student)).toEqual(["KeepNotebook"]);
-    expect(capabilitiesFor(teacher)).toEqual(["TeachCourses"]);
+    expect(capabilitiesFor(student)).toEqual(["SeeOwnDay", "KeepNotebook"]);
+    expect(capabilitiesFor(teacher)).toEqual(["SeeOwnDay", "TeachCourses"]);
     expect(capabilitiesFor(operatorContext)).toEqual(["OperatePlatform"]);
+  });
+
+  it("gives everybody at a school their own day, and the operator nobody's", () => {
+    // A teacher's morning is a school day like anyone else's. Only the notebook is a student's.
+    expect(hasCapability(teacher, "SeeOwnDay")).toBe(true);
+    expect(hasCapability(teacher, "KeepNotebook")).toBe(false);
+    expect(hasCapability(operatorContext, "SeeOwnDay")).toBe(false);
   });
 
   it("keeps a school context away from platform operation, and the reverse", () => {
