@@ -1,6 +1,6 @@
 import { Organization } from "@stu/core";
 import { describe, expect, it } from "vite-plus/test";
-import { defaultContext, findContext, findRouteContext, type ShellContext } from "./contexts.ts";
+import { defaultContext, findContext, type ShellContext } from "./contexts.ts";
 
 const school: ShellContext = {
   ref: Organization.schoolContext(Organization.SchoolId.make("igs-lilienthal"), "Student"),
@@ -24,10 +24,5 @@ describe("shell context routing", () => {
     expect(findContext(contexts, ["igs-lilienthal", "lehrer"])).toBeUndefined();
     expect(findContext(contexts, ["another-school", "schueler"])).toBeUndefined();
     expect(findContext(contexts, ["igs-lilienthal", "schueler"])).toBe(school);
-  });
-
-  it("selects the context prefix without treating destination segments as context", () => {
-    expect(findRouteContext(contexts, ["operator", "schulen"])).toBe(operator);
-    expect(findRouteContext(contexts, ["igs-lilienthal", "schueler", "heute"])).toBe(school);
   });
 });

@@ -1,10 +1,10 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { KeyRound, LogOut, Plus, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import type { SchoolAccessView } from "#/features/auth/access.ts";
 import { AuthError } from "#/features/auth/auth-shell.tsx";
 import { betterAuthMessage } from "#/features/auth/messages.ts";
-import { useRefreshAuthorization } from "#/features/auth/use-refresh-authorization.ts";
+import { useSignOut } from "#/features/auth/use-sign-out.ts";
 import { initials } from "#/domain-ui/person-name.ts";
 import { DestinationPage } from "#/domain-ui/shell/destination-page.tsx";
 import { authClient } from "#/infra/auth/client.ts";
@@ -24,33 +24,28 @@ const kindLabel = (kind: SchoolAccessView["kind"]) =>
  *
  * Everything here outlives a school: the address you sign in with, the passkeys on your devices, and
  * the list of schools you have redeemed a code for. That is why it is reachable from every context
- * rather than living inside one — and why signing out belongs here rather than in the chrome.
+ * rather than living inside one.
+ *
+ * Signing out is here and in the account menu both, and deliberately so: this is where it belongs
+ * next to the things it ends, and the menu is where somebody actually reaches for it.
  */
 function AccountPage() {
   const { account } = useShell();
-  const navigate = useNavigate();
-  const refreshAuthorization = useRefreshAuthorization();
+  const signOut = useSignOut();
   const [error, setError] = useState<string>();
 
-  const signOut = async () => {
-    await authClient.signOut();
-    await refreshAuthorization();
-    await navigate({ to: "/anmelden", search: {}, replace: true });
-  };
-
   return (
-    <DestinationPage title="Mein Konto">
-      <p className="text-ink-soft">
-        Angemeldet als <span className="text-ink">{account.user.email ?? "Operator-Konto"}</span>
-      </p>
-
+    <DestinationPage
+      lead={`Angemeldet als ${account.user.email ?? "Operator-Konto"}`}
+      title="Mein Konto"
+    >
       {error === undefined ? null : (
-        <div className="mt-6">
+        <div className="mb-6">
           <AuthError>{error}</AuthError>
         </div>
       )}
 
-      <h2 className="mt-7 text-lg">Meine Schulzugänge</h2>
+      <h2 className="text-lg">Meine Schulzugänge</h2>
       <section className="mt-4 grid gap-4 sm:grid-cols-2">
         {account.accesses.map((access) => (
           <SchoolCard access={access} key={access.id} />

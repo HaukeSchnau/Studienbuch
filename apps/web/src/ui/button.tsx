@@ -4,19 +4,31 @@ import { Slot } from "radix-ui";
 
 import { cn } from "#/ui/cn.ts";
 
+/*
+ * The generated component arrived with the grey defaults it ships with — a near-black `default`, a
+ * `neutral-300` outline and a grey focus ring — and only `brand` was ever given the product's own
+ * colours. Every other button therefore read as belonging to some other application: the account
+ * page in particular was a column of grey pills in a green product.
+ *
+ * The palette below is the same one the rest of the interface is built from, so a button no longer
+ * has to opt in to looking like Studienbuch. `brand` keeps the blue, because that is the colour
+ * Flutter fills `ElevatedButton` with and the app this supersedes uses it for the one action a
+ * screen is asking for; `default` is now the green, which is what the brand actually is.
+ */
 const buttonVariants = cva(
-  "press inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:border-neutral-400 focus-visible:ring-[3px] focus-visible:ring-neutral-400/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-red-600 aria-invalid:ring-red-600/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "press inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-[3px] focus-visible:ring-accent/40 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-danger aria-invalid:ring-danger/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
-        default: "bg-neutral-900 text-white hover:bg-neutral-800",
-        destructive: "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-600/20",
-        outline: "border border-neutral-300 bg-transparent shadow-xs hover:bg-neutral-100",
-        secondary: "bg-neutral-200 text-neutral-950 hover:bg-neutral-300",
-        ghost: "hover:bg-neutral-100",
-        link: "text-neutral-950 underline-offset-4 hover:underline",
+        default: "bg-primary text-white hover:bg-primary-punch",
+        destructive: "bg-danger text-white hover:bg-danger-sec focus-visible:ring-danger/30",
+        outline:
+          "border border-neutral-sec bg-white text-ink shadow-card hover:border-primary-pale/60 hover:bg-primary-des",
+        secondary: "bg-primary-des text-primary-text hover:bg-primary-pale/25",
+        ghost: "text-ink hover:bg-primary-des hover:text-primary-text",
+        link: "text-accent underline-offset-4 hover:underline",
         // The app's own call to action: a blue pill, the colour Flutter fills ElevatedButton with.
-        brand: "bg-accent text-white shadow-float hover:bg-accent-sec focus-visible:ring-accent/40",
+        brand: "bg-accent text-white shadow-float hover:bg-accent-sec",
       },
       radius: {
         default: "",

@@ -1,18 +1,23 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { Wordmark } from "#/domain-ui/brand/wordmark.tsx";
-import { ContextSwitcher } from "./context-switcher.tsx";
+import { AccountMenu } from "./account-menu.tsx";
 import { DestinationLink } from "./destination-link.tsx";
 import { destinationsFor } from "./destinations.ts";
-import type { ShellContext } from "./contexts.ts";
+import { useShell } from "./shell-state.tsx";
 
-const railLink =
-  "press flex items-center gap-3 rounded-full px-4 py-2 text-sm text-ink hover:bg-primary-des/60 data-[active=true]:bg-primary-des data-[active=true]:font-bold data-[active=true]:text-primary-text";
+/*
+ * Every interactive thing in the chrome carries the same focus ring. The public site has rung its
+ * links since it was built; the rail — the most keyboard-driven surface in the whole product — was
+ * left with nothing but the browser's default outline on a fully rounded shape.
+ */
+const focusRing = "focus-visible:ring-2 focus-visible:ring-primary-pale focus-visible:outline-none";
 
-const barLink =
-  "press flex min-w-0 grow basis-0 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 text-xs text-ink-soft data-[active=true]:font-bold data-[active=true]:text-primary-text";
+const railLink = `press flex items-center gap-3 rounded-full px-4 py-2 text-sm text-ink hover:bg-primary-des/60 data-[active=true]:bg-primary-des data-[active=true]:font-bold data-[active=true]:text-primary-text ${focusRing}`;
 
-const legalLink = "rounded-sm hover:text-ink";
+const barLink = `press group flex min-w-0 grow basis-0 flex-col items-center gap-1 rounded-2xl px-1 py-1.5 text-xs text-ink-soft data-[active=true]:font-bold data-[active=true]:text-primary-text ${focusRing}`;
+
+const legalLink = `rounded-sm hover:text-ink ${focusRing}`;
 
 /**
  * Impressum and Datenschutz, from inside the application.
@@ -43,20 +48,26 @@ const LegalLinks = ({ className }: { readonly className?: string }) => (
  *
  * The destinations come from the active context's capabilities, so a student at one school sees the
  * same handful of entries the legacy app had and never learns that any of this is general.
+ *
+ * It reads the shell rather than being handed it. The layout above already resolves the active
+ * context and provides it, and taking the same two values as props meant a second copy that could
+ * disagree with what every destination below was reading.
  */
-export const AppShell = ({
-  children,
-  context,
-  contexts,
-}: {
-  readonly children: ReactNode;
-  readonly context: ShellContext;
-  readonly contexts: ReadonlyArray<ShellContext>;
-}) => {
+export const AppShell = ({ children }: { readonly children: ReactNode }) => {
+  const { context } = useShell();
   const destinations = destinationsFor(context.ref);
 
   return (
-    <div className="min-h-screen bg-primary-des md:flex">
+    <div className="app-page min-h-screen bg-primary-des md:flex">
+      {/* Up to seven links and a menu stand between the top of the page and the content, on every
+          screen. Without this a keyboard reaches the timetable by tabbing past all of them. */}
+      <a
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-text focus:shadow-float"
+        href="#hauptinhalt"
+      >
+        Direkt zum Inhalt
+      </a>
+
       <nav
         aria-label="Hauptbereiche"
         className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-neutral-sec/60 bg-white px-3 py-5 md:flex"
@@ -64,10 +75,10 @@ export const AppShell = ({
       >
         {/* Home is the application, not the landing page. The most-clicked mark in the chrome
             should not eject someone from the thing they are using. */}
-        <Link className="press mb-4 px-2" to="/app">
+        <Link className={`press mb-4 rounded-sm px-2 ${focusRing}`} to="/app">
           <Wordmark />
         </Link>
-        <ContextSwitcher active={context} contexts={contexts} />
+        <AccountMenu />
         <ul className="mt-4 grid gap-0.5">
           {destinations.map((destination) => (
             <li key={destination.id}>
@@ -83,13 +94,15 @@ export const AppShell = ({
 
       <div className="min-w-0 grow pb-24 md:pb-0">
         {/* Only below `md`, where the rail and everything in it is hidden. */}
-        <header className="flex items-center justify-between gap-4 bg-white px-4 py-2.5 shadow-card md:hidden">
-          <Link className="press" to="/app">
+        <header className="flex items-center justify-between gap-3 bg-white px-4 py-2.5 shadow-card md:hidden">
+          <Link className={`press rounded-sm ${focusRing}`} to="/app">
             <Wordmark />
           </Link>
-          <ContextSwitcher active={context} compact contexts={contexts} />
+          <AccountMenu compact />
         </header>
-        {children}
+        <div id="hauptinhalt" tabIndex={-1}>
+          {children}
+        </div>
         <LegalLinks className="flex justify-center gap-5 px-5 pt-2 pb-6 text-xs text-ink-soft md:hidden" />
       </div>
 
@@ -105,7 +118,11 @@ export const AppShell = ({
             destination={destination}
             key={destination.id}
           >
-            <destination.icon className="size-5" />
+            {/* The selected tab fills a pill behind its icon, the way the legacy bar marks one.
+                Bolder text alone is not legible as "you are here" at a glance. */}
+            <span className="grid h-7 w-12 place-items-center rounded-full transition-colors group-data-[active=true]:bg-primary-des">
+              <destination.icon className="size-5" />
+            </span>
             <span className="w-full truncate text-center">{destination.label}</span>
           </DestinationLink>
         ))}
