@@ -5,16 +5,16 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
 import { siteUrl } from "#/domain-ui/brand/links.ts";
 import { ErrorState, NotFound } from "#/features/errors/error-states.tsx";
-import { getPublicConfig } from "#/infra/config/public-config.ts";
+import { getPublicShellState } from "#/infra/config/public-config.ts";
 import type { RouterContext } from "#/infra/effect-atom/router-context.ts";
 import { ClientObservability } from "#/infra/observability/client-bootstrap.tsx";
 
 import appCss from "#/styles.css?url";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
-  // Public runtime configuration is loaded once here and serialized into the SSR payload, so
-  // client credentials never have to be inlined into the bundle at build time.
-  loader: () => getPublicConfig(),
+  // Public runtime configuration and the request's cheap auth rendering hint are loaded together
+  // and serialized into the SSR payload. Neither needs another request before the first paint.
+  loader: () => getPublicShellState(),
   // The public site should never fall back to the framework's bare error text.
   errorComponent: ({ reset }) => <ErrorState reset={reset} />,
   notFoundComponent: () => <NotFound />,
@@ -99,7 +99,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const config = Route.useLoaderData();
+  const { config } = Route.useLoaderData();
   const { atomRegistry } = Route.useRouteContext();
 
   return (
