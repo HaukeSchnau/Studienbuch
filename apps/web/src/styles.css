@@ -94,6 +94,18 @@ html:has(.public-page) {
   scroll-padding-top: 6rem;
 }
 
+/*
+ * The application's surface reaches the edges of the window.
+ *
+ * `body` is white and the shell paints its green on a `min-h-screen` element inside it, so the
+ * colour stopped exactly where the content did: overscrolling on iOS, or any viewport taller than
+ * the shell's own box, showed a white band below a green page. The same `:has()` scoping as above
+ * keeps this off the marketing pages, which are white on purpose.
+ */
+html:has(.app-page) body {
+  background-color: var(--color-primary-des);
+}
+
 body {
   margin: 0;
   -webkit-font-smoothing: antialiased;

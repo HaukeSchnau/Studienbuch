@@ -30,3 +30,12 @@ export const rememberContext = (context: Organization.ContextRef) => {
     // Nothing to do: the next visit simply starts at the first context.
   }
 };
+
+/** Forgets the choice, so the next person to sign in on this browser starts fresh. */
+export const forgetContext = () => {
+  try {
+    globalThis.localStorage?.removeItem(storageKey);
+  } catch {
+    // Nothing to do: a browser that cannot store this had nothing to forget.
+  }
+};

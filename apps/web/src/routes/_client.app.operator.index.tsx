@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { Organization } from "@stu/core/organization";
 import { redirectToContext } from "#/domain-ui/shell/context-redirect.ts";
 
@@ -7,10 +7,8 @@ export const Route = createFileRoute("/_client/app/operator/")({
     const operator = context.contexts.find((candidate) =>
       Organization.sameContext(candidate.ref, Organization.operatorContext),
     );
-    if (operator === undefined) {
-      redirect({ to: "/app", replace: true, throw: true });
-      return;
-    }
+    // No grant: the layout above renders the refusal rather than this sending them elsewhere.
+    if (operator === undefined) return;
     redirectToContext(operator);
   },
 });

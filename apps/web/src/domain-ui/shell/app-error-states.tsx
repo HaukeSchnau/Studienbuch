@@ -40,6 +40,44 @@ export const AppNotFound = () => (
 );
 
 /**
+ * A link into a school this account has not redeemed a code for.
+ *
+ * Previously this redirected in silence: somebody sent a colleague a link to their own school, and
+ * the colleague landed on their own overview with no idea that a different page had been asked for.
+ * A redirect is only kind when the destination is the one that was wanted. Here it never is, so the
+ * refusal is said out loud — together with the one thing that would fix it.
+ */
+export const ContextNotAvailable = () => (
+  <AppErrorLayout
+    action={
+      <div className="flex flex-wrap justify-center gap-3">
+        <Button asChild radius="pill" size="lg" variant="brand">
+          <Link to="/app">Zu meinem Studienbuch</Link>
+        </Button>
+        <Button asChild radius="pill" size="lg" variant="outline">
+          <Link to="/aktivieren">Zugangscode einlösen</Link>
+        </Button>
+      </div>
+    }
+    detail="Zu diesem Bereich gehört kein Zugang auf deinem Konto. Wenn du einen Zugangscode für diese Schule hast, kannst du ihn jetzt einlösen."
+    heading="Dieser Bereich gehört nicht zu dir"
+  />
+);
+
+/** The operator area, seen by an account without a grant for it. */
+export const OperatorOnly = () => (
+  <AppErrorLayout
+    action={
+      <Button asChild radius="pill" size="lg" variant="brand">
+        <Link to="/app">Zu meinem Studienbuch</Link>
+      </Button>
+    }
+    detail="Dieser Bereich gehört der Verwaltung von Studienbuch und ist von deinem Konto aus nicht zu erreichen."
+    heading="Nur für den Betrieb"
+  />
+);
+
+/**
  * Shown when something inside the shell throws. Like the public one it prints nothing about the
  * error itself; the details go to the crash reporter, not to the screen.
  */
