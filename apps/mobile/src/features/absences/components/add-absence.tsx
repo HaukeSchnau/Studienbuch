@@ -11,7 +11,7 @@ import { SheetScaffold } from "~/ui/layout/sheet-scaffold";
 import { SystemIcon } from "~/ui/system-icon";
 import { Text } from "~/ui/text";
 import { TextField } from "~/ui/fields/text-field";
-import { getEntriesForSchoolDay, getNextSchoolDay } from "~/domain-ui/school-day";
+import { getEntriesForSchoolDay, getNextSchoolDay } from "~/features/schedule";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
 import { subjectNameMap, type SubjectId, type TimetableEntry } from "~/compat/mobile-v0";
 import { useCourses } from "~/features/courses";

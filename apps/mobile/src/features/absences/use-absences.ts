@@ -5,20 +5,18 @@ import {
   addAbsenceAtom,
   deleteAbsenceAtom,
   signAbsenceAtom,
-  type AddAbsenceInput,
   type SignAbsenceInput,
 } from "./absence-atoms";
 
 export function useAbsences() {
   const absences = useAtomValue(absencesAtom);
-  const add = useAtomSet(addAbsenceAtom);
-  const deleteById = useAtomSet(deleteAbsenceAtom);
-  const sign = useAtomSet(signAbsenceAtom);
-  const addAbsence = useCallback((input: AddAbsenceInput) => add(input), [add]);
-  const deleteAbsence = useCallback((absenceId: string) => deleteById(absenceId), [deleteById]);
+  const addAbsence = useAtomSet(addAbsenceAtom);
+  const deleteAbsence = useAtomSet(deleteAbsenceAtom);
+  const writeSignAbsence = useAtomSet(signAbsenceAtom);
   const signAbsence = useCallback(
-    (absenceId: string, signer: SignAbsenceInput["signer"]) => sign({ absenceId, signer }),
-    [sign],
+    (absenceId: string, signer: SignAbsenceInput["signer"]) =>
+      writeSignAbsence({ absenceId, signer }),
+    [writeSignAbsence],
   );
 
   return { absences, addAbsence, deleteAbsence, signAbsence };

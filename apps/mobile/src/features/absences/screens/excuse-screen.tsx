@@ -3,8 +3,7 @@ import { ViewConfirmPageContent } from "~/domain-ui/confirm-page-content";
 import { PageScaffold } from "~/ui/navigation/page-scaffold";
 import { Text } from "~/ui/text";
 import { useProfile } from "~/features/profile";
-import { ExcuseParent } from "../excuse/excuse-parent";
-import { ExcuseTeacher } from "../excuse/excuse-teacher";
+import { AbsenceConfirmation } from "../excuse/absence-confirmation";
 import { useAbsences } from "../use-absences";
 
 export function ExcuseScreen({ date, courseIds }: { date: Date; courseIds: string[] }) {
@@ -24,11 +23,11 @@ export function ExcuseScreen({ date, courseIds }: { date: Date; courseIds: strin
   }
 
   if (!user.isOfAge && !absence.parentSignature) {
-    return <ExcuseParent absence={absence} />;
+    return <AbsenceConfirmation absence={absence} signer="parent" />;
   }
 
   if (!absence.teacherSignature) {
-    return <ExcuseTeacher absence={absence} />;
+    return <AbsenceConfirmation absence={absence} signer="teacher" />;
   }
 
   return (

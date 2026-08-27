@@ -5,30 +5,7 @@ import type { GradeType } from "~/compat/mobile-v0";
 import { useGrades } from "../use-grades";
 import { useCourses } from "../../use-courses";
 import { useProfile } from "~/features/profile";
-import {
-  ConfirmMasterGradeParent,
-  MasterGradeParentConfirmationView,
-} from "../master/confirm-master-grade-parent";
-import {
-  ConfirmMasterGradeTeacher,
-  MasterGradeTeacherConfirmationView,
-} from "../master/confirm-master-grade-teacher";
-import {
-  ConfirmOralGradeParent,
-  OralGradeParentConfirmationView,
-} from "../oral/confirm-oral-grade-parent";
-import {
-  ConfirmOralGradeTeacher,
-  OralGradeTeacherConfirmationView,
-} from "../oral/confirm-oral-grade-teacher";
-import {
-  ConfirmWrittenGradeParent,
-  WrittenGradeParentConfirmationView,
-} from "../written/confirm-written-grade-parent";
-import {
-  ConfirmWrittenGradeTeacher,
-  WrittenGradeTeacherConfirmationView,
-} from "../written/confirm-written-grade-teacher";
+import { GradeConfirmation, GradeConfirmationView } from "../grade-confirmation";
 
 interface Props {
   date: Date;
@@ -59,25 +36,11 @@ export const GradeScreen = ({ date, courseId, type }: Props) => {
   };
 
   if (!grade.teacherSignature) {
-    switch (type) {
-      case "MASTER":
-        return <ConfirmMasterGradeTeacher grade={resolvedGrade} />;
-      case "ORAL":
-        return <ConfirmOralGradeTeacher grade={resolvedGrade} />;
-      case "WRITTEN":
-        return <ConfirmWrittenGradeTeacher grade={resolvedGrade} />;
-    }
+    return <GradeConfirmation grade={resolvedGrade} signer="teacher" />;
   }
 
   if (!user.isOfAge && !grade.parentSignature) {
-    switch (type) {
-      case "MASTER":
-        return <ConfirmMasterGradeParent grade={resolvedGrade} />;
-      case "ORAL":
-        return <ConfirmOralGradeParent grade={resolvedGrade} />;
-      case "WRITTEN":
-        return <ConfirmWrittenGradeParent grade={resolvedGrade} />;
-    }
+    return <GradeConfirmation grade={resolvedGrade} signer="parent" />;
   }
 
   const confirmedGrade = {
@@ -87,27 +50,11 @@ export const GradeScreen = ({ date, courseId, type }: Props) => {
 
   return (
     <PageScaffold title="Note bestätigt" contentClassName="p-8" useDefaultPadding={false}>
-      {type === "MASTER" ? <MasterGradeTeacherConfirmationView grade={confirmedGrade} /> : null}
-      {type === "ORAL" ? <OralGradeTeacherConfirmationView grade={confirmedGrade} /> : null}
-      {type === "WRITTEN" ? <WrittenGradeTeacherConfirmationView grade={confirmedGrade} /> : null}
+      <GradeConfirmationView grade={confirmedGrade} signer="teacher" />
       {!user.isOfAge && grade.parentSignature ? (
         <>
           <View className="h-16" />
-          {type === "MASTER" ? (
-            <MasterGradeParentConfirmationView
-              grade={{ ...confirmedGrade, parentSignature: grade.parentSignature }}
-            />
-          ) : null}
-          {type === "ORAL" ? (
-            <OralGradeParentConfirmationView
-              grade={{ ...confirmedGrade, parentSignature: grade.parentSignature }}
-            />
-          ) : null}
-          {type === "WRITTEN" ? (
-            <WrittenGradeParentConfirmationView
-              grade={{ ...confirmedGrade, parentSignature: grade.parentSignature }}
-            />
-          ) : null}
+          <GradeConfirmationView grade={confirmedGrade} signer="parent" />
         </>
       ) : null}
     </PageScaffold>

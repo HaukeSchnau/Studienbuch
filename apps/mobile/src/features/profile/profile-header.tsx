@@ -9,7 +9,7 @@ import { PressableSurface } from "~/ui/feedback/pressable-surface";
 import { IconButton } from "~/ui/icon-button";
 import { Text } from "~/ui/text";
 import { SystemIcon, type SystemIconName } from "~/ui/system-icon";
-import { formatClassName, getCurrentYearNum, type Semester } from "~/compat/mobile-v0";
+import { formatClassName, type Semester } from "~/compat/mobile-v0";
 import { useSchoolCatalog } from "~/features/organization";
 import { useProfile } from "./use-profile";
 import { profileEditRoute } from "~/infra/routing/params";
@@ -33,7 +33,7 @@ export const Header = ({
     year && schoolClass
       ? formatClassName(schoolClass, year)
       : year
-        ? `${getCurrentYearNum(year)}. Klasse`
+        ? `${year.classLevel}. Klasse`
         : "Schule";
 
   return (
