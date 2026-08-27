@@ -24,11 +24,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { PressableSurface } from "~/ui/feedback/pressable-surface";
 import { Card } from "~/ui/card";
-import { IconButton } from "~/ui/icon-button";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { SubjectIcon } from "~/domain-ui/subject-icon";
-import { SystemIcon } from "~/ui/system-icon";
-import { shadow } from "~/ui/styles/shadow";
 import { Text } from "~/ui/text";
 import { useMainTabBarPadding } from "~/ui/use-main-tab-bar-padding";
 import { haptics } from "~/infra/native/haptics";
@@ -37,6 +33,8 @@ import { useCourses } from "~/features/courses";
 import { useSchedule } from "../use-schedule";
 import { courseRoute } from "~/infra/routing/params";
 import { colors } from "~/ui/colors";
+import { EmptyWeekState } from "../components/empty-week-state";
+import { ScheduleHeader } from "../components/schedule-header";
 
 const TIME_MARKERS = [
   { minute: 8 * 60, label: "08:00" },
@@ -89,45 +87,6 @@ const durationToHeight = (duration: number, gridHeight: number) =>
 const weekdayToPercent = (weekday: number) =>
   `${(weekday / WEEKDAY_LABELS.length) * 100}%` as DimensionValue;
 
-const EmptyWeekState = () => (
-  <View
-    accessible
-    accessibilityLabel="Freie Woche. Keine Kurse eingetragen."
-    className="items-center px-5"
-    pointerEvents="none"
-  >
-    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <View className="relative h-28 w-40">
-        <View className="absolute left-8 top-4 h-20 w-24 rotate-[-8deg] rounded-[24px] bg-[#EAF7EA]" />
-        <View className="absolute left-14 top-1 h-16 w-20 rotate-[8deg] rounded-[20px] bg-[#EAF1FF]" />
-        <View className="absolute left-12 top-6 h-16 w-16 items-center justify-center rounded-full bg-white">
-          <SystemIcon name="calendar-today" color={colors.primary.DEFAULT} size={30} />
-        </View>
-        <View className="absolute left-1 top-16 rounded-full bg-[#3B7FD9] px-3 py-1.5">
-          <Text weight="bold" className="text-[10px] uppercase text-white">
-            frei
-          </Text>
-        </View>
-        <View className="absolute right-2 top-20 rotate-[7deg] rounded-full bg-[#FFD95A] px-3 py-1.5">
-          <Text weight="bold" className="text-[10px] text-[#3E4655]">
-            :)
-          </Text>
-        </View>
-        <View className="absolute right-8 top-3 h-3 w-3 rounded-full bg-[#2EAB2E]" />
-        <View className="absolute right-1 top-10 h-2 w-2 rounded-full bg-[#3B7FD9]" />
-      </View>
-      <View className="items-center">
-        <Text weight="bold" className="mt-1 text-center text-lg text-[#138A13]">
-          Freie Woche!
-        </Text>
-        <Text className="mt-1 text-center text-sm leading-5 text-neutral">
-          Keine Kurse eingetragen. Zeit zum Durchatmen.
-        </Text>
-      </View>
-    </View>
-  </View>
-);
-
 export const ScheduleScreen = () => {
   const { getCourse } = useCourses();
   const { timetable } = useSchedule();
@@ -144,13 +103,6 @@ export const ScheduleScreen = () => {
     haptics.selection();
     setWeekOffset((current) => current + delta);
   }, []);
-
-  const settleWeekSwipe = useCallback(
-    (delta: number) => {
-      changeWeek(delta);
-    },
-    [changeWeek],
-  );
 
   useLayoutEffect(() => {
     weekDragX.value = 0;
@@ -192,7 +144,7 @@ export const ScheduleScreen = () => {
                 },
                 (finished) => {
                   if (finished) {
-                    runOnJS(settleWeekSwipe)(delta);
+                    runOnJS(changeWeek)(delta);
                   }
                 },
               );
@@ -206,17 +158,24 @@ export const ScheduleScreen = () => {
             });
           }),
       ),
-    [gridWidth, settleWeekSwipe, weekDragX],
+    [changeWeek, gridWidth, weekDragX],
   );
 
   const weekContentStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: weekDragX.value }],
   }));
-  const weekHeaderContentStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: weekDragX.value }],
-  }));
-
   const weekStart = useMemo(() => addWeeks(startOfISOWeek(new Date()), weekOffset), [weekOffset]);
+  const positionedTimetable = useMemo(
+    () =>
+      timetable
+        .map((entry) => ({
+          ...entry,
+          weekday: (getDay(entry.start) + 6) % 7,
+          startMinutes: entry.start.getHours() * 60 + entry.start.getMinutes(),
+        }))
+        .sort((a, b) => a.start.getTime() - b.start.getTime()),
+    [timetable],
+  );
   const weekPages = useMemo(
     () =>
       WEEK_PAGE_OFFSETS.map((relativeOffset) => {
@@ -224,19 +183,12 @@ export const ScheduleScreen = () => {
         const pageWeekEnd = subMilliseconds(addDays(pageWeekStart, 5), 1);
         const pageWeekdays = WEEKDAY_LABELS.map((_, index) => addDays(pageWeekStart, index));
 
-        const pageEntries = timetable
-          .map((entry) => ({
-            ...entry,
-            weekday: (getDay(entry.start) + 6) % 7,
-            startMinutes: entry.start.getHours() * 60 + entry.start.getMinutes(),
-          }))
-          .filter(
-            (entry) =>
-              entry.weekday < WEEKDAY_LABELS.length &&
-              entry.start.getTime() >= pageWeekStart.getTime() &&
-              entry.start.getTime() <= pageWeekEnd.getTime(),
-          )
-          .sort((a, b) => a.start.getTime() - b.start.getTime());
+        const pageEntries = positionedTimetable.filter(
+          (entry) =>
+            entry.weekday < WEEKDAY_LABELS.length &&
+            entry.start.getTime() >= pageWeekStart.getTime() &&
+            entry.start.getTime() <= pageWeekEnd.getTime(),
+        );
 
         return {
           entries: pageEntries,
@@ -245,7 +197,7 @@ export const ScheduleScreen = () => {
           weekdays: pageWeekdays,
         };
       }),
-    [timetable, weekStart],
+    [positionedTimetable, weekStart],
   );
 
   const currentWeek = getISOWeek(weekStart);
@@ -261,77 +213,15 @@ export const ScheduleScreen = () => {
 
   return (
     <View className="flex-1 overflow-hidden bg-[#F7F8FB]">
-      <View style={[shadow, { backgroundColor: colors.primary.DEFAULT }]}>
-        <SafeAreaView edges={["top"]}>
-          <View className="px-4 pb-2 pt-1">
-            <View className="flex-row items-center">
-              <IconButton
-                accessibilityLabel="Vorherige Woche"
-                icon="chevron-left"
-                variant="plain"
-                color="white"
-                onPress={() => changeWeek(-1)}
-              />
-              <View className="flex-1 items-center">
-                <Text weight="bold" className="text-center text-lg text-white">
-                  KW {currentWeek}
-                </Text>
-              </View>
-              <IconButton
-                accessibilityLabel="Nächste Woche"
-                icon="chevron-right"
-                variant="plain"
-                color="white"
-                onPress={() => changeWeek(1)}
-              />
-            </View>
-            <View className="flex-row">
-              <View style={{ width: TIME_RAIL_WIDTH }} />
-              <View className="h-12 flex-1 overflow-hidden">
-                <Animated.View className="absolute inset-0" style={weekHeaderContentStyle}>
-                  {weekPages.map((page) => (
-                    <View
-                      key={`header-${page.weekStart.toISOString()}`}
-                      accessibilityElementsHidden={page.relativeOffset !== 0}
-                      className="absolute top-0 bottom-0 flex-row"
-                      importantForAccessibility={
-                        page.relativeOffset === 0 ? "auto" : "no-hide-descendants"
-                      }
-                      style={{
-                        width: measuredGridWidth,
-                        transform: [{ translateX: page.relativeOffset * measuredGridWidth }],
-                      }}
-                    >
-                      {page.weekdays.map((day, index) => (
-                        <View
-                          key={day.toISOString()}
-                          className="flex-1 items-center justify-center"
-                        >
-                          <Text
-                            weight="bold"
-                            className="text-sm uppercase text-white/85"
-                            style={{
-                              color: isToday(day) ? "#FFFFFF" : "rgba(255, 255, 255, 0.82)",
-                            }}
-                          >
-                            {WEEKDAY_LABELS[index]}
-                          </Text>
-                          <Text
-                            weight={isToday(day) ? "bold" : "semi-bold"}
-                            className="text-base text-white"
-                          >
-                            {format(day, "dd.MM.", { locale: localeDE })}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  ))}
-                </Animated.View>
-              </View>
-            </View>
-          </View>
-        </SafeAreaView>
-      </View>
+      <ScheduleHeader
+        currentWeek={currentWeek}
+        pages={weekPages}
+        gridWidth={measuredGridWidth}
+        timeRailWidth={TIME_RAIL_WIDTH}
+        weekdayLabels={WEEKDAY_LABELS}
+        weekDragX={weekDragX}
+        onChangeWeek={changeWeek}
+      />
 
       <View className="flex-1 px-4 pt-3" style={{ paddingBottom: weekBottomClearance }}>
         <View
