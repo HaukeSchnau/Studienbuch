@@ -4,7 +4,9 @@ import { AccessRpcHandlers } from "@stu/server/access";
 import { Auth } from "@stu/server/auth";
 import { MarketingRpcHandlers } from "@stu/server/enquiry";
 import * as Effect from "effect/Effect";
+import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
+import * as Scope from "effect/Scope";
 import * as HttpEffect from "effect/unstable/http/HttpEffect";
 import { RpcSerialization, RpcServer } from "effect/unstable/rpc";
 import {
@@ -80,7 +82,69 @@ const makeApplicationRpcEndpoint = Effect.gen(function* () {
   return HttpEffect.toWebHandler(httpEffect);
 });
 
-/** Recreated by Nitro server HMR while the process-wide resource runtime stays alive. */
-let endpoint: Promise<(request: Request) => Promise<Response>> | undefined;
-export const applicationRpcEndpoint = () =>
-  (endpoint ??= applicationRuntime.runPromise(Effect.scoped(makeApplicationRpcEndpoint)));
+type RpcEndpoint = (request: Request) => Promise<Response>;
+
+interface RpcEndpointLifecycle {
+  readonly endpoint: () => Promise<RpcEndpoint>;
+  readonly dispose: () => Promise<void>;
+  readonly state: () => "active" | "stopping" | "stopped";
+}
+
+const createRpcEndpointLifecycle = (): RpcEndpointLifecycle => {
+  const scope = Scope.makeUnsafe();
+  let endpoint: Promise<RpcEndpoint> | undefined;
+  let shutdown: Promise<void> | undefined;
+  let state: ReturnType<RpcEndpointLifecycle["state"]> = "active";
+
+  return {
+    endpoint: () =>
+      (endpoint ??= applicationRuntime.runPromise(
+        makeApplicationRpcEndpoint.pipe(Effect.provideService(Scope.Scope, scope)),
+      )),
+    dispose: () =>
+      (shutdown ??= (async () => {
+        state = "stopping";
+        await Effect.runPromise(Scope.close(scope, Exit.void));
+        state = "stopped";
+      })()),
+    state: () => state,
+  };
+};
+
+const endpointKey = Symbol.for("@stu/web/application-rpc-endpoint");
+const globalEndpoint = globalThis as typeof globalThis & {
+  [endpointKey]?: RpcEndpointLifecycle;
+};
+const processCurrent = globalEndpoint[endpointKey];
+const processCurrentState = processCurrent?.state();
+const shouldReplaceCurrent =
+  processCurrent !== undefined &&
+  (processCurrentState === "stopping" ||
+    processCurrentState === "stopped" ||
+    import.meta.hot?.data.applicationRpcEndpoint === processCurrent);
+
+const makeActiveRpcEndpointLifecycle = (previous?: RpcEndpointLifecycle): RpcEndpointLifecycle => {
+  const current = createRpcEndpointLifecycle();
+  let activation: Promise<RpcEndpoint> | undefined;
+  return {
+    ...current,
+    endpoint: () =>
+      (activation ??= current.endpoint().then(async (endpoint) => {
+        await previous?.dispose();
+        return endpoint;
+      })),
+  };
+};
+
+const applicationRpcEndpointLifecycle =
+  processCurrent === undefined || shouldReplaceCurrent
+    ? makeActiveRpcEndpointLifecycle(shouldReplaceCurrent ? processCurrent : undefined)
+    : processCurrent;
+
+globalEndpoint[endpointKey] = applicationRpcEndpointLifecycle;
+if (import.meta.hot !== undefined) {
+  import.meta.hot.data.applicationRpcEndpoint = applicationRpcEndpointLifecycle;
+}
+
+export const applicationRpcEndpoint = applicationRpcEndpointLifecycle.endpoint;
+export const disposeApplicationRpcEndpoint = applicationRpcEndpointLifecycle.dispose;
