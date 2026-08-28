@@ -1,6 +1,7 @@
 import { useAtomSuspense } from "@effect/atom-react";
 import { Organization } from "@stu/core/organization";
 import { createFileRoute, Link, type ErrorComponentProps } from "@tanstack/react-router";
+import * as Exit from "effect/Exit";
 import * as Schema from "effect/Schema";
 import { useState } from "react";
 import { reservationAtom } from "#/features/auth/access.ts";
@@ -70,6 +71,7 @@ function RegistrationError({ error, reset }: ErrorComponentProps) {
 function RegisterPage() {
   const { reservation } = Route.useSearch();
   const claim = useAtomSuspense(reservationAtom(reservation)).value;
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string>();
@@ -80,11 +82,16 @@ function RegisterPage() {
     event.preventDefault();
     setBusy(true);
     setError(undefined);
+    const accountName = Schema.decodeExit(Organization.AccountName)(name);
+    if (Exit.isFailure(accountName)) {
+      setBusy(false);
+      setError("Gib den Namen ein, unter dem du Studienbuch verwendest.");
+      return;
+    }
     const callbackPath = `/aktivieren/abschliessen?reservation=${encodeURIComponent(reservation)}`;
-    // Better Auth requires a global name. The school profile remains the only user-authored name.
     const result = await authClient.signUp.email(
       {
-        name: Organization.neutralAccountName,
+        name: accountName.value,
         email,
         password,
         callbackURL: `${window.location.origin}${callbackPath}`,
@@ -134,6 +141,16 @@ function RegisterPage() {
         {claim.school.name}, {claim.kind === "Student" ? "Schülerzugang" : "Lehrerzugang"}
       </p>
       <form className="mt-7 grid gap-4" onSubmit={submit}>
+        <Field label="Name">
+          <Input
+            autoComplete="name"
+            maxLength={Organization.accountNameMaxLength}
+            onChange={(event) => setName(event.target.value)}
+            required
+            value={name}
+            {...invalidWhen(error)}
+          />
+        </Field>
         <Field label="E-Mail-Adresse">
           <Input
             autoComplete="email"

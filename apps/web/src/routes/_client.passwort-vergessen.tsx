@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import * as Schema from "effect/Schema";
 import { useState } from "react";
 import {
   AuthDone,
@@ -16,13 +17,17 @@ import { authClient } from "#/infra/auth/client.ts";
 import { Button } from "#/ui/button.tsx";
 import { Input } from "#/ui/input.tsx";
 
+const Search = Schema.Struct({ email: Schema.optional(Schema.String) });
+
 export const Route = createFileRoute("/_client/passwort-vergessen")({
+  validateSearch: Schema.decodeUnknownSync(Search),
   component: ForgotPasswordPage,
   head: () => ({ meta: [{ title: "Passwort vergessen | Studienbuch" }] }),
 });
 
 function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
+  const search = Route.useSearch();
+  const [email, setEmail] = useState(search.email ?? "");
   const [error, setError] = useState<string>();
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);

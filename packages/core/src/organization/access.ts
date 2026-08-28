@@ -64,6 +64,7 @@ export const formatAccessCode = (value: string) => {
  * being accepted and silently shortened.
  */
 export const profileFieldMaxLength = 80;
+export const accountNameMaxLength = 120;
 
 export const AccountId = entityId("AccountId");
 export type AccountId = typeof AccountId.Type;
@@ -79,15 +80,19 @@ export type SchoolAccessReservationToken = typeof SchoolAccessReservationToken.T
 
 const profileField = Schema.Trim.pipe(Schema.check(Schema.isMaxLength(profileFieldMaxLength)));
 
-export const RequiredProfileField = profileField.pipe(Schema.check(Schema.isNonEmpty()));
-export type RequiredProfileField = typeof RequiredProfileField.Type;
-
 export const OptionalProfileField = profileField;
 export type OptionalProfileField = typeof OptionalProfileField.Type;
 
+/** The self-authored name of the person who controls an account. */
+export const AccountName = Schema.Trim.pipe(
+  Schema.check(Schema.isNonEmpty()),
+  Schema.check(Schema.isMaxLength(accountNameMaxLength)),
+  Schema.brand("AccountName"),
+);
+export type AccountName = typeof AccountName.Type;
+
 export const NotebookProfileInput = Schema.Struct({
   schoolAccessId: SchoolAccessId,
-  displayName: RequiredProfileField,
   cohort: Schema.optional(OptionalProfileField),
   className: Schema.optional(OptionalProfileField),
 });
@@ -117,13 +122,3 @@ export class ProfileUnavailable extends Schema.TaggedError<ProfileUnavailable>()
   "SchoolAccess.ProfileUnavailable",
   {},
 ) {}
-
-/**
- * The name a Studienbuch account carries.
- *
- * Authentication requires every account to have one, and Studienbuch deliberately does not ask a
- * person for theirs: a real name belongs to the school-scoped notebook profile they author, not to
- * the global identity that outlives any one school. So every account carries the same placeholder,
- * and this is the one place it is written down.
- */
-export const neutralAccountName = "Studienbuch-Konto";

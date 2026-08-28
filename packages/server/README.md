@@ -42,13 +42,14 @@ database.
 School signup is closed by default. A platform operator created through the console generates
 unassigned, one-time access codes for one school and either the student or teacher role. A regular
 account must reserve a code, verify its email address, and redeem that reservation before it gets a
-school-scoped notebook profile. The account, the self-authored school profile, and imported
-directory identities remain separate. See
+school-scoped notebook profile. The account owns the self-authored name and email, while the school
+profile holds only school-specific settings. Imported directory identities remain separate. See
 [`docs/authentication.md`](../../docs/authentication.md) for the full contract.
 
-Operator accounts have no password. `operator-bootstrap` creates the first grant and a short-lived
-URL for registering a passkey; `operator-recover` creates another setup URL for an existing operator
-when recovery is needed. The console is the trusted recovery boundary.
+An operator is an ordinary account with an active operator grant. `operator-bootstrap` creates the
+first verified account and prints the standard password-setup URL. `operator-grant` gives an
+existing account the same authority. Password recovery and passkey management use Better Auth's
+ordinary account flows.
 
 There is deliberately no generic repository, domain projection schema, sync protocol, or domain
 event log yet. The import store records what a provider said without pretending that every

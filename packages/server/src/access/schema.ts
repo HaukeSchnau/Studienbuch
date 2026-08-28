@@ -112,7 +112,6 @@ export const notebookProfiles = pgTable("notebook_profiles", {
   schoolAccessId: uuid("schoolAccessId")
     .primaryKey()
     .references(() => schoolAccesses.id, { onDelete: "cascade" }),
-  displayName: text("displayName").notNull(),
   cohort: text("cohort"),
   className: text("className"),
   ...timestamps,
@@ -129,25 +128,6 @@ export const operatorGrants = pgTable(
     createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [index("operator_grants_active_idx").on(table.revokedAt)],
-);
-
-/** One passkey-registration ceremony for an operator created by the console. */
-export const operatorSetupTokens = pgTable(
-  "operator_setup_tokens",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    userId: uuid("userId")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    tokenHash: text("tokenHash").notNull(),
-    expiresAt: timestamp("expiresAt", { withTimezone: true }).notNull(),
-    usedAt: timestamp("usedAt", { withTimezone: true }),
-    createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
-  },
-  (table) => [
-    uniqueIndex("operator_setup_tokens_secret_unique").on(table.tokenHash),
-    index("operator_setup_tokens_user_idx").on(table.userId),
-  ],
 );
 
 /** Better Auth's passkey plugin model. Field names are part of its adapter contract. */

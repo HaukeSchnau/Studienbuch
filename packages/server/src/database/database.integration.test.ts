@@ -1045,12 +1045,72 @@ it.live.runIf(hasContainerRuntime)(
 );
 
 it.live.runIf(hasContainerRuntime)(
+  "onboards an operator through the ordinary password recovery path",
+  () => {
+    let resetToken = "";
+    return Effect.gen(function* () {
+      const auth = yield* Auth.Service;
+      const database = yield* Database.Service;
+      const operator = yield* Operator.bootstrap({
+        name: "  Initial Operator  ",
+        email: "INITIAL-OPERATOR@example.test",
+      });
+
+      const [stored] = yield* database.drizzle
+        .select({ name: users.name, email: users.email, emailVerified: users.emailVerified })
+        .from(users)
+        .where(eq(users.id, operator.userId));
+      expect(stored).toEqual({
+        name: "Initial Operator",
+        email: "initial-operator@example.test",
+        emailVerified: true,
+      });
+      expect(yield* Operator.isActive(operator.userId)).toBe(true);
+
+      yield* Effect.promise(() =>
+        auth.api.requestPasswordReset({
+          body: {
+            email: operator.email,
+            redirectTo: "https://studienbuch.example/passwort-zuruecksetzen",
+          },
+        }),
+      );
+      expect(resetToken).not.toBe("");
+      yield* Effect.promise(() =>
+        auth.api.resetPassword({
+          body: { newPassword: "correct-horse-battery", token: resetToken },
+        }),
+      );
+      const signedIn = yield* Effect.promise(() =>
+        auth.api.signInEmail({
+          body: { email: operator.email, password: "correct-horse-battery" },
+        }),
+      );
+      expect(signedIn.user.id).toBe(operator.userId);
+    }).pipe(
+      Effect.provide(
+        Layer.provideMerge(
+          Auth.layer({
+            sendResetPassword: ({ token }) => Effect.sync(() => (resetToken = token)),
+          }),
+          migrated,
+        ),
+      ),
+    );
+  },
+  { timeout: 60_000 },
+);
+
+it.live.runIf(hasContainerRuntime)(
   "signs a user up through the very schema Better Auth is mapped onto",
   () =>
     Effect.gen(function* () {
       const auth = yield* Auth.Service;
       const database = yield* Database.Service;
-      const operator = yield* Operator.bootstrap("Test operator");
+      const operator = yield* Operator.bootstrap({
+        name: "Test operator",
+        email: "operator-auth@example.test",
+      });
       const [code] = yield* SchoolAccess.generateCodes({
         schoolId: "auth-test-school",
         schoolName: "Auth Test School",
@@ -1063,11 +1123,19 @@ it.live.runIf(hasContainerRuntime)(
 
       const result = yield* Effect.promise(() =>
         auth.api.signUpEmail({
-          body: { email: "ada-auth@example.test", password: "correct-horse-battery", name: "Ada" },
+          body: {
+            email: "ada-auth@example.test",
+            password: "correct-horse-battery",
+            name: "  Ada Auth  ",
+          },
           headers: new Headers({ "x-studienbuch-registration": reservation.token }),
         }),
       );
       expect(result.user.email).toBe("ada-auth@example.test");
+      expect(result.user.name).toBe("Ada Auth");
+      const granted = yield* Operator.grant(result.user.email);
+      expect(granted.userId).toBe(result.user.id);
+      expect(yield* Operator.isActive(result.user.id)).toBe(true);
 
       // `db:generate` cannot see auth.ts, so nothing but agreement keeps the modelName mapping and
       // the migration history in step. Reading the rows back through our own tables is what makes
@@ -1101,7 +1169,10 @@ it.live.runIf(hasContainerRuntime)(
   "lets one reservation create a bounded number of accounts",
   () =>
     Effect.gen(function* () {
-      const operator = yield* Operator.bootstrap("Budget operator");
+      const operator = yield* Operator.bootstrap({
+        name: "Budget operator",
+        email: "operator-budget@example.test",
+      });
       const [code] = yield* SchoolAccess.generateCodes({
         schoolId: "budget-test-school",
         schoolName: "Budget Test School",
@@ -1132,7 +1203,10 @@ it.live.runIf(hasContainerRuntime)(
   () =>
     Effect.gen(function* () {
       const database = yield* Database.Service;
-      const operator = yield* Operator.bootstrap("Enrollment operator");
+      const operator = yield* Operator.bootstrap({
+        name: "Enrollment operator",
+        email: "operator-enrollment@example.test",
+      });
       const [code] = yield* SchoolAccess.generateCodes({
         schoolId: "enrollment-test-school",
         schoolName: "Enrollment Test School",
@@ -1171,13 +1245,12 @@ it.live.runIf(hasContainerRuntime)(
       expect(yield* SchoolAccess.claimRegistrationSignup(reservation.token)).toBe(false);
       yield* SchoolAccess.saveProfile(user.id, {
         schoolAccessId: Organization.SchoolAccessId.make(access.id),
-        displayName: "Alex",
         cohort: "8",
         className: "8a",
       });
       const listed = yield* SchoolAccess.listForUser(user.id);
       expect(listed).toMatchObject([
-        { displayName: "Alex", cohort: "8", className: "8a", kind: "Student" },
+        { profileId: access.id, cohort: "8", className: "8a", kind: "Student" },
       ]);
 
       const stored = yield* database.drizzle

@@ -152,6 +152,7 @@ let
               ${releasePackage}/bin/project-release-runtime console --help \
               > "$root/console-help.txt" 2>&1
             grep -q operator-bootstrap "$root/console-help.txt"
+            grep -q operator-grant "$root/console-help.txt"
 
             PROJECT_RUNTIME_FILE="$root/manifest.json" \
               PROJECT_SECRETS_DIR="$secrets" \

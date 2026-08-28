@@ -9,6 +9,8 @@ import { runRouteEffect, type RouteEffectRunner } from "#/infra/runtime/request.
 export const authRoute = "/api/auth/*";
 
 type AuthOperation =
+  | "auth.account.email.change"
+  | "auth.account.update"
   | "auth.other"
   | "auth.password_reset.complete"
   | "auth.password_reset.request"
@@ -34,6 +36,10 @@ class AuthResponseFailure extends Data.TaggedError("AuthResponseFailure")<{
 
 export function authOperation(request: Request): AuthOperation {
   switch (new URL(request.url).pathname) {
+    case "/api/auth/change-email":
+      return "auth.account.email.change";
+    case "/api/auth/update-user":
+      return "auth.account.update";
     case "/api/auth/get-session":
       return "auth.session.get";
     case "/api/auth/sign-in/email":

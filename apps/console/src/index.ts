@@ -4,7 +4,7 @@ import { observabilityCommand } from "./commands/observability.ts";
 import {
   accessCodesCommand,
   operatorBootstrapCommand,
-  operatorRecoverCommand,
+  operatorGrantCommand,
 } from "./commands/auth.ts";
 import { pullCommand } from "./commands/pull.ts";
 import {
@@ -20,7 +20,7 @@ export const consoleCommand = Command.make("console").pipe(
   Command.withSubcommands([
     pullCommand,
     operatorBootstrapCommand,
-    operatorRecoverCommand,
+    operatorGrantCommand,
     accessCodesCommand,
     observabilityCommand,
     webUntisDirectoryCommand,

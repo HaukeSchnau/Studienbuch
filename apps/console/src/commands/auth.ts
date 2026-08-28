@@ -5,21 +5,16 @@ import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import { Command, Flag } from "effect/unstable/cli";
 
-const name = Flag.string("name").pipe(Flag.withDescription("Operator display name"));
-const userId = Flag.string("user-id").pipe(Flag.withDescription("Operator account UUID"));
-const printSetup = (setup: {
-  readonly token: string;
-  readonly expiresAt: Date;
-  readonly userId: string;
-}) =>
+const name = Flag.string("name").pipe(Flag.withDescription("Operator account name"));
+const email = Flag.string("email").pipe(Flag.withDescription("Operator account email address"));
+const printBootstrap = (account: { readonly userId: string; readonly email: string }) =>
   Effect.gen(function* () {
     const baseUrl = yield* Config.string("BETTER_AUTH_URL");
     yield* Console.log(
       JSON.stringify(
         {
-          userId: setup.userId,
-          expiresAt: setup.expiresAt.toISOString(),
-          setupUrl: `${baseUrl.replace(/\/$/, "")}/operator/setup?token=${encodeURIComponent(setup.token)}`,
+          ...account,
+          passwordSetupUrl: `${baseUrl.replace(/\/$/, "")}/passwort-vergessen?email=${encodeURIComponent(account.email)}`,
         },
         null,
         2,
@@ -27,13 +22,22 @@ const printSetup = (setup: {
     );
   });
 
-export const operatorBootstrapCommand = Command.make("operator-bootstrap", { name }, ({ name }) =>
-  Operator.bootstrap(name).pipe(Effect.flatMap(printSetup), Effect.provide(Database.layerConfig)),
-).pipe(Command.withDescription("Create a passkey-only platform operator"));
+export const operatorBootstrapCommand = Command.make(
+  "operator-bootstrap",
+  { name, email },
+  (identity) =>
+    Operator.bootstrap(identity).pipe(
+      Effect.flatMap(printBootstrap),
+      Effect.provide(Database.layerConfig),
+    ),
+).pipe(Command.withDescription("Create an account with platform operator authority"));
 
-export const operatorRecoverCommand = Command.make("operator-recover", { userId }, ({ userId }) =>
-  Operator.recover(userId).pipe(Effect.flatMap(printSetup), Effect.provide(Database.layerConfig)),
-).pipe(Command.withDescription("Issue a new passkey setup URL for an operator"));
+export const operatorGrantCommand = Command.make("operator-grant", { email }, ({ email }) =>
+  Operator.grant(email).pipe(
+    Effect.flatMap((account) => Console.log(JSON.stringify(account, null, 2))),
+    Effect.provide(Database.layerConfig),
+  ),
+).pipe(Command.withDescription("Give an existing account platform operator authority"));
 
 const schoolId = Flag.string("school-id").pipe(
   Flag.withDescription("Stable school identifier, for example igs-lil"),

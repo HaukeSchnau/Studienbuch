@@ -336,7 +336,7 @@ export const listForUser = Effect.fn("SchoolAccess.listForUser")(function* (user
       createdAt: schoolAccesses.createdAt,
       schoolId: schools.id,
       schoolName: schools.name,
-      displayName: notebookProfiles.displayName,
+      profileId: notebookProfiles.schoolAccessId,
       cohort: notebookProfiles.cohort,
       className: notebookProfiles.className,
     })
@@ -365,7 +365,6 @@ export const saveProfile = Effect.fn("SchoolAccess.saveProfile")(function* (
   if (access === undefined) return yield* Organization.ProfileUnavailable.make();
 
   const profile = {
-    displayName: input.displayName,
     cohort: input.cohort === "" ? undefined : input.cohort,
     className: input.className === "" ? undefined : input.className,
   };

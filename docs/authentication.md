@@ -1,15 +1,21 @@
 # Authentication and school access
 
-Studienbuch accounts outlive any one school. Authentication answers who controls an account. A
-school access record answers which school-specific notebook that account may use. Imported school
-directory data answers a third question: which real person a provider says exists. These records
-must not collapse into one another.
+Studienbuch accounts outlive any one school. An account owns the person's self-authored name,
+verified email address, and authentication methods. A school access record answers which
+school-specific notebook that account may use. Imported school directory data answers a separate
+question: which real person a provider says exists. These records must not collapse into one
+another.
 
 ## First release
 
-Regular users authenticate with a verified email address and password. They may add passkeys after
-signing in. Platform operators use passkeys only. The console creates an operator account and a
-short-lived setup token; it never creates an operator password.
+Every account authenticates with a verified email address and password and may add passkeys after
+signing in. A platform operator is an ordinary account with an active operator grant. The console
+can create the first account and grant or restore operator authority for an existing account.
+
+`operator-bootstrap` creates a verified, passwordless account. The account owner uses the standard
+password-reset flow to choose its first password. Better Auth creates the missing credential during
+that reset. This keeps initial provisioning inside the trusted console without maintaining a second
+authentication or recovery protocol.
 
 Production uses `studienbuch.app` as its WebAuthn relying-party ID. A passkey registered on
 `beta.studienbuch.app` therefore remains usable if the application later moves to another
@@ -27,7 +33,7 @@ The flow is:
 2. They create an account or sign in to an existing one.
 3. New accounts verify their email address.
 4. Studienbuch redeems the reservation for the authenticated account.
-5. The user configures their own notebook profile.
+5. The user may add school-specific cohort and class details to their notebook profile.
 
 A reservation prevents two registrations from racing for one code without permanently consuming a
 code when someone closes the signup page. Reservations expire. Redemption is atomic and final.
@@ -63,12 +69,12 @@ being wrapped in a private RPC facade.
 
 ## Stored meaning
 
-A school access record means only that an account redeemed a code issued for a school. It does not
-verify the user's name, class, email domain, or provider identity.
+A school access record means only that an account redeemed a code issued for a school. The account
+name and email do not prove school membership or a provider identity.
 
-The notebook profile is self-authored. A student may choose their display name, cohort, class, and
-courses. The access code fixes the access kind, so a student cannot grant themselves teacher access.
-A teacher code initially unlocks the teacher's own workspace. Reading or changing student data
+The notebook profile contains only school-specific, self-authored data such as cohort and class.
+The access code fixes the access kind, so a student cannot grant themselves teacher access. A
+teacher code initially unlocks the teacher's own workspace. Reading or changing student data
 requires a verified directory link or an explicit grant that is outside this first release.
 
 Provider-backed directory memberships stay separate. Studienbuch must never link a self-authored
@@ -77,24 +83,22 @@ must use stronger evidence and record that decision explicitly.
 
 ## Privacy
 
-An email address belongs to the authentication system. Studienbuch uses it for login, verification,
-and account recovery. It is not copied into the notebook profile, exposed to a school, used as proof
-of school membership, or enrolled in marketing.
+The account name and email address belong to the authentication system. Studienbuch uses them for
+personal account UI, login, verification, and account recovery. They are not copied into the
+notebook profile, exposed to a school, used as proof of school membership, or enrolled in marketing.
 
-The global account does not collect a person's name. Better Auth's required name field contains a
-neutral internal value. A display name exists only in the self-authored, school-scoped notebook
-profile.
+Imported names remain independent. Studienbuch never links an account to an imported person because
+their names or email addresses happen to match.
 
 Schools can see counts for generated, reserved, redeemed, expired, and revoked codes. They do not
 receive a code-to-account or code-to-email mapping.
 
 ## Security rules
 
-- Store access codes, reservations, and operator setup tokens as hashes. Show plaintext only when
-  they are created.
+- Store access codes and reservations as hashes. Show plaintext only when they are created.
 - Generate 80 bits of randomness for human-entered access codes. Their one-time use and
   server-side verification make that ample. Generate at least 128 bits for machine-entered
-  reservation and setup tokens.
+  reservation tokens.
 - Make access codes revocable and optionally expiring. Codes do not expire by default because
   schools may distribute printed batches over a long period.
 - Allow only one active reservation per code. Expired reservations no longer block a code.
@@ -102,9 +106,7 @@ receive a code-to-account or code-to-email mapping.
   signup, then return the claim when Better Auth rejects the request.
 - Rate-limit the enrollment routes per client. Not for entropy — 80 bits is ample — but so that one
   client cannot churn reservations or the work behind them.
-- Check an operator setup token against the account a passkey ceremony is actually for before
-  spending it. A signed-in visitor registers a passkey for themselves whatever token they present.
-- Require a verified email before a regular user can redeem a reservation or enter the app.
+- Require a verified email before an account can redeem a reservation or enter the app.
 - Require WebAuthn user verification for passkey registration and authentication.
 - Never automatically link accounts that happen to use the same email address at different identity
   providers.

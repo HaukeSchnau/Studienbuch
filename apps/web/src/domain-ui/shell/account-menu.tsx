@@ -37,7 +37,6 @@ export const AccountMenu = ({ compact = false }: { readonly compact?: boolean })
   const signOut = useSignOut();
 
   const access = context.access;
-  const displayName = access?.displayName ?? null;
 
   return (
     <DropdownMenu>
@@ -50,7 +49,7 @@ export const AccountMenu = ({ compact = false }: { readonly compact?: boolean })
         }
         data-testid="account-menu"
       >
-        <ContextAvatar context={context} />
+        <ContextAvatar accountName={account.user.name} context={context} />
         {compact ? (
           <span className="max-w-32 truncate text-sm font-semibold text-ink">{context.title}</span>
         ) : (
@@ -65,17 +64,12 @@ export const AccountMenu = ({ compact = false }: { readonly compact?: boolean })
       <DropdownMenuContent align={compact ? "end" : "start"} className="max-w-[min(20rem,90vw)]">
         <DropdownMenuLabel>
           {/* Who is signed in, which until now was legible on exactly one screen in the product. */}
-          <span className="block truncate text-sm font-semibold text-ink">
-            {displayName ?? "Angemeldet"}
-          </span>
-          <span className="block truncate font-normal">
-            {account.user.email ?? "Operator-Konto"}
-          </span>
+          <span className="block truncate text-sm font-semibold text-ink">{account.user.name}</span>
+          <span className="block truncate font-normal">{account.user.email}</span>
         </DropdownMenuLabel>
 
-        {/* An unfinished profile is why the avatar has no initials in it. Say so here, where the
-            question is being asked, rather than leaving a permanent placeholder in the chrome. */}
-        {access !== undefined && displayName === null ? (
+        {/* Keep the unfinished school profile next to the context it belongs to. */}
+        {access !== undefined && access.profile === null ? (
           <DropdownMenuItem asChild>
             <Link search={{ access: access.id }} to="/einrichten">
               <UserRoundPen /> Profil einrichten
@@ -137,28 +131,20 @@ export const AccountMenu = ({ compact = false }: { readonly compact?: boolean })
 };
 
 /**
- * Two letters of the person's own name, which is the only thing telling two schools apart at a
- * glance. A context with no name yet shows what it is instead of a question mark: the operator is
- * not a person and has no profile to finish, and a school access without one has an invitation
- * waiting in the menu below.
+ * School contexts carry the account's initials. The operator shield identifies authority rather
+ * than a second kind of person.
  */
-const ContextAvatar = ({ context }: { readonly context: ShellContext }) => {
-  const displayName = context.access?.displayName ?? null;
-
-  return (
-    <span
-      aria-hidden
-      className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-sm font-bold text-primary-text"
-    >
-      {displayName === null ? (
-        context.ref._tag === "Operator" ? (
-          <ShieldCheck className="size-4.5" />
-        ) : (
-          <UserRound className="size-4.5" />
-        )
-      ) : (
-        initials(displayName)
-      )}
-    </span>
-  );
-};
+const ContextAvatar = ({
+  context,
+  accountName,
+}: {
+  readonly context: ShellContext;
+  readonly accountName: string;
+}) => (
+  <span
+    aria-hidden
+    className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-sm font-bold text-primary-text"
+  >
+    {context.ref._tag === "Operator" ? <ShieldCheck className="size-4.5" /> : initials(accountName)}
+  </span>
+);
