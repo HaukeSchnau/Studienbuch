@@ -4,7 +4,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
-import { AuthEmail } from "#/infra/email/auth-email.server.ts";
+import { AuthEmail } from "#/infra/email/auth-email.server.tsx";
 
 /** Plugins and delivery adapters the web application contributes to shared authentication. */
 export const authOptions = Effect.gen(function* () {

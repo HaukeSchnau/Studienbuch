@@ -4,7 +4,16 @@ import {
   smtpDeliveryDuration,
   spanAttributes,
 } from "@stu/observability";
+import { render } from "@react-email/render";
 import nodemailer from "nodemailer";
+import {
+  PasswordResetEmail,
+  passwordResetEmailSubject,
+} from "#/features/auth/emails/password-reset.tsx";
+import {
+  VerificationEmail,
+  verificationEmailSubject,
+} from "#/features/auth/emails/verification.tsx";
 import * as Clock from "effect/Clock";
 import * as Config from "effect/Config";
 import * as Console from "effect/Console";
@@ -22,8 +31,36 @@ interface Message {
   readonly kind: "password-reset" | "verification";
   readonly to: string;
   readonly subject: string;
+  readonly html: string;
   readonly text: string;
 }
+
+/**
+ * Renders one auth email into its deliverable form. The templates are the single source of the
+ * copy; the plain-text variant is derived from the same tree so the two cannot drift apart.
+ */
+const renderMessage = (
+  kind: Message["kind"],
+  data: { readonly user: { readonly email: string }; readonly url: string },
+) =>
+  Effect.gen(function* () {
+    const email =
+      kind === "verification" ? (
+        <VerificationEmail recipient={data.user.email} url={data.url} />
+      ) : (
+        <PasswordResetEmail recipient={data.user.email} url={data.url} />
+      );
+    const subject = kind === "verification" ? verificationEmailSubject : passwordResetEmailSubject;
+    const html = yield* Effect.promise(() => render(email));
+    const text = yield* Effect.promise(() => render(email, { plainText: true }));
+    return {
+      kind,
+      to: data.user.email,
+      subject,
+      html,
+      text,
+    } satisfies Message;
+  });
 
 export class DeliveryUnavailable extends Schema.TaggedError<DeliveryUnavailable>()(
   "AuthEmail.DeliveryUnavailable",
@@ -52,9 +89,9 @@ export class AuthEmail extends Context.Service<
       const mode = yield* Config.string("STUDIENBUCH_AUTH_EMAIL_MODE").pipe(
         Config.withDefault(nodeEnvironment === "production" ? "smtp" : "console"),
       );
-      const deliver =
+      const deliver: (message: Message) => Effect.Effect<void, DeliveryUnavailable> =
         mode === "console"
-          ? (message: Message) =>
+          ? (message) =>
               // This is intentionally not an Effect log: the local verification URL is useful to
               // a developer, but credentials and addresses must not enter OTLP.
               Console.log(`[auth-email:${message.kind}]\n${message.text}`)
@@ -62,19 +99,9 @@ export class AuthEmail extends Context.Service<
 
       return AuthEmail.of({
         sendVerificationEmail: (data) =>
-          deliver({
-            kind: "verification",
-            to: data.user.email,
-            subject: "E-Mail-Adresse für Studienbuch bestätigen",
-            text: `Bestätige deine E-Mail-Adresse über diesen Link:\n\n${data.url}\n\nDer Link ist eine Stunde gültig. Wenn du dich nicht bei Studienbuch angemeldet hast, kannst du diese Nachricht ignorieren.`,
-          }),
+          renderMessage("verification", data).pipe(Effect.flatMap(deliver)),
         sendPasswordResetEmail: (data) =>
-          deliver({
-            kind: "password-reset",
-            to: data.user.email,
-            subject: "Studienbuch-Passwort zurücksetzen",
-            text: `Setze dein Studienbuch-Passwort über diesen Link zurück:\n\n${data.url}\n\nDer Link ist eine Stunde gültig. Wenn du das nicht angefordert hast, kannst du diese Nachricht ignorieren.`,
-          }),
+          renderMessage("password-reset", data).pipe(Effect.flatMap(deliver)),
       });
     }),
   );

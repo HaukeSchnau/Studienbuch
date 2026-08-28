@@ -7,7 +7,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as FetchHttpClient from "effect/unstable/http/FetchHttpClient";
 import { authOptions } from "#/infra/auth/options.server.ts";
-import { AuthEmail } from "#/infra/email/auth-email.server.ts";
+import { AuthEmail } from "#/infra/email/auth-email.server.tsx";
 import { EnrollmentRateLimiter } from "#/infra/http/rate-limit.server.ts";
 import { ClientTelemetry } from "#/infra/observability/client-telemetry.server.ts";
 
