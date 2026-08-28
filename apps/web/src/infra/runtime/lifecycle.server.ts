@@ -89,14 +89,17 @@ export function createRuntimeLifecycle(): RuntimeLifecycle {
   return { runtime, ...controller };
 }
 
-const lifecycleKey = Symbol.for("@stu/web/application-runtime-lifecycle");
+const lifecycleKey = Symbol.for("@stu/web/application-runtime-lifecycle-v2");
 const globalRuntime = globalThis as typeof globalThis & {
   [lifecycleKey]?: RuntimeLifecycle;
 };
 const processCurrent = globalRuntime[lifecycleKey];
+const processCurrentState = processCurrent?.state().status;
 const shouldReplaceCurrent =
   processCurrent !== undefined &&
-  import.meta.hot?.data.applicationRuntimeLifecycle === processCurrent;
+  (processCurrentState === "stopping" ||
+    processCurrentState === "stopped" ||
+    import.meta.hot?.data.applicationRuntimeLifecycle === processCurrent);
 
 const makeActiveRuntimeLifecycle = (previous?: RuntimeLifecycle): RuntimeLifecycle => {
   const current = createRuntimeLifecycle();
