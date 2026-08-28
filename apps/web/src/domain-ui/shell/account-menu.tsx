@@ -45,7 +45,7 @@ export const AccountMenu = ({ compact = false }: { readonly compact?: boolean })
         className={
           compact
             ? "press flex min-w-0 items-center gap-2 rounded-full py-1 pr-2 pl-1 hover:bg-primary-des focus-visible:ring-2 focus-visible:ring-primary-pale focus-visible:outline-none"
-            : "press flex w-full items-center gap-3 rounded-2xl bg-primary-des px-3 py-2.5 text-left hover:bg-primary-pale/25 focus-visible:ring-2 focus-visible:ring-primary-pale focus-visible:outline-none"
+            : "press flex w-full items-center gap-3 rounded-full bg-primary-des px-3 py-2.5 text-left hover:bg-primary-pale/25 focus-visible:ring-2 focus-visible:ring-primary-pale focus-visible:outline-none"
         }
         data-testid="account-menu"
       >

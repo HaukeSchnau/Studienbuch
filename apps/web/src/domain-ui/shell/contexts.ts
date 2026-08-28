@@ -45,7 +45,7 @@ export const contextsFor = (account: AccountView): ReadonlyArray<ShellContext> =
         ...schools,
         {
           ref: Organization.operatorContext,
-          title: "Studienbuch",
+          title: "Operator",
           subtitle: "Plattform-Operator",
         },
       ]
@@ -70,15 +70,6 @@ export const defaultContext = (
 ) => findContext(contexts, rememberedSegments) ?? contexts.at(0);
 
 /**
- * How a context names itself in a browser tab.
- *
- * The operator's display title is "Studienbuch", which is fine in a switcher and absurd in a tab
- * already ending in the same word.
- */
-const tabName = (context: ShellContext) =>
-  context.ref._tag === "Operator" ? "Operator" : context.title;
-
-/**
  * The title a destination gives the browser tab.
  *
  * It names the school, because somebody enrolled at two of them otherwise has two tabs both reading
@@ -93,5 +84,5 @@ export const destinationTitle = (
   const context = findContext(contexts, segments);
   return context === undefined
     ? `${page} | Studienbuch`
-    : `${page} · ${tabName(context)} | Studienbuch`;
+    : `${page} · ${context.title} | Studienbuch`;
 };

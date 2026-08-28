@@ -87,13 +87,7 @@ function SetupPage() {
           />
         </Field>
         {error === undefined ? null : <AuthError>{error}</AuthError>}
-        <Button
-          radius="pill"
-          size="xl"
-          type="submit"
-          variant="brand"
-          {...submitState({ busy, error })}
-        >
+        <Button size="xl" type="submit" variant="brand" {...submitState({ busy, error })}>
           {busy ? <Working>Wird gespeichert ...</Working> : "Los geht's"}
         </Button>
       </form>

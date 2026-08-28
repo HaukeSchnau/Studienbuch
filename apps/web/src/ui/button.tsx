@@ -15,8 +15,11 @@ import { cn } from "#/ui/cn.ts";
  * Flutter fills `ElevatedButton` with and the app this supersedes uses it for the one action a
  * screen is asking for; `default` is now the green, which is what the brand actually is.
  */
+/*
+ * Every button is a pill, the shape the rest of the form controls (Input, Textarea) already have.
+ */
 const buttonVariants = cva(
-  "press inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-[3px] focus-visible:ring-accent/40 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-danger aria-invalid:ring-danger/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "press inline-flex shrink-0 items-center justify-center gap-2 rounded-full text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-[3px] focus-visible:ring-accent/40 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-danger aria-invalid:ring-danger/20 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -30,25 +33,20 @@ const buttonVariants = cva(
         // The app's own call to action: a blue pill, the colour Flutter fills ElevatedButton with.
         brand: "bg-accent text-white shadow-float hover:bg-accent-sec",
       },
-      radius: {
-        default: "",
-        pill: "rounded-full",
-      },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
         xl: "h-12 px-7 text-base has-[>svg]:px-6",
-        xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
+        xs: "h-6 gap-1 px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-8 gap-1.5 px-3 has-[>svg]:px-2.5",
+        lg: "h-10 px-6 has-[>svg]:px-4",
         icon: "size-9",
-        "icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
+        "icon-xs": "size-6 [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-8",
         "icon-lg": "size-10",
       },
     },
     defaultVariants: {
       variant: "default",
-      radius: "default",
       size: "default",
     },
   },
@@ -57,7 +55,6 @@ const buttonVariants = cva(
 function Button({
   className,
   variant = "default",
-  radius = "default",
   size = "default",
   asChild = false,
   ...props
@@ -71,9 +68,8 @@ function Button({
     <Comp
       data-slot="button"
       data-variant={variant}
-      data-radius={radius}
       data-size={size}
-      className={cn(buttonVariants({ variant, radius, size, className }))}
+      className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
   );

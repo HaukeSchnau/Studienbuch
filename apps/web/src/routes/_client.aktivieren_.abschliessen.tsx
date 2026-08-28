@@ -99,7 +99,7 @@ function CompleteActivationPage() {
         <p className="enter-later mt-4 text-center text-ink-soft">
           Melde dich an, um den Schulzugang zu übernehmen.
         </p>
-        <Button asChild className="mt-7 w-full" radius="pill" size="xl" variant="brand">
+        <Button asChild className="mt-7 w-full" size="xl" variant="brand">
           <Link search={{ reservation }} to="/anmelden">
             Anmelden
           </Link>
@@ -121,7 +121,6 @@ function CompleteActivationPage() {
             className="mt-7 w-full"
             disabled={completionResult.waiting}
             onClick={() => void redeem()}
-            radius="pill"
             size="xl"
             type="button"
             variant="brand"
@@ -129,7 +128,7 @@ function CompleteActivationPage() {
             {completionResult.waiting ? "Wird erneut versucht ..." : "Erneut versuchen"}
           </Button>
         ) : (
-          <Button asChild className="mt-7 w-full" radius="pill" size="xl" variant="brand">
+          <Button asChild className="mt-7 w-full" size="xl" variant="brand">
             <Link to="/aktivieren">Zugangscode eingeben</Link>
           </Button>
         )}

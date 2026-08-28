@@ -150,7 +150,6 @@ export const EnquiryForm = () => {
         <Button
           className={status === "failed" ? "nudge" : undefined}
           disabled={sending}
-          radius="pill"
           size="xl"
           type="submit"
           variant="brand"

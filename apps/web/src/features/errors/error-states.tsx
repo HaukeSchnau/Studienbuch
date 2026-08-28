@@ -45,7 +45,7 @@ const ErrorLayout = ({
 export const NotFound = () => (
   <ErrorLayout
     action={
-      <Button asChild radius="pill" size="xl" variant="brand">
+      <Button asChild size="xl" variant="brand">
         <Link to="/">Zurück zur Startseite</Link>
       </Button>
     }
@@ -63,7 +63,7 @@ export const NotFound = () => (
 export const ErrorState = ({ reset }: { reset: () => void }) => (
   <ErrorLayout
     action={
-      <Button onClick={reset} radius="pill" size="xl" variant="brand">
+      <Button onClick={reset} size="xl" variant="brand">
         Nochmal versuchen
       </Button>
     }

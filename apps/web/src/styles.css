@@ -76,6 +76,26 @@ body,
 }
 
 /*
+ * Everything clickable points.
+ *
+ * The browser gives a native `<button>` the arrow cursor, so buttons read as labels while the
+ * links next to them pointed — and each component papered over it with its own `cursor-pointer`.
+ * One base rule covers every shape of clickability: real buttons, ARIA buttons (Radix triggers),
+ * `<summary>`, and the row roles Radix menus render. Live `@layer base` keeps the rule beneath any
+ * utility, so an explicit `cursor-*` class still wins where a component means to override it.
+ */
+@layer base {
+  button:not(:disabled),
+  summary,
+  [role="button"]:not(:disabled),
+  [role="menuitem"]:not([data-disabled]),
+  [role="menuitemradio"]:not([data-disabled]),
+  [role="option"]:not([data-disabled]) {
+    cursor: pointer;
+  }
+}
+
+/*
  * Scrolling behaviour belongs to the marketing pages, not to the whole document.
  *
  * Both rules exist for the landing page's anchor navigation: the smooth glide is the point of

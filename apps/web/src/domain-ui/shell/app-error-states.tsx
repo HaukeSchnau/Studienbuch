@@ -30,7 +30,7 @@ const AppErrorLayout = ({
 export const AppNotFound = () => (
   <AppErrorLayout
     action={
-      <Button asChild radius="pill" size="lg" variant="brand">
+      <Button asChild size="lg" variant="brand">
         <Link to="/app">Zu meinem Studienbuch</Link>
       </Button>
     }
@@ -51,10 +51,10 @@ export const ContextNotAvailable = () => (
   <AppErrorLayout
     action={
       <div className="flex flex-wrap justify-center gap-3">
-        <Button asChild radius="pill" size="lg" variant="brand">
+        <Button asChild size="lg" variant="brand">
           <Link to="/app">Zu meinem Studienbuch</Link>
         </Button>
-        <Button asChild radius="pill" size="lg" variant="outline">
+        <Button asChild size="lg" variant="outline">
           <Link to="/aktivieren">Zugangscode einlösen</Link>
         </Button>
       </div>
@@ -68,7 +68,7 @@ export const ContextNotAvailable = () => (
 export const OperatorOnly = () => (
   <AppErrorLayout
     action={
-      <Button asChild radius="pill" size="lg" variant="brand">
+      <Button asChild size="lg" variant="brand">
         <Link to="/app">Zu meinem Studienbuch</Link>
       </Button>
     }
@@ -85,10 +85,10 @@ export const AppErrorState = ({ reset }: { readonly reset: () => void }) => (
   <AppErrorLayout
     action={
       <div className="flex flex-wrap justify-center gap-3">
-        <Button onClick={reset} radius="pill" size="lg" variant="brand">
+        <Button onClick={reset} size="lg" variant="brand">
           Nochmal versuchen
         </Button>
-        <Button asChild radius="pill" size="lg" variant="outline">
+        <Button asChild size="lg" variant="outline">
           <Link to="/app">Zu meinem Studienbuch</Link>
         </Button>
       </div>

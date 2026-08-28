@@ -76,7 +76,7 @@ export const SchoolFaq = () => (
           {questions.map(({ answer, question }) => (
             <li key={question}>
               <details className="group rounded-card bg-surface px-6 py-5 shadow-card">
-                <summary className="press flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-bold text-ink marker:hidden">
+                <summary className="press flex list-none items-center justify-between gap-4 text-lg font-bold text-ink marker:hidden">
                   {question}
                   <span
                     aria-hidden
