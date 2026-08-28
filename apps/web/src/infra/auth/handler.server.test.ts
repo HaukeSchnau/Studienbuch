@@ -29,6 +29,8 @@ function fixture(response = new Response(null, { status: 204 })) {
 
 describe("Better Auth telemetry boundary", () => {
   it.each([
+    ["/api/auth/change-email", "auth.account.email.change"],
+    ["/api/auth/update-user", "auth.account.update"],
     ["/api/auth/get-session", "auth.session.get"],
     ["/api/auth/sign-in/email", "auth.sign_in.email"],
     ["/api/auth/passkey/generate-authenticate-options", "auth.sign_in.passkey.challenge"],

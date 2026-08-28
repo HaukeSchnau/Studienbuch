@@ -26,7 +26,6 @@ import { Route as ClientAktivierenAbschliessenRouteImport } from './routes/_clie
 import { Route as ClientAppIndexRouteImport } from './routes/_client.app.index'
 import { Route as ClientAppKontoRouteImport } from './routes/_client.app.konto'
 import { Route as ClientAppOperatorRouteImport } from './routes/_client.app.operator'
-import { Route as ClientOperatorSetupRouteImport } from './routes/_client.operator.setup'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiHealthLiveRouteImport } from './routes/api/health/live'
 import { Route as ApiHealthReadyRouteImport } from './routes/api/health/ready'
@@ -127,11 +126,6 @@ const ClientAppOperatorRoute = ClientAppOperatorRouteImport.update({
   path: '/operator',
   getParentRoute: () => ClientAppRoute,
 } as any)
-const ClientOperatorSetupRoute = ClientOperatorSetupRouteImport.update({
-  id: '/operator/setup',
-  path: '/operator/setup',
-  getParentRoute: () => ClientRoute,
-} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -227,7 +221,6 @@ export interface FileRoutesByFullPath {
   '/aktivieren/abschliessen': typeof ClientAktivierenAbschliessenRoute
   '/app/konto': typeof ClientAppKontoRoute
   '/app/operator': typeof ClientAppOperatorRouteWithChildren
-  '/operator/setup': typeof ClientOperatorSetupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -257,7 +250,6 @@ export interface FileRoutesByTo {
   '/api/rpc': typeof ApiRpcRoute
   '/aktivieren/abschliessen': typeof ClientAktivierenAbschliessenRoute
   '/app/konto': typeof ClientAppKontoRoute
-  '/operator/setup': typeof ClientOperatorSetupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -291,7 +283,6 @@ export interface FileRoutesById {
   '/_client/aktivieren_/abschliessen': typeof ClientAktivierenAbschliessenRoute
   '/_client/app/konto': typeof ClientAppKontoRoute
   '/_client/app/operator': typeof ClientAppOperatorRouteWithChildren
-  '/_client/operator/setup': typeof ClientOperatorSetupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/live': typeof ApiHealthLiveRoute
   '/api/health/ready': typeof ApiHealthReadyRoute
@@ -325,7 +316,6 @@ export interface FileRouteTypes {
     | '/aktivieren/abschliessen'
     | '/app/konto'
     | '/app/operator'
-    | '/operator/setup'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -355,7 +345,6 @@ export interface FileRouteTypes {
     | '/api/rpc'
     | '/aktivieren/abschliessen'
     | '/app/konto'
-    | '/operator/setup'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -388,7 +377,6 @@ export interface FileRouteTypes {
     | '/_client/aktivieren_/abschliessen'
     | '/_client/app/konto'
     | '/_client/app/operator'
-    | '/_client/operator/setup'
     | '/api/auth/$'
     | '/api/health/live'
     | '/api/health/ready'
@@ -537,13 +525,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/operator'
       preLoaderRoute: typeof ClientAppOperatorRouteImport
       parentRoute: typeof ClientAppRoute
-    }
-    '/_client/operator/setup': {
-      id: '/_client/operator/setup'
-      path: '/operator/setup'
-      fullPath: '/operator/setup'
-      preLoaderRoute: typeof ClientOperatorSetupRouteImport
-      parentRoute: typeof ClientRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -708,7 +689,6 @@ interface ClientRouteChildren {
   ClientPasswortZuruecksetzenRoute: typeof ClientPasswortZuruecksetzenRoute
   ClientRegistrierenRoute: typeof ClientRegistrierenRoute
   ClientAktivierenAbschliessenRoute: typeof ClientAktivierenAbschliessenRoute
-  ClientOperatorSetupRoute: typeof ClientOperatorSetupRoute
 }
 
 const ClientRouteChildren: ClientRouteChildren = {
@@ -720,7 +700,6 @@ const ClientRouteChildren: ClientRouteChildren = {
   ClientPasswortZuruecksetzenRoute: ClientPasswortZuruecksetzenRoute,
   ClientRegistrierenRoute: ClientRegistrierenRoute,
   ClientAktivierenAbschliessenRoute: ClientAktivierenAbschliessenRoute,
-  ClientOperatorSetupRoute: ClientOperatorSetupRoute,
 }
 
 const ClientRouteWithChildren =

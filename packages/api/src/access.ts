@@ -37,17 +37,20 @@ export const SchoolAccessView = Schema.Struct({
   createdAt: Schema.DateTimeUtcFromString,
   schoolId: Organization.SchoolId,
   schoolName: Schema.String,
-  displayName: Schema.NullOr(Schema.String),
-  cohort: Schema.NullOr(Schema.String),
-  className: Schema.NullOr(Schema.String),
+  profile: Schema.NullOr(
+    Schema.Struct({
+      cohort: Schema.NullOr(Schema.String),
+      className: Schema.NullOr(Schema.String),
+    }),
+  ),
 });
 export type SchoolAccessView = typeof SchoolAccessView.Type;
 
 export const AccountView = Schema.Struct({
   user: Schema.Struct({
     id: Organization.AccountId,
-    name: Schema.String,
-    email: Schema.NullOr(Schema.String),
+    name: Organization.AccountName,
+    email: Schema.String,
     emailVerified: Schema.Boolean,
   }),
   operator: Schema.Boolean,
@@ -57,7 +60,6 @@ export type AccountView = typeof AccountView.Type;
 
 export const ProfileSaved = Schema.Struct({
   profile: Schema.Struct({
-    displayName: Organization.RequiredProfileField,
     cohort: Schema.NullOr(Organization.OptionalProfileField),
     className: Schema.NullOr(Organization.OptionalProfileField),
   }),

@@ -10,7 +10,6 @@ import * as Exit from "effect/Exit";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
 import { Database } from "../database/client.ts";
-import { consumeSetupToken, resolveSetupUser } from "../access/operator.ts";
 import { claimRegistrationSignup, releaseRegistrationSignup } from "../access/school-access.ts";
 
 /**
@@ -57,6 +56,7 @@ const registrationToken = (context: { readonly headers?: Headers }) =>
 const decodeSignUpResult = Schema.decodeUnknownExit(
   Schema.Struct({ user: Schema.Struct({ id: Schema.String }) }),
 );
+const decodeAccountName = Schema.decodeUnknownExit(Organization.AccountName);
 
 /**
  * Better Auth, wired to the same pool as Drizzle.
@@ -97,7 +97,7 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
             generateId: false,
           },
         },
-        user: { modelName: "users" },
+        user: { modelName: "users", changeEmail: { enabled: true } },
         session: { modelName: "sessions" },
         account: { modelName: "accounts" },
         verification: { modelName: "verifications" },
@@ -111,6 +111,17 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
         },
         hooks: {
           before: createAuthMiddleware(async (context) => {
+            if (context.path === "/update-user" && context.body.name !== undefined) {
+              const name = decodeAccountName(context.body.name);
+              if (Exit.isFailure(name)) {
+                // oxlint-disable-next-line anti-slop/no-throwing-errors -- Better Auth middleware aborts requests through APIError.
+                throw new APIError("BAD_REQUEST", {
+                  code: "ACCOUNT_NAME_INVALID",
+                  message: "A valid account name is required",
+                });
+              }
+              return { context: { body: { ...context.body, name: name.value } } };
+            }
             if (context.path !== "/sign-up/email") return;
             if (!(await runCallback(claimRegistrationSignup(registrationToken(context))))) {
               // oxlint-disable-next-line anti-slop/no-throwing-errors -- Better Auth middleware aborts requests through APIError.
@@ -120,11 +131,15 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
               });
             }
 
-            // Set here rather than trusted from the request: the placeholder is what keeps a
-            // person's name out of the global account, so a client must not be able to choose it.
-            return {
-              context: { body: { ...context.body, name: Organization.neutralAccountName } },
-            };
+            const name = decodeAccountName(context.body.name);
+            if (Exit.isFailure(name)) {
+              // oxlint-disable-next-line anti-slop/no-throwing-errors -- Better Auth middleware aborts requests through APIError.
+              throw new APIError("BAD_REQUEST", {
+                code: "ACCOUNT_NAME_INVALID",
+                message: "A valid account name is required",
+              });
+            }
+            return { context: { body: { ...context.body, name: name.value } } };
           }),
           /**
            * Returns a signup claim when Better Auth rejects the request before producing an account.
@@ -151,39 +166,6 @@ export class Service extends Context.Service<Service>()("@stu/server/auth/better
             authenticatorSelection: {
               residentKey: "required",
               userVerification: "required",
-            },
-            registration: {
-              requireSession: false,
-              resolveUser: async ({ context }) => {
-                const user = await runCallback(resolveSetupUser(context ?? null));
-                if (user !== null) return user;
-                // oxlint-disable-next-line anti-slop/no-throwing-errors -- Better Auth's callback has no typed failure return.
-                throw new APIError("UNAUTHORIZED", {
-                  code: "OPERATOR_SETUP_TOKEN_INVALID",
-                  message: "The operator setup token is no longer valid",
-                });
-              },
-              /**
-               * A visitor who is already signed in registers a passkey for themselves, whatever
-               * `context` says, because a session outranks `resolveUser` above. So the token is
-               * checked against the account this ceremony is actually for, and only spent once it
-               * matches — otherwise presenting an operator's setup link would be enough to burn it.
-               */
-              afterVerification: async ({ context, user }) => {
-                if (context === null || context === undefined) return;
-                const setupUser = await runCallback(resolveSetupUser(context));
-                const consumedForUserId =
-                  setupUser?.id === user.id
-                    ? await runCallback(consumeSetupToken(context))
-                    : undefined;
-                if (consumedForUserId !== user.id) {
-                  // oxlint-disable-next-line anti-slop/no-throwing-errors -- Better Auth's callback has no typed failure return.
-                  throw new APIError("UNAUTHORIZED", {
-                    code: "OPERATOR_SETUP_TOKEN_INVALID",
-                    message: "The operator setup token is no longer valid",
-                  });
-                }
-              },
             },
           }),
           ...(options.plugins ?? []),

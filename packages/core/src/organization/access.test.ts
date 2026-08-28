@@ -1,5 +1,24 @@
+import * as Exit from "effect/Exit";
+import * as Schema from "effect/Schema";
 import { describe, expect, it } from "vite-plus/test";
-import { formatAccessCode, isAccessCode, normalizeAccessCode, repairAccessCode } from "./access.ts";
+import {
+  AccountName,
+  accountNameMaxLength,
+  formatAccessCode,
+  isAccessCode,
+  normalizeAccessCode,
+  repairAccessCode,
+} from "./access.ts";
+
+describe("account names", () => {
+  it("trims names and rejects empty or overlong values", () => {
+    expect(Schema.decodeSync(AccountName)("  Ada Lovelace  ")).toBe("Ada Lovelace");
+    expect(Exit.isFailure(Schema.decodeExit(AccountName)("   "))).toBe(true);
+    expect(
+      Exit.isFailure(Schema.decodeExit(AccountName)("x".repeat(accountNameMaxLength + 1))),
+    ).toBe(true);
+  });
+});
 
 describe("school access codes", () => {
   it("normalizes a printed code without changing its entropy", () => {

@@ -60,10 +60,13 @@ Regular signup requires a reserved school access code. Production email uses
 Create operators and school codes through the console:
 
 ```bash
-project dev console operator-bootstrap --name "Hauke Schnau"
+project dev console operator-bootstrap --name "Hauke Schnau" --email hauke@example.com
 project dev console access-codes --school-id igs-lilienthal --school-name "IGS Lilienthal" \
   --kind student --count 100 --operator-user-id <operator-user-id>
 ```
+
+The bootstrap output links to the ordinary password flow. Use `operator-grant --email` when the
+account already exists.
 
 ## Production
 

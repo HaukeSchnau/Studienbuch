@@ -29,14 +29,10 @@ export const Route = createFileRoute("/_client/app/$school/$rolle/heute")({
  * ready.
  */
 function OverviewPage() {
-  const { context } = useShell();
-  const name = context.access?.displayName ?? null;
+  const { account, context } = useShell();
 
   return (
-    <DestinationPage
-      lead={context.title}
-      title={name === null ? "Moin!" : `Moin, ${shortName(name)}!`}
-    >
+    <DestinationPage lead={context.title} title={`Moin, ${shortName(account.user.name)}!`}>
       <NothingHereYet icon={House}>
         Hier steht bald dein Tagesplan: die Stunden, die heute anstehen, mit Vertretungen und
         Ausfällen.

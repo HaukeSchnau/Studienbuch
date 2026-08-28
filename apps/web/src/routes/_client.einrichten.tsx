@@ -32,7 +32,6 @@ function SetupPage() {
   const { access } = Route.useSearch();
   const navigate = useNavigate();
   const [saveResult, saveProfile] = useAtom(saveProfileMutation, { mode: "promiseExit" });
-  const [displayName, setDisplayName] = useState("");
   const [cohort, setCohort] = useState("");
   const [className, setClassName] = useState("");
   const [error, setError] = useState<string>();
@@ -43,7 +42,6 @@ function SetupPage() {
     setError(undefined);
     const profile = Schema.decodeExit(Organization.NotebookProfileInput)({
       schoolAccessId: access,
-      displayName,
       cohort,
       className,
     });
@@ -67,19 +65,9 @@ function SetupPage() {
     <AuthShell>
       <AuthHeading>Fast fertig</AuthHeading>
       <p className="enter-later mt-4 text-center text-ink-soft">
-        Wie sollen wir dich nennen? Das bestimmst nur du, und du kannst es später ändern.
+        Ergänze, was zu diesem Schulzugang gehört. Beides ist optional.
       </p>
       <form className="mt-7 grid gap-4" onSubmit={submit}>
-        <Field label="Name">
-          <Input
-            autoComplete="name"
-            maxLength={Organization.profileFieldMaxLength}
-            onChange={(event) => setDisplayName(event.target.value)}
-            required
-            value={displayName}
-            {...invalidWhen(error)}
-          />
-        </Field>
         <Field label="Jahrgang, optional">
           <Input
             maxLength={Organization.profileFieldMaxLength}

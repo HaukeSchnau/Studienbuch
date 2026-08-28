@@ -166,7 +166,6 @@ erDiagram
     }
     notebook_profiles {
       uuid schoolAccessId PK,FK
-      text displayName
       text cohort
       text className
       timestamptz createdAt
@@ -179,15 +178,6 @@ erDiagram
       timestamptz createdAt
     }
     operator_grants |o--|| users : operator_grants_userId_users_id_fkey
-    operator_setup_tokens {
-      uuid id PK
-      uuid userId FK
-      text tokenHash
-      timestamptz expiresAt
-      timestamptz usedAt
-      timestamptz createdAt
-    }
-    operator_setup_tokens }o--|| users : operator_setup_tokens_userId_users_id_fkey
     passkey {
       uuid id PK
       text name
@@ -220,6 +210,7 @@ erDiagram
       uuid accessCodeId FK
       text tokenHash
       timestamptz expiresAt
+      integer signupCount
       timestamptz createdAt
       timestamptz updatedAt
     }

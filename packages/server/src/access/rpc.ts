@@ -61,7 +61,6 @@ export const AccessRpcHandlers = AccessApi.Rpcs.toLayer({
       const profile = yield* saveProfile(user.id, input);
       return {
         profile: {
-          displayName: Organization.RequiredProfileField.make(profile.displayName),
           cohort:
             profile.cohort === undefined
               ? null
@@ -83,7 +82,7 @@ export const AccessRpcHandlers = AccessApi.Rpcs.toLayer({
       return {
         user: {
           ...user,
-          email: user.email.endsWith("@accounts.invalid") ? null : user.email,
+          name: Organization.AccountName.make(user.name),
         },
         operator,
         accesses: accesses.map((access) => ({
@@ -92,9 +91,13 @@ export const AccessRpcHandlers = AccessApi.Rpcs.toLayer({
           createdAt: DateTime.fromDateUnsafe(access.createdAt),
           schoolId: Organization.SchoolId.make(access.schoolId),
           schoolName: access.schoolName,
-          displayName: access.displayName,
-          cohort: access.cohort,
-          className: access.className,
+          profile:
+            access.profileId === null
+              ? null
+              : {
+                  cohort: access.cohort,
+                  className: access.className,
+                },
         })),
       };
     }).pipe(Effect.catchTag("EffectDrizzleQueryError", (error) => Effect.die(error))),

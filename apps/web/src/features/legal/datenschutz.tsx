@@ -118,7 +118,7 @@ export const Datenschutz = () => (
     <h3>Verarbeitete Daten</h3>
     <ul>
       <li>
-        Kontodaten: E-Mail-Adresse, Bestätigungsstatus und ein nicht rückrechenbarer Hash des
+        Kontodaten: Name, E-Mail-Adresse, Bestätigungsstatus und ein nicht rückrechenbarer Hash des
         Passworts
       </li>
       <li>
@@ -138,7 +138,7 @@ export const Datenschutz = () => (
         Schulzugang, Zugangsart und Status des eingelösten Zugangscodes; der Code selbst wird nur
         als kryptografischer Hash gespeichert
       </li>
-      <li>selbst gewählte Profildaten, etwa Anzeigename, Schuljahr, Klasse und belegte Kurse</li>
+      <li>selbst gewählte Schuldaten, etwa Schuljahr, Klasse und belegte Kurse</li>
       <li>Stundenplan, Vertretungen und Kursinformationen</li>
       <li>Noten und die dazugehörigen Bestätigungen, einschließlich erfasster Unterschriften</li>
       <li>Fehlzeiten mit Datum, Grund und Entschuldigungsstand</li>
@@ -148,16 +148,18 @@ export const Datenschutz = () => (
 
     <h3>Konto und Schulzugang</h3>
     <p>
-      Ein Konto kann länger bestehen als ein einzelner Schulzugang. Die E-Mail-Adresse dient nur der
-      Anmeldung, Bestätigung und Wiederherstellung. Sie wird nicht in das Schulprofil kopiert und
-      nicht als Nachweis einer Schulzugehörigkeit verwendet. Die Schule erhält von uns keine
-      Zuordnung zwischen Zugangscode und Konto oder E-Mail-Adresse.
+      Ein Konto kann länger bestehen als ein einzelner Schulzugang. Name und E-Mail-Adresse gehören
+      zum Konto und werden nicht in das Schulprofil kopiert. Die E-Mail-Adresse dient der Anmeldung,
+      Bestätigung und Wiederherstellung; sie wird nicht als Nachweis einer Schulzugehörigkeit
+      verwendet. Die Schule erhält von uns keine Zuordnung zwischen Zugangscode und Konto oder
+      E-Mail-Adresse.
     </p>
     <p>
       Zugangscodes enthalten nur die Schule und die Zugangsart „Schülerin oder Schüler“ oder
-      „Lehrkraft“. Sie enthalten keinen Namen und keine Klasse. Anzeigename, Jahrgang und Klasse
-      trägt die nutzende Person anschließend selbst ein. Automatisch importierte Schuldaten werden
-      nicht allein aufgrund gleicher Namen oder E-Mail-Adressen mit diesem Profil verknüpft.
+      „Lehrkraft“. Sie enthalten keinen Namen und keine Klasse. Den Namen im Konto sowie Jahrgang
+      und Klasse im Schulprofil trägt die nutzende Person selbst ein. Automatisch importierte
+      Schuldaten werden nicht allein aufgrund gleicher Namen oder E-Mail-Adressen mit diesem Profil
+      verknüpft.
     </p>
 
     <h3>Speicherung auf dem Gerät</h3>
@@ -189,8 +191,8 @@ export const Datenschutz = () => (
       genutzt. Die Verarbeitung erfolgt nicht auf Grundlage einer Einwilligung der Nutzenden,
       sondern für den von der Schule bereitgestellten Zugang und in ihrem Auftrag. Die Schule gibt
       ausschließlich unpersönliche Zugangscodes aus; die nutzende Person entscheidet selbst, welche
-      zulässige E-Mail-Adresse und welche Profildaten sie verwendet. Bestätigungen, die eine
-      Zustimmung der Eltern erfordern, bildet die App als solche ab.
+      zulässigen Konto- und Schuldaten sie verwendet. Bestätigungen, die eine Zustimmung der Eltern
+      erfordern, bildet die App als solche ab.
     </p>
 
     <h2>4. Empfänger und Auftragsverarbeiter</h2>
