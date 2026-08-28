@@ -1,7 +1,7 @@
 import { Organization } from "@stu/core/organization";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import * as Schema from "effect/Schema";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AuthError,
   AuthHeading,
@@ -39,10 +39,49 @@ function SignInPage() {
   const [busy, setBusy] = useState(false);
 
   /** Where a successful sign-in lands: back into an activation in progress, or the account. */
-  const arrive = () =>
-    reservation === undefined
-      ? navigate({ to: "/app", replace: true })
-      : navigate({ to: "/aktivieren/abschliessen", search: { reservation }, replace: true });
+  const arrive = useCallback(
+    () =>
+      reservation === undefined
+        ? navigate({ to: "/app", replace: true })
+        : navigate({
+            to: "/aktivieren/abschliessen",
+            search: { reservation },
+            replace: true,
+          }),
+    [navigate, reservation],
+  );
+
+  useEffect(() => {
+    let mounted = true;
+
+    const signInFromPasskeyAutofill = async () => {
+      if (
+        !("PublicKeyCredential" in window) ||
+        window.PublicKeyCredential.isConditionalMediationAvailable === undefined
+      ) {
+        return;
+      }
+
+      try {
+        if (!(await window.PublicKeyCredential.isConditionalMediationAvailable())) return;
+      } catch {
+        return;
+      }
+
+      const result = await authClient.signIn.passkey({ autoFill: true });
+      // Closing autofill or starting the explicit passkey flow cancels this request. Neither is an
+      // authentication error worth showing in the password form.
+      if (!mounted || result.error !== null) return;
+
+      await refreshAuthorization();
+      if (mounted) await arrive();
+    };
+
+    void signInFromPasskeyAutofill();
+    return () => {
+      mounted = false;
+    };
+  }, [arrive, refreshAuthorization]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
