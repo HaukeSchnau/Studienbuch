@@ -56,6 +56,7 @@ let
 
       projectRuntime = nix-infra-modules.lib.projectRuntime.mkDevelopment {
         inherit pkgs descriptorPath;
+        disallowedRequisites = [ web.release.payload ];
         actions = {
           prepare = workspace.preparation.action;
           database = database.action;

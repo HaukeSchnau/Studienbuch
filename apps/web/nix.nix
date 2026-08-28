@@ -310,6 +310,7 @@ let
     name = "studienbuch-development-console-action";
     runtimeInputs = [ nodejs ];
     text = ''
+      checkout="$(project-context path checkout)"
       ${consoleContextEnvironment {
         databaseAssignments = ''
           @sh "database_host=\(.endpoints.database.listen.host)",
@@ -327,7 +328,8 @@ let
       }}
       ${observabilityEnvironment "development"}
 
-      exec node ${webApplication}/${applicationPath}/.output/server/console.mjs "$@"
+      exec node "$checkout/apps/console/node_modules/tsx/dist/cli.mjs" \
+        "$checkout/apps/console/src/index.ts" "$@"
     '';
   };
 
