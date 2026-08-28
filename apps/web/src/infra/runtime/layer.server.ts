@@ -1,7 +1,7 @@
 import { serverObservabilityLayer } from "@stu/observability/server";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { Auth } from "@stu/server/auth";
-import { Database, Migrate } from "@stu/server/database";
+import { Database } from "@stu/server/database";
 import { EnquiryNotifier } from "@stu/server/enquiry";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -25,10 +25,6 @@ const authLayer = Layer.unwrap(authOptions.pipe(Effect.map(Auth.layer))).pipe(
   Layer.provide([authEmailLayer, databaseLayer, NodeServices.layer]),
 );
 
-const developmentMigrationLayer = import.meta.env.DEV
-  ? Layer.effectDiscard(Migrate.migrateToLatest).pipe(Layer.provide(databaseLayer))
-  : Layer.empty;
-
 /** Process-lifetime resources. Request handlers stay outside this layer so Nitro can reload them. */
 export const WebApplicationLive = Layer.mergeAll(
   NodeServices.layer,
@@ -37,5 +33,4 @@ export const WebApplicationLive = Layer.mergeAll(
   EnquiryNotifier.layer,
   authLayer,
   databaseLayer,
-  developmentMigrationLayer,
 ).pipe(Layer.provideMerge(telemetryLayer));

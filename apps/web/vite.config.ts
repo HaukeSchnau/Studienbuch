@@ -6,7 +6,6 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
-import { databaseMigrationReload } from "./src/infra/database/migrations-vite.ts";
 
 const allowedHosts = new Set<string>(JSON.parse(process.env.STUDIENBUCH_WEB_HOST_NAMES ?? "[]"));
 if (process.env.BETTER_AUTH_URL !== undefined) {
@@ -30,7 +29,6 @@ const config = defineConfig(({ command }) => ({
   },
   plugins: [
     devtools(),
-    databaseMigrationReload(),
     nitro({
       plugins: skipRuntimePlugin ? [] : ["./server/plugins/effect-runtime.ts"],
     }),

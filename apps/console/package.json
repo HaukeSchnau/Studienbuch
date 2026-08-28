@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/index.ts",
+    "migrate": "tsx src/migrate.ts",
     "build": "vp pack",
     "clean": "rm -rf dist",
     "start": "node dist/index.mjs",

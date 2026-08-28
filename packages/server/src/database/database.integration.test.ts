@@ -12,7 +12,7 @@ import { Operator } from "../access/operator.ts";
 import { SchoolAccess } from "../access/school-access.ts";
 import { schoolAccessCodes } from "../access/schema.ts";
 import { Database } from "./client.ts";
-import { migrateToLatest } from "./migrate.ts";
+import { HistoryMismatch, migrateToLatest } from "./migrate.ts";
 import { migrationsSchema, migrationsTable } from "./migration-history.ts";
 import { users } from "../auth/schema.ts";
 import {
@@ -1040,6 +1040,49 @@ it.live.runIf(hasContainerRuntime)(
         ),
       );
       expect(afterRerun.rows[0]?.count).toBe(bookkeeping.rows[0]?.count);
+    }).pipe(Effect.provide(migrated)),
+  { timeout: 60_000 },
+);
+
+it.live.runIf(hasContainerRuntime)(
+  "rejects an applied migration whose file hash changed",
+  () =>
+    Effect.gen(function* () {
+      const database = yield* Database.Service;
+      const applied = yield* Effect.promise(() =>
+        database.pool.query<{ id: number; name: string; hash: string }>(
+          `select id, name, hash from ${migrationsSchema}.${migrationsTable}
+           where name is not null order by id limit 1`,
+        ),
+      );
+      const migration = applied.rows[0];
+      expect(migration).toBeDefined();
+      if (migration === undefined) return;
+
+      yield* Effect.promise(() =>
+        database.pool.query(
+          `update ${migrationsSchema}.${migrationsTable} set hash = $1 where id = $2`,
+          ["edited-hash", migration.id],
+        ),
+      );
+
+      const mismatch = yield* Effect.flip(migrateToLatest).pipe(
+        Effect.ensuring(
+          Effect.promise(() =>
+            database.pool.query(
+              `update ${migrationsSchema}.${migrationsTable} set hash = $1 where id = $2`,
+              [migration.hash, migration.id],
+            ),
+          ),
+        ),
+      );
+      expect(mismatch).toEqual(
+        HistoryMismatch.make({
+          name: migration.name,
+          appliedHash: "edited-hash",
+          localHash: migration.hash,
+        }),
+      );
     }).pipe(Effect.provide(migrated)),
   { timeout: 60_000 },
 );

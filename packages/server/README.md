@@ -5,7 +5,7 @@ PostgreSQL persistence seam:
 
 - one scoped `pg` pool with startup validation and deterministic shutdown
 - an Effect-native Drizzle client backed by that same pool
-- a single migration history under `drizzle/`, applied in process at server start
+- a single migration history under `drizzle/`, applied by development and release tasks
 - Better Auth's current-state tables as the initial schema
 - incremental provider records with immutable payload versions and per-poll change manifests
 
@@ -130,10 +130,16 @@ Mermaid output, so the Nix package temporarily applies
 [the proposed upstream fix](https://github.com/HaukeSchnau/atlas/commit/c8b54962d4e5efad46e9f434ccb1e028047cce43)
 until it is available in a release.
 
-`just db-migrate` is a convenience for development. A deployed Release applies pending migrations
-as a staged pre-deploy task before the active artifact or web process changes.
-Both paths record their work in `public.studienbuch_migrations`; the table and schema names live in
-`src/database/migration-history.ts` so the two cannot drift.
+Managed development applies pending migrations when an instance starts. `just db-migrate` applies
+them deliberately while an instance is already running. Editing a file never runs its SQL.
+A deployed Release uses the same runner as a staged pre-deploy task before the active artifact or
+web process changes.
+
+Migration files become immutable once recorded in `public.studienbuch_migrations`. The runner
+compares their stored and local hashes before applying pending work, and rejects edited or deleted
+history. Fix an applied migration with a new migration. Rewriting unpublished history requires an
+explicit database reset. The table and schema names live in `src/database/migration-history.ts` so
+the development and release paths cannot drift.
 
 A bundled server has no workspace neighbours to resolve `drizzle/` against, so the Nix release
 copies the history beside the bundle and sets `STUDIENBUCH_MIGRATIONS_DIR`.
