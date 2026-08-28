@@ -21,8 +21,31 @@ const sentry = vi.hoisted(() => ({
   initialize: vi.fn(),
 }));
 
+const router = vi.hoisted(() => {
+  type RouterEvent = {
+    readonly pathChanged: boolean;
+    readonly toLocation: { readonly pathname: string };
+  };
+  const callbacks = new Map<string, (event: RouterEvent) => void>();
+  return {
+    callbacks,
+    subscribe: vi.fn((eventName: string, callback: (event: RouterEvent) => void) => {
+      callbacks.set(eventName, callback);
+      return vi.fn();
+    }),
+  };
+});
+
+const browser = vi.hoisted(() => ({
+  enabled: false,
+  recordCanary: vi.fn(),
+  recordNavigation: vi.fn(),
+  recordRender: vi.fn(),
+  removeLifecycle: vi.fn(),
+}));
+
 vi.mock("@tanstack/react-router", () => ({
-  useRouter: () => ({ subscribe: vi.fn(() => vi.fn()) }),
+  useRouter: () => ({ subscribe: router.subscribe }),
 }));
 
 vi.mock("./sentry-client.ts", async () => {
@@ -32,8 +55,15 @@ vi.mock("./sentry-client.ts", async () => {
 });
 
 vi.mock("./browser-client.ts", () => ({
-  browserTelemetry: () => undefined,
-  installBrowserTelemetryLifecycle: vi.fn(),
+  browserTelemetry: () =>
+    browser.enabled
+      ? {
+          recordCanary: browser.recordCanary,
+          recordNavigation: browser.recordNavigation,
+          recordRender: browser.recordRender,
+        }
+      : undefined,
+  installBrowserTelemetryLifecycle: () => browser.removeLifecycle,
 }));
 
 describe("client observability bootstrap", () => {
@@ -57,5 +87,44 @@ describe("client observability bootstrap", () => {
     await Promise.resolve();
 
     expect(sentry.initialize).not.toHaveBeenCalled();
+  });
+
+  it("measures the initial render from browser navigation start", async () => {
+    browser.enabled = true;
+    router.callbacks.clear();
+    const navigationEntry: PerformanceEntry = {
+      duration: 0,
+      entryType: "navigation",
+      name: "document",
+      startTime: 25,
+      toJSON: () => ({}),
+    };
+    vi.spyOn(performance, "getEntriesByType").mockReturnValue([navigationEntry]);
+    vi.spyOn(performance, "now").mockReturnValue(3_275);
+
+    const root = createRoot(document.createElement("div"));
+    flushSync(() => {
+      root.render(
+        <ClientObservability
+          config={{
+            sentryDsn: undefined,
+            environment: "test",
+            instanceId: undefined,
+            version: "test",
+          }}
+        />,
+      );
+    });
+    await vi.waitFor(() => expect(router.callbacks.get("onRendered")).toBeDefined());
+
+    router.callbacks.get("onRendered")?.({
+      pathChanged: false,
+      toLocation: { pathname: "/app" },
+    });
+
+    expect(browser.recordRender).toHaveBeenCalledWith(3_250, "/app");
+    root.unmount();
+    browser.enabled = false;
+    vi.restoreAllMocks();
   });
 });

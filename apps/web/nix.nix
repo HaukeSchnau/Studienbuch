@@ -236,6 +236,9 @@ let
       DATABASE_URL="postgresql://postgres@$database_host:$database_port/postgres"
       export DATABASE_URL
       export NODE_OPTIONS="--import ./instrument.server.mjs''${NODE_OPTIONS:+ $NODE_OPTIONS}"
+      # Managed development is consumed over the Tailnet, where one request per source module is
+      # expensive. Keep an explicit opt-out while Vite's bundled development mode is experimental.
+      export STUDIENBUCH_WEB_BUNDLED_DEV="''${STUDIENBUCH_WEB_BUNDLED_DEV:-1}"
 
       ${observabilityEnvironment "development"}
 
