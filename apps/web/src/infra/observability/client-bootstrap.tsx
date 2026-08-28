@@ -25,7 +25,10 @@ export function ClientObservability({ config }: { readonly config: PublicConfig 
   }, [config.sentryDsn]);
 
   useEffect(() => {
-    const initializedAt = performance.now();
+    // Navigation timing starts before HTML download, hydration, and this effect. Measuring from it
+    // makes the initial render signal match the delay a user experiences after opening the app.
+    const initialNavigationStartedAt =
+      performance.getEntriesByType("navigation").at(0)?.startTime ?? 0;
     let dispose: (() => void) | undefined;
     let disposed = false;
 
@@ -59,7 +62,10 @@ export function ClientObservability({ config }: { readonly config: PublicConfig 
           router.subscribe("onRendered", ({ toLocation }) => {
             if (recordedInitialRender) return;
             recordedInitialRender = true;
-            telemetry.recordRender(performance.now() - initializedAt, toLocation.pathname);
+            telemetry.recordRender(
+              performance.now() - initialNavigationStartedAt,
+              toLocation.pathname,
+            );
           }),
         ];
         dispose = () => {

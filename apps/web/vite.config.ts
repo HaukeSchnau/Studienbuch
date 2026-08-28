@@ -22,8 +22,14 @@ if (process.env.BETTER_AUTH_URL !== undefined) {
 const skipRuntimePlugin =
   process.env.NODE_ENV !== "production" && process.env.STUDIENBUCH_WEB_SKIP_RUNTIME === "1";
 
+// Remote development pays a network round trip for every unbundled module. The managed Tailnet
+// action enables Vite's bundled development mode by default; local development remains unchanged.
+const bundledDevEnvironment = process.env.STUDIENBUCH_WEB_BUNDLED_DEV?.trim().toLowerCase();
+const bundledDev = bundledDevEnvironment === "1" || bundledDevEnvironment === "true";
+
 const config = defineConfig(({ command }) => ({
   resolve: { tsconfigPaths: true },
+  experimental: { bundledDev },
   server: {
     allowedHosts: [...allowedHosts],
   },
