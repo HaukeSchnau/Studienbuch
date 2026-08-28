@@ -1,14 +1,9 @@
-export { Auth } from "./auth/better-auth.ts";
-export { Operator } from "./access/operator.ts";
-export { AccessRpcHandlers } from "./access/rpc.ts";
-export { SchoolAccess } from "./access/school-access.ts";
-export { Database } from "./database/client.ts";
-export { EnquiryNotifier } from "./enquiry/enquiry-notifier.ts";
-export { EnquiryStore } from "./enquiry/enquiry-store.ts";
-export { MarketingRpcHandlers } from "./enquiry/rpc.ts";
+export { AccessRpcHandlers, Operator, SchoolAccess } from "./access.ts";
+export { Auth } from "./auth.ts";
+export { Database, Migrate } from "./database.ts";
+export { EnquiryNotifier, EnquiryStore, MarketingRpcHandlers } from "./enquiry.ts";
 export { SourceObservationStore } from "./importing/source-observation-store.ts";
 export { EntityLinks } from "./importing/entity-links.ts";
-export { Migrate } from "./database/migrate.ts";
 export { DirectoryProjectionStore } from "./organization/directory-projection-store.ts";
 export { CourseProjectionStore } from "./organization/course-projection-store.ts";
 export { TimetableProjectionStore } from "./schedule/timetable-projection-store.ts";

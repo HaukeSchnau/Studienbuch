@@ -5,7 +5,11 @@
   "license": "BUSL-1.1",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./access": "./src/access.ts",
+    "./auth": "./src/auth.ts",
+    "./database": "./src/database.ts",
+    "./enquiry": "./src/enquiry.ts"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate",
