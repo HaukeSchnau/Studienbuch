@@ -99,12 +99,13 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const { config } = Route.useLoaderData();
+  const { bundledDev, config } = Route.useLoaderData();
   const { atomRegistry } = Route.useRouteContext();
 
   return (
     <html lang="de">
       <head>
+        <BundledDevelopmentRuntime enabled={bundledDev} />
         <HeadContent />
       </head>
       <body>
@@ -125,4 +126,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </body>
     </html>
   );
+}
+
+/**
+ * Vite injects this runtime through its HTML transform, which TanStack Start's SSR shell bypasses.
+ *
+ * TODO: Remove this adapter once TanStack Start emits the bundled development runtime before its
+ * client entry. The non-async head script intentionally matches Vite's own bundled-dev transform.
+ */
+function BundledDevelopmentRuntime({ enabled }: { readonly enabled: boolean }) {
+  return enabled ? <script src="/bundledDevClient.mjs" type="module" /> : null;
 }
