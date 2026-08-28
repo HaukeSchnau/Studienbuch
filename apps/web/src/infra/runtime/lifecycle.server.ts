@@ -93,9 +93,45 @@ const lifecycleKey = Symbol.for("@stu/web/application-runtime-lifecycle");
 const globalRuntime = globalThis as typeof globalThis & {
   [lifecycleKey]?: RuntimeLifecycle;
 };
+const processCurrent = globalRuntime[lifecycleKey];
+const shouldReplaceCurrent =
+  processCurrent !== undefined &&
+  import.meta.hot?.data.applicationRuntimeLifecycle === processCurrent;
 
-export const applicationRuntimeLifecycle =
-  globalRuntime[lifecycleKey] ?? (globalRuntime[lifecycleKey] = createRuntimeLifecycle());
+const makeActiveRuntimeLifecycle = (previous?: RuntimeLifecycle): RuntimeLifecycle => {
+  const current = createRuntimeLifecycle();
+  let activation: Promise<RuntimeState> | undefined;
+  return {
+    ...current,
+    warm: () => {
+      activation ??= current.warm().then(async (state) => {
+        // Nitro keeps the process alive across server reloads. Build the replacement before closing
+        // its predecessor so requests never observe a missing application runtime.
+        if (state.status === "ready") await previous?.dispose();
+        return state;
+      });
+      return activation;
+    },
+  };
+};
+
+export const selectRuntimeLifecycle = (
+  processCurrent: RuntimeLifecycle | undefined,
+  shouldReplaceCurrent: boolean,
+) =>
+  processCurrent === undefined || shouldReplaceCurrent
+    ? makeActiveRuntimeLifecycle(shouldReplaceCurrent ? processCurrent : undefined)
+    : processCurrent;
+
+export const applicationRuntimeLifecycle = selectRuntimeLifecycle(
+  processCurrent,
+  shouldReplaceCurrent,
+);
+
+globalRuntime[lifecycleKey] = applicationRuntimeLifecycle;
+if (import.meta.hot !== undefined) {
+  import.meta.hot.data.applicationRuntimeLifecycle = applicationRuntimeLifecycle;
+}
 
 export const applicationRuntime = applicationRuntimeLifecycle.runtime;
 export const warmApplicationRuntime = applicationRuntimeLifecycle.warm;

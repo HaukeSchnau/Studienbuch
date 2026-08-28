@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { createLifecycleController } from "./lifecycle.server.ts";
+import {
+  createLifecycleController,
+  createRuntimeLifecycle,
+  selectRuntimeLifecycle,
+} from "./lifecycle.server.ts";
 
 describe("application runtime lifecycle", () => {
   it("warms and disposes exactly once under concurrent calls", async () => {
@@ -33,5 +37,12 @@ describe("application runtime lifecycle", () => {
     await lifecycle.dispose();
     expect(actions.flush).not.toHaveBeenCalled();
     expect(actions.dispose).toHaveBeenCalledOnce();
+  });
+
+  it("shares duplicate imports and replaces the generation that Vite invalidated", () => {
+    const current = createRuntimeLifecycle();
+
+    expect(selectRuntimeLifecycle(current, false)).toBe(current);
+    expect(selectRuntimeLifecycle(current, true)).not.toBe(current);
   });
 });

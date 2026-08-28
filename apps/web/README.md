@@ -23,6 +23,11 @@ STUDIENBUCH_WEB_SKIP_RUNTIME=1 vp run --filter @stu/web dev
 
 The flag is ignored in production.
 
+Nitro reloads server request handlers in place, so edits do not restart the development process or
+its long-lived database and telemetry resources. Changes to `packages/server/drizzle/**/migration.sql`
+rebuild the application runtime instead. The replacement applies pending migrations and reaches
+readiness before the previous Effect scope closes.
+
 ## Rendering and routing
 
 Public marketing and legal routes render on the server. The pathless `_client` route disables SSR

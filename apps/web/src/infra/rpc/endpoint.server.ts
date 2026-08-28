@@ -1,7 +1,8 @@
 import { AccessApi, Rpcs } from "@stu/api";
 import { Organization } from "@stu/core";
-import { AccessRpcHandlers, Auth, MarketingRpcHandlers } from "@stu/server";
-import * as Context from "effect/Context";
+import { AccessRpcHandlers } from "@stu/server/access";
+import { Auth } from "@stu/server/auth";
+import { MarketingRpcHandlers } from "@stu/server/enquiry";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as HttpEffect from "effect/unstable/http/HttpEffect";
@@ -10,6 +11,7 @@ import {
   EnrollmentRateLimiter,
   forwardedPrincipalFromHeaders,
 } from "#/infra/http/rate-limit.server.ts";
+import { applicationRuntime } from "#/infra/runtime/lifecycle.server.ts";
 
 const sameOrigin = (headers: Readonly<Record<string, string>>) => {
   const origin = headers.origin;
@@ -65,23 +67,20 @@ const authenticatedLayer = Layer.effect(
   }),
 );
 
-export class ApplicationRpcEndpoint extends Context.Service<
-  ApplicationRpcEndpoint,
-  (request: Request) => Promise<Response>
->()("@stu/web/infra/rpc/endpoint.server/ApplicationRpcEndpoint") {
-  static readonly layer = Layer.effect(
-    ApplicationRpcEndpoint,
-    Effect.gen(function* () {
-      const httpEffect = yield* RpcServer.toHttpEffect(Rpcs).pipe(
-        Effect.provide([
-          AccessRpcHandlers,
-          MarketingRpcHandlers,
-          admissionLayer,
-          authenticatedLayer,
-          RpcSerialization.layerJson,
-        ]),
-      );
-      return HttpEffect.toWebHandler(httpEffect);
-    }),
+const makeApplicationRpcEndpoint = Effect.gen(function* () {
+  const httpEffect = yield* RpcServer.toHttpEffect(Rpcs).pipe(
+    Effect.provide([
+      AccessRpcHandlers,
+      MarketingRpcHandlers,
+      admissionLayer,
+      authenticatedLayer,
+      RpcSerialization.layerJson,
+    ]),
   );
-}
+  return HttpEffect.toWebHandler(httpEffect);
+});
+
+/** Recreated by Nitro server HMR while the process-wide resource runtime stays alive. */
+let endpoint: Promise<(request: Request) => Promise<Response>> | undefined;
+export const applicationRpcEndpoint = () =>
+  (endpoint ??= applicationRuntime.runPromise(Effect.scoped(makeApplicationRpcEndpoint)));
