@@ -5,7 +5,7 @@
   "scripts": [
     {
       "name": "Start development",
-      "command": "project dev up >/dev/null && project dev status | jq -r '.endpoints | to_entries[] | select(.value.url) | \"\\(.key): \\(.value.url)\"'",
+      "command": "project dev up --only web",
       "icon": "configure",
       "runOnWorktreeCreate": true
     }
