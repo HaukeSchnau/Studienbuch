@@ -136,6 +136,10 @@ if (import.meta.hot !== undefined) {
   import.meta.hot.data.applicationRuntimeLifecycle = applicationRuntimeLifecycle;
 }
 
+// Server modules can reload without Nitro rerunning its startup plugin. Warm each new generation at
+// its source; the plugin awaits the same idempotent operation and remains responsible for failure.
+void applicationRuntimeLifecycle.warm();
+
 export const applicationRuntime = applicationRuntimeLifecycle.runtime;
 export const warmApplicationRuntime = applicationRuntimeLifecycle.warm;
 export const disposeApplicationRuntime = applicationRuntimeLifecycle.dispose;
