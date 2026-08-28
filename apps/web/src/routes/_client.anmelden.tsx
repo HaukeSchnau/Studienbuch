@@ -108,13 +108,7 @@ function SignInPage() {
           />
         </Field>
         {error === undefined ? null : <AuthError>{error}</AuthError>}
-        <Button
-          radius="pill"
-          size="xl"
-          type="submit"
-          variant="brand"
-          {...submitState({ busy, error })}
-        >
+        <Button size="xl" type="submit" variant="brand" {...submitState({ busy, error })}>
           {busy ? <Working>Anmeldung läuft ...</Working> : "Anmelden"}
         </Button>
       </form>
@@ -132,7 +126,6 @@ function SignInPage() {
       <Button
         className="w-full"
         onClick={() => void signInWithPasskey()}
-        radius="pill"
         size="lg"
         type="button"
         variant="outline"

@@ -45,7 +45,7 @@ function DropdownMenuContent({
  * highlight two rows at once.
  */
 const itemStyles =
-  "relative flex cursor-pointer items-center gap-3 rounded-2xl px-3 py-2 text-sm text-ink outline-hidden select-none focus:bg-primary-des focus:text-primary-text data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
+  "relative flex items-center gap-3 rounded-2xl px-3 py-2 text-sm text-ink outline-hidden select-none focus:bg-primary-des focus:text-primary-text data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4";
 
 function DropdownMenuItem({
   className,

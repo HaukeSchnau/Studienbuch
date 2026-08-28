@@ -60,7 +60,7 @@ function AccountPage() {
           <p className="mt-2 text-sm text-ink-soft">
             Ein Konto kann die Zugangscodes mehrerer Schulen einlösen.
           </p>
-          <Button asChild className="mt-5" radius="pill" variant="outline">
+          <Button asChild className="mt-5" variant="outline">
             <Link to="/aktivieren">
               <Plus /> Zugangscode eingeben
             </Link>
@@ -70,7 +70,7 @@ function AccountPage() {
 
       <PasskeySection onError={setError} />
 
-      <Button className="mt-7" onClick={() => void signOut()} radius="pill" variant="outline">
+      <Button className="mt-7" onClick={() => void signOut()} variant="outline">
         <LogOut /> Abmelden
       </Button>
     </DestinationPage>
@@ -203,7 +203,7 @@ function SchoolCard({
       </div>
 
       {access.profile === null ? (
-        <Button asChild className="mt-5" radius="pill" variant="brand">
+        <Button asChild className="mt-5" variant="brand">
           <Link search={{ access: access.id }} to="/einrichten">
             Profil einrichten
           </Link>
@@ -270,7 +270,6 @@ function PasskeySection({ onError }: { readonly onError: (message?: string) => v
           aria-busy={pending === "add"}
           disabled={pending !== undefined}
           onClick={() => void add()}
-          radius="pill"
           variant="outline"
         >
           <KeyRound />
@@ -308,7 +307,6 @@ function PasskeySection({ onError }: { readonly onError: (message?: string) => v
                 aria-label={`${passkey.name ?? "Passkey"} entfernen`}
                 disabled={pending !== undefined}
                 onClick={() => void remove(passkey.id)}
-                radius="pill"
                 size="icon-sm"
                 variant="ghost"
               >

@@ -61,7 +61,7 @@ function ResetPasswordPage() {
         <div className="mt-6">
           <AuthError>Der Link ist ungültig oder abgelaufen.</AuthError>
         </div>
-        <Button asChild className="mt-7 w-full" radius="pill" size="xl" variant="brand">
+        <Button asChild className="mt-7 w-full" size="xl" variant="brand">
           <Link to="/passwort-vergessen">Neuen Link anfordern</Link>
         </Button>
       </AuthShell>
@@ -84,13 +84,7 @@ function ResetPasswordPage() {
           />
         </Field>
         {error === undefined ? null : <AuthError>{error}</AuthError>}
-        <Button
-          radius="pill"
-          size="xl"
-          type="submit"
-          variant="brand"
-          {...submitState({ busy, error })}
-        >
+        <Button size="xl" type="submit" variant="brand" {...submitState({ busy, error })}>
           {busy ? <Working>Wird gespeichert ...</Working> : "Passwort speichern"}
         </Button>
       </form>

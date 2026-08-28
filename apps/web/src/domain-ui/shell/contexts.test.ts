@@ -9,7 +9,7 @@ const school: ShellContext = {
 };
 const operator: ShellContext = {
   ref: Organization.operatorContext,
-  title: "Studienbuch",
+  title: "Operator",
   subtitle: "Plattform-Operator",
 };
 const contexts = [school, operator];

@@ -99,7 +99,6 @@ function ActivatePage() {
         </Field>
         {error === undefined ? null : <AuthError>{error}</AuthError>}
         <Button
-          radius="pill"
           size="xl"
           type="submit"
           variant="brand"

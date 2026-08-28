@@ -55,7 +55,7 @@ function RegistrationError({ error, reset }: ErrorComponentProps) {
           : "Das hat nicht geklappt"}
       </AuthHeading>
       <p className="enter-later mt-4 text-center text-ink-soft">{accessMessage(error)}</p>
-      <Button asChild className="mt-7 w-full" radius="pill" size="xl" variant="brand">
+      <Button asChild className="mt-7 w-full" size="xl" variant="brand">
         <Link to="/aktivieren">Zugangscode eingeben</Link>
       </Button>
       <AuthNote>
@@ -123,7 +123,6 @@ function RegisterPage() {
           onClick={() => {
             setSentTo(undefined);
           }}
-          radius="pill"
           size="lg"
           type="button"
           variant="outline"
@@ -173,13 +172,7 @@ function RegisterPage() {
           />
         </Field>
         {error === undefined ? null : <AuthError>{error}</AuthError>}
-        <Button
-          radius="pill"
-          size="xl"
-          type="submit"
-          variant="brand"
-          {...submitState({ busy, error })}
-        >
+        <Button size="xl" type="submit" variant="brand" {...submitState({ busy, error })}>
           {busy ? <Working>Konto wird erstellt ...</Working> : "Konto erstellen"}
         </Button>
       </form>
