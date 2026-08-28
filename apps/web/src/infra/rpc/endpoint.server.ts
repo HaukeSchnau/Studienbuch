@@ -13,7 +13,7 @@ import {
   EnrollmentRateLimiter,
   forwardedPrincipalFromHeaders,
 } from "#/infra/http/rate-limit.server.ts";
-import { applicationRuntime } from "#/infra/runtime/lifecycle.server.ts";
+import { currentApplicationRuntime } from "#/infra/runtime/lifecycle.server.ts";
 
 const sameOrigin = (headers: Readonly<Record<string, string>>) => {
   const origin = headers.origin;
@@ -90,7 +90,9 @@ interface RpcEndpointLifecycle {
   readonly state: () => "active" | "stopping" | "stopped";
 }
 
-const createRpcEndpointLifecycle = (): RpcEndpointLifecycle => {
+type ApplicationRuntime = ReturnType<typeof currentApplicationRuntime>;
+
+const createRpcEndpointLifecycle = (runtime: ApplicationRuntime): RpcEndpointLifecycle => {
   const scope = Scope.makeUnsafe();
   let endpoint: Promise<RpcEndpoint> | undefined;
   let shutdown: Promise<void> | undefined;
@@ -98,7 +100,7 @@ const createRpcEndpointLifecycle = (): RpcEndpointLifecycle => {
 
   return {
     endpoint: () =>
-      (endpoint ??= applicationRuntime.runPromise(
+      (endpoint ??= runtime.runPromise(
         makeApplicationRpcEndpoint.pipe(Effect.provideService(Scope.Scope, scope)),
       )),
     dispose: () =>
@@ -111,20 +113,21 @@ const createRpcEndpointLifecycle = (): RpcEndpointLifecycle => {
   };
 };
 
-const endpointKey = Symbol.for("@stu/web/application-rpc-endpoint");
-const globalEndpoint = globalThis as typeof globalThis & {
-  [endpointKey]?: RpcEndpointLifecycle;
-};
-const processCurrent = globalEndpoint[endpointKey];
-const processCurrentState = processCurrent?.state();
-const shouldReplaceCurrent =
-  processCurrent !== undefined &&
-  (processCurrentState === "stopping" ||
-    processCurrentState === "stopped" ||
-    import.meta.hot?.data.applicationRpcEndpoint === processCurrent);
+interface RpcEndpointSlot {
+  readonly runtime: ApplicationRuntime;
+  readonly lifecycle: RpcEndpointLifecycle;
+}
 
-const makeActiveRpcEndpointLifecycle = (previous?: RpcEndpointLifecycle): RpcEndpointLifecycle => {
-  const current = createRpcEndpointLifecycle();
+const endpointKey = Symbol.for("@stu/web/application-rpc-endpoint-v2");
+const globalEndpoint = globalThis as typeof globalThis & {
+  [endpointKey]?: RpcEndpointSlot;
+};
+
+const makeActiveRpcEndpointLifecycle = (
+  runtime: ApplicationRuntime,
+  previous?: RpcEndpointLifecycle,
+): RpcEndpointLifecycle => {
+  const current = createRpcEndpointLifecycle(runtime);
   let activation: Promise<RpcEndpoint> | undefined;
   return {
     ...current,
@@ -136,15 +139,32 @@ const makeActiveRpcEndpointLifecycle = (previous?: RpcEndpointLifecycle): RpcEnd
   };
 };
 
-const applicationRpcEndpointLifecycle =
-  processCurrent === undefined || shouldReplaceCurrent
-    ? makeActiveRpcEndpointLifecycle(shouldReplaceCurrent ? processCurrent : undefined)
-    : processCurrent;
+const selectRpcEndpointLifecycle = (invalidated?: RpcEndpointLifecycle) => {
+  const runtime = currentApplicationRuntime();
+  const processSlot = globalEndpoint[endpointKey];
+  const processCurrent = processSlot?.lifecycle;
+  const processCurrentState = processCurrent?.state();
+  const shouldReplaceCurrent =
+    processSlot !== undefined &&
+    (processSlot.runtime !== runtime ||
+      processCurrentState === "stopping" ||
+      processCurrentState === "stopped" ||
+      invalidated === processSlot.lifecycle);
+  const lifecycle =
+    processCurrent === undefined || shouldReplaceCurrent
+      ? makeActiveRpcEndpointLifecycle(runtime, shouldReplaceCurrent ? processCurrent : undefined)
+      : processCurrent;
+  globalEndpoint[endpointKey] = { runtime, lifecycle };
+  return lifecycle;
+};
 
-globalEndpoint[endpointKey] = applicationRpcEndpointLifecycle;
+const moduleRpcEndpointLifecycle = selectRpcEndpointLifecycle(
+  import.meta.hot?.data.applicationRpcEndpoint,
+);
 if (import.meta.hot !== undefined) {
-  import.meta.hot.data.applicationRpcEndpoint = applicationRpcEndpointLifecycle;
+  import.meta.hot.data.applicationRpcEndpoint = moduleRpcEndpointLifecycle;
 }
 
-export const applicationRpcEndpoint = applicationRpcEndpointLifecycle.endpoint;
-export const disposeApplicationRpcEndpoint = applicationRpcEndpointLifecycle.dispose;
+export const applicationRpcEndpoint = () => selectRpcEndpointLifecycle().endpoint();
+export const disposeApplicationRpcEndpoint = () =>
+  globalEndpoint[endpointKey]?.lifecycle.dispose() ?? Promise.resolve();

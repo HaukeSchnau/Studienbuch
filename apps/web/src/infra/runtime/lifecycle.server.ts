@@ -140,7 +140,10 @@ if (import.meta.hot !== undefined) {
 // its source; the plugin awaits the same idempotent operation and remains responsible for failure.
 void applicationRuntimeLifecycle.warm();
 
-export const applicationRuntime = applicationRuntimeLifecycle.runtime;
-export const warmApplicationRuntime = applicationRuntimeLifecycle.warm;
-export const disposeApplicationRuntime = applicationRuntimeLifecycle.dispose;
-export const applicationRuntimeState = applicationRuntimeLifecycle.state;
+const currentApplicationRuntimeLifecycle = () =>
+  globalRuntime[lifecycleKey] ?? applicationRuntimeLifecycle;
+
+export const currentApplicationRuntime = () => currentApplicationRuntimeLifecycle().runtime;
+export const warmApplicationRuntime = () => currentApplicationRuntimeLifecycle().warm();
+export const disposeApplicationRuntime = () => currentApplicationRuntimeLifecycle().dispose();
+export const applicationRuntimeState = () => currentApplicationRuntimeLifecycle().state();

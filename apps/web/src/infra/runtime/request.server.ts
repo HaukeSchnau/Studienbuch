@@ -13,7 +13,7 @@ import type { OtlpExporter } from "effect/unstable/observability";
 import type { Database } from "@stu/server";
 import type { ClientTelemetry } from "#/infra/observability/client-telemetry.server.ts";
 import { httpAvailabilityOutcome } from "./http-outcome.ts";
-import { applicationRuntime } from "./lifecycle.server.ts";
+import { currentApplicationRuntime } from "./lifecycle.server.ts";
 
 export interface RouteEffectOptions {
   readonly request: Request;
@@ -35,8 +35,8 @@ export interface RouteEffectRunner<R = ClientTelemetry | OtlpExporter.Flusher> {
 
 /**
  * Runs a route's effect on the process-wide runtime, as a server span continuing any incoming W3C
- * trace context. The runtime is warmed once by the Nitro plugin, which terminates the process if it
- * cannot be built, so handlers never see a half-constructed runtime here.
+ * trace context. Each runtime generation starts warming when its module loads; the Nitro plugin
+ * terminates the process if that warmup fails, so handlers never see a half-constructed runtime.
  */
 export const runRouteEffect: RouteEffectRunner<RuntimeServices> = (effect, options) => {
   const traced = Effect.gen(function* () {
@@ -85,7 +85,7 @@ export const runRouteEffect: RouteEffectRunner<RuntimeServices> = (effect, optio
       { captureStackTrace: false },
     ),
   );
-  return applicationRuntime.runPromiseExit(
+  return currentApplicationRuntime().runPromiseExit(
     withIncomingTraceContext(traced, options.request.headers),
     { signal: options.request.signal },
   );

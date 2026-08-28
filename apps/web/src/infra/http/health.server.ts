@@ -4,8 +4,8 @@ import { Database } from "@stu/server";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import {
-  applicationRuntime,
   applicationRuntimeState,
+  currentApplicationRuntime,
   type RuntimeState,
 } from "#/infra/runtime/lifecycle.server.ts";
 import { runRouteEffect } from "#/infra/runtime/request.server.ts";
@@ -23,7 +23,7 @@ const databasePingTimeout = "2 seconds";
  * the trace stream.
  */
 async function pingDatabase(): Promise<boolean> {
-  const exit = await applicationRuntime.runPromiseExit(
+  const exit = await currentApplicationRuntime().runPromiseExit(
     Effect.flatMap(Database.Service, (database) => database.ping).pipe(
       Effect.timeout(databasePingTimeout),
     ),
