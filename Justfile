@@ -45,7 +45,7 @@ db-generate:
     vp run --filter "@stu/server" db:generate
 
 db-migrate:
-    vp run --filter "@stu/server" db:migrate
+    vp run --filter "@stu/console" migrate
 
 db-diagram:
     #!/usr/bin/env bash

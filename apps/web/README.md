@@ -24,9 +24,9 @@ STUDIENBUCH_WEB_SKIP_RUNTIME=1 vp run --filter @stu/web dev
 The flag is ignored in production.
 
 Nitro reloads server request handlers in place, so edits do not restart the development process or
-its long-lived database and telemetry resources. Changes to `packages/server/drizzle/**/migration.sql`
-rebuild the application runtime instead. The replacement applies pending migrations and reaches
-readiness before the previous Effect scope closes.
+its long-lived database and telemetry resources. Migration files are never watched or applied in
+response to an edit. Managed development applies pending migrations when the instance starts; run
+`just db-migrate` deliberately when adding one to an instance that is already running.
 
 ## Rendering and routing
 
