@@ -9,7 +9,7 @@ import { getPublicShellState } from "#/infra/config/public-config.ts";
 import type { RouterContext } from "#/infra/effect-atom/router-context.ts";
 import { ClientObservability } from "#/infra/observability/client-bootstrap.tsx";
 
-import appCss from "#/styles.css?url";
+import "#/styles.css";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   // Public runtime configuration and the request's cheap auth rendering hint are loaded together
@@ -74,10 +74,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
       // Rounded artwork for the browser tab, square for iOS: Apple masks the touch icon itself, so
       // a pre-rounded one would be rounded twice and show its corners.
       {
