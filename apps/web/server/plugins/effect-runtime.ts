@@ -3,7 +3,10 @@ import {
   disposeApplicationRuntime,
   warmApplicationRuntime,
 } from "../../src/infra/runtime/lifecycle.server.ts";
-import { applicationRpcEndpoint } from "../../src/infra/rpc/endpoint.server.ts";
+import {
+  applicationRpcEndpoint,
+  disposeApplicationRpcEndpoint,
+} from "../../src/infra/rpc/endpoint.server.ts";
 import { installNodeShutdownHandlers } from "../../src/infra/runtime/shutdown.server.ts";
 
 const terminateAfterStartupFailure = (reason: string) => {
@@ -16,6 +19,7 @@ export default definePlugin((nitroApp) => {
   const removeNodeHandlers = installNodeShutdownHandlers();
   nitroApp.hooks.hook("close", async () => {
     removeNodeHandlers();
+    await disposeApplicationRpcEndpoint();
     await disposeApplicationRuntime();
   });
   void Promise.all([warmApplicationRuntime(), applicationRpcEndpoint()]).then(
