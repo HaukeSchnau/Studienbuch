@@ -24,8 +24,7 @@ const skipRuntimePlugin =
 
 // Remote development pays a network round trip for every unbundled module. The managed Tailnet
 // action enables Vite's bundled development mode by default; local development remains unchanged.
-const bundledDevEnvironment = process.env.STUDIENBUCH_WEB_BUNDLED_DEV?.trim().toLowerCase();
-const bundledDev = bundledDevEnvironment === "1" || bundledDevEnvironment === "true";
+const bundledDev = process.env.STUDIENBUCH_WEB_BUNDLED_DEV === "1";
 
 const config = defineConfig(({ command }) => ({
   resolve: { tsconfigPaths: true },

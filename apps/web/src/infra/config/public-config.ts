@@ -21,6 +21,8 @@ export interface PublicConfig {
 
 export interface PublicShellState {
   readonly config: PublicConfig;
+  /** Whether the SSR shell must initialize Vite's experimental bundled development runtime. */
+  readonly bundledDev: boolean;
   /**
    * A rendering hint, not proof of authentication. Reading the token cookie avoids showing the
    * signed-out call to action while the browser verifies an existing session.
@@ -39,6 +41,7 @@ function deploymentEnvironment(value: string | undefined): DeploymentEnvironment
 
 export const getPublicShellState = createServerFn({ method: "GET" }).handler(
   (): PublicShellState => ({
+    bundledDev: process.env.STUDIENBUCH_WEB_BUNDLED_DEV === "1",
     config: {
       sentryDsn: optionalText(process.env.STUDIENBUCH_SENTRY_DSN),
       environment: deploymentEnvironment(
