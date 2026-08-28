@@ -1,5 +1,13 @@
 {
   "$schema": "https://t3.codes/schema/t3.json",
   "iconPath": "branding/logo/app-icon.svg",
-  "defaultThreadEnvMode": "worktree"
+  "defaultThreadEnvMode": "worktree",
+  "scripts": [
+    {
+      "name": "Start development",
+      "command": "project dev up >/dev/null && project dev status | jq -r '.endpoints | to_entries[] | select(.value.url) | \"\\(.key): \\(.value.url)\"'",
+      "icon": "configure",
+      "runOnWorktreeCreate": true
+    }
+  ]
 }
