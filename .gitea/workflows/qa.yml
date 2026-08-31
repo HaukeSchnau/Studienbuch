@@ -98,11 +98,31 @@ jobs:
             just qa
           BASH
 
+  release_check:
+    name: Release contract
+    if: github.event_name != 'pull_request'
+    needs: qa
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Verify release contract
+        run: |
+          set -euo pipefail
+          if [ -x /run/current-system/sw/bin/nix ]; then
+            export PATH="/run/current-system/sw/bin:$PATH"
+          fi
+          system="$(nix eval --impure --raw --expr builtins.currentSystem)"
+          nix build ".#checks.${system}.projectReleaseGate" --no-link --print-build-logs
+
   release:
     name: Release
     if: github.event_name != 'pull_request'
-    needs: qa
+    needs: release_check
     uses: schnau/nix-infra-modules/.gitea/workflows/project-release.yml@main
     with:
-      verification_check: projectReleaseGate
       readiness_url: https://beta.studienbuch.app/api/health/ready
