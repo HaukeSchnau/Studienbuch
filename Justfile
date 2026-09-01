@@ -33,13 +33,13 @@ test: test-packages test-apps
 test-packages: test-package-libraries test-server
 
 test-package-libraries:
-    vp run --filter "@stu/core" --filter "@stu/observability" test
+    vp run --cache --filter "@stu/core" --filter "@stu/observability" test
 
 test-server:
-    vp run --filter "@stu/server" test
+    vp run --cache --filter "@stu/server" test
 
 test-apps:
-    vp run --filter "./apps/*" test
+    vp run --cache --filter "./apps/*" test
 
 db-generate:
     vp run --filter "@stu/server" db:generate
