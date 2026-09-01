@@ -80,6 +80,7 @@ let
       ciPackages =
         developmentPackages
         ++ lib.optionals isLinux [
+          pkgs.procps
           pkgs.rsync
           pkgs.util-linux
         ];
