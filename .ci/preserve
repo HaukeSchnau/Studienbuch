@@ -1,0 +1,19 @@
+# Project-owned caches retained when the generic runner refreshes the source tree.
+/.jj/
+/.pnpm-store/
+/node_modules/
+/.vite-plus/
+/dist/
+/apps/*/node_modules/
+/apps/*/.vite-plus/
+/apps/*/.expo/
+/apps/*/.expo-update-verify/
+/apps/*/dist/
+/apps/*/dist-ssr/
+/apps/*/web-build/
+/packages/*/node_modules/
+/packages/*/.vite-plus/
+/packages/*/dist/
+/scripts/node_modules/
+/scripts/.vite-plus/
+*.tsbuildinfo
