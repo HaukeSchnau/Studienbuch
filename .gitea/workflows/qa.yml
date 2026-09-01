@@ -1,7 +1,7 @@
 name: CI
 
-# Pull requests stop after QA. Pushes to `main` and manual runs publish only after this job succeeds,
-# so the same `just qa` a developer runs is the gate in front of the immutable Release workflow.
+# Pull requests stop after QA. Pushes to `main` and manual runs verify the release contract in the
+# same runner allocation, then publish through the immutable Release workflow.
 
 on:
   push:
@@ -51,31 +51,17 @@ jobs:
             "$source_workspace/scripts/ci-workspace-run.sh" \
             "$source_workspace" just qa
 
-  release_check:
-    name: Release contract
-    if: github.event_name != 'pull_request'
-    needs: qa
-    runs-on: ubuntu-22.04
-    timeout-minutes: 30
-    steps:
-      - name: Checkout exact revision
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-
       - name: Verify release contract
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
-          if [ -x /run/current-system/sw/bin/nix ]; then
-            export PATH="/run/current-system/sw/bin:$PATH"
-          fi
           system="$(nix eval --impure --raw --expr builtins.currentSystem)"
           nix build ".#checks.${system}.projectReleaseGate" --no-link --print-build-logs
 
   release:
     name: Release
     if: github.event_name != 'pull_request'
-    needs: release_check
+    needs: qa
     uses: schnau/nix-infra-modules/.gitea/workflows/project-release.yml@main
     with:
       readiness_url: https://beta.studienbuch.app/api/health/ready
