@@ -108,10 +108,14 @@ let
               --arg state "$state" \
               --arg runtime "$runtime" \
               --arg databaseUrl "$database_url" \
+              --arg databaseHost "$postgres_socket" \
+              --arg databaseUser "$postgres_user" \
+              --arg otlpEndpoint "http://127.0.0.1:$collector_port" \
               --arg authEmailFrom 'Studienbuch <konto@studienbuch.app>' \
               --argjson webPort "$web_port" \
               '{
-                schemaVersion: 2,
+                schemaVersion: 3,
+                instanceId: "studienbuch-release-smoke",
                 project: "studienbuch",
                 realization: "release",
                 paths: {state: $state, runtime: $runtime},
@@ -125,13 +129,20 @@ let
                   }
                 },
                 parameters: {
-                  databaseUrl: $databaseUrl,
+                  observabilityOtlpEndpoint: $otlpEndpoint,
                   authEmailFrom: $authEmailFrom,
                   passkeyRpId: "example.test",
                   webUntisSchoolName: "IGS Lilienthal",
                   webUntisSchoolLoginName: "igs-lilienthal",
                   webUntisServerUrl: "https://igs-lilienthal.webuntis.com",
                   webUntisTenantId: "6603700"
+                },
+                bindings: {
+                  database: {kind: "postgresql", majorVersion: 17, host: $databaseHost, port: 5432, user: $databaseUser, database: "postgres", url: $databaseUrl},
+                  betterAuthSecret: {kind: "secret", credential: "betterAuthSecret"},
+                  smtpUrl: {kind: "secret", credential: "smtpUrl"},
+                  webUntisUsername: {kind: "secret", credential: "webUntisUsername"},
+                  webUntisPassword: {kind: "secret", credential: "webUntisPassword"}
                 },
                 secrets: {
                   betterAuthSecret: "better-auth-secret",
@@ -277,26 +288,15 @@ let
       releaseChecks = {
         projectDescriptor = pkgs.runCommand "studienbuch-project-descriptor-check" { } ''
           ${pkgs.jq}/bin/jq -e '
-            .schemaVersion == 3 and
+            .schemaVersion == 4 and
             .project == "studienbuch" and
-            (.development.endpoints | keys) == ["database", "mobile", "web"] and
-            (.development.workloads | keys) == ["database", "importer", "mobile", "web"] and
-            .development.workloads.importer.lifecycle == "background" and
-            .development.workloads.importer.secrets == ["webUntisUsername", "webUntisPassword"] and
-            .development.commands.console == {action: "console", secrets: ["webUntisUsername", "webUntisPassword"]} and
-            .development.workloads.web.secrets == ["betterAuthSecret"] and
-            (.development.workloads.mobile.secrets // []) == [] and
-            .development.endpoints.web.health.paths == ["/api/health/ready"] and
-            (.parameters | keys) == ["authEmailFrom", "databaseUrl", "observabilityOtlpEndpoint", "passkeyRpId", "webUntisSchoolLoginName", "webUntisSchoolName", "webUntisServerUrl", "webUntisTenantId"] and
-            (.secrets | keys) == ["betterAuthSecret", "smtpUrl", "webUntisPassword", "webUntisUsername"] and
-            .release.action == "web" and
-            .release.commands.console == {action: "console", secrets: ["webUntisUsername", "webUntisPassword"]} and
-            .release.preDeployTasks == {migrate: {timeoutSec: 300}} and
-            (.release.maintenanceJobs | keys) == ["webuntis-course-rosters", "webuntis-directory", "webuntis-timetable-hot", "webuntis-timetable-warm"] and
-            .release.health.paths == ["/api/health/live", "/api/health/ready"] and
-            .release.health.startupTimeoutSec == 60 and
-            .release.health.intervalSec == 2 and
-            .release.health.requestTimeoutSec == 2
+            .requirements.database.majorVersions == [16, 17] and
+            .development.providers.database.majorVersion == 17 and
+            .development.workloads.worker.lifecycle == "background" and
+            .development.commands.console.action == "studienbuch:console" and
+            (.development.endpoints | keys) == ["mobile", "web"] and
+            .environment.release.common.DATABASE_URL == {binding: "database", field: "url"} and
+            .release.preDeployTasks.migrate.action == "migrate"
           ' ${descriptorPath} >/dev/null
           cmp ${descriptorPath} ${releasePackage}/share/project/descriptor.json
           test -x ${releasePackage}/bin/project-release-runtime

@@ -1,149 +1,588 @@
 {
-  "$schema": "https://raw.githubusercontent.com/HaukeSchnau/nix-infra-modules/main/schemas/project-descriptor/v3.json",
-  "schemaVersion": 3,
-  "project": "studienbuch",
-  "secrets": {
-    "betterAuthSecret": {
-      "description": "Secret used to sign Better Auth sessions"
-    },
-    "smtpUrl": {
-      "description": "SMTP connection URL used to deliver authentication email"
-    },
-    "webUntisUsername": {
-      "description": "WebUntis account used for school data imports"
-    },
-    "webUntisPassword": {
-      "description": "Password for the WebUntis import account"
-    }
-  },
-  "parameters": {
-    "databaseUrl": {
-      "description": "PostgreSQL connection URL used by the Release runtime",
-      "default": "postgresql:///studienbuch?host=/run/postgresql"
-    },
-    "authEmailFrom": {
-      "description": "Sender shown on authentication email",
-      "default": "Studienbuch <konto@studienbuch.app>"
-    },
-    "passkeyRpId": {
-      "description": "WebAuthn relying-party ID shared by production origins",
-      "default": "studienbuch.app"
-    },
-    "webUntisSchoolName": {
-      "description": "Display name used to discover the WebUntis school",
-      "default": "IGS Lilienthal"
-    },
-    "webUntisSchoolLoginName": {
-      "description": "Operational WebUntis school login name",
-      "default": "igs-lilienthal"
-    },
-    "webUntisServerUrl": {
-      "description": "Pinned WebUntis server URL",
-      "default": "https://igs-lilienthal.webuntis.com"
-    },
-    "webUntisTenantId": {
-      "description": "Pinned WebUntis tenant identity",
-      "default": "6603700"
-    },
-    "observabilityOtlpEndpoint": {
-      "description": "OpenTelemetry Protocol HTTP endpoint selected by the runtime",
-      "default": "http://127.0.0.1:4318"
-    }
-  },
   "development": {
-    "preparation": {
-      "action": "prepare"
-    },
-    "workloads": {
-      "database": {
-        "action": "database"
-      },
-      "web": {
-        "action": "web",
-        "secrets": ["betterAuthSecret"]
-      },
-      "mobile": {
-        "action": "mobile"
-      },
-      "importer": {
-        "action": "worker",
-        "kind": "service",
-        "lifecycle": "background",
-        "secrets": ["webUntisUsername", "webUntisPassword"]
-      }
-    },
     "commands": {
       "console": {
-        "action": "console",
-        "secrets": ["webUntisUsername", "webUntisPassword"]
+        "action": "studienbuch:console",
+        "dependsOn": [],
+        "secrets": [
+          "webUntisPassword",
+          "webUntisUsername"
+        ]
       }
     },
     "endpoints": {
-      "database": {
-        "protocol": "tcp",
-        "workload": "database"
+      "mobile": {
+        "health": {
+          "intervalSec": 1,
+          "paths": [
+            "/status"
+          ],
+          "requestTimeoutSec": 15,
+          "startupTimeoutSec": 60
+        },
+        "port": 8081,
+        "protocol": "http",
+        "publication": "preview",
+        "workload": "mobile"
       },
       "web": {
         "health": {
-          "paths": ["/api/health/ready"]
-        }
+          "intervalSec": 1,
+          "paths": [
+            "/api/health/ready"
+          ],
+          "requestTimeoutSec": 15,
+          "startupTimeoutSec": 60
+        },
+        "port": 3000,
+        "protocol": "http",
+        "publication": "preview",
+        "workload": "web"
+      }
+    },
+    "preparation": {
+      "action": "prepare",
+      "secrets": [],
+      "timeoutSec": 900
+    },
+    "providers": {
+      "database": {
+        "database": "postgres",
+        "majorVersion": 17,
+        "port": 5432,
+        "user": "postgres",
+        "workload": "database"
+      }
+    },
+    "workloads": {
+      "database": {
+        "action": "database",
+        "dependsOn": [],
+        "kind": "service",
+        "lifecycle": "on-demand",
+        "secrets": []
       },
       "mobile": {
-        "health": {
-          "paths": ["/status"]
-        }
+        "action": "mobile",
+        "dependsOn": [],
+        "kind": "service",
+        "lifecycle": "on-demand",
+        "secrets": []
+      },
+      "web": {
+        "action": "web",
+        "dependsOn": [],
+        "kind": "service",
+        "lifecycle": "on-demand",
+        "secrets": [
+          "betterAuthSecret"
+        ]
+      },
+      "worker": {
+        "action": "worker",
+        "dependsOn": [],
+        "kind": "service",
+        "lifecycle": "background",
+        "secrets": [
+          "webUntisPassword",
+          "webUntisUsername"
+        ]
       }
     }
   },
+  "environment": {
+    "development": {
+      "actions": {
+        "mobile": {
+          "EXPO_PACKAGER_PROXY_URL": {
+            "endpoint": "mobile",
+            "field": "url"
+          },
+          "STUDIENBUCH_MOBILE_CACHE": {
+            "append": "mobile",
+            "path": "cache"
+          },
+          "STUDIENBUCH_MOBILE_PORT": {
+            "endpoint": "mobile",
+            "field": "listen.port"
+          }
+        },
+        "studienbuch:console": {
+          "WEBUNTIS_PASSWORD": {
+            "binding": "webUntisPassword",
+            "field": "value"
+          },
+          "WEBUNTIS_SCHOOL_LOGIN_NAME": {
+            "parameter": "webUntisSchoolLoginName"
+          },
+          "WEBUNTIS_SCHOOL_NAME": {
+            "parameter": "webUntisSchoolName"
+          },
+          "WEBUNTIS_SERVER_URL": {
+            "parameter": "webUntisServerUrl"
+          },
+          "WEBUNTIS_TENANT_ID": {
+            "parameter": "webUntisTenantId"
+          },
+          "WEBUNTIS_USERNAME": {
+            "binding": "webUntisUsername",
+            "field": "value"
+          }
+        },
+        "web": {
+          "BETTER_AUTH_SECRET": {
+            "binding": "betterAuthSecret",
+            "field": "value"
+          },
+          "STUDIENBUCH_EMAIL_FROM": {
+            "parameter": "authEmailFrom"
+          },
+          "STUDIENBUCH_PASSKEY_RP_ID": {
+            "parameter": "passkeyRpId"
+          },
+          "STUDIENBUCH_WEB_HOST": {
+            "endpoint": "web",
+            "field": "listen.host"
+          },
+          "STUDIENBUCH_WEB_HOST_NAMES": {
+            "endpoint": "web",
+            "field": "hostNames"
+          },
+          "STUDIENBUCH_WEB_PORT": {
+            "endpoint": "web",
+            "field": "listen.port"
+          }
+        },
+        "worker": {
+          "WEBUNTIS_PASSWORD": {
+            "binding": "webUntisPassword",
+            "field": "value"
+          },
+          "WEBUNTIS_SCHOOL_LOGIN_NAME": {
+            "parameter": "webUntisSchoolLoginName"
+          },
+          "WEBUNTIS_SCHOOL_NAME": {
+            "parameter": "webUntisSchoolName"
+          },
+          "WEBUNTIS_SERVER_URL": {
+            "parameter": "webUntisServerUrl"
+          },
+          "WEBUNTIS_TENANT_ID": {
+            "parameter": "webUntisTenantId"
+          },
+          "WEBUNTIS_USERNAME": {
+            "binding": "webUntisUsername",
+            "field": "value"
+          }
+        }
+      },
+      "common": {
+        "BETTER_AUTH_URL": {
+          "endpoint": "web",
+          "field": "url"
+        },
+        "DATABASE_URL": {
+          "binding": "database",
+          "field": "url"
+        },
+        "EXPO_PUBLIC_API_URL": {
+          "endpoint": "web",
+          "field": "url"
+        },
+        "OTEL_EXPORTER_OTLP_ENDPOINT": {
+          "parameter": "observabilityOtlpEndpoint"
+        },
+        "PGDATA": {
+          "binding": "database",
+          "field": "dataDirectory"
+        },
+        "PGDATABASE": {
+          "binding": "database",
+          "field": "database"
+        },
+        "PGHOST": {
+          "binding": "database",
+          "field": "host"
+        },
+        "PGPORT": {
+          "binding": "database",
+          "field": "port"
+        },
+        "PGUSER": {
+          "binding": "database",
+          "field": "user"
+        },
+        "STUDIENBUCH_INSTANCE_ID": {
+          "instance": "id"
+        },
+        "STUDIENBUCH_OTEL_ENABLED": "true"
+      }
+    },
+    "release": {
+      "actions": {
+        "console": {
+          "WEBUNTIS_PASSWORD": {
+            "binding": "webUntisPassword",
+            "field": "value"
+          },
+          "WEBUNTIS_SCHOOL_LOGIN_NAME": {
+            "parameter": "webUntisSchoolLoginName"
+          },
+          "WEBUNTIS_SCHOOL_NAME": {
+            "parameter": "webUntisSchoolName"
+          },
+          "WEBUNTIS_SERVER_URL": {
+            "parameter": "webUntisServerUrl"
+          },
+          "WEBUNTIS_TENANT_ID": {
+            "parameter": "webUntisTenantId"
+          },
+          "WEBUNTIS_USERNAME": {
+            "binding": "webUntisUsername",
+            "field": "value"
+          }
+        },
+        "web": {
+          "BETTER_AUTH_SECRET": {
+            "binding": "betterAuthSecret",
+            "field": "value"
+          },
+          "HOST": {
+            "endpoint": "web",
+            "field": "listen.host"
+          },
+          "PORT": {
+            "endpoint": "web",
+            "field": "listen.port"
+          },
+          "STUDIENBUCH_EMAIL_FROM": {
+            "parameter": "authEmailFrom"
+          },
+          "STUDIENBUCH_PASSKEY_RP_ID": {
+            "parameter": "passkeyRpId"
+          },
+          "STUDIENBUCH_SMTP_URL_FILE": {
+            "binding": "smtpUrl",
+            "field": "file"
+          }
+        },
+        "webuntis-course-rosters": {
+          "WEBUNTIS_PASSWORD": {
+            "binding": "webUntisPassword",
+            "field": "value"
+          },
+          "WEBUNTIS_SCHOOL_LOGIN_NAME": {
+            "parameter": "webUntisSchoolLoginName"
+          },
+          "WEBUNTIS_SCHOOL_NAME": {
+            "parameter": "webUntisSchoolName"
+          },
+          "WEBUNTIS_SERVER_URL": {
+            "parameter": "webUntisServerUrl"
+          },
+          "WEBUNTIS_TENANT_ID": {
+            "parameter": "webUntisTenantId"
+          },
+          "WEBUNTIS_USERNAME": {
+            "binding": "webUntisUsername",
+            "field": "value"
+          }
+        },
+        "webuntis-directory": {
+          "WEBUNTIS_PASSWORD": {
+            "binding": "webUntisPassword",
+            "field": "value"
+          },
+          "WEBUNTIS_SCHOOL_LOGIN_NAME": {
+            "parameter": "webUntisSchoolLoginName"
+          },
+          "WEBUNTIS_SCHOOL_NAME": {
+            "parameter": "webUntisSchoolName"
+          },
+          "WEBUNTIS_SERVER_URL": {
+            "parameter": "webUntisServerUrl"
+          },
+          "WEBUNTIS_TENANT_ID": {
+            "parameter": "webUntisTenantId"
+          },
+          "WEBUNTIS_USERNAME": {
+            "binding": "webUntisUsername",
+            "field": "value"
+          }
+        },
+        "webuntis-timetable-hot": {
+          "WEBUNTIS_PASSWORD": {
+            "binding": "webUntisPassword",
+            "field": "value"
+          },
+          "WEBUNTIS_SCHOOL_LOGIN_NAME": {
+            "parameter": "webUntisSchoolLoginName"
+          },
+          "WEBUNTIS_SCHOOL_NAME": {
+            "parameter": "webUntisSchoolName"
+          },
+          "WEBUNTIS_SERVER_URL": {
+            "parameter": "webUntisServerUrl"
+          },
+          "WEBUNTIS_TENANT_ID": {
+            "parameter": "webUntisTenantId"
+          },
+          "WEBUNTIS_USERNAME": {
+            "binding": "webUntisUsername",
+            "field": "value"
+          }
+        },
+        "webuntis-timetable-warm": {
+          "WEBUNTIS_PASSWORD": {
+            "binding": "webUntisPassword",
+            "field": "value"
+          },
+          "WEBUNTIS_SCHOOL_LOGIN_NAME": {
+            "parameter": "webUntisSchoolLoginName"
+          },
+          "WEBUNTIS_SCHOOL_NAME": {
+            "parameter": "webUntisSchoolName"
+          },
+          "WEBUNTIS_SERVER_URL": {
+            "parameter": "webUntisServerUrl"
+          },
+          "WEBUNTIS_TENANT_ID": {
+            "parameter": "webUntisTenantId"
+          },
+          "WEBUNTIS_USERNAME": {
+            "binding": "webUntisUsername",
+            "field": "value"
+          }
+        }
+      },
+      "common": {
+        "BETTER_AUTH_URL": {
+          "endpoint": "web",
+          "field": "url"
+        },
+        "DATABASE_URL": {
+          "binding": "database",
+          "field": "url"
+        },
+        "OTEL_EXPORTER_OTLP_ENDPOINT": {
+          "parameter": "observabilityOtlpEndpoint"
+        },
+        "STUDIENBUCH_ENVIRONMENT": "production",
+        "STUDIENBUCH_INSTANCE_ID": {
+          "instance": "id"
+        },
+        "STUDIENBUCH_OTEL_ENABLED": "true"
+      }
+    }
+  },
+  "parameters": {
+    "authEmailFrom": {
+      "default": "Studienbuch <konto@studienbuch.app>",
+      "description": "Sender shown on authentication email",
+      "required": false,
+      "type": "string"
+    },
+    "observabilityOtlpEndpoint": {
+      "description": "OpenTelemetry Protocol HTTP endpoint selected by the runtime",
+      "required": true,
+      "type": "string"
+    },
+    "passkeyRpId": {
+      "default": "studienbuch.app",
+      "description": "WebAuthn relying-party ID shared by production origins",
+      "required": false,
+      "type": "string"
+    },
+    "webUntisSchoolLoginName": {
+      "description": "Operational WebUntis school login name",
+      "required": true,
+      "type": "string"
+    },
+    "webUntisSchoolName": {
+      "description": "Display name used to discover the WebUntis school",
+      "required": true,
+      "type": "string"
+    },
+    "webUntisServerUrl": {
+      "description": "Pinned WebUntis server URL",
+      "required": true,
+      "type": "string"
+    },
+    "webUntisTenantId": {
+      "description": "Pinned WebUntis tenant identity",
+      "required": true,
+      "type": "string"
+    }
+  },
+  "project": "studienbuch",
   "release": {
     "action": "web",
+    "activationExecutable": null,
+    "backend": "service",
     "commands": {
       "console": {
         "action": "console",
-        "secrets": ["webUntisUsername", "webUntisPassword"]
+        "secrets": [
+          "webUntisUsername",
+          "webUntisPassword"
+        ]
       }
     },
+    "executable": "project-release-runtime",
+    "health": {
+      "intervalSec": 2,
+      "paths": [
+        "/api/health/live",
+        "/api/health/ready"
+      ],
+      "requestTimeoutSec": 2,
+      "startupTimeoutSec": 60
+    },
+    "ingress": {
+      "cacheRules": [],
+      "compression": true,
+      "redirects": [],
+      "requestBodyMaxBytes": null,
+      "responseHeaders": {},
+      "streamCloseDelaySec": null
+    },
+    "maintenanceJobs": {
+      "webuntis-course-rosters": {
+        "action": "webuntis-course-rosters",
+        "schedule": {
+          "cadence": null,
+          "calendar": "*-*-* 04:00:00",
+          "interval": null
+        },
+        "secrets": [
+          "webUntisUsername",
+          "webUntisPassword"
+        ]
+      },
+      "webuntis-directory": {
+        "action": "webuntis-directory",
+        "schedule": {
+          "cadence": null,
+          "calendar": "*-*-* 03:15:00",
+          "interval": null
+        },
+        "secrets": [
+          "webUntisUsername",
+          "webUntisPassword"
+        ]
+      },
+      "webuntis-timetable-hot": {
+        "action": "webuntis-timetable-hot",
+        "schedule": {
+          "cadence": "fixed",
+          "calendar": null,
+          "interval": "10min"
+        },
+        "secrets": [
+          "webUntisUsername",
+          "webUntisPassword"
+        ]
+      },
+      "webuntis-timetable-warm": {
+        "action": "webuntis-timetable-warm",
+        "schedule": {
+          "cadence": "fixed",
+          "calendar": null,
+          "interval": "1h"
+        },
+        "secrets": [
+          "webUntisUsername",
+          "webUntisPassword"
+        ]
+      }
+    },
+    "ociAuxiliaries": {},
+    "package": "projectRelease",
     "preDeployTasks": {
       "migrate": {
+        "action": "migrate",
+        "dependsOn": [],
+        "failureMode": "fail",
+        "secrets": [],
         "timeoutSec": 300
       }
     },
-    "maintenanceJobs": {
-      "webuntis-directory": {
-        "schedule": {
-          "calendar": "*-*-* 03:15:00"
-        },
-        "secrets": ["webUntisUsername", "webUntisPassword"]
+    "stateDirectories": []
+  },
+  "requirements": {
+    "betterAuthSecret": {
+      "description": "",
+      "generate": {
+        "bytes": 32
       },
-      "webuntis-timetable-hot": {
-        "schedule": {
-          "interval": "10min",
-          "cadence": "fixed"
-        },
-        "secrets": ["webUntisUsername", "webUntisPassword"]
-      },
-      "webuntis-timetable-warm": {
-        "schedule": {
-          "interval": "1h",
-          "cadence": "fixed"
-        },
-        "secrets": ["webUntisUsername", "webUntisPassword"]
-      },
-      "webuntis-course-rosters": {
-        "schedule": {
-          "calendar": "*-*-* 04:00:00"
-        },
-        "secrets": ["webUntisUsername", "webUntisPassword"]
-      }
+      "kind": "secret",
+      "realizations": [
+        "development",
+        "release"
+      ],
+      "required": true
     },
-    "health": {
-      "paths": ["/api/health/live", "/api/health/ready"],
-      "startupTimeoutSec": 60,
-      "intervalSec": 2,
-      "requestTimeoutSec": 2
+    "database": {
+      "dataDirectory": "postgres",
+      "description": "",
+      "kind": "postgresql",
+      "majorVersions": [
+        16,
+        17
+      ],
+      "realizations": [
+        "development",
+        "release"
+      ],
+      "required": true
     },
-    "ingress": {
-      "compression": true
+    "smtpUrl": {
+      "description": "",
+      "generate": null,
+      "kind": "secret",
+      "realizations": [
+        "release"
+      ],
+      "required": true
+    },
+    "webUntisPassword": {
+      "description": "",
+      "generate": null,
+      "kind": "secret",
+      "realizations": [
+        "development",
+        "release"
+      ],
+      "required": true
+    },
+    "webUntisUsername": {
+      "description": "",
+      "generate": null,
+      "kind": "secret",
+      "realizations": [
+        "development",
+        "release"
+      ],
+      "required": true
+    }
+  },
+  "schemaVersion": 4,
+  "secrets": {
+    "betterAuthSecret": {
+      "description": "",
+      "required": true
+    },
+    "smtpUrl": {
+      "description": "",
+      "required": true
+    },
+    "webUntisPassword": {
+      "description": "",
+      "required": true
+    },
+    "webUntisUsername": {
+      "description": "",
+      "required": true
     }
   }
 }

@@ -7,7 +7,6 @@ let
   inherit (workspace.sources) dependencySource;
   inherit (workspace.toolchain) nodejs pnpm;
   manifest = lib.importJSON ./package.json;
-  webUntisEnvironment = import ../../nix/webuntis-environment.nix;
   application = {
     workspaceName = manifest.name;
     relativePath = "apps/web";
@@ -43,82 +42,12 @@ let
        | .resolvePeersFromWorkspaceRoot = false' \
       pnpm-workspace.yaml
   '';
-  consoleContextEnvironment =
-    {
-      databaseAssignments,
-      databaseDefaults,
-      databaseEnvironment,
-      requiredSecrets,
-    }:
-    let
-      credentials =
-        if requiredSecrets then
-          ''
-            if [ ! -s "$webuntis_username_file" ] || [ ! -s "$webuntis_password_file" ]; then
-              echo "Studienbuch console: required WebUntis credentials are unavailable" >&2
-              exit 66
-            fi
-            WEBUNTIS_USERNAME="$(<"$webuntis_username_file")"
-            WEBUNTIS_PASSWORD="$(<"$webuntis_password_file")"
-            export WEBUNTIS_USERNAME WEBUNTIS_PASSWORD
-          ''
-        else
-          ''
-            if [ -s "$webuntis_username_file" ]; then
-              WEBUNTIS_USERNAME="$(<"$webuntis_username_file")"
-              export WEBUNTIS_USERNAME
-            fi
-            if [ -s "$webuntis_password_file" ]; then
-              WEBUNTIS_PASSWORD="$(<"$webuntis_password_file")"
-              export WEBUNTIS_PASSWORD
-            fi
-          '';
-    in
-    ''
-      BETTER_AUTH_URL=
-      WEBUNTIS_SCHOOL_NAME=
-      WEBUNTIS_SCHOOL_LOGIN_NAME=
-      WEBUNTIS_SERVER_URL=
-      WEBUNTIS_TENANT_ID=
-      webuntis_username_file=
-      webuntis_password_file=
-      ${databaseDefaults}
-      context_snapshot="$(project-context snapshot)"
-      eval "$(${lib.getExe pkgs.jq} --raw-output '
-        @sh "BETTER_AUTH_URL=\(.endpoints.web.url)",
-        @sh "WEBUNTIS_SCHOOL_NAME=\(.parameters.webUntisSchoolName)",
-        @sh "WEBUNTIS_SCHOOL_LOGIN_NAME=\(.parameters.webUntisSchoolLoginName)",
-        @sh "WEBUNTIS_SERVER_URL=\(.parameters.webUntisServerUrl)",
-        @sh "WEBUNTIS_TENANT_ID=\(.parameters.webUntisTenantId)",
-        @sh "webuntis_username_file=\(.secretFiles.webUntisUsername // "")",
-        @sh "webuntis_password_file=\(.secretFiles.webUntisPassword // "")",
-        ${databaseAssignments}
-      ' <<<"$context_snapshot")"
-      unset context_snapshot
-      export BETTER_AUTH_URL
-      export WEBUNTIS_SCHOOL_NAME WEBUNTIS_SCHOOL_LOGIN_NAME WEBUNTIS_SERVER_URL WEBUNTIS_TENANT_ID
-
-      ${credentials}
-      ${databaseEnvironment}
-    '';
   releaseRevisionEnvironment = ''
     STUDIENBUCH_REVISION="$(project-context revision 2>/dev/null || true)"
     if [[ -n "$STUDIENBUCH_REVISION" ]]; then
       export STUDIENBUCH_REVISION
     fi
   '';
-  observabilityEnvironment = environment: ''
-    export STUDIENBUCH_OTEL_ENABLED="''${STUDIENBUCH_OTEL_ENABLED:-true}"
-    configured_otlp_endpoint="$(project-context parameter observabilityOtlpEndpoint)"
-    export OTEL_EXPORTER_OTLP_ENDPOINT="''${OTEL_EXPORTER_OTLP_ENDPOINT:-$configured_otlp_endpoint}"
-    unset configured_otlp_endpoint
-    export STUDIENBUCH_ENVIRONMENT="''${STUDIENBUCH_ENVIRONMENT:-${environment}}"
-    STUDIENBUCH_INSTANCE_ID="$(project-context instance-id 2>/dev/null || true)"
-    if [[ -n "$STUDIENBUCH_INSTANCE_ID" ]]; then
-      export STUDIENBUCH_INSTANCE_ID
-    fi
-  '';
-
   # Update with the `got:` hash reported by:
   #   nix build .#webApplication
   # after running `just web-lock` for relevant workspace manifest or primary lock changes.
@@ -219,33 +148,13 @@ let
     name = "studienbuch-release-web-action";
     runtimeInputs = [ nodejs ];
     text = ''
-      web_url="$(project-context endpoint web url)"
-      HOST="$(project-context endpoint web listen-host)"
-      PORT="$(project-context endpoint web listen-port)"
-      BETTER_AUTH_URL="$web_url"
-      export HOST PORT BETTER_AUTH_URL
       export NODE_ENV=production
 
-      # The collector is deliberately local to the host. OTLP exporter
-      # failures must never prevent the application from serving requests.
-      ${observabilityEnvironment "production"}
       export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
       ${releaseRevisionEnvironment}
       export STUDIENBUCH_OTEL_EXPORT_INTERVAL="5 seconds"
       export STUDIENBUCH_OTEL_SHUTDOWN_TIMEOUT="3 seconds"
 
-      better_auth_secret_file="$(project-context secret-file betterAuthSecret --required)"
-      BETTER_AUTH_SECRET="$(<"$better_auth_secret_file")"
-      export BETTER_AUTH_SECRET
-
-      STUDIENBUCH_SMTP_URL_FILE="$(project-context secret-file smtpUrl --required)"
-      export STUDIENBUCH_SMTP_URL_FILE
-      STUDIENBUCH_EMAIL_FROM="$(project-context parameter authEmailFrom)"
-      STUDIENBUCH_PASSKEY_RP_ID="$(project-context parameter passkeyRpId)"
-      export STUDIENBUCH_EMAIL_FROM STUDIENBUCH_PASSKEY_RP_ID
-
-      DATABASE_URL="$(project-context parameter databaseUrl)"
-      export DATABASE_URL
       # STUDIENBUCH_SENTRY_DSN is read from the deployment environment and inherited by the server
       # process. It is a public client credential served to the browser through the root route
       # loader, so rotating it needs a restart rather than a rebuild.
@@ -260,10 +169,7 @@ let
     name = "studienbuch-release-migrate-action";
     runtimeInputs = [ nodejs ];
     text = ''
-      DATABASE_URL="$(project-context parameter databaseUrl)"
-      export DATABASE_URL
       export STUDIENBUCH_MIGRATIONS_DIR=${webApplication}/${applicationPath}/drizzle
-      ${observabilityEnvironment "production"}
       export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
       ${releaseRevisionEnvironment}
 
@@ -275,19 +181,6 @@ let
     name = "studienbuch-release-console-action";
     runtimeInputs = [ nodejs ];
     text = ''
-      ${consoleContextEnvironment {
-        databaseAssignments = ''
-          @sh "DATABASE_URL=\(.parameters.databaseUrl)"
-        '';
-        databaseDefaults = ''
-          DATABASE_URL=
-        '';
-        requiredSecrets = true;
-        databaseEnvironment = ''
-          export DATABASE_URL
-        '';
-      }}
-      ${observabilityEnvironment "production"}
       export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
       ${releaseRevisionEnvironment}
 
@@ -302,16 +195,7 @@ let
         name = "studienbuch-release-${name}-action";
         runtimeInputs = [ nodejs ];
         text = ''
-          ${webUntisEnvironment {
-            requiredSecrets = true;
-            database = ''
-              DATABASE_URL="$(project-context parameter databaseUrl)"
-              export DATABASE_URL
-            '';
-          }}
-
           export NODE_ENV=production
-          ${observabilityEnvironment "production"}
           export STUDIENBUCH_VERSION=${lib.escapeShellArg (builtins.baseNameOf (toString webApplication))}
           ${releaseRevisionEnvironment}
 
