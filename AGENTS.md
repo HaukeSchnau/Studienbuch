@@ -32,7 +32,7 @@ Keep this document and other docs up-to-date.
 
 These are not set in stone. Feel free to suggest changes to these roles or adding new packages.
 
-- `flake.nix` should provide a reproducible dev environment including all necessary dependencies needed to work in the project and be able to build the packages that will be deployed to my infra using Nix.
+- `devenv.nix` owns development tools, setup tasks and processes. Keep `devenv.lock` checked in. `flake.nix` owns immutable release builds and the CI shell.
 - `Justfile` is the primary entrypoint for day-to-day tasks and commands.
 
 ## Directory naming

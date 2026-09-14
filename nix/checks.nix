@@ -280,14 +280,10 @@ let
             .schemaVersion == 3 and
             .project == "studienbuch" and
             (.development.endpoints | keys) == ["database", "mobile", "web"] and
-            (.development.workloads | keys) == ["database", "importer", "migrate", "mobile", "web"] and
+            (.development.workloads | keys) == ["database", "importer", "mobile", "web"] and
             .development.workloads.importer.lifecycle == "background" and
-            .development.workloads.importer.dependsOn == ["migrate"] and
             .development.workloads.importer.secrets == ["webUntisUsername", "webUntisPassword"] and
-            .development.commands.console == {action: "console", dependsOn: ["migrate"], secrets: ["webUntisUsername", "webUntisPassword"]} and
-            .development.workloads.migrate.kind == "task" and
-            .development.workloads.migrate.dependsOn == ["database"] and
-            .development.workloads.web.dependsOn == ["migrate"] and
+            .development.commands.console == {action: "console", secrets: ["webUntisUsername", "webUntisPassword"]} and
             .development.workloads.web.secrets == ["betterAuthSecret"] and
             (.development.workloads.mobile.secrets // []) == [] and
             .development.endpoints.web.health.paths == ["/api/health/ready"] and

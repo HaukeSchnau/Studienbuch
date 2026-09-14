@@ -58,14 +58,8 @@
       "database": {
         "action": "database"
       },
-      "migrate": {
-        "action": "migrate",
-        "kind": "task",
-        "dependsOn": ["database"]
-      },
       "web": {
         "action": "web",
-        "dependsOn": ["migrate"],
         "secrets": ["betterAuthSecret"]
       },
       "mobile": {
@@ -75,14 +69,12 @@
         "action": "worker",
         "kind": "service",
         "lifecycle": "background",
-        "dependsOn": ["migrate"],
         "secrets": ["webUntisUsername", "webUntisPassword"]
       }
     },
     "commands": {
       "console": {
         "action": "console",
-        "dependsOn": ["migrate"],
         "secrets": ["webUntisUsername", "webUntisPassword"]
       }
     },

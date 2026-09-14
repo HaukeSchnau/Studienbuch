@@ -215,41 +215,6 @@ let
     '';
   };
 
-  developmentAction = pkgs.writeShellApplication {
-    name = "studienbuch-web-action";
-    runtimeInputs = [ nodejs ];
-    text = ''
-      checkout="$(project-context path checkout)"
-      web_url="$(project-context endpoint web url)"
-      web_host="$(project-context endpoint web listen-host)"
-      web_port="$(project-context endpoint web listen-port)"
-
-      export BETTER_AUTH_URL="$web_url"
-      STUDIENBUCH_WEB_HOST_NAMES="$(project-context endpoint web host-names --json)"
-      export STUDIENBUCH_WEB_HOST_NAMES
-      if better_auth_secret_file="$(project-context secret-file betterAuthSecret)"; then
-        BETTER_AUTH_SECRET="$(<"$better_auth_secret_file")"
-        export BETTER_AUTH_SECRET
-      fi
-      database_host="$(project-context endpoint database listen-host)"
-      database_port="$(project-context endpoint database listen-port)"
-      DATABASE_URL="postgresql://postgres@$database_host:$database_port/postgres"
-      export DATABASE_URL
-      export NODE_OPTIONS="--import ./instrument.server.mjs''${NODE_OPTIONS:+ $NODE_OPTIONS}"
-      # Managed development is consumed over the Tailnet, where one request per source module is
-      # expensive. Keep an explicit opt-out while Vite's bundled development mode is experimental.
-      export STUDIENBUCH_WEB_BUNDLED_DEV="''${STUDIENBUCH_WEB_BUNDLED_DEV:-1}"
-
-      ${observabilityEnvironment "development"}
-
-      cd "$checkout/${application.relativePath}"
-      exec node "$checkout/${application.relativePath}/node_modules/vite/dist/vite/node/cli.js" \
-        --host "$web_host" \
-        --port "$web_port" \
-        --strictPort
-    '';
-  };
-
   releaseAction = pkgs.writeShellApplication {
     name = "studienbuch-release-web-action";
     runtimeInputs = [ nodejs ];
@@ -306,33 +271,6 @@ let
     '';
   };
 
-  developmentConsoleAction = pkgs.writeShellApplication {
-    name = "studienbuch-development-console-action";
-    runtimeInputs = [ nodejs ];
-    text = ''
-      checkout="$(project-context path checkout)"
-      ${consoleContextEnvironment {
-        databaseAssignments = ''
-          @sh "database_host=\(.endpoints.database.listen.host)",
-          @sh "database_port=\(.endpoints.database.listen.port)"
-        '';
-        databaseDefaults = ''
-          database_host=
-          database_port=
-        '';
-        requiredSecrets = false;
-        databaseEnvironment = ''
-          DATABASE_URL="postgresql://postgres@$database_host:$database_port/postgres"
-          export DATABASE_URL
-        '';
-      }}
-      ${observabilityEnvironment "development"}
-
-      exec node "$checkout/apps/console/node_modules/tsx/dist/cli.mjs" \
-        "$checkout/apps/console/src/index.ts" "$@"
-    '';
-  };
-
   releaseConsoleAction = pkgs.writeShellApplication {
     name = "studienbuch-release-console-action";
     runtimeInputs = [ nodejs ];
@@ -384,9 +322,7 @@ let
     );
 in
 {
-  development.action = developmentAction;
   console = {
-    developmentAction = developmentConsoleAction;
     releaseAction = releaseConsoleAction;
   };
   release = {
