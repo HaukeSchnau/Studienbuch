@@ -17,6 +17,8 @@ export default defineConfig({
       "node_modules",
       "pnpm-lock.yaml",
       "pnpm-lock.web.yaml",
+      // The Project SDK owns this generated transport file's formatting.
+      "project.json",
       "result",
       "*.tsbuildinfo",
       "**/routeTree.gen.ts",
