@@ -43,6 +43,7 @@ pnpm-debug.log*
 
 # local tool state
 /.direnv/
+/.devenv/
 /.vite-hooks/
 /result
 /result-*
