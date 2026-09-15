@@ -39,6 +39,7 @@ in
     STUDIENBUCH_WEB_HOST = "127.0.0.1";
     STUDIENBUCH_WEB_PORT = "3000";
     STUDIENBUCH_MOBILE_PORT = "8081";
+    STUDIENBUCH_MOBILE_HOST = "127.0.0.1";
     STUDIENBUCH_ENVIRONMENT = "development";
     EXPO_NO_TELEMETRY = "1";
   };
@@ -129,9 +130,13 @@ in
         install -d -m 0700 "$TMPDIR"
         encoded_url="$(node -p 'encodeURIComponent(process.argv[1])' "$EXPO_PACKAGER_PROXY_URL")"
         echo "Studienbuch Dev Client: studienbuch://expo-development-client/?url=$encoded_url"
+        expo_host=localhost
+        if [[ "$STUDIENBUCH_MOBILE_HOST" != "127.0.0.1" ]]; then
+          expo_host=lan
+        fi
         cd apps/mobile
         exec node node_modules/expo/bin/cli start --dev-client --scheme studienbuch \
-          --localhost --port "$STUDIENBUCH_MOBILE_PORT"
+          --host "$expo_host" --port "$STUDIENBUCH_MOBILE_PORT"
       '';
     };
     worker = {

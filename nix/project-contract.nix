@@ -263,6 +263,10 @@ in
         health.paths = [ "/status" ];
       };
       environment = {
+        STUDIENBUCH_MOBILE_HOST = {
+          endpoint = "mobile";
+          field = "listen.host";
+        };
         STUDIENBUCH_MOBILE_PORT = {
           endpoint = "mobile";
           field = "listen.port";

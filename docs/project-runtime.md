@@ -27,6 +27,10 @@ assigns its port and retained data directory. The requirement accepts PostgreSQL
 16 and 17 so production can bind an existing supported host database. A version
 change to an initialized local data directory still needs an explicit migration.
 
+Web and Metro consume their Project endpoint's listen address and port. In an
+isolated workspace, Metro uses LAN mode so the workspace's preview forwarding can
+reach it. Ordinary local development keeps Metro on localhost.
+
 Each development instance receives a generated session-signing credential. WebUntis
 account credentials and school selection come from authorized host bindings.
 Production also binds SMTP and the session credential through host policy. Their
