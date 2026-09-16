@@ -61,7 +61,8 @@ in
       before = [ "devenv:enterShell" ];
       exec = ''
         # Managed startup has no terminal for pnpm's stale node_modules prompt.
-        CI=true pnpm install --frozen-lockfile
+        export CI=true
+        pnpm install --frozen-lockfile
         # Also repair checkouts previously installed with --ignore-scripts.
         pnpm run prepare
       '';
