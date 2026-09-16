@@ -291,10 +291,7 @@ let
             .schemaVersion == 4 and
             .project == "studienbuch" and
             .requirements.database.majorVersions == [16, 17] and
-            .development.providers.database.majorVersion == 17 and
-            .development.workloads.worker.lifecycle == "background" and
-            .development.commands.console.action == "studienbuch:console" and
-            (.development.endpoints | keys) == ["mobile", "web"] and
+            .development == null and
             .environment.release.common.DATABASE_URL == {binding: "database", field: "url"} and
             .release.preDeployTasks.migrate.action == "migrate"
           ' ${descriptorPath} >/dev/null

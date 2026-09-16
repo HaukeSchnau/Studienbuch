@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ lib, ... }:
 let
   webUntisEnvironment = {
     WEBUNTIS_SCHOOL_NAME = {
@@ -54,12 +54,10 @@ let
 in
 {
   project = {
-    enable = true;
     name = "studienbuch";
     requirements = {
       database = {
         kind = "postgresql";
-        package = pkgs.postgresql_17;
         majorVersions = [
           16
           17
@@ -234,60 +232,5 @@ in
         "webuntis-course-rosters"
       ] (_: webUntisEnvironment);
     };
-  };
-  processes = {
-    database.project.provides.database = { };
-    web.project = {
-      endpoints.web = {
-        port = 3000;
-        health.paths = [ "/api/health/ready" ];
-      };
-      environment = webEnvironment // {
-        STUDIENBUCH_WEB_HOST = {
-          endpoint = "web";
-          field = "listen.host";
-        };
-        STUDIENBUCH_WEB_PORT = {
-          endpoint = "web";
-          field = "listen.port";
-        };
-        STUDIENBUCH_WEB_HOST_NAMES = {
-          endpoint = "web";
-          field = "hostNames";
-        };
-      };
-    };
-    mobile.project = {
-      endpoints.mobile = {
-        port = 8081;
-        health.paths = [ "/status" ];
-      };
-      environment = {
-        STUDIENBUCH_MOBILE_HOST = {
-          endpoint = "mobile";
-          field = "listen.host";
-        };
-        STUDIENBUCH_MOBILE_PORT = {
-          endpoint = "mobile";
-          field = "listen.port";
-        };
-        EXPO_PACKAGER_PROXY_URL = {
-          endpoint = "mobile";
-          field = "url";
-        };
-        STUDIENBUCH_MOBILE_CACHE = {
-          path = "cache";
-          append = "mobile";
-        };
-      };
-    };
-    worker.project = {
-      lifecycle = "background";
-      environment = webUntisEnvironment;
-    };
-  };
-  tasks."studienbuch:console".project = {
-    command = "console";
-    environment = webUntisEnvironment;
   };
 }
