@@ -1,10 +1,11 @@
 # Project development and release
 
 `devenv.nix` defines the native database, web, mobile and worker processes and
-their setup tasks. `nix/project-contract.nix` adds Project metadata to that graph
-and declares the application's resource requirements. `project.json` is the
-generated transport contract. Regenerate it with `project export` after editing
-the declarations; preparation rejects an export that differs from the native graph.
+their setup tasks. `project.nix` declares shared requirements, environment
+bindings and release policy; `nix/project-development.nix` annotates the native
+graph. Preparation generates development metadata automatically. `flake.nix`
+evaluates the shared declaration and builds release artifacts independently of
+devenv. There is no source `project.json` or manual export step.
 
 For a managed checkout:
 

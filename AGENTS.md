@@ -32,7 +32,7 @@ Keep this document and other docs up-to-date.
 
 These are not set in stone. Feel free to suggest changes to these roles or adding new packages.
 
-- `devenv.nix` owns development tools, setup tasks and processes. `nix/project-contract.nix` annotates that native graph and declares resource requirements and runtime environment mappings. Run `project export` after changing either declaration and commit the generated `project.json`. Keep `devenv.lock` checked in. `flake.nix` owns immutable release builds and the CI shell. See `docs/project-runtime.md` for the managed workflow.
+- `devenv.nix` owns development tools, setup tasks and processes. `project.nix` declares shared requirements, runtime environment bindings and release policy. `nix/project-development.nix` annotates the native graph. JSON metadata is generated during preparation and release builds; there is no source `project.json` or manual export. Keep `devenv.lock` checked in. `flake.nix` owns immutable release builds and the CI shell. See `docs/project-runtime.md` for the managed workflow.
 - `Justfile` is the primary entrypoint for day-to-day tasks and commands.
 
 ## Directory naming

@@ -1,11 +1,11 @@
 {
-  descriptorPath,
+  descriptor,
   nix-infra-modules,
   nixpkgs,
   root,
 }:
 let
-  descriptor = nixpkgs.lib.importJSON descriptorPath;
+  descriptorPath = builtins.toFile "studienbuch-project.json" (builtins.toJSON descriptor + "\n");
 
   systems = [
     "aarch64-darwin"
@@ -72,7 +72,7 @@ let
         if isLinux then
           let
             projectRelease = nix-infra-modules.lib.projectRuntime.mkServiceRelease {
-              inherit pkgs descriptorPath;
+              inherit pkgs descriptor;
               payloads = [
                 web.release.payload
               ];

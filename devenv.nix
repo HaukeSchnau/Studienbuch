@@ -13,7 +13,8 @@ in
 {
   imports = [
     (inputs.projectSdk + "/modules/devenv/project.nix")
-    ./nix/project-contract.nix
+    ./project.nix
+    ./nix/project-development.nix
   ];
 
   packages = builtins.attrValues tools ++ [
