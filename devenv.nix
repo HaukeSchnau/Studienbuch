@@ -60,7 +60,8 @@ in
     "studienbuch:dependencies" = {
       before = [ "devenv:enterShell" ];
       exec = ''
-        pnpm install --frozen-lockfile
+        # Managed startup has no terminal for pnpm's stale node_modules prompt.
+        CI=true pnpm install --frozen-lockfile
         # Also repair checkouts previously installed with --ignore-scripts.
         pnpm run prepare
       '';
