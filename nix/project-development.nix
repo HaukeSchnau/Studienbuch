@@ -1,8 +1,8 @@
 { pkgs, config, ... }:
 let
-  webUntisEnvironment = config.project.releaseEnvironment.actions.console;
+  webUntisEnvironment = config.project.release.commands.console.environment;
   webEnvironment = {
-    inherit (config.project.releaseEnvironment.actions.web)
+    inherit (config.project.release.serviceEnvironment)
       BETTER_AUTH_SECRET
       STUDIENBUCH_EMAIL_FROM
       STUDIENBUCH_PASSKEY_RP_ID

@@ -1,4 +1,3 @@
-{ lib, ... }:
 let
   webUntisEnvironment = {
     WEBUNTIS_SCHOOL_NAME = {
@@ -109,7 +108,8 @@ in
         required = true;
       };
     };
-    environment = commonEnvironment // {
+    environment = commonEnvironment;
+    development.environment = {
       PGHOST = {
         binding = "database";
         field = "host";
@@ -137,14 +137,24 @@ in
     };
     release = {
       action = "web";
-      commands = {
-        console = {
-          action = "console";
-          secrets = [
-            "webUntisUsername"
-            "webUntisPassword"
-          ];
+      environment.STUDIENBUCH_ENVIRONMENT = "production";
+      serviceEnvironment = webEnvironment // {
+        HOST = {
+          endpoint = "web";
+          field = "listen.host";
         };
+        PORT = {
+          endpoint = "web";
+          field = "listen.port";
+        };
+        STUDIENBUCH_SMTP_URL_FILE = {
+          binding = "smtpUrl";
+          field = "file";
+        };
+      };
+      commands.console = {
+        action = "console";
+        environment = webUntisEnvironment;
       };
       preDeployTasks = {
         migrate = {
@@ -156,39 +166,27 @@ in
           schedule = {
             calendar = "*-*-* 03:15:00";
           };
-          secrets = [
-            "webUntisUsername"
-            "webUntisPassword"
-          ];
+          environment = webUntisEnvironment;
         };
         webuntis-timetable-hot = {
           schedule = {
             interval = "10min";
             cadence = "fixed";
           };
-          secrets = [
-            "webUntisUsername"
-            "webUntisPassword"
-          ];
+          environment = webUntisEnvironment;
         };
         webuntis-timetable-warm = {
           schedule = {
             interval = "1h";
             cadence = "fixed";
           };
-          secrets = [
-            "webUntisUsername"
-            "webUntisPassword"
-          ];
+          environment = webUntisEnvironment;
         };
         webuntis-course-rosters = {
           schedule = {
             calendar = "*-*-* 04:00:00";
           };
-          secrets = [
-            "webUntisUsername"
-            "webUntisPassword"
-          ];
+          environment = webUntisEnvironment;
         };
       };
       health = {
@@ -204,33 +202,6 @@ in
         compression = true;
       };
     };
-    releaseEnvironment = {
-      common = commonEnvironment // {
-        STUDIENBUCH_ENVIRONMENT = "production";
-      };
-      actions = {
-        web = webEnvironment // {
-          HOST = {
-            endpoint = "web";
-            field = "listen.host";
-          };
-          PORT = {
-            endpoint = "web";
-            field = "listen.port";
-          };
-          STUDIENBUCH_SMTP_URL_FILE = {
-            binding = "smtpUrl";
-            field = "file";
-          };
-        };
-        console = webUntisEnvironment;
-      }
-      // lib.genAttrs [
-        "webuntis-directory"
-        "webuntis-timetable-hot"
-        "webuntis-timetable-warm"
-        "webuntis-course-rosters"
-      ] (_: webUntisEnvironment);
-    };
+
   };
 }

@@ -5,8 +5,6 @@
   root,
 }:
 let
-  descriptorPath = builtins.toFile "studienbuch-project.json" (builtins.toJSON descriptor + "\n");
-
   systems = [
     "aarch64-darwin"
     "aarch64-linux"
@@ -46,9 +44,7 @@ let
         enableParallelBuilding = true;
       });
 
-      projectChecks = import ./checks.nix {
-        inherit descriptorPath pkgs;
-      };
+      projectChecks = import ./checks.nix { inherit pkgs; };
       developmentPackages = [
         workspace.toolchain.nodejs
         workspace.toolchain.pnpm

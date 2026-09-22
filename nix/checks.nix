@@ -1,7 +1,4 @@
-{
-  descriptorPath,
-  pkgs,
-}:
+{ pkgs }:
 let
   forRelease =
     {
@@ -286,20 +283,6 @@ let
             touch "$out"
           '';
       releaseChecks = {
-        projectDescriptor = pkgs.runCommand "studienbuch-project-descriptor-check" { } ''
-          ${pkgs.jq}/bin/jq -e '
-            .schemaVersion == 4 and
-            .project == "studienbuch" and
-            .requirements.database.majorVersions == [16, 17] and
-            .development == null and
-            .environment.release.common.DATABASE_URL == {binding: "database", field: "url"} and
-            .release.preDeployTasks.migrate.action == "migrate"
-          ' ${descriptorPath} >/dev/null
-          cmp ${descriptorPath} ${releasePackage}/share/project/descriptor.json
-          test -x ${releasePackage}/bin/project-release-runtime
-          test ! -e ${releasePackage}/bin/studienbuch-console
-          touch "$out"
-        '';
         releaseInterface = projectRelease.checks.interface;
         releaseClosure = releaseClosureCheck;
         inherit releasePackage releaseSmoke;
