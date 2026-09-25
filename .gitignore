@@ -53,6 +53,3 @@ pnpm-debug.log*
 
 # Finder (MacOS) folder config
 .DS_Store
-
-# Local agent continuity notes
-agent-notes/
