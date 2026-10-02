@@ -12,6 +12,7 @@ import type {
 import {
   makeTimetableImportPlan,
   projectTimetableOccurrences,
+  timetableEntryRequests,
   type TimetableInventory,
 } from "./timetable.ts";
 
@@ -110,6 +111,22 @@ const inventory = (
 });
 
 describe("WebUntis timetable import", () => {
+  it("plans one entries request per advertised resource", () => {
+    expect(
+      timetableEntryRequests({
+        CLASS: [resource(3, "5.1"), resource(4, "5.2")],
+        SUBJECT: [resource(20, "MA")],
+        TEACHER: [],
+        ROOM: [resource(40, "A101")],
+      }),
+    ).toEqual([
+      { resourceType: "CLASS", resource: 3 },
+      { resourceType: "CLASS", resource: 4 },
+      { resourceType: "SUBJECT", resource: 20 },
+      { resourceType: "ROOM", resource: 40 },
+    ]);
+  });
+
   it("keeps class views distinct and normalizes their identity and ordering", () => {
     const removedTeacher = positionResource("TEACHER", "REMOVED", "Teacher old");
     const addedTeacher = positionResource("TEACHER", "ADDED", "Teacher new");

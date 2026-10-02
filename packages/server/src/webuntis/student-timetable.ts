@@ -1,5 +1,4 @@
 import type { Schedule } from "@stu/core";
-import * as EffectArray from "effect/Array";
 import * as Effect from "effect/Effect";
 import * as Order from "effect/Order";
 import * as Schema from "effect/Schema";
@@ -29,7 +28,7 @@ import {
   normalizeTimetableEntry,
   requestedTimetableDates,
   timetableEntryExternalId,
-  timetableResourceBatchSize,
+  timetableEntryRequestConcurrency,
   timetableResourceReference,
   type TimetableDiagnostic,
   type TimetableDiagnosticCode,
@@ -38,19 +37,15 @@ import {
 type StudentFilterItem = TimetableFilter["students"][number];
 type TimetableEntryLocation = "Back" | "Day" | "Grid";
 
-export const studentTimetableDateBatchSize = 3;
-
+/**
+ * Plans one entries request per student over the whole roster window. WebUntis accepts exactly one
+ * resource per request, and a single student's 57-day window stays small.
+ */
 export const studentTimetableEntryRequests = (
   studentIds: ReadonlyArray<number>,
-  requestedDates: ReadonlyArray<string>,
-) =>
-  EffectArray.chunksOf(requestedDates, studentTimetableDateBatchSize).flatMap((dates) =>
-    EffectArray.chunksOf(studentIds, timetableResourceBatchSize).map((resources) => ({
-      start: EffectArray.headNonEmpty(dates),
-      end: EffectArray.lastNonEmpty(dates),
-      resources,
-    })),
-  );
+  start: string,
+  end: string,
+) => studentIds.map((resource) => ({ start, end, resource }));
 
 export const StudentTimetableObservation = Schema.TaggedStruct("TimetableOccurrence", {
   externalId: Schema.String,
@@ -512,7 +507,7 @@ export const projectCourseRosterObservations = (
     .sort((left, right) => Order.String(left.id, right.id));
 };
 
-/** Fetches the private student view in bounded batches and performs no persistence. */
+/** Fetches the private student view one student at a time and performs no persistence. */
 export const fetchStudentTimetableImportPlan = Effect.fn(
   "WebUntis.fetchStudentTimetableImportPlan",
 )(function* (requestedSchoolYear: string, start: string, end: string) {
@@ -534,21 +529,16 @@ export const fetchStudentTimetableImportPlan = Effect.fn(
   const students = [...filter.students].sort((left, right) => left.student.id - right.student.id);
   const entryRequests = studentTimetableEntryRequests(
     students.map((item) => item.student.id),
-    requestedDates,
+    start,
+    end,
   );
   const responses = yield* Effect.forEach(
     entryRequests,
     (request) =>
       timetable
-        .getEntries({
-          start: request.start,
-          end: request.end,
-          resourceType: "STUDENT",
-          resources: request.resources,
-          timetableType: "STANDARD",
-        })
+        .getEntries({ ...request, resourceType: "STUDENT", timetableType: "STANDARD" })
         .pipe(withSchoolYear(academicYear.id)),
-    { concurrency: 3 },
+    { concurrency: timetableEntryRequestConcurrency },
   );
 
   return yield* makeStudentTimetableImportPlan({

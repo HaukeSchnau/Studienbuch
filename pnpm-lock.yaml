@@ -536,8 +536,8 @@ importers:
         specifier: 'catalog:'
         version: 4.0.0-rc.108(effect@4.0.0-rc.108)
       '@schnau/webuntis-api':
-        specifier: 0.2.6
-        version: 0.2.6(effect@4.0.0-rc.108)
+        specifier: 0.3.0
+        version: 0.3.0(effect@4.0.0-rc.108)
       '@stu/api':
         specifier: workspace:*
         version: link:../api
@@ -4397,8 +4397,8 @@ packages:
       rollup:
         optional: true
 
-  '@schnau/webuntis-api@0.2.6':
-    resolution: {integrity: sha512-DUOoCl03CChGB/P+/bxjQYd2M21CbMMK1l2Xa9XNzt8XKs92G/vAmrGfuYEFAgXD7yf6CBcLNoCn3+gB2w0roQ==}
+  '@schnau/webuntis-api@0.3.0':
+    resolution: {integrity: sha512-wF38j2BKhCEFPYhGSnTUJoft6QZrptQ8mCExUBo2EfVinuw9a5EhnJRitb1xBbGxGY7g/QGQigycM0MFLTM8jw==}
     engines: {node: '>=22.12.0'}
     peerDependencies:
       effect: 4.0.0-rc.108
@@ -14205,7 +14205,7 @@ snapshots:
       estree-walker: 2.0.2
       picomatch: 4.0.5
 
-  '@schnau/webuntis-api@0.2.6(effect@4.0.0-rc.108)':
+  '@schnau/webuntis-api@0.3.0(effect@4.0.0-rc.108)':
     dependencies:
       effect: 4.0.0-rc.108
 
