@@ -46,7 +46,7 @@ export const defaultPolicy: Policy = {
   courseRosterFutureDays: 28,
   directoryInterval: Duration.days(1),
   directoryCadence: "spaced",
-  recentAndNearTimetableInterval: Duration.minutes(10),
+  recentAndNearTimetableInterval: Duration.minutes(30),
   recentAndNearTimetableCadence: "fixed",
   farTimetableInterval: Duration.hours(1),
   farTimetableCadence: "fixed",

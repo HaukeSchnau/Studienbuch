@@ -110,32 +110,11 @@ const inventory = (responses: ReadonlyArray<TimetableEntries>): StudentTimetable
 });
 
 describe("WebUntis student timetable import", () => {
-  it("bounds entry requests by students and dates", () => {
-    const studentIds = Array.from({ length: 1_001 }, (_, index) => index + 1);
-    const dates = Array.from(
-      { length: 15 },
-      (_, index) => `2026-09-${String(index + 1).padStart(2, "0")}`,
-    );
-
-    const requests = studentTimetableEntryRequests(studentIds, dates);
-
-    expect(requests).toHaveLength(15);
-    expect(requests.map(({ start, end, resources }) => [start, end, resources.length])).toEqual([
-      ["2026-09-01", "2026-09-03", 500],
-      ["2026-09-01", "2026-09-03", 500],
-      ["2026-09-01", "2026-09-03", 1],
-      ["2026-09-04", "2026-09-06", 500],
-      ["2026-09-04", "2026-09-06", 500],
-      ["2026-09-04", "2026-09-06", 1],
-      ["2026-09-07", "2026-09-09", 500],
-      ["2026-09-07", "2026-09-09", 500],
-      ["2026-09-07", "2026-09-09", 1],
-      ["2026-09-10", "2026-09-12", 500],
-      ["2026-09-10", "2026-09-12", 500],
-      ["2026-09-10", "2026-09-12", 1],
-      ["2026-09-13", "2026-09-15", 500],
-      ["2026-09-13", "2026-09-15", 500],
-      ["2026-09-13", "2026-09-15", 1],
+  it("requests one student per call over the whole roster window", () => {
+    expect(studentTimetableEntryRequests([7, 9, 12], "2026-09-03", "2026-10-29")).toEqual([
+      { start: "2026-09-03", end: "2026-10-29", resource: 7 },
+      { start: "2026-09-03", end: "2026-10-29", resource: 9 },
+      { start: "2026-09-03", end: "2026-10-29", resource: 12 },
     ]);
   });
 

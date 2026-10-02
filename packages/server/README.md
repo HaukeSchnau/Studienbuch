@@ -98,7 +98,7 @@ there is no manual start step. The command below remains useful outside managed 
 just dev worker
 ```
 
-It imports the directory daily, the previous two timetable days through 14 days ahead every ten
+It imports the directory daily, the previous two timetable days through 14 days ahead every 30
 minutes, days 15 through 56 hourly, and a private course-roster window daily. Every job also runs at
 startup. Effect schedules provide jittered fixed cadences and bounded exponential retry; Effect
 semaphores prevent local overlap. A session-level PostgreSQL advisory lock around each whole import

@@ -90,10 +90,17 @@ room resources. That is enough to represent teacher substitutions and room chang
 and homework are signaled too, but their authored text requires the same privacy treatment as other
 school content.
 
-The live multi-view importer needs one entries request per resource type for IGS. On 2026-08-24 it
-covered 45 classes, 305 subjects, 125 teachers and 148 rooms in four responses. All 623 advertised
-resource rows were present; the complete daily snapshot contained 1,279 claims: 504 class, 268
-subject, 276 teacher and 231 room views.
+On 2026-08-24 the live multi-view importer covered 45 classes, 305 subjects, 125 teachers and 148
+rooms. All 623 advertised resource rows were present; the complete daily snapshot contained 1,279
+claims: 504 class, 268 subject, 276 teacher and 231 room views.
+
+Until 2026-09-04 one entries request could list up to 500 resources, so this took four requests.
+Since then WebUntis rejects any entries request with more than one resource, whatever the date range:
+`400 VALIDATION_ERROR`, "Exactly one resource required". The importer now sends one request per
+resource, about 626 for IGS on 2026-10-01. A single request takes about 120 ms, so a window takes
+roughly 20 seconds with four requests in flight. `entriesWeekOverview` still accepts several
+resources, but it omits entry IDs, resource positions and substitution text, so it cannot replace
+`entries`.
 
 ### Raw identity
 
@@ -122,16 +129,16 @@ Use one complete scope per academic year and calendar date, containing all impor
 academic-year:10/resource-types:CLASS,SUBJECT,TEACHER,ROOM/date:2026-08-24
 ```
 
-The importer may fetch a wider window and resource IDs in bounded batches, then normalize and
-persist one daily snapshot at a time. A daily scope is complete only when every expected resource was
+The importer may fetch a wider window, one resource per request, then normalize and persist one
+daily snapshot at a time. A daily scope is complete only when every expected resource was
 requested, every response decoded, no response-level error applies to the date, and duplicate raw
 identities agree. Empty complete days are meaningful and remove entries previously observed for
 that day. Partial results may be retained for diagnostics but must not remove anything.
 
 The additional outer views contribute the numeric subject, teacher and room identities that class
 entry positions omit. They therefore remain separate source claims even where their display data
-overlaps. This costs four entries requests per IGS window because all currently advertised IDs fit
-inside the tested batch size of 500.
+overlaps. They cost one entries request per advertised subject, teacher and room, about 580 of the
+626 requests per IGS window.
 
 ### Polling policy
 
@@ -140,11 +147,14 @@ registered checkout. Production systemd timers invoke bounded Release jobs. Both
 defaults:
 
 - directory: at startup, daily and on demand;
-- timetable from two days ago through 14 days ahead: at startup and every 10 minutes;
+- timetable from two days ago through 14 days ahead: at startup and every 30 minutes;
 - timetable from 15 through 56 days ahead: at startup and hourly;
 - private course-roster evidence from 28 days ago through 28 days ahead: at startup, daily and
   immediately after a directory projection changes;
 - exams for the active academic year: hourly after the exams importer is added.
+
+The hot window ran every 10 minutes while four requests covered it. With one request per resource it
+runs every 30 minutes, which keeps IGS at roughly 30,000 hot-window requests a day.
 
 Every range is clipped to the current WebUntis academic year. The two timetable windows are
 disjoint, including when the worker runs near the start or end of an academic year.
@@ -333,13 +343,12 @@ may recognize codes such as `MA23`; generic level labels such as `MA-E` and `MA-
 but do not identify one.
 
 Student views should use a separate, slower server-only import scope. Course rosters change far less
-often than substitutions, and importing every student claim every ten minutes would add substantial
+often than substitutions, and importing every student claim with the hot timetable would add substantial
 private data without improving the client timetable. A daily reconciliation window, plus a refresh
 after directory changes, is the current default.
 
-Student entry requests combine at most 500 students with three calendar dates. The daily source
-scopes merge those responses after all batches return. This keeps the roster window intact without
-asking WebUntis to calculate every student's whole window in one request.
+Student entry requests ask for one student over the whole roster window, about 1,270 requests for
+IGS. The daily source scopes merge those responses after every request returns.
 
 The private source scope is one complete academic year and date:
 

@@ -170,7 +170,7 @@ in
         };
         webuntis-timetable-hot = {
           schedule = {
-            interval = "10min";
+            interval = "30min";
             cadence = "fixed";
           };
           environment = webUntisEnvironment;

@@ -1,5 +1,4 @@
 import { Importing } from "@stu/core";
-import * as EffectArray from "effect/Array";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
 import * as Calendar from "temporal-polyfill/fns/Calendar";
@@ -29,8 +28,6 @@ import {
 import { SchoolYearUnavailable } from "./directory-preview.ts";
 import { findSchoolProfile } from "./school-profile.ts";
 import { projectTimetableOccurrences } from "./timetable-projection.ts";
-
-export const timetableResourceBatchSize = 500;
 
 export const importedTimetableResourceTypes = ["CLASS", "SUBJECT", "TEACHER", "ROOM"] as const;
 export type ImportedTimetableResourceType = (typeof importedTimetableResourceTypes)[number];
@@ -483,7 +480,19 @@ const resourcesFor = (
   }
 };
 
-/** Fetches identity-bearing timetable views in bounded batches and performs no persistence. */
+/** Parallel entries requests per import; keeps one run from bursting against the school's server. */
+export const timetableEntryRequestConcurrency = 4;
+
+/**
+ * Plans one entries request per advertised resource. WebUntis rejects requests that list several
+ * resources (`400 VALIDATION_ERROR`, "Exactly one resource required") since 2026-09-04.
+ */
+export const timetableEntryRequests = (resources: TimetableInventory["resources"]) =>
+  importedTimetableResourceTypes.flatMap((resourceType) =>
+    resources[resourceType].map((resource) => ({ resourceType, resource: resource.id })),
+  );
+
+/** Fetches identity-bearing timetable views one resource at a time and performs no persistence. */
 export const fetchTimetableImportPlan = Effect.fn("WebUntis.fetchTimetableImportPlan")(function* (
   requestedSchoolYear: string,
   start: string,
@@ -525,25 +534,13 @@ export const fetchTimetableImportPlan = Effect.fn("WebUntis.fetchTimetableImport
     TEACHER: resourceMap.get("TEACHER") ?? [],
     ROOM: resourceMap.get("ROOM") ?? [],
   };
-  const entryRequests = importedTimetableResourceTypes.flatMap((resourceType) =>
-    EffectArray.chunksOf(
-      resources[resourceType].map((resource) => resource.id),
-      timetableResourceBatchSize,
-    ).map((resourceIds) => ({ resourceType, resourceIds })),
-  );
   const responses = yield* Effect.forEach(
-    entryRequests,
-    ({ resourceType, resourceIds }) =>
+    timetableEntryRequests(resources),
+    ({ resourceType, resource }) =>
       timetable
-        .getEntries({
-          start,
-          end,
-          resourceType,
-          resources: resourceIds,
-          timetableType: "STANDARD",
-        })
+        .getEntries({ start, end, resourceType, resource, timetableType: "STANDARD" })
         .pipe(withSchoolYear(academicYear.id)),
-    { concurrency: 4 },
+    { concurrency: timetableEntryRequestConcurrency },
   );
 
   return yield* makeTimetableImportPlan({
