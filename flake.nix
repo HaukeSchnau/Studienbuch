@@ -24,6 +24,7 @@
     in
     {
       lib.project = project.descriptor;
+      lib.observability = import ./packages/observability/dashboard-and-alerts.nix;
     }
     // flake-utils.lib.eachSystem project.systems project.forSystem;
 }
