@@ -38,8 +38,8 @@ just qa          # format, lint, type-check, test
 devenv up --strict-ports
 ```
 
-`just fix` applies formatting and the auto-fixable lint rules. Run `just qa` before pushing, since
-CI runs exactly the same thing.
+`just fix` applies formatting and the auto-fixable lint rules. Run `just qa` before pushing. CI runs
+the same checks as separate tasks in `.kiln/ci.ts`.
 
 The default stack starts PostgreSQL, applies migrations, and starts web and Metro. The importer
 is opt-in locally with `devenv up worker`. With the database running, use

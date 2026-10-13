@@ -21,7 +21,6 @@ let
           android_sdk.accept_license = true;
         };
       };
-      inherit (pkgs) lib;
       isLinux = pkgs.stdenv.hostPlatform.isLinux;
 
       workspace = import ./workspace.nix {
@@ -45,20 +44,13 @@ let
       });
 
       projectChecks = import ./checks.nix { inherit pkgs; };
-      developmentPackages = [
+      toolchainPackages = [
         workspace.toolchain.nodejs
         workspace.toolchain.pnpm
-        pkgs.just
         pkgs.python3
         pkgs.stdenv.cc
       ];
-      ciPackages =
-        developmentPackages
-        ++ lib.optionals isLinux [
-          pkgs.procps
-          pkgs.rsync
-          pkgs.util-linux
-        ];
+      developmentPackages = toolchainPackages ++ [ pkgs.just ];
       diagramPackages = [
         atlas
         pkgs.mermaid-cli
@@ -106,7 +98,7 @@ let
       devShells = {
         # CI needs the project toolchain, not the Android SDK, NDK, JDKs, Gradle, or Watchman.
         ci = pkgs.mkShellNoCC {
-          packages = ciPackages;
+          packages = toolchainPackages;
           shellHook = developmentShellHook;
         };
 
