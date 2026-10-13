@@ -25,8 +25,13 @@ metric attribute vocabulary, and W3C trace-context propagation -- the parts Open
 
 `contract.json` is the machine-readable seam between Studienbuch and its deployment. Studienbuch
 owns service names, metric names, and objectives. It does not own collector ports, storage products,
-dashboards, or alert delivery. The adjacent JSON Schema and `src/contract.test.ts` keep the external
-contract and the TypeScript vocabulary in sync.
+or alert delivery. The adjacent JSON Schema and `src/contract.test.ts` keep the external contract
+and the TypeScript vocabulary in sync.
+
+`dashboard-and-alerts.nix` builds the Grafana dashboard and the vmalert rules from the contract, so
+a renamed metric and its queries change in one commit. The flake exports it as `lib.observability`.
+The fleet's observability primary calls it with its Grafana panel builders and alert rule layout,
+and picks the new version up when infra bumps its `studienbuch` input.
 
 The Project Runtime supplies deployment context through environment variables. In particular,
 `OTEL_EXPORTER_OTLP_ENDPOINT` selects the collector and `STUDIENBUCH_INSTANCE_ID` distinguishes one
