@@ -2,9 +2,7 @@ set unstable
 set lists
 
 [parallel]
-qa-tasks: lint mobile-e2e-check test-package-libraries test-server test-apps web-lock-check
-
-qa: fmt-check qa-tasks
+qa: fmt-check lint test mobile-e2e-check web-lock-check
 fix: fmt lint-fix
 
 doctor:
@@ -22,24 +20,8 @@ lint:
 lint-fix:
     vp lint --report-unused-disable-directives --fix
 
-# Keep the package and application selections separate: with the whole workspace selected at once,
-# Vite+ drops @stu/web whenever its package dependencies are in the same task graph. The independent
-# selections run concurrently; QA also starts the server suite immediately instead of waiting for
-# the library packages.
-[parallel]
-test: test-packages test-apps
-
-[parallel]
-test-packages: test-package-libraries test-server
-
-test-package-libraries:
-    vp run --cache --filter "@stu/core" --filter "@stu/observability" test
-
-test-server:
-    vp run --cache --filter "@stu/server" test
-
-test-apps:
-    vp run --cache --filter "./apps/*" test
+test:
+    vp run --cache --parallel -r test
 
 db-generate:
     vp run --filter "@stu/server" db:generate
