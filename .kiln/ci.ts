@@ -10,7 +10,7 @@ const install = Pnpm.install({
   keep: ["dist", "dist-ssr", "web-build", ".expo", ".expo-update-verify"],
 });
 
-export const qa = Task.make("qa", { shell, setup: install, run: cmd`just qa` }).pipe(
+const qa = Task.make("qa", { shell, setup: install, run: cmd`just qa` }).pipe(
   Step.timeout("30 minutes"),
 );
 
