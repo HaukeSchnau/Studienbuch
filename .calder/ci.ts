@@ -1,5 +1,5 @@
-import { Files, Step, Task, cmd } from "@kiln/core";
-import { Pnpm, Project, Vitest } from "@kiln/std";
+import { Files, Step, Task, cmd } from "@calder-ci/core";
+import { Pnpm, Project, Vitest } from "@calder-ci/std";
 import { flake } from "./flake.ts";
 
 const shell = flake.devShells.ci;
@@ -48,7 +48,7 @@ interface Suite {
   /** The config file vitest reads in the package. */
   readonly config?: string;
   readonly tests?: ReadonlyArray<string>;
-  /** The package's import aliases, so Kiln follows them to the files a test reaches. */
+  /** The package's import aliases, so Calder follows them to the files a test reaches. */
   readonly aliases?: Vitest.FilesOptions["aliases"];
 }
 

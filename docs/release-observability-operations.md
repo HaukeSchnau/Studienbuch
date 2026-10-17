@@ -43,8 +43,8 @@ serving if telemetry is unavailable. Runtime Context supplies the immutable revi
 console, migration, and worker telemetry attach it as `vcs.revision`. `service.version` remains the
 immutable Nix application output identity because the two values answer different questions.
 
-Kiln runs CI and deployment from `.kiln/ci.ts` and reports `kiln/<step>` commit statuses to Gitea at
-`git.schnau.dev`, which stays authoritative; inspect runs at https://kiln.schnau.dev. GitHub is a
+Calder runs CI and deployment from `.calder/ci.ts` and reports `calder/<step>` commit statuses to Gitea at
+`git.schnau.dev`, which stays authoritative; inspect runs at https://calder.schnau.dev. GitHub is a
 mirror and may lag.
 
 ## Recomputing the dependency hash
