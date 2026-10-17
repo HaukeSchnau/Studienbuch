@@ -44,7 +44,7 @@ console, migration, and worker telemetry attach it as `vcs.revision`. `service.v
 immutable Nix application output identity because the two values answer different questions.
 
 Calder runs CI and deployment from `.calder/ci.ts` and reports `calder/<step>` commit statuses to Gitea at
-`git.schnau.dev`, which stays authoritative; inspect runs at https://calder.schnau.dev. GitHub is a
+`git.schnau.dev`, which stays authoritative; inspect runs at https://calder.schnau.dev/app/. GitHub is a
 mirror and may lag.
 
 ## Recomputing the dependency hash
