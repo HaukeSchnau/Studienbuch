@@ -23,7 +23,7 @@ Catalogue tables may shorten Flutter paths to `lib/` and React Native paths to `
 beneath the respective app roots above. Scenario contracts retain archive-relative paths so each
 piece of executable specification is self-contained.
 
-The archive normally lives at `/home/haukeschnau/context/studienbuch-archive`. Line references are
+The archive normally lives at `~/context/studienbuch-archive`. Line references are
 evidence pointers, not imports or runtime dependencies.
 
 ## Authority and disposition

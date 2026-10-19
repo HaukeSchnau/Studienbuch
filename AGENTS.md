@@ -75,8 +75,8 @@ question, and there are no technical buckets.
   official Effect docs. Check whether Effect already supplies the schema, error, concurrency,
   lifecycle, scheduling, or testing abstraction the problem needs.
 - Do not assume an API from memory or from another Effect release. The local package source is the
-  authority for exact behavior; `/home/haukeschnau/context/effect-ts-effect` and
-  `/home/haukeschnau/context/effect-ts-website` hold the canonical upstream source and docs.
+  authority for exact behavior; `~/context/effect-ts-effect` and
+  `~/context/effect-ts-website` hold the canonical upstream source and docs.
 
 ## Paired Mobile E2E Evaluation
 
@@ -96,16 +96,16 @@ question, and there are no technical buckets.
 
 ## Reference Repos
 
-- T3 Code (full-stack app architecture, strong Effect v4 usage): `/home/haukeschnau/context/pingdotgg-t3code` ([upstream](https://github.com/pingdotgg/t3code))
-- Legacy Flutter production app reference: `/home/haukeschnau/context/studienbuch-archive/Stubu-legacy-flutter/apps/flutter`
-- Legacy React Native / Expo app reference: `/home/haukeschnau/context/studienbuch-archive/Studienbuch-Legacy/packages/app-mobile`
-- Broader legacy product archive (source-oriented copy without secrets, generated files, or service data): `/home/haukeschnau/context/studienbuch-archive`
-- April 2026 repository snapshot (pre-current architecture and `packages/apps/*` layout): `/home/haukeschnau/context/studienbuch-history/2026-04-02-b325561`
-- August 2026 legacy Flutter release snapshot (Android release tooling, final package identity, and store assets): `/home/haukeschnau/context/studienbuch-archive/native-release`
-- Groundswell (event-driven local/client-to-server sync architecture): `/home/haukeschnau/context/schnau-dev-Groundswell`
-- LiveStore (Expo-capable reactive SQLite and event-sourced sync comparison): `/home/haukeschnau/context/livestorejs-livestore` ([upstream](https://github.com/livestorejs/livestore))
-- Expo 54 migration snapshot (intermediate native/mobile architecture): `/home/haukeschnau/context/studienbuch-archive/expo-54`
-- Early event and aggregate modeling experiments: `/home/haukeschnau/context/studienbuch-archive/Experiments`
+- T3 Code (full-stack app architecture, strong Effect v4 usage): `~/context/pingdotgg-t3code` ([upstream](https://github.com/pingdotgg/t3code))
+- Legacy Flutter production app reference: `~/context/studienbuch-archive/Stubu-legacy-flutter/apps/flutter`
+- Legacy React Native / Expo app reference: `~/context/studienbuch-archive/Studienbuch-Legacy/packages/app-mobile`
+- Broader legacy product archive (source-oriented copy without secrets, generated files, or service data): `~/context/studienbuch-archive`
+- April 2026 repository snapshot (pre-current architecture and `packages/apps/*` layout): `~/context/studienbuch-history/2026-04-02-b325561`
+- August 2026 legacy Flutter release snapshot (Android release tooling, final package identity, and store assets): `~/context/studienbuch-archive/native-release`
+- Groundswell (event-driven local/client-to-server sync architecture): `~/context/schnau-dev-Groundswell`
+- LiveStore (Expo-capable reactive SQLite and event-sourced sync comparison): `~/context/livestorejs-livestore` ([upstream](https://github.com/livestorejs/livestore))
+- Expo 54 migration snapshot (intermediate native/mobile architecture): `~/context/studienbuch-archive/expo-54`
+- Early event and aggregate modeling experiments: `~/context/studienbuch-archive/Experiments`
 
 Use T3 Code as the primary reference for server/client structure and Effect-heavy app architecture. Note that we want an even more robust local-first/offline-first experience and architecture than T3 Code.
 When implementing or reviewing mobile UI, use the legacy Flutter app as the primary visual and behavioral reference because it is the current production app this project supersedes. Use the legacy React Native / Expo app as a secondary implementation reference.
