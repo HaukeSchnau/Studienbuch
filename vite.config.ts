@@ -31,6 +31,8 @@ export default defineConfig({
       "dist",
       "node_modules",
       ".direnv",
+      // The Alchemy stack is its own package, with dependencies the workspace doesn't install.
+      "deploy",
       "pnpm-lock.yaml",
       "pnpm-lock.web.yaml",
       "result",
