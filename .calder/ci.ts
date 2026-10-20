@@ -86,7 +86,7 @@ export default Project.standard({
   checks: [fmtCheck, lint, mobileE2eCheck, webLockCheck, ...tests].map(Step.timeout("15 minutes")),
   placement: {
     shell,
-    setup: Pnpm.install({ shell, dir: "deploy" }),
+    setup: Pnpm.install({ shell, dir: "deploy", name: "deploy-install" }),
     dir: "deploy",
     env: "cloudflare",
     secrets: { FLEET_TOKEN_FILE: "placement-token" },
