@@ -1,5 +1,11 @@
 import { defineRule, type ESTree } from "@oxlint/plugins";
 
+import { memberKey, unwrap } from "./syntax.ts";
+
+// Ported from T3 Code's rule of the same name (github.com/pingdotgg/t3code, MIT, copyright T3 Tools
+// Inc.). T3 checks calls only, which misses `const S = Intl.Segmenter; new S()`, so here every read
+// counts except a feature test: `typeof`, `in` or a comparison with `undefined`.
+
 // Hermes V1 lacks these. They type-check under `lib: ["ESNext"]` and crash on a device.
 const UNSUPPORTED_METHODS = new Map([
   ["toSorted", "Copy, then sort: [...items].sort(compare)."],
@@ -12,20 +18,43 @@ const UNSUPPORTED_GLOBALS = new Map([
 ]);
 
 const GLOBAL_OBJECTS = new Set(["globalThis", "global", "window", "self"]);
+const EQUALITY = new Set(["===", "!==", "==", "!="]);
 
-/** `Intl.Segmenter` for `Intl.Segmenter` and `globalThis.Intl.Segmenter`, null for anything dynamic. */
+/** `Intl.Segmenter` for it and for `globalThis.Intl["Segmenter"]`, null for anything dynamic. */
 function globalPath(node: ESTree.Node): string | null {
-  if (node.type === "Identifier") return node.name;
+  const expression = unwrap(node);
 
-  if (node.type !== "MemberExpression" || node.computed || node.property.type !== "Identifier") {
-    return null;
+  if (expression.type === "Identifier") return expression.name;
+
+  if (expression.type !== "MemberExpression") return null;
+
+  const object = globalPath(expression.object);
+  const key = memberKey(expression);
+
+  if (object === null || key === null) return null;
+
+  return GLOBAL_OBJECTS.has(object) ? key : `${object}.${key}`;
+}
+
+/** Whether `node` is only tested for existence: `typeof x`, `x in y` or `x === undefined`. */
+function isFeatureTest(node: ESTree.Node): boolean {
+  let child = node;
+  let parent = node.parent;
+
+  while (parent !== null && unwrap(parent) !== parent) {
+    child = parent;
+    parent = parent.parent;
   }
 
-  const object = globalPath(node.object);
+  if (parent?.type === "UnaryExpression") return parent.operator === "typeof";
 
-  if (object === null) return null;
+  if (parent?.type !== "BinaryExpression") return false;
 
-  return GLOBAL_OBJECTS.has(object) ? node.property.name : `${object}.${node.property.name}`;
+  if (parent.operator === "in") return true;
+
+  const other = parent.left === child ? parent.right : parent.left;
+
+  return EQUALITY.has(parent.operator) && other.type === "Identifier" && other.name === "undefined";
 }
 
 /** Device code uses only what Hermes V1 implements. */
@@ -42,6 +71,8 @@ export default defineRule({
   create(context) {
     return {
       MemberExpression(node) {
+        if (isFeatureTest(node)) return;
+
         const path = globalPath(node);
         const global = path === null ? undefined : UNSUPPORTED_GLOBALS.get(path);
 
@@ -51,15 +82,14 @@ export default defineRule({
           return;
         }
 
-        if (node.computed || node.property.type !== "Identifier") return;
+        const method = memberKey(node);
+        const instead = method === null ? undefined : UNSUPPORTED_METHODS.get(method);
 
-        const method = UNSUPPORTED_METHODS.get(node.property.name);
-
-        if (method !== undefined) {
+        if (instead !== undefined) {
           context.report({
             node: node.property,
             messageId: "unsupported",
-            data: { api: `Array#${node.property.name}`, instead: method },
+            data: { api: `Array#${method}`, instead },
           });
         }
       },

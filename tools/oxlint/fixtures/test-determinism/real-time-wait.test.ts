@@ -1,10 +1,10 @@
 import { it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
-import { setTimeout as sleep } from "node:timers/promises";
+import * as NodeTimersPromises from "node:timers/promises";
 
 it("waits on the wall clock", async () => {
   // oxlint-disable-next-line studienbuch/no-real-time-wait-in-tests -- fixture: timers/promises in a test
-  await sleep(10);
+  await NodeTimersPromises.setTimeout(10);
 });
 
 it("waits for a timer in a promise", async () => {

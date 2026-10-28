@@ -1,8 +1,7 @@
-// One tab owns a device's database in the browser (ADR 0014; A7's measured design). The owner holds a
-// Web Lock for its document's lifetime, and the browser drops the lock together with the document,
-// its SQLite worker and the worker's OPFS handles. Another tab of the same device parks. "Hier
-// verwenden" asks the owner over a BroadcastChannel to reload into the parked state, then waits for
-// the lock.
+// One tab owns a device's database in the browser (ADR 0014). The owner holds a Web Lock for its
+// document's lifetime, and the browser drops it with the document, its SQLite worker and their
+// OPFS handles. Other tabs of the device park. "Hier verwenden" asks the owner over a
+// BroadcastChannel to reload into the parked state, then waits for the lock.
 
 import { use, useState } from "react";
 

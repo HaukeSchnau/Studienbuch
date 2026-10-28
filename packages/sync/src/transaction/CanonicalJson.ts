@@ -1,12 +1,8 @@
 /**
- * The one text form of a row's JSON. The device's SQLite and the server's Postgres store rows in
- * this form, so the device's optimistic result and the server's result are equal exactly when
- * their canonical texts are equal.
- *
- * Postgres `jsonb` rewrites what it stores (key order, whitespace, `1e+21`, `é`, duplicate
- * keys), SQLite keeps the text it gets. Encoding again after every read removes those differences.
- * Values that the two engines cannot both store are refused before they reach either, on the
- * device, before a command enters the outbox: see {@link Unrepresentable}.
+ * The one text form of a row's JSON, stored by the device's SQLite and the server's Postgres, so
+ * the device's optimistic result equals the server's exactly when the texts are equal. Every read
+ * encodes again, because `jsonb` rewrites key order, whitespace, `1e+21`, `é` and duplicate keys.
+ * Values both can't store fail as {@link Unrepresentable} before a command enters the outbox.
  */
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";

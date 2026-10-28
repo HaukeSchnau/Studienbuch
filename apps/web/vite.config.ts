@@ -1,7 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import { join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import * as NodeFS from "node:fs";
+import * as NodeModule from "node:module";
+import * as NodePath from "node:path";
+import * as NodeURL from "node:url";
 
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
@@ -31,11 +31,13 @@ const reactNativeWeb = (): Plugin => {
       // Resolved from this app: shared packages import `react-native` without depending on RNW.
       return dev && this.environment.name !== "client"
         ? ssrModule
-        : this.resolve("react-native-web", fileURLToPath(import.meta.url), { skipSelf: true });
+        : this.resolve("react-native-web", NodeURL.fileURLToPath(import.meta.url), {
+            skipSelf: true,
+          });
     },
     load(id) {
       if (id !== ssrModule) return;
-      const exported: unknown = createRequire(import.meta.url)("react-native-web");
+      const exported: unknown = NodeModule.createRequire(import.meta.url)("react-native-web");
       const names = exported instanceof Object ? Object.keys(exported) : [];
 
       return [
@@ -60,12 +62,12 @@ const failOnBrokenPages = (files: ReadonlyArray<string>): Plugin => ({
       const client = builder.environments["client"];
 
       if (client === undefined) return;
-      const outDir = resolve(client.config.root, client.config.build.outDir);
+      const outDir = NodePath.resolve(client.config.root, client.config.build.outDir);
 
       const broken = files.filter((file) => {
-        const path = join(outDir, file);
+        const path = NodePath.join(outDir, file);
 
-        return !existsSync(path) || readFileSync(path, "utf8").includes("<!--$!-->");
+        return !NodeFS.existsSync(path) || NodeFS.readFileSync(path, "utf8").includes("<!--$!-->");
       });
 
       if (broken.length > 0) this.error(`Prerendering failed for ${broken.join(", ")}`);
@@ -96,6 +98,6 @@ export default defineConfig({
       spa: { enabled: true, maskPath: "/console", prerender: { outputPath: shell } },
     }),
     viteReact(),
-    failOnBrokenPages([...pages.map((path) => join(path, "index.html")), `${shell}.html`]),
+    failOnBrokenPages([...pages.map((path) => NodePath.join(path, "index.html")), `${shell}.html`]),
   ],
 });

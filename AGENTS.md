@@ -177,12 +177,13 @@ The layout below is the target. Packages appear as M0 builds them.
 - Errors are tagged values in Effect's error channel. Defects use `Effect.die`. `Option` means absence, never a failed parse.
 - Ids and timestamps reach a mutator as arguments. Civil time follows [ADR 0001](docs/adr/0001-model-civil-time-explicitly.md).
 - Data and subscriptions belong in atoms, navigation and selection in the router, drafts in locally persisted atoms. React's state, effect and memoization hooks may only be called in an exported `use…` hook with a doc comment (`studienbuch/no-ad-hoc-state-or-effects`).
+- Platform differences live in `infra/` adapters, `ui/` components, `app/` routes and `.web.tsx` or `.native.tsx` files. Feature code gets them through an injected service or a documented hook (`studienbuch/no-global-process-runtime`).
 - Comments state a reason the code can't show, describe how a function is used, and move with the code.
 - If a rule here fights the task in front of you, say so loudly and get a human sign-off before breaking it.
 
 ## Lint
 
-`vp check` enforces most rules of this codebase, through oxlint with type information, the Effect presets, anti-slop and our plugin in `tools/oxlint/`: no throwing, the module shape, package boundaries, mutator purity, APIs Hermes lacks, baked-in origins, directory names, deterministic tests, and a reason on every suppression. When a rule fights a real need, change the rule in its own PR rather than suppressing it in passing. A convention that keeps coming up in review belongs in the plugin, not in this file.
+`vp check` enforces most rules of this codebase, through oxlint with type information, the Effect presets, anti-slop and our plugin in `tools/oxlint/`: no throwing, the module shape, package boundaries, mutator purity, APIs Hermes lacks, baked-in origins, directory names, deterministic tests, `Effect.fn` and `catchTags`, no platform reads in feature code, comments of at most four lines, no em dashes in copy, and a reason on every suppression. Many of the plugin's rules come from T3 Code (MIT, `tools/T3CODE-LICENSE`). When a rule fights a real need, change the rule in its own PR rather than suppressing it in passing. A convention that keeps coming up in review belongs in the plugin, not in this file.
 
 ## Effect
 

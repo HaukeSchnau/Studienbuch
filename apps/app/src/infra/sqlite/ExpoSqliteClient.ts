@@ -37,96 +37,93 @@ const fail = (operation: string) => (cause: unknown) =>
     reason: SqlError.classifySqliteError(cause, { message: `Failed to ${operation}`, operation }),
   });
 
-const make = (config: Config) =>
-  Effect.gen(function* () {
-    const reactivity = yield* Reactivity.Reactivity;
+const make = Effect.fn("ExpoSqliteClient.make")(function* (config: Config) {
+  const reactivity = yield* Reactivity.Reactivity;
 
-    const db = yield* Effect.acquireRelease(
-      Effect.tryPromise({
-        try: async () => {
-          const opened = await SQLite.openDatabaseAsync(config.filename, {
-            enableChangeListener: true,
-          });
+  const db = yield* Effect.acquireRelease(
+    Effect.tryPromise({
+      try: async () => {
+        const opened = await SQLite.openDatabaseAsync(config.filename, {
+          enableChangeListener: true,
+        });
 
-          await opened.execAsync(`PRAGMA key = "x'${config.encryptionKey}'"`);
+        await opened.execAsync(`PRAGMA key = "x'${config.encryptionKey}'"`);
 
-          return opened;
-        },
-        catch: fail("open the database"),
-      }),
-      (opened) => Effect.promise(() => opened.closeAsync()),
-    );
-
-    // sqlite3_update_hook to Reactivity, so `sql.reactive` queries run again after writes.
-    const subscription = SQLite.addDatabaseChangeListener((change) => {
-      if (change.databaseFilePath === db.databasePath) {
-        reactivity.invalidateUnsafe({ [change.tableName]: [String(change.rowId)] });
-      }
-    });
-
-    yield* Effect.addFinalizer(() => Effect.sync(() => subscription.remove()));
-
-    const rows = (sql: string, values: ReadonlyArray<unknown>) =>
-      Effect.tryPromise({
-        try: () => db.getAllAsync<object>(sql, [...params(values)]),
-        catch: fail("execute"),
-      });
-
-    const arrays = (sql: string, values: ReadonlyArray<unknown>) =>
-      Effect.tryPromise({
-        try: async () => {
-          const statement = await db.prepareAsync(sql);
-
-          try {
-            const result = await statement.executeForRawResultAsync([...params(values)]);
-
-            return await result.getAllAsync();
-          } finally {
-            await statement.finalizeAsync();
-          }
-        },
-        catch: fail("execute"),
-      });
-
-    const connection: SqlConnection.Connection = {
-      execute: (sql, values, transform) =>
-        transform ? Effect.map(rows(sql, values), transform) : rows(sql, values),
-      executeRaw: rows,
-      executeValues: arrays,
-      executeValuesUnprepared: arrays,
-      executeUnprepared: (sql, values, transform) =>
-        transform ? Effect.map(rows(sql, values), transform) : rows(sql, values),
-      executeStream: (sql, values, transform) => {
-        const stream = Stream.fromAsyncIterable(
-          db.getEachAsync<object>(sql, [...params(values)]),
-          fail("stream"),
-        );
-
-        return transform
-          ? Stream.flattenIterable(Stream.map(stream, (row) => transform([row])))
-          : stream;
+        return opened;
       },
-    };
+      catch: fail("open the database"),
+    }),
+    (opened) => Effect.promise(() => opened.closeAsync()),
+  );
 
-    // One connection behind a semaphore: Effect issues BEGIN and COMMIT itself.
-    const { acquirer, borrower, onCommitFailure, transactionAcquirer } = Client.makeSqliteAcquirers(
-      {
-        connection: Effect.succeed(connection),
-        semaphore: yield* Semaphore.make(1),
-      },
-    );
-
-    return yield* Client.make({
-      driver: "expo-sqlite",
-      acquirer,
-      borrower,
-      transactionAcquirer,
-      onCommitFailure,
-      compiler: Statement.makeCompilerSqlite(),
-      releaseSavepoint: (name) => `RELEASE SAVEPOINT ${name}`,
-      spanAttributes: [["db.system.name", "sqlite"]],
-    });
+  // sqlite3_update_hook to Reactivity, so `sql.reactive` queries run again after writes.
+  const subscription = SQLite.addDatabaseChangeListener((change) => {
+    if (change.databaseFilePath === db.databasePath) {
+      reactivity.invalidateUnsafe({ [change.tableName]: [String(change.rowId)] });
+    }
   });
+
+  yield* Effect.addFinalizer(() => Effect.sync(() => subscription.remove()));
+
+  const rows = (sql: string, values: ReadonlyArray<unknown>) =>
+    Effect.tryPromise({
+      try: () => db.getAllAsync<object>(sql, [...params(values)]),
+      catch: fail("execute"),
+    });
+
+  const arrays = (sql: string, values: ReadonlyArray<unknown>) =>
+    Effect.tryPromise({
+      try: async () => {
+        const statement = await db.prepareAsync(sql);
+
+        try {
+          const result = await statement.executeForRawResultAsync([...params(values)]);
+
+          return await result.getAllAsync();
+        } finally {
+          await statement.finalizeAsync();
+        }
+      },
+      catch: fail("execute"),
+    });
+
+  const connection: SqlConnection.Connection = {
+    execute: (sql, values, transform) =>
+      transform ? Effect.map(rows(sql, values), transform) : rows(sql, values),
+    executeRaw: rows,
+    executeValues: arrays,
+    executeValuesUnprepared: arrays,
+    executeUnprepared: (sql, values, transform) =>
+      transform ? Effect.map(rows(sql, values), transform) : rows(sql, values),
+    executeStream: (sql, values, transform) => {
+      const stream = Stream.fromAsyncIterable(
+        db.getEachAsync<object>(sql, [...params(values)]),
+        fail("stream"),
+      );
+
+      return transform
+        ? Stream.flattenIterable(Stream.map(stream, (row) => transform([row])))
+        : stream;
+    },
+  };
+
+  // One connection behind a semaphore: Effect issues BEGIN and COMMIT itself.
+  const { acquirer, borrower, onCommitFailure, transactionAcquirer } = Client.makeSqliteAcquirers({
+    connection: Effect.succeed(connection),
+    semaphore: yield* Semaphore.make(1),
+  });
+
+  return yield* Client.make({
+    driver: "expo-sqlite",
+    acquirer,
+    borrower,
+    transactionAcquirer,
+    onCommitFailure,
+    compiler: Statement.makeCompilerSqlite(),
+    releaseSavepoint: (name) => `RELEASE SAVEPOINT ${name}`,
+    spanAttributes: [["db.system.name", "sqlite"]],
+  });
+});
 
 /** The database file `config.filename` as `SqlClient`. */
 export const layer = (config: Config) =>

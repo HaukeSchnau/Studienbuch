@@ -5,12 +5,10 @@ import SQLiteESMFactory from "@effect/wa-sqlite/dist/wa-sqlite.mjs";
 import { AccessHandlePoolVFS } from "@effect/wa-sqlite/src/examples/AccessHandlePoolVFS.js";
 import wasmUrl from "@effect/wa-sqlite/dist/wa-sqlite.wasm";
 
-// Effect's `OpfsWorker.run` from @effect/sql-sqlite-wasm, ported for Metro (client-platform.md, "Effect
-// and SQLite"). It speaks the same protocol, so the page uses Effect's unchanged `SqliteClient.layer`.
-// Two things differ: wa-sqlite's wasm comes from a Metro asset URL, because Metro rewrites the
-// `import.meta.url` wa-sqlite looks next to, and the OPFS directory is the worker's name, so every
-// device keeps its own pool of access handles. If `OpfsWorker.run` took a wasm URL and a directory,
-// this file could go.
+// Effect's `OpfsWorker.run` from @effect/sql-sqlite-wasm, ported for Metro with the same protocol,
+// so the page uses Effect's unchanged `SqliteClient.layer`. The wasm comes from a Metro asset URL,
+// because Metro rewrites wa-sqlite's `import.meta.url`, and the OPFS directory is the worker's
+// name, one access handle pool per device. If `OpfsWorker.run` took both, this file could go.
 
 type Message =
   | [id: number, sql: string, params: Array<SQLiteCompatibleType | null>]

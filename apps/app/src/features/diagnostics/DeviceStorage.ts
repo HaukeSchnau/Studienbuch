@@ -54,7 +54,7 @@ const recordStart = Effect.gen(function* () {
         });
 
   return { starts: count, sqlite: version, cipher } satisfies Report;
-}).pipe(Effect.catchTag("SchemaError", Effect.die));
+}).pipe(Effect.catchTags({ SchemaError: Effect.die }));
 
 // The database stays open for the app's lifetime.
 const database = Atom.runtime(layer).pipe(Atom.keepAlive);

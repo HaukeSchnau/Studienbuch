@@ -4,14 +4,12 @@ import { Tokens } from "@stu/ui/Tokens";
 import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { useRouter } from "expo-router";
-import { Platform } from "react-native";
 
 import { ApiProtocol } from "../../infra/api/ApiProtocol.ts";
 import { VirtualDevice } from "../../infra/device/VirtualDevice.ts";
-import { Button } from "../../ui/Button.tsx";
+import { BuildInfo } from "../../infra/updates/BuildInfo.ts";
 import { Card } from "../../ui/Card.tsx";
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
-import { BuildInfo } from "./BuildInfo.ts";
 import { CryptoSelfTest } from "./CryptoSelfTest.ts";
 import { DeviceStorage } from "./DeviceStorage.ts";
 import { ServerInfo } from "./ServerInfo.ts";
@@ -37,21 +35,7 @@ export function DiagnosticsScreen() {
     <HeroScreen
       title="Moin!"
       subtitle="Das läuft auf diesem Gerät:"
-      action={
-        Platform.OS === "web" ? (
-          <Button
-            kind="quiet"
-            label="Aktualisieren"
-            busy={server.waiting || selfTest.waiting}
-            onPress={refresh}
-          />
-        ) : undefined
-      }
-      refresh={
-        Platform.OS === "web"
-          ? undefined
-          : { refreshing: server.waiting || selfTest.waiting, onRefresh: refresh }
-      }
+      refresh={{ refreshing: server.waiting || selfTest.waiting, onRefresh: refresh }}
     >
       <Card>
         <StatusRow first {...appRow(serverRevision)} />
@@ -83,7 +67,7 @@ const joined = (...parts: ReadonlyArray<string | undefined>) =>
 function appRow(serverRevision: Option.Option<string>): Row {
   const accent = Tokens.subject.blue.fill;
 
-  if (Platform.OS === "web") {
+  if (BuildInfo.servedByServer) {
     return {
       label: "App",
       title: "Im Browser",

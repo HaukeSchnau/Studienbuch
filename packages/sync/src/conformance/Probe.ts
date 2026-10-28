@@ -31,6 +31,9 @@ export const table = Sync.table("Probe", {
 
 export type Row = Sync.Row<typeof table>;
 
+/** A row's JSON object, as the table's codec encodes it. */
+export const encode = Schema.encodeEffect(table.codec);
+
 export type Index = Sync.IndexOf<typeof table>;
 
 export type Step =
@@ -63,7 +66,7 @@ export interface Trace {
 }
 
 const canonicalRow = (row: Row) =>
-  Schema.encodeEffect(table.codec)(row).pipe(
+  encode(row).pipe(
     Effect.flatMap((json) => Effect.fromResult(CanonicalJson.encode(json))),
     Effect.orDie,
   );
@@ -125,17 +128,17 @@ const step = (engine: Engines.Engine, space: string, step: Step) => {
     case "seed":
       return seed(engine, space, step.id, step.json).pipe(
         Effect.as<Outcome>({ ok: null }),
-        Effect.catchTag("CanonicalJson.Unrepresentable", (error) =>
-          Effect.succeed(describe(error)),
-        ),
+        Effect.catchTags({
+          "CanonicalJson.Unrepresentable": (error) => Effect.succeed(describe(error)),
+        }),
       );
   }
 };
 
-// A seed writes raw JSON past the codec, including values the encoder must refuse.
-// oxlint-disable-next-line anti-slop/no-unknown-parameters -- see above
-const seed = (engine: Engines.Engine, space: string, id: string, json: unknown) =>
-  Effect.gen(function* () {
+const seed = Effect.fn("Probe.seed")(
+  // A seed writes raw JSON past the codec, including values the encoder must refuse.
+  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- see above
+  function* (engine: Engines.Engine, space: string, id: string, json: unknown) {
     const text = yield* Effect.fromResult(CanonicalJson.encode(json));
     const sql = yield* SqlClient.SqlClient;
 
@@ -150,7 +153,9 @@ const seed = (engine: Engines.Engine, space: string, id: string, json: unknown) 
             values (${space}, ${table.name}, ${id}, 1, ${text}::jsonb)
             on conflict (space_id, tbl, id) do update set data = excluded.data
           `;
-  }).pipe(engine.sql);
+  },
+  (effect, engine) => engine.sql(effect),
+);
 
 const stored = (engine: Engines.Engine, space: string) =>
   engine
@@ -177,12 +182,15 @@ const stored = (engine: Engines.Engine, space: string) =>
     );
 
 /** Runs the steps on one engine, each in its own transaction, in a space no other run uses. */
-export const run = (engine: Engines.Engine, space: string, steps: ReadonlyArray<Step>) =>
-  Effect.gen(function* () {
-    const outcomes = yield* Effect.forEach(steps, (each) => step(engine, space, each));
+export const run = Effect.fn("Probe.run")(function* (
+  engine: Engines.Engine,
+  space: string,
+  steps: ReadonlyArray<Step>,
+) {
+  const outcomes = yield* Effect.forEach(steps, (each) => step(engine, space, each));
 
-    return { outcomes, stored: yield* stored(engine, space) } satisfies Trace;
-  }).pipe(Effect.orDie);
+  return { outcomes, stored: yield* stored(engine, space) } satisfies Trace;
+}, Effect.orDie);
 
 let spaces = 0;
 

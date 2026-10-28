@@ -20,11 +20,10 @@ const isNotFound = (error: HttpServerError.HttpServerError) =>
   error.reason._tag === "RouteNotFound";
 
 /**
- * Serves both web builds from one origin, with no COOP or COEP headers (ADR 0014, D29):
- * - `/app/*`: the Expo web export, falling back to `index.html` for routes without a file.
- * - `/console/*`: the console SPA shell that TanStack Start writes as `_shell.html`.
- * - everything else: the prerendered pages, where `/impressum` is `impressum.html` or
- *   `impressum/index.html`, whichever the build wrote.
+ * Serves both web builds from one origin, with no COOP or COEP headers (ADR 0014, D29): the Expo
+ * web export under `/app/*` (unknown routes get `index.html`), the console SPA's `_shell.html`
+ * under `/console/*`, and the prerendered pages elsewhere, where `/impressum` is `impressum.html`
+ * or `impressum/index.html`, whichever the build wrote.
  */
 export const layer = (roots: Roots) =>
   HttpRouter.use(

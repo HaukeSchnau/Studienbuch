@@ -1,11 +1,8 @@
 /**
  * The device's SQLite schema as Drizzle declarations, derived from the synced tables, so one
- * definition in `packages/core` drives the device's storage, its migrations (drizzle-kit reads
- * this) and its typed queries.
- *
- * The device stores rows as JSON in two engine tables, and each synced table is a view over them.
- * A Drizzle view, not a table, because the device never writes a synced table directly: the server
- * fills `base_row`, the outbox fills `pending_row`.
+ * definition in `packages/core` drives the device's storage, its migrations and its typed queries.
+ * Each synced table is a view over two engine tables of JSON rows, because the device never writes
+ * one directly: the server fills `base_row`, the outbox fills `pending_row`.
  *
  * ```ts
  * // The schema file drizzle-kit reads. Each entity is a named export.

@@ -14,7 +14,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import type * as SqlError from "effect/sql/SqlError";
 // installFileFetch reads the wasm file before any Effect runtime exists.
 // oxlint-disable-next-line effecttsgo/node-builtin-import -- see above
-import { readFile } from "node:fs/promises";
+import * as NodeFSP from "node:fs/promises";
 import { inject } from "vitest";
 import { DeviceDatabase } from "../client/DeviceDatabase.ts";
 import { SqliteTx } from "../client/SqliteTx.ts";
@@ -139,7 +139,7 @@ export async function installFileFetch() {
 
     if (url.protocol !== "file:") return nodeFetch(input, init);
 
-    return readFile(url).then(
+    return NodeFSP.readFile(url).then(
       (bytes) => new Response(bytes, { headers: { "content-type": "application/wasm" } }),
     );
   };

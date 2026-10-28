@@ -92,7 +92,9 @@ layer(NodeServices.layer)("Migrations", (it) => {
         });
 
         const behind = yield* Migrations.requireHead(local).pipe(
-          Effect.catchTag("Migrations.SchemaBehind", ({ missing }) => Effect.succeed(missing)),
+          Effect.catchTags({
+            "Migrations.SchemaBehind": ({ missing }) => Effect.succeed(missing),
+          }),
         );
 
         assert.deepStrictEqual(behind, ["20260102000000_b"]);

@@ -1,7 +1,6 @@
 import { expect, layer } from "@effect/vitest";
 import { and, eq } from "drizzle-orm";
 import * as Effect from "effect/Effect";
-import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Cases } from "../conformance/Cases.ts";
 import { Engines } from "../conformance/Engines.ts";
@@ -15,7 +14,7 @@ import { DeviceDatabase } from "./DeviceDatabase.ts";
  * string the row codec stored, and an absent field reads as `null`.
  */
 const asViewRow = (space: string, id: string, row: Probe.Row) =>
-  Effect.map(Schema.encodeEffect(Probe.table.codec)(row), (json) => ({
+  Effect.map(Probe.encode(row), (json) => ({
     space,
     id,
     // The row codec's encoded side is typed unknown; for the probe it's the row's JSON object.
