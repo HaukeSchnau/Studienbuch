@@ -260,7 +260,7 @@ for (const result of results) {
 // CI's tasks run over the whole repository, so they catch what the file lists above skip.
 const ciTasks = [
   ...NodeFS.readFileSync(NodePath.join(root, ".calder/ci.ts"), "utf8").matchAll(
-    /Task\.make\("([^"]+)"/gu,
+    /(?:Task\.make\(|Vitest\.files\(\{\s*name: )"([^"]+)"/gu,
   ),
 ].map((match) => match[1]);
 

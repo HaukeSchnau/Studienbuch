@@ -1,0 +1,14 @@
+# The stack is its own pnpm project, outside the root workspace, so the deploy step installs only
+# Alchemy and the providers, and an Alchemy bump never rebuilds the release bundle.
+
+# Cloudflare's local runtime, which only `alchemy dev` uses.
+allowBuilds:
+  workerd: false
+
+# Same-day releases we need now. Delete each entry at the next bump of its package.
+minimumReleaseAgeExclude:
+  - effect@4.0.7
+  - "@effect/platform-node-shared@4.0.7"
+  - "@effect/platform-node@4.0.7"
+  - "@effect/vitest@4.0.7"
+  - "@schnau/fleet@0.3.0"

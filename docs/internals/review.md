@@ -2,7 +2,7 @@
 
 What a reviewer agent checks in a Studienbuch PR, beyond what `vp check` and CI already prove. AGENTS.md holds the rules for writing the code. This file lists what lint and CI can't check. When a rule moves, change both.
 
-Until WP-15 lands, CI (`.calder/ci.ts`) runs format and lint only. Lint reports type errors too, but nothing runs knip or the tests. Ask which tests the author ran, or run them yourself: `vp run check:changed`, and `vp test run` in the package for the rest. Tests that need PostgreSQL get it from `devenv up`.
+CI (`.calder/ci.ts`) runs format, lint, knip, a typecheck of every project, every test (those that need PostgreSQL against a real PostgreSQL 18) and the flake checks, over the whole repository. A PR's preview deploys before they finish, so a preview that works says nothing about the checks; read their status in Calder's comment.
 
 ## Reporting
 
