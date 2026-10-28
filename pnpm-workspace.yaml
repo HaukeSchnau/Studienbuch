@@ -18,6 +18,12 @@ catalog:
   "@effect/sql-pg": 4.0.7
   "@effect/vitest": 4.0.7
   "@effect/atom-react": 4.0.7
+  "@effect/sql-pglite": 4.0.7
+  "@effect/sql-sqlite-node": 4.0.7
+  "@effect/sql-sqlite-wasm": 4.0.7
+  # The wasm SQLite build behind @effect/sql-sqlite-wasm, which bundles SQLite 3.50.4.
+  "@effect/wa-sqlite": 0.2.1
+  "@electric-sql/pglite": 0.5.13
   # Drizzle's Effect driver exists only in the 1.0 release candidates. Its pin moves together with
   # Effect's (ADR 0012).
   drizzle-kit: 1.0.0-rc.5
@@ -39,11 +45,15 @@ catalog:
 overrides:
   vite@*: "catalog:"
   vitest@*: "catalog:"
+  # @effect/sql-pglite would otherwise bring its own older PGlite.
+  "@electric-sql/pglite@*": "catalog:"
 
 peerDependencyRules:
   # The alias reports Vite+'s version, not the Vite 8 inside it.
   allowedVersions:
     vite: "*"
+    # The driver's range is stale: Effect's own repository tests it against 0.2.1.
+    "@effect/sql-sqlite-wasm>@effect/wa-sqlite": 0.2.1
 
 # Same-day releases we need now. Delete each entry at the next bump of its package.
 minimumReleaseAgeExclude:
@@ -53,3 +63,7 @@ minimumReleaseAgeExclude:
   - "@effect/sql-pg@4.0.7"
   - "@effect/vitest@4.0.7"
   - "@effect/atom-react@4.0.7"
+  - "@effect/sql-pglite@4.0.7"
+  - "@effect/sql-sqlite-node@4.0.7"
+  - "@effect/sql-sqlite-wasm@4.0.7"
+  - "@electric-sql/pglite@0.5.13"
