@@ -11,7 +11,10 @@
     "erasableSyntaxOnly": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "types": [],
     "strict": true,
+    "exactOptionalPropertyTypes": false,
+    "noPropertyAccessFromIndexSignature": false,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
@@ -19,6 +22,13 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "allowUnreachableCode": false,
-    "allowUnusedLabels": false
+    "allowUnusedLabels": false,
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "diagnostics": false,
+        "namespaceImportPackages": ["effect"]
+      }
+    ]
   }
 }

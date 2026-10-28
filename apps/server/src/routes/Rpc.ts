@@ -9,6 +9,7 @@ import { Deployment } from "../infra/config/Deployment.ts";
 const handlers = Api.Rpcs.toLayer(
   Effect.gen(function* () {
     const { revision, environment } = yield* Deployment.Current;
+
     return {
       "System.info": () =>
         Effect.map(

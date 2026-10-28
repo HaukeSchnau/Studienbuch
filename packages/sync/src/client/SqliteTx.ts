@@ -12,6 +12,7 @@
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Predicate from "effect/Predicate";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Tx } from "../transaction/Tx.ts";
 
@@ -19,6 +20,7 @@ export * as SqliteTx from "./SqliteTx.ts";
 
 export const make = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
+
   return Tx.make({
     read: (space, table, id) =>
       sql<{ readonly data: string }>`
@@ -56,6 +58,7 @@ const listByIndex = (
   filter: Tx.StoreFilter,
 ) => {
   const path = literal(indexPath(filter.field));
+
   return sql.unsafe<{ readonly id: string; readonly data: string }>(
     `select id, data from sync_row_view
      where space = ? and tbl = ${literal(table)} and data ->> ${path} = ? and data -> ${path} = ?
@@ -73,7 +76,10 @@ const literal = (text: string) => `'${text.replaceAll("'", "''")}'`;
 // object or array.
 const scalar = (filter: Tx.StoreFilter): string | number => {
   const { value } = filter;
-  if (typeof value === "string" || typeof value === "number") return value;
-  if (typeof value === "boolean") return value ? 1 : 0;
+
+  if (Predicate.isString(value) || Predicate.isNumber(value)) return value;
+
+  if (Predicate.isBoolean(value)) return value ? 1 : 0;
+
   return filter.json;
 };

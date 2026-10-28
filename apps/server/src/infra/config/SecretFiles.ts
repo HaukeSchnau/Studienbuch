@@ -11,6 +11,7 @@ export const provider = Effect.fn("SecretFiles.provider")(function* (
   env: ConfigProvider.ConfigProvider,
 ) {
   const fs = yield* FileSystem.FileSystem;
+
   const files = ConfigProvider.make((path) =>
     Effect.flatMap(env.load([...path, "FILE"]), (node) =>
       node?._tag === "Value"
@@ -24,9 +25,12 @@ export const provider = Effect.fn("SecretFiles.provider")(function* (
                 }),
             ),
           )
-        : Effect.succeed(undefined),
+        : // ConfigProvider.make needs `Node | undefined`, and Effect.void is typed `void`.
+          // oxlint-disable-next-line effecttsgo/effect-succeed-with-void -- see above
+          Effect.succeed(undefined),
     ),
   );
+
   return ConfigProvider.orElse(files, env);
 });
 

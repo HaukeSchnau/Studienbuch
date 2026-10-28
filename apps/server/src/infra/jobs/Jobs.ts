@@ -11,6 +11,7 @@ import { Schema as Tables } from "../database/Schema.ts";
 
 /** Every job the server knows. */
 export const Name = Schema.Literals(["heartbeat"]);
+
 export type Name = typeof Name.Type;
 
 /**
@@ -36,6 +37,7 @@ const recordRun = Effect.fn("Jobs.recordRun")(function* (name: Name) {
 export const lastRuns = Effect.gen(function* () {
   const db = yield* Database.Drizzle;
   const rows = yield* db.select().from(Tables.jobRun);
+
   return new Map(rows.map((row) => [row.name, DateTime.fromDateUnsafe(row.lastRunAt)]));
 });
 
@@ -46,7 +48,7 @@ const jobs = {
     cron: Cron.parseUnsafe("* * * * *"),
     execute: recordRun("heartbeat"),
   }),
-} satisfies Record<Name, unknown>;
+} satisfies Record<Name, ReturnType<typeof ClusterCron.make>>;
 
 /**
  * Runs the enabled jobs through `ClusterCron` on a single-node cluster in Postgres, so runs never
@@ -55,6 +57,7 @@ const jobs = {
 export const layer = Layer.unwrap(
   Effect.map(enabled, (names) => {
     const [first, ...rest] = names.map((name) => jobs[name]);
+
     return first === undefined
       ? Layer.empty
       : Layer.mergeAll(first, ...rest).pipe(Layer.provide(SingleRunner.layer()));

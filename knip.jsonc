@@ -1,0 +1,30 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  // A module exports itself as a namespace, so a member it uses itself, such as an error class in
+  // its functions' error channels, belongs to that namespace even without an outside import.
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": [
+    // The tsconfig plugin that @effect/tsgo's patched TypeScript provides, not a package.
+    "@effect/language-service",
+  ],
+  // PostgreSQL 18 comes from Nix, not npm. The sync tests start a throwaway server with it.
+  "ignoreBinaries": ["pg_ctl", "postgres"],
+  "workspaces": {
+    "apps/web": {
+      // vite.config.ts resolves `react-native` to it by name.
+      "ignoreDependencies": ["react-native-web"],
+    },
+    "packages/ui": {
+      // `fonts.css` imports the font, and `vp` runs the tests without a config file.
+      "ignoreDependencies": ["@fontsource-variable/nunito", "vite-plus"],
+    },
+  },
+  "ignore": [
+    // Calder loads its own TypeScript project, with dependencies the workspace doesn't install.
+    ".calder/**",
+    // Vendored as upstream wrote it, unused helpers included.
+    "tools/oxlint/anti-slop/**",
+    // Each fixture exists to fail the lint, not to be imported.
+    "tools/oxlint/fixtures/**",
+  ],
+}

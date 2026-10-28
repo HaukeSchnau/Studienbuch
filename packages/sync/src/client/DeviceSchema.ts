@@ -26,9 +26,10 @@ import {
   sqliteView,
   text,
 } from "drizzle-orm/sqlite-core";
+import * as Predicate from "effect/Predicate";
 import * as Schema from "effect/Schema";
 import * as SchemaAST from "effect/SchemaAST";
-import { Sync } from "../definition/Sync.ts";
+import type { Sync } from "../definition/Sync.ts";
 import { SqliteTx } from "./SqliteTx.ts";
 
 export * as DeviceSchema from "./DeviceSchema.ts";
@@ -44,36 +45,38 @@ export const kindOf = (field: Schema.Constraint): Kind =>
   scalarKind(SchemaAST.toEncoded(Schema.toCodecJson(field).ast)) ?? "json";
 
 const scalarKind = (ast: SchemaAST.AST): Exclude<Kind, "json"> | undefined => {
-  switch (ast._tag) {
-    case "String":
-    case "TemplateLiteral":
-      return "text";
-    case "Number":
-      return "number";
-    case "Boolean":
-      return "boolean";
-    case "Literal":
-      return typeof ast.literal === "string"
-        ? "text"
-        : typeof ast.literal === "number"
-          ? "number"
-          : typeof ast.literal === "boolean"
-            ? "boolean"
-            : undefined;
-    case "Union": {
-      const kinds = new Set(
-        ast.types
-          .filter((member) => member._tag !== "Null" && member._tag !== "Undefined")
-          .map(scalarKind),
-      );
-      const [kind] = kinds;
-      return kinds.size === 1 ? kind : undefined;
-    }
-    default:
-      return undefined;
+  if (ast._tag === "String" || ast._tag === "TemplateLiteral") return "text";
+
+  if (ast._tag === "Number") return "number";
+
+  if (ast._tag === "Boolean") return "boolean";
+
+  if (ast._tag === "Literal") {
+    const { literal } = ast;
+
+    if (Predicate.isString(literal)) return "text";
+
+    if (Predicate.isNumber(literal)) return "number";
+
+    return Predicate.isBoolean(literal) ? "boolean" : undefined;
   }
+
+  if (ast._tag !== "Union") return undefined;
+
+  const kinds = new Set(
+    ast.types
+      .filter((member) => member._tag !== "Null" && member._tag !== "Undefined")
+      .map(scalarKind),
+  );
+
+  const [kind] = kinds;
+
+  return kinds.size === 1 ? kind : undefined;
 };
 
+// Drizzle hands a custom column its driver value untyped, and the view's column type is the
+// contract for what comes out.
+/* oxlint-disable anti-slop/no-unknown-parameters, anti-slop/no-unknown-returns, typescript/no-unsafe-type-assertion -- see above */
 const fromDriver: Record<Kind, (value: unknown) => unknown> = {
   text: (value) => value,
   number: (value) => value,
@@ -81,6 +84,7 @@ const fromDriver: Record<Kind, (value: unknown) => unknown> = {
   // `->` hands out JSON text that SQLite produced from a canonical row.
   json: (value) => JSON.parse(value as string),
 };
+/* oxlint-enable anti-slop/no-unknown-parameters, anti-slop/no-unknown-returns, typescript/no-unsafe-type-assertion */
 
 type Encoded<F extends Schema.Constraint> = F["Encoded"];
 
@@ -96,10 +100,14 @@ type Column<F extends Schema.Constraint> = ReturnType<
 
 const column = <F extends Schema.Constraint>(name: string, field: F): Column<F> => {
   const kind = kindOf(field);
+
   const builder = customType({
     dataType: () => (kind === "number" ? "real" : kind === "boolean" ? "integer" : "text"),
     fromDriver: fromDriver[kind],
   })(name);
+
+  // Drizzle can't type a column built from a runtime schema; `Column<F>` computes it from the field.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- see above
   return builder as unknown as Column<F>;
 };
 
@@ -111,16 +119,21 @@ const fieldExpression = (name: string, field: Schema.Constraint) =>
 /** One synced table as a typed view: `space`, `id` and a column per field. */
 export const view = <T extends Sync.Any>(table: T) => {
   const fields = Object.entries(table.fields);
+
   const columns = {
     space: text("space").notNull(),
     id: text("id").notNull(),
+    // Object.fromEntries loses the per-field column types that `column` computed.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- see above
     ...(Object.fromEntries(fields.map(([name, field]) => [name, column(name, field)])) as {
       [K in keyof T["fields"]]: Column<T["fields"][K]>;
     }),
   };
+
   const select = ["space", "id"]
     .concat(fields.map(([name, field]) => `${fieldExpression(name, field)} as "${name}"`))
     .join(", ");
+
   return sqliteView(table.name, columns).as(
     sql.raw(`select ${select} from sync_row_view where tbl = ${literal(table.name)}`),
   );
@@ -135,6 +148,8 @@ const indexesOn = (rowTable: string, tables: ReadonlyArray<Sync.Any>) =>
   tables.flatMap((table) =>
     table.indexes.map((name) =>
       index(`${rowTable}_${table.name}_${name}`)
+        // An index is a key of its table's fields.
+        // oxlint-disable-next-line typescript/no-non-null-assertion -- see above
         .on(sql.raw("space"), sql.raw(fieldExpression(name, table.fields[name]!)), sql.raw("id"))
         .where(sql.raw(`tbl = ${literal(table.name)}`)),
     ),
@@ -155,6 +170,7 @@ export const make = <const Tables extends ReadonlyArray<Sync.Any>>(tables: Table
       ...indexesOn("base_row", tables),
     ],
   );
+
   // `data` is null for a row the outbox deleted.
   const pending_row = sqliteTable(
     "pending_row",
@@ -164,6 +180,7 @@ export const make = <const Tables extends ReadonlyArray<Sync.Any>>(tables: Table
       ...indexesOn("pending_row", tables),
     ],
   );
+
   const sync_row_view = sqliteView("sync_row_view", {
     space: text().notNull(),
     tbl: text().notNull(),
@@ -178,8 +195,12 @@ export const make = <const Tables extends ReadonlyArray<Sync.Any>>(tables: Table
         where pending.space = base.space and pending.tbl = base.tbl and pending.id = base.id
       )`),
   );
+
+  // Object.fromEntries loses each view's type, which `view<T>` computed per table.
+  // oxlint-disable-next-line anti-slop/no-chained-type-assertions, typescript/no-unsafe-type-assertion -- see above
   const views = Object.fromEntries(tables.map((table) => [table.name, view(table)])) as unknown as {
     [T in Tables[number] as T["name"]]: ReturnType<typeof view<T>>;
   };
+
   return { base_row, pending_row, sync_row_view, ...views };
 };

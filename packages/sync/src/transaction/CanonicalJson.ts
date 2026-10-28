@@ -13,6 +13,10 @@ import * as Schema from "effect/Schema";
 
 export * as CanonicalJson from "./CanonicalJson.ts";
 
+// The encoder is the parser for row JSON: it takes any value, inspects its JavaScript type and
+// refuses whatever isn't JSON.
+/* oxlint-disable anti-slop/no-object-parameters, anti-slop/no-runtime-typeof, anti-slop/no-unknown-parameters, anti-slop/no-unsafe-dictionary-type, typescript/no-unsafe-type-assertion, typescript/switch-exhaustiveness-check -- see above */
+
 /**
  * SQLite's JSON functions reject documents nested deeper than 1000 levels, and one such row would
  * break every view over its table on the device. Rows need a handful of levels, so the limit sits
@@ -20,25 +24,25 @@ export * as CanonicalJson from "./CanonicalJson.ts";
  */
 export const maxDepth = 64;
 
-export class Unrepresentable extends Schema.TaggedError<Unrepresentable>()(
-  "CanonicalJson.Unrepresentable",
-  {
-    path: Schema.String,
-    reason: Schema.Literals([
-      // Postgres rejects U+0000 in text and jsonb.
-      "nul",
-      // Postgres rejects an unpaired surrogate in jsonb.
-      "lone-surrogate",
-      // NaN and the infinities have no JSON form.
-      "non-finite",
-      // Beyond 2^53 a number is no longer exact in JavaScript, and SQLite reads such a literal as
-      // a 64-bit integer that the drivers refuse (node:sqlite) or return as a bigint (wa-sqlite).
-      "unsafe-integer",
-      "too-deep",
-      "not-json",
-    ]),
-  },
-) {}
+export class Unrepresentable extends Schema.TaggedError<
+  Unrepresentable,
+  { readonly brand: unique symbol }
+>()("CanonicalJson.Unrepresentable", {
+  path: Schema.String,
+  reason: Schema.Literals([
+    // Postgres rejects U+0000 in text and jsonb.
+    "nul",
+    // Postgres rejects an unpaired surrogate in jsonb.
+    "lone-surrogate",
+    // NaN and the infinities have no JSON form.
+    "non-finite",
+    // Beyond 2^53 a number is no longer exact in JavaScript, and SQLite reads such a literal as
+    // a 64-bit integer that the drivers refuse (node:sqlite) or return as a bigint (wa-sqlite).
+    "unsafe-integer",
+    "too-deep",
+    "not-json",
+  ]),
+}) {}
 
 /**
  * Encodes a JSON value: object keys sorted by UTF-16 code unit, an `undefined` member the same as
@@ -46,6 +50,7 @@ export class Unrepresentable extends Schema.TaggedError<Unrepresentable>()(
  */
 export const encode = (value: unknown): Result.Result<string, Unrepresentable> => {
   const text = write(value, "$", 0);
+
   return typeof text === "string" ? Result.succeed(text) : Result.fail(text);
 };
 
@@ -58,19 +63,23 @@ export const normalize = (text: string): Result.Result<string, Unrepresentable> 
 
 const write = (value: unknown, path: string, depth: number): string | Unrepresentable => {
   if (value === null) return "null";
+
   switch (typeof value) {
     case "boolean":
       return value ? "true" : "false";
     case "number":
       if (!Number.isFinite(value)) return new Unrepresentable({ path, reason: "non-finite" });
+
       if (Math.abs(value) > Number.MAX_SAFE_INTEGER) {
         return new Unrepresentable({ path, reason: "unsafe-integer" });
       }
+
       return JSON.stringify(value);
     case "string":
       return checkText(value, path) ?? JSON.stringify(value);
     case "object":
       if (depth >= maxDepth) return new Unrepresentable({ path, reason: "too-deep" });
+
       return Array.isArray(value)
         ? writeArray(value, path, depth)
         : writeObject(value, path, depth);
@@ -85,31 +94,41 @@ const writeArray = (
   depth: number,
 ): string | Unrepresentable => {
   const parts: Array<string> = [];
+
   for (let index = 0; index < items.length; index++) {
     const part = write(items[index], `${path}[${index}]`, depth + 1);
+
     if (typeof part !== "string") return part;
     parts.push(part);
   }
+
   return `[${parts.join(",")}]`;
 };
 
 const writeObject = (value: object, path: string, depth: number): string | Unrepresentable => {
   const prototype = Object.getPrototypeOf(value);
+
   if (prototype !== Object.prototype && prototype !== null) {
     return new Unrepresentable({ path, reason: "not-json" });
   }
+
   const record = value as Readonly<Record<string, unknown>>;
   const parts: Array<string> = [];
+
   for (const key of Object.keys(record).sort()) {
     const member = record[key];
+
     if (member === undefined) continue;
     const memberPath = `${path}.${key}`;
     const keyProblem = checkText(key, memberPath);
+
     if (keyProblem !== undefined) return keyProblem;
     const part = write(member, memberPath, depth + 1);
+
     if (typeof part !== "string") return part;
     parts.push(`${JSON.stringify(key)}:${part}`);
   }
+
   return `{${parts.join(",")}}`;
 };
 
@@ -117,17 +136,23 @@ const writeObject = (value: object, path: string, depth: number): string | Unrep
 const checkText = (text: string, path: string): Unrepresentable | undefined => {
   for (let index = 0; index < text.length; index++) {
     const unit = text.charCodeAt(index);
+
     if (unit === 0) return new Unrepresentable({ path, reason: "nul" });
+
     if (unit >= 0xdc00 && unit <= 0xdfff) {
       return new Unrepresentable({ path, reason: "lone-surrogate" });
     }
+
     if (unit >= 0xd800 && unit <= 0xdbff) {
       const next = text.charCodeAt(index + 1);
+
       if (!(next >= 0xdc00 && next <= 0xdfff)) {
         return new Unrepresentable({ path, reason: "lone-surrogate" });
       }
+
       index++;
     }
   }
+
   return undefined;
 };

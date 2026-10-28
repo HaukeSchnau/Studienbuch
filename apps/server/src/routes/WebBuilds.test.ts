@@ -23,10 +23,12 @@ const builds = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const root = yield* fs.makeTempDirectoryScoped();
+
   for (const [file, content] of Object.entries(files)) {
     yield* fs.makeDirectory(path.dirname(path.join(root, file)), { recursive: true });
     yield* fs.writeFileString(path.join(root, file), content);
   }
+
   return { web: path.join(root, "web"), app: path.join(root, "app") };
 });
 
@@ -37,11 +39,13 @@ const server = Layer.unwrap(
 ).pipe(Layer.provideMerge(NodeHttpServer.layerTest));
 
 // A browser navigation; asset requests don't accept HTML and get no fallback.
-const get = Effect.fn(function* (url: string, accept = "text/html") {
+const get = Effect.fnUntraced(function* (url: string, accept = "text/html") {
   const response = yield* (yield* HttpClient.HttpClient).get(url, { headers: { accept } });
+
   const isolation = ["cross-origin-opener-policy", "cross-origin-embedder-policy"].filter(
     (header) => header in response.headers,
   );
+
   return {
     url,
     status: response.status,
@@ -58,6 +62,7 @@ const page = (url: string, body: string) => ({
   cache: "no-cache",
   isolation: [],
 });
+
 const asset = (url: string, body: string) => ({
   url,
   status: 200,
@@ -65,6 +70,7 @@ const asset = (url: string, body: string) => ({
   cache: "public, max-age=31536000, immutable",
   isolation: [],
 });
+
 const missing = (url: string) => ({ url, status: 404, body: "", cache: null, isolation: [] });
 
 layer(server)("WebBuilds", (it) => {
@@ -87,6 +93,7 @@ layer(server)("WebBuilds", (it) => {
         ],
         (url) => get(url),
       );
+
       assert.deepStrictEqual(responses, [
         page("/", "landing"),
         page("/impressum", "impressum"),

@@ -17,6 +17,8 @@ export * as Probe from "./Probe.ts";
 export const table = Sync.table("Probe", {
   fields: {
     text: Schema.String,
+    // The probe stores non-finite numbers on purpose, to compare how the engines keep them.
+    // oxlint-disable-next-line effecttsgo/schema-number -- see above
     amount: Schema.Number,
     flag: Schema.Boolean,
     note: Schema.optional(Schema.NullOr(Schema.String)),
@@ -49,9 +51,10 @@ export type Step =
   | { readonly op: "seed"; readonly id: string; readonly json: unknown };
 
 /** What one step returned: rows as canonical JSON, or the error's tag and reason. */
-export type Outcome =
-  | { readonly ok: null | string | ReadonlyArray<{ readonly id: string; readonly row: string }> }
-  | { readonly error: string };
+/** What a step returns: nothing, a row's canonical JSON, or a list of them. */
+export type Ok = null | string | ReadonlyArray<{ readonly id: string; readonly row: string }>;
+
+export type Outcome = { readonly ok: Ok } | { readonly error: string };
 
 export interface Trace {
   readonly outcomes: ReadonlyArray<Outcome>;
@@ -73,11 +76,12 @@ const describe = (error: Tx.Error): Outcome => ({
 });
 
 const step = (engine: Engines.Engine, space: string, step: Step) => {
-  const run = <A>(effect: Effect.Effect<A, Tx.Error, Tx.Service>) =>
+  const run = (effect: Effect.Effect<Ok, Tx.Error, Tx.Service>) =>
     engine.transaction(effect).pipe(
-      Effect.map((ok) => ({ ok }) as unknown as Outcome),
+      Effect.map((ok): Outcome => ({ ok })),
       Effect.catch((error: Tx.Error) => Effect.succeed(describe(error))),
     );
+
   switch (step.op) {
     case "insert":
     case "put":
@@ -88,12 +92,14 @@ const step = (engine: Engines.Engine, space: string, step: Step) => {
       );
     case "patch": {
       const unset = Object.fromEntries((step.unset ?? []).map((field) => [field, undefined]));
+
       return run(
         Effect.flatMap(Tx.Service, (tx) =>
           tx.patch(table, space, step.id, { ...step.fields, ...unset }),
         ).pipe(Effect.as(null)),
       );
     }
+
     case "remove":
       return run(
         Effect.flatMap(Tx.Service, (tx) => tx.remove(table, space, step.id)).pipe(Effect.as(null)),
@@ -126,10 +132,13 @@ const step = (engine: Engines.Engine, space: string, step: Step) => {
   }
 };
 
+// A seed writes raw JSON past the codec, including values the encoder must refuse.
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- see above
 const seed = (engine: Engines.Engine, space: string, id: string, json: unknown) =>
   Effect.gen(function* () {
     const text = yield* Effect.fromResult(CanonicalJson.encode(json));
     const sql = yield* SqlClient.SqlClient;
+
     return yield* engine.side === "device"
       ? sql`
             insert into base_row (space, tbl, id, version, data)
@@ -171,9 +180,11 @@ const stored = (engine: Engines.Engine, space: string) =>
 export const run = (engine: Engines.Engine, space: string, steps: ReadonlyArray<Step>) =>
   Effect.gen(function* () {
     const outcomes = yield* Effect.forEach(steps, (each) => step(engine, space, each));
+
     return { outcomes, stored: yield* stored(engine, space) } satisfies Trace;
   }).pipe(Effect.orDie);
 
 let spaces = 0;
+
 /** A space id no earlier run used, so runs share one database per engine. */
 export const freshSpace = () => `space-${++spaces}`;

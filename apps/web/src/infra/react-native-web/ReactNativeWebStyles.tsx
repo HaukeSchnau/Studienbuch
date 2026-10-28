@@ -5,7 +5,8 @@ interface WebStyleSheet {
   getSheet(): { id: string; textContent: string };
 }
 
-const isWebStyleSheet = (sheet: object): sheet is WebStyleSheet => "getSheet" in sheet;
+const isWebStyleSheet = (sheet: typeof StyleSheet): sheet is typeof StyleSheet & WebStyleSheet =>
+  "getSheet" in sheet;
 
 /**
  * Writes the atomic CSS react-native-web collected during server rendering, under the id RNW looks
@@ -14,6 +15,7 @@ const isWebStyleSheet = (sheet: object): sheet is WebStyleSheet => "getSheet" in
 export function ReactNativeWebStyles() {
   if (!isWebStyleSheet(StyleSheet)) return null;
   const sheet = StyleSheet.getSheet();
+
   return (
     <style
       id={sheet.id}

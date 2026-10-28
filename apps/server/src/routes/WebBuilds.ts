@@ -30,6 +30,7 @@ export const layer = (roots: Roots) =>
   HttpRouter.use(
     Effect.fnUntraced(function* (router) {
       const path = yield* Path.Path;
+
       const files = (options: Parameters<typeof HttpStaticServer.make>[0]) =>
         Effect.map(HttpStaticServer.make(options), (handler) =>
           Effect.catch(handler, HttpServerRespondable.toResponse),
@@ -51,6 +52,7 @@ export const layer = (roots: Roots) =>
         spa: true,
         cacheControl: revalidate,
       };
+
       yield* router.add("GET", "/console/*", yield* files(consoleShell));
       yield* router.add(
         "GET",
@@ -66,18 +68,21 @@ export const layer = (roots: Roots) =>
           const request = yield* HttpServerRequest.HttpServerRequest;
           const [pathname = "/", ...query] = request.url.split("?");
           const search = query.length > 0 ? `?${query.join("?")}` : "";
+
           const [first = pathname, ...rest] =
             path.extname(pathname) !== ""
               ? [pathname]
               : pathname.endsWith("/")
                 ? [`${pathname}index.html`]
                 : [`${pathname}.html`, `${pathname}/index.html`];
+
           const serve = (candidate: string) =>
             Effect.provideService(
               page,
               HttpServerRequest.HttpServerRequest,
               request.modify({ url: candidate + search }),
             );
+
           return yield* rest.reduce(
             (previous, candidate) => Effect.catchIf(previous, isNotFound, () => serve(candidate)),
             serve(first),
