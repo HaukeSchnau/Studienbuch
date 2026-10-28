@@ -11,6 +11,12 @@ catalog:
   vite: npm:@voidzero-dev/vite-plus-core@1.4.0
   vite-plus: 1.4.0
   vitest: 5.0.5
+  # Effect's unstable modules change in patch releases, so `effect` and every `@effect/*` sit at one
+  # exact version and move together.
+  effect: 4.0.7
+  "@effect/platform-node": 4.0.7
+  "@effect/sql-pg": 4.0.7
+  "@effect/vitest": 4.0.7
 
 overrides:
   vite@*: "catalog:"
@@ -20,3 +26,7 @@ peerDependencyRules:
   # The alias reports Vite+'s version, not the Vite 8 inside it.
   allowedVersions:
     vite: "*"
+
+# Same-day releases we need now. Delete each entry at the next bump of its package.
+minimumReleaseAgeExclude:
+  - effect@4.0.7
