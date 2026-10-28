@@ -1,24 +1,20 @@
-import type * as DateTime from "effect/DateTime";
-import * as Effect from "effect/Effect";
+import { Api } from "@stu/api";
+import { System } from "@stu/api/System";
+import * as FetchHttpClient from "effect/http/FetchHttpClient";
+import * as Layer from "effect/Layer";
 import * as Atom from "effect/reactivity/Atom";
-import * as Schema from "effect/Schema";
+import * as AtomRpc from "effect/reactivity/AtomRpc";
+import * as RpcClient from "effect/rpc/RpcClient";
 
-// The web's access to the `System` RPC group. Until `packages/api` lands (M0-WP-10), `info` fails
-// with `Unreachable`; then it becomes the RPC call and `Info` the group's success schema.
+// The `System` RPC group on the page's own origin.
 export * as SystemClient from "./SystemClient.ts";
 
-export interface Info {
-  readonly revision: string;
-  readonly environment: string;
-  readonly serverTime: DateTime.Utc;
-}
-
-export class Unreachable extends Schema.TaggedError<Unreachable>()(
-  "SystemClient.Unreachable",
-  {},
-) {}
-
-const fetchInfo: Effect.Effect<Info, Unreachable> = Effect.fail(new Unreachable());
+class Client extends AtomRpc.Service<Client>()("SystemClient", {
+  group: System.Rpcs,
+  protocol: RpcClient.layerProtocolHttp({ url: Api.path }).pipe(
+    Layer.provide([FetchHttpClient.layer, Api.serialization]),
+  ),
+}) {}
 
 /** What `System.info` returns. Prerendering never calls the server, so the HTML shows the waiting state. */
-export const info = Atom.make(fetchInfo).pipe(Atom.withServerValueInitial);
+export const info = Client.query("System.info", undefined).pipe(Atom.withServerValueInitial);

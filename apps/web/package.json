@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@effect/atom-react": "catalog:",
+    "@stu/api": "workspace:*",
     "@stu/ui": "workspace:*",
     "@tanstack/react-router": "catalog:",
     "@tanstack/react-start": "catalog:",

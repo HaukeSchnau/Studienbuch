@@ -279,6 +279,9 @@ importers:
       '@effect/atom-react':
         specifier: 'catalog:'
         version: 4.0.7(effect@4.0.7)(react@19.3.0)(scheduler@0.28.0)
+      '@stu/api':
+        specifier: workspace:*
+        version: link:../../packages/api
       '@stu/ui':
         specifier: workspace:*
         version: link:../../packages/ui
