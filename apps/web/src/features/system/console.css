@@ -1,0 +1,39 @@
+/* The operator console. Denser and quieter than the public pages: no blobs, no motion. */
+
+.console {
+  min-height: 100vh;
+  background: var(--color-canvas);
+}
+
+.console-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 45rem;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.console-badge {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.console-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 45rem;
+  margin: 0 auto;
+  padding: 16px 16px 48px;
+}
+
+.console-main h1 {
+  color: var(--color-accent);
+  font-size: 28px;
+  line-height: 34px;
+}

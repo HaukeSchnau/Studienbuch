@@ -1,0 +1,89 @@
+/* The Impressum and the Datenschutzerklärung: one narrow column of prose. */
+
+.legal-main {
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;
+  padding: 64px 0 96px;
+}
+
+/* Only where the margin beside the column keeps it off the text. */
+.legal-blob {
+  --drift: 26s;
+  display: none;
+  top: 2rem;
+  right: -8rem;
+  width: 26rem;
+  height: 26rem;
+}
+
+@media (min-width: 1280px) {
+  .legal-blob {
+    display: block;
+  }
+}
+
+.legal-column {
+  max-width: 48rem;
+}
+
+.legal-column h1 {
+  color: var(--color-accent);
+  font-size: clamp(2.25rem, 1.6rem + 2.6vw, 3.25rem);
+  line-height: 1.2;
+}
+
+.legal-updated {
+  margin-top: 12px;
+  color: var(--color-ink-soft);
+  font-size: 15px;
+}
+
+.legal-prose {
+  margin-top: 48px;
+  color: var(--color-ink-soft);
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+.legal-prose > * + * {
+  margin-top: 16px;
+}
+
+.legal-prose h2 {
+  margin-top: 56px;
+  color: var(--color-accent);
+  font-size: 26px;
+  line-height: 1.3;
+}
+
+.legal-prose h3 {
+  margin-top: 32px;
+  color: var(--color-ink);
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+.legal-prose h2 + *,
+.legal-prose h3 + * {
+  margin-top: 8px;
+}
+
+.legal-prose address {
+  font-style: normal;
+}
+
+.legal-prose strong {
+  color: var(--color-ink);
+}
+
+.legal-prose ul {
+  display: grid;
+  gap: 8px;
+  padding-left: 1.25em;
+  list-style: disc;
+}
+
+.legal-prose li::marker {
+  color: var(--color-hero-edge);
+}

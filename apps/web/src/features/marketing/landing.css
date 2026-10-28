@@ -1,0 +1,1281 @@
+/* The landing page. Shared pieces (header, footer, blobs, reveals) are in src/ui/site.css. */
+
+/* ---------- Hero ---------- */
+
+/* White behind the floating nav, so it and the hero below it are one surface. */
+.landing {
+  background: var(--color-surface);
+}
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;
+  padding: 32px 0 64px;
+  background: var(--color-surface);
+}
+
+.hero-blob-green {
+  --drift: 20s;
+  left: -4rem;
+  top: 22%;
+  width: 12rem;
+  height: 18rem;
+}
+
+.hero-blob-blue {
+  --drift: 24s;
+  right: -3.5rem;
+  top: 0;
+  width: 12rem;
+  height: 20rem;
+}
+
+@media (min-width: 640px) {
+  .hero-blob-green {
+    left: -5rem;
+    width: 26rem;
+    height: 40rem;
+  }
+
+  .hero-blob-blue {
+    right: -5rem;
+    width: 27rem;
+    height: 46rem;
+  }
+}
+
+.hero-grid {
+  display: grid;
+  gap: 40px;
+  align-items: center;
+}
+
+.hero-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 28px 24px;
+}
+
+.hero-title {
+  color: var(--color-accent);
+  font-size: clamp(2.25rem, 1.3rem + 3.6vw, 4.25rem);
+  line-height: 1.3;
+}
+
+.hero-title > span {
+  display: block;
+}
+
+.hero-lead {
+  grid-column: 1 / -1;
+  max-width: 34rem;
+  color: var(--color-ink);
+  font-size: 19px;
+  line-height: 1.6;
+}
+
+.hero-download-prompt {
+  margin-bottom: 18px;
+  color: var(--color-ink);
+  font-size: 21px;
+}
+
+.hero-proof {
+  margin-top: 18px;
+  /* Ink, not inkSoft: the green blob runs behind this line. */
+  color: var(--color-ink);
+  font-size: 15px;
+}
+
+@media (min-width: 640px) {
+  .hero-heading {
+    column-gap: 32px;
+  }
+
+  .hero-lead {
+    font-size: 21px;
+  }
+
+  .hero-download-prompt {
+    font-size: 24px;
+  }
+}
+
+/* The phones. Each figure is positioned and rotated; its device is zoomed to `--phone-zoom`. */
+
+.hero-phones {
+  position: relative;
+  height: 430px;
+  margin-bottom: 48px;
+  perspective: 1400px;
+}
+
+.hero-phones .phone {
+  --phone-zoom: 0.44;
+  position: absolute;
+}
+
+.phone-today {
+  left: -2%;
+  top: 34px;
+  rotate: -7deg;
+}
+
+.phone-course {
+  left: 47%;
+  top: 0;
+  rotate: 6deg;
+}
+
+.hero-hint {
+  position: absolute;
+  bottom: -44px;
+  left: 4%;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  color: var(--color-accent);
+  font-size: 16px;
+  font-weight: 800;
+  rotate: -3deg;
+}
+
+/* Drawn pointing down into the phone above it; below 1024 px the hint sits under the phones. */
+.hero-hint-arrow {
+  width: 34px;
+  height: 46px;
+  margin-bottom: 8px;
+  fill: none;
+  stroke: var(--color-hero-edge);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+  scale: 1 -1;
+}
+
+@media (min-width: 640px) {
+  .hero-phones {
+    height: 600px;
+  }
+
+  .hero-phones .phone {
+    --phone-zoom: 0.62;
+  }
+
+  .phone-today {
+    left: 4%;
+  }
+
+  .phone-course {
+    left: 48%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero {
+    padding: 48px 0 96px;
+  }
+
+  .hero-grid {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    column-gap: 40px;
+    row-gap: 40px;
+  }
+
+  .hero-heading {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: end;
+  }
+
+  .hero-download {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+  }
+
+  /* The phones are allowed past their column and off the right edge of the page. */
+  .hero-phones {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    height: 720px;
+    margin-bottom: 0;
+    margin-right: -7vw;
+  }
+
+  .hero-phones .phone {
+    --phone-zoom: 0.76;
+  }
+
+  .phone-today {
+    left: -4%;
+    top: 64px;
+  }
+
+  .phone-course {
+    left: 52%;
+    top: 0;
+  }
+
+  /* Above the Übersicht, pointing down into its lessons. */
+  .hero-hint {
+    top: -6px;
+    bottom: auto;
+    left: -2%;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+  }
+
+  .hero-hint-arrow {
+    margin: 22px 4px 0 0;
+    scale: 1 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-phones .phone {
+    animation: phone-in 900ms var(--ease-out) 120ms both;
+  }
+
+  .hero-phones .phone-course {
+    animation-delay: 280ms;
+  }
+
+  .hero-hint {
+    animation: fade 600ms ease 1400ms both;
+  }
+}
+
+@keyframes phone-in {
+  from {
+    opacity: 0;
+    translate: 0 80px;
+    scale: 0.94;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+/* ---------- Phone frame ---------- */
+
+.phone {
+  margin: 0;
+}
+
+.phone-device {
+  zoom: var(--phone-zoom, 0.6);
+  width: 414px;
+  padding: 12px;
+  border-radius: 62px;
+  background: #121820;
+  box-shadow:
+    0 40px 80px rgb(32 55 85 / 0.28),
+    inset 0 0 0 2px rgb(255 255 255 / 0.1);
+}
+
+.phone-screen {
+  position: relative;
+  width: 390px;
+  height: 844px;
+  overflow: hidden;
+  border-radius: 50px;
+  background: var(--color-canvas);
+}
+
+/* A highlight passing over the glass now and then, so the screen reads as lit. */
+@media (prefers-reduced-motion: no-preference) {
+  .phone-screen::after {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    background: linear-gradient(
+        105deg,
+        transparent 44%,
+        rgb(255 255 255 / 0.28) 50%,
+        transparent 56%
+      )
+      no-repeat;
+    background-size: 260% 100%;
+    animation: gloss 9s ease-in-out infinite;
+    content: "";
+    pointer-events: none;
+  }
+
+  .phone-course .phone-screen::after {
+    animation-delay: -4.5s;
+  }
+}
+
+@keyframes gloss {
+  0%,
+  82% {
+    background-position: 165% 0;
+  }
+
+  100% {
+    background-position: -65% 0;
+  }
+}
+
+.phone-content {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.phone-status {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 54px;
+  padding: 0 34px 0 46px;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.phone-island {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  width: 122px;
+  height: 35px;
+  border-radius: 20px;
+  background: #000000;
+  translate: -50% 0;
+}
+
+.phone-battery {
+  width: 27px;
+  height: 13px;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.phone-tabs {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 2;
+  display: flex;
+  justify-content: space-around;
+  height: 88px;
+  padding: 8px 12px 0;
+  border-top: 1px solid var(--color-hairline);
+  background: var(--color-surface);
+}
+
+.phone-tabs::after {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  width: 134px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--color-ink);
+  content: "";
+  translate: -50% 0;
+}
+
+.phone-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 104px;
+  color: var(--color-ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.phone-tab-icon {
+  width: 56px;
+  height: 30px;
+  padding: 3px 16px;
+  border-radius: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.phone-tab[data-active="true"] {
+  color: var(--color-accent);
+}
+
+.phone-tab[data-active="true"] .phone-tab-icon {
+  background: var(--color-accent-tint);
+}
+
+/* The lean towards the pointer, from `PointerTracker`. Past about four degrees it reads as a toy. */
+[data-pointer] .phone {
+  transform: rotateX(calc(var(--pointer-y, 0) * var(--lean, 3.5deg) * -1))
+    rotateY(calc(var(--pointer-x, 0) * var(--lean, 3.5deg)));
+  transition: transform 320ms var(--ease-out);
+}
+
+/* ---------- Subject strip ---------- */
+
+.subject-strip {
+  overflow: hidden;
+  background: var(--color-surface);
+  padding: 36px 0;
+}
+
+.subject-strip .drifting-row {
+  width: 112%;
+  margin-left: -6%;
+  padding: 14px 0;
+  rotate: -1.5deg;
+}
+
+.subject-tile {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+  margin-right: 16px;
+  padding: 14px 22px 14px 16px;
+  border-radius: 20px;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: var(--elevation-card);
+  transition: translate 200ms var(--ease-out);
+}
+
+.subject-tile img {
+  width: 30px;
+  height: 30px;
+  padding: 2px;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .subject-tile {
+    animation: bob 3.4s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes bob {
+  from {
+    translate: 0 0.35rem;
+  }
+
+  to {
+    translate: 0 -0.35rem;
+  }
+}
+
+/* ---------- Paper and app ---------- */
+
+.paper-compare {
+  display: grid;
+  justify-items: center;
+  gap: 40px;
+}
+
+@media (min-width: 768px) {
+  .paper-compare {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.paper-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+}
+
+.paper-label {
+  color: var(--color-ink-soft);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.paper-label-app {
+  color: var(--color-accent);
+}
+
+/* Always paper, in dark mode too: it is an object, not a surface of the page. */
+.paper-page {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  overflow: hidden;
+  padding: 18px 22px 30px 54px;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 27px, rgb(32 55 85 / 0.13) 27px 28px),
+    #fdfcf7;
+  box-shadow:
+    0 18px 48px rgb(32 55 85 / 0.14),
+    0 0 0 1px rgb(0 0 0 / 0.05);
+  color: #203755;
+  font-size: 15px;
+  line-height: 28px;
+  rotate: -2deg;
+}
+
+.paper-page::before {
+  position: absolute;
+  inset: 0 auto 0 40px;
+  width: 1px;
+  background: rgb(164 43 51 / 0.3);
+  content: "";
+}
+
+.paper-coffee {
+  position: absolute;
+  top: -20px;
+  right: -24px;
+  width: 98px;
+  height: 98px;
+  border: 7px solid rgb(185 138 75 / 0.22);
+  border-radius: 50%;
+}
+
+.paper-heading {
+  font-weight: 800;
+  opacity: 0.75;
+}
+
+.paper-line {
+  opacity: 0.62;
+}
+
+.paper-struck {
+  text-decoration: line-through 2px rgb(164 43 51 / 0.6);
+}
+
+.paper-smudge {
+  filter: blur(0.7px);
+}
+
+.paper-signature {
+  margin-top: 28px;
+  color: rgb(77 117 168 / 0.75);
+  font-family: "Segoe Script", "Bradley Hand", "Snell Roundhand", cursive;
+  font-size: 19px;
+  font-style: italic;
+}
+
+.paper-signature-line {
+  display: block;
+  width: 130px;
+  height: 1px;
+  background: rgb(32 55 85 / 0.3);
+}
+
+.paper-arrow {
+  display: none;
+  align-self: center;
+  color: var(--color-hero-edge);
+  font-size: 44px;
+  font-weight: 800;
+}
+
+@media (min-width: 768px) {
+  .paper-arrow {
+    display: block;
+  }
+}
+
+.paper-app {
+  width: 100%;
+  max-width: 360px;
+}
+
+.paper-caption {
+  max-width: 42rem;
+  margin: 56px auto 0;
+  color: var(--color-ink-soft);
+  font-size: 20px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* As the reader scrolls past, the paper tilts away and greys while the app settles in. */
+    .paper-page {
+      animation: paper-lift linear both;
+      animation-timeline: view();
+      animation-range: cover 35% cover 80%;
+    }
+
+    .app-settle .paper-app {
+      animation: app-settle linear both;
+      animation-timeline: view();
+      animation-range: entry 20% cover 45%;
+    }
+  }
+}
+
+@keyframes paper-lift {
+  from {
+    filter: saturate(1);
+    rotate: -2deg;
+    translate: 0 0;
+  }
+
+  to {
+    filter: saturate(0.5);
+    rotate: -8deg;
+    translate: 0 -1.5rem;
+  }
+}
+
+@keyframes app-settle {
+  from {
+    scale: 0.94;
+    translate: 0 2.5rem;
+  }
+
+  to {
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+/* ---------- Features ---------- */
+
+.features-blob,
+.privacy-blob,
+.schools-blob,
+.get-app-blob {
+  display: none;
+}
+
+/* Only where the margin beside the content column is wide enough to keep them off body text. */
+@media (min-width: 1440px) {
+  .features-blob,
+  .privacy-blob,
+  .schools-blob,
+  .get-app-blob {
+    display: block;
+  }
+}
+
+.features-blob {
+  --drift: 22s;
+  top: 9rem;
+  right: -13rem;
+  width: 24rem;
+  height: 24rem;
+}
+
+.feature-grid {
+  display: grid;
+  gap: 24px;
+}
+
+.feature {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 20px 28px;
+  border-radius: var(--radius-panel);
+}
+
+.feature-preview {
+  margin-bottom: 14px;
+}
+
+/* The components are laid out for a 390-point phone; inside a card on one, they get a little room. */
+@media (max-width: 479px) {
+  .feature-preview {
+    zoom: 0.88;
+  }
+}
+
+.feature h3 {
+  padding: 0 8px;
+  color: var(--color-accent);
+  font-size: 26px;
+  line-height: 1.25;
+}
+
+.feature p {
+  padding: 0 8px;
+  color: var(--color-ink-soft);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.feature-timetable {
+  background: var(--color-action-tint);
+}
+
+.feature-grades {
+  background: var(--color-accent-tint);
+}
+
+.feature-absences {
+  background: var(--color-warning-tint);
+}
+
+/* White on the brand green is 3.24:1, so everything on it is large or bold large text. */
+.feature-offline {
+  display: grid;
+  gap: 32px;
+  align-items: center;
+  padding: 32px 20px 20px;
+  background: var(--color-hero);
+}
+
+.feature-offline-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.feature-offline h3 {
+  color: #ffffff;
+  font-size: 30px;
+}
+
+.feature-offline p {
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+@media (min-width: 640px) {
+  .feature {
+    padding: 28px 28px 36px;
+  }
+
+  .feature-offline {
+    padding: 44px;
+  }
+}
+
+@media (min-width: 960px) {
+  .feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "timetable grades"
+      "absences grades"
+      "offline offline";
+  }
+
+  .feature-timetable {
+    grid-area: timetable;
+  }
+
+  .feature-grades {
+    grid-area: grades;
+  }
+
+  .feature-absences {
+    grid-area: absences;
+  }
+
+  .feature-offline {
+    grid-area: offline;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 27rem);
+    gap: 48px;
+    padding: 52px;
+  }
+}
+
+.airplane {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 8px 22px 8px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.16);
+  color: #ffffff;
+  font: 800 20px var(--font-family);
+}
+
+.airplane-track {
+  position: relative;
+  width: 54px;
+  height: 32px;
+  border-radius: 16px;
+  background: rgb(0 0 0 / 0.25);
+  transition: background 200ms ease;
+}
+
+.airplane-thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: translate 260ms var(--ease-out);
+}
+
+.airplane[aria-checked="true"] .airplane-track {
+  background: var(--color-panel-card);
+}
+
+.airplane[aria-checked="true"] .airplane-thumb {
+  translate: 22px 0;
+}
+
+.airplane:focus-visible {
+  outline-color: #ffffff;
+}
+
+.feature-offline .airplane-status {
+  min-height: 3.2em;
+}
+
+/* ---------- Privacy ---------- */
+
+.privacy-blob {
+  --drift: 26s;
+  top: 4rem;
+  left: -13rem;
+  width: 22rem;
+  height: 22rem;
+}
+
+.privacy-grid {
+  display: grid;
+  gap: 48px;
+  align-items: center;
+}
+
+@media (min-width: 960px) {
+  .privacy-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 30rem);
+    column-gap: 64px;
+  }
+}
+
+.privacy .section-heading {
+  margin-bottom: 32px;
+}
+
+.privacy-visible {
+  padding: 24px 28px;
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background: var(--color-canvas);
+  color: var(--color-ink-soft);
+  font-size: 17px;
+}
+
+.privacy-visible h3 {
+  margin-bottom: 6px;
+  color: var(--color-ink);
+  font-size: 20px;
+}
+
+.privacy-visible ul {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0;
+}
+
+.privacy-visible li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.privacy-visible li::before {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-hero-edge);
+  content: "";
+  translate: 0 -2px;
+}
+
+.vault {
+  padding: 16px;
+  border: 1px solid var(--color-card-edge);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-raised);
+  transition: background-color 400ms ease;
+}
+
+.vault[data-view="server"] {
+  background: var(--color-panel-card);
+}
+
+.vault-switch {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--color-canvas);
+  transition: background-color 400ms ease;
+}
+
+.vault[data-view="server"] .vault-switch {
+  background: rgb(255 255 255 / 0.08);
+}
+
+.vault-option {
+  min-height: 46px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-ink-soft);
+  font: 800 14px var(--font-family);
+}
+
+@media (min-width: 640px) {
+  .vault-option {
+    font-size: 15px;
+  }
+}
+
+.vault[data-view="server"] .vault-option {
+  color: rgb(255 255 255 / 0.78);
+}
+
+.vault .vault-option[aria-pressed="true"] {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.vault-entries {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0;
+}
+
+.vault-entry {
+  display: grid;
+  gap: 2px;
+  padding: 12px 16px;
+  border-radius: 20px;
+  background: var(--color-canvas);
+  transition: background-color 400ms ease;
+}
+
+.vault[data-view="server"] .vault-entry {
+  background: rgb(0 0 0 / 0.2);
+}
+
+.vault-kind {
+  color: var(--color-ink-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.vault-text {
+  color: var(--color-ink);
+  font-size: 18px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.vault[data-view="server"] .vault-kind,
+.vault[data-view="server"] .vault-key {
+  color: rgb(255 255 255 / 0.78);
+}
+
+/* Ciphertext is the subject here, so it is set like one. */
+.vault[data-view="server"] .vault-text {
+  color: var(--color-panel-title);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 16px;
+}
+
+.vault-key {
+  padding: 0 8px 4px;
+  color: var(--color-ink-soft);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* ---------- Schools ---------- */
+
+.schools-blob {
+  --drift: 20s;
+  top: 13rem;
+  right: -12rem;
+  width: 20rem;
+  height: 20rem;
+}
+
+.school-points {
+  display: grid;
+  gap: 32px;
+  margin-bottom: 80px;
+}
+
+.school-point {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.school-point h3 {
+  color: var(--color-accent);
+  font-size: 22px;
+}
+
+.school-point p,
+.school-step p {
+  color: var(--color-ink-soft);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.school-subheading {
+  margin-bottom: 28px;
+  color: var(--color-accent);
+  font-size: 28px;
+}
+
+.school-steps {
+  display: grid;
+  gap: 32px;
+}
+
+.school-step h4 {
+  margin-bottom: 8px;
+  color: var(--color-ink);
+  font-size: 21px;
+}
+
+.school-step-number {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 16px;
+  border-radius: 50%;
+  background: var(--color-hero);
+  color: #ffffff;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+@media (min-width: 768px) {
+  .school-points,
+  .school-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 40px;
+  }
+}
+
+.school-steps-block {
+  margin-bottom: 80px;
+}
+
+.school-contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px 32px;
+  margin-top: 48px;
+  padding: 28px;
+  border: 1px solid var(--color-card-edge);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-card);
+}
+
+.school-contact p {
+  max-width: 36rem;
+  color: var(--color-ink);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+@media (min-width: 640px) {
+  .school-contact {
+    padding: 32px 40px;
+  }
+}
+
+.faq ul {
+  display: grid;
+  gap: 12px;
+}
+
+.faq-item {
+  padding: 0 24px;
+  border: 1px solid var(--color-card-edge);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--elevation-card);
+}
+
+.faq-item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 0;
+  color: var(--color-ink);
+  font-size: 18px;
+  font-weight: 700;
+  list-style: none;
+}
+
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-toggle {
+  flex-shrink: 0;
+  color: var(--color-accent);
+  font-size: 30px;
+  line-height: 1;
+  transition: rotate 220ms var(--ease-out);
+}
+
+.faq-item[open] .faq-toggle {
+  rotate: 45deg;
+}
+
+.faq-item p {
+  padding-bottom: 22px;
+  color: var(--color-ink-soft);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+/* Answers open by height. Browsers without these features open them at once. */
+@supports (interpolate-size: allow-keywords) and selector(details::details-content) {
+  @media (prefers-reduced-motion: no-preference) {
+    .faq {
+      interpolate-size: allow-keywords;
+    }
+
+    .faq-item::details-content {
+      block-size: 0;
+      overflow: hidden;
+      transition:
+        block-size 300ms var(--ease-out),
+        content-visibility 300ms allow-discrete;
+    }
+
+    .faq-item[open]::details-content {
+      block-size: auto;
+    }
+  }
+}
+
+/* ---------- Closing panel ---------- */
+
+.get-app-blob {
+  --drift: 24s;
+  top: 6rem;
+  left: -13rem;
+  width: 20rem;
+  height: 20rem;
+}
+
+.get-app-panel {
+  --lean: 2deg;
+  position: relative;
+  display: grid;
+  gap: 40px;
+  overflow: hidden;
+  padding: 56px 24px 0;
+  border-radius: 40px;
+  background: var(--color-hero);
+  text-align: center;
+  perspective: 1400px;
+}
+
+.get-app-text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+}
+
+.get-app-text h2 {
+  color: #ffffff;
+  font-size: clamp(2rem, 1.2rem + 3vw, 3.25rem);
+  line-height: 1.2;
+}
+
+.get-app-text p {
+  max-width: 28rem;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.get-app-text .store-badges {
+  justify-content: center;
+}
+
+.phone-week {
+  --phone-zoom: 0.62;
+  position: relative;
+  z-index: 1;
+  justify-self: center;
+  margin-bottom: -250px;
+  rotate: 4deg;
+}
+
+@media (min-width: 640px) {
+  .get-app-panel {
+    padding: 72px 48px 0;
+    border-radius: 56px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .get-app-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
+    align-items: center;
+    padding: 0 64px;
+    text-align: left;
+  }
+
+  .get-app-text {
+    align-items: flex-start;
+    padding: 88px 0;
+  }
+
+  .get-app-text .store-badges {
+    justify-content: flex-start;
+  }
+
+  .phone-week {
+    --phone-zoom: 0.68;
+    align-self: end;
+    margin: 64px 0 -170px;
+    rotate: 5deg;
+  }
+}

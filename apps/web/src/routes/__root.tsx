@@ -13,8 +13,15 @@ export const Route = createRootRoute({
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "color-scheme", content: "light dark" },
       { title: "Studienbuch" },
+      { property: "og:site_name", content: "Studienbuch" },
+      { property: "og:locale", content: "de_DE" },
     ],
-    links: [{ rel: "stylesheet", href: siteCss }],
+    links: [
+      { rel: "stylesheet", href: siteCss },
+      // Rounded artwork for the browser tab, square for iOS, which rounds the touch icon itself.
+      { rel: "icon", href: "/brand/favicon-512.png", type: "image/png" },
+      { rel: "apple-touch-icon", href: "/brand/icon-192.png" },
+    ],
   }),
   shellComponent: Document,
 });
