@@ -1,0 +1,104 @@
+{
+  "type": "base",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "46c100ad-0364-49fa-9a7c-0496d3f25549",
+  "prevIds": ["00000000-0000-0000-0000-000000000000"],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "job_run"],
+      "writes": [
+        "s|tbl|public.job_run",
+        "n|tbl|public.job_run",
+        "e|tbl|public.job_run",
+        "n|rel|public.job_run",
+        "n|type|public.job_run",
+        "n|rel|public.job_run_pkey"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "sync_epoch"],
+      "writes": [
+        "s|tbl|public.sync_epoch",
+        "n|tbl|public.sync_epoch",
+        "e|tbl|public.sync_epoch",
+        "n|rel|public.sync_epoch",
+        "n|type|public.sync_epoch",
+        "n|rel|public.sync_epoch_pkey"
+      ],
+      "reads": ["n|sch|public"]
+    }
+  ],
+  "ddl": [
+    {
+      "schema": "public",
+      "name": "job_run",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "public",
+      "name": "sync_epoch",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "public",
+      "table": "job_run",
+      "name": "name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "job_run",
+      "name": "last_run_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "sync_epoch",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "public",
+      "table": "job_run",
+      "name": "job_run_pkey",
+      "columns": ["name"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "public",
+      "table": "sync_epoch",
+      "name": "sync_epoch_pkey",
+      "columns": ["id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    }
+  ]
+}
