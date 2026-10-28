@@ -1,8 +1,7 @@
-// The glyphs the stand-ins draw: the 24-point stroked paths of apps/app/src/ui/Icon.tsx, as inline
-// SVG. The app draws them through react-native-svg, whose web build doesn't bundle here yet: its
-// SvgTouchableMixin imports TurboModuleRegistry, which react-native-web lacks, and Rolldown refuses
-// the missing export. When M1 moves the app's components into packages/domain-ui, the landing page
-// needs that resolved (an alias for the module, or a react-native-svg release without the import).
+// The stroked 24-point glyphs of apps/app/src/ui/Icon.tsx, as inline SVG: react-native-svg's web
+// build imports TurboModuleRegistry, which react-native-web lacks, so Rolldown refuses it. M1 must
+// resolve that (an alias, or a release without the import) before the landing page can use the app's
+// components from packages/domain-ui.
 const paths = {
   check: "M5 12.5l4.5 4.5L19 7.5",
   chevron: "M9.5 6l6 6-6 6",

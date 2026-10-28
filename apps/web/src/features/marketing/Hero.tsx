@@ -9,13 +9,9 @@ import { PhoneFrame } from "./PhoneFrame.tsx";
 import { CourseScreen, TodayScreen } from "./Screens.tsx";
 
 /**
- * The legacy site's composition: the notebook and a big green headline on the left, the app huge
- * and running off the right edge. Where the legacy page had a screenshot, two live screens stand
- * one behind the other, as the August render did. A lesson tapped in the Übersicht opens its course
- * and brings that phone forward; tapping or focusing the phone behind brings it back.
- *
- * The headline sits at the bottom of its grid row and the download prompt at the top of the next,
- * so the two converge beside the phones instead of drifting apart across their height.
+ * The legacy composition: the notebook and headline on the left, two live phones running off the
+ * right edge. A lesson tapped in the Übersicht opens its course and brings that phone forward. The
+ * headline ends its grid row and the download prompt starts the next, so both meet beside the phones.
  */
 export function Hero({ demo, dispatch }: { demo: Demo.State; dispatch: Demo.Dispatch }) {
   const course = demo.openCourse;

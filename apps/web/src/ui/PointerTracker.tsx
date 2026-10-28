@@ -5,11 +5,9 @@ import { Motion } from "./Motion.ts";
 const properties = ["--pointer-x", "--pointer-y", "--spot-x", "--spot-y", "--spot-on"];
 
 /**
- * Writes the pointer's position onto `element` as CSS custom properties: `--pointer-x` and
- * `--pointer-y` from -1 to 1 across the viewport, and `--spot-x`, `--spot-y` and `--spot-on`
- * relative to the element. At most one write per frame, and no React re-render. Returns whether it
- * is tracking, which is only for a fine pointer when motion is welcome (a finger has no hover); the
- * properties are removed when it stops.
+ * Writes the pointer onto `element` as `--pointer-x`/`-y` (-1 to 1 across the viewport) and
+ * `--spot-x`/`-y`/`-on` (relative to the element), at most once a frame and without re-rendering.
+ * Returns whether it tracks: only for a fine pointer when motion is welcome.
  */
 export function usePointerTracking(element: RefObject<HTMLElement | null>) {
   const motion = Motion.useAllowed();
@@ -46,7 +44,8 @@ export function usePointerTracking(element: RefObject<HTMLElement | null>) {
 
     const onMove = (event: PointerEvent) => {
       pointer = { x: event.clientX, y: event.clientY };
-      frame ||= requestAnimationFrame(apply);
+
+      if (frame === 0) frame = requestAnimationFrame(apply);
     };
 
     addEventListener("pointermove", onMove, { passive: true });

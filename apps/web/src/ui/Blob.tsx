@@ -52,13 +52,9 @@ const outlines = {
 const tones = { green: "var(--color-blob-green)", blue: "var(--color-blob-blue)" } as const;
 
 /**
- * One decorative blob. The caller's class positions and sizes it, usually hanging past the page
- * edge, in the outline's own proportions so `meet` doesn't letterbox it. The host section needs
- * `position: relative` and `isolation: isolate` so the blob stays behind its content.
- *
- * It breathes by morphing between its two paths in SMIL, which no media query reaches, so the morph
- * starts only after hydration and only when motion is welcome. Without JavaScript it still drifts,
- * through CSS.
+ * One decorative blob, sized and placed by the caller's class in the outline's own proportions. Its
+ * host needs `position: relative` and `isolation: isolate`. The SMIL morph ignores media queries, so
+ * it starts only after hydration and when motion is welcome; without JavaScript, CSS still drifts it.
  */
 export function Blob({
   outline,

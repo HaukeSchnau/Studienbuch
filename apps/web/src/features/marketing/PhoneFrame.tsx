@@ -23,15 +23,9 @@ const tabs = [
 ] as const;
 
 /**
- * A phone around a live app screen, frameless like the August page's renders. The screen is laid
- * out at 390 points, the width of the mocks, and `zoom` on the device (landing.css,
- * `--phone-zoom`) scales it to its placement; the figure carries position and rotation, because
- * zoom would scale its offsets too. Status bar and tab bar are device chrome drawn here: in the app
- * the operating system draws them (variant B).
- *
- * A phone at `depth="back"` sits behind another. A tap anywhere on it, or keyboard focus reaching
- * one of its controls, calls `onRaise`; the tap lands on a cover over the screen, so it brings the
- * phone forward without also pressing whatever was under the finger.
+ * A frameless phone around a live 390-point screen, scaled by `zoom` on the device (`--phone-zoom`)
+ * while the figure carries position and rotation, which zoom would distort. At `depth="back"`, a
+ * tap on the cover or focus inside calls `onRaise`, so raising it presses nothing under the finger.
  */
 export function PhoneFrame({
   tab,
