@@ -1,0 +1,16 @@
+{
+  "cli": {
+    "version": ">= 25.3.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "beta": {
+      "channel": "beta",
+      "env": { "STUDIENBUCH_CHANNEL": "beta" }
+    },
+    "production": {
+      "channel": "production",
+      "env": { "STUDIENBUCH_CHANNEL": "production" }
+    }
+  }
+}

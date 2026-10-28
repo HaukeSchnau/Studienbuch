@@ -45,6 +45,32 @@ catalog:
   react-dom: 19.3.0
   react-native: 0.88.0
   react-native-web: 0.21.4
+  # The Expo app. Expo 58.0.20 is the release that pins React Native 0.88.0 above; its modules sit at
+  # the versions that release names in `bundledNativeModules.json`.
+  expo: 58.0.20
+  expo-constants: 58.0.13
+  expo-font: 58.0.10
+  expo-linking: 58.0.14
+  expo-router: 58.0.27
+  expo-secure-store: 58.0.2
+  expo-splash-screen: 58.0.11
+  expo-sqlite: 58.0.14
+  expo-status-bar: 58.0.4
+  expo-symbols: 58.0.4
+  expo-system-ui: 58.0.6
+  expo-updates: 58.0.18
+  "@expo/metro-runtime": 58.0.15
+  react-native-safe-area-context: 5.10.1
+  react-native-screens: 4.30.0
+  react-native-svg: 15.16.0
+  # Nunito as static TTFs, which native builds embed. The web keeps the variable font from @stu/ui.
+  "@expo-google-fonts/nunito": 0.4.2
+  # The native crypto pair WP-2 proved on Hermes; quick-crypto was built against these two.
+  react-native-quick-crypto: 1.1.9
+  react-native-nitro-modules: 0.37.1
+  react-native-quick-base64: 3.0.1
+  # X-Wing for key boxes (D38).
+  "@noble/post-quantum": 0.7.1
 
 overrides:
   vite@*: "catalog:"
@@ -71,3 +97,4 @@ minimumReleaseAgeExclude:
   - "@effect/sql-sqlite-node@4.0.7"
   - "@effect/sql-sqlite-wasm@4.0.7"
   - "@electric-sql/pglite@0.5.13"
+  - "@noxcturnal/noxcturnal-win32-x64-msvc@0.1.11"
