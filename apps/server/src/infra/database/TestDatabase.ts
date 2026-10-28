@@ -14,13 +14,16 @@ export const layer = Layer.unwrap(
     const url = yield* Config.Redacted("DATABASE_URL");
     const crypto = yield* Crypto.Crypto;
     const database = `test_${(yield* crypto.randomUUIDv4()).replaceAll("-", "")}`;
+
     const admin = yield* PgClient.make({ url, maxConnections: 1 }).pipe(
       Effect.provide(Reactivity.layer),
     );
+
     yield* admin`CREATE DATABASE ${admin(database)}`;
     yield* Effect.addFinalizer(() =>
       admin`DROP DATABASE ${admin(database)} WITH (FORCE)`.pipe(Effect.orDie),
     );
+
     return PgClient.layer({ url, database });
   }),
 );

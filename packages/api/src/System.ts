@@ -7,13 +7,14 @@ import * as Schema from "effect/Schema";
  * and captured mail, and nothing else may depend on it (ADR 0004).
  */
 export const Environment = Schema.Literals(["development", "preview", "beta", "production"]);
+
 export type Environment = typeof Environment.Type;
 
 /**
  * What a client shows about the server it talks to. `revision` is the git revision of the release,
  * or `"unreleased"` when the server runs from a working copy.
  */
-export class Info extends Schema.Class<Info>("System.Info")({
+export class Info extends Schema.Class<Info, { readonly brand: unique symbol }>("System.Info")({
   revision: Schema.String,
   environment: Environment,
   serverTime: Schema.DateTimeUtc,

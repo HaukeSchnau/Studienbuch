@@ -7,14 +7,16 @@ import * as SqlClient from "effect/sql/SqlClient";
 import { Migrations } from "./Migrations.ts";
 import { TestDatabase } from "./TestDatabase.ts";
 
-const release = Effect.fn(function* (migrations: Record<string, string>) {
+const release = Effect.fnUntraced(function* (migrations: Record<string, string>) {
   const fs = yield* FileSystem.FileSystem;
   const path = yield* Path.Path;
   const folder = yield* fs.makeTempDirectoryScoped();
+
   for (const [name, sql] of Object.entries(migrations)) {
     yield* fs.makeDirectory(path.join(folder, name));
     yield* fs.writeFileString(path.join(folder, name, "migration.sql"), sql);
   }
+
   return yield* Migrations.read(folder);
 });
 
@@ -41,9 +43,11 @@ layer(NodeServices.layer)("Migrations", (it) => {
     it.effect("applies once when two runs race", () =>
       Effect.gen(function* () {
         const local = yield* release(second);
+
         const runs = yield* Effect.all([Migrations.apply(local), Migrations.apply(local)], {
           concurrency: 2,
         });
+
         assert.deepStrictEqual(runs.flat().sort(), ["20260101000000_a", "20260102000000_b"]);
       }),
     );
@@ -54,17 +58,19 @@ layer(NodeServices.layer)("Migrations", (it) => {
         const edited = yield* release({ "20260101000000_a": `${a}-- edited\n` });
         const error = yield* Effect.flip(Migrations.apply(edited));
         assert.strictEqual(error._tag, "Migrations.HistoryMismatch");
-        assert.include(error, { name: "20260101000000_a", localHash: edited[0]?.hash });
+        assert.include(error, { migration: "20260101000000_a", localHash: edited[0]?.hash });
       }),
     );
 
     it.effect("refuses a deleted applied migration, but not one newer than the release", () =>
       Effect.gen(function* () {
         yield* Migrations.apply(yield* release(second));
+
         const deleted = yield* Effect.flip(
           Migrations.verify(yield* release({ "20260102000000_b": b })),
         );
-        assert.include(deleted, { name: "20260101000000_a", localHash: null });
+
+        assert.include(deleted, { migration: "20260101000000_a", localHash: null });
         // An older release after a newer one migrated, as in a rollback.
         const older = yield* release(first);
         yield* Migrations.verify(older);
@@ -84,9 +90,11 @@ layer(NodeServices.layer)("Migrations", (it) => {
           head: "20260101000000_a",
           missing: ["20260102000000_b"],
         });
+
         const behind = yield* Migrations.requireHead(local).pipe(
           Effect.catchTag("Migrations.SchemaBehind", ({ missing }) => Effect.succeed(missing)),
         );
+
         assert.deepStrictEqual(behind, ["20260102000000_b"]);
       }),
     );

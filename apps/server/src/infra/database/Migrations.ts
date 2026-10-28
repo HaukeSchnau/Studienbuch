@@ -17,32 +17,38 @@ export interface Migration {
   readonly statements: ReadonlyArray<string>;
 }
 
-export class Unreadable extends Schema.TaggedError<Unreadable>()("Migrations.Unreadable", {
-  folder: Schema.String,
-  cause: Schema.Defect(),
-}) {}
+export class Unreadable extends Schema.TaggedError<Unreadable, { readonly brand: unique symbol }>()(
+  "Migrations.Unreadable",
+  {
+    folder: Schema.String,
+    cause: Schema.Defect(),
+  },
+) {}
 
 /**
  * An applied migration differs from this release's copy, or is missing from it while older than
  * this release's newest. Applied migrations are immutable, so this needs a person.
  */
-export class HistoryMismatch extends Schema.TaggedError<HistoryMismatch>()(
-  "Migrations.HistoryMismatch",
-  {
-    name: Schema.String,
-    appliedHash: Schema.String,
-    localHash: Schema.NullOr(Schema.String),
-  },
-) {
+export class HistoryMismatch extends Schema.TaggedError<
+  HistoryMismatch,
+  { readonly brand: unique symbol }
+>()("Migrations.HistoryMismatch", {
+  migration: Schema.String,
+  appliedHash: Schema.String,
+  localHash: Schema.NullOr(Schema.String),
+}) {
   override get message() {
     return this.localHash === null
-      ? `Applied migration ${this.name} is missing from this release`
-      : `Applied migration ${this.name} differs from this release's copy`;
+      ? `Applied migration ${this.migration} is missing from this release`
+      : `Applied migration ${this.migration} differs from this release's copy`;
   }
 }
 
 /** The database lacks migrations this release needs; `prepare` applies them. */
-export class SchemaBehind extends Schema.TaggedError<SchemaBehind>()("Migrations.SchemaBehind", {
+export class SchemaBehind extends Schema.TaggedError<
+  SchemaBehind,
+  { readonly brand: unique symbol }
+>()("Migrations.SchemaBehind", {
   missing: Schema.Array(Schema.String),
 }) {
   override get message() {
@@ -62,13 +68,17 @@ export const read = Effect.fn("Migrations.read")(function* (folder: string) {
 
   const names = (yield* fs.readDirectory(folder).pipe(Effect.mapError(unreadable))).sort();
   const migrations: Array<Migration> = [];
+
   for (const name of names) {
     const file = path.join(folder, name, "migration.sql");
+
     if (!(yield* fs.exists(file).pipe(Effect.mapError(unreadable)))) continue;
     const sql = yield* fs.readFileString(file).pipe(Effect.mapError(unreadable));
+
     const digest = yield* crypto
       .digest("SHA-256", encoder.encode(sql))
       .pipe(Effect.mapError(unreadable));
+
     migrations.push({
       name,
       hash: Buffer.from(digest).toString("hex"),
@@ -77,6 +87,7 @@ export const read = Effect.fn("Migrations.read")(function* (folder: string) {
         .filter((statement) => statement.trim() !== ""),
     });
   }
+
   return migrations;
 });
 
@@ -94,9 +105,12 @@ interface Applied {
 
 const readApplied = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
+
   const [history] = yield* sql<{ readonly exists: boolean }>`
     SELECT to_regclass(${historyTable}) IS NOT NULL AS exists`;
+
   if (!history?.exists) return [];
+
   return yield* sql<Applied>`SELECT name, hash FROM ${sql(historyTable)} ORDER BY name`;
 });
 
@@ -107,14 +121,18 @@ const readApplied = Effect.gen(function* () {
 const checkHistory = (local: ReadonlyArray<Migration>, applied: ReadonlyArray<Applied>) => {
   const localHashes = new Map(local.map(({ name, hash }) => [name, hash]));
   const head = local.at(-1)?.name;
+
   for (const { name, hash } of applied) {
     const localHash = localHashes.get(name);
+
     if (localHash === hash || (localHash === undefined && head !== undefined && name > head))
       continue;
+
     return Effect.fail(
-      new HistoryMismatch({ name, appliedHash: hash, localHash: localHash ?? null }),
+      new HistoryMismatch({ migration: name, appliedHash: hash, localHash: localHash ?? null }),
     );
   }
+
   return Effect.void;
 };
 
@@ -122,9 +140,10 @@ const checkHistory = (local: ReadonlyArray<Migration>, applied: ReadonlyArray<Ap
 export const status = Effect.fn("Migrations.status")(function* (local: ReadonlyArray<Migration>) {
   const applied = yield* readApplied;
   const appliedNames = new Set(applied.map(({ name }) => name));
+
   return {
     head: applied.at(-1)?.name ?? null,
-    missing: local.filter(({ name }) => !appliedNames.has(name)).map(({ name }) => name),
+    missing: local.flatMap(({ name }) => (appliedNames.has(name) ? [] : [name])),
   };
 });
 
@@ -133,6 +152,7 @@ export const requireHead = Effect.fn("Migrations.requireHead")(function* (
   local: ReadonlyArray<Migration>,
 ) {
   const { missing } = yield* status(local);
+
   if (missing.length > 0) return yield* new SchemaBehind({ missing });
 });
 
@@ -148,6 +168,7 @@ export const verify = Effect.fn("Migrations.verify")(function* (local: ReadonlyA
  */
 export const apply = Effect.fn("Migrations.apply")(function* (local: ReadonlyArray<Migration>) {
   const sql = yield* SqlClient.SqlClient;
+
   return yield* sql.withTransaction(
     Effect.gen(function* () {
       yield* sql`SELECT pg_advisory_xact_lock(hashtext(${historyTable}))`;
@@ -160,10 +181,12 @@ export const apply = Effect.fn("Migrations.apply")(function* (local: ReadonlyArr
       yield* checkHistory(local, applied);
       const appliedNames = new Set(applied.map(({ name }) => name));
       const pending = local.filter(({ name }) => !appliedNames.has(name));
+
       for (const migration of pending) {
         for (const statement of migration.statements) yield* sql.unsafe(statement);
         yield* sql`INSERT INTO ${sql(historyTable)} ${sql.insert({ name: migration.name, hash: migration.hash })}`;
       }
+
       return pending.map(({ name }) => name);
     }),
   );

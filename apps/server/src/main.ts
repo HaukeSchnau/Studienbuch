@@ -12,6 +12,8 @@ import * as HttpRouter from "effect/http/HttpRouter";
 import * as Layer from "effect/Layer";
 import * as Runtime from "effect/Runtime";
 import * as Schema from "effect/Schema";
+// NodeHttpServer.layer takes Node's own server factory; Effect has no counterpart to it.
+// oxlint-disable-next-line effecttsgo/node-builtin-import -- see above
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import packageJson from "../package.json" with { type: "json" };
@@ -55,6 +57,7 @@ const http = HttpRouter.serve(
 
 const serve = Effect.gen(function* () {
   yield* Migrations.requireHead(yield* Migrations.Release);
+
   return yield* Layer.launch(Layer.mergeAll(http, Jobs.layer));
 }).pipe(Effect.provide(runtime));
 
@@ -65,23 +68,32 @@ const prepare = Effect.gen(function* () {
   );
 }).pipe(Effect.provide(runtime));
 
-class InvariantBroken extends Schema.TaggedError<InvariantBroken>()("Verify.InvariantBroken", {
+class InvariantBroken extends Schema.TaggedError<
+  InvariantBroken,
+  { readonly brand: unique symbol }
+>()("Verify.InvariantBroken", {
   invariant: Schema.String,
 }) {}
 
 const verify = Effect.gen(function* () {
   yield* Migrations.verify(yield* Migrations.Release);
   const db = yield* Database.Drizzle;
+
   if ((yield* db.$count(Tables.syncEpoch)) !== 1) {
     return yield* new InvariantBroken({ invariant: "sync_epoch holds exactly one row" });
   }
+
   yield* Effect.logInfo("The schema is at head and the invariants hold");
 }).pipe(Effect.provide(runtime));
 
 const status = Effect.gen(function* () {
   const report = yield* Health.readiness;
-  const json = yield* Schema.encodeEffect(Schema.toCodecJson(Health.Readiness))(report);
-  yield* Console.log(JSON.stringify(json, null, 2));
+
+  const json = yield* Schema.encodeEffect(
+    Schema.fromJsonString(Schema.toCodecJson(Health.Readiness), { space: 2 }),
+  )(report);
+
+  yield* Console.log(json);
 }).pipe(Effect.provide(runtime));
 
 const cli = Command.make("studienbuch-server", {}, () => serve).pipe(
