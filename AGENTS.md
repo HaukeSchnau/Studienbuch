@@ -118,7 +118,7 @@ An empty database is a bad test.
 ## Verifying
 
 - Before every push, run `calder check`. It runs `.calder/ci.ts` on your working copy like a PR, and the push reuses its results.
-- While you iterate, run `vp check` (format, lint, types) and `vp test run <files>`.
+- While you iterate, run `vp run check:changed`. It checks format and lint on the files you changed, runs knip, typechecks the projects they affect and runs the tests beside them. `vp check` and `vp test run <files>` cover the whole repository or the files you name.
 - Test behavior that can break: the sync engine (outbox, rebase, refusals, convergence), encryption formats and key handling, migrations, import parsing and projection, school rules, auth and membership guards, and the logic a bug fix changed. Leave out what types guarantee, trivial code, copy text, smoke runs and mock-call mirrors.
 - Extend before you add: when an existing test covers the behavior, add a row or an assertion there. Test at one layer, the lowest one that fails without your change.
 - Tests sit next to their module (`Homework.test.ts`), use `@effect/vitest`, and replace dependencies through Layers, never module mocks.
@@ -168,6 +168,7 @@ The layout below is the target. Packages appear as M0 builds them.
 | `packages/domain-ui`          | Dumb components shared by the app and the landing page: rows and callbacks in                                                                                         | read SQLite or the sync engine                                          |
 | `deploy/`, `.calder/`, `nix/` | The Alchemy stack, CI, bundle derivations and checks                                                                                                                  |                                                                         |
 | `tools/oxlint/`               | Local lint plugins                                                                                                                                                    |                                                                         |
+| `tools/check-changed/`        | `vp run check:changed`: the checks for the files one change touches                                                                                                   |                                                                         |
 
 ## Taste
 

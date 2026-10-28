@@ -4,7 +4,8 @@
   "license": "BUSL-1.1",
   "type": "module",
   "scripts": {
-    "prepare": "effect-tsgo patch --oxlint"
+    "prepare": "effect-tsgo patch --oxlint",
+    "check:changed": "node tools/check-changed/check-changed.ts"
   },
   "devDependencies": {
     "@effect/tsgo": "catalog:",
