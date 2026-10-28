@@ -82,6 +82,7 @@ let
         (root + "/package.json")
         (root + "/pnpm-lock.yaml")
         (root + "/pnpm-workspace.yaml")
+        (fs.maybeMissing (root + "/patches"))
       ]
       ++ map (dir: root + "/${dir}/package.json") packageDirs
     );
