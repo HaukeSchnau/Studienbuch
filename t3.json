@@ -4,8 +4,8 @@
   "defaultThreadEnvMode": "worktree",
   "scripts": [
     {
-      "name": "Start development",
-      "command": "project dev up --only web",
+      "name": "Install dependencies",
+      "command": "devenv shell -- pnpm install",
       "icon": "configure",
       "runOnWorktreeCreate": true
     }

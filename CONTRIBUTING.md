@@ -28,32 +28,20 @@ project is navigable.
 
 ## Getting a checkout running
 
-Use devenv 2.3.1. `devenv.nix`, `devenv.yaml`, and `devenv.lock` pin the tools,
-install dependencies and define the development processes. The flake builds releases and
-provides the smaller CI shell.
+Use devenv. `devenv.nix` and `nix/toolchain.nix` pin Node and pnpm, and the flake provides the
+smaller shell CI uses.
 
 ```sh
 devenv shell     # or `direnv allow` if you use direnv
-just qa          # format, lint, type-check, test
-devenv up --strict-ports
+pnpm install
+vp check         # format, lint and type check
 ```
 
-`just fix` applies formatting and the auto-fixable lint rules. Run `just qa` before pushing. CI runs
-the same checks as separate tasks in `.calder/ci.ts`.
+`vp check --fix` applies formatting and the auto-fixable lint rules. CI runs the same checks as
+separate tasks in `.calder/ci.ts`.
 
-The default stack starts PostgreSQL, applies migrations, and starts web and Metro. The importer
-is opt-in locally with `devenv up worker`. With the database running, use
-`devenv shell -- studienbuch-console --help` for the console. Shell entry alone starts no services.
-Use `devenv --profile mobile shell` for Android SDK/NDK, JDK, Gradle and the native mobile tools.
-
-On a managed host, `project dev bundle refresh` prepares the environment and graph from this
-checkout. `project dev up --only web` then starts the selected endpoint and its dependencies.
-Project owns endpoints, credentials and instance data; devenv owns process ordering and readiness.
-`project dev console -- --help` uses the same running database. Application source stays live,
-while changes to devenv configuration require another explicit bundle refresh.
-
-Mobile end-to-end tests have their own rules, described in `apps/mobile/e2e/README.md`. Any change
-to mobile behaviour has to update both E2E runners, not just the one you happen to use.
+The repository is in a from-scratch rewrite, and the apps arrive during its first milestone.
+`AGENTS.md` describes the development environment as it grows.
 
 ## Where development happens
 

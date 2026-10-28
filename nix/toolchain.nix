@@ -1,8 +1,8 @@
 { pkgs }:
 let
-  nodejs = pkgs.nodejs-slim_24;
+  nodejs = pkgs.nodejs-slim_26;
 in
 {
   inherit nodejs;
-  pnpm = pkgs.pnpm_11.override { nodejs-slim = nodejs; };
+  pnpm = pkgs.pnpm_12.override { nodejs-slim = nodejs; };
 }

@@ -2,15 +2,7 @@
 import { Flake } from "@calder-ci/core";
 
 export const flake = Flake.make({
-  packages: ["projectRelease", "webApplication"],
-  checks: [
-    "projectReleaseGate",
-    "releaseClosure",
-    "releaseInterface",
-    "releasePackage",
-    "releaseSmoke",
-    "webApplication",
-    "workspaceSource",
-  ],
-  devShells: ["ci", "default"],
+  packages: [],
+  checks: [],
+  devShells: ["ci"],
 });

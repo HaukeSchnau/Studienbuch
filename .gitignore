@@ -1,55 +1,28 @@
 # dependencies
 node_modules/
 
-# build outputs and distributable archives
+# build and test output
 dist/
-out/
-.output/
-*.tgz
-*.ipa
-*.apk
-*.aab
-*.xcarchive/
-
-# test and automation artifacts
 coverage/
-*.lcov
 test-results/
 playwright-report/
-blob-report/
-/tmp/
-
-# logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# dotenv environment variable files
-.env
-.env.*
-!.env.example
-!.env.*.example
-
-# caches
-.eslintcache
-.cache/
-.pnpm-store/
-.vite/
-.vite-plus/
 *.tsbuildinfo
 
 # local tool state
-/.direnv/
 /.devenv/
-/.vite-hooks/
+/.devenv.flake.nix
+/.direnv/
+/devenv.local.nix
 /result
 /result-*
+.vite/
+.vite-plus/
 
-# IDEs
+# secrets and local settings
+.env
+.env.*
+!.env.example
+
+# editors and operating systems
 .idea/
-
-# Finder (MacOS) folder config
 .DS_Store

@@ -1,113 +1,22 @@
 packages:
   - apps/*
   - packages/*
-  - scripts
 
-patchedDependencies:
-  "@better-auth/passkey@1.6.27": patches/@better-auth__passkey@1.6.27.patch
-  tree-sitter@0.21.1: patches/tree-sitter@0.21.1.patch
-
-allowBuilds:
-  "@fails-components/webtransport-transport-http3-quiche": true
-  "@sentry/cli": true
-  core-js: false
-  cpu-features: false
-  esbuild: true
-  lightningcss: true
-  msgpackr-extract: true
-  node-pty: true
-  protobufjs: false
-  ssh2: false
-  tree-sitter: true
-  tree-sitter-javascript: true
-  tree-sitter-typescript: true
+catalogMode: strict
 
 catalog:
-  "@effect/atom-react": 4.0.0-rc.108
-  "@effect/openapi-generator": 4.0.0-rc.108
-  "@effect/platform-node": 4.0.0-rc.108
-  "@effect/platform-node-shared": 4.0.0-rc.108
-  "@effect/sql-pg": 4.0.0-rc.108
-  "@effect/tsgo": 0.36.5
-  "@effect/vitest": 4.0.0-rc.108
-  "@tanstack/devtools-vite": 0.8.5
-  "@tanstack/react-devtools": 0.10.12
-  "@tanstack/react-router": 1.170.32
-  "@tanstack/react-router-devtools": 1.167.1
-  "@tanstack/react-start": 1.168.49
-  "@types/node": ^26.2.0
-  "@types/pg": ^8.15.5
-  drizzle-kit: 1.0.0-rc.5-ab785fc
-  drizzle-orm: 1.0.0-rc.5-169397b
-  effect: 4.0.0-rc.108
-  temporal-polyfill: 1.0.4
-  pg: ^8.16.3
-  typescript: ^7.0.2
-  vite: npm:@voidzero-dev/vite-plus-core@0.2.9
-  vite-plus: 0.2.9
-
-minimumReleaseAgeExclude:
-  - "@effect/atom-react@4.0.0-rc.108"
-  - "@effect/openapi-generator@4.0.0-rc.108"
-  - "@effect/platform-node@4.0.0-rc.108"
-  - "@effect/platform-node-shared@4.0.0-rc.108"
-  - "@effect/sql-pg@4.0.0-rc.108"
-  - "@effect/vitest@4.0.0-rc.108"
-  - "effect@4.0.0-rc.108"
-  - "drizzle-kit@1.0.0-rc.5-ab785fc"
-  - "drizzle-orm@1.0.0-rc.5-169397b"
-  - "webuntis-api@0.2.2"
-  - "@better-auth/core@1.6.27"
-  - "@better-auth/drizzle-adapter@1.6.27"
-  - "@better-auth/kysely-adapter@1.6.27"
-  - "@better-auth/memory-adapter@1.6.27"
-  - "@better-auth/mongo-adapter@1.6.27"
-  - "@better-auth/passkey@1.6.27"
-  - "@better-auth/prisma-adapter@1.6.27"
-  - "@better-auth/telemetry@1.6.27"
-  - "better-auth@1.6.27"
-  - "@tanstack/react-router@1.170.27"
-  - "@tanstack/react-start@1.168.44"
-  - "@tanstack/react-start-client@1.168.25"
-  - "@tanstack/react-start-rsc@0.1.43"
-  - "@tanstack/react-start-server@1.167.32"
-  - "@tanstack/router-core@1.171.22"
-  - "@tanstack/router-generator@1.167.28"
-  - "@tanstack/router-plugin@1.168.30"
-  - "@tanstack/start-client-core@1.170.22"
-  - "@tanstack/start-plugin-core@1.171.34"
-  - "@tanstack/start-server-core@1.169.26"
-  - "@tanstack/start-storage-context@1.167.24"
-  - "@voidzero-dev/vite-plus-core@0.2.9"
-  - "@voidzero-dev/vite-plus-darwin-arm64@0.2.9"
-  - "@voidzero-dev/vite-plus-darwin-x64@0.2.9"
-  - "@voidzero-dev/vite-plus-linux-arm64-gnu@0.2.9"
-  - "@voidzero-dev/vite-plus-linux-arm64-musl@0.2.9"
-  - "@voidzero-dev/vite-plus-linux-x64-gnu@0.2.9"
-  - "@voidzero-dev/vite-plus-linux-x64-musl@0.2.9"
-  - "@voidzero-dev/vite-plus-win32-arm64-msvc@0.2.9"
-  - "@voidzero-dev/vite-plus-win32-x64-msvc@0.2.9"
-  - "vite-plus@0.2.9"
-  - "@vitejs/plugin-react@6.1.0"
-  - "@schnau/webuntis-api@0.3.0"
+  typescript: 7.0.2
+  # Vite+ bundles Vite and Vitest. These two follow its release, so every package and plugin
+  # resolves the same copies as `vp`.
+  vite: npm:@voidzero-dev/vite-plus-core@1.4.0
+  vite-plus: 1.4.0
+  vitest: 5.0.5
 
 overrides:
-  "@effect/atom-react": "catalog:"
-  "@effect/platform-node": "catalog:"
-  "@effect/platform-node-shared": "catalog:"
-  effect: "catalog:"
-  expo-constants: 57.0.10
-  lightningcss: 1.30.1
-  react-native-screens: 4.26.2
-  vite: "catalog:"
-
-packageExtensions:
-  "vite-plus@*":
-    dependencies:
-      vite: "catalog:"
+  vite@*: "catalog:"
+  vitest@*: "catalog:"
 
 peerDependencyRules:
-  allowAny:
-    - vite
+  # The alias reports Vite+'s version, not the Vite 8 inside it.
   allowedVersions:
     vite: "*"

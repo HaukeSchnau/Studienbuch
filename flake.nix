@@ -1,30 +1,21 @@
 {
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
-    nix-infra-modules = {
-      url = "github:HaukeSchnau/nix-infra-modules/c08469c9ed76a0e2223cb6bf1ac624580be6f98c";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
   outputs =
-    {
-      nixpkgs,
-      flake-utils,
-      nix-infra-modules,
-      ...
-    }:
+    { nixpkgs, ... }:
     let
-      project = import ./nix/project.nix {
-        inherit nixpkgs nix-infra-modules;
-        descriptor = nix-infra-modules.lib.projectDefinition { modules = [ ./project.nix ]; };
-        root = ./.;
-      };
+      systems = [
+        "aarch64-darwin"
+        "aarch64-linux"
+        "x86_64-linux"
+      ];
+      forEachSystem = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
     in
     {
-      lib.project = project.descriptor;
-      lib.observability = import ./packages/observability/dashboard-and-alerts.nix;
-    }
-    // flake-utils.lib.eachSystem project.systems project.forSystem;
+      devShells = forEachSystem (pkgs: {
+        ci = pkgs.mkShellNoCC {
+          packages = builtins.attrValues (import ./nix/toolchain.nix { inherit pkgs; });
+        };
+      });
+    };
 }

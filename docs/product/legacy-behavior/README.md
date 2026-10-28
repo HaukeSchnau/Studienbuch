@@ -17,7 +17,8 @@ paths:
   `studienbuch-archive/` and normally begins `Stubu-legacy-flutter/apps/flutter/`.
 - `react-native:` marks archived React Native evidence; the following path is relative to
   `studienbuch-archive/` and normally begins `Studienbuch-Legacy/`.
-- `current:` resolves beneath this repository root.
+- `current:` resolves beneath the repository root at the `legacy-2026-10` bookmark, the tree the
+  rewrite replaced.
 
 Catalogue tables may shorten Flutter paths to `lib/` and React Native paths to `src/`; those resolve
 beneath the respective app roots above. Scenario contracts retain archive-relative paths so each
@@ -50,21 +51,20 @@ Confidence is separate from disposition:
 - **Inferred** — suggested by source but not yet demonstrated in a running legacy build.
 - **Questionable** — likely accidental, obsolete, incomplete, or harmful.
 
-Only accepted behavior belongs in `apps/mobile/e2e/scenarios/`. Unresolved observations remain in
+Only accepted behavior belongs in [`../scenarios/`](../scenarios/). Unresolved observations remain in
 the catalogue so a future implementation cannot accidentally settle the product question.
 
 ## Readable executable specification
 
-Scenario contracts follow `apps/mobile/e2e/SCENARIO_TEMPLATE.md` and use four principles:
+Scenario contracts follow [`../scenarios/TEMPLATE.md`](../scenarios/TEMPLATE.md) and use four principles:
 
 1. The rule states the product guarantee in domain language.
 2. The Given/When/Then example describes intent rather than widget mechanics.
 3. Every outcome maps to stable, user-observable executable evidence.
 4. Initial state, final state, and side effects make isolation and persistence explicit.
 
-The Markdown contract is the source of truth. An agent-device script and an Argent YAML flow are
-paired executable adapters. They may be created only through live recording once the rewrite can
-reach the contract's named state, and each unchanged recording must pass twice.
+The Markdown contract is the source of truth. The E2E runner chosen in M1 (D4) implements it once
+the rewrite can reach the contract's named state.
 
 ## Archaeology workflow
 
@@ -75,7 +75,7 @@ reach the contract's named state, and each unchanged recording must pass twice.
 5. Assign a disposition. Escalate choices that materially change the product.
 6. Map every accepted entry to one or more runner-neutral scenario contracts.
 7. During the rewrite, implement deterministic fixtures and semantic accessibility identifiers.
-8. Record both runners live and preserve their two-pass comparison evidence.
+8. Implement the contract in the E2E runner and keep it passing unchanged.
 
 ## Naming
 
