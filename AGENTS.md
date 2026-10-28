@@ -176,9 +176,10 @@ Code in `packages/core`, `packages/sync` and `packages/e2ee` also runs on Hermes
 - Complexity belongs at the adapter boundary. Orchestration stays pure, UI stays dumb.
 - Inferred types over annotations. `any` is the enemy.
 - Effect Schema parses every boundary: HTTP, RPC, environment, storage, JSON.
-- Errors are tagged values in Effect's error channel, named `Domain.ClassName` without an `Error` suffix. Defects use `Effect.die`. `Option` means absence, never a failed parse.
+- Nothing throws, anywhere, and `Promise.reject` or `assert` don't stand in for it. Errors are tagged values in Effect's error channel, named `Domain.ClassName` without an `Error` suffix. Defects use `Effect.die`. `Option` means absence, never a failed parse.
+- `exactOptionalPropertyTypes` stays off on purpose. Don't propose turning it on.
 - Mutators read no clock, randomness, network or SQL. Ids and timestamps arrive as arguments. Civil time follows [ADR 0001](docs/adr/0001-model-civil-time-explicitly.md).
-- A public module is one PascalCase file, imported as a namespace: `import * as Homework from "./Homework.ts"`.
+- A public module is one PascalCase file that exports itself as a namespace (`export * as Homework from "./Homework.ts"` inside `Homework.ts`), imported as `import { Homework } from "./Homework.ts"`. No `import * as` for our own modules and no split into two files. Effect modules keep `import * as Effect from "effect/Effect"`.
 - Data and subscriptions belong in atoms. A React effect synchronizes with something outside React.
 - Comments state a reason the code can't show, describe how a function is used, and move with the code. A lint suppression carries its reason.
 - If a rule here fights the task in front of you, say so loudly and get a human sign-off before breaking it.
