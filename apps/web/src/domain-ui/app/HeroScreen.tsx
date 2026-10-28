@@ -1,7 +1,9 @@
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import type { ReactNode } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+
+import { Icon } from "./Icon.tsx";
 
 import { Type } from "./Type.ts";
 
@@ -36,6 +38,7 @@ export function HeroScreen({
   chips = [],
   art,
   toolbar,
+  back,
   children,
 }: {
   title: string;
@@ -45,6 +48,8 @@ export function HeroScreen({
   art?: string;
   /** Buttons above the title at the right, where our web chrome puts them (variant B). */
   toolbar?: ReactNode;
+  /** A pill at the top left that leads back, as the native stack's back button does. */
+  back?: { readonly label: string; readonly onPress: () => void };
   children: ReactNode;
 }) {
   const { color, elevation } = Theme.useTheme();
@@ -52,46 +57,63 @@ export function HeroScreen({
   return (
     <View style={[styles.screen, { backgroundColor: color.canvas }]}>
       <View style={[styles.hero, { backgroundColor: color.hero }]}>
-        {toolbar === undefined ? null : <View style={styles.toolbar}>{toolbar}</View>}
-        <View style={art === undefined ? undefined : styles.besideArt}>
-          <Text accessibilityRole="header" style={[Type.style("heroTitle"), styles.onHero]}>
-            {title}
-          </Text>
-          {subtitle === undefined ? null : (
-            <Text style={[Type.style("heroSubtitle"), styles.onHero]}>{subtitle}</Text>
-          )}
-        </View>
-        {chips.length === 0 ? null : (
-          <View style={styles.chips}>
-            {chips.map((chip) => (
-              <Text
-                key={chip}
-                style={[
-                  Type.style("chip"),
-                  styles.chip,
-                  { backgroundColor: color.surface, color: color.accent },
-                ]}
-              >
-                {chip}
-              </Text>
-            ))}
-          </View>
-        )}
-        {art === undefined ? null : (
-          <View
-            style={[
-              styles.artTile,
-              {
-                backgroundColor: color.surface,
-                borderColor: color.cardEdge,
-                boxShadow: elevation.float,
-              },
+        {back === undefined ? null : (
+          <Pressable
+            accessibilityLabel={`Zurück zur ${back.label}`}
+            accessibilityRole="button"
+            onPress={back.onPress}
+            style={({ pressed }) => [
+              styles.back,
+              { backgroundColor: color.surface, boxShadow: elevation.float },
+              pressed && styles.pressed,
             ]}
           >
-            {/* `defaultSource` makes react-native-web render the image while prerendering. */}
-            <Image defaultSource={{ uri: art }} source={{ uri: art }} style={styles.art} />
-          </View>
+            <Icon color={color.accent} name="back" size={20} />
+            <Text style={[Type.style("chip"), { color: color.accent }]}>{back.label}</Text>
+          </Pressable>
         )}
+        {toolbar === undefined ? null : <View style={styles.toolbar}>{toolbar}</View>}
+        <View style={styles.titleRow}>
+          <View style={styles.titleText}>
+            <Text accessibilityRole="header" style={[Type.style("heroTitle"), styles.onHero]}>
+              {title}
+            </Text>
+            {subtitle === undefined ? null : (
+              <Text style={[Type.style("heroSubtitle"), styles.onHero]}>{subtitle}</Text>
+            )}
+            {chips.length === 0 ? null : (
+              <View style={styles.chips}>
+                {chips.map((chip) => (
+                  <Text
+                    key={chip}
+                    style={[
+                      Type.style("chip"),
+                      styles.chip,
+                      { backgroundColor: color.surface, color: color.accent },
+                    ]}
+                  >
+                    {chip}
+                  </Text>
+                ))}
+              </View>
+            )}
+          </View>
+          {art === undefined ? null : (
+            <View
+              style={[
+                styles.artTile,
+                {
+                  backgroundColor: color.surface,
+                  borderColor: color.cardEdge,
+                  boxShadow: elevation.float,
+                },
+              ]}
+            >
+              {/* `defaultSource` makes react-native-web render the image while prerendering. */}
+              <Image defaultSource={{ uri: art }} source={{ uri: art }} style={styles.art} />
+            </View>
+          )}
+        </View>
       </View>
       {/* Inline SVG rather than react-native-svg, which doesn't bundle here yet (Icon.tsx). */}
       <svg
@@ -118,6 +140,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: Tokens.layout.cardPadding,
     gap: Tokens.space.xs,
   },
+  back: {
+    flexDirection: "row",
+    alignSelf: "flex-start",
+    alignItems: "center",
+    gap: Tokens.space.xxs,
+    height: 36,
+    marginTop: -Tokens.space.sm,
+    marginBottom: Tokens.space.md,
+    paddingLeft: Tokens.space.sm,
+    paddingRight: Tokens.space.md + Tokens.space.xxs,
+    borderRadius: Tokens.radius.pill,
+    cursor: "pointer",
+  },
+  pressed: { transform: [{ scale: Tokens.motion.press.scale }] },
   toolbar: {
     flexDirection: "row",
     alignSelf: "flex-end",
@@ -126,7 +162,8 @@ const styles = StyleSheet.create({
     marginTop: -Tokens.space.sm,
     marginBottom: Tokens.space.sm,
   },
-  besideArt: { paddingRight: 120, gap: Tokens.space.xs },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: Tokens.space.lg },
+  titleText: { flex: 1, gap: Tokens.space.xs },
   onHero: { color: "#FFFFFF" },
   chips: { flexDirection: "row", gap: Tokens.space.sm, marginTop: Tokens.space.sm },
   chip: {
@@ -136,9 +173,6 @@ const styles = StyleSheet.create({
     paddingVertical: Tokens.space.xs,
   },
   artTile: {
-    position: "absolute",
-    top: 74,
-    right: Tokens.layout.cardPadding,
     width: 96,
     height: 96,
     borderRadius: Tokens.radius.tile + 4,

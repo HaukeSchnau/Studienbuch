@@ -25,20 +25,28 @@ export function TodayScreen({ onOpen }: { onOpen?: (id: string) => void }) {
   );
 }
 
-/** A course page with its grades. */
+/** A course page with its grades. With `onBack`, it was opened from the Übersicht and leads back. */
 export function CourseScreen({
   course,
   exams,
   onSign,
+  onBack,
 }: {
   course: Demo.CourseId;
   exams: ReadonlyArray<Exam>;
   onSign?: (id: string) => void;
+  onBack?: () => void;
 }) {
   const { name, teacher, term, oral } = Demo.courses[course];
 
   return (
-    <HeroScreen art={Demo.art[course]} chips={[term]} subtitle={teacher} title={name}>
+    <HeroScreen
+      art={Demo.art[course]}
+      back={onBack === undefined ? undefined : { label: "Übersicht", onPress: onBack }}
+      chips={[term]}
+      subtitle={teacher}
+      title={name}
+    >
       <GradesCard
         average={Demo.confirmedAverage(exams)}
         exams={exams}

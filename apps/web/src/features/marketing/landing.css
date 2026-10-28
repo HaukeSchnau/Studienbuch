@@ -104,10 +104,9 @@
 }
 
 /*
- * The phones: one scene, two devices one behind the other, both tilted the same way, as in the
- * August render. Each phone sits in a slot, `data-depth="front"` or `"back"`, given by translate
- * and scale, so swapping them is a transition of two compositor properties; the z-index changes at
- * once, so the phone coming forward passes in front of the other. `--phone-zoom` sizes the device.
+ * The phones, as the August render had them: a larger Übersicht tilted one way and a smaller course
+ * page tilted the other, offset so that where they overlap only a screen edge or a tab bar is under
+ * the other phone. Each figure is placed by `left`/`top`; `--phone-zoom` sizes its device.
  */
 
 .hero-phones {
@@ -115,97 +114,42 @@
   perspective: 1400px;
 }
 
+/* Below 1024 px they stack: the Übersicht at the top left, the course page lower right in front,
+   its hero over the Übersicht's tab bar, so both are large enough to read and tap. */
 .hero-scene {
-  --phone-zoom: 0.48;
-  --front: 0px 44px;
-  --back: 180px 0px;
-  --back-peek: 186px -12px;
-  --back-scale: 0.9;
   position: relative;
   max-width: 342px;
-  height: 470px;
-  margin: 0 auto 56px;
+  height: 960px;
+  margin: 0 auto;
 }
 
 .hero-scene .phone {
   position: absolute;
-  top: 0;
+}
+
+.phone-today {
+  --phone-zoom: 0.64;
+  top: 52px;
   left: 0;
-  rotate: -7deg;
-  transition:
-    translate 560ms var(--ease-out),
-    scale 560ms var(--ease-out),
-    transform 320ms var(--ease-out);
-}
-
-.phone[data-depth="front"] {
-  z-index: 2;
-  translate: var(--front);
-}
-
-.phone[data-depth="back"] {
   z-index: 1;
-  translate: var(--back);
-  scale: var(--back-scale);
+  rotate: -5deg;
 }
 
-/* Without JavaScript, a phone with keyboard focus inside at least comes to the top. */
-.phone[data-depth="back"]:focus-within {
-  z-index: 3;
-}
-
-/* The tap target over a phone in the back, and the label that says it can be tapped. */
-.phone-raise {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  padding: 0;
-  border: 0;
-  border-radius: 32px;
-  background: transparent;
-}
-
-/* Hung on the phone's lower edge, where it covers no content. */
-.phone-raise-hint {
-  position: absolute;
-  right: 18%;
-  bottom: -30px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: 999px;
-  background: var(--color-surface);
-  box-shadow: var(--elevation-float);
-  color: var(--color-accent);
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-  transition: scale 200ms var(--ease-out);
-}
-
-.phone-raise-hint::after {
-  content: "→";
-  translate: 0 -1px;
-}
-
-@media (hover: hover) {
-  .phone[data-depth="back"]:hover {
-    translate: var(--back-peek);
-  }
-
-  .phone[data-depth="back"]:hover .phone-raise-hint {
-    scale: 1.06;
-  }
+.phone-course {
+  --phone-zoom: 0.56;
+  top: 556px;
+  right: 0;
+  z-index: 2;
+  rotate: 6deg;
 }
 
 .hero-hint {
   position: absolute;
-  bottom: -60px;
-  left: 0;
+  top: 0;
+  left: 8px;
   display: flex;
   flex-direction: row-reverse;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 4px;
   color: var(--color-accent);
   font-size: 15px;
@@ -214,32 +158,43 @@
   transition: opacity 300ms ease;
 }
 
-/* The hint is about the Übersicht; it steps aside once the course is in front. */
-.hero-scene[data-front="course"] .hero-hint {
+/* The hint is about the day's lessons; it steps aside while a course is open. */
+.hero-scene[data-screen="course"] .hero-hint {
   opacity: 0;
 }
 
-/* Drawn pointing down into the phone above it; below 1024 px the hint sits under the phones. */
+/* Points down into the Übersicht below it. */
 .hero-hint-arrow {
   width: 30px;
   height: 40px;
-  margin-bottom: 6px;
+  margin: 16px 2px 0 0;
   fill: none;
   stroke: var(--color-hero-edge);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 4;
-  scale: 1 -1;
 }
 
 @media (min-width: 640px) {
   .hero-scene {
-    --phone-zoom: 0.64;
-    --front: 0px 60px;
-    --back: 222px 0px;
-    --back-peek: 230px -16px;
-    max-width: 470px;
-    height: 620px;
+    max-width: 560px;
+    height: 640px;
+  }
+
+  .phone-today {
+    --phone-zoom: 0.66;
+    top: 60px;
+  }
+
+  /* From here they stand side by side, the course page lower and tucked behind the Übersicht's
+     edge, where only its card margins and art are covered, never its sign button. */
+  .phone-course {
+    --phone-zoom: 0.54;
+    top: 110px;
+    left: 214px;
+    right: auto;
+    z-index: 0;
+    rotate: 7deg;
   }
 }
 
@@ -274,27 +229,36 @@
   }
 
   .hero-scene {
-    --phone-zoom: 0.78;
-    --front: 0px 92px;
-    --back: 282px 0px;
-    --back-peek: 292px -18px;
     max-width: none;
-    height: 780px;
+    height: 790px;
     margin: 0;
   }
 
-  /* Above the Übersicht, pointing down into its lessons. */
-  .hero-hint {
-    top: 8px;
-    bottom: auto;
-    left: 6px;
-    flex-direction: row-reverse;
-    align-items: flex-start;
+  .phone-today {
+    --phone-zoom: 0.8;
+    top: 84px;
   }
 
-  .hero-hint-arrow {
-    margin: 20px 4px 0 0;
-    scale: 1 1;
+  .phone-course {
+    --phone-zoom: 0.62;
+    top: 150px;
+    left: 290px;
+  }
+
+  .hero-hint {
+    top: 18px;
+    left: 10px;
+  }
+}
+
+/* Below 1024 px the download prompt comes before the tall stack of phones. */
+@media (max-width: 1023px) {
+  .hero-download {
+    order: 1;
+  }
+
+  .hero-phones {
+    order: 2;
   }
 }
 
@@ -307,9 +271,8 @@
     animation-delay: 300ms;
   }
 
-  /* Backwards only: the hint's opacity also answers which phone is in front. */
-  .hero-hint,
-  .phone-raise-hint {
+  /* Backwards only: the hint's opacity also says whether a course is open. */
+  .hero-hint {
     animation: fade 600ms ease 1400ms backwards;
   }
 }
@@ -343,18 +306,10 @@
   box-shadow:
     0 0 0 1.5px rgb(32 55 85 / 0.08),
     0 36px 80px rgb(32 55 85 / 0.24);
-  transition: box-shadow 560ms var(--ease-out);
-}
-
-.phone[data-depth="back"] .phone-device {
-  box-shadow:
-    0 0 0 1.5px rgb(32 55 85 / 0.08),
-    0 18px 44px rgb(32 55 85 / 0.16);
 }
 
 @media (prefers-color-scheme: dark) {
-  .phone-device,
-  .phone[data-depth="back"] .phone-device {
+  .phone-device {
     box-shadow:
       0 0 0 1.5px rgb(255 255 255 / 0.1),
       0 36px 80px rgb(0 0 0 / 0.55);
