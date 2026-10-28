@@ -164,6 +164,9 @@ settings:
 
 catalogs:
   default:
+    effect:
+      specifier: 4.0.7
+      version: 4.0.7
     typescript:
       specifier: 7.0.2
       version: 7.0.2
@@ -185,6 +188,12 @@ importers:
       vite-plus:
         specifier: 'catalog:'
         version: 1.4.0(@vitest/ui@5.0.5)(typescript@7.0.2)
+
+  packages/api:
+    dependencies:
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.7
 
 packages:
 
@@ -900,6 +909,9 @@ packages:
 
   dom-accessibility-api@0.5.16:
     resolution: {integrity: sha512-X7BJ2yElsnOJ30pZF4uIIDfBEVgF4XEBxL9Bxhy6dnrm5hkzqmsWHGTiHqRiITNhMyFLyAiWndIJP7Z1NTteDg==}
+
+  effect@4.0.7:
+    resolution: {integrity: sha512-47CiUzNAmeLr40pDT9vKMxxtB8o3bdpZEKU4IUM3fVxsK2GYzPsV7fQoZP0I41A308BZd71nMxqJ0KRh3s9u2g==}
 
   es-module-lexer@2.3.2:
     resolution: {integrity: sha512-poHGpORABojJJucnV9KbOavETW8lBVnphkW77ER5/BQ5Fz7oXSoCNek7IH3vR5nRjdsEz926ibFYX8KtLQmdyw==}
@@ -1686,6 +1698,8 @@ snapshots:
   detect-libc@2.1.2: {}
 
   dom-accessibility-api@0.5.16: {}
+
+  effect@4.0.7: {}
 
   es-module-lexer@2.3.2: {}
 
