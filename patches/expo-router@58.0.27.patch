@@ -1,0 +1,51 @@
+diff --git a/build/fork/getPathFromState-forks.js b/build/fork/getPathFromState-forks.js
+index 0517532d2cad4ebf60077af043d2a8a9985783f7..cc549241ee315eb913a9df25fc237a02dbb3ee86 100644
+--- a/build/fork/getPathFromState-forks.js
++++ b/build/fork/getPathFromState-forks.js
+@@ -66,10 +66,8 @@ function appendQueryAndHash(path, { '#': hash, ...focusedParams }) {
+     return path;
+ }
+ function appendBaseUrl(path, baseUrl = process.env.EXPO_BASE_URL) {
+-    if (process.env.NODE_ENV !== 'development') {
+-        if (baseUrl) {
+-            return `/${baseUrl.replace(/^\/+/, '').replace(/\/$/, '')}${path}`;
+-        }
++    if (baseUrl) {
++        return `/${baseUrl.replace(/^\/+/, '').replace(/\/$/, '')}${path}`;
+     }
+     return path;
+ }
+diff --git a/build/fork/getPathFromState.js b/build/fork/getPathFromState.js
+index 46b862d675a1a45287fb2ae808fdd3f4d571a1e5..ebcb5e3b07c0b650068e193a39381e1d136d0fde 100644
+--- a/build/fork/getPathFromState.js
++++ b/build/fork/getPathFromState.js
+@@ -235,10 +235,8 @@ const createNormalizedConfigs = (options, pattern)=>Object.fromEntries(Object.en
+         ];
+     }));
+ function appendBaseUrl(path, baseUrl = process.env.EXPO_BASE_URL) {
+-    if (process.env.NODE_ENV !== 'development') {
+-        if (baseUrl) {
+-            return `/${baseUrl.replace(/^\/+/, '').replace(/\/$/, '')}${path}`;
+-        }
++    if (baseUrl) {
++        return `/${baseUrl.replace(/^\/+/, '').replace(/\/$/, '')}${path}`;
+     }
+     return path;
+ }
+diff --git a/build/fork/getStateFromPath-forks.js b/build/fork/getStateFromPath-forks.js
+index 207eecdf02c2a04ecf5933fadd93a4889ea10f3a..ba4d7ba3b477ebbc4da9c088b4c5a60dc1d19840 100644
+--- a/build/fork/getStateFromPath-forks.js
++++ b/build/fork/getStateFromPath-forks.js
+@@ -209,10 +209,8 @@ function spreadParamsAcrossAllStates(state, params) {
+     }
+ }
+ function stripBaseUrl(path, baseUrl = process.env.EXPO_BASE_URL) {
+-    if (process.env.NODE_ENV !== 'development') {
+-        if (baseUrl) {
+-            return path.replace(/^\/+/g, '/').replace(new RegExp(`^\\/?${(0, _escapeStringRegexp.escapeStringRegexp)(baseUrl)}`, 'g'), '');
+-        }
++    if (baseUrl) {
++        return path.replace(/^\/+/g, '/').replace(new RegExp(`^\\/?${(0, _escapeStringRegexp.escapeStringRegexp)(baseUrl)}`, 'g'), '');
+     }
+     return path;
+ }
