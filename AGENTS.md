@@ -136,6 +136,7 @@ Agents work through pull requests ([ADR 0008](docs/adr/0008-agents-work-through-
 - A PR that changes what a user sees links its preview and shows before and after screenshots.
 - The orchestrator merges once checks pass and the preview looks right. Hauke can open any preview and never has to review code.
 - The catalog in `pnpm-workspace.yaml` is append-only while packages run in parallel: add entries only for dependencies you introduce. Regenerate `pnpm-lock.yaml` with `pnpm install` after a rebase, never merge it by hand.
+- Reviewer agents follow [docs/internals/review.md](docs/internals/review.md): what to check per area, and what not to report.
 
 ## Documentation
 
@@ -144,6 +145,7 @@ Most code changes need no documentation change. Agents can read the code.
 - `docs/adr/` holds one decision per file: the context, the decision and why, in a few sentences. Write one when a decision is hard to reverse, surprising without context, and the result of a real trade-off. A changed decision gets a new ADR that supersedes the old one.
 - `docs/product/` holds the legacy behavior catalogue and the scenario contracts. A scenario states a user-visible rule independent of any test runner; the E2E test implements it.
 - `docs/operations/` holds procedures for running, releasing and debugging.
+- `docs/internals/` holds guides for agents working on the code, such as the review guide.
 - Document reasons and constraints the code can't show. Leave out feature lists, field lists, control-flow narration and PR summaries. When a documented decision changes, rewrite the text instead of appending.
 - Plans, research notes and scratch files stay out of the tree. The rewrite's roadmap and design documents are at <https://files.schnau.dev/html/studienbuch-roadmap/> (Tailnet), and ADRs link into them.
 
