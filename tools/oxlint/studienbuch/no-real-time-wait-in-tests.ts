@@ -1,6 +1,14 @@
 import { defineRule, type ESTree } from "@oxlint/plugins";
 
-import { isFunction, isLoop, memberKey, pathOf, propertyKey, unwrap } from "./syntax.ts";
+import {
+  enclosingFunction,
+  isFunction,
+  isLoop,
+  memberKey,
+  pathOf,
+  propertyKey,
+  unwrap,
+} from "./syntax.ts";
 
 // Ported from T3 Code's rule of the same name (pingdotgg/t3code, oxlint-plugin-t3code).
 
@@ -151,11 +159,7 @@ function isPollingLoopStep(node: ESTree.Node): boolean {
 }
 
 function isInsidePromiseExecutor(node: ESTree.Node): boolean {
-  let current: ESTree.Node | null = node.parent;
-
-  while (current !== null && !isFunction(current)) current = current.parent;
-
-  const executor = current;
+  const executor = enclosingFunction(node);
   const parent = executor?.parent ?? null;
 
   return (

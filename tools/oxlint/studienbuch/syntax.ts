@@ -1,6 +1,6 @@
 import type { ESTree } from "@oxlint/plugins";
 
-type FunctionNode = ESTree.ArrowFunctionExpression | ESTree.Function;
+export type FunctionNode = ESTree.ArrowFunctionExpression | ESTree.Function;
 
 type LoopNode = ESTree.DoWhileStatement | ESTree.ForStatement | ESTree.WhileStatement;
 
@@ -17,8 +17,22 @@ export function isFunction(node: ESTree.Node): node is FunctionNode {
   return FUNCTIONS.has(node.type);
 }
 
+/** The innermost function around `node`, null at module level. */
+export function enclosingFunction(node: ESTree.Node): FunctionNode | null {
+  let current = node.parent;
+
+  while (current !== null && !isFunction(current)) current = current.parent;
+
+  return current;
+}
+
 export function isLoop(node: ESTree.Node): node is LoopNode {
   return LOOPS.has(node.type);
+}
+
+/** The name in `import { name }` or `export { name }`, written as an identifier or a string. */
+export function moduleExportName(name: ESTree.ModuleExportName): string {
+  return name.type === "Identifier" ? name.name : name.value;
 }
 
 /** The expression inside optional chains, parentheses, non-null assertions and type assertions. */

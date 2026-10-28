@@ -1,6 +1,6 @@
 import { defineRule, type ESTree } from "@oxlint/plugins";
 
-import { isFunction, isLoop, pathOf, unwrap } from "./syntax.ts";
+import { enclosingFunction, isFunction, isLoop, pathOf, unwrap } from "./syntax.ts";
 
 // Ported from T3 Code's rule of the same name (pingdotgg/t3code, oxlint-plugin-t3code). T3 searches
 // each loop's body for waits and exits. This walks up from them instead, so it needs no traversal
@@ -198,11 +198,9 @@ export default defineRule({
 
         if (!TIMERS.has(pathOf(node.callee) ?? "")) return;
 
-        let current: ESTree.Node | null = node.parent;
+        const executor = enclosingFunction(node);
 
-        while (current !== null && !isFunction(current)) current = current.parent;
-
-        if (current !== null) timerExecutors.add(current);
+        if (executor !== null) timerExecutors.add(executor);
       },
       ReturnStatement: markExit,
       BreakStatement: markExit,

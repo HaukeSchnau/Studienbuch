@@ -232,7 +232,10 @@ export default defineConfig({
       {
         // React code. Elsewhere a function named `use`, such as `HttpRouter.use`, is no hook.
         files: scope("apps/app/**", "apps/web/**", "packages/{ui,domain-ui}/**"),
-        rules: { "react/rules-of-hooks": "error" },
+        rules: {
+          "react/rules-of-hooks": "error",
+          "studienbuch/no-hookless-use-function": "error",
+        },
       },
       {
         // Code that runs on devices, under Hermes.
@@ -242,7 +245,10 @@ export default defineConfig({
       {
         // Code in a web or native client bundle.
         files: scope("apps/app/**", "apps/web/**", "packages/**"),
-        rules: { "studienbuch/no-baked-origin": "error" },
+        rules: {
+          "studienbuch/no-ad-hoc-state-or-effects": "error",
+          "studienbuch/no-baked-origin": "error",
+        },
       },
       {
         // Tests are deterministic: they await events and drive the TestClock (AGENTS.md, "Verifying").

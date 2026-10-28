@@ -3,7 +3,7 @@ import * as NodePath from "node:path";
 import { defineRule, type ESTree } from "@oxlint/plugins";
 
 import { layoutPath } from "./repository-path.ts";
-import { isStringLiteral } from "./syntax.ts";
+import { isStringLiteral, moduleExportName } from "./syntax.ts";
 
 interface Boundary {
   /** Globs over repository paths of the files the boundary applies to. */
@@ -123,13 +123,6 @@ const BOUNDARIES: ReadonlyArray<Boundary> = [
     reason: "apps/server runs in Node. Expo and React Native packages never load there.",
   },
   {
-    files: ["apps/*/src/{features,domain-ui}/**", "packages/domain-ui/**"],
-    forbidden: ["react"],
-    names: ["useEffect", "useLayoutEffect"],
-    reason:
-      "Data and subscriptions belong in atoms. An effect that synchronizes with something outside React lives in src/ui or src/infra.",
-  },
-  {
     files: ["**"],
     forbidden: ["temporal-polyfill", "temporal-polyfill/global{,/**}", "@js-temporal/**"],
     reason:
@@ -147,10 +140,6 @@ const WHOLE_MODULE = new Set(["*", "default"]);
 
 function isRelative(source: string): boolean {
   return source.startsWith("./") || source.startsWith("../");
-}
-
-function nameOf(name: ESTree.ModuleExportName): string {
-  return name.type === "Identifier" ? name.name : name.value;
 }
 
 /** Code imports only what its place in the repository allows. */
@@ -226,7 +215,7 @@ export default defineRule({
           node.specifiers.map((specifier) => ({
             name:
               specifier.type === "ImportSpecifier"
-                ? nameOf(specifier.imported)
+                ? moduleExportName(specifier.imported)
                 : specifier.type === "ImportDefaultSpecifier"
                   ? "default"
                   : "*",
@@ -240,7 +229,10 @@ export default defineRule({
         check(
           node.source.value,
           node.source,
-          node.specifiers.map((specifier) => ({ name: nameOf(specifier.local), node: specifier })),
+          node.specifiers.map((specifier) => ({
+            name: moduleExportName(specifier.local),
+            node: specifier,
+          })),
         );
       },
       ExportAllDeclaration(node) {
