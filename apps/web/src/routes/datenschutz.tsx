@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { LegalPage } from "#/features/legal/LegalPage.tsx";
+import { Datenschutz } from "#/features/legal/Datenschutz.tsx";
+import legalCss from "#/features/legal/legal.css?url";
 
 export const Route = createFileRoute("/datenschutz")({
-  head: () => ({ meta: [{ title: "Datenschutz · Studienbuch" }] }),
-  component: () => (
-    <LegalPage title="Datenschutz">
-      <p>Die Datenschutzerklärung folgt.</p>
-    </LegalPage>
-  ),
+  head: () => ({
+    meta: [{ title: "Datenschutzerklärung · Studienbuch" }],
+    links: [{ rel: "stylesheet", href: legalCss }],
+  }),
+  component: Datenschutz,
 });

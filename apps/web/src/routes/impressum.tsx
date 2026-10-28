@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { LegalPage } from "#/features/legal/LegalPage.tsx";
+import { Impressum } from "#/features/legal/Impressum.tsx";
+import legalCss from "#/features/legal/legal.css?url";
 
 export const Route = createFileRoute("/impressum")({
-  head: () => ({ meta: [{ title: "Impressum · Studienbuch" }] }),
-  component: () => (
-    <LegalPage title="Impressum">
-      <p>Das Impressum folgt.</p>
-    </LegalPage>
-  ),
+  head: () => ({
+    meta: [{ title: "Impressum · Studienbuch" }],
+    links: [{ rel: "stylesheet", href: legalCss }],
+  }),
+  component: Impressum,
 });

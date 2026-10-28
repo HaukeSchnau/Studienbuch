@@ -1,0 +1,103 @@
+import { Motion } from "./Motion.ts";
+
+/**
+ * The legacy site's two blobs, plus outlines drawn to match. Each morph path has the same commands in
+ * the same order as its outline, which is what makes the two interpolable. The drawn ones are closed
+ * loops whose radius is a sum of low-frequency harmonics: real lobes and waists, but every turn round.
+ * Every outline sits inside its viewBox with room to spare, so the SVG viewport never crops one.
+ */
+const outlines = {
+  legacyGreen: {
+    viewBox: "-21 0 351 540",
+    d: "M-21 0C15.2535 9.43179 96.7897 42.9735 132.906 101.686C178.052 175.077 148.639 246.7 262.872 282.953C354.258 311.956 328.31 407.04 303.913 450.956C279.5 494.9 140 552 -21 520Z",
+    morph:
+      "M-2.2 23.4C25.5 -1.2 73.3 24.4 133.3 120.7C201.3 185.0 137.7 223.2 244.6 283.8C373.5 335.1 337.8 395.7 280.3 432.9C280.7 514.4 163.1 561.2 -32.7 496.3Z",
+  },
+  legacyBlue: {
+    viewBox: "-10 -55 640 1100",
+    d: "M617 -40.1C438.74 -51 68.96 -45.58 15.96 63.26C-50.3 199.32 105.43 273.53 196.27 239.96C287.11 206.39 373.85 221.4 279.6 489.09C204.19 703.24 453.08 937.59 586.95 1028Z",
+    morph:
+      "M635.8 -16.7C449.0 -61.6 45.5 -64.1 16.4 82.3C-27.0 209.2 94.4 250.0 178.0 240.8C306.4 229.6 383.4 210.1 256.0 471.1C205.4 722.8 476.1 946.7 575.3 1004.3Z",
+  },
+  // A deep waist down one side, almost folded in half.
+  kidney: {
+    viewBox: "0 0 680 680",
+    d: "M310 44C350 39 369 38 410 46C452 54 476 59 510 84C544 110 559 130 575 169C592 208 590 232 589 273C588 314 582 332 570 368C558 405 552 420 532 450C511 481 500 492 472 516C445 540 433 547 399 567C365 588 352 602 310 617C268 631 239 645 196 636C152 627 121 611 100 573C78 534 81 495 91 449C101 403 131 382 148 351C166 320 174 323 176 299C177 274 159 266 155 233C151 200 143 173 157 140C170 106 186 90 218 70C250 50 270 49 310 44Z",
+    morph:
+      "M327 45C365 38 383 38 425 44C466 50 490 52 527 75C564 97 583 115 604 153C625 191 626 217 627 260C627 303 620 323 606 362C593 401 585 417 562 449C539 480 526 492 496 515C466 538 452 542 417 560C382 579 370 589 327 604C284 620 258 638 209 636C161 634 123 629 91 594C59 560 49 521 53 471C58 421 87 389 113 351C138 313 162 311 176 287C191 262 182 259 184 230C186 202 175 179 187 146C199 114 211 95 240 74C269 53 289 51 327 45Z",
+  },
+  // Two lobes with a dip between them along the bottom.
+  twin: {
+    viewBox: "0 0 680 680",
+    d: "M355 98C395 80 427 67 467 78C507 90 528 116 550 153C572 190 565 219 575 258C585 297 588 305 601 342C613 378 636 396 636 434C636 473 632 504 603 528C573 552 536 553 495 551C454 550 434 525 405 520C376 516 381 517 355 530C330 544 320 572 282 586C245 601 214 611 173 602C133 593 111 575 84 542C57 508 50 483 44 440C38 397 41 371 58 332C74 294 93 277 125 252C156 226 177 228 208 210C240 192 245 188 275 165C306 142 316 116 355 98Z",
+    morph:
+      "M350 124C389 105 418 84 460 89C503 93 531 110 557 145C584 179 580 212 589 253C598 295 593 308 603 347C612 385 632 400 636 441C640 483 645 516 621 547C597 578 562 590 518 591C475 593 444 567 409 554C375 540 375 526 350 527C325 528 322 547 289 558C257 569 231 585 191 580C152 576 128 565 97 537C67 509 56 486 45 445C34 404 32 378 44 337C56 297 72 276 104 249C135 222 161 221 196 207C231 193 242 197 273 180C305 163 312 143 350 124Z",
+  },
+  // Twin lobes again, pinched on the other side and rounder.
+  pinch: {
+    viewBox: "0 0 680 680",
+    d: "M304 52C344 64 361 80 389 106C417 132 422 150 440 178C457 207 455 217 473 243C490 268 501 271 525 301C549 332 575 348 590 391C605 434 612 468 596 510C581 551 555 571 515 593C476 615 448 610 405 617C361 625 347 627 304 630C261 634 238 647 196 636C155 625 127 614 103 579C80 544 82 510 84 468C86 425 107 407 113 374C120 341 119 340 113 307C108 274 88 257 87 215C85 174 85 142 107 107C130 71 155 55 196 44C236 33 264 39 304 52Z",
+    morph:
+      "M330 44C371 52 391 67 421 93C451 119 459 140 474 172C489 204 484 221 494 249C504 278 505 282 522 310C539 339 560 348 575 387C591 426 606 457 598 499C590 541 572 566 538 592C503 618 474 615 431 623C388 631 373 626 330 629C287 632 267 643 223 636C180 629 149 625 120 594C91 564 83 531 82 487C82 443 104 418 118 382C131 345 143 343 147 312C151 281 137 271 137 233C137 195 131 166 149 129C167 91 186 70 224 52C261 35 289 36 330 44Z",
+  },
+  // Mostly full, with one soft bite taken out of a flank.
+  notch: {
+    viewBox: "0 0 680 680",
+    d: "M307 90C340 107 343 127 371 142C399 156 405 151 441 159C478 166 510 157 550 179C590 200 619 220 636 261C653 302 645 333 632 377C618 420 597 435 571 472C545 509 536 524 505 555C473 586 458 610 417 622C376 634 346 633 307 615C268 597 252 568 228 535C204 503 208 483 190 458C172 434 165 435 142 415C118 394 98 389 78 360C58 330 48 311 44 273C40 235 44 214 59 176C74 139 86 118 117 94C149 69 172 59 212 58C251 57 274 73 307 90Z",
+    morph:
+      "M304 67C337 86 345 112 369 134C393 156 392 162 421 174C450 187 472 177 510 195C547 213 580 225 602 261C625 297 626 327 619 369C611 411 590 428 566 465C541 502 530 514 499 546C468 579 456 603 416 621C375 640 346 648 304 636C262 624 240 598 213 563C186 529 188 501 174 469C159 436 159 431 143 406C127 382 111 379 94 351C77 323 66 307 61 271C56 235 58 215 70 179C81 142 90 121 118 93C146 65 167 49 205 44C244 39 270 49 304 67Z",
+  },
+} as const;
+
+const tones = { green: "var(--color-blob-green)", blue: "var(--color-blob-blue)" } as const;
+
+/**
+ * One decorative blob, sized and placed by the caller's class in the outline's own proportions. Its
+ * host needs `position: relative` and `isolation: isolate`. The SMIL morph ignores media queries, so
+ * it starts only after hydration and when motion is welcome; without JavaScript, CSS still drifts it.
+ */
+export function Blob({
+  outline,
+  tone,
+  className,
+  duration = 24,
+  offset = 0,
+  rotate = 0,
+}: {
+  outline: keyof typeof outlines;
+  tone: keyof typeof tones;
+  className: string;
+  /** Seconds per breath. Vary it per placement so the page never pulses in unison. */
+  duration?: number;
+  /** Where in the cycle to start, from 0 to 1. */
+  offset?: number;
+  /** Degrees, so one outline can return elsewhere without reading as a repeat. */
+  rotate?: number;
+}) {
+  const { d, morph, viewBox } = outlines[outline];
+  const motion = Motion.useAllowed();
+
+  return (
+    // The drift animation owns the outer transform, so the rotation needs an element of its own.
+    <div aria-hidden className={`blob ${className}`}>
+      <svg
+        className="blob-shape"
+        style={{ transform: `rotate(${String(rotate)}deg)` }}
+        viewBox={viewBox}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path d={d} style={{ fill: tones[tone] }}>
+          {motion ? (
+            <animate
+              attributeName="d"
+              begin={`-${String(duration * offset)}s`}
+              dur={`${String(duration)}s`}
+              repeatCount="indefinite"
+              values={`${d};${morph};${d}`}
+            />
+          ) : null}
+        </path>
+      </svg>
+    </div>
+  );
+}

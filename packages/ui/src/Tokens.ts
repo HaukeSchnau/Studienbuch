@@ -20,6 +20,8 @@ const light = {
   // Button blue for links and secondary buttons (D50).
   action: "#2A6FC7",
   onAction: "#FFFFFF",
+  // Legacy accentDesaturated: pale blue panels behind ink.
+  actionTint: "#EBF1F9",
   danger: "#A42B33",
   dangerTint: "#F6E1E3",
   warning: "#8D5703",
@@ -31,6 +33,9 @@ const light = {
   panel: "#3B7FD9",
   panelCard: "#203755",
   panelTitle: "#3CC233",
+  // The decorative blobs, drawn at 45 % opacity. Landing page, onboarding and empty states only.
+  blobGreen: "#6DB868",
+  blobBlue: "#76A6E5",
 } as const;
 
 export type ColorName = keyof typeof light;
@@ -50,6 +55,7 @@ const dark = {
   accentTint: "#15291A",
   action: "#77ADF5",
   onAction: "#0B1B33",
+  actionTint: "#132238",
   danger: "#F2979B",
   dangerTint: "#3D1D20",
   warning: "#E2A94F",
@@ -59,6 +65,8 @@ const dark = {
   panel: "#1B3A63",
   panelCard: "#0E1B2D",
   panelTitle: "#65C55B",
+  blobGreen: "#1F5A1B",
+  blobBlue: "#1E4170",
 } as const satisfies Palette;
 
 export const color = { light, dark } as const;
