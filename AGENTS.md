@@ -101,8 +101,11 @@ The most common defect is a change that works where you tested it and is missing
 
 devenv on localhost is the dev environment, one instance per worktree ([ADR 0006](docs/adr/0006-fleet-service-instead-of-the-project-sdk.md)).
 
-- `devenv shell` (or direnv) provides Node and pnpm from `nix/toolchain.nix`. `pnpm install` installs.
-- `devenv up` starts the dev instance once M0 adds its processes: PostgreSQL 18, Garage for blobs, captured mail, and the server as the one origin in front of Vite (`/`, `/console`) and Metro (`/app`). Ports are allocated per worktree, so read them from devenv's output.
+- `devenv shell` (or direnv) provides Node, pnpm and PostgreSQL 18 from `nix/toolchain.nix`. `pnpm install` installs.
+- `devenv up` starts the dev instance: PostgreSQL 18 on a socket, Garage with its bucket and key, and the server as the one origin. The server proxies `/` and `/console` to Vite and `/app` to Metro, hot reload included, and serves `/api` itself. Before the server starts, a task generates the auth secret and runs `prepare`. The server gets the release variables, with `MAIL_URL=capture:`.
+- devenv allocates every port, counting up from 3000 for the server, so a second worktree gets 3001. Read them with `devenv processes list`. The server restarts when a file it imports changes.
+- `studienbuch-console <command>` runs the operator CLI against this worktree's database, for example `studienbuch-console status`.
+- Release builds come from the flake: `nix build .#bundle`, and `nix build .#checks.x86_64-linux.serverSmoke` or `.closureGuard`. A changed `pnpm-lock.yaml` fails the build with a hash mismatch until you copy the `got:` hash into `nix/bundle.nix`. Build on the tower or dev-hauke rather than srv-2.
 - Test in browsers, iOS simulators and Android emulators whenever it helps. That never needs permission. Use agent-browser or Playwright against localhost, and run iOS work on m1 through `builder-control`.
 - Stop what you started, by the PID you captured (rule 1).
 - Commands have one home each, and there is no Justfile ([ADR 0009](docs/adr/0009-no-justfile.md)): tools run directly (`vp check`, `vp test`), a package's commands are scripts in its `package.json` run with `vp run`, long-running processes belong to devenv, and CI is `.calder/ci.ts`.
