@@ -1,11 +1,9 @@
-import { useAtom } from "@effect/atom-react";
-
 import { Site } from "#/domain-ui/Site.ts";
 import { StoreBadges } from "#/domain-ui/StoreBadges.tsx";
 import { Blob } from "#/ui/Blob.tsx";
 import { PointerTracker } from "#/ui/PointerTracker.tsx";
 
-import { Demo } from "./Demo.ts";
+import type { Demo } from "./Demo.ts";
 import { PhoneFrame } from "./PhoneFrame.tsx";
 import { WeekScreen } from "./Screens.tsx";
 
@@ -14,9 +12,7 @@ import { WeekScreen } from "./Screens.tsx";
  * edge, cropped by the panel, so the phone sits in the panel rather than on it. White on the brand
  * green is 3.24:1, so nothing on the panel is under 20 px or dimmed.
  */
-export function GetTheApp() {
-  const [week, setWeek] = useAtom(Demo.shownWeek);
-
+export function GetTheApp({ demo, dispatch }: { demo: Demo.State; dispatch: Demo.Dispatch }) {
   return (
     <section className="section section-surface get-app" id={Site.sections.app}>
       <Blob
@@ -42,7 +38,7 @@ export function GetTheApp() {
             label="Meine Woche: der Stundenplan der Woche mit der Vertretung und dem Entfall von heute."
             tab="week"
           >
-            <WeekScreen onShow={setWeek} week={week} />
+            <WeekScreen onShow={(week) => dispatch({ kind: "week", week })} week={demo.week} />
           </PhoneFrame>
         </PointerTracker>
       </div>

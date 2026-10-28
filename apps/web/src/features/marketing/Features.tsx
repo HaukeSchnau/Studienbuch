@@ -1,10 +1,9 @@
-import { useAtom } from "@effect/atom-react";
 import type { ReactNode } from "react";
 
 import { AbsenceCard } from "#/domain-ui/app/AbsenceCard.tsx";
 import { AgendaCard } from "#/domain-ui/app/AgendaCard.tsx";
 import { GradesCard } from "#/domain-ui/app/GradesCard.tsx";
-import { HomeworkPanel } from "#/domain-ui/app/HomeworkPanel.tsx";
+import { HomeworkCard } from "#/domain-ui/app/HomeworkCard.tsx";
 import { Site } from "#/domain-ui/Site.ts";
 import { Blob } from "#/ui/Blob.tsx";
 
@@ -39,9 +38,8 @@ function Feature({
  * component it describes: two small cards side by side, then the grades and the offline card at
  * full width, so no card stretches beside a taller one.
  */
-export function Features() {
-  const [signed, setSigned] = useAtom(Demo.signatures);
-  const exams = Demo.signedExams("de", signed);
+export function Features({ demo, dispatch }: { demo: Demo.State; dispatch: Demo.Dispatch }) {
+  const exams = Demo.signedExams("de", demo.signed);
 
   return (
     <section className="section section-canvas features" id={Site.sections.features}>
@@ -79,7 +77,7 @@ export function Features() {
                 average={Demo.confirmedAverage(exams)}
                 exams={exams}
                 oral={Demo.courses.de.oral}
-                onSign={(id) => setSigned((current) => new Set(current).add(id))}
+                onSign={(exam) => dispatch({ kind: "sign", exam })}
               />
             }
             title="Noten"
@@ -90,14 +88,14 @@ export function Features() {
 
           <Feature
             area="absences"
-            preview={<AbsenceCard days={1} unexcused={2} />}
+            preview={<AbsenceCard days={1} entries={Demo.absences} unexcused={2} />}
             title="Fehlzeiten"
           >
             Fehltage eintragen, Grund dazuschreiben und sehen, welche Entschuldigung noch fehlt.
             Ohne lose Zettel und Stempel im Papierheft.
           </Feature>
 
-          <Offline />
+          <Offline demo={demo} dispatch={dispatch} />
         </div>
       </div>
     </section>
@@ -109,28 +107,18 @@ export function Features() {
  * visitor can feel it rather than read it: the phone is in a dead spot, so a ticked homework waits
  * on the device and goes out by itself once the signal is back.
  */
-function Offline() {
-  const [homework, setHomework] = useAtom(Demo.ticked);
-  const [signal, setSignal] = useAtom(Demo.signal);
-
-  const toggle = (id: string) => {
-    setHomework((items) =>
-      items.map((item) => (item.id === id ? { ...item, done: !item.done, pending: true } : item)),
-    );
-    setSignal("waiting");
-    setTimeout(() => {
-      setHomework((items) =>
-        items.map((item) => (item.id === id ? { ...item, pending: false } : item)),
-      );
-      setSignal("synced");
-    }, Demo.signalDelays.back);
+function Offline({ demo, dispatch }: { demo: Demo.State; dispatch: Demo.Dispatch }) {
+  const toggle = (homework: string) => {
+    dispatch({ kind: "tick", homework });
+    setTimeout(() => dispatch({ kind: "synced" }), Demo.signalDelays.back);
     setTimeout(
-      () => setSignal((current) => (current === "synced" ? "none" : current)),
+      () => dispatch({ kind: "settled" }),
       Demo.signalDelays.back + Demo.signalDelays.settle,
     );
   };
 
-  const waiting = homework.filter((item) => item.pending).length;
+  const waiting = demo.homework.filter((item) => item.pending).length;
+  const synced = demo.signal === "synced";
 
   return (
     <article className="feature feature-offline reveal">
@@ -143,21 +131,26 @@ function Offline() {
         </p>
       </div>
       <div className="feature-offline-preview">
-        <p aria-live="polite" className="signal" data-signal={signal}>
-          <svg aria-hidden className="signal-icon" viewBox="0 0 24 24">
-            {signal === "synced" ? (
-              <path d="M5 12.5l4.5 4.5L19 7.5" />
-            ) : (
-              <path d="M4 18h2M9 18v-4M14 18v-7M19 18V7M3 4l18 16" />
-            )}
-          </svg>
-          {signal === "synced"
-            ? "Wieder Netz, alles abgeglichen"
-            : waiting === 0
-              ? "Funkloch: gerade kein Netz"
-              : `Kein Netz: ${String(waiting)} ${waiting === 1 ? "Änderung wartet" : "Änderungen warten"} auf dem Handy`}
-        </p>
-        <HomeworkPanel items={homework} onToggle={toggle} />
+        <HomeworkCard
+          items={demo.homework}
+          onToggle={toggle}
+          status={
+            <span className="signal" data-signal={demo.signal}>
+              <svg aria-hidden className="signal-icon" viewBox="0 0 24 24">
+                <path
+                  d={
+                    synced ? "M5 12.5l4.5 4.5L19 7.5" : "M4 18h2M9 18v-4M14 18v-7M19 18V7M3 4l18 16"
+                  }
+                />
+              </svg>
+              {synced
+                ? "Wieder Netz, abgeglichen"
+                : waiting === 0
+                  ? "Kein Netz"
+                  : `Kein Netz, ${String(waiting)} ${waiting === 1 ? "Änderung wartet" : "Änderungen warten"}`}
+            </span>
+          }
+        />
       </div>
     </article>
   );

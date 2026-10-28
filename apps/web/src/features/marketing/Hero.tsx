@@ -1,5 +1,3 @@
-import { useAtom } from "@effect/atom-react";
-
 import { StoreBadges } from "#/domain-ui/StoreBadges.tsx";
 import { AppIcon } from "#/domain-ui/Wordmark.tsx";
 import { Blob } from "#/ui/Blob.tsx";
@@ -19,18 +17,14 @@ import { CourseScreen, TodayScreen } from "./Screens.tsx";
  * The headline sits at the bottom of its grid row and the download prompt at the top of the next,
  * so the two converge beside the phones instead of drifting apart across their height.
  */
-export function Hero() {
-  const [course, setCourse] = useAtom(Demo.openCourse);
-  const [signed, setSigned] = useAtom(Demo.signatures);
-  const [front, setFront] = useAtom(Demo.frontPhone);
+export function Hero({ demo, dispatch }: { demo: Demo.State; dispatch: Demo.Dispatch }) {
+  const course = demo.openCourse;
 
   const open = (id: string) => {
-    if (!Demo.isCourse(id)) return;
-    setCourse(id);
-    setFront("course");
+    if (Demo.isCourse(id)) dispatch({ kind: "open", course: id });
   };
 
-  const depth = (phone: typeof front) => (front === phone ? "front" : "back");
+  const depth = (phone: Demo.State["front"]) => (demo.front === phone ? "front" : "back");
 
   return (
     <section className="hero">
@@ -53,18 +47,19 @@ export function Hero() {
             </span>
           </h1>
           <p className="hero-lead enter enter-later">
-            Stundenplan, Vertretungen, Noten, Fehlzeiten und Hausaufgaben an einem Ort. In der
-            Hosentasche, auch ohne Empfang, und verschlüsselt, bevor etwas dein Handy verlässt.
+            Stundenplan, Vertretungen, Noten, Fehlzeiten und Hausaufgaben an einem Ort, in der
+            Hosentasche und auch ohne Empfang. Noten, Fehlzeiten und Hausaufgaben verschlüsselt dein
+            Handy, bevor sie es verlassen.
           </p>
         </div>
 
         <PointerTracker className="hero-phones">
-          <div className="hero-scene" data-front={front}>
+          <div className="hero-scene" data-front={demo.front}>
             <PhoneFrame
               className="phone-today"
               depth={depth("today")}
               label="Die Übersicht der App: der heutige Tag mit Vertretung und Entfall, darunter die Fehlzeiten."
-              onRaise={() => setFront("today")}
+              onRaise={() => dispatch({ kind: "raise", phone: "today" })}
               raiseLabel="Übersicht ansehen"
               tab="today"
             >
@@ -74,14 +69,14 @@ export function Hero() {
               className="phone-course"
               depth={depth("course")}
               label={`Die Kursseite ${Demo.courses[course].name} mit den Noten.`}
-              onRaise={() => setFront("course")}
+              onRaise={() => dispatch({ kind: "raise", phone: "course" })}
               raiseLabel="Noten ansehen"
               tab="today"
             >
               <CourseScreen
                 course={course}
-                exams={Demo.signedExams(course, signed)}
-                onSign={(id) => setSigned((current) => new Set(current).add(id))}
+                exams={Demo.signedExams(course, demo.signed)}
+                onSign={(exam) => dispatch({ kind: "sign", exam })}
               />
             </PhoneFrame>
             <p aria-hidden className="hero-hint">

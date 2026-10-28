@@ -5,6 +5,7 @@ import { SiteHeader } from "#/domain-ui/SiteHeader.tsx";
 import { Features } from "#/features/marketing/Features.tsx";
 import { ForSchools } from "#/features/marketing/ForSchools.tsx";
 import { GetTheApp } from "#/features/marketing/GetTheApp.tsx";
+import { Demo } from "#/features/marketing/Demo.ts";
 import { Hero } from "#/features/marketing/Hero.tsx";
 import landingCss from "#/features/marketing/landing.css?url";
 import { PaperContrast } from "#/features/marketing/PaperContrast.tsx";
@@ -12,7 +13,7 @@ import { Privacy } from "#/features/marketing/Privacy.tsx";
 import { SubjectStrip } from "#/features/marketing/SubjectStrip.tsx";
 
 const description =
-  "Stundenplan, Vertretungen, Noten, Fehlzeiten und Hausaufgaben in einer App, auch ohne Empfang und Ende-zu-Ende-verschlüsselt. Für Schülerinnen und Schüler, und für Schulen, die ihr Papier-Studienbuch ablösen wollen.";
+  "Stundenplan, Vertretungen, Noten, Fehlzeiten und Hausaufgaben in einer App, auch ohne Empfang. Noten, Fehlzeiten und Hausaufgaben sind Ende-zu-Ende-verschlüsselt. Für Schülerinnen und Schüler, und für Schulen, die ihr Papier-Studienbuch ablösen wollen.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,17 +30,19 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
+  const [demo, dispatch] = Demo.useDemo();
+
   return (
     <div className="public-page landing">
       <SiteHeader />
       <main>
-        <Hero />
+        <Hero demo={demo} dispatch={dispatch} />
         <SubjectStrip />
         <PaperContrast />
-        <Features />
-        <Privacy />
+        <Features demo={demo} dispatch={dispatch} />
+        <Privacy demo={demo} dispatch={dispatch} />
         <ForSchools />
-        <GetTheApp />
+        <GetTheApp demo={demo} dispatch={dispatch} />
       </main>
       <SiteFooter />
     </div>

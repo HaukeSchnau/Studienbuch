@@ -1,9 +1,10 @@
 import type { Tokens } from "@stu/ui/Tokens";
-import * as Atom from "effect/reactivity/Atom";
+import { useReducer } from "react";
 
 import type { AgendaRow } from "#/domain-ui/app/AgendaCard.tsx";
 import type { Exam } from "#/domain-ui/app/GradesCard.tsx";
-import type { Homework } from "#/domain-ui/app/HomeworkPanel.tsx";
+import type { Homework } from "#/domain-ui/app/HomeworkCard.tsx";
+import type { AbsenceEntry } from "#/domain-ui/app/AbsenceCard.tsx";
 import type { WeekCell, WeekDay } from "#/domain-ui/app/WeekGrid.tsx";
 
 // The landing page's demo data: Wednesday 28 October 2026 at 10:31, KW 44, as in the design mocks.
@@ -154,6 +155,7 @@ export const homework: ReadonlyArray<Homework> = [
   {
     id: "hw-ma",
     subject: "Mathe",
+    slot: "blue",
     title: "S. 84, Nr. 3 bis 7",
     due: "bis morgen",
     done: true,
@@ -162,6 +164,7 @@ export const homework: ReadonlyArray<Homework> = [
   {
     id: "hw-en",
     subject: "Englisch",
+    slot: "violet",
     title: "Vokabeln Unit 6",
     due: "bis Freitag",
     done: false,
@@ -170,11 +173,19 @@ export const homework: ReadonlyArray<Homework> = [
   {
     id: "hw-de",
     subject: "Deutsch",
+    slot: "rust",
     title: "Erörterung überarbeiten",
     due: "bis Montag",
     done: false,
     pending: false,
   },
+];
+
+/** The October absences: one day still waits for its excuse, two hours on Thursday the 15th. */
+export const absences: ReadonlyArray<AbsenceEntry> = [
+  { id: "ab-12", date: "Mo, 12.10.", hours: 1, reason: "Arzttermin", excused: true },
+  { id: "ab-14", date: "Mi, 14.10.", hours: 2, reason: "krank", excused: true },
+  { id: "ab-15", date: "Do, 15.10.", hours: 2, reason: undefined, excused: false },
 ];
 
 export const periods = ["08:00", "09:45", "11:30", "13:50", "15:15"] as const;
@@ -319,41 +330,86 @@ export const strip: ReadonlyArray<{
   { icon: "re", label: "Religion", slot: "blue" },
 ];
 
-// What the visitor changed on the page. Sections that show the same record read the same atom, so
-// an exam signed in the hero is signed in the Noten card too.
+/** The index in `weeks` of the current week, KW 44. */
+export const currentWeek = 1;
 
-/** The course the second hero phone shows. */
-export const openCourse = Atom.make<CourseId>("de");
+/** How long a ticked homework waits for the network, and how long "abgeglichen" stays, in ms. */
+export const signalDelays = { back: 2400, settle: 3200 } as const;
 
-/** Which of the two hero phones is in front. */
-export const frontPhone = Atom.make<"today" | "course">("today");
+/** What the visitor changed on the page. Sections showing the same record read the same state. */
+export interface State {
+  /** The course the second hero phone shows, and which hero phone is in front. */
+  readonly openCourse: CourseId;
+  readonly front: "today" | "course";
+  /** Exams the visitor had signed. Signing adds the parents' signature. */
+  readonly signed: ReadonlySet<string>;
+  /** The offline card's homework. Its phone sits in a dead spot until a tick has waited a moment. */
+  readonly homework: ReadonlyArray<Homework>;
+  readonly signal: "none" | "waiting" | "synced";
+  readonly vaultView: "device" | "server";
+  /** Index into `weeks` of the week the closing phone shows. */
+  readonly week: number;
+}
 
-const unsigned: ReadonlySet<string> = new Set();
+export type Action =
+  | { readonly kind: "open"; readonly course: CourseId }
+  | { readonly kind: "raise"; readonly phone: State["front"] }
+  | { readonly kind: "sign"; readonly exam: string }
+  | { readonly kind: "tick"; readonly homework: string }
+  | { readonly kind: "synced" }
+  | { readonly kind: "settled" }
+  | { readonly kind: "view"; readonly view: State["vaultView"] }
+  | { readonly kind: "week"; readonly week: number };
 
-/** Exams the visitor had signed. Signing adds the parents' signature. */
-export const signatures = Atom.make(unsigned);
+const initial: State = {
+  openCourse: "de",
+  front: "today",
+  signed: new Set(),
+  homework,
+  signal: "none",
+  vaultView: "device",
+  week: currentWeek,
+};
+
+const reduce = (state: State, action: Action): State => {
+  switch (action.kind) {
+    case "open":
+      return { ...state, openCourse: action.course, front: "course" };
+    case "raise":
+      return { ...state, front: action.phone };
+    case "sign":
+      return { ...state, signed: new Set(state.signed).add(action.exam) };
+    case "tick":
+      return {
+        ...state,
+        signal: "waiting",
+        homework: state.homework.map((item) =>
+          item.id === action.homework ? { ...item, done: !item.done, pending: true } : item,
+        ),
+      };
+    case "synced":
+      return {
+        ...state,
+        signal: "synced",
+        homework: state.homework.map((item) => ({ ...item, pending: false })),
+      };
+    case "settled":
+      return state.signal === "synced" ? { ...state, signal: "none" } : state;
+    case "view":
+      return { ...state, vaultView: action.view };
+    case "week":
+      return weeks[action.week] === undefined ? state : { ...state, week: action.week };
+  }
+};
+
+/**
+ * The landing page's demo state, held by the page and handed to its sections. It starts the same
+ * on every visit and is gone on reload: nothing here outlives the page.
+ */
+export const useDemo = () => useReducer(reduce, initial);
+
+export type Dispatch = ReturnType<typeof useDemo>[1];
 
 /** The exams of `course`, with the visitor's signatures applied. */
 export const signedExams = (course: CourseId, signed: ReadonlySet<string>) =>
   courses[course].exams.map((exam) => (signed.has(exam.id) ? { ...exam, parents: true } : exam));
-
-/**
- * The offline card's phone is in a dead spot: a ticked homework waits on the device until the
- * signal comes back, a moment later, and then syncs.
- */
-export const signal = Atom.make<"none" | "waiting" | "synced">("none");
-
-/** How long a change waits for the network, and how long "abgeglichen" stays, in ms. */
-export const signalDelays = { back: 2400, settle: 3200 } as const;
-
-/** The homework on the offline card, as the visitor ticked it. */
-export const ticked = Atom.make(homework);
-
-/** Whether the encryption card shows the device's view or the server's. */
-export const vaultView = Atom.make<"device" | "server">("device");
-
-/** The index in `weeks` of the current week, KW 44. */
-export const currentWeek = 1;
-
-/** Index into `weeks` of the week the closing phone shows. */
-export const shownWeek = Atom.make(currentWeek);

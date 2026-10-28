@@ -1,10 +1,8 @@
-import { useAtom } from "@effect/atom-react";
-
 import { Site } from "#/domain-ui/Site.ts";
 import { Blob } from "#/ui/Blob.tsx";
 import { Scramble } from "#/ui/Scramble.tsx";
 
-import { Demo } from "./Demo.ts";
+import type { Demo } from "./Demo.ts";
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -30,13 +28,13 @@ const entries = [
 const benefits = [
   {
     icon: "M7 10.5V8a5 5 0 0 1 10 0v2.5M6 10.5h12a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7.5a1 1 0 0 1 1-1zM12 14.5v2",
-    title: "Auf deinem Gerät verschlüsselt",
-    body: "Noten, Fehlzeiten, Hausaufgaben, Fotos und Unterschriften, Ende-zu-Ende.",
+    title: "Der Schlüssel bleibt bei dir",
+    body: "Nur deine Geräte haben ihn, wir nicht.",
   },
   {
     icon: "M3.5 12S7 5.5 12 5.5 20.5 12 20.5 12 17 18.5 12 18.5 3.5 12 3.5 12zM12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM4 20 20 4",
-    title: "Nicht einmal wir lesen mit",
-    body: "Den Schlüssel haben nur deine Geräte. Bei uns kommt Zeichensalat an.",
+    title: "Bei uns nur Zeichensalat",
+    body: "So kommen diese Einträge auf unserem Server an, und so liegen sie dort.",
   },
   {
     icon: "M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
@@ -54,8 +52,8 @@ const views = [
  * The privacy pitch rests on end-to-end encryption (D24). The card flips the same entries between
  * the device's view and the server's.
  */
-export function Privacy() {
-  const [view, setView] = useAtom(Demo.vaultView);
+export function Privacy({ demo, dispatch }: { demo: Demo.State; dispatch: Demo.Dispatch }) {
+  const view = demo.vaultView;
 
   return (
     <section className="section section-surface privacy" id={Site.sections.privacy}>
@@ -70,10 +68,10 @@ export function Privacy() {
       <div className="container privacy-grid">
         <div className="privacy-text">
           <div className="section-heading">
-            <h2>Verschlüsselt, bevor es dein Handy verlässt</h2>
+            <h2>Deine Noten liest nur du</h2>
             <p>
-              Was du in dein Studienbuch einträgst, geht nur dich etwas an. Lesen kannst du es auf
-              deinen eigenen Geräten, und sonst niemand.
+              Noten, Fehlzeiten, Hausaufgaben, Fotos und Unterschriften verschlüsselt dein Handy,
+              bevor sie es verlassen. Lesen kannst du sie auf deinen Geräten. Wir können es nicht.
             </p>
           </div>
           <ul className="benefits">
@@ -99,7 +97,7 @@ export function Privacy() {
                 aria-pressed={view === each.id}
                 className="vault-option press"
                 key={each.id}
-                onClick={() => setView(each.id)}
+                onClick={() => dispatch({ kind: "view", view: each.id })}
                 type="button"
               >
                 {each.label}

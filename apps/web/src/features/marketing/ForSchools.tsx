@@ -70,18 +70,25 @@ const questions = [
   },
 ] as const;
 
-/** A printed access code, the slip a school hands out. Drawn, like the paper booklet above. */
-function AccessSlip({ code, className }: { code: string; className: string }) {
+/**
+ * A printed access code, the slip a school hands out. Drawn, like the paper booklet above. The
+ * slip behind gets no `code` and shows only the brand line, so no half-covered words peek out.
+ */
+function AccessSlip({ code, className }: { code?: string; className: string }) {
   return (
     <div className={`slip ${className}`}>
       <p className="slip-brand">
         <AppIcon size="small" />
         Studienbuch
       </p>
-      <p className="slip-school">IGS Musterstadt</p>
-      <p className="slip-label">Dein Zugangscode</p>
-      <p className="slip-code">{code}</p>
-      <p className="slip-note">Einmal gültig. Gib ihn beim Einrichten der App ein.</p>
+      {code === undefined ? null : (
+        <>
+          <p className="slip-school">IGS Musterstadt</p>
+          <p className="slip-label">Dein Zugangscode</p>
+          <p className="slip-code">{code}</p>
+          <p className="slip-note">Einmal gültig. Gib ihn beim Einrichten der App ein.</p>
+        </>
+      )}
     </div>
   );
 }
@@ -129,7 +136,7 @@ export function ForSchools() {
             </div>
           </div>
           <div aria-hidden className="slips">
-            <AccessSlip className="slip-back" code="9RTB 4WNC" />
+            <AccessSlip className="slip-back" />
             <AccessSlip className="slip-front" code="K7QF 2MDX" />
           </div>
         </div>
