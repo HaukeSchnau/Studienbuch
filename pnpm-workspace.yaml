@@ -5,6 +5,10 @@ packages:
 catalogMode: strict
 
 catalog:
+  "@effect/tsgo": 0.62.0
+  # Exactly the oxlint that Vite+ bundles, which loads the local plugins in tools/oxlint.
+  "@oxlint/plugins": 1.89.0
+  knip: 6.43.0
   typescript: 7.0.2
   # Vite+ bundles Vite and Vitest. These two follow its release, so every package and plugin
   # resolves the same copies as `vp`.

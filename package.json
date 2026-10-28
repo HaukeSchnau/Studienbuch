@@ -3,7 +3,14 @@
   "private": true,
   "license": "BUSL-1.1",
   "type": "module",
+  "scripts": {
+    "prepare": "effect-tsgo patch --oxlint"
+  },
   "devDependencies": {
+    "@effect/tsgo": "catalog:",
+    "@oxlint/plugins": "catalog:",
+    "@types/node": "catalog:",
+    "knip": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   },
