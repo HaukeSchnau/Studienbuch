@@ -176,7 +176,7 @@ The layout below is the target. Packages appear as M0 builds them.
 - Effect Schema parses every boundary: HTTP, RPC, environment, storage, JSON.
 - Errors are tagged values in Effect's error channel. Defects use `Effect.die`. `Option` means absence, never a failed parse.
 - Ids and timestamps reach a mutator as arguments. Civil time follows [ADR 0001](docs/adr/0001-model-civil-time-explicitly.md).
-- Data and subscriptions belong in atoms. A React effect synchronizes with something outside React.
+- Data and subscriptions belong in atoms, navigation and selection in the router, drafts in locally persisted atoms. React's state, effect and memoization hooks may only be called in an exported `use…` hook with a doc comment (`studienbuch/no-ad-hoc-state-or-effects`).
 - Comments state a reason the code can't show, describe how a function is used, and move with the code.
 - If a rule here fights the task in front of you, say so loudly and get a human sign-off before breaking it.
 
