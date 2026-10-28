@@ -1,4 +1,5 @@
 import { describe, expect, layer } from "@effect/vitest";
+import * as Arr from "effect/Array";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
@@ -24,6 +25,7 @@ const push = (space: string, ids: ReadonlyArray<string>, beforeCommit = Effect.v
     sql.withTransaction(
       Effect.gen(function* () {
         const tx = yield* Tx.Service;
+
         for (const id of ids) yield* tx.put(Note, space, id, { text: id });
         yield* beforeCommit;
       }).pipe(Effect.provide(PostgresTx.layer)),
@@ -49,6 +51,7 @@ describe.skipIf(Engines.postgres18 === null)("PostgresTx on PostgreSQL 18", () =
         Effect.gen(function* () {
           const firstWrote = yield* Deferred.make<void>();
           const commitFirst = yield* Deferred.make<void>();
+
           const first = yield* Effect.forkChild(
             push(
               "order",
@@ -56,6 +59,7 @@ describe.skipIf(Engines.postgres18 === null)("PostgresTx on PostgreSQL 18", () =
               Effect.andThen(Deferred.succeed(firstWrote, undefined), Deferred.await(commitFirst)),
             ),
           );
+
           yield* Deferred.await(firstWrote);
           const second = yield* Effect.forkChild(push("order", ["second"]));
 
@@ -74,6 +78,7 @@ describe.skipIf(Engines.postgres18 === null)("PostgresTx on PostgreSQL 18", () =
     it.effect("a puller following its cursor sees every row, and a push's rows together", () =>
       Effect.gen(function* () {
         const spaces = ["busy-a", "busy-b"];
+
         const writers = Effect.forEach(
           Array.from({ length: 8 }, (_, writer) => writer),
           (writer) =>
@@ -81,7 +86,7 @@ describe.skipIf(Engines.postgres18 === null)("PostgresTx on PostgreSQL 18", () =
               Array.from({ length: 25 }, (_, push) => push),
               (index) =>
                 push(
-                  spaces[(writer + index) % spaces.length]!,
+                  Arr.getUnsafe(spaces, (writer + index) % spaces.length),
                   [`${writer}-${index}-x`, `${writer}-${index}-y`],
                   Effect.yieldNow,
                 ),
@@ -89,37 +94,47 @@ describe.skipIf(Engines.postgres18 === null)("PostgresTx on PostgreSQL 18", () =
             ),
           { concurrency: "unbounded", discard: true },
         );
+
         const done = yield* Deferred.make<void>();
+
         const puller = (space: string) =>
           Effect.gen(function* () {
             const batches: Array<ReadonlyArray<{ readonly id: string; readonly version: number }>> =
               [];
+
             let cursor = 0;
             let last = false;
+
             while (!last) {
               last = yield* Deferred.isDone(done);
               const rows = yield* pull(space, cursor);
+
               if (rows.length > 0) batches.push(rows);
               cursor = rows.at(-1)?.version ?? cursor;
             }
+
             return batches;
           });
+
         const pullers = yield* Effect.forkChild(
-          Effect.all(spaces.map(puller), { concurrency: "unbounded" }),
+          Effect.forEach(spaces, puller, { concurrency: "unbounded" }),
         );
+
         yield* writers;
         yield* Deferred.succeed(done, undefined);
         const pulled = yield* Fiber.join(pullers);
 
         for (const [index, space] of spaces.entries()) {
-          const batches = pulled[index]!;
+          const batches = Arr.getUnsafe(pulled, index);
           const rows = batches.flat();
           const stored = yield* pull(space, 0);
           expect(rows, `${space}: every row once, in version order`).toEqual(stored);
           const versions = [...new Set(rows.map((row) => row.version))];
           expect(versions, `${space}: no gaps`).toEqual(versions.map((_, at) => at + 1));
+
           for (const batch of batches) {
             const ids = new Set(batch.map((row) => row.id));
+
             for (const { id } of batch) {
               expect(
                 ids.has(id.replace(/-[xy]$/, "-x")) && ids.has(id.replace(/-[xy]$/, "-y")),
@@ -127,6 +142,7 @@ describe.skipIf(Engines.postgres18 === null)("PostgresTx on PostgreSQL 18", () =
             }
           }
         }
+
         expect(pulled.flat(2)).toHaveLength(8 * 25 * 2);
       }),
     );

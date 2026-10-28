@@ -1,6 +1,8 @@
 import { expect, layer } from "@effect/vitest";
 import * as Arbitrary from "effect/Arbitrary";
+import * as Arr from "effect/Array";
 import * as Effect from "effect/Effect";
+import * as Predicate from "effect/Predicate";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { CanonicalJson } from "../transaction/CanonicalJson.ts";
@@ -13,7 +15,7 @@ const pick = <const A>(values: ReadonlyArray<A>) =>
     Arbitrary.schema(
       Schema.Int.check(Schema.isBetween({ minimum: 0, maximum: values.length - 1 })),
     ),
-    (index) => values[index]!,
+    (index) => Arr.getUnsafe(values, index),
   );
 
 const either = <A, B>(left: Arbitrary.Arbitrary<A>, right: Arbitrary.Arbitrary<B>) =>
@@ -128,33 +130,43 @@ const seed: Arbitrary.Arbitrary<Probe.Step> = Arbitrary.map(
 );
 
 /** The fixture keeps numbers JSON can't hold as `{ "$number": "NaN" }`. */
+// JSON.stringify hands its replacer every value untyped.
+// oxlint-disable-next-line anti-slop/no-unknown-parameters -- see above
 const fixtureNumbers = (_key: string, value: unknown) =>
-  typeof value === "number" && !Number.isFinite(value) ? { $number: String(value) } : value;
+  Predicate.isNumber(value) && !Number.isFinite(value) ? { $number: String(value) } : value;
 
 const agree = (steps: ReadonlyArray<Probe.Step>) =>
   Effect.gen(function* () {
     const engines = yield* Engines.Service;
     const space = Probe.freshSpace();
     const traces = yield* Effect.forEach(engines, (engine) => Probe.run(engine, space, steps));
+
     for (const [index, engine] of engines.entries()) {
-      expect(traces[index], `${engine.name} against ${engines[0]!.name}`).toEqual(traces[0]);
+      expect(traces[index], `${engine.name} against ${Arr.getUnsafe(engines, 0).name}`).toEqual(
+        traces[0],
+      );
     }
-    return traces[0]!;
+
+    return Arr.getUnsafe(traces, 0);
   });
 
 layer(Engines.layer)("Tx conformance", (it) => {
   it.effect("every hand-written case ends the same on every engine", () =>
     Effect.gen(function* () {
       const cases = [];
+
       for (const { name, steps } of Cases.all) {
         const { outcomes, stored } = yield* agree(steps);
         cases.push({ name, steps, outcomes, stored });
       }
+
       // JSON Lines: a header, then one case per line, which a device can replay one at a time.
       const engines = (yield* Engines.Service).map((engine) => engine.name);
+
       const lines = [{ table: Probe.table.name, engines }, ...cases].map((line) =>
         JSON.stringify(line, fixtureNumbers),
       );
+
       yield* Effect.promise(() =>
         expect(`${lines.join("\n")}\n`).toMatchFileSnapshot("./cases.jsonl"),
       );
@@ -179,16 +191,22 @@ layer(Engines.layer)("Tx conformance", (it) => {
         const engines = yield* Engines.Service;
         const json = yield* Schema.encodeEffect(Probe.table.codec)(row);
         const encoded = CanonicalJson.encode(json);
+
         if (encoded._tag === "Failure") return;
+
         for (const engine of engines.filter((each) => each.side === "server")) {
-          const [roundTrip] = yield* engine.sql(
+          const rows = yield* engine.sql(
             Effect.flatMap(
               SqlClient.SqlClient,
               (sql) =>
                 sql<{ readonly text: string }>`select (${encoded.success}::jsonb)::text as text`,
             ),
           );
-          const normalized = yield* Effect.fromResult(CanonicalJson.normalize(roundTrip!.text));
+
+          const normalized = yield* Effect.fromResult(
+            CanonicalJson.normalize(Arr.getUnsafe(rows, 0).text),
+          );
+
           expect(normalized, engine.name).toBe(encoded.success);
         }
       }),

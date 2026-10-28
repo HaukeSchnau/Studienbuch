@@ -29,13 +29,16 @@ export * as DeviceDatabase from "./DeviceDatabase.ts";
 export const make = Effect.gen(function* () {
   const client = yield* SqlClient.SqlClient;
   const dialect = new SQLiteDialect({ codecs: effectSQLiteWasmCodecs });
+
   const session = new EffectSQLiteWasmSession(
     // The session's type names the wasm client, but it only uses the `SqlClient` part.
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- see above
     client as ConstructorParameters<typeof EffectSQLiteWasmSession>[0],
     dialect,
     {},
     { logger: yield* EffectLogger, cache: yield* EffectCache },
   );
+
   return new SQLiteEffectDatabase(dialect, session, {});
 }).pipe(Effect.provide(Layer.merge(EffectLogger.Default, EffectCache.Default)));
 

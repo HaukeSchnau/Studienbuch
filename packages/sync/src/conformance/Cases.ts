@@ -163,11 +163,14 @@ export const all: ReadonlyArray<Case> = [
       {
         op: "put",
         id: "a",
+        // Only JSON.parse builds an own `__proto__` key; an object literal sets the prototype.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- see above
         row: row({ nested: JSON.parse('{"__proto__":{"x":1}}') as Schema.Json }),
       },
       {
         op: "seed",
         id: "b",
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- as above
         json: JSON.parse(`{${JSON.stringify(row()).slice(1, -1)},"__proto__":1}`) as Schema.Json,
       },
       { op: "patch", id: "b", fields: { text: "patched" } },

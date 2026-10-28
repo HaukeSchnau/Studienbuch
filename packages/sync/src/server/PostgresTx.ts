@@ -44,7 +44,9 @@ export const make = Effect.gen(function* () {
 
   const version = (space: string) => {
     const known = versions.get(space);
+
     if (known !== undefined) return Effect.succeed(known);
+
     return sql<{ readonly version: string }>`
       insert into space (id, version) values (${space}, 1)
       on conflict (id) do update set version = space.version + 1

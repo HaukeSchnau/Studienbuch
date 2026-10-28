@@ -8,13 +8,13 @@ import { SqliteClient as WasmSqliteClient } from "@effect/sql-sqlite-wasm";
 import { and, eq, sql } from "drizzle-orm";
 import { drizzle as drizzleProxy } from "drizzle-orm/sqlite-proxy";
 import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
+import type * as Layer from "effect/Layer";
 import * as ManagedRuntime from "effect/ManagedRuntime";
 import * as SqlClient from "effect/sql/SqlClient";
 import { test } from "vitest";
 import { Engines } from "../conformance/Engines.ts";
 import ProbeMigrations from "../conformance/migrations/migrations.js";
-import { ProbeView } from "../conformance/ProbeDevice.ts";
+import { ProbeDevice } from "../conformance/ProbeDevice.ts";
 import { DeviceDatabase } from "./DeviceDatabase.ts";
 
 await Engines.installFileFetch();
@@ -25,6 +25,7 @@ const groups = 20;
 const seed = Effect.gen(function* () {
   yield* DeviceDatabase.migrate(ProbeMigrations.migrations);
   const sql = yield* SqlClient.SqlClient;
+
   const data = Array.from({ length: rows }, (_, index) => ({
     id: `row-${String(index).padStart(4, "0")}`,
     data: JSON.stringify({
@@ -36,14 +37,16 @@ const seed = Effect.gen(function* () {
       text: `Hausaufgabe ${index}`,
     }),
   }));
+
   yield* sql`
     insert into base_row (space, tbl, id, version, data)
     select 'bench', 'Probe', value ->> '$.id', 1, value ->> '$.data' from json_each(${JSON.stringify(data)})
   `;
 });
 
-const runtimeOf = (layer: Layer.Layer<SqlClient.SqlClient, unknown>) => {
+const runtimeOf = <E>(layer: Layer.Layer<SqlClient.SqlClient, E>) => {
   const runtime = ManagedRuntime.make(layer);
+
   return runtime.runPromise(seed).then(() => runtime);
 };
 
@@ -55,31 +58,54 @@ const builds = [
 for (const [name, runtime] of builds) {
   const client = await runtime.runPromise(SqlClient.SqlClient);
   const effectDb = await runtime.runPromise(DeviceDatabase.make);
+
   // The proxy's callbacks return promises, so each query leaves the caller's fiber: no typed error,
-  // no transaction, no span.
+  // no transaction, no span. Its callback types are loose, and these return what it asks for.
+  /* oxlint-disable typescript/no-unsafe-type-assertion -- see above */
   const query = (sql: string, params: Array<unknown>, rowMode?: "array" | "object") =>
     runtime.runPromise(
       rowMode === "object"
         ? client.unsafe(sql, params).withoutTransform
         : client.unsafe(sql, params).values,
     ) as Promise<Array<never>>;
+
   const proxyDb = drizzleProxy({
     all: query,
     get: (sql, params, rowMode) => query(sql, params, rowMode).then((result) => result[0]) as never,
     run: (sql, params) => runtime.runPromise(client.unsafe(sql, params).raw),
   });
+  /* oxlint-enable typescript/no-unsafe-type-assertion */
 
-  const byId = and(eq(ProbeView.space, "bench"), eq(ProbeView.id, "row-0500"));
-  const byGroup = and(eq(ProbeView.space, "bench"), eq(ProbeView.group, "group-7"));
+  const byId = and(
+    eq(ProbeDevice.ProbeView.space, "bench"),
+    eq(ProbeDevice.ProbeView.id, "row-0500"),
+  );
+
+  const byGroup = and(
+    eq(ProbeDevice.ProbeView.space, "bench"),
+    eq(ProbeDevice.ProbeView.group, "group-7"),
+  );
+
   const preparedById = effectDb
     .select()
-    .from(ProbeView)
-    .where(and(eq(ProbeView.space, "bench"), eq(ProbeView.id, sql.placeholder("id"))))
+    .from(ProbeDevice.ProbeView)
+    .where(
+      and(
+        eq(ProbeDevice.ProbeView.space, "bench"),
+        eq(ProbeDevice.ProbeView.id, sql.placeholder("id")),
+      ),
+    )
     .prepare();
+
   const preparedByGroup = effectDb
     .select()
-    .from(ProbeView)
-    .where(and(eq(ProbeView.space, "bench"), eq(ProbeView.group, sql.placeholder("group"))))
+    .from(ProbeDevice.ProbeView)
+    .where(
+      and(
+        eq(ProbeDevice.ProbeView.space, "bench"),
+        eq(ProbeDevice.ProbeView.group, sql.placeholder("group")),
+      ),
+    )
     .prepare();
 
   test(`${name}: one row by id`, async ({ bench }) => {
@@ -89,8 +115,8 @@ for (const [name, runtime] of builds) {
           client`select * from "Probe" where space = 'bench' and id = 'row-0500'`,
         )),
       bench("Drizzle on the Effect session", () =>
-        runtime.runPromise(effectDb.select().from(ProbeView).where(byId))),
-      bench("Drizzle sqlite-proxy", () => proxyDb.select().from(ProbeView).where(byId)),
+        runtime.runPromise(effectDb.select().from(ProbeDevice.ProbeView).where(byId))),
+      bench("Drizzle sqlite-proxy", () => proxyDb.select().from(ProbeDevice.ProbeView).where(byId)),
       bench("Drizzle on the Effect session, prepared", () =>
         runtime.runPromise(preparedById.execute({ id: "row-0500" }))),
     );
@@ -103,8 +129,9 @@ for (const [name, runtime] of builds) {
           client`select * from "Probe" where space = 'bench' and "group" = 'group-7'`,
         )),
       bench("Drizzle on the Effect session", () =>
-        runtime.runPromise(effectDb.select().from(ProbeView).where(byGroup))),
-      bench("Drizzle sqlite-proxy", () => proxyDb.select().from(ProbeView).where(byGroup)),
+        runtime.runPromise(effectDb.select().from(ProbeDevice.ProbeView).where(byGroup))),
+      bench("Drizzle sqlite-proxy", () =>
+        proxyDb.select().from(ProbeDevice.ProbeView).where(byGroup)),
       bench("Drizzle on the Effect session, prepared", () =>
         runtime.runPromise(preparedByGroup.execute({ group: "group-7" }))),
     );
