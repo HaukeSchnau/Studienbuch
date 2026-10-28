@@ -97,7 +97,10 @@ export default defineConfig({
       // shell and the prerendered landing page collide on `index.html` (TanStack/router#8741).
       spa: { enabled: true, maskPath: "/console", prerender: { outputPath: shell } },
     }),
-    viteReact(),
+    // The React Compiler memoizes components here as Expo's Babel preset does in the app, which is
+    // why no code memoizes by hand. It compiles the client build only, and warns about a component
+    // it skips, which would otherwise go unmemoized without a sound.
+    viteReact({ compiler: { reportDiagnostics: true } }),
     failOnBrokenPages([...pages.map((path) => NodePath.join(path, "index.html")), `${shell}.html`]),
   ],
 });
