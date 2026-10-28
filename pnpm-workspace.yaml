@@ -17,11 +17,24 @@ catalog:
   "@effect/platform-node": 4.0.7
   "@effect/sql-pg": 4.0.7
   "@effect/vitest": 4.0.7
+  "@effect/atom-react": 4.0.7
   # Drizzle's Effect driver exists only in the 1.0 release candidates. Its pin moves together with
   # Effect's (ADR 0012).
   drizzle-kit: 1.0.0-rc.5
   drizzle-orm: 1.0.0-rc.5
   "@types/node": 26.6.5
+  "@fontsource-variable/nunito": 5.3.0
+  "@tanstack/react-router": 1.170.46
+  "@tanstack/react-start": 1.169.4
+  "@types/react": 19.3.0
+  "@types/react-dom": 19.3.0
+  "@vitejs/plugin-react": 6.1.2
+  # React, React Native and React Native Web follow Expo SDK 58's pins, so the landing page renders
+  # with the versions the app runs.
+  react: 19.3.0
+  react-dom: 19.3.0
+  react-native: 0.88.0
+  react-native-web: 0.21.4
 
 overrides:
   vite@*: "catalog:"
@@ -39,3 +52,4 @@ minimumReleaseAgeExclude:
   - "@effect/platform-node@4.0.7"
   - "@effect/sql-pg@4.0.7"
   - "@effect/vitest@4.0.7"
+  - "@effect/atom-react@4.0.7"
