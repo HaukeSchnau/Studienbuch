@@ -2,6 +2,8 @@ import * as NodePath from "node:path";
 
 import { defineRule, type ESTree } from "@oxlint/plugins";
 
+import { moduleExportName } from "./syntax.ts";
+
 // A module is one PascalCase `.ts` file. Components (`.tsx`), tests (`X.test.ts`) and platform
 // variants (`X.web.ts`) don't match.
 const MODULE_FILE = /^(?<name>[A-Z][A-Za-z0-9]*)\.ts$/u;
@@ -20,10 +22,6 @@ function moduleName(source: string): string | null {
   if (!isRelative(source)) return null;
 
   return MODULE_FILE.exec(NodePath.posix.basename(source))?.groups?.name ?? null;
-}
-
-function nameOf(name: ESTree.ModuleExportName): string {
-  return name.type === "Identifier" ? name.name : name.value;
 }
 
 /**
@@ -72,7 +70,7 @@ export default defineRule({
           } else if (specifier.type === "ImportDefaultSpecifier") {
             checkMember(source, "default", specifier);
           } else {
-            checkMember(source, nameOf(specifier.imported), specifier);
+            checkMember(source, moduleExportName(specifier.imported), specifier);
           }
         }
       },
@@ -80,7 +78,7 @@ export default defineRule({
         if (node.source === null) return;
 
         for (const specifier of node.specifiers) {
-          checkMember(node.source.value, nameOf(specifier.local), specifier);
+          checkMember(node.source.value, moduleExportName(specifier.local), specifier);
         }
       },
       ExportAllDeclaration(node) {
@@ -91,7 +89,7 @@ export default defineRule({
         const isSelfExport =
           self !== undefined &&
           node.exported !== null &&
-          nameOf(node.exported) === self &&
+          moduleExportName(node.exported) === self &&
           source === `./${fileName}`;
 
         if (isSelfExport) {
