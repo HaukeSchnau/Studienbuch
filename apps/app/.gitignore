@@ -1,0 +1,7 @@
+# Expo's generated state, typed routes included
+.expo/
+expo-env.d.ts
+
+# Native projects come from `expo prebuild`
+/ios/
+/android/

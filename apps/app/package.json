@@ -1,0 +1,50 @@
+{
+  "name": "@stu/app",
+  "version": "2.0.0",
+  "private": true,
+  "license": "BUSL-1.1",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "build:web": "expo export --platform web --output-dir dist"
+  },
+  "dependencies": {
+    "@effect/atom-react": "catalog:",
+    "@effect/sql-sqlite-wasm": "catalog:",
+    "@effect/wa-sqlite": "catalog:",
+    "@expo-google-fonts/nunito": "catalog:",
+    "@expo/metro-runtime": "catalog:",
+    "@fontsource-variable/nunito": "catalog:",
+    "@noble/post-quantum": "catalog:",
+    "@stu/api": "workspace:*",
+    "@stu/ui": "workspace:*",
+    "effect": "catalog:",
+    "expo": "catalog:",
+    "expo-constants": "catalog:",
+    "expo-font": "catalog:",
+    "expo-linking": "catalog:",
+    "expo-router": "catalog:",
+    "expo-secure-store": "catalog:",
+    "expo-splash-screen": "catalog:",
+    "expo-sqlite": "catalog:",
+    "expo-status-bar": "catalog:",
+    "expo-symbols": "catalog:",
+    "expo-system-ui": "catalog:",
+    "expo-updates": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-native": "catalog:",
+    "react-native-nitro-modules": "catalog:",
+    "react-native-quick-base64": "catalog:",
+    "react-native-quick-crypto": "catalog:",
+    "react-native-safe-area-context": "catalog:",
+    "react-native-screens": "catalog:",
+    "react-native-svg": "catalog:",
+    "react-native-web": "catalog:"
+  },
+  "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@types/react": "catalog:",
+    "typescript": "catalog:"
+  }
+}

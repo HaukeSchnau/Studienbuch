@@ -14,6 +14,12 @@
       // vite.config.ts resolves `react-native` to it by name.
       "ignoreDependencies": ["react-native-web"],
     },
+    "apps/app": {
+      // Expo loads fingerprint.config.js by name, and Metro bundles the worker from a `new URL`.
+      "entry": ["fingerprint.config.js", "src/infra/sqlite/opfs.worker.ts"],
+      // app.config.ts hands the font files to expo-font by path.
+      "ignoreDependencies": ["@expo-google-fonts/nunito"],
+    },
     "packages/ui": {
       // `fonts.css` imports the font, and `vp` runs the tests without a config file.
       "ignoreDependencies": ["@fontsource-variable/nunito", "vite-plus"],
