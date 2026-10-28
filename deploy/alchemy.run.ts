@@ -2,6 +2,7 @@ import * as Cloudflare from "@alchemy.run/cloudflare";
 import * as Fleet from "@schnau/fleet";
 import * as Alchemy from "alchemy";
 import * as Output from "alchemy/Output";
+import * as State from "alchemy/State";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -32,12 +33,35 @@ const release: Platform.Release = {
   node: Config.String("CALDER_NODE"),
 };
 
+/**
+ * Stops a new preview while three others run. srv-2's grant caps Studienbuch's services as well,
+ * but its refusal can't say which previews take the room. A destroyed stage leaves no state.
+ */
+const roomForPreview = Effect.fn(function* (stage: string) {
+  // A stack can't require the state store, but the store is part of every stack's context.
+  const store = yield* Effect.serviceOption(State.State);
+  if (Option.isNone(store)) return;
+
+  const stack = yield* Alchemy.Stack;
+  const stages = yield* State.listState({ path: stack.name }).pipe(
+    Effect.provideService(State.State, store.value),
+    Effect.orDie,
+  );
+  const names = stages.map((path) => path.slice(stack.name.length + 1).replace(/\/$/, ""));
+
+  yield* Option.match(Environments.noRoomFor(stage, names), {
+    onNone: () => Effect.void,
+    onSome: Effect.die,
+  });
+});
+
 /** The server of one environment, with its DNS record when it is public. */
 const deploy = Effect.fn(function* (environment: Environments.Environment) {
   if (environment.storage === "prod") {
     // A second A record for studienbuch.app would send half of the legacy apps' traffic here.
     return yield* Effect.die("prod waits for the legacy apps to leave studienbuch.app (D10)");
   }
+  if (environment.kind === "preview") yield* roomForPreview(environment.stage);
 
   const tokens = yield* Alchemy.stackRef<Tokens>("Tokens", { stage: "prod" });
   const storage = environment.storage;

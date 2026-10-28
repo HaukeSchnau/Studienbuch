@@ -70,4 +70,26 @@ export const of = (stage: string): Option.Option<Environment> => {
   return pr === undefined ? Option.none() : Option.some(preview(Number(pr)));
 };
 
+/** At most three previews run at a time (ADR 0007). */
+const maxPreviews = 3;
+
+/**
+ * Why a new preview can't start beside the stages that have state, or none. A preview that runs
+ * already always redeploys.
+ */
+export const noRoomFor = (
+  preview: string,
+  stages: ReadonlyArray<string>,
+): Option.Option<string> => {
+  const previews = stages.filter((stage) =>
+    Option.exists(of(stage), (environment) => environment.kind === "preview"),
+  );
+
+  return previews.includes(preview) || previews.length < maxPreviews
+    ? Option.none()
+    : Option.some(
+        `${previews.length} previews are running (${previews.join(", ")}); close a PR or wait`,
+      );
+};
+
 export * as Environments from "./environments.ts";

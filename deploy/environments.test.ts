@@ -31,6 +31,17 @@ describe("Environments.of", () => {
     }
   });
 
+  it("lets a fourth preview wait for one of three running previews, but redeploys a running one", () => {
+    const stages = ["beta", "pr-3", "pr-7", "pr-9"];
+
+    assert.deepStrictEqual(
+      Environments.noRoomFor("pr-12", stages),
+      Option.some("3 previews are running (pr-3, pr-7, pr-9); close a PR or wait"),
+    );
+    assert.isTrue(Option.isNone(Environments.noRoomFor("pr-7", stages)));
+    assert.isTrue(Option.isNone(Environments.noRoomFor("pr-12", ["beta", "pr-3", "pr-7"])));
+  });
+
   it("knows no stage besides beta, prod and a pull request's", () => {
     for (const stage of [
       "pr-",
