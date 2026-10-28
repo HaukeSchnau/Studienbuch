@@ -1,0 +1,25 @@
+{
+  "name": "@stu/server",
+  "version": "0.1.0",
+  "private": true,
+  "license": "BUSL-1.1",
+  "type": "module",
+  "scripts": {
+    "build": "vp pack",
+    "db:generate": "drizzle-kit generate",
+    "start": "node src/main.ts"
+  },
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "@effect/sql-pg": "catalog:",
+    "@stu/api": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "@types/node": "catalog:",
+    "drizzle-kit": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}

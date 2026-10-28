@@ -17,6 +17,11 @@ catalog:
   "@effect/platform-node": 4.0.7
   "@effect/sql-pg": 4.0.7
   "@effect/vitest": 4.0.7
+  # Drizzle's Effect driver exists only in the 1.0 release candidates. Its pin moves together with
+  # Effect's (ADR 0012).
+  drizzle-kit: 1.0.0-rc.5
+  drizzle-orm: 1.0.0-rc.5
+  "@types/node": 26.6.5
 
 overrides:
   vite@*: "catalog:"
@@ -30,3 +35,7 @@ peerDependencyRules:
 # Same-day releases we need now. Delete each entry at the next bump of its package.
 minimumReleaseAgeExclude:
   - effect@4.0.7
+  - "@effect/platform-node-shared@4.0.7"
+  - "@effect/platform-node@4.0.7"
+  - "@effect/sql-pg@4.0.7"
+  - "@effect/vitest@4.0.7"
