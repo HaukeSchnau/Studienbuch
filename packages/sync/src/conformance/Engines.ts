@@ -3,7 +3,6 @@
  * server's Postgres in two builds. Every engine runs a test's effect in one transaction with its
  * own `Tx`, the way a mutator runs.
  */
-import { PgClient } from "@effect/sql-pg";
 import { PgliteClient } from "@effect/sql-pglite";
 import { SqliteClient as NodeSqliteClient } from "@effect/sql-sqlite-node";
 import { SqliteClient as WasmSqliteClient } from "@effect/sql-sqlite-wasm";
@@ -15,10 +14,10 @@ import type * as SqlError from "effect/sql/SqlError";
 // installFileFetch reads the wasm file before any Effect runtime exists.
 // oxlint-disable-next-line effecttsgo/node-builtin-import -- see above
 import * as NodeFSP from "node:fs/promises";
-import { inject } from "vitest";
 import { DeviceDatabase } from "../client/DeviceDatabase.ts";
 import { SqliteTx } from "../client/SqliteTx.ts";
 import { PostgresTx } from "../server/PostgresTx.ts";
+import { Postgres18 } from "../testing/Postgres18.ts";
 import { Probe } from "./Probe.ts";
 import type { Tx } from "../transaction/Tx.ts";
 import ProbeMigrations from "./migrations/migrations.js";
@@ -44,9 +43,6 @@ export interface Engine {
 export class Service extends Context.Service<Service, ReadonlyArray<Engine>>()(
   "@stu/sync/conformance/Engines",
 ) {}
-
-/** The socket directory of the run's PostgreSQL 18, or `null` when it isn't available. */
-export const postgres18 = inject("postgres18");
 
 const engine = Effect.fnUntraced(function* (
   name: Name,
@@ -83,28 +79,6 @@ const engine = Effect.fnUntraced(function* (
   } satisfies Engine;
 });
 
-/** A fresh database on the run's PostgreSQL 18, so test files running in parallel stay apart. */
-export const postgres18Database = (socket: string) =>
-  Layer.unwrap(
-    Effect.gen(function* () {
-      // Names one throwaway database. Effect's Crypto service would have to reach every engine
-      // layer for it.
-      // oxlint-disable-next-line effecttsgo/crypto-random-uuid-in-effect -- see above
-      const database = `stu_${crypto.randomUUID().replaceAll("-", "")}`;
-
-      const admin = yield* Layer.build(
-        PgClient.layer({ host: socket, username: "postgres", database: "postgres" }),
-      );
-
-      yield* Effect.provide(
-        Effect.flatMap(SqlClient.SqlClient, (sql) => sql.unsafe(`create database ${database}`)),
-        admin,
-      );
-
-      return PgClient.layer({ host: socket, username: "postgres", database, maxConnections: 20 });
-    }),
-  );
-
 const devices = [
   engine("sqlite-wasm", WasmSqliteClient.layerMemory({})),
   engine("sqlite-node", NodeSqliteClient.layer({ filename: ":memory:" })),
@@ -112,7 +86,9 @@ const devices = [
 
 const servers = [
   engine("pglite", PgliteClient.layer({})),
-  ...(postgres18 === null ? [] : [engine("postgres-18", postgres18Database(postgres18))]),
+  ...(Postgres18.socket === null
+    ? []
+    : [engine("postgres-18", Postgres18.database(Postgres18.socket))]),
 ];
 
 const layerOf = (engines: typeof devices) =>

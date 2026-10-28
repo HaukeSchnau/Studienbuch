@@ -11,7 +11,7 @@ export default defineConfig({
     },
   ],
   test: {
-    globalSetup: ["./src/conformance/Postgres18.setup.ts"],
+    globalSetup: ["./src/testing/Postgres18.setup.ts"],
     // PGlite takes several seconds to start, and the property tests run hundreds of cases on four
     // engines.
     testTimeout: 120_000,
