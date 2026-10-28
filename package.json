@@ -3,23 +3,12 @@
   "private": true,
   "license": "BUSL-1.1",
   "type": "module",
-  "scripts": {
-    "prepare": "effect-tsgo patch --oxlint && vp config --no-agent"
-  },
   "devDependencies": {
-    "@effect/tsgo": "catalog:",
-    "@oxlint/plugins": "1.78.0",
-    "@swmansion/argent": "0.20.0",
-    "@types/node": "catalog:",
-    "agent-device": "0.20.8",
-    "oxlint": "1.78.0",
-    "react-doctor": "^0.9.11",
     "typescript": "catalog:",
-    "vite": "catalog:",
     "vite-plus": "catalog:"
   },
   "engines": {
-    "node": "^24.13.1"
+    "node": "^26.12.0"
   },
-  "packageManager": "pnpm@11.21.0"
+  "packageManager": "pnpm@12.9.0"
 }
