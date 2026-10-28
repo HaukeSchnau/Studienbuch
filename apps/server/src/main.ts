@@ -10,6 +10,7 @@ import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
 import * as HttpRouter from "effect/http/HttpRouter";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import * as Runtime from "effect/Runtime";
 import * as Schema from "effect/Schema";
 // NodeHttpServer.layer takes Node's own server factory; Effect has no counterpart to it.
@@ -25,6 +26,7 @@ import { Schema as Tables } from "./infra/database/Schema.ts";
 import { Jobs } from "./infra/jobs/Jobs.ts";
 import { Telemetry } from "./infra/telemetry/Telemetry.ts";
 import { Health } from "./routes/Health.ts";
+import { DevServers } from "./routes/DevServers.ts";
 import { Rpc } from "./routes/Rpc.ts";
 import { WebBuilds } from "./routes/WebBuilds.ts";
 
@@ -39,13 +41,23 @@ const runtime = Layer.mergeAll(
   Telemetry.layer,
 ).pipe(Layer.provideMerge(Deployment.layer));
 
-const http = HttpRouter.serve(
-  Layer.mergeAll(
-    Health.layer,
-    Rpc.layer,
-    WebBuilds.layer({ web: besideServer("web"), app: besideServer("app") }),
+// devenv runs Vite and Metro beside the server and names them, and a release serves their builds.
+const webBuilds = Layer.unwrap(
+  Effect.map(
+    Config.option(
+      Config.all({
+        web: Config.String("STUDIENBUCH_DEV_WEB_URL"),
+        app: Config.String("STUDIENBUCH_DEV_APP_URL"),
+      }),
+    ),
+    Option.match({
+      onNone: () => WebBuilds.layer({ web: besideServer("web"), app: besideServer("app") }),
+      onSome: DevServers.layer,
+    }),
   ),
-).pipe(
+);
+
+const http = HttpRouter.serve(Layer.mergeAll(Health.layer, Rpc.layer, webBuilds)).pipe(
   Layer.provide(
     NodeHttpServer.layerConfig(NodeHttp.createServer, {
       host: Config.String("HOST"),
