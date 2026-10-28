@@ -1,6 +1,6 @@
 import { defineRule, type ESTree } from "@oxlint/plugins";
 
-import { isStringLiteral } from "./string-literal.ts";
+import { isStringLiteral } from "./syntax.ts";
 
 // `Domain.ClassName`, as in `Homework.NotFound`.
 const DOMAIN_TAG = /^[A-Z][A-Za-z0-9]*\.(?<name>[A-Z][A-Za-z0-9]*)$/u;

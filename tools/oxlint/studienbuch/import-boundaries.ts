@@ -3,7 +3,7 @@ import * as NodePath from "node:path";
 import { defineRule, type ESTree } from "@oxlint/plugins";
 
 import { layoutPath } from "./repository-path.ts";
-import { isStringLiteral } from "./string-literal.ts";
+import { isStringLiteral } from "./syntax.ts";
 
 interface Boundary {
   /** Globs over repository paths of the files the boundary applies to. */

@@ -1,5 +1,6 @@
 import { effectNative, strict } from "@effect/tsgo/oxlint-presets";
 import { defineConfig } from "vite-plus";
+import { defaultExclude } from "vite-plus/test/config";
 
 const errors = (rules: ReadonlyArray<string>) =>
   Object.fromEntries(rules.map((rule): [string, "error"] => [rule, "error"]));
@@ -32,6 +33,10 @@ export default defineConfig({
     // Vendored as upstream wrote it, so the next re-vendor is a plain copy.
     ignorePatterns: ["tools/oxlint/anti-slop/**"],
     sortPackageJson: {},
+  },
+  test: {
+    // The lint fixtures include test files that exist to fail the lint, not to run.
+    exclude: [...defaultExclude, "tools/oxlint/fixtures/**"],
   },
   lint: {
     ignorePatterns: [
@@ -238,6 +243,16 @@ export default defineConfig({
         // Code in a web or native client bundle.
         files: scope("apps/app/**", "apps/web/**", "packages/**"),
         rules: { "studienbuch/no-baked-origin": "error" },
+      },
+      {
+        // Tests are deterministic: they await events and drive the TestClock (AGENTS.md, "Verifying").
+        files: ["**/*.{test,spec}.{ts,tsx}"],
+        rules: {
+          "studienbuch/no-polling-loop-in-tests": "error",
+          "studienbuch/no-real-time-wait-in-tests": "error",
+          "studienbuch/no-test-timeout-or-unreasoned-skip": "error",
+          "studienbuch/no-wall-clock-in-tests": "error",
+        },
       },
       {
         // packages/e2ee stores nothing and opens no connection.

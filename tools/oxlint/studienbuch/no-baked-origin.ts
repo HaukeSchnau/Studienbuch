@@ -1,6 +1,6 @@
 import { defineRule, type ESTree } from "@oxlint/plugins";
 
-import { isStringLiteral } from "./string-literal.ts";
+import { isStringLiteral } from "./syntax.ts";
 
 // A URL on one Studienbuch deployment or a local server. One web build serves every preview, beta
 // and production from its own origin, and native builds read EXPO_PUBLIC_API_URL (AGENTS.md,

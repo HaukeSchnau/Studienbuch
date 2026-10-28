@@ -1,5 +1,7 @@
 // The packages the fixtures import. The workspace root installs none of them, and a fixture only
 // needs its import to resolve.
+declare module "@effect/vitest";
+
 declare module "@stu/core";
 
 declare module "@stu/sync";
@@ -16,11 +18,15 @@ declare module "effect/Data";
 
 declare module "effect/Effect";
 
+declare module "effect/Fiber";
+
 declare module "effect/rpc";
 
 declare module "effect/rpc/RpcServer";
 
 declare module "effect/sql/SqlClient";
+
+declare module "effect/testing/TestClock";
 
 declare module "expo-notifications";
 

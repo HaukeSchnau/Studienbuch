@@ -1,20 +1,9 @@
-import { defineRule, type ESTree } from "@oxlint/plugins";
+import { defineRule } from "@oxlint/plugins";
 
-import { isStringLiteral } from "./string-literal.ts";
+import { isStringLiteral, pathOf } from "./syntax.ts";
 
 // `Service.operation`, as in `SyncWriter.write` or `Sync.Client.push`.
 const SPAN_NAME = /^(?:[A-Z][A-Za-z0-9]*\.)+[a-z][A-Za-z0-9]*$/u;
-
-function isEffectFn(node: ESTree.Node): boolean {
-  return (
-    node.type === "MemberExpression" &&
-    !node.computed &&
-    node.object.type === "Identifier" &&
-    node.object.name === "Effect" &&
-    node.property.type === "Identifier" &&
-    node.property.name === "fn"
-  );
-}
 
 /** `Effect.fn` names its span `Service.operation`. `Effect.fnUntraced` is the unnamed form. */
 export default defineRule({
@@ -31,7 +20,7 @@ export default defineRule({
   create(context) {
     return {
       CallExpression(node) {
-        if (!isEffectFn(node.callee)) return;
+        if (pathOf(node.callee) !== "Effect.fn") return;
 
         const first = node.arguments[0];
 
