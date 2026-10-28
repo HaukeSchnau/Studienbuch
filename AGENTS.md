@@ -118,7 +118,7 @@ An empty database is a bad test.
 ## Verifying
 
 - Before every push, run `calder check`. It runs `.calder/ci.ts` on your working copy like a PR, and the push reuses its results.
-- While you iterate, run `vp check` (format, lint, types) and `vp test run <files>`.
+- While you iterate, run `vp run check:changed`. It checks format and lint on the files you changed, runs knip, typechecks the projects they affect and runs the tests beside them. `vp check` and `vp test run <files>` cover the whole repository or the files you name.
 - Test behavior that can break: the sync engine (outbox, rebase, refusals, convergence), encryption formats and key handling, migrations, import parsing and projection, school rules, auth and membership guards, and the logic a bug fix changed. Leave out what types guarantee, trivial code, copy text, smoke runs and mock-call mirrors.
 - Extend before you add: when an existing test covers the behavior, add a row or an assertion there. Test at one layer, the lowest one that fails without your change.
 - Tests sit next to their module (`Homework.test.ts`), use `@effect/vitest`, and replace dependencies through Layers, never module mocks.
@@ -136,6 +136,7 @@ Agents work through pull requests ([ADR 0008](docs/adr/0008-agents-work-through-
 - A PR that changes what a user sees links its preview and shows before and after screenshots.
 - The orchestrator merges once checks pass and the preview looks right. Hauke can open any preview and never has to review code.
 - The catalog in `pnpm-workspace.yaml` is append-only while packages run in parallel: add entries only for dependencies you introduce. Regenerate `pnpm-lock.yaml` with `pnpm install` after a rebase, never merge it by hand.
+- Reviewer agents follow [docs/internals/review.md](docs/internals/review.md): what to check per area, and what not to report.
 
 ## Documentation
 
@@ -144,6 +145,7 @@ Most code changes need no documentation change. Agents can read the code.
 - `docs/adr/` holds one decision per file: the context, the decision and why, in a few sentences. Write one when a decision is hard to reverse, surprising without context, and the result of a real trade-off. A changed decision gets a new ADR that supersedes the old one.
 - `docs/product/` holds the legacy behavior catalogue and the scenario contracts. A scenario states a user-visible rule independent of any test runner; the E2E test implements it.
 - `docs/operations/` holds procedures for running, releasing and debugging.
+- `docs/internals/` holds guides for agents working on the code, such as the review guide.
 - Document reasons and constraints the code can't show. Leave out feature lists, field lists, control-flow narration and PR summaries. When a documented decision changes, rewrite the text instead of appending.
 - Plans, research notes and scratch files stay out of the tree. The rewrite's roadmap and design documents are at <https://files.schnau.dev/html/studienbuch-roadmap/> (Tailnet), and ADRs link into them.
 
@@ -168,6 +170,7 @@ The layout below is the target. Packages appear as M0 builds them.
 | `packages/domain-ui`          | Dumb components shared by the app and the landing page: rows and callbacks in                                                                                         | read SQLite or the sync engine                                          |
 | `deploy/`, `.calder/`, `nix/` | The Alchemy stack, CI, bundle derivations and checks                                                                                                                  |                                                                         |
 | `tools/oxlint/`               | Local lint plugins                                                                                                                                                    |                                                                         |
+| `tools/check-changed/`        | `vp run check:changed`: the checks for the files one change touches                                                                                                   |                                                                         |
 
 ## Taste
 
@@ -177,12 +180,13 @@ The layout below is the target. Packages appear as M0 builds them.
 - Errors are tagged values in Effect's error channel. Defects use `Effect.die`. `Option` means absence, never a failed parse.
 - Ids and timestamps reach a mutator as arguments. Civil time follows [ADR 0001](docs/adr/0001-model-civil-time-explicitly.md).
 - Data and subscriptions belong in atoms, navigation and selection in the router, drafts in locally persisted atoms. React's state, effect and memoization hooks may only be called in an exported `use…` hook with a doc comment (`studienbuch/no-ad-hoc-state-or-effects`).
+- Platform differences live in `infra/` adapters, `ui/` components, `app/` routes and `.web.tsx` or `.native.tsx` files. Feature code gets them through an injected service or a documented hook (`studienbuch/no-global-process-runtime`).
 - Comments state a reason the code can't show, describe how a function is used, and move with the code.
 - If a rule here fights the task in front of you, say so loudly and get a human sign-off before breaking it.
 
 ## Lint
 
-`vp check` enforces most rules of this codebase, through oxlint with type information, the Effect presets, anti-slop and our plugin in `tools/oxlint/`: no throwing, the module shape, package boundaries, mutator purity, APIs Hermes lacks, baked-in origins, directory names, deterministic tests, and a reason on every suppression. When a rule fights a real need, change the rule in its own PR rather than suppressing it in passing. A convention that keeps coming up in review belongs in the plugin, not in this file.
+`vp check` enforces most rules of this codebase, through oxlint with type information, the Effect presets, anti-slop and our plugin in `tools/oxlint/`: no throwing, the module shape, package boundaries, mutator purity, APIs Hermes lacks, baked-in origins, directory names, deterministic tests, `Effect.fn` and `catchTags`, no platform reads in feature code, comments of at most four lines, no em dashes in copy, and a reason on every suppression. Many of the plugin's rules come from T3 Code (MIT, `tools/T3CODE-LICENSE`). When a rule fights a real need, change the rule in its own PR rather than suppressing it in passing. A convention that keeps coming up in review belongs in the plugin, not in this file.
 
 ## Effect
 

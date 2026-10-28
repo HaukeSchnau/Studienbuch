@@ -189,7 +189,7 @@ layer(Engines.layer)("Tx conformance", (it) => {
     ({ row }) =>
       Effect.gen(function* () {
         const engines = yield* Engines.Service;
-        const json = yield* Schema.encodeEffect(Probe.table.codec)(row);
+        const json = yield* Probe.encode(row);
         const encoded = CanonicalJson.encode(json);
 
         if (encoded._tag === "Failure") return;

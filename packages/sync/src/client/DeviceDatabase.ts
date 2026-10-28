@@ -1,17 +1,14 @@
 /**
- * Drizzle on the device's Effect `SqlClient`, whichever SQLite build provides it: Effect's wasm
- * client on the web, our expo-sqlite adapter on iOS and Android, Effect's node client in tests.
- * Queries are Effects on the caller's fiber, so they join its transaction and fail with typed
- * errors.
+ * Drizzle on the device's Effect `SqlClient`, whichever SQLite build provides it. Queries are
+ * Effects on the caller's fiber, so they join its transaction and fail with typed errors.
  *
  * ```ts
  * const db = yield* DeviceDatabase.make;
  * const rows = yield* db.select().from(Homework).where(eq(Homework.courseId, courseId));
  * ```
  *
- * It uses the session of Drizzle's `effect-sqlite-wasm` driver, which calls only
- * `SqlClient.unsafe` and `SqlClient.withTransaction`, without the driver's entry point, which would
- * import the wasm client into the native bundle to look up its service tag.
+ * It uses only the session of Drizzle's `effect-sqlite-wasm` driver, which needs only `unsafe` and
+ * `withTransaction`. The driver's entry point would import the wasm client into the native bundle.
  */
 import { EffectCache } from "drizzle-orm/cache/core/cache-effect";
 import { EffectLogger } from "drizzle-orm/effect-core/logger";

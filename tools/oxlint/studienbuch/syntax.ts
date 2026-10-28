@@ -53,15 +53,24 @@ export function unwrap(node: ESTree.Node): ESTree.Node {
   return current;
 }
 
-/** The key of `x.now` or `x["now"]`, null for a key computed at runtime. */
+/** The text of `"now"` or `` `now` ``, null for anything computed at runtime. */
+export function staticString(node: ESTree.Node): string | null {
+  if (isStringLiteral(node)) return node.value;
+
+  if (node.type !== "TemplateLiteral" || node.expressions.length > 0) return null;
+
+  return node.quasis[0]?.value.cooked ?? null;
+}
+
+/** The key of `x.now`, `x["now"]` or ``x[`now`]``, null for a key computed at runtime. */
 export function memberKey(node: ESTree.MemberExpression): string | null {
   if (!node.computed) return node.property.name;
 
-  return isStringLiteral(node.property) ? node.property.value : null;
+  return staticString(node.property);
 }
 
 /** The key of `{ now: … }` or `{ "now": … }`, null for a computed key. */
-export function propertyKey(node: ESTree.ObjectProperty): string | null {
+export function propertyKey(node: Extract<ESTree.Node, { type: "Property" }>): string | null {
   if (node.key.type === "Identifier" && !node.computed) return node.key.name;
 
   return isStringLiteral(node.key) ? node.key.value : null;

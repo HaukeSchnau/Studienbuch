@@ -43,3 +43,17 @@ export const privateWeek = usePrivateWeek;
 /** A label for `week`. */
 // oxlint-disable-next-line studienbuch/no-hookless-use-function -- fixture: a use function without a hook
 export const useWeekLabel = (week: number) => `KW ${week}`;
+
+export function ForcedWeek() {
+  // oxlint-disable-next-line studienbuch/no-ad-hoc-state-or-effects -- fixture: a "use memo" directive
+  "use memo";
+
+  return 1;
+}
+
+export function SkippedWeek() {
+  // oxlint-disable-next-line studienbuch/no-ad-hoc-state-or-effects -- fixture: a "use no memo" directive
+  "use no memo";
+
+  return 1;
+}

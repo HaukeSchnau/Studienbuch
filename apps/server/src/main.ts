@@ -14,8 +14,8 @@ import * as Runtime from "effect/Runtime";
 import * as Schema from "effect/Schema";
 // NodeHttpServer.layer takes Node's own server factory; Effect has no counterpart to it.
 // oxlint-disable-next-line effecttsgo/node-builtin-import -- see above
-import { createServer } from "node:http";
-import { fileURLToPath } from "node:url";
+import * as NodeHttp from "node:http";
+import * as NodeURL from "node:url";
 import packageJson from "../package.json" with { type: "json" };
 import { Deployment } from "./infra/config/Deployment.ts";
 import { SecretFiles } from "./infra/config/SecretFiles.ts";
@@ -30,7 +30,8 @@ import { WebBuilds } from "./routes/WebBuilds.ts";
 
 // This file runs as `src/main.ts` in the workspace and as `server/main.mjs` in the release bundle,
 // which keeps `migrations/`, `web/` and `app/` beside `server/` (hosting.md, section 2).
-const besideServer = (name: string) => fileURLToPath(new URL(`../${name}/`, import.meta.url));
+const besideServer = (name: string) =>
+  NodeURL.fileURLToPath(new URL(`../${name}/`, import.meta.url));
 
 const runtime = Layer.mergeAll(
   Database.layer,
@@ -46,7 +47,7 @@ const http = HttpRouter.serve(
   ),
 ).pipe(
   Layer.provide(
-    NodeHttpServer.layerConfig(createServer, {
+    NodeHttpServer.layerConfig(NodeHttp.createServer, {
       host: Config.String("HOST"),
       port: Config.Port("PORT"),
       // On SIGTERM the server stops accepting connections and lets running requests finish.
@@ -86,12 +87,13 @@ const verify = Effect.gen(function* () {
   yield* Effect.logInfo("The schema is at head and the invariants hold");
 }).pipe(Effect.provide(runtime));
 
+const encodeReadiness = Schema.encodeEffect(
+  Schema.fromJsonString(Schema.toCodecJson(Health.Readiness), { space: 2 }),
+);
+
 const status = Effect.gen(function* () {
   const report = yield* Health.readiness;
-
-  const json = yield* Schema.encodeEffect(
-    Schema.fromJsonString(Schema.toCodecJson(Health.Readiness), { space: 2 }),
-  )(report);
+  const json = yield* encodeReadiness(report);
 
   yield* Console.log(json);
 }).pipe(Effect.provide(runtime));

@@ -4,10 +4,10 @@
  * example through `nix shell nixpkgs#postgresql_18`. Without them the tests that need a real server
  * skip and say so.
  */
-import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import * as NodeChildProcess from "node:child_process";
+import * as NodeFS from "node:fs";
+import * as NodeOS from "node:os";
+import * as NodePath from "node:path";
 import type { TestProject } from "vitest/node";
 
 declare module "vitest" {
@@ -18,7 +18,7 @@ declare module "vitest" {
 }
 
 export default function setup(project: TestProject) {
-  const version = spawnSync("postgres", ["--version"], { encoding: "utf8" });
+  const version = NodeChildProcess.spawnSync("postgres", ["--version"], { encoding: "utf8" });
 
   if (version.status !== 0 || !/\(PostgreSQL\) 18\./.test(version.stdout)) {
     console.warn("PostgreSQL 18 is not on PATH, so the tests that need a real server skip.");
@@ -27,11 +27,11 @@ export default function setup(project: TestProject) {
     return;
   }
 
-  const directory = mkdtempSync(join(tmpdir(), "stu-sync-pg18-"));
-  const data = join(directory, "data");
+  const directory = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "stu-sync-pg18-"));
+  const data = NodePath.join(directory, "data");
 
   const run = (command: string, args: ReadonlyArray<string>) => {
-    const result = spawnSync(command, args, { encoding: "utf8" });
+    const result = NodeChildProcess.spawnSync(command, args, { encoding: "utf8" });
 
     if (result.status !== 0) {
       project.provide("postgres18", null);
@@ -51,12 +51,12 @@ export default function setup(project: TestProject) {
 
   const started =
     run("initdb", [...initdb, ...icu]) &&
-    run("pg_ctl", ["-D", data, "-w", "-l", join(directory, "log"), ...socket, "start"]);
+    run("pg_ctl", ["-D", data, "-w", "-l", NodePath.join(directory, "log"), ...socket, "start"]);
 
   if (started) project.provide("postgres18", directory);
 
   return () => {
-    if (started) spawnSync("pg_ctl", ["-D", data, "-m", "immediate", "stop"]);
-    rmSync(directory, { recursive: true, force: true });
+    if (started) NodeChildProcess.spawnSync("pg_ctl", ["-D", data, "-m", "immediate", "stop"]);
+    NodeFS.rmSync(directory, { recursive: true, force: true });
   };
 }

@@ -24,6 +24,8 @@ export class Unavailable extends Schema.TaggedError<
 /** 32 random bytes as hex, the raw key SQLCipher takes as `x'…'`. */
 const DatabaseKey = Schema.String.check(Schema.isPattern(/^[0-9a-f]{64}$/u));
 
+const decodeDatabaseKey = Schema.decodeEffect(DatabaseKey);
+
 const databaseKeyName = "database-key";
 
 /**
@@ -35,7 +37,7 @@ export const databaseKey = Effect.gen(function* () {
   const stored = yield* store.get(databaseKeyName);
 
   if (Option.isSome(stored)) {
-    return yield* Schema.decodeEffect(DatabaseKey)(stored.value).pipe(Effect.orDie);
+    return yield* decodeDatabaseKey(stored.value).pipe(Effect.orDie);
   }
 
   const key = Hex.encode(globalThis.crypto.getRandomValues(new Uint8Array(32)));

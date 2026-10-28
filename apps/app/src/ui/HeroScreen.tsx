@@ -15,14 +15,16 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
+import { Button } from "./Button.tsx";
 import { Text } from "./Text.tsx";
 
 export interface HeroScreenProps {
   readonly title: string;
   readonly subtitle: string;
-  /** The web's stand-in for a toolbar button, at the hero's top right. The phones pass none. */
-  readonly action?: ReactNode;
-  /** Pull to refresh, on the phones. */
+  /**
+   * Pull to refresh on the phones. The web has no gesture for it, so there an "Aktualisieren" pill
+   * sits at the hero's top right.
+   */
   readonly refresh?: { readonly refreshing: boolean; readonly onRefresh: () => void };
   readonly children: ReactNode;
 }
@@ -31,7 +33,7 @@ export interface HeroScreenProps {
  * A tab's root screen: the green hero with its swoosh, and the cards below it. The hero is content,
  * so it scrolls under the native header and tab bar (design-language.md, section 3, rule 6).
  */
-export function HeroScreen({ title, subtitle, action, refresh, children }: HeroScreenProps) {
+export function HeroScreen({ title, subtitle, refresh, children }: HeroScreenProps) {
   const { color } = Theme.useTheme();
   const insets = useSafeAreaInsets();
   const { overCanvas, onHeroLayout, onScroll } = useHeroCover(insets.top);
@@ -48,7 +50,7 @@ export function HeroScreen({ title, subtitle, action, refresh, children }: HeroS
         onScroll={onScroll}
         scrollEventThrottle={16}
         refreshControl={
-          refresh === undefined ? undefined : (
+          refresh === undefined || Platform.OS === "web" ? undefined : (
             <RefreshControl
               refreshing={refresh.refreshing}
               onRefresh={refresh.onRefresh}
@@ -65,7 +67,16 @@ export function HeroScreen({ title, subtitle, action, refresh, children }: HeroS
             onLayout={onHeroLayout}
           >
             <View style={[styles.column, styles.heroText]}>
-              {action === undefined ? null : <View style={styles.action}>{action}</View>}
+              {refresh === undefined || Platform.OS !== "web" ? null : (
+                <View style={styles.action}>
+                  <Button
+                    kind="quiet"
+                    label="Aktualisieren"
+                    busy={refresh.refreshing}
+                    onPress={refresh.onRefresh}
+                  />
+                </View>
+              )}
               <Text variant="display" accessibilityRole="header" style={styles.onHero}>
                 {title}
               </Text>
@@ -87,10 +98,9 @@ export function HeroScreen({ title, subtitle, action, refresh, children }: HeroS
 
 /**
  * Whether the hero has scrolled out from under the status bar, which is `statusBar` points tall.
- * Pass `onHeroLayout` to the hero and `onScroll` to the scroll view. Once `overCanvas` is true,
- * a strip of canvas keeps the status bar readable over the cards, and on Android its text turns
- * dark. iOS 27 runs the app on UIScene, where React Native can't set the style, so there it follows
- * the appearance: dark text on the hero in light mode.
+ * Pass `onHeroLayout` to the hero and `onScroll` to the scroll view. Once `overCanvas` is true, a
+ * strip of canvas keeps the status bar readable and Android's status bar text turns dark. iOS 27
+ * runs on UIScene, where React Native can't set that style, so it follows the appearance.
  */
 export function useHeroCover(statusBar: number) {
   const [heroBottom, setHeroBottom] = useState(Number.POSITIVE_INFINITY);

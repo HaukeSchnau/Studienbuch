@@ -112,8 +112,14 @@ export default defineConfig({
       "studienbuch/effect-fn-name": "error",
       "studienbuch/import-boundaries": "error",
       "studienbuch/module-shape": "error",
+      "studienbuch/namespace-node-imports": "error",
       "studienbuch/no-file-kind-directories": "error",
+      "studienbuch/no-inline-schema-compile": "error",
+      "studienbuch/no-low-value-comments": "error",
+      "studienbuch/no-native-title-tooltip": "error",
       "studienbuch/no-throwing-errors": "error",
+      "studienbuch/prefer-catch-tags": "error",
+      "studienbuch/prefer-effect-fn": "error",
       "studienbuch/require-suppression-reason": "error",
       "studienbuch/tagged-error-name": "error",
 
@@ -208,13 +214,13 @@ export default defineConfig({
       {
         // Native Array, String and Object methods are correct and readable. Rewriting them into
         // Effect's modules catches no bug, so only effect-native's other rules apply.
-        // https://github.com/Effect-TS/tsgo/blob/main/docs/rules/prefer-effect-array.md
-        // https://github.com/Effect-TS/tsgo/blob/main/docs/rules/prefer-effect-string.md
-        // https://github.com/Effect-TS/tsgo/blob/main/docs/rules/prefer-effect-record.md
         files: scope("apps/server/**", "packages/{core,sync,e2ee,api}/**"),
         rules: {
+          // https://github.com/Effect-TS/tsgo/blob/main/docs/rules/prefer-effect-array.md
           "effecttsgo/prefer-effect-array": "off",
+          // https://github.com/Effect-TS/tsgo/blob/main/docs/rules/prefer-effect-string.md
           "effecttsgo/prefer-effect-string": "off",
+          // https://github.com/Effect-TS/tsgo/blob/main/docs/rules/prefer-effect-record.md
           "effecttsgo/prefer-effect-record": "off",
         },
       },
@@ -248,17 +254,55 @@ export default defineConfig({
         rules: {
           "studienbuch/no-ad-hoc-state-or-effects": "error",
           "studienbuch/no-baked-origin": "error",
+          "studienbuch/no-raw-resize-observer": "error",
         },
+      },
+      {
+        // The app's screens scroll under the native stack header and the native tabs.
+        files: scope("apps/app/src/**"),
+        rules: { "studienbuch/require-registered-list-scroll": "error" },
+      },
+      {
+        // Feature code receives the platform it runs on. Adapters in infra/, the design system in
+        // ui/ and the routes' navigation options may read it.
+        files: scope(
+          "apps/*/src/{features,domain-ui}/**",
+          "packages/{core,sync,e2ee,api,domain-ui}/**",
+        ),
+        rules: { "studienbuch/no-global-process-runtime": "error" },
+      },
+      {
+        // Copy that people or agents read.
+        files: scope("apps/*/src/**", "packages/*/src/**"),
+        excludeFiles: ["**/*.{test,spec}.{ts,tsx}"],
+        rules: { "studienbuch/no-em-dash-copy": "error" },
+      },
+      {
+        files: scope("apps/*/src/**", "packages/*/src/**"),
+        rules: { "studienbuch/no-dom-test-environment": "error" },
       },
       {
         // Tests are deterministic: they await events and drive the TestClock (AGENTS.md, "Verifying").
         files: ["**/*.{test,spec}.{ts,tsx}"],
         rules: {
+          "studienbuch/no-manual-effect-runtime-in-tests": "error",
           "studienbuch/no-polling-loop-in-tests": "error",
           "studienbuch/no-real-time-wait-in-tests": "error",
+          "studienbuch/no-test-in-loop": "error",
           "studienbuch/no-test-timeout-or-unreasoned-skip": "error",
           "studienbuch/no-wall-clock-in-tests": "error",
+          // Test helpers build inline programs, not reusable services.
+          "studienbuch/prefer-effect-fn": "off",
         },
+      },
+      {
+        // Component tests in the client apps and packages.
+        files: scope("{apps/app,apps/web,packages/ui,packages/domain-ui}/**/*.test.{ts,tsx}"),
+        rules: { "studienbuch/require-disposable-render": "error" },
+      },
+      {
+        files: ["**/*.browser.test.{ts,tsx}"],
+        rules: { "studienbuch/no-frame-waits-in-browser-tests": "error" },
       },
       {
         // packages/e2ee stores nothing and opens no connection.

@@ -1,7 +1,7 @@
 // oxlint-disable-next-line studienbuch/no-throwing-errors -- fixture: an assertion module
-import { ok } from "node:assert";
+import * as NodeAssert from "node:assert";
 
-export const isPositive = (value: number) => ok(value > 0);
+export const isPositive = (value: number) => NodeAssert.ok(value > 0);
 
 export function fail(): never {
   // oxlint-disable-next-line studienbuch/no-throwing-errors -- fixture: a throw
