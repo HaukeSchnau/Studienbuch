@@ -80,7 +80,7 @@ The domain. UI copy is German, code is English:
 
 1. **Killing by pattern.** Kill only a PID you captured at spawn, or the owner of your port from `ss -H -ltnp` after confirming `/proc/<pid>/cwd` is your worktree. Your own agent process has this worktree's path in its argv, and the host runs other agents' dev servers.
 2. **Logging beta out of WebUntis.** Two logins with one WebUntis account log each other out, and beta imports live with the school's account. Develop and test the import against the anonymized corpus. A live login from anywhere else needs Hauke's go and beta's import paused first.
-3. **Baking in an origin.** One web build serves every preview, beta and later prod, and it calls the server on its own origin. Web code uses relative URLs. `EXPO_PUBLIC_API_URL` exists for native builds only, set per EAS environment.
+3. **Baking in an origin.** One web build serves every preview, beta and later prod. `EXPO_PUBLIC_API_URL` exists for native builds only, set per EAS environment.
 4. **Leaking plaintext.** Content of encrypted tables exists in plaintext only on devices. Logs, spans, error messages, the command log, Postgres, dumps and the blob store carry ids, tags and ciphertext. Real names and real student data stay out of fixtures, logs and the repository.
 5. **Changing srv-2 by hand.** Previews, beta, their databases, the app stores and EAS change only through the pipeline (Calder and the Alchemy stack). Reading status and logs is fine. Anything that writes needs Hauke's go at the time.
 
@@ -122,7 +122,7 @@ An empty database is a bad test.
 - Test behavior that can break: the sync engine (outbox, rebase, refusals, convergence), encryption formats and key handling, migrations, import parsing and projection, school rules, auth and membership guards, and the logic a bug fix changed. Leave out what types guarantee, trivial code, copy text, smoke runs and mock-call mirrors.
 - Extend before you add: when an existing test covers the behavior, add a row or an assertion there. Test at one layer, the lowest one that fails without your change.
 - Tests sit next to their module (`Homework.test.ts`), use `@effect/vitest`, and replace dependencies through Layers, never module mocks.
-- Tests are deterministic. `it.effect` runs on a `TestClock`. Await the `Deferred`, take from the `Queue` or drain the worker. A test that needs a sleep, a polling loop, a timeout or a retry to pass is wrong.
+- `it.effect` runs on a `TestClock`. Await the `Deferred`, take from the `Queue` or drain the worker instead of waiting.
 - Proof for a bug fix depends on the bug. Logic, data, state and protocol bugs get a failing test first, then the fix. Visual bugs get before and after screenshots and no test.
 - Look at every user-visible change in a real client before you call it done: a browser on localhost, an iOS simulator, an Android emulator. Claim only what you saw in this session.
 
@@ -169,33 +169,30 @@ The layout below is the target. Packages appear as M0 builds them.
 | `deploy/`, `.calder/`, `nix/` | The Alchemy stack, CI, bundle derivations and checks                                                                                                                  |                                                                         |
 | `tools/oxlint/`               | Local lint plugins                                                                                                                                                    |                                                                         |
 
-Code in `packages/core`, `packages/sync` and `packages/e2ee` also runs on Hermes, which lacks `Temporal`, `toSorted`, `toReversed`, `toSpliced` and `Intl.Segmenter`.
-
 ## Taste
 
 - Complexity belongs at the adapter boundary. Orchestration stays pure, UI stays dumb.
 - Inferred types over annotations. `any` is the enemy.
 - Effect Schema parses every boundary: HTTP, RPC, environment, storage, JSON.
-- Nothing throws, anywhere, and `Promise.reject` or `assert` don't stand in for it. Errors are tagged values in Effect's error channel, named `Domain.ClassName` without an `Error` suffix. Defects use `Effect.die`. `Option` means absence, never a failed parse.
-- `exactOptionalPropertyTypes` stays off on purpose. Don't propose turning it on.
-- Mutators read no clock, randomness, network or SQL. Ids and timestamps arrive as arguments. Civil time follows [ADR 0001](docs/adr/0001-model-civil-time-explicitly.md).
-- A public module is one PascalCase file that exports itself as a namespace (`export * as Homework from "./Homework.ts"` inside `Homework.ts`), imported as `import { Homework } from "./Homework.ts"`. No `import * as` for our own modules and no split into two files. Effect modules keep `import * as Effect from "effect/Effect"`.
+- Errors are tagged values in Effect's error channel. Defects use `Effect.die`. `Option` means absence, never a failed parse.
+- Ids and timestamps reach a mutator as arguments. Civil time follows [ADR 0001](docs/adr/0001-model-civil-time-explicitly.md).
 - Data and subscriptions belong in atoms. A React effect synchronizes with something outside React.
-- Comments state a reason the code can't show, describe how a function is used, and move with the code. A lint suppression carries its reason.
+- Comments state a reason the code can't show, describe how a function is used, and move with the code.
 - If a rule here fights the task in front of you, say so loudly and get a human sign-off before breaking it.
+
+## Lint
+
+`vp check` enforces most rules of this codebase, through oxlint with type information, the Effect presets, anti-slop and our plugin in `tools/oxlint/`: no throwing, the module shape, package boundaries, mutator purity, APIs Hermes lacks, baked-in origins, directory names, deterministic tests, and a reason on every suppression. When a rule fights a real need, change the rule in its own PR rather than suppressing it in passing. A convention that keeps coming up in review belongs in the plugin, not in this file.
 
 ## Effect
 
 - `effect` and every `@effect/*` sit at one exact version in the catalog and move together. Most modules we use are marked unstable and change in patch releases, so read the changelog on every bump.
 - Before designing Effect-heavy code, check whether Effect already supplies the schema, error, concurrency, lifecycle, scheduling, SQL, RPC or testing abstraction the problem needs.
 - The installed package source is the authority on exact behavior. `~/context/effect-ts-effect` (checked out at the pinned tag) and `~/context/effect-ts-website` hold upstream source and docs. Check APIs there rather than from memory or another release.
-- Reusable Effect functions use `Effect.fn("Service.operation")`, which names their span.
 
 ## Directory naming
 
 A directory name answers **why this code exists**, never **what kind of file it is**. There are two reasons to exist: the problem (domain) or a technology choice (infrastructure). The top level of every app and package makes which one visible. The test: swap the technology, which directories change? Change the product, which change? A directory that would change for both is misnamed.
-
-`lib`, `utils`, `helpers`, `common`, `shared`, `misc` and `types` are not directory names. They describe file kinds, attract anything without an obvious home, and stop explaining themselves once they hold two things.
 
 Apps use:
 
