@@ -1,0 +1,17 @@
+{
+  "name": "@stu/deploy",
+  "private": true,
+  "license": "BUSL-1.1",
+  "type": "module",
+  "devDependencies": {
+    "@alchemy.run/cloudflare": "2.0.0-beta.84",
+    "@effect/platform-node": "4.0.7",
+    "@effect/vitest": "4.0.7",
+    "@schnau/fleet": "0.3.0",
+    "alchemy": "2.0.0-beta.84",
+    "effect": "4.0.7",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  },
+  "packageManager": "pnpm@12.9.0"
+}

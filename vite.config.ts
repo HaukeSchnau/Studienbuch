@@ -38,9 +38,15 @@ export default defineConfig({
     sortPackageJson: {},
   },
   test: {
-    // The lint fixtures include test files that exist to fail the lint, not to run.
-    // Browser tests run in each package's browser project (apps/app/vite.config.ts), never in Node.
-    exclude: [...defaultExclude, "tools/oxlint/fixtures/**", "**/*.browser.test.{ts,tsx}"],
+    exclude: [
+      ...defaultExclude,
+      // The lint fixtures include test files that exist to fail the lint, not to run.
+      "tools/oxlint/fixtures/**",
+      // Browser tests run in each package's browser project (apps/app/vite.config.ts), never in Node.
+      "**/*.browser.test.{ts,tsx}",
+      // The Alchemy stack's tests run on its own install's vitest (`test-deploy` in .calder/ci.ts).
+      "deploy/**",
+    ],
   },
   lint: {
     ignorePatterns: [
