@@ -1,16 +1,20 @@
 import { Site } from "#/domain-ui/Site.ts";
+import { AppIcon } from "#/domain-ui/Wordmark.tsx";
 import { Blob } from "#/ui/Blob.tsx";
 
 const points = [
   {
+    icon: "M12 3v11M7.5 9.5 12 14l4.5-4.5M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3",
     title: "Import statt Doppelpflege",
     body: "Klassen, Kurse, Stundenpläne und Vertretungen kommen aus dem Stundenplansystem der Schule, etwa WebUntis. Niemand tippt einen Plan zweimal ab.",
   },
   {
+    icon: "M14.5 9.5a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM13.4 12.4 20 19M17 16l2-2M15.5 14.5l1.5-1.5",
     title: "Zugang über die Schule",
     body: "Schülerinnen und Schüler richten die App mit einem Zugangscode der Schule ein. Wer dazugehört, entscheidet die Schule, nicht eine offene Registrierung.",
   },
   {
+    icon: "M3 6a1 1 0 0 1 1-1h11a1 1 0 0 1 1 1v8H3zM1.5 17h16M18 9h3.5a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H18a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z",
     title: "Auf jedem Gerät",
     body: "iPhone, Android oder der Browser im Computerraum: Es ist dieselbe App, und sie gleicht sich zwischen den Geräten ab.",
   },
@@ -66,34 +70,76 @@ const questions = [
   },
 ] as const;
 
+/** A printed access code, the slip a school hands out. Drawn, like the paper booklet above. */
+function AccessSlip({ code, className }: { code: string; className: string }) {
+  return (
+    <div className={`slip ${className}`}>
+      <p className="slip-brand">
+        <AppIcon size="small" />
+        Studienbuch
+      </p>
+      <p className="slip-school">IGS Musterstadt</p>
+      <p className="slip-label">Dein Zugangscode</p>
+      <p className="slip-code">{code}</p>
+      <p className="slip-note">Einmal gültig. Gib ihn beim Einrichten der App ein.</p>
+    </div>
+  );
+}
+
 /**
- * What adopting Studienbuch means for a school, in the "Sie" the legal pages use: three plain
- * answers, the way in, the questions a school asks. The enquiry is an email, because the rewrite's
- * server has no enquiry endpoint yet.
+ * What adopting Studienbuch means for a school, in the "Sie" the legal pages use. It opens like the
+ * hero, with the way in at hand: a conversation, by email, because the rewrite's server has no
+ * enquiry endpoint yet. The slips show what reaches students: a code from their school.
  */
 export function ForSchools() {
   return (
     <section className="section section-canvas schools" id={Site.sections.schools}>
-      <Blob
-        className="schools-blob"
-        duration={22}
-        offset={0.75}
-        rotate={-12}
-        outline="notch"
-        tone="green"
-      />
       <div className="container">
-        <div className="section-heading">
-          <h2>Studienbuch an Ihre Schule holen</h2>
-          <p>
-            Studienbuch ersetzt das Papier-Studienbuch für eine ganze Schule. Die Einführung beginnt
-            mit einem Gespräch, nicht mit einem Vertrag.
-          </p>
+        <div className="schools-intro reveal">
+          <Blob
+            className="schools-intro-blob"
+            duration={22}
+            offset={0.75}
+            outline="notch"
+            rotate={-12}
+            tone="green"
+          />
+          <Blob
+            className="schools-intro-blob-blue"
+            duration={28}
+            offset={0.3}
+            outline="twin"
+            rotate={140}
+            tone="blue"
+          />
+          <div className="schools-intro-text">
+            <h2>Studienbuch an Ihre Schule holen</h2>
+            <p className="schools-lead">
+              Studienbuch ersetzt das Papier-Studienbuch für eine ganze Schule. Die Einführung
+              beginnt mit einem Gespräch, nicht mit einem Vertrag.
+            </p>
+            <div className="schools-cta">
+              <a className="button button-accent press" href={Site.schoolEnquiry}>
+                Gespräch vereinbaren
+              </a>
+              <p>
+                oder an <a href={`mailto:${Site.email}`}>{Site.email}</a>. Wir melden uns innerhalb
+                von zwei Werktagen.
+              </p>
+            </div>
+          </div>
+          <div aria-hidden className="slips">
+            <AccessSlip className="slip-back" code="9RTB 4WNC" />
+            <AccessSlip className="slip-front" code="K7QF 2MDX" />
+          </div>
         </div>
 
         <ul className="school-points reveal-group">
-          {points.map(({ title, body }) => (
+          {points.map(({ icon, title, body }) => (
             <li className="school-point reveal" key={title}>
+              <svg aria-hidden className="benefit-icon" viewBox="0 0 24 24">
+                <path d={icon} />
+              </svg>
               <h3>{title}</h3>
               <p>{body}</p>
             </li>
@@ -113,15 +159,6 @@ export function ForSchools() {
               </li>
             ))}
           </ol>
-          <div className="school-contact reveal">
-            <p>
-              Schreiben Sie uns, wie Ihre Schule heißt und wie viele Schülerinnen und Schüler sie
-              hat. Wir melden uns innerhalb von zwei Werktagen.
-            </p>
-            <a className="button button-accent press" href={Site.schoolEnquiry}>
-              Gespräch vereinbaren
-            </a>
-          </div>
         </div>
 
         <div className="faq">

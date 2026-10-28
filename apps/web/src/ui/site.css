@@ -437,13 +437,24 @@ summary,
   border-top: 1px solid var(--color-hairline);
 }
 
-/* Store badges and the browser link, a matched row. */
+/* Store badges, and the web app as a quiet line below them. */
 
 .store-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.store-badge-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 12px;
+}
+
+.store-badge {
+  border-radius: 10px;
 }
 
 .store-badge img {
@@ -457,35 +468,60 @@ summary,
   }
 }
 
-.store-badge,
-.browser-badge {
-  border-radius: 10px;
-}
-
-.store-badge:hover,
-.browser-badge:hover {
+.store-badge:hover {
   translate: 0 -2px;
 }
 
-.browser-badge {
+.browser-link {
   display: inline-flex;
   align-items: center;
-  height: 46px;
-  padding: 0 18px;
-  font-size: 16px;
-  font-weight: 800;
+  gap: 6px;
+  padding: 4px 0;
+  color: var(--color-accent);
+  font-size: 17px;
+  font-weight: 700;
   text-decoration: none;
 }
 
-.store-badges-canvas .browser-badge {
-  background: var(--color-surface);
-  color: var(--color-accent);
-  box-shadow: inset 0 0 0 2px var(--color-accent);
+.browser-link-text {
+  position: relative;
 }
 
-.store-badges-hero .browser-badge {
-  background: var(--color-surface);
-  color: var(--color-accent);
+.browser-link-underline {
+  bottom: -4px;
+  color: var(--color-hero-edge);
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 340ms var(--ease-in-out);
+}
+
+.browser-link:hover .browser-link-underline,
+.browser-link:focus-visible .browser-link-underline {
+  clip-path: inset(0 -2% 0 0);
+}
+
+.browser-link-arrow {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+  transition: translate 200ms var(--ease-out);
+}
+
+.browser-link:hover .browser-link-arrow {
+  translate: 3px 0;
+}
+
+/* On the brand green, white and at least 19 px bold, so it counts as large text (3.24:1). */
+.store-badges-hero .browser-link {
+  color: #ffffff;
+  font-size: 19px;
+}
+
+.store-badges-hero .browser-link-underline {
+  color: #ffffff;
 }
 
 /*

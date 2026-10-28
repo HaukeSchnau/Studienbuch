@@ -2,6 +2,7 @@ import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { StyleSheet, Text, View } from "react-native";
 
+import { Card } from "./Card.tsx";
 import { Type } from "./Type.ts";
 
 export interface WeekDay {
@@ -23,13 +24,14 @@ export interface WeekCell {
   readonly change?: "Vertretung" | "Entfall";
 }
 
-const cellHeight = 64;
-const rowGap = 6;
+const cellHeight = 58;
+const rowGap = Tokens.space.sm;
+const columnGap = 6;
 
 /**
- * Stand-in for "Meine Woche" (design-language.md, variant B) until M1 builds it in
- * packages/domain-ui. Today's column is tinted and its date sits in a green pill; `now` draws the
- * line through today at that point of a period.
+ * Stand-in for "Meine Woche" (variant B) until M1 builds it in packages/domain-ui. Today's column
+ * is tinted and its date sits in a green pill; `now` draws the line through today at that point of
+ * a period.
  */
 export function WeekGrid({
   days,
@@ -45,15 +47,10 @@ export function WeekGrid({
   today: string | undefined;
   now?: { readonly period: number; readonly fraction: number };
 }) {
-  const { color, elevation } = Theme.useTheme();
+  const { color } = Theme.useTheme();
 
   return (
-    <View
-      style={[
-        styles.card,
-        { backgroundColor: color.surface, borderColor: color.cardEdge, boxShadow: elevation.card },
-      ]}
-    >
+    <Card style={styles.card}>
       <View style={styles.row}>
         <View style={styles.times} />
         {days.map((day) => {
@@ -65,16 +62,11 @@ export function WeekGrid({
               style={[styles.dayHeader, isToday && { backgroundColor: color.accent }]}
             >
               <Text
-                style={[
-                  Type.style("footnote"),
-                  { color: isToday ? color.onAccent : color.inkSoft },
-                ]}
+                style={[Type.style("label"), { color: isToday ? color.onAccent : color.inkSoft }]}
               >
                 {day.name}
               </Text>
-              <Text
-                style={[Type.style("headline"), { color: isToday ? color.onAccent : color.ink }]}
-              >
+              <Text style={[Type.style("title"), { color: isToday ? color.onAccent : color.ink }]}>
                 {day.date}
               </Text>
             </View>
@@ -82,9 +74,12 @@ export function WeekGrid({
         })}
       </View>
       <View style={styles.row}>
-        <View style={styles.times}>
+        <View style={[styles.times, styles.column]}>
           {periods.map((time) => (
-            <Text key={time} style={[Type.style("caption"), styles.time, { color: color.inkSoft }]}>
+            <Text
+              key={time}
+              style={[Type.style("cellDetail"), styles.time, { color: color.inkSoft }]}
+            >
               {time}
             </Text>
           ))}
@@ -92,7 +87,11 @@ export function WeekGrid({
         {days.map((day) => (
           <View
             key={day.id}
-            style={[styles.column, day.id === today && { backgroundColor: color.accentTint }]}
+            style={[
+              styles.column,
+              styles.grow,
+              day.id === today && { backgroundColor: color.accentTint },
+            ]}
           >
             {periods.map((time, period) => {
               const cell = cells.find((each) => each.day === day.id && each.period === period);
@@ -119,7 +118,7 @@ export function WeekGrid({
           </View>
         ))}
       </View>
-    </View>
+    </Card>
   );
 }
 
@@ -135,20 +134,20 @@ function Cell({ cell }: { cell: WeekCell }) {
           { backgroundColor: color.dangerTint, borderColor: color.danger },
         ]}
       >
-        <Text style={[Type.style("caption"), styles.struck, { color: color.danger }]}>
+        <Text style={[Type.style("cellDetail"), styles.struck, { color: color.danger }]}>
           {cell.subject}
         </Text>
-        <Text style={[Type.style("caption"), { color: color.danger }]}>Entfall</Text>
+        <Text style={[Type.style("cell"), { color: color.danger }]}>Entfall</Text>
       </View>
     );
   }
 
   return (
     <View style={[styles.cell, { backgroundColor: Tokens.subject[cell.slot].fill }]}>
-      <Text numberOfLines={1} style={[Type.style("caption"), styles.label]}>
+      <Text numberOfLines={1} style={[Type.style("cell"), styles.onFill]}>
         {cell.subject}
       </Text>
-      <Text style={[Type.style("caption"), styles.teacher]}>
+      <Text style={[Type.style("cellDetail"), styles.onFillSoft]}>
         {cell.change === "Vertretung" ? `⇄ ${cell.teacher}` : cell.teacher}
       </Text>
     </View>
@@ -156,23 +155,18 @@ function Cell({ cell }: { cell: WeekCell }) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: Tokens.radius.card,
-    borderWidth: 1,
-    padding: Tokens.space.sm,
-    paddingTop: Tokens.space.md,
-    gap: Tokens.space.sm,
-  },
-  row: { flexDirection: "row", gap: 4 },
-  times: { width: 38, gap: rowGap },
-  time: { height: cellHeight, paddingTop: 4 },
+  card: { padding: Tokens.space.sm, paddingTop: Tokens.space.md, gap: Tokens.space.sm },
+  row: { flexDirection: "row", gap: columnGap },
+  times: { width: 36 },
+  column: { gap: rowGap, borderRadius: Tokens.radius.cell },
+  grow: { flex: 1 },
+  time: { height: cellHeight, paddingTop: Tokens.space.xs, textAlign: "right", paddingRight: 2 },
   dayHeader: {
     flex: 1,
     alignItems: "center",
     borderRadius: Tokens.radius.cell + 2,
     paddingVertical: Tokens.space.xs,
   },
-  column: { flex: 1, gap: rowGap, borderRadius: Tokens.radius.cell },
   empty: { height: cellHeight },
   cell: {
     height: cellHeight,
@@ -180,11 +174,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 2,
+    gap: 1,
   },
   cancelled: { borderWidth: 1.5, borderStyle: "dashed" },
-  label: { color: "#FFFFFF" },
-  teacher: { color: "#FFFFFF", fontWeight: "600" },
+  onFill: { color: "#FFFFFF" },
+  onFillSoft: { color: "rgba(255, 255, 255, 0.88)" },
   struck: { textDecorationLine: "line-through" },
-  now: { position: "absolute", left: -4, right: 0, height: 2.5 },
-  nowDot: { position: "absolute", left: -4, top: -3.5, width: 9, height: 9, borderRadius: 4.5 },
+  now: { position: "absolute", left: -3, right: 0, height: 2 },
+  nowDot: { position: "absolute", left: -3, top: -3.5, width: 9, height: 9, borderRadius: 4.5 },
 });

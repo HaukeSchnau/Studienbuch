@@ -23,31 +23,56 @@ const tabs = [
 ] as const;
 
 /**
- * A phone around a live app screen. The screen is laid out at 390 points, the width of the mocks,
- * and `zoom` on the device (landing.css, `--phone-zoom`) scales it to its placement. The figure
- * itself carries position and rotation, because zoom would scale its offsets too. Status bar and tab bar are
- * device chrome drawn here: in the app the operating system draws them (variant B).
+ * A phone around a live app screen, frameless like the August page's renders. The screen is laid
+ * out at 390 points, the width of the mocks, and `zoom` on the device (landing.css,
+ * `--phone-zoom`) scales it to its placement; the figure carries position and rotation, because
+ * zoom would scale its offsets too. Status bar and tab bar are device chrome drawn here: in the app
+ * the operating system draws them (variant B).
+ *
+ * A phone at `depth="back"` sits behind another. A tap anywhere on it, or keyboard focus reaching
+ * one of its controls, calls `onRaise`; the tap lands on a cover over the screen, so it brings the
+ * phone forward without also pressing whatever was under the finger.
  */
 export function PhoneFrame({
   tab,
   label,
   className,
+  depth,
+  onRaise,
+  raiseLabel,
   children,
 }: {
   tab: Tab;
   /** What the screen shows, for people who can't see it. */
   label: string;
   className: string;
+  depth?: "front" | "back";
+  onRaise?: () => void;
+  /** The affordance on a phone in the back, such as "Noten ansehen". */
+  raiseLabel?: string;
   children: ReactNode;
 }) {
+  const back = depth === "back";
+
   return (
-    <figure aria-label={label} className={`phone ${className}`}>
+    <figure
+      aria-label={label}
+      className={`phone ${className}`}
+      data-depth={depth}
+      onFocusCapture={back ? onRaise : undefined}
+    >
       <div className="phone-device">
         <div className="phone-screen">
           <div aria-hidden className="phone-status">
             <span>{Demo.clock}</span>
-            <span className="phone-island" />
-            <span className="phone-battery" />
+            <svg className="phone-status-icons" viewBox="0 0 66 14">
+              <path d="M1 13h3V9H1zM6 13h3V6.5H6zM11 13h3V4h-3zM16 13h3V1.5h-3z" />
+              <path
+                className="phone-status-wifi"
+                d="M26 5.2a10 10 0 0 1 13 0M28.4 8a6.2 6.2 0 0 1 8.2 0M30.8 10.8a2.4 2.4 0 0 1 3.4 0"
+              />
+              <rect height="11" rx="3" width="21" x="43" y="1.5" />
+            </svg>
           </div>
           <div className="phone-content">{children}</div>
           <div aria-hidden className="phone-tabs">
@@ -62,6 +87,11 @@ export function PhoneFrame({
           </div>
         </div>
       </div>
+      {back ? (
+        <button aria-hidden className="phone-raise" onClick={onRaise} tabIndex={-1} type="button">
+          <span className="phone-raise-hint">{raiseLabel}</span>
+        </button>
+      ) : null}
     </figure>
   );
 }

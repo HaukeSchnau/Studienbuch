@@ -103,50 +103,127 @@
   }
 }
 
-/* The phones. Each figure is positioned and rotated; its device is zoomed to `--phone-zoom`. */
+/*
+ * The phones: one scene, two devices one behind the other, both tilted the same way, as in the
+ * August render. Each phone sits in a slot, `data-depth="front"` or `"back"`, given by translate
+ * and scale, so swapping them is a transition of two compositor properties; the z-index changes at
+ * once, so the phone coming forward passes in front of the other. `--phone-zoom` sizes the device.
+ */
 
 .hero-phones {
   position: relative;
-  height: 430px;
-  margin-bottom: 48px;
   perspective: 1400px;
 }
 
-.hero-phones .phone {
-  --phone-zoom: 0.44;
+.hero-scene {
+  --phone-zoom: 0.48;
+  --front: 0px 44px;
+  --back: 180px 0px;
+  --back-peek: 186px -12px;
+  --back-scale: 0.9;
+  position: relative;
+  max-width: 342px;
+  height: 470px;
+  margin: 0 auto 56px;
+}
+
+.hero-scene .phone {
   position: absolute;
-}
-
-.phone-today {
-  left: -2%;
-  top: 34px;
-  rotate: -7deg;
-}
-
-.phone-course {
-  left: 47%;
   top: 0;
-  rotate: 6deg;
+  left: 0;
+  rotate: -7deg;
+  transition:
+    translate 560ms var(--ease-out),
+    scale 560ms var(--ease-out),
+    transform 320ms var(--ease-out);
+}
+
+.phone[data-depth="front"] {
+  z-index: 2;
+  translate: var(--front);
+}
+
+.phone[data-depth="back"] {
+  z-index: 1;
+  translate: var(--back);
+  scale: var(--back-scale);
+}
+
+/* Without JavaScript, a phone with keyboard focus inside at least comes to the top. */
+.phone[data-depth="back"]:focus-within {
+  z-index: 3;
+}
+
+/* The tap target over a phone in the back, and the label that says it can be tapped. */
+.phone-raise {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  padding: 0;
+  border: 0;
+  border-radius: 32px;
+  background: transparent;
+}
+
+/* Hung on the phone's lower edge, where it covers no content. */
+.phone-raise-hint {
+  position: absolute;
+  right: 18%;
+  bottom: -30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--color-surface);
+  box-shadow: var(--elevation-float);
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: scale 200ms var(--ease-out);
+}
+
+.phone-raise-hint::after {
+  content: "→";
+  translate: 0 -1px;
+}
+
+@media (hover: hover) {
+  .phone[data-depth="back"]:hover {
+    translate: var(--back-peek);
+  }
+
+  .phone[data-depth="back"]:hover .phone-raise-hint {
+    scale: 1.06;
+  }
 }
 
 .hero-hint {
   position: absolute;
-  bottom: -44px;
-  left: 4%;
+  bottom: -60px;
+  left: 0;
   display: flex;
+  flex-direction: row-reverse;
   align-items: flex-end;
   gap: 4px;
   color: var(--color-accent);
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 700;
   rotate: -3deg;
+  transition: opacity 300ms ease;
+}
+
+/* The hint is about the Übersicht; it steps aside once the course is in front. */
+.hero-scene[data-front="course"] .hero-hint {
+  opacity: 0;
 }
 
 /* Drawn pointing down into the phone above it; below 1024 px the hint sits under the phones. */
 .hero-hint-arrow {
-  width: 34px;
-  height: 46px;
-  margin-bottom: 8px;
+  width: 30px;
+  height: 40px;
+  margin-bottom: 6px;
   fill: none;
   stroke: var(--color-hero-edge);
   stroke-linecap: round;
@@ -156,20 +233,13 @@
 }
 
 @media (min-width: 640px) {
-  .hero-phones {
-    height: 600px;
-  }
-
-  .hero-phones .phone {
-    --phone-zoom: 0.62;
-  }
-
-  .phone-today {
-    left: 4%;
-  }
-
-  .phone-course {
-    left: 48%;
+  .hero-scene {
+    --phone-zoom: 0.64;
+    --front: 0px 60px;
+    --back: 222px 0px;
+    --back-peek: 230px -16px;
+    max-width: 470px;
+    height: 620px;
   }
 }
 
@@ -196,55 +266,51 @@
     align-self: start;
   }
 
-  /* The phones are allowed past their column and off the right edge of the page. */
+  /* The scene may run past its column, towards the right edge of the page. */
   .hero-phones {
     grid-column: 2;
     grid-row: 1 / span 2;
-    height: 720px;
-    margin-bottom: 0;
-    margin-right: -7vw;
+    margin-right: -6vw;
   }
 
-  .hero-phones .phone {
-    --phone-zoom: 0.76;
-  }
-
-  .phone-today {
-    left: -4%;
-    top: 64px;
-  }
-
-  .phone-course {
-    left: 52%;
-    top: 0;
+  .hero-scene {
+    --phone-zoom: 0.78;
+    --front: 0px 92px;
+    --back: 282px 0px;
+    --back-peek: 292px -18px;
+    max-width: none;
+    height: 780px;
+    margin: 0;
   }
 
   /* Above the Übersicht, pointing down into its lessons. */
   .hero-hint {
-    top: -6px;
+    top: 8px;
     bottom: auto;
-    left: -2%;
+    left: 6px;
     flex-direction: row-reverse;
     align-items: flex-start;
   }
 
   .hero-hint-arrow {
-    margin: 22px 4px 0 0;
+    margin: 20px 4px 0 0;
     scale: 1 1;
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .hero-phones .phone {
+  .hero-scene .phone-device {
     animation: phone-in 900ms var(--ease-out) 120ms both;
   }
 
-  .hero-phones .phone-course {
-    animation-delay: 280ms;
+  .hero-scene .phone-course .phone-device {
+    animation-delay: 300ms;
   }
 
-  .hero-hint {
-    animation: fade 600ms ease 1400ms both;
+  /* Backwards only: the hint's opacity also answers which phone is in front. */
+  .hero-hint,
+  .phone-raise-hint {
+    animation: fade 600ms ease 1400ms backwards;
   }
 }
 
@@ -252,13 +318,11 @@
   from {
     opacity: 0;
     translate: 0 80px;
-    scale: 0.94;
   }
 
   to {
     opacity: 1;
     translate: 0 0;
-    scale: 1;
   }
 }
 
@@ -266,17 +330,35 @@
 
 .phone {
   margin: 0;
+  transition: transform 320ms var(--ease-out);
 }
 
+/* Frameless, as the August renders: the screen is the device, lifted by a navy-tinted shadow. */
 .phone-device {
   zoom: var(--phone-zoom, 0.6);
-  width: 414px;
-  padding: 12px;
-  border-radius: 62px;
-  background: #121820;
+  width: 390px;
+  overflow: hidden;
+  border-radius: 56px;
+  background: var(--color-canvas);
   box-shadow:
-    0 40px 80px rgb(32 55 85 / 0.28),
-    inset 0 0 0 2px rgb(255 255 255 / 0.1);
+    0 0 0 1.5px rgb(32 55 85 / 0.08),
+    0 36px 80px rgb(32 55 85 / 0.24);
+  transition: box-shadow 560ms var(--ease-out);
+}
+
+.phone[data-depth="back"] .phone-device {
+  box-shadow:
+    0 0 0 1.5px rgb(32 55 85 / 0.08),
+    0 18px 44px rgb(32 55 85 / 0.16);
+}
+
+@media (prefers-color-scheme: dark) {
+  .phone-device,
+  .phone[data-depth="back"] .phone-device {
+    box-shadow:
+      0 0 0 1.5px rgb(255 255 255 / 0.1),
+      0 36px 80px rgb(0 0 0 / 0.55);
+  }
 }
 
 .phone-screen {
@@ -284,8 +366,6 @@
   width: 390px;
   height: 844px;
   overflow: hidden;
-  border-radius: 50px;
-  background: var(--color-canvas);
 }
 
 /* A highlight passing over the glass now and then, so the screen reads as lit. */
@@ -297,7 +377,7 @@
     background: linear-gradient(
         105deg,
         transparent 44%,
-        rgb(255 255 255 / 0.28) 50%,
+        rgb(255 255 255 / 0.22) 50%,
         transparent 56%
       )
       no-repeat;
@@ -337,29 +417,24 @@
   align-items: center;
   justify-content: space-between;
   height: 54px;
-  padding: 0 34px 0 46px;
+  padding: 8px 30px 0 40px;
   color: #ffffff;
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 600;
   pointer-events: none;
 }
 
-.phone-island {
-  position: absolute;
-  top: 11px;
-  left: 50%;
-  width: 122px;
-  height: 35px;
-  border-radius: 20px;
-  background: #000000;
-  translate: -50% 0;
+.phone-status-icons {
+  width: 66px;
+  height: 14px;
+  fill: currentColor;
 }
 
-.phone-battery {
-  width: 27px;
-  height: 13px;
-  border-radius: 4px;
-  background: #ffffff;
+.phone-status-wifi {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2.2;
 }
 
 .phone-tabs {
@@ -368,8 +443,8 @@
   z-index: 2;
   display: flex;
   justify-content: space-around;
-  height: 88px;
-  padding: 8px 12px 0;
+  height: 84px;
+  padding: 10px 16px 0;
   border-top: 1px solid var(--color-hairline);
   background: var(--color-surface);
 }
@@ -383,6 +458,7 @@
   border-radius: 3px;
   background: var(--color-ink);
   content: "";
+  opacity: 0.85;
   translate: -50% 0;
 }
 
@@ -394,7 +470,7 @@
   width: 104px;
   color: var(--color-ink-soft);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .phone-tab-icon {
@@ -406,11 +482,12 @@
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2;
+  stroke-width: 1.9;
 }
 
 .phone-tab[data-active="true"] {
   color: var(--color-accent);
+  font-weight: 600;
 }
 
 .phone-tab[data-active="true"] .phone-tab-icon {
@@ -421,7 +498,6 @@
 [data-pointer] .phone {
   transform: rotateX(calc(var(--pointer-y, 0) * var(--lean, 3.5deg) * -1))
     rotateY(calc(var(--pointer-x, 0) * var(--lean, 3.5deg)));
-  transition: transform 320ms var(--ease-out);
 }
 
 /* ---------- Subject strip ---------- */
@@ -657,7 +733,6 @@
 
 .features-blob,
 .privacy-blob,
-.schools-blob,
 .get-app-blob {
   display: none;
 }
@@ -666,7 +741,6 @@
 @media (min-width: 1440px) {
   .features-blob,
   .privacy-blob,
-  .schools-blob,
   .get-app-blob {
     display: block;
   }
@@ -688,13 +762,23 @@
 .feature {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  justify-content: space-between;
+  gap: 28px;
   padding: 20px 20px 28px;
   border-radius: var(--radius-panel);
 }
 
+/* A component shorter than its neighbour's sits centred in the space it has. */
 .feature-preview {
-  margin-bottom: 14px;
+  display: grid;
+  flex: 1;
+  align-content: center;
+}
+
+.feature-text {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 /* The components are laid out for a 390-point phone; inside a card on one, they get a little room. */
@@ -771,9 +855,18 @@
   .feature-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas:
-      "timetable grades"
-      "absences grades"
+      "timetable absences"
+      "grades grades"
       "offline offline";
+  }
+
+  /* The wide cards put the component beside the text, the grades card on the left. */
+  .feature-grades {
+    display: grid;
+    grid-template-columns: minmax(0, 28rem) minmax(0, 1fr);
+    align-items: center;
+    gap: 48px;
+    padding: 32px 52px 32px 32px;
   }
 
   .feature-timetable {
@@ -791,58 +884,46 @@
   .feature-offline {
     grid-area: offline;
     grid-template-columns: minmax(0, 1fr) minmax(0, 27rem);
+    align-items: start;
     gap: 48px;
     padding: 52px;
   }
 }
 
-.airplane {
-  display: inline-flex;
+.feature-offline-preview {
+  display: grid;
+  gap: 12px;
+}
+
+/* The demo phone's connection, on a darker pill so white text holds 4.4:1 at 19 px bold. */
+.feature-offline .signal {
+  display: flex;
   align-items: center;
-  gap: 14px;
-  margin-top: 12px;
-  padding: 8px 22px 8px 8px;
-  border: 0;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 18px;
   border-radius: 999px;
   background: rgb(0 0 0 / 0.16);
   color: #ffffff;
-  font: 800 20px var(--font-family);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.3;
+  transition: background-color 300ms ease;
 }
 
-.airplane-track {
-  position: relative;
-  width: 54px;
-  height: 32px;
-  border-radius: 16px;
-  background: rgb(0 0 0 / 0.25);
-  transition: background 200ms ease;
+.feature-offline .signal[data-signal="synced"] {
+  background: rgb(0 0 0 / 0.26);
 }
 
-.airplane-thumb {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #ffffff;
-  transition: translate 260ms var(--ease-out);
-}
-
-.airplane[aria-checked="true"] .airplane-track {
-  background: var(--color-panel-card);
-}
-
-.airplane[aria-checked="true"] .airplane-thumb {
-  translate: 22px 0;
-}
-
-.airplane:focus-visible {
-  outline-color: #ffffff;
-}
-
-.feature-offline .airplane-status {
-  min-height: 3.2em;
+.signal-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
 }
 
 /* ---------- Privacy ---------- */
@@ -864,6 +945,7 @@
 @media (min-width: 960px) {
   .privacy-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 30rem);
+    align-items: start;
     column-gap: 64px;
   }
 }
@@ -872,43 +954,42 @@
   margin-bottom: 32px;
 }
 
-.privacy-visible {
-  padding: 24px 28px;
-  border: 1px solid var(--color-hairline);
-  border-radius: var(--radius-card);
-  background: var(--color-canvas);
+.benefits {
+  display: grid;
+  gap: 20px;
+}
+
+.benefit {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.benefit-icon {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--color-accent-tint);
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.benefit h3 {
+  color: var(--color-ink);
+  font-size: 19px;
+  line-height: 1.4;
+}
+
+.benefit p {
+  margin-top: 2px;
   color: var(--color-ink-soft);
   font-size: 17px;
-}
-
-.privacy-visible h3 {
-  margin-bottom: 6px;
-  color: var(--color-ink);
-  font-size: 20px;
-}
-
-.privacy-visible ul {
-  display: grid;
-  gap: 6px;
-  margin: 14px 0;
-}
-
-.privacy-visible li {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  color: var(--color-ink);
-  font-weight: 600;
-}
-
-.privacy-visible li::before {
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-hero-edge);
-  content: "";
-  translate: 0 -2px;
+  line-height: 1.5;
 }
 
 .vault {
@@ -1019,29 +1100,204 @@
 
 /* ---------- Schools ---------- */
 
-.schools-blob {
-  --drift: 20s;
-  top: 13rem;
-  right: -12rem;
-  width: 20rem;
-  height: 20rem;
+/* Opens like the hero: a tinted panel with the blobs inside it, text left, the code slips right. */
+.schools-intro {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  gap: 40px;
+  overflow: hidden;
+  margin-bottom: 64px;
+  padding: 40px 24px 48px;
+  border-radius: 40px;
+  background: var(--color-accent-tint);
+}
+
+.schools-intro-blob {
+  --drift: 22s;
+  right: -6rem;
+  bottom: -7rem;
+  width: 22rem;
+  height: 22rem;
+}
+
+.schools-intro-blob-blue {
+  --drift: 27s;
+  top: -8rem;
+  right: 18%;
+  width: 16rem;
+  height: 16rem;
+}
+
+.schools-intro-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.schools-intro h2 {
+  color: var(--color-accent);
+  font-size: clamp(2rem, 1.3rem + 2.6vw, 2.875rem);
+  line-height: 1.2;
+}
+
+.schools-lead {
+  max-width: 34rem;
+  color: var(--color-ink);
+  font-size: 20px;
+  line-height: 1.6;
+}
+
+.schools-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin-top: 8px;
+}
+
+.schools-cta p {
+  max-width: 22rem;
+  color: var(--color-ink);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.slips {
+  position: relative;
+  justify-self: center;
+  width: min(100%, 320px);
+  height: 250px;
+}
+
+/* Always paper, in dark mode too: it is an object, not a surface of the page. */
+.slip {
+  position: absolute;
+  width: 260px;
+  padding: 18px 20px 16px;
+  border-radius: 6px;
+  background: #fdfcf7;
+  box-shadow:
+    0 18px 40px rgb(32 55 85 / 0.16),
+    inset 0 0 0 1.5px rgb(32 55 85 / 0.06);
+  color: #203755;
+  outline: 1.5px dashed rgb(32 55 85 / 0.25);
+  outline-offset: -8px;
+}
+
+.slip-back {
+  top: 0;
+  right: 0;
+  rotate: 7deg;
+}
+
+.slip-front {
+  bottom: 0;
+  left: 0;
+  rotate: -5deg;
+}
+
+.slip-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #097d00;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.slip-brand .app-icon-small {
+  width: 22px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.slip-school {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.slip-label {
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.slip-code {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.slip-note {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .schools-intro:hover .slip-front {
+    rotate: -8deg;
+    translate: -6px 4px;
+  }
+
+  .schools-intro:hover .slip-back {
+    rotate: 10deg;
+    translate: 6px -4px;
+  }
+
+  .slip {
+    transition:
+      rotate 400ms var(--ease-out),
+      translate 400ms var(--ease-out);
+  }
+}
+
+@media (min-width: 640px) {
+  .schools-intro {
+    padding: 56px 48px;
+    border-radius: 56px;
+  }
+}
+
+@media (min-width: 960px) {
+  .schools-intro {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    align-items: center;
+    padding: 64px;
+  }
+
+  .slips {
+    height: 280px;
+  }
 }
 
 .school-points {
   display: grid;
   gap: 32px;
-  margin-bottom: 80px;
+  margin-bottom: 72px;
 }
 
 .school-point {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-content: start;
+  column-gap: 16px;
+  row-gap: 4px;
+}
+
+.school-point .benefit-icon {
+  grid-row: span 2;
 }
 
 .school-point h3 {
   color: var(--color-accent);
-  font-size: 22px;
+  font-size: 21px;
+  line-height: 1.35;
 }
 
 .school-point p,
@@ -1057,25 +1313,45 @@
   font-size: 28px;
 }
 
+/* A sequence, so the numbers sit on one line that runs through all three. */
 .school-steps {
+  position: relative;
   display: grid;
   gap: 32px;
 }
 
+.school-steps::before {
+  position: absolute;
+  top: 23px;
+  bottom: 23px;
+  left: 22px;
+  border-left: 2px dashed var(--color-blob-green);
+  content: "";
+}
+
+.school-step {
+  position: relative;
+  padding-left: 66px;
+}
+
 .school-step h4 {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   color: var(--color-ink);
   font-size: 21px;
+  line-height: 46px;
 }
 
 .school-step-number {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: grid;
   place-items: center;
   width: 46px;
   height: 46px;
-  margin-bottom: 16px;
   border-radius: 50%;
   background: var(--color-hero);
+  box-shadow: 0 0 0 6px var(--color-canvas);
   color: #ffffff;
   font-size: 21px;
   font-weight: 800;
@@ -1087,37 +1363,41 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 40px;
   }
+
+  .school-point {
+    grid-template-columns: 1fr;
+    row-gap: 12px;
+  }
+
+  .school-point .benefit-icon {
+    grid-row: auto;
+  }
+
+  .school-steps::before {
+    top: 22px;
+    right: 33%;
+    bottom: auto;
+    left: 46px;
+    border-top: 2px dashed var(--color-blob-green);
+    border-left: 0;
+  }
+
+  .school-step {
+    padding-left: 0;
+  }
+
+  .school-step-number {
+    position: relative;
+    margin-bottom: 16px;
+  }
+
+  .school-step h4 {
+    line-height: 1.35;
+  }
 }
 
 .school-steps-block {
-  margin-bottom: 80px;
-}
-
-.school-contact {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px 32px;
-  margin-top: 48px;
-  padding: 28px;
-  border: 1px solid var(--color-card-edge);
-  border-radius: var(--radius-panel);
-  background: var(--color-surface);
-  box-shadow: var(--elevation-card);
-}
-
-.school-contact p {
-  max-width: 36rem;
-  color: var(--color-ink);
-  font-size: 18px;
-  line-height: 1.6;
-}
-
-@media (min-width: 640px) {
-  .school-contact {
-    padding: 32px 40px;
-  }
+  margin-bottom: 72px;
 }
 
 .faq ul {
@@ -1236,6 +1516,10 @@
 }
 
 .get-app-text .store-badges {
+  align-items: center;
+}
+
+.get-app-text .store-badge-row {
   justify-content: center;
 }
 
@@ -1269,6 +1553,10 @@
   }
 
   .get-app-text .store-badges {
+    align-items: flex-start;
+  }
+
+  .get-app-text .store-badge-row {
     justify-content: flex-start;
   }
 

@@ -26,16 +26,18 @@ function Feature({
   return (
     <article className={`feature feature-${area} reveal`}>
       <div className="feature-preview">{preview}</div>
-      <h3>{title}</h3>
-      <p>{children}</p>
+      <div className="feature-text">
+        <h3>{title}</h3>
+        <p>{children}</p>
+      </div>
     </article>
   );
 }
 
 /**
  * What the app does, each card tinted with one of the app's state colours and holding the live
- * component it describes. The cards differ in height, so they sit in a grid of areas rather than
- * in identical rows.
+ * component it describes: two small cards side by side, then the grades and the offline card at
+ * full width, so no card stretches beside a taller one.
  */
 export function Features() {
   const [signed, setSigned] = useAtom(Demo.signatures);
@@ -104,23 +106,28 @@ export function Features() {
 
 /**
  * Offline is what paper can do and most school apps can't, so it takes the full width, and the
- * visitor can try it: with the switch on, a ticked homework is saved and waits for the network.
+ * visitor can feel it rather than read it: the phone is in a dead spot, so a ticked homework waits
+ * on the device and goes out by itself once the signal is back.
  */
 function Offline() {
-  const [offline, setOffline] = useAtom(Demo.offline);
   const [homework, setHomework] = useAtom(Demo.ticked);
+  const [signal, setSignal] = useAtom(Demo.signal);
 
-  const toggle = (id: string) =>
+  const toggle = (id: string) => {
     setHomework((items) =>
-      items.map((item) =>
-        item.id === id ? { ...item, done: !item.done, pending: offline } : item,
-      ),
+      items.map((item) => (item.id === id ? { ...item, done: !item.done, pending: true } : item)),
     );
-
-  const goOnline = (next: boolean) => {
-    setOffline(next);
-
-    if (!next) setHomework((items) => items.map((item) => ({ ...item, pending: false })));
+    setSignal("waiting");
+    setTimeout(() => {
+      setHomework((items) =>
+        items.map((item) => (item.id === id ? { ...item, pending: false } : item)),
+      );
+      setSignal("synced");
+    }, Demo.signalDelays.back);
+    setTimeout(
+      () => setSignal((current) => (current === "synced" ? "none" : current)),
+      Demo.signalDelays.back + Demo.signalDelays.settle,
+    );
   };
 
   const waiting = homework.filter((item) => item.pending).length;
@@ -130,31 +137,26 @@ function Offline() {
       <div className="feature-offline-text">
         <h3>Funktioniert auch ohne Empfang</h3>
         <p>
-          Studienbuch speichert alles zuerst auf deinem Gerät und gleicht ab, sobald wieder Netz da
-          ist. Die App öffnet sich mit deinen Daten statt mit einem Ladebalken, und was du im
-          Funkloch abhakst, geht nicht verloren.
-        </p>
-        <button
-          aria-checked={offline}
-          className="airplane press"
-          onClick={() => goOnline(!offline)}
-          role="switch"
-          type="button"
-        >
-          <span aria-hidden className="airplane-track">
-            <span className="airplane-thumb" />
-          </span>
-          Flugmodus
-        </button>
-        <p aria-live="polite" className="airplane-status">
-          {offline
-            ? waiting === 0
-              ? "Kein Netz. Hak eine Aufgabe ab."
-              : `Kein Netz. ${String(waiting)} ${waiting === 1 ? "Änderung wartet" : "Änderungen warten"} auf dem Gerät.`
-            : "Online. Alles abgeglichen."}
+          Studienbuch speichert alles zuerst auf deinem Gerät. Hak im Funkloch eine Aufgabe ab: Sie
+          wartet auf dem Handy und geht raus, sobald wieder Netz da ist. Und die App öffnet sich mit
+          deinen Daten statt mit einem Ladebalken.
         </p>
       </div>
       <div className="feature-offline-preview">
+        <p aria-live="polite" className="signal" data-signal={signal}>
+          <svg aria-hidden className="signal-icon" viewBox="0 0 24 24">
+            {signal === "synced" ? (
+              <path d="M5 12.5l4.5 4.5L19 7.5" />
+            ) : (
+              <path d="M4 18h2M9 18v-4M14 18v-7M19 18V7M3 4l18 16" />
+            )}
+          </svg>
+          {signal === "synced"
+            ? "Wieder Netz, alles abgeglichen"
+            : waiting === 0
+              ? "Funkloch: gerade kein Netz"
+              : `Kein Netz: ${String(waiting)} ${waiting === 1 ? "Änderung wartet" : "Änderungen warten"} auf dem Handy`}
+        </p>
         <HomeworkPanel items={homework} onToggle={toggle} />
       </div>
     </article>

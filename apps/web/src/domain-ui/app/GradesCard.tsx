@@ -2,7 +2,8 @@ import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Check, CheckBadge } from "./Glyph.tsx";
+import { Card } from "./Card.tsx";
+import { CheckBadge, Icon, OpenBadge } from "./Icon.tsx";
 import { Type } from "./Type.ts";
 
 export interface Exam {
@@ -18,9 +19,9 @@ export interface Exam {
 const art = { oral: "/art/muendl.svg", written: "/art/schriftl.svg" } as const;
 
 /**
- * Stand-in for the course page's grade card ("Deine Noten", design-language.md variant B) until M1
- * builds it in packages/domain-ui. `average` is the mean of the confirmed exams, which the caller
- * computes. "Unterschreiben lassen" calls `onSign`; in the app it opens the signature pad.
+ * Stand-in for the course page's grade card ("Deine Noten", variant B) until M1 builds it in
+ * packages/domain-ui. `average` is the mean of the confirmed exams, which the caller computes.
+ * "Unterschreiben lassen" calls `onSign`; in the app it opens the signature pad.
  */
 export function GradesCard({
   oral,
@@ -33,37 +34,34 @@ export function GradesCard({
   exams: ReadonlyArray<Exam>;
   onSign?: (id: string) => void;
 }) {
-  const { color, elevation } = Theme.useTheme();
+  const { color } = Theme.useTheme();
 
   return (
-    <View
-      style={[
-        styles.card,
-        { backgroundColor: color.surface, borderColor: color.cardEdge, boxShadow: elevation.card },
-      ]}
-    >
-      <Text style={[Type.style("title2"), { color: color.accent }]}>Deine Noten</Text>
-      <GradeSummary
+    <Card style={styles.card}>
+      <Text style={[Type.style("cardTitle"), { color: color.accent }]}>Deine Noten</Text>
+      <Summary
         art={art.oral}
         caption={`Mündliche Note, Stand ${oral.date}`}
         confirmed={oral.confirmed}
         points={oral.points}
       />
       <View style={[styles.divider, { backgroundColor: color.hairline }]} />
-      <GradeSummary
+      <Summary
         art={art.written}
         caption="Schnitt der bestätigten Klausuren"
         confirmed={false}
         points={average}
       />
-      {exams.map((exam) => (
-        <ExamTile exam={exam} key={exam.id} onSign={onSign} />
-      ))}
-    </View>
+      <View style={styles.exams}>
+        {exams.map((exam) => (
+          <ExamTile exam={exam} key={exam.id} onSign={onSign} />
+        ))}
+      </View>
+    </Card>
   );
 }
 
-function GradeSummary({
+function Summary({
   art,
   points,
   caption,
@@ -83,9 +81,9 @@ function GradeSummary({
       <View style={styles.grow}>
         <Text style={{ color: color.ink }}>
           <Text style={Type.style("figure")}>{points ?? "–"}</Text>
-          <Text style={Type.style("title2")}> Punkte</Text>
+          <Text style={Type.style("figureUnit")}> Punkte</Text>
         </Text>
-        <Text style={[Type.style("callout"), { color: color.inkSoft }]}>{caption}</Text>
+        <Text style={[Type.style("detail"), { color: color.inkSoft }]}>{caption}</Text>
         {confirmed ? <Confirmed /> : null}
       </View>
     </View>
@@ -98,7 +96,7 @@ function Confirmed() {
   return (
     <View style={styles.status}>
       <CheckBadge color={color.accent} />
-      <Text style={[Type.style("footnote"), styles.bold, { color: color.accent }]}>bestätigt</Text>
+      <Text style={[Type.style("status"), { color: color.accent }]}>bestätigt</Text>
     </View>
   );
 }
@@ -111,24 +109,22 @@ function ExamTile({ exam, onSign }: { exam: Exam; onSign: ((id: string) => void)
     <View
       style={[styles.tile, { backgroundColor: confirmed ? color.accentTint : color.warningTint }]}
     >
-      <Text style={[Type.style("title1"), styles.tilePoints, { color: color.ink }]}>
-        {exam.points}
-      </Text>
+      <Text style={[Type.style("points"), styles.points, { color: color.ink }]}>{exam.points}</Text>
       <View style={styles.grow}>
         <View style={styles.tileHeader}>
-          <Text style={[Type.style("headline"), styles.grow, { color: color.ink }]}>
-            {exam.title}
-          </Text>
+          <View style={styles.grow}>
+            <Text style={[Type.style("title"), { color: color.ink }]}>{exam.title}</Text>
+            <Text style={[Type.style("detail"), { color: color.inkSoft }]}>
+              Klausur vom {exam.date}
+            </Text>
+          </View>
           {confirmed ? <Confirmed /> : null}
         </View>
-        <Text style={[Type.style("callout"), { color: color.inkSoft }]}>
-          Klausur vom {exam.date}
-        </Text>
         {confirmed ? null : (
           <>
             <View style={styles.signers}>
               <Signer done={exam.teacher} label="Lehrkraft" />
-              <Signer done={exam.parents} label={exam.parents ? "Eltern" : "Eltern fehlen"} />
+              <Signer done={exam.parents} label="Eltern fehlen" />
             </View>
             {onSign === undefined ? null : (
               <Pressable
@@ -140,7 +136,7 @@ function ExamTile({ exam, onSign }: { exam: Exam; onSign: ((id: string) => void)
                   pressed && styles.pressed,
                 ]}
               >
-                <Text style={[Type.style("headline"), { color: color.onAction }]}>
+                <Text style={[Type.style("button"), { color: color.onAction }]}>
                   Unterschreiben lassen
                 </Text>
               </Pressable>
@@ -157,46 +153,40 @@ function Signer({ done, label }: { done: boolean; label: string }) {
   const tone = done ? color.accent : color.warning;
 
   return (
-    <View style={styles.status}>
-      {done ? (
-        <Check color={tone} size={16} />
-      ) : (
-        <View style={[styles.open, { borderColor: tone }]} />
-      )}
-      <Text style={[Type.style("footnote"), styles.bold, { color: tone }]}>{label}</Text>
+    <View style={styles.signer}>
+      {done ? <Icon color={tone} name="check" size={16} /> : <OpenBadge color={tone} size={14} />}
+      <Text style={[Type.style("status"), { color: tone }]}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: Tokens.radius.card,
-    borderWidth: 1,
-    padding: Tokens.layout.cardPadding,
-    gap: Tokens.space.lg,
-  },
+  card: { padding: Tokens.layout.cardPadding, gap: Tokens.space.lg },
   summary: { flexDirection: "row", alignItems: "center", gap: Tokens.space.lg },
-  art: { width: 60, height: 60 },
+  art: { width: 56, height: 56 },
   grow: { flex: 1 },
-  divider: { height: 1 },
-  status: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
-  bold: { fontWeight: "800" },
+  divider: { height: StyleSheet.hairlineWidth },
+  status: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: Tokens.space.xs },
+  exams: { gap: Tokens.space.sm },
   tile: {
     flexDirection: "row",
     gap: Tokens.space.md,
     borderRadius: Tokens.radius.tile,
-    padding: Tokens.space.lg,
+    paddingVertical: Tokens.space.md,
+    paddingHorizontal: Tokens.space.lg,
   },
-  tilePoints: { minWidth: 34 },
-  tileHeader: { flexDirection: "row", alignItems: "center", gap: Tokens.space.sm },
+  // Wide enough that the exam titles start on the same line as the texts beside the art above:
+  // tile padding + points + gap = art + gap.
+  points: { width: 44 },
+  tileHeader: { flexDirection: "row", alignItems: "flex-start", gap: Tokens.space.sm },
   signers: { flexDirection: "row", gap: Tokens.space.lg, marginTop: Tokens.space.sm },
-  open: { width: 12, height: 12, borderRadius: 6, borderWidth: 2, marginHorizontal: 2 },
+  signer: { flexDirection: "row", alignItems: "center", gap: Tokens.space.xs },
   button: {
     alignSelf: "flex-start",
     marginTop: Tokens.space.md,
     borderRadius: Tokens.radius.pill,
-    paddingHorizontal: Tokens.space.xl,
-    minHeight: Tokens.layout.minTarget,
+    paddingHorizontal: Tokens.space.lg + Tokens.space.xs,
+    minHeight: 44,
     justifyContent: "center",
     cursor: "pointer",
   },

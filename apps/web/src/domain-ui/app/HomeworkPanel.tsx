@@ -2,7 +2,7 @@ import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Check } from "./Glyph.tsx";
+import { Icon } from "./Icon.tsx";
 import { Type } from "./Type.ts";
 
 export interface Homework {
@@ -32,7 +32,7 @@ export function HomeworkPanel({
 
   return (
     <View style={[styles.panel, { backgroundColor: color.panel }]}>
-      <Text style={[Type.style("title1"), styles.title]}>Hausaufgaben</Text>
+      <Text style={[Type.style("cardTitle"), styles.title]}>Hausaufgaben</Text>
       {items.map((item) => (
         <HomeworkRow item={item} key={item.id} onToggle={onToggle} />
       ))}
@@ -63,19 +63,21 @@ function HomeworkRow({ item, onToggle }: { item: Homework; onToggle: (id: string
             : styles.open,
         ]}
       >
-        {item.done ? <Check color={color.panelCard} size={20} /> : null}
+        {item.done ? <Icon color={color.panelCard} name="check" size={18} /> : null}
       </View>
-      <View style={[styles.grow, item.done && styles.done]}>
-        <Text style={[Type.style("headline"), { color: color.panelTitle }]}>{item.subject}</Text>
-        <Text style={[Type.style("callout"), styles.text, item.done && styles.struck]}>
+      <View style={styles.text}>
+        <Text style={[Type.style("title"), { color: color.panelTitle }, item.done && styles.done]}>
+          {item.subject}
+        </Text>
+        <Text style={[Type.style("body"), styles.onPanel, item.done && styles.struck]}>
           {item.title}
         </Text>
         <View style={styles.meta}>
-          <Text style={[Type.style("footnote"), styles.due]}>{item.due}</Text>
+          <Text style={[Type.style("label"), styles.due]}>{item.due}</Text>
           {item.pending ? (
             <Text
               style={[
-                Type.style("footnote"),
+                Type.style("status"),
                 styles.pending,
                 { backgroundColor: color.warningTint, color: color.warning },
               ]}
@@ -91,9 +93,9 @@ function HomeworkRow({ item, onToggle }: { item: Homework; onToggle: (id: string
 
 const styles = StyleSheet.create({
   panel: {
-    borderRadius: Tokens.radius.panel,
-    padding: Tokens.space.lg,
-    paddingTop: Tokens.space.xl,
+    borderRadius: Tokens.radius.card,
+    padding: Tokens.space.md,
+    paddingTop: Tokens.space.lg,
     gap: Tokens.space.sm,
   },
   title: { color: "#FFFFFF", paddingHorizontal: Tokens.space.sm, marginBottom: Tokens.space.xs },
@@ -102,25 +104,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Tokens.space.md,
     borderRadius: Tokens.radius.tile,
-    padding: Tokens.space.lg,
+    paddingVertical: Tokens.space.md,
+    paddingHorizontal: Tokens.space.lg,
     cursor: "pointer",
   },
   pressed: { transform: [{ scale: Tokens.motion.press.scale }] },
   tick: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2.5,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
   },
-  open: { borderColor: "rgba(255, 255, 255, 0.7)" },
-  grow: { flex: 1, gap: 2 },
+  open: { borderColor: "rgba(255, 255, 255, 0.6)" },
+  text: { flex: 1, gap: Tokens.space.xxs },
   done: { opacity: 0.6 },
-  text: { color: "#FFFFFF" },
-  struck: { textDecorationLine: "line-through" },
-  meta: { flexDirection: "row", alignItems: "center", gap: Tokens.space.sm, marginTop: 2 },
-  due: { color: "rgba(255, 255, 255, 0.78)" },
+  onPanel: { color: "#FFFFFF" },
+  struck: { opacity: 0.6, textDecorationLine: "line-through" },
+  meta: { flexDirection: "row", alignItems: "center", gap: Tokens.space.sm },
+  due: { color: "rgba(255, 255, 255, 0.72)" },
   pending: {
     overflow: "hidden",
     borderRadius: Tokens.radius.pill,

@@ -42,12 +42,7 @@ export function GetTheApp() {
             label="Meine Woche: der Stundenplan der Woche mit der Vertretung und dem Entfall von heute."
             tab="week"
           >
-            <WeekScreen
-              onStep={(step) =>
-                setWeek((current) => Math.min(Math.max(current + step, 0), Demo.weeks.length - 1))
-              }
-              week={week}
-            />
+            <WeekScreen onShow={setWeek} week={week} />
           </PhoneFrame>
         </PointerTracker>
       </div>

@@ -233,6 +233,25 @@ const cells = (
 
 export const weeks: ReadonlyArray<Week> = [
   {
+    number: 43,
+    kind: "A-Woche",
+    days: [
+      day("mo", "Mo", "19."),
+      day("di", "Di", "20."),
+      day("mi", "Mi", "21."),
+      day("do", "Do", "22."),
+      day("fr", "Fr", "23."),
+    ],
+    today: undefined,
+    cells: [
+      ...cells("mo", ["Mathe", "Englisch", "Deutsch", "Spanisch", null]),
+      ...cells("di", ["Bio", "Chemie", "PoWi", "Sport", "Seminar"]),
+      ...cells("mi", ["Mathe", "Deutsch", "Englisch", "Gesch.", null]),
+      ...cells("do", ["Deutsch", "Spanisch", "Chemie", null, null]),
+      ...cells("fr", ["Englisch", "Mathe", "Gesch.", "PoWi", "Sport"]),
+    ],
+  },
+  {
     number: 44,
     kind: "B-Woche",
     days: [
@@ -306,6 +325,9 @@ export const strip: ReadonlyArray<{
 /** The course the second hero phone shows. */
 export const openCourse = Atom.make<CourseId>("de");
 
+/** Which of the two hero phones is in front. */
+export const frontPhone = Atom.make<"today" | "course">("today");
+
 const unsigned: ReadonlySet<string> = new Set();
 
 /** Exams the visitor had signed. Signing adds the parents' signature. */
@@ -315,8 +337,14 @@ export const signatures = Atom.make(unsigned);
 export const signedExams = (course: CourseId, signed: ReadonlySet<string>) =>
   courses[course].exams.map((exam) => (signed.has(exam.id) ? { ...exam, parents: true } : exam));
 
-/** The flight mode switch on the offline card. */
-export const offline = Atom.make(false);
+/**
+ * The offline card's phone is in a dead spot: a ticked homework waits on the device until the
+ * signal comes back, a moment later, and then syncs.
+ */
+export const signal = Atom.make<"none" | "waiting" | "synced">("none");
+
+/** How long a change waits for the network, and how long "abgeglichen" stays, in ms. */
+export const signalDelays = { back: 2400, settle: 3200 } as const;
 
 /** The homework on the offline card, as the visitor ticked it. */
 export const ticked = Atom.make(homework);
@@ -324,5 +352,8 @@ export const ticked = Atom.make(homework);
 /** Whether the encryption card shows the device's view or the server's. */
 export const vaultView = Atom.make<"device" | "server">("device");
 
+/** The index in `weeks` of the current week, KW 44. */
+export const currentWeek = 1;
+
 /** Index into `weeks` of the week the closing phone shows. */
-export const shownWeek = Atom.make(0);
+export const shownWeek = Atom.make(currentWeek);

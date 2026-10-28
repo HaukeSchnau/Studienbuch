@@ -2,7 +2,8 @@ import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Check, Chevron } from "./Glyph.tsx";
+import { Card } from "./Card.tsx";
+import { Icon } from "./Icon.tsx";
 import { Type } from "./Type.ts";
 
 export type AgendaRow =
@@ -22,9 +23,9 @@ export type AgendaRow =
   | { readonly kind: "free"; readonly id: string; readonly time: string };
 
 /**
- * Stand-in for the app's day agenda ("Übersicht", design-language.md variant B) until M1 builds it
- * in packages/domain-ui. Lessons open their course through `onOpen`; without it they are not
- * pressable and show no chevron.
+ * Stand-in for the app's day agenda ("Übersicht", variant B) until M1 builds it in
+ * packages/domain-ui. Rows have the geometry of the app's `StatusRow`. Lessons open their course
+ * through `onOpen`; without it they are not pressable and show no chevron.
  */
 export function AgendaCard({
   rows,
@@ -33,15 +34,10 @@ export function AgendaCard({
   rows: ReadonlyArray<AgendaRow>;
   onOpen?: (id: string) => void;
 }) {
-  const { color, elevation } = Theme.useTheme();
+  const { color } = Theme.useTheme();
 
   return (
-    <View
-      style={[
-        styles.card,
-        { backgroundColor: color.surface, borderColor: color.cardEdge, boxShadow: elevation.card },
-      ]}
-    >
+    <Card>
       {rows.map((row, index) => (
         <View
           key={row.id}
@@ -49,11 +45,9 @@ export function AgendaCard({
         >
           {row.kind === "free" ? (
             <View style={styles.row}>
-              <View style={styles.grow}>
-                <Text style={[Type.style("footnote"), { color: color.inkSoft }]}>
-                  {row.time} Uhr
-                </Text>
-                <Text style={[Type.style("title3"), styles.free, { color: color.inkSoft }]}>
+              <View style={styles.text}>
+                <Text style={[Type.style("label"), { color: color.inkSoft }]}>{row.time} Uhr</Text>
+                <Text style={[Type.style("rowTitle"), styles.free, { color: color.inkSoft }]}>
                   Freistunde
                 </Text>
               </View>
@@ -63,7 +57,7 @@ export function AgendaCard({
           )}
         </View>
       ))}
-    </View>
+    </Card>
   );
 }
 
@@ -76,22 +70,30 @@ function Lesson({
 }) {
   const { color } = Theme.useTheme();
   const cancelled = lesson.change === "Entfall";
+  const past = lesson.phase === "past";
+  const pressable = onOpen !== undefined && !past;
 
   const content = (
     <>
-      <View style={[styles.bar, { backgroundColor: Tokens.subject[lesson.slot].fill }]} />
-      <View style={styles.grow}>
+      <View
+        style={[
+          styles.bar,
+          { backgroundColor: Tokens.subject[lesson.slot].fill },
+          past && styles.dim,
+        ]}
+      />
+      <View style={[styles.text, past && styles.dim]}>
         {lesson.phase === "now" && lesson.remaining !== undefined ? (
           <View style={styles.now}>
             <View style={[styles.dot, { backgroundColor: color.accent }]} />
-            <Text style={[Type.style("footnote"), { color: color.ink }]}>{lesson.remaining}</Text>
+            <Text style={[Type.style("status"), { color: color.ink }]}>{lesson.remaining}</Text>
           </View>
         ) : (
-          <Text style={[Type.style("footnote"), { color: color.inkSoft }]}>{lesson.time} Uhr</Text>
+          <Text style={[Type.style("label"), { color: color.inkSoft }]}>{lesson.time} Uhr</Text>
         )}
         <Text
           style={[
-            Type.style("title3"),
+            Type.style("rowTitle"),
             cancelled
               ? [styles.struck, { color: color.inkSoft, textDecorationColor: color.danger }]
               : { color: color.accent },
@@ -100,11 +102,9 @@ function Lesson({
           {lesson.subject}
         </Text>
         {cancelled ? (
-          <Text style={[Type.style("callout"), styles.change, { color: color.danger }]}>
-            Entfall
-          </Text>
+          <Text style={[Type.style("status"), { color: color.danger }]}>Entfall</Text>
         ) : (
-          <Text style={[Type.style("callout"), { color: color.inkSoft }]}>
+          <Text style={[Type.style("detail"), { color: color.inkSoft }]}>
             {lesson.detail}
             {lesson.change === "Vertretung" ? (
               <Text style={[styles.change, { color: color.danger }]}> (Vertretung)</Text>
@@ -112,17 +112,15 @@ function Lesson({
           </Text>
         )}
       </View>
-      {lesson.phase === "past" ? (
-        <Check color={color.accent} />
-      ) : onOpen === undefined ? null : (
-        <Chevron color={color.inkSoft} />
-      )}
+      {past ? (
+        <Icon color={color.accent} name="check" />
+      ) : pressable ? (
+        <Icon color={color.inkSoft} name="chevron" />
+      ) : null}
     </>
   );
 
-  return onOpen === undefined || lesson.phase === "past" ? (
-    <View style={[styles.row, lesson.phase === "past" && styles.past]}>{content}</View>
-  ) : (
+  return pressable ? (
     <Pressable
       accessibilityLabel={`${lesson.subject} öffnen`}
       accessibilityRole="button"
@@ -131,39 +129,43 @@ function Lesson({
         styles.row,
         styles.pressable,
         lesson.phase === "now" && { backgroundColor: color.accentTint },
-        pressed && styles.pressed,
+        pressed && { backgroundColor: color.accentTint },
       ]}
     >
       {content}
     </Pressable>
+  ) : (
+    <View style={[styles.row, lesson.phase === "now" && { backgroundColor: color.accentTint }]}>
+      {content}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: Tokens.radius.card,
-    borderWidth: 1,
-    overflow: "hidden",
-    paddingVertical: Tokens.space.xs,
-  },
-  divider: { borderTopWidth: 1 },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth },
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: Tokens.space.md,
-    minHeight: 62,
-    paddingVertical: 7,
-    paddingLeft: 24,
-    paddingRight: 18,
+    minHeight: 64,
+    paddingVertical: Tokens.space.md,
+    paddingLeft: Tokens.space.xl,
+    paddingRight: Tokens.space.lg,
   },
   pressable: { cursor: "pointer" },
-  past: { opacity: 0.55 },
-  pressed: { transform: [{ scale: Tokens.motion.press.scale }] },
-  bar: { position: "absolute", left: 10, top: 16, bottom: 16, width: 4, borderRadius: 2 },
-  grow: { flex: 1 },
+  bar: {
+    position: "absolute",
+    left: 10,
+    top: Tokens.space.lg,
+    bottom: Tokens.space.lg,
+    width: 4,
+    borderRadius: 2,
+  },
+  text: { flex: 1, gap: Tokens.space.xxs },
+  dim: { opacity: 0.5 },
   now: { flexDirection: "row", alignItems: "center", gap: 6 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  free: { fontStyle: "italic", fontWeight: "600" },
-  struck: { textDecorationLine: "line-through", textDecorationStyle: "solid" },
-  change: { fontWeight: "800" },
+  dot: { width: 7, height: 7, borderRadius: 3.5 },
+  free: { fontStyle: "italic", fontWeight: "500" },
+  struck: { textDecorationLine: "line-through" },
+  change: { fontWeight: "600" },
 });

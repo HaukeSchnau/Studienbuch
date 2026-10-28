@@ -25,14 +25,34 @@ const entries = [
   { kind: "Unterschrift", text: "Mama, am 23.10." },
 ] as const;
 
+// Benefits only: what the server still processes is in the FAQ and the Datenschutzerklärung,
+// where a reader looking for it finds the whole list.
+const benefits = [
+  {
+    icon: "M7 10.5V8a5 5 0 0 1 10 0v2.5M6 10.5h12a1 1 0 0 1 1 1V19a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-7.5a1 1 0 0 1 1-1zM12 14.5v2",
+    title: "Auf deinem Gerät verschlüsselt",
+    body: "Noten, Fehlzeiten, Hausaufgaben, Fotos und Unterschriften, Ende-zu-Ende.",
+  },
+  {
+    icon: "M3.5 12S7 5.5 12 5.5 20.5 12 20.5 12 17 18.5 12 18.5 3.5 12 3.5 12zM12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM4 20 20 4",
+    title: "Nicht einmal wir lesen mit",
+    body: "Den Schlüssel haben nur deine Geräte. Bei uns kommt Zeichensalat an.",
+  },
+  {
+    icon: "M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
+    title: "Server in Deutschland",
+    body: "Unser Server steht bei einem deutschen Anbieter in Deutschland.",
+  },
+] as const;
+
 const views = [
-  { id: "device", label: "Auf deinem Handy" },
-  { id: "server", label: "Auf unserem Server" },
+  { id: "device", label: "Dein Handy" },
+  { id: "server", label: "Unser Server" },
 ] as const;
 
 /**
- * The privacy pitch rests on end-to-end encryption, and it names what the server still sees
- * (D24, D42). The card flips the same entries between the device's view and the server's.
+ * The privacy pitch rests on end-to-end encryption (D24). The card flips the same entries between
+ * the device's view and the server's.
  */
 export function Privacy() {
   const [view, setView] = useAtom(Demo.vaultView);
@@ -52,23 +72,23 @@ export function Privacy() {
           <div className="section-heading">
             <h2>Verschlüsselt, bevor es dein Handy verlässt</h2>
             <p>
-              Noten, Fehlzeiten, Hausaufgaben, Fotos und Unterschriften sind
-              Ende-zu-Ende-verschlüsselt. Den Schlüssel haben nur deine Geräte. Bei uns kommt
-              Zeichensalat an, und den können auch wir nicht lesen.
+              Was du in dein Studienbuch einträgst, geht nur dich etwas an. Lesen kannst du es auf
+              deinen eigenen Geräten, und sonst niemand.
             </p>
           </div>
-          <div className="privacy-visible">
-            <h3>Was unser Server trotzdem sieht</h3>
-            <p>Damit Stundenplan, Anmeldung und Abgleich funktionieren:</p>
-            <ul>
-              <li>deine E-Mail-Adresse</li>
-              <li>welche Kurse du belegst</li>
-              <li>wann sich deine Geräte melden</li>
-              <li>ungefähr, wie viel du einträgst</li>
-              <li>den Stundenplan deiner Schule, den wir dafür abrufen</li>
-            </ul>
-            <p>Der Server steht in Deutschland.</p>
-          </div>
+          <ul className="benefits">
+            {benefits.map(({ icon, title, body }) => (
+              <li className="benefit" key={title}>
+                <svg aria-hidden className="benefit-icon" viewBox="0 0 24 24">
+                  <path d={icon} />
+                </svg>
+                <div>
+                  <h3>{title}</h3>
+                  <p>{body}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <div className="vault reveal" data-view={view}>
