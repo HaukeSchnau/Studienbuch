@@ -1,1 +1,0 @@
-ALTER TABLE "school_access_reservations" ADD COLUMN "signupCount" integer DEFAULT 0 NOT NULL;
