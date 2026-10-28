@@ -34,6 +34,7 @@ const light = {
 } as const;
 
 export type ColorName = keyof typeof light;
+
 export type Palette = Readonly<Record<ColorName, string>>;
 
 const dark = {

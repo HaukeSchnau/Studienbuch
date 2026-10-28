@@ -7,15 +7,20 @@ const contrast = (foreground: string, background: string) => {
   const luminance = (hex: string) => {
     const channel = (offset: number) => {
       const value = Number.parseInt(hex.slice(offset, offset + 2), 16) / 255;
+
       return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
     };
+
     return 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
   };
+
   const [lighter, darker] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+
   return ((lighter ?? 0) + 0.05) / ((darker ?? 0) + 0.05);
 };
 
 const white = "#FFFFFF";
+
 // Body text needs 4.5:1. Text of at least 24 px, or 19 px bold, needs 3:1.
 const body = 4.5;
 const large = 3;
@@ -46,6 +51,7 @@ describe("Tokens", () => {
       [scheme]: Tokens.color[scheme],
       [`${scheme}, high contrast`]: { ...Tokens.color[scheme], ...Tokens.highContrast[scheme] },
     };
+
     for (const [name, palette] of Object.entries(palettes)) {
       it.each(pairs(palette, scheme))(
         `${name}: %s is readable`,

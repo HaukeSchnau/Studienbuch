@@ -18,6 +18,7 @@ const shell = "/_shell";
 const reactNativeWeb = (): Plugin => {
   const ssrModule = "\0react-native-web-ssr";
   let dev = false;
+
   return {
     name: "studienbuch:react-native-web",
     enforce: "pre",
@@ -26,6 +27,7 @@ const reactNativeWeb = (): Plugin => {
     },
     resolveId(id) {
       if (id !== "react-native") return;
+
       // Resolved from this app: shared packages import `react-native` without depending on RNW.
       return dev && this.environment.name !== "client"
         ? ssrModule
@@ -34,7 +36,8 @@ const reactNativeWeb = (): Plugin => {
     load(id) {
       if (id !== ssrModule) return;
       const exported: unknown = createRequire(import.meta.url)("react-native-web");
-      const names = typeof exported === "object" && exported !== null ? Object.keys(exported) : [];
+      const names = exported instanceof Object ? Object.keys(exported) : [];
+
       return [
         `import { createRequire } from "node:module";`,
         `const rnw = createRequire(${JSON.stringify(import.meta.url)})("react-native-web");`,
@@ -55,12 +58,16 @@ const failOnBrokenPages = (files: ReadonlyArray<string>): Plugin => ({
     order: "post",
     async handler(builder) {
       const client = builder.environments["client"];
+
       if (client === undefined) return;
       const outDir = resolve(client.config.root, client.config.build.outDir);
+
       const broken = files.filter((file) => {
         const path = join(outDir, file);
+
         return !existsSync(path) || readFileSync(path, "utf8").includes("<!--$!-->");
       });
+
       if (broken.length > 0) this.error(`Prerendering failed for ${broken.join(", ")}`);
     },
   },

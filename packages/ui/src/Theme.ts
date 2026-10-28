@@ -49,5 +49,6 @@ const schemes: Record.ReadonlyRecord<Tokens.Scheme, Values> = {
 /** Colours and elevations for styles that depend on the colour scheme. */
 export const useTheme = (): Values => {
   const colorScheme = useColorScheme();
+
   return Platform.OS === "web" ? references : schemes[colorScheme === "dark" ? "dark" : "light"];
 };
