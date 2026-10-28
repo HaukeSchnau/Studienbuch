@@ -167,7 +167,19 @@ function configDir(file: string): string {
   return dir;
 }
 
-const testsByConfig = Map.groupBy(tests, configDir);
+/**
+ * A directory below the root with a lockfile of its own, such as deploy/, has its own install. Its
+ * tests run on that install's vitest, because the root's would load a second copy of Vitest.
+ */
+function ownInstall(file: string): string | null {
+  for (let dir = NodePath.dirname(file); dir !== "."; dir = NodePath.dirname(dir)) {
+    if (exists(`${dir}/pnpm-lock.yaml`)) return dir;
+  }
+
+  return null;
+}
+
+const testsByConfig = Map.groupBy(tests, (file) => ownInstall(file) ?? configDir(file));
 
 // Any code or manifest change can leave a file, export or dependency unused.
 const runKnip = files.some(
@@ -176,6 +188,8 @@ const runKnip = files.some(
 
 interface Step {
   readonly name: string;
+  /** `vp` unless it says otherwise. */
+  readonly command?: string;
   readonly args: ReadonlyArray<string>;
   readonly cwd?: string;
 }
@@ -201,11 +215,23 @@ for (const dir of affected) {
   steps.push({ name: `typecheck ${dir}`, args: ["exec", "tsc", "--noEmit", "-p", dir] });
 }
 
+// Directories with an install of their own whose install is missing, so their tests didn't run.
+const uninstalled: Array<string> = [];
+
 for (const [dir, group] of testsByConfig) {
+  const own = dir !== "." && exists(`${dir}/pnpm-lock.yaml`);
+  const vitest = NodePath.join(root, dir, "node_modules/.bin/vitest");
+
+  if (own && !NodeFS.existsSync(vitest)) {
+    uninstalled.push(dir);
+    continue;
+  }
+
   steps.push({
     name: `test ${dir === "." ? "" : `${dir} `}(${count(group)})`,
+    command: own ? vitest : "vp",
     args: [
-      "test",
+      ...(own ? [] : ["test"]),
       "run",
       "--passWithNoTests",
       ...group.map((file) => NodePath.relative(dir, file)),
@@ -227,7 +253,7 @@ function run(step: Step): Promise<Result> {
   const started = performance.now();
   const output: Array<Buffer> = [];
 
-  const child = NodeChildProcess.spawn("vp", step.args, {
+  const child = NodeChildProcess.spawn(step.command ?? "vp", step.args, {
     cwd: NodePath.join(root, step.cwd ?? "."),
     env,
   });
@@ -269,6 +295,12 @@ summary.push(`  CI also runs: ${ciTasks.join(", ")} on every file (\`calder chec
 if (!runKnip) summary.push("  knip skipped: no code or manifest changed");
 
 if (tests.size === 0) summary.push("  tests skipped: no test file beside a changed file");
+
+for (const dir of uninstalled) {
+  summary.push(
+    `  tests in ${dir} skipped: it has an install of its own; run \`pnpm --dir ${dir} install\``,
+  );
+}
 
 console.log(`\n${summary.join("\n")}`);
 
