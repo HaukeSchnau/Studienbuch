@@ -17,7 +17,8 @@ import * as Schema from "effect/Schema";
 // oxlint-disable-next-line effecttsgo/node-builtin-import -- see above
 import * as NodeHttp from "node:http";
 import * as NodeURL from "node:url";
-import { SyncEpoch, Tables as SyncTables } from "@stu/sync/server";
+import { Connection } from "@stu/sync";
+import { SyncEpoch, SyncServer, Tables as SyncTables } from "@stu/sync/server";
 import packageJson from "../package.json" with { type: "json" };
 import { Auth } from "./auth/Auth.ts";
 import { Deployment } from "./infra/config/Deployment.ts";
@@ -33,6 +34,7 @@ import { Rpc } from "./routes/Rpc.ts";
 import { WebBuilds } from "./routes/WebBuilds.ts";
 import { WellKnown } from "./routes/WellKnown.ts";
 import { Notebooks } from "./sync/Notebooks.ts";
+import { Sync } from "./sync/Sync.ts";
 
 // This file runs as `src/main.ts` in the workspace and as `server/main.mjs` in the release bundle,
 // which keeps `migrations/`, `web/` and `app/` beside `server/` (hosting.md, section 2).
@@ -62,7 +64,7 @@ const webBuilds = Layer.unwrap(
 );
 
 const http = HttpRouter.serve(
-  Layer.mergeAll(Health.layer, Rpc.layer, webBuilds, Auth.route, WellKnown.layer),
+  Layer.mergeAll(Health.layer, Rpc.layer, Sync.layer, webBuilds, Auth.route, WellKnown.layer),
 ).pipe(
   Layer.provide(Auth.layer.pipe(Layer.provide(Mail.layer))),
   Layer.provide(
@@ -71,6 +73,7 @@ const http = HttpRouter.serve(
       port: Config.Port("PORT"),
       // On SIGTERM the server stops accepting connections and lets running requests finish.
       gracefulShutdownTimeout: Config.succeed(Duration.seconds(10)),
+      websocket: Config.succeed({ maxPayload: Connection.maxMessageBytes }),
     }),
   ),
 );
@@ -78,7 +81,9 @@ const http = HttpRouter.serve(
 const serve = Effect.gen(function* () {
   yield* Migrations.requireHead(yield* Migrations.Release);
 
-  return yield* Layer.launch(Layer.mergeAll(http, Jobs.layer));
+  return yield* Layer.launch(
+    Layer.mergeAll(SyncServer.closeFirst.pipe(Layer.provide(http)), Jobs.layer),
+  );
 }).pipe(Effect.provide(runtime));
 
 const prepare = Effect.gen(function* () {

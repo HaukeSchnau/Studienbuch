@@ -24,6 +24,7 @@
     "effect": "catalog:"
   },
   "devDependencies": {
+    "@effect/platform-node": "catalog:",
     "@effect/sql-pg": "catalog:",
     "@effect/sql-pglite": "catalog:",
     "@effect/sql-sqlite-node": "catalog:",
