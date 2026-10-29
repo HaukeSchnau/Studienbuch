@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // `Keys` carries `@stu/e2ee`'s formats, whose code types WebCrypto from the DOM library.
+    // `Keys` carries `@stu/e2ee`'s wire formats, which encode text with the DOM's TextEncoder.
     "lib": ["ESNext", "DOM"],
     "types": []
   },
