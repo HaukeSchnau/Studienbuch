@@ -123,9 +123,20 @@ let
     src = depsSource;
     inherit pnpm;
     fetcherVersion = 5;
+    # The fetcher downloads every platform's native packages, but the release is only built on
+    # x86_64-linux (flake.nix). Developers' installs never read this copy of the workspace settings.
+    prePnpmInstall = ''
+      export pnpm_config_force_ignores_platform=false
+      cat >> pnpm-workspace.yaml <<'YAML'
+      supportedArchitectures:
+        os: [linux]
+        cpu: [x64]
+        libc: [glibc]
+      YAML
+    '';
     # A changed pnpm-lock.yaml fails this fetch with a hash mismatch. Replace the hash with the one
     # after `got:`.
-    hash = "sha256-AxVdRHKGs6meoLZhXSbz9t5ZYplF4vgYoaIbq4zECtw=";
+    hash = "sha256-cz9h5oOT8HzrkbAe8Dpg7hklO1GnIGXMe2SZpR0mxUk=";
   };
 
   # Every workspace package's node_modules, installed offline from `pnpmDeps`.
