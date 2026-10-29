@@ -7,6 +7,7 @@ export default defineConfig({
     "./src/infra/database/Schema.ts",
     "./src/auth/AuthTables.ts",
     "./src/infra/mail/MailTables.ts",
+    "./src/school/SchoolTables.ts",
     "../../packages/sync/src/server/Tables.ts",
   ],
   out: "./migrations",
