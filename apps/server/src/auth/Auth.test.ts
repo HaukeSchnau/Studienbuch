@@ -198,6 +198,14 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
         Effect.gen(function* () {
           const resolver = yield* Ports.SessionResolver;
           const db = yield* Database.Drizzle;
+
+          const short = yield* call("POST", "/sign-up/email", {
+            body: { email: "lena@example.org", password: "123456789", name: "" },
+          });
+
+          assert.strictEqual(short.status, 400);
+          assert.deepStrictEqual(yield* decodeCode(short.json), { code: "PASSWORD_TOO_SHORT" });
+
           const token = yield* signUp("lena@example.org");
 
           assert.isTrue(Option.isSome(yield* resolver.resolve(bearer(token))));

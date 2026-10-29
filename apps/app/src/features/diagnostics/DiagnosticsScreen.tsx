@@ -16,6 +16,7 @@ import { CryptoSelfTest } from "./CryptoSelfTest.ts";
 import { DeviceStorage } from "./DeviceStorage.ts";
 import { ServerInfo } from "./ServerInfo.ts";
 import { StatusRow, type StatusRowProps } from "./StatusRow.tsx";
+import { SignOutButton } from "../account/SignOutButton.tsx";
 
 /** "Moin!": what runs on this device, and whether its server, crypto and storage work. */
 export function DiagnosticsScreen() {
@@ -52,6 +53,7 @@ export function DiagnosticsScreen() {
         <StatusRow {...cryptoRow(selfTest)} onPress={() => router.push("/selbsttest")} />
         <StatusRow {...storageRow(storage, persistence)} />
       </Card>
+      <SignOutButton pending={0} />
     </HeroScreen>
   );
 }
