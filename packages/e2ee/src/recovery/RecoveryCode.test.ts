@@ -1,11 +1,12 @@
 import { assert, describe, it } from "@effect/vitest";
+import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
 
 import { RecoveryCode } from "./RecoveryCode.ts";
 
 // 0x08 in every byte gives a text full of 0 and 1, the characters that have lookalikes.
-const bytes = new Uint8Array(16).fill(0x08);
-const text = RecoveryCode.text(bytes);
+const bytes = Redacted.make(new Uint8Array(16).fill(0x08));
+const text = Redacted.value(RecoveryCode.text(bytes));
 
 const reason = (input: string) =>
   Result.match(RecoveryCode.parse(input), {
@@ -37,7 +38,7 @@ describe("parse", () => {
       text.replaceAll("-", ""),
       text.replaceAll("0", "O").replaceAll("1", "I"),
       text.replaceAll("1", "l"),
-      `  ${RecoveryCode.qr(text)}\n`,
+      `  ${Redacted.value(RecoveryCode.qr(RecoveryCode.text(bytes)))}\n`,
     ];
 
     assert.isTrue(text.includes("0") && text.includes("1"));
@@ -46,7 +47,7 @@ describe("parse", () => {
       typed.every((input) =>
         Result.match(RecoveryCode.parse(input), {
           onFailure: () => false,
-          onSuccess: (parsed) => parsed.every((byte) => byte === 0x08),
+          onSuccess: (parsed) => Redacted.value(parsed).every((byte) => byte === 0x08),
         }),
       ),
     );
@@ -67,7 +68,9 @@ describe("parse", () => {
     const missed: Array<string> = [];
 
     for (const code of codes) {
-      const characters = RecoveryCode.text(code).replaceAll("-", "").split("");
+      const characters = Redacted.value(RecoveryCode.text(Redacted.make(code)))
+        .replaceAll("-", "")
+        .split("");
 
       for (const [index, original] of characters.entries()) {
         for (const replacement of alphabet) {

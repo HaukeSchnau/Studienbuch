@@ -304,8 +304,8 @@ const rowCase = (name: string, title: string, json: string): Case => ({
       json,
     };
 
-    const { envelope, ct } = yield* SealedRow.seal(sealedRow, lena, 3, key);
-    const opened = yield* SealedRow.open(sealedRow, envelope, ct, key);
+    const { envelope, ct } = yield* SealedRow.seal(sealedRow, lena, 3, Redacted.make(key));
+    const opened = yield* SealedRow.open(sealedRow, envelope, ct, Redacted.make(key));
     yield* expect(opened.table === sealedRow.table && opened.json === sealedRow.json, "opened");
 
     return {
@@ -388,8 +388,8 @@ const keyBox: Case = {
   values: Effect.gen(function* () {
     const { sha256 } = yield* suite;
     const { keys1, record1 } = yield* chain;
-    const current = { epoch: 1, key: counting(0x10, 32) };
-    const older = { epoch: 0, key: counting(0x30, 32) };
+    const current = { epoch: 1, key: Redacted.make(counting(0x10, 32)) };
+    const older = { epoch: 0, key: Redacted.make(counting(0x30, 32)) };
     const box = yield* SpaceKey.box(notebook, [current, older], record1, keys1);
     const opened = yield* SpaceKey.openBox(box, notebook, keys1, record1);
     const [first, second] = opened;
@@ -397,9 +397,9 @@ const keyBox: Case = {
     yield* expect(
       opened.length === 2 &&
         first?.epoch === 1 &&
-        Bytes.equal(first.key, current.key) &&
+        Bytes.equal(Redacted.value(first.key), Redacted.value(current.key)) &&
         second?.epoch === 0 &&
-        Bytes.equal(second.key, older.key),
+        Bytes.equal(Redacted.value(second.key), Redacted.value(older.key)),
       "opened",
     );
 
@@ -419,11 +419,14 @@ const historyLink: Case = {
   layer: TestCrypto.layer("history-link"),
   values: Effect.gen(function* () {
     const { keys1, record1 } = yield* chain;
-    const current = { epoch: 1, key: counting(0x10, 32) };
+    const current = { epoch: 1, key: Redacted.make(counting(0x10, 32)) };
     const previous = counting(0x30, 32);
-    const link = yield* SpaceKey.link(notebook, current, previous, keys1);
+    const link = yield* SpaceKey.link(notebook, current, Redacted.make(previous), keys1);
     const opened = yield* SpaceKey.openLink(link, notebook, current, record1);
-    yield* expect(opened.epoch === 0 && Bytes.equal(opened.key, previous), "opened");
+    yield* expect(
+      opened.epoch === 0 && Bytes.equal(Redacted.value(opened.key), previous),
+      "opened",
+    );
 
     return {
       aad: hex(yield* Effect.fromResult(SpaceKey.linkAad(link))),
@@ -523,12 +526,21 @@ const recoveryCode: Case = {
   title: "Notfallkarten-Code",
   layer: TestCrypto.layer("recovery-code"),
   values: Effect.gen(function* () {
-    const text = RecoveryCode.text(codeBytes);
-    const typed = text.toLowerCase().replaceAll("-", " ");
-    const parsed = Result.getOrElse(RecoveryCode.parse(typed), () => new Uint8Array(0));
+    const text = RecoveryCode.text(Redacted.make(codeBytes));
+    const typed = Redacted.value(text).toLowerCase().replaceAll("-", " ");
+
+    const parsed = Result.match(RecoveryCode.parse(typed), {
+      onFailure: () => new Uint8Array(0),
+      onSuccess: Redacted.value,
+    });
+
     yield* same(parsed, codeBytes, "parsed");
 
-    return { bytes: hex(codeBytes), text, qr: RecoveryCode.qr(text) };
+    return {
+      bytes: hex(codeBytes),
+      text: Redacted.value(text),
+      qr: Redacted.value(RecoveryCode.qr(text)),
+    };
   }),
 };
 

@@ -15,6 +15,7 @@
  * ```
  */
 import * as Effect from "effect/Effect";
+import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 
@@ -122,7 +123,7 @@ export const seal = Effect.fnUntraced(function* (
   row: Row,
   author: string,
   keyEpoch: number,
-  key: Uint8Array,
+  key: Redacted.Redacted<Uint8Array>,
 ) {
   const suite = yield* CryptoSuite.Service;
   const envelope = new Envelope({ format, suite: CryptoSuite.id, keyEpoch, author });
@@ -130,7 +131,8 @@ export const seal = Effect.fnUntraced(function* (
   const table = yield* Effect.fromResult(Bytes.text(row.table, "row"));
   const json = yield* Effect.fromResult(Bytes.utf8(row.json, "row"));
   const nonce = yield* suite.randomBytes(nonceLength);
-  const sealed = yield* suite.aead.seal(key, nonce, pad(Bytes.concat(table, json)), associated);
+  const plaintext = pad(Bytes.concat(table, json));
+  const sealed = yield* suite.aead.seal(Redacted.value(key), nonce, plaintext, associated);
 
   return { envelope, ct: Bytes.concat(nonce, sealed) } satisfies Sealed;
 });
@@ -143,7 +145,7 @@ export const open = Effect.fnUntraced(function* (
   location: Location,
   envelope: Envelope,
   ct: Uint8Array,
-  key: Uint8Array,
+  key: Redacted.Redacted<Uint8Array>,
 ) {
   if (envelope.format !== format || envelope.suite !== CryptoSuite.id) {
     return yield* new E2ee.Unsupported({
@@ -158,7 +160,7 @@ export const open = Effect.fnUntraced(function* (
   const associated = yield* Effect.fromResult(aad(location, envelope));
 
   const padded = yield* suite.aead
-    .open(key, ct.subarray(0, nonceLength), ct.subarray(nonceLength), associated)
+    .open(Redacted.value(key), ct.subarray(0, nonceLength), ct.subarray(nonceLength), associated)
     .pipe(Effect.mapError(() => new E2ee.WrongSecret({ format: "row" })));
 
   const plaintext = unpad(padded);

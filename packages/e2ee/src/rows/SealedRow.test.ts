@@ -1,6 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Hex from "effect/encoding/Hex";
+import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 
@@ -67,7 +68,7 @@ describe("paddedLength", () => {
   });
 });
 
-const key = new Uint8Array(32).fill(7);
+const key = Redacted.make(new Uint8Array(32).fill(7));
 const row = { space: "notebook-1", id: "row-1", table: "Homework", json: '{"title":"Seite 41"}' };
 
 const sealed = SealedRow.seal(row, "acc-1", 2, key);
@@ -117,7 +118,7 @@ describe("open", () => {
           SealedRow.open({ ...row, space: "notebook-2" }, envelope, ct, key),
           SealedRow.open(row, changed(envelope, { keyEpoch: 3 }), ct, key),
           SealedRow.open(row, changed(envelope, { author: "acc-2" }), ct, key),
-          SealedRow.open(row, envelope, ct, new Uint8Array(32).fill(8)),
+          SealedRow.open(row, envelope, ct, Redacted.make(new Uint8Array(32).fill(8))),
         ];
 
         const tags = yield* Effect.forEach(attempts, (attempt) =>
@@ -141,7 +142,8 @@ describe("open", () => {
       plaintext[inner.length] = 0x80;
       const associated = yield* Effect.fromResult(SealedRow.aad(row, envelope));
       const nonce = new Uint8Array(12).fill(1);
-      const ct = Bytes.concat(nonce, yield* suite.aead.seal(key, nonce, plaintext, associated));
+      const sealedBody = yield* suite.aead.seal(Redacted.value(key), nonce, plaintext, associated);
+      const ct = Bytes.concat(nonce, sealedBody);
       const opened = yield* SealedRow.open(row, envelope, ct, key);
 
       assert.deepStrictEqual([ct.length, opened.json], [284, row.json]);

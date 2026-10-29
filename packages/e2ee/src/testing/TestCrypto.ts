@@ -8,6 +8,7 @@ import * as Semaphore from "effect/Semaphore";
 
 import { Bytes } from "../format/Bytes.ts";
 import { CryptoSuite } from "../suite/CryptoSuite.ts";
+import { Primitives } from "../suite/Primitives.ts";
 
 export * as TestCrypto from "./TestCrypto.ts";
 
@@ -40,7 +41,7 @@ const streamed = Effect.fn("TestCrypto.streamed")(function* (
       }),
     );
 
-  return CryptoSuite.make(draw);
+  return Primitives.make(draw);
 });
 
 const digest = (bytes: Uint8Array) =>

@@ -12,6 +12,7 @@
  * ```
  */
 import * as Effect from "effect/Effect";
+import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 
@@ -64,8 +65,10 @@ const check = (bytes: Uint8Array) => {
   return crc;
 };
 
-/** The 28 characters of a code's 16 bytes, in groups of four. */
-export const text = (bytes: Uint8Array): string => {
+/** The 28 characters of a code's 16 bytes, in groups of four. The text is as secret as the bytes. */
+export const text = (code: Redacted.Redacted<Uint8Array>): Redacted.Redacted => {
+  const bytes = Redacted.value(code);
+
   // The 140 bits are the 128 of the code and the 12 of the check, read five at a time.
   const fields: ReadonlyArray<readonly [value: number, width: number]> = [
     ...[...bytes].map((byte) => [byte, 8] as const),
@@ -88,21 +91,22 @@ export const text = (bytes: Uint8Array): string => {
     pending &= (1 << pendingBits) - 1;
   }
 
-  return characters.match(/.{4}/gu)?.join("-") ?? characters;
+  return Redacted.make(characters.match(/.{4}/gu)?.join("-") ?? characters);
 };
 
 /** A new random code, as its bytes and its text. */
 export const generate = Effect.gen(function* () {
-  const bytes = yield* (yield* CryptoSuite.Service).randomBytes(codeLength);
+  const bytes = Redacted.make(yield* (yield* CryptoSuite.Service).randomBytes(codeLength));
 
   return { bytes, text: text(bytes) };
 });
 
 /** What the QR code on the card holds. */
-export const qr = (codeText: string): string => qrPrefix + codeText;
+export const qr = (codeText: Redacted.Redacted): Redacted.Redacted =>
+  Redacted.make(qrPrefix + Redacted.value(codeText));
 
 /** The code's 16 bytes from what the student typed or scanned. */
-export const parse = (input: string): Result.Result<Uint8Array, Invalid> => {
+export const parse = (input: string): Result.Result<Redacted.Redacted<Uint8Array>, Invalid> => {
   const trimmed = input.trim();
 
   const withoutPrefix = trimmed.toUpperCase().startsWith(qrPrefix)
@@ -139,6 +143,6 @@ export const parse = (input: string): Result.Result<Uint8Array, Invalid> => {
 
   // What remains are the 12 bits of the check.
   return pending === check(bytes)
-    ? Result.succeed(bytes)
+    ? Result.succeed(Redacted.make(bytes))
     : Result.fail(new Invalid({ reason: "check" }));
 };
