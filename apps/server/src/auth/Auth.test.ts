@@ -4,7 +4,7 @@ import { assert, describe, layer } from "@effect/vitest";
 import { Accounts } from "@stu/api/Accounts";
 import { Ports } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
@@ -143,7 +143,18 @@ const bearer = (token: string) => Headers.fromInput({ authorization: `Bearer ${t
 
 const password = "lange-genug-123";
 
-const mailCount = Effect.flatMap(Database.Drizzle, (db) => db.$count(MailTables.capturedMail));
+const mailCount = (email: string) =>
+  Effect.flatMap(Database.Drizzle, (db) =>
+    db.$count(MailTables.capturedMail, eq(MailTables.capturedMail.to, email)),
+  );
+
+const userOf = (email: string) =>
+  Effect.map(
+    Effect.flatMap(Database.Drizzle, (db) =>
+      db.select().from(AuthTables.user).where(eq(AuthTables.user.email, email)),
+    ),
+    ([user]) => user,
+  );
 
 /** The six digits of the newest captured mail, which went to `email`. */
 const codeFor = Effect.fnUntraced(function* (email: string) {
@@ -152,9 +163,8 @@ const codeFor = Effect.fnUntraced(function* (email: string) {
   const [mail] = yield* db
     .select()
     .from(MailTables.capturedMail)
+    .where(eq(MailTables.capturedMail.to, email))
     .orderBy(desc(MailTables.capturedMail.sentAt));
-
-  assert.strictEqual(mail?.to, email);
 
   return /\b(?<code>\d{6})\b/u.exec(mail?.text ?? "")?.groups?.code ?? "no code";
 });
@@ -193,66 +203,63 @@ const revocations = (count: number) =>
 
 describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
   layer(NodeServices.layer)((it) => {
-    it.layer(server("development"), { buildPerTest: true })((it) => {
+    // One server for the file: each test signs up its own address.
+    it.layer(server("development"))((it) => {
       it.effect("opens sign-up in development, and the mailed code signs the device in", () =>
         Effect.gen(function* () {
           const resolver = yield* Ports.SessionResolver;
-          const db = yield* Database.Drizzle;
 
           const short = yield* call("POST", "/sign-up/email", {
-            body: { email: "lena@example.org", password: "123456789", name: "" },
+            body: { email: "lena.signup@example.org", password: "123456789", name: "" },
           });
 
           assert.strictEqual(short.status, 400);
           assert.deepStrictEqual(yield* decodeCode(short.json), { code: "PASSWORD_TOO_SHORT" });
 
-          const token = yield* signUp("lena@example.org");
+          const token = yield* signUp("lena.signup@example.org");
 
           assert.isTrue(Option.isSome(yield* resolver.resolve(bearer(token))));
           assert.isTrue(Option.isNone(yield* resolver.resolve(Headers.empty)));
 
           // The name lives in the encrypted notebook, whatever sign-up sent.
-          const [user] = yield* db.select().from(AuthTables.user);
+          const user = yield* userOf("lena.signup@example.org");
 
           assert.deepStrictEqual([user?.name, user?.image], ["", null]);
 
           // The console lists the code's mail for whoever tests the sign-up.
           const mails = yield* Mail.captured;
 
-          assert.deepStrictEqual(
-            mails.map((mail) => mail.to),
-            ["lena@example.org"],
-          );
+          assert.strictEqual(mails[0]?.to, "lena.signup@example.org");
         }),
       );
 
       it.effect("mails no code to a confirmed address, and its code can't be guessed in", () =>
         Effect.gen(function* () {
-          yield* signUp("lena@example.org");
+          yield* signUp("lena.resend@example.org");
 
           const resent = yield* call("POST", "/send-verification-email", {
-            body: { email: "lena@example.org" },
+            body: { email: "lena.resend@example.org" },
           });
 
           const otp = yield* call("POST", "/email-otp/send-verification-otp", {
-            body: { email: "lena@example.org", type: "email-verification" },
+            body: { email: "lena.resend@example.org", type: "email-verification" },
           });
 
           const guessed = yield* call("POST", "/email-otp/verify-email", {
-            body: { email: "lena@example.org", otp: "000000" },
+            body: { email: "lena.resend@example.org", otp: "000000" },
           });
 
           assert.strictEqual(resent.status, 200);
           assert.strictEqual(otp.status, 404);
           assert.strictEqual(guessed.status, 400);
           assert.strictEqual(guessed.token, undefined);
-          assert.strictEqual(yield* mailCount, 1);
+          assert.strictEqual(yield* mailCount("lena.resend@example.org"), 1);
         }),
       );
 
       it.effect("closes the routes Studienbuch doesn't offer", () =>
         Effect.gen(function* () {
-          const token = yield* signUp("lena@example.org");
+          const token = yield* signUp("lena.routes@example.org");
 
           const statuses = yield* Effect.forEach(
             [
@@ -276,7 +283,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
       it.effect("tells the resolver when a session ends at sign-out", () =>
         Effect.gen(function* () {
           const resolver = yield* Ports.SessionResolver;
-          const token = yield* signUp("lena@example.org");
+          const token = yield* signUp("lena.signout@example.org");
           const session = yield* resolver.resolve(bearer(token));
           const revoked = yield* revocations(1);
 
@@ -295,8 +302,8 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
         Effect.gen(function* () {
           const db = yield* Database.Drizzle;
           const resolver = yield* Ports.SessionResolver;
-          const token = yield* signUp("lena@example.org");
-          const [user] = yield* db.select().from(AuthTables.user);
+          const token = yield* signUp("lena.everywhere@example.org");
+          const user = yield* userOf("lena.everywhere@example.org");
           const userId = user?.id ?? "";
 
           const expiresAt = DateTime.toDateUtc(DateTime.makeUnsafe("2100-01-01T00:00:00Z"));
@@ -322,10 +329,10 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
       it.effect("ends every other device's session when the password changes", () =>
         Effect.gen(function* () {
           const resolver = yield* Ports.SessionResolver;
-          const first = yield* signUp("lena@example.org");
+          const first = yield* signUp("lena.password@example.org");
 
           const second = yield* call("POST", "/sign-in/email", {
-            body: { email: "lena@example.org", password },
+            body: { email: "lena.password@example.org", password },
           });
 
           const other = yield* resolver.resolve(bearer(second.token ?? ""));
@@ -350,7 +357,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
         () =>
           Effect.gen(function* () {
             const resolver = yield* Ports.SessionResolver;
-            const token = yield* signUp("lena@example.org");
+            const token = yield* signUp("lena.passkey@example.org");
             const authenticator = yield* VirtualAuthenticator.make;
 
             const offered = yield* call("GET", "/passkey/generate-register-options", { token });
@@ -446,7 +453,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
           Effect.gen(function* () {
             const resolver = yield* Ports.SessionResolver;
             const sql = yield* SqlClient.SqlClient;
-            const token = yield* signUp("lena@example.org");
+            const token = yield* signUp("lena.recent@example.org");
             const authenticator = yield* VirtualAuthenticator.make;
             const session = yield* resolver.resolve(bearer(token));
 
@@ -477,7 +484,9 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
             });
 
             const [sessions] = yield* sql<{ readonly count: number }>`
-              select count(*)::int as count from auth_session
+              select count(*)::int as count from auth_session s
+              join auth_user u on u.id = s."userId"
+              where u.email = 'lena.recent@example.org'
             `;
 
             assert.deepStrictEqual(
@@ -493,7 +502,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
       );
     });
 
-    it.layer(server("beta"), { buildPerTest: true })((it) => {
+    it.layer(server("beta"))((it) => {
       it.effect("refuses sign-up outside development and preview", () =>
         Effect.gen(function* () {
           const created = yield* call("POST", "/sign-up/email", {
@@ -524,7 +533,7 @@ describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
 
           assert.deepStrictEqual(
             [
-              // An empty secret file reads as no secret at all.
+              // An empty variable is no value to Config; an empty secret file reads as "", a weak secret.
               yield* failure("development", { AUTH_SECRET: "" }),
               yield* failure("development", { AUTH_SECRET: "x".repeat(31) }),
               yield* failure("development", { PASSKEY_RP_ID: "studienbuch.app" }),
