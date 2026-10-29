@@ -132,6 +132,51 @@ const staleFirst: Scripted.PushAnswer = (request) =>
       .map((command) => Protocol.Stale.make({ mutationId: command.mutationId })),
   });
 
+/** The server answers the push's first command `answer` and stops there. */
+const stopFirst =
+  (answer: (mutationId: number) => Protocol.Outcome): Scripted.PushAnswer =>
+  (request) =>
+    Effect.succeed({
+      lastMutationId: (request.commands[0]?.mutationId ?? 1) - 1,
+      outcomes: request.commands.slice(0, 1).map((command) => answer(command.mutationId)),
+    });
+
+/** Lena's generations 1 and 2, and device A's wrapper, which generation 2 sealed its key to. */
+const renewedAccount = Effect.gen(function* () {
+  const wrapper = { id: "w-a", kind: "device", place: "", credentialId: "" } as const;
+  const keys1 = yield* AccountKey.derive(Redacted.make(bytes(1)), Devices.actor, 1);
+  const record1 = yield* AccountKey.record(keys1, "first");
+  const keys2 = yield* AccountKey.derive(Redacted.make(bytes(2)), Devices.actor, 2);
+  const record2 = yield* AccountKey.record(keys2, { keys: keys1, record: record1 });
+  const { statement } = yield* Wrapper.create(wrapper, Redacted.make(bytes(9)), keys1);
+  const kept = yield* Wrapper.reendorse(statement, record1, keys2);
+  const renewal = yield* Wrapper.seal(kept, keys2);
+
+  return { keys2, record2, own: { seal: renewal, records: [record1, record2] } };
+});
+
+/** Device A at generation 1, with its wrapper's seed, and its own seal as `served` returns it. */
+const behind = (driver: Devices.Driver, served: Effect.Effect<Option.Option<Keyring.OwnSeal>>) =>
+  SyncClient.layer(Notes.schema, { ownSeal: served }).pipe(
+    Layer.provideMerge(
+      Layer.mergeAll(Devices.session, Devices.secrets, TestCrypto.layer("a"), Devices.disconnected),
+    ),
+    Layer.provideMerge(Devices.database(driver)),
+  );
+
+/** Holds generation 1's root key and the wrapper's seed, as device A does. */
+const atGeneration1 = Effect.gen(function* () {
+  yield* (yield* Ports.DeviceSecrets).set("device-seed", bytes(9));
+  yield* (yield* SyncClient.Service).unlock(bytes(1), 1);
+});
+
+const boxGenerations = (requests: ReadonlyArray<Protocol.PushRequest>) =>
+  requests.map((request) =>
+    Option.map(sealOf(request), (seal) => seal.boxes.map((box) => box.authorGeneration)),
+  );
+
+const encodeCommands = Schema.encodeEffect(Schema.fromJsonString(Schema.Array(Command.Any)));
+
 /** Opens the sealed row that `commands` carry for `id`, with `key`. */
 const openPushed = (
   commands: ReadonlyArray<Command.Any>,
@@ -1096,5 +1141,175 @@ describe("Seal", () => {
         );
       }).pipe(Effect.provide(Devices.database(driver))),
     ),
+  );
+
+  it.effect("a Seal the server has no key record for waits until the keys change", () =>
+    onEachDriver((driver) =>
+      Effect.gen(function* () {
+        const a = yield* Layer.build(device(driver, "a"));
+
+        yield* Effect.provide(
+          Effect.gen(function* () {
+            yield* Devices.space("nb-lena", "notebook", "owner");
+            yield* create("n1", "Mathe");
+
+            const server = Scripted.scripted({
+              push: [
+                stopFirst((mutationId) => Protocol.NoKeyRecord.make({ mutationId })),
+                Scripted.applyAll,
+              ],
+              pull: [
+                Scripted.page({ spaces: notebook(0, null), lastMutationId: 0 }),
+                Scripted.page({ spaces: notebook(0, null), lastMutationId: 0 }),
+                Scripted.page({ spaces: notebook(1, 0), lastMutationId: 1 }),
+              ],
+            });
+
+            yield* replicate(server.remote);
+            yield* replicate(server.remote);
+            expect(server.pushes, driver).toHaveLength(1);
+
+            // The app published the account's record (`Keys.init`) and hands the engine its key.
+            yield* (yield* SyncClient.Service).unlock(Devices.rootKey, 0);
+            yield* replicate(server.remote);
+
+            expect(
+              Option.map(sealOf(server.pushes[1]), (seal) => seal.writes.map((write) => write.id)),
+              driver,
+            ).toEqual(Option.some(["n1"]));
+          }),
+          a,
+        );
+      }).pipe(Effect.scoped),
+    ),
+  );
+
+  it.effect(
+    "`KeysBehind` fetches the device's own seal and seals again at the newer generation",
+    () =>
+      onEachDriver((driver) =>
+        Effect.gen(function* () {
+          const { own } = yield* renewedAccount;
+          const a = yield* Layer.build(behind(driver, Effect.succeedSome(own)));
+
+          yield* Effect.provide(
+            Effect.gen(function* () {
+              yield* atGeneration1;
+              yield* Devices.space("nb-lena", "notebook", "owner");
+              yield* create("n1", "Mathe");
+
+              const server = Scripted.scripted({
+                push: [
+                  stopFirst((mutationId) =>
+                    Protocol.KeysBehind.make({ mutationId, generation: 2 }),
+                  ),
+                  Scripted.applyAll,
+                ],
+                pull: [
+                  Scripted.page({ spaces: notebook(0, null), lastMutationId: 0 }),
+                  Scripted.page({ spaces: notebook(1, 0), lastMutationId: 1 }),
+                ],
+              });
+
+              expect(yield* replicate(server.remote), driver).toBe("idle");
+              expect(boxGenerations(server.pushes), driver).toEqual([
+                Option.some([1]),
+                Option.some([2]),
+              ]);
+            }),
+            a,
+          );
+        }).pipe(Effect.provide(TestCrypto.layer("keys-behind")), Effect.scoped),
+      ),
+  );
+
+  it.effect("`KeysBehind` at an older generation than the device's holds its Seals", () =>
+    onEachDriver((driver) =>
+      Effect.gen(function* () {
+        let fetched = 0;
+
+        const a = yield* Layer.build(
+          behind(
+            driver,
+            Effect.sync(() => {
+              fetched += 1;
+
+              return Option.none<Keyring.OwnSeal>();
+            }),
+          ),
+        );
+
+        yield* Effect.provide(
+          Effect.gen(function* () {
+            yield* atGeneration1;
+            yield* Devices.space("nb-lena", "notebook", "owner");
+            yield* create("n1", "Mathe");
+
+            // The server lost generation 1's record: a seal can't help, the records need publishing.
+            const server = Scripted.scripted({
+              push: [
+                stopFirst((mutationId) => Protocol.KeysBehind.make({ mutationId, generation: 0 })),
+              ],
+              pull: [
+                Scripted.page({ spaces: notebook(0, null), lastMutationId: 0 }),
+                Scripted.page({ spaces: notebook(0, null), lastMutationId: 0 }),
+              ],
+            });
+
+            yield* replicate(server.remote);
+            yield* replicate(server.remote);
+
+            expect(server.pushes, driver).toHaveLength(1);
+            expect(fetched, driver).toBe(0);
+          }),
+          a,
+        );
+      }).pipe(Effect.scoped),
+    ),
+  );
+
+  it.effect(
+    "commands a dropped connection may have applied go out again unchanged, restore or not",
+    () =>
+      onEachDriver((driver) =>
+        Effect.gen(function* () {
+          const a = yield* Layer.build(device(driver, "a"));
+
+          yield* Effect.provide(
+            Effect.gen(function* () {
+              yield* Devices.space("nb-lena", "notebook", "owner");
+              yield* create("n1", "Mathe");
+              yield* create("n2", "Deutsch");
+
+              const lost: Scripted.PushAnswer = () => Effect.fail(new Replication.Disconnected());
+
+              const restored: Scripted.PushAnswer = () =>
+                Effect.fail(new Protocol.EpochChanged({ syncEpoch: "epoch-2", lastMutationId: 0 }));
+
+              const server = Scripted.scripted({
+                push: [lost, restored, Scripted.applyAll],
+                pull: [
+                  Scripted.page({
+                    syncEpoch: "epoch-2",
+                    spaces: notebook(1, 0),
+                    lastMutationId: 2,
+                  }),
+                ],
+              });
+
+              yield* Effect.exit(replicate(server.remote));
+              yield* replicate(server.remote);
+
+              const sent = yield* Effect.forEach(server.pushes, (request) =>
+                encodeCommands(request.commands),
+              );
+
+              expect(sent, driver).toHaveLength(3);
+              expect(new Set(sent).size, driver).toBe(1);
+            }),
+            a,
+          );
+        }).pipe(Effect.scoped),
+      ),
   );
 });

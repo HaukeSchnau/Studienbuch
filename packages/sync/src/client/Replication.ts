@@ -7,6 +7,7 @@
 import * as Clock from "effect/Clock";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
+import * as Ref from "effect/Ref";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -89,6 +90,13 @@ export interface Device {
   readonly keyring: Keyring.Keyring;
   /** After a pull: opens boxes that waited for the account's keys, and picks up a renewed key. */
   readonly afterPull: Effect.Effect<void, SqlError.SqlError>;
+  /**
+   * Whether every `Seal` waits for the account's keys to change on the device: the server holds no
+   * key record for the account, or the renewal `KeysBehind` asked for didn't come.
+   */
+  readonly sealsHeld: Ref.Ref<boolean>;
+  /** Fetches the device's own seal and unlocks with it, if it reaches `generation`. */
+  readonly renewTo: (generation: number) => Effect.Effect<boolean, SqlError.SqlError>;
 }
 
 export interface Renumbered {
@@ -101,10 +109,17 @@ type Step =
   | "done"
   | "again"
   | "stale"
+  | "keys-behind"
   | "retry"
   | "revoked?"
   | "renumber-after-pull"
   | Exclude<Outcome, "idle" | "retry">;
+
+/** Where a round's push stands: what the server confirmed, and the generation it asked for. */
+interface Fence {
+  pushedUpTo: number;
+  keysBehind: number | null;
+}
 
 export const make = (device: Device) => {
   const { definition, actor } = device;
@@ -178,7 +193,9 @@ export const make = (device: Device) => {
    * round starts again at the first command the device hasn't settled, and sends nothing newer
    * than what the server confirms.
    */
-  const push = Effect.fnUntraced(function* (remote: Remote, fence: { pushedUpTo: number }) {
+  const push = Effect.fnUntraced(function* (remote: Remote, fence: Fence) {
+    const held = yield* Ref.get(device.sealsHeld);
+
     for (;;) {
       const meta = yield* Outbox.meta;
       const waiting = yield* Outbox.after(fence.pushedUpTo, pushBatch);
@@ -198,6 +215,8 @@ export const make = (device: Device) => {
           commands.push(Outbox.asMutate(command));
           continue;
         }
+
+        if (held) break;
 
         if (command.sealed !== null) {
           for (const box of command.sealed.boxes) opening.add(box.space);
@@ -270,6 +289,20 @@ export const make = (device: Device) => {
       if (response.outcomes.some((outcome) => outcome._tag === "Retry")) return "retry";
 
       if (response.outcomes.some((outcome) => outcome._tag === "Stale")) return "stale";
+
+      for (const outcome of response.outcomes) {
+        if (outcome._tag === "NoKeyRecord") {
+          yield* Ref.set(device.sealsHeld, true);
+
+          return "retry";
+        }
+
+        if (outcome._tag === "KeysBehind") {
+          fence.keysBehind = outcome.generation;
+
+          return "keys-behind";
+        }
+      }
 
       if (response.lastMutationId <= fence.pushedUpTo) return "retry";
       fence.pushedUpTo = response.lastMutationId;
@@ -425,7 +458,11 @@ export const make = (device: Device) => {
   /** One round over `remote`. Fails only when the connection does. */
   const round = Effect.fnUntraced(function* (remote: Remote) {
     for (let pass = 0; pass < maxPasses; pass++) {
-      const fence = { pushedUpTo: (yield* Outbox.meta).settledMutationId };
+      const fence: Fence = {
+        pushedUpTo: (yield* Outbox.meta).settledMutationId,
+        keysBehind: null,
+      };
+
       const pushed: Step = yield* flagged("pushing", push(remote, fence));
 
       if (pushed === "update-required") return pushed;
@@ -445,6 +482,15 @@ export const make = (device: Device) => {
       }
 
       if (pushed === "stale") continue;
+
+      // The server took the account's keys as renewed past this device's. The pull dropped what
+      // the push sent, and the device's own seal brings the newer keys to seal it again with.
+      if (pushed === "keys-behind") {
+        if (fence.keysBehind !== null && (yield* device.renewTo(fence.keysBehind))) continue;
+        yield* Ref.set(device.sealsHeld, true);
+
+        return "retry";
+      }
 
       if (pushed === "retry" || pushed === "revoked?" || pulled === "retry") return "retry";
 

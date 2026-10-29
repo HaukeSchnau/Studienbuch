@@ -20,6 +20,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Reactivity from "effect/reactivity/Reactivity";
 import * as Redacted from "effect/Redacted";
+import * as Ref from "effect/Ref";
 import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -130,7 +131,8 @@ export interface Interface {
   readonly setOffline: (offline: boolean) => Effect.Effect<void>;
   /**
    * Keeps the account's root key of `generation`, as after unlocking with a passkey or the
-   * Notfallkarte, or a demo sign-in, and opens the boxes and rows that waited for it.
+   * Notfallkarte, a demo sign-in or publishing the account's record (`Keys.init`). It opens the
+   * boxes and rows that waited for it, and sends the `Seal` commands that waited.
    */
   readonly unlock: (
     rootKey: Uint8Array,
@@ -250,6 +252,7 @@ export const make = Effect.fnUntraced(function* (
   const secrets = yield* Ports.DeviceSecrets;
   const suite = yield* CryptoSuite.Service;
   const keyring = yield* Keyring.make(actor);
+  const sealsHeld = yield* Ref.make(false);
 
   const withSuite = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
     Effect.provideService(effect, CryptoSuite.Service, suite);
@@ -501,6 +504,7 @@ export const make = Effect.fnUntraced(function* (
     yield* withSuite(keyring.unlock(rootKey, generation)).pipe(
       Effect.provideService(SqlClient.SqlClient, sql),
     );
+    yield* Ref.set(sealsHeld, false);
     yield* reopenAll;
 
     // Sealed commands that waited for a key can go out now.
@@ -511,35 +515,59 @@ export const make = Effect.fnUntraced(function* (
    * Picks up a renewed root key once a box from the account's newer generation waits: fetches the
    * device's own seal and unlocks with its key. A box that doesn't open yet stays, and opens then.
    */
+  /**
+   * Picks up the account's keys at `generation` from the device's own seal. A generation at or below
+   * the device's own means the server lost newer key records, which a seal can't bring back: the
+   * device's records need publishing again, and its `Seal` commands wait until then.
+   */
+  const renewTo = Effect.fn("SyncClient.renewTo")(
+    function* (generation: number) {
+      const own = yield* withSuite(keyring.account);
+
+      if (Option.isSome(own) && generation <= own.value.keys.generation) {
+        yield* Effect.logWarning("The server holds an older key generation than this device", {
+          server: generation,
+          device: own.value.keys.generation,
+        });
+
+        return false;
+      }
+
+      if (options.ownSeal === undefined) return false;
+      const fetched = yield* options.ownSeal;
+
+      if (Option.isNone(fetched)) return false;
+      const keys = yield* withSuite(keyring.renewed(fetched.value));
+
+      if (Option.isNone(keys) || keys.value.generation < generation) return false;
+      yield* unlock(Redacted.value(keys.value.rootKey), keys.value.generation);
+
+      return true;
+    },
+    Effect.provideService(SqlClient.SqlClient, sql),
+    // A keychain that can't take the key now leaves the device behind until the next try.
+    Effect.catchTags({
+      "DeviceSecrets.SecretsUnavailable": () =>
+        Effect.as(Effect.logWarning("The renewed root key couldn't be kept"), false),
+    }),
+  );
+
   const renew = Effect.gen(function* () {
     const own = yield* withSuite(keyring.account);
 
-    if (Option.isNone(own) || options.ownSeal === undefined) return;
+    if (Option.isNone(own)) return;
 
-    const newer = yield* sql`
-      select 1 from base_row
+    const [newest] = yield* sql<{ readonly generation: number | null }>`
+      select max(data ->> '$.authorGeneration') as generation from base_row
       where tbl = ${Protocol.keyBoxTable} and data ->> '$.author' = ${actor}
-        and data ->> '$.authorGeneration' > ${own.value.keys.generation}
-      limit 1
     `;
 
-    if (newer.length === 0) return;
-    const fetched = yield* options.ownSeal;
+    const generation = newest?.generation ?? null;
 
-    if (Option.isNone(fetched)) return;
-    const keys = yield* withSuite(keyring.renewed(fetched.value));
-
-    if (Option.isSome(keys) && keys.value.generation > own.value.keys.generation) {
-      yield* unlock(Redacted.value(keys.value.rootKey), keys.value.generation);
+    if (generation !== null && generation > own.value.keys.generation) {
+      yield* renewTo(generation);
     }
-  }).pipe(
-    Effect.provideService(SqlClient.SqlClient, sql),
-    // A keychain that can't take the key now leaves the box waiting for the next pull.
-    Effect.catchTags({
-      "DeviceSecrets.SecretsUnavailable": () =>
-        Effect.logWarning("The renewed root key couldn't be kept"),
-    }),
-  );
+  }).pipe(Effect.provideService(SqlClient.SqlClient, sql));
 
   // Whether this engine reopened the boxes since the account's keys became available.
   let boxesRetried = false;
@@ -577,6 +605,8 @@ export const make = Effect.fnUntraced(function* (
     opener,
     keyring,
     afterPull: Effect.andThen(retryBoxes, renew),
+    sealsHeld,
+    renewTo,
   });
 
   // A crash between two pages of a pull left the overlay on older rows.
