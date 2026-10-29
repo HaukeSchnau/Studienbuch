@@ -27,50 +27,25 @@
 import * as Effect from "effect/Effect";
 import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
-import * as Schema from "effect/Schema";
 
 import { AccountKey } from "../accounts/AccountKey.ts";
 import { Bytes } from "../format/Bytes.ts";
 import { E2ee } from "../format/E2ee.ts";
 import { CryptoSuite } from "../suite/CryptoSuite.ts";
+import { SpaceKey as SpaceKeyWire } from "../wire/SpaceKey.ts";
 
 export * as SpaceKey from "./SpaceKey.ts";
 
 /** The format this build writes, for boxes and links alike. */
 export const format = 1;
 
-export class KeyBox extends Schema.Class<KeyBox, { readonly brand: unique symbol }>(
-  "SpaceKey.KeyBox",
-)({
-  format: Bytes.U8,
-  suite: Bytes.U8,
-  space: Schema.String,
-  /** The newest epoch whose key the box carries. */
-  keyEpoch: Bytes.U32,
-  /** The member account the box is for. */
-  recipient: Schema.String,
-  /** The generation of the recipient's account key whose sealing key opens the box. */
-  recipientGeneration: Bytes.U32,
-  author: Schema.String,
-  authorGeneration: Bytes.U32,
-  enc: Schema.Uint8Array,
-  ct: Schema.Uint8Array,
-  signature: Schema.Uint8Array,
-}) {}
+export const KeyBox = SpaceKeyWire.KeyBox;
 
-export class HistoryLink extends Schema.Class<HistoryLink, { readonly brand: unique symbol }>(
-  "SpaceKey.HistoryLink",
-)({
-  format: Bytes.U8,
-  suite: Bytes.U8,
-  space: Schema.String,
-  /** The epoch whose key encrypts the link. It holds the key of the epoch before, so at least 1. */
-  keyEpoch: Bytes.U32.check(Schema.isGreaterThanOrEqualTo(1)),
-  author: Schema.String,
-  authorGeneration: Bytes.U32,
-  ct: Schema.Uint8Array,
-  signature: Schema.Uint8Array,
-}) {}
+export type KeyBox = SpaceKeyWire.KeyBox;
+
+export const HistoryLink = SpaceKeyWire.HistoryLink;
+
+export type HistoryLink = SpaceKeyWire.HistoryLink;
 
 /** The fields of a box that its info binds. */
 export interface BoxHeader {

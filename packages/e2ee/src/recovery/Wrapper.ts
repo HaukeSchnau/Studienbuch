@@ -28,26 +28,24 @@
 import * as Effect from "effect/Effect";
 import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
-import * as Schema from "effect/Schema";
 
 import { AccountKey } from "../accounts/AccountKey.ts";
 import { Bytes } from "../format/Bytes.ts";
 import { E2ee } from "../format/E2ee.ts";
 import { CryptoSuite } from "../suite/CryptoSuite.ts";
+import { Wrapper as WrapperWire } from "../wire/Wrapper.ts";
 
 export * as Wrapper from "./Wrapper.ts";
 
 /** The format this build writes, for statements and seals alike. */
 export const format = 1;
 
-export const Kind = Schema.Literals(["device", "prf", "code"]);
+export const Kind = WrapperWire.Kind;
 
-export type Kind = typeof Kind.Type;
+export type Kind = WrapperWire.Kind;
 
-/** The byte each kind travels and is signed as. 4 is reserved for `shamir`. */
-export const kindByte = { device: 1, prf: 2, code: 3 } satisfies {
-  readonly [kind in Kind]: number;
-};
+/** The byte each kind travels and is signed as. */
+export const kindByte = WrapperWire.kindByte;
 
 const kindOf = (byte: number): Kind | undefined =>
   byte === kindByte.device
@@ -59,40 +57,14 @@ const kindOf = (byte: number): Kind | undefined =>
         : undefined;
 
 /** A recovery method as the server stores it. */
-export class Statement extends Schema.Class<Statement, { readonly brand: unique symbol }>(
-  "Wrapper.Statement",
-)({
-  format: Bytes.U8,
-  suite: Bytes.U8,
-  /** Chosen by the device that creates it. */
-  id: Schema.String,
-  accountId: Schema.String,
-  /** `kindByte`. Any byte decodes, so a newer kind reaches an older app as `Unsupported`. */
-  kind: Bytes.U8,
-  /** Where a code lives: `card` or `passwordManager`. Empty for the other kinds. */
-  place: Schema.String,
-  /** The passkey's credential id for `prf`. Empty for the other kinds. */
-  credentialId: Schema.String,
-  publicKey: Schema.Uint8Array,
-  /** The generation whose identity key the anchor binds: the one the wrapper was created at. */
-  anchorGeneration: Bytes.U32,
-  /** Proves to a recovering device that the method's secret was there at creation. */
-  anchor: Schema.optionalKey(Schema.Uint8Array),
-  /** The generation whose identity key signed `endorsement`; every renewal moves it forward. */
-  endorsedGeneration: Bytes.U32,
-  endorsement: Schema.Uint8Array,
-}) {}
+export const Statement = WrapperWire.Statement;
+
+export type Statement = WrapperWire.Statement;
 
 /** The root key of `generation`, sealed to one wrapper's public key. */
-export class Seal extends Schema.Class<Seal, { readonly brand: unique symbol }>("Wrapper.Seal")({
-  format: Bytes.U8,
-  suite: Bytes.U8,
-  wrapperId: Schema.String,
-  accountId: Schema.String,
-  generation: Bytes.U32,
-  enc: Schema.Uint8Array,
-  ct: Schema.Uint8Array,
-}) {}
+export const Seal = WrapperWire.Seal;
+
+export type Seal = WrapperWire.Seal;
 
 /** A method before it has keys: what its statement names. */
 export interface Method {
