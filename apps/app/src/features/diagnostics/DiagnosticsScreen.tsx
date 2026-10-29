@@ -177,7 +177,7 @@ function cryptoRow(selfTest: AsyncResult.AsyncResult<ReadonlyArray<CryptoSelfTes
         detail:
           failed === undefined
             ? missing.length === 0
-              ? "AES-GCM, HKDF, Ed25519, X25519, ML-KEM, X-Wing"
+              ? "AES-GCM, HKDF, Ed25519, X-Wing und jedes Format"
               : `${missing.map((outcome) => outcome.name).join(", ")} fehlt hier`
             : `${failed.name}: ${failed.detail}`,
         status: selfTest.waiting ? "pending" : failed === undefined ? "ok" : "failed",
