@@ -41,8 +41,18 @@ const pairs = (palette: Tokens.Palette, scheme: Tokens.Scheme) =>
     ["white on hero", white, palette.hero, scheme === "light" ? large : body],
     ["white on panel", white, palette.panel, large],
     ["panelTitle on panelCard", palette.panelTitle, palette.panelCard, body],
+    ["panelDue on panelCard", palette.panelDue, palette.panelCard, body],
     ["danger on dangerTint", palette.danger, palette.dangerTint, body],
     ["warning on warningTint", palette.warning, palette.warningTint, body],
+    ...Object.entries(Tokens.subject).flatMap(([slot, colors]) => {
+      const [text, tint] =
+        scheme === "light" ? [colors.text, colors.tint] : [colors.textDark, colors.tintDark];
+
+      return [
+        [`${slot} text on ${slot} tint`, text, tint, body],
+        [`${slot} text on surface`, text, palette.surface, body],
+      ] as const;
+    }),
   ] as const;
 
 describe("Tokens", () => {

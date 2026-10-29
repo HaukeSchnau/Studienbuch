@@ -9,9 +9,17 @@ import { Tokens } from "./Tokens.ts";
 // any script runs.
 export * as Theme from "./Theme.ts";
 
+/** A subject's colours in the current scheme: `fill` carries white labels, `tint` and `text` go together. */
+export interface SubjectColors {
+  readonly fill: string;
+  readonly tint: string;
+  readonly text: string;
+}
+
 export interface Values {
   readonly color: Tokens.Palette;
   readonly elevation: Readonly<Record.ReadonlyRecord<Tokens.ElevationName, string>>;
+  readonly subject: Readonly<Record.ReadonlyRecord<Tokens.SubjectSlot, SubjectColors>>;
 }
 
 // Fontsource registers the variable web font as "Nunito Variable".
@@ -25,8 +33,30 @@ const variable = (group: string, name: string) =>
 const declarations = (group: string, values: Record.ReadonlyRecord<string, string>) =>
   Record.collect(values, (name, value) => `${variable(group, name)}:${value};`).join("");
 
+const subjects: Record.ReadonlyRecord<
+  Tokens.Scheme,
+  Record.ReadonlyRecord<Tokens.SubjectSlot, SubjectColors>
+> = {
+  light: Record.map(Tokens.subject, ({ fill, tint, text }) => ({ fill, tint, text })),
+  dark: Record.map(Tokens.subject, ({ fill, tintDark, textDark }) => ({
+    fill,
+    tint: tintDark,
+    text: textDark,
+  })),
+};
+
+// One variable per slot and colour, such as `--subject-red-tint`.
+const subjectVariables = (name: Tokens.Scheme) =>
+  Object.fromEntries(
+    Record.collect(subjects[name], (slot, colors) =>
+      Record.collect(colors, (kind, value) => [`${slot}-${kind}`, value] as const),
+    ).flat(),
+  );
+
 const scheme = (name: Tokens.Scheme) =>
-  declarations("color", Tokens.color[name]) + declarations("elevation", Tokens.elevation[name]);
+  declarations("color", Tokens.color[name]) +
+  declarations("elevation", Tokens.elevation[name]) +
+  declarations("subject", subjectVariables(name));
 
 /** The CSS custom properties behind `useTheme()` on the web. Render it in the document's `<head>`. */
 export const css = [
@@ -39,14 +69,17 @@ export const css = [
 const references: Values = {
   color: Record.map(Tokens.color.light, (_, name) => `var(${variable("color", name)})`),
   elevation: Record.map(Tokens.elevation.light, (_, name) => `var(${variable("elevation", name)})`),
+  subject: Record.map(subjects.light, (colors, slot) =>
+    Record.map(colors, (_, kind) => `var(${variable("subject", `${slot}-${kind}`)})`),
+  ),
 };
 
 const schemes: Record.ReadonlyRecord<Tokens.Scheme, Values> = {
-  light: { color: Tokens.color.light, elevation: Tokens.elevation.light },
-  dark: { color: Tokens.color.dark, elevation: Tokens.elevation.dark },
+  light: { color: Tokens.color.light, elevation: Tokens.elevation.light, subject: subjects.light },
+  dark: { color: Tokens.color.dark, elevation: Tokens.elevation.dark, subject: subjects.dark },
 };
 
-/** Colours and elevations for styles that depend on the colour scheme. */
+/** Colours, subject colours and elevations for styles that depend on the colour scheme. */
 export const useTheme = (): Values => {
   const colorScheme = useColorScheme();
 
