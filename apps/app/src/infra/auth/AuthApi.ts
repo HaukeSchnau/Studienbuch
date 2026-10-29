@@ -25,11 +25,19 @@ export class Refused extends Schema.TaggedError<Refused, { readonly brand: uniqu
   { status: Schema.Int, code: Schema.String },
 ) {}
 
-/** No answer, a server error, or an answer that isn't what Better Auth sends. */
+/** No answer at all: the device is offline, or the server is down. */
 export class Unreachable extends Schema.TaggedError<
   Unreachable,
   { readonly brand: unique symbol }
 >()("AuthApi.Unreachable", { cause: Schema.Defect() }) {}
+
+/** The server answered with an error of its own, or with something that isn't Better Auth's. */
+export class ServerFailed extends Schema.TaggedError<
+  ServerFailed,
+  { readonly brand: unique symbol }
+>()("AuthApi.ServerFailed", { cause: Schema.Defect() }) {}
+
+type Failure = Refused | Unreachable | ServerFailed;
 
 /** A signed-in device: the account and the bearer token of its new session. */
 export interface SignedIn {
@@ -128,49 +136,38 @@ export class Service extends Context.Service<
   Service,
   {
     /** Creates an account. Better Auth mails a code, and answers the same for a known address. */
-    readonly signUp: (
-      email: string,
-      password: string,
-    ) => Effect.Effect<void, Refused | Unreachable>;
+    readonly signUp: (email: string, password: string) => Effect.Effect<void, Failure>;
     /** `EMAIL_NOT_VERIFIED` means the address still needs its code, which is on its way. */
-    readonly signIn: (
-      email: string,
-      password: string,
-    ) => Effect.Effect<SignedIn, Refused | Unreachable>;
-    readonly sendCode: (email: string) => Effect.Effect<void, Refused | Unreachable>;
-    readonly confirmEmail: (
-      email: string,
-      code: string,
-    ) => Effect.Effect<SignedIn, Refused | Unreachable>;
+    readonly signIn: (email: string, password: string) => Effect.Effect<SignedIn, Failure>;
+    readonly sendCode: (email: string) => Effect.Effect<void, Failure>;
+    readonly confirmEmail: (email: string, code: string) => Effect.Effect<SignedIn, Failure>;
     /** When the session ends now, or `None` once it ended. A call also renews it (D27). */
-    readonly session: (
-      token: Redacted.Redacted,
-    ) => Effect.Effect<Option.Option<Date>, Refused | Unreachable>;
-    readonly signOut: (token: Redacted.Redacted) => Effect.Effect<void, Refused | Unreachable>;
-    readonly passkeySignInOptions: Effect.Effect<Ceremony<RequestOptions>, Refused | Unreachable>;
+    readonly session: (token: Redacted.Redacted) => Effect.Effect<Option.Option<Date>, Failure>;
+    readonly signOut: (token: Redacted.Redacted) => Effect.Effect<void, Failure>;
+    readonly passkeySignInOptions: Effect.Effect<Ceremony<RequestOptions>, Failure>;
     readonly passkeySignIn: (
       challenge: string,
       credential: Credential,
-    ) => Effect.Effect<SignedIn, Refused | Unreachable>;
+    ) => Effect.Effect<SignedIn, Failure>;
     readonly passkeyCreationOptions: (
       token: Redacted.Redacted,
-    ) => Effect.Effect<Ceremony<CreationOptions>, Refused | Unreachable>;
+    ) => Effect.Effect<Ceremony<CreationOptions>, Failure>;
     readonly addPasskey: (
       token: Redacted.Redacted,
       challenge: string,
       credential: Credential,
-    ) => Effect.Effect<void, Refused | Unreachable>;
+    ) => Effect.Effect<void, Failure>;
   }
 >()("AuthApi.Service") {}
 
 // A 4xx answer carries Better Auth's error code. Anything else wrong is the server's problem.
 const checked = (
   response: HttpClientResponse.HttpClientResponse,
-): Effect.Effect<HttpClientResponse.HttpClientResponse, Refused | Unreachable> => {
+): Effect.Effect<HttpClientResponse.HttpClientResponse, Refused | ServerFailed> => {
   if (response.status < 400) return Effect.succeed(response);
 
   if (response.status >= 500) {
-    return Effect.fail(new Unreachable({ cause: `HTTP ${response.status}` }));
+    return Effect.fail(new ServerFailed({ cause: `HTTP ${response.status}` }));
   }
 
   return refusal(response).pipe(
@@ -202,7 +199,7 @@ export const layer = Layer.effect(Service)(
 
     const read = <A>(request: HttpClientRequest.HttpClientRequest, body: Read<A>) =>
       Effect.flatMap(send(request), (response) =>
-        Effect.mapError(body(response), (cause) => new Unreachable({ cause })),
+        Effect.mapError(body(response), (cause) => new ServerFailed({ cause })),
       );
 
     const ceremony = <A>(request: HttpClientRequest.HttpClientRequest, body: Read<A>) =>
@@ -210,7 +207,7 @@ export const layer = Layer.effect(Service)(
         Effect.all({
           options: body(response),
           challenge: Effect.fromOption(Headers.get(response.headers, Accounts.challengeHeader)),
-        }).pipe(Effect.mapError((cause) => new Unreachable({ cause }))),
+        }).pipe(Effect.mapError((cause) => new ServerFailed({ cause }))),
       );
 
     const withChallenge = (request: HttpClientRequest.HttpClientRequest, challenge: string) =>

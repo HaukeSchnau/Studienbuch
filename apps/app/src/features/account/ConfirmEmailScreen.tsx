@@ -7,17 +7,24 @@ import { Keyboard, StyleSheet, View } from "react-native";
 
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
 import { Text } from "../../ui/Text.tsx";
+import { Account } from "./Account.ts";
 import { PasskeyLead, ProblemText, reasonOf } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
 import { CodeField, codeLength } from "./CodeField.tsx";
 import { Button, Link, Section } from "./SharedUi.tsx";
 
-/** "E-Mail bestätigen": the six digits from the mail, then a passkey if the person wants one. */
+/**
+ * "E-Mail bestätigen": the six digits from the mail, then a passkey if the person wants one. The
+ * offer shows only for the address on screen, so on a shared device the next person never sees
+ * the previous one's.
+ */
 export function ConfirmEmailScreen() {
   const { email = "" } = useLocalSearchParams<{ email?: string }>();
-  const confirmed = useAtomValue(AccountState.confirmed);
+  const confirmed = Account.confirmedFor(useAtomValue(AccountState.confirmed), email);
 
-  return Option.isSome(confirmed) ? <PasskeyOffer /> : <CodeEntry email={email} />;
+  AccountState.useAbandonOnLeave();
+
+  return Option.isSome(confirmed) ? <PasskeyOffer email={email} /> : <CodeEntry email={email} />;
 }
 
 function CodeEntry({ email }: { readonly email: string }) {
@@ -63,7 +70,7 @@ function CodeEntry({ email }: { readonly email: string }) {
   );
 }
 
-function PasskeyOffer() {
+function PasskeyOffer({ email }: { readonly email: string }) {
   const [result, finish] = useAtom(AccountState.finish);
 
   return (
@@ -78,15 +85,20 @@ function PasskeyOffer() {
           label="Passkey anlegen"
           block
           busy={result.waiting}
-          onPress={() => finish({ withPasskey: true })}
+          onPress={() => finish({ email, withPasskey: true })}
         />
-        <Button kind="quiet" label="Später" block onPress={() => finish({ withPasskey: false })} />
+        <Button
+          kind="quiet"
+          label="Später"
+          block
+          onPress={() => finish({ email, withPasskey: false })}
+        />
       </Section>
     </HeroScreen>
   );
 }
 
-/** The code as typed, digits only, so a pasted "123 456" still works. */
+/** The code as typed, digits only and at most six, so a pasted "145 838" becomes "145838". */
 export function useCode() {
   const [value, setValue] = useState("");
 

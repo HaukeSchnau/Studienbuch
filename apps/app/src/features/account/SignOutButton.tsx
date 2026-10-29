@@ -20,9 +20,9 @@ export function SignOutButton({ pending }: SignOutButtonProps) {
       onNone: () => Promise.resolve(true),
       onSome: (warning) =>
         confirm(
-          "Wirklich abmelden?",
-          `${warning} Sie gehen verloren, wenn du dich jetzt abmeldest.`,
-          "Abmelden",
+          "Abmelden?",
+          `${warning} Wenn du dich jetzt abmeldest, sind sie weg.`,
+          "Trotzdem abmelden",
         ),
     });
 

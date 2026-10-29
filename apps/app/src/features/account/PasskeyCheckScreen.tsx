@@ -1,19 +1,37 @@
-import { useAtom } from "@effect/atom-react";
+import { useAtom, useAtomValue } from "@effect/atom-react";
 import { Tokens } from "@stu/ui/Tokens";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
+import { Redirect } from "expo-router";
 import { StyleSheet, View } from "react-native";
 
 import { Button } from "../../ui/Button.tsx";
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
 import { Text } from "../../ui/Text.tsx";
-import { Section } from "./SharedUi.tsx";
+import { ServerInfo } from "../diagnostics/ServerInfo.ts";
 import { AccountState } from "./AccountState.ts";
+import { Section } from "./SharedUi.tsx";
 
 /**
- * "Passkey-Test": the device check of design/spikes/passkey-prf.md. It shows what this platform's
- * passkey says about PRF, as fingerprints, so two devices or two sign-ins can be compared.
+ * "Passkey-Test" on every server but production. The check needs beta, the one public host real
+ * phones' passkeys reach; delete the route once Hauke ran spikes/passkey-prf.md.
  */
 export function PasskeyCheckScreen() {
+  const allowed = AsyncResult.match(useAtomValue(ServerInfo.info), {
+    onInitial: () => undefined,
+    onFailure: () => false,
+    onSuccess: ({ value }) => value.environment !== "production",
+  });
+
+  if (allowed === undefined) return null;
+
+  return allowed ? <PasskeyCheck /> : <Redirect href="/anmelden" />;
+}
+
+/**
+ * The device check of design/spikes/passkey-prf.md. It shows what this platform's passkey says
+ * about PRF, as fingerprints, so two devices or two sign-ins can be compared.
+ */
+function PasskeyCheck() {
   const [created, create] = useAtom(AccountState.checkCreate);
   const [asserted, assert] = useAtom(AccountState.checkAssert);
 

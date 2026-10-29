@@ -2,6 +2,7 @@ import { Accounts } from "@stu/api/Accounts";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import type * as Redacted from "effect/Redacted";
+import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Schema from "effect/Schema";
 
 import { AuthApi } from "../../infra/auth/AuthApi.ts";
@@ -26,10 +27,13 @@ export const Reason = Schema.Literals([
   "code-expired",
   "too-many-attempts",
   "offline",
+  "server-error",
   "other-account",
   "passkey-unknown",
   "passkey-unsupported",
   "passkey-registered",
+  "passkey-none",
+  "passkey-no-biometrics",
   "passkey-failed",
   "failed",
 ]);
@@ -52,11 +56,16 @@ export const sentence: Record<Reason, string> = {
   "code-expired": "Der Code ist abgelaufen. Lass dir einen neuen schicken.",
   "too-many-attempts": "Zu viele Versuche. Warte kurz und versuch es dann noch einmal.",
   offline: "Keine Verbindung zum Server. Zum Anmelden brauchst du einmal Internet.",
+  "server-error": "Beim Server ist gerade etwas schiefgelaufen. Versuch es gleich noch einmal.",
   "other-account":
     "Auf diesem Gerät ist noch ein anderes Konto angemeldet. Melde es zuerst ab, damit seine Daten nicht verloren gehen.",
   "passkey-unknown": "Diesen Passkey kennt Studienbuch nicht. Melde dich mit deinem Passwort an.",
   "passkey-unsupported": "Dieses Gerät kann hier keine Passkeys nutzen.",
   "passkey-registered": "Dieser Passkey gehört schon zu deinem Konto.",
+  "passkey-none":
+    "Auf diesem Gerät gibt es keinen Passkey für Studienbuch. Melde dich mit deinem Passwort an.",
+  "passkey-no-biometrics":
+    "Für einen Passkey braucht dein Gerät Face ID oder Touch ID. Richte es in den Einstellungen ein.",
   "passkey-failed": "Mit dem Passkey hat es nicht geklappt. Versuch es noch einmal.",
   failed: "Das hat nicht geklappt. Versuch es noch einmal.",
 };
@@ -80,28 +89,35 @@ const reasons = new Map<string, Reason>(
   } satisfies Record<string, Reason>),
 );
 
-const problem = (error: AuthApi.Refused | AuthApi.Unreachable) =>
+const problem = (error: AuthApi.Refused | AuthApi.Unreachable | AuthApi.ServerFailed) =>
   new Problem({
     reason:
-      error._tag === "AuthApi.Unreachable" ? "offline" : (reasons.get(error.code) ?? "failed"),
+      error._tag === "AuthApi.Unreachable"
+        ? "offline"
+        : error._tag === "AuthApi.ServerFailed"
+          ? "server-error"
+          : (reasons.get(error.code) ?? "failed"),
   });
+
+const passkeyReasons: Record<Passkeys.Failed["reason"], Reason> = {
+  unsupported: "passkey-unsupported",
+  "already-registered": "passkey-registered",
+  "no-passkey": "passkey-none",
+  "no-biometrics": "passkey-no-biometrics",
+  failed: "passkey-failed",
+};
 
 const passkeyProblem = (error: Passkeys.Failed) =>
-  new Problem({
-    reason:
-      error.reason === "unsupported"
-        ? "passkey-unsupported"
-        : error.reason === "already-registered"
-          ? "passkey-registered"
-          : "passkey-failed",
-  });
+  new Problem({ reason: passkeyReasons[error.reason] });
 
 /**
- * Keeps a new session, so the device is signed in. Not while the device still holds another
- * account whose session ended: its database may hold changes that never reached the server, so
- * that account signs out first.
+ * Refuses a new session while the device still holds another account whose session ended: its
+ * database may hold changes that never reached the server, so that account signs out first. The
+ * refused session ends on the server.
  */
-export const keep = Effect.fn("Account.keep")(function* (signedIn: AuthApi.SignedIn) {
+const refuseOtherAccount = Effect.fn("Account.refuseOtherAccount")(function* (
+  signedIn: AuthApi.SignedIn,
+) {
   const store = yield* SessionStore.Service;
   const api = yield* AuthApi.Service;
   const current = yield* store.current;
@@ -111,7 +127,13 @@ export const keep = Effect.fn("Account.keep")(function* (signedIn: AuthApi.Signe
 
     return yield* new Problem({ reason: "other-account" });
   }
+});
 
+/** Keeps a new session, so the device is signed in, unless another account holds the device. */
+export const keep = Effect.fn("Account.keep")(function* (signedIn: AuthApi.SignedIn) {
+  const store = yield* SessionStore.Service;
+
+  yield* refuseOtherAccount(signedIn);
   yield* store.signedIn(signedIn).pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
 });
 
@@ -134,16 +156,66 @@ export const sendCode = Effect.fn("Account.sendCode")(function* (email: string) 
   yield* api.sendCode(email.trim()).pipe(Effect.mapError(problem));
 });
 
-/** Confirms the address with its code. The new session waits for `keep`, so a passkey can come first. */
+/** A confirmed address and its new session, waiting for the passkey offer before `keep`. */
+export interface Confirmed {
+  readonly email: string;
+  readonly signedIn: AuthApi.SignedIn;
+}
+
+/** Confirms the address with its code. The new session waits for `finish`, so a passkey can come first. */
 export const confirmEmail = Effect.fn("Account.confirmEmail")(function* (
   email: string,
   code: string,
 ) {
   const api = yield* AuthApi.Service;
 
-  return yield* api
+  const signedIn = yield* api
     .confirmEmail(email.trim(), code.replaceAll(/\s/gu, ""))
     .pipe(Effect.mapError(problem));
+
+  // Said here, on the code screen, rather than after the passkey offer.
+  yield* refuseOtherAccount(signedIn);
+
+  return { email: email.trim(), signedIn } satisfies Confirmed;
+});
+
+const sameAddress = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/** The confirmed session waiting for its passkey offer, if it belongs to `email`. */
+export const confirmedFor = (pending: Option.Option<Confirmed>, email: string) =>
+  Option.filter(pending, (confirmed) => sameAddress(confirmed.email, email));
+
+/**
+ * Signs the device in with the session that confirmed `email`, adding a passkey first when
+ * `withPasskey`. Refuses when the waiting session belongs to another address, so a shared device
+ * never signs in as, or adds a passkey for, the person who confirmed before.
+ */
+export const finish = Effect.fn("Account.finish")(function* (
+  pending: Option.Option<Confirmed>,
+  email: string,
+  withPasskey: boolean,
+) {
+  const confirmed = yield* Effect.fromOption(confirmedFor(pending, email)).pipe(
+    Effect.mapError(() => new Problem({ reason: "failed" })),
+  );
+
+  if (withPasskey) yield* addPasskey(confirmed.signedIn.token);
+
+  yield* keep(confirmed.signedIn);
+});
+
+/**
+ * Ends a confirmed session that nobody finished, when its screen goes. A finished one is the
+ * device's session by then and stays.
+ */
+export const abandon = Effect.fn("Account.abandon")(function* (confirmed: Confirmed) {
+  const store = yield* SessionStore.Service;
+  const api = yield* AuthApi.Service;
+  const current = yield* store.current;
+
+  if (Option.exists(current, (signed) => signed.accountId === confirmed.signedIn.accountId)) return;
+
+  yield* Effect.ignore(api.signOut(confirmed.signedIn.token));
 });
 
 /**
@@ -219,3 +291,23 @@ export const unsentWarning = (pending: number): Option.Option<string> =>
           ? "1 Änderung ist noch nicht übertragen."
           : `${pending} Änderungen sind noch nicht übertragen.`,
       );
+
+/**
+ * What the device can show: an account with a live session, one whose session ended (its data
+ * stays, and "Anmelden" brings sync back), none, or none possible because the build has no server
+ * or the keychain is locked.
+ */
+export type Access = "loading" | "unavailable" | "signed-out" | "signed-in" | "ended";
+
+export const access = (
+  current: AsyncResult.AsyncResult<Option.Option<SessionStore.Signed>, unknown>,
+): Access =>
+  AsyncResult.match(current, {
+    onInitial: () => "loading",
+    onFailure: () => "unavailable",
+    onSuccess: ({ value }) =>
+      Option.match(value, {
+        onNone: () => "signed-out",
+        onSome: (signed) => (Option.isSome(signed.token) ? "signed-in" : "ended"),
+      }),
+  });

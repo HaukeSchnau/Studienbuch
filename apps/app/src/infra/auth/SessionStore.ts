@@ -120,6 +120,7 @@ export const session = (accountId: string) =>
                   // Offline or a server hiccup proves nothing about the session.
                   Effect.catchTags({
                     "AuthApi.Unreachable": () => Effect.void,
+                    "AuthApi.ServerFailed": () => Effect.void,
                     "AuthApi.Refused": () => Effect.void,
                   }),
                 ),
