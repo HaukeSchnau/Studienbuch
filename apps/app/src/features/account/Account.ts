@@ -1,9 +1,13 @@
 import { Accounts } from "@stu/api/Accounts";
+import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import type * as Redacted from "effect/Redacted";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import * as Schema from "effect/Schema";
+import * as Semaphore from "effect/Semaphore";
+import * as SubscriptionRef from "effect/SubscriptionRef";
 
 import { AuthApi } from "../../infra/auth/AuthApi.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
@@ -162,12 +166,32 @@ export interface Confirmed {
   readonly signedIn: AuthApi.SignedIn;
 }
 
+/**
+ * The confirmed session waiting for its passkey offer. `finish` and `abandon` take turns through
+ * `guard`, so a back press during the offer never ends a session the device is keeping.
+ */
+export class Confirmations extends Context.Service<
+  Confirmations,
+  {
+    readonly current: SubscriptionRef.SubscriptionRef<Option.Option<Confirmed>>;
+    readonly guard: Semaphore.Semaphore;
+  }
+>()("Account.Confirmations") {}
+
+export const confirmations = Layer.effect(Confirmations)(
+  Effect.all({
+    current: SubscriptionRef.make(Option.none<Confirmed>()),
+    guard: Semaphore.make(1),
+  }),
+);
+
 /** Confirms the address with its code. The new session waits for `finish`, so a passkey can come first. */
 export const confirmEmail = Effect.fn("Account.confirmEmail")(function* (
   email: string,
   code: string,
 ) {
   const api = yield* AuthApi.Service;
+  const { current, guard } = yield* Confirmations;
 
   const signedIn = yield* api
     .confirmEmail(email.trim(), code.replaceAll(/\s/gu, ""))
@@ -176,7 +200,9 @@ export const confirmEmail = Effect.fn("Account.confirmEmail")(function* (
   // Said here, on the code screen, rather than after the passkey offer.
   yield* refuseOtherAccount(signedIn);
 
-  return { email: email.trim(), signedIn } satisfies Confirmed;
+  yield* SubscriptionRef.set(current, Option.some({ email: email.trim(), signedIn })).pipe(
+    Semaphore.withPermit(guard),
+  );
 });
 
 const sameAddress = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -190,32 +216,37 @@ export const confirmedFor = (pending: Option.Option<Confirmed>, email: string) =
  * `withPasskey`. Refuses when the waiting session belongs to another address, so a shared device
  * never signs in as, or adds a passkey for, the person who confirmed before.
  */
-export const finish = Effect.fn("Account.finish")(function* (
-  pending: Option.Option<Confirmed>,
-  email: string,
-  withPasskey: boolean,
-) {
-  const confirmed = yield* Effect.fromOption(confirmedFor(pending, email)).pipe(
-    Effect.mapError(() => new Problem({ reason: "failed" })),
-  );
+export const finish = Effect.fn("Account.finish")(function* (email: string, withPasskey: boolean) {
+  const { current, guard } = yield* Confirmations;
 
-  if (withPasskey) yield* addPasskey(confirmed.signedIn.token);
+  yield* Effect.gen(function* () {
+    const confirmed = yield* Effect.fromOption(
+      confirmedFor(yield* SubscriptionRef.get(current), email),
+    ).pipe(Effect.mapError(() => new Problem({ reason: "failed" })));
 
-  yield* keep(confirmed.signedIn);
+    if (withPasskey) yield* addPasskey(confirmed.signedIn.token);
+
+    yield* keep(confirmed.signedIn);
+    yield* SubscriptionRef.set(current, Option.none());
+  }).pipe(Semaphore.withPermit(guard));
 });
 
 /**
- * Ends a confirmed session that nobody finished, when its screen goes. A finished one is the
- * device's session by then and stays.
+ * Ends the session that confirmed `email` when its screen goes and nobody finished it. It waits
+ * for a `finish` under way, whose session the device keeps.
  */
-export const abandon = Effect.fn("Account.abandon")(function* (confirmed: Confirmed) {
-  const store = yield* SessionStore.Service;
+export const abandon = Effect.fn("Account.abandon")(function* (email: string) {
   const api = yield* AuthApi.Service;
-  const current = yield* store.current;
+  const { current, guard } = yield* Confirmations;
 
-  if (Option.exists(current, (signed) => signed.accountId === confirmed.signedIn.accountId)) return;
+  yield* Effect.gen(function* () {
+    const unfinished = confirmedFor(yield* SubscriptionRef.get(current), email);
 
-  yield* Effect.ignore(api.signOut(confirmed.signedIn.token));
+    if (Option.isNone(unfinished)) return;
+
+    yield* SubscriptionRef.set(current, Option.none());
+    yield* Effect.ignore(api.signOut(unfinished.value.signedIn.token));
+  }).pipe(Semaphore.withPermit(guard));
 });
 
 /**
@@ -271,7 +302,10 @@ export const signOut = Effect.fn("Account.signOut")(function* <E, R>(
 ) {
   const store = yield* SessionStore.Service;
   const api = yield* AuthApi.Service;
+  const confirmations = yield* Confirmations;
   const current = yield* store.current;
+
+  yield* SubscriptionRef.set(confirmations.current, Option.none());
 
   if (Option.isNone(current)) return;
 

@@ -11,8 +11,12 @@ export interface SignOutButtonProps {
   readonly pending: number;
 }
 
-/** "Abmelden": asks first when changes would be lost, then forgets this device's account. */
+/**
+ * "Abmelden": asks first when changes would be lost, then forgets this device's account. It shows
+ * only while the device holds an account, live or ended.
+ */
 export function SignOutButton({ pending }: SignOutButtonProps) {
+  const access = AccountState.useAccess();
   const signOut = useAtomSet(AccountState.signOut);
 
   const press = async () => {
@@ -28,6 +32,8 @@ export function SignOutButton({ pending }: SignOutButtonProps) {
 
     if (proceed) signOut();
   };
+
+  if (access !== "signed-in" && access !== "ended") return null;
 
   return <Button kind="quiet" label="Abmelden" onPress={() => void press()} />;
 }
