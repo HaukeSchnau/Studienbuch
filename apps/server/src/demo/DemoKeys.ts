@@ -9,7 +9,7 @@
  *                        || 0x00 || UTF-8 of the account id)
  * ```
  */
-import { CryptoSuite } from "@stu/e2ee";
+import { AccountKey, CryptoSuite } from "@stu/e2ee";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Redacted from "effect/Redacted";
@@ -59,4 +59,11 @@ export const rootKey = Effect.fn("DemoKeys.rootKey")(function* (account: string)
   });
 
   return Redacted.make(key);
+});
+
+/** Generation 0 of the demo account's key chain, signed, as a first device publishes it. */
+export const firstRecord = Effect.fn("DemoKeys.firstRecord")(function* (account: string) {
+  const keys = yield* AccountKey.derive(yield* rootKey(account), account, 0);
+
+  return yield* AccountKey.record(keys, "first");
 });

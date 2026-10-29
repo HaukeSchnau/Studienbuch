@@ -1,11 +1,15 @@
 import { describe, expect, it, layer } from "@effect/vitest";
+import { AccountKey, CryptoSuite } from "@stu/e2ee";
 import { Postgres18 } from "@stu/sync/testing";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import { Deployment } from "../infra/config/Deployment.ts";
 import { Fixture } from "../school/Fixture.ts";
 import { DemoAccounts } from "./DemoAccounts.ts";
+import { DemoKeys } from "./DemoKeys.ts";
 import { Seed } from "./Seed.ts";
 
 const demoKeySeed = { DEMO_KEY_SEED: "a demo key seed that is long enough for the tests" };
@@ -73,12 +77,49 @@ const state = Effect.gen(function* () {
       select u.id, u.email, d.persona from auth_user u join demo_account d on d.account_id = u.id
       order by u.id
     `,
+    keys: yield* sql`
+      select account_id as account, generation, record::text as record, created_at as at
+      from account_key order by account_id, generation
+    `,
   };
 });
 
+const decodeRecord = Schema.decodeUnknownEffect(Schema.toCodecJson(AccountKey.Record));
+
+/** The public keys of the account's published generation 0. */
+const published = (account: string) =>
+  Effect.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
+
+    const [row] = yield* sql<{ readonly record: unknown }>`
+      select record from account_key where account_id = ${account} and generation = 0
+    `;
+
+    const record = yield* decodeRecord(row?.record);
+
+    return { signingKey: record.signingKey, sealingKey: record.sealingKey };
+  });
+
+/** The public keys that the account's root key derives on a beta server. */
+const derived = (account: string) =>
+  Effect.gen(function* () {
+    const rootKey = yield* DemoKeys.rootKey(account);
+    const keys = yield* AccountKey.derive(rootKey, account, 0);
+
+    return { signingKey: keys.signingKey, sealingKey: keys.sealingKey };
+  }).pipe(Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env: demoKeySeed }))));
+
+/** What the seed needs from the server it runs in. */
+const seeding = Layer.mergeAll(
+  Fixture.database,
+  DemoAccounts.seeding,
+  CryptoSuite.layer,
+  Layer.succeed(Deployment.Current, { revision: "test", environment: "beta" }),
+);
+
 describe.skipIf(Postgres18.socket === null)("Seed on PostgreSQL 18", () => {
-  layer(Layer.merge(Fixture.database, DemoAccounts.seeding))((it) => {
-    it.effect("a second seed writes nothing, so no space's version moves", () =>
+  layer(seeding)((it) => {
+    it.effect("a second seed writes nothing, so no space's version or key record moves", () =>
       Effect.gen(function* () {
         yield* seedWith(reviewPassword);
         const first = yield* state;
@@ -87,9 +128,28 @@ describe.skipIf(Postgres18.socket === null)("Seed on PostgreSQL 18", () => {
         expect(yield* state).toEqual(first);
       }),
     );
+
+    it.effect("publishes each persona's generation 0, derived from its own root key", () =>
+      Effect.gen(function* () {
+        yield* seedWith({});
+
+        expect({
+          accounts: (yield* state).keys.map((row) => [row["account"], row["generation"]]),
+          lena: yield* published("demo-lena"),
+          tom: yield* published("demo-tom"),
+        }).toEqual({
+          accounts: [
+            ["demo-lena", 0],
+            ["demo-tom", 0],
+          ],
+          lena: yield* derived("demo-lena"),
+          tom: yield* derived("demo-tom"),
+        });
+      }),
+    );
   });
 
-  layer(Layer.merge(Fixture.database, DemoAccounts.seeding))((it) => {
+  layer(seeding)((it) => {
     it.effect("a changed or removed DEMO_PASSWORD ends the personas' sessions and passkeys", () =>
       Effect.gen(function* () {
         yield* seedWith(reviewPassword);
@@ -110,7 +170,7 @@ describe.skipIf(Postgres18.socket === null)("Seed on PostgreSQL 18", () => {
     );
   });
 
-  layer(Layer.merge(Fixture.database, DemoAccounts.seeding))((it) => {
+  layer(seeding)((it) => {
     it.effect("refuses to seed without DEMO_KEY_SEED, which the personas' keys derive from", () =>
       Effect.gen(function* () {
         const refusal = yield* Effect.flip(
@@ -124,9 +184,13 @@ describe.skipIf(Postgres18.socket === null)("Seed on PostgreSQL 18", () => {
 
   it.effect("two seeds on fresh databases give the same ids", () =>
     Effect.gen(function* () {
-      const seeded = Effect.andThen(seedWith({}), state).pipe(
-        Effect.provide(Layer.merge(Fixture.database, DemoAccounts.seeding)),
-      );
+      // Fresh databases publish the same key records at different times.
+      const withoutTimes = Effect.map(state, ({ keys, ...rest }) => ({
+        ...rest,
+        keys: keys.map((key) => [key["account"], key["generation"], key["record"]]),
+      }));
+
+      const seeded = Effect.andThen(seedWith({}), withoutTimes).pipe(Effect.provide(seeding));
 
       const one = yield* seeded;
 
