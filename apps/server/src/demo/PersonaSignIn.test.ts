@@ -3,6 +3,9 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 import { describe, expect, layer } from "@effect/vitest";
 import { Accounts } from "@stu/api/Accounts";
 import { Api } from "@stu/api";
+import { Keys } from "@stu/api/Keys";
+import { AccountKey, Wrapper } from "@stu/e2ee";
+import { TestCrypto } from "@stu/e2ee/testing";
 import { Ports } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
 import * as ConfigProvider from "effect/ConfigProvider";
@@ -16,6 +19,7 @@ import * as HttpRouter from "effect/http/HttpRouter";
 import * as HttpServer from "effect/http/HttpServer";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Redacted from "effect/Redacted";
 import * as RpcClient from "effect/rpc/RpcClient";
 import { hashPassword } from "better-auth/crypto";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -151,6 +155,32 @@ const signUpMia = Effect.gen(function* () {
   return verified.token ?? "no token";
 });
 
+/** Generation 0 of an account's key chain with a device wrapper and a Notfallkarte. */
+const firstKeys = Effect.fnUntraced(
+  function* (account: string) {
+    const keys = yield* AccountKey.generate(account, 0);
+
+    const wrapper = (method: Wrapper.Method, secret: Uint8Array) =>
+      Effect.map(
+        Wrapper.create(method, Redacted.make(secret), keys),
+        (made) => new Keys.Sealed(made),
+      );
+
+    return {
+      record: yield* AccountKey.record(keys, "first"),
+      device: yield* wrapper(
+        { id: `${account}-device`, kind: "device", place: "", credentialId: "" },
+        new Uint8Array(32).fill(1),
+      ),
+      card: yield* wrapper(
+        { id: `${account}-card`, kind: "code", place: "card", credentialId: "" },
+        new Uint8Array(16).fill(2),
+      ),
+    };
+  },
+  Effect.provide(TestCrypto.layer("PersonaSignIn.test")),
+);
+
 const demoAccounts = Effect.flatMap(
   SqlClient.SqlClient,
   (sql) => sql<{ readonly account: string }>`
@@ -231,6 +261,10 @@ describe.skipIf(Postgres18.socket === null)("Demo sign-in over the router", () =
 
           SignInDemoCalls.count = 0;
 
+          const miaSession = yield* resolver.resolve(Headers.fromInput(bearer(mia).headers));
+          const miaAccount = Option.map(miaSession, (session) => session.accountId);
+          const miaKeys = yield* firstKeys(Option.getOrElse(miaAccount, () => "mia"));
+
           // Every RPC the router serves, called by an account the seed didn't make. A new RPC fails
           // the census below until it joins this list.
           const calls = yield* Effect.all({
@@ -243,6 +277,16 @@ describe.skipIf(Postgres18.socket === null)("Demo sign-in over the router", () =
             ),
             "Demo.signIn": Effect.exit(client["Demo.signIn"]({ persona: "lena" }, bearer(mia))),
             "Demo.rootKey": Effect.exit(client["Demo.rootKey"](undefined, bearer(mia))),
+            "Keys.state": Effect.exit(client["Keys.state"](undefined, bearer(mia))),
+            "Keys.init": Effect.exit(
+              client["Keys.init"]({ record: miaKeys.record, wrapper: miaKeys.device }, bearer(mia)),
+            ),
+            "Keys.addWrapper": Effect.exit(
+              client["Keys.addWrapper"]({ wrapper: miaKeys.card }, bearer(mia)),
+            ),
+            "Keys.fetchSeals": Effect.exit(
+              client["Keys.fetchSeals"]({ method: Keys.RecoveryCode.make({}) }, bearer(mia)),
+            ),
           });
 
           const lena = calls["Demo.signIn"];
@@ -275,7 +319,9 @@ describe.skipIf(Postgres18.socket === null)("Demo sign-in over the router", () =
 
           expect({
             census: Object.keys(calls).sort(),
-            answered: Object.values(calls).map((exit) => exit._tag),
+            answered: Object.fromEntries(
+              Object.entries(calls).map(([name, exit]) => [name, exit._tag]),
+            ),
             miasKey: miasKey._tag,
             lenasKey: lenasKey.rootKey,
             cacheControl: answer.headers["cache-control"],
@@ -287,8 +333,20 @@ describe.skipIf(Postgres18.socket === null)("Demo sign-in over the router", () =
             notDemo: notDemo._tag,
           }).toEqual({
             census: [...Api.Rpcs.requests.keys()].sort(),
-            // Mia is no demo account, so `Demo.rootKey` refuses her.
-            answered: ["Success", "Success", "Success", "Success", "Success", "Success", "Failure"],
+            answered: {
+              "System.info": "Success",
+              "Mail.captured": "Success",
+              "Dev.createSchool": "Success",
+              "Dev.admit": "Success",
+              "Dev.admitToDemoSchool": "Success",
+              "Demo.signIn": "Success",
+              // Mia is no demo account, so `Demo.rootKey` refuses her.
+              "Demo.rootKey": "Failure",
+              "Keys.state": "Success",
+              "Keys.init": "Success",
+              "Keys.addWrapper": "Success",
+              "Keys.fetchSeals": "Success",
+            },
             miasKey: "Demo.NotDemo",
             lenasKey: handedOver,
             cacheControl: "no-store",
