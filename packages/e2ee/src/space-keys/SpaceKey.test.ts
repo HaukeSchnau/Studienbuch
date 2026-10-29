@@ -89,8 +89,8 @@ const accounts = Effect.gen(function* () {
   };
 });
 
-const current = { epoch: 4, key: new Uint8Array(32).fill(4) };
-const older = { epoch: 3, key: new Uint8Array(32).fill(3) };
+const current = { epoch: 4, key: Redacted.make(new Uint8Array(32).fill(4)) };
+const older = { epoch: 3, key: Redacted.make(new Uint8Array(32).fill(3)) };
 
 const tag = <A, E extends { readonly _tag: string }, R>(effect: Effect.Effect<A, E, R>) =>
   Effect.map(Effect.flip(effect), ({ _tag }) => _tag);
@@ -181,6 +181,22 @@ describe("openBox", () => {
         ["E2ee.Untrusted", false, true],
       );
     }).pipe(Effect.provide(TestCrypto.layer("SpaceKey.test"))),
+  );
+
+  // After a renewal the device holds generation 2, and a thief still holds generation 1. A caller
+  // that passes the old record as the author must not open the thief's box.
+  it.effect(
+    "refuses a box its own account signed at an older generation than the device holds",
+    () =>
+      Effect.gen(function* () {
+        const { lena1, lena1Record, lena2, lena2Record } = yield* accounts;
+        const box = yield* SpaceKey.box("nb", [current], lena2Record, lena1);
+
+        assert.strictEqual(
+          yield* tag(SpaceKey.openBox(box, "nb", lena2, lena1Record)),
+          "E2ee.Untrusted",
+        );
+      }).pipe(Effect.provide(TestCrypto.layer("SpaceKey.test"))),
   );
 
   it.effect("refuses another account's sealing seed and another author's record", () =>

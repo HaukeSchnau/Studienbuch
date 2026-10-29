@@ -139,9 +139,10 @@ export const linkAad = (link: LinkHeader) =>
 export const linkSigned = (link: LinkBody) =>
   Result.map(linkAad(link), (aad) => Bytes.concat(aad, Bytes.lp(link.ct)));
 
+/** One epoch's space key. The key stays `Redacted` so a log line can't print it. */
 export interface EpochKey {
   readonly epoch: number;
-  readonly key: Uint8Array;
+  readonly key: Redacted.Redacted<Uint8Array>;
 }
 
 const keyLength = 32;
@@ -150,7 +151,7 @@ const encLength = 1120;
 
 /** A new random space key. */
 export const generate = Effect.gen(function* () {
-  return yield* (yield* CryptoSuite.Service).randomBytes(keyLength);
+  return Redacted.make(yield* (yield* CryptoSuite.Service).randomBytes(keyLength));
 });
 
 const unsupported = (
@@ -165,7 +166,7 @@ const unsupported = (
 const ordered = (keys: ReadonlyArray<EpochKey>) =>
   keys.every(
     (entry, index) =>
-      entry.key.length === keyLength &&
+      Redacted.value(entry.key).length === keyLength &&
       (index === 0 || entry.epoch < (keys[index - 1]?.epoch ?? 0)),
   );
 
@@ -219,7 +220,7 @@ export const box = Effect.fn("SpaceKey.box")(function* (
 
   const payload = Bytes.concat(
     Bytes.u32(keys.length),
-    ...keys.flatMap(({ epoch, key }) => [Bytes.u32(epoch), key]),
+    ...keys.flatMap(({ epoch, key }) => [Bytes.u32(epoch), Redacted.value(key)]),
   );
 
   const ct = Bytes.concat(nonce, yield* suite.aead.seal(k, nonce, payload, info));
@@ -265,7 +266,12 @@ export const openBox = Effect.fn("SpaceKey.openBox")(function* (
   yield* unsupported("keyBox", keyBox);
   const suite = yield* CryptoSuite.Service;
 
-  if (!authorIs(author, keyBox.author, keyBox.authorGeneration)) {
+  // The caller vouches that `author` is the newest record. For the device's own account it holds
+  // the newest keys itself, so a box of its own at any other generation came from an older key.
+  const ownOlder =
+    keyBox.author === recipient.accountId && keyBox.authorGeneration !== recipient.generation;
+
+  if (ownOlder || !authorIs(author, keyBox.author, keyBox.authorGeneration)) {
     return yield* new E2ee.Untrusted({ format: "keyBox", reason: "chain" });
   }
 
@@ -327,7 +333,7 @@ const readKeys = (payload: Uint8Array): ReadonlyArray<EpochKey> | undefined => {
     const key = reader.take(keyLength);
 
     if (epoch === undefined || key === undefined) return undefined;
-    keys.push({ epoch, key: key.slice() });
+    keys.push({ epoch, key: Redacted.make(key.slice()) });
   }
 
   return keys;
@@ -337,7 +343,7 @@ const readKeys = (payload: Uint8Array): ReadonlyArray<EpochKey> | undefined => {
 export const link = Effect.fn("SpaceKey.link")(function* (
   space: string,
   current: EpochKey,
-  previousKey: Uint8Array,
+  previousKey: Redacted.Redacted<Uint8Array>,
   author: AccountKey.Keys,
 ) {
   const suite = yield* CryptoSuite.Service;
@@ -352,7 +358,12 @@ export const link = Effect.fn("SpaceKey.link")(function* (
 
   const aad = yield* Effect.fromResult(linkAad(header));
   const nonce = yield* suite.randomBytes(nonceLength);
-  const ct = Bytes.concat(nonce, yield* suite.aead.seal(current.key, nonce, previousKey, aad));
+
+  const ct = Bytes.concat(
+    nonce,
+    yield* suite.aead.seal(Redacted.value(current.key), nonce, Redacted.value(previousKey), aad),
+  );
+
   const unsigned = { ...header, format, ct };
 
   const signature = yield* suite.sign.sign(
@@ -414,12 +425,12 @@ export const openLink = Effect.fn("SpaceKey.openLink")(function* (
 
   const previous = yield* suite.aead
     .open(
-      current.key,
+      Redacted.value(current.key),
       ct.subarray(0, nonceLength),
       ct.subarray(nonceLength),
       yield* Effect.fromResult(linkAad(expected)),
     )
     .pipe(Effect.mapError(() => new E2ee.WrongSecret({ format: "historyLink" })));
 
-  return { epoch: current.epoch - 1, key: previous } satisfies EpochKey;
+  return { epoch: current.epoch - 1, key: Redacted.make(previous) } satisfies EpochKey;
 });

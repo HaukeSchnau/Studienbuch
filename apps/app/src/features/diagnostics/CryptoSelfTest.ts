@@ -63,7 +63,7 @@ const randomness = timing(
 );
 
 const rowCount = 1000;
-const key = new Uint8Array(32).fill(1);
+const key = Redacted.make(new Uint8Array(32).fill(1));
 
 const sealedRows = Effect.forEach(
   Array.from({ length: rowCount }, (_, index) => index),
