@@ -20,6 +20,7 @@ import { Refusal } from "../protocol/Refusal.ts";
 import { Link } from "../simulation/Link.ts";
 import { Network } from "../simulation/Network.ts";
 import { DeviceDatabase } from "./DeviceDatabase.ts";
+import { DeviceSchema } from "./DeviceSchema.ts";
 import { Devices } from "./fixture/Devices.ts";
 import { Notes } from "./fixture/Notes.ts";
 import { NotesDevice } from "./fixture/NotesDevice.ts";
@@ -57,6 +58,8 @@ const notes = Effect.flatMap(DeviceDatabase.make, (db) =>
   db.select().from(NotesDevice.Note).orderBy(NotesDevice.Note.id),
 );
 
+const decodeNotes = DeviceSchema.decodeView(Notes.Note);
+
 const overlay = Effect.flatMap(
   SqlClient.SqlClient,
   (sql) => sql<{ readonly id: string }>`select id from pending_row order by id`,
@@ -79,6 +82,9 @@ describe("SyncClient.mutate", () => {
         expect(mutationId, driver).toBe(1);
         expect(yield* notes, driver).toEqual([
           { space: "nb-lena", id: "n1", title: "Vokabeln", done: null },
+        ]);
+        expect(yield* decodeNotes(yield* notes), driver).toStrictEqual([
+          { space: "nb-lena", id: "n1", title: "Vokabeln" },
         ]);
         expect(yield* Outbox.pending, driver).toEqual([
           {

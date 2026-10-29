@@ -8,6 +8,7 @@ import { Probe } from "../conformance/Probe.ts";
 import { ProbeDevice } from "../conformance/ProbeDevice.ts";
 import { Tx } from "../transaction/Tx.ts";
 import { DeviceDatabase } from "./DeviceDatabase.ts";
+import { DeviceSchema } from "./DeviceSchema.ts";
 
 /**
  * What the typed view returns for a row the `Tx` returns: its JSON encoding, so `NaN` reads as the
@@ -22,6 +23,8 @@ const asViewRow = (space: string, id: string, row: Probe.Row) =>
     ...(json as Probe.Row),
     note: row.note ?? null,
   }));
+
+const decodeProbes = DeviceSchema.decodeView(Probe.table);
 
 layer(Engines.deviceLayer)("Drizzle on the device", (it) => {
   it.effect("typed reads through the views return the rows the Tx returns", () =>
@@ -51,6 +54,10 @@ layer(Engines.deviceLayer)("Drizzle on the device", (it) => {
 
         expect(rows, engine.name).toEqual(
           yield* Effect.forEach(expected, ({ id, row }) => asViewRow(space, id, row)),
+        );
+        // The view can't tell an absent `note` from a `null` one, so both decode as absent.
+        expect(yield* decodeProbes(rows), engine.name).toEqual(
+          expected.map(({ id, row }) => ({ space, id, ...row, note: row.note ?? undefined })),
         );
 
         const grouped = yield* engine.sql(

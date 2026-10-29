@@ -22,6 +22,7 @@ import {
   sqliteView,
   text,
 } from "drizzle-orm/sqlite-core";
+import * as Effect from "effect/Effect";
 import * as Predicate from "effect/Predicate";
 import * as Schema from "effect/Schema";
 import * as SchemaAST from "effect/SchemaAST";
@@ -133,6 +134,41 @@ export const view = <T extends Sync.Any>(table: T) => {
   return sqliteView(table.name, columns).as(
     sql.raw(`select ${select} from sync_row_view where tbl = ${literal(table.name)}`),
   );
+};
+
+const decodeIdentity = Schema.decodeUnknownEffect(
+  Schema.Struct({ space: Schema.String, id: Schema.String }),
+);
+
+/**
+ * Decodes whole rows of `table`'s view, as `db.select().from(view)` returns them, with the
+ * table's codec. A view returns `null` for a field its row lacks, so an optional field's `null`
+ * decodes as an absent key, and an optional field that held `null` reads as absent too. Make the
+ * decoder once per table, outside the query.
+ */
+export const decodeView = <Fields extends Sync.Fields>(
+  table: Sync.Table<string, Fields, string>,
+) => {
+  const decodeFields = Schema.decodeUnknownEffect(table.codec);
+
+  const optional = new Set(
+    Object.entries(table.fields).flatMap(([name, field]) =>
+      SchemaAST.isOptional(field.ast) ? [name] : [],
+    ),
+  );
+
+  return (rows: ReadonlyArray<object>) =>
+    Effect.forEach(rows, (row) =>
+      Effect.zipWith(
+        decodeIdentity(row),
+        decodeFields(
+          Object.fromEntries(
+            Object.entries(row).filter(([name, value]) => value !== null || !optional.has(name)),
+          ),
+        ),
+        (identity, fields) => ({ ...identity, ...fields }),
+      ),
+    );
 };
 
 /**
