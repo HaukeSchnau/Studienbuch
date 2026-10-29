@@ -337,12 +337,14 @@ export const currentWeek = 1;
 export const signalDelays = { back: 2400, settle: 3200 } as const;
 
 /** What the visitor changed on the page. Sections showing the same record read the same state. */
+/** The places on the page where an exam can be signed. Each keeps its own signatures. */
+export type Signing = "today" | "grades" | "features";
+
 export interface State {
-  /** The course the second hero phone shows, and which hero phone is in front. */
-  readonly openCourse: CourseId;
-  readonly front: "today" | "course";
-  /** Exams the visitor had signed. Signing adds the parents' signature. */
-  readonly signed: ReadonlySet<string>;
+  /** What the Übersicht phone shows: the day, or a course opened from it. */
+  readonly todayScreen: "today" | CourseId;
+  /** Exams the visitor had signed, per place. Signing adds the parents' signature. */
+  readonly signed: Readonly<Record<Signing, ReadonlySet<string>>>;
   /** The offline card's homework. Its phone sits in a dead spot until a tick has waited a moment. */
   readonly homework: ReadonlyArray<Homework>;
   readonly signal: "none" | "waiting" | "synced";
@@ -353,8 +355,8 @@ export interface State {
 
 export type Action =
   | { readonly kind: "open"; readonly course: CourseId }
-  | { readonly kind: "raise"; readonly phone: State["front"] }
-  | { readonly kind: "sign"; readonly exam: string }
+  | { readonly kind: "back" }
+  | { readonly kind: "sign"; readonly place: Signing; readonly exam: string }
   | { readonly kind: "tick"; readonly homework: string }
   | { readonly kind: "synced" }
   | { readonly kind: "settled" }
@@ -362,9 +364,8 @@ export type Action =
   | { readonly kind: "week"; readonly week: number };
 
 const initial: State = {
-  openCourse: "de",
-  front: "today",
-  signed: new Set(),
+  todayScreen: "today",
+  signed: { today: new Set(), grades: new Set(), features: new Set() },
   homework,
   signal: "none",
   vaultView: "device",
@@ -374,11 +375,17 @@ const initial: State = {
 const reduce = (state: State, action: Action): State => {
   switch (action.kind) {
     case "open":
-      return { ...state, openCourse: action.course, front: "course" };
-    case "raise":
-      return { ...state, front: action.phone };
+      return { ...state, todayScreen: action.course };
+    case "back":
+      return { ...state, todayScreen: "today" };
     case "sign":
-      return { ...state, signed: new Set(state.signed).add(action.exam) };
+      return {
+        ...state,
+        signed: {
+          ...state.signed,
+          [action.place]: new Set(state.signed[action.place]).add(action.exam),
+        },
+      };
     case "tick":
       return {
         ...state,

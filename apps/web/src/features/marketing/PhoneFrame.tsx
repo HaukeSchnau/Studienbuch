@@ -24,37 +24,23 @@ const tabs = [
 
 /**
  * A frameless phone around a live 390-point screen, scaled by `zoom` on the device (`--phone-zoom`)
- * while the figure carries position and rotation, which zoom would distort. At `depth="back"`, a
- * tap on the cover or focus inside calls `onRaise`, so raising it presses nothing under the finger.
+ * while the figure carries position and rotation, which zoom would distort. Status and tab bar are
+ * device chrome drawn here; in the app the operating system draws them (variant B).
  */
 export function PhoneFrame({
   tab,
   label,
   className,
-  depth,
-  onRaise,
-  raiseLabel,
   children,
 }: {
   tab: Tab;
   /** What the screen shows, for people who can't see it. */
   label: string;
   className: string;
-  depth?: "front" | "back";
-  onRaise?: () => void;
-  /** The affordance on a phone in the back, such as "Noten ansehen". */
-  raiseLabel?: string;
   children: ReactNode;
 }) {
-  const back = depth === "back";
-
   return (
-    <figure
-      aria-label={label}
-      className={`phone ${className}`}
-      data-depth={depth}
-      onFocusCapture={back ? onRaise : undefined}
-    >
+    <figure aria-label={label} className={`phone ${className}`}>
       <div className="phone-device">
         <div className="phone-screen">
           <div aria-hidden className="phone-status">
@@ -81,11 +67,6 @@ export function PhoneFrame({
           </div>
         </div>
       </div>
-      {back ? (
-        <button aria-hidden className="phone-raise" onClick={onRaise} tabIndex={-1} type="button">
-          <span className="phone-raise-hint">{raiseLabel}</span>
-        </button>
-      ) : null}
     </figure>
   );
 }

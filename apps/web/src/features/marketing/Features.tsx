@@ -39,7 +39,7 @@ function Feature({
  * full width, so no card stretches beside a taller one.
  */
 export function Features({ demo, dispatch }: { demo: Demo.State; dispatch: Demo.Dispatch }) {
-  const exams = Demo.signedExams("de", demo.signed);
+  const exams = Demo.signedExams("de", demo.signed.features);
 
   return (
     <section className="section section-canvas features" id={Site.sections.features}>
@@ -77,7 +77,7 @@ export function Features({ demo, dispatch }: { demo: Demo.State; dispatch: Demo.
                 average={Demo.confirmedAverage(exams)}
                 exams={exams}
                 oral={Demo.courses.de.oral}
-                onSign={(exam) => dispatch({ kind: "sign", exam })}
+                onSign={(exam) => dispatch({ kind: "sign", place: "features", exam })}
               />
             }
             title="Noten"

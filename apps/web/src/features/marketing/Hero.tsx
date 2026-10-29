@@ -9,18 +9,16 @@ import { PhoneFrame } from "./PhoneFrame.tsx";
 import { CourseScreen, TodayScreen } from "./Screens.tsx";
 
 /**
- * The legacy composition: the notebook and headline on the left, two live phones running off the
- * right edge. A lesson tapped in the Übersicht opens its course and brings that phone forward. The
- * headline ends its grid row and the download prompt starts the next, so both meet beside the phones.
+ * The August composition: the notebook and headline on the left, and two phones of different sizes
+ * tilted apart. Each phone works on its own: a lesson opens its course inside the Übersicht phone,
+ * and the course phone signs inside itself. Neither overlaps the other's controls.
  */
 export function Hero({ demo, dispatch }: { demo: Demo.State; dispatch: Demo.Dispatch }) {
-  const course = demo.openCourse;
+  const screen = demo.todayScreen;
 
   const open = (id: string) => {
     if (Demo.isCourse(id)) dispatch({ kind: "open", course: id });
   };
-
-  const depth = (phone: Demo.State["front"]) => (demo.front === phone ? "front" : "back");
 
   return (
     <section className="hero">
@@ -50,29 +48,36 @@ export function Hero({ demo, dispatch }: { demo: Demo.State; dispatch: Demo.Disp
         </div>
 
         <PointerTracker className="hero-phones">
-          <div className="hero-scene" data-front={demo.front}>
+          <div className="hero-scene" data-screen={screen === "today" ? "today" : "course"}>
             <PhoneFrame
               className="phone-today"
-              depth={depth("today")}
-              label="Die Übersicht der App: der heutige Tag mit Vertretung und Entfall, darunter die Fehlzeiten."
-              onRaise={() => dispatch({ kind: "raise", phone: "today" })}
-              raiseLabel="Übersicht ansehen"
+              label={
+                screen === "today"
+                  ? "Die Übersicht der App: der heutige Tag mit Vertretung und Entfall, darunter die Fehlzeiten."
+                  : `Die Kursseite ${Demo.courses[screen].name}, aus der Übersicht geöffnet.`
+              }
               tab="today"
             >
-              <TodayScreen onOpen={open} />
+              {screen === "today" ? (
+                <TodayScreen onOpen={open} />
+              ) : (
+                <CourseScreen
+                  course={screen}
+                  exams={Demo.signedExams(screen, demo.signed.today)}
+                  onBack={() => dispatch({ kind: "back" })}
+                  onSign={(exam) => dispatch({ kind: "sign", place: "today", exam })}
+                />
+              )}
             </PhoneFrame>
             <PhoneFrame
               className="phone-course"
-              depth={depth("course")}
-              label={`Die Kursseite ${Demo.courses[course].name} mit den Noten.`}
-              onRaise={() => dispatch({ kind: "raise", phone: "course" })}
-              raiseLabel="Noten ansehen"
+              label="Die Kursseite Deutsch mit den Noten."
               tab="today"
             >
               <CourseScreen
-                course={course}
-                exams={Demo.signedExams(course, demo.signed)}
-                onSign={(exam) => dispatch({ kind: "sign", exam })}
+                course="de"
+                exams={Demo.signedExams("de", demo.signed.grades)}
+                onSign={(exam) => dispatch({ kind: "sign", place: "grades", exam })}
               />
             </PhoneFrame>
             <p aria-hidden className="hero-hint">
