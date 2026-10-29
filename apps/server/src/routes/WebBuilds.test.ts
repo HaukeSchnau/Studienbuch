@@ -6,6 +6,7 @@ import * as HttpClient from "effect/http/HttpClient";
 import * as HttpRouter from "effect/http/HttpRouter";
 import * as Layer from "effect/Layer";
 import * as Path from "effect/Path";
+import { Deployment } from "../infra/config/Deployment.ts";
 import { WebBuilds } from "./WebBuilds.ts";
 
 const files = {
@@ -36,7 +37,12 @@ const server = Layer.unwrap(
   Effect.map(builds, (roots) =>
     HttpRouter.serve(WebBuilds.layer(roots), { disableLogger: true, disableListenLog: true }),
   ),
-).pipe(Layer.provideMerge(NodeHttpServer.layerTest));
+).pipe(
+  Layer.provideMerge(NodeHttpServer.layerTest),
+  Layer.provide(
+    Layer.succeed(Deployment.Current)({ revision: "0123abc", environment: "development" }),
+  ),
+);
 
 // A browser navigation; asset requests don't accept HTML and get no fallback.
 const get = Effect.fnUntraced(function* (url: string, accept = "text/html") {
@@ -109,6 +115,37 @@ layer(server)("WebBuilds", (it) => {
         missing("/nowhere"),
       ]);
       assert.deepStrictEqual(yield* get("/app/missing.js", "*/*"), missing("/app/missing.js"));
+    }),
+  );
+
+  it.effect("revalidates pages by the release's ETag, never by size, mtime or date", () =>
+    Effect.gen(function* () {
+      const client = yield* HttpClient.HttpClient;
+
+      const revalidate = Effect.fnUntraced(function* (headers: Record<string, string>) {
+        const response = yield* client.get("/app/", {
+          headers: { accept: "text/html", ...headers },
+        });
+
+        return { status: response.status, lastModified: response.headers["last-modified"] ?? null };
+      });
+
+      const etag = (yield* client.get("/app/")).headers["etag"] ?? "";
+      // The ETag of the same file in another release with equal sizes and dates, as a Nix store has.
+      const sameMetadata = etag.replace(/^W\/"[0-9a-f]+-/, '"');
+
+      assert.deepStrictEqual(
+        [
+          yield* revalidate({ "if-none-match": etag }),
+          yield* revalidate({ "if-none-match": sameMetadata }),
+          yield* revalidate({ "if-modified-since": "Fri, 01 Jan 2100 00:00:00 GMT" }),
+        ],
+        [
+          { status: 304, lastModified: null },
+          { status: 200, lastModified: null },
+          { status: 200, lastModified: null },
+        ],
+      );
     }),
   );
 });
