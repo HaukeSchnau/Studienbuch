@@ -18,11 +18,11 @@
 import * as Effect from "effect/Effect";
 import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
-import * as Schema from "effect/Schema";
 
 import { Bytes } from "../format/Bytes.ts";
 import { E2ee } from "../format/E2ee.ts";
 import { CryptoSuite } from "../suite/CryptoSuite.ts";
+import { AccountKey as AccountKeyWire } from "../wire/AccountKey.ts";
 
 export * as AccountKey from "./AccountKey.ts";
 
@@ -46,22 +46,9 @@ export interface Keys {
 }
 
 /** One generation's public keys, as the server stores and serves them. */
-export class Record extends Schema.Class<Record, { readonly brand: unique symbol }>(
-  "AccountKey.Record",
-)({
-  format: Bytes.U8,
-  suite: Bytes.U8,
-  accountId: Schema.String,
-  generation: Bytes.U32,
-  /** The account started over without its old root key ("Neu anfangen"), so no link leads here. */
-  reset: Schema.Boolean,
-  signingKey: Schema.Uint8Array,
-  sealingKey: Schema.Uint8Array,
-  /** By this generation's identity key, over `signed`. */
-  signature: Schema.Uint8Array,
-  /** By the previous generation's identity key, over `linked`. */
-  link: Schema.optionalKey(Schema.Uint8Array),
-}) {}
+export const Record = AccountKeyWire.Record;
+
+export type Record = AccountKeyWire.Record;
 
 /** The fields a record's self-signature covers. */
 export interface Fields {

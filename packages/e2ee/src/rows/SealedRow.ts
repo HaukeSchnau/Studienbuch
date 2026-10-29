@@ -17,29 +17,20 @@
 import * as Effect from "effect/Effect";
 import * as Redacted from "effect/Redacted";
 import * as Result from "effect/Result";
-import * as Schema from "effect/Schema";
 
 import { Bytes } from "../format/Bytes.ts";
 import { E2ee } from "../format/E2ee.ts";
 import { CryptoSuite } from "../suite/CryptoSuite.ts";
+import { SealedRow as SealedRowWire } from "../wire/SealedRow.ts";
 
 export * as SealedRow from "./SealedRow.ts";
 
 /** The format this build writes. */
 export const format = 1;
 
-export class Envelope extends Schema.Class<Envelope, { readonly brand: unique symbol }>(
-  "SealedRow.Envelope",
-)({
-  /** The format version. An app opens only versions it knows and parks the others. */
-  format: Bytes.U8,
-  /** The `CryptoSuite` id the row was sealed with. */
-  suite: Bytes.U8,
-  /** The space key's epoch that encrypted the row. The server refuses a stale one. */
-  keyEpoch: Bytes.U32,
-  /** The account that wrote the row. The server checks that it is the connection's account. */
-  author: Schema.String,
-}) {}
+export const Envelope = SealedRowWire.Envelope;
+
+export type Envelope = SealedRowWire.Envelope;
 
 /** Where a row lives. The server assigns its version later, so the AAD can't bind that. */
 export interface Location {
