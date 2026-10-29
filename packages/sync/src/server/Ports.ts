@@ -42,8 +42,9 @@ export class AccountKeys extends Context.Service<
   AccountKeys,
   {
     /**
-     * The account's newest key record, or `None` before a device published one. Read inside the
-     * `Seal`'s transaction, it holds the record until commit, so a renewal waits for the check.
+     * The account's newest key record, or `None` before a device published one. A `Seal` reads it
+     * after locking its spaces and holds it for share until commit: a renewal that locks it later
+     * waits, and one that commits while the read is under way goes unseen.
      */
     readonly newest: (
       accountId: string,

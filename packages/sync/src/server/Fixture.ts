@@ -373,8 +373,8 @@ export const envelope = (
 const zeroKey = () => Redacted.make(new Uint8Array(32));
 
 /**
- * A key box that opens `keyEpoch` of `space` for `recipient`, signed by `author` at
- * `authorGeneration`. The server never opens it.
+ * A key box that opens `keyEpoch` of `space` for `recipient` at `recipientGeneration`, signed by
+ * `author` at `authorGeneration`. The server never opens it.
  */
 export const keyBox = Effect.fn("Fixture.keyBox")(function* (
   space: string,
@@ -383,13 +383,15 @@ export const keyBox = Effect.fn("Fixture.keyBox")(function* (
     readonly author?: string;
     readonly keyEpoch?: number;
     readonly authorGeneration?: number;
+    readonly recipientGeneration?: number;
   } = {},
 ) {
   const keyEpoch = options.keyEpoch ?? 0;
   const author = yield* keysOf(options.author ?? recipient, options.authorGeneration ?? 0);
+  const sealedTo = yield* recordOf(recipient, options.recipientGeneration ?? 0);
   const keys = [{ epoch: keyEpoch, key: zeroKey() }] as const;
 
-  return yield* Effect.orDie(SpaceKey.box(space, keys, yield* recordOf(recipient), author));
+  return yield* Effect.orDie(SpaceKey.box(space, keys, sealedTo, author));
 });
 
 /** A history link that holds epoch `keyEpoch - 1`'s key under `keyEpoch`'s, signed by `author`. */

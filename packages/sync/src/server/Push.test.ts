@@ -571,40 +571,88 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
     );
 
     it.effect(
-      "a key box signed by no current key of its author is refused and stores nothing",
+      "a forged key box is refused, one of a missing or older key record waits for keys, and none is stored",
       () =>
         Effect.gen(function* () {
-          const { lena } = yield* Fixture.school("signatures");
+          const { lena, school } = yield* Fixture.school("signatures");
+          const spaces = yield* Spaces.Service;
           const sql = yield* SqlClient.SqlClient;
+          // Ida's first device hasn't published her key record yet.
+          const ida = { account: "signatures-ida", notebook: "signatures-ida-notebook" };
+          yield* spaces.create(ida.notebook, Fixture.Notebook, { parent: school });
+          yield* spaces.addMember(ida.notebook, ida.account, "owner");
           const box = yield* Fixture.keyBox(lena.notebook, lena.account);
           const forged = Fixture.alteredBox(box, { signature: Fixture.forged(box.signature) });
 
-          const opening = (clientId: string, keyBox: typeof box) =>
+          const opening = (
+            student: { readonly account: string; readonly notebook: string },
+            clientId: string,
+            keyBox: typeof box,
+          ) =>
             answer(
-              push(lena.account, clientId, [
-                seal(1, [write(lena.notebook, "x", lena.account)], [keyBox]),
+              push(student.account, clientId, [
+                seal(1, [write(student.notebook, "x", student.account)], [keyBox]),
               ]),
             );
 
-          const before = yield* opening("signatures-a", forged);
-          // Lena renews her key: a box her generation 0 signed may come from a thief of that key.
-          yield* (yield* Fixture.Keys).publish(yield* Fixture.recordOf(lena.account, 1));
-          const stale = yield* opening("signatures-b", box);
+          const forgedSignature = yield* opening(lena, "signatures-a", forged);
 
-          const [stored] = yield* sql<{ readonly rows: number }>`
-          select count(*)::int as rows from sync_row where space_id = ${lena.notebook}
-        `;
-
-          const renewed = yield* opening(
-            "signatures-c",
-            yield* Fixture.keyBox(lena.notebook, lena.account, { authorGeneration: 1 }),
+          // The batch stops at the first command that waits for keys.
+          const noRecord = yield* answer(
+            push(ida.account, "signatures-b", [
+              seal(
+                1,
+                [write(ida.notebook, "x", ida.account)],
+                [yield* Fixture.keyBox(ida.notebook, ida.account)],
+              ),
+              seal(2, [write(ida.notebook, "y", ida.account)]),
+            ]),
           );
 
-          expect([before, stale, stored?.rows, renewed]).toEqual([
-            { lastMutationId: 1, outcomes: ["1 Sync.BadEnvelope"] },
-            { lastMutationId: 1, outcomes: ["1 Sync.BadEnvelope"] },
-            0,
-            { lastMutationId: 1, outcomes: ["1 Applied"] },
+          // Lena renews her key: a box her generation 0 signed may come from a thief of that key.
+          yield* (yield* Fixture.Keys).publish(yield* Fixture.recordOf(lena.account, 1));
+
+          const renewed = (recipientGeneration: number) =>
+            Fixture.keyBox(lena.notebook, lena.account, {
+              authorGeneration: 1,
+              recipientGeneration,
+            });
+
+          const olderAuthor = yield* push(lena.account, "signatures-c", [
+            seal(1, [write(lena.notebook, "x", lena.account)], [box]),
+          ]);
+
+          const olderSealingKey = yield* opening(lena, "signatures-d", yield* renewed(0));
+
+          const [stored] = yield* sql<{ readonly rows: number }>`
+            select count(*)::int as rows from sync_row
+            where space_id in (${lena.notebook}, ${ida.notebook})
+          `;
+
+          const newest = yield* opening(lena, "signatures-e", yield* renewed(1));
+
+          const cases = [
+            ["a forged signature", forgedSignature],
+            ["no key record yet", noRecord],
+            ["an older author generation", olderAuthor],
+            ["her own older sealing key", olderSealingKey],
+            ["stored", stored?.rows],
+            ["the newest generation", newest],
+          ];
+
+          expect(cases).toEqual([
+            ["a forged signature", { lastMutationId: 1, outcomes: ["1 Sync.BadEnvelope"] }],
+            ["no key record yet", { lastMutationId: 0, outcomes: ["1 NoKeyRecord"] }],
+            [
+              "an older author generation",
+              {
+                lastMutationId: 0,
+                outcomes: [Protocol.KeysBehind.make({ mutationId: 1, generation: 1 })],
+              },
+            ],
+            ["her own older sealing key", { lastMutationId: 0, outcomes: ["1 KeysBehind"] }],
+            ["stored", 0],
+            ["the newest generation", { lastMutationId: 1, outcomes: ["1 Applied"] }],
           ]);
         }),
     );

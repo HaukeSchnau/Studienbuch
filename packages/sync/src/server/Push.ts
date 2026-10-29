@@ -398,6 +398,12 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
           return Effect.succeed(Protocol.Retry.make({ mutationId }));
         case "Stale":
           return Effect.succeed(Protocol.Stale.make({ mutationId }));
+        case "NoKeyRecord":
+          return Effect.succeed(Protocol.NoKeyRecord.make({ mutationId }));
+        case "KeysBehind":
+          return Effect.succeed(
+            Protocol.KeysBehind.make({ mutationId, generation: decision.generation }),
+          );
       }
     };
 
@@ -433,7 +439,7 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
         const outcome = yield* process(request.clientId, account, command);
         outcomes.push(outcome);
 
-        if (outcome._tag === "Retry" || outcome._tag === "Stale") break;
+        if (outcome._tag !== "Applied" && outcome._tag !== "Rejected") break;
       }
 
       const lastMutationId = (yield* clientRow(request.clientId))?.lastMutationId ?? 0;

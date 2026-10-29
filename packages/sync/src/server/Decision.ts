@@ -1,7 +1,7 @@
 /**
  * What the server decides about one pushed command inside its transaction, and the space locks
  * both command kinds take first. Only `Applied` commits. A refusal is recorded in a second
- * transaction, and `Retry` and `Stale` leave no trace.
+ * transaction, and the other decisions leave no trace.
  */
 import * as Data from "effect/Data";
 import * as Effect from "effect/Effect";
@@ -24,9 +24,12 @@ export type Decision = Data.TaggedEnum<{
   Refused: { readonly reason: Refusal.Reason };
   Retry: {};
   Stale: {};
+  NoKeyRecord: {};
+  KeysBehind: { readonly generation: number };
 }>;
 
-export const { Applied, Refused, Retry, Stale } = Data.taggedEnum<Decision>();
+export const { Applied, Refused, Retry, Stale, NoKeyRecord, KeysBehind } =
+  Data.taggedEnum<Decision>();
 
 const encodeEngine = Schema.encodeEffect(Schema.toCodecJson(Refusal.Engine));
 

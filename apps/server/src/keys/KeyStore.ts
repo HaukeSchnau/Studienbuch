@@ -255,8 +255,10 @@ const lockNewest = Effect.fn("KeyStore.lockNewest")(function* (account: string) 
 });
 
 /**
- * The account's newest key record, held for share until the transaction ends, so a renewal waits
- * for a `Seal` that checks a signature against it.
+ * The account's newest key record, held for share until the transaction ends. A renewal that locks
+ * it later waits for that transaction, and one that commits while this read is under way goes
+ * unseen. M3's rotate must re-read the newest generation after taking its lock, and lock spaces
+ * before `account_key` in the order a Seal does, or the two deadlock.
  */
 export const newest = Effect.fn("KeyStore.newest")(function* (account: string) {
   const sql = yield* SqlClient.SqlClient;
