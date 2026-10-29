@@ -14,8 +14,11 @@ import type * as Stream from "effect/Stream";
 
 export * as Ports from "./Ports.ts";
 
-/** The secrets a device keeps outside its database. */
-export const SecretName = Schema.Literals(["root-key", "device-seed"]);
+/**
+ * The secrets a device keeps outside its database. `session` is the signed-in account with its
+ * bearer token, which the device reads before it knows which database to open.
+ */
+export const SecretName = Schema.Literals(["root-key", "device-seed", "session"]);
 
 export type SecretName = typeof SecretName.Type;
 
