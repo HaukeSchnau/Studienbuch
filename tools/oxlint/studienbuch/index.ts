@@ -31,6 +31,7 @@ import requireDisposableRender from "./require-disposable-render.ts";
 import requireRegisteredListScroll from "./require-registered-list-scroll.ts";
 import requireSuppressionReason from "./require-suppression-reason.ts";
 import taggedErrorName from "./tagged-error-name.ts";
+import testOnlyImports from "./test-only-imports.ts";
 
 /** Studienbuch's own rules: the conventions in AGENTS.md that a linter can check. */
 export default definePlugin({
@@ -67,5 +68,6 @@ export default definePlugin({
     "require-registered-list-scroll": requireRegisteredListScroll,
     "require-suppression-reason": requireSuppressionReason,
     "tagged-error-name": taggedErrorName,
+    "test-only-imports": testOnlyImports,
   },
 });
