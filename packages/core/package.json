@@ -1,0 +1,19 @@
+{
+  "name": "@stu/core",
+  "version": "0.1.0",
+  "private": true,
+  "license": "BUSL-1.1",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@stu/sync": "workspace:*",
+    "effect": "catalog:",
+    "temporal-polyfill": "catalog:"
+  },
+  "devDependencies": {
+    "@effect/vitest": "catalog:"
+  }
+}
