@@ -153,6 +153,8 @@ export const SyncedSpace = Schema.Struct({
   id: Schema.String,
   kind: Schema.String,
   role: Schema.String,
+  /** The device's cursor in the space, `null` until its first patch. */
+  version: Schema.NullOr(Ids.Version),
   syncedAt: Schema.NullOr(Schema.DateTimeUtcFromMillis),
 });
 
@@ -168,7 +170,7 @@ export const spaces: SyncQuery.SyncQuery<
   run: () =>
     Effect.flatMap(SqlClient.SqlClient, (sql) =>
       Effect.flatMap(
-        sql`select id, kind, role, synced_at as "syncedAt" from sync_space order by id`,
+        sql`select id, kind, role, version, synced_at as "syncedAt" from sync_space order by id`,
         decodeSynced,
       ),
     ),

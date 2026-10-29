@@ -236,8 +236,20 @@ describe("SyncClient.replicate", () => {
         ).toEqual([2]);
         expect(yield* ma.confirmed, driver).toBeUndefined();
         expect(yield* SyncClient.spaces.run(), driver).toEqual([
-          { id: "igs", kind: "school", role: "reader", syncedAt: DateTime.makeUnsafe(0) },
-          { id: "nb-lena", kind: "notebook", role: "owner", syncedAt: DateTime.makeUnsafe(0) },
+          {
+            id: "igs",
+            kind: "school",
+            role: "reader",
+            version: 1,
+            syncedAt: DateTime.makeUnsafe(0),
+          },
+          {
+            id: "nb-lena",
+            kind: "notebook",
+            role: "owner",
+            version: 1,
+            syncedAt: DateTime.makeUnsafe(0),
+          },
         ]);
       }),
     ),
