@@ -16,6 +16,12 @@ export const Ticket = Schema.Struct({ ticket: Schema.String });
 /** The WebSocket, with the ticket in the query parameter `ticket`. An unknown ticket gets 401. */
 export const socketPath = "/api/sync";
 
+/**
+ * The largest WebSocket message either side sends. A device batches its push under it, and the
+ * server closes a connection that sends a larger one with 1009.
+ */
+export const maxMessageBytes = 16 * 1024 * 1024;
+
 /** The socket's URL on a server origin, `wss:` for an `https:` origin. */
 export const socketUrl = (origin: URL, ticket: string): URL => {
   const url = new URL(socketPath, origin);
