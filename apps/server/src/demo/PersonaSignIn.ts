@@ -31,9 +31,10 @@ export const handlers = Demo.Rpcs.toLayer(
 
         if (Option.isNone(account)) return yield* new Demo.NotSeeded({ persona });
 
-        // Both checks above hold, so `signInDemo` and `rootKey` agree.
-        const token = yield* Effect.orDie(auth.signInDemo(account.value));
+        // Both checks above hold, so `rootKey` and `signInDemo` agree. The key comes first, so a
+        // server without its seed fails before it creates a session.
         const rootKey = yield* Effect.orDie(DemoKeys.rootKey(account.value));
+        const token = yield* Effect.orDie(auth.signInDemo(account.value));
 
         return new Demo.Session({
           account: account.value,

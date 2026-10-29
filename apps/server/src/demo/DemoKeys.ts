@@ -5,16 +5,16 @@
  *
  * ```text
  * R = HKDF-SHA256(ikm = UTF-8 of DEMO_KEY_SEED, salt = empty, 32,
- *                 info = "stu.demo.root.v1" || 0x00 || UTF-8 of the account id)
+ *                 info = "stu.demo.root.v1" || 0x00 || UTF-8 of STUDIENBUCH_ENVIRONMENT
+ *                        || 0x00 || UTF-8 of the account id)
  * ```
- *
- * Changing the seed changes every demo account's R, which strands what their devices sealed.
  */
 import { CryptoSuite } from "@stu/e2ee";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
+import { Deployment } from "../infra/config/Deployment.ts";
 import { DemoAccounts } from "./DemoAccounts.ts";
 
 export * as DemoKeys from "./DemoKeys.ts";
@@ -42,10 +42,14 @@ export const rootKey = Effect.fn("DemoKeys.rootKey")(function* (account: string)
   }
 
   const suite = yield* CryptoSuite.Service;
+  const { environment } = yield* Deployment.Current;
+  const place = encoder.encode(environment);
   const id = encoder.encode(account);
-  const info = new Uint8Array(label.length + 1 + id.length);
+  // Zeros separate the parts, and the label and the environment hold none.
+  const info = new Uint8Array(label.length + 1 + place.length + 1 + id.length);
   info.set(label);
-  info.set(id, label.length + 1);
+  info.set(place, label.length + 1);
+  info.set(id, label.length + 1 + place.length + 1);
 
   const key = yield* suite.hkdf({
     ikm: encoder.encode(Redacted.value(yield* seed)),

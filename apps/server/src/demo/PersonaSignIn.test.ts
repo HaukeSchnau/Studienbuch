@@ -39,9 +39,10 @@ const SignInDemoCalls = { count: 0 };
 
 /**
  * The auth route and every RPC at `/api/rpc` on a seeded database, as a server in `environment`
- * serves them, with `signInDemo` counting its calls.
+ * serves them, with `signInDemo` counting its calls. `keySeed: false` serves without the
+ * `DEMO_KEY_SEED` that the seed had.
  */
-const server = (environment: string) =>
+const server = (environment: string, options: { readonly keySeed?: boolean } = {}) =>
   Layer.unwrap(
     Effect.gen(function* () {
       const sql = yield* SqlClient.SqlClient;
@@ -61,6 +62,8 @@ const server = (environment: string) =>
       };
 
       yield* Seed.run.pipe(Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env }))));
+      const { DEMO_KEY_SEED: _, ...withoutKeySeed } = env;
+      const served = options.keySeed === false ? withoutKeySeed : env;
 
       const counted = Layer.effect(Auth.Service)(
         Effect.map(Auth.Service, (auth) => ({
@@ -83,7 +86,7 @@ const server = (environment: string) =>
         Layer.provideMerge(Mail.layer),
         Layer.provideMerge(Database.layer),
         Layer.provideMerge(Deployment.layer),
-        Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env }))),
+        Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env: served }))),
       );
     }),
   ).pipe(
@@ -246,6 +249,14 @@ describe.skipIf(Postgres18.socket === null)("Demo sign-in over the router", () =
           const token = Exit.isSuccess(lena) ? lena.value.token : "";
           const handedOver = Exit.isSuccess(lena) ? lena.value.rootKey : undefined;
           const lenasKey = yield* client["Demo.rootKey"](undefined, bearer(token));
+
+          // Any answer at the path, here to an empty batch of requests.
+          const answer = yield* (yield* HttpClient.HttpClient).execute(
+            HttpClientRequest.post(Api.path).pipe(
+              HttpClientRequest.bodyText("", "application/ndjson"),
+            ),
+          );
+
           const miasKey = yield* Effect.flip(client["Demo.rootKey"](undefined, bearer(mia)));
 
           const [raw] = yield* sql<{ readonly token: string }>`
@@ -267,6 +278,7 @@ describe.skipIf(Postgres18.socket === null)("Demo sign-in over the router", () =
             answered: Object.values(calls).map((exit) => exit._tag),
             miasKey: miasKey._tag,
             lenasKey: lenasKey.rootKey,
+            cacheControl: answer.headers["cache-control"],
             signInDemoCalls: SignInDemoCalls.count,
             demoAccounts: yield* demoAccounts,
             lenas: lenas.map((row) => row.id),
@@ -279,6 +291,7 @@ describe.skipIf(Postgres18.socket === null)("Demo sign-in over the router", () =
             answered: ["Success", "Success", "Success", "Success", "Success", "Success", "Failure"],
             miasKey: "Demo.NotDemo",
             lenasKey: handedOver,
+            cacheControl: "no-store",
             signInDemoCalls: 1,
             demoAccounts: ["demo-lena", "demo-tom"],
             lenas: ["demo-lena"],
@@ -301,6 +314,24 @@ describe.skipIf(Postgres18.socket === null)("Demo sign-in over the router", () =
     it.effect(
       "production signs no persona in, and gives a root key to demo accounts only",
       () => outsideDevelopment,
+    );
+  });
+
+  layer(server("preview", { keySeed: false }))((it) => {
+    it.effect(
+      "a server without DEMO_KEY_SEED signs no persona in and leaves no session behind",
+      () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          const client = yield* rpc;
+          const signedIn = yield* Effect.exit(client["Demo.signIn"]({ persona: "lena" }));
+
+          const [sessions] = yield* sql<{ readonly count: number }>`
+          select count(*)::int as count from auth_session where "userId" = 'demo-lena'
+        `;
+
+          expect([signedIn._tag, sessions?.count]).toEqual(["Failure", 0]);
+        }),
     );
   });
 });
