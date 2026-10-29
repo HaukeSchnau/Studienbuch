@@ -68,6 +68,7 @@ const harnessWith = Effect.fnUntraced(function* (
   const offline = yield* SubscriptionRef.make(false);
   const writes = yield* PubSub.unbounded<void>();
   let ended = 0;
+  const reports: Array<Supervisor.Connection> = [];
   let outdated = 0;
 
   const remaining = [...script];
@@ -100,7 +101,7 @@ const harnessWith = Effect.fnUntraced(function* (
     lifecycle: { changes: SubscriptionRef.changes(lifecycle) },
     writes: Stream.fromPubSub(writes),
     offline,
-    report: () => Effect.void,
+    report: (connection) => Effect.sync(() => void reports.push(connection)),
     outdated: Effect.sync(() => {
       outdated += 1;
     }),
@@ -118,6 +119,7 @@ const harnessWith = Effect.fnUntraced(function* (
     offline,
     write: PubSub.publish(writes, undefined),
     ended: () => ended,
+    reports,
     outdated: () => outdated,
   };
 });
@@ -221,6 +223,7 @@ describe("Supervisor", () => {
 
       expect(device.ended()).toBe(1);
       expect(device.attempts).toHaveLength(1);
+      expect(device.reports.at(-1)).toBe("offline");
 
       yield* SubscriptionRef.set(device.token, Option.some(Redacted.make("token-2")));
       yield* TestClock.adjust(0);
@@ -350,10 +353,29 @@ describe("Supervisor rounds", () => {
 
       const attempts = device.attempts.length;
       yield* SubscriptionRef.set(device.offline, true);
+      yield* TestClock.adjust(0);
       yield* SubscriptionRef.set(device.offline, false);
       yield* TestClock.adjust(0);
 
       expect(device.attempts.length).toBe(attempts + 1);
     }).pipe(Effect.scoped),
+  );
+
+  it.effect(
+    "going to the background during a backoff wakes nothing, nor does losing the network",
+    () =>
+      Effect.gen(function* () {
+        const device = yield* harness([]);
+
+        for (let second = 0; second < 4; second++) yield* TestClock.adjust("1 second");
+
+        const attempts = device.attempts.length;
+        yield* SubscriptionRef.set(device.lifecycle, { foreground: false, online: true });
+        yield* TestClock.adjust(0);
+        yield* SubscriptionRef.set(device.lifecycle, { foreground: false, online: false });
+        yield* TestClock.adjust(0);
+
+        expect(device.attempts).toHaveLength(attempts);
+      }).pipe(Effect.scoped),
   );
 });
