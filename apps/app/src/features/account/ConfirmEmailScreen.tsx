@@ -1,4 +1,4 @@
-import { useAtom, useAtomValue } from "@effect/atom-react";
+import { useAtom } from "@effect/atom-react";
 import { Accounts } from "@stu/api/Accounts";
 import * as Option from "effect/Option";
 import { useLocalSearchParams } from "expo-router";
@@ -7,7 +7,6 @@ import { Keyboard, StyleSheet, View } from "react-native";
 
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
 import { Text } from "../../ui/Text.tsx";
-import { Account } from "./Account.ts";
 import { PasskeyLead, ProblemText, reasonOf } from "./AccountForm.tsx";
 import { AccountState } from "./AccountState.ts";
 import { CodeField, codeLength } from "./CodeField.tsx";
@@ -20,9 +19,9 @@ import { Button, Link, Section } from "./SharedUi.tsx";
  */
 export function ConfirmEmailScreen() {
   const { email = "" } = useLocalSearchParams<{ email?: string }>();
-  const confirmed = Account.confirmedFor(useAtomValue(AccountState.confirmed), email);
+  const confirmed = AccountState.useConfirmedFor(email);
 
-  AccountState.useAbandonOnLeave();
+  AccountState.useAbandonOnLeave(email);
 
   return Option.isSome(confirmed) ? <PasskeyOffer email={email} /> : <CodeEntry email={email} />;
 }

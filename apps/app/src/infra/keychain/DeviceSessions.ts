@@ -5,6 +5,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
+import * as Semaphore from "effect/Semaphore";
 
 import { Device } from "../device/Device.ts";
 import { Names } from "../device/Names.ts";
@@ -60,6 +61,9 @@ export const layer = Layer.effect(Service)(
     const write = (tokens: Record<string, string>) =>
       Effect.flatMap(encodeTokens(tokens).pipe(Effect.orDie), (text) => store.set(entry, text));
 
+    // `set` and `remove` read, change and write the whole entry, one at a time.
+    const writer = yield* Semaphore.make(1);
+
     return Service.of({
       all: Effect.map(read, (tokens) =>
         Object.entries(tokens).map(([accountId, token]) => ({
@@ -68,11 +72,13 @@ export const layer = Layer.effect(Service)(
         })),
       ),
       set: (accountId, token) =>
-        Effect.flatMap(read, (tokens) => write({ ...tokens, [accountId]: Redacted.value(token) })),
+        Effect.flatMap(read, (tokens) =>
+          write({ ...tokens, [accountId]: Redacted.value(token) }),
+        ).pipe(Semaphore.withPermit(writer)),
       remove: (accountId) =>
         Effect.flatMap(read, (tokens) =>
           write(Object.fromEntries(Object.entries(tokens).filter(([id]) => id !== accountId))),
-        ),
+        ).pipe(Semaphore.withPermit(writer)),
     });
   }),
 );
