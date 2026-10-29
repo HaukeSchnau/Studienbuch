@@ -49,6 +49,7 @@
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
+    "@expo/metro-config": "catalog:",
     "@types/react": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "drizzle-kit": "catalog:",

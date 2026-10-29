@@ -78,13 +78,6 @@ const Case = Schema.Struct({
 
 const decodeCase = Schema.decodeUnknownEffect(Case);
 
-export interface Replayable {
-  readonly name: string;
-  readonly steps: ReadonlyArray<Probe.Step>;
-  /** The outcomes and stored rows every engine agreed on, encoded like `encode` does. */
-  readonly expected: string;
-}
-
 /** The cases of a fixture, each with the trace a device must reproduce. */
 export const decode = Effect.fn("Fixture.decode")(function* (text: string) {
   const [, ...lines] = text.split("\n").filter((line) => line !== "");
@@ -93,7 +86,8 @@ export const decode = Effect.fn("Fixture.decode")(function* (text: string) {
     Effect.map(decodeCase(JSON.parse(line, revive)), ({ name, steps, outcomes, stored }) => ({
       name,
       steps,
-      // The engines wrote these in this key order, which the traces keep.
+      // The outcomes and stored rows every engine agreed on, encoded as `encode` does. The engines
+      // wrote them in this key order, which the traces keep.
       expected: JSON.stringify({ outcomes, stored }, nonFinite),
     })),
   );

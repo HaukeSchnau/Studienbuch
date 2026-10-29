@@ -12,5 +12,5 @@ export const roll = () => Math.random();
 // oxlint-disable-next-line effecttsgo/crypto-random-uuid -- fixture: crypto.randomUUID in core
 export const id = () => crypto.randomUUID();
 
-// oxlint-disable-next-line effecttsgo/global-fetch -- fixture: fetch in core
+// oxlint-disable-next-line effecttsgo/global-fetch, eslint/no-restricted-globals -- fixture: fetch in core
 export const load = () => fetch("/api/rows");

@@ -200,6 +200,9 @@ catalogs:
     '@expo-google-fonts/nunito':
       specifier: 0.4.2
       version: 0.4.2
+    '@expo/metro-config':
+      specifier: 58.0.18
+      version: 58.0.18
     '@expo/metro-runtime':
       specifier: 58.0.15
       version: 58.0.15
@@ -497,6 +500,9 @@ importers:
       '@effect/vitest':
         specifier: 'catalog:'
         version: 4.0.7(effect@4.0.7)(vitest@5.0.5)
+      '@expo/metro-config':
+        specifier: 'catalog:'
+        version: 58.0.18(expo@58.0.20)(supports-color@8.1.1)(typescript@7.0.2)
       '@types/react':
         specifier: 'catalog:'
         version: 19.3.0

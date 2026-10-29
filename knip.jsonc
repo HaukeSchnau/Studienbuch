@@ -15,8 +15,9 @@
       "ignoreDependencies": ["react-native-web"],
     },
     "apps/app": {
-      // Expo loads fingerprint.config.js by name, and Metro bundles the worker from a `new URL`.
-      "entry": ["fingerprint.config.js", "src/infra/sqlite/opfs.worker.ts"],
+      // Expo loads fingerprint.config.js by name, Metro bundles the worker from a `new URL`, and
+      // browsers load the service worker from /app/sw.js.
+      "entry": ["fingerprint.config.js", "src/infra/sqlite/opfs.worker.ts", "public/sw.js"],
       // app.config.ts hands the font files to expo-font by path.
       "ignoreDependencies": ["@expo-google-fonts/nunito"],
     },
@@ -32,5 +33,7 @@
     "tools/oxlint/anti-slop/**",
     // Each fixture exists to fail the lint, not to be imported.
     "tools/oxlint/fixtures/**",
+    // TypeScript finds the declaration of `x.jsonl` as `x.d.jsonl.ts` by name, which knip doesn't.
+    "**/*.d.*.ts",
   ],
 }
