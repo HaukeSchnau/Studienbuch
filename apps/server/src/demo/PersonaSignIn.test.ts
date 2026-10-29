@@ -65,7 +65,10 @@ const server = (environment: string, options: { readonly keySeed?: boolean } = {
         DEMO_PASSWORD: demoPassword,
       };
 
-      yield* Seed.run.pipe(Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env }))));
+      yield* Seed.run.pipe(
+        Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env }))),
+        Effect.provideService(Deployment.Current, { revision: "test", environment }),
+      );
       const { DEMO_KEY_SEED: _, ...withoutKeySeed } = env;
       const served = options.keySeed === false ? withoutKeySeed : env;
 
