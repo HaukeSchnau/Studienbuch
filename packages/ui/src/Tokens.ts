@@ -33,6 +33,10 @@ const light = {
   panel: "#3B7FD9",
   panelCard: "#203755",
   panelTitle: "#3CC233",
+  // A due date that has passed, on a panel card.
+  panelDue: "#FF9C9C",
+  // The darker wave across the panel, legacy's AufgabenClipper.
+  panelFold: "rgba(0, 0, 0, 0.1)",
   // The decorative blobs, drawn at 45 % opacity. Landing page, onboarding and empty states only.
   blobGreen: "#6DB868",
   blobBlue: "#76A6E5",
@@ -65,6 +69,8 @@ const dark = {
   panel: "#1B3A63",
   panelCard: "#0E1B2D",
   panelTitle: "#65C55B",
+  panelDue: "#FF9C9C",
+  panelFold: "rgba(0, 0, 0, 0.18)",
   blobGreen: "#1F5A1B",
   blobBlue: "#1E4170",
 } as const satisfies Palette;
