@@ -556,6 +556,16 @@ importers:
         specifier: 'catalog:'
         version: 4.0.7
 
+  packages/e2ee:
+    dependencies:
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.7
+    devDependencies:
+      '@effect/vitest':
+        specifier: 'catalog:'
+        version: 4.0.7(effect@4.0.7)(vitest@5.0.5)
+
   packages/sync:
     dependencies:
       drizzle-orm:
