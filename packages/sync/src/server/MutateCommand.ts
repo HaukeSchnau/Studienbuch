@@ -33,16 +33,26 @@ const mayWrite = (mutator: Sync.AnyMutator, space: Decision.Locked) => {
   return allowed.length > 0 && allowed.every(Boolean);
 };
 
-/** A mutator's own refusal through its error codec, or a `Tx` refusal from running it again. */
+/**
+ * A mutator's own refusal through its error codec, or a `Tx` refusal from running it again. A
+ * failure outside the codec is the mutator's bug, like a defect, so the command waits for a fix.
+ */
 const refusal = (mutator: Sync.AnyMutator, error: { readonly _tag: string }) =>
   (isTxRefusal(error)
     ? encodeTxRefusal(error)
     : Schema.encodeUnknownEffect(mutator.error)(error)
   ).pipe(
-    // A refusal outside the mutator's own codec is the mutator's bug, like a defect.
-    Effect.orDie,
     Effect.flatMap(Decision.reason),
     Effect.map((reason) => Decision.Refused({ reason })),
+    Effect.catchTags({
+      SchemaError: () =>
+        Effect.as(
+          Effect.logError("A mutator refused with an error its codec doesn't encode").pipe(
+            Effect.annotateLogs({ mutator: mutator.name, refusal: error._tag }),
+          ),
+          Decision.Retry(),
+        ),
+    }),
   );
 
 export const decide = Effect.fn("MutateCommand.decide")(function* (

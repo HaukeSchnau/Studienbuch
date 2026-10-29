@@ -17,7 +17,11 @@ import { SyncWriter } from "./SyncWriter.ts";
 
 export * as Fixture from "./Fixture.ts";
 
-export const Notebook = Sync.spaceKind("notebook", { encryption: "sealed", roles: ["owner"] });
+/** A guest reads a notebook and may write none of its tables. */
+export const Notebook = Sync.spaceKind("notebook", {
+  encryption: "sealed",
+  roles: ["owner", "guest"],
+});
 
 export const School = Sync.spaceKind("school", {
   encryption: "none",
@@ -46,7 +50,10 @@ export const Enrollment = Sync.table("Enrollment", {
 /** A term of a school, in the School space. */
 export const Term = Sync.table("Term", { class: "readable", fields: { name: Schema.String } });
 
-/** A course a school offers, in the School space. Its id is also its Course space's id. */
+/**
+ * A course a school offers, in the School space. Its id is the key of its Course space, which is
+ * created under the school with `{ parent: school, key: id }`.
+ */
 export const Offering = Sync.table("Offering", {
   class: "readable",
   fields: { name: Schema.String },
@@ -100,6 +107,30 @@ export const setEnrollment = Sync.mutator("enrollment.set", {
   }),
 });
 
+/** Creates the term's enrollment once. A second call is refused as `Tx.RowExists` on the server. */
+export const createEnrollment = Sync.mutator("enrollment.create", {
+  version: 1,
+  args: Schema.Struct({ notebook: Schema.String, termId: Schema.String }),
+  writes: [Enrollment],
+  spaces: (args) => [args.notebook],
+  run: Effect.fn("Fixture.createEnrollment")(function* (args) {
+    const tx = yield* Tx.Service;
+    yield* tx.insert(Enrollment, args.notebook, args.termId, {
+      termId: args.termId,
+      courseIds: [],
+    });
+  }),
+});
+
+/** Dies, as a mutator with a bug does. */
+export const crash = Sync.mutator("enrollment.crash", {
+  version: 1,
+  args: Schema.Struct({ notebook: Schema.String }),
+  writes: [Enrollment],
+  spaces: (args) => [args.notebook],
+  run: () => Effect.die("The fixture's mutator crashed"),
+});
+
 export const createHomework = Sync.mutator("homework.create", {
   version: 1,
   args: Schema.Struct({ notebook: Schema.String, id: Schema.String, title: Schema.String }),
@@ -122,7 +153,7 @@ export const definition = Sync.schema({
   version: 1,
   spaceKinds: [Notebook, School, Course],
   tables: [Homework, Enrollment, Term, Offering, Lesson],
-  mutators: [setEnrollment, createHomework],
+  mutators: [setEnrollment, createEnrollment, crash, createHomework],
   membership: [courses],
 });
 
@@ -173,13 +204,23 @@ export const school = Effect.fn("Fixture.school")(function* (name: string) {
 });
 
 /** A sealed row's envelope by `author` under `keyEpoch`. */
-export const envelope = (author: string, keyEpoch = 0, format = SealedRow.format) =>
-  new SealedRow.Envelope({ format, suite: CryptoSuite.id, keyEpoch, author });
+export const envelope = (
+  author: string,
+  keyEpoch = 0,
+  format = SealedRow.format,
+  suite = CryptoSuite.id,
+) => new SealedRow.Envelope({ format, suite, keyEpoch, author });
 
 /** A key box that opens `keyEpoch` of `space` for `recipient`. The server never opens it. */
-export const keyBox = (space: string, recipient: string, author = recipient, keyEpoch = 0) =>
+export const keyBox = (
+  space: string,
+  recipient: string,
+  author = recipient,
+  keyEpoch = 0,
+  format = SpaceKey.format,
+) =>
   new SpaceKey.KeyBox({
-    format: SpaceKey.format,
+    format,
     suite: CryptoSuite.id,
     space,
     keyEpoch,
@@ -189,5 +230,23 @@ export const keyBox = (space: string, recipient: string, author = recipient, key
     authorGeneration: 0,
     enc: new Uint8Array(32),
     ct: new Uint8Array(48),
+    signature: new Uint8Array(64),
+  });
+
+/** A history link that holds epoch `keyEpoch - 1`'s key under `keyEpoch`'s. */
+export const historyLink = (
+  space: string,
+  author: string,
+  keyEpoch = 1,
+  format = SpaceKey.format,
+) =>
+  new SpaceKey.HistoryLink({
+    format,
+    suite: CryptoSuite.id,
+    space,
+    keyEpoch,
+    author,
+    authorGeneration: 0,
+    ct: new Uint8Array(60),
     signature: new Uint8Array(64),
   });

@@ -5,6 +5,7 @@
  */
 import { CryptoSuite, SealedRow, SpaceKey } from "@stu/e2ee";
 import * as Effect from "effect/Effect";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Command } from "../protocol/Command.ts";
@@ -53,9 +54,13 @@ const knownFormat = (item: { readonly format: number; readonly suite: number }, 
 /**
  * Boxes and links carry Ed25519 signatures by their author's identity key at `authorGeneration`.
  * Checking them needs WP-2's verification and WP-11's account key records. Until both land the
- * server accepts them, and a device checks a box's signature before it opens it.
+ * server finds no box or link whose signature fails, and a device checks a box's signature before
+ * it opens it.
  */
-const signaturesVerify = (_command: Command.Seal) => Effect.succeed(true);
+const unsigned = (
+  _command: Command.Seal,
+): Effect.Effect<Option.Option<{ readonly space: string; readonly id: string }>> =>
+  Effect.succeedNone;
 
 /** The rows a command writes into a space. */
 interface Put {
@@ -169,8 +174,10 @@ export const decide = Effect.fn("SealCommand.decide")(function* (
     );
   }
 
-  if (!(yield* signaturesVerify(command))) {
-    return yield* Decision.refuse(new Refusal.BadEnvelope({ space: spaces[0] ?? "", id: "" }));
+  const forged = yield* unsigned(command);
+
+  if (Option.isSome(forged)) {
+    return yield* Decision.refuse(new Refusal.BadEnvelope(forged.value));
   }
 
   const large = writes.find((write) => (write.ct?.length ?? 0) > Command.maxSealedBytes);

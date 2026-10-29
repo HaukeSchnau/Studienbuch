@@ -1,16 +1,22 @@
 import { describe, expect, layer } from "@effect/vitest";
+import { SpaceKey } from "@stu/e2ee";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
+import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import { Bounds } from "../protocol/Bounds.ts";
 import { Command } from "../protocol/Command.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { Postgres18 } from "../testing/Postgres18.ts";
 import { Fixture } from "./Fixture.ts";
 import { Pull } from "./Pull.ts";
 import { Push } from "./Push.ts";
+import { Spaces } from "./Spaces.ts";
 import { SyncEpoch } from "./SyncEpoch.ts";
+
+const decodeKeyBox = Schema.decodeUnknownEffect(Schema.toCodecJson(SpaceKey.KeyBox));
 
 const at = DateTime.makeUnsafe(0);
 const { contract } = Fixture.definition;
@@ -79,7 +85,8 @@ const seal = (
   mutationId: number,
   writes: ReadonlyArray<Command.SealedWrite>,
   boxes: Command.Seal["boxes"] = [],
-) => Command.Seal.make({ mutationId, at, writes, boxes, links: [] });
+  links: Command.Seal["links"] = [],
+) => Command.Seal.make({ mutationId, at, writes, boxes, links });
 
 const write = (
   space: string,
@@ -90,12 +97,13 @@ const write = (
     readonly keyEpoch?: number;
     readonly ct?: Uint8Array | null;
     readonly format?: number;
+    readonly suite?: number;
   } = {},
 ): Command.SealedWrite => ({
   space,
   id,
   base: options.base ?? Command.Absent.make({}),
-  envelope: Fixture.envelope(author, options.keyEpoch, options.format),
+  envelope: Fixture.envelope(author, options.keyEpoch, options.format, options.suite),
   ct: options.ct === undefined ? new Uint8Array(32) : options.ct,
 });
 
@@ -228,61 +236,227 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
           yield* openNotebook(lena, "checks-open");
           const large = new Uint8Array(Command.maxSealedBytes + 1);
 
+          // Tom is a guest in Lena's notebook: he reads it and may write nothing there.
+          yield* (yield* Spaces.Service).addMember(lena.notebook, tom.account, "guest");
+          // Opening epoch 1 takes one box per member, the guest's included.
+          const nextBox = Fixture.keyBox(lena.notebook, lena.account, lena.account, 1);
+          const guestBox = Fixture.keyBox(lena.notebook, tom.account, lena.account, 1);
+          const badBox = Fixture.keyBox(lena.notebook, lena.account, lena.account, 1, 2);
+          const badLink = Fixture.historyLink(lena.notebook, lena.account, 1, 2);
+          const bad = { ct: large, format: 2 };
+
           // Each case breaks its own check and every later one, so only the order decides the answer.
           const cases = [
             [
               "NotMember: another author",
-              write(lena.notebook, "a", tom.account, { ct: large, format: 2 }),
+              lena,
+              seal(1, [write(lena.notebook, "a", tom.account, bad)]),
             ],
             [
               "NotMember: another notebook",
-              write(tom.notebook, "b", lena.account, { ct: large, format: 2 }),
+              lena,
+              seal(1, [write(tom.notebook, "b", lena.account, bad)]),
             ],
             [
               "NotAllowed: a readable space",
-              write(school, "c", lena.account, { ct: large, format: 2 }),
+              lena,
+              seal(1, [write(school, "c", lena.account, bad)]),
+            ],
+            [
+              "NotAllowed: a guest's role",
+              tom,
+              seal(1, [write(lena.notebook, "c", tom.account, bad)]),
             ],
             [
               "Stale: an old key epoch",
-              write(lena.notebook, "d", lena.account, { keyEpoch: 1, ct: large, format: 2 }),
+              lena,
+              seal(1, [write(lena.notebook, "d", lena.account, { ...bad, keyEpoch: 1 })]),
             ],
             [
               "Stale: a moved row",
-              write(lena.notebook, "checks-open-first", lena.account, { ct: large, format: 2 }),
+              lena,
+              seal(1, [write(lena.notebook, "checks-open-first", lena.account, bad)]),
             ],
             [
               "BadEnvelope: an unknown format",
-              write(lena.notebook, "f", lena.account, { ct: large, format: 2 }),
+              lena,
+              seal(1, [write(lena.notebook, "f", lena.account, bad)]),
             ],
-            ["TooLarge", write(lena.notebook, "g", lena.account, { ct: large })],
+            [
+              "BadEnvelope: an unknown suite",
+              lena,
+              seal(1, [write(lena.notebook, "f", lena.account, { ct: large, suite: 9 })]),
+            ],
+            ["BadEnvelope: a key box's format", lena, seal(1, [], [badBox, guestBox])],
+            [
+              "BadEnvelope: a history link's format",
+              lena,
+              seal(1, [], [nextBox, guestBox], [badLink]),
+            ],
+            ["TooLarge", lena, seal(1, [write(lena.notebook, "g", lena.account, { ct: large })])],
           ] as const;
 
           const answers = [];
 
-          for (const [name, sealed] of cases) {
-            const answered = yield* answer(
-              push(lena.account, `checks-${name}`, [seal(1, [sealed])]),
-            );
-
-            answers.push([name, answered]);
+          for (const [name, student, command] of cases) {
+            answers.push([name, yield* answer(push(student.account, `checks-${name}`, [command]))]);
           }
 
+          const refused = (tag: string) => ({ lastMutationId: 1, outcomes: [`1 ${tag}`] });
+          const stale = { lastMutationId: 0, outcomes: ["1 Stale"] };
+
           expect(answers).toEqual([
-            ["NotMember: another author", { lastMutationId: 1, outcomes: ["1 Sync.NotMember"] }],
-            ["NotMember: another notebook", { lastMutationId: 1, outcomes: ["1 Sync.NotMember"] }],
-            [
-              "NotAllowed: a readable space",
-              { lastMutationId: 1, outcomes: ["1 Sync.NotAllowed"] },
-            ],
-            ["Stale: an old key epoch", { lastMutationId: 0, outcomes: ["1 Stale"] }],
-            ["Stale: a moved row", { lastMutationId: 0, outcomes: ["1 Stale"] }],
-            [
-              "BadEnvelope: an unknown format",
-              { lastMutationId: 1, outcomes: ["1 Sync.BadEnvelope"] },
-            ],
-            ["TooLarge", { lastMutationId: 1, outcomes: ["1 Sync.TooLarge"] }],
+            ["NotMember: another author", refused("Sync.NotMember")],
+            ["NotMember: another notebook", refused("Sync.NotMember")],
+            ["NotAllowed: a readable space", refused("Sync.NotAllowed")],
+            ["NotAllowed: a guest's role", refused("Sync.NotAllowed")],
+            ["Stale: an old key epoch", stale],
+            ["Stale: a moved row", stale],
+            ["BadEnvelope: an unknown format", refused("Sync.BadEnvelope")],
+            ["BadEnvelope: an unknown suite", refused("Sync.BadEnvelope")],
+            ["BadEnvelope: a key box's format", refused("Sync.BadEnvelope")],
+            ["BadEnvelope: a history link's format", refused("Sync.BadEnvelope")],
+            ["TooLarge", refused("Sync.TooLarge")],
           ]);
         }),
+    );
+
+    it.effect("bounds refuse a command, and the command log keeps nothing it can't read", () =>
+      Effect.gen(function* () {
+        const world = yield* Fixture.school("bounds");
+        const { lena } = world;
+        const sql = yield* SqlClient.SqlClient;
+
+        const outcomes = yield* answer(
+          push(lena.account, "bounds-c1", [
+            // Homework sent as a readable command, by a modified app.
+            Command.Mutate.make({
+              mutationId: 1,
+              name: "homework.create",
+              version: 1,
+              args: { title: "MARKER-unknown" },
+              at,
+            }),
+            Command.Mutate.make({
+              mutationId: 2,
+              name: "enrollment.set",
+              version: 1,
+              args: { title: "MARKER-undecodable" },
+              at,
+            }),
+            enroll(3, world, { courseIds: ["MARKER\u0000nul"] }),
+            seal(
+              4,
+              Array.from({ length: Bounds.maxSealedWrites + 1 }, (_, index) =>
+                write(lena.notebook, `row-${index}`, lena.account),
+              ),
+            ),
+            seal(5, [], [Fixture.keyBox("", lena.account)]),
+            // Neither the version nor the name fits the log's columns.
+            Command.Mutate.make({
+              mutationId: 6,
+              name: "enrollment.set",
+              version: Bounds.maxVersion + 1,
+              args: {},
+              at,
+            }),
+            Command.Mutate.make({
+              mutationId: 7,
+              name: "MARKER\u0000name",
+              version: 1,
+              args: {},
+              at,
+            }),
+          ]),
+        );
+
+        const logged = yield* sql<{ readonly row: string }>`
+          select concat_ws(' ', name, version, detail::text) as row from command_log
+          where client_id = 'bounds-c1'
+        `;
+
+        expect(outcomes).toEqual({
+          lastMutationId: 7,
+          outcomes: [
+            "1 Sync.UnknownMutator",
+            "2 Sync.InvalidArgs",
+            "3 Sync.InvalidArgs",
+            "4 Sync.TooLarge",
+            "5 Sync.BadEnvelope",
+            "6 Sync.InvalidArgs",
+            "7 Sync.InvalidArgs",
+          ],
+        });
+
+        expect(logged).toHaveLength(7);
+        expect(logged.filter(({ row }) => row.includes("MARKER"))).toEqual([]);
+      }),
+    );
+
+    it.effect(
+      "a re-run's Tx refusal is refused, and a mutator's defect or a database failure waits",
+      () =>
+        Effect.gen(function* () {
+          const { lena } = yield* Fixture.school("failures");
+          const sql = yield* SqlClient.SqlClient;
+
+          const create = (mutationId: number, termId: string) =>
+            Command.Mutate.make({
+              mutationId,
+              name: Fixture.createEnrollment.name,
+              version: 1,
+              args: { notebook: lena.notebook, termId },
+              at,
+            });
+
+          const crash = Command.Mutate.make({
+            mutationId: 3,
+            name: Fixture.crash.name,
+            version: 1,
+            args: { notebook: lena.notebook },
+            at,
+          });
+
+          const first = yield* answer(
+            push(lena.account, "failures-c1", [create(1, "winter"), create(2, "winter"), crash]),
+          );
+
+          // Without its command log the server can't record anything, so the command waits.
+          yield* sql`alter table command_log rename to command_log_away`;
+          const broken = yield* answer(push(lena.account, "failures-c1", [create(3, "summer")]));
+          yield* sql`alter table command_log_away rename to command_log`;
+          const healed = yield* answer(push(lena.account, "failures-c1", [create(3, "summer")]));
+
+          expect([first, broken, healed]).toEqual([
+            { lastMutationId: 2, outcomes: ["1 Applied", "2 Tx.RowExists", "3 Retry"] },
+            { lastMutationId: 2, outcomes: ["3 Retry"] },
+            { lastMutationId: 3, outcomes: ["3 Applied"] },
+          ]);
+        }),
+    );
+
+    it.effect("two connections of one device that send one refused command record it once", () =>
+      Effect.gen(function* () {
+        const world = yield* Fixture.school("race");
+        const sql = yield* SqlClient.SqlClient;
+        const refused = enroll(1, world, { courseIds: ["no-such-course"] });
+
+        const answers = yield* Effect.all(
+          Array.from({ length: 4 }, () => answer(push(world.lena.account, "race-c1", [refused]))),
+          { concurrency: "unbounded" },
+        );
+
+        const logged = yield* sql`select 1 from command_log where client_id = 'race-c1'`;
+
+        expect(answers).toEqual(
+          Array.from({ length: 4 }, () => ({
+            lastMutationId: 1,
+            outcomes: ["1 Enrollment.UnknownCourse"],
+          })),
+        );
+
+        expect(logged).toHaveLength(1);
+      }),
     );
 
     it.effect("a notebook's key epoch 0 opens once, with one box for each member", () =>
@@ -337,6 +511,11 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
           `${Protocol.keyBoxTable}/${Protocol.keyBoxId(box)} Readable`,
           "/y Sealed",
         ]);
+
+        // A device reads the box back exactly as it sent it.
+        const keyRow = notebook?.ops.find((op) => op.tbl === Protocol.keyBoxTable)?.row;
+
+        expect(keyRow?._tag === "Readable" ? yield* decodeKeyBox(keyRow.data) : null).toEqual(box);
       }),
     );
 

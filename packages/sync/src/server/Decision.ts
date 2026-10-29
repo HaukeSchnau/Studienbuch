@@ -75,7 +75,7 @@ export const lock = Effect.fn("Decision.lock")(function* (
       select s.kind, s.version::float8 as version, s.key_epoch as "keyEpoch", m.role
       from space s left join space_member m on m.space_id = s.id and m.account_id = ${account}
       where s.id = ${space}
-      for update of s
+      for no key update of s
     `;
 
     if (row === undefined) continue;

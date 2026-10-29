@@ -12,20 +12,25 @@ import * as Data from "effect/Data";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
+import * as Predicate from "effect/Predicate";
+import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as SqlError from "effect/sql/SqlError";
+import { Sync } from "../definition/Sync.ts";
+import { Bounds } from "../protocol/Bounds.ts";
 import { Command } from "../protocol/Command.ts";
 import { Ids } from "../protocol/Ids.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { Refusal } from "../protocol/Refusal.ts";
 import { Contract } from "./Contract.ts";
-import type { Decision } from "./Decision.ts";
+import { Decision } from "./Decision.ts";
 import { MutateCommand } from "./MutateCommand.ts";
 import { Pokes } from "./Pokes.ts";
 import { SealCommand } from "./SealCommand.ts";
 import { SyncEpoch } from "./SyncEpoch.ts";
-import type { SyncSchema } from "./SyncSchema.ts";
+import { SyncSchema } from "./SyncSchema.ts";
 
 export * as Push from "./Push.ts";
 
@@ -40,8 +45,15 @@ export class Service extends Context.Service<
   }
 >()("@stu/sync/server/Push") {}
 
-/** What the command log keeps of a `Mutate`: the arguments, which only readable tables take. */
+/** What the command log keeps of a `Mutate`: arguments a readable table's mutator decoded. */
 const MutateDetail = Schema.Struct({ args: Schema.Json });
+
+/**
+ * What it keeps of a command it can't read safely: one naming no readable table's mutator, with
+ * arguments that mutator doesn't decode, or past a bound. Such arguments may be anything, a
+ * homework's title sent as a `Mutate` included, so only their size and hash stay.
+ */
+const OpaqueDetail = Schema.Struct({ bytes: Schema.Int, sha256: Schema.String });
 
 /** What it keeps of a `Seal`: what the server checked, and a hash of each ciphertext. */
 const SealDetail = Schema.Struct({
@@ -62,6 +74,61 @@ const encodeMutateDetail = Schema.encodeEffect(Schema.fromJsonString(MutateDetai
 
 const encodeSealDetail = Schema.encodeEffect(Schema.fromJsonString(Schema.toCodecJson(SealDetail)));
 
+const encodeOpaqueDetail = Schema.encodeEffect(Schema.fromJsonString(OpaqueDetail));
+
+const encodeCommand = Schema.encodeEffect(Schema.fromJsonString(Schema.toCodecJson(Command.Any)));
+
+const utf8 = new TextEncoder();
+
+/** The earliest and latest instants Postgres stores comfortably, years 1 to 9999. */
+const earliest = DateTime.toEpochMillis(DateTime.makeUnsafe("0001-01-01T00:00:00Z"));
+
+const latest = DateTime.toEpochMillis(DateTime.makeUnsafe("9999-12-31T23:59:59.999Z"));
+
+/**
+ * When the user acted, for the command log only. A device clock far off is clamped instead of
+ * refused, because the time changes nothing else about the command.
+ */
+const loggedAt = (at: DateTime.Utc) =>
+  DateTime.toDateUtc(
+    DateTime.makeUnsafe(Math.min(latest, Math.max(earliest, DateTime.toEpochMillis(at)))),
+  );
+
+/** Postgres's SQLSTATE of a failed statement, such as `22021` for a byte sequence it rejects. */
+const sqlState = (error: SqlError.SqlError) => {
+  const { cause } = error.reason;
+
+  return Predicate.hasProperty(cause, "code") && Predicate.isString(cause.code)
+    ? cause.code
+    : undefined;
+};
+
+/** A data exception: a value in the command that Postgres can't take, which no retry fixes. */
+const isDataException = (error: unknown): error is SqlError.SqlError =>
+  SqlError.isSqlError(error) && (sqlState(error)?.startsWith("22") ?? false);
+
+/** The refusal for a command whose values Postgres rejected after `Bounds` let them through. */
+const dataRefusal = (command: Command.Any) => {
+  if (command._tag === "Mutate") {
+    return new Refusal.InvalidArgs({ mutator: command.name, version: command.version });
+  }
+
+  const [write] = command.writes;
+  const [box] = command.boxes;
+  const [link] = command.links;
+
+  const [space, id] =
+    write !== undefined
+      ? [write.space, write.id]
+      : box !== undefined
+        ? [box.space, Protocol.keyBoxId(box)]
+        : link !== undefined
+          ? [link.space, Protocol.historyLinkId(link)]
+          : ["?", "?"];
+
+  return new Refusal.BadEnvelope({ space, id });
+};
+
 const ReasonJson = Schema.fromJsonString(Refusal.Reason);
 
 const encodeReason = Schema.encodeEffect(ReasonJson);
@@ -78,35 +145,66 @@ class Declined extends Data.TaggedError("Push.Declined")<{
   readonly decision: Exclude<Decision.Decision, { readonly _tag: "Applied" }>;
 }> {}
 
-const detailOf = (command: Command.Any) =>
-  command._tag === "Mutate"
-    ? encodeMutateDetail({ args: command.args })
-    : encodeSealDetail({
-        writes: command.writes.map((write) => ({
-          space: write.space,
-          id: write.id,
-          base: write.base,
-          envelope: write.envelope,
-          bytes: write.ct === null ? null : write.ct.length,
-          sha256: write.ct === null ? null : bytesToHex(sha256(write.ct)),
-        })),
-        keys: [
-          ...command.boxes.map((box) => ({
-            space: box.space,
-            tbl: Protocol.keyBoxTable,
-            id: Protocol.keyBoxId(box),
-          })),
-          ...command.links.map((link) => ({
-            space: link.space,
-            tbl: Protocol.historyLinkTable,
-            id: Protocol.historyLinkId(link),
-          })),
-        ],
-      });
+const opaque = Effect.fn("Push.opaque")(function* (command: Command.Any) {
+  const text = yield* encodeCommand(command);
+  const bytes = utf8.encode(text);
+
+  return yield* encodeOpaqueDetail({ bytes: bytes.length, sha256: bytesToHex(sha256(bytes)) });
+});
+
+const sealDetail = (command: Command.Seal) =>
+  encodeSealDetail({
+    writes: command.writes.map((write) => ({
+      space: write.space,
+      id: write.id,
+      base: write.base,
+      envelope: write.envelope,
+      bytes: write.ct === null ? null : write.ct.length,
+      sha256: write.ct === null ? null : bytesToHex(sha256(write.ct)),
+    })),
+    keys: [
+      ...command.boxes.map((box) => ({
+        space: box.space,
+        tbl: Protocol.keyBoxTable,
+        id: Protocol.keyBoxId(box),
+      })),
+      ...command.links.map((link) => ({
+        space: link.space,
+        tbl: Protocol.historyLinkTable,
+        id: Protocol.historyLinkId(link),
+      })),
+    ],
+  });
 
 export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum) {
   const sql = yield* SqlClient.SqlClient;
+  const definition = yield* SyncSchema.Service;
   const services = yield* Effect.context<SqlClient.SqlClient | SyncSchema.Service>();
+
+  /**
+   * What the command log keeps of a command: never content it can't read, and of a command past a
+   * bound only its kind, size and hash, because its name or version may not fit the columns.
+   */
+  const loggedOf = Effect.fnUntraced(function* (command: Command.Any) {
+    const unnamed = { name: null, version: null };
+
+    if (Option.isSome(Bounds.refusalOf(command))) {
+      return { ...unnamed, detail: yield* opaque(command) };
+    }
+
+    if (command._tag === "Seal") return { ...unnamed, detail: yield* sealDetail(command) };
+    const mutator = definition.byName.mutators.Mutate.get(command.name);
+
+    const decodes =
+      mutator !== undefined &&
+      Result.isSuccess(yield* Effect.result(Sync.invoke(mutator, command.version, command.args)));
+
+    return {
+      name: command.name,
+      version: command.version,
+      detail: decodes ? yield* encodeMutateDetail({ args: command.args }) : yield* opaque(command),
+    };
+  });
 
   const clientRow = Effect.fn("Push.clientRow")(function* (client: string) {
     const [row] = yield* sql<{ readonly account: string; readonly lastMutationId: number }>`
@@ -156,19 +254,18 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
     command: Command.Any,
     reason: Refusal.Reason | null,
   ) {
-    const detail = yield* Effect.orDie(detailOf(command));
+    const { name, version, detail } = yield* Effect.orDie(loggedOf(command));
     const encodedReason = reason === null ? null : yield* Effect.orDie(encodeReason(reason));
     const processedAt = DateTime.toDateUtc(yield* DateTime.now);
-    const mutator = command._tag === "Mutate" ? command : { name: null, version: null };
 
     yield* sql`
         insert into command_log
           (client_id, mutation_id, account_id, kind, name, version, detail, applied, reason, at,
             processed_at)
         values (
-          ${client}, ${command.mutationId}, ${account}, ${command._tag}, ${mutator.name},
-          ${mutator.version}::int, ${detail}::jsonb, ${reason === null}, ${encodedReason}::jsonb,
-          ${DateTime.toDateUtc(command.at)}, ${processedAt}
+          ${client}, ${command.mutationId}, ${account}, ${command._tag}, ${name},
+          ${version}::int, ${detail}::jsonb, ${reason === null}, ${encodedReason}::jsonb,
+          ${loggedAt(command.at)}, ${processedAt}
         )
       `;
   });
@@ -194,11 +291,24 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
     sql.withTransaction(
       Effect.gen(function* () {
         yield* claim(client, account, command);
+        const bound = Bounds.refusalOf(command);
 
-        const decision =
+        if (Option.isSome(bound)) {
+          return yield* new Declined({ decision: yield* Decision.refuse(bound.value) });
+        }
+
+        const decided: Effect.Effect<
+          Decision.Decision,
+          SqlError.SqlError,
+          SqlClient.SqlClient | SyncSchema.Service
+        > =
           command._tag === "Mutate"
-            ? yield* MutateCommand.decide(account, command)
-            : yield* SealCommand.decide(account, client, command);
+            ? MutateCommand.decide(account, command)
+            : SealCommand.decide(account, client, command);
+
+        const decision = yield* Effect.catchIf(decided, isDataException, () =>
+          Decision.refuse(dataRefusal(command)),
+        );
 
         if (decision._tag !== "Applied") return yield* new Declined({ decision });
         yield* log(client, account, command, null);
@@ -314,6 +424,7 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
     // Reads outside a command's transaction fail only when the database does. The device's
     // connection drops the call and pushes again.
     Effect.catchTags({ SqlError: Effect.die }),
+    (effect, _account, request) => Contract.failSendable(effect, request.contract, minimum),
     Effect.provide(services),
   );
 

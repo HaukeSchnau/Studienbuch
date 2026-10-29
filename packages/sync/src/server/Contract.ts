@@ -56,3 +56,17 @@ export const sendable = (
       )
     : Effect.void;
 };
+
+/**
+ * `effect`, with a failure the client can't decode turned into `Sync.UpdateRequired`, as
+ * `sendable` does for an answer.
+ */
+export const failSendable = <A, E extends { readonly _tag: string }, R>(
+  effect: Effect.Effect<A, E, R>,
+  contract: Protocol.Contract,
+  minimum: Minimum,
+  since?: Since,
+) =>
+  Effect.catch(effect, (error) =>
+    Effect.andThen(sendable(contract, minimum, [error._tag], since), Effect.fail(error)),
+  );

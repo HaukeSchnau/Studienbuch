@@ -151,7 +151,10 @@ export const commandLog = pgTable(
     accountId: id("account_id").notNull(),
     /** `Mutate` or `Seal`. */
     kind: id("kind").notNull(),
-    /** The mutator's name and version for `Mutate`. `null` for `Seal`, which names no mutator. */
+    /**
+     * The mutator's name and version for `Mutate`. `null` for `Seal`, which names no mutator, and
+     * for a command past `Bounds`, whose name or version may not fit.
+     */
     name: id("name"),
     version: integer("version"),
     /**

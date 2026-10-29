@@ -69,6 +69,9 @@ const toOp = Effect.fnUntraced(function* (row: Stored) {
   return { tbl: row.tbl, id: row.id, version: row.version, row: live } satisfies Protocol.Op;
 }, Effect.orDie);
 
+/** Rows per page at most, whatever a request asks for. */
+export const maxLimit = 1000;
+
 export const make = Effect.fn("Pull.make")(function* (minimum: Contract.Minimum) {
   const sql = yield* SqlClient.SqlClient;
   const services = yield* Effect.context<SqlClient.SqlClient>();
@@ -128,7 +131,7 @@ export const make = Effect.fn("Pull.make")(function* (minimum: Contract.Minimum)
     const readable = new Set(spaces.map((space) => space.id));
     const removed = [...cursors.keys()].filter((space) => !readable.has(space)).sort();
     const patches: Array<Protocol.Patch> = [];
-    let remaining = request.limit;
+    let remaining = Math.min(request.limit, maxLimit);
     let more = false;
 
     for (const space of spaces) {
@@ -214,6 +217,7 @@ export const make = Effect.fn("Pull.make")(function* (minimum: Contract.Minimum)
     // A pull fails only when the database does. The device's connection drops the call and
     // pulls again.
     Effect.catchTags({ SqlError: Effect.die }),
+    (effect, _account, request) => Contract.failSendable(effect, request.contract, minimum),
     Effect.provide(services),
   );
 
