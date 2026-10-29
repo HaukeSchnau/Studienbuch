@@ -31,6 +31,15 @@ pkgs.runCommand "studienbuch-server-smoke"
       DATABASE_URL="postgresql:///studienbuch?host=$PGHOST&user=postgres" \
       STUDIENBUCH_ENVIRONMENT=preview \
       STUDIENBUCH_REVISION=smoke-revision
+    # Throwaway values for what `serve` refuses to start without. The secret comes from a file, as a
+    # host hands it over.
+    printf '%s' serverSmoke-throwaway-auth-secret-of-at-least-32-bytes > $TMPDIR/auth-secret
+    export \
+      PUBLIC_URL="http://localhost:$PORT" \
+      PASSKEY_RP_ID=localhost \
+      AUTH_SECRET_FILE=$TMPDIR/auth-secret \
+      MAIL_URL=capture: \
+      MAIL_FROM="Studienbuch <smoke@localhost>"
     server="node ${bundle}/server/main.mjs"
     origin="http://$HOST:$PORT"
     get() { curl -sS --max-time 5 "$@"; }
