@@ -5,7 +5,8 @@ import { isStringLiteral } from "./syntax.ts";
 
 // Demo accounts are the only accounts the server signs in without a password and derives a root
 // key for (invariant 14, ADR 0027). What makes or reaches one has a single home each, so a route
-// can't grow a way in. Tests are exempt in vite.config.ts.
+// can't grow a way in. Names count as identifiers and as strings, which bracket access uses.
+// Tests are exempt in vite.config.ts.
 
 interface Capability {
   readonly what: string;
@@ -22,30 +23,29 @@ const signInDemo: Capability = {
 const seeding: Capability = {
   what: "The permission to create demo accounts",
   home: "`prepare` and the console in main.ts",
-  files: ["apps/server/src/main.ts"],
+  files: ["apps/server/src/demo/DemoAccounts.ts", "apps/server/src/main.ts"],
 };
 
 const demoTable: Capability = {
-  what: "The Drizzle table of `demo_account`",
-  home: "demo/DemoTables.ts, which drizzle-kit reads; write the table in `DemoAccounts.ensure`",
-  files: ["apps/server/src/demo/DemoTables.ts"],
+  what: "The `demo_account` table",
+  home: "`DemoAccounts`, and its Drizzle declaration in demo/DemoTables.ts",
+  files: ["apps/server/src/demo/DemoAccounts.ts", "apps/server/src/demo/DemoTables.ts"],
 };
 
-const demoWrite: Capability = {
-  what: "Writing `demo_account`",
-  home: "`DemoAccounts.ensure`",
-  files: ["apps/server/src/demo/DemoAccounts.ts"],
-};
+const NAMES: ReadonlyMap<string, Capability> = new Map([
+  ["signInDemo", signInDemo],
+  ["Seeding", seeding],
+  ["seeding", seeding],
+  ["demoAccount", demoTable],
+]);
 
-const WRITE = /\b(?:insert\s+into|update|delete\s+from)\s+"?demo_account\b/iu;
-
-/** Only their own modules mint demo sessions, grant `Seeding` or write `demo_account`. */
+/** Only their own modules mint demo sessions, grant `Seeding` or touch `demo_account`. */
 export default defineRule({
   meta: {
     type: "problem",
     docs: {
       description:
-        "Keep demo sessions, the seed's permission and writes to demo_account in their own modules.",
+        "Keep demo sessions, the seed's permission and the demo_account table in their own modules.",
     },
     messages: {
       outOfPlace: "{{what}} stays in {{home}} (invariant 14).",
@@ -54,8 +54,8 @@ export default defineRule({
   create(context) {
     const file = layoutPath(context);
 
-    const check = (capability: Capability, node: ESTree.Node) => {
-      if (capability.files.includes(file)) return;
+    const check = (capability: Capability | undefined, node: ESTree.Node) => {
+      if (capability === undefined || capability.files.includes(file)) return;
 
       context.report({
         node,
@@ -65,25 +65,12 @@ export default defineRule({
     };
 
     const text = (value: string, node: ESTree.Node) => {
-      if (WRITE.test(value)) check(demoWrite, node);
+      check(value.includes("demo_account") ? demoTable : NAMES.get(value), node);
     };
 
     return {
       Identifier(node) {
-        if (node.name === "signInDemo") check(signInDemo, node);
-
-        if (node.name === "demoAccount") check(demoTable, node);
-      },
-      MemberExpression(node) {
-        if (
-          !node.computed &&
-          node.object.type === "Identifier" &&
-          node.object.name === "DemoAccounts" &&
-          node.property.type === "Identifier" &&
-          node.property.name === "seeding"
-        ) {
-          check(seeding, node);
-        }
+        check(NAMES.get(node.name), node);
       },
       Literal(node) {
         if (isStringLiteral(node)) text(node.value, node);
