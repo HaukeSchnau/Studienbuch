@@ -11,6 +11,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Random from "effect/Random";
 import * as Reactivity from "effect/reactivity/Reactivity";
+import * as Redacted from "effect/Redacted";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 import { Engines } from "../../conformance/Engines.ts";
@@ -45,11 +46,13 @@ export const database = (driver: Driver) =>
     Layer.orDie,
   );
 
+const token = Redacted.make("token-lena");
+
 /** Signed in as `actor`, with a token that never changes. */
 export const session = Layer.succeed(Ports.Session, {
   accountId: actor,
-  token: Effect.succeedNone,
-  changes: Stream.make(Option.none()),
+  token: Effect.succeedSome(token),
+  changes: Stream.make(Option.some(token)),
   ended: Effect.void,
 });
 
@@ -92,6 +95,19 @@ export const crypto = Layer.succeed(
       encapsulate: () => Effect.die("Not in the test suite"),
       decapsulate: () => Effect.die("Not in the test suite"),
     },
+  }),
+);
+
+/**
+ * A device whose platform reports no network, so the supervisor never connects: for tests that
+ * run rounds themselves through `SyncClient.replicate`.
+ */
+export const disconnected = Layer.mergeAll(
+  Layer.succeed(Ports.Lifecycle, {
+    changes: Stream.make({ foreground: true, online: false }),
+  }),
+  Layer.succeed(Ports.Transport, {
+    connect: Effect.die("A disconnected test device tried to connect"),
   }),
 );
 

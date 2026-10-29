@@ -33,6 +33,8 @@ export interface Meta {
   readonly lastMutationId: number;
   /** Every command up to here has left the outbox. */
   readonly settledMutationId: number;
+  /** A page changed base rows since the overlay was last replayed. */
+  readonly replayDue: boolean;
 }
 
 /** A command the server refused, kept until the user dismisses or redoes it. */
@@ -46,6 +48,7 @@ const MetaRow = Schema.Struct({
   sync_epoch: Schema.NullOr(Schema.String),
   last_mutation_id: Schema.Int,
   settled_mutation_id: Schema.Int,
+  replay_due: Schema.Int,
 });
 
 const commandFields = {
@@ -103,7 +106,8 @@ export const meta = Effect.gen(function* () {
 
   const rows = yield* decodeMeta(
     yield* sql`
-      select client_id, sync_epoch, last_mutation_id, settled_mutation_id from sync_meta where id = 1
+      select client_id, sync_epoch, last_mutation_id, settled_mutation_id, replay_due
+      from sync_meta where id = 1
     `,
   );
 
@@ -116,6 +120,7 @@ export const meta = Effect.gen(function* () {
     syncEpoch: row.sync_epoch,
     lastMutationId: row.last_mutation_id,
     settledMutationId: row.settled_mutation_id,
+    replayDue: row.replay_due === 1,
   } satisfies Meta;
 });
 
@@ -359,6 +364,12 @@ export const renumber = Effect.fnUntraced(function* (clientId: string) {
   `;
 
   return new Map(commands.map((each, index) => [each.mutationId, index + 1]));
+});
+
+export const setReplayDue = Effect.fnUntraced(function* (due: boolean) {
+  const sql = yield* SqlClient.SqlClient;
+
+  yield* sql`update sync_meta set replay_due = ${due ? 1 : 0} where id = 1`;
 });
 
 export const setSyncEpoch = Effect.fnUntraced(function* (syncEpoch: string) {

@@ -21,7 +21,8 @@ import * as Schema from "effect/Schema";
 import * as Semaphore from "effect/Semaphore";
 import * as SqlClient from "effect/sql/SqlClient";
 import type * as SqlError from "effect/sql/SqlError";
-import type * as Stream from "effect/Stream";
+import * as PubSub from "effect/PubSub";
+import * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 import { Sync } from "../definition/Sync.ts";
 import { Ids } from "../protocol/Ids.ts";
@@ -34,6 +35,7 @@ import { Ports } from "./Ports.ts";
 import { Rebase } from "./Rebase.ts";
 import { Replication } from "./Replication.ts";
 import { SqliteTx } from "./SqliteTx.ts";
+import { Supervisor } from "./Supervisor.ts";
 import type { SyncQuery } from "./SyncQuery.ts";
 
 export * as SyncClient from "./SyncClient.ts";
@@ -72,7 +74,7 @@ export interface Status {
   /** Commands the server hasn't settled. A device is idle when it is online and none is in flight. */
   readonly waiting: number;
   /** The server needs a newer app. The device keeps working on its own data and keeps its outbox. */
-  readonly updateRequired: Option.Option<{ readonly protocol: number; readonly schema: number }>;
+  readonly updateRequired: Option.Option<Replication.UpdateRequired>;
   /** Another device removed this one, and the engine wiped its data and keys. */
   readonly revoked: boolean;
 }
@@ -109,6 +111,11 @@ export interface Interface {
     /** The status now, then each change. */
     readonly changes: Stream.Stream<Status>;
   };
+  /**
+   * The offline latch, for the Sync Lab, tests and native E2E: while set, the device disconnects,
+   * stays disconnected and keeps working on its own data.
+   */
+  readonly setOffline: (offline: boolean) => Effect.Effect<void>;
   /**
    * One round of push and pull over a connection. The connection supervisor runs it after each
    * connect and after pokes; a second round waits for the first.
@@ -187,8 +194,14 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
   const sql = yield* SqlClient.SqlClient;
   const reactivity = yield* Reactivity.Reactivity;
   const actor = (yield* Ports.Session).accountId;
+  /** Tells the supervisor that a command waits. */
+  const writes = yield* PubSub.sliding<void>(1);
+  const offline = yield* SubscriptionRef.make(false);
   const secrets = yield* Ports.DeviceSecrets;
   const suite = yield* CryptoSuite.Service;
+  const transport = yield* Ports.Transport;
+  const lifecycle = yield* Ports.Lifecycle;
+  const session = yield* Ports.Session;
 
   yield* Outbox.start(yield* Ids.random);
 
@@ -385,6 +398,9 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
     wipe,
   });
 
+  // A crash between two pages of a pull left the overlay on older rows.
+  yield* replication.replayIfDue;
+
   const rounds = yield* Semaphore.make(1);
 
   const replicate: Interface["replicate"] = (remote) =>
@@ -420,6 +436,8 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
       }),
     );
 
+    yield* PubSub.publish(writes, undefined);
+
     return mutation;
   });
 
@@ -446,7 +464,12 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
           tables: [...queued.tables, keys.refusals],
         };
       }),
-    ).pipe(Effect.map(({ mutation }) => mutation));
+    ).pipe(
+      Effect.map(({ mutation }) => mutation),
+      Effect.tap((mutation) =>
+        Option.isSome(mutation) ? PubSub.publish(writes, undefined) : Effect.void,
+      ),
+    );
 
   const dismiss: Interface["dismiss"] = (rejected) =>
     Outbox.take(rejected.clientId, rejected.mutationId).pipe(
@@ -454,11 +477,30 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
       Effect.provideService(SqlClient.SqlClient, sql),
     );
 
+  yield* Supervisor.run({
+    connect: Effect.flatMap(transport.connect, (connected) =>
+      Supervisor.overRpc(connected, definition.contract),
+    ),
+    replicate,
+    session,
+    lifecycle,
+    writes: Stream.fromPubSub(writes),
+    offline,
+    report: (connection) =>
+      SubscriptionRef.update(status, (current) => ({ ...current, connection })),
+    outdated: SubscriptionRef.update(status, (current) =>
+      Option.isSome(current.updateRequired)
+        ? current
+        : { ...current, updateRequired: Option.some({ minimum: Option.none() }) },
+    ),
+  }).pipe(Effect.forkScoped);
+
   return Service.of({
     mutate,
     redo,
     dismiss,
     replicate,
+    setOffline: (latched) => SubscriptionRef.set(offline, latched),
     status: { get: SubscriptionRef.get(status), changes: SubscriptionRef.changes(status) },
   });
 });

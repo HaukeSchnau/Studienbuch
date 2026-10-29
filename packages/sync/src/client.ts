@@ -11,3 +11,5 @@ export { SqliteTx } from "./client/SqliteTx.ts";
 export { SyncClient } from "./client/SyncClient.ts";
 
 export { SyncQuery } from "./client/SyncQuery.ts";
+
+export { WebSocketTransport } from "./client/WebSocketTransport.ts";

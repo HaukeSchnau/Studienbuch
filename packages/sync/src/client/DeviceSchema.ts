@@ -166,7 +166,8 @@ export const keys = {
 
 /**
  * The device's own state, one row: the client id the server knows it by, the restore epoch of its
- * last pull, the last mutation id it gave a command and the last one it settled.
+ * last pull, the last mutation id it gave a command and the last one it settled. `replay_due` is 1
+ * after a page changed base rows the overlay hasn't been replayed on yet.
  */
 const sync_meta = sqliteTable("sync_meta", {
   id: integer().primaryKey(),
@@ -174,6 +175,7 @@ const sync_meta = sqliteTable("sync_meta", {
   sync_epoch: text(),
   last_mutation_id: integer().notNull(),
   settled_mutation_id: integer().notNull(),
+  replay_due: integer().notNull().default(0),
 });
 
 /**

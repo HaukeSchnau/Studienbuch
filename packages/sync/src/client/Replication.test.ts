@@ -20,7 +20,9 @@ import { Replication } from "./Replication.ts";
 import { SyncClient } from "./SyncClient.ts";
 
 const engine = SyncClient.layer(Notes.schema).pipe(
-  Layer.provideMerge(Layer.mergeAll(Devices.session, Devices.secrets, Devices.crypto)),
+  Layer.provideMerge(
+    Layer.mergeAll(Devices.session, Devices.secrets, Devices.crypto, Devices.disconnected),
+  ),
 );
 
 type Services =
@@ -432,7 +434,9 @@ describe("SyncClient.replicate", () => {
         });
 
         expect(yield* sync.replicate(server.remote), driver).toBe("update-required");
-        expect((yield* sync.status.get).updateRequired, driver).toEqual(Option.some(minimum));
+        expect((yield* sync.status.get).updateRequired, driver).toEqual(
+          Option.some({ minimum: Option.some(minimum) }),
+        );
         expect(yield* Outbox.pending, driver).toHaveLength(1);
         expect(yield* choices, driver).toHaveLength(1);
       }),
@@ -826,12 +830,257 @@ describe("SyncClient wipe with a stuck secret", () => {
         }).pipe(
           Effect.provide(
             SyncClient.layer(Notes.schema).pipe(
-              Layer.provideMerge(Layer.mergeAll(Devices.session, stuck, Devices.crypto)),
+              Layer.provideMerge(
+                Layer.mergeAll(Devices.session, stuck, Devices.crypto, Devices.disconnected),
+              ),
               Layer.provideMerge(Devices.database(driver)),
             ),
           ),
           Effect.scoped,
         ),
+      { discard: true },
+    ),
+  );
+});
+
+describe("SyncClient.replicate replays once per pull", () => {
+  // The device waits to choose Mathe. One page of a three-page pull drops Mathe from the school,
+  // so the replay of `choice.set` refuses and its overlay row goes. The replay runs once, after
+  // the last page, wherever the change was.
+  const dropMathe = { space: "igs", reset: false, to: 2, ops: [deleted("Course", "ma", 2)] };
+  const nothing = (to: number) => ({ space: "igs", reset: false, to, ops: [] });
+
+  const cases = [
+    { name: "on the first page", pages: [dropMathe, nothing(3), nothing(4)] },
+    { name: "on the middle page", pages: [nothing(2), { ...dropMathe, to: 3 }, nothing(4)] },
+    { name: "on the last page", pages: [nothing(2), nothing(3), { ...dropMathe, to: 4 }] },
+  ];
+
+  it.effect("the overlay keeps its rows between pages and drops them after the last", () =>
+    onEachDevice((driver) =>
+      Effect.gen(function* () {
+        const sync = yield* SyncClient.Service;
+        const sql = yield* SqlClient.SqlClient;
+
+        const overlay = Effect.orDie(
+          Effect.provideService(rows("pending_row"), SqlClient.SqlClient, sql),
+        );
+
+        for (const { name, pages } of cases) {
+          yield* sql`delete from sync_outbox`;
+          yield* sql`delete from base_row`;
+          yield* sql`update sync_space set version = null`;
+          yield* enrolled;
+          yield* choose("ma");
+          const seen: Array<ReadonlyArray<{ readonly id: string }>> = [];
+
+          const answer =
+            (index: number): PullAnswer =>
+            () =>
+              Effect.gen(function* () {
+                if (index > 0) seen.push(yield* overlay);
+
+                return {
+                  syncEpoch: "epoch-1",
+                  spaces: listed(0, index + 2),
+                  patches: [pages[index] ?? nothing(index + 2)],
+                  removed: [],
+                  lastMutationId: index === 2 ? 0 : null,
+                  refusals: [],
+                  more: index < 2,
+                };
+              });
+
+          const server = scripted({ push: [retryFirst], pull: [answer(0), answer(1), answer(2)] });
+
+          yield* sync.replicate(server.remote);
+
+          expect(seen, `${driver}, Mathe dropped ${name}`).toEqual([
+            [{ id: "ma" }],
+            [{ id: "ma" }],
+          ]);
+          expect(yield* overlay, `${driver}, Mathe dropped ${name}`).toEqual([]);
+          expect((yield* Outbox.meta).replayDue, driver).toBe(false);
+        }
+      }),
+    ),
+  );
+
+  it.effect("a pull cut between pages replays on the rows it got", () =>
+    onEachDevice((driver) =>
+      Effect.gen(function* () {
+        const sync = yield* SyncClient.Service;
+        yield* enrolled;
+        yield* choose("ma");
+
+        const server = scripted({
+          push: [retryFirst],
+          pull: [
+            page({ spaces: listed(0, 3), patches: [dropMathe], more: true }),
+            () => Effect.fail(new Replication.Disconnected()),
+          ],
+        });
+
+        expect(Exit.isFailure(yield* Effect.exit(sync.replicate(server.remote))), driver).toBe(
+          true,
+        );
+        expect(yield* rows("pending_row"), driver).toEqual([]);
+        expect((yield* Outbox.meta).replayDue, driver).toBe(false);
+      }),
+    ),
+  );
+
+  it.effect("after a restore the screens keep their rows until the snapshot arrives", () =>
+    onEachDevice((driver) =>
+      Effect.gen(function* () {
+        const sync = yield* SyncClient.Service;
+        const sql = yield* SqlClient.SqlClient;
+        yield* enrolled;
+        const seen: Array<number> = [];
+
+        const snapshot: PullAnswer = () =>
+          Effect.gen(function* () {
+            seen.push(
+              (yield* Effect.orDie(Effect.provideService(courses, SqlClient.SqlClient, sql)))
+                .length,
+            );
+
+            return yield* page({ syncEpoch: "epoch-2", patches: [schoolPatch], lastMutationId: 0 })(
+              pull,
+            );
+          });
+
+        const server = scripted({
+          pull: [
+            () =>
+              Effect.fail(new Protocol.EpochChanged({ syncEpoch: "epoch-2", lastMutationId: 0 })),
+            snapshot,
+          ],
+        });
+
+        expect(yield* sync.replicate(server.remote), driver).toBe("idle");
+        expect(seen, driver).toEqual([5]);
+        expect(server.pulls[1]?.cursors, driver).toEqual([]);
+      }),
+    ),
+  );
+
+  it.effect("a last page counting more commands than the device made moves it to a new id", () =>
+    onEachDevice((driver) =>
+      Effect.gen(function* () {
+        const sync = yield* SyncClient.Service;
+        yield* enrolled;
+        yield* choose("ma");
+        const { clientId } = yield* Outbox.meta;
+
+        const server = scripted({
+          push: [retryFirst, applyAll],
+          pull: [page({ lastMutationId: 9 }), page({ lastMutationId: 1 })],
+        });
+
+        // The first round ends on the server's `Retry`; the second pushes under the new id.
+        yield* sync.replicate(server.remote);
+        yield* sync.replicate(server.remote);
+
+        expect(server.pushes[1]?.clientId, driver).not.toBe(clientId);
+        expect(server.pushes.map(ids), driver).toEqual([[1], [1]]);
+        expect(yield* Outbox.pending, driver).toEqual([]);
+      }),
+    ),
+  );
+});
+
+const pull: Protocol.PullRequest = {
+  clientId: "client-1",
+  syncEpoch: null,
+  contract: Notes.schema.contract,
+  cursors: [],
+  settledMutationId: 0,
+  limit: 10,
+};
+
+describe("SyncClient.replicate review cases", () => {
+  it.effect("a page that drops one space and resets another where it was still moves on", () =>
+    onEachDevice((driver) =>
+      Effect.gen(function* () {
+        const sync = yield* SyncClient.Service;
+
+        yield* sync.replicate(
+          scripted({
+            pull: [
+              page({
+                spaces: listed(1, 1),
+                patches: [schoolPatch, { space: "nb-lena", reset: true, to: 1, ops: [] }],
+              }),
+            ],
+          }).remote,
+        );
+
+        // Before: igs at 1, nb-lena at 1. After the first page: igs at 1, other at 1.
+        const other = { id: "other", kind: "notebook", role: "owner", version: 1, keyEpoch: null };
+
+        const server = scripted({
+          pull: [
+            page({
+              spaces: [...listed(1, 1).slice(1), other],
+              patches: [{ space: "other", reset: true, to: 1, ops: [] }],
+              more: true,
+            }),
+            page({ spaces: [...listed(1, 1).slice(1), other], lastMutationId: 0 }),
+          ],
+        });
+
+        expect(yield* sync.replicate(server.remote), driver).toBe("idle");
+        expect(server.pulls, driver).toHaveLength(2);
+      }),
+    ),
+  );
+
+  it.effect("a snapshot after a restore drops the rows the restored server lost", () =>
+    onEachDevice((driver) =>
+      Effect.gen(function* () {
+        const sync = yield* SyncClient.Service;
+        yield* enrolled;
+
+        const snapshot = {
+          ...schoolPatch,
+          ops: schoolPatch.ops.filter((op) => op.id !== "ku"),
+        };
+
+        const server = scripted({
+          pull: [
+            () =>
+              Effect.fail(new Protocol.EpochChanged({ syncEpoch: "epoch-2", lastMutationId: 0 })),
+            page({ syncEpoch: "epoch-2", patches: [snapshot], lastMutationId: 0 }),
+          ],
+        });
+
+        yield* sync.replicate(server.remote);
+        expect(
+          (yield* courses).map((course) => course.id),
+          driver,
+        ).toEqual(["de", "en", "fr", "ma"]);
+      }),
+    ),
+  );
+
+  it.effect("an engine that starts with a replay due replays first", () =>
+    Effect.forEach(
+      Devices.drivers,
+      (driver) =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          yield* Effect.scoped(Effect.provide(Effect.andThen(enrolled, choose("ma")), engine));
+
+          // A crash between two pages: the school dropped Mathe, and no replay followed.
+          yield* sql`delete from base_row where tbl = 'Course' and id = 'ma'`;
+          yield* sql`update sync_meta set replay_due = 1`;
+
+          yield* Effect.scoped(Effect.provide(Effect.void, engine));
+
+          expect(yield* rows("pending_row"), driver).toEqual([]);
+          expect((yield* Outbox.meta).replayDue, driver).toBe(false);
+        }).pipe(Effect.provide(Devices.database(driver)), Effect.scoped),
       { discard: true },
     ),
   );
