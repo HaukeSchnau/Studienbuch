@@ -87,6 +87,15 @@ export const CrashDuringChoose = Schema.TaggedStruct("CrashDuringChoose", {
   statement: Statement(20),
 });
 
+/**
+ * The engine crashes right before its write's command enters the outbox. In one transaction with
+ * the write, that leaves nothing; a write split in two would leave its rows without a command.
+ */
+export const CrashBeforeQueue = Schema.TaggedStruct("CrashBeforeQueue", {
+  device: Device,
+  courses: Schema.Array(Course).check(Schema.isMaxLength(3)),
+});
+
 export const Offline = Schema.TaggedStruct("Offline", { device: Device, offline: Schema.Boolean });
 
 const oneShots = ["dropNextResponse", "duplicateNextPush", "reorderNext"] as const;
@@ -170,6 +179,7 @@ const readableSteps = [
   CrashDuringSync,
   Crash,
   CrashDuringChoose,
+  CrashBeforeQueue,
   Offline,
   Fault,
   Latency,
@@ -359,7 +369,21 @@ export const run = (workload: Workload) =>
     const dismissedAtBackup = new Map<World.DeviceId, ReadonlySet<string>>();
 
     /** Moves the simulated clock once the server answered what it was asked. */
-    const advance = (by: Duration.Duration) => Effect.andThen(world.quiet, TestClock.adjust(by));
+    const advance = (by: Duration.Duration) =>
+      Effect.andThen(
+        Effect.tap(world.quiet, (answered) =>
+          Effect.sync(() => {
+            if (!answered) {
+              hung.push({
+                invariant: "liveness",
+                place: "server",
+                detail: "the database never answered",
+              });
+            }
+          }),
+        ),
+        TestClock.adjust(by),
+      );
 
     /**
      * Lets simulated time pass until `done` holds or `limit` passed, and says whether it held. The
@@ -438,6 +462,34 @@ export const run = (workload: Workload) =>
     const syncing = (on: World.Device, limit: Duration.Duration = syncFor) =>
       Effect.map(until(on.idle, limit), (idle) => (idle ? "idle" : "busy"));
 
+    /** Writes `courses` on `on` and crashes it before the statement `at` names. */
+    const crashWhileChoosing = Effect.fnUntraced(function* (
+      on: World.Device,
+      courses: ReadonlyArray<string>,
+      at: number | RegExp,
+      named: string,
+    ) {
+      const last = on
+        .sql(Effect.map(Outbox.meta, (meta) => meta.lastMutationId))
+        .pipe(Effect.orDie);
+
+      const before = yield* last;
+      const stopped = yield* on.stopBefore(at);
+      const work = yield* Effect.forkChild(choose(on, courses));
+
+      yield* Effect.raceFirst(Deferred.await(stopped), Fiber.await(work));
+      const reached = yield* Deferred.poll(stopped);
+      yield* on.crash;
+      const outcome = yield* Fiber.join(work);
+      const after = yield* last;
+
+      if (after > before) return `committed #${after}, then crashed`;
+
+      return Option.isSome(reached)
+        ? `crashed before ${named} of the write, which queued nothing`
+        : `${outcome}, then crashed`;
+    });
+
     const apply = Effect.fnUntraced(function* (step: Step) {
       switch (step._tag) {
         case "Add":
@@ -490,31 +542,21 @@ export const run = (workload: Workload) =>
           return `crashed before statement ${at.statement}${at.inTransaction ? " in a transaction" : ""}${inRound ? " of a round" : ", between rounds"}`;
         }
 
-        case "CrashDuringChoose": {
-          const on = yield* device(step.device);
+        case "CrashDuringChoose":
+          return yield* crashWhileChoosing(
+            yield* device(step.device),
+            step.courses,
+            step.statement,
+            `statement ${step.statement}`,
+          );
 
-          const last = on
-            .sql(Effect.map(Outbox.meta, (meta) => meta.lastMutationId))
-            .pipe(Effect.orDie);
-
-          const before = yield* last;
-          const stopped = yield* on.stopBefore(step.statement);
-          const work = yield* Effect.forkChild(choose(on, step.courses));
-
-          yield* Effect.raceFirst(Deferred.await(stopped), Fiber.await(work));
-          const at = yield* Deferred.poll(stopped);
-          yield* on.crash;
-          const outcome = yield* Fiber.join(work);
-          const after = yield* last;
-
-          if (after > before) return `committed #${after}, then crashed`;
-
-          return Option.match(at, {
-            onNone: () => `${outcome}, then crashed`,
-            onSome: () =>
-              `crashed before statement ${step.statement} of the write, which queued nothing`,
-          });
-        }
+        case "CrashBeforeQueue":
+          return yield* crashWhileChoosing(
+            yield* device(step.device),
+            step.courses,
+            /^\s*insert into sync_outbox/iu,
+            "the outbox insert",
+          );
 
         case "Crash": {
           yield* (yield* device(step.device)).crash;

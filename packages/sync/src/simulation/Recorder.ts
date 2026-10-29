@@ -3,6 +3,7 @@
  * the leak check. Span ids count up, so a seeded run's frames and lines equal its replay's.
  */
 import * as Cause from "effect/Cause";
+import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Hex from "effect/encoding/Hex";
 import * as Exit from "effect/Exit";
@@ -53,12 +54,14 @@ const render = (value: unknown): string => {
 
     if (field instanceof Set) return [...field];
 
-    // An error's own fields, as `Formatter.formatJson` writes them, besides its name and message.
+    // An error's own fields, as `Formatter.formatJson` writes them, besides its name, message and
+    // cause, which isn't enumerable: a database error's `detail` may quote a value.
     if (field instanceof Error) {
       return {
         ...Object.fromEntries(Object.entries(field)),
         name: field.name,
         message: field.message,
+        cause: field.cause,
       };
     }
 
@@ -105,8 +108,14 @@ const counting = (ended: (span: Tracer.NativeSpan, exit: Exit.Exit<unknown, unkn
 /** A device's tracer: ids that count, nothing recorded, as spans on a device may hold plaintext. */
 export const deviceTracer = Layer.sync(Tracer.Tracer)(() => counting(() => {}));
 
-/** Fiber ids count across the whole process, so a replay would differ in them alone. */
-const withoutFiberIds = (text: string) => text.replaceAll(/#\d+/gu, "#");
+/**
+ * A cause as text that reads the same on every run and machine: fiber ids count across the whole
+ * process, and stack frames name files by absolute path, which starts with the checkout's.
+ */
+const portable = (text: string) =>
+  text
+    .replaceAll(/#\d+/gu, "#")
+    .replaceAll(/(?:file:\/\/)?\/[^\s()]*?\/(?=(?:packages|apps|tools|node_modules)\/)/gu, "");
 
 export const make = Effect.sync(() => {
   const lines: Array<string> = [];
@@ -125,7 +134,7 @@ export const make = Effect.sync(() => {
         attributes: span.attributes,
         events: span.events,
         links: span.links.map((link) => link.attributes),
-        failure: Exit.isFailure(exit) ? withoutFiberIds(Cause.pretty(exit.cause)) : undefined,
+        failure: Exit.isFailure(exit) ? portable(Cause.pretty(exit.cause)) : undefined,
       })}`,
     );
   });
@@ -163,3 +172,17 @@ export const make = Effect.sync(() => {
 });
 
 export type Recorder = Effect.Success<typeof make>;
+
+/**
+ * A recorder for what a test file builds once and every world shares: the database client and its
+ * `LISTEN`. Their own fibers log outside each world's recorder.
+ */
+export class Shared extends Context.Service<Shared, Recorder>()(
+  "@stu/sync/simulation/Recorder/Shared",
+) {}
+
+/** `database` with its logs and spans in `Shared`, which it provides too. */
+export const shared = <A, E>(database: Layer.Layer<A, E>) =>
+  Layer.unwrap(Effect.map(Shared, (recorder) => Layer.provide(database, recorder.layer))).pipe(
+    Layer.provideMerge(Layer.effect(Shared, make)),
+  );
