@@ -39,6 +39,12 @@ export class UnknownSchool extends Schema.TaggedError<
   { readonly brand: unique symbol }
 >()("Dev.UnknownSchool", { school: Schema.String }) {}
 
+/** The caller signed in as a demo persona, which gets into the demo school only. */
+export class DemoAccount extends Schema.TaggedError<
+  DemoAccount,
+  { readonly brand: unique symbol }
+>()("Dev.DemoAccount", { school: Schema.String }) {}
+
 export const Rpcs = RpcGroup.make(
   /** A new school on each call, so runs never share one. */
   Rpc.make("Dev.createSchool", {
@@ -52,7 +58,7 @@ export const Rpcs = RpcGroup.make(
   Rpc.make("Dev.admit", {
     payload: { school: Schema.String },
     success: Admission,
-    error: Schema.Union([Unavailable, SignedOut, UnknownSchool]),
+    error: Schema.Union([Unavailable, SignedOut, UnknownSchool, DemoAccount]),
   }),
   /**
    * "Der Demo-Schule beitreten": admits the caller to the demo school as `Dev.admit` does, with a
@@ -61,6 +67,6 @@ export const Rpcs = RpcGroup.make(
    */
   Rpc.make("Dev.admitToDemoSchool", {
     success: Admission,
-    error: Schema.Union([Unavailable, SignedOut, UnknownSchool]),
+    error: Schema.Union([Unavailable, SignedOut, UnknownSchool, DemoAccount]),
   }),
 );

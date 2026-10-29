@@ -24,6 +24,7 @@ import { Database } from "../infra/database/Database.ts";
 import { Testing } from "../infra/database/Testing.ts";
 import { Mail } from "../infra/mail/Mail.ts";
 import { Rpc } from "../routes/Rpc.ts";
+import { DemoAccounts } from "./DemoAccounts.ts";
 import { Seed } from "./Seed.ts";
 
 const publicUrl = "http://localhost:3000";
@@ -77,7 +78,10 @@ const server = (environment: string) =>
         Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env }))),
       );
     }),
-  ).pipe(Layer.provide(Testing.prepared), Layer.provideMerge(NodeServices.layer));
+  ).pipe(
+    Layer.provide([Testing.prepared, DemoAccounts.seeding]),
+    Layer.provideMerge(NodeServices.layer),
+  );
 
 /** The `Api.Rpcs` client over HTTP, as a device calls it. */
 const rpc = Effect.gen(function* () {

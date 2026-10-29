@@ -116,6 +116,21 @@ describe.skipIf(Postgres18.socket === null)("Access on PostgreSQL 18", () => {
       }),
     );
 
+    it.effect("a demo account gets into no school but the demo school", () =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+        yield* Schools.publish(data);
+        yield* Fixture.account("demo-lena");
+        yield* sql`insert into demo_account (account_id, persona) values ('demo-lena', 'lena')`;
+        const refusal = yield* Effect.flip(Access.admit("demo-lena", school, choose("ma-1")));
+
+        expect([refusal._tag, yield* Fixture.memberships("demo-lena")]).toEqual([
+          "Access.DemoAccount",
+          [],
+        ]);
+      }),
+    );
+
     it.effect("a first choice that enrollment.set refuses admits nothing", () =>
       Effect.gen(function* () {
         yield* Schools.publish(data);

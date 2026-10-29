@@ -10,7 +10,6 @@ import * as Command from "effect/cli/Command";
 import * as Config from "effect/Config";
 import * as Console from "effect/Console";
 import * as Effect from "effect/Effect";
-import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import { Access } from "../school/Access.ts";
 import { Schools } from "../school/Schools.ts";
@@ -19,29 +18,34 @@ import { DemoSchool } from "./DemoSchool.ts";
 
 export * as Seed from "./Seed.ts";
 
-/** Seeds the demo school and its personas, or brings them to today's school year and term. */
+/**
+ * Seeds the demo school and its personas, or brings them to today's school year and term. It needs
+ * `DemoAccounts.Seeding`, which only `prepare` and the console provide.
+ */
 export const run = Effect.gen(function* () {
-  const school = yield* DemoSchool.data(yield* Schools.today(DemoSchool.timeZone));
-  const term = school.year.current.id;
-  const password = yield* Config.option(Config.Redacted("DEMO_PASSWORD"));
-  yield* Schools.publish(school.data);
+  const password = yield* DemoAccounts.password;
 
-  for (const persona of Demo.Persona.literals) {
-    const { account, notebook } = DemoSchool.personas[persona];
-    const choice = DemoSchool.choice(DemoSchool.personas[persona], term);
-    yield* DemoAccounts.ensure(persona, password);
-    yield* Access.admit(account, DemoSchool.id, Option.some(choice), notebook);
-    // A term that began since the last seed gets the persona's courses again.
-    yield* Access.enroll(notebook, choice);
-  }
+  return yield* Effect.gen(function* () {
+    const school = yield* DemoSchool.data(yield* Schools.today(DemoSchool.timeZone));
+    const term = school.year.current.id;
+    yield* Schools.publish(school.data);
 
-  return { school: DemoSchool.id, term };
-}).pipe(
-  // The seed's own rows, which `enrollment.set` accepts.
-  Effect.orDie,
-  Effect.withSpan("Seed.run"),
-  Effect.provide(Layer.merge(SyncServer.writers(Studienbuch.schema), DemoAccounts.seeding)),
-);
+    for (const persona of Demo.Persona.literals) {
+      const { account, notebook } = DemoSchool.personas[persona];
+      const choice = DemoSchool.choice(DemoSchool.personas[persona], term);
+      yield* DemoAccounts.ensure(persona, password);
+      yield* Access.admit(account, DemoSchool.id, Option.some(choice), notebook);
+      // A term that began since the last seed gets the persona's courses again.
+      yield* Access.enroll(notebook, choice);
+    }
+
+    return { school: DemoSchool.id, term };
+  }).pipe(
+    // The seed's own rows, which `enrollment.set` accepts.
+    Effect.orDie,
+    Effect.provide(SyncServer.writers(Studienbuch.schema)),
+  );
+}).pipe(Effect.withSpan("Seed.run"));
 
 /** What `prepare` runs: the seed when `STUDIENBUCH_DEMO_SCHOOL=seed`, and nothing otherwise. */
 export const whenEnabled = Effect.gen(function* () {

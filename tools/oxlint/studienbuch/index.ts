@@ -1,5 +1,6 @@
 import { definePlugin } from "@oxlint/plugins";
 
+import demoAccountBoundaries from "./demo-account-boundaries.ts";
 import effectFnName from "./effect-fn-name.ts";
 import importBoundaries from "./import-boundaries.ts";
 import selfExportingModules from "./module-shape.ts";
@@ -35,6 +36,7 @@ import taggedErrorName from "./tagged-error-name.ts";
 export default definePlugin({
   meta: { name: "studienbuch" },
   rules: {
+    "demo-account-boundaries": demoAccountBoundaries,
     "effect-fn-name": effectFnName,
     "import-boundaries": importBoundaries,
     "module-shape": selfExportingModules,

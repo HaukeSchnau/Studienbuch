@@ -11,6 +11,7 @@ import * as Effect from "effect/Effect";
 import type * as Headers from "effect/http/Headers";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as Result from "effect/Result";
 import { DemoSchool } from "../demo/DemoSchool.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { Access } from "../school/Access.ts";
@@ -80,20 +81,20 @@ export const admit = Effect.fn("Shortcuts.admit")(function* (
 
   if (Option.isNone(id)) return yield* new Dev.UnknownSchool({ school });
 
-  const admitted = yield* Access.admit(
-    account,
-    id.value,
-    yield* Schools.offered(id.value, grade),
-  ).pipe(
-    Effect.asSome,
-    Effect.catchTags({ "Access.UnknownSchool": () => Effect.succeedNone }),
-    // The choice is what the school offers, which `enrollment.set` accepts.
-    Effect.orDie,
+  const admitted = yield* Effect.result(
+    Access.admit(account, id.value, yield* Schools.offered(id.value, grade)),
   );
 
-  if (Option.isNone(admitted)) return yield* new Dev.UnknownSchool({ school });
+  if (Result.isSuccess(admitted)) return new Dev.Admission({ notebook: admitted.success.notebook });
 
-  return new Dev.Admission({ notebook: admitted.value.notebook });
+  const refusal = admitted.failure;
+
+  if (refusal._tag === "Access.UnknownSchool") return yield* new Dev.UnknownSchool({ school });
+
+  if (refusal._tag === "Access.DemoAccount") return yield* new Dev.DemoAccount({ school });
+
+  // The choice is what the school offers, which `enrollment.set` accepts.
+  return yield* Effect.die(refusal);
 });
 
 export const handlers = Dev.Rpcs.toLayer(

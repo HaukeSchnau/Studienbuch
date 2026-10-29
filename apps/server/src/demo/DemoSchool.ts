@@ -86,8 +86,9 @@ export interface Persona {
 }
 
 /**
- * Their addresses are under a domain of ours that receives no mail, so nobody else can confirm
- * one. The account and notebook ids are fixed, so every seed finds them again.
+ * Their addresses are under `demo.studienbuch.app`, a domain of ours. The seed creates the accounts
+ * before a sign-up could claim an address, and fails rather than adopt an account that has one.
+ * The account and notebook ids are fixed, so every seed finds them again.
  */
 export const personas: Readonly<Record<Demo.Persona, Persona>> = {
   lena: {

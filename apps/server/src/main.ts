@@ -21,6 +21,7 @@ import { Connection } from "@stu/sync";
 import { SyncEpoch, SyncServer, Tables as SyncTables } from "@stu/sync/server";
 import packageJson from "../package.json" with { type: "json" };
 import { Auth } from "./auth/Auth.ts";
+import { DemoAccounts } from "./demo/DemoAccounts.ts";
 import { Seed } from "./demo/Seed.ts";
 import { Deployment } from "./infra/config/Deployment.ts";
 import { SecretFiles } from "./infra/config/SecretFiles.ts";
@@ -94,7 +95,7 @@ const prepare = Effect.gen(function* () {
   yield* Effect.logInfo(
     applied.length === 0 ? "The schema is at head" : `Applied ${applied.join(", ")}`,
   );
-  yield* Seed.whenEnabled;
+  yield* Seed.whenEnabled.pipe(Effect.provide(DemoAccounts.seeding));
 }).pipe(Effect.provide(runtime));
 
 class InvariantBroken extends Schema.TaggedError<
@@ -150,7 +151,7 @@ const cli = Command.make("studienbuch-server", {}, () => serve).pipe(
           Command.withDescription("Prints what /api/health/ready reports"),
         ),
         AccessCommand.command.pipe(Command.provide(runtime)),
-        Seed.command.pipe(Command.provide(runtime)),
+        Seed.command.pipe(Command.provide(Layer.merge(runtime, DemoAccounts.seeding))),
       ]),
     ),
     Command.make("verify", {}, () => verify).pipe(

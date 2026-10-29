@@ -237,6 +237,12 @@ export default defineConfig({
         ),
       },
       {
+        // Demo sessions, the seed's permission and demo_account writes stay in their own modules.
+        files: scope("apps/server/**"),
+        excludeFiles: ["**/*.test.ts"],
+        rules: { "studienbuch/demo-account-boundaries": "error" },
+      },
+      {
         // React code. Elsewhere a function named `use`, such as `HttpRouter.use`, is no hook.
         files: scope("apps/app/**", "apps/web/**", "packages/{ui,domain-ui}/**"),
         rules: {

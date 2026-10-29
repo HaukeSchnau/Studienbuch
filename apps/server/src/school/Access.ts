@@ -11,6 +11,8 @@ import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
+import { DemoAccounts } from "../demo/DemoAccounts.ts";
+import { DemoSchool } from "../demo/DemoSchool.ts";
 import { Notebooks } from "../sync/Notebooks.ts";
 import type { Schools } from "./Schools.ts";
 
@@ -20,6 +22,15 @@ export class UnknownSchool extends Schema.TaggedError<
   UnknownSchool,
   { readonly brand: unique symbol }
 >()("Access.UnknownSchool", { school: Schema.String }) {}
+
+/**
+ * A demo account gets into the demo school only. Everyone who holds beta's review password signs
+ * in to it, so it must never read a real school's data.
+ */
+export class DemoAccount extends Schema.TaggedError<
+  DemoAccount,
+  { readonly brand: unique symbol }
+>()("Access.DemoAccount", { school: Schema.String }) {}
 
 export interface Admission {
   readonly notebook: Notebook.Id;
@@ -52,10 +63,10 @@ export const enroll = Effect.fn("Access.enroll")(function* (
 });
 
 /**
- * Admits the account to the school with its first course choice, or answers the notebook it
- * already has there, with its memberships restored. Admissions of one account run one at a time,
- * so it never gets two notebooks at one school. A choice that `enrollment.set` refuses admits
- * nothing. The notebook's id is random unless the demo seed names it.
+ * Admits the account with its first course choice, or answers its notebook there with its
+ * memberships restored. Admissions of one account run one at a time, so it never gets two
+ * notebooks at one school. A refused choice, or another school for a demo account, admits nothing.
+ * The notebook's id is random unless the demo seed names it.
  */
 export const admit = Effect.fn("Access.admit")(function* (
   account: string,
@@ -74,6 +85,10 @@ export const admit = Effect.fn("Access.admit")(function* (
       `;
 
       if (found === undefined) return yield* Effect.die(`The account ${account} doesn't exist`);
+
+      if (school !== DemoSchool.id && (yield* DemoAccounts.isDemo(account))) {
+        return yield* new DemoAccount({ school });
+      }
 
       const [admitted] = yield* sql<{ readonly notebook: string }>`
         select notebook_id as notebook from school_access
