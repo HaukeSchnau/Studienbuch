@@ -2,6 +2,8 @@ export { CivilTime } from "./civil-time/CivilTime.ts";
 
 export { Homework } from "./homework/Homework.ts";
 
+export { HomeworkDates } from "./homework/HomeworkDates.ts";
+
 export { Enrollment } from "./notebook/Enrollment.ts";
 
 export { Notebook } from "./notebook/Notebook.ts";

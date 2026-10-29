@@ -4,7 +4,6 @@
  * clock, so the caller computes "today" with `dateIn` and the school's `timeZone`, and passes it in.
  */
 import * as Effect from "effect/Effect";
-import * as Order from "effect/Order";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SchemaIssue from "effect/SchemaIssue";
@@ -13,6 +12,7 @@ import * as Calendar from "temporal-polyfill/fns/Calendar";
 import * as InstantFns from "temporal-polyfill/fns/Instant";
 import * as PlainDateFns from "temporal-polyfill/fns/PlainDate";
 import * as ZonedDateTimeFns from "temporal-polyfill/fns/ZonedDateTime";
+import { CivilDate } from "./CivilDate.ts";
 
 export * as CivilTime from "./CivilTime.ts";
 
@@ -42,14 +42,9 @@ export const PlainDate = isoDate.pipe(
 export type PlainDate = typeof PlainDate.Type;
 
 /** Earlier dates first. */
-export const order: Order.Order<PlainDate> = Order.make((self, that) => {
-  const sign = PlainDateFns.compare(self, that);
+export const order = CivilDate.order;
 
-  return sign < 0 ? -1 : sign > 0 ? 1 : 0;
-});
-
-export const addDays = (date: PlainDate, days: number): PlainDate =>
-  PlainDateFns.addDays(date, days);
+export const addDays = CivilDate.addDays;
 
 /** A closed range: `start` and `end` both belong to it. */
 export const DateRange = Schema.Struct({ start: PlainDate, end: PlainDate }).check(
