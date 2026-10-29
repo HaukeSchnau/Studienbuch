@@ -3,11 +3,14 @@
  * version may only add. To raise `Studienbuch.version`, save the snapshot that the failing test
  * prints as `schema.v<version>.json` and import it below.
  */
-import { describe, expect, it } from "@effect/vitest";
+import { describe, expect, expectTypeOf, it } from "@effect/vitest";
 import { Evolution, Sync } from "@stu/sync";
 import * as Effect from "effect/Effect";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
+import { Homework } from "../homework/Homework.ts";
+import type { Enrollment } from "../notebook/Enrollment.ts";
+import { Notebook } from "../notebook/Notebook.ts";
 import { Studienbuch } from "./Studienbuch.ts";
 import v1 from "./schema.v1.json" with { type: "json" };
 
@@ -69,4 +72,33 @@ describe("Studienbuch.schema", () => {
       );
     }),
   );
+});
+
+/** A refusal and a mutator that no module has yet, as M2's grades will add them. */
+class Invalid extends Schema.TaggedError<Invalid, { readonly brand: unique symbol }>()(
+  "Grade.Invalid",
+  {},
+) {}
+
+const recordGrade = Sync.mutator("grade.record", {
+  version: 1,
+  args: Schema.Struct({ notebook: Notebook.Id }),
+  error: Invalid,
+  writes: [Homework.Row],
+  spaces: (args) => [args.notebook],
+  run: () => Effect.void,
+});
+
+describe("Studienbuch.RefusalTag", () => {
+  it("is the tags of every refusal the schema's mutators fail with", () => {
+    expectTypeOf<Studienbuch.RefusalTag>().toEqualTypeOf<
+      Homework.Refusal["_tag"] | Enrollment.Refusal["_tag"]
+    >();
+  });
+
+  it("gains the tags of a mutator added to the list", () => {
+    expectTypeOf<
+      Studienbuch.RefusalTags<[...typeof Studienbuch.mutators, typeof recordGrade]>
+    >().toEqualTypeOf<Studienbuch.RefusalTag | "Grade.Invalid">();
+  });
 });
