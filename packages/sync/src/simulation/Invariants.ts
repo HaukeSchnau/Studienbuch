@@ -16,7 +16,15 @@ import { Leaks } from "./Leaks.ts";
 
 export * as Invariants from "./Invariants.ts";
 
-export type Name = "replay" | "gapless" | "plaintext" | "convergence" | "nothing-lost" | "liveness";
+export type Name =
+  | "replay"
+  | "gapless"
+  | "cursors"
+  | "membership"
+  | "plaintext"
+  | "convergence"
+  | "nothing-lost"
+  | "liveness";
 
 export interface Violation {
   readonly invariant: Name;
@@ -143,14 +151,30 @@ export const gapless = Effect.fn("Invariants.gapless")(function* (place: string)
   return waiting === expected ? [] : [violation];
 }, Effect.orDie);
 
-/** No marker of an encrypted field anywhere in the server's Postgres. */
-export const plaintextInPostgres = Effect.map(Leaks.postgres, (leaks) =>
-  leaks.map((leak): Violation => ({
-    invariant: "plaintext",
-    place: leak.place,
-    detail: leak.excerpt,
-  })),
-).pipe(Effect.orDie);
+/** Whether a statement of this database waits for a lock on `sync_row`. */
+export const waitingForRows = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+
+  const [row] = yield* sql<{ readonly waiting: boolean }>`
+    select exists (
+      select 1 from pg_locks l join pg_class c on c.oid = l.relation
+      where c.relname = 'sync_row' and not l.granted
+        and l.database = (select oid from pg_database where datname = current_database())
+    ) as waiting
+  `;
+
+  return row?.waiting === true;
+}).pipe(Effect.orDie);
+
+/** No marker of an encrypted field in any of `tables`, the server's Postgres. */
+export const plaintextInPostgres = (tables: ReadonlyArray<Leaks.Table>) =>
+  Effect.map(Leaks.scan(tables), (leaks) =>
+    leaks.map((leak): Violation => ({
+      invariant: "plaintext",
+      place: leak.place,
+      detail: leak.excerpt,
+    })),
+  ).pipe(Effect.orDie);
 
 /**
  * No marker in text the server saw: a frame it received, a line it logged, a span it ended. A
@@ -245,7 +269,16 @@ const decodeReason = Schema.decodeUnknownEffect(Schema.fromJsonString(Refusal.Re
 const reasonOf = (text: string) =>
   Effect.flatMap(decodeReason(text), (reason) => Effect.fromResult(CanonicalJson.encode(reason)));
 
-/** A device's state at quiescence: its counters, its waiting commands and its refusals' reasons. */
+/** A command as it reads in canonical JSON: its name, version and arguments. */
+const contentOf = (name: string | null, version: number | null, args: Schema.Json) =>
+  Effect.map(Effect.fromResult(CanonicalJson.encode(args)), (json) => `${name}@${version} ${json}`);
+
+const decodeArgs = Schema.decodeUnknownEffect(Schema.fromJsonString(Schema.Json));
+
+/**
+ * A device's state at quiescence: its counters, its waiting commands, its refusals' reasons and
+ * what the commands it counts as applied said.
+ */
 export const settledState = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
   const meta = yield* Outbox.meta;
@@ -260,9 +293,26 @@ export const settledState = Effect.gen(function* () {
     Effect.map(reasonOf(row.reason), (reason) => `${row.mutation_id} ${reason}`),
   );
 
-  return { meta, waiting, refused };
+  // Kept for a week, and only the current client id's: renumbering forgets the old one's.
+  const settledRows = yield* sql<{
+    readonly mutation_id: number;
+    readonly name: string;
+    readonly version: number;
+    readonly args: string;
+  }>`select mutation_id, name, version, args from sync_settled_command order by mutation_id`;
+
+  const applied = yield* Effect.forEach(settledRows, (row) =>
+    Effect.flatMap(decodeArgs(row.args), (args) =>
+      Effect.map(contentOf(row.name, row.version, args), (content) => ({
+        mutationId: row.mutation_id,
+        content,
+      })),
+    ),
+  );
+
+  return { meta, waiting, refused, applied };
 }).pipe(
-  // One transaction, so the engine's periodic pull can't commit between the reads.
+  // One transaction, so a pull can't commit between the reads.
   (state) => Effect.flatMap(SqlClient.SqlClient, (sql) => sql.withTransaction(state)),
   Effect.orDie,
 );
@@ -271,31 +321,55 @@ export interface Processed {
   readonly mutationId: number;
   /** The refusal's reason in canonical JSON, or `undefined` for an applied command. */
   readonly refused: string | undefined;
+  /**
+   * What the server read of the command, as `contentOf` writes it. A command whose arguments it
+   * couldn't read logs only their hash, and then this names that.
+   */
+  readonly content: string;
 }
 
-/** The server's record of one client: each command it processed, and each refusal's reason. */
+/** The arguments the command log kept, when it could read them. */
+const Detail = Schema.fromJsonString(Schema.Struct({ args: Schema.Json }));
+
+const decodeDetail = Schema.decodeUnknownEffect(Detail);
+
+/** The server's record of one client: each command it processed, what it said and any refusal. */
 export const serverLog = Effect.fn("Invariants.serverLog")(function* (clientId: string) {
   const sql = yield* SqlClient.SqlClient;
 
-  const rows = yield* sql<{ readonly mutation_id: number; readonly reason: string | null }>`
-      select mutation_id::float8 as mutation_id, reason::text as reason from command_log
-      where client_id = ${clientId} order by mutation_id
+  const rows = yield* sql<{
+    readonly mutation_id: number;
+    readonly name: string | null;
+    readonly version: number | null;
+    readonly detail: string;
+    readonly reason: string | null;
+  }>`
+      select mutation_id::float8 as mutation_id, name, version, detail::text as detail,
+        reason::text as reason
+      from command_log where client_id = ${clientId} order by mutation_id
     `;
 
   return yield* Effect.forEach(rows, (row) =>
-    row.reason === null
-      ? Effect.succeed<Processed>({ mutationId: row.mutation_id, refused: undefined })
-      : Effect.map(reasonOf(row.reason), (reason): Processed => ({
-          mutationId: row.mutation_id,
-          refused: reason,
-        })),
+    Effect.gen(function* () {
+      const detail = yield* Effect.option(decodeDetail(row.detail));
+
+      const content =
+        detail._tag === "Some"
+          ? yield* contentOf(row.name, row.version, detail.value.args)
+          : `${row.name}@${row.version} unreadable ${row.detail}`;
+
+      const refused = row.reason === null ? undefined : yield* reasonOf(row.reason);
+
+      return { mutationId: row.mutation_id, refused, content } satisfies Processed;
+    }),
   );
 }, Effect.orDie);
 
 /**
  * Nothing is lost: the outbox is empty, the server processed every command of the device's client
- * exactly once and in order, and every refusal the server recorded waits on the device with the
- * same reason, unless the user dismissed it.
+ * exactly once and in order, every command the device counts as applied is one the server applied
+ * with the same name and arguments, and every refusal the server recorded waits on the device with
+ * the same reason, unless the user dismissed it.
  */
 export const nothingLost = (
   place: string,
@@ -319,6 +393,18 @@ export const nothingLost = (
 
   if (processed !== expected) violation(`server processed ${processed}, expected ${expected}`);
 
+  const byId = new Map(log.map((entry) => [entry.mutationId, entry]));
+
+  for (const { mutationId, content } of device.applied) {
+    const logged = byId.get(mutationId);
+
+    if (logged === undefined || logged.refused !== undefined || logged.content !== content) {
+      violation(
+        `#${mutationId} applied as ${content}, server ${logged === undefined ? "has nothing" : logged.refused === undefined ? `applied ${logged.content}` : `refused ${logged.content}`}`,
+      );
+    }
+  }
+
   const refusedOnServer = log
     .flatMap((entry) =>
       entry.refused === undefined || dismissed.has(entry.mutationId)
@@ -335,3 +421,128 @@ export const nothingLost = (
 
   return found;
 };
+
+/**
+ * A device's cursor covers its rows: no base row is newer than its space's cursor. A pull reads
+ * one snapshot, so each page's rows end at the version it reports.
+ */
+export const cursors = Effect.fn("Invariants.cursors")(function* (place: string) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const ahead = yield* sql<{
+    readonly space: string;
+    readonly newest: number;
+    readonly cursor: number | null;
+  }>`
+    select r.space, max(r.version) as newest, s.version as cursor
+    from base_row r join sync_space s on s.id = r.space
+    group by r.space, s.version
+    having s.version is null or max(r.version) > s.version
+    order by r.space
+  `;
+
+  return ahead.map((row): Violation => ({
+    invariant: "cursors",
+    place,
+    detail: `${row.space}: a row at ${row.newest}, cursor ${row.cursor ?? "none"}`,
+  }));
+}, Effect.orDie);
+
+const decodeCourses = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(Schema.Struct({ courses: Schema.Array(Schema.String) })),
+);
+
+/**
+ * An account reads exactly the course spaces its notebook's choice names under the notebook's
+ * school, and none once it left the school. Read in one snapshot, as the grants commit with the
+ * choice.
+ */
+export const courseMembership = Effect.fn("Invariants.courseMembership")(function* (
+  account: string,
+  notebook: string,
+  choice: { readonly table: string; readonly id: string; readonly kind: string },
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const read = Effect.gen(function* () {
+    yield* sql`set transaction isolation level repeatable read, read only`;
+
+    const [chosen] = yield* sql<{ readonly data: string; readonly school: string }>`
+      select r.data::text as data, n.parent_id as school
+      from sync_row r join space n on n.id = r.space_id
+      join space_member m on m.space_id = n.parent_id and m.account_id = ${account}
+      where r.space_id = ${notebook} and r.tbl = ${choice.table} and r.id = ${choice.id}
+        and r.data is not null
+    `;
+
+    const courses = chosen === undefined ? [] : (yield* decodeCourses(chosen.data)).courses;
+
+    const expected =
+      chosen === undefined || courses.length === 0
+        ? []
+        : yield* sql<{ readonly id: string }>`
+            select id from space
+            where parent_id = ${chosen.school} and kind = ${choice.kind}
+              and key in ${sql.in(courses)}
+            order by id
+          `;
+
+    const held = yield* sql<{ readonly id: string }>`
+      select s.id from space_member m join space s on s.id = m.space_id
+      where m.account_id = ${account} and s.kind = ${choice.kind}
+      order by s.id
+    `;
+
+    return { expected: expected.map((row) => row.id), held: held.map((row) => row.id) };
+  });
+
+  const { expected, held } = yield* sql.withTransaction(read);
+
+  return expected.join(",") === held.join(",")
+    ? []
+    : [
+        {
+          invariant: "membership",
+          place: `account ${account}`,
+          detail: `reads courses ${held.join(",") || "none"}, its choice names ${expected.join(",") || "none"}`,
+        } satisfies Violation,
+      ];
+}, Effect.orDie);
+
+/** The spaces a device knows, with its role in each. */
+export const deviceSpaces = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+
+  const rows = yield* sql<{ readonly id: string; readonly role: string }>`
+    select id, role from sync_space order by id
+  `;
+
+  return rows.map((row) => `${row.id} ${row.role}`);
+}).pipe(Effect.orDie);
+
+/** The spaces the server says an account reads, with its role in each. */
+export const serverSpaces = Effect.fn("Invariants.serverSpaces")(function* (account: string) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const rows = yield* sql<{ readonly id: string; readonly role: string }>`
+    select space_id as id, role from space_member where account_id = ${account} order by space_id
+  `;
+
+  return rows.map((row) => `${row.id} ${row.role}`);
+}, Effect.orDie);
+
+/** A device at rest knows exactly the spaces its account reads. */
+export const sameSpaces = (
+  place: string,
+  shown: ReadonlyArray<string>,
+  expected: ReadonlyArray<string>,
+): ReadonlyArray<Violation> =>
+  shown.join(", ") === expected.join(", ")
+    ? []
+    : [
+        {
+          invariant: "convergence",
+          place,
+          detail: `knows spaces ${shown.join(", ") || "none"}, the server ${expected.join(", ") || "none"}`,
+        },
+      ];

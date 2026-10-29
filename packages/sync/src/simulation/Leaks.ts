@@ -115,22 +115,32 @@ const findInRow = (place: string, row: string): ReadonlyArray<Leak> => {
   return [];
 };
 
-/**
- * Every row of every table outside Postgres's own schemas, as `row_to_json` writes it: text and
- * JSON as they are, and bytes as hex, which it also decodes. Both kinds of marker count.
- */
-export const postgres = Effect.gen(function* () {
+export interface Table {
+  readonly schema: string;
+  readonly name: string;
+}
+
+/** Every table outside Postgres's own schemas. */
+export const tables = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
 
-  const tables = yield* sql<{ readonly schema: string; readonly name: string }>`
+  return yield* sql<Table>`
     select table_schema as schema, table_name as name from information_schema.tables
     where table_type = 'BASE TABLE'
       and table_schema not in ('pg_catalog', 'information_schema')
       and table_schema not like 'pg\\_toast%'
     order by table_schema, table_name
   `;
+});
 
-  const leaks = yield* Effect.forEach(tables, ({ schema, name }) =>
+/**
+ * Every row of `among`, as `row_to_json` writes it: text and JSON as they are, and bytes as hex,
+ * which it also decodes. Both kinds of marker count.
+ */
+export const scan = Effect.fn("Leaks.scan")(function* (among: ReadonlyArray<Table>) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const leaks = yield* Effect.forEach(among, ({ schema, name }) =>
     Effect.map(
       sql.unsafe<{ readonly row: string }>(
         `select row_to_json(t)::text as row from ${quoted(schema)}.${quoted(name)} as t`,
@@ -141,6 +151,9 @@ export const postgres = Effect.gen(function* () {
 
   return leaks.flat();
 });
+
+/** Every row of every table outside Postgres's own schemas, as `scan` reads them. */
+export const postgres = Effect.flatMap(tables, scan);
 
 /**
  * Sealed rows show the server nothing but their envelope and ciphertext: their table name is
