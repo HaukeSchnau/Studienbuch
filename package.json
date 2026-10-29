@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "prepare": "effect-tsgo patch --oxlint",
-    "check:changed": "node tools/check-changed/check-changed.ts"
+    "check:changed": "node tools/check-changed/check-changed.ts",
+    "nix:update-hash": "nix/update-pnpm-hash.sh"
   },
   "devDependencies": {
     "@effect/tsgo": "catalog:",
