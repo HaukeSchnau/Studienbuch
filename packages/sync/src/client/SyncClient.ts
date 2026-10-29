@@ -1,0 +1,282 @@
+/**
+ * The device engine, one per device database. A screen writes through `mutate` and reads through
+ * `SyncQuery` over the views. A write lands in the overlay (`pending_row`) and the outbox in one
+ * transaction, so it shows at once and survives a crash, and the server confirms or refuses it
+ * later. A refusal stays in `refusals` with its reason until the user dismisses or redoes it.
+ *
+ * ```ts
+ * const sync = yield* SyncClient.Service
+ * const { confirmed } = yield* sync.mutate(Homework.create, { notebook, id, courseId, title, dueOn })
+ * ```
+ */
+import * as Clock from "effect/Clock";
+import * as Context from "effect/Context";
+import * as Deferred from "effect/Deferred";
+import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
+import * as Reactivity from "effect/reactivity/Reactivity";
+import * as Schema from "effect/Schema";
+import * as SqlClient from "effect/sql/SqlClient";
+import type * as SqlError from "effect/sql/SqlError";
+import type * as Stream from "effect/Stream";
+import * as SubscriptionRef from "effect/SubscriptionRef";
+import { Sync } from "../definition/Sync.ts";
+import { Ids } from "../protocol/Ids.ts";
+import { Refusal } from "../protocol/Refusal.ts";
+import { Tx } from "../transaction/Tx.ts";
+import { Outbox } from "./Outbox.ts";
+import { Ports } from "./Ports.ts";
+import { SqliteTx } from "./SqliteTx.ts";
+import type { SyncQuery } from "./SyncQuery.ts";
+
+export * as SyncClient from "./SyncClient.ts";
+
+/** The server refused the command. Its effect has left the device, and `refusals` lists it. */
+export class Rejected extends Schema.TaggedError<Rejected, { readonly brand: unique symbol }>()(
+  "SyncClient.Rejected",
+  { mutationId: Ids.MutationId, reason: Refusal.Reason },
+) {}
+
+export interface Mutation {
+  readonly mutationId: number;
+  /**
+   * Completes once the server applied the command, or fails with its refusal. Most screens ignore
+   * it. It lives in memory, so it never completes for a command whose device restarted since.
+   */
+  readonly confirmed: Effect.Effect<void, Rejected>;
+}
+
+/**
+ * Why a command never entered the outbox: the mutator's own refusal, a `Tx` error, a space the
+ * device doesn't know or a role that may not write there, or arguments its codec refuses.
+ */
+export type MutateError<E> =
+  | E
+  | Tx.Error
+  | Refusal.NotMember
+  | Refusal.NotAllowed
+  | Refusal.InvalidArgs;
+
+export interface Status {
+  /** Whether the engine has a connection to the server. */
+  readonly connection: "offline" | "connecting" | "online";
+  readonly pushing: boolean;
+  readonly pulling: boolean;
+  /** Commands the server hasn't settled. A device is idle when it is online and none is in flight. */
+  readonly waiting: number;
+  /** The server needs a newer app. The device keeps working on its own data and keeps its outbox. */
+  readonly updateRequired: Option.Option<{ readonly protocol: number; readonly schema: number }>;
+  /** Another device removed this one, and the engine wiped its data and keys. */
+  readonly revoked: boolean;
+}
+
+export interface Interface {
+  /**
+   * Runs the mutator on the device and queues the command, or fails and queues nothing. Returns
+   * once the local transaction committed.
+   */
+  readonly mutate: <
+    Args,
+    E extends { readonly _tag: string },
+    Writes extends ReadonlyArray<Sync.Any>,
+  >(
+    mutator: Sync.Mutator<string, Args, E, Writes>,
+    args: Args,
+  ) => Effect.Effect<Mutation, MutateError<E>>;
+  /** Runs a refused command again from its stored arguments, and dismisses the refusal with it. */
+  readonly redo: (
+    rejected: Outbox.Rejected,
+  ) => Effect.Effect<Mutation, MutateError<{ readonly _tag: string }> | Refusal.UnknownMutator>;
+  readonly dismiss: (
+    rejected: Pick<Outbox.Rejected, "clientId" | "mutationId">,
+  ) => Effect.Effect<void, SqlError.SqlError>;
+  readonly status: {
+    readonly get: Effect.Effect<Status>;
+    /** The status now, then each change. */
+    readonly changes: Stream.Stream<Status>;
+  };
+}
+
+export class Service extends Context.Service<Service, Interface>()("@stu/sync/client/SyncClient") {}
+
+/** The `Reactivity` key of `refusals`. Synced tables use their own names as keys. */
+export const refusalsKey = "rejected_command";
+
+/** The device's refused commands, oldest first. */
+export const refusals: SyncQuery.SyncQuery<void, Outbox.Rejected, SqlError.SqlError> = {
+  keys: [refusalsKey],
+  run: () => Outbox.rejected,
+};
+
+const SpaceRow = Schema.Struct({ id: Schema.String, kind: Schema.String, role: Schema.String });
+
+const decodeSpaces = Schema.decodeUnknownEffect(Schema.Array(SpaceRow));
+
+/** The kind and the account's role of each of `spaces` that the device knows. */
+const knownSpaces = Effect.fnUntraced(function* (spaces: ReadonlyArray<string>) {
+  const sql = yield* SqlClient.SqlClient;
+
+  if (spaces.length === 0) return new Map<string, typeof SpaceRow.Type>();
+
+  const rows = yield* Effect.orDie(
+    decodeSpaces(yield* sql`select id, kind, role from space where ${sql.in("id", spaces)}`),
+  );
+
+  return new Map(rows.map((row) => [row.id, row]));
+});
+
+export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
+  yield* Effect.orDie(Effect.fromResult(Sync.validate(definition)));
+  const sql = yield* SqlClient.SqlClient;
+  const reactivity = yield* Reactivity.Reactivity;
+  const actor = (yield* Ports.Session).accountId;
+
+  yield* Outbox.start(yield* Outbox.newClientId);
+
+  const status = yield* SubscriptionRef.make<Status>({
+    connection: "offline",
+    pushing: false,
+    pulling: false,
+    waiting: yield* Outbox.waiting,
+    updateRequired: Option.none(),
+    revoked: false,
+  });
+
+  /**
+   * The `confirmed` handles of commands the server hasn't settled, by mutation id. A command
+   * whose transaction rolled back leaves its handle behind until the next command takes its id.
+   */
+  const waiters = new Map<number, Deferred.Deferred<void, Rejected>>();
+
+  const countWaiting = Effect.flatMap(Outbox.waiting, (waiting) =>
+    SubscriptionRef.update(status, (current) => ({ ...current, waiting })),
+  ).pipe(Effect.provideService(SqlClient.SqlClient, sql));
+
+  /**
+   * Runs one command on the device's rows and queues it, inside the caller's transaction. The
+   * declared spaces must be known, the mutator must succeed, and the account's role must allow
+   * each table it wrote in each space it wrote.
+   */
+  const queue = Effect.fnUntraced(function* <E>(
+    mutator: Sync.AnyMutator,
+    version: number,
+    args: Schema.Json,
+    invocation: {
+      readonly spaces: ReadonlyArray<string>;
+      readonly run: Effect.Effect<void, E | Tx.Error, Tx.Service>;
+    },
+  ) {
+    const spaces = yield* knownSpaces(invocation.spaces);
+
+    for (const space of invocation.spaces) {
+      if (!spaces.has(space)) return yield* new Refusal.NotMember({ space });
+    }
+
+    const { tx, written } = yield* SqliteTx.tracked({ actor, writes: mutator.writes });
+    yield* Effect.provideService(invocation.run, Tx.Service, tx);
+    const rows = written();
+
+    for (const row of rows) {
+      const space = spaces.get(row.space);
+
+      if (space === undefined) {
+        return yield* Effect.die(`${mutator.name} wrote ${row.space}, which it doesn't declare`);
+      }
+
+      const roles = definition.byName.tables.get(row.table)?.writableBy[space.kind] ?? [];
+
+      if (!roles.includes(space.role)) return yield* new Refusal.NotAllowed({ space: row.space });
+    }
+
+    const mutationId = yield* Outbox.append({
+      name: mutator.name,
+      version,
+      args,
+      at: yield* Clock.currentTimeMillis,
+      mode: mutator.mode,
+    });
+
+    const deferred = yield* Deferred.make<void, Rejected>();
+    waiters.set(mutationId, deferred);
+
+    return {
+      mutation: { mutationId, confirmed: Deferred.await(deferred) } satisfies Mutation,
+      tables: [...new Set(rows.map((row) => row.table))],
+    };
+  });
+
+  /** Runs `effect` in one transaction, then invalidates the tables it changed. */
+  const commit = <A extends { readonly tables: ReadonlyArray<string> }, E>(
+    effect: Effect.Effect<A, E, SqlClient.SqlClient>,
+  ) =>
+    sql.withTransaction(Effect.provideService(effect, SqlClient.SqlClient, sql)).pipe(
+      Effect.tap(({ tables }) => reactivity.invalidate(tables)),
+      Effect.tap(() => countWaiting),
+    );
+
+  const mutate = Effect.fn("SyncClient.mutate")(function* <
+    Args,
+    E extends { readonly _tag: string },
+    Writes extends ReadonlyArray<Sync.Any>,
+  >(mutator: Sync.Mutator<string, Args, E, Writes>, args: Args) {
+    const invalid = () =>
+      new Refusal.InvalidArgs({ mutator: mutator.name, version: mutator.version });
+
+    const encoded = yield* Effect.mapError(Schema.encodeEffect(mutator.args)(args), invalid);
+    // Replays and the server run the command on its stored arguments, so this first run does too.
+    const decoded = yield* Effect.mapError(Schema.decodeEffect(mutator.args)(encoded), invalid);
+
+    const { mutation } = yield* commit(
+      queue(mutator, mutator.version, encoded, {
+        spaces: mutator.spaces(decoded),
+        run: mutator.run(decoded),
+      }),
+    );
+
+    return mutation;
+  });
+
+  const redo: Interface["redo"] = (rejected) => {
+    const mutator = definition.mutators.find((each) => each.name === rejected.name);
+
+    if (mutator === undefined) {
+      return Effect.fail(new Refusal.UnknownMutator({ mutator: rejected.name }));
+    }
+
+    return commit(
+      Effect.gen(function* () {
+        const invocation = yield* Sync.invoke(mutator, rejected.version, rejected.args).pipe(
+          Effect.mapError(
+            () => new Refusal.InvalidArgs({ mutator: mutator.name, version: rejected.version }),
+          ),
+        );
+
+        const queued = yield* queue(mutator, rejected.version, rejected.args, invocation);
+        yield* Outbox.dismiss(rejected.clientId, rejected.mutationId);
+
+        return { ...queued, tables: [...queued.tables, refusalsKey] };
+      }),
+    ).pipe(Effect.map(({ mutation }) => mutation));
+  };
+
+  const dismiss: Interface["dismiss"] = (rejected) =>
+    Outbox.dismiss(rejected.clientId, rejected.mutationId).pipe(
+      Effect.andThen(reactivity.invalidate([refusalsKey])),
+      Effect.provideService(SqlClient.SqlClient, sql),
+    );
+
+  return Service.of({
+    mutate,
+    redo,
+    dismiss,
+    status: { get: SubscriptionRef.get(status), changes: SubscriptionRef.changes(status) },
+  });
+});
+
+/**
+ * The engine for one device database, which dies at start on a definition `Sync.validate`
+ * refuses. It keeps nothing outside its scope and the database, so closing the scope at any point
+ * is a crash, and a new layer on the same database resumes from there.
+ */
+export const layer = (definition: Sync.Definition) => Layer.effect(Service, make(definition));

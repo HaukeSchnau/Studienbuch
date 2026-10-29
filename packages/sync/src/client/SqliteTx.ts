@@ -18,36 +18,66 @@ import { Tx } from "../transaction/Tx.ts";
 
 export * as SqliteTx from "./SqliteTx.ts";
 
+/** A row a command wrote or deleted. */
+export interface Written {
+  readonly space: string;
+  readonly table: string;
+  readonly id: string;
+}
+
 /** The device's `Tx` for a command of the signed-in account. */
 export const make = Effect.fnUntraced(function* (runner: Tx.Runner) {
-  const sql = yield* SqlClient.SqlClient;
-
-  return Tx.make({
-    ...runner,
-    location: "client",
-
-    read: (space, table, id) =>
-      sql<{ readonly data: string }>`
-        select data from sync_row_view where space = ${space} and tbl = ${table} and id = ${id}
-      `.pipe(Effect.map((rows) => Option.map(Option.fromNullishOr(rows[0]), (row) => row.data))),
-
-    list: (space, table, filter) =>
-      filter === undefined
-        ? sql<{ readonly id: string; readonly data: string }>`
-            select id, data from sync_row_view where space = ${space} and tbl = ${table}
-            order by id
-          `
-        : listByIndex(sql, space, table, filter),
-
-    write: (space, table, id, data) =>
-      sql`
-        insert into pending_row (space, tbl, id, data) values (${space}, ${table}, ${id}, ${data})
-        on conflict (space, tbl, id) do update set data = excluded.data
-      `.pipe(Effect.asVoid),
-  });
+  return Tx.make(store(yield* SqlClient.SqlClient, runner, () => undefined));
 });
 
 export const layer = (runner: Tx.Runner) => Layer.effect(Tx.Service, make(runner));
+
+/**
+ * The device's `Tx` and the rows it wrote so far, each once, in the order of their first write.
+ * The engine checks the roles of the spaces written and invalidates their tables.
+ */
+export const tracked = Effect.fnUntraced(function* (runner: Tx.Runner) {
+  const written = new Map<string, Written>();
+
+  const tx = Tx.make(
+    store(yield* SqlClient.SqlClient, runner, (row) => {
+      written.set(JSON.stringify([row.space, row.table, row.id]), row);
+    }),
+  );
+
+  return { tx, written: (): ReadonlyArray<Written> => [...written.values()] };
+});
+
+const store = (
+  sql: SqlClient.SqlClient,
+  runner: Tx.Runner,
+  onWrite: (row: Written) => void,
+): Tx.Store => ({
+  ...runner,
+  location: "client",
+
+  read: (space, table, id) =>
+    sql<{ readonly data: string }>`
+      select data from sync_row_view where space = ${space} and tbl = ${table} and id = ${id}
+    `.pipe(Effect.map((rows) => Option.map(Option.fromNullishOr(rows[0]), (row) => row.data))),
+
+  list: (space, table, filter) =>
+    filter === undefined
+      ? sql<{ readonly id: string; readonly data: string }>`
+          select id, data from sync_row_view where space = ${space} and tbl = ${table}
+          order by id
+        `
+      : listByIndex(sql, space, table, filter),
+
+  write: (space, table, id, data) =>
+    sql`
+      insert into pending_row (space, tbl, id, data) values (${space}, ${table}, ${id}, ${data})
+      on conflict (space, tbl, id) do update set data = excluded.data
+    `.pipe(
+      Effect.tap(() => Effect.sync(() => onWrite({ space, table, id }))),
+      Effect.asVoid,
+    ),
+});
 
 /**
  * `->` compares the field's JSON text, which is exact because rows are stored canonical. `->>`
