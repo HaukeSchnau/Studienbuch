@@ -38,7 +38,13 @@ export const encode = Schema.encodeEffect(table.codec);
 export type Index = Sync.IndexOf<typeof table>;
 
 export type Step =
-  | { readonly op: "insert" | "put"; readonly id: string; readonly row: Row }
+  | {
+      readonly op: "insert" | "put";
+      readonly id: string;
+      readonly row: Row;
+      /** Fields the write sets to `undefined`, which JSON can't carry. */
+      readonly unset?: ReadonlyArray<keyof Row>;
+    }
   | {
       readonly op: "patch";
       readonly id: string;
@@ -81,6 +87,10 @@ const describe = (error: Tx.Error): Outcome => ({
       : error._tag,
 });
 
+/** A step's `unset` fields as `undefined` values, to spread over its row or fields. */
+const unsetOf = (step: { readonly unset?: ReadonlyArray<keyof Row> }) =>
+  Object.fromEntries((step.unset ?? []).map((field) => [field, undefined]));
+
 const step = (engine: Engines.Engine, space: string, step: Step) => {
   const run = (effect: Effect.Effect<Ok, Tx.Error, Tx.Service>) =>
     engine.transaction(effect).pipe(
@@ -92,12 +102,12 @@ const step = (engine: Engines.Engine, space: string, step: Step) => {
     case "insert":
     case "put":
       return run(
-        Effect.flatMap(Tx.Service, (tx) => tx[step.op](table, space, step.id, step.row)).pipe(
-          Effect.as(null),
-        ),
+        Effect.flatMap(Tx.Service, (tx) =>
+          tx[step.op](table, space, step.id, { ...step.row, ...unsetOf(step) }),
+        ).pipe(Effect.as(null)),
       );
     case "patch": {
-      const unset = Object.fromEntries((step.unset ?? []).map((field) => [field, undefined]));
+      const unset = unsetOf(step);
 
       return run(
         Effect.flatMap(Tx.Service, (tx) =>

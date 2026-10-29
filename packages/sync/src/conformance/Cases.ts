@@ -48,6 +48,16 @@ export const all: ReadonlyArray<Case> = [
     ],
   },
   {
+    name: "a field given as undefined is absent after an insert, a put or a patch",
+    steps: [
+      { op: "insert", id: "inserted", row: row({ note: "x" }), unset: ["note"] },
+      { op: "put", id: "put", row: row({ note: "x" }), unset: ["note"] },
+      { op: "put", id: "patched", row: row({ note: "x" }) },
+      { op: "patch", id: "patched", fields: {}, unset: ["note"] },
+      { op: "list" },
+    ],
+  },
+  {
     name: "a patch keeps the fields a newer app version wrote",
     steps: [
       {

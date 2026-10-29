@@ -109,14 +109,14 @@ export interface Interface {
     space: string,
     where?: Where<T>,
   ) => Effect.Effect<ReadonlyArray<Entry<Sync.Row<T>>>, Error>;
-  /** Creates a row, and fails if it exists. */
+  /** Creates a row, and fails if it exists. A field given as `undefined` is absent. */
   readonly insert: <T extends Sync.Any>(
     table: T,
     space: string,
     id: string,
     row: Sync.Row<T>,
   ) => Effect.Effect<void, Error>;
-  /** Creates or replaces a row. */
+  /** Creates or replaces a row. A field given as `undefined` is absent. */
   readonly put: <T extends Sync.Any>(
     table: T,
     space: string,
@@ -223,8 +223,12 @@ export const make = (store: Store): Interface => {
       Effect.mapError(invalid(table, space, id)),
     );
 
+  // The JSON codec writes a field given as `undefined` as `null`, so a row's text would depend on
+  // which operation wrote it. Every write drops such fields first, as a patch always has.
   const encode = <T extends Sync.Any>(table: T, space: string, id: string, row: Sync.Row<T>) =>
-    Schema.encodeEffect(table.codec)(row).pipe(Effect.mapError(invalid(table, space, id)));
+    Schema.encodeEffect(table.codec)(withoutUndefined(row)).pipe(
+      Effect.mapError(invalid(table, space, id)),
+    );
 
   const read = <T extends Sync.Any>(table: T, space: string, id: string, text: string) =>
     Effect.flatMap(parse(table, space, id, text), (json) => decode(table, space, id, json));
@@ -333,15 +337,14 @@ const indexFilter = Effect.fnUntraced(function* <T extends Sync.Any>(table: T, w
 /* oxlint-disable anti-slop/no-known-value-widening, anti-slop/no-unknown-parameters, anti-slop/no-unknown-returns, anti-slop/no-unsafe-dictionary-type, typescript/no-unsafe-type-assertion -- see above */
 
 // Spread, not assignment, so a field named `__proto__` stays a field.
-const mergeFields = <A extends object>(current: A, fields: Partial<A>): A => {
-  const merged: Record<string, unknown> = { ...current, ...fields };
+const mergeFields = <A extends object>(current: A, fields: Partial<A>): A => ({
+  ...current,
+  ...fields,
+});
 
-  for (const key of Object.keys(fields)) {
-    if (merged[key] === undefined) delete merged[key];
-  }
-
-  return merged as A;
-};
+// `Object.fromEntries` defines each key as its own field, `__proto__` included.
+const withoutUndefined = <A extends object>(row: A): A =>
+  Object.fromEntries(Object.entries(row).filter(([, value]) => value !== undefined)) as A;
 
 const keepUndeclaredFields = (table: Sync.Any, stored: unknown, encoded: unknown): unknown => {
   const undeclared = Object.entries(stored as Readonly<Record<string, unknown>>).filter(
