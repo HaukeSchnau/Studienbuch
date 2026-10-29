@@ -7,6 +7,7 @@ import { useRouter } from "expo-router";
 import { Keyboard } from "react-native";
 
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
+import { PublicComputerChoice } from "../keys/PublicComputerChoice.tsx";
 import {
   AppTile,
   OtherWay,
@@ -52,6 +53,7 @@ export function SignInScreen() {
         <ProblemText reason={reasonOf(passkey)} />
       </Card>
       <Card padded title="Mit E-Mail und Passwort">
+        <PublicComputerChoice />
         <Field
           label="E-Mail-Adresse"
           value={email}

@@ -8,6 +8,7 @@ import { ServerOrigin } from "../api/ServerOrigin.ts";
 import { Device } from "../device/Device.ts";
 import { VirtualDevice } from "../device/VirtualDevice.ts";
 import { Names } from "../device/Names.ts";
+import { publicComputer } from "../device/publicComputer.ts";
 import { DeviceSessions } from "../keychain/DeviceSessions.ts";
 import { Keychain } from "../keychain/Keychain.ts";
 import { MemoryKeychain } from "../keychain/MemoryKeychain.ts";
@@ -46,7 +47,7 @@ export const device = (options: Device.Options) =>
  * This app's own device. Every atom runtime that names this one value shares one build of it, so
  * the device's sessions and secrets have a single writer.
  */
-export const app = device({ name: VirtualDevice.current, publicComputer: false });
+export const app = device({ name: VirtualDevice.current, publicComputer });
 
 const secrets = (accountId: string) =>
   Layer.unwrap(

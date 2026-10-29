@@ -8,10 +8,11 @@ import * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 import { useEffect } from "react";
 
-import { AuthApi } from "../../infra/auth/AuthApi.ts";
 import { SessionStore } from "../../infra/auth/SessionStore.ts";
 import { layer as authenticator } from "../../infra/passkeys/platform.ts";
+import { AccountEngine } from "../../infra/runtime/AccountEngine.ts";
 import { Layers } from "../../infra/runtime/Layers.ts";
+import { OfferedPrf } from "../keys/OfferedPrf.ts";
 import { Account } from "./Account.ts";
 import { PasskeyCheck } from "./PasskeyCheck.ts";
 
@@ -20,9 +21,8 @@ import { PasskeyCheck } from "./PasskeyCheck.ts";
 export * as AccountState from "./AccountState.ts";
 
 const runtime = Atom.runtime(
-  Layer.mergeAll(AuthApi.layer, authenticator, Account.confirmations).pipe(
-    Layer.provideMerge(SessionStore.layer),
-    Layer.provideMerge(Layers.app),
+  Layer.mergeAll(authenticator, Account.confirmations).pipe(
+    Layer.provideMerge(AccountEngine.device),
   ),
 ).pipe(Atom.keepAlive);
 
@@ -69,8 +69,10 @@ export const confirmEmail = runtime.fn<{ readonly email: string; readonly code: 
 
 /** Signs the device in with the session that confirmed `email`, with a new passkey first. */
 export const finish = runtime
-  .fn<{ readonly email: string; readonly withPasskey: boolean }>()(({ email, withPasskey }) =>
-    Account.finish(email, withPasskey),
+  .fn<{ readonly email: string; readonly withPasskey: boolean }>()(({ email, withPasskey }, get) =>
+    Effect.tap(Account.finish(email, withPasskey), (used) =>
+      Effect.sync(() => get.set(OfferedPrf.waiting, used)),
+    ),
   )
   .pipe(Atom.keepAlive);
 
@@ -85,10 +87,20 @@ export function useAbandonOnLeave(email: string) {
   useEffect(() => () => abandonUnfinished(email), [abandonUnfinished, email]);
 }
 
-export const signInWithPasskey = runtime.fn<void>()(() => Account.signInWithPasskey());
+/** Signs in with a passkey, and leaves its PRF output for the notebook's unlock. */
+export const signInWithPasskey = runtime.fn<void>()((_, get) =>
+  Effect.tap(Account.signInWithPasskey(), (used) =>
+    Effect.sync(() => get.set(OfferedPrf.waiting, Option.some(used))),
+  ),
+);
 
 export const signOut = runtime
-  .fn<void>()(() => Account.signOut(Layers.forget))
+  .fn<void>()(() =>
+    // The account's engine closes first: only a closed database can be deleted.
+    Account.signOut((accountId) =>
+      Effect.andThen(AccountEngine.close(accountId), Layers.forget(accountId)),
+    ),
+  )
   .pipe(Atom.keepAlive);
 
 /** The device check's two steps (design/spikes/passkey-prf.md). */
