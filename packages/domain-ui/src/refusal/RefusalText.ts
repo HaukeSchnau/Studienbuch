@@ -1,6 +1,7 @@
 /**
- * What a device says when the server refused one of its changes: the card's title, and one sentence
- * per refusal tag (m1-screens.md, "Refusal sentences"). A tag from a newer server gets `fallback`.
+ * What a device says when the server, or the device itself, refused one of its changes: the card's
+ * title, and one sentence per refusal tag (m1-screens.md, "Refusal sentences"). A tag from a newer
+ * server gets `fallback`.
  */
 import type { Studienbuch } from "@stu/core";
 
@@ -30,6 +31,9 @@ const other = {
   "Sync.TooLarge": "Die Änderung ist zu groß. Kürz den Text und versuch es noch einmal.",
   "Sync.UnknownMutator": "Diese Änderung kennt der Server nicht mehr. Aktualisiere die App.",
   "Sync.InvalidArgs": "Der Server konnte die Änderung nicht lesen. Aktualisiere die App.",
+  // The device refuses this itself: the row came from a newer app, or its key is locked here.
+  "SyncClient.Unreadable":
+    "Dieses Gerät kann den Eintrag noch nicht lesen. Entsperr dein Notizbuch oder aktualisiere die App und versuch es noch einmal.",
   // On the sign-in screen, after the device wiped itself.
   "Sync.DeviceRevoked":
     "Dieses Gerät wurde auf einem anderen Gerät entfernt. Seine Daten wurden gelöscht.",
