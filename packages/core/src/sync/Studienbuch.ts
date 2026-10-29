@@ -36,10 +36,28 @@ export const tables = [
   Homework.Row,
 ] as const;
 
+export const mutators = [
+  Homework.create,
+  Homework.update,
+  Homework.setDone,
+  Homework.delete,
+  Enrollment.set,
+] as const;
+
+/** The tags of the refusals that `Mutators` can fail with. */
+export type RefusalTags<Mutators extends ReadonlyArray<Sync.AnyMutator>> =
+  Mutators[number]["error"]["Type"]["_tag"];
+
+/**
+ * Every refusal tag a mutator of Studienbuch can fail with, such as `"Homework.NotFound"`. A
+ * mutator added to `mutators` adds its tags here.
+ */
+export type RefusalTag = RefusalTags<typeof mutators>;
+
 export const schema = Sync.schema({
   version,
   spaceKinds: [Notebook.Space, School.Space, Course.Space],
   tables,
-  mutators: [Homework.create, Homework.update, Homework.setDone, Homework.delete, Enrollment.set],
+  mutators,
   membership: [Enrollment.courseMembership],
 });
