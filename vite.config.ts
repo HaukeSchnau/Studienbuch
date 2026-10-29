@@ -5,6 +5,9 @@ import { defaultExclude } from "vite-plus/test/config";
 const errors = (rules: ReadonlyArray<string>) =>
   Object.fromEntries(rules.map((rule): [string, "error"] => [rule, "error"]));
 
+const platformNeutral =
+  "packages/core and packages/domain-ui run on every platform and take their data from the caller.";
+
 // The fixtures in tools/oxlint/fixtures mirror the repository layout, so every scoped override
 // also covers the fixture that proves it.
 const scope = (...globs: ReadonlyArray<string>) =>
@@ -313,26 +316,53 @@ export default defineConfig({
         rules: { "studienbuch/no-frame-waits-in-browser-tests": "error" },
       },
       {
-        // packages/core typechecks with the DOM lib for the e2ee and sync code it imports, and runs
-        // in mutators on every platform, so its own code reaches for none of the browser's APIs.
-        files: scope("packages/core/**"),
+        // packages/core and packages/domain-ui typecheck with the DOM lib for the e2ee and sync code
+        // core imports. Core runs in mutators and domain-ui renders on every platform, so their own
+        // code reaches for none of the browser's APIs. packages/ui's `.web.tsx` files may.
+        files: scope("packages/core/**", "packages/domain-ui/**"),
         rules: {
           "eslint/no-restricted-globals": [
             "error",
             temporal,
             ...[
               "window",
+              "self",
               "document",
               "navigator",
               "location",
+              "history",
+              "screen",
+              "innerWidth",
+              "innerHeight",
+              "devicePixelRatio",
+              "matchMedia",
+              "getComputedStyle",
+              "scrollTo",
+              "addEventListener",
+              "removeEventListener",
+              "alert",
+              "confirm",
+              "prompt",
+              "IntersectionObserver",
+              "MutationObserver",
               "fetch",
               "XMLHttpRequest",
               "WebSocket",
               "EventSource",
+              "BroadcastChannel",
               "localStorage",
               "sessionStorage",
               "indexedDB",
-            ].map((name) => ({ name, message: "packages/core is the domain, not a browser." })),
+              "caches",
+            ].map((name) => ({ name, message: platformNeutral })),
+          ],
+          "eslint/no-restricted-properties": [
+            "error",
+            ...["window", "document", "location"].map((property) => ({
+              object: "globalThis",
+              property,
+              message: platformNeutral,
+            })),
           ],
         },
       },
