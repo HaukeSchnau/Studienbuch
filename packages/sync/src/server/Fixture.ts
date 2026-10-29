@@ -2,14 +2,22 @@
  * A small definition in the shape of M1's domain, and a fresh PostgreSQL 18 database with the
  * engine's tables, for the server engine's tests.
  */
+import { PgClient } from "@effect/sql-pg";
 import { CryptoSuite, SealedRow, SpaceKey } from "@stu/e2ee";
+import * as Context from "effect/Context";
+import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
+import * as PubSub from "effect/PubSub";
 import * as Schema from "effect/Schema";
+import * as Stream from "effect/Stream";
+import * as TestCrypto from "effect/testing/TestCrypto";
 import { Sync } from "../definition/Sync.ts";
 import { Postgres18 } from "../testing/Postgres18.ts";
 import { Tx } from "../transaction/Tx.ts";
+import { Listener } from "./Listener.ts";
+import { Ports } from "./Ports.ts";
 import { ServerDatabase } from "./ServerDatabase.ts";
 import { Spaces } from "./Spaces.ts";
 import { SyncServer } from "./SyncServer.ts";
@@ -162,8 +170,77 @@ export const database = Layer.effectDiscard(ServerDatabase.create).pipe(
   Layer.provideMerge(Postgres18.database(Postgres18.socket ?? "")),
 );
 
-/** The engine's services over {@link database}. */
-export const server = SyncServer.layer(definition).pipe(Layer.provideMerge(database));
+/**
+ * Sessions by bearer token, which a test adds and revokes, as Better Auth's do. Tokens are
+ * `Bearer <session id>`.
+ */
+export class Sessions extends Context.Service<
+  Sessions,
+  {
+    readonly add: (session: Ports.ResolvedSession) => Effect.Effect<void>;
+    readonly revoke: (sessionId: string) => Effect.Effect<void>;
+  }
+>()("@stu/sync/server/Fixture/Sessions") {}
+
+export const sessions = Layer.effectContext(
+  Effect.gen(function* () {
+    const known = new Map<string, Ports.ResolvedSession>();
+    const revoked = yield* PubSub.unbounded<string>();
+
+    return Context.make(
+      Sessions,
+      Sessions.of({
+        add: (session) => Effect.sync(() => known.set(session.sessionId, session)),
+        revoke: (sessionId) =>
+          Effect.andThen(
+            Effect.sync(() => known.delete(sessionId)),
+            PubSub.publish(revoked, sessionId),
+          ),
+      }),
+    ).pipe(
+      Context.add(
+        Ports.SessionResolver,
+        Ports.SessionResolver.of({
+          resolve: (headers) =>
+            Effect.succeed(
+              Option.flatMapNullishOr(Option.fromNullishOr(headers.authorization), (value) =>
+                known.get(value.replace(/^Bearer /, "")),
+              ),
+            ),
+          revoked: Stream.fromPubSub(revoked),
+        }),
+      ),
+    );
+  }),
+);
+
+/** Tickets from a seeded generator, so a run repeats. */
+export const crypto = TestCrypto.layer("fixture").pipe(
+  Layer.provide(
+    Layer.succeed(
+      Crypto.Crypto,
+      Crypto.make({
+        randomBytes: (size) => new Uint8Array(size),
+        digest: () => Effect.die("unused"),
+      }),
+    ),
+  ),
+);
+
+/** The whole engine over {@link database}, with test sessions. */
+export const serverWith = (options?: SyncServer.Options) =>
+  SyncServer.layer(definition, options).pipe(
+    Layer.provideMerge(
+      Layer.mergeAll(
+        sessions,
+        crypto,
+        Listener.layer(PgClient.PgClient, (notification) => notification.payload),
+      ),
+    ),
+    Layer.provideMerge(database),
+  );
+
+export const server = serverWith();
 
 /** The ids of one test's school: its own spaces and accounts, so tests share a database. */
 export const school = Effect.fn("Fixture.school")(function* (name: string) {

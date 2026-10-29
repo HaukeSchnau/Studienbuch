@@ -676,6 +676,9 @@ importers:
         specifier: 'catalog:'
         version: 4.0.7
     devDependencies:
+      '@effect/platform-node':
+        specifier: 'catalog:'
+        version: 4.0.7(effect@4.0.7)(redis@6.3.0)
       '@effect/sql-pg':
         specifier: 'catalog:'
         version: 4.0.7(effect@4.0.7)

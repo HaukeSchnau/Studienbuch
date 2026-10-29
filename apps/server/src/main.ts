@@ -33,6 +33,7 @@ import { Rpc } from "./routes/Rpc.ts";
 import { WebBuilds } from "./routes/WebBuilds.ts";
 import { WellKnown } from "./routes/WellKnown.ts";
 import { Notebooks } from "./sync/Notebooks.ts";
+import { Sync } from "./sync/Sync.ts";
 
 // This file runs as `src/main.ts` in the workspace and as `server/main.mjs` in the release bundle,
 // which keeps `migrations/`, `web/` and `app/` beside `server/` (hosting.md, section 2).
@@ -62,7 +63,7 @@ const webBuilds = Layer.unwrap(
 );
 
 const http = HttpRouter.serve(
-  Layer.mergeAll(Health.layer, Rpc.layer, webBuilds, Auth.route, WellKnown.layer),
+  Layer.mergeAll(Health.layer, Rpc.layer, Sync.layer, webBuilds, Auth.route, WellKnown.layer),
 ).pipe(
   Layer.provide(Auth.layer.pipe(Layer.provide(Mail.layer))),
   Layer.provide(
