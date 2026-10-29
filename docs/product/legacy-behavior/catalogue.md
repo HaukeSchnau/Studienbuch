@@ -68,6 +68,13 @@ Deletion and Save/Cancel semantics remain product decisions rather than inferred
 - [Distinguish overdue tasks](../scenarios/distinguish-overdue-tasks.md)
 - [Cancel or confirm task deletion](../scenarios/delete-task-with-confirmation.md)
 
+Overdue and dimmed count calendar days, each one day later than in Flutter. A task is overdue from
+the day after its due date and dimmed from the eighth day after it. Flutter compared the due
+date's midnight with the current time, so a task turned red on its due date and dimmed on the
+seventh day after it (`lib/features/tasks/tasks_view.dart:55-58`, `:102`). The rewrite follows the
+overdue scenario's rule, a due date that has passed, in core's `Homework.isOverdue` and
+`Homework.isDimmed`.
+
 Archival semantics and legacy attachment-storage defects remain quarantined.
 
 ## Absences

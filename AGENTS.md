@@ -51,7 +51,7 @@ The domain. UI copy is German, code is English:
 
 | UI                  | Code                    | Meaning                                                                                          |
 | ------------------- | ----------------------- | ------------------------------------------------------------------------------------------------ |
-| Schule              | `School`                | A school using Studienbuch, with its rules (`SchoolRules`)                                       |
+| Schule              | `School`                | A school using Studienbuch. Its rules are fields of its row                                      |
 | Schulprofil         | `SchoolProfile`         | One school's conventions and timetable source                                                    |
 | Schuljahr, Halbjahr | `SchoolYear`, `Term`    | The school year and its halves                                                                   |
 | Ferien, Feiertag    | `Closure`               | Dates without school                                                                             |
@@ -165,7 +165,7 @@ The layout below is the target. Packages appear as M0 builds them.
 | `apps/app`                    | Expo Router routes, features wired to live queries, the SQLite drivers, installing native crypto for `packages/e2ee`, keychain access                                 | contain domain rules                                                    |
 | `apps/web`                    | Landing and legal pages through react-native-web, the console SPA                                                                                                     | import `packages/sync`                                                  |
 | `apps/server`                 | The four commands (`serve`, `prepare`, `console`, `verify`), HTTP routes, RPC handlers, Better Auth, Drizzle schema and migrations, jobs, school profiles, the import | contain native addons or Expo packages                                  |
-| `packages/core`               | The domain: row tables, mutators, membership rules, `SchoolRules`, refusal tags, civil time                                                                           | import React, React Native, Expo, `node:*` or the sync client or server |
+| `packages/core`               | The domain: row tables, mutators, membership rules, the School row's rule fields, refusal tags, civil time                                                            | import React, React Native, Expo, `node:*` or the sync client or server |
 | `packages/sync`               | The engine. Root: definition API, `Tx`, wire protocol. `./client`, `./server`, `./lab` (the Sync Lab's browser transport), `./testing` (Node-only simulation)         | let `client` import `server` or the reverse                             |
 | `packages/e2ee`               | Envelopes, key boxes, signatures, recovery and pairing over a `CryptoSuite` service                                                                                   | store anything or open a connection                                     |
 | `packages/api`                | Effect RPC groups and schemas outside sync                                                                                                                            | hold handlers                                                           |

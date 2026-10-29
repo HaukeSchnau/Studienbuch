@@ -76,6 +76,9 @@ catalog:
   "@noble/post-quantum": 0.7.1
   # SHA-256 for the sync contract's hash, synchronous on Hermes, browsers and Node.
   "@noble/hashes": 2.4.0
+  # Civil dates through its functional API, which defers to a native Temporal where one exists
+  # and runs on Hermes, which has none (ADR 0001).
+  temporal-polyfill: 1.0.6
 
 overrides:
   vite@*: "catalog:"
