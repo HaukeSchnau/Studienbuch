@@ -12,26 +12,15 @@ import {
   Term,
 } from "@stu/core";
 import { Command } from "@stu/sync";
-import { Listener, Ports, Push, Spaces, SyncEpoch, SyncServer, SyncWriter } from "@stu/sync/server";
+import { Listener, Ports, Push, Spaces, SyncServer, SyncWriter } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import * as Path from "effect/Path";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
-import { Migrations } from "../infra/database/Migrations.ts";
-
-/** A database at the release's schema, as `prepare` leaves it. */
-const prepared = Layer.effectDiscard(
-  Effect.gen(function* () {
-    const path = yield* Path.Path;
-    const folder = path.join(import.meta.dirname, "../../migrations");
-    yield* Migrations.apply(yield* Migrations.read(folder));
-    yield* SyncEpoch.initialize;
-  }),
-).pipe(Layer.provideMerge(Postgres18.database(Postgres18.socket ?? "")));
+import { Testing } from "../infra/database/Testing.ts";
 
 /** No sessions: these tests write and push rows, and open no connection. */
 const noSessions = Layer.succeed(
@@ -42,7 +31,7 @@ const noSessions = Layer.succeed(
 const engine = SyncServer.layer(Studienbuch.schema).pipe(
   Layer.provideMerge(Listener.layer(PgClient.PgClient, (notification) => notification.payload)),
   Layer.provideMerge(noSessions),
-  Layer.provideMerge(prepared),
+  Layer.provideMerge(Testing.prepared),
   Layer.provideMerge(NodeServices.layer),
 );
 

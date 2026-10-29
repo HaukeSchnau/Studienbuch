@@ -1,27 +1,15 @@
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { describe, expect, layer } from "@effect/vitest";
 import { Notebook, School, Studienbuch } from "@stu/core";
-import { Spaces, SyncEpoch, SyncServer, SyncWriter } from "@stu/sync/server";
+import { Spaces, SyncServer, SyncWriter } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import * as Path from "effect/Path";
-import { Migrations } from "../infra/database/Migrations.ts";
+import { Testing } from "../infra/database/Testing.ts";
 import { Notebooks } from "./Notebooks.ts";
 
-/** A database at the release's schema, as `prepare` leaves it. */
-const prepared = Layer.effectDiscard(
-  Effect.gen(function* () {
-    const path = yield* Path.Path;
-    yield* Migrations.apply(
-      yield* Migrations.read(path.join(import.meta.dirname, "../../migrations")),
-    );
-    yield* SyncEpoch.initialize;
-  }),
-).pipe(Layer.provideMerge(Postgres18.database(Postgres18.socket ?? "")));
-
 const writers = SyncServer.writers(Studienbuch.schema).pipe(
-  Layer.provideMerge(prepared),
+  Layer.provideMerge(Testing.prepared),
   Layer.provideMerge(NodeServices.layer),
 );
 

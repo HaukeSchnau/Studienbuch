@@ -16,5 +16,7 @@ export default defineConfig({
   test: {
     // A throwaway PostgreSQL 18 for the tests that need one (`Postgres18` in @stu/sync/testing).
     globalSetup: ["@stu/sync/testing/postgres18.setup"],
+    // Many tests start a database-backed server, which takes seconds on a loaded host.
+    testTimeout: 30_000,
   },
 });

@@ -3,7 +3,7 @@ import * as NodeServices from "@effect/platform-node/NodeServices";
 import { describe, expect, layer } from "@effect/vitest";
 import { Accounts } from "@stu/api/Accounts";
 import { Api } from "@stu/api";
-import { Ports, SyncEpoch } from "@stu/sync/server";
+import { Ports } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
 import * as ConfigProvider from "effect/ConfigProvider";
 import * as Effect from "effect/Effect";
@@ -18,17 +18,15 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as RpcClient from "effect/rpc/RpcClient";
 import * as SqlClient from "effect/sql/SqlClient";
-import * as NodeURL from "node:url";
 import { Auth } from "../auth/Auth.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { Database } from "../infra/database/Database.ts";
-import { Migrations } from "../infra/database/Migrations.ts";
+import { Testing } from "../infra/database/Testing.ts";
 import { Mail } from "../infra/mail/Mail.ts";
 import { Rpc } from "../routes/Rpc.ts";
 import { Seed } from "./Seed.ts";
 
 const publicUrl = "http://localhost:3000";
-const migrations = NodeURL.fileURLToPath(new URL("../../migrations/", import.meta.url));
 
 /** Counts the calls that reach `Auth.Service.signInDemo`. */
 const SignInDemoCalls = { count: 0 };
@@ -42,8 +40,6 @@ const server = (environment: string) =>
     Effect.gen(function* () {
       const sql = yield* SqlClient.SqlClient;
       const [row] = yield* sql<{ readonly name: string }>`select current_database() as name`;
-      yield* Migrations.apply(yield* Migrations.read(migrations));
-      yield* SyncEpoch.initialize;
       yield* Seed.run;
       const socket = encodeURIComponent(Postgres18.socket ?? "");
 
@@ -81,10 +77,7 @@ const server = (environment: string) =>
         Layer.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env }))),
       );
     }),
-  ).pipe(
-    Layer.provideMerge(NodeServices.layer),
-    Layer.provide(Postgres18.database(Postgres18.socket ?? "")),
-  );
+  ).pipe(Layer.provide(Testing.prepared), Layer.provideMerge(NodeServices.layer));
 
 /** The `Api.Rpcs` client over HTTP, as a device calls it. */
 const rpc = Effect.gen(function* () {
