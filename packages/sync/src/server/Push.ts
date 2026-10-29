@@ -24,6 +24,7 @@ import { Command } from "../protocol/Command.ts";
 import { Ids } from "../protocol/Ids.ts";
 import { Protocol } from "../protocol/Protocol.ts";
 import { Refusal } from "../protocol/Refusal.ts";
+import { CanonicalJson } from "../transaction/CanonicalJson.ts";
 import { Contract } from "./Contract.ts";
 import { Decision } from "./Decision.ts";
 import { MutateCommand } from "./MutateCommand.ts";
@@ -77,6 +78,8 @@ const encodeSealDetail = Schema.encodeEffect(Schema.fromJsonString(Schema.toCode
 const encodeOpaqueDetail = Schema.encodeEffect(Schema.fromJsonString(OpaqueDetail));
 
 const encodeCommand = Schema.encodeEffect(Schema.fromJsonString(Schema.toCodecJson(Command.Any)));
+
+const encodeCommandJson = Schema.encodeEffect(Schema.toCodecJson(Command.Any));
 
 const utf8 = new TextEncoder();
 
@@ -145,11 +148,21 @@ class Declined extends Data.TaggedError("Push.Declined")<{
   readonly decision: Exclude<Decision.Decision, { readonly _tag: "Applied" }>;
 }> {}
 
-const opaque = Effect.fn("Push.opaque")(function* (command: Command.Any) {
-  const text = yield* encodeCommand(command);
+interface Fingerprint {
+  readonly bytes: number;
+  readonly sha256: string;
+}
+
+/**
+ * A command's size and SHA-256 as JSON, keys sorted where it can be stored, so a command sent again
+ * matches however the device ordered its keys.
+ */
+const fingerprint = Effect.fn("Push.fingerprint")(function* (command: Command.Any) {
+  const canonical = CanonicalJson.encode(yield* encodeCommandJson(command));
+  const text = Result.isSuccess(canonical) ? canonical.success : yield* encodeCommand(command);
   const bytes = utf8.encode(text);
 
-  return yield* encodeOpaqueDetail({ bytes: bytes.length, sha256: bytesToHex(sha256(bytes)) });
+  return { bytes: bytes.length, sha256: bytesToHex(sha256(bytes)) } satisfies Fingerprint;
 });
 
 const sealDetail = (command: Command.Seal) =>
@@ -185,12 +198,11 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
    * What the command log keeps of a command: never content it can't read, and of a command past a
    * bound only its kind, size and hash, because its name or version may not fit the columns.
    */
-  const loggedOf = Effect.fnUntraced(function* (command: Command.Any) {
+  const loggedOf = Effect.fnUntraced(function* (command: Command.Any, print: Fingerprint) {
     const unnamed = { name: null, version: null };
+    const opaque = encodeOpaqueDetail(print);
 
-    if (Option.isSome(Bounds.refusalOf(command))) {
-      return { ...unnamed, detail: yield* opaque(command) };
-    }
+    if (Option.isSome(Bounds.refusalOf(command))) return { ...unnamed, detail: yield* opaque };
 
     if (command._tag === "Seal") return { ...unnamed, detail: yield* sealDetail(command) };
     const mutator = definition.byName.mutators.Mutate.get(command.name);
@@ -202,7 +214,7 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
     return {
       name: command.name,
       version: command.version,
-      detail: decodes ? yield* encodeMutateDetail({ args: command.args }) : yield* opaque(command),
+      detail: decodes ? yield* encodeMutateDetail({ args: command.args }) : yield* opaque,
     };
   });
 
@@ -254,28 +266,38 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
     command: Command.Any,
     reason: Refusal.Reason | null,
   ) {
-    const { name, version, detail } = yield* Effect.orDie(loggedOf(command));
+    const print = yield* Effect.orDie(fingerprint(command));
+    const { name, version, detail } = yield* Effect.orDie(loggedOf(command, print));
     const encodedReason = reason === null ? null : yield* Effect.orDie(encodeReason(reason));
     const processedAt = DateTime.toDateUtc(yield* DateTime.now);
 
     yield* sql`
         insert into command_log
-          (client_id, mutation_id, account_id, kind, name, version, detail, applied, reason, at,
-            processed_at)
+          (client_id, mutation_id, account_id, kind, name, version, detail, sha256, applied,
+            reason, at, processed_at)
         values (
           ${client}, ${command.mutationId}, ${account}, ${command._tag}, ${name},
-          ${version}::int, ${detail}::jsonb, ${reason === null}, ${encodedReason}::jsonb,
-          ${loggedAt(command.at)}, ${processedAt}
+          ${version}::int, ${detail}::jsonb, ${print.sha256}, ${reason === null},
+          ${encodedReason}::jsonb, ${loggedAt(command.at)}, ${processedAt}
         )
       `;
   });
 
   /** What the command log says about a command processed before. */
-  const earlier = Effect.fn("Push.earlier")(function* (client: string, mutationId: number) {
-    const [row] = yield* sql<{ readonly reason: string | null }>`
-        select reason::text as reason from command_log
+  const earlier = Effect.fn("Push.earlier")(function* (client: string, command: Command.Any) {
+    const { mutationId } = command;
+
+    const [row] = yield* sql<{ readonly reason: string | null; readonly sha256: string | null }>`
+        select reason::text as reason, sha256 from command_log
         where client_id = ${client} and mutation_id = ${mutationId}
       `;
+
+    // A device whose database went back in time made a new command under an id it had used.
+    if (row !== undefined && row.sha256 !== null) {
+      const { sha256: sent } = yield* Effect.orDie(fingerprint(command));
+
+      if (sent !== row.sha256) return yield* new Protocol.ClientUnknown();
+    }
 
     if (row?.reason === undefined || row.reason === null) {
       return Protocol.Applied.make({ mutationId });
@@ -332,10 +354,10 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
 
   /** Answers a command whose mutation id the transaction couldn't take. */
   const unclaimed =
-    (client: string, mutationId: number) =>
+    (client: string, command: Command.Any) =>
     ({ why }: Unclaimed) =>
       why === "duplicate"
-        ? earlier(client, mutationId)
+        ? earlier(client, command)
         : why === "client-unknown"
           ? Effect.fail(new Protocol.ClientUnknown())
           : Effect.fail(new Protocol.OutOfOrder({ expected: why.expected }));
@@ -365,7 +387,7 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
         case "Refused":
           return attempts(refuse(client, account, command, decision.reason), mutationId).pipe(
             // Another connection of the device may have recorded the command meanwhile.
-            Effect.catchTags({ "Push.Unclaimed": unclaimed(client, mutationId) }),
+            Effect.catchTags({ "Push.Unclaimed": unclaimed(client, command) }),
           );
         case "Retry":
           return Effect.succeed(Protocol.Retry.make({ mutationId }));
@@ -376,7 +398,7 @@ export const make = Effect.fn("Push.make")(function* (minimum: Contract.Minimum)
 
     return attempts(apply(client, account, command), mutationId).pipe(
       Effect.catchTags({
-        "Push.Unclaimed": unclaimed(client, mutationId),
+        "Push.Unclaimed": unclaimed(client, command),
         "Push.Declined": declined,
       }),
       Effect.withSpan("Push.process", { attributes: { mutationId, kind: command._tag } }),

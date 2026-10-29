@@ -1,7 +1,9 @@
 import { describe, expect, layer } from "@effect/vitest";
 import * as Arbitrary from "effect/Arbitrary";
 import * as Arr from "effect/Array";
+import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
+import * as Fiber from "effect/Fiber";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import type { Protocol } from "../protocol/Protocol.ts";
@@ -226,6 +228,90 @@ describe.skipIf(Postgres18.socket === null)("Pull on PostgreSQL 18", () => {
             "Sync.EpochChanged",
             "Sync.EpochChanged",
             "ok",
+          ]);
+        }),
+    );
+
+    it.effect(
+      "a commit to two spaces that lands during a pull shows in neither its cursors nor its rows",
+      () =>
+        Effect.gen(function* () {
+          const spaces = yield* Spaces.Service;
+          const writer = yield* SyncWriter.Service;
+          const sql = yield* SqlClient.SqlClient;
+          const account = "snapshot-account";
+          const ids = ["snapshot-a", "snapshot-b"];
+
+          const lesson = (space: string, row: string) =>
+            writer.write(
+              space,
+              [Fixture.Lesson],
+              Effect.flatMap(Tx.Service, (tx) =>
+                tx.put(Fixture.Lesson, space, row, { room: "A", day: "mon" }),
+              ),
+            );
+
+          for (const space of ids) {
+            yield* spaces.create(space, Fixture.School);
+            yield* spaces.addMember(space, account, "reader");
+            yield* lesson(space, "before");
+          }
+
+          const written = yield* Deferred.make<void>();
+          const commit = yield* Deferred.make<void>();
+
+          // The push holds `sync_row` until the pull has read its spaces and waits for the rows.
+          const pushing = yield* Effect.forkChild(
+            sql.withTransaction(
+              Effect.gen(function* () {
+                yield* sql`lock table sync_row in access exclusive mode`;
+
+                for (const space of ids) yield* lesson(space, "during");
+                yield* Deferred.succeed(written, undefined);
+                yield* Deferred.await(commit);
+              }),
+            ),
+          );
+
+          yield* Deferred.await(written);
+          const pulling = yield* Effect.forkChild(pull(account, []));
+
+          yield* sql<{ readonly waiting: boolean }>`
+          select exists (
+            select 1 from pg_locks l join pg_class c on c.oid = l.relation
+            where c.relname = 'sync_row' and not l.granted
+              and l.database = (select oid from pg_database where datname = current_database())
+          ) as waiting
+        `.pipe(Effect.repeat({ until: ([row]) => row?.waiting === true }));
+
+          yield* Deferred.succeed(commit, undefined);
+          yield* Fiber.join(pushing);
+          const during = yield* Fiber.join(pulling);
+
+          const cursors = during.patches.map((patch) => ({
+            space: patch.space,
+            version: patch.to,
+          }));
+
+          const after = yield* pull(account, cursors);
+
+          const pages = [during, after].map((response) =>
+            response.patches.map((patch) => ({
+              space: patch.space,
+              to: patch.to,
+              ops: patch.ops.map((op) => `${op.id}@${op.version}`),
+            })),
+          );
+
+          expect(pages).toEqual([
+            [
+              { space: "snapshot-a", to: 1, ops: ["before@1"] },
+              { space: "snapshot-b", to: 1, ops: ["before@1"] },
+            ],
+            [
+              { space: "snapshot-a", to: 2, ops: ["during@2"] },
+              { space: "snapshot-b", to: 2, ops: ["during@2"] },
+            ],
           ]);
         }),
     );

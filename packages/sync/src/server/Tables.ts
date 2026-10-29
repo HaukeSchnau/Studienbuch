@@ -163,6 +163,11 @@ export const commandLog = pgTable(
      * Never content.
      */
     detail: jsonb("detail").notNull(),
+    /**
+     * The SHA-256 of the command's JSON with sorted keys, which tells a command sent again from a
+     * different one under the same id. `null` for commands logged before the column existed.
+     */
+    sha256: id("sha256"),
     applied: boolean("applied").notNull(),
     /** A refused command's `Refusal.Reason`, `null` when applied. */
     reason: jsonb("reason"),

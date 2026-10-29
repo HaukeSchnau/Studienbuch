@@ -120,7 +120,7 @@ const openNotebook = (student: School["lena"], clientId: string) =>
 describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
   layer(Fixture.server)((it) => {
     it.effect(
-      "a re-sent push reports its earlier outcomes, and a gap or a foreign client fails it",
+      "a re-sent push reports its earlier outcomes, and a gap, a foreign client or a different command under a used id fails it",
       () =>
         Effect.gen(function* () {
           const world = yield* Fixture.school("resend");
@@ -140,6 +140,32 @@ describe.skipIf(Postgres18.socket === null)("Push on PostgreSQL 18", () => {
           });
 
           expect(again).toEqual(first);
+
+          // The same command with its keys in another order, then a different command under its
+          // id, as from a device whose database went back to before it sent the first.
+          const reordered = Command.Mutate.make({
+            mutationId: 1,
+            name: Fixture.setEnrollment.name,
+            version: 1,
+            args: {
+              courseIds: ["ma"],
+              termId: world.term,
+              school: world.school,
+              notebook: lena.notebook,
+            },
+            at,
+          });
+
+          expect(yield* answer(push(lena.account, "resend-c1", [reordered]))).toEqual({
+            lastMutationId: 2,
+            outcomes: ["1 Applied"],
+          });
+
+          expect(
+            yield* answer(
+              push(lena.account, "resend-c1", [enroll(1, world, { courseIds: ["de"] })]),
+            ),
+          ).toBe("Sync.ClientUnknown");
           expect(yield* answer(push(lena.account, "resend-c1", [enroll(4, world, {})]))).toBe(
             "Sync.OutOfOrder",
           );

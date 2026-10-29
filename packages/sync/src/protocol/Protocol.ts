@@ -68,8 +68,9 @@ export class UpdateRequired extends Schema.TaggedError<
 }) {}
 
 /**
- * The server doesn't know this client for this account: it was unseen for a year, or another
- * account registered it. The device registers a new client id and renumbers its outbox from 1.
+ * The server doesn't know this client for this account: it was unseen for a year, another account
+ * registered it, or the device sent a different command under an id it had used, as after its
+ * database was restored. The device registers a new client id and renumbers its outbox from 1.
  */
 export class ClientUnknown extends Schema.TaggedError<
   ClientUnknown,

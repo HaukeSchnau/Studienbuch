@@ -1,0 +1,1 @@
+ALTER TABLE "command_log" ADD COLUMN "sha256" text collate "C";
