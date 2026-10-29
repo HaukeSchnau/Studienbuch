@@ -1,8 +1,8 @@
 /**
  * When homework is due, in words, relative to today: "Bis morgen", "Bis Freitag", "Überfällig seit
- * Montag", "Erledigt am Dienstag" (m1-screens.md). Overdue follows core's `Homework.isOverdue`.
+ * Montag", "Erledigt am Dienstag" (m1-screens.md). Overdue follows core's `HomeworkDates.isOverdue`.
  */
-import { Homework, type CivilTime } from "@stu/core";
+import { HomeworkDates, type CivilTime } from "@stu/core";
 import * as PlainDateFns from "temporal-polyfill/fns/PlainDate";
 
 export * as Due from "./Due.ts";
@@ -35,12 +35,12 @@ const done = (doneOn: CivilTime.PlainDate, today: CivilTime.PlainDate) => {
 };
 
 /** The due date as the list and the panel show it. */
-export const label = (homework: Homework.Listed, today: CivilTime.PlainDate): string => {
+export const label = (homework: HomeworkDates.Listed, today: CivilTime.PlainDate): string => {
   if (homework.doneOn !== undefined) return done(homework.doneOn, today);
 
   const days = PlainDateFns.diffDays(today, homework.dueOn);
 
-  if (Homework.isOverdue(homework, today)) {
+  if (HomeworkDates.isOverdue(homework, today)) {
     if (days === -1) return "Überfällig seit gestern";
 
     return `Überfällig seit ${days > -7 ? weekday(homework.dueOn) : dayMonth(homework.dueOn)}`;
