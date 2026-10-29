@@ -5,11 +5,12 @@ import * as NodeURL from "node:url";
 
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
-import { defineConfig, type Plugin } from "vite-plus";
+import { defineConfig, type Plugin, type ViteBuilder } from "vite-plus";
 
 // Pages prerendered to `<path>/index.html`. Everything under `/console` is served from the shell.
 const pages = ["/", "/impressum", "/datenschutz"];
 const shell = "/_shell";
+const prerendered = [...pages.map((path) => NodePath.join(path, "index.html")), `${shell}.html`];
 
 // `react-native` resolves to react-native-web. The browser and production builds get RNW's ESM build,
 // which Rolldown bundles. Vite's dev SSR runner can neither externalize that build (Node refuses ESM
@@ -50,6 +51,15 @@ const reactNativeWeb = (): Plugin => {
   };
 };
 
+// The client build's output directory, where Start writes the prerendered pages.
+const clientOutDir = (builder: ViteBuilder) => {
+  const client = builder.environments["client"];
+
+  return client === undefined
+    ? undefined
+    : NodePath.resolve(client.config.root, client.config.build.outDir);
+};
+
 // Start 1.169 exits with code 0 when a page fails to prerender (TanStack/router#8120). A page that
 // throws while rendering is even written, as React's client-render fallback (`<!--$!-->`) with no
 // content. Remove this check once a failed page fails Start's build.
@@ -59,10 +69,9 @@ const failOnBrokenPages = (files: ReadonlyArray<string>): Plugin => ({
   buildApp: {
     order: "post",
     async handler(builder) {
-      const client = builder.environments["client"];
+      const outDir = clientOutDir(builder);
 
-      if (client === undefined) return;
-      const outDir = NodePath.resolve(client.config.root, client.config.build.outDir);
+      if (outDir === undefined) return;
 
       const broken = files.filter((file) => {
         const path = NodePath.join(outDir, file);
@@ -71,6 +80,32 @@ const failOnBrokenPages = (files: ReadonlyArray<string>): Plugin => ({
       });
 
       if (broken.length > 0) this.error(`Prerendering failed for ${broken.join(", ")}`);
+    },
+  },
+});
+
+// Prerendering stamps each route match with the time it loaded (`u:<ms>` in the `$_TSR` script), so
+// two builds of the same source differ. The client compares that time only with stale and gc times,
+// and a page is past both whenever someone opens it, so a fixed time behaves the same.
+const reproduciblePages = (files: ReadonlyArray<string>): Plugin => ({
+  name: "studienbuch:reproducible-pages",
+  enforce: "post",
+  buildApp: {
+    order: "post",
+    async handler(builder) {
+      const outDir = clientOutDir(builder);
+
+      if (outDir === undefined) return;
+
+      for (const file of files) {
+        const path = NodePath.join(outDir, file);
+        const html = NodeFS.readFileSync(path, "utf8");
+
+        NodeFS.writeFileSync(
+          path,
+          html.replaceAll(/(?<match>\{i:"(?:[^"\\]|\\.)*",u:)\d+/g, "$<match>0"),
+        );
+      }
     },
   },
 });
@@ -101,6 +136,7 @@ export default defineConfig({
     // why no code memoizes by hand. It compiles the client build only, and warns about a component
     // it skips, which would otherwise go unmemoized without a sound.
     viteReact({ compiler: { reportDiagnostics: true } }),
-    failOnBrokenPages([...pages.map((path) => NodePath.join(path, "index.html")), `${shell}.html`]),
+    failOnBrokenPages(prerendered),
+    reproduciblePages(prerendered),
   ],
 });
