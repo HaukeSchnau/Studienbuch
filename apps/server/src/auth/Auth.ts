@@ -4,6 +4,7 @@ import { Ports } from "@stu/sync/server";
 import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { bearer, emailOTP } from "better-auth/plugins";
+import { serializeSignedCookie } from "better-call";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
@@ -19,8 +20,10 @@ import * as Option from "effect/Option";
 import * as PubSub from "effect/PubSub";
 import * as Redacted from "effect/Redacted";
 import * as Schema from "effect/Schema";
+import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 import { Pool } from "pg";
+import { DemoAccounts } from "../demo/DemoAccounts.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { Mail } from "../infra/mail/Mail.ts";
 import { NativeApps } from "./NativeApps.ts";
@@ -168,6 +171,12 @@ export class ForeignRpId extends Schema.TaggedError<
   { readonly brand: unique symbol }
 >()("Auth.ForeignRpId", { rpId: Schema.String, host: Schema.String }) {}
 
+/** The server is no development or preview server, or the seed didn't make the account. */
+export class NotDemo extends Schema.TaggedError<NotDemo, { readonly brand: unique symbol }>()(
+  "Auth.NotDemo",
+  { accountId: Schema.String },
+) {}
+
 const codeMail = (to: string, code: string): Mail.Message => ({
   to,
   subject: `${code} ist dein Code für Studienbuch`,
@@ -191,12 +200,19 @@ export class Service extends Context.Service<
     readonly challengeCookie: string;
     readonly origin: string;
     readonly sessions: Ports.SessionResolver["Service"];
+    /**
+     * A new session of a demo account without its password, as the signed bearer token a sign-in
+     * returns. Only `Demo.signIn` calls it. It refuses outside development and preview servers and
+     * for any account the seed didn't make, whatever the caller checked.
+     */
+    readonly signInDemo: (accountId: string) => Effect.Effect<string, NotDemo>;
   }
 >()("Auth.Service") {}
 
 const make = Effect.gen(function* () {
   const { environment } = yield* Deployment.Current;
   const mail = yield* Mail.Service;
+  const sql = yield* SqlClient.SqlClient;
 
   const settings = yield* Config.all({
     publicUrl: Config.String("PUBLIC_URL"),
@@ -270,11 +286,33 @@ const make = Effect.gen(function* () {
     }));
   });
 
+  const signInDemo = Effect.fn("Auth.signInDemo")(function* (accountId: string) {
+    const demo =
+      Deployment.isDevelopmentOrPreview(environment) &&
+      (yield* DemoAccounts.isDemo(accountId).pipe(
+        Effect.provideService(SqlClient.SqlClient, sql),
+        Effect.orDie,
+      ));
+
+    if (!demo) return yield* new NotDemo({ accountId });
+
+    // Better Auth's own path, so its session hooks and expiry apply.
+    const session = yield* Effect.promise(() => context.internalAdapter.createSession(accountId));
+
+    // Signed as the bearer plugin signs a session cookie, which is what a sign-in hands a device.
+    const cookie = yield* Effect.promise(() =>
+      serializeSignedCookie("", session.token, context.secret),
+    );
+
+    return cookie.replace("=", "");
+  });
+
   return {
     handler: auth.handler,
     challengeCookie: context.createAuthCookie(challengeCookie).name,
     origin: new URL(settings.publicUrl).origin,
     sessions: { resolve, revoked: Stream.fromPubSub(deleted) },
+    signInDemo,
   };
 });
 

@@ -99,6 +99,9 @@ catalog:
   # Metro's Babel transformer, which apps/app/metro.transformer.js wraps, at the version Expo 58.0.20
   # depends on.
   "@expo/metro-config": 58.0.18
+  # Signs a demo session's token the way Better Auth's bearer plugin does, at Better Auth's own
+  # version of it.
+  better-call: 1.4.4
 
 overrides:
   vite@*: "catalog:"

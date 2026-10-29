@@ -1,5 +1,6 @@
 import { describe, expect, layer } from "@effect/vitest";
 import { Course, School, Term } from "@stu/core";
+import { Spaces } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
@@ -87,10 +88,30 @@ describe.skipIf(Postgres18.socket === null)("Access on PostgreSQL 18", () => {
           one: { notebook: one.notebook, created: true },
           other: { notebook: one.notebook, created: false },
           memberships: [
-            "course am-see/ma-1 reader",
+            `course ${yield* Schools.courseSpace(school, "ma-1")} reader`,
             `notebook ${one.notebook} owner`,
             "school am-see reader",
           ],
+        });
+      }),
+    );
+
+    it.effect("admitting an account that left the school gives it its memberships back", () =>
+      Effect.gen(function* () {
+        const spaces = yield* Spaces.Service;
+        yield* Schools.publish(data);
+        yield* Fixture.account("mia");
+        const first = yield* Access.admit("mia", school, choose("ma-1"));
+        const admitted = yield* Fixture.memberships("mia");
+        yield* spaces.removeMember(first.notebook, "mia");
+        yield* spaces.removeMember(school, "mia");
+        const left = yield* Fixture.memberships("mia");
+        const again = yield* Access.admit("mia", school, Option.none());
+
+        expect({ again, left, back: yield* Fixture.memberships("mia") }).toEqual({
+          again: { notebook: first.notebook, created: false },
+          left: [],
+          back: admitted,
         });
       }),
     );

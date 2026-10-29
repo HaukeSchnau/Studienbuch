@@ -1,5 +1,6 @@
 import { describe, expect, layer } from "@effect/vitest";
 import { Dev } from "@stu/api/Dev";
+import { School } from "@stu/core";
 import type { System } from "@stu/api/System";
 import { Ports } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
@@ -13,6 +14,7 @@ import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { Fixture } from "../school/Fixture.ts";
+import { Schools } from "../school/Schools.ts";
 import { Shortcuts } from "./Shortcuts.ts";
 
 /** Sessions by bearer token, where the token is the account's id. */
@@ -85,11 +87,27 @@ describe.skipIf(Postgres18.socket === null)("Dev on PostgreSQL 18", () => {
         const first = yield* dev["Dev.admit"]({ school: school.id }, signedIn("mia"));
         const again = yield* dev["Dev.admit"]({ school: school.id }, signedIn("mia"));
 
-        expect({ school, again, enrollments: yield* enrollments("mia") }).toEqual({
+        const id = School.Id.make(school.id);
+
+        const courses = yield* Effect.forEach(school.courseIds, (course) =>
+          Effect.map(Schools.courseSpace(id, course), (space) => `course ${space} reader`),
+        );
+
+        expect({
+          school,
+          again,
+          enrollments: yield* enrollments("mia"),
+          memberships: yield* Fixture.memberships("mia"),
+        }).toEqual({
           // The TestClock starts on January 1, 1970, in the first half of 1969/70.
           school: { id: school.id, termId: "1969-1", courseIds: ["ma-1", "de-1", "en-1"] },
           again: first,
           enrollments: ['1969-1 ["de-1", "en-1", "ma-1"]'],
+          memberships: [
+            ...courses.sort(),
+            `notebook ${first.notebook} owner`,
+            `school ${school.id} reader`,
+          ],
         });
       }).pipe(Effect.scoped),
     );

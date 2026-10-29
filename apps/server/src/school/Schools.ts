@@ -17,7 +17,9 @@ import {
 import { type Sync, Tx } from "@stu/sync";
 import { PostgresTx, Spaces, SyncWriter } from "@stu/sync/server";
 import * as Clock from "effect/Clock";
+import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
+import * as Hex from "effect/encoding/Hex";
 import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
@@ -39,8 +41,20 @@ export interface Data {
   readonly offerings: Rows<typeof CourseOffering.Row>;
 }
 
-/** The id of a course's own space, unique across schools. */
-export const courseSpace = (school: School.Id, course: string) => `${school}/${course}`;
+/**
+ * The id of a course's own space, from a hash of the school's and the course's ids, which together
+ * can exceed the 64 characters of an id. The space's key is the course's id.
+ */
+export const courseSpace = Effect.fn("Schools.courseSpace")(function* (
+  school: School.Id,
+  course: string,
+) {
+  const crypto = yield* Crypto.Crypto;
+  const name = new TextEncoder().encode(`${school}\u0000${course}`);
+  const digest = yield* crypto.digest("SHA-256", name);
+
+  return `course-${Hex.encode(digest.subarray(0, 16))}`;
+}, Effect.orDie);
 
 const entries = <T extends Sync.Any>(table: T, rows: Rows<T>) =>
   Effect.forEach(Object.entries(rows), ([id, row]) =>
@@ -77,7 +91,7 @@ export const publish = Effect.fn("Schools.publish")(function* (data: Data) {
       yield* write(CourseOffering.Row, data.offerings);
 
       for (const course of Object.keys(data.courses)) {
-        yield* spaces.create(courseSpace(data.id, course), Course.Space, {
+        yield* spaces.create(yield* courseSpace(data.id, course), Course.Space, {
           parent: data.id,
           key: course,
         });
@@ -122,48 +136,82 @@ export const today = (timeZone: CivilTime.TimeZone) =>
 /** `enrollment.set`'s arguments without the notebook: a term, a grade level and its courses. */
 export type Choice = Omit<(typeof Enrollment.set.args)["Type"], "notebook">;
 
+/** The server's own reads, of every space. */
+const reading = <A, E>(effect: Effect.Effect<A, E, Tx.Service>) =>
+  Effect.flatMap(PostgresTx.make({ actor: "", writes: [] }), (tx) =>
+    Effect.provideService(effect, Tx.Service, tx),
+  );
+
+/** The school's term that holds today in its time zone, if any. */
+export const currentTerm = Effect.fn("Schools.currentTerm")(function* (school: School.Id) {
+  return yield* reading(
+    Effect.gen(function* () {
+      const read = yield* Tx.Service;
+      const row = yield* read.get(School.Row, school, school);
+
+      if (Option.isNone(row)) return Option.none<Term.Id>();
+
+      const day = yield* today(row.value.timeZone);
+      const term = Term.containing(yield* read.list(Term.Row, school), day);
+
+      return Option.map(term, ({ id }) => Term.Id.make(id));
+    }),
+  );
+}, Effect.orDie);
+
 /**
- * The courses the school offers to the grade level in today's term without naming a class, one of
- * each elective group, or none when today is in no term.
+ * The courses the school offers to the grade level in today's term, one of each elective group, or
+ * none when today is in no term. Where the grade level has classes that year, the choice names the
+ * first of them, which `enrollment.set` requires.
  */
 export const offered = Effect.fn("Schools.offered")(function* (
   school: School.Id,
   gradeLevel: School.GradeLevel,
 ) {
-  const tx = yield* PostgresTx.make({ actor: "", writes: [] });
+  const term = yield* currentTerm(school);
 
-  return yield* Effect.gen(function* () {
-    const read = yield* Tx.Service;
-    const row = yield* read.get(School.Row, school, school);
+  if (Option.isNone(term)) return Option.none<Choice>();
 
-    if (Option.isNone(row)) return Option.none<Choice>();
+  const termId = term.value;
 
-    const day = yield* today(row.value.timeZone);
-    const term = Term.containing(yield* read.list(Term.Row, school), day);
+  const { classId, offerings } = yield* reading(
+    Effect.gen(function* () {
+      const read = yield* Tx.Service;
+      const year = yield* read.get(Term.Row, school, termId);
 
-    if (Option.isNone(term)) return Option.none<Choice>();
+      const classes = Option.isNone(year)
+        ? []
+        : yield* read.list(SchoolClass.Row, school, {
+            index: "schoolYearId",
+            equals: year.value.schoolYearId,
+          });
 
-    const termId = Term.Id.make(term.value.id);
+      return {
+        classId: classes
+          .filter(({ row }) => row.gradeLevel === gradeLevel)
+          .map(({ id }) => SchoolClass.Id.make(id))
+          .sort()[0],
+        offerings: yield* read.list(CourseOffering.Row, school, {
+          index: "termId",
+          equals: termId,
+        }),
+      };
+    }),
+  );
 
-    const offerings = yield* read.list(CourseOffering.Row, school, {
-      index: "termId",
-      equals: termId,
-    });
+  const groups = new Set<string>();
+  const courseIds: Array<Course.Id> = [];
 
-    const groups = new Set<string>();
-    const courseIds: Array<Course.Id> = [];
+  for (const { row: offering } of offerings) {
+    if (!CourseOffering.isFor(offering, { termId, gradeLevel, classId })) continue;
 
-    for (const { row: offering } of offerings) {
-      if (!CourseOffering.isFor(offering, { termId, gradeLevel })) continue;
-
-      if (offering.groupKey !== undefined) {
-        if (groups.has(offering.groupKey)) continue;
-        groups.add(offering.groupKey);
-      }
-
-      courseIds.push(offering.courseId);
+    if (offering.groupKey !== undefined) {
+      if (groups.has(offering.groupKey)) continue;
+      groups.add(offering.groupKey);
     }
 
-    return Option.some<Choice>({ termId, gradeLevel, courseIds: courseIds.sort() });
-  }).pipe(Effect.provideService(Tx.Service, tx));
+    courseIds.push(offering.courseId);
+  }
+
+  return Option.some<Choice>({ termId, gradeLevel, classId, courseIds: courseIds.sort() });
 }, Effect.orDie);

@@ -1,0 +1,124 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "16df4abd-93b4-4902-8869-355ef06a2a4d",
+  "prevIds": ["f8b7c933-bbb9-48c1-8bf9-402c6cf9ecec"],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "demo_account"],
+      "writes": [
+        "s|tbl|public.demo_account",
+        "n|tbl|public.demo_account",
+        "e|tbl|public.demo_account",
+        "n|rel|public.demo_account",
+        "n|type|public.demo_account",
+        "n|rel|public.demo_account_pkey",
+        "n|rel|public.demo_account_persona_key"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "demo_account"],
+      "writes": [
+        "s|fk|public.demo_account.demo_account_account_id_auth_user_id_fkey",
+        "n|fk|public.demo_account.demo_account_account_id_auth_user_id_fkey",
+        "e|fk|public.demo_account.demo_account_account_id_auth_user_id_fkey",
+        "n|con|public.demo_account.demo_account_account_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.demo_account",
+        "n|sch|public",
+        "n|tbl|public.auth_user",
+        "n|sch|public",
+        "n|col|public.demo_account.account_id",
+        "n|col|public.auth_user.id",
+        "e|uniqueness|public.auth_user.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "demo_account",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "demo_account",
+        "name": "account_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "demo_account",
+        "name": "persona",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "demo_account",
+        "name": "demo_account_account_id_auth_user_id_fkey",
+        "nameExplicit": false,
+        "columns": ["account_id"],
+        "schemaTo": "public",
+        "tableTo": "auth_user",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "demo_account",
+        "name": "demo_account_pkey",
+        "columns": ["account_id"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "demo_account",
+        "name": "demo_account_persona_key",
+        "nameExplicit": false,
+        "columns": ["persona"],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    }
+  ]
+}
