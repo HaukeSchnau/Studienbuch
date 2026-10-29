@@ -1,13 +1,16 @@
 import { describe, expect, layer } from "@effect/vitest";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
+import * as Option from "effect/Option";
 import * as Schema from "effect/Schema";
+import * as SqlClient from "effect/sql/SqlClient";
 import * as Stream from "effect/Stream";
 import { Protocol } from "../protocol/Protocol.ts";
 import { Postgres18 } from "../testing/Postgres18.ts";
 import { Tx } from "../transaction/Tx.ts";
 import { Events } from "./Events.ts";
 import { Fixture } from "./Fixture.ts";
+import { Pokes } from "./Pokes.ts";
 import { Spaces } from "./Spaces.ts";
 import { SyncWriter } from "./SyncWriter.ts";
 
@@ -53,6 +56,26 @@ describe.skipIf(Postgres18.socket === null)("Events on PostgreSQL 18", () => {
                 isPoke(event) ? event.spaces.map(({ space }) => space) : [],
               ),
             ).toEqual([world.school]);
+          }),
+        ),
+    );
+
+    it.effect(
+      "a connection hears AccountChanged once LISTEN is back after losing its backend",
+      () =>
+        Effect.scoped(
+          Effect.gen(function* () {
+            const sql = yield* SqlClient.SqlClient;
+            const events = yield* Events.Service;
+            const heard = yield* events.subscribe("reconnect-lena", Fixture.definition.contract);
+            const first = yield* Effect.forkChild(Stream.runHead(heard));
+
+            yield* sql`
+            select pg_terminate_backend(pid) from pg_stat_activity
+            where datname = current_database() and query ilike ${`listen%${Pokes.channel}%`}
+          `;
+
+            expect(yield* Fiber.join(first)).toEqual(Option.some(Protocol.AccountChanged.make({})));
           }),
         ),
     );

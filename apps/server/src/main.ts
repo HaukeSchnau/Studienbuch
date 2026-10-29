@@ -17,7 +17,8 @@ import * as Schema from "effect/Schema";
 // oxlint-disable-next-line effecttsgo/node-builtin-import -- see above
 import * as NodeHttp from "node:http";
 import * as NodeURL from "node:url";
-import { SyncEpoch, Tables as SyncTables } from "@stu/sync/server";
+import { Connection } from "@stu/sync";
+import { SyncEpoch, SyncServer, Tables as SyncTables } from "@stu/sync/server";
 import packageJson from "../package.json" with { type: "json" };
 import { Auth } from "./auth/Auth.ts";
 import { Deployment } from "./infra/config/Deployment.ts";
@@ -72,6 +73,7 @@ const http = HttpRouter.serve(
       port: Config.Port("PORT"),
       // On SIGTERM the server stops accepting connections and lets running requests finish.
       gracefulShutdownTimeout: Config.succeed(Duration.seconds(10)),
+      websocket: Config.succeed({ maxPayload: Connection.maxMessageBytes }),
     }),
   ),
 );
@@ -79,7 +81,9 @@ const http = HttpRouter.serve(
 const serve = Effect.gen(function* () {
   yield* Migrations.requireHead(yield* Migrations.Release);
 
-  return yield* Layer.launch(Layer.mergeAll(http, Jobs.layer));
+  return yield* Layer.launch(
+    Layer.mergeAll(SyncServer.closeFirst.pipe(Layer.provide(http)), Jobs.layer),
+  );
 }).pipe(Effect.provide(runtime));
 
 const prepare = Effect.gen(function* () {

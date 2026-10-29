@@ -179,6 +179,10 @@ export class Sessions extends Context.Service<
   {
     readonly add: (session: Ports.ResolvedSession) => Effect.Effect<void>;
     readonly revoke: (sessionId: string) => Effect.Effect<void>;
+    /** Ends a session unannounced, as a delete in SQL or on another server process does. */
+    readonly forget: (sessionId: string) => Effect.Effect<void>;
+    /** Makes resolving die while `down`, as Better Auth's rejected promise does. */
+    readonly outage: (down: boolean) => Effect.Effect<void>;
   }
 >()("@stu/sync/server/Fixture/Sessions") {}
 
@@ -186,6 +190,7 @@ export const sessions = Layer.effectContext(
   Effect.gen(function* () {
     const known = new Map<string, Ports.ResolvedSession>();
     const revoked = yield* PubSub.unbounded<string>();
+    let down = false;
 
     return Context.make(
       Sessions,
@@ -196,17 +201,24 @@ export const sessions = Layer.effectContext(
             Effect.sync(() => known.delete(sessionId)),
             PubSub.publish(revoked, sessionId),
           ),
+        forget: (sessionId) => Effect.sync(() => known.delete(sessionId)),
+        outage: (now) =>
+          Effect.sync(() => {
+            down = now;
+          }),
       }),
     ).pipe(
       Context.add(
         Ports.SessionResolver,
         Ports.SessionResolver.of({
           resolve: (headers) =>
-            Effect.succeed(
-              Option.flatMapNullishOr(Option.fromNullishOr(headers.authorization), (value) =>
-                known.get(value.replace(/^Bearer /, "")),
-              ),
-            ),
+            down
+              ? Effect.die("The session store is down")
+              : Effect.succeed(
+                  Option.flatMapNullishOr(Option.fromNullishOr(headers.authorization), (value) =>
+                    known.get(value.replace(/^Bearer /, "")),
+                  ),
+                ),
           revoked: Stream.fromPubSub(revoked),
         }),
       ),

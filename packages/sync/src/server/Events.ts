@@ -9,6 +9,7 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as PubSub from "effect/PubSub";
+import * as Queue from "effect/Queue";
 import * as Schedule from "effect/Schedule";
 import * as Schema from "effect/Schema";
 import type * as Scope from "effect/Scope";
@@ -78,12 +79,19 @@ export const layer = Layer.effect(
     // A connection must not start before pokes can reach it.
     yield* Deferred.await(listening);
 
+    // A database hiccup delays a device's events rather than ending them.
     const spacesOf = (account: string) =>
       sql<{ readonly space: string }>`
         select space_id as space from space_member where account_id = ${account}
       `.pipe(
         Effect.map((rows) => new Set(rows.map((row) => row.space))),
-        Effect.orDie,
+        Effect.tapError((error) =>
+          Effect.andThen(
+            Effect.logWarning("Events couldn't read an account's spaces", error),
+            Effect.sleep("1 second"),
+          ),
+        ),
+        Effect.eventually,
       );
 
     const subscribe = Effect.fn("Events.subscribe")(function* (
@@ -92,44 +100,47 @@ export const layer = Layer.effect(
     ) {
       const subscription = yield* PubSub.subscribe(heard);
       let spaces = yield* spacesOf(account);
+      // What the device hasn't heard yet, merged, so a slow socket holds one entry per space it
+      // reads rather than a queue of notifications.
+      let changed = false;
+      const newest = new Map<string, number>();
+      const waiting = yield* Queue.sliding<void>(1);
 
-      /** What one notification means for this account. */
-      const relevant = Effect.fnUntraced(function* (item: Heard) {
-        const changed = item === "missed" || item.accounts.includes(account);
+      const hear = Effect.fnUntraced(function* (item: Heard) {
+        if (item === "missed" || item.accounts.includes(account)) {
+          changed = true;
+          spaces = yield* spacesOf(account);
+        }
 
-        if (changed) spaces = yield* spacesOf(account);
+        for (const { space, version } of item === "missed" ? [] : item.spaces) {
+          if (spaces.has(space)) newest.set(space, Math.max(version, newest.get(space) ?? 0));
+        }
 
-        const cursors =
-          item === "missed" ? [] : item.spaces.filter(({ space }) => spaces.has(space));
-
-        return { changed, cursors };
+        if (changed || newest.size > 0) yield* Queue.offer(waiting, undefined);
       });
 
-      return Stream.fromSubscription(subscription).pipe(
-        Stream.mapEffect(relevant),
-        Stream.filter(({ changed, cursors }) => changed || cursors.length > 0),
-        Stream.groupedWithin(Number.POSITIVE_INFINITY, coalescing),
-        Stream.flatMap((group) => {
-          const newest = new Map<string, number>();
+      yield* Stream.fromSubscription(subscription).pipe(Stream.runForEach(hear), Effect.forkScoped);
 
-          for (const { space, version } of group.flatMap(({ cursors }) => cursors)) {
-            newest.set(space, Math.max(version, newest.get(space) ?? 0));
-          }
+      const take = Effect.sync(() => {
+        const cursors = [...newest]
+          .sort(([left], [right]) => (left < right ? -1 : 1))
+          .map(([space, version]) => ({ space, version }));
 
-          const spaces = [...newest]
-            .sort(([left], [right]) => (left < right ? -1 : 1))
-            .map(([space, version]) => ({ space, version }));
+        const events: Array<Protocol.Event> = [
+          ...(changed ? [Protocol.AccountChanged.make({})] : []),
+          ...(cursors.length > 0 ? [Protocol.Poke.make({ spaces: cursors })] : []),
+        ];
 
-          const events: Array<Protocol.Event> = [
-            ...(group.some(({ changed }) => changed) ? [Protocol.AccountChanged.make({})] : []),
-            ...(spaces.length > 0 ? [Protocol.Poke.make({ spaces })] : []),
-          ];
+        changed = false;
+        newest.clear();
 
-          // An event this client can't decode stays home. Its next pull catches up.
-          return Stream.fromIterable(
-            events.filter((event) => Contract.needed([event._tag]) <= contract.protocol),
-          );
-        }),
+        // An event this client can't decode stays home. Its next pull catches up.
+        return events.filter((event) => Contract.needed([event._tag]) <= contract.protocol);
+      });
+
+      return Stream.fromQueue(waiting).pipe(
+        Stream.mapEffect(() => Effect.andThen(Effect.sleep(coalescing), take)),
+        Stream.flatMap(Stream.fromIterable),
       );
     });
 

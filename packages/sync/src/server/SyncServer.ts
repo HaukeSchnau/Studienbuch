@@ -4,6 +4,7 @@
  */
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
+import type * as Headers from "effect/http/Headers";
 import type * as Socket from "effect/socket/Socket";
 import type { Sync } from "../definition/Sync.ts";
 import { Connections } from "./Connections.ts";
@@ -12,6 +13,7 @@ import { Events } from "./Events.ts";
 import type { Ports } from "./Ports.ts";
 import { Pull } from "./Pull.ts";
 import { Push } from "./Push.ts";
+import { Revocations } from "./Revocations.ts";
 import { Routes } from "./Routes.ts";
 import { Spaces } from "./Spaces.ts";
 import { SyncSchema } from "./SyncSchema.ts";
@@ -43,7 +45,9 @@ export const layer = (definition: Sync.Definition, options?: Options) => {
   const minimum = options?.minimum ?? Contract.initialMinimum;
 
   return Layer.mergeAll(Connections.layer(minimum), Tickets.layer).pipe(
-    Layer.provideMerge(Layer.mergeAll(Push.layer(minimum), Pull.layer(minimum), Events.layer)),
+    Layer.provideMerge(
+      Layer.mergeAll(Push.layer(minimum), Pull.layer(minimum), Events.layer, Revocations.layer),
+    ),
     Layer.provideMerge(writers(definition)),
   );
 };
@@ -53,7 +57,22 @@ export const routes = Routes.layer;
 
 /**
  * Serves one connection on `socket` until it closes, as the WebSocket route does after the
- * ticket check. The simulation calls it with an in-memory socket.
+ * ticket check. The simulation calls it with an in-memory socket. With `headers`, the ones that
+ * resolved the session, the connection asks `Ports.SessionResolver` again every few minutes.
  */
-export const connection = (session: Ports.ResolvedSession, socket: Socket.Socket) =>
-  Effect.flatMap(Connections.Service, (connections) => connections.serve(session, socket));
+export const connection = (
+  session: Ports.ResolvedSession,
+  socket: Socket.Socket,
+  headers?: Headers.Headers,
+) =>
+  Effect.flatMap(Connections.Service, (connections) => connections.serve(session, socket, headers));
+
+/**
+ * Closes the sync connections with 1012 when its scope closes. Built on the HTTP server, it runs
+ * before the server drains its requests.
+ */
+export const closeFirst = Layer.effectDiscard(
+  Effect.flatMap(Connections.Service, (connections) =>
+    Effect.addFinalizer(() => connections.shutdown),
+  ),
+);

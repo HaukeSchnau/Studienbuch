@@ -1,16 +1,19 @@
 import { NodeHttpServer } from "@effect/platform-node";
-import { describe, expect, layer } from "@effect/vitest";
+import { describe, expect, it, layer } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
 import * as Effect from "effect/Effect";
 import * as Exit from "effect/Exit";
+import * as Fiber from "effect/Fiber";
 import * as HttpClient from "effect/http/HttpClient";
 import * as HttpClientRequest from "effect/http/HttpClientRequest";
 import * as HttpRouter from "effect/http/HttpRouter";
 import * as HttpServer from "effect/http/HttpServer";
 import * as Layer from "effect/Layer";
+import * as Option from "effect/Option";
 import * as RpcClient from "effect/rpc/RpcClient";
 import * as Schema from "effect/Schema";
+import * as Scope from "effect/Scope";
 import * as Socket from "effect/socket/Socket";
 import { Command } from "../protocol/Command.ts";
 import { Connection } from "../protocol/Connection.ts";
@@ -150,6 +153,36 @@ describe.skipIf(Postgres18.socket === null)("The sync routes on PostgreSQL 18", 
       ),
     );
   });
+
+  it.live("a server shutting down closes its connections with 1012 before it drains HTTP", () =>
+    Effect.scoped(
+      Effect.gen(function* () {
+        const scope = yield* Scope.make();
+
+        const server = yield* Layer.buildWithScope(
+          SyncServer.closeFirst.pipe(Layer.provideMerge(served())),
+          scope,
+        );
+
+        yield* Effect.provide(
+          Effect.gen(function* () {
+            const sessions = yield* Fixture.Sessions;
+            const session = sessionOf("shutdown");
+            yield* sessions.add(session);
+            const issued = yield* ticket(session.sessionId);
+            const { client, closed } = yield* connect(issued.ticket ?? "");
+            yield* client["Sync.pull"](pullRequest("shutdown-device"));
+            const shutdown = yield* Effect.forkChild(Scope.close(scope, Exit.void));
+
+            // The HTTP server alone would hold the socket open for its 20 second drain.
+            expect(yield* Effect.timeoutOption(closed, "5 seconds")).toEqual(Option.some(1012));
+            yield* Fiber.join(shutdown);
+          }),
+          server,
+        );
+      }),
+    ),
+  );
 
   layer(served({ minimum: { protocol: 1, schema: 2 } }), { excludeTestServices: true })((it) => {
     it.effect("a client below the minimum gets UpdateRequired, then the update close code", () =>

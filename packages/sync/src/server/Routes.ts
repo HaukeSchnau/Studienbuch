@@ -31,7 +31,9 @@ export const layer = Layer.unwrap(
 
       if (Option.isNone(session)) return unauthorized;
 
-      return yield* Effect.orDie(ticketJson({ ticket: yield* tickets.issue(session.value) }));
+      const issued = yield* tickets.issue({ session: session.value, headers: request.headers });
+
+      return yield* Effect.orDie(ticketJson({ ticket: issued }));
     });
 
     const socket = Effect.gen(function* () {
@@ -41,11 +43,11 @@ export const layer = Layer.unwrap(
         url.searchParams.get("ticket"),
       );
 
-      const session = Option.isNone(ticket) ? Option.none() : yield* tickets.redeem(ticket.value);
+      const admission = Option.isNone(ticket) ? Option.none() : yield* tickets.redeem(ticket.value);
 
-      if (Option.isNone(session)) return unauthorized;
+      if (Option.isNone(admission)) return unauthorized;
       const upgraded = yield* Effect.orDie(request.upgrade);
-      yield* connections.serve(session.value, upgraded);
+      yield* connections.serve(admission.value.session, upgraded, admission.value.headers);
 
       return HttpServerResponse.empty();
     });
