@@ -32,20 +32,34 @@ const demoTable: Capability = {
   files: ["apps/server/src/demo/DemoAccounts.ts", "apps/server/src/demo/DemoTables.ts"],
 };
 
+const demoKeys: Capability = {
+  what: "Deriving a demo account's root key",
+  home: "persona sign-in and the seed",
+  files: [
+    "apps/server/src/demo/DemoKeys.ts",
+    "apps/server/src/demo/PersonaSignIn.ts",
+    "apps/server/src/demo/Seed.ts",
+  ],
+};
+
 const NAMES: ReadonlyMap<string, Capability> = new Map([
+  ["DemoKeys", demoKeys],
   ["signInDemo", signInDemo],
   ["Seeding", seeding],
   ["seeding", seeding],
   ["demoAccount", demoTable],
 ]);
 
-/** Only their own modules mint demo sessions, grant `Seeding` or touch `demo_account`. */
+/**
+ * Only their own modules mint demo sessions, derive demo root keys, grant `Seeding` or touch
+ * `demo_account`.
+ */
 export default defineRule({
   meta: {
     type: "problem",
     docs: {
       description:
-        "Keep demo sessions, the seed's permission and the demo_account table in their own modules.",
+        "Keep demo sessions, demo root keys, the seed's permission and the demo_account table in their own modules.",
     },
     messages: {
       outOfPlace: "{{what}} stays in {{home}} (invariant 14).",

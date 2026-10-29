@@ -11,6 +11,9 @@ declare const auth: {
 
 declare const DemoAccounts: Record<string, string>;
 
+// oxlint-disable-next-line studienbuch/demo-account-boundaries -- fixture: the route's view of the derivation
+declare const DemoKeys: { readonly rootKey: (account: string) => string };
+
 declare const DemoTables: Record<string, string>;
 
 declare const sql: (
@@ -20,6 +23,9 @@ declare const sql: (
 
 // oxlint-disable-next-line studienbuch/demo-account-boundaries -- fixture: a route that mints a demo session
 export const minted = auth.signInDemo("demo-lena");
+
+// oxlint-disable-next-line studienbuch/demo-account-boundaries -- fixture: a route that hands out a demo root key
+export const derived = DemoKeys.rootKey("demo-lena");
 
 // oxlint-disable-next-line studienbuch/demo-account-boundaries -- fixture: the same, by bracket access
 export const bracketed = auth["signInDemo"];

@@ -15,6 +15,7 @@
     "@effect/sql-pg": "catalog:",
     "@stu/api": "workspace:*",
     "@stu/core": "workspace:*",
+    "@stu/e2ee": "workspace:*",
     "@stu/sync": "workspace:*",
     "better-auth": "catalog:",
     "better-call": "catalog:",

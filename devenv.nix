@@ -62,6 +62,7 @@ in
     PASSKEY_RP_ID = "localhost";
     DATABASE_URL = "postgresql:///studienbuch?host=${config.env.DEVENV_RUNTIME}/postgres";
     AUTH_SECRET_FILE = "${state}/auth-secret";
+    DEMO_KEY_SEED_FILE = "${state}/demo-key-seed";
     S3_ENDPOINT = config.env.GARAGE_S3_ENDPOINT;
     S3_REGION = config.services.garage.region;
     S3_BUCKET = bucket;
@@ -78,6 +79,16 @@ in
     exec = ''umask 077 && head -c 32 /dev/urandom | base64 > "$AUTH_SECRET_FILE"'';
     status = ''test -s "$AUTH_SECRET_FILE"'';
     before = [ "devenv:processes:server" ];
+  };
+
+  # The demo accounts' root keys derive from it, so it stays as long as the instance's database.
+  tasks."studienbuch:demo-key-seed" = {
+    exec = ''umask 077 && head -c 32 /dev/urandom | base64 > "$DEMO_KEY_SEED_FILE"'';
+    status = ''test -s "$DEMO_KEY_SEED_FILE"'';
+    before = [
+      "studienbuch:prepare"
+      "devenv:processes:server"
+    ];
   };
 
   tasks."studienbuch:prepare" = {
