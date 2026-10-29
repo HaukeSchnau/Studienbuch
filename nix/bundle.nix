@@ -75,17 +75,47 @@ let
       );
     };
 
-  depsSource = fs.toSource {
-    inherit root;
-    fileset = fs.unions (
-      [
-        (root + "/package.json")
-        (root + "/pnpm-lock.yaml")
-        (root + "/pnpm-workspace.yaml")
-      ]
-      ++ map (dir: root + "/${dir}/package.json") packageDirs
+  # What `pnpm install` reads: the lockfile, the workspace settings, and the fields of each
+  # package.json that name dependencies. A changed script or export then installs nothing again.
+  installFields = [
+    "name"
+    "version"
+    "dependencies"
+    "devDependencies"
+    "optionalDependencies"
+    "peerDependencies"
+    "peerDependenciesMeta"
+    "dependenciesMeta"
+    "bin"
+    "engines"
+    "packageManager"
+    "pnpm"
+  ];
+  installManifest =
+    dir:
+    pkgs.writeText "package.json" (
+      builtins.toJSON (lib.filterAttrs (field: _: lib.elem field installFields) (manifest dir))
     );
-  };
+  depsSource =
+    pkgs.runCommand "studienbuch-deps-source"
+      {
+        settings = fs.toSource {
+          inherit root;
+          fileset = fs.unions [
+            (root + "/pnpm-lock.yaml")
+            (root + "/pnpm-workspace.yaml")
+            (fs.maybeMissing (root + "/patches"))
+          ];
+        };
+      }
+      ''
+        cp -r $settings $out
+        chmod -R u+w $out
+        ${lib.concatMapStrings (dir: ''
+          mkdir -p $out/${dir}
+          cp ${installManifest dir} $out/${dir}/package.json
+        '') ([ "." ] ++ packageDirs)}
+      '';
 
   pnpmDeps = pkgs.fetchPnpmDeps {
     pname = "studienbuch";
@@ -111,6 +141,9 @@ let
     dontBuild = true;
     dontFixup = true;
     installPhase = ''
+      # pnpm's own bookkeeping holds the install time and a temporary store path, and only a later
+      # pnpm install reads it.
+      rm node_modules/.modules.yaml node_modules/.pnpm-workspace-state-v1.json
       for dir in . ${toString packageDirs}; do
         if [ -d "$dir/node_modules" ]; then
           mkdir -p "$out/$dir"
