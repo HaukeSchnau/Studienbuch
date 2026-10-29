@@ -34,11 +34,16 @@ export * as Faults from "./Faults.ts";
 /**
  * A command the device never made, the way a modified app sends it, which the server must refuse.
  * `SealInto` sends the next `Seal`'s writes to `space`, such as another student's notebook.
- * `RewriteArgs` gives the next `Mutate` of `mutator` the arguments `args`.
+ * `RewriteArgs` gives the next `Mutate` of `mutator` the arguments `args`, and the mutator name
+ * `name` when given, such as one the server doesn't know.
  */
 export type Forge = Data.TaggedEnum<{
   SealInto: { readonly space: string };
-  RewriteArgs: { readonly mutator: string; readonly args: Schema.Json };
+  RewriteArgs: {
+    readonly mutator: string;
+    readonly args: Schema.Json;
+    readonly name?: string | undefined;
+  };
 }>;
 
 export const Forge = Data.taggedEnum<Forge>();
@@ -148,7 +153,7 @@ export const make = Effect.gen(function* () {
       }
 
       if (forge.value._tag === "RewriteArgs" && command._tag === "Mutate") {
-        return { ...command, args: forge.value.args };
+        return { ...command, name: forge.value.name ?? command.name, args: forge.value.args };
       }
 
       return command;
@@ -157,7 +162,7 @@ export const make = Effect.gen(function* () {
     const detail =
       forge.value._tag === "SealInto"
         ? `SealInto ${forge.value.space}`
-        : `RewriteArgs ${forge.value.mutator} ${yield* Effect.orDie(encodeForge(forge.value.args))}`;
+        : `RewriteArgs ${forge.value.mutator}${forge.value.name === undefined ? "" : ` as ${forge.value.name}`} ${yield* Effect.orDie(encodeForge(forge.value.args))}`;
 
     yield* emit("forge", `${detail} on mutation ${commands[index]?.mutationId ?? ""}`);
 
