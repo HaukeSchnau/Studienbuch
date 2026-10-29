@@ -178,7 +178,11 @@ export const run = Effect.fnUntraced(function* (options: Options) {
     token: Option.none(),
   });
 
-  /** Wakes a waiting backoff ("reset"), or ends the attempt so a new socket opens ("replace"). */
+  /**
+   * Wakes a waiting backoff and starts its ladder over ("reset"): the latch lifting, a new token,
+   * the network coming back, a return to the foreground. Or ends the attempt so a new socket
+   * opens ("replace"). Going offline or to the background wakes nothing.
+   */
   const wakeups = yield* Queue.sliding<"reset" | "replace">(4);
   /** Asks the running connection for a round. */
   const rounds = yield* Queue.sliding<void>(1);
@@ -189,23 +193,30 @@ export const run = Effect.fnUntraced(function* (options: Options) {
   const waitFor = (predicate: (current: Conditions) => boolean) =>
     SubscriptionRef.changes(conditions).pipe(Stream.filter(predicate), Stream.runHead);
 
-  /** Any change of the conditions after now, such as the latch lifting or a new sign-in. */
-  const anyChange = SubscriptionRef.changes(conditions).pipe(Stream.drop(1), Stream.runHead);
-
   let tokens = 0;
 
   yield* options.session.changes.pipe(
     Stream.runForEach((token) =>
-      update((current) => ({
-        ...current,
-        token: Option.isSome(token) ? Option.some((tokens += 1)) : Option.none(),
-      })),
+      Effect.andThen(
+        Option.isSome(token) ? Queue.offer(wakeups, "reset") : Effect.void,
+        update((current) => ({
+          ...current,
+          token: Option.isSome(token) ? Option.some((tokens += 1)) : Option.none(),
+        })),
+      ),
     ),
     Effect.forkScoped,
   );
 
   yield* SubscriptionRef.changes(options.offline).pipe(
-    Stream.runForEach((offline) => update((current) => ({ ...current, offline }))),
+    Stream.runForEach((offline) =>
+      Effect.gen(function* () {
+        const before = yield* SubscriptionRef.get(conditions);
+
+        if (before.offline && !offline) yield* Queue.offer(wakeups, "reset");
+        yield* update((current) => ({ ...current, offline }));
+      }),
+    ),
     Effect.forkScoped,
   );
 
@@ -216,9 +227,8 @@ export const run = Effect.fnUntraced(function* (options: Options) {
       Effect.gen(function* () {
         const before = yield* SubscriptionRef.get(conditions);
         const now = yield* Clock.currentTimeMillis;
-        yield* update((current) => ({ ...current, ...state }));
 
-        if (before.online !== state.online) yield* Queue.offer(wakeups, "reset");
+        if (!before.online && state.online) yield* Queue.offer(wakeups, "reset");
 
         if (!before.foreground && state.foreground) {
           const away = Option.match(backgroundSince, { onNone: () => 0, onSome: (at) => now - at });
@@ -230,6 +240,10 @@ export const run = Effect.fnUntraced(function* (options: Options) {
           );
           yield* Queue.offer(rounds, undefined);
         }
+
+        // A wakeup goes in before the change it follows, so the attempt the change allows clears
+        // it instead of the backoff after that attempt taking it.
+        yield* update((current) => ({ ...current, ...state }));
 
         if (before.foreground && !state.foreground) backgroundSince = Option.some(now);
       }),
@@ -326,14 +340,18 @@ export const run = Effect.fnUntraced(function* (options: Options) {
         : End.Dropped({ code: Option.none(), stable: false });
     }
 
-    const openedAt = yield* Clock.currentTimeMillis;
+    // The connection counts as working 30 s after the server first answered on it.
+    let answeredAt = Option.none<number>();
 
     yield* link.success.closed.pipe(
       Effect.flatMap((code) =>
         Effect.flatMap(Clock.currentTimeMillis, (now) =>
           Deferred.succeed(
             stop,
-            closedWith(code, now - openedAt >= Duration.toMillis(stableAfter)),
+            closedWith(
+              code,
+              Option.exists(answeredAt, (at) => now - at >= Duration.toMillis(stableAfter)),
+            ),
           ),
         ),
       ),
@@ -363,15 +381,15 @@ export const run = Effect.fnUntraced(function* (options: Options) {
     ).pipe(Effect.andThen(Queue.offer(rounds, undefined)), Effect.forever, Effect.forkScoped);
 
     // Online once the server answers on this connection, not when the socket was asked for.
-    let answered = false;
-
     const online = <A, E>(effect: Effect.Effect<A, E>) =>
       Effect.tap(effect, () =>
-        answered
+        Option.isSome(answeredAt)
           ? Effect.void
-          : Effect.andThen(
-              Effect.sync(() => (answered = true)),
-              options.report("online"),
+          : Effect.flatMap(Clock.currentTimeMillis, (now) =>
+              Effect.andThen(
+                Effect.sync(() => (answeredAt = Option.some(now))),
+                options.report("online"),
+              ),
             ),
       );
 
@@ -424,6 +442,7 @@ export const run = Effect.fnUntraced(function* (options: Options) {
         failures = 0;
         continue;
       case "SessionEnded": {
+        yield* options.report("offline");
         yield* options.session.ended;
         const ended = tokens;
         yield* waitFor((next) => Option.exists(next.token, (token) => token > ended));
@@ -443,11 +462,9 @@ export const run = Effect.fnUntraced(function* (options: Options) {
         failures = end.stable ? 1 : failures + 1;
         yield* options.report("offline");
 
-        // A network change, a return to the foreground, the latch lifting or a new sign-in all
-        // end the wait and start the ladder over.
         const woken = yield* Effect.raceFirst(
           Effect.as(Effect.flatMap(backoff(failures), Effect.sleep), false),
-          Effect.raceFirst(Effect.as(Queue.take(wakeups), true), Effect.as(anyChange, true)),
+          Effect.as(Queue.take(wakeups), true),
         );
 
         if (woken) failures = 0;
