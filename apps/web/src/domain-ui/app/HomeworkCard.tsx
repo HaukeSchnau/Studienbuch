@@ -1,11 +1,10 @@
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-
-import { Card } from "./Card.tsx";
-import { Icon } from "./Icon.tsx";
-import { Type } from "./Type.ts";
+import { Card } from "@stu/ui/Card";
+import { Icon } from "@stu/ui/Icon";
+import { Text } from "@stu/ui/Text";
+import { Pressable, StyleSheet, View } from "react-native";
 
 export interface Homework {
   readonly id: string;
@@ -39,7 +38,9 @@ export function HomeworkCard({
   return (
     <Card>
       <View style={styles.header}>
-        <Text style={[Type.style("cardTitle"), { color: color.accent }]}>Hausaufgaben</Text>
+        <Text variant="title2" style={{ color: color.accent }}>
+          Hausaufgaben
+        </Text>
         <View accessibilityLiveRegion="polite" style={styles.status}>
           {status}
         </View>
@@ -70,30 +71,29 @@ function HomeworkRow({ item, onToggle }: { item: Homework; onToggle: (id: string
       <View style={styles.text}>
         {/* Only the task dims when it is done; the waiting badge keeps its full contrast. */}
         <View style={styles.meta}>
-          <Text style={[Type.style("label"), { color: color.inkSoft }, item.done && styles.done]}>
+          <Text
+            variant="footnote"
+            weight="medium"
+            style={[{ color: color.inkSoft }, item.done && styles.done]}
+          >
             {item.due}
           </Text>
           {item.pending ? (
             <Text
-              style={[
-                Type.style("status"),
-                styles.pending,
-                { backgroundColor: color.warningTint, color: color.warning },
-              ]}
+              variant="footnote"
+              style={[styles.pending, { backgroundColor: color.warningTint, color: color.warning }]}
             >
               Wartet auf Netz
             </Text>
           ) : null}
         </View>
-        <Text style={[Type.style("rowTitle"), { color: color.accent }, item.done && styles.done]}>
+        <Text variant="title3" style={[{ color: color.accent }, item.done && styles.done]}>
           {item.subject}
         </Text>
         <Text
-          style={[
-            Type.style("detail"),
-            { color: color.inkSoft },
-            item.done && [styles.done, styles.struck],
-          ]}
+          variant="subhead"
+          weight="regular"
+          style={[{ color: color.inkSoft }, item.done && [styles.done, styles.struck]]}
         >
           {item.title}
         </Text>

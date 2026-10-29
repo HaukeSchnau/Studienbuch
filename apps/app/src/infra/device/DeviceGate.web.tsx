@@ -3,10 +3,10 @@ import * as Option from "effect/Option";
 import type { ReactNode } from "react";
 import { StyleSheet } from "react-native";
 
-import { Button } from "../../ui/Button.tsx";
-import { Card } from "../../ui/Card.tsx";
+import { Button } from "@stu/ui/Button";
+import { Card } from "@stu/ui/Card";
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
-import { Text } from "../../ui/Text.tsx";
+import { Text } from "@stu/ui/Text";
 import { TabOwner } from "./TabOwner.ts";
 import { VirtualDevice } from "./VirtualDevice.ts";
 

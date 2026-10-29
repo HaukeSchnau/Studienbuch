@@ -1,3 +1,4 @@
+import { Hero } from "@stu/ui/Hero";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { StatusBar } from "expo-status-bar";
@@ -8,35 +9,32 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
-
-import { Button } from "./Button.tsx";
-import { Text } from "./Text.tsx";
 
 export interface HeroScreenProps {
   readonly title: string;
   readonly subtitle: string;
+  /** Art at the right of the title, such as the app icon on the sign-in screens. */
+  readonly aside?: ReactNode;
   /**
-   * Pull to refresh on the phones. The web has no gesture for it, so there an "Aktualisieren" pill
-   * sits at the hero's top right.
+   * Pull to refresh on the phones. The web has none and no button for it either, because the sync
+   * engine pulls on its own.
    */
   readonly refresh?: { readonly refreshing: boolean; readonly onRefresh: () => void };
   readonly children: ReactNode;
 }
 
 /**
- * A tab's root screen: the green hero with its swoosh, and the cards below it. The hero is content,
- * so it scrolls under the native header and tab bar (design-language.md, section 3, rule 6).
+ * A tab's root screen: the hero and the cards on its band. The hero is content, so it scrolls under
+ * the native header and tab bar (design-language.md, section 3, rule 6).
  */
-export function HeroScreen({ title, subtitle, refresh, children }: HeroScreenProps) {
+export function HeroScreen({ title, subtitle, aside, refresh, children }: HeroScreenProps) {
   const { color } = Theme.useTheme();
   const insets = useSafeAreaInsets();
-  const { overCanvas, onHeroLayout, onScroll } = useHeroCover(insets.top);
+  const { overCanvas, onHeroEnd, onScroll } = useHeroCover(insets.top);
 
   return (
     <View style={[styles.screen, { backgroundColor: color.canvas }]}>
@@ -45,8 +43,11 @@ export function HeroScreen({ title, subtitle, refresh, children }: HeroScreenPro
       <View style={[styles.overscroll, { backgroundColor: color.hero }]} />
       <ScrollView
         style={styles.screen}
-        contentContainerStyle={styles.grow}
+        contentContainerStyle={[styles.grow, { backgroundColor: color.canvas }]}
         contentInsetAdjustmentBehavior="automatic"
+        // Forms stay reachable above the keyboard, and a tap on a button doesn't only close it.
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
         onScroll={onScroll}
         scrollEventThrottle={16}
         refreshControl={
@@ -61,33 +62,16 @@ export function HeroScreen({ title, subtitle, refresh, children }: HeroScreenPro
           )
         }
       >
-        <View style={[styles.grow, { backgroundColor: color.canvas }]}>
-          <View
-            style={{ backgroundColor: color.hero, paddingTop: heroTop(insets.top) }}
-            onLayout={onHeroLayout}
-          >
-            <View style={[styles.column, styles.heroText]}>
-              {refresh === undefined || Platform.OS !== "web" ? null : (
-                <View style={styles.action}>
-                  <Button
-                    kind="quiet"
-                    label="Aktualisieren"
-                    busy={refresh.refreshing}
-                    onPress={refresh.onRefresh}
-                  />
-                </View>
-              )}
-              <Text variant="display" accessibilityRole="header" style={styles.onHero}>
-                {title}
-              </Text>
-              <Text variant="title3" style={styles.onHero}>
-                {subtitle}
-              </Text>
-            </View>
-          </View>
-          <Swoosh fill={color.hero} edge={color.heroEdge} />
-          <View style={[styles.column, styles.content]}>{children}</View>
-        </View>
+        <Hero
+          title={title}
+          subtitle={subtitle}
+          aside={aside}
+          top={heroTop(insets.top)}
+          onColourEnd={onHeroEnd}
+        >
+          {children}
+        </Hero>
+        <View style={styles.end} />
       </ScrollView>
       {overCanvas && Platform.OS !== "web" ? (
         <View style={[styles.statusStrip, { height: insets.top, backgroundColor: color.canvas }]} />
@@ -97,10 +81,10 @@ export function HeroScreen({ title, subtitle, refresh, children }: HeroScreenPro
 }
 
 /**
- * Whether the hero has scrolled out from under the status bar, which is `statusBar` points tall.
- * Pass `onHeroLayout` to the hero and `onScroll` to the scroll view. Once `overCanvas` is true, a
- * strip of canvas keeps the status bar readable and Android's status bar text turns dark. iOS 27
- * runs on UIScene, where React Native can't set that style, so it follows the appearance.
+ * Whether the hero's colour has scrolled out from under the status bar, which is `statusBar` points
+ * tall. Pass `onHeroEnd` to the hero's `onColourEnd` and `onScroll` to the scroll view. Then a strip
+ * of canvas keeps the status bar readable and Android's status bar text turns dark. iOS 27 runs on
+ * UIScene, where React Native can't set that style, so it follows the appearance.
  */
 export function useHeroCover(statusBar: number) {
   const [heroBottom, setHeroBottom] = useState(Number.POSITIVE_INFINITY);
@@ -108,8 +92,7 @@ export function useHeroCover(statusBar: number) {
 
   return {
     overCanvas,
-    onHeroLayout: (event: LayoutChangeEvent) =>
-      setHeroBottom(event.nativeEvent.layout.y + event.nativeEvent.layout.height),
+    onHeroEnd: (y: number) => setHeroBottom(y),
     onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const covered = event.nativeEvent.contentOffset.y + statusBar > heroBottom;
 
@@ -126,58 +109,10 @@ const heroTop = (statusBar: number) =>
     default: Tokens.space.xl,
   });
 
-const band = { width: 390, height: 150, edge: 6 } as const;
-
-// Legacy's BezierClipper (lib/presentation/components/clippers.dart), cut to the curved band below
-// the hero: the left edge runs down to the bottom, the right edge stays at the top. The blue line is
-// the same curve, `band.edge` lower.
-const curve = (offset: number) => {
-  const w = band.width;
-  const h = band.height - band.edge * 2;
-
-  return [
-    `M0 0 L0 ${h + offset}`,
-    `C${w * 0.5} ${(h * 5) / 6 + offset} ${w * 0.5} ${h + offset} ${w * 0.7} ${h / 3 + offset}`,
-    `C${w * 0.8} ${offset} ${w} ${offset} ${w} ${offset}`,
-    `L${w} 0Z`,
-  ].join(" ");
-};
-
-function Swoosh({ fill, edge }: { readonly fill: string; readonly edge: string }) {
-  return (
-    <Svg
-      width="100%"
-      height={band.height}
-      viewBox={`0 0 ${band.width} ${band.height}`}
-      preserveAspectRatio="none"
-      aria-hidden
-    >
-      <Path d={curve(band.edge)} fill={edge} />
-      <Path d={curve(0)} fill={fill} />
-    </Svg>
-  );
-}
-
-// The first card starts this far below the hero's text, on top of the band.
-const heroGap = 22;
-
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   grow: { flexGrow: 1 },
   overscroll: { position: "absolute", top: 0, left: 0, right: 0, height: "50%" },
-  column: {
-    width: "100%",
-    maxWidth: Tokens.layout.contentMaxWidth,
-    alignSelf: "center",
-  },
-  heroText: { paddingHorizontal: Tokens.layout.cardPadding, gap: Tokens.space.xs },
-  action: { alignSelf: "flex-end", marginBottom: Tokens.space.sm },
-  onHero: { color: "#FFFFFF" },
-  content: {
-    marginTop: heroGap - band.height,
-    paddingHorizontal: Tokens.layout.gutter,
-    paddingBottom: Tokens.space.xxl,
-    gap: Tokens.space.lg,
-  },
+  end: { height: Tokens.space.xxl },
   statusStrip: { position: "absolute", top: 0, left: 0, right: 0, opacity: 0.94 },
 });

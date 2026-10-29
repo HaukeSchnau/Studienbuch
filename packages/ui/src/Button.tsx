@@ -1,18 +1,18 @@
-import { Theme } from "@stu/ui/Theme";
-import { Tokens } from "@stu/ui/Tokens";
 import { ActivityIndicator, Pressable, StyleSheet } from "react-native";
 
 import { Text } from "./Text.tsx";
+import { Theme } from "./Theme.ts";
+import { Tokens } from "./Tokens.ts";
 
 export interface ButtonProps {
   readonly label: string;
   readonly onPress: () => void;
-  /** "filled" is the primary action in green; "quiet" sits on the hero as a white pill. */
+  /** "filled" is the primary action in green; "quiet" is a white pill, as on the hero. */
   readonly kind?: "filled" | "quiet";
   readonly busy?: boolean;
 }
 
-/** A pill button. */
+/** A pill button. Its label stays bold, a step above the headline token, so it reads as an action. */
 export function Button({ label, onPress, kind = "filled", busy = false }: ButtonProps) {
   const { color, elevation } = Theme.useTheme();
   const filled = kind === "filled";
@@ -34,7 +34,7 @@ export function Button({ label, onPress, kind = "filled", busy = false }: Button
       ]}
     >
       {busy ? <ActivityIndicator color={foreground} /> : null}
-      <Text variant="headline" style={{ color: foreground }}>
+      <Text variant="headline" weight="bold" style={{ color: foreground }}>
         {label}
       </Text>
     </Pressable>

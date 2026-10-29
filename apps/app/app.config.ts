@@ -19,10 +19,10 @@ const nunito = (weight: number, name: string) => ({
 
 // The weights the type tokens use (packages/ui, Tokens.type).
 const nunitoFaces = [
+  nunito(400, "Regular"),
   nunito(500, "Medium"),
   nunito(600, "SemiBold"),
   nunito(700, "Bold"),
-  nunito(800, "ExtraBold"),
 ];
 
 export default ({ config }: ConfigContext): ExpoConfig =>

@@ -51,6 +51,29 @@ const reactNativeWeb = (): Plugin => {
   };
 };
 
+// Metro takes `Thing.web.tsx` for a relative import of "./Thing.tsx" in our own code
+// (apps/app/metro.config.js), so the web build does the same. `resolve.extensions` covers
+// extensionless imports only. An import by package name goes through the package's export
+// conditions instead, as `@stu/ui/Vector` does.
+const platformFiles = (): Plugin => ({
+  name: "studienbuch:platform-files",
+  enforce: "pre",
+  resolveId(id, importer) {
+    if (
+      importer === undefined ||
+      importer.includes("/node_modules/") ||
+      !/^\.\.?\//u.test(id) ||
+      !/\.tsx?$/u.test(id)
+    ) {
+      return undefined;
+    }
+
+    const web = NodePath.resolve(NodePath.dirname(importer), id.replace(/\.(tsx?)$/u, ".web.$1"));
+
+    return NodeFS.existsSync(web) ? web : undefined;
+  },
+});
+
 // The client build's output directory, where Start writes the prerendered pages.
 const clientOutDir = (builder: ViteBuilder) => {
   const client = builder.environments["client"];
@@ -123,6 +146,7 @@ export default defineConfig({
   preview: { host: "127.0.0.1" },
   plugins: [
     reactNativeWeb(),
+    platformFiles(),
     tanstackStart({
       // The generated route tree is checked in, so it is written the way oxfmt formats it.
       router: { quoteStyle: "double", semicolons: true },

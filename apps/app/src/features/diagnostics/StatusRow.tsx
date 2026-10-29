@@ -2,8 +2,8 @@ import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
 import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 
-import { Icon } from "../../ui/Icon.tsx";
-import { Text } from "../../ui/Text.tsx";
+import { Icon } from "@stu/ui/Icon";
+import { Text } from "@stu/ui/Text";
 
 export type Status = "ok" | "pending" | "failed" | "missing";
 

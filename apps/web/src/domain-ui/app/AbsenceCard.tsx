@@ -1,10 +1,9 @@
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
-import { Image, StyleSheet, Text, View } from "react-native";
-
-import { Card } from "./Card.tsx";
-import { CheckBadge, Icon, OpenBadge } from "./Icon.tsx";
-import { Type } from "./Type.ts";
+import { Card } from "@stu/ui/Card";
+import { Icon } from "@stu/ui/Icon";
+import { Text } from "@stu/ui/Text";
+import { Image, StyleSheet, View } from "react-native";
 
 const warning = "/art/warning.svg";
 
@@ -36,40 +35,51 @@ export function AbsenceCard({
     <Card>
       <View style={styles.summary}>
         <View style={styles.header}>
-          <Text style={[Type.style("cardTitle"), { color: color.accent }]}>Fehlzeiten</Text>
+          <Text variant="title2" style={{ color: color.accent }}>
+            Fehlzeiten
+          </Text>
           <Icon color={color.accent} name="plus" size={26} />
         </View>
         <View style={styles.body}>
           {/* `defaultSource` makes react-native-web render the image while prerendering. */}
           <Image defaultSource={{ uri: warning }} source={{ uri: warning }} style={styles.art} />
-          <Text style={[Type.style("body"), styles.text, { color: color.ink }]}>
-            Du hast noch <Text style={styles.strong}>{unexcused}</Text> unentschuldigte Fehlzeiten
-            an <Text style={styles.strong}>{days}</Text> {days === 1 ? "Tag" : "Tagen"}.
+          <Text variant="callout" style={[styles.text, { color: color.ink }]}>
+            Du hast noch{" "}
+            <Text variant="callout" weight="bold">
+              {unexcused}
+            </Text>{" "}
+            unentschuldigte Fehlzeiten an{" "}
+            <Text variant="callout" weight="bold">
+              {days}
+            </Text>{" "}
+            {days === 1 ? "Tag" : "Tagen"}.
           </Text>
         </View>
       </View>
       {entries.map((entry) => (
         <View key={entry.id} style={[styles.row, { borderTopColor: color.hairline }]}>
           <View style={styles.text}>
-            <Text style={[Type.style("label"), { color: color.inkSoft }]}>{entry.date}</Text>
-            <Text style={[Type.style("title"), { color: color.ink }]}>
+            <Text variant="footnote" weight="medium" style={{ color: color.inkSoft }}>
+              {entry.date}
+            </Text>
+            <Text variant="headline" style={{ color: color.ink }}>
               {entry.hours} {entry.hours === 1 ? "Stunde" : "Stunden"}
               {entry.reason === undefined ? null : (
-                <Text style={[styles.reason, { color: color.inkSoft }]}>, {entry.reason}</Text>
+                <Text variant="headline" weight="regular" style={{ color: color.inkSoft }}>
+                  , {entry.reason}
+                </Text>
               )}
             </Text>
           </View>
           <View style={styles.status}>
             {entry.excused ? (
-              <CheckBadge color={color.accent} />
+              <Icon color={color.accent} name="checkBadge" size={16} />
             ) : (
-              <OpenBadge color={color.warning} />
+              <Icon color={color.warning} name="openBadge" size={16} />
             )}
             <Text
-              style={[
-                Type.style("status"),
-                { color: entry.excused ? color.accent : color.warning },
-              ]}
+              variant="footnote"
+              style={{ color: entry.excused ? color.accent : color.warning }}
             >
               {entry.excused ? "entschuldigt" : "Entschuldigung fehlt"}
             </Text>
@@ -96,7 +106,6 @@ const styles = StyleSheet.create({
     transform: [{ rotate: "-14deg" }],
   },
   text: { flex: 1, gap: Tokens.space.xxs },
-  strong: { fontWeight: "700" },
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -106,6 +115,5 @@ const styles = StyleSheet.create({
     paddingLeft: Tokens.layout.cardPadding,
     paddingRight: Tokens.space.lg,
   },
-  reason: { fontWeight: "400" },
   status: { flexDirection: "row", alignItems: "center", gap: 6 },
 });

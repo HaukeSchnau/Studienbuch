@@ -1,10 +1,9 @@
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-
-import { Card } from "./Card.tsx";
-import { Icon } from "./Icon.tsx";
-import { Type } from "./Type.ts";
+import { Card } from "@stu/ui/Card";
+import { Icon } from "@stu/ui/Icon";
+import { Text } from "@stu/ui/Text";
+import { Pressable, StyleSheet, View } from "react-native";
 
 export type AgendaRow =
   | {
@@ -46,8 +45,10 @@ export function AgendaCard({
           {row.kind === "free" ? (
             <View style={styles.row}>
               <View style={styles.text}>
-                <Text style={[Type.style("label"), { color: color.inkSoft }]}>{row.time} Uhr</Text>
-                <Text style={[Type.style("rowTitle"), styles.free, { color: color.inkSoft }]}>
+                <Text variant="footnote" weight="medium" style={{ color: color.inkSoft }}>
+                  {row.time} Uhr
+                </Text>
+                <Text variant="title3" style={[styles.free, { color: color.inkSoft }]}>
                   Freistunde
                 </Text>
               </View>
@@ -86,28 +87,37 @@ function Lesson({
         {lesson.phase === "now" && lesson.remaining !== undefined ? (
           <View style={styles.now}>
             <View style={[styles.dot, { backgroundColor: color.accent }]} />
-            <Text style={[Type.style("status"), { color: color.ink }]}>{lesson.remaining}</Text>
+            <Text variant="footnote" style={{ color: color.ink }}>
+              {lesson.remaining}
+            </Text>
           </View>
         ) : (
-          <Text style={[Type.style("label"), { color: color.inkSoft }]}>{lesson.time} Uhr</Text>
+          <Text variant="footnote" weight="medium" style={{ color: color.inkSoft }}>
+            {lesson.time} Uhr
+          </Text>
         )}
         <Text
-          style={[
-            Type.style("rowTitle"),
+          variant="title3"
+          style={
             cancelled
               ? [styles.struck, { color: color.inkSoft, textDecorationColor: color.danger }]
-              : { color: color.accent },
-          ]}
+              : { color: color.accent }
+          }
         >
           {lesson.subject}
         </Text>
         {cancelled ? (
-          <Text style={[Type.style("status"), { color: color.danger }]}>Entfall</Text>
+          <Text variant="footnote" style={{ color: color.danger }}>
+            Entfall
+          </Text>
         ) : (
-          <Text style={[Type.style("detail"), { color: color.inkSoft }]}>
+          <Text variant="subhead" weight="regular" style={{ color: color.inkSoft }}>
             {lesson.detail}
             {lesson.change === "Vertretung" ? (
-              <Text style={[styles.change, { color: color.danger }]}> (Vertretung)</Text>
+              <Text variant="subhead" weight="semibold" style={{ color: color.danger }}>
+                {" "}
+                (Vertretung)
+              </Text>
             ) : null}
           </Text>
         )}
@@ -167,5 +177,4 @@ const styles = StyleSheet.create({
   dot: { width: 7, height: 7, borderRadius: 3.5 },
   free: { fontStyle: "italic", fontWeight: "500" },
   struck: { textDecorationLine: "line-through" },
-  change: { fontWeight: "600" },
 });
