@@ -1,6 +1,6 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
-import { withBackupExclusion } from "./modules/backup-exclusion/plugin.ts";
+import { withBackupExclusion } from "./modules/device-files/plugin.ts";
 
 // The EAS project of `dev.schnau.studienbuch` on Hauke's Expo account, carried over from the old tree.
 const projectId = "76a4b2c7-e6dc-40fa-808e-27c1b574d342";
@@ -60,7 +60,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     plugins: [
       "expo-router",
       ["expo-sqlite", { useSQLCipher: true }],
-      // The backup rules of modules/backup-exclusion also leave out the secure store's entries.
+      // The backup rules of modules/device-files also leave out the secure store's entries.
       ["expo-secure-store", { configureAndroidBackup: false }],
       "react-native-quick-crypto",
       [

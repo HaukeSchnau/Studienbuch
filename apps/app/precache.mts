@@ -10,8 +10,10 @@ const dist = NodePath.join(import.meta.dirname, "dist");
 const worker = NodePath.join(dist, "sw.js");
 const placeholder = '"__PRECACHE__"';
 
-// The worker itself is fetched past any service worker, and `metadata.json` is for native updates.
-const skipped = new Set(["sw.js", "metadata.json"]);
+// The worker itself is fetched past any service worker, `metadata.json` is for native updates,
+// and source maps load only with the developer tools open.
+const skipped = (file: string) =>
+  file === "sw.js" || file === "metadata.json" || file.endsWith(".map");
 
 const files = NodeFS.readdirSync(dist, { recursive: true, withFileTypes: true })
   .filter((entry) => entry.isFile())
@@ -20,7 +22,7 @@ const files = NodeFS.readdirSync(dist, { recursive: true, withFileTypes: true })
       .split(NodePath.sep)
       .join("/"),
   )
-  .filter((file) => !skipped.has(file))
+  .filter((file) => !skipped(file))
   .sort();
 
 const hash = NodeCrypto.createHash("sha256");

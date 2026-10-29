@@ -4,20 +4,17 @@ import * as Layer from "effect/Layer";
 import * as Queue from "effect/Queue";
 import * as Atom from "effect/reactivity/Atom";
 import * as Stream from "effect/Stream";
-import * as Network from "expo-network";
 import { AppState } from "react-native";
 
-// One implementation for all three platforms: React Native's AppState follows the app on iOS and
-// Android and the tab's visibility in react-native-web, and expo-network follows the platform's
-// network, which in a browser is `navigator.onLine` with its `online` and `offline` events.
+import { onlineNow, onOnlineChange } from "./network.ts";
+
+// React Native's AppState follows the app on iOS and Android and the tab's visibility in
+// react-native-web. The network comes from expo-network on phones and from the browser's own
+// events on the web (network.ts).
 
 export * as AppLifecycle from "./AppLifecycle.ts";
 
 const foreground = (state: string | null | undefined) => state === "active";
-
-// A network that Android hasn't probed yet reports no reachability, so a connection counts.
-const online = (state: Network.NetworkState) =>
-  state.isInternetReachable ?? state.isConnected ?? true;
 
 const same = (a: Ports.LifecycleState, b: Ports.LifecycleState) =>
   a.foreground === b.foreground && a.online === b.online;
@@ -39,17 +36,16 @@ const changes = Stream.callback<Ports.LifecycleState>((queue) =>
       update({ foreground: foreground(next) }),
     );
 
-    const network = Network.addNetworkStateListener((next) => update({ online: online(next) }));
+    const stopNetwork = onOnlineChange((online) => update({ online }));
 
     yield* Effect.addFinalizer(() =>
       Effect.sync(() => {
         app.remove();
-        network.remove();
+        stopNetwork();
       }),
     );
 
-    const initial = yield* Effect.promise(() => Network.getNetworkStateAsync());
-    update({ online: online(initial) });
+    update({ online: yield* Effect.promise(onlineNow) });
   }),
 ).pipe(Stream.changesWith(same));
 

@@ -57,6 +57,16 @@ export const layer: Databases.Open = (location) =>
 const notFound = (cause: unknown) =>
   cause instanceof DOMException && cause.name === "NotFoundError";
 
+export const removeLeftovers: Databases.RemoveLeftovers = Effect.tryPromise(async () => {
+  const opfs = await navigator.storage.getDirectory();
+
+  for await (const [name, handle] of opfs.entries()) {
+    if (handle.kind === "directory" && name.startsWith("device-")) {
+      await opfs.removeEntry(name, { recursive: true });
+    }
+  }
+}).pipe(Effect.catchCause((cause) => Effect.logWarning("M0's databases stay for now", cause)));
+
 export const remove: Databases.Remove = (location) =>
   location.memory
     ? Effect.void

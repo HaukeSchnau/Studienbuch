@@ -5,9 +5,9 @@ import * as Atom from "effect/reactivity/Atom";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 
-import { BackupExclusion } from "../../infra/backup/BackupExclusion.ts";
+import { excludeDatabases } from "../../infra/device/files.ts";
 import { VirtualDevice } from "../../infra/device/VirtualDevice.ts";
-import { layer as keychain } from "../../infra/keychain/platform.ts";
+import { clearedAfterInstall, layer as keychain } from "../../infra/keychain/platform.ts";
 import { layer as open } from "../../infra/sqlite/database.ts";
 
 // The SQLite check: a database of this device's own counts the app's starts, so a number that
@@ -23,6 +23,8 @@ export interface Report {
   readonly cipher: Option.Option<{ readonly version: string; readonly provider: string }>;
   /** Whether iOS keeps the databases out of its backups. None where the build's rules do it. */
   readonly excludedFromBackup: Option.Option<boolean>;
+  /** Keychain entries of an earlier install that this start removed (iOS keeps them). */
+  readonly clearedAfterInstall: number;
 }
 
 const one = <S extends Schema.Top>(schema: S) => Schema.decodeUnknownEffect(Schema.Tuple([schema]));
@@ -64,7 +66,8 @@ const recordStart = Effect.gen(function* () {
     starts: count,
     sqlite: version,
     cipher,
-    excludedFromBackup: yield* BackupExclusion.excludeDatabases,
+    excludedFromBackup: yield* excludeDatabases,
+    clearedAfterInstall: yield* clearedAfterInstall,
   } satisfies Report;
 }).pipe(Effect.catchTags({ SchemaError: Effect.die }));
 

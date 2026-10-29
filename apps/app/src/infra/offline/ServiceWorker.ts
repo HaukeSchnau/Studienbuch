@@ -13,7 +13,22 @@ export const register = () => {
   if (Platform.OS !== "web" || !("serviceWorker" in navigator)) return;
 
   if (process.env.NODE_ENV === "production") {
-    void navigator.serviceWorker.register(`${base}/sw.js`, { scope: `${base}/` });
+    // After the page's own files, so the worker's download of the release doesn't compete with them.
+    // Its scope is `/app` rather than `/app/`, which the server allows, so it answers a bare `/app`
+    // without network too. Earlier builds registered `/app/`, which would keep answering for it.
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register(`${base}/sw.js`, { scope: base })
+        .then(() => navigator.serviceWorker.getRegistrations())
+        .then((registrations) =>
+          Promise.all(
+            registrations
+              .filter((registration) => registration.scope.endsWith(`${base}/`))
+              .map((registration) => registration.unregister()),
+          ),
+        )
+        .catch(() => console.warn("No service worker, so the app won't start offline"));
+    });
 
     return;
   }

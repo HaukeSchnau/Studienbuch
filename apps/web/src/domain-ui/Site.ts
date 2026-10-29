@@ -10,7 +10,7 @@ export const appStore = "https://apps.apple.com/de/app/igs-lilienthal/id64492273
 export const playStore = "https://play.google.com/store/apps/details?id=dev.schnau.studienbuch";
 
 /** The web app, on the page's own origin. */
-export const webApp = "/app";
+export const webApp = "/app/";
 
 export const email = "info@urbs.one";
 export const schoolEnquiry = `mailto:${email}?subject=${encodeURIComponent("Studienbuch für unsere Schule")}`;

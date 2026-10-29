@@ -20,7 +20,8 @@ CREATE TABLE `sync_meta` (
 	`client_id` text NOT NULL,
 	`sync_epoch` text,
 	`last_mutation_id` integer NOT NULL,
-	`settled_mutation_id` integer NOT NULL
+	`settled_mutation_id` integer NOT NULL,
+	`replay_due` integer DEFAULT 0 NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `sync_outbox` (

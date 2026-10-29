@@ -5,10 +5,10 @@ import * as Schema from "effect/Schema";
 
 import { Keychain } from "./Keychain.ts";
 
-// A browser has no keychain. Each value is sealed with AES-GCM under one key per origin, which
-// WebCrypto created as non-extractable and IndexedDB keeps as a key object (encryption.md,
-// decision 7): page code can use it, but no script can read its bytes. The entry's name is the
-// associated data, so a value moved to another name no longer opens.
+// A browser has no keychain. Each value is sealed with AES-GCM under a non-extractable WebCrypto
+// key, named by the entry (encryption.md, decision 7), so it doesn't leak without that key, as in
+// a copied profile. A script on the page can still have WebCrypto open it: the content security
+// policy on /app (WebBuilds.ts) is what keeps other scripts out.
 
 export * as IndexedDbKeychain from "./IndexedDbKeychain.ts";
 

@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
-  s.name           = 'BackupExclusion'
+  s.name           = 'DeviceFiles'
   s.version        = '1.0.0'
-  s.summary        = "Keeps Studienbuch's databases out of iCloud backups"
+  s.summary        = "Studienbuch's databases out of iCloud backups, and its first start after an install"
   s.license        = 'BUSL-1.1'
   s.author         = 'Studienbuch'
   s.homepage       = 'https://studienbuch.app'

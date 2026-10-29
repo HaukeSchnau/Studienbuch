@@ -1,7 +1,7 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "f9b9bb68-241d-4342-94a2-72e40f0e7aa3",
+  "id": "5bf43fab-0a34-4159-8adf-c4bff83337ca",
   "prevIds": ["00000000-0000-0000-0000-000000000000"],
   "ddl": [
     {
@@ -169,6 +169,16 @@
       "notNull": true,
       "autoincrement": false,
       "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_meta",
+      "name": "replay_due",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "0",
       "generated": null,
       "entityType": "columns"
     },

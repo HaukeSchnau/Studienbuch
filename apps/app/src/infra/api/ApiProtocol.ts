@@ -4,17 +4,12 @@ import * as FetchHttpClient from "effect/http/FetchHttpClient";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as RpcClient from "effect/rpc/RpcClient";
-import { fetch as expoFetch } from "expo/fetch";
-
+import { streamingFetch } from "./fetch.ts";
 import { ServerOrigin } from "./ServerOrigin.ts";
 
 // The RPC protocol to the server, over HTTP.
 
 export * as ApiProtocol from "./ApiProtocol.ts";
-
-// The server answers in NDJSON, which Effect reads as a stream. React Native's own fetch has no
-// response streams; Expo's has, and on the web it is the browser's.
-const streamingFetch: typeof globalThis.fetch = (input, init) => expoFetch(input, init);
 
 /** Effect's `HttpClient` on a fetch that streams responses on every platform. */
 export const httpClient = FetchHttpClient.layer.pipe(

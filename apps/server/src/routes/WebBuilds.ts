@@ -23,6 +23,26 @@ export interface Roots {
 const immutable = "public, max-age=31536000, immutable";
 const revalidate = "no-cache";
 
+// The app's own files and its server only. RNW and Expo write inline styles, and the database's
+// wasm needs `wasm-unsafe-eval`. A script injected into the page could still use the browser's
+// keys (IndexedDbKeychain.ts), so this is what keeps the notebook's plaintext on the device.
+const appPolicy = [
+  "default-src 'self'",
+  "script-src 'self' 'wasm-unsafe-eval'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "worker-src 'self'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+].join("; ");
+
+const withAppPolicy = <E, R>(serve: Effect.Effect<HttpServerResponse.HttpServerResponse, E, R>) =>
+  Effect.map(serve, HttpServerResponse.setHeader("content-security-policy", appPolicy));
+
 const isNotFound = (error: HttpServerError.HttpServerError) =>
   error.reason._tag === "RouteNotFound";
 
@@ -89,13 +109,38 @@ export const layer = (roots: Roots) =>
         );
 
       const app = router.prefixed("/app");
-      const appAssets = yield* files({ root: roots.app, cacheControl: immutable });
+      const appAssets = withAppPolicy(yield* files({ root: roots.app, cacheControl: immutable }));
       yield* app.add("GET", "/_expo/static/*", appAssets);
       yield* app.add("GET", "/assets/*", appAssets);
+
+      const appPages = withAppPolicy(
+        yield* files({ root: roots.app, spa: true, cacheControl: revalidate }),
+      );
+
+      // A link to /app moves to /app/ for good, query and all. The service worker may also answer
+      // /app itself, so it starts offline from there too, which its file under /app/ alone can't.
       yield* app.add(
         "GET",
         "/*",
-        yield* files({ root: roots.app, spa: true, cacheControl: revalidate }),
+        Effect.gen(function* () {
+          const request = yield* HttpServerRequest.HttpServerRequest;
+          // Absolute behind a prefixed router; the base only parses a relative one.
+          const { pathname, search } = new URL(request.originalUrl, "http://localhost");
+
+          if (pathname === "/app/sw.js") {
+            return yield* Effect.map(
+              appPages,
+              HttpServerResponse.setHeader("service-worker-allowed", "/app"),
+            );
+          }
+
+          if (pathname !== "/app") return yield* appPages;
+
+          return HttpServerResponse.redirect(`/app/${search}`, {
+            status: 308,
+            headers: { "cache-control": "public, max-age=31536000" },
+          });
+        }),
       );
 
       const consoleShell = {

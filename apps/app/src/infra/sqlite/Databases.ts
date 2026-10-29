@@ -44,3 +44,10 @@ export class RemoveFailed extends Schema.TaggedError<
 export type Remove = (
   location: Location,
 ) => Effect.Effect<void, RemoveFailed | Keychain.Unavailable, Keychain.Store>;
+
+/**
+ * Deletes what M0 builds kept, before databases had owners: one `studienbuch.db` and its key on a
+ * phone, `device-*` directories in a browser's OPFS. They held only a start counter. What can't go
+ * now (a browser tab of an M0 build still holding its directory) goes at a later start.
+ */
+export type RemoveLeftovers = Effect.Effect<void, never, Keychain.Store>;

@@ -1,3 +1,4 @@
+import { Ports } from "@stu/sync/client";
 import { Replay } from "@stu/sync/conformance";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -8,7 +9,6 @@ import * as SqlClient from "effect/sql/SqlClient";
 import { VirtualDevice } from "../../infra/device/VirtualDevice.ts";
 import { MemoryKeychain } from "../../infra/keychain/MemoryKeychain.ts";
 import { Layers } from "../../infra/runtime/Layers.ts";
-import { AccountDatabase } from "../../infra/sqlite/AccountDatabase.ts";
 import { layer as open } from "../../infra/sqlite/database.ts";
 
 // The SQLite build this device runs: expo-sqlite with SQLCipher on Hermes, the wasm build in its
@@ -44,16 +44,25 @@ const created = Effect.gen(function* () {
 
 const accountId = "selbsttest";
 
+// Signed in, the account stores a key, and signing out deletes it with the database.
+const signedIn = Effect.gen(function* () {
+  const secrets = yield* Ports.DeviceSecrets;
+
+  yield* secrets.set("device-seed", globalThis.crypto.getRandomValues(new Uint8Array(32)));
+
+  return yield* created;
+});
+
 /** How many tables, views and indexes an account's database got, once it is deleted again. */
 export const accountDatabase = Atom.make(
   Effect.gen(function* () {
     const count = yield* Effect.scoped(
-      Effect.flatMap(Layer.build(AccountDatabase.layer(accountId)), (context) =>
-        Effect.provide(created, context),
+      Effect.flatMap(Layer.build(Layers.account(accountId)), (context) =>
+        Effect.provide(signedIn, context),
       ),
     );
 
-    yield* AccountDatabase.remove(accountId);
+    yield* Layers.forget(accountId);
 
     return count;
   }).pipe(

@@ -22,7 +22,7 @@ export function DiagnosticsScreen() {
   const server = useAtomValue(ServerInfo.info);
   const selfTest = useAtomValue(CryptoSelfTest.outcomes);
   const storage = useAtomValue(DeviceStorage.thisStart);
-  const persistence = AsyncResult.value(useAtomValue(StoragePersistence.state));
+  const persistence = AsyncResult.value(useAtomValue(StoragePersistence.state(false)));
   const lifecycle = AsyncResult.value(useAtomValue(AppLifecycle.state));
   const refreshServer = useAtomRefresh(ServerInfo.info);
   const refreshSelfTest = useAtomRefresh(CryptoSelfTest.outcomes);
@@ -187,6 +187,12 @@ function cryptoRow(selfTest: AsyncResult.AsyncResult<ReadonlyArray<CryptoSelfTes
   });
 }
 
+const persistenceText: Record<StoragePersistence.State, string> = {
+  kept: "bleibt gespeichert",
+  "may be deleted": "der Browser darf ihn löschen",
+  "memory only": "nur bis zum Schließen",
+};
+
 function storageRow(
   storage: AsyncResult.AsyncResult<DeviceStorage.Report, { readonly _tag: string }>,
   persistence: Option.Option<StoragePersistence.State>,
@@ -214,11 +220,7 @@ function storageRow(
         onNone: () =>
           joined(
             `SQLite ${value.sqlite}, eigener Ordner im Browser`,
-            Option.getOrUndefined(
-              Option.map(persistence, (state) =>
-                state === "kept" ? "bleibt gespeichert" : "der Browser darf ihn löschen",
-              ),
-            ),
+            Option.getOrUndefined(Option.map(persistence, (state) => persistenceText[state])),
           ),
         onSome: (cipher) =>
           joined(
@@ -228,6 +230,11 @@ function storageRow(
                 excluded ? "nicht im iCloud-Backup" : "landet im iCloud-Backup",
               ),
             ),
+            value.clearedAfterInstall === 0
+              ? undefined
+              : value.clearedAfterInstall === 1
+                ? "1 Eintrag einer früheren Installation gelöscht"
+                : `${value.clearedAfterInstall} Einträge einer früheren Installation gelöscht`,
           ),
       }),
       status: Option.getOrElse(value.excludedFromBackup, () => true) ? "ok" : "missing",

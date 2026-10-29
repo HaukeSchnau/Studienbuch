@@ -3,7 +3,7 @@ import * as Hex from "effect/encoding/Hex";
 import * as Layer from "effect/Layer";
 import * as SQLite from "expo-sqlite";
 
-import { BackupExclusion } from "../backup/BackupExclusion.ts";
+import { excludeDatabases } from "../device/files.ts";
 import { Keychain } from "../keychain/Keychain.ts";
 import { Databases } from "./Databases.ts";
 import { ExpoSqliteClient } from "./ExpoSqliteClient.ts";
@@ -24,7 +24,7 @@ export const layer: Databases.Open = (location) =>
         });
       }
 
-      yield* BackupExclusion.excludeDatabases;
+      yield* excludeDatabases;
 
       return ExpoSqliteClient.layer({
         filename: file(location),
@@ -50,3 +50,10 @@ export const remove: Databases.Remove = (location) =>
         ),
         Effect.andThen(Keychain.forgetDatabaseKey(location.name)),
       );
+
+export const removeLeftovers: Databases.RemoveLeftovers = Effect.gen(function* () {
+  const store = yield* Keychain.Store;
+
+  yield* remove({ device: "phone", name: "studienbuch", memory: false });
+  yield* store.remove("database-key");
+}).pipe(Effect.catchCause((cause) => Effect.logWarning("M0's database stays for now", cause)));

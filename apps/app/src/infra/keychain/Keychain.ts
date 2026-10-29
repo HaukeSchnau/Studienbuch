@@ -66,15 +66,18 @@ export const forgetDatabaseKey = Effect.fn("Keychain.forgetDatabaseKey")(functio
 
 const decodeSecret = Schema.decodeEffect(Schema.Uint8ArrayFromBase64);
 
+const secretEntry = (namespace: string, secret: Ports.SecretName) =>
+  `secret.${namespace}.${secret}`;
+
 /**
  * The engine's `DeviceSecrets` on this store, in a namespace of their own (`Names.secrets`), so
- * every server and virtual device keeps its secrets apart.
+ * every account on every server and device keeps its secrets apart.
  */
 export const secrets = (namespace: string) =>
   Layer.effect(Ports.DeviceSecrets)(
     Effect.gen(function* () {
       const store = yield* Store;
-      const entry = (secret: Ports.SecretName) => `secret.${namespace}.${secret}`;
+      const entry = (secret: Ports.SecretName) => secretEntry(namespace, secret);
 
       const unavailable = (secret: Ports.SecretName) => () =>
         new Ports.SecretsUnavailable({ secret });
@@ -97,5 +100,16 @@ export const secrets = (namespace: string) =>
       };
     }),
   );
+
+/** Removes every secret in a namespace, as sign-out does for its account's. */
+export const forgetSecrets = Effect.fn("Keychain.forgetSecrets")(function* (namespace: string) {
+  const store = yield* Store;
+
+  yield* Effect.forEach(
+    Ports.SecretName.literals,
+    (secret) => store.remove(secretEntry(namespace, secret)),
+    { discard: true },
+  );
+});
 
 export * as Keychain from "./Keychain.ts";
