@@ -34,14 +34,36 @@ const rows = (space: string, table: string) =>
     `,
   );
 
-const members = (space: string) =>
-  Effect.flatMap(
-    SqlClient.SqlClient,
-    (sql) => sql<{ readonly account: string; readonly grantedBy: string | null }>`
-      select account_id as account, granted_by as "grantedBy" from space_member
-      where space_id = ${space} order by account_id
-    `,
+/** The spaces an account reads, each with the space whose rows granted it. */
+const memberships = (account: string) =>
+  Effect.flatMap(SqlClient.SqlClient, (sql) =>
+    sql<{ readonly space: string; readonly grantedBy: string | null }>`
+      select space_id as space, granted_by as "grantedBy" from space_member
+      where account_id = ${account} order by space_id
+    `.pipe(
+      Effect.map((rows) => rows.map((row): [string, string | null] => [row.space, row.grantedBy])),
+    ),
   );
+
+/** A school `<name>-school` with its courses, and Lena and Tom admitted with a notebook each. */
+const school = (name: string, courses: ReadonlyArray<string>) =>
+  Effect.gen(function* () {
+    const spaces = yield* Spaces.Service;
+    const school = `${name}-school`;
+    yield* spaces.create(school, Fixture.School);
+
+    for (const course of courses) {
+      yield* spaces.create(`${name}-${course}`, Fixture.Course, { parent: school, key: course });
+    }
+
+    for (const student of ["lena", "tom"]) {
+      yield* spaces.create(`${name}-${student}`, Fixture.Notebook, { parent: school });
+      yield* spaces.addMember(`${name}-${student}`, `${name}-account-${student}`, "owner");
+      yield* spaces.addMember(school, `${name}-account-${student}`, "reader");
+    }
+
+    return { lena: `${name}-account-lena`, tom: `${name}-account-tom` };
+  });
 
 const enroll = (notebook: string, courseIds: ReadonlyArray<string>) =>
   Effect.flatMap(SyncWriter.Service, (writer) =>
@@ -162,44 +184,73 @@ describe.skipIf(Postgres18.socket === null)("SyncWriter on PostgreSQL 18", () =>
       () =>
         Effect.gen(function* () {
           const spaces = yield* Spaces.Service;
+          const { lena } = yield* school("grants", ["ma", "de", "en"]);
           const next = yield* listen;
-          yield* spaces.create("lena", Fixture.Notebook);
-          yield* spaces.create("tom", Fixture.Notebook);
-          yield* spaces.addMember("lena", "account-lena", "owner");
-
-          for (const course of ["ma", "de", "en"]) yield* spaces.create(course, Fixture.Course);
           // Lena reads English through her school's admission, not through the rule.
-          yield* spaces.addMember("en", "account-lena", "reader");
-          expect([yield* next, yield* next]).toEqual([
-            { spaces: [], accounts: ["account-lena"] },
-            { spaces: [], accounts: ["account-lena"] },
+          yield* spaces.addMember("grants-en", lena, "reader");
+          expect(yield* next).toEqual({ spaces: [], accounts: [lena] });
+
+          yield* enroll("grants-lena", ["ma", "de", "en"]);
+          expect(yield* next).toEqual({
+            spaces: [{ space: "grants-lena", version: 1 }],
+            accounts: [],
+          });
+          expect(yield* next).toEqual({ spaces: [], accounts: [lena] });
+
+          expect(yield* memberships(lena)).toEqual([
+            ["grants-de", "grants-lena"],
+            ["grants-en", null],
+            ["grants-lena", null],
+            ["grants-ma", "grants-lena"],
+            ["grants-school", null],
           ]);
 
-          yield* enroll("lena", ["ma", "de", "en"]);
-          expect(yield* next).toEqual({ spaces: [{ space: "lena", version: 1 }], accounts: [] });
-          expect(yield* next).toEqual({ spaces: [], accounts: ["account-lena"] });
+          // A modified app names another student's notebook, the school and an id that is no space.
+          yield* enroll("grants-lena", ["de", "grants-tom", "grants-school", "missing"]);
 
-          expect([yield* members("ma"), yield* members("de"), yield* members("en")]).toEqual([
-            [{ account: "account-lena", grantedBy: "lena" }],
-            [{ account: "account-lena", grantedBy: "lena" }],
-            [{ account: "account-lena", grantedBy: null }],
-          ]);
-
-          // A modified app names another student's notebook and an id that is no space.
-          yield* enroll("lena", ["de", "tom", "missing"]);
-
-          expect([
-            yield* members("ma"),
-            yield* members("de"),
-            yield* members("en"),
-            yield* members("tom"),
-          ]).toEqual([
-            [],
-            [{ account: "account-lena", grantedBy: "lena" }],
-            [{ account: "account-lena", grantedBy: null }],
-            [],
+          expect(yield* memberships(lena)).toEqual([
+            ["grants-de", "grants-lena"],
+            ["grants-en", null],
+            ["grants-lena", null],
+            ["grants-school", null],
           ]);
         }),
+    );
+
+    it.effect("a forged enrollment naming another school's courses grants nothing", () =>
+      Effect.gen(function* () {
+        const spaces = yield* Spaces.Service;
+        const { lena } = yield* school("here", ["ma"]);
+        // Course ids repeat across schools: both offer a "ma".
+        yield* school("there", ["ma", "ph"]);
+        // Lena attends both, with a notebook at each.
+        yield* spaces.create("there-lena-2", Fixture.Notebook, { parent: "there-school" });
+        yield* spaces.addMember("there-lena-2", lena, "owner");
+        yield* spaces.addMember("there-school", lena, "reader");
+        yield* enroll("here-lena", ["ma", "ph"]);
+
+        expect((yield* memberships(lena)).filter(([space]) => !space.endsWith("school"))).toEqual([
+          ["here-lena", null],
+          ["here-ma", "here-lena"],
+          ["there-lena-2", null],
+        ]);
+      }),
+    );
+
+    it.effect("after leaving a school, a new enrollment write grants nothing for it", () =>
+      Effect.gen(function* () {
+        const spaces = yield* Spaces.Service;
+        const { lena } = yield* school("leaving", ["ma"]);
+        yield* enroll("leaving-lena", ["ma"]);
+        yield* spaces.removeMember("leaving-school", lena);
+        const left = yield* memberships(lena);
+        yield* enroll("leaving-lena", ["ma"]);
+
+        expect([left, yield* memberships(lena)]).toEqual([
+          [["leaving-lena", null]],
+          [["leaving-lena", null]],
+        ]);
+      }),
     );
 
     it.effect(

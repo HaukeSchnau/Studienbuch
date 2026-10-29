@@ -14,6 +14,7 @@ import {
   pgTable,
   primaryKey,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -41,18 +42,36 @@ export const syncEpoch = pgTable("sync_epoch", {
 });
 
 /** A unit of sync: a set of rows that the same accounts read. */
-export const space = pgTable("space", {
-  id: id("id").primaryKey(),
-  /** The `Sync.spaceKind` name. */
-  kind: id("kind").notNull(),
-  /**
-   * Bumped under the row lock by every commit that writes the space, and stamped on the rows that
-   * commit wrote, so version order is commit order (ADR 0019). 0 before the first write.
-   */
-  version: counter("version").notNull().default(0),
-  /** A sealed space's current key epoch, `null` until a member's device opens epoch 0. */
-  keyEpoch: integer("key_epoch"),
-});
+export const space = pgTable(
+  "space",
+  {
+    id: id("id").primaryKey(),
+    /** The `Sync.spaceKind` name. */
+    kind: id("kind").notNull(),
+    /**
+     * The space this one belongs to, such as a course's or a notebook's school. A membership rule
+     * grants a member of a notebook only spaces of the notebook's own parent, and only while the
+     * member reads that parent.
+     */
+    parentId: id("parent_id"),
+    /**
+     * The id that rows in the parent use for this space, which membership rules name, such as a
+     * course's id among its school's rows. Unique per parent and kind, not across parents.
+     */
+    key: id("key"),
+    /**
+     * Bumped under the row lock by every commit that writes the space, and stamped on the rows
+     * that commit wrote, so version order is commit order (ADR 0019). 0 before the first write.
+     */
+    version: counter("version").notNull().default(0),
+    /** A sealed space's current key epoch, `null` until a member's device opens epoch 0. */
+    keyEpoch: integer("key_epoch"),
+  },
+  (table) => [
+    foreignKey({ columns: [table.parentId], foreignColumns: [table.id] }),
+    uniqueIndex("space_parent_kind_key").on(table.parentId, table.kind, table.key),
+  ],
+);
 
 /** Who reads a space, with a role. Membership is the only read rule. */
 export const spaceMember = pgTable(
@@ -64,7 +83,8 @@ export const spaceMember = pgTable(
     /**
      * The space whose rows granted the membership through a `Sync.membershipRule`, such as the
      * notebook whose `Enrollment` lists a course. `null` for memberships that server code added
-     * through `Spaces`. A rule only ever removes the memberships it granted itself.
+     * through `Spaces`. A rule only ever removes the memberships it granted itself, and leaving a
+     * parent ends the memberships its child spaces granted.
      */
     grantedBy: id("granted_by"),
   },

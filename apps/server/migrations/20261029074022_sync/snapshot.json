@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "34cd7ae7-36ae-453c-8a79-59a981461aa0",
+  "id": "53c97b2a-e5ef-496d-b1f4-8ed3a3675b29",
   "prevIds": ["6e6bdc0a-e553-4bd7-b920-df6d1f7994be"],
   "footprints": [
     {
@@ -72,6 +72,23 @@
     },
     {
       "statementType": "create_index",
+      "statementTarget": ["index", "public", "space", "space_parent_kind_key"],
+      "writes": [
+        "s|idx|public.space_parent_kind_key",
+        "n|idx|public.space_parent_kind_key",
+        "e|idx|public.space_parent_kind_key",
+        "n|rel|public.space_parent_kind_key"
+      ],
+      "reads": [
+        "n|tbl|public.space",
+        "n|sch|public",
+        "n|col|public.space.parent_id",
+        "n|col|public.space.kind",
+        "n|col|public.space.key"
+      ]
+    },
+    {
+      "statementType": "create_index",
       "statementTarget": ["index", "public", "space_member", "space_member_account"],
       "writes": [
         "s|idx|public.space_member_account",
@@ -136,6 +153,25 @@
         "n|col|public.command_log.client_id",
         "n|col|public.sync_client.id",
         "e|uniqueness|public.sync_client.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "space"],
+      "writes": [
+        "s|fk|public.space.space_parent_id_space_id_fkey",
+        "n|fk|public.space.space_parent_id_space_id_fkey",
+        "e|fk|public.space.space_parent_id_space_id_fkey",
+        "n|con|public.space.space_parent_id_space_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.space",
+        "n|sch|public",
+        "n|tbl|public.space",
+        "n|sch|public",
+        "n|col|public.space.parent_id",
+        "n|col|public.space.id",
+        "e|uniqueness|public.space.id"
       ]
     },
     {
@@ -436,6 +472,38 @@
       "row": {
         "schema": "public",
         "table": "space",
+        "name": "parent_id",
+        "type": "text collate \"C\"",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "space",
+        "name": "key",
+        "type": "text collate \"C\"",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "space",
         "name": "version",
         "type": "bigint",
         "typeSchema": null,
@@ -723,6 +791,44 @@
       "op": "create",
       "row": {
         "schema": "public",
+        "table": "space",
+        "name": "space_parent_kind_key",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "parent_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "kind",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "key",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
         "table": "space_member",
         "name": "space_member_account",
         "nameExplicit": true,
@@ -835,6 +941,22 @@
         "columnsTo": ["id"],
         "onUpdate": "NO ACTION",
         "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "space",
+        "name": "space_parent_id_space_id_fkey",
+        "nameExplicit": false,
+        "columns": ["parent_id"],
+        "schemaTo": "public",
+        "tableTo": "space",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "NO ACTION",
         "entityType": "fks"
       }
     },

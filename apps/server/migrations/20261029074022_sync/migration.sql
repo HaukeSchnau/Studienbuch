@@ -16,6 +16,8 @@ CREATE TABLE "command_log" (
 CREATE TABLE "space" (
 	"id" text collate "C" PRIMARY KEY,
 	"kind" text collate "C" NOT NULL,
+	"parent_id" text collate "C",
+	"key" text collate "C",
 	"version" bigint DEFAULT 0 NOT NULL,
 	"key_epoch" integer
 );
@@ -47,10 +49,12 @@ CREATE TABLE "sync_row" (
 	CONSTRAINT "sync_row_pkey" PRIMARY KEY("space_id","tbl","id")
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX "space_parent_kind_key" ON "space" ("parent_id","kind","key");--> statement-breakpoint
 CREATE INDEX "space_member_account" ON "space_member" ("account_id");--> statement-breakpoint
 CREATE INDEX "space_member_granted_by" ON "space_member" ("granted_by");--> statement-breakpoint
 CREATE INDEX "sync_client_account" ON "sync_client" ("account_id");--> statement-breakpoint
 CREATE INDEX "sync_row_space_version" ON "sync_row" ("space_id","version");--> statement-breakpoint
 ALTER TABLE "command_log" ADD CONSTRAINT "command_log_client_id_sync_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "sync_client"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "space" ADD CONSTRAINT "space_parent_id_space_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "space"("id");--> statement-breakpoint
 ALTER TABLE "space_member" ADD CONSTRAINT "space_member_space_id_space_id_fkey" FOREIGN KEY ("space_id") REFERENCES "space"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "sync_row" ADD CONSTRAINT "sync_row_space_id_space_id_fkey" FOREIGN KEY ("space_id") REFERENCES "space"("id") ON DELETE CASCADE;

@@ -20,23 +20,37 @@ export class Service extends Context.Service<
   Service,
   {
     /**
-     * Creates the space with no rows and no members, or does nothing when it exists with this
-     * kind. A sealed space starts without a key epoch: its owner's device opens epoch 0.
+     * Creates the space with no rows and no members, or does nothing when it exists alike. A
+     * sealed space starts without a key epoch: its owner's device opens epoch 0. `parent` is the
+     * space it belongs to, such as a notebook's or a course's school, and `key` the id the
+     * parent's rows use for it, which membership rules name.
      */
-    readonly create: (id: string, kind: Sync.SpaceKind) => Effect.Effect<void, SqlError.SqlError>;
+    readonly create: (
+      id: string,
+      kind: Sync.SpaceKind,
+      options?: Placement,
+    ) => Effect.Effect<void, SqlError.SqlError>;
     /** Adds the account with `role`, or changes its role. The space must exist. */
     readonly addMember: (
       space: string,
       account: string,
       role: string,
     ) => Effect.Effect<void, SqlError.SqlError>;
-    /** Removes the account, which then gets the space in a pull's `removed`. */
+    /**
+     * Removes the account, which then gets the space in a pull's `removed`, and the memberships
+     * the space's children granted it, such as the courses of a school the account left.
+     */
     readonly removeMember: (
       space: string,
       account: string,
     ) => Effect.Effect<void, SqlError.SqlError>;
   }
 >()("@stu/sync/server/Spaces") {}
+
+export interface Placement {
+  readonly parent?: string;
+  readonly key?: string;
+}
 
 const fitsId = Schema.is(Ids.Id);
 
@@ -56,18 +70,37 @@ export const make = Effect.gen(function* () {
   });
 
   return Service.of({
-    create: Effect.fn("Spaces.create")(function* (id: string, kind: Sync.SpaceKind) {
+    create: Effect.fn("Spaces.create")(function* (
+      id: string,
+      kind: Sync.SpaceKind,
+      options?: Placement,
+    ) {
+      const parent = options?.parent ?? null;
+      const key = options?.key ?? null;
+
       if (!isId(id)) return yield* Effect.die(`The space id ${id} is outside Ids.Id`);
 
       if (definition.byName.spaceKinds.get(kind.name) !== kind) {
         return yield* Effect.die(`The space kind ${kind.name} isn't the definition's`);
       }
 
-      yield* sql`insert into space (id, kind) values (${id}, ${kind.name}) on conflict (id) do nothing`;
-      const [row] = yield* sql<{ readonly kind: string }>`select kind from space where id = ${id}`;
+      if (key !== null && parent === null) {
+        return yield* Effect.die(`The space ${id} has a key but no parent`);
+      }
 
-      if (row?.kind !== kind.name) {
-        return yield* Effect.die(`The space ${id} exists with another kind`);
+      yield* sql`
+        insert into space (id, kind, parent_id, key) values (${id}, ${kind.name}, ${parent}, ${key})
+        on conflict (id) do nothing
+      `;
+
+      const [row] = yield* sql<{
+        readonly kind: string;
+        readonly parent: string | null;
+        readonly key: string | null;
+      }>`select kind, parent_id as parent, key from space where id = ${id}`;
+
+      if (row?.kind !== kind.name || row.parent !== parent || row.key !== key) {
+        return yield* Effect.die(`The space ${id} exists with another kind or place`);
       }
     }),
 
@@ -98,7 +131,9 @@ export const make = Effect.gen(function* () {
 
     removeMember: Effect.fn("Spaces.removeMember")(function* (space: string, account: string) {
       const removed = yield* sql`
-        delete from space_member where space_id = ${space} and account_id = ${account}
+        delete from space_member
+        where account_id = ${account}
+          and (space_id = ${space} or granted_by in (select id from space where parent_id = ${space}))
         returning 1
       `;
 
