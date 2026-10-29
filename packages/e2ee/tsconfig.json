@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // WebCrypto's types. Hermes gets the implementation from quick-crypto's `install()`.
+    "lib": ["ESNext", "DOM"],
+    "types": []
+  },
+  "include": ["src"]
+}
