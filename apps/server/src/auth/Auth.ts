@@ -1,5 +1,6 @@
 import { passkey } from "@better-auth/passkey";
 import { Accounts } from "@stu/api/Accounts";
+import { Keys } from "@stu/api/Keys";
 import { Ports } from "@stu/sync/server";
 import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
@@ -71,8 +72,14 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
       database: { defaultFindManyLimit: 100_000 },
     },
     user: { modelName: "auth_user" },
-    // A session lasts 90 days and renews with use, at most once a day (D27).
-    session: { modelName: "auth_session", expiresIn: 90 * day, updateAge: day },
+    // A session lasts 90 days and renews with use, at most once a day (D27). Adding a passkey
+    // needs a sign-in as recent as adding a key wrapper does (ADR 0025).
+    session: {
+      modelName: "auth_session",
+      expiresIn: 90 * day,
+      updateAge: day,
+      freshAge: Keys.freshSignInMinutes * 60,
+    },
     account: { modelName: "auth_account" },
     verification: { modelName: "auth_verification" },
     emailAndPassword: {
@@ -92,12 +99,15 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
           : Promise.resolve(),
     },
     hooks: {
-      // A new password ends the session on every other device, whatever the request asks for.
+      // A new password ends the session on every other device, whatever the request asks for. A
+      // new passkey signs nobody in, so a fresh sign-in can't be stretched by registering again.
       before: createAuthMiddleware((context) =>
         Promise.resolve(
           context.path === "/change-password"
             ? { context: { body: { ...context.body, revokeOtherSessions: true } } }
-            : undefined,
+            : context.path === "/passkey/verify-registration"
+              ? { context: { body: { ...context.body, createSession: false } } }
+              : undefined,
         ),
       ),
     },

@@ -191,7 +191,7 @@ const revocations = (count: number) =>
     }),
   );
 
-describe.skipIf(Postgres18.socket === null)("Auth", () => {
+describe.skipIf((Postgres18.socket ?? null) === null)("Auth", () => {
   layer(NodeServices.layer)((it) => {
     it.layer(server("development"), { buildPerTest: true })((it) => {
       it.effect("opens sign-up in development, and the mailed code signs the device in", () =>
@@ -429,6 +429,57 @@ describe.skipIf(Postgres18.socket === null)("Auth", () => {
             assert.deepStrictEqual(
               accountOf(yield* resolver.resolve(bearer(signedIn.token ?? ""))),
               accountOf(yield* resolver.resolve(bearer(token))),
+            );
+          }),
+      );
+      it.effect(
+        "adds a passkey only within ten minutes of a sign-in, and a new passkey signs nobody in",
+        () =>
+          Effect.gen(function* () {
+            const resolver = yield* Ports.SessionResolver;
+            const sql = yield* SqlClient.SqlClient;
+            const token = yield* signUp("lena@example.org");
+            const authenticator = yield* VirtualAuthenticator.make;
+            const session = yield* resolver.resolve(bearer(token));
+
+            const sessionId = Option.match(session, {
+              onNone: () => "",
+              onSome: (s) => s.sessionId,
+            });
+
+            const signedInAgo = (minutes: number) => sql`
+              update auth_session set "createdAt" = now() - make_interval(mins => ${minutes})
+              where id = ${sessionId}
+            `;
+
+            yield* signedInAgo(11);
+            const stale = yield* call("GET", "/passkey/generate-register-options", { token });
+            yield* signedInAgo(9);
+            const offered = yield* call("GET", "/passkey/generate-register-options", { token });
+
+            const registered = yield* call("POST", "/passkey/verify-registration", {
+              token,
+              challenge: offered.challenge,
+              body: {
+                createSession: true,
+                response: authenticator.create(yield* decodeChallenge(offered.json), {
+                  verified: true,
+                }),
+              },
+            });
+
+            const [sessions] = yield* sql<{ readonly count: number }>`
+              select count(*)::int as count from auth_session
+            `;
+
+            assert.deepStrictEqual(
+              {
+                stale: stale.status,
+                registered: registered.status,
+                token: registered.token,
+                sessions: sessions?.count,
+              },
+              { stale: 403, registered: 200, token: undefined, sessions: 1 },
             );
           }),
       );

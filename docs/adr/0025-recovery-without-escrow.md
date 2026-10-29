@@ -12,9 +12,10 @@ M1 builds three methods, each a wrapper of ADR 0026:
 
 QR pairing, renewal after a lost device, device removal, and the unlock banners and mail arrive in M3.
 
-The server stores each account's key records, statements and seals, and checks every signature and endorsement it receives. It can't open a seal. Two limits guard the methods:
+The server stores each account's key records, statements and seals, and checks every signature and endorsement it receives. It can't open a seal. Three rules guard the methods:
 
-- A passkey or Notfallkarte wrapper needs a sign-in in the last ten minutes, so a thief with an unlocked phone can't quietly add a card of their own.
+- A passkey or Notfallkarte wrapper needs a sign-in in the last ten minutes, so a thief with an unlocked phone can't quietly add a card of their own. Registering a passkey needs the same, and it signs nobody in, so it can't mint a fresh session either.
+- A device wrapper names the session that added it, and a session adds one, so M3's device removal knows whose seal to drop.
 - An account gets 20 seal fetches in 24 hours, and each fetch that finds a seal writes a `recovery_event` in the same transaction. The 128 bits of a card are the real protection. The limit and the events give M3's unlock alerts something to show.
 
 Key operations need the server: it decides `ChainExists`, the ten-minute rule and the limit. So in M1 a device sends them online and shows a new Notfallkarte only after the server stored its wrapper. The offline promise covers the notebook's content, not key operations, which need a sign-in anyway. ADR 0021 says a device re-sends its key operations after a restore. M1 doesn't: a re-sent passkey or card wrapper would fail the ten-minute rule, so M3 designs the re-send with its local queue. Until then, a device that finds the server without its generation 0 publishes it again.

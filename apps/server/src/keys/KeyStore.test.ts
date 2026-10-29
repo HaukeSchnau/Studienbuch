@@ -7,6 +7,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
+import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Fixture } from "../school/Fixture.ts";
 import { KeyStore } from "./KeyStore.ts";
@@ -27,6 +28,16 @@ const firstDevice = (account: string, fill: number) =>
 
     return { keys, record, device: new Keys.Sealed(device) };
   });
+
+const device = (id: string, fill: number, keys: AccountKey.Keys) =>
+  Effect.map(
+    Wrapper.create({ id, kind: "device", place: "", credentialId: "" }, secret(fill), keys),
+    (created) => new Keys.Sealed(created),
+  );
+
+const recordJson = Schema.encodeEffect(
+  Schema.fromJsonString(Schema.toCodecJson(AccountKey.Record)),
+);
 
 const card = (account: string, keys: AccountKey.Keys) =>
   Effect.map(
@@ -62,7 +73,7 @@ const fetches = (account: string) =>
     `,
   ).pipe(Effect.map(([row]) => row?.count));
 
-describe.skipIf(Postgres18.socket === null)("KeyStore on PostgreSQL 18", () => {
+describe.skipIf((Postgres18.socket ?? null) === null)("KeyStore on PostgreSQL 18", () => {
   layer(Layer.merge(Fixture.database, TestCrypto.layer("KeyStore.test")))((it) => {
     it.effect(
       "publishes generation 0 once: the same record again changes nothing, another one is refused, and of two at once one wins",
@@ -72,7 +83,7 @@ describe.skipIf(Postgres18.socket === null)("KeyStore on PostgreSQL 18", () => {
           yield* Fixture.account("lena");
           const lena = yield* firstDevice("lena", 10);
           const other = yield* firstDevice("lena", 20);
-          const publish = Option.some(lena.device);
+          const publish = Option.some({ wrapper: lena.device, session: "lena-0" });
           yield* sql.withTransaction(KeyStore.publishFirst("lena", lena.record, publish));
           yield* sql.withTransaction(KeyStore.publishFirst("lena", lena.record, publish));
 
@@ -86,7 +97,13 @@ describe.skipIf(Postgres18.socket === null)("KeyStore on PostgreSQL 18", () => {
             [yield* firstDevice("tom", 30), yield* firstDevice("tom", 40)],
             (tom) =>
               sql
-                .withTransaction(KeyStore.publishFirst("tom", tom.record, Option.some(tom.device)))
+                .withTransaction(
+                  KeyStore.publishFirst(
+                    "tom",
+                    tom.record,
+                    Option.some({ wrapper: tom.device, session: "tom-0" }),
+                  ),
+                )
                 .pipe(
                   Effect.as("published"),
                   Effect.catchTags({ "Keys.ChainExists": (error) => Effect.succeed(error._tag) }),
@@ -122,20 +139,20 @@ describe.skipIf(Postgres18.socket === null)("KeyStore on PostgreSQL 18", () => {
           yield* Fixture.account("mia");
           const mia = yield* firstDevice("mia", 50);
           yield* sql.withTransaction(
-            KeyStore.publishFirst("mia", mia.record, Option.some(mia.device)),
+            KeyStore.publishFirst(
+              "mia",
+              mia.record,
+              Option.some({ wrapper: mia.device, session: "mia-0" }),
+            ),
           );
           const notfallkarte = yield* card("mia", mia.keys);
           const old = yield* signedIn("mia", 11);
           const fresh = yield* signedIn("mia", 9);
 
-          const laptop = yield* Wrapper.create(
-            { id: "mia-laptop", kind: "device", place: "", credentialId: "" },
-            secret(51),
-            mia.keys,
-          );
+          const laptop = yield* device("mia-laptop", 51, mia.keys);
 
           const refused = yield* Effect.flip(KeyStore.addWrapper("mia", old, notfallkarte));
-          yield* KeyStore.addWrapper("mia", old, new Keys.Sealed(laptop));
+          yield* KeyStore.addWrapper("mia", old, laptop);
           yield* KeyStore.addWrapper("mia", fresh, notfallkarte);
 
           expect({
@@ -158,7 +175,11 @@ describe.skipIf(Postgres18.socket === null)("KeyStore on PostgreSQL 18", () => {
           yield* Fixture.account("ben");
           const ben = yield* firstDevice("ben", 60);
           yield* sql.withTransaction(
-            KeyStore.publishFirst("ben", ben.record, Option.some(ben.device)),
+            KeyStore.publishFirst(
+              "ben",
+              ben.record,
+              Option.some({ wrapper: ben.device, session: "ben-0" }),
+            ),
           );
           yield* KeyStore.addWrapper(
             "ben",
@@ -206,6 +227,98 @@ describe.skipIf(Postgres18.socket === null)("KeyStore on PostgreSQL 18", () => {
             refused: "Keys.TooManyAttempts",
             fetches: 20,
           });
+        }),
+    );
+    it.effect(
+      "names the session that made a device wrapper, takes one per session, and keeps wrapper ids per account",
+      () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          yield* Fixture.account("ida");
+          yield* Fixture.account("jan");
+          const ida = yield* firstDevice("ida", 70);
+          const phone = yield* signedIn("ida", 600);
+          const laptop = yield* signedIn("ida", 1);
+          const first = Option.some({ wrapper: ida.device, session: phone });
+          yield* sql.withTransaction(KeyStore.publishFirst("ida", ida.record, first));
+          const second = yield* device("ida-laptop", 72, ida.keys);
+          const refused = yield* Effect.flip(KeyStore.addWrapper("ida", phone, second));
+          yield* KeyStore.addWrapper("ida", laptop, second);
+
+          // Another account may pick the same id for its own wrapper.
+          const jan = yield* firstDevice("jan", 73);
+          const sameId = yield* device("ida-device", 74, jan.keys);
+          const janFirst = Option.some({ wrapper: sameId, session: yield* signedIn("jan", 0) });
+          yield* sql.withTransaction(KeyStore.publishFirst("jan", jan.record, janFirst));
+
+          const made = yield* sql<{ readonly id: string; readonly session: string }>`
+            select id, created_by_session as session from key_wrapper
+            where account_id = 'ida' order by created_at, id
+          `;
+
+          expect({
+            refused: refused._tag === "Keys.Invalid" ? refused.reason : refused._tag,
+            made,
+            jan: (yield* KeyStore.state("jan")).wrappers.map((wrapper) => wrapper.statement.id),
+          }).toEqual({
+            refused: "limit",
+            made: [
+              { id: "ida-device", session: phone },
+              { id: "ida-laptop", session: laptop },
+            ],
+            jan: ["ida-device"],
+          });
+        }),
+    );
+
+    it.effect(
+      "takes a seal only of its format's length, and a first wrapper only while generation 0 is the newest",
+      () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+          yield* Fixture.account("kai");
+          const kai = yield* firstDevice("kai", 80);
+          const session = yield* signedIn("kai", 0);
+          const first = Option.some({ wrapper: kai.device, session });
+          yield* sql.withTransaction(KeyStore.publishFirst("kai", kai.record, first));
+          const notfallkarte = yield* card("kai", kai.keys);
+          const { seal } = notfallkarte;
+
+          const cut = new Keys.Sealed({
+            statement: notfallkarte.statement,
+            seal: new Wrapper.Seal({
+              format: seal.format,
+              suite: seal.suite,
+              wrapperId: seal.wrapperId,
+              accountId: seal.accountId,
+              generation: seal.generation,
+              enc: seal.enc,
+              ct: seal.ct.subarray(0, 59),
+            }),
+          });
+
+          const short = yield* Effect.flip(KeyStore.addWrapper("kai", session, cut));
+          const keys1 = yield* AccountKey.derive(secret(81), "kai", 1);
+          const record1 = yield* AccountKey.record(keys1, { keys: kai.keys, record: kai.record });
+
+          yield* sql`
+            insert into account_key (account_id, generation, record)
+            values ('kai', 1, ${yield* recordJson(record1)})
+          `;
+
+          const late = Option.some({
+            wrapper: yield* device("kai-laptop", 82, kai.keys),
+            session: yield* signedIn("kai", 1),
+          });
+
+          const renewed = yield* Effect.flip(
+            sql.withTransaction(KeyStore.publishFirst("kai", kai.record, late)),
+          );
+
+          expect({
+            short: short._tag === "Keys.Invalid" ? short.reason : short._tag,
+            renewed: renewed._tag,
+          }).toEqual({ short: "seal", renewed: "Keys.ChainExists" });
         }),
     );
   });

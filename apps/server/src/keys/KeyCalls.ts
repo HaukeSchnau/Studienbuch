@@ -46,7 +46,11 @@ export const handlers = Keys.Rpcs.toLayer(
           }
 
           yield* sql.withTransaction(
-            KeyStore.publishFirst(session.accountId, record, Option.some(wrapper)),
+            KeyStore.publishFirst(
+              session.accountId,
+              record,
+              Option.some({ wrapper, session: session.sessionId }),
+            ),
           );
         },
         Effect.catchTags({ SqlError: Effect.die }),

@@ -111,73 +111,92 @@ const isStatement = Effect.fn("KeyStore.isStatement")(function* (
   );
 });
 
+// A seal is an X-Wing encapsulation, and a nonce, the 32-byte root key and its tag (`Wrapper`).
+const sealLength = { enc: 1120, ct: 12 + 32 + 16 };
+
 const isSeal = (account: string, wrapper: Keys.Sealed, generation: number) =>
   wrapper.seal.format === Wrapper.format &&
   wrapper.seal.suite === CryptoSuite.id &&
   wrapper.seal.wrapperId === wrapper.statement.id &&
   wrapper.seal.accountId === account &&
-  wrapper.seal.generation === generation;
+  wrapper.seal.generation === generation &&
+  wrapper.seal.enc.length === sealLength.enc &&
+  wrapper.seal.ct.length === sealLength.ct;
 
 /**
- * Stores a checked wrapper and its seal. Sending the same wrapper again changes nothing; another
- * statement under a taken id is `Invalid`.
+ * Stores a checked wrapper and its seal, with the session that added it. Sending the same wrapper
+ * again changes nothing. Another statement under a taken id, or a second device wrapper from one
+ * session, is `Invalid`.
  */
 const insertWrapper = Effect.fn("KeyStore.insertWrapper")(function* (
   account: string,
   wrapper: Keys.Sealed,
+  session: string | null,
 ) {
   const sql = yield* SqlClient.SqlClient;
   const { statement, seal } = wrapper;
 
+  if (statement.kind === Wrapper.kindByte.device && session !== null) {
+    const [made] = yield* sql`
+      select 1 from key_wrapper
+      where created_by_session = ${session} and kind = ${statement.kind} and id <> ${statement.id}
+    `;
+
+    if (made !== undefined) return yield* new Keys.Invalid({ reason: "limit" });
+  }
+
   yield* sql`
-    insert into key_wrapper (id, account_id, kind, credential_id, statement)
-    values (${statement.id}, ${account}, ${statement.kind}, ${statement.credentialId},
-      ${yield* statementText(statement)})
-    on conflict (id) do nothing
+    insert into key_wrapper (account_id, id, kind, credential_id, statement, created_by_session)
+    values (${account}, ${statement.id}, ${statement.kind}, ${statement.credentialId},
+      ${yield* statementText(statement)}, ${session})
+    on conflict (account_id, id) do nothing
   `;
 
-  const [stored] = yield* sql<{
-    readonly account: string;
-    readonly statement: typeof statementJson.Encoded;
-  }>`
-    select account_id as account, statement from key_wrapper where id = ${statement.id}
+  const [stored] = yield* sql<{ readonly statement: typeof statementJson.Encoded }>`
+    select statement from key_wrapper where account_id = ${account} and id = ${statement.id}
   `;
 
   if (stored === undefined) return yield* Effect.die("A wrapper vanished inside its transaction");
-  const kept = yield* decodeStatement(stored.statement);
 
-  if (stored.account !== account || !sameBytes(kept.publicKey, statement.publicKey)) {
+  if (!sameBytes((yield* decodeStatement(stored.statement)).publicKey, statement.publicKey)) {
     return yield* new Keys.Invalid({ reason: "id" });
   }
 
   yield* sql`
-    insert into key_wrapper_seal (wrapper_id, generation, seal)
-    values (${statement.id}, ${seal.generation}, ${yield* sealText(seal)})
-    on conflict (wrapper_id, generation) do nothing
+    insert into key_wrapper_seal (account_id, wrapper_id, generation, seal)
+    values (${account}, ${statement.id}, ${seal.generation}, ${yield* sealText(seal)})
+    on conflict (account_id, wrapper_id, generation) do nothing
   `;
 });
+
+/** A first device's wrapper, and the session that sends it. */
+export interface First {
+  readonly wrapper: Keys.Sealed;
+  readonly session: string;
+}
 
 /**
  * Publishes generation 0 of an account's chain in the caller's transaction, with its first wrapper
  * when given. The same keys again change nothing (the demo seed runs on every deploy, and WebKit
- * signs with fresh randomness); other keys are `ChainExists`.
+ * signs with fresh randomness); other keys, or a wrapper after generation 0, are `ChainExists`.
  */
 export const publishFirst = Effect.fn("KeyStore.publishFirst")(function* (
   account: string,
   record: AccountKey.Record,
-  wrapper: Option.Option<Keys.Sealed>,
+  first: Option.Option<First>,
 ) {
   const sql = yield* SqlClient.SqlClient;
 
-  if (!(yield* isFirstRecord(account, record)))
+  if (!(yield* isFirstRecord(account, record))) {
     return yield* new Keys.Invalid({ reason: "record" });
+  }
 
-  if (Option.isSome(wrapper)) {
-    if (!(yield* isStatement(account, wrapper.value.statement, record))) {
+  if (Option.isSome(first)) {
+    if (!(yield* isStatement(account, first.value.wrapper.statement, record))) {
       return yield* new Keys.Invalid({ reason: "statement" });
     }
 
-    if (!isSeal(account, wrapper.value, record.generation)) {
+    if (!isSeal(account, first.value.wrapper, record.generation)) {
       return yield* new Keys.Invalid({ reason: "seal" });
     }
   }
@@ -189,18 +208,26 @@ export const publishFirst = Effect.fn("KeyStore.publishFirst")(function* (
     on conflict (account_id, generation) do nothing
   `;
 
-  const [stored] = yield* sql<{ readonly record: typeof recordJson.Encoded }>`
-    select record from account_key where account_id = ${account} and generation = 0
+  const stored = yield* sql<{
+    readonly generation: number;
+    readonly record: typeof recordJson.Encoded;
+  }>`
+    select generation, record from account_key where account_id = ${account}
+    order by generation
   `;
 
-  if (stored === undefined)
-    return yield* Effect.die("A key record vanished inside its transaction");
+  const [zero] = stored;
 
-  if (!sameRecord(yield* decodeRecord(stored.record), record)) {
-    return yield* new Keys.ChainExists();
+  if (zero === undefined) return yield* Effect.die("A key record vanished inside its transaction");
+
+  if (!sameRecord(yield* decodeRecord(zero.record), record)) return yield* new Keys.ChainExists();
+
+  if (Option.isSome(first)) {
+    // A wrapper endorsed by generation 0 after a renewal would hold a root key nobody uses.
+    if (stored.length > 1) return yield* new Keys.ChainExists();
+
+    yield* insertWrapper(account, first.value.wrapper, first.value.session);
   }
-
-  if (Option.isSome(wrapper)) yield* insertWrapper(account, wrapper.value);
 });
 
 /** The account's key records, oldest generation first. */
@@ -299,7 +326,7 @@ export const addWrapper = Effect.fn("KeyStore.addWrapper")(function* (
         if (count >= Keys.wrappersPerPasskey) return yield* new Keys.Invalid({ reason: "limit" });
       }
 
-      yield* insertWrapper(account, wrapper);
+      yield* insertWrapper(account, wrapper, session);
     }),
   );
 });
@@ -337,7 +364,8 @@ export const fetchSeals = Effect.fn("KeyStore.fetchSeals")(function* (
       }>`
         select w.statement, s.seal
         from key_wrapper w
-        join key_wrapper_seal s on s.wrapper_id = w.id and s.generation = ${newest.value.generation}
+        join key_wrapper_seal s on s.account_id = w.account_id and s.wrapper_id = w.id
+          and s.generation = ${newest.value.generation}
         where w.account_id = ${account} and w.kind = ${Wrapper.kindByte[kind]}
           and w.credential_id = ${credential}
         order by w.created_at, w.id

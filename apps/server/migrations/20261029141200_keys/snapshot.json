@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "d45a88c1-793a-4a06-9e24-ca96acbe1c2d",
+  "id": "fac17431-49d6-437c-9d97-1a5e3442d3df",
   "prevIds": ["16df4abd-93b4-4902-8869-355ef06a2a4d"],
   "footprints": [
     {
@@ -59,12 +59,12 @@
     },
     {
       "statementType": "create_index",
-      "statementTarget": ["index", "public", "key_wrapper", "key_wrapper_account"],
+      "statementTarget": ["index", "public", "key_wrapper", "key_wrapper_kind"],
       "writes": [
-        "s|idx|public.key_wrapper_account",
-        "n|idx|public.key_wrapper_account",
-        "e|idx|public.key_wrapper_account",
-        "n|rel|public.key_wrapper_account"
+        "s|idx|public.key_wrapper_kind",
+        "n|idx|public.key_wrapper_kind",
+        "e|idx|public.key_wrapper_kind",
+        "n|rel|public.key_wrapper_kind"
       ],
       "reads": [
         "n|tbl|public.key_wrapper",
@@ -72,6 +72,21 @@
         "n|col|public.key_wrapper.account_id",
         "n|col|public.key_wrapper.kind",
         "n|col|public.key_wrapper.credential_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": ["index", "public", "key_wrapper", "key_wrapper_session"],
+      "writes": [
+        "s|idx|public.key_wrapper_session",
+        "n|idx|public.key_wrapper_session",
+        "e|idx|public.key_wrapper_session",
+        "n|rel|public.key_wrapper_session"
+      ],
+      "reads": [
+        "n|tbl|public.key_wrapper",
+        "n|sch|public",
+        "n|col|public.key_wrapper.created_by_session"
       ]
     },
     {
@@ -132,19 +147,21 @@
       "statementType": "create_fk",
       "statementTarget": ["table", "public", "key_wrapper_seal"],
       "writes": [
-        "s|fk|public.key_wrapper_seal.key_wrapper_seal_wrapper_id_key_wrapper_id_fkey",
-        "n|fk|public.key_wrapper_seal.key_wrapper_seal_wrapper_id_key_wrapper_id_fkey",
-        "e|fk|public.key_wrapper_seal.key_wrapper_seal_wrapper_id_key_wrapper_id_fkey",
-        "n|con|public.key_wrapper_seal.key_wrapper_seal_wrapper_id_key_wrapper_id_fkey"
+        "s|fk|public.key_wrapper_seal.key_wrapper_seal_qs2BvQLndf0f_fkey",
+        "n|fk|public.key_wrapper_seal.key_wrapper_seal_qs2BvQLndf0f_fkey",
+        "e|fk|public.key_wrapper_seal.key_wrapper_seal_qs2BvQLndf0f_fkey",
+        "n|con|public.key_wrapper_seal.key_wrapper_seal_qs2BvQLndf0f_fkey"
       ],
       "reads": [
         "n|tbl|public.key_wrapper_seal",
         "n|sch|public",
         "n|tbl|public.key_wrapper",
         "n|sch|public",
+        "n|col|public.key_wrapper_seal.account_id",
         "n|col|public.key_wrapper_seal.wrapper_id",
+        "n|col|public.key_wrapper.account_id",
         "n|col|public.key_wrapper.id",
-        "e|uniqueness|public.key_wrapper.id"
+        "e|uniqueness|public.key_wrapper.account_id.id"
       ]
     },
     {
@@ -273,7 +290,7 @@
       "row": {
         "schema": "public",
         "table": "key_wrapper",
-        "name": "id",
+        "name": "account_id",
         "type": "text",
         "typeSchema": null,
         "notNull": true,
@@ -289,7 +306,7 @@
       "row": {
         "schema": "public",
         "table": "key_wrapper",
-        "name": "account_id",
+        "name": "id",
         "type": "text",
         "typeSchema": null,
         "notNull": true,
@@ -353,12 +370,44 @@
       "row": {
         "schema": "public",
         "table": "key_wrapper",
+        "name": "created_by_session",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper",
         "name": "created_at",
         "type": "timestamp with time zone",
         "typeSchema": null,
         "notNull": true,
         "dimensions": 0,
         "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper_seal",
+        "name": "account_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
         "generated": null,
         "identity": null,
         "entityType": "columns"
@@ -529,7 +578,7 @@
       "row": {
         "schema": "public",
         "table": "key_wrapper",
-        "name": "key_wrapper_account",
+        "name": "key_wrapper_kind",
         "nameExplicit": true,
         "columns": [
           {
@@ -548,6 +597,30 @@
           },
           {
             "value": "credential_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "key_wrapper",
+        "name": "key_wrapper_session",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "created_by_session",
             "isExpression": false,
             "asc": true,
             "nullsFirst": false,
@@ -630,12 +703,12 @@
       "row": {
         "schema": "public",
         "table": "key_wrapper_seal",
-        "name": "key_wrapper_seal_wrapper_id_key_wrapper_id_fkey",
+        "name": "key_wrapper_seal_qs2BvQLndf0f_fkey",
         "nameExplicit": false,
-        "columns": ["wrapper_id"],
+        "columns": ["account_id", "wrapper_id"],
         "schemaTo": "public",
         "tableTo": "key_wrapper",
-        "columnsTo": ["id"],
+        "columnsTo": ["account_id", "id"],
         "onUpdate": "NO ACTION",
         "onDelete": "CASCADE",
         "entityType": "fks"
@@ -672,9 +745,9 @@
       "op": "create",
       "row": {
         "schema": "public",
-        "table": "key_wrapper_seal",
-        "name": "key_wrapper_seal_pkey",
-        "columns": ["wrapper_id", "generation"],
+        "table": "key_wrapper",
+        "name": "key_wrapper_pkey",
+        "columns": ["account_id", "id"],
         "nameExplicit": false,
         "entityType": "pks"
       }
@@ -683,9 +756,9 @@
       "op": "create",
       "row": {
         "schema": "public",
-        "table": "key_wrapper",
-        "name": "key_wrapper_pkey",
-        "columns": ["id"],
+        "table": "key_wrapper_seal",
+        "name": "key_wrapper_seal_pkey",
+        "columns": ["account_id", "wrapper_id", "generation"],
         "nameExplicit": false,
         "entityType": "pks"
       }

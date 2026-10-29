@@ -45,19 +45,26 @@ export const accountKey = pgTable(
 export const keyWrapper = pgTable(
   "key_wrapper",
   {
-    /** Chosen by the device that created it. */
-    id: text("id").primaryKey(),
     accountId: text("account_id").notNull(),
+    /** Chosen by the device that created it, unique within the account. */
+    id: text("id").notNull(),
     /** `Wrapper.kindByte`. */
     kind: smallint("kind").notNull(),
     /** The passkey's credential id for a `prf` wrapper, empty for the other kinds. */
     credentialId: text("credential_id").notNull(),
     /** `Wrapper.Statement`. */
     statement: jsonb("statement").notNull(),
+    /**
+     * The session that added it, so a device's wrapper belongs to the device that made it. `null`
+     * for what the demo seed publishes.
+     */
+    createdBySession: text("created_by_session"),
     createdAt: createdAt(),
   },
   (table) => [
-    index("key_wrapper_account").on(table.accountId, table.kind, table.credentialId),
+    primaryKey({ columns: [table.accountId, table.id] }),
+    index("key_wrapper_kind").on(table.accountId, table.kind, table.credentialId),
+    index("key_wrapper_session").on(table.createdBySession),
     foreignKey({ columns: [table.accountId], foreignColumns: [AuthTables.user.id] }).onDelete(
       "cascade",
     ),
@@ -68,6 +75,7 @@ export const keyWrapper = pgTable(
 export const keyWrapperSeal = pgTable(
   "key_wrapper_seal",
   {
+    accountId: text("account_id").notNull(),
     wrapperId: text("wrapper_id").notNull(),
     generation: integer("generation").notNull(),
     /** `Wrapper.Seal`. */
@@ -75,8 +83,11 @@ export const keyWrapperSeal = pgTable(
     createdAt: createdAt(),
   },
   (table) => [
-    primaryKey({ columns: [table.wrapperId, table.generation] }),
-    foreignKey({ columns: [table.wrapperId], foreignColumns: [keyWrapper.id] }).onDelete("cascade"),
+    primaryKey({ columns: [table.accountId, table.wrapperId, table.generation] }),
+    foreignKey({
+      columns: [table.accountId, table.wrapperId],
+      foreignColumns: [keyWrapper.accountId, keyWrapper.id],
+    }).onDelete("cascade"),
   ],
 );
 

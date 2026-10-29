@@ -77,7 +77,7 @@ export class Invalid extends Schema.TaggedError<Invalid, { readonly brand: uniqu
       "seal",
       // Another statement already has this wrapper's id.
       "id",
-      // The passkey has `wrappersPerPasskey` wrappers already.
+      // The passkey has `wrappersPerPasskey` wrappers already, or the session added its device's.
       "limit",
     ]),
   },
