@@ -109,6 +109,9 @@ catalog:
   # through react-native-passkeys, the one library that maps PRF on iOS (stack.md).
   "@simplewebauthn/browser": 14.0.0
   react-native-passkeys: 0.4.2
+  # AES-256-GCM for NobleCrypto, the synchronous suite in @stu/e2ee/testing. The version Better
+  # Auth and @noble/post-quantum already install.
+  "@noble/ciphers": 2.4.0
 
 overrides:
   vite@*: "catalog:"

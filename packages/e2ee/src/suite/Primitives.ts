@@ -141,6 +141,32 @@ const kemCall = <A>(operation: () => A) =>
 
 const probeRandomness = new Uint8Array(64);
 
+// Not every browser's WebCrypto derives a public key from a private one, and exporting the private
+// key to read it would take the key out of WebCrypto, so noble computes it in every suite.
+export const ed25519PublicKey: Signature["publicKey"] = (seed) =>
+  Effect.sync(() => ed25519.getPublicKey(seed));
+
+/** X-Wing on noble, the same in every suite, with encapsulation randomness from `randomBytes`. */
+export const xWingKem = (randomBytes: Interface["randomBytes"]): Kem => ({
+  publicKey: (seed) => Effect.sync(() => xWing.getPublicKey(seed)),
+  validate: (publicKey) =>
+    publicKey.length === xWing.lengths.publicKey
+      ? kemCall(() => xWing.encapsulate(publicKey, probeRandomness)).pipe(
+          Effect.as(true),
+          Effect.orElseSucceed(() => false),
+        )
+      : Effect.succeed(false),
+  encapsulate: (publicKey) =>
+    Effect.flatMap(randomBytes(64), (eseed) =>
+      kemCall(() => {
+        const { sharedSecret, cipherText } = xWing.encapsulate(publicKey, eseed);
+
+        return { sharedSecret, enc: cipherText };
+      }),
+    ),
+  decapsulate: (enc, seed) => kemCall(() => xWing.decapsulate(enc, seed)),
+});
+
 /**
  * The suite on WebCrypto, with X-Wing and Ed25519 public keys from noble, drawing randomness from
  * `randomBytes`. `CryptoSuite.layer` passes the platform's generator, `@stu/e2ee/testing` fixed
@@ -191,9 +217,7 @@ export const make = (randomBytes: Interface["randomBytes"]): Interface => ({
     }),
   },
   sign: {
-    // Not every browser's WebCrypto derives a public key from a private one, and exporting the
-    // private key to read it would take the key out of WebCrypto, so noble computes it.
-    publicKey: (seed) => Effect.sync(() => ed25519.getPublicKey(seed)),
+    publicKey: ed25519PublicKey,
     sign: Effect.fnUntraced(function* (seed, message) {
       const key = yield* call(() =>
         subtle().importKey("pkcs8", own(ed25519Pkcs8(seed)), "Ed25519", false, ["sign"]),
@@ -214,25 +238,7 @@ export const make = (randomBytes: Interface["randomBytes"]): Interface => ({
         : yield* call(() => subtle().verify("Ed25519", key.value, own(signature), own(message)));
     }),
   },
-  kem: {
-    publicKey: (seed) => Effect.sync(() => xWing.getPublicKey(seed)),
-    validate: (publicKey) =>
-      publicKey.length === xWing.lengths.publicKey
-        ? kemCall(() => xWing.encapsulate(publicKey, probeRandomness)).pipe(
-            Effect.as(true),
-            Effect.orElseSucceed(() => false),
-          )
-        : Effect.succeed(false),
-    encapsulate: (publicKey) =>
-      Effect.flatMap(randomBytes(64), (eseed) =>
-        kemCall(() => {
-          const { sharedSecret, cipherText } = xWing.encapsulate(publicKey, eseed);
-
-          return { sharedSecret, enc: cipherText };
-        }),
-      ),
-    decapsulate: (enc, seed) => kemCall(() => xWing.decapsulate(enc, seed)),
-  },
+  kem: xWingKem(randomBytes),
 });
 
 /** The platform's secure generator, `crypto.getRandomValues`. */

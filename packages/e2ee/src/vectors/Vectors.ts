@@ -1,8 +1,8 @@
 /**
  * Fixed vectors for every primitive and every format, the same file on Node, in browsers and on
- * Hermes. Each case computes its values with the real primitives under a test layer, opens what it
- * sealed, and compares every value with `vectors.json`. Published vectors also check the primitive
- * against its standard.
+ * Hermes. Each case computes its values under a test layer, opens what it sealed, and compares
+ * every value with `vectors.json`. The self-test runs them on the platform's primitives, and the
+ * tests also on `NobleCrypto`. Published vectors also check the primitive against its standard.
  */
 import * as Cause from "effect/Cause";
 import type * as Duration from "effect/Duration";
@@ -54,7 +54,8 @@ interface Case {
    * them, so there the case's own verification stands in for the bytes.
    */
   readonly signatures?: ReadonlyArray<string>;
-  readonly layer: Layer.Layer<CryptoSuite.Service>;
+  /** The exact bytes the case draws, such as a published vector's. Without it, the stream of its name. */
+  readonly randomness?: Uint8Array;
   readonly values: Effect.Effect<
     Values,
     Mismatch | E2ee.Failure | CryptoSuite.NotAuthentic | CryptoSuite.InvalidKey,
@@ -89,7 +90,6 @@ const suite = CryptoSuite.Service;
 const sha256: Case = {
   name: "sha256",
   title: "SHA-256",
-  layer: TestCrypto.layer("sha256"),
   values: Effect.gen(function* () {
     const digest = yield* (yield* suite).sha256(Bytes.label("abc"));
 
@@ -107,7 +107,6 @@ const sha256: Case = {
 const hmac: Case = {
   name: "hmac-sha256",
   title: "HMAC-SHA256",
-  layer: TestCrypto.layer("hmac-sha256"),
   values: Effect.gen(function* () {
     // RFC 4231, test case 2.
     const mac = yield* (yield* suite).hmac(
@@ -128,7 +127,6 @@ const hmac: Case = {
 const hkdf: Case = {
   name: "hkdf-sha256",
   title: "HKDF-SHA256",
-  layer: TestCrypto.layer("hkdf-sha256"),
   values: Effect.gen(function* () {
     const derive = (yield* suite).hkdf;
     const ikm = new Uint8Array(22).fill(0x0b);
@@ -164,7 +162,6 @@ const hkdf: Case = {
 const aesGcm: Case = {
   name: "aes-256-gcm",
   title: "AES-256-GCM",
-  layer: TestCrypto.layer("aes-256-gcm"),
   values: Effect.gen(function* () {
     const { aead } = yield* suite;
     // The GCM specification's test case 16.
@@ -200,7 +197,6 @@ const ed25519: Case = {
   name: "ed25519",
   title: "Ed25519",
   signatures: ["signature"],
-  layer: TestCrypto.layer("ed25519"),
   values: Effect.gen(function* () {
     const { sign } = yield* suite;
     // RFC 8032, section 7.1, test 2. Test 1 signs the empty message, whose signatures WebKit
@@ -243,7 +239,7 @@ const xWingVector = {
 const xWing: Case = {
   name: "x-wing",
   title: "X-Wing",
-  layer: TestCrypto.layerFixed(bytes(xWingVector.eseed)),
+  randomness: bytes(xWingVector.eseed),
   values: Effect.gen(function* () {
     const { kem, sha256 } = yield* suite;
     const seed = bytes(xWingVector.seed);
@@ -279,7 +275,6 @@ const xWing: Case = {
 const prfSalt: Case = {
   name: "prf-salt",
   title: "PRF-Salz",
-  layer: TestCrypto.layer("prf-salt"),
   values: Effect.map(Wrapper.prfSalt, (salt) => ({ salt: hex(salt) })),
 };
 
@@ -293,7 +288,6 @@ const encodeEnvelope = Schema.encodeEffect(
 const rowCase = (name: string, title: string, json: string): Case => ({
   name,
   title,
-  layer: TestCrypto.layer(name),
   values: Effect.gen(function* () {
     const key = counting(0x40, 32);
 
@@ -354,7 +348,6 @@ const accountKey: Case = {
   name: "account-key",
   title: "Kontoschlüssel und Kette",
   signatures: ["signature0", "link1"],
-  layer: TestCrypto.layer("account-key"),
   values: Effect.gen(function* () {
     const { sha256 } = yield* suite;
     const { keys0, keys1, record0, record1 } = yield* chain;
@@ -384,7 +377,6 @@ const keyBox: Case = {
   name: "key-box",
   title: "Schlüsselbox",
   signatures: ["signature"],
-  layer: TestCrypto.layer("key-box"),
   values: Effect.gen(function* () {
     const { sha256 } = yield* suite;
     const { keys1, record1 } = yield* chain;
@@ -416,7 +408,6 @@ const historyLink: Case = {
   name: "history-link",
   title: "Verlaufsglied",
   signatures: ["signature"],
-  layer: TestCrypto.layer("history-link"),
   values: Effect.gen(function* () {
     const { keys1, record1 } = yield* chain;
     const current = { epoch: 1, key: Redacted.make(counting(0x10, 32)) };
@@ -447,7 +438,6 @@ const wrapperCase = (
   name,
   title,
   signatures: ["endorsement0", "endorsement1"],
-  layer: TestCrypto.layer(name),
   values: Effect.gen(function* () {
     const { sha256 } = yield* suite;
     const { keys0, keys1, record0, record1 } = yield* chain;
@@ -524,7 +514,6 @@ const codeWrapper = wrapperCase(
 const recoveryCode: Case = {
   name: "recovery-code",
   title: "Notfallkarten-Code",
-  layer: TestCrypto.layer("recovery-code"),
   values: Effect.gen(function* () {
     const text = RecoveryCode.text(Redacted.make(codeBytes));
     const typed = Redacted.value(text).toLowerCase().replaceAll("-", " ");
@@ -566,10 +555,26 @@ export const cases: ReadonlyArray<Case> = [
 /** The vector file's text: every case's values, two-space indented for review. */
 export const encodeFile = Schema.encodeEffect(Schema.fromJsonString(File, { space: 2 }));
 
-/** Every case's values, as `vectors.json` holds them. */
-export const compute = Effect.forEach(cases, ({ name, layer, values }) =>
-  Effect.map(Effect.provide(values, layer), (computed) => ({ name, values: computed })),
-);
+/** Test layers to run the cases on: `TestCrypto` or `NobleCrypto` from `@stu/e2ee/testing`. */
+export interface Suites {
+  readonly layer: (seed: string) => Layer.Layer<CryptoSuite.Service>;
+  readonly layerFixed: (randomness: Uint8Array) => Layer.Layer<CryptoSuite.Service>;
+}
+
+const layerOf = (suites: Suites, { name, randomness }: Case) =>
+  randomness === undefined ? suites.layer(name) : suites.layerFixed(randomness);
+
+/** Every case's values on `suites`, as `vectors.json` holds them. */
+export const computeOn = (suites: Suites) =>
+  Effect.forEach(cases, (entry) =>
+    Effect.map(Effect.provide(entry.values, layerOf(suites, entry)), (computed) => ({
+      name: entry.name,
+      values: computed,
+    })),
+  );
+
+/** Every case's values on the platform's primitives. */
+export const compute = computeOn(TestCrypto);
 
 const compare = (
   expected: Values | undefined,
@@ -593,8 +598,7 @@ const compare = (
   return Effect.succeed(verifiedOnly.length === 0 ? values : `${values}, ${signatures}`);
 };
 
-/** Whether this platform's Ed25519 signs one message twice differently, as WebKit's does. */
-export const hedged = Effect.gen(function* () {
+const signsTwiceDifferently = Effect.gen(function* () {
   const { sign } = yield* suite;
   const seed = counting(0, 32);
   const message = Bytes.label("stu.hedged");
@@ -602,7 +606,10 @@ export const hedged = Effect.gen(function* () {
   const second = yield* sign.sign(seed, message);
 
   return !Bytes.equal(first, second);
-}).pipe(Effect.provide(TestCrypto.layer("hedged")));
+});
+
+/** Whether these suites' Ed25519 signs one message twice differently, as WebKit's does. */
+const hedgedOn = (suites: Suites) => Effect.provide(signsTwiceDifferently, suites.layer("hedged"));
 
 const isMismatch = Schema.is(Mismatch);
 
@@ -616,14 +623,16 @@ const describe = (cause: Cause.Cause<unknown>) => {
 
 const decodeFile = Schema.decodeUnknownEffect(File);
 
-/** Runs every case against `vectors.json`, one after another so each one's time is its own. */
-export const run = Effect.gen(function* () {
+/** Runs every case on `suites` against `vectors.json`, one after another so each one's time is its own. */
+export const runOn = Effect.fn("Vectors.runOn")(function* (suites: Suites) {
   const expected = yield* decodeFile(file).pipe(Effect.orDie);
   const byName = new Map(expected.map((entry) => [entry.name, entry.values]));
-  const randomized = yield* hedged;
+  const randomized = yield* hedgedOn(suites);
 
-  return yield* Effect.forEach(cases, ({ name, title, signatures = [], layer, values }) =>
-    Effect.provide(values, layer).pipe(
+  return yield* Effect.forEach(cases, (entry) => {
+    const { name, title, signatures = [], values } = entry;
+
+    return Effect.provide(values, layerOf(suites, entry)).pipe(
       Effect.flatMap((computed) =>
         compare(byName.get(name), computed, randomized ? signatures : []),
       ),
@@ -634,6 +643,9 @@ export const run = Effect.gen(function* () {
           ? { name, title, status: "passed", detail: exit.value, duration }
           : { name, title, status: "failed", detail: describe(exit.cause), duration },
       ),
-    ),
-  );
+    );
+  });
 });
+
+/** Runs every case on the platform's primitives against `vectors.json`, as the self-test does. */
+export const run = runOn(TestCrypto);
