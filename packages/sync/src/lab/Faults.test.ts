@@ -93,7 +93,10 @@ const harness = Effect.gen(function* () {
     (frame) => Effect.sync(() => frames.push(frame)),
   );
 
-  const faults = yield* Faults.make;
+  const faults = yield* Faults.make.pipe(
+    Effect.provideService(Faults.Allowed, { environment: "development" }),
+  );
+
   const transport = faults.transport(network.transport({ id: "a", session }));
   const connection = yield* transport.connect;
 
@@ -288,6 +291,14 @@ describe("Faults on the simulated network", () => {
       Effect.gen(function* () {
         const { client, faults, push, received } = yield* harness;
         const [mutate, seal] = push.commands;
+
+        // A forge for a later command lets an earlier one through as it is, and stays armed.
+        yield* faults.forge(
+          Faults.Forge.SealInto({ space: "notebook-tom", mutationId: (seal?.mutationId ?? 0) + 1 }),
+        );
+        yield* client["Sync.push"](push);
+        expect(yield* Queue.take(received)).toStrictEqual(push);
+        expect((yield* SubscriptionRef.get(faults.settings)).forge._tag).toBe("Some");
 
         yield* faults.forge(Faults.Forge.SealInto({ space: "notebook-tom" }));
         yield* client["Sync.push"](push);

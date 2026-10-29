@@ -191,7 +191,11 @@ const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.N
   const account = devices[id];
   const notebook = accounts[account];
   const platform = yield* Layer.build(devicePlatform);
-  const faults = yield* Faults.make;
+
+  const faults = yield* Faults.make.pipe(
+    Effect.provideService(Faults.Allowed, { environment: "development" }),
+  );
+
   const events = yield* faults.subscribe;
 
   const sql = <A, E>(effect: Effect.Effect<A, E, SqlClient.SqlClient>) =>
