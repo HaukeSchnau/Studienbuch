@@ -13,4 +13,8 @@ export default defineConfig({
     sourcemap: true,
     deps: { alwaysBundle: [/.*/], onlyBundle: false },
   },
+  test: {
+    // A throwaway PostgreSQL 18 for the tests that need one (`Postgres18` in @stu/sync/testing).
+    globalSetup: ["@stu/sync/testing/postgres18.setup"],
+  },
 });

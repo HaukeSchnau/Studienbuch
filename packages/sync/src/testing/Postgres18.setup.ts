@@ -1,21 +1,13 @@
 /**
- * Starts a throwaway PostgreSQL 18 on a Unix socket for one test run, so tests need no port and
- * leave nothing behind. It needs PostgreSQL 18's `postgres`, `initdb` and `pg_ctl` on `PATH`, for
- * example through `nix shell nixpkgs#postgresql_18`. Without them the tests that need a real server
- * skip and say so.
+ * Vitest's global setup that starts a throwaway PostgreSQL 18 on a Unix socket for one test run,
+ * which tests reach through `Postgres18`. It needs `postgres`, `initdb` and `pg_ctl` 18 on `PATH`,
+ * as devenv's shell has them. Without them those tests skip and say so.
  */
 import * as NodeChildProcess from "node:child_process";
 import * as NodeFS from "node:fs";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import type { TestProject } from "vitest/node";
-
-declare module "vitest" {
-  export interface ProvidedContext {
-    /** The socket directory of the throwaway server, or `null` when PostgreSQL 18 is missing. */
-    postgres18: string | null;
-  }
-}
 
 export default function setup(project: TestProject) {
   const version = NodeChildProcess.spawnSync("postgres", ["--version"], { encoding: "utf8" });
@@ -27,7 +19,7 @@ export default function setup(project: TestProject) {
     return;
   }
 
-  const directory = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "stu-sync-pg18-"));
+  const directory = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "stu-pg18-"));
   const data = NodePath.join(directory, "data");
 
   const run = (command: string, args: ReadonlyArray<string>) => {

@@ -6,8 +6,8 @@ import * as Fiber from "effect/Fiber";
 import * as Layer from "effect/Layer";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
-import { Engines } from "../conformance/Engines.ts";
 import { Sync } from "../definition/Sync.ts";
+import { Postgres18 } from "../testing/Postgres18.ts";
 import { Tx } from "../transaction/Tx.ts";
 import { PostgresTx } from "./PostgresTx.ts";
 
@@ -17,7 +17,7 @@ const database = Layer.effectDiscard(
   Effect.flatMap(SqlClient.SqlClient, (sql) =>
     Effect.forEach(PostgresTx.schema, (statement) => sql.unsafe(statement), { discard: true }),
   ),
-).pipe(Layer.provideMerge(Engines.postgres18Database(Engines.postgres18 ?? "")));
+).pipe(Layer.provideMerge(Postgres18.database(Postgres18.socket ?? "")));
 
 /** One push: a transaction that writes rows into a space through the server's `Tx`. */
 const push = (space: string, ids: ReadonlyArray<string>, beforeCommit = Effect.void) =>
@@ -43,7 +43,7 @@ const pull = (space: string, cursor: number) =>
     `,
   );
 
-describe.skipIf(Engines.postgres18 === null)("PostgresTx on PostgreSQL 18", () => {
+describe.skipIf(Postgres18.socket === null)("PostgresTx on PostgreSQL 18", () => {
   layer(database)((it) => {
     it.effect(
       "a second writer waits for the first to commit, so versions follow commit order",
