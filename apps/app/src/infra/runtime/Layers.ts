@@ -6,6 +6,7 @@ import * as Socket from "effect/socket/Socket";
 import { ApiProtocol } from "../api/ApiProtocol.ts";
 import { ServerOrigin } from "../api/ServerOrigin.ts";
 import { Device } from "../device/Device.ts";
+import { VirtualDevice } from "../device/VirtualDevice.ts";
 import { Names } from "../device/Names.ts";
 import { DeviceSessions } from "../keychain/DeviceSessions.ts";
 import { Keychain } from "../keychain/Keychain.ts";
@@ -40,6 +41,12 @@ export const device = (options: Device.Options) =>
     Layer.provideMerge(options.publicComputer ? MemoryKeychain.layer() : platformKeychain),
     Layer.provideMerge(Device.layer(options)),
   );
+
+/**
+ * This app's own device. Every atom runtime that names this one value shares one build of it, so
+ * the device's sessions and secrets have a single writer.
+ */
+export const app = device({ name: VirtualDevice.current, publicComputer: false });
 
 const secrets = (accountId: string) =>
   Layer.unwrap(

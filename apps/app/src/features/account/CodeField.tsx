@@ -34,7 +34,6 @@ export function CodeField({ value, onChangeText }: CodeFieldProps) {
         textContentType="oneTimeCode"
         keyboardType="number-pad"
         inputMode="numeric"
-        maxLength={codeLength}
         caretHidden
         style={[StyleSheet.absoluteFill, styles.input]}
       />

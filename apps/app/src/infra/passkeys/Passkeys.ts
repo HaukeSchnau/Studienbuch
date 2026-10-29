@@ -19,11 +19,20 @@ export class Cancelled extends Schema.TaggedError<Cancelled, { readonly brand: u
   {},
 ) {}
 
-/** The platform offers no passkeys here, or the ceremony failed. `detail` is the platform's. */
+/**
+ * The ceremony failed. `no-passkey`: Android found no passkey for this server on the device.
+ * `no-biometrics`: iOS has no Face ID or Touch ID set up. `detail` is the platform's own.
+ */
 export class Failed extends Schema.TaggedError<Failed, { readonly brand: unique symbol }>()(
   "Passkeys.Failed",
   {
-    reason: Schema.Literals(["unsupported", "already-registered", "failed"]),
+    reason: Schema.Literals([
+      "unsupported",
+      "already-registered",
+      "no-passkey",
+      "no-biometrics",
+      "failed",
+    ]),
     detail: Schema.String,
   },
 ) {}
@@ -97,7 +106,8 @@ const registered = new Set(["InvalidStateError", "ERROR_AUTHENTICATOR_PREVIOUSLY
 
 /**
  * Sorts what a platform threw. A closed sheet is `Cancelled`: NotAllowedError in browsers,
- * `ERR_USER_CANCELLED` on iOS, `UserCancelled` on Android.
+ * `ERR_USER_CANCELLED` on iOS, `UserCancelled` on Android. react-native-passkeys rejects with
+ * `NoCredentials` on Android and `ERR_BIOMETRIC` on iOS for the two dead ends.
  */
 // oxlint-disable-next-line anti-slop/no-unknown-parameters -- a promise's rejection is unknown; the decoders below are the parser.
 export const failure = (thrown: unknown): Cancelled | Failed => {
@@ -122,6 +132,10 @@ export const failure = (thrown: unknown): Cancelled | Failed => {
   if (names.some((name) => registered.has(name))) {
     return new Failed({ reason: "already-registered", detail });
   }
+
+  if (names.includes("NoCredentials")) return new Failed({ reason: "no-passkey", detail });
+
+  if (names.includes("ERR_BIOMETRIC")) return new Failed({ reason: "no-biometrics", detail });
 
   return new Failed({ reason: "failed", detail });
 };
