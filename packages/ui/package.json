@@ -6,8 +6,10 @@
   "exports": {
     "./Button": "./src/Button.tsx",
     "./Card": "./src/Card.tsx",
+    "./Field": "./src/Field.tsx",
     "./Hero": "./src/Hero.tsx",
     "./Icon": "./src/Icon.tsx",
+    "./Link": "./src/Link.tsx",
     "./Pill": "./src/Pill.tsx",
     "./RevisionCard": "./src/RevisionCard.tsx",
     "./Text": "./src/Text.tsx",
