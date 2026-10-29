@@ -17,6 +17,9 @@ declare module "vitest" {
  */
 export const socket = inject("postgres18");
 
+/** The server's log file, where a failed statement's `DETAIL` may quote values, or `null`. */
+export const log = socket === null ? null : `${socket}/log`;
+
 /** A fresh database on the run's PostgreSQL 18, so test files running in parallel stay apart. */
 export const database = (socket: string) =>
   Layer.unwrap(

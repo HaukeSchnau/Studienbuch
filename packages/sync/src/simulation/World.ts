@@ -90,10 +90,10 @@ export interface Device {
   /** The app goes to the background and comes back at once, which runs a round. */
   readonly resume: Effect.Effect<void>;
   /**
-   * Stops the engine before the `statement`th SQL statement from now, which then waits for a crash
-   * to end it. The result completes there.
+   * Stops the engine before the `at`th SQL statement from now, or the first whose SQL `at` matches,
+   * which then waits for a crash to end it. The result completes there.
    */
-  readonly stopBefore: (statement: number) => Effect.Effect<Deferred.Deferred<Stopped>>;
+  readonly stopBefore: (at: number | RegExp) => Effect.Effect<Deferred.Deferred<Stopped>>;
   /** How many statements ran since the last `stopBefore`. */
   readonly statements: Effect.Effect<number>;
   /**
@@ -113,6 +113,9 @@ export interface Stopped {
   readonly statement: number;
   readonly inTransaction: boolean;
 }
+
+/** How many scheduler turns `quiet` waits for the database: a minute or so on a loaded machine. */
+const patientTurns = 5_000_000;
 
 /** A UUIDv4 from `Random`, so a seeded run names everything the same way. */
 export const uuid = Effect.gen(function* () {
@@ -257,14 +260,21 @@ const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.N
   const notebook = accounts[account];
   let statements = 0;
   let inTransaction = false;
-  let stop: { readonly at: number; readonly stopped: Deferred.Deferred<Stopped> } | undefined;
+
+  let stop:
+    | { readonly at: number | RegExp; readonly stopped: Deferred.Deferred<Stopped> }
+    | undefined;
 
   // Counts statements, follows the transaction and stops where `stopBefore` asked.
   const before = (text: string) =>
     Effect.suspend(() => {
       statements += 1;
 
-      if (stop !== undefined && statements >= stop.at) {
+      const reached =
+        stop !== undefined &&
+        (stop.at instanceof RegExp ? stop.at.test(text) : statements >= stop.at);
+
+      if (stop !== undefined && reached) {
         const { stopped } = stop;
         stop = undefined;
 
@@ -412,11 +422,11 @@ const makeDevice = Effect.fnUntraced(function* (id: DeviceId, network: Network.N
       SubscriptionRef.set(foreground, false),
       SubscriptionRef.set(foreground, true),
     ),
-    stopBefore: (statement) =>
+    stopBefore: (at) =>
       Effect.tap(Deferred.make<Stopped>(), (stopped) =>
         Effect.sync(() => {
           statements = 0;
-          stop = { at: statement, stopped };
+          stop = { at, stopped };
         }),
       ),
     statements: Effect.sync(() => statements),
@@ -504,14 +514,18 @@ export const make = Effect.gen(function* () {
     normalized: (text: string) =>
       system === undefined ? text : text.replaceAll(system.id, "<system identifier>"),
     /**
-     * Waits until no server SQL is in flight. A real database answers in real time, which the
-     * simulated clock must not run ahead of, or a slow machine would see timeouts a fast one
-     * doesn't.
+     * Waits until no server SQL is in flight, and says whether that came. A real database answers
+     * in real time, which the simulated clock must not run ahead of, or a slow machine would see
+     * timeouts a fast one doesn't. A database that never answers gives up after many turns.
      */
     quiet: Effect.gen(function* () {
-      for (let calm = 0; calm < 3; calm = recorder.sqlInFlight() === 0 ? calm + 1 : 0) {
+      for (let calm = 0, turns = 0; calm < 3; turns++) {
+        if (turns > patientTurns) return false;
         yield* Effect.yieldNow;
+        calm = recorder.sqlInFlight() === 0 ? calm + 1 : 0;
       }
+
+      return true;
     }),
     /** Runs an effect against the server engine. */
     server: <A, E>(
