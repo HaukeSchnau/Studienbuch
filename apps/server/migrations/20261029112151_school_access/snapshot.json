@@ -1,0 +1,226 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "c64f0e89-9441-4ef0-8128-be3fedca26d1",
+  "prevIds": ["53c97b2a-e5ef-496d-b1f4-8ed3a3675b29"],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "school_access"],
+      "writes": [
+        "s|tbl|public.school_access",
+        "n|tbl|public.school_access",
+        "e|tbl|public.school_access",
+        "n|rel|public.school_access",
+        "n|type|public.school_access",
+        "n|rel|public.school_access_pkey",
+        "n|rel|public.school_access_notebook"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "school_access"],
+      "writes": [
+        "s|fk|public.school_access.school_access_account_id_auth_user_id_fkey",
+        "n|fk|public.school_access.school_access_account_id_auth_user_id_fkey",
+        "e|fk|public.school_access.school_access_account_id_auth_user_id_fkey",
+        "n|con|public.school_access.school_access_account_id_auth_user_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.school_access",
+        "n|sch|public",
+        "n|tbl|public.auth_user",
+        "n|sch|public",
+        "n|col|public.school_access.account_id",
+        "n|col|public.auth_user.id",
+        "e|uniqueness|public.auth_user.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "school_access"],
+      "writes": [
+        "s|fk|public.school_access.school_access_school_id_space_id_fkey",
+        "n|fk|public.school_access.school_access_school_id_space_id_fkey",
+        "e|fk|public.school_access.school_access_school_id_space_id_fkey",
+        "n|con|public.school_access.school_access_school_id_space_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.school_access",
+        "n|sch|public",
+        "n|tbl|public.space",
+        "n|sch|public",
+        "n|col|public.school_access.school_id",
+        "n|col|public.space.id",
+        "e|uniqueness|public.space.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "school_access"],
+      "writes": [
+        "s|fk|public.school_access.school_access_notebook_id_space_id_fkey",
+        "n|fk|public.school_access.school_access_notebook_id_space_id_fkey",
+        "e|fk|public.school_access.school_access_notebook_id_space_id_fkey",
+        "n|con|public.school_access.school_access_notebook_id_space_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.school_access",
+        "n|sch|public",
+        "n|tbl|public.space",
+        "n|sch|public",
+        "n|col|public.school_access.notebook_id",
+        "n|col|public.space.id",
+        "e|uniqueness|public.space.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "school_access",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "school_access",
+        "name": "account_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "school_access",
+        "name": "school_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "school_access",
+        "name": "notebook_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "school_access",
+        "name": "admitted_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "school_access",
+        "name": "school_access_account_id_auth_user_id_fkey",
+        "nameExplicit": false,
+        "columns": ["account_id"],
+        "schemaTo": "public",
+        "tableTo": "auth_user",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "school_access",
+        "name": "school_access_school_id_space_id_fkey",
+        "nameExplicit": false,
+        "columns": ["school_id"],
+        "schemaTo": "public",
+        "tableTo": "space",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "NO ACTION",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "school_access",
+        "name": "school_access_notebook_id_space_id_fkey",
+        "nameExplicit": false,
+        "columns": ["notebook_id"],
+        "schemaTo": "public",
+        "tableTo": "space",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "NO ACTION",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "school_access",
+        "name": "school_access_pkey",
+        "columns": ["account_id", "school_id"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "school_access",
+        "name": "school_access_notebook",
+        "nameExplicit": true,
+        "columns": ["notebook_id"],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    }
+  ]
+}
