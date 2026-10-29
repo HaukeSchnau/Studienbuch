@@ -207,6 +207,14 @@ describe.skipIf(Postgres18.socket === null)("Auth", () => {
           const [user] = yield* db.select().from(AuthTables.user);
 
           assert.deepStrictEqual([user?.name, user?.image], ["", null]);
+
+          // The console lists the code's mail for whoever tests the sign-up.
+          const mails = yield* Mail.captured;
+
+          assert.deepStrictEqual(
+            mails.map((mail) => mail.to),
+            ["lena@example.org"],
+          );
         }),
       );
 
@@ -437,6 +445,10 @@ describe.skipIf(Postgres18.socket === null)("Auth", () => {
           assert.deepStrictEqual(yield* decodeCode(created.json), {
             code: "EMAIL_PASSWORD_SIGN_UP_DISABLED",
           });
+
+          const listed = yield* Effect.flip(Mail.captured);
+
+          assert.strictEqual(listed._tag, "Mail.NotCaptured");
         }),
       );
     });

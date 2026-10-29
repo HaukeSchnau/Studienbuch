@@ -1,0 +1,75 @@
+/* The captured mail list: one card per mail, the text as it went out. */
+
+.console-mail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.console-mail header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.console-mail h2 {
+  color: var(--color-ink);
+  font-size: 22px;
+  line-height: 28px;
+}
+
+.console-mail button {
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-accent);
+  font: inherit;
+  font-weight: 800;
+  box-shadow: var(--elevation-card);
+  cursor: pointer;
+}
+
+.console-mail ol {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.console-mail li {
+  padding: 16px 20px;
+  border: 1px solid var(--color-card-edge);
+  border-radius: 28px;
+  background: var(--color-surface);
+  box-shadow: var(--elevation-card);
+}
+
+.console-mail-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--color-ink-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.console-mail-subject {
+  margin-top: 4px;
+  color: var(--color-ink);
+  font-weight: 800;
+}
+
+.console-mail pre,
+.console-mail-empty {
+  margin: 8px 0 0;
+  color: var(--color-ink);
+  font-family: inherit;
+  white-space: pre-wrap;
+}
+
+.console-mail-problem {
+  color: var(--color-danger);
+}

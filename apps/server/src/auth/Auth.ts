@@ -227,7 +227,7 @@ const make = Effect.gen(function* () {
 
   const auth = betterAuth({
     ...options(
-      { ...settings, signUp: environment === "development" || environment === "preview" },
+      { ...settings, signUp: Deployment.isDevelopmentOrPreview(environment) },
       {
         sendCode: (email, code) =>
           Effect.runPromiseWith(services)(

@@ -5,6 +5,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as RpcServer from "effect/rpc/RpcServer";
 import { Deployment } from "../infra/config/Deployment.ts";
+import { Mail } from "../infra/mail/Mail.ts";
 
 const handlers = Api.Rpcs.toLayer(
   Effect.gen(function* () {
@@ -16,6 +17,7 @@ const handlers = Api.Rpcs.toLayer(
           DateTime.now,
           (serverTime) => new System.Info({ revision, environment, serverTime }),
         ),
+      "Mail.captured": () => Mail.captured,
     };
   }),
 );

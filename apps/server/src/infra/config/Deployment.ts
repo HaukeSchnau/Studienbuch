@@ -21,4 +21,11 @@ export const layer = Layer.effect(Current)(
   ),
 );
 
+/**
+ * Development and preview servers hold no real students. They open sign-up, keep mail instead of
+ * sending it, and show the Sync Lab what they hold.
+ */
+export const isDevelopmentOrPreview = (environment: System.Environment) =>
+  environment === "development" || environment === "preview";
+
 export * as Deployment from "./Deployment.ts";

@@ -1,3 +1,5 @@
+import { Mail as ApiMail } from "@stu/api/Mail";
+import { desc } from "drizzle-orm";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
@@ -66,6 +68,28 @@ export const layerCapture = Layer.effect(Service)(
   }),
 );
 
+/** The newest captured mail first, for the console in development and preview. */
+export const captured = Effect.gen(function* () {
+  const { environment } = yield* Deployment.Current;
+
+  if (!Deployment.isDevelopmentOrPreview(environment)) {
+    return yield* new ApiMail.NotCaptured();
+  }
+
+  const db = yield* Database.Drizzle;
+
+  const rows = yield* db
+    .select()
+    .from(MailTables.capturedMail)
+    .orderBy(desc(MailTables.capturedMail.sentAt))
+    .limit(50)
+    .pipe(Effect.orDie);
+
+  return rows.map(
+    (row) => new ApiMail.Captured({ ...row, sentAt: DateTime.fromDateUnsafe(row.sentAt) }),
+  );
+});
+
 /** Sends over SMTP. The URL carries the credentials, as in `smtps://user:password@host:465`. */
 export const layerSmtp = (url: Redacted.Redacted, from: string) =>
   Layer.effect(Service)(
@@ -108,7 +132,7 @@ export const layer = Layer.unwrap(
 
     if (Redacted.value(url) !== "capture:") return layerSmtp(url, from);
 
-    if (environment !== "development" && environment !== "preview") {
+    if (!Deployment.isDevelopmentOrPreview(environment)) {
       return yield* new CaptureNotAllowed({ environment });
     }
 
