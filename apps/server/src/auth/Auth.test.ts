@@ -6,6 +6,7 @@ import { Ports } from "@stu/sync/server";
 import { Postgres18 } from "@stu/sync/testing";
 import { desc } from "drizzle-orm";
 import * as ConfigProvider from "effect/ConfigProvider";
+import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Base64Url from "effect/encoding/Base64Url";
 import * as Fiber from "effect/Fiber";
@@ -26,12 +27,16 @@ import { Migrations } from "../infra/database/Migrations.ts";
 import { Mail } from "../infra/mail/Mail.ts";
 import { MailTables } from "../infra/mail/MailTables.ts";
 import { Auth } from "./Auth.ts";
+import { AuthTables } from "./AuthTables.ts";
 
 const publicUrl = "http://localhost:3000";
 const migrations = NodeURL.fileURLToPath(new URL("../../migrations/", import.meta.url));
 
-/** The auth route on a fresh database with every migration, in one environment. */
-const server = (environment: string) =>
+/**
+ * The auth route on a fresh database with every migration, in one environment. Beta sends mail
+ * over SMTP, which its tests never reach.
+ */
+const server = (environment: string, overrides: Record<string, string> = {}) =>
   Layer.unwrap(
     Effect.gen(function* () {
       const sql = yield* SqlClient.SqlClient;
@@ -47,8 +52,9 @@ const server = (environment: string) =>
         PUBLIC_URL: publicUrl,
         AUTH_SECRET: "a test secret that is long enough for Better Auth",
         PASSKEY_RP_ID: "localhost",
-        MAIL_URL: "capture:",
+        MAIL_URL: environment === "development" ? "capture:" : "smtp://localhost:1",
         MAIL_FROM: "Studienbuch <studienbuch@localhost>",
+        ...overrides,
       };
 
       return HttpRouter.serve(Auth.route, { disableLogger: true, disableListenLog: true }).pipe(
@@ -66,6 +72,8 @@ interface CallOptions {
   readonly body?: object;
   readonly token?: string;
   readonly challenge?: string;
+  /** A browser's own origin by default. Native apps send none (`null`). */
+  readonly origin?: string | null;
 }
 
 /**
@@ -93,6 +101,11 @@ const call = Effect.fnUntraced(function* (
     request = HttpClientRequest.setHeader(request, Accounts.challengeHeader, options.challenge);
   }
 
+  // Node's fetch sends Fetch Metadata like a browser, so it needs the Origin a browser sends too.
+  if (options.origin !== null) {
+    request = HttpClientRequest.setHeader(request, "origin", options.origin ?? publicUrl);
+  }
+
   if (options.body !== undefined) {
     request = HttpClientRequest.bodyJsonUnsafe(request, options.body);
   }
@@ -101,16 +114,15 @@ const call = Effect.fnUntraced(function* (
 
   return {
     status: response.status,
-    json: yield* response.json,
+    json: yield* Effect.orElseSucceed(response.json, () => null),
     cookies: response.headers["set-cookie"] ?? null,
     challenge: Option.getOrUndefined(Headers.get(response.headers, Accounts.challengeHeader)),
+    token: Option.getOrUndefined(Headers.get(response.headers, "set-auth-token")),
   };
 });
 
-const SignedIn = Schema.Struct({ token: Schema.String });
-const decodeSignedIn = Schema.decodeUnknownEffect(SignedIn);
-const decodePasskeySignedIn = Schema.decodeUnknownEffect(Schema.Struct({ session: SignedIn }));
-const decodeRefused = Schema.decodeUnknownEffect(Schema.Struct({ code: Schema.String }));
+const decodeToken = Schema.decodeUnknownEffect(Schema.Struct({ token: Schema.String }));
+const decodeCode = Schema.decodeUnknownEffect(Schema.Struct({ code: Schema.String }));
 const decodeChallenge = Schema.decodeUnknownEffect(Schema.Struct({ challenge: Schema.String }));
 
 const decodeRegistrationOptions = Schema.decodeUnknownEffect(
@@ -129,6 +141,10 @@ const decodeAuthenticationOptions = Schema.decodeUnknownEffect(
 
 const bearer = (token: string) => Headers.fromInput({ authorization: `Bearer ${token}` });
 
+const password = "lange-genug-123";
+
+const mailCount = Effect.flatMap(Database.Drizzle, (db) => db.$count(MailTables.capturedMail));
+
 /** The six digits of the newest captured mail, which went to `email`. */
 const codeFor = Effect.fnUntraced(function* (email: string) {
   const db = yield* Database.Drizzle;
@@ -143,10 +159,10 @@ const codeFor = Effect.fnUntraced(function* (email: string) {
   return /\b(?<code>\d{6})\b/u.exec(mail?.text ?? "")?.groups?.code ?? "no code";
 });
 
-/** Signs up, enters the mailed code, and returns the session token that signs the device in. */
+/** Signs up, enters the mailed code, and returns the signed token the device keeps. */
 const signUp = Effect.fnUntraced(function* (email: string) {
   const created = yield* call("POST", "/sign-up/email", {
-    body: { email, password: "lange-genug-123", name: "" },
+    body: { email, password, name: "Lena Beispiel" },
   });
 
   assert.strictEqual(created.status, 200);
@@ -158,8 +174,22 @@ const signUp = Effect.fnUntraced(function* (email: string) {
   assert.strictEqual(verified.status, 200);
   assert.strictEqual(verified.cookies, null);
 
-  return (yield* decodeSignedIn(verified.json)).token;
+  const resolver = yield* Ports.SessionResolver;
+  const raw = (yield* decodeToken(verified.json)).token;
+
+  // The raw token in the body, as in a dump of the session table, opens nothing.
+  assert.isTrue(Option.isNone(yield* resolver.resolve(bearer(raw))));
+
+  return verified.token ?? "no signed token";
 });
+
+/** Revocations from now on, `count` of them. */
+const revocations = (count: number) =>
+  Effect.flatMap(Ports.SessionResolver, (resolver) =>
+    Effect.forkChild(Stream.runCollect(Stream.take(resolver.revoked, count)), {
+      startImmediately: true,
+    }),
+  );
 
 describe.skipIf(Postgres18.socket === null)("Auth", () => {
   layer(NodeServices.layer)((it) => {
@@ -167,10 +197,63 @@ describe.skipIf(Postgres18.socket === null)("Auth", () => {
       it.effect("opens sign-up in development, and the mailed code signs the device in", () =>
         Effect.gen(function* () {
           const resolver = yield* Ports.SessionResolver;
+          const db = yield* Database.Drizzle;
           const token = yield* signUp("lena@example.org");
 
           assert.isTrue(Option.isSome(yield* resolver.resolve(bearer(token))));
           assert.isTrue(Option.isNone(yield* resolver.resolve(Headers.empty)));
+
+          // The name lives in the encrypted notebook, whatever sign-up sent.
+          const [user] = yield* db.select().from(AuthTables.user);
+
+          assert.deepStrictEqual([user?.name, user?.image], ["", null]);
+        }),
+      );
+
+      it.effect("mails no code to a confirmed address, and its code can't be guessed in", () =>
+        Effect.gen(function* () {
+          yield* signUp("lena@example.org");
+
+          const resent = yield* call("POST", "/send-verification-email", {
+            body: { email: "lena@example.org" },
+          });
+
+          const otp = yield* call("POST", "/email-otp/send-verification-otp", {
+            body: { email: "lena@example.org", type: "email-verification" },
+          });
+
+          const guessed = yield* call("POST", "/email-otp/verify-email", {
+            body: { email: "lena@example.org", otp: "000000" },
+          });
+
+          assert.strictEqual(resent.status, 200);
+          assert.strictEqual(otp.status, 404);
+          assert.strictEqual(guessed.status, 400);
+          assert.strictEqual(guessed.token, undefined);
+          assert.strictEqual(yield* mailCount, 1);
+        }),
+      );
+
+      it.effect("closes the routes Studienbuch doesn't offer", () =>
+        Effect.gen(function* () {
+          const token = yield* signUp("lena@example.org");
+
+          const statuses = yield* Effect.forEach(
+            [
+              ["GET", "/list-sessions"],
+              ["POST", "/update-user"],
+              ["GET", "/verify-email?token=x"],
+              ["POST", "/email-otp/check-verification-otp"],
+              ["POST", "/sign-in/email-otp"],
+            ] as const,
+            ([method, path]) =>
+              Effect.map(
+                call(method, path, { token, body: method === "POST" ? {} : undefined }),
+                (answer) => answer.status,
+              ),
+          );
+
+          assert.deepStrictEqual(statuses, [404, 404, 404, 404, 404]);
         }),
       );
 
@@ -179,19 +262,70 @@ describe.skipIf(Postgres18.socket === null)("Auth", () => {
           const resolver = yield* Ports.SessionResolver;
           const token = yield* signUp("lena@example.org");
           const session = yield* resolver.resolve(bearer(token));
-
-          const revoked = yield* Effect.forkChild(Stream.runHead(resolver.revoked), {
-            startImmediately: true,
-          });
+          const revoked = yield* revocations(1);
 
           const signedOut = yield* call("POST", "/sign-out", { body: {}, token });
 
           assert.strictEqual(signedOut.status, 200);
           assert.deepStrictEqual(
-            yield* Fiber.join(revoked),
-            Option.map(session, (found) => found.sessionId),
+            [...(yield* Fiber.join(revoked))],
+            Option.toArray(Option.map(session, (found) => found.sessionId)),
           );
           assert.isTrue(Option.isNone(yield* resolver.resolve(bearer(token))));
+        }),
+      );
+
+      it.effect("reports every session that signing out everywhere ends, past a hundred", () =>
+        Effect.gen(function* () {
+          const db = yield* Database.Drizzle;
+          const resolver = yield* Ports.SessionResolver;
+          const token = yield* signUp("lena@example.org");
+          const [user] = yield* db.select().from(AuthTables.user);
+          const userId = user?.id ?? "";
+
+          const expiresAt = DateTime.toDateUtc(DateTime.makeUnsafe("2100-01-01T00:00:00Z"));
+
+          yield* db.insert(AuthTables.session).values(
+            Array.from({ length: 100 }, (_, index) => ({
+              id: `session-${index}`,
+              token: `token-${index}`,
+              userId,
+              expiresAt,
+            })),
+          );
+
+          const revoked = yield* revocations(101);
+          const answer = yield* call("POST", "/revoke-sessions", { body: {}, token });
+
+          assert.strictEqual(answer.status, 200);
+          assert.strictEqual(new Set(yield* Fiber.join(revoked)).size, 101);
+          assert.isTrue(Option.isNone(yield* resolver.resolve(bearer(token))));
+        }),
+      );
+
+      it.effect("ends every other device's session when the password changes", () =>
+        Effect.gen(function* () {
+          const resolver = yield* Ports.SessionResolver;
+          const first = yield* signUp("lena@example.org");
+
+          const second = yield* call("POST", "/sign-in/email", {
+            body: { email: "lena@example.org", password },
+          });
+
+          const other = yield* resolver.resolve(bearer(second.token ?? ""));
+          const revoked = yield* revocations(2);
+
+          const changed = yield* call("POST", "/change-password", {
+            token: first,
+            body: { currentPassword: password, newPassword: "noch-laenger-456" },
+          });
+
+          assert.strictEqual(changed.status, 200);
+          assert.includeMembers(
+            [...(yield* Fiber.join(revoked))],
+            Option.toArray(Option.map(other, (found) => found.sessionId)),
+          );
+          assert.isTrue(Option.isNone(yield* resolver.resolve(bearer(second.token ?? ""))));
         }),
       );
 
@@ -218,7 +352,9 @@ describe.skipIf(Postgres18.socket === null)("Auth", () => {
               body: { response: authenticator.create(registration, { verified: false }) },
             });
 
-            assert.notStrictEqual(unverified.status, 200);
+            assert.deepStrictEqual(yield* decodeCode(unverified.json), {
+              code: "FAILED_TO_VERIFY_REGISTRATION",
+            });
 
             const again = yield* call("GET", "/passkey/generate-register-options", { token });
 
@@ -235,7 +371,6 @@ describe.skipIf(Postgres18.socket === null)("Auth", () => {
             assert.strictEqual(registered.status, 200);
 
             const asked = yield* call("GET", "/passkey/generate-authenticate-options");
-
             const authentication = yield* decodeAuthenticationOptions(asked.json);
 
             assert.strictEqual(authentication.userVerification, "required");
@@ -245,12 +380,31 @@ describe.skipIf(Postgres18.socket === null)("Auth", () => {
               body: { response: yield* authenticator.get(authentication, { verified: false }) },
             });
 
-            assert.notStrictEqual(refused.status, 200);
+            assert.deepStrictEqual(yield* decodeCode(refused.json), {
+              code: "AUTHENTICATION_FAILED",
+            });
 
+            // A page on another site can't finish a ceremony, even with the challenge.
+            const foreign = yield* call("GET", "/passkey/generate-authenticate-options");
+
+            const forged = yield* call("POST", "/passkey/verify-authentication", {
+              challenge: foreign.challenge,
+              origin: "https://elsewhere.example",
+              body: {
+                response: yield* authenticator.get(yield* decodeChallenge(foreign.json), {
+                  verified: true,
+                }),
+              },
+            });
+
+            assert.strictEqual(forged.status, 403);
+
+            // Native apps send no Origin at all.
             const next = yield* call("GET", "/passkey/generate-authenticate-options");
 
             const signedIn = yield* call("POST", "/passkey/verify-authentication", {
               challenge: next.challenge,
+              origin: null,
               body: {
                 response: yield* authenticator.get(yield* decodeChallenge(next.json), {
                   verified: true,
@@ -261,13 +415,11 @@ describe.skipIf(Postgres18.socket === null)("Auth", () => {
             assert.strictEqual(signedIn.status, 200);
             assert.strictEqual(signedIn.cookies, null);
 
-            const { session } = yield* decodePasskeySignedIn(signedIn.json);
-
             const accountOf = (found: Option.Option<Ports.ResolvedSession>) =>
               Option.map(found, ({ accountId }) => accountId);
 
             assert.deepStrictEqual(
-              accountOf(yield* resolver.resolve(bearer(session.token))),
+              accountOf(yield* resolver.resolve(bearer(signedIn.token ?? ""))),
               accountOf(yield* resolver.resolve(bearer(token))),
             );
           }),
@@ -277,20 +429,40 @@ describe.skipIf(Postgres18.socket === null)("Auth", () => {
     it.layer(server("beta"), { buildPerTest: true })((it) => {
       it.effect("refuses sign-up outside development and preview", () =>
         Effect.gen(function* () {
-          const db = yield* Database.Drizzle;
-
           const created = yield* call("POST", "/sign-up/email", {
-            body: { email: "lena@example.org", password: "lange-genug-123", name: "" },
+            body: { email: "lena@example.org", password, name: "" },
           });
 
           assert.strictEqual(created.status, 400);
-          assert.deepStrictEqual(yield* decodeRefused(created.json), {
+          assert.deepStrictEqual(yield* decodeCode(created.json), {
             code: "EMAIL_PASSWORD_SIGN_UP_DISABLED",
           });
-          assert.strictEqual(yield* db.$count(MailTables.capturedMail), 0);
         }),
       );
     });
+
+    it.effect(
+      "doesn't start with a short secret, a foreign passkey host or captured mail in beta",
+      () =>
+        Effect.gen(function* () {
+          const failure = (environment: string, overrides: Record<string, string>) =>
+            Effect.map(
+              Effect.flip(Effect.scoped(Layer.build(server(environment, overrides)))),
+              (error) => ("_tag" in error ? error._tag : "untagged"),
+            );
+
+          assert.deepStrictEqual(
+            [
+              // An empty secret file reads as no secret at all.
+              yield* failure("development", { AUTH_SECRET: "" }),
+              yield* failure("development", { AUTH_SECRET: "x".repeat(31) }),
+              yield* failure("development", { PASSKEY_RP_ID: "studienbuch.app" }),
+              yield* failure("beta", { MAIL_URL: "capture:" }),
+            ],
+            ["ConfigError", "Auth.WeakSecret", "Auth.ForeignRpId", "Mail.CaptureNotAllowed"],
+          );
+        }),
+    );
   });
 });
 

@@ -2,6 +2,7 @@ import { passkey } from "@better-auth/passkey";
 import { Accounts } from "@stu/api/Accounts";
 import { Ports } from "@stu/sync/server";
 import { type BetterAuthOptions, betterAuth } from "better-auth";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { bearer, emailOTP } from "better-auth/plugins";
 import * as Config from "effect/Config";
 import * as Context from "effect/Context";
@@ -17,6 +18,7 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as PubSub from "effect/PubSub";
 import * as Redacted from "effect/Redacted";
+import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
 import { Pool } from "pg";
 import { Deployment } from "../infra/config/Deployment.ts";
@@ -57,6 +59,14 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
     logger: { level: "warn", log: callbacks.log },
     // Better Auth would limit only when NODE_ENV is "production"; one build serves every environment.
     rateLimit: { enabled: true },
+    advanced: {
+      // Better Auth turns both checks off when it thinks it runs in a test (`TEST`, `NODE_ENV`).
+      disableOriginCheck: false,
+      disableCSRFCheck: false,
+      // Deleting many rows reports each one to the `delete` hooks, but reads at most this many. An
+      // account's sessions must all reach the resolver when it signs out everywhere.
+      database: { defaultFindManyLimit: 100_000 },
+    },
     user: { modelName: "auth_user" },
     // A session lasts 90 days and renews with use, at most once a day (D27).
     session: { modelName: "auth_session", expiresIn: 90 * day, updateAge: day },
@@ -70,17 +80,44 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
     emailVerification: {
       sendOnSignUp: true,
       sendOnSignIn: true,
+      // The code signs the device in, so it may only ever confirm an address once.
       autoSignInAfterVerification: true,
+      beforeEmailVerification: (user) =>
+        user.emailVerified
+          ? // oxlint-disable-next-line studienbuch/no-throwing-errors -- Better Auth hooks refuse a request by rejecting with APIError.
+            Promise.reject(APIError.from("BAD_REQUEST", alreadyConfirmed))
+          : Promise.resolve(),
+    },
+    hooks: {
+      // A new password ends the session on every other device, whatever the request asks for.
+      before: createAuthMiddleware((context) =>
+        Promise.resolve(
+          context.path === "/change-password"
+            ? { context: { body: { ...context.body, revokeOtherSessions: true } } }
+            : undefined,
+        ),
+      ),
     },
     databaseHooks: {
+      user: {
+        // The display name lives in the encrypted notebook only (architecture.md, C9).
+        create: { before: () => Promise.resolve({ data: { name: "", image: null } }) },
+      },
       session: {
         // The privacy claim lists what the server sees, and a client's IP address isn't on it.
         create: { before: () => Promise.resolve({ data: { ipAddress: null } }) },
         delete: { after: (session) => Promise.resolve(callbacks.sessionDeleted(session.id)) },
       },
     },
-    // Flows Studienbuch doesn't offer. `sendCode` sends only email verification codes.
+    // Flows Studienbuch doesn't offer. A code reaches only an address that isn't confirmed yet,
+    // through `/send-verification-email`, and confirming it signs the device in. A session's token
+    // never leaves the device it belongs to, so `/list-sessions` waits for the device list.
     disabledPaths: [
+      "/verify-email",
+      "/update-user",
+      "/list-sessions",
+      "/email-otp/send-verification-otp",
+      "/email-otp/check-verification-otp",
       "/sign-in/email-otp",
       "/email-otp/request-password-reset",
       "/forget-password/email-otp",
@@ -89,7 +126,8 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
       "/email-otp/change-email",
     ],
     plugins: [
-      bearer(),
+      // Devices hold the signed token from `set-auth-token`, which a raw token from a dump can't be.
+      bearer({ requireSignature: true }),
       emailOTP({
         overrideDefaultEmailVerification: true,
         disableSignUp: true,
@@ -115,6 +153,20 @@ export const options = (settings: Settings, callbacks: Callbacks) =>
       }),
     ],
   }) satisfies BetterAuthOptions;
+
+const alreadyConfirmed = { code: "EMAIL_ALREADY_VERIFIED", message: "Email already verified" };
+
+/** `AUTH_SECRET` is shorter than 32 bytes. Better Auth would fall back to a public default. */
+export class WeakSecret extends Schema.TaggedError<WeakSecret, { readonly brand: unique symbol }>()(
+  "Auth.WeakSecret",
+  {},
+) {}
+
+/** `PASSKEY_RP_ID` isn't `PUBLIC_URL`'s host, so no passkey of this environment would work. */
+export class ForeignRpId extends Schema.TaggedError<
+  ForeignRpId,
+  { readonly brand: unique symbol }
+>()("Auth.ForeignRpId", { rpId: Schema.String, host: Schema.String }) {}
 
 const codeMail = (to: string, code: string): Mail.Message => ({
   to,
@@ -152,6 +204,14 @@ const make = Effect.gen(function* () {
     rpId: Config.String("PASSKEY_RP_ID"),
     nativeApps: NativeApps.config,
   });
+
+  if (new TextEncoder().encode(Redacted.value(settings.secret)).length < 32) {
+    return yield* new WeakSecret();
+  }
+
+  const host = new URL(settings.publicUrl).hostname;
+
+  if (settings.rpId !== host) return yield* new ForeignRpId({ rpId: settings.rpId, host });
 
   const databaseUrl = yield* Config.Redacted("DATABASE_URL");
 
