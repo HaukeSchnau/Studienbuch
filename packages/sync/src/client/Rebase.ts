@@ -212,10 +212,6 @@ export const applyPull = Effect.fnUntraced(function* (
       key_epoch = excluded.key_epoch
   `;
 
-  // Before this page's boxes open: a device whose own epoch 0 the server took gets it back from
-  // its own box.
-  yield* Keyring.dropOwnOnceListed;
-
   const rekeyed = new Set<string>();
   const sealed: Array<{ readonly space: string; readonly op: Protocol.Op }> = [];
 
@@ -374,6 +370,13 @@ export const replay = Effect.fnUntraced(function* (definition: Sync.Definition, 
 
   yield* sql`delete from pending_row`;
 
+  // Spaces whose rows come back whole with the next pull, as after a restore of the server.
+  const awaiting = new Set(
+    (yield* sql<{ readonly id: string }>`select id from sync_space where version is null`).map(
+      (row) => row.id,
+    ),
+  );
+
   for (const command of yield* Outbox.pending) {
     const mutator = definition.byName.mutators[command.mode].get(command.name);
 
@@ -385,9 +388,17 @@ export const replay = Effect.fnUntraced(function* (definition: Sync.Definition, 
       continue;
     }
 
-    // A sealed command the push sent keeps what it sent until the server answers `Stale`, since the
-    // server may hold it already. Its drafts and refusal stay, and only the overlay follows.
-    const sent = command.mode === "Seal" && command.sealed !== null;
+    // A sealed command the push sent keeps what it sent until a pull shows the server didn't take
+    // it, since the server may hold it already. One in a space whose rows come back whole waits for
+    // them: its rows here may be the effect it had before a restore. Their overlay still follows.
+    const declared = yield* Effect.option(
+      Effect.map(Sync.invoke(mutator, command.version, command.args), (each) => each.spaces),
+    );
+
+    const sent =
+      command.mode === "Seal" &&
+      (command.sealed !== null ||
+        Option.exists(declared, (spaces) => spaces.some((space) => awaiting.has(space))));
 
     // A sealed command's drafts belong to its savepoint, so a row it can't read takes back its
     // effect like any other refusal.

@@ -87,8 +87,8 @@ export interface Device {
   /** Opens key boxes and sealed rows as pages arrive. */
   readonly opener: Rebase.Opener;
   readonly keyring: Keyring.Keyring;
-  /** After a pull: picks up a renewed root key that a box of the account asks for. */
-  readonly renew: Effect.Effect<void, SqlError.SqlError>;
+  /** After a pull: opens boxes that waited for the account's keys, and picks up a renewed key. */
+  readonly afterPull: Effect.Effect<void, SqlError.SqlError>;
 }
 
 export interface Renumbered {
@@ -207,7 +207,7 @@ export const make = (device: Device) => {
 
         const sealed = yield* Sealing.seal(command, actor, device.keyring, opening);
 
-        if (sealed === "locked" || sealed === "key-missing") break;
+        if (sealed === "locked" || sealed === "key-missing" || sealed === "held") break;
         yield* Outbox.keepSealed(sealed);
         commands.push(sealed);
       }
@@ -269,15 +269,7 @@ export const make = (device: Device) => {
 
       if (response.outcomes.some((outcome) => outcome._tag === "Retry")) return "retry";
 
-      const stale = response.outcomes.flatMap((outcome) =>
-        outcome._tag === "Stale" ? [outcome.mutationId] : [],
-      );
-
-      if (stale.length > 0) {
-        yield* Outbox.forgetSealed(stale);
-
-        return "stale";
-      }
+      if (response.outcomes.some((outcome) => outcome._tag === "Stale")) return "stale";
 
       if (response.lastMutationId <= fence.pushedUpTo) return "retry";
       fence.pushedUpTo = response.lastMutationId;
@@ -310,10 +302,14 @@ export const make = (device: Device) => {
             ? Option.none<Outbox.Settled>()
             : Option.some(yield* Outbox.settle(last, response.refusals, now));
 
+        // The server took nothing after `last`, so what the push sent of those seals again.
+        const unsent = last !== null && !ahead && (yield* Outbox.forgetSealedAfter(last));
+
         const refused = Option.exists(settled, (each) => each.refused.length > 0);
 
         const changed =
           meta.replayDue ||
+          unsent ||
           tables.size > 0 ||
           Option.isSome(renumbered) ||
           Option.exists(settled, (each) => each.applied.length > 0) ||
@@ -408,7 +404,7 @@ export const make = (device: Device) => {
       yield* apply(result.success);
 
       if (!result.success.more) {
-        yield* device.renew;
+        yield* device.afterPull;
 
         return "done";
       }

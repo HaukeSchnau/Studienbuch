@@ -307,15 +307,19 @@ export const keepSealed = Effect.fnUntraced(function* (seal: Wire.Seal) {
 });
 
 /**
- * Forgets what the push sent for commands the server answered `Stale`. The next pull replays them
- * on the newer rows, and the push seals them again.
+ * Forgets what the push sent for the commands after `lastMutationId`, which the server didn't
+ * process, so they seal again on the rows the pull brought. Whether there were any.
  */
-export const forgetSealed = Effect.fnUntraced(function* (mutationIds: ReadonlyArray<number>) {
+export const forgetSealedAfter = Effect.fnUntraced(function* (lastMutationId: number) {
   const sql = yield* SqlClient.SqlClient;
 
-  if (mutationIds.length === 0) return;
-  yield* sql`update sync_outbox set sealed = null where ${sql.in("mutation_id", mutationIds)}`;
-  yield* setReplayDue(true);
+  const forgotten = yield* sql<{ readonly mutation_id: number }>`
+    update sync_outbox set sealed = null
+    where mutation_id > ${lastMutationId} and sealed is not null
+    returning mutation_id
+  `;
+
+  return forgotten.length > 0;
 });
 
 /** The newest waiting command whose rows include `id` in `space`. */

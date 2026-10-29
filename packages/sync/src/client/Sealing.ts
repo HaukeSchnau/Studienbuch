@@ -78,8 +78,11 @@ export const drafts = Effect.fnUntraced(function* <E, R>(
   return result;
 });
 
-/** Why a sealed command can't go out yet. The push stops before it, and the round retries. */
-export type Blocked = "locked" | "key-missing";
+/**
+ * Why a sealed command can't go out yet: no account keys, no key for the space's epoch, or no
+ * drafts while its space comes back whole. The push stops before it, and the round retries.
+ */
+export type Blocked = "locked" | "key-missing" | "held";
 
 /**
  * Seals a command's drafts for the push. `opening` holds the spaces this batch already opens epoch
@@ -96,6 +99,8 @@ export const seal = Effect.fnUntraced(function* (
   const boxes: Array<SpaceKey.KeyBox> = [];
   const at = DateTime.makeUnsafe(command.at);
 
+  if (command.writes === null && command.failure === null) return "held" satisfies Blocked;
+
   // A command whose last run refused leaves without rows: its id is used, and the device shows
   // its own reason once the id settles.
   const drafts = command.failure === null ? (command.writes ?? []) : [];
@@ -107,7 +112,10 @@ export const seal = Effect.fnUntraced(function* (
 
     const epoch = space?.key_epoch ?? 0;
     const opened = space !== undefined && space.key_epoch !== null;
-    const stored = yield* Keyring.spaceKey(draft.space, epoch);
+
+    const stored = opened
+      ? yield* Keyring.confirmedKey(draft.space, epoch)
+      : yield* Keyring.spaceKey(draft.space, epoch);
 
     if (opened && Option.isNone(stored)) return "key-missing" satisfies Blocked;
 

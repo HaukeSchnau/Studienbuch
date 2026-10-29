@@ -541,6 +541,31 @@ export const make = Effect.fnUntraced(function* (
     }),
   );
 
+  // Whether this engine reopened the boxes since the account's keys became available.
+  let boxesRetried = false;
+
+  /**
+   * The first time in this engine's life that the account's keys are available, opens the boxes
+   * of the account that hold no key yet, as after a start with the keychain locked.
+   */
+  const retryBoxes = Effect.gen(function* () {
+    if (boxesRetried || Option.isNone(yield* withSuite(keyring.account))) return;
+    boxesRetried = true;
+
+    const waiting = yield* sql`
+      select 1 from base_row as box
+      where box.tbl = ${Protocol.keyBoxTable} and box.data ->> '$.recipient' = ${actor}
+        and not exists (
+          select 1 from sync_space_key as known
+          where known.space = box.space and known.key_epoch = box.data ->> '$.keyEpoch'
+            and known.made_here = 0
+        )
+      limit 1
+    `;
+
+    if (waiting.length > 0) yield* reopenAll;
+  }).pipe(Effect.provideService(SqlClient.SqlClient, sql));
+
   const replication = Replication.make({
     definition,
     actor,
@@ -551,7 +576,7 @@ export const make = Effect.fnUntraced(function* (
     wipe,
     opener,
     keyring,
-    renew,
+    afterPull: Effect.andThen(retryBoxes, renew),
   });
 
   // A crash between two pages of a pull left the overlay on older rows.
@@ -573,6 +598,8 @@ export const make = Effect.fnUntraced(function* (
   } else if (undrafted.length > 0) {
     yield* commit(Effect.map(Rebase.replay(definition, actor), (tables) => ({ tables })));
   }
+
+  yield* retryBoxes;
 
   const rounds = yield* Semaphore.make(1);
 

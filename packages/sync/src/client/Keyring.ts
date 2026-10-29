@@ -65,9 +65,22 @@ export const storeKeys = Effect.fnUntraced(function* (
   }
 });
 
+/** The key of `space` at `epoch` that a box delivered, as a space with a listed epoch needs. */
+export const confirmedKey = Effect.fnUntraced(function* (space: string, epoch: number) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const [row] = yield* sql<{ readonly key: Uint8Array }>`
+    select key from sync_space_key
+    where space = ${space} and key_epoch = ${epoch} and made_here = 0
+  `;
+
+  return Option.map(Option.fromNullishOr(row), (each) => Redacted.make(new Uint8Array(each.key)));
+});
+
 /**
  * Keeps the epoch-0 key the device made for a space nobody opened yet, before a command boxes it.
- * It counts only until the server lists the space's epoch: then the server's box carries the key.
+ * Once the server lists an epoch, only a box's key seals, and a box for that epoch replaces this
+ * one: another device may have opened the epoch first.
  */
 export const keepOwn = Effect.fnUntraced(function* (
   space: string,
@@ -79,19 +92,6 @@ export const keepOwn = Effect.fnUntraced(function* (
     insert into sync_space_key (space, key_epoch, key, made_here)
     values (${space}, 0, ${Redacted.value(key)}, 1)
     on conflict (space, key_epoch) do nothing
-  `;
-});
-
-/**
- * Drops the keys the device made for spaces whose epoch the server now lists. Another device may
- * have opened that epoch first, and a row sealed under a key nobody else holds would be lost.
- */
-export const dropOwnOnceListed = Effect.gen(function* () {
-  const sql = yield* SqlClient.SqlClient;
-
-  yield* sql`
-    delete from sync_space_key where made_here = 1
-      and space in (select id from sync_space where key_epoch is not null)
   `;
 });
 
