@@ -16,11 +16,14 @@ const reason = (input: string) =>
 
 const alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
-/** 60 codes from a fixed linear congruential generator; the property needs no secure randomness. */
+/**
+ * 8 codes from a fixed linear congruential generator; the property needs no secure randomness.
+ * The CRC is linear, so a miss depends on the error alone, and each code tries every substitution.
+ */
 const codes = (() => {
   let state = 12_345;
 
-  return Array.from({ length: 60 }, () =>
+  return Array.from({ length: 8 }, () =>
     Uint8Array.from({ length: 16 }, () => {
       state = (state * 1_103_515_245 + 12_345) >>> 0;
 
