@@ -79,6 +79,16 @@ catalog:
   # Civil dates through its functional API, which defers to a native Temporal where one exists
   # and runs on Hermes, which has none (ADR 0001).
   temporal-polyfill: 1.0.6
+  # Accounts. Better Auth and its passkey plugin move together, and the passkey patch below names
+  # the exact release (ADR 0028).
+  better-auth: 1.7.14
+  "@better-auth/passkey": 1.7.14
+  # Better Auth's own pool, beside Effect's client (stack.md). Pure JS: the bundle never loads the
+  # optional pg-native addon.
+  pg: 8.23.1
+  "@types/pg": 8.23.1
+  # SMTP for `MAIL_URL`. It ships its own types.
+  nodemailer: 10.2.1
 
 overrides:
   vite@*: "catalog:"
@@ -108,6 +118,11 @@ minimumReleaseAgeExclude:
   - "@noxcturnal/noxcturnal-win32-x64-msvc@0.1.11"
 
 patchedDependencies:
+  # Passkey sign-in asks for "preferred" user verification and both verify calls accept none, but
+  # the PRF unlock needs verification on every assertion (recovery.md, section 4). The patch reads
+  # `authenticatorSelection.userVerification` for all three, so "required" applies everywhere.
+  # `Auth.test.ts` fails when a bump drops it. Delete it once upstream PR #11155 or #11981 ships.
+  "@better-auth/passkey@1.7.14": patches/@better-auth__passkey@1.7.14.patch
   # Expo Router ignores `experiments.baseUrl` while NODE_ENV is development (expo/expo#47701), so
   # behind the dev server's front door `/app/...` matched no route and links left `/app`. The patch
   # is upstream's fix, expo/expo#49236: apply the base URL in every mode, as release builds do.

@@ -10,16 +10,21 @@
     "start": "node src/main.ts"
   },
   "dependencies": {
+    "@better-auth/passkey": "catalog:",
     "@effect/platform-node": "catalog:",
     "@effect/sql-pg": "catalog:",
     "@stu/api": "workspace:*",
+    "@stu/sync": "workspace:*",
+    "better-auth": "catalog:",
     "drizzle-orm": "catalog:",
-    "effect": "catalog:"
+    "effect": "catalog:",
+    "nodemailer": "catalog:",
+    "pg": "catalog:"
   },
   "devDependencies": {
     "@effect/vitest": "catalog:",
-    "@stu/sync": "workspace:*",
     "@types/node": "catalog:",
+    "@types/pg": "catalog:",
     "drizzle-kit": "catalog:",
     "vite-plus": "catalog:"
   }
