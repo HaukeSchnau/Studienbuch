@@ -87,8 +87,6 @@ const cases = {
       Simulation.Choose.make({ device: "a", courses: ["course-de"] }),
       Simulation.Sync.make({ device: "a" }),
       Simulation.Sync.make({ device: "b" }),
-      // Long enough for the choice's own poke to have reached b, so only the leave's can bring news.
-      Simulation.Wait.make({ millis: 60_000 }),
       Simulation.Admit.make({ account: "lena", admitted: false }),
     ],
   },

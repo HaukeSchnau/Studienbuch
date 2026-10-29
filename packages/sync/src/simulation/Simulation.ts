@@ -458,9 +458,24 @@ export const run = (workload: Workload) =>
         sync.mutate(Planner.choose, { notebook: on.notebook, school: World.school, courses }),
       );
 
-    /** Lets `on` work until it is idle, for at most `limit`. */
+    /**
+     * Whether `idle` holds and still holds after `calmFor`, with nothing run on the server
+     * meanwhile. A device waiting out a poke's spread looks idle, so the round the poke asked for
+     * shows only as server work. The clock first moves one tick, so a poke on its way lands and its
+     * wait starts before the jump.
+     */
+    const stillIdle = Effect.fn("Simulation.stillIdle")(function* (idle: Effect.Effect<boolean>) {
+      if (!(yield* idle)) return false;
+      const ran = world.serverLines().length;
+      yield* advance(tick);
+      yield* advance(calmFor);
+
+      return (yield* idle) && world.serverLines().length === ran;
+    });
+
+    /** Lets `on` work until it is idle and stays so, for at most `limit`. */
     const syncing = (on: World.Device, limit: Duration.Duration = syncFor) =>
-      Effect.map(until(on.idle, limit), (idle) => (idle ? "idle" : "busy"));
+      Effect.map(until(stillIdle(on.idle), limit), (idle) => (idle ? "idle" : "busy"));
 
     /** Writes `courses` on `on` and crashes it before the statement `at` names. */
     const crashWhileChoosing = Effect.fnUntraced(function* (
@@ -790,13 +805,7 @@ export const run = (workload: Workload) =>
     );
 
     /** Every device idle, and the server ran nothing for `calmFor`. */
-    const calm = Effect.gen(function* () {
-      if (!(yield* allIdle)) return false;
-      const ran = world.serverLines().length;
-      yield* advance(calmFor);
-
-      return (yield* allIdle) && world.serverLines().length === ran;
-    });
+    const calm = stillIdle(allIdle);
 
     /** Lets every device work until the world is at rest, or breaks liveness. */
     const rest = Effect.fn("Simulation.rest")(function* (label: "settled" | "resumed") {
