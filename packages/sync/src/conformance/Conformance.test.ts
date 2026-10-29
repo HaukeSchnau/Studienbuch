@@ -87,7 +87,14 @@ const step: Arbitrary.Arbitrary<Probe.Step> = Arbitrary.flatMap(
     switch (op) {
       case "insert":
       case "put":
-        return Arbitrary.map(Arbitrary.all({ id: pick(ids), row }), (args) => ({ op, ...args }));
+        return Arbitrary.map(
+          Arbitrary.all({
+            id: pick(ids),
+            row,
+            unset: Arbitrary.array(pick(fieldNames), { maxLength: 1 }),
+          }),
+          (args) => ({ op, ...args }),
+        );
       case "patch":
         return Arbitrary.map(
           Arbitrary.all({
