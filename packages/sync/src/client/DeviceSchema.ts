@@ -6,8 +6,8 @@
  *
  * ```ts
  * // The schema file drizzle-kit reads. Each entity is a named export, the engine's tables included.
- * export const { sync_meta, sync_space, sync_outbox, sync_rejected_command, base_row, pending_row,
- *   sync_row_view, Homework } = DeviceSchema.make([Homework.Row]);
+ * export const { sync_meta, sync_space, sync_outbox, sync_settled_command, sync_rejected_command,
+ *   base_row, pending_row, sync_row_view, Homework } = DeviceSchema.make([Homework.Row]);
  * // A typed read:
  * db.select().from(Homework).where(eq(Homework.courseId, courseId)).orderBy(Homework.dueOn)
  * ```
@@ -155,6 +155,16 @@ const indexesOn = (rowTable: string, tables: ReadonlyArray<Sync.Any>) =>
 // table named `Space` or `Outbox` would otherwise collide with them.
 
 /**
+ * The `Reactivity` keys of the engine's own tables, which their queries follow. Synced tables use
+ * their names as keys.
+ */
+export const keys = {
+  outbox: "sync_outbox",
+  refusals: "sync_rejected_command",
+  spaces: "sync_space",
+} as const;
+
+/**
  * The device's own state, one row: the client id the server knows it by, the restore epoch of its
  * last pull, the last mutation id it gave a command and the last one it settled.
  */
@@ -190,6 +200,20 @@ const sync_outbox = sqliteTable("sync_outbox", {
   args: text().notNull(),
   at: integer().notNull(),
   mode: text({ enum: ["Mutate", "Seal"] }).notNull(),
+});
+
+/**
+ * Commands the server applied, kept for 7 days after `settled_at`, so that after a restore of the
+ * server's database (`Sync.EpochChanged`) the device can send them again.
+ */
+const sync_settled_command = sqliteTable("sync_settled_command", {
+  mutation_id: integer().primaryKey(),
+  name: text().notNull(),
+  version: integer().notNull(),
+  args: text().notNull(),
+  at: integer().notNull(),
+  mode: text({ enum: ["Mutate", "Seal"] }).notNull(),
+  settled_at: integer().notNull(),
 });
 
 /**
@@ -261,6 +285,7 @@ export const make = <const Tables extends ReadonlyArray<Sync.Any>>(tables: Table
     sync_meta,
     sync_space,
     sync_outbox,
+    sync_settled_command,
     sync_rejected_command,
     base_row,
     pending_row,

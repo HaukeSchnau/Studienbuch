@@ -88,7 +88,10 @@ export const remove = Sync.mutator("note.remove", {
   }),
 });
 
-/** Chooses a course the school offers, as `enrollment.set` does: a readable command. */
+/**
+ * Chooses a course the school offers, as `enrollment.set` does: a readable command. It writes
+ * before it checks, so a replay that refuses has to take its write back.
+ */
 export const choose = Sync.mutator("choice.set", {
   version: 1,
   args: Schema.Struct({ notebook: Schema.String, school: Schema.String, course: Schema.String }),
@@ -97,10 +100,11 @@ export const choose = Sync.mutator("choice.set", {
   spaces: (args) => [args.notebook],
   run: Effect.fn("Notes.choose")(function* (args) {
     const tx = yield* Tx.Service;
-    const course = yield* tx.get(Course, args.school, args.course);
+    yield* tx.put(Choice, args.notebook, args.course, { course: args.course });
 
-    if (course._tag === "None") return yield* new NotOffered({ course: args.course });
-    yield* tx.put(Choice, args.notebook, args.notebook, { course: args.course });
+    if ((yield* tx.get(Course, args.school, args.course))._tag === "None") {
+      return yield* new NotOffered({ course: args.course });
+    }
   }),
 });
 

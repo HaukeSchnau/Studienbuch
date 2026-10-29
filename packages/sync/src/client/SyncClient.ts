@@ -9,6 +9,7 @@
  * const { confirmed } = yield* sync.mutate(Homework.create, { notebook, id, courseId, title, dueOn })
  * ```
  */
+import { CryptoSuite } from "@stu/e2ee";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Deferred from "effect/Deferred";
@@ -17,16 +18,21 @@ import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Reactivity from "effect/reactivity/Reactivity";
 import * as Schema from "effect/Schema";
+import * as Semaphore from "effect/Semaphore";
 import * as SqlClient from "effect/sql/SqlClient";
 import type * as SqlError from "effect/sql/SqlError";
 import type * as Stream from "effect/Stream";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 import { Sync } from "../definition/Sync.ts";
 import { Ids } from "../protocol/Ids.ts";
+import { Protocol } from "../protocol/Protocol.ts";
 import { Refusal } from "../protocol/Refusal.ts";
 import { Tx } from "../transaction/Tx.ts";
+import { DeviceSchema } from "./DeviceSchema.ts";
 import { Outbox } from "./Outbox.ts";
 import { Ports } from "./Ports.ts";
+import { Rebase } from "./Rebase.ts";
+import { Replication } from "./Replication.ts";
 import { SqliteTx } from "./SqliteTx.ts";
 import type { SyncQuery } from "./SyncQuery.ts";
 
@@ -103,15 +109,19 @@ export interface Interface {
     /** The status now, then each change. */
     readonly changes: Stream.Stream<Status>;
   };
+  /**
+   * One round of push and pull over a connection. The connection supervisor runs it after each
+   * connect and after pokes; a second round waits for the first.
+   */
+  readonly replicate: (
+    remote: Replication.Remote,
+  ) => Effect.Effect<Replication.Outcome, Replication.Disconnected | SqlError.SqlError>;
 }
 
 export class Service extends Context.Service<Service, Interface>()("@stu/sync/client/SyncClient") {}
 
 /** The `Reactivity` keys of the engine's own queries. Synced tables use their names as keys. */
-export const keys = {
-  outbox: "sync_outbox",
-  refusals: "sync_rejected_command",
-} as const;
+export const keys = DeviceSchema.keys;
 
 /** The device's refused commands, oldest first. */
 export const refusals: SyncQuery.SyncQuery<void, Outbox.Rejected, SqlError.SqlError> = {
@@ -125,7 +135,35 @@ export const pending: SyncQuery.SyncQuery<void, Outbox.Command, SqlError.SqlErro
   run: () => Outbox.pending,
 };
 
+/** A space the account reads, and when the device last pulled ("zuletzt synchronisiert"). */
+export const SyncedSpace = Schema.Struct({
+  id: Schema.String,
+  kind: Schema.String,
+  role: Schema.String,
+  syncedAt: Schema.NullOr(Schema.DateTimeUtcFromMillis),
+});
+
+const decodeSynced = Schema.decodeUnknownEffect(Schema.Array(SyncedSpace));
+
+/** The spaces the account reads as of the last pull, apart from the connection's state. */
+export const spaces: SyncQuery.SyncQuery<
+  void,
+  typeof SyncedSpace.Type,
+  SqlError.SqlError | Schema.SchemaError
+> = {
+  keys: [keys.spaces],
+  run: () =>
+    Effect.flatMap(SqlClient.SqlClient, (sql) =>
+      Effect.flatMap(
+        sql`select id, kind, role, synced_at as "syncedAt" from sync_space order by id`,
+        decodeSynced,
+      ),
+    ),
+};
+
 const isId = Schema.is(Ids.Id);
+
+const encodeRevoked = Schema.encodeEffect(Protocol.DeviceRevoked);
 
 const SpaceRow = Schema.Struct({ id: Schema.String, kind: Schema.String, role: Schema.String });
 
@@ -149,8 +187,10 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
   const sql = yield* SqlClient.SqlClient;
   const reactivity = yield* Reactivity.Reactivity;
   const actor = (yield* Ports.Session).accountId;
+  const secrets = yield* Ports.DeviceSecrets;
+  const suite = yield* CryptoSuite.Service;
 
-  yield* Outbox.start(yield* Outbox.newClientId);
+  yield* Outbox.start(yield* Ids.random);
 
   const status = yield* SubscriptionRef.make<Status>({
     connection: "offline",
@@ -165,7 +205,10 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
    * The `confirmed` handles of commands the server hasn't settled, by client id and mutation id. A
    * command whose transaction rolled back leaves its handle behind until the next takes its id.
    */
-  const waiters = new Map<string, Deferred.Deferred<void, Rejected>>();
+  const waiters = new Map<
+    string,
+    { readonly mutationId: number; readonly deferred: Deferred.Deferred<void, Rejected> }
+  >();
 
   const waiterKey = (clientId: string, mutationId: number) => `${mutationId} ${clientId}`;
 
@@ -218,7 +261,7 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
     });
 
     const deferred = yield* Deferred.make<void, Rejected>();
-    waiters.set(waiterKey(clientId, mutationId), deferred);
+    waiters.set(waiterKey(clientId, mutationId), { mutationId, deferred });
 
     return {
       mutation: { mutationId, confirmed: Deferred.await(deferred) } satisfies Mutation,
@@ -230,7 +273,7 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
    * Runs `effect` in one transaction, then invalidates the tables it changed and reports how many
    * commands wait, as counted in that transaction.
    */
-  const commit = <A extends { readonly tables: ReadonlyArray<string> }, E>(
+  const commit = <A extends { readonly tables: Iterable<string> }, E>(
     effect: Effect.Effect<A, E, SqlClient.SqlClient>,
   ) =>
     sql
@@ -244,12 +287,115 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
         ),
       )
       .pipe(
-        Effect.tap(({ result }) => reactivity.invalidate(result.tables)),
+        Effect.tap(({ result }) => reactivity.invalidate([...new Set(result.tables)])),
         Effect.tap(({ waiting }) =>
           SubscriptionRef.update(status, (current) => ({ ...current, waiting })),
         ),
         Effect.map(({ result }) => result),
       );
+
+  /** Completes the `confirmed` handles of the commands a pull settled. */
+  const settled = Effect.fn("SyncClient.settled")(function* (settled: Outbox.Settled) {
+    const take = (mutationId: number) => {
+      const key = waiterKey(settled.clientId, mutationId);
+      const waiter = waiters.get(key);
+      waiters.delete(key);
+
+      return waiter;
+    };
+
+    for (const mutationId of settled.applied) {
+      const waiter = take(mutationId);
+
+      if (waiter !== undefined) yield* Deferred.succeed(waiter.deferred, undefined);
+    }
+
+    for (const { mutationId, reason } of settled.refused) {
+      const waiter = take(mutationId);
+
+      if (waiter !== undefined) {
+        yield* Deferred.fail(waiter.deferred, new Rejected({ mutationId, reason }));
+      }
+    }
+  });
+
+  /** Moves the handles of a renumbered outbox to the commands' new ids. */
+  const renumbered = (renumbered: Replication.Renumbered) =>
+    Effect.sync(() => {
+      for (const [from, to] of renumbered.ids) {
+        const waiter = waiters.get(waiterKey(renumbered.from, from));
+
+        if (waiter === undefined) continue;
+        waiters.delete(waiterKey(renumbered.from, from));
+        waiters.set(waiterKey(renumbered.to, to), { mutationId: to, deferred: waiter.deferred });
+      }
+    });
+
+  /**
+   * Another device removed this one: its keys, data and outbox go, and the device starts over
+   * under a new client id, so the account can sign in on it again. While a secret stays behind,
+   * the old client id stays too, and the next pull wipes again.
+   */
+  const wipe = Effect.gen(function* () {
+    const removed = yield* Effect.forEach(Ports.SecretName.literals, (name) =>
+      secrets.remove(name).pipe(
+        Effect.as(true),
+        Effect.catchTags({
+          "DeviceSecrets.SecretsUnavailable": () =>
+            Effect.as(
+              Effect.logWarning("A secret stayed on the device after the wipe", { secret: name }),
+              false,
+            ),
+        }),
+      ),
+    );
+
+    const clientId = yield* Effect.provideService(Ids.random, CryptoSuite.Service, suite);
+
+    yield* commit(
+      Effect.gen(function* () {
+        yield* Rebase.clear;
+        yield* Outbox.clear;
+
+        if (removed.every(Boolean)) yield* Outbox.reset(clientId);
+
+        return {
+          tables: [...definition.tables.map((table) => table.name), ...Object.values(keys)],
+        };
+      }),
+    );
+
+    const reason = yield* Effect.orDie(encodeRevoked(new Protocol.DeviceRevoked()));
+
+    for (const { mutationId, deferred } of waiters.values()) {
+      yield* Deferred.fail(deferred, new Rejected({ mutationId, reason }));
+    }
+
+    waiters.clear();
+    yield* SubscriptionRef.update(status, (current) => ({ ...current, revoked: true }));
+  });
+
+  const replication = Replication.make({
+    definition,
+    actor,
+    report: (change) => SubscriptionRef.update(status, (current) => ({ ...current, ...change })),
+    commit,
+    settled,
+    renumbered,
+    wipe,
+  });
+
+  const rounds = yield* Semaphore.make(1);
+
+  const replicate: Interface["replicate"] = (remote) =>
+    rounds.withPermit(
+      replication
+        .round(remote)
+        .pipe(
+          Effect.provideService(SqlClient.SqlClient, sql),
+          Effect.provideService(CryptoSuite.Service, suite),
+        ),
+    );
 
   const mutate = Effect.fn("SyncClient.mutate")(function* <
     Args,
@@ -312,6 +458,7 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
     mutate,
     redo,
     dismiss,
+    replicate,
     status: { get: SubscriptionRef.get(status), changes: SubscriptionRef.changes(status) },
   });
 });
