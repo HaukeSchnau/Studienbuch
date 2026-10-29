@@ -23,6 +23,9 @@ interface Domains {
   readonly studienbuchApp: { readonly zoneId: string };
 }
 
+// Alchemy reads the environment once it has imported this module.
+process.env.FLEET_SERVICES_URL ??= Platform.controller;
+
 /**
  * What Calder hands every deploy (`.calder/ci.ts`). The service reads them only once Alchemy plans
  * it, because `alchemy destroy` evaluates this stack too and Calder hands it no artifacts.

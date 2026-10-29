@@ -18,6 +18,13 @@ export interface Storage {
 /** The host, whose grant lets Studienbuch run its services (infra `hosts/srv-2`). */
 const host = "srv-2";
 
+/**
+ * srv-2's service controller, on 18120 because Calder's controller holds the module's default port
+ * there (infra `hosts/srv-2/services.nix`). `Fleet.Service` takes another address only from
+ * `FLEET_SERVICES_URL`; this goes once the module's default port no longer clashes with Calder's.
+ */
+export const controller = `http://${host}:18120`;
+
 /** `studienbuch-server <command>` from the bundle, on the release's own Node. */
 const server = (command: string) => ["{node}/bin/node", "{bundle}/server/main.mjs", command];
 
