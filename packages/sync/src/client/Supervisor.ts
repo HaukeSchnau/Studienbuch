@@ -79,7 +79,7 @@ export const debounce = Duration.millis(100);
  */
 export const pokeSpread = Duration.seconds(2);
 
-/** While connected, a round runs every 2.5 to 5 minutes, at random, in case a poke was lost. */
+/** The default of `Options.pullEvery`: a round every 2.5 to 5 minutes. */
 export const pullEvery = Duration.minutes(5);
 
 /** A connection this old counts as working, so the backoff starts over when it drops. */
@@ -126,6 +126,12 @@ export interface Options {
   readonly report: (connection: Connection) => Effect.Effect<void>;
   /** The server closed with 4426: this app is too old for it. */
   readonly outdated: Effect.Effect<void>;
+  /**
+   * While connected, a round runs every half to whole of this, at random, in case a poke was lost.
+   * `Duration.infinity` turns the timer off. The simulation uses it, so a lost poke leaves a
+   * device behind instead of being covered by the timer.
+   */
+  readonly pullEvery: Duration.Duration;
 }
 
 type SyncRound = (
@@ -390,10 +396,12 @@ export const run = Effect.fnUntraced(function* (options: Options) {
       Effect.forkScoped,
     );
 
-    yield* Effect.flatMap(
-      between(Duration.millis(Duration.toMillis(pullEvery) / 2), pullEvery),
-      Effect.sleep,
-    ).pipe(Effect.andThen(Queue.offer(rounds, undefined)), Effect.forever, Effect.forkScoped);
+    if (Duration.isFinite(options.pullEvery)) {
+      yield* Effect.flatMap(
+        between(Duration.millis(Duration.toMillis(options.pullEvery) / 2), options.pullEvery),
+        Effect.sleep,
+      ).pipe(Effect.andThen(Queue.offer(rounds, undefined)), Effect.forever, Effect.forkScoped);
+    }
 
     // Online once the server answers on this connection, not when the socket was asked for.
     const online = <A, E>(effect: Effect.Effect<A, E>) =>

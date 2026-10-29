@@ -14,6 +14,7 @@ import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
 import * as Deferred from "effect/Deferred";
+import type * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
@@ -204,7 +205,15 @@ const knownSpaces = Effect.fnUntraced(function* (spaces: ReadonlyArray<string>) 
   return new Map(rows.map((row) => [row.id, row]));
 });
 
-export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
+export interface Options {
+  /** `Supervisor.Options.pullEvery`, by default `Supervisor.pullEvery`. */
+  readonly pullEvery?: Duration.Duration;
+}
+
+export const make = Effect.fnUntraced(function* (
+  definition: Sync.Definition,
+  options: Options = {},
+) {
   yield* Effect.orDie(Effect.fromResult(Sync.validate(definition)));
   const sql = yield* SqlClient.SqlClient;
   const reactivity = yield* Reactivity.Reactivity;
@@ -534,6 +543,7 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
         ? current
         : { ...current, updateRequired: Option.some({ minimum: Option.none() }) },
     ),
+    pullEvery: options.pullEvery ?? Supervisor.pullEvery,
   }).pipe(Effect.forkScoped);
 
   return Service.of({
@@ -551,4 +561,5 @@ export const make = Effect.fnUntraced(function* (definition: Sync.Definition) {
  * refuses. It keeps nothing outside its scope and the database, so closing the scope at any point
  * is a crash, and a new layer on the same database resumes from there.
  */
-export const layer = (definition: Sync.Definition) => Layer.effect(Service, make(definition));
+export const layer = (definition: Sync.Definition, options?: Options) =>
+  Layer.effect(Service, make(definition, options));

@@ -60,6 +60,7 @@ type Script = ReadonlyArray<"unreachable" | "session-ended" | "link" | "unsubscr
 const harnessWith = Effect.fnUntraced(function* (
   script: Script,
   round: (log: Array<string>) => Effect.Effect<Replication.Outcome>,
+  pullEvery = Supervisor.pullEvery,
 ) {
   const log: Array<string> = [];
   const attempts: Array<number> = [];
@@ -115,6 +116,7 @@ const harnessWith = Effect.fnUntraced(function* (
     outdated: Effect.sync(() => {
       outdated += 1;
     }),
+    pullEvery,
   }).pipe(Effect.forkScoped);
 
   // Lets the forked fibers start before the test moves the clock.
@@ -135,13 +137,20 @@ const harnessWith = Effect.fnUntraced(function* (
 });
 
 /** The harness with rounds that log `round` and end with `outcome`. */
-const harness = (script: Script, outcome: () => Replication.Outcome = () => "idle") =>
-  harnessWith(script, (log) =>
-    Effect.sync(() => {
-      log.push("round");
+const harness = (
+  script: Script,
+  outcome: () => Replication.Outcome = () => "idle",
+  pullEvery = Supervisor.pullEvery,
+) =>
+  harnessWith(
+    script,
+    (log) =>
+      Effect.sync(() => {
+        log.push("round");
 
-      return outcome();
-    }),
+        return outcome();
+      }),
+    pullEvery,
   );
 
 describe("Supervisor", () => {
@@ -178,6 +187,20 @@ describe("Supervisor", () => {
       yield* TestClock.adjust(Supervisor.pullEvery);
       yield* TestClock.adjust(Supervisor.debounce);
       expect(rounds()).toBe(4);
+    }).pipe(Effect.scoped),
+  );
+
+  it.effect("an infinite `pullEvery` leaves the rounds to pokes and writes", () =>
+    Effect.gen(function* () {
+      const device = yield* harness(["link"], undefined, Duration.infinity);
+      const rounds = () => device.log.filter((entry) => entry === "round").length;
+
+      for (let minute = 0; minute < 60; minute++) yield* TestClock.adjust("1 minute");
+      expect(rounds()).toBe(1);
+
+      yield* device.write;
+      yield* TestClock.adjust(Supervisor.debounce);
+      expect(rounds()).toBe(2);
     }).pipe(Effect.scoped),
   );
 
