@@ -649,6 +649,9 @@ importers:
 
   packages/api:
     dependencies:
+      '@stu/e2ee':
+        specifier: workspace:*
+        version: link:../e2ee
       effect:
         specifier: 'catalog:'
         version: 4.0.7

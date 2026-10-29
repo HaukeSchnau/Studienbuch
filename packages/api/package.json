@@ -11,9 +11,11 @@
     "./Accounts": "./src/Accounts.ts",
     "./Demo": "./src/Demo.ts",
     "./Dev": "./src/Dev.ts",
-    "./Mail": "./src/Mail.ts"
+    "./Mail": "./src/Mail.ts",
+    "./Keys": "./src/Keys.ts"
   },
   "dependencies": {
+    "@stu/e2ee": "workspace:*",
     "effect": "catalog:"
   }
 }

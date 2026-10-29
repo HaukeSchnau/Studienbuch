@@ -11,6 +11,7 @@ import { PersonaSignIn } from "../demo/PersonaSignIn.ts";
 import { Shortcuts } from "../dev/Shortcuts.ts";
 import { Deployment } from "../infra/config/Deployment.ts";
 import { Mail } from "../infra/mail/Mail.ts";
+import { KeyCalls } from "../keys/KeyCalls.ts";
 
 const handlers = System.Rpcs.merge(ApiMail.Rpcs).toLayer(
   Effect.gen(function* () {
@@ -33,7 +34,13 @@ export const layer = RpcServer.layerHttp({
   path: Api.path,
   protocol: "http",
 }).pipe(
-  Layer.provide([handlers, Shortcuts.handlers, PersonaSignIn.handlers, Api.serialization]),
+  Layer.provide([
+    handlers,
+    Shortcuts.handlers,
+    PersonaSignIn.handlers,
+    KeyCalls.handlers,
+    Api.serialization,
+  ]),
   // Answers carry sessions and demo root keys, which no cache may keep.
   Layer.provide(
     HttpRouter.middleware(Effect.map(HttpServerResponse.setHeader("cache-control", "no-store")))
