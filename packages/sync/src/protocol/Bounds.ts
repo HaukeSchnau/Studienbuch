@@ -53,7 +53,9 @@ const sealedRefusal = (
   id: string,
 ) => new refusal({ space: named(space), id: named(id) });
 
-const sealedProblem = (command: Command.Seal): Refusal.Engine | undefined => {
+const sealedProblem = (
+  command: Command.Seal,
+): Refusal.TooLarge | Refusal.BadEnvelope | undefined => {
   const [first] = command.writes;
   const [box] = command.boxes;
   const [link] = command.links;
@@ -103,7 +105,7 @@ const sealedProblem = (command: Command.Seal): Refusal.Engine | undefined => {
   return undefined;
 };
 
-const mutateProblem = (command: Command.Mutate): Refusal.Engine | undefined => {
+const mutateProblem = (command: Command.Mutate): Refusal.InvalidArgs | undefined => {
   const args = CanonicalJson.encode(command.args);
 
   const fits =
@@ -117,12 +119,15 @@ const mutateProblem = (command: Command.Mutate): Refusal.Engine | undefined => {
     : new Refusal.InvalidArgs({ mutator: named(command.name), version: command.version });
 };
 
+/** The refusals `refusalOf` answers with. */
+export type Refused = Refusal.InvalidArgs | Refusal.TooLarge | Refusal.BadEnvelope;
+
 /**
  * The refusal for a command past a bound, or with a value the server can't store, which the
  * server answers before it looks at its rows. A sealed row's ciphertext above `Command.maxSealedBytes`
  * is refused later, after the checks on membership, role and base.
  */
-export const refusalOf = (command: Command.Any): Option.Option<Refusal.Engine> =>
+export const refusalOf = (command: Command.Any): Option.Option<Refused> =>
   Option.fromUndefinedOr(
     command._tag === "Mutate" ? mutateProblem(command) : sealedProblem(command),
   );

@@ -176,16 +176,11 @@ export const spaces: SyncQuery.SyncQuery<
 
 const isId = Schema.is(Ids.Id);
 
-/** The refusals `Bounds.refusalOf` names. */
-const isBound = Schema.is(
-  Schema.Union([Refusal.InvalidArgs, Refusal.TooLarge, Refusal.BadEnvelope]),
-);
-
 /** Fails with the server's refusal for a command past a bound of `Bounds`. */
 const withinBounds = (command: Command.Any) =>
   Option.match(Bounds.refusalOf(command), {
     onNone: () => Effect.void,
-    onSome: (refusal) => (isBound(refusal) ? Effect.fail(refusal) : Effect.die(refusal)),
+    onSome: Effect.fail,
   });
 
 const encodeRevoked = Schema.encodeEffect(Protocol.DeviceRevoked);
