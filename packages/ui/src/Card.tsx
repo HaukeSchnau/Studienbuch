@@ -1,11 +1,9 @@
-import { Theme } from "@stu/ui/Theme";
-import { Tokens } from "@stu/ui/Tokens";
 import { StyleSheet, View, type ViewProps } from "react-native";
 
-/**
- * Stand-in for the app's `Card` (apps/app/src/ui): a white card on the canvas. Light cards lift by
- * their shadow, dark ones by a hairline.
- */
+import { Theme } from "./Theme.ts";
+import { Tokens } from "./Tokens.ts";
+
+/** A white card on the canvas. Light cards lift by their shadow, dark ones by a hairline. */
 export function Card({ style, ...props }: ViewProps) {
   const { color, elevation } = Theme.useTheme();
 

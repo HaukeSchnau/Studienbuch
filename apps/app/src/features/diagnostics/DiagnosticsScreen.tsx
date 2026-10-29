@@ -10,7 +10,7 @@ import { VirtualDevice } from "../../infra/device/VirtualDevice.ts";
 import { AppLifecycle } from "../../infra/lifecycle/AppLifecycle.ts";
 import { StoragePersistence } from "../../infra/offline/StoragePersistence.ts";
 import { BuildInfo } from "../../infra/updates/BuildInfo.ts";
-import { Card } from "../../ui/Card.tsx";
+import { Card } from "@stu/ui/Card";
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
 import { CryptoSelfTest } from "./CryptoSelfTest.ts";
 import { DeviceStorage } from "./DeviceStorage.ts";

@@ -1,9 +1,8 @@
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
-import { StyleSheet, Text, View } from "react-native";
-
-import { Card } from "./Card.tsx";
-import { Type } from "./Type.ts";
+import { Card } from "@stu/ui/Card";
+import { Text } from "@stu/ui/Text";
+import { StyleSheet, View } from "react-native";
 
 export interface WeekDay {
   readonly id: string;
@@ -62,11 +61,13 @@ export function WeekGrid({
               style={[styles.dayHeader, isToday && { backgroundColor: color.accent }]}
             >
               <Text
-                style={[Type.style("label"), { color: isToday ? color.onAccent : color.inkSoft }]}
+                variant="footnote"
+                weight="medium"
+                style={{ color: isToday ? color.onAccent : color.inkSoft }}
               >
                 {day.name}
               </Text>
-              <Text style={[Type.style("title"), { color: isToday ? color.onAccent : color.ink }]}>
+              <Text variant="headline" style={{ color: isToday ? color.onAccent : color.ink }}>
                 {day.date}
               </Text>
             </View>
@@ -78,7 +79,9 @@ export function WeekGrid({
           {periods.map((time) => (
             <Text
               key={time}
-              style={[Type.style("cellDetail"), styles.time, { color: color.inkSoft }]}
+              variant="caption"
+              weight="medium"
+              style={[styles.time, { color: color.inkSoft }]}
             >
               {time}
             </Text>
@@ -134,20 +137,22 @@ function Cell({ cell }: { cell: WeekCell }) {
           { backgroundColor: color.dangerTint, borderColor: color.danger },
         ]}
       >
-        <Text style={[Type.style("cellDetail"), styles.struck, { color: color.danger }]}>
+        <Text variant="caption" weight="medium" style={[styles.struck, { color: color.danger }]}>
           {cell.subject}
         </Text>
-        <Text style={[Type.style("cell"), { color: color.danger }]}>Entfall</Text>
+        <Text variant="caption" style={{ color: color.danger }}>
+          Entfall
+        </Text>
       </View>
     );
   }
 
   return (
     <View style={[styles.cell, { backgroundColor: Tokens.subject[cell.slot].fill }]}>
-      <Text numberOfLines={1} style={[Type.style("cell"), styles.onFill]}>
+      <Text numberOfLines={1} variant="caption" style={styles.onFill}>
         {cell.subject}
       </Text>
-      <Text style={[Type.style("cellDetail"), styles.onFillSoft]}>
+      <Text variant="caption" weight="medium" style={styles.onFillSoft}>
         {cell.change === "Vertretung" ? `⇄ ${cell.teacher}` : cell.teacher}
       </Text>
     </View>

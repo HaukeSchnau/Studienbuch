@@ -4,10 +4,20 @@
   "license": "BUSL-1.1",
   "type": "module",
   "exports": {
+    "./Button": "./src/Button.tsx",
+    "./Card": "./src/Card.tsx",
+    "./Hero": "./src/Hero.tsx",
+    "./Icon": "./src/Icon.tsx",
+    "./Pill": "./src/Pill.tsx",
     "./RevisionCard": "./src/RevisionCard.tsx",
+    "./Text": "./src/Text.tsx",
     "./Theme": "./src/Theme.ts",
     "./Tokens": "./src/Tokens.ts",
     "./useStableCallback": "./src/useStableCallback.ts",
+    "./Vector": {
+      "react-native": "./src/Vector.tsx",
+      "default": "./src/Vector.web.tsx"
+    },
     "./fonts.css": "./src/fonts.css"
   },
   "dependencies": {
@@ -19,11 +29,13 @@
     "@types/react": "catalog:",
     "react": "catalog:",
     "react-native": "catalog:",
+    "react-native-svg": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
   },
   "peerDependencies": {
     "react": "*",
-    "react-native": "*"
+    "react-native": "*",
+    "react-native-svg": "*"
   }
 }

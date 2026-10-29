@@ -8,8 +8,8 @@ import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, ScrollView, StyleSheet } from "react-native";
 
 import { provider } from "../../infra/crypto/runtime.ts";
-import { Card } from "../../ui/Card.tsx";
-import { Text } from "../../ui/Text.tsx";
+import { Card } from "@stu/ui/Card";
+import { Text } from "@stu/ui/Text";
 import { CryptoSelfTest } from "./CryptoSelfTest.ts";
 import { SqliteSelfTest } from "./SqliteSelfTest.ts";
 import { StatusRow, type Status } from "./StatusRow.tsx";

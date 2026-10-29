@@ -1,10 +1,9 @@
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-
-import { Card } from "./Card.tsx";
-import { CheckBadge, Icon, OpenBadge } from "./Icon.tsx";
-import { Type } from "./Type.ts";
+import { Card } from "@stu/ui/Card";
+import { Icon } from "@stu/ui/Icon";
+import { Text } from "@stu/ui/Text";
+import { Image, Pressable, StyleSheet, View } from "react-native";
 
 export interface Exam {
   readonly id: string;
@@ -38,7 +37,9 @@ export function GradesCard({
 
   return (
     <Card style={styles.card}>
-      <Text style={[Type.style("cardTitle"), { color: color.accent }]}>Deine Noten</Text>
+      <Text variant="title2" style={{ color: color.accent }}>
+        Deine Noten
+      </Text>
       <Summary
         art={art.oral}
         caption={`Mündliche Note, Stand ${oral.date}`}
@@ -79,11 +80,13 @@ function Summary({
       {/* `defaultSource` makes react-native-web render the image while prerendering. */}
       <Image defaultSource={{ uri: art }} source={{ uri: art }} style={styles.art} />
       <View style={styles.grow}>
-        <Text style={{ color: color.ink }}>
-          <Text style={Type.style("figure")}>{points ?? "–"}</Text>
-          <Text style={Type.style("figureUnit")}> Punkte</Text>
+        <Text variant="figure">
+          {points ?? "–"}
+          <Text variant="title3"> Punkte</Text>
         </Text>
-        <Text style={[Type.style("detail"), { color: color.inkSoft }]}>{caption}</Text>
+        <Text variant="subhead" weight="regular" style={{ color: color.inkSoft }}>
+          {caption}
+        </Text>
         {confirmed ? <Confirmed /> : null}
       </View>
     </View>
@@ -95,8 +98,10 @@ function Confirmed() {
 
   return (
     <View style={styles.status}>
-      <CheckBadge color={color.accent} />
-      <Text style={[Type.style("status"), { color: color.accent }]}>bestätigt</Text>
+      <Icon color={color.accent} name="checkBadge" size={16} />
+      <Text variant="footnote" style={{ color: color.accent }}>
+        bestätigt
+      </Text>
     </View>
   );
 }
@@ -109,12 +114,16 @@ function ExamTile({ exam, onSign }: { exam: Exam; onSign: ((id: string) => void)
     <View
       style={[styles.tile, { backgroundColor: confirmed ? color.accentTint : color.warningTint }]}
     >
-      <Text style={[Type.style("points"), styles.points, { color: color.ink }]}>{exam.points}</Text>
+      <Text variant="title1" style={[styles.points, { color: color.ink }]}>
+        {exam.points}
+      </Text>
       <View style={styles.grow}>
         <View style={styles.tileHeader}>
           <View style={styles.grow}>
-            <Text style={[Type.style("title"), { color: color.ink }]}>{exam.title}</Text>
-            <Text style={[Type.style("detail"), { color: color.inkSoft }]}>
+            <Text variant="headline" style={{ color: color.ink }}>
+              {exam.title}
+            </Text>
+            <Text variant="subhead" weight="regular" style={{ color: color.inkSoft }}>
               Klausur vom {exam.date}
             </Text>
           </View>
@@ -136,7 +145,7 @@ function ExamTile({ exam, onSign }: { exam: Exam; onSign: ((id: string) => void)
                   pressed && styles.pressed,
                 ]}
               >
-                <Text style={[Type.style("button"), { color: color.onAction }]}>
+                <Text variant="callout" weight="bold" style={{ color: color.onAction }}>
                   Unterschreiben lassen
                 </Text>
               </Pressable>
@@ -154,8 +163,14 @@ function Signer({ done, label }: { done: boolean; label: string }) {
 
   return (
     <View style={styles.signer}>
-      {done ? <Icon color={tone} name="check" size={16} /> : <OpenBadge color={tone} size={14} />}
-      <Text style={[Type.style("status"), { color: tone }]}>{label}</Text>
+      {done ? (
+        <Icon color={tone} name="check" size={16} />
+      ) : (
+        <Icon color={tone} name="openBadge" size={14} />
+      )}
+      <Text variant="footnote" style={{ color: tone }}>
+        {label}
+      </Text>
     </View>
   );
 }

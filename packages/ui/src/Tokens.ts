@@ -197,20 +197,21 @@ export const fontFamily = "Nunito";
 
 // Nunito's digits are tabular by default (every figure is 600 units wide), so times and grades line
 // up without a feature flag. `ios` is the Dynamic Type ramp passed as `dynamicTypeRamp`; Android
-// scales `sp` by itself.
+// scales `sp` by itself. The weights are a step calmer than design-language.md's, after Hauke found
+// them too bold on the landing page's phones (m1-screens.md, "Type").
 export const type = {
-  display: { size: 34, line: 41, weight: "800", ios: "largeTitle" },
-  title1: { size: 28, line: 34, weight: "800", ios: "title1" },
-  title2: { size: 22, line: 28, weight: "800", ios: "title2" },
-  title3: { size: 20, line: 26, weight: "700", ios: "title3" },
-  headline: { size: 17, line: 22, weight: "800", ios: "headline" },
-  body: { size: 17, line: 24, weight: "500", ios: "body" },
-  callout: { size: 16, line: 22, weight: "500", ios: "callout" },
-  subhead: { size: 15, line: 20, weight: "600", ios: "subheadline" },
-  footnote: { size: 13, line: 18, weight: "700", ios: "footnote" },
+  display: { size: 34, line: 41, weight: "700", ios: "largeTitle" },
+  title1: { size: 28, line: 34, weight: "700", ios: "title1" },
+  title2: { size: 22, line: 28, weight: "700", ios: "title2" },
+  title3: { size: 20, line: 26, weight: "600", ios: "title3" },
+  headline: { size: 17, line: 22, weight: "600", ios: "headline" },
+  body: { size: 17, line: 24, weight: "400", ios: "body" },
+  callout: { size: 16, line: 22, weight: "400", ios: "callout" },
+  subhead: { size: 15, line: 20, weight: "500", ios: "subheadline" },
+  footnote: { size: 13, line: 18, weight: "600", ios: "footnote" },
   // Week grid cells only.
-  caption: { size: 12, line: 16, weight: "800", ios: "caption1", maxScale: 1.3 },
-  figure: { size: 34, line: 38, weight: "800", ios: "largeTitle" },
+  caption: { size: 12, line: 16, weight: "700", ios: "caption1", maxScale: 1.3 },
+  figure: { size: 34, line: 38, weight: "700", ios: "largeTitle" },
 } as const;
 
 export const space = { xxs: 2, xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 } as const;

@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
-import { Text } from "../Text.tsx";
+import { Text } from "@stu/ui/Text";
 
 // The web has no system tab bar, so it gets ours, from the same tokens: a bottom bar with Android's
 // pill indicator on phones, a side rail from the wide breakpoint on (design-language.md, section 3).

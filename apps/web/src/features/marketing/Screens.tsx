@@ -1,27 +1,36 @@
+import { Hero, type HeroProps } from "@stu/ui/Hero";
+import { Pill } from "@stu/ui/Pill";
 import { Theme } from "@stu/ui/Theme";
 import { Tokens } from "@stu/ui/Tokens";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
 
 import { AbsenceCard } from "#/domain-ui/app/AbsenceCard.tsx";
 import { AgendaCard } from "#/domain-ui/app/AgendaCard.tsx";
 import { type Exam, GradesCard } from "#/domain-ui/app/GradesCard.tsx";
-import { HeroScreen } from "#/domain-ui/app/HeroScreen.tsx";
-import { Icon } from "#/domain-ui/app/Icon.tsx";
-import { Type } from "#/domain-ui/app/Type.ts";
 import { WeekGrid } from "#/domain-ui/app/WeekGrid.tsx";
 
 import { Demo } from "./Demo.ts";
 
-// The app's screens as the landing page shows them: the stand-in components with demo data, laid
-// out the way variant B lays them out on a 390-point phone.
+// The app's screens as the landing page shows them: the components with demo data, laid out the
+// way variant B lays them out on a 390-point phone, under the status bar the phone frame draws.
+
+function PhoneScreen(props: Omit<HeroProps, "top">) {
+  const { color } = Theme.useTheme();
+
+  return (
+    <View style={[styles.screen, { backgroundColor: color.canvas }]}>
+      <Hero top={props.toolbar === undefined ? 70 : 58} {...props} />
+    </View>
+  );
+}
 
 /** Übersicht: the day, the absences, and a way into each course. */
 export function TodayScreen({ onOpen }: { onOpen?: (id: string) => void }) {
   return (
-    <HeroScreen subtitle="Das steht heute an:" title={`Hallo, ${Demo.student}!`}>
+    <PhoneScreen subtitle="Das steht heute an:" title={`Moin, ${Demo.student}!`}>
       <AgendaCard onOpen={onOpen} rows={Demo.today} />
       <AbsenceCard days={1} unexcused={2} />
-    </HeroScreen>
+    </PhoneScreen>
   );
 }
 
@@ -37,15 +46,37 @@ export function CourseScreen({
   onSign?: (id: string) => void;
   onBack?: () => void;
 }) {
+  const { color, elevation } = Theme.useTheme();
   const { name, teacher, term, oral } = Demo.courses[course];
+  const art = Demo.art[course];
 
   return (
-    <HeroScreen
-      art={Demo.art[course]}
-      back={onBack === undefined ? undefined : { label: "Übersicht", onPress: onBack }}
+    <PhoneScreen
+      aside={
+        <View
+          style={[
+            styles.artTile,
+            {
+              backgroundColor: color.surface,
+              borderColor: color.cardEdge,
+              boxShadow: elevation.float,
+            },
+          ]}
+        >
+          {/* `defaultSource` makes react-native-web render the image while prerendering. */}
+          <Image defaultSource={{ uri: art }} source={{ uri: art }} style={styles.art} />
+        </View>
+      }
       chips={[term]}
       subtitle={teacher}
       title={name}
+      toolbar={
+        onBack === undefined
+          ? undefined
+          : {
+              start: <Pill icon="back" label="Übersicht" onPress={onBack} />,
+            }
+      }
     >
       <GradesCard
         average={Demo.confirmedAverage(exams)}
@@ -53,62 +84,39 @@ export function CourseScreen({
         oral={oral}
         onSign={onSign}
       />
-    </HeroScreen>
+    </PhoneScreen>
   );
 }
 
 /** Meine Woche, with the arrows between weeks and "Heute" back to this one. */
 export function WeekScreen({ week, onShow }: { week: number; onShow: (week: number) => void }) {
-  const { color, elevation } = Theme.useTheme();
   const shown = Demo.weeks[week] ?? Demo.weeks[Demo.currentWeek];
 
   if (shown === undefined) return null;
 
-  const pill = { backgroundColor: color.surface, boxShadow: elevation.float };
-
-  const arrow = (step: -1 | 1, label: string) => {
-    const available = Demo.weeks[week + step] !== undefined;
-
-    return (
-      <Pressable
-        accessibilityLabel={label}
-        accessibilityRole="button"
-        disabled={!available}
-        onPress={() => onShow(week + step)}
-        style={({ pressed }) => [
-          styles.arrow,
-          pill,
-          available ? styles.pressable : styles.disabled,
-          pressed && styles.pressed,
-        ]}
-      >
-        <Icon color={color.accent} name={step === -1 ? "back" : "forward"} size={22} />
-      </Pressable>
-    );
-  };
+  const arrow = (step: -1 | 1, label: string) => (
+    <Pill
+      disabled={Demo.weeks[week + step] === undefined}
+      icon={step === -1 ? "back" : "chevron"}
+      iconOnly
+      label={label}
+      onPress={() => onShow(week + step)}
+    />
+  );
 
   return (
-    <HeroScreen
+    <PhoneScreen
       chips={[`KW ${String(shown.number)}`, shown.kind]}
       title="Meine Woche"
-      toolbar={
-        <>
-          {arrow(-1, "Vorige Woche")}
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => onShow(Demo.currentWeek)}
-            style={({ pressed }) => [
-              styles.today,
-              pill,
-              styles.pressable,
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={[Type.style("chip"), { color: color.accent }]}>Heute</Text>
-          </Pressable>
-          {arrow(1, "Nächste Woche")}
-        </>
-      }
+      toolbar={{
+        end: (
+          <>
+            {arrow(-1, "Vorige Woche")}
+            <Pill label="Heute" onPress={() => onShow(Demo.currentWeek)} />
+            {arrow(1, "Nächste Woche")}
+          </>
+        ),
+      }}
     >
       <WeekGrid
         cells={shown.cells}
@@ -117,25 +125,19 @@ export function WeekScreen({ week, onShow }: { week: number; onShow: (week: numb
         periods={Demo.periods}
         today={shown.today}
       />
-    </HeroScreen>
+    </PhoneScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  arrow: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  screen: { width: 390, minHeight: "100%" },
+  artTile: {
+    width: 96,
+    height: 96,
+    borderRadius: Tokens.radius.tile + 4,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  today: {
-    height: 40,
-    justifyContent: "center",
-    borderRadius: Tokens.radius.pill,
-    paddingHorizontal: Tokens.space.lg,
-  },
-  pressable: { cursor: "pointer" },
-  disabled: { opacity: 0.45 },
-  pressed: { transform: [{ scale: Tokens.motion.press.scale }] },
+  art: { width: 62, height: 62 },
 });
