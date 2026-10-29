@@ -18,19 +18,34 @@ import * as Tracer from "effect/Tracer";
 export * as Recorder from "./Recorder.ts";
 
 // Logs and spans carry values of any shape, which no schema describes. Bytes become hex, so the
-// leak check sees plaintext bytes too, and a value seen twice is written once.
-/* oxlint-disable anti-slop/no-unknown-parameters -- see above */
+// leak check sees plaintext bytes too, and a value seen twice is written once. The replacer reads
+// `this[key]`, because `JSON.stringify` has already replaced a Buffer by its `toJSON`.
+/* oxlint-disable anti-slop/no-unknown-parameters, anti-slop/no-unsafe-dictionary-type -- see above */
+const bytesOf = (field: unknown): Uint8Array | undefined => {
+  if (field instanceof Uint8Array) return field;
+
+  if (field instanceof ArrayBuffer) return new Uint8Array(field);
+
+  return ArrayBuffer.isView(field)
+    ? new Uint8Array(field.buffer, field.byteOffset, field.byteLength)
+    : undefined;
+};
+
 const render = (value: unknown): string => {
   const seen = new WeakSet<object>();
 
-  return JSON.stringify(value, (_key, field: unknown) => {
+  return JSON.stringify(value, function (this: unknown, key: string, replaced: unknown) {
+    const field = Predicate.isObject(this) ? (this as Record<string, unknown>)[key] : replaced;
+
     if (Predicate.isBigInt(field)) return field.toString();
 
-    if (!Predicate.isObject(field)) return field;
+    if (!Predicate.isObject(field)) return replaced;
 
     if (Redacted.isRedacted(field)) return "<redacted>";
 
-    if (field instanceof Uint8Array) return `hex:${Hex.encode(field)}`;
+    const bytes = bytesOf(field);
+
+    if (bytes !== undefined) return `hex:${Hex.encode(bytes)}`;
 
     if (seen.has(field)) return "<seen>";
     seen.add(field);
@@ -39,12 +54,19 @@ const render = (value: unknown): string => {
 
     if (field instanceof Set) return [...field];
 
-    if (field instanceof Error) return { name: field.name, message: field.message };
+    // An error's own fields, as `Formatter.formatJson` writes them, besides its name and message.
+    if (field instanceof Error) {
+      return {
+        ...Object.fromEntries(Object.entries(field)),
+        name: field.name,
+        message: field.message,
+      };
+    }
 
-    return field;
+    return replaced;
   });
 };
-/* oxlint-enable anti-slop/no-unknown-parameters */
+/* oxlint-enable anti-slop/no-unknown-parameters, anti-slop/no-unsafe-dictionary-type */
 
 const id = (n: number, length: number) => n.toString(16).padStart(length, "0");
 
@@ -52,8 +74,9 @@ export const make = Effect.sync(() => {
   const lines: Array<string> = [];
   let spans = 0;
 
+  // Fiber ids count across the whole process, so a replay would differ in them alone.
   const logger = Logger.map(Logger.formatStructured, (entry) => {
-    lines.push(`log ${render(entry)}`);
+    lines.push(`log ${render({ ...entry, fiberId: undefined })}`);
   });
 
   const tracer = Tracer.make({

@@ -7,6 +7,7 @@ import * as Effect from "effect/Effect";
 import * as Base64 from "effect/encoding/Base64";
 import * as Base64Url from "effect/encoding/Base64Url";
 import * as Hex from "effect/encoding/Hex";
+import * as Result from "effect/Result";
 import * as SqlClient from "effect/sql/SqlClient";
 
 export * as Leaks from "./Leaks.ts";
@@ -76,27 +77,68 @@ export const find = (place: string, text: string): ReadonlyArray<Leak> => {
 
 const quoted = (identifier: string) => `"${identifier.replaceAll('"', '""')}"`;
 
+/** `bytea` as `row_to_json` writes it: `\\x` and hex digits, its backslash escaped. */
+const hexRuns = /\\\\x((?:[0-9a-fA-F]{2})+)/gu;
+
+/** The leak in a row's JSON, or in the bytes of one of its `bytea` values. */
+const findInRow = (place: string, row: string): ReadonlyArray<Leak> => {
+  const inText = find(place, row);
+
+  if (inText.length > 0) return inText;
+
+  for (const [, hex = ""] of row.matchAll(hexRuns)) {
+    const bytes = Result.getOrUndefined(Hex.decode(hex));
+
+    if (bytes !== undefined && inBytes(bytes))
+      return [{ place, excerpt: `bytes \\x${hex.slice(0, 80)}` }];
+  }
+
+  return [];
+};
+
 /**
- * Every row of every table in the connection's schema, as `row_to_json` writes it: text and JSON
- * as they are, and bytes as `\x` hex.
+ * Every row of every table outside Postgres's own schemas, as `row_to_json` writes it: text and
+ * JSON as they are, and bytes as hex, which it also decodes.
  */
 export const postgres = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
 
-  const tables = yield* sql<{ readonly name: string }>`
-    select table_name as name from information_schema.tables
-    where table_schema = current_schema() and table_type = 'BASE TABLE'
-    order by table_name
+  const tables = yield* sql<{ readonly schema: string; readonly name: string }>`
+    select table_schema as schema, table_name as name from information_schema.tables
+    where table_type = 'BASE TABLE'
+      and table_schema not in ('pg_catalog', 'information_schema')
+      and table_schema not like 'pg\\_toast%'
+    order by table_schema, table_name
   `;
 
-  const leaks = yield* Effect.forEach(tables, ({ name }) =>
+  const leaks = yield* Effect.forEach(tables, ({ schema, name }) =>
     Effect.map(
       sql.unsafe<{ readonly row: string }>(
-        `select row_to_json(t)::text as row from ${quoted(name)} as t`,
+        `select row_to_json(t)::text as row from ${quoted(schema)}.${quoted(name)} as t`,
       ),
-      (rows) => rows.flatMap(({ row }) => find(`postgres ${name}`, row)),
+      (rows) => rows.flatMap(({ row }) => findInRow(`postgres ${schema}.${name}`, row)),
     ),
   );
 
   return leaks.flat();
+});
+
+/**
+ * Sealed rows show the server nothing but their envelope and ciphertext: their table name is
+ * empty, because it travels inside the ciphertext, and they carry no readable data. Rows with an
+ * empty table name are sealed ones, tombstones included.
+ */
+export const sealedRows = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+
+  const shown = yield* sql<{ readonly space: string; readonly tbl: string; readonly id: string }>`
+    select space_id as space, tbl, id from sync_row
+    where (envelope is not null or ct is not null or tbl = '') and (tbl <> '' or data is not null)
+    order by space_id, tbl, id
+  `;
+
+  return shown.map(({ space, tbl, id }): Leak => ({
+    place: "postgres sync_row",
+    excerpt: `sealed row ${space} ${id} shows table "${tbl}" or readable data`,
+  }));
 });

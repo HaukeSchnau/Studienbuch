@@ -46,24 +46,53 @@ describe("Leaks", () => {
   );
 
   layer(PgliteClient.layer({}))("in Postgres", (it) => {
-    it.effect("finds a marker in a text, JSON or bytes column and names the table", () =>
+    it.effect(
+      "finds a marker in a text, JSON or bytes column of any schema and names the table",
+      () =>
+        Effect.gen(function* () {
+          const sql = yield* SqlClient.SqlClient;
+
+          yield* sql`create schema archive`;
+          yield* sql`create table clean (id text, data jsonb, ct bytea)`;
+          yield* sql`create table "leaky row" (id text, data jsonb, ct bytea)`;
+          yield* sql`create table archive.old (id text, ct bytea)`;
+          yield* sql`insert into clean values ('a', '{"title":"Mathe"}', '\\x00ff')`;
+          expect(yield* Leaks.postgres).toStrictEqual([]);
+
+          yield* sql`insert into "leaky row" (id, ct) values ('b', ${shifted(3)})`;
+          yield* sql`insert into "leaky row" (id, data) values ('c', ${`{"ct":"${Base64.encode(shifted(2))}"}`})`;
+          yield* sql`insert into "leaky row" (id) values (${`id ${marker}`})`;
+          // Bytes that hold the base64 text of plaintext, which only decoding the hex shows.
+          yield* sql`insert into archive.old (id, ct) values ('d', ${utf8.encode(Base64.encode(shifted(1)))})`;
+
+          const places = (yield* Leaks.postgres).map((leak) => leak.place);
+          expect(places).toStrictEqual([
+            "postgres archive.old",
+            "postgres public.leaky row",
+            "postgres public.leaky row",
+            "postgres public.leaky row",
+          ]);
+        }),
+    );
+
+    it.effect("finds a sealed row that shows its table or readable data", () =>
       Effect.gen(function* () {
         const sql = yield* SqlClient.SqlClient;
 
-        yield* sql`create table clean (id text, data jsonb, ct bytea)`;
-        yield* sql`create table "leaky row" (id text, data jsonb, ct bytea)`;
-        yield* sql`insert into clean values ('a', '{"title":"Mathe"}', '\\x00ff')`;
-        expect(yield* Leaks.postgres).toStrictEqual([]);
+        // The columns of the server's `sync_row` that the check reads.
+        yield* sql`create table sync_row (space_id text, tbl text, id text, data jsonb, envelope jsonb, ct bytea)`;
+        yield* sql`insert into sync_row values ('notebook-lena', '', 'sealed', null, '{"format":1}', '\\x00')`;
+        yield* sql`insert into sync_row values ('notebook-lena', '', 'deleted', null, '{"format":1}', null)`;
+        yield* sql`insert into sync_row values ('notebook-lena', 'Enrollment', 'readable', '{}', null, null)`;
+        expect(yield* Leaks.sealedRows).toStrictEqual([]);
 
-        yield* sql`insert into "leaky row" (id, ct) values ('b', ${shifted(3)})`;
-        yield* sql`insert into "leaky row" (id, data) values ('c', ${`{"ct":"${Base64.encode(shifted(2))}"}`})`;
-        yield* sql`insert into "leaky row" (id) values (${`id ${marker}`})`;
+        yield* sql`insert into sync_row values ('notebook-lena', 'Homework', 'named', null, '{"format":1}', '\\x00')`;
+        yield* sql`insert into sync_row values ('notebook-lena', '', 'with data', '{}', '{"format":1}', '\\x00')`;
 
-        const places = (yield* Leaks.postgres).map((leak) => leak.place);
-        expect(places).toStrictEqual([
-          "postgres leaky row",
-          "postgres leaky row",
-          "postgres leaky row",
+        const shown = (yield* Leaks.sealedRows).map((leak) => leak.excerpt);
+        expect(shown).toStrictEqual([
+          'sealed row notebook-lena with data shows table "" or readable data',
+          'sealed row notebook-lena named shows table "Homework" or readable data',
         ]);
       }),
     );

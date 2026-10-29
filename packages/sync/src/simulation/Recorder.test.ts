@@ -49,6 +49,28 @@ describe("Recorder", () => {
     }),
   );
 
+  it.effect("writes every kind of bytes as hex, and errors with their own fields", () =>
+    Effect.gen(function* () {
+      const bytes = new TextEncoder().encode(marker);
+      const hex = Hex.encode(bytes);
+
+      const [line = ""] = yield* recorded(
+        Effect.logInfo("sealed", {
+          buffer: Buffer.from(bytes),
+          arrayBuffer: bytes.slice().buffer,
+          view: new DataView(bytes.slice().buffer),
+          error: Object.assign(new Error("refused"), { row: "row-7" }),
+        }),
+      );
+
+      expect(line).toContain(`"buffer":"hex:${hex}"`);
+      expect(line).toContain(`"arrayBuffer":"hex:${hex}"`);
+      expect(line).toContain(`"view":"hex:${hex}"`);
+      expect(line).toContain(`"row":"row-7"`);
+      expect(line).not.toContain("fiberId");
+    }),
+  );
+
   it.effect("numbers spans the same way on every run", () =>
     Effect.gen(function* () {
       const program = Effect.withSpan(Effect.withSpan(Effect.void, "inner"), "outer");

@@ -6,10 +6,13 @@ import * as Duration from "effect/Duration";
 import * as Effect from "effect/Effect";
 import * as Fiber from "effect/Fiber";
 import * as Predicate from "effect/Predicate";
+import * as PubSub from "effect/PubSub";
 import * as Queue from "effect/Queue";
 import * as RpcClient from "effect/rpc/RpcClient";
+import * as RpcMessage from "effect/rpc/RpcMessage";
 import * as Schema from "effect/Schema";
 import * as Stream from "effect/Stream";
+import * as SubscriptionRef from "effect/SubscriptionRef";
 import * as TestClock from "effect/testing/TestClock";
 // The recorded messages are read once while the test file loads, before any Effect runs.
 // oxlint-disable-next-line effecttsgo/node-builtin-import -- see above
@@ -94,9 +97,12 @@ const harness = Effect.gen(function* () {
   const transport = faults.transport(network.transport({ id: "a", session }));
   const connection = yield* transport.connect;
 
-  const client = yield* RpcClient.make(Protocol.Rpcs).pipe(
-    Effect.provideService(RpcClient.Protocol, connection.protocol),
-  );
+  // Request ids count per client, so a run and its replay send the same frames.
+  let requests = 0;
+
+  const client = yield* RpcClient.make(Protocol.Rpcs, {
+    generateRequestId: () => RpcMessage.RequestId(requests++),
+  }).pipe(Effect.provideService(RpcClient.Protocol, connection.protocol));
 
   const pull = {
     clientId: push.clientId,
@@ -179,16 +185,62 @@ describe("Faults on the simulated network", () => {
     }),
   );
 
-  it.effect("a dropped response loses the answer after the server applied the push", () =>
+  it.effect("a dropped response fails the call after the server applied the push", () =>
     Effect.gen(function* () {
       const { client, connection, faults, push, received } = yield* harness;
 
       yield* faults.arm("dropNextResponse");
-      const answer = yield* Effect.forkChild(client["Sync.push"](push));
+      const failure = yield* Effect.flip(client["Sync.push"](push));
 
+      expect(failure).toStrictEqual(Faults.dropped);
       expect(yield* connection.closed).toBe(Faults.droppedCode);
       expect(yield* Queue.take(received)).toStrictEqual(push);
-      expect(answer.pollUnsafe()).toBeUndefined();
+      expect(yield* Effect.flip(client["Sync.push"](push))).toStrictEqual(Faults.dropped);
+    }),
+  );
+
+  it.effect("a push that never leaves a dropped connection uses up no forge or duplicate", () =>
+    Effect.gen(function* () {
+      const { client, faults, push } = yield* harness;
+
+      yield* faults.arm("duplicateNextPush");
+      yield* faults.forge(Faults.Forge.SealInto({ space: "notebook-tom" }));
+      yield* faults.setLatency(Duration.millis(300));
+
+      // Still on its way when the connection drops.
+      const queued = yield* Effect.forkChild(client["Sync.push"](push));
+      yield* TestClock.adjust(Duration.millis(100));
+      yield* faults.disconnect;
+      yield* TestClock.adjust(Duration.millis(300));
+
+      expect(yield* Effect.flip(Fiber.join(queued))).toStrictEqual(Faults.dropped);
+      expect(yield* Effect.flip(client["Sync.push"](push))).toStrictEqual(Faults.dropped);
+
+      const settings = yield* SubscriptionRef.get(faults.settings);
+      expect(settings.duplicateNextPush).toBe(true);
+      expect(settings.forge._tag).toBe("Some");
+    }),
+  );
+
+  it.effect("the log records each fault with its details, latency included", () =>
+    Effect.gen(function* () {
+      const { client, faults, push, received } = yield* harness;
+      const log = yield* faults.subscribe;
+
+      yield* faults.setLatency(Duration.millis(300));
+      yield* faults.forge(
+        Faults.Forge.RewriteArgs({ mutator: "enrollment.set", args: { courseIds: ["course-x"] } }),
+      );
+      yield* Effect.forkChild(client["Sync.push"](push));
+      yield* TestClock.adjust(Duration.millis(300));
+      yield* Queue.take(received);
+
+      const logged = [yield* PubSub.take(log), yield* PubSub.take(log)];
+
+      expect(logged.map(({ fault, detail }) => `${fault} ${detail}`)).toStrictEqual([
+        "latency 300 ms",
+        'forge RewriteArgs enrollment.set {"courseIds":["course-x"]} on mutation 1',
+      ]);
     }),
   );
 
@@ -249,13 +301,16 @@ describe("Faults on the simulated network", () => {
         ).toStrictEqual(["notebook-tom"]);
 
         yield* faults.forge(
-          Faults.Forge.RewriteArgs({ mutator: "enrollment.set", args: () => ({ courseIds: [] }) }),
+          Faults.Forge.RewriteArgs({
+            mutator: "enrollment.set",
+            args: { courseIds: ["course-x"] },
+          }),
         );
         yield* client["Sync.push"](push);
 
         const mutated = yield* Queue.take(received);
         expect(mutated.commands[0]?._tag === "Mutate" && mutated.commands[0].args).toStrictEqual({
-          courseIds: [],
+          courseIds: ["course-x"],
         });
         expect(mutated.commands[1]).toStrictEqual(seal);
       }),

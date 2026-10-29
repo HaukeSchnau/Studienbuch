@@ -20,10 +20,11 @@ import * as Option from "effect/Option";
 import * as PubSub from "effect/PubSub";
 import * as Queue from "effect/Queue";
 import type * as RpcClient from "effect/rpc/RpcClient";
+import * as RpcClientError from "effect/rpc/RpcClientError";
 import type * as RpcMessage from "effect/rpc/RpcMessage";
 import * as Schema from "effect/Schema";
 import * as Scope from "effect/Scope";
-import * as Stream from "effect/Stream";
+import * as Socket from "effect/socket/Socket";
 import * as SubscriptionRef from "effect/SubscriptionRef";
 import { Ports } from "../client/Ports.ts";
 import { Protocol } from "../protocol/Protocol.ts";
@@ -33,11 +34,11 @@ export * as Faults from "./Faults.ts";
 /**
  * A command the device never made, the way a modified app sends it, which the server must refuse.
  * `SealInto` sends the next `Seal`'s writes to `space`, such as another student's notebook.
- * `RewriteArgs` gives the next `Mutate` of `mutator` the result of `args` on its arguments.
+ * `RewriteArgs` gives the next `Mutate` of `mutator` the arguments `args`.
  */
 export type Forge = Data.TaggedEnum<{
   SealInto: { readonly space: string };
-  RewriteArgs: { readonly mutator: string; readonly args: (args: Schema.Json) => Schema.Json };
+  RewriteArgs: { readonly mutator: string; readonly args: Schema.Json };
 }>;
 
 export const Forge = Data.taggedEnum<Forge>();
@@ -73,7 +74,7 @@ export const initial: Settings = {
 
 /** What happened, for the lab's log and the simulation's trace. */
 export interface Event {
-  readonly fault: OneShot | "offline" | "online" | "disconnect" | "forge";
+  readonly fault: OneShot | "offline" | "online" | "latency" | "disconnect" | "forge";
   /** By the device's `Clock`. */
   readonly at: number;
   readonly detail: string;
@@ -84,6 +85,13 @@ export const reorderWindow = Duration.seconds(1);
 
 /** What the engine sees when a fault drops its connection, like a lost network. */
 export const droppedCode = 1006;
+
+/** What every call in flight on a dropped connection fails with, as a closed socket fails them. */
+export const dropped = new RpcClientError.RpcClientError({
+  reason: new Socket.SocketCloseError({ code: droppedCode }),
+});
+
+const encodeForge = Schema.encodeEffect(Schema.fromJsonString(Schema.Json));
 
 const PushJson = Schema.toCodecJson(Protocol.PushRequest);
 
@@ -115,6 +123,7 @@ export const make = Effect.gen(function* () {
     );
 
   const forgePush = Effect.fnUntraced(function* (request: RpcMessage.RequestEncoded) {
+    if (Option.isNone((yield* SubscriptionRef.get(settings)).forge)) return request;
     const push = yield* decodePush(request.payload).pipe(Effect.orDie);
 
     const target = (forge: Forge) =>
@@ -139,34 +148,39 @@ export const make = Effect.gen(function* () {
       }
 
       if (forge.value._tag === "RewriteArgs" && command._tag === "Mutate") {
-        return { ...command, args: forge.value.args(command.args) };
+        return { ...command, args: forge.value.args };
       }
 
       return command;
     });
 
-    const forged = commands[index];
+    const detail =
+      forge.value._tag === "SealInto"
+        ? `SealInto ${forge.value.space}`
+        : `RewriteArgs ${forge.value.mutator} ${yield* Effect.orDie(encodeForge(forge.value.args))}`;
 
-    yield* emit(
-      "forge",
-      forged === undefined ? "" : `${forge.value._tag} on mutation ${forged.mutationId}`,
-    );
+    yield* emit("forge", `${detail} on mutation ${commands[index]?.mutationId ?? ""}`);
 
     return { ...request, payload: yield* encodePush({ ...push, commands }).pipe(Effect.orDie) };
   });
 
-  /** Sends a copy of a push on a connection of its own and waits for its answer, which it drops. */
+  /**
+   * Sends a copy of a push on a connection of its own and waits for its answer, which it drops.
+   * Going offline or a disconnect drops that connection too.
+   */
   const duplicate = (inner: Ports.Transport["Service"], request: RpcMessage.RequestEncoded) =>
     Effect.scoped(
       Effect.gen(function* () {
         const side = yield* inner.connect;
         const answered = yield* Deferred.make<void>();
+        const drop = Deferred.succeed(answered, undefined).pipe(Effect.asVoid);
+
+        drops.add(drop);
+        yield* Effect.addFinalizer(() => Effect.sync(() => drops.delete(drop)));
 
         yield* Effect.forkScoped(
           side.protocol.run(0, (message) =>
-            message._tag === "Exit" && message.requestId === request.id
-              ? Deferred.succeed(answered, undefined)
-              : Effect.void,
+            message._tag === "Exit" && message.requestId === request.id ? drop : Effect.void,
           ),
         );
         yield* side.protocol.send(0, request);
@@ -183,20 +197,8 @@ export const make = Effect.gen(function* () {
       const outer = yield* Effect.scope;
       const own = yield* Scope.fork(outer);
       const connected = yield* inner.connect.pipe(Scope.provide(own));
-      const dropped = yield* Deferred.make<number>();
+      const closedBy = yield* Deferred.make<number>();
       let isDropped = false;
-
-      const drop = Effect.suspend(() => {
-        isDropped = true;
-
-        return Effect.andThen(Deferred.succeed(dropped, droppedCode), Scope.close(own, Exit.void));
-      });
-
-      drops.add(drop);
-      yield* Scope.addFinalizer(
-        outer,
-        Effect.sync(() => drops.delete(drop)),
-      );
 
       // The tags of requests in flight, so a fault can tell a push's answer from an event.
       const tags = new Map<string | number, string>();
@@ -205,6 +207,34 @@ export const make = Effect.gen(function* () {
         number,
         (message: RpcMessage.FromServerEncoded) => Effect.Effect<void>
       >();
+
+      // Every call in flight fails as on a closed socket, and so does every later send.
+      const failed: RpcMessage.FromServerEncoded = {
+        // Effect has no constructor for this protocol message. It is what `makeProtocolSocket`
+        // hands every handler when its socket closes.
+        // oxlint-disable-next-line anti-slop-effect/no-manual-tagged-construction -- see above
+        _tag: "ClientProtocolError",
+        error: dropped,
+      };
+
+      const drop = Effect.suspend(() => {
+        if (isDropped) return Effect.void;
+        isDropped = true;
+        tags.clear();
+
+        return Effect.forEach([...handlers.values()], (handler) => handler(failed), {
+          discard: true,
+        }).pipe(
+          Effect.andThen(Deferred.succeed(closedBy, droppedCode)),
+          Effect.andThen(Scope.close(own, Exit.void)),
+        );
+      });
+
+      drops.add(drop);
+      yield* Scope.addFinalizer(
+        outer,
+        Effect.sync(() => drops.delete(drop)),
+      );
 
       type Message<A> = { readonly clientId: number; readonly message: A; readonly due: number };
 
@@ -232,6 +262,8 @@ export const make = Effect.gen(function* () {
         clientId,
         message,
       }: Message<RpcMessage.FromClientEncoded>) {
+        // A message queued before a drop never leaves, so it neither forges nor duplicates.
+        if (isDropped) return;
         let outgoing = message;
 
         if (outgoing._tag === "Request") {
@@ -247,7 +279,6 @@ export const make = Effect.gen(function* () {
           }
         }
 
-        if (isDropped) return;
         // A failed send means the connection broke, which `closed` reports.
         yield* connected.protocol.send(clientId, outgoing).pipe(Effect.ignore);
       });
@@ -311,7 +342,8 @@ export const make = Effect.gen(function* () {
 
       const protocol: RpcClient.Protocol["Service"] = {
         ...connected.protocol,
-        send: (clientId, message) => stamp(up, clientId, message),
+        send: (clientId, message) =>
+          isDropped ? Effect.fail(dropped) : stamp(up, clientId, message),
         run: (clientId, handler) =>
           Effect.suspend(() => {
             handlers.set(clientId, handler);
@@ -322,15 +354,15 @@ export const make = Effect.gen(function* () {
 
       return {
         protocol,
-        closed: Effect.raceFirst(connected.closed, Deferred.await(dropped)),
+        closed: Effect.raceFirst(connected.closed, Deferred.await(closedBy)),
       } satisfies Ports.Connected;
     }),
   });
 
   return {
     settings,
-    /** Every fault as it fires, from the moment of subscribing. */
-    events: Stream.fromPubSub(events),
+    /** Every fault as it fires from now on, until the scope closes. */
+    subscribe: PubSub.subscribe(events),
     transport,
 
     setOffline: Effect.fn("Faults.setOffline")(function* (offline: boolean) {
@@ -345,8 +377,10 @@ export const make = Effect.gen(function* () {
       if (offline) yield* dropAll;
     }),
 
-    setLatency: (latency: Duration.Duration) =>
-      SubscriptionRef.update(settings, (current) => ({ ...current, latency })),
+    setLatency: Effect.fn("Faults.setLatency")(function* (latency: Duration.Duration) {
+      yield* SubscriptionRef.update(settings, (current) => ({ ...current, latency }));
+      yield* emit("latency", `${Duration.toMillis(latency)} ms`);
+    }),
 
     arm: (fault: OneShot) =>
       SubscriptionRef.update(settings, (current) => ({ ...current, [fault]: true })),
