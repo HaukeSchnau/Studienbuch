@@ -306,6 +306,30 @@ export default defineConfig({
         rules: { "studienbuch/no-frame-waits-in-browser-tests": "error" },
       },
       {
+        // packages/core typechecks with the DOM lib for the e2ee and sync code it imports, and runs
+        // in mutators on every platform, so its own code reaches for none of the browser's APIs.
+        files: scope("packages/core/**"),
+        rules: {
+          "eslint/no-restricted-globals": [
+            "error",
+            temporal,
+            ...[
+              "window",
+              "document",
+              "navigator",
+              "location",
+              "fetch",
+              "XMLHttpRequest",
+              "WebSocket",
+              "EventSource",
+              "localStorage",
+              "sessionStorage",
+              "indexedDB",
+            ].map((name) => ({ name, message: "packages/core is the domain, not a browser." })),
+          ],
+        },
+      },
+      {
         // packages/e2ee stores nothing and opens no connection.
         files: scope("packages/e2ee/**"),
         rules: {

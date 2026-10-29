@@ -1,6 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // The DOM lib's types of the web APIs that e2ee and sync use, such as TextEncoder and URL, as in
+    // packages/e2ee. Core's own code may not use the browser's (vite.config.ts, lint).
+    "lib": ["ESNext", "DOM"],
     "types": []
   },
   "include": ["src"]
