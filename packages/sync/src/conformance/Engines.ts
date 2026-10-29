@@ -26,6 +26,9 @@ export * as Engines from "./Engines.ts";
 
 export type Name = "sqlite-wasm" | "sqlite-node" | "pglite" | "postgres-18";
 
+/** The account every engine's transactions run for. */
+export const actor = "account-probe";
+
 export interface Engine {
   readonly name: Name;
   readonly side: "device" | "server";
@@ -63,7 +66,7 @@ const engine = Effect.fnUntraced(function* (
           }),
         ),
   ).pipe(Effect.orDie);
-  const txLayer = side === "device" ? SqliteTx.layer : PostgresTx.layer;
+  const txLayer = side === "device" ? SqliteTx.layer(actor) : PostgresTx.layer(actor);
 
   return {
     name,

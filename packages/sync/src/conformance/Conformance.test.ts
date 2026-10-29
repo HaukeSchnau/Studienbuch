@@ -6,6 +6,7 @@ import * as Predicate from "effect/Predicate";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { CanonicalJson } from "../transaction/CanonicalJson.ts";
+import { Tx } from "../transaction/Tx.ts";
 import { Cases } from "./Cases.ts";
 import { Engines } from "./Engines.ts";
 import { Probe } from "./Probe.ts";
@@ -170,6 +171,16 @@ layer(Engines.layer)("Tx conformance", (it) => {
       yield* Effect.promise(() =>
         expect(`${lines.join("\n")}\n`).toMatchFileSnapshot("./cases.jsonl"),
       );
+    }),
+  );
+
+  it.effect("a mutator runs on the client on SQLite and on the server on Postgres", () =>
+    Effect.gen(function* () {
+      for (const engine of yield* Engines.Service) {
+        const location = yield* engine.transaction(Effect.map(Tx.Service, (tx) => tx.location));
+
+        expect(location, engine.name).toBe(engine.side === "device" ? "client" : "server");
+      }
     }),
   );
 

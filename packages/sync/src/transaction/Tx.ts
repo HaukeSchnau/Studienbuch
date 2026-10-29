@@ -61,7 +61,20 @@ export interface Where<T extends Sync.Any> {
   readonly equals: unknown;
 }
 
+/** Where a mutator runs: on a device, or on the server for a readable table's command. */
+export type Location = "client" | "server";
+
 export interface Interface {
+  /**
+   * The account the command runs for: the signed-in account on a device, the connection's account
+   * on the server.
+   */
+  readonly actor: string;
+  /**
+   * For the rare step only one side takes, such as scheduling a notification on the server. Rows
+   * written must not depend on it, or the device would show what the server never stores.
+   */
+  readonly location: Location;
   readonly get: <T extends Sync.Any>(
     table: T,
     space: string,
@@ -114,8 +127,10 @@ export interface StoreFilter {
   readonly json: string;
 }
 
-/** What an engine implements. Rows go in and out as canonical JSON text. */
+/** What an engine implements for one transaction. Rows go in and out as canonical JSON text. */
 export interface Store {
+  readonly actor: string;
+  readonly location: Location;
   readonly read: (
     space: string,
     table: string,
@@ -171,6 +186,9 @@ export const make = (store: Store): Interface => {
 
   // Mutators call these once per row, on every replay of the outbox, so they carry no span.
   return {
+    actor: store.actor,
+    location: store.location,
+
     get: Effect.fnUntraced(function* <T extends Sync.Any>(table: T, space: string, id: string) {
       const stored = yield* store.read(space, table.name, id);
 

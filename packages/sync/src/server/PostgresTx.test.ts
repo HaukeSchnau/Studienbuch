@@ -11,7 +11,7 @@ import { Sync } from "../definition/Sync.ts";
 import { Tx } from "../transaction/Tx.ts";
 import { PostgresTx } from "./PostgresTx.ts";
 
-const Note = Sync.table("Note", { fields: { text: Schema.String } });
+const Note = Sync.table("Note", { class: "readable", fields: { text: Schema.String } });
 
 const database = Layer.effectDiscard(
   Effect.flatMap(SqlClient.SqlClient, (sql) =>
@@ -28,7 +28,7 @@ const push = (space: string, ids: ReadonlyArray<string>, beforeCommit = Effect.v
 
         for (const id of ids) yield* tx.put(Note, space, id, { text: id });
         yield* beforeCommit;
-      }).pipe(Effect.provide(PostgresTx.layer)),
+      }).pipe(Effect.provide(PostgresTx.layer("account"))),
     ),
   );
 

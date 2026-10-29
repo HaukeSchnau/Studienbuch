@@ -74,6 +74,8 @@ catalog:
   react-native-quick-base64: 3.0.1
   # X-Wing for key boxes (D38).
   "@noble/post-quantum": 0.7.1
+  # SHA-256 for the sync contract's hash, synchronous on Hermes, browsers and Node.
+  "@noble/hashes": 2.4.0
 
 overrides:
   vite@*: "catalog:"

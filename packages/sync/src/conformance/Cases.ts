@@ -253,6 +253,10 @@ export const all: ReadonlyArray<Case> = [
     ],
   },
   {
+    name: "a mutator reads the account it runs for",
+    steps: [{ op: "actor" }],
+  },
+  {
     name: "a sequence of patches",
     steps: [
       { op: "put", id: "a", row: row() },
