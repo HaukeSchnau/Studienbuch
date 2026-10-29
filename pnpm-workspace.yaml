@@ -102,6 +102,9 @@ catalog:
   # Signs a demo session's token the way Better Auth's bearer plugin does, at Better Auth's own
   # version of it.
   better-call: 1.4.4
+  # Ed25519 public keys from a seed without exporting the private key. The version
+  # @noble/post-quantum pins.
+  "@noble/curves": 2.4.0
 
 overrides:
   vite@*: "catalog:"

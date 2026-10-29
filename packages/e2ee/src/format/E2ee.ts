@@ -61,3 +61,6 @@ export class Untrusted extends Schema.TaggedError<Untrusted, { readonly brand: u
     ]),
   },
 ) {}
+
+/** Every way opening or checking a format fails. */
+export type Failure = Malformed | Unsupported | WrongSecret | Untrusted;

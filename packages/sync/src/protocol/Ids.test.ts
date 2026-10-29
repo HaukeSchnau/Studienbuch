@@ -17,6 +17,7 @@ const descending = CryptoSuite.Service.of({
   },
   kem: {
     publicKey: () => Effect.die("unused"),
+    validate: () => Effect.die("unused"),
     encapsulate: () => Effect.die("unused"),
     decapsulate: () => Effect.die("unused"),
   },
