@@ -1,0 +1,21 @@
+{
+  "name": "@stu/domain-ui",
+  "private": true,
+  "license": "BUSL-1.1",
+  "type": "module",
+  "exports": {
+    "./homework/Due": "./src/homework/Due.ts",
+    "./refusal/RefusalText": "./src/refusal/RefusalText.ts",
+    "./subject/SubjectColor": "./src/subject/SubjectColor.ts"
+  },
+  "dependencies": {
+    "@stu/core": "workspace:*",
+    "@stu/ui": "workspace:*",
+    "temporal-polyfill": "catalog:"
+  },
+  "devDependencies": {
+    "@effect/vitest": "catalog:",
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
+  }
+}
