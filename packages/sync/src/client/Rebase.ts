@@ -212,6 +212,10 @@ export const applyPull = Effect.fnUntraced(function* (
       key_epoch = excluded.key_epoch
   `;
 
+  // Before this page's boxes open: a device whose own epoch 0 the server took gets it back from
+  // its own box.
+  yield* Keyring.dropOwnOnceListed;
+
   const rekeyed = new Set<string>();
   const sealed: Array<{ readonly space: string; readonly op: Protocol.Op }> = [];
 
@@ -343,7 +347,11 @@ const encoderOf = (mutator: Sync.AnyMutator) => {
   const known = encoders.get(mutator);
 
   if (known !== undefined) return known;
-  const encoder = Schema.encodeUnknownEffect(Schema.Union([mutator.error, Tx.Refused]));
+
+  const encoder = Schema.encodeUnknownEffect(
+    Schema.Union([mutator.error, Tx.Refused, Sealing.Unreadable]),
+  );
+
   encoders.set(mutator, encoder);
 
   return encoder;
@@ -377,26 +385,43 @@ export const replay = Effect.fnUntraced(function* (definition: Sync.Definition, 
       continue;
     }
 
+    // A sealed command the push sent keeps what it sent until the server answers `Stale`, since the
+    // server may hold it already. Its drafts and refusal stay, and only the overlay follows.
+    const sent = command.mode === "Seal" && command.sealed !== null;
+
+    // A sealed command's drafts belong to its savepoint, so a row it can't read takes back its
+    // effect like any other refusal.
     const exit = yield* Effect.exit(
       sql.withTransaction(
         Effect.gen(function* () {
           const invocation = yield* Sync.invoke(mutator, command.version, command.args);
           const { tx, written } = yield* SqliteTx.tracked({ actor, writes: mutator.writes });
           yield* Effect.provideService(invocation.run, Tx.Service, tx);
+          const rows = written();
 
-          return written();
+          const drafts =
+            command.mode === "Seal" && !sent
+              ? yield* Sealing.drafts(rows, (space, id) =>
+                  Effect.succeed(Option.fromNullishOr(writers.get(rowKey(space, id)))),
+                )
+              : [];
+
+          return { rows, drafts };
         }),
       ),
     );
 
-    if (Exit.isSuccess(exit)) {
-      for (const row of exit.value) tables.add(row.table);
+    if (sent) {
+      if (Exit.isSuccess(exit)) for (const row of exit.value.rows) tables.add(row.table);
+
+      for (const draft of command.writes ?? []) {
+        writers.set(rowKey(draft.space, draft.id), command.mutationId);
+      }
+    } else if (Exit.isSuccess(exit)) {
+      for (const row of exit.value.rows) tables.add(row.table);
 
       if (command.mode === "Seal") {
-        const drafts = yield* Sealing.drafts(exit.value, (space, id) =>
-          Effect.succeed(Option.fromNullishOr(writers.get(rowKey(space, id)))),
-        );
-
+        const { drafts } = exit.value;
         yield* Outbox.materialize(command.mutationId, drafts, null);
 
         for (const draft of drafts) writers.set(rowKey(draft.space, draft.id), command.mutationId);

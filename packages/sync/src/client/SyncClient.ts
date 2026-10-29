@@ -65,7 +65,8 @@ export interface Mutation {
 /**
  * Why a command never entered the outbox: the mutator's own refusal, a `Tx` error, a space the
  * device doesn't know or a role that may not write there, arguments its codec refuses, a bound of
- * `Bounds` the server would refuse it for, or a sealed row larger than the server stores.
+ * `Bounds` the server would refuse it for, a sealed row larger than the server stores, or a sealed
+ * row the device can't open.
  */
 export type MutateError<E> =
   | E
@@ -74,7 +75,8 @@ export type MutateError<E> =
   | Refusal.NotAllowed
   | Refusal.InvalidArgs
   | Refusal.TooLarge
-  | Refusal.BadEnvelope;
+  | Refusal.BadEnvelope
+  | Sealing.Unreadable;
 
 export interface Status {
   /** Whether the engine has a connection to the server. */
@@ -355,7 +357,12 @@ export const make = Effect.fnUntraced(function* (
       }
     }
 
-    const { clientId, mutationId } = yield* Outbox.append({ ...entry, writes, failure: null });
+    const { clientId, mutationId } = yield* Outbox.append({
+      ...entry,
+      writes,
+      failure: null,
+      sealed: null,
+    });
 
     const deferred = yield* Deferred.make<void, Rejected>();
     waiters.set(waiterKey(clientId, mutationId), { mutationId, deferred });
@@ -473,6 +480,20 @@ export const make = Effect.fnUntraced(function* (
     yield* SubscriptionRef.update(status, (current) => ({ ...current, revoked: true }));
   });
 
+  /** Opens the boxes and rows that waited in every space, and replays the outbox on them. */
+  const reopenAll = commit(
+    Effect.gen(function* () {
+      const tables = new Set<string>();
+      const known = yield* sql<{ readonly id: string }>`select id from sync_space`;
+
+      for (const { id } of known) {
+        for (const table of yield* Rebase.reopen(opener, id)) tables.add(table);
+      }
+
+      return { tables: [...tables, ...(yield* Rebase.replay(definition, actor))] };
+    }),
+  );
+
   const unlock = Effect.fn("SyncClient.unlock")(function* (
     rootKey: Uint8Array,
     generation: number,
@@ -480,19 +501,7 @@ export const make = Effect.fnUntraced(function* (
     yield* withSuite(keyring.unlock(rootKey, generation)).pipe(
       Effect.provideService(SqlClient.SqlClient, sql),
     );
-
-    yield* commit(
-      Effect.gen(function* () {
-        const tables = new Set<string>();
-        const known = yield* sql<{ readonly id: string }>`select id from sync_space`;
-
-        for (const { id } of known) {
-          for (const table of yield* Rebase.reopen(opener, id)) tables.add(table);
-        }
-
-        return { tables: [...tables, ...(yield* Rebase.replay(definition, actor))] };
-      }),
-    );
+    yield* reopenAll;
 
     // Sealed commands that waited for a key can go out now.
     yield* PubSub.publish(writes, undefined);
@@ -547,6 +556,23 @@ export const make = Effect.fnUntraced(function* (
 
   // A crash between two pages of a pull left the overlay on older rows.
   yield* replication.replayIfDue;
+
+  // An update may open formats the build before couldn't, and a build without drafts queued `Seal`
+  // commands that need theirs before their first push.
+  const [started] = yield* sql<{ readonly opened_with: string | null }>`
+    select opened_with from sync_meta where id = 1
+  `;
+
+  const undrafted = yield* sql`
+    select 1 from sync_outbox where mode = 'Seal' and writes is null and failure is null limit 1
+  `;
+
+  if (started?.opened_with !== Keyring.opens) {
+    yield* reopenAll;
+    yield* sql`update sync_meta set opened_with = ${Keyring.opens} where id = 1`;
+  } else if (undrafted.length > 0) {
+    yield* commit(Effect.map(Rebase.replay(definition, actor), (tables) => ({ tables })));
+  }
 
   const rounds = yield* Semaphore.make(1);
 

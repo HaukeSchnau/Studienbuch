@@ -1,17 +1,9 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "fb5f3523-77b2-4275-a632-b8089afa40bd",
+  "id": "57b4114e-e888-409d-8504-bd9205f51b4e",
   "prevIds": ["333f1c0b-b3ad-4313-ab10-aa3515da766b"],
   "ddl": [
-    {
-      "name": "base_row",
-      "entityType": "tables"
-    },
-    {
-      "name": "pending_row",
-      "entityType": "tables"
-    },
     {
       "name": "sync_meta",
       "entityType": "tables"
@@ -41,94 +33,12 @@
       "entityType": "tables"
     },
     {
-      "table": "base_row",
-      "name": "space",
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "entityType": "columns"
+      "name": "base_row",
+      "entityType": "tables"
     },
     {
-      "table": "base_row",
-      "name": "tbl",
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "entityType": "columns"
-    },
-    {
-      "table": "base_row",
-      "name": "id",
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "entityType": "columns"
-    },
-    {
-      "table": "base_row",
-      "name": "version",
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "entityType": "columns"
-    },
-    {
-      "table": "base_row",
-      "name": "data",
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "entityType": "columns"
-    },
-    {
-      "table": "pending_row",
-      "name": "space",
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "entityType": "columns"
-    },
-    {
-      "table": "pending_row",
-      "name": "tbl",
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "entityType": "columns"
-    },
-    {
-      "table": "pending_row",
-      "name": "id",
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "entityType": "columns"
-    },
-    {
-      "table": "pending_row",
-      "name": "data",
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "entityType": "columns"
+      "name": "pending_row",
+      "entityType": "tables"
     },
     {
       "table": "sync_meta",
@@ -197,6 +107,16 @@
       "notNull": true,
       "autoincrement": false,
       "default": "0",
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_meta",
+      "name": "opened_with",
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
       "generated": null,
       "entityType": "columns"
     },
@@ -273,6 +193,16 @@
     {
       "table": "sync_outbox",
       "name": "failure",
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "sealed",
       "type": "text",
       "notNull": false,
       "autoincrement": false,
@@ -571,6 +501,106 @@
       "entityType": "columns"
     },
     {
+      "table": "sync_space_key",
+      "name": "made_here",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "0",
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "space",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "tbl",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "id",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "version",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "base_row",
+      "name": "data",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "pending_row",
+      "name": "space",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "pending_row",
+      "name": "tbl",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "pending_row",
+      "name": "id",
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "pending_row",
+      "name": "data",
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
       "table": "base_row",
       "name": "base_row_Note_title",
       "columns": [
@@ -615,20 +645,6 @@
       "entityType": "indexes"
     },
     {
-      "table": "base_row",
-      "name": "base_row_pk",
-      "columns": ["space", "tbl", "id"],
-      "nameExplicit": false,
-      "entityType": "pks"
-    },
-    {
-      "table": "pending_row",
-      "name": "pending_row_pk",
-      "columns": ["space", "tbl", "id"],
-      "nameExplicit": false,
-      "entityType": "pks"
-    },
-    {
       "table": "sync_rejected_command",
       "name": "sync_rejected_command_pk",
       "columns": ["client_id", "mutation_id"],
@@ -646,6 +662,20 @@
       "table": "sync_space_key",
       "name": "sync_space_key_pk",
       "columns": ["space", "key_epoch"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "table": "base_row",
+      "name": "base_row_pk",
+      "columns": ["space", "tbl", "id"],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "table": "pending_row",
+      "name": "pending_row_pk",
+      "columns": ["space", "tbl", "id"],
       "nameExplicit": false,
       "entityType": "pks"
     },

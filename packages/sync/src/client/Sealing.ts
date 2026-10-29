@@ -7,8 +7,10 @@ import { CryptoSuite, SealedRow, SpaceKey } from "@stu/e2ee";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
+import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 import { Command } from "../protocol/Command.ts";
+import { Ids } from "../protocol/Ids.ts";
 import { Keyring } from "./Keyring.ts";
 import type { Outbox } from "./Outbox.ts";
 import type { SqliteTx } from "./SqliteTx.ts";
@@ -30,6 +32,15 @@ export const tooLarge = (draft: Outbox.Draft) =>
     Command.maxSealedBytes;
 
 /**
+ * The row is on the server in a form this build can't open: a newer format, or a key epoch the
+ * device holds no key for yet. A write would replace content the device never read.
+ */
+export class Unreadable extends Schema.TaggedError<Unreadable, { readonly brand: unique symbol }>()(
+  "SyncClient.Unreadable",
+  { space: Ids.Id, id: Ids.Id },
+) {}
+
+/**
  * The rows a run wrote, as drafts. `writer` names the waiting command that last wrote a row, so a
  * batch can write one row twice before the server confirmed the first.
  */
@@ -45,9 +56,13 @@ export const drafts = Effect.fnUntraced(function* <E, R>(
       select data from pending_row where space = ${row.space} and tbl = ${row.table} and id = ${row.id}
     `;
 
-    const [stored] = yield* sql<{ readonly version: number }>`
-      select version from sync_sealed_row where space = ${row.space} and id = ${row.id}
+    const [stored] = yield* sql<{ readonly version: number; readonly tbl: string | null }>`
+      select version, tbl from sync_sealed_row where space = ${row.space} and id = ${row.id}
     `;
+
+    if (stored !== undefined && stored.tbl === null) {
+      return yield* new Unreadable({ space: row.space, id: row.id });
+    }
 
     const earlier = yield* writer(row.space, row.id);
 
@@ -106,7 +121,7 @@ export const seal = Effect.fnUntraced(function* (
     const key = Option.isSome(stored) ? stored.value : yield* SpaceKey.generate;
 
     if (Option.isSome(account)) {
-      if (Option.isNone(stored)) yield* Keyring.storeKeys(draft.space, [{ epoch: 0, key }]);
+      if (Option.isNone(stored)) yield* Keyring.keepOwn(draft.space, key);
 
       if (!opening.has(draft.space)) {
         boxes.push(

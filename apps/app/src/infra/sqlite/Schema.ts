@@ -1,18 +1,11 @@
 import { Studienbuch } from "@stu/core";
 import { DeviceSchema } from "@stu/sync/client";
 
-// The device's tables and views, the file drizzle-kit reads (`drizzle.config.ts`) to generate the
-// migrations every account database runs when it opens. Each table and view is one named export.
-// After a change, run `vp run db:generate` in apps/app.
+// The device's tables and views, which drizzle-kit reads with the engine's own tables
+// (`drizzle.config.ts`) to generate the migrations every account database runs when it opens. Each
+// table and view is one named export. After a change, run `vp run db:generate` in apps/app.
 
 export const {
-  sync_meta,
-  sync_space,
-  sync_outbox,
-  sync_settled_command,
-  sync_rejected_command,
-  sync_space_key,
-  sync_sealed_row,
   base_row,
   pending_row,
   sync_row_view,

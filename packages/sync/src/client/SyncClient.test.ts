@@ -112,6 +112,7 @@ describe("SyncClient.mutate", () => {
               },
             ],
             failure: null,
+            sealed: null,
           },
         ]);
         expect((yield* (yield* SyncClient.Service).status.get).waiting, driver).toBe(1);

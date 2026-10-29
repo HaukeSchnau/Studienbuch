@@ -1,8 +1,8 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "1bd6f5b1-7e98-4a09-a30e-1687cfdd5412",
-  "prevIds": ["393adc87-8010-479b-86b7-491c68f6072c"],
+  "id": "d9078977-7264-4603-a7eb-03179c1bf2a1",
+  "prevIds": ["5bf43fab-0a34-4159-8adf-c4bff83337ca"],
   "ddl": [
     {
       "name": "base_row",
@@ -201,6 +201,16 @@
       "entityType": "columns"
     },
     {
+      "table": "sync_meta",
+      "name": "opened_with",
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
       "table": "sync_outbox",
       "name": "mutation_id",
       "type": "integer",
@@ -273,6 +283,16 @@
     {
       "table": "sync_outbox",
       "name": "failure",
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
+      "table": "sync_outbox",
+      "name": "sealed",
       "type": "text",
       "notNull": false,
       "autoincrement": false,
@@ -571,15 +591,25 @@
       "entityType": "columns"
     },
     {
+      "table": "sync_space_key",
+      "name": "made_here",
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "0",
+      "generated": null,
+      "entityType": "columns"
+    },
+    {
       "table": "base_row",
-      "name": "base_row_Note_course",
+      "name": "base_row_SchoolClass_schoolYearId",
       "columns": [
         {
           "value": "space",
           "isExpression": true
         },
         {
-          "value": "data ->> '$.\"course\"'",
+          "value": "data ->> '$.\"schoolYearId\"'",
           "isExpression": true
         },
         {
@@ -588,20 +618,86 @@
         }
       ],
       "isUnique": false,
-      "where": "tbl = 'Note'",
+      "where": "tbl = 'SchoolClass'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "base_row",
+      "name": "base_row_CourseOffering_termId",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"termId\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'CourseOffering'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "base_row",
+      "name": "base_row_Homework_dueOn",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"dueOn\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'Homework'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "base_row",
+      "name": "base_row_Homework_courseId",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"courseId\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'Homework'",
       "origin": "manual",
       "entityType": "indexes"
     },
     {
       "table": "pending_row",
-      "name": "pending_row_Note_course",
+      "name": "pending_row_SchoolClass_schoolYearId",
       "columns": [
         {
           "value": "space",
           "isExpression": true
         },
         {
-          "value": "data ->> '$.\"course\"'",
+          "value": "data ->> '$.\"schoolYearId\"'",
           "isExpression": true
         },
         {
@@ -610,7 +706,73 @@
         }
       ],
       "isUnique": false,
-      "where": "tbl = 'Note'",
+      "where": "tbl = 'SchoolClass'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "pending_row",
+      "name": "pending_row_CourseOffering_termId",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"termId\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'CourseOffering'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "pending_row",
+      "name": "pending_row_Homework_dueOn",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"dueOn\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'Homework'",
+      "origin": "manual",
+      "entityType": "indexes"
+    },
+    {
+      "table": "pending_row",
+      "name": "pending_row_Homework_courseId",
+      "columns": [
+        {
+          "value": "space",
+          "isExpression": true
+        },
+        {
+          "value": "data ->> '$.\"courseId\"'",
+          "isExpression": true
+        },
+        {
+          "value": "id",
+          "isExpression": true
+        }
+      ],
+      "isUnique": false,
+      "where": "tbl = 'Homework'",
       "origin": "manual",
       "entityType": "indexes"
     },
@@ -678,29 +840,78 @@
       "entityType": "pks"
     },
     {
-      "name": "Choice",
-      "definition": "select space, id, data ->> '$.\"school\"' as \"school\", data -> '$.\"courses\"' as \"courses\" from sync_row_view where tbl = 'Choice'",
+      "name": "Course",
+      "definition": "select space, id, data ->> '$.\"name\"' as \"name\", data ->> '$.\"subjectId\"' as \"subjectId\" from sync_row_view where tbl = 'Course'",
       "isExisting": false,
       "error": null,
       "entityType": "views"
     },
     {
-      "name": "Note",
-      "definition": "select space, id, data ->> '$.\"course\"' as \"course\", data ->> '$.\"title\"' as \"title\", data ->> '$.\"done\"' as \"done\" from sync_row_view where tbl = 'Note'",
+      "name": "CourseOffering",
+      "definition": "select space, id, data ->> '$.\"courseId\"' as \"courseId\", data ->> '$.\"termId\"' as \"termId\", data -> '$.\"gradeLevels\"' as \"gradeLevels\", data -> '$.\"classIds\"' as \"classIds\", data ->> '$.\"groupKey\"' as \"groupKey\" from sync_row_view where tbl = 'CourseOffering'",
       "isExisting": false,
       "error": null,
       "entityType": "views"
     },
     {
-      "name": "Offer",
-      "definition": "select space, id, data ->> '$.\"name\"' as \"name\" from sync_row_view where tbl = 'Offer'",
+      "name": "Enrollment",
+      "definition": "select space, id, data ->> '$.\"termId\"' as \"termId\", data ->> '$.\"gradeLevel\"' as \"gradeLevel\", data ->> '$.\"classId\"' as \"classId\", data -> '$.\"courseIds\"' as \"courseIds\" from sync_row_view where tbl = 'Enrollment'",
       "isExisting": false,
       "error": null,
       "entityType": "views"
     },
     {
-      "name": "Topic",
-      "definition": "select space, id, data ->> '$.\"title\"' as \"title\" from sync_row_view where tbl = 'Topic'",
+      "name": "Homework",
+      "definition": "select space, id, data ->> '$.\"courseId\"' as \"courseId\", data ->> '$.\"title\"' as \"title\", data ->> '$.\"description\"' as \"description\", data ->> '$.\"dueOn\"' as \"dueOn\", data ->> '$.\"doneOn\"' as \"doneOn\" from sync_row_view where tbl = 'Homework'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "Notebook",
+      "definition": "select space, id, data ->> '$.\"schoolId\"' as \"schoolId\" from sync_row_view where tbl = 'Notebook'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "NotebookProfile",
+      "definition": "select space, id, data ->> '$.\"displayName\"' as \"displayName\" from sync_row_view where tbl = 'NotebookProfile'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "School",
+      "definition": "select space, id, data ->> '$.\"name\"' as \"name\", data ->> '$.\"timeZone\"' as \"timeZone\" from sync_row_view where tbl = 'School'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "SchoolClass",
+      "definition": "select space, id, data ->> '$.\"schoolYearId\"' as \"schoolYearId\", data ->> '$.\"name\"' as \"name\", data ->> '$.\"gradeLevel\"' as \"gradeLevel\" from sync_row_view where tbl = 'SchoolClass'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "SchoolYear",
+      "definition": "select space, id, data ->> '$.\"name\"' as \"name\", data -> '$.\"dates\"' as \"dates\" from sync_row_view where tbl = 'SchoolYear'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "Subject",
+      "definition": "select space, id, data ->> '$.\"name\"' as \"name\", data ->> '$.\"shortName\"' as \"shortName\" from sync_row_view where tbl = 'Subject'",
+      "isExisting": false,
+      "error": null,
+      "entityType": "views"
+    },
+    {
+      "name": "Term",
+      "definition": "select space, id, data ->> '$.\"schoolYearId\"' as \"schoolYearId\", data ->> '$.\"name\"' as \"name\", data -> '$.\"dates\"' as \"dates\" from sync_row_view where tbl = 'Term'",
       "isExisting": false,
       "error": null,
       "entityType": "views"

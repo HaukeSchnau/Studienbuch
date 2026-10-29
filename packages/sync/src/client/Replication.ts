@@ -179,14 +179,15 @@ export const make = (device: Device) => {
    * than what the server confirms.
    */
   const push = Effect.fnUntraced(function* (remote: Remote, fence: { pushedUpTo: number }) {
-    // Spaces whose epoch 0 a command of this push opens: later ones there need no box.
-    const opening = new Set<string>();
-
     for (;;) {
       const meta = yield* Outbox.meta;
       const waiting = yield* Outbox.after(fence.pushedUpTo, pushBatch);
 
       if (waiting.length === 0) return "done";
+
+      // Spaces whose epoch 0 a command of this batch opens: later ones in it need no box. A batch
+      // the server didn't take carries no box for the next one.
+      const opening = new Set<string>();
 
       // A sealed command seals only now, under the space's current key epoch. One that can't yet,
       // on a locked device or without its space's key, holds back every command after it.
@@ -198,9 +199,16 @@ export const make = (device: Device) => {
           continue;
         }
 
+        if (command.sealed !== null) {
+          for (const box of command.sealed.boxes) opening.add(box.space);
+          commands.push(command.sealed);
+          continue;
+        }
+
         const sealed = yield* Sealing.seal(command, actor, device.keyring, opening);
 
         if (sealed === "locked" || sealed === "key-missing") break;
+        yield* Outbox.keepSealed(sealed);
         commands.push(sealed);
       }
 
@@ -261,7 +269,15 @@ export const make = (device: Device) => {
 
       if (response.outcomes.some((outcome) => outcome._tag === "Retry")) return "retry";
 
-      if (response.outcomes.some((outcome) => outcome._tag === "Stale")) return "stale";
+      const stale = response.outcomes.flatMap((outcome) =>
+        outcome._tag === "Stale" ? [outcome.mutationId] : [],
+      );
+
+      if (stale.length > 0) {
+        yield* Outbox.forgetSealed(stale);
+
+        return "stale";
+      }
 
       if (response.lastMutationId <= fence.pushedUpTo) return "retry";
       fence.pushedUpTo = response.lastMutationId;

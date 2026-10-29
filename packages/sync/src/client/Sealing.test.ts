@@ -16,12 +16,13 @@ import { NotesDevice } from "./fixture/NotesDevice.ts";
 import { Scripted } from "./fixture/Scripted.ts";
 import { Keyring } from "./Keyring.ts";
 import { Outbox } from "./Outbox.ts";
+import { Replication } from "./Replication.ts";
 import { Ports } from "./Ports.ts";
 import { SyncClient } from "./SyncClient.ts";
 
-/** One of Lena's devices: its own database and randomness, and the account's root key or not. */
-const device = (driver: Devices.Driver, seed: string, holdsKey = true) =>
-  SyncClient.layer(Notes.schema).pipe(
+/** The engine of one of Lena's devices, with its randomness and the account's root key or not. */
+const engine = (seed: string, holdsKey = true, options?: SyncClient.Options) =>
+  SyncClient.layer(Notes.schema, options).pipe(
     Layer.provideMerge(
       Layer.mergeAll(
         Devices.session,
@@ -30,8 +31,13 @@ const device = (driver: Devices.Driver, seed: string, holdsKey = true) =>
         Devices.disconnected,
       ),
     ),
-    Layer.provideMerge(Devices.database(driver)),
   );
+
+/** One of Lena's devices: the engine on its own database. */
+const device = (driver: Devices.Driver, seed: string, holdsKey = true) =>
+  engine(seed, holdsKey).pipe(Layer.provideMerge(Devices.database(driver)));
+
+const bytes = (fill: number) => new Uint8Array(32).fill(fill);
 
 const onEachDriver = <E>(body: (driver: Devices.Driver) => Effect.Effect<void, E>) =>
   Effect.forEach(Devices.drivers, body, { discard: true });
@@ -61,6 +67,7 @@ const rename = (id: string, title: string) =>
 const encodeBox = Schema.encodeEffect(Schema.toCodecJson(SpaceKey.KeyBox));
 const encodeEnvelope = Schema.encodeEffect(Schema.toCodecJson(SealedRow.Envelope));
 const encodePush = Schema.encodeEffect(Schema.fromJsonString(Protocol.PushRequest));
+const encodeJson = Schema.encodeEffect(Schema.fromJsonString(Schema.Json));
 
 const sealOf = (request: Protocol.PushRequest | undefined) => {
   const command = request?.commands[0];
@@ -95,6 +102,35 @@ const opsOf = Effect.fnUntraced(function* (seal: Command.Seal, version: number) 
 
   return ops;
 });
+
+/** A key box of another device, as a pull delivers it. */
+const boxOp = Effect.fnUntraced(function* (box: SpaceKey.KeyBox, version: number) {
+  return {
+    tbl: Protocol.keyBoxTable,
+    id: Protocol.keyBoxId(box),
+    version,
+    row: Protocol.Readable.make({ data: yield* encodeBox(box) }),
+  } satisfies Protocol.Op;
+});
+
+/** A sealed row of another device, as a pull delivers it. */
+const rowOp = Effect.fnUntraced(function* (id: string, sealed: SealedRow.Sealed, version: number) {
+  return {
+    tbl: "",
+    id,
+    version,
+    row: Protocol.Sealed.make({ envelope: yield* encodeEnvelope(sealed.envelope), ct: sealed.ct }),
+  } satisfies Protocol.Op;
+});
+
+/** The server answers `Stale` for every command of the push. */
+const staleAll: Scripted.PushAnswer = (request) =>
+  Effect.succeed({
+    lastMutationId: (request.commands[0]?.mutationId ?? 1) - 1,
+    outcomes: request.commands.map((command) =>
+      Protocol.Stale.make({ mutationId: command.mutationId }),
+    ),
+  });
 
 /** Lena writes `n1` on a device, which pushes it and pulls the server's copy back. */
 const established = Effect.gen(function* () {
@@ -339,9 +375,10 @@ describe("Seal", () => {
             yield* established;
             yield* rename("n1", "Mathe neu");
 
-            // Lena's other device deleted n1, so the rename has no row to change.
+            // Lena's other device deleted n1, so the rename has no row to change. The rename went
+            // out before the device knew, and the server answers it `Stale` once it arrives.
             const server = Scripted.scripted({
-              push: [Scripted.retryFirst, Scripted.applyAll],
+              push: [Scripted.retryFirst, staleAll, Scripted.applyAll],
               pull: [
                 Scripted.page({
                   spaces: notebook(2, 0),
@@ -355,6 +392,7 @@ describe("Seal", () => {
                   ],
                   lastMutationId: 1,
                 }),
+                Scripted.page({ spaces: notebook(2, 0), lastMutationId: 1 }),
                 Scripted.page({ spaces: notebook(2, 0), lastMutationId: 2 }),
               ],
             });
@@ -363,9 +401,11 @@ describe("Seal", () => {
             yield* replicate(server.remote);
 
             expect(
-              Option.map(sealOf(server.pushes[1]), (seal) => seal.writes),
+              server.pushes.map((request) =>
+                Option.map(sealOf(request), (seal) => seal.writes.length),
+              ),
               driver,
-            ).toEqual(Option.some([]));
+            ).toEqual([Option.some(1), Option.some(1), Option.some(0)]);
             expect(yield* notes, driver).toEqual([]);
             expect(
               (yield* Outbox.rejected).map((each) => each.reason._tag),
@@ -454,7 +494,6 @@ describe("Seal", () => {
     () =>
       onEachDriver((driver) =>
         Effect.gen(function* () {
-          const bytes = (fill: number) => new Uint8Array(32).fill(fill);
           const wrapper = { id: "w-a", kind: "device", place: "", credentialId: "" } as const;
 
           // Lena's generations 1 and 2, and device A's wrapper, endorsed again by generation 2.
@@ -477,23 +516,7 @@ describe("Seal", () => {
             epochKey,
           );
 
-          const ops: ReadonlyArray<Protocol.Op> = [
-            {
-              tbl: Protocol.keyBoxTable,
-              id: Protocol.keyBoxId(box),
-              version: 1,
-              row: Protocol.Readable.make({ data: yield* encodeBox(box) }),
-            },
-            {
-              tbl: "",
-              id: "n1",
-              version: 1,
-              row: Protocol.Sealed.make({
-                envelope: yield* encodeEnvelope(row.envelope),
-                ct: row.ct,
-              }),
-            },
-          ];
+          const ops = [yield* boxOp(box, 1), yield* rowOp("n1", row, 1)];
 
           let served = Option.none<Keyring.OwnSeal>();
 
@@ -549,5 +572,276 @@ describe("Seal", () => {
           );
         }).pipe(Effect.provide(TestCrypto.layer("renewal")), Effect.scoped),
       ),
+  );
+
+  it.effect("a device's own epoch-0 key goes once the server lists another epoch 0", () =>
+    onEachDriver((driver) =>
+      Effect.gen(function* () {
+        const b = yield* Layer.build(device(driver, "b"));
+
+        // Device A, at generation 1, opened epoch 0 first. B holds generation 0.
+        const keys1 = yield* AccountKey.derive(Redacted.make(bytes(1)), Devices.actor, 1);
+        const record1 = yield* AccountKey.record(keys1, "first");
+        const epochKey = yield* SpaceKey.generate;
+        const box = yield* SpaceKey.box("nb-lena", [{ epoch: 0, key: epochKey }], record1, keys1);
+
+        const row = yield* SealedRow.seal(
+          { space: "nb-lena", id: "from-a", table: "Note", json: '{"title":"A"}' },
+          Devices.actor,
+          0,
+          epochKey,
+        );
+
+        const ops = [yield* boxOp(box, 1), yield* rowOp("from-a", row, 1)];
+
+        yield* Effect.provide(
+          Effect.gen(function* () {
+            yield* Devices.space("nb-lena", "notebook", "owner");
+            yield* create("from-b", "B");
+
+            const server = Scripted.scripted({
+              push: [staleAll, Scripted.applyAll],
+              pull: [
+                Scripted.page({
+                  spaces: notebook(1, 0),
+                  patches: [{ space: "nb-lena", reset: true, to: 1, ops }],
+                }),
+                Scripted.page({ spaces: notebook(1, 0) }),
+              ],
+            });
+
+            yield* replicate(server.remote);
+
+            // B can't open A's box, so `from-b` waits instead of leaving under B's own key.
+            expect(server.pushes, driver).toHaveLength(1);
+            expect(Option.isNone(yield* Keyring.spaceKey("nb-lena", 0)), driver).toBe(true);
+          }),
+          b,
+        );
+      }).pipe(Effect.provide(TestCrypto.layer("race")), Effect.scoped),
+    ),
+  );
+
+  it.effect(
+    "a write over a row this build can't open is refused instead of claiming its version",
+    () =>
+      onEachDriver((driver) =>
+        Effect.gen(function* () {
+          const a = yield* Layer.build(device(driver, "a"));
+          const b = yield* Layer.build(device(driver, "b"));
+          const { ops } = yield* Effect.provide(established, a);
+          const [box, row] = ops;
+
+          if (box === undefined || row?.row._tag !== "Sealed") return yield* Effect.die("No ops");
+
+          // n1 and n2 in a format newer than this build.
+          const sealed = row.row;
+
+          const newer = (id: string) => ({
+            ...row,
+            id,
+            row: Protocol.Sealed.make({
+              envelope: { ...Object(sealed.envelope), format: 2 },
+              ct: sealed.ct,
+            }),
+          });
+
+          yield* Effect.provide(
+            Effect.gen(function* () {
+              yield* Devices.space("nb-lena", "notebook", "owner");
+              yield* create("n2", "Vorher");
+
+              // The server holds n2 already, so it answers the create `Stale`.
+              const server = Scripted.scripted({
+                push: [staleAll, Scripted.retryFirst],
+                pull: [
+                  Scripted.page({
+                    spaces: notebook(1, 0),
+                    patches: [
+                      {
+                        space: "nb-lena",
+                        reset: true,
+                        to: 1,
+                        ops: [box, newer("n1"), newer("n2")],
+                      },
+                    ],
+                  }),
+                  Scripted.page({ spaces: notebook(1, 0) }),
+                ],
+              });
+
+              yield* replicate(server.remote);
+
+              const refusal = yield* Effect.match(create("n1", "Neu"), {
+                onFailure: (error) => error._tag,
+                onSuccess: () => "queued",
+              });
+
+              expect(refusal, driver).toBe("SyncClient.Unreadable");
+              expect(
+                (yield* Outbox.pending).map((command) => command.failure?._tag),
+                driver,
+              ).toEqual(["SyncClient.Unreadable"]);
+              expect(
+                Option.map(sealOf(server.pushes[1]), (seal) => seal.writes),
+                driver,
+              ).toEqual(Option.some([]));
+            }),
+            b,
+          );
+        }).pipe(Effect.scoped),
+      ),
+  );
+
+  it.effect("a sealed command whose answer was lost goes out again byte for byte", () =>
+    onEachDriver((driver) =>
+      Effect.gen(function* () {
+        const a = yield* Layer.build(device(driver, "a"));
+
+        yield* Effect.provide(
+          Effect.gen(function* () {
+            yield* Devices.space("nb-lena", "notebook", "owner");
+            yield* create("n1", "Mathe");
+
+            const lost: Scripted.PushAnswer = () => Effect.fail(new Replication.Disconnected());
+
+            const server = Scripted.scripted({
+              push: [lost, Scripted.applyAll],
+              pull: [Scripted.page({ spaces: notebook(1, 0), lastMutationId: 1 })],
+            });
+
+            yield* Effect.exit(replicate(server.remote));
+            yield* replicate(server.remote);
+
+            const [first, again] = server.pushes;
+
+            if (first === undefined || again === undefined) return yield* Effect.die("No resend");
+            expect(yield* encodePush(again), driver).toBe(yield* encodePush(first));
+          }),
+          a,
+        );
+      }).pipe(Effect.scoped),
+    ),
+  );
+
+  it.effect("a resent command keeps the outcome it went out with, and settles as applied", () =>
+    onEachDriver((driver) =>
+      Effect.gen(function* () {
+        const a = yield* Layer.build(device(driver, "a"));
+
+        yield* Effect.provide(
+          Effect.gen(function* () {
+            yield* established;
+            yield* create("n2", "Bio");
+            const key = yield* Keyring.spaceKey("nb-lena", 0);
+
+            if (Option.isNone(key)) return yield* Effect.die("No space key");
+
+            // Lena's other device wrote two notes, so a replay of n2 would now be one too many.
+            const other = (id: string) =>
+              SealedRow.seal(
+                { space: "nb-lena", id, table: "Note", json: '{"title":"Andere"}' },
+                Devices.actor,
+                0,
+                key.value,
+              );
+
+            const server = Scripted.scripted({
+              push: [Scripted.retryFirst, Scripted.applyAll],
+              pull: [
+                Scripted.page({
+                  spaces: notebook(3, 0),
+                  patches: [
+                    {
+                      space: "nb-lena",
+                      reset: false,
+                      to: 3,
+                      ops: [
+                        yield* rowOp("n3", yield* other("n3"), 2),
+                        yield* rowOp("n4", yield* other("n4"), 3),
+                      ],
+                    },
+                  ],
+                  lastMutationId: 1,
+                }),
+                Scripted.page({ spaces: notebook(4, 0), lastMutationId: 2 }),
+              ],
+            });
+
+            yield* replicate(server.remote);
+            yield* replicate(server.remote);
+
+            // The server took n2 as it went out the first time.
+            const [first, again] = server.pushes;
+
+            if (first === undefined || again === undefined) return yield* Effect.die("No resend");
+            expect(yield* encodePush(again), driver).toBe(yield* encodePush(first));
+            expect(yield* Outbox.rejected, driver).toEqual([]);
+          }),
+          a,
+        );
+      }).pipe(Effect.scoped),
+    ),
+  );
+
+  it.effect("a build that opens other formats opens the parked rows at start", () =>
+    onEachDriver((driver) =>
+      Effect.gen(function* () {
+        const { seal } = yield* Effect.scoped(Effect.provide(established, engine("a")));
+        const [write] = seal.writes;
+
+        if (write === undefined || write.ct === null) return yield* Effect.die("No write");
+        const sql = yield* SqlClient.SqlClient;
+        const envelope = yield* encodeJson(yield* encodeEnvelope(write.envelope));
+
+        // An older build parked n1, which this one can open.
+        yield* sql`delete from base_row where tbl = 'Note'`;
+        yield* sql`
+          update sync_sealed_row set tbl = null, envelope = ${envelope}, ct = ${write.ct}
+          where id = 'n1'
+        `;
+        yield* sql`update sync_meta set opened_with = 'an older build'`;
+
+        const opened = yield* Effect.scoped(Effect.provide(notes, engine("a")));
+
+        expect(
+          opened.map((note) => note.title),
+          driver,
+        ).toEqual(["Geheimnis 4711"]);
+      }).pipe(Effect.provide(Devices.database(driver))),
+    ),
+  );
+
+  it.effect("a sealed command queued before drafts existed gets them before its first push", () =>
+    onEachDriver((driver) =>
+      Effect.gen(function* () {
+        const sql = yield* SqlClient.SqlClient;
+
+        yield* Effect.scoped(
+          Effect.provide(
+            Effect.gen(function* () {
+              yield* Devices.space("nb-lena", "notebook", "owner");
+              yield* create("n1", "Mathe");
+            }),
+            engine("a"),
+          ),
+        );
+
+        // The outbox as a build without drafts left it.
+        yield* sql`update sync_outbox set writes = null`;
+
+        const server = Scripted.scripted({
+          push: [Scripted.applyAll],
+          pull: [Scripted.page({ spaces: notebook(1, 0), lastMutationId: 1 })],
+        });
+
+        yield* Effect.scoped(Effect.provide(replicate(server.remote), engine("a")));
+
+        expect(
+          Option.map(sealOf(server.pushes[0]), (each) => each.writes.map((write) => write.id)),
+          driver,
+        ).toEqual(Option.some(["n1"]));
+      }).pipe(Effect.provide(Devices.database(driver))),
+    ),
   );
 });

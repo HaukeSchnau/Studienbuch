@@ -32,6 +32,8 @@ export type Draft = typeof Draft.Type;
 
 const Drafts = Schema.fromJsonString(Schema.Array(Draft));
 const encodeDrafts = Schema.encodeEffect(Drafts);
+const Sealed = Schema.fromJsonString(Schema.toCodecJson(Wire.Seal));
+const encodeSealed = Schema.encodeEffect(Sealed);
 const encodeReason = Schema.encodeEffect(Schema.fromJsonString(Refusal.Reason));
 
 /** A command as the device stores it: its invocation in plaintext. */
@@ -47,6 +49,8 @@ export interface Command {
   readonly writes: ReadonlyArray<Draft> | null;
   /** The refusal of a `Seal` command's last run, which the device shows once the id settles. */
   readonly failure: Refusal.Reason | null;
+  /** A `Seal` command as the push first sent it, which a resend repeats byte for byte. */
+  readonly sealed: Wire.Seal | null;
 }
 
 export interface Meta {
@@ -62,7 +66,7 @@ export interface Meta {
 }
 
 /** A command the server refused, kept until the user dismisses or redoes it. */
-export interface Rejected extends Omit<Command, "mode" | "writes" | "failure"> {
+export interface Rejected extends Omit<Command, "mode" | "writes" | "failure" | "sealed"> {
   readonly clientId: string;
   readonly reason: Refusal.Reason;
 }
@@ -88,6 +92,7 @@ const CommandRow = Schema.Struct({
   mode: Schema.Literals(["Mutate", "Seal"]),
   writes: Schema.NullOr(Drafts),
   failure: Schema.NullOr(Schema.fromJsonString(Refusal.Reason)),
+  sealed: Schema.NullOr(Sealed),
 });
 
 const RejectedRow = Schema.Struct({
@@ -116,6 +121,7 @@ const command = (row: typeof CommandRow.Type): Command => ({
   mode: row.mode,
   writes: row.writes,
   failure: row.failure,
+  sealed: row.sealed,
 });
 
 /** A readable command as the push sends it. */
@@ -172,10 +178,12 @@ const insert = Effect.fnUntraced(function* (command: Command) {
   const failure =
     command.failure === null ? null : yield* Effect.orDie(encodeReason(command.failure));
 
+  const sealed = command.sealed === null ? null : yield* Effect.orDie(encodeSealed(command.sealed));
+
   yield* sql`
-    insert into sync_outbox (mutation_id, name, version, args, at, mode, writes, failure)
+    insert into sync_outbox (mutation_id, name, version, args, at, mode, writes, failure, sealed)
     values (${command.mutationId}, ${command.name}, ${command.version}, ${args}, ${command.at},
-      ${command.mode}, ${writes}, ${failure})
+      ${command.mode}, ${writes}, ${failure}, ${sealed})
   `;
 });
 
@@ -200,7 +208,7 @@ export const pending = Effect.gen(function* () {
 
   const rows = yield* decodeCommands(
     yield* sql`
-      select mutation_id, name, version, args, at, mode, writes, failure from sync_outbox
+      select mutation_id, name, version, args, at, mode, writes, failure, sealed from sync_outbox
       order by mutation_id
     `,
   );
@@ -214,7 +222,7 @@ export const after = Effect.fnUntraced(function* (mutationId: number, limit: num
 
   const rows = yield* decodeCommands(
     yield* sql`
-      select mutation_id, name, version, args, at, mode, writes, failure from sync_outbox
+      select mutation_id, name, version, args, at, mode, writes, failure, sealed from sync_outbox
       where mutation_id > ${mutationId} order by mutation_id limit ${limit}
     `,
   );
@@ -285,6 +293,29 @@ export const materialize = Effect.fnUntraced(function* (
   yield* sql`
     update sync_outbox set writes = ${text}, failure = ${reason} where mutation_id = ${mutationId}
   `;
+});
+
+/**
+ * Keeps a `Seal` as the push is about to send it. Every resend repeats it, because the server
+ * answers a different command under a used id `ClientUnknown`.
+ */
+export const keepSealed = Effect.fnUntraced(function* (seal: Wire.Seal) {
+  const sql = yield* SqlClient.SqlClient;
+  const text = yield* Effect.orDie(encodeSealed(seal));
+
+  yield* sql`update sync_outbox set sealed = ${text} where mutation_id = ${seal.mutationId}`;
+});
+
+/**
+ * Forgets what the push sent for commands the server answered `Stale`. The next pull replays them
+ * on the newer rows, and the push seals them again.
+ */
+export const forgetSealed = Effect.fnUntraced(function* (mutationIds: ReadonlyArray<number>) {
+  const sql = yield* SqlClient.SqlClient;
+
+  if (mutationIds.length === 0) return;
+  yield* sql`update sync_outbox set sealed = null where ${sql.in("mutation_id", mutationIds)}`;
+  yield* setReplayDue(true);
 });
 
 /** The newest waiting command whose rows include `id` in `space`. */
@@ -441,8 +472,9 @@ export const renumber = Effect.fnUntraced(function* (clientId: string) {
   yield* sql`delete from sync_settled_command`;
 
   for (const [index, each] of commands.entries()) {
-    // The arguments were stored canonical, so they encode again.
-    yield* insert({ ...each, mutationId: index + 1 }).pipe(
+    // The arguments were stored canonical, so they encode again. A sealed command seals again
+    // under its new id, which the server hasn't seen.
+    yield* insert({ ...each, mutationId: index + 1, sealed: null }).pipe(
       Effect.catchTags({ "CanonicalJson.Unrepresentable": Effect.die }),
     );
   }

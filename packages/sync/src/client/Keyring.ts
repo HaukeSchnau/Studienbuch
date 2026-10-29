@@ -3,7 +3,7 @@
  * of the generation in `sync_meta.key_generation`, and the space keys the device opened from key
  * boxes live in `sync_space_key`. The engine opens and seals rows and boxes through it.
  */
-import { AccountKey, SealedRow, SpaceKey, Wrapper } from "@stu/e2ee";
+import { AccountKey, CryptoSuite, SealedRow, SpaceKey, Wrapper } from "@stu/e2ee";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
 import * as Redacted from "effect/Redacted";
@@ -35,6 +35,9 @@ const decodeEnvelope = Schema.decodeUnknownEffect(Schema.toCodecJson(SealedRow.E
 
 const rootKeyLength = 32;
 
+/** The formats this build opens rows and boxes in. A start under other ones opens what waited. */
+export const opens = `row ${SealedRow.format}, box ${SpaceKey.format}, suite ${CryptoSuite.id}`;
+
 /** The key of `space` at `epoch`, if the device opened it. */
 export const spaceKey = Effect.fnUntraced(function* (space: string, epoch: number) {
   const sql = yield* SqlClient.SqlClient;
@@ -46,7 +49,7 @@ export const spaceKey = Effect.fnUntraced(function* (space: string, epoch: numbe
   return Option.map(Option.fromNullishOr(row), (each) => Redacted.make(new Uint8Array(each.key)));
 });
 
-/** Keeps opened epoch keys. A key the server delivers replaces one the device made itself. */
+/** Keeps epoch keys a box delivered. They replace a key the device made itself. */
 export const storeKeys = Effect.fnUntraced(function* (
   space: string,
   keys: ReadonlyArray<SpaceKey.EpochKey>,
@@ -55,11 +58,41 @@ export const storeKeys = Effect.fnUntraced(function* (
 
   for (const { epoch, key } of keys) {
     yield* sql`
-      insert into sync_space_key (space, key_epoch, key)
-      values (${space}, ${epoch}, ${Redacted.value(key)})
-      on conflict (space, key_epoch) do update set key = excluded.key
+      insert into sync_space_key (space, key_epoch, key, made_here)
+      values (${space}, ${epoch}, ${Redacted.value(key)}, 0)
+      on conflict (space, key_epoch) do update set key = excluded.key, made_here = 0
     `;
   }
+});
+
+/**
+ * Keeps the epoch-0 key the device made for a space nobody opened yet, before a command boxes it.
+ * It counts only until the server lists the space's epoch: then the server's box carries the key.
+ */
+export const keepOwn = Effect.fnUntraced(function* (
+  space: string,
+  key: Redacted.Redacted<Uint8Array>,
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  yield* sql`
+    insert into sync_space_key (space, key_epoch, key, made_here)
+    values (${space}, 0, ${Redacted.value(key)}, 1)
+    on conflict (space, key_epoch) do nothing
+  `;
+});
+
+/**
+ * Drops the keys the device made for spaces whose epoch the server now lists. Another device may
+ * have opened that epoch first, and a row sealed under a key nobody else holds would be lost.
+ */
+export const dropOwnOnceListed = Effect.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
+
+  yield* sql`
+    delete from sync_space_key where made_here = 1
+      and space in (select id from sync_space where key_epoch is not null)
+  `;
 });
 
 export const make = Effect.fnUntraced(function* (actor: string) {
