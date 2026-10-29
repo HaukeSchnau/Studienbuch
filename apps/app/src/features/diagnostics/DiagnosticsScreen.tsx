@@ -5,8 +5,10 @@ import * as Option from "effect/Option";
 import * as AsyncResult from "effect/reactivity/AsyncResult";
 import { useRouter } from "expo-router";
 
-import { ApiProtocol } from "../../infra/api/ApiProtocol.ts";
+import { ServerOrigin } from "../../infra/api/ServerOrigin.ts";
 import { VirtualDevice } from "../../infra/device/VirtualDevice.ts";
+import { AppLifecycle } from "../../infra/lifecycle/AppLifecycle.ts";
+import { StoragePersistence } from "../../infra/offline/StoragePersistence.ts";
 import { BuildInfo } from "../../infra/updates/BuildInfo.ts";
 import { Card } from "../../ui/Card.tsx";
 import { HeroScreen } from "../../ui/HeroScreen.tsx";
@@ -20,6 +22,8 @@ export function DiagnosticsScreen() {
   const server = useAtomValue(ServerInfo.info);
   const selfTest = useAtomValue(CryptoSelfTest.outcomes);
   const storage = useAtomValue(DeviceStorage.thisStart);
+  const persistence = AsyncResult.value(useAtomValue(StoragePersistence.state(false)));
+  const lifecycle = AsyncResult.value(useAtomValue(AppLifecycle.state));
   const refreshServer = useAtomRefresh(ServerInfo.info);
   const refreshSelfTest = useAtomRefresh(CryptoSelfTest.outcomes);
   const router = useRouter();
@@ -39,9 +43,14 @@ export function DiagnosticsScreen() {
     >
       <Card>
         <StatusRow first {...appRow(serverRevision)} />
-        <StatusRow {...serverRow(server)} />
+        <StatusRow
+          {...serverRow(
+            server,
+            Option.map(lifecycle, (state) => state.online),
+          )}
+        />
         <StatusRow {...cryptoRow(selfTest)} onPress={() => router.push("/selbsttest")} />
-        <StatusRow {...storageRow(storage)} />
+        <StatusRow {...storageRow(storage, persistence)} />
       </Card>
     </HeroScreen>
   );
@@ -107,9 +116,16 @@ function appRow(serverRevision: Option.Option<string>): Row {
   };
 }
 
-function serverRow(server: AsyncResult.AsyncResult<System.Info, { readonly _tag: string }>): Row {
+function serverRow(
+  server: AsyncResult.AsyncResult<System.Info, { readonly _tag: string }>,
+  online: Option.Option<boolean>,
+): Row {
   const accent = Tokens.subject.violet.fill;
-  const host = Option.getOrUndefined(ApiProtocol.host);
+
+  const host = joined(
+    Option.getOrUndefined(ServerOrigin.host),
+    Option.contains(online, false) ? "kein Netz" : undefined,
+  );
 
   return AsyncResult.matchWithError(server, {
     onInitial: () => ({
@@ -123,7 +139,7 @@ function serverRow(server: AsyncResult.AsyncResult<System.Info, { readonly _tag:
       label: "Server",
       title: "Nicht erreichbar",
       detail:
-        error._tag === "ApiProtocol.NoServer" ? "Diesem Build fehlt die Server-Adresse" : host,
+        error._tag === "ServerOrigin.NoServer" ? "Diesem Build fehlt die Server-Adresse" : host,
       status: "failed",
       accent,
     }),
@@ -171,8 +187,15 @@ function cryptoRow(selfTest: AsyncResult.AsyncResult<ReadonlyArray<CryptoSelfTes
   });
 }
 
+const persistenceText: Record<StoragePersistence.State, string> = {
+  kept: "bleibt gespeichert",
+  "may be deleted": "der Browser darf ihn löschen",
+  "memory only": "nur bis zum Schließen",
+};
+
 function storageRow(
   storage: AsyncResult.AsyncResult<DeviceStorage.Report, { readonly _tag: string }>,
+  persistence: Option.Option<StoragePersistence.State>,
 ): Row {
   const label = "Speicher";
   const accent = Tokens.subject.amber.fill;
@@ -194,11 +217,27 @@ function storageRow(
       label,
       title: `${value.starts}. Start`,
       detail: Option.match(value.cipher, {
-        onNone: () => `SQLite ${value.sqlite}, eigener Ordner im Browser`,
+        onNone: () =>
+          joined(
+            `SQLite ${value.sqlite}, eigener Ordner im Browser`,
+            Option.getOrUndefined(Option.map(persistence, (state) => persistenceText[state])),
+          ),
         onSome: (cipher) =>
-          `SQLCipher ${cipher.version.split(" ")[0]} (${cipher.provider}), Schlüssel im Schlüsselbund`,
+          joined(
+            `SQLCipher ${cipher.version.split(" ")[0]} (${cipher.provider}), Schlüssel im Schlüsselbund`,
+            Option.getOrUndefined(
+              Option.map(value.excludedFromBackup, (excluded) =>
+                excluded ? "nicht im iCloud-Backup" : "landet im iCloud-Backup",
+              ),
+            ),
+            value.clearedAfterInstall === 0
+              ? undefined
+              : value.clearedAfterInstall === 1
+                ? "1 Eintrag einer früheren Installation gelöscht"
+                : `${value.clearedAfterInstall} Einträge einer früheren Installation gelöscht`,
+          ),
       }),
-      status: "ok",
+      status: Option.getOrElse(value.excludedFromBackup, () => true) ? "ok" : "missing",
       accent,
     }),
   });

@@ -5,6 +5,11 @@ const config = getDefaultConfig(__dirname);
 // The web's SQLite worker loads wa-sqlite's wasm build as an asset.
 config.resolver.assetExts.push("wasm");
 
+// SQL migrations and the conformance fixture are text modules (metro.transformer.js).
+config.resolver.sourceExts.push("sql", "jsonl");
+
+config.transformer.babelTransformerPath = require.resolve("./metro.transformer.js");
+
 // Our imports name the file with its extension (lint rule `import/extensions`), and Metro picks a
 // platform file such as `Database.web.ts` only for a specifier without one. So relative imports of
 // our own TypeScript lose the extension before Metro resolves them.

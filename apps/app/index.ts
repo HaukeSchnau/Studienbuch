@@ -4,3 +4,7 @@
 import "./src/infra/crypto/runtime.ts";
 // oxlint-disable-next-line import/no-unassigned-import -- Expo Router's entry registers the app
 import "expo-router/entry";
+
+import { ServiceWorker } from "./src/infra/offline/ServiceWorker.ts";
+
+ServiceWorker.register();

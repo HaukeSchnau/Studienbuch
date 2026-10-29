@@ -36,7 +36,8 @@ export default defineConfig({
   },
   test: {
     // The lint fixtures include test files that exist to fail the lint, not to run.
-    exclude: [...defaultExclude, "tools/oxlint/fixtures/**"],
+    // Browser tests run in each package's browser project (apps/app/vite.config.ts), never in Node.
+    exclude: [...defaultExclude, "tools/oxlint/fixtures/**", "**/*.browser.test.{ts,tsx}"],
   },
   lint: {
     ignorePatterns: [

@@ -1,13 +1,18 @@
 import * as Effect from "effect/Effect";
+import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as Atom from "effect/reactivity/Atom";
 import * as Schema from "effect/Schema";
 import * as SqlClient from "effect/sql/SqlClient";
 
-import { layer } from "../../infra/sqlite/database.ts";
+import { excludeDatabases } from "../../infra/device/files.ts";
+import { VirtualDevice } from "../../infra/device/VirtualDevice.ts";
+import { clearedAfterInstall, layer as keychain } from "../../infra/keychain/platform.ts";
+import { layer as open } from "../../infra/sqlite/database.ts";
 
-// The SQLite check: this device's database counts the app's starts, so a number that keeps rising
-// across restarts proves the data survives them.
+// The SQLite check: a database of this device's own counts the app's starts, so a number that
+// keeps rising across restarts proves the data survives them. It holds nothing else, so signing
+// out keeps it.
 
 export * as DeviceStorage from "./DeviceStorage.ts";
 
@@ -16,6 +21,10 @@ export interface Report {
   readonly sqlite: string;
   /** SQLCipher's version and crypto provider. None where the database isn't encrypted (the web). */
   readonly cipher: Option.Option<{ readonly version: string; readonly provider: string }>;
+  /** Whether iOS keeps the databases out of its backups. None where the build's rules do it. */
+  readonly excludedFromBackup: Option.Option<boolean>;
+  /** Keychain entries of an earlier install that this start removed (iOS keeps them). */
+  readonly clearedAfterInstall: number;
 }
 
 const one = <S extends Schema.Top>(schema: S) => Schema.decodeUnknownEffect(Schema.Tuple([schema]));
@@ -53,11 +62,21 @@ const recordStart = Effect.gen(function* () {
             .cipher_provider,
         });
 
-  return { starts: count, sqlite: version, cipher } satisfies Report;
+  return {
+    starts: count,
+    sqlite: version,
+    cipher,
+    excludedFromBackup: yield* excludeDatabases,
+    clearedAfterInstall: yield* clearedAfterInstall,
+  } satisfies Report;
 }).pipe(Effect.catchTags({ SchemaError: Effect.die }));
 
 // The database stays open for the app's lifetime.
-const database = Atom.runtime(layer).pipe(Atom.keepAlive);
+const database = Atom.runtime(
+  open({ device: VirtualDevice.current, name: "diagnostics", memory: false }).pipe(
+    Layer.provide(keychain),
+  ),
+).pipe(Atom.keepAlive);
 
 /** This start, counted once when the app opens its database. */
 export const thisStart = database.atom(recordStart).pipe(Atom.keepAlive);
