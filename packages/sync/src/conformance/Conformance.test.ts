@@ -194,32 +194,36 @@ layer(Engines.layer)("Tx conformance", (it) => {
     }),
   );
 
-  it.effect("a Tx writes only its command's tables, and the server's never an encrypted one", () =>
-    Effect.gen(function* () {
-      const Undeclared = Sync.table("Undeclared", { class: "readable", fields: {} });
-      const Secret = Sync.table("Secret", { class: "encrypted", fields: {} });
+  it.effect(
+    "a Tx writes only its command's tables, and a readable command reads no encrypted one",
+    () =>
+      Effect.gen(function* () {
+        const Undeclared = Sync.table("Undeclared", { class: "readable", fields: {} });
+        const Secret = Sync.table("Secret", { class: "encrypted", fields: {} });
 
-      const dies = <A, E>(effect: Effect.Effect<A, E, Tx.Service>, engine: Engines.Engine) =>
-        Effect.map(
-          Effect.exit(engine.transaction(effect)),
-          (exit) => Exit.isFailure(exit) && Cause.hasDies(exit.cause),
-        );
+        const dies = <A, E>(effect: Effect.Effect<A, E, Tx.Service>, engine: Engines.Engine) =>
+          Effect.map(
+            Effect.exit(engine.transaction(effect)),
+            (exit) => Exit.isFailure(exit) && Cause.hasDies(exit.cause),
+          );
 
-      for (const engine of yield* Engines.Service) {
-        const outcomes = [
-          yield* dies(
-            Effect.flatMap(Tx.Service, (tx) => tx.put(Undeclared, "guard", "a", {})),
-            engine,
-          ),
-          yield* dies(
-            Effect.flatMap(Tx.Service, (tx) => tx.get(Secret, "guard", "a")),
-            engine,
-          ),
-        ];
+        for (const engine of yield* Engines.Service) {
+          const outcomes = [
+            yield* dies(
+              Effect.flatMap(Tx.Service, (tx) => tx.put(Undeclared, "guard", "a", {})),
+              engine,
+            ),
+            yield* dies(
+              Effect.flatMap(Tx.Service, (tx) => tx.get(Secret, "guard", "a")),
+              engine,
+            ),
+          ];
 
-        expect(outcomes, engine.name).toEqual([true, engine.side === "server"]);
-      }
-    }),
+          // The probe's commands are readable, so the server runs them again, and neither side may
+          // read an encrypted table for them.
+          expect(outcomes, engine.name).toEqual([true, true]);
+        }
+      }),
   );
 
   it.effect.prop(
