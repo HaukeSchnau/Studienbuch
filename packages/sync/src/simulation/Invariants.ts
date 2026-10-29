@@ -166,14 +166,15 @@ export const waitingForRows = Effect.gen(function* () {
   return row?.waiting === true;
 }).pipe(Effect.orDie);
 
-/** No marker of an encrypted field anywhere in the server's Postgres. */
-export const plaintextInPostgres = Effect.map(Leaks.postgres, (leaks) =>
-  leaks.map((leak): Violation => ({
-    invariant: "plaintext",
-    place: leak.place,
-    detail: leak.excerpt,
-  })),
-).pipe(Effect.orDie);
+/** No marker of an encrypted field in any of `tables`, the server's Postgres. */
+export const plaintextInPostgres = (tables: ReadonlyArray<Leaks.Table>) =>
+  Effect.map(Leaks.scan(tables), (leaks) =>
+    leaks.map((leak): Violation => ({
+      invariant: "plaintext",
+      place: leak.place,
+      detail: leak.excerpt,
+    })),
+  ).pipe(Effect.orDie);
 
 /**
  * No marker in text the server saw: a frame it received, a line it logged, a span it ended. A

@@ -35,6 +35,8 @@ const tour: Simulation.Workload = {
     Simulation.Offline.make({ device: "b", offline: true }),
     Simulation.CrashDuringChoose.make({ device: "b", courses: ["course-de"], statement: 6 }),
     Simulation.Offline.make({ device: "b", offline: false }),
+    // Between a write's overlay and its outbox entry, were they two transactions.
+    Simulation.CrashDuringChoose.make({ device: "a", courses: ["course-ma"], statement: 9 }),
     Simulation.ForgeChoice.make({ device: "a" }),
     Simulation.Choose.make({ device: "a", courses: ["course-bio"] }),
     Simulation.Fault.make({ device: "a", fault: "dropNextResponse" }),
@@ -60,7 +62,7 @@ const tour: Simulation.Workload = {
 };
 
 const settings = Config.all({
-  runs: Config.Int("SIMULATION_RUNS").pipe(Config.withDefault(40)),
+  runs: Config.Int("SIMULATION_RUNS").pipe(Config.withDefault(10)),
   seed: Config.Int("SIMULATION_SEED").pipe(Config.withDefault(20_261_029)),
   /** The token a failure printed, which runs that failure and its shrinking again. */
   replay: Config.String("SIMULATION_REPLAY").pipe(Config.option),

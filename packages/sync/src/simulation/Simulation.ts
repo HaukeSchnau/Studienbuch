@@ -289,13 +289,16 @@ const tick = Duration.millis(50);
 const syncFor = Duration.seconds(30);
 
 /**
- * How long settling lets every device work: more than the supervisor's longest backoff, so a
- * device that lost its connection is back. Nothing pulls on a timer, so only pokes bring news.
+ * How long the world must stay quiet to be at rest: longer than a poke's spread and a write's
+ * debounce, so a round a poke or a write asked for has begun.
  */
-const settleFor = Duration.minutes(6);
+const calmFor = Duration.seconds(5);
 
-/** How much longer a device may stay busy after that before it breaks liveness. */
-const patience = Duration.minutes(5);
+/**
+ * How long devices may take to come to rest before they break liveness: the supervisor's longest
+ * backoff, 5 minutes, and as long again.
+ */
+const restLimit = Duration.minutes(10);
 
 /** A fresh note id: random, as encrypted rows' ids are, so the server can't date them. */
 const noteId = Effect.map(World.uuid, (id) => `note-${id}`);
@@ -341,6 +344,8 @@ const queued = (mutation: SyncClient.Mutation) => `queued #${mutation.mutationId
 export const run = (workload: Workload) =>
   Effect.gen(function* () {
     const world = yield* World.make;
+    // The tables are those of the run's schema, which doesn't change during the run.
+    const tables = yield* world.server(Leaks.tables).pipe(Effect.orDie);
     const trace: Array<string> = [];
     const violations: Array<Violation> = [];
     const hung: Array<Invariants.Violation> = [];
@@ -709,7 +714,7 @@ export const run = (workload: Workload) =>
         );
       }
 
-      found.push(...(yield* world.server(Invariants.plaintextInPostgres)));
+      found.push(...(yield* world.server(Invariants.plaintextInPostgres(tables))));
 
       const frames = world.frames();
 
@@ -742,11 +747,18 @@ export const run = (workload: Workload) =>
       (idle) => idle.every(Boolean),
     );
 
-    /** Lets every device work until all are idle, or breaks liveness. */
-    const rest = Effect.fn("Simulation.rest")(function* (label: "settled" | "resumed") {
-      yield* until(Effect.succeed(false), settleFor, Duration.seconds(1));
+    /** Every device idle, and the server ran nothing for `calmFor`. */
+    const calm = Effect.gen(function* () {
+      if (!(yield* allIdle)) return false;
+      const ran = world.serverLines().length;
+      yield* advance(calmFor);
 
-      if (!(yield* until(allIdle, patience))) {
+      return (yield* allIdle) && world.serverLines().length === ran;
+    });
+
+    /** Lets every device work until the world is at rest, or breaks liveness. */
+    const rest = Effect.fn("Simulation.rest")(function* (label: "settled" | "resumed") {
+      if (!(yield* until(calm, restLimit, Duration.seconds(1)))) {
         for (const each of devices) {
           if (!(yield* each.idle)) {
             hung.push({ invariant: "liveness", place: `device ${each.id}`, detail: "never idle" });
@@ -837,7 +849,7 @@ export const run = (workload: Workload) =>
       yield* each.faults.setLatency(Duration.zero);
     }
 
-    // Only pokes bring news now, so a device a poke missed stays behind and shows here.
+    // Nothing pulls on a timer, so a device a poke missed stays behind and shows here.
     yield* rest("settled");
 
     for (const violation of [...(yield* check), ...(yield* atRest)]) {
