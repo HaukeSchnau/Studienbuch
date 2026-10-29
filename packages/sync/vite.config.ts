@@ -2,12 +2,14 @@ import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   plugins: [
-    // drizzle-kit's `migrations.js` imports each migration's SQL as text, as Metro's inline import
-    // does on the device.
+    // drizzle-kit's `migrations.js` imports each migration's SQL as text, and `Replay` the
+    // conformance fixture, as the app's Metro transformer does on the device.
     {
-      name: "sql-as-text",
+      name: "text-files",
       transform: (code, id) =>
-        id.endsWith(".sql") ? { code: `export default ${JSON.stringify(code)};`, map: null } : null,
+        /\.(?:sql|jsonl)$/u.test(id)
+          ? { code: `export default ${JSON.stringify(code)};`, map: null }
+          : null,
     },
   ],
   test: {
