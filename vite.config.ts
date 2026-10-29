@@ -123,6 +123,7 @@ export default defineConfig({
       "studienbuch/prefer-effect-fn": "error",
       "studienbuch/require-suppression-reason": "error",
       "studienbuch/tagged-error-name": "error",
+      "studienbuch/test-only-imports": "error",
 
       // Every Effect module we use is marked unstable.
       // https://github.com/Effect-TS/tsgo/blob/main/docs/rules/unstable-api-usage.md

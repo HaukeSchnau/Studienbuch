@@ -92,6 +92,7 @@ export const crypto = Layer.succeed(
     },
     kem: {
       publicKey: () => Effect.die("Not in the test suite"),
+      validate: () => Effect.die("Not in the test suite"),
       encapsulate: () => Effect.die("Not in the test suite"),
       decapsulate: () => Effect.die("Not in the test suite"),
     },

@@ -8,6 +8,8 @@ declare module "@react-navigation/native";
 
 declare module "@stu/core";
 
+declare module "@stu/e2ee/testing";
+
 declare module "@stu/sync";
 
 declare module "@stu/sync/client";

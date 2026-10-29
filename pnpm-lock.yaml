@@ -209,6 +209,9 @@ catalogs:
     '@fontsource-variable/nunito':
       specifier: 5.3.0
       version: 5.3.0
+    '@noble/curves':
+      specifier: 2.4.0
+      version: 2.4.0
     '@noble/hashes':
       specifier: 2.4.0
       version: 2.4.0
@@ -412,15 +415,15 @@ importers:
       '@noble/hashes':
         specifier: 'catalog:'
         version: 2.4.0
-      '@noble/post-quantum':
-        specifier: 'catalog:'
-        version: 0.7.1
       '@stu/api':
         specifier: workspace:*
         version: link:../../packages/api
       '@stu/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@stu/e2ee':
+        specifier: workspace:*
+        version: link:../../packages/e2ee
       '@stu/sync':
         specifier: workspace:*
         version: link:../../packages/sync
@@ -665,6 +668,12 @@ importers:
 
   packages/e2ee:
     dependencies:
+      '@noble/curves':
+        specifier: 'catalog:'
+        version: 2.4.0
+      '@noble/post-quantum':
+        specifier: 'catalog:'
+        version: 0.7.1
       effect:
         specifier: 'catalog:'
         version: 4.0.7
