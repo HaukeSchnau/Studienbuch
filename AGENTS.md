@@ -74,7 +74,7 @@ The domain. UI copy is German, code is English:
 |                     | `Membership`            | Who receives a space, with a role                                                                |
 |                     | `Mutator`               | A named, pure change to rows. It runs on the device, and for readable tables again on the server |
 |                     | `Refusal`               | A mutator's typed reason to reject a change, shown as "Nicht übernommen"                         |
-| Schlüssel           | `SpaceKey`              | The key of one encrypted space in one epoch. Only members' devices hold it                       |
+| Schlüssel           | `SpaceKey`              | The key of one encrypted space in one key epoch. Only members' devices hold it                   |
 
 ## The five ways to hurt yourself
 
@@ -114,7 +114,7 @@ devenv on localhost is the dev environment, one instance per worktree ([ADR 0006
 
 An empty database is a bad test.
 
-- The demo school: `prepare` seeds it deterministically when `STUDIENBUCH_DEMO_SCHOOL=seed`, with personas (two students, a teacher, a parent). Dev instances and previews offer "sign in as" for them.
+- The demo school: `prepare` seeds it deterministically when `STUDIENBUCH_DEMO_SCHOOL=seed`, with personas: two students, and later a teacher and a parent. Dev instances and previews offer "sign in as" for them.
 - The import runs against an anonymized WebUntis corpus that lives outside this public repository. Real WebUntis data stays out of the tree.
 - E2E tests create their own school per run, so they can run against previews and beta without a reset.
 
@@ -147,7 +147,7 @@ Most code changes need no documentation change. Agents can read the code.
 
 - `docs/adr/` holds one decision per file: the context, the decision and why, in a few sentences. Write one when a decision is hard to reverse, surprising without context, and the result of a real trade-off. A changed decision gets a new ADR that supersedes the old one.
 - `docs/product/` holds the legacy behavior catalogue and the scenario contracts. A scenario states a user-visible rule independent of any test runner; the E2E test implements it.
-- `docs/operations/` holds procedures for running, releasing and debugging.
+- `docs/operations/` will hold procedures for running, releasing and debugging. Create it with the first one.
 - `docs/internals/` holds guides for agents working on the code, such as the review guide.
 - Document reasons and constraints the code can't show. Leave out feature lists, field lists, control-flow narration and PR summaries. When a documented decision changes, rewrite the text instead of appending.
 - Plans, research notes and scratch files stay out of the tree. The rewrite's roadmap and design documents are at <https://files.schnau.dev/html/studienbuch-roadmap/> (Tailnet), and ADRs link into them.
@@ -162,11 +162,11 @@ The layout below is the target. Packages appear as M0 builds them.
 
 | Path                          | Owns                                                                                                                                                                  | Must not                                                                |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `apps/app`                    | Expo Router routes, features wired to live queries, the SQLite drivers, the native crypto layer, keychain access                                                      | contain domain rules                                                    |
+| `apps/app`                    | Expo Router routes, features wired to live queries, the SQLite drivers, installing native crypto for `packages/e2ee`, keychain access                                 | contain domain rules                                                    |
 | `apps/web`                    | Landing and legal pages through react-native-web, the console SPA                                                                                                     | import `packages/sync`                                                  |
 | `apps/server`                 | The four commands (`serve`, `prepare`, `console`, `verify`), HTTP routes, RPC handlers, Better Auth, Drizzle schema and migrations, jobs, school profiles, the import | contain native addons or Expo packages                                  |
 | `packages/core`               | The domain: row tables, mutators, membership rules, `SchoolRules`, refusal tags, civil time                                                                           | import React, React Native, Expo, `node:*` or the sync client or server |
-| `packages/sync`               | The engine. Root: definition API, `Tx`, wire protocol. `./client`, `./server`, `./testing` (simulation and Sync Lab)                                                  | let `client` import `server` or the reverse                             |
+| `packages/sync`               | The engine. Root: definition API, `Tx`, wire protocol. `./client`, `./server`, `./lab` (the Sync Lab's browser transport), `./testing` (Node-only simulation)         | let `client` import `server` or the reverse                             |
 | `packages/e2ee`               | Envelopes, key boxes, signatures, recovery and pairing over a `CryptoSuite` service                                                                                   | store anything or open a connection                                     |
 | `packages/api`                | Effect RPC groups and schemas outside sync                                                                                                                            | hold handlers                                                           |
 | `packages/ui`                 | Design tokens, fonts, icons, domain-free components                                                                                                                   | know a domain type                                                      |
